@@ -98,12 +98,21 @@ describe('hreflangAlternates', () => {
     '/zh-CN/terms-of-service/',
     '/p/supported-models/',
     '/p/supported-models/flux-1-dev/',
-    '/agent/',
-    '/zh-CN/agent/',
     '/comfy-agent/',
     '/404'
   ])('emits nothing for %s without indexable translations', (pathname) => {
     expect(hreflangAlternates(pathname, ORIGIN)).toEqual([])
+  })
+
+  it('pairs the agent landing page with its zh-CN twin, unlike the still-noindexed /comfy-agent preview', () => {
+    expect(hreflangAlternates('/agent/', ORIGIN)).toEqual([
+      { hreflang: 'en', href: 'https://comfy.org/agent/' },
+      { hreflang: 'zh-CN', href: 'https://comfy.org/zh-CN/agent/' },
+      { hreflang: 'x-default', href: 'https://comfy.org/agent/' }
+    ])
+    expect(hreflangAlternates('/zh-CN/agent/', ORIGIN)).toEqual(
+      hreflangAlternates('/agent/', ORIGIN)
+    )
   })
 })
 
@@ -125,7 +134,7 @@ describe('sitemapAlternates', () => {
     ])
   })
 
-  it.for(['/affiliates/', '/agent/'])(
+  it.for(['/affiliates/'])(
     'leaves %s without links to unindexable translations',
     (pathname) => {
       expect(sitemapAlternates(`${ORIGIN}${pathname}`)).toBeUndefined()

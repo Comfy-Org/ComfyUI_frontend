@@ -48,8 +48,6 @@ describe('indexing policy', () => {
     '/zh-CN/booking-confirmation/',
     '/comfy-agent',
     '/comfy-agent/',
-    '/zh-CN/agent',
-    '/zh-CN/agent/',
     '/case-studies',
     '/zh-CN/videos/',
     '/demos',
@@ -71,6 +69,8 @@ describe('indexing policy', () => {
     '/pricing',
     '/agent',
     '/agent/',
+    '/zh-CN/agent',
+    '/zh-CN/agent/',
     '/p/supported-models/grok-imagine',
     '/demos/image-to-video'
   ])('keeps %s indexable', (pathname) => {

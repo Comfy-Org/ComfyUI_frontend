@@ -4,168 +4,176 @@ import BrandButton from '../common/BrandButton.vue'
 import BreadcrumbBar from '../common/BreadcrumbBar.vue'
 import ProductCardsSection from '../common/ProductCardsSection.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { externalLinks, getRoutes } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 
 interface Props {
   noindex?: boolean
+  locale?: Locale
 }
 
-const { noindex = false } = Astro.props
+const { noindex = false, locale = 'en' } = Astro.props
 
-const routes = getRoutes('en')
+const routes = getRoutes(locale)
 const imageRoot = 'https://media.comfy.org/website/comfy-agent'
 const capabilities = [
   {
-    title: 'Workflow Master',
+    title: t('agentPage.capabilities.1.title', locale),
     image: `${imageRoot}/knowledge.png`,
     alt: 'A collection of creative images and community workflows',
     bullets: [
-      'Curated knowledge for model recommendations and node selection.',
-      'Builds, edits, explains, and debugs workflows',
-      'Runs generations with your permission'
+      t('agentPage.capabilities.1.bullet.1', locale),
+      t('agentPage.capabilities.1.bullet.2', locale),
+      t('agentPage.capabilities.1.bullet.3', locale)
     ]
   },
   {
-    title: 'Real-time Collaboration',
+    title: t('agentPage.capabilities.2.title', locale),
     image: `${imageRoot}/multiplayer.png`,
     alt: 'A user and Comfy Agent editing a shared node workflow',
     bullets: [
-      'Edits the canvas together with you, in real time',
-      'References assets or nodes directly from the graph or library',
-      'Understands assets visually. It sees what you see'
+      t('agentPage.capabilities.2.bullet.1', locale),
+      t('agentPage.capabilities.2.bullet.2', locale),
+      t('agentPage.capabilities.2.bullet.3', locale)
     ]
   },
   {
-    title: 'Vibe Crafting',
+    title: t('agentPage.capabilities.3.title', locale),
     image: '/images/comfy-agent/vibe-crafting-workflow.webp',
     alt: 'Headphone workflow with connected 3D camera and color controls',
     bullets: [
-      'Builds any custom nodes on local Comfy',
-      'Creates your own skills, or uses public preset skills',
-      'Runs up to 5 agent chats in parallel, with full history'
+      t('agentPage.capabilities.3.bullet.1', locale),
+      t('agentPage.capabilities.3.bullet.2', locale),
+      t('agentPage.capabilities.3.bullet.3', locale)
     ]
   }
 ]
 const comparisons = [
   {
-    label: 'What is it',
+    label: t('agentPage.comparison.1.label', locale),
     agent: [
-      'The agent built into the Comfy app.',
-      'Chat and build on the canvas together.',
-      'Curated knowledge and native tools to operate ComfyUI.'
+      t('agentPage.comparison.1.agent.1', locale),
+      t('agentPage.comparison.1.agent.2', locale),
+      t('agentPage.comparison.1.agent.3', locale)
     ],
-    mcp: ['Your own agent, connected to ComfyUI.']
+    mcp: [t('agentPage.comparison.1.mcp.1', locale)]
   },
   {
-    label: 'Best for',
+    label: t('agentPage.comparison.2.label', locale),
     agent: [
-      'Both beginners to advanced builders.',
-      'See the agent build and edit workflows real time',
-      'Ask about existing workflows'
+      t('agentPage.comparison.2.agent.1', locale),
+      t('agentPage.comparison.2.agent.2', locale),
+      t('agentPage.comparison.2.agent.3', locale)
     ],
-    mcp: ['People who already work in another agent.']
+    mcp: [t('agentPage.comparison.2.mcp.1', locale)]
   },
   {
-    label: 'Requires',
+    label: t('agentPage.comparison.3.label', locale),
     agent: [
-      'Ready-to-go agent integration.',
-      'Try for free. Uses your existing Comfy Credits.'
+      t('agentPage.comparison.3.agent.1', locale),
+      t('agentPage.comparison.3.agent.2', locale)
     ],
-    mcp: ['Your own agent.', 'Comfy Cloud or a local ComfyUI setup.']
+    mcp: [
+      t('agentPage.comparison.3.mcp.1', locale),
+      t('agentPage.comparison.3.mcp.2', locale)
+    ]
   },
   {
-    label: 'Runs on',
-    agent: ['Comfy Cloud GPUs, or your local GPU'],
-    mcp: ['Comfy Cloud GPUs, or your local GPU']
+    label: t('agentPage.comparison.4.label', locale),
+    agent: [t('agentPage.comparison.4.agent.1', locale)],
+    mcp: [t('agentPage.comparison.4.mcp.1', locale)]
   },
   {
-    label: 'Custom nodes',
-    agent: ['Cloud-supported nodes on Cloud.', 'Any node on local.'],
-    mcp: ['Cloud-supported on Cloud.', 'Any node on local.']
+    label: t('agentPage.comparison.5.label', locale),
+    agent: [
+      t('agentPage.comparison.5.agent.1', locale),
+      t('agentPage.comparison.5.agent.2', locale)
+    ],
+    mcp: [
+      t('agentPage.comparison.5.mcp.1', locale),
+      t('agentPage.comparison.5.mcp.2', locale)
+    ]
   }
 ]
 const faqs = [
   {
-    question: 'How do people usually use it?',
-    answer:
-      'Key capabilities:\n- Builds, edits, reads, runs, and debugs workflows, running a task end to end\n- Builds in real time while you keep editing the graph\n- Curated knowledge for model recommendations and parameter tips\n- References assets and nodes, dragged straight from the asset library\n- Visual understanding of assets anywhere in Comfy\n- Creates, saves, and deletes skills\n- Up to 5 agent chats in parallel, with full chat history\n\nComing soon:\n- Local support (in another 1-2 weeks), including creating custom nodes and model/node downloads\n- GPU detection and workflow recommendations\n- LLM model selection'
+    question: t('agentPage.faq.1.q', locale),
+    answer: t('agentPage.faq.1.a', locale)
   },
   {
-    question: 'What model powers it?',
-    answer:
-      'Frontier models by Anthropic. We always provide the strongest we can offer for the job. Choices for switching LLMs is on the way. What they lack alone, the agent adds: full context of your workflow, your errors, and Comfy itself.'
+    question: t('agentPage.faq.2.q', locale),
+    answer: t('agentPage.faq.2.a', locale)
   },
   {
-    question: 'Do you plan to support local LLMs?',
-    answer:
-      'Yes. We have local LLM support in the roadmap. ComfyUI can do the memory management for both the image / video models and the LLMs at the same time.'
+    question: t('agentPage.faq.3.q', locale),
+    answer: t('agentPage.faq.3.a', locale)
   },
   {
-    question: 'Does it work with my existing workflows?',
-    answer:
-      'Yes. Open any workflow and the agent reads the whole graph. Describe what you want to change, or point at an error, and keep editing together. You can also reference another workflow in the chat.'
+    question: t('agentPage.faq.4.q', locale),
+    answer: t('agentPage.faq.4.a', locale)
   },
   {
-    question: 'Will it run generations without asking?',
-    answer:
-      'You decide. By default the agent will ask your confirmation to run any generations. In auto mode it runs and iterates on its own until the result is ready.'
+    question: t('agentPage.faq.5.q', locale),
+    answer: t('agentPage.faq.5.a', locale)
   },
   {
-    question: 'What does it cost?',
-    answer:
-      'Today, we provide some free tokens for new users to try the chat.\n\nNormally, Comfy Agent consumes the Comfy Credits for LLM tokens. Your existing credits can apply to it already. See the pricing page for plans and usage details.',
-    link: { label: 'See pricing', href: externalLinks.docsInAppAgent }
+    question: t('agentPage.faq.6.q', locale),
+    answer: t('agentPage.faq.6.a', locale),
+    link: {
+      label: t('agentPage.faq.6.linkLabel', locale),
+      href: externalLinks.docsInAppAgent
+    }
   },
   {
-    question: 'Can it run locally?',
-    answer:
-      'Yes. The same agent runs in your local ComfyUI, working on workflows based on your GPU, your models, and your custom nodes. It walks you through setup, picks models that fit your hardware, and builds the tools you need. It is coming soon.'
+    question: t('agentPage.faq.7.q', locale),
+    answer: t('agentPage.faq.7.a', locale)
   },
   {
-    question: 'Does the agent replace the canvas?',
-    answer:
-      'No. The canvas stays at the center. The agent builds with you on it, every control stays where it is, and you keep the editable workflow behind every result.'
+    question: t('agentPage.faq.8.q', locale),
+    answer: t('agentPage.faq.8.a', locale)
   },
   {
-    question: 'How is this different from asking ChatGPT?',
-    answer:
-      'ChatGPT only gives you instructions to follow. Comfy Agent works directly on your canvas. It sees your workflow and your errors, answers your questions, and also builds and runs the graph, and reviews the output. It doesn’t just see the entire setup, but also execute tasks for you.'
+    question: t('agentPage.faq.9.q', locale),
+    answer: t('agentPage.faq.9.a', locale)
   }
 ]
 const briefs = [
   {
     creator: 'Doug Hogan',
-    title: 'VFX: isolate, mask, and refine',
-    description:
-      'Take a shot from image to compositing passes. Isolate the subject, generate masks, and work with depth and normals in one workflow.',
+    ariaLabel: t('agentPage.usecases.brief.1.ariaLabel', locale),
+    byline: t('agentPage.usecases.brief.1.byline', locale),
+    title: t('agentPage.usecases.brief.1.title', locale),
+    description: t('agentPage.usecases.brief.1.description', locale),
     video: `${imageRoot}/bigfoot-vfx.mp4`,
     poster: `${imageRoot}/bigfoot-vfx-poster.webp`,
-    tag: 'VFX'
+    tag: t('agentPage.usecases.brief.1.tag', locale)
   },
   {
     creator: 'shanef3d',
-    title: 'Product imagery, from brief to campaign',
-    description:
-      'Build a product scene with precision in Blender. Explore rendering, lighting, materials, and composition, then refine the details on the canvas.',
+    ariaLabel: t('agentPage.usecases.brief.2.ariaLabel', locale),
+    byline: t('agentPage.usecases.brief.2.byline', locale),
+    title: t('agentPage.usecases.brief.2.title', locale),
+    description: t('agentPage.usecases.brief.2.description', locale),
     video: `${imageRoot}/product-imagery-demo.mp4`,
     poster: `${imageRoot}/product-imagery-demo-poster.webp`,
-    tag: 'Marketing'
+    tag: t('agentPage.usecases.brief.2.tag', locale)
   }
 ]
 ---
 
 <BaseLayout
-  title="Comfy Agent — The first agent for craft"
-  description="Comfy Agent lives inside ComfyUI, local and cloud. It builds, runs, and reviews the workflow while you edit the canvas. You and your agent craft side by side."
+  title={t('agentPage.meta.title', locale)}
+  description={t('agentPage.meta.description', locale)}
   noindex={noindex}
   hideAnnouncementBanner
 >
   <BreadcrumbBar
     crumbs={[
-      { label: 'Home', href: routes.home },
-      { label: 'Products', href: '#products' },
-      { label: 'Comfy Agent' }
+      { label: t('breadcrumb.home', locale), href: routes.home },
+      { label: t('nav.products', locale), href: '#products' },
+      { label: t('breadcrumb.agent', locale) }
     ]}
   />
 
@@ -178,17 +186,15 @@ const briefs = [
         id="agent-title"
         class="text-4xl/[1.3] font-light tracking-[-0.03em] text-primary-warm-white lg:text-5xl/[1.3]"
       >
-        Comfy Agent:
+        {t('agentPage.hero.titleLine1', locale)}
         <span class="block text-primary-comfy-canvas"
-          >The first agent for craft</span
+          >{t('agentPage.hero.titleLine2', locale)}</span
         >
       </h1>
       <p
         class="mt-6 w-0 min-w-full text-[17px]/[1.6] font-light text-primary-comfy-canvas sm:ml-[-10%] sm:min-w-[120%] lg:mt-8"
       >
-        Describe what you want right inside ComfyUI. It plans, builds and runs
-        workflows. Editing the canvas while you work, it crafts side by side
-        with you.
+        {t('agentPage.hero.subtitle', locale)}
       </p>
     </div>
     <div
@@ -198,7 +204,7 @@ const briefs = [
         href={externalLinks.cloud}
         size="lg"
         class="min-h-12 w-full rounded-2xl px-6 text-sm tracking-normal uppercase sm:w-auto"
-        >Try Comfy Agent</BrandButton
+        >{t('agentPage.cta', locale)}</BrandButton
       >
     </div>
   </section>
@@ -213,13 +219,13 @@ const briefs = [
       <p
         class="text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
       >
-        The agent
+        {t('agentPage.capabilities.eyebrow', locale)}
       </p>
       <h2
         id="capabilities-title"
         class="mt-4 text-4xl/tight font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl"
       >
-        Your teammate inside ComfyUI
+        {t('agentPage.capabilities.heading', locale)}
       </h2>
     </div>
     <div class="mt-7 grid gap-4 sm:mt-14 md:grid-cols-3">
@@ -258,7 +264,7 @@ const briefs = [
         href={externalLinks.cloud}
         size="lg"
         class="min-h-12 w-full rounded-2xl px-6 text-sm uppercase sm:min-h-16 sm:w-auto sm:rounded-3xl"
-        >Try Comfy Agent</BrandButton
+        >{t('agentPage.cta', locale)}</BrandButton
       >
     </div>
   </section>
@@ -272,18 +278,18 @@ const briefs = [
       <p
         class="mb-6 text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
       >
-        Use cases
+        {t('agentPage.usecases.eyebrow', locale)}
       </p>
       <h2
         id="briefs-title"
         class="scroll-mt-40 text-4xl/tight font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl"
       >
-        One canvas, every industry
+        {t('agentPage.usecases.heading', locale)}
       </h2>
       <p
         class="mx-auto mt-6 max-w-160 text-[17px]/[1.6] font-light text-primary-comfy-canvas"
       >
-        Studios run these workflows in production today, on Comfy.
+        {t('agentPage.usecases.subheading', locale)}
       </p>
     </div>
     <article
@@ -299,7 +305,7 @@ const briefs = [
           loop
           persistentControls
           fit="contain"
-          ariaLabel="Animation, from story to screen — by 852話 | Andidea"
+          ariaLabel={t('agentPage.usecases.featured.ariaLabel', locale)}
           class="w-full rounded-[36px] border-0"
         />
       </div>
@@ -307,20 +313,18 @@ const briefs = [
         <p
           class="text-xs font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
         >
-          By 852話 | Andidea
+          {t('agentPage.usecases.featured.byline', locale)}
         </p>
         <h3 class="mt-3 text-2xl/[1.2] font-medium text-primary-comfy-canvas">
-          Animation, from story to screen
+          {t('agentPage.usecases.featured.title', locale)}
         </h3>
         <p class="mt-4 text-sm/normal font-light text-primary-warm-gray">
-          Bring characters and imagined worlds into the same creative workflow.
-          The agent helps shape the look, explore a scene, and compare
-          generation results. Made by one artist in 100 hours with Comfy Agent.
+          {t('agentPage.usecases.featured.description', locale)}
         </p>
         <p class="mt-8">
           <span
             class="rounded-full bg-transparency-white-t4 px-5 py-2 text-xs font-light text-primary-warm-gray uppercase"
-            >Animation</span
+            >{t('agentPage.usecases.featured.tag', locale)}</span
           >
         </p>
       </div>
@@ -339,7 +343,7 @@ const briefs = [
             loop
             persistentControls
             fit="contain"
-            ariaLabel={`${brief.title} — by ${brief.creator}`}
+            ariaLabel={brief.ariaLabel}
             class="w-full rounded-[36px] border-0"
           />
         </div>
@@ -347,7 +351,7 @@ const briefs = [
           <p
             class="text-xs font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
           >
-            By {brief.creator}
+            {brief.byline}
           </p>
           <h3 class="mt-3 text-2xl/[1.2] font-medium text-primary-comfy-canvas">
             {brief.title}
@@ -372,15 +376,12 @@ const briefs = [
         id="difference-title"
         class="mx-auto max-w-220 text-4xl/tight font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl"
       >
-        Every result is a workflow, not <br class="hidden sm:block" />just an
-        asset.
+        {t('agentPage.difference.heading', locale)}
       </h2>
       <p
         class="mx-auto mt-8 max-w-[337.5px] text-[17px]/[1.6] font-light text-primary-comfy-canvas sm:max-w-[405px] lg:mt-10 lg:max-w-135"
       >
-        Everywhere else, you get the output file. With ComfyUI, Comfy Agent
-        hands you the pipeline that made it: every node, seed, sampler, and
-        model. Reuse it at any time.
+        {t('agentPage.difference.body', locale)}
       </p>
     </div>
   </section>
@@ -394,12 +395,12 @@ const briefs = [
         id="start-title"
         class="max-w-100 text-4xl/tight font-light tracking-[-0.03em] text-primary-comfy-canvas max-sm:mx-auto lg:text-5xl"
       >
-        Where to start from
+        {t('agentPage.start.heading', locale)}
       </h2>
       <p
         class="mt-12 hidden text-[17px]/[1.6] font-light text-primary-warm-white sm:block"
       >
-        Local or cloud, it lives wherever you build.
+        {t('agentPage.start.subheading', locale)}
       </p>
     </div>
     <div class="space-y-16">
@@ -407,40 +408,35 @@ const briefs = [
         class="grid gap-6 border-b border-primary-comfy-canvas/40 pb-16 md:grid-cols-[280fr_568fr] md:gap-8"
       >
         <h3 class="text-2xl/[1.4] font-medium text-primary-comfy-canvas">
-          Comfy Cloud
+          {t('agentPage.start.cloud.heading', locale)}
         </h3>
         <div class="text-[17px]/[1.6] font-light text-primary-comfy-canvas">
           <p>
-            Try on Comfy Cloud to get free tokens. No setup needed. The agent is
-            there when you log in. You can start with all your saved workflows
-            and assets.
+            {t('agentPage.start.cloud.body', locale)}
           </p>
           <p class="mt-6">
-            No account yet?
+            {t('agentPage.start.cloud.noAccount', locale)}
             <a
               href={externalLinks.cloud}
               class="text-primary-comfy-yellow underline underline-offset-4 hover:opacity-80"
-              >Sign up for free</a
+              >{t('agentPage.start.cloud.cta', locale)}</a
             >
           </p>
         </div>
       </div>
       <div class="grid gap-6 md:grid-cols-[280fr_568fr] md:gap-8">
         <h3 class="text-2xl/[1.4] font-medium text-primary-comfy-canvas">
-          Running ComfyUI locally
+          {t('agentPage.start.local.heading', locale)}
         </h3>
         <div class="text-[17px]/[1.6] font-light text-primary-comfy-canvas">
           <p>
-            Agent on local ComfyUI is coming soon. Your GPU, your models, your
-            custom nodes. The agent walks you through setup, picks models that
-            fit your hardware, customizes your environment, and vibe codes all
-            the tools you need.
+            {t('agentPage.start.local.body', locale)}
           </p>
           <p class="mt-6">
             <a
               href="https://form.typeform.com/to/UqL3PpAM"
               class="text-primary-comfy-yellow underline underline-offset-4 hover:opacity-80"
-              >Let me know when available</a
+              >{t('agentPage.start.local.cta', locale)}</a
             >
           </p>
         </div>
@@ -456,7 +452,7 @@ const briefs = [
       id="comparison-title"
       class="text-center text-4xl/tight font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl"
     >
-      Which one should I use?
+      {t('agentPage.comparison.heading', locale)}
     </h2>
     <div
       class="mt-16 overflow-x-auto rounded-[40px] bg-transparency-white-t4 p-3 md:p-4 lg:px-10 lg:py-6"
@@ -470,19 +466,21 @@ const briefs = [
         <thead>
           <tr>
             <td class="w-[24%] md:w-1/5">
-              <span class="sr-only">Feature</span>
+              <span class="sr-only"
+                >{t('agentPage.comparison.featureSr', locale)}</span
+              >
             </td>
             <th
               scope="col"
               class="w-[38%] px-2 pb-3 text-[11px] font-bold tracking-wider text-primary-comfy-yellow uppercase sm:px-3 sm:text-xs md:w-2/5 md:px-6 md:pb-4"
             >
-              Comfy Agent
+              {t('agentPage.comparison.colAgent', locale)}
             </th>
             <th
               scope="col"
               class="w-[38%] px-2 pb-3 text-[11px] font-bold tracking-wider text-primary-comfy-yellow uppercase sm:px-3 sm:text-xs md:w-2/5 md:px-6 md:pb-4"
             >
-              Comfy MCP
+              {t('agentPage.comparison.colMcp', locale)}
             </th>
           </tr>
         </thead>
@@ -516,7 +514,7 @@ const briefs = [
       id="faq-title"
       class="text-4xl/tight font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl"
     >
-      Q&A
+      {t('agentPage.faq.heading', locale)}
     </h2>
     <div class="space-y-12">
       {faqs.map((faq, index) => <details
@@ -557,6 +555,7 @@ const briefs = [
   </section>
   <div id="products">
     <ProductCardsSection
+      locale={locale}
       labelKey="products.labelProducts"
       ctaKey="products.ctaShort"
     />

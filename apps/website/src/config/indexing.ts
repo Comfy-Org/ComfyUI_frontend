@@ -27,10 +27,8 @@ const NOINDEX_PATHNAMES = new Set([
   ...ALL_LOCALE_PREFIXES.flatMap((prefix) =>
     NOINDEX_ROUTES.map((route) => `${prefix}${route}`)
   ),
-  // The English /agent page is a real, indexable landing page. Only the
-  // zh-CN variant (not yet localized) and the older /comfy-agent preview
-  // stay out of the index.
-  '/zh-CN/agent',
+  // Both /agent and /zh-CN/agent are real, indexable, localized pages. Only
+  // the older /comfy-agent preview route stays out of the index.
   '/comfy-agent'
 ])
 
