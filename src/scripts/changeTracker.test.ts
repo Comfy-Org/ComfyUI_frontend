@@ -285,31 +285,48 @@ describe('ChangeTracker', () => {
       }
     )
 
-    it('leaves contenteditable history to the editor without scanning modals', () => {
-      const editor = document.createElement('div')
-      Object.defineProperty(editor, 'isContentEditable', { value: true })
-      vi.spyOn(document, 'activeElement', 'get').mockReturnValue(editor)
-      useQueueSettingsStore().mode = 'disabled'
-      const querySelectorAll = vi.spyOn(document, 'querySelectorAll')
-      const frames: FrameRequestCallback[] = []
-      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
-        frames.push(frame)
-      )
-      const addEventListener = vi
-        .spyOn(window, 'addEventListener')
-        .mockImplementation(() => {})
-      ChangeTracker.init()
-      const keydown = addEventListener.mock.calls.find(
-        ([type]) => type === 'keydown'
-      )?.[1]
-      if (typeof keydown !== 'function')
-        throw new Error('keydown listener missing')
+    it.for([
+      { editor: 'INPUT', createElement: () => document.createElement('input') },
+      {
+        editor: 'TEXTAREA',
+        createElement: () => document.createElement('textarea')
+      },
+      {
+        editor: 'contenteditable',
+        createElement: () => {
+          const element = document.createElement('div')
+          Object.defineProperty(element, 'isContentEditable', { value: true })
+          return element
+        }
+      }
+    ])(
+      'leaves $editor history to the editor without scanning modals',
+      ({ createElement }) => {
+        vi.spyOn(document, 'activeElement', 'get').mockReturnValue(
+          createElement()
+        )
+        useQueueSettingsStore().mode = 'disabled'
+        const querySelectorAll = vi.spyOn(document, 'querySelectorAll')
+        const frames: FrameRequestCallback[] = []
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        const addEventListener = vi
+          .spyOn(window, 'addEventListener')
+          .mockImplementation(() => {})
+        ChangeTracker.init()
+        const keydown = addEventListener.mock.calls.find(
+          ([type]) => type === 'keydown'
+        )?.[1]
+        if (typeof keydown !== 'function')
+          throw new Error('keydown listener missing')
 
-      keydown(new KeyboardEvent('keydown', { key: 'a' }))
+        keydown(new KeyboardEvent('keydown', { key: 'a' }))
 
-      expect(querySelectorAll).not.toHaveBeenCalled()
-      expect(frames).toHaveLength(0)
-    })
+        expect(querySelectorAll).not.toHaveBeenCalled()
+        expect(frames).toHaveLength(0)
+      }
+    )
 
     it('captures editor changes when store-backed auto-queue uses change mode', async () => {
       const editor = document.createElement('input')
