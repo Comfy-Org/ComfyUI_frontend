@@ -29,10 +29,9 @@ const REFUSALS = new Map<string, RunFailure>([
   ['insufficient_credits', 'noCredits'],
   // The same sentence in both.
   ['rate_limited', 'rateLimit']
-  // Nothing else: a request only stays 'failed' when no run was ever
-  // submitted (once one is, a failure interrupts it instead), so the panel's
-  // sentences for network, response and provider failures — a run that may
-  // still be billed, credits that may have gone — would not be true.
+  // Nothing else: network, response and execution failures reach 'failed'
+  // only while preparing a request. Once submission begins, those failures
+  // interrupt the run instead, so the panel's billing warnings would be wrong.
 ])
 
 /**

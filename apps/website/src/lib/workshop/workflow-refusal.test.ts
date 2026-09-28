@@ -21,7 +21,7 @@ const REFUSALS: readonly [
 ][] = [
   ['insufficient_credits', 'noCredits'],
   ['rate_limited', 'rateLimit'],
-  // A refused request never ran, so nothing may still complete, be billed or
+  // These preparation failures never ran, so nothing may still complete, be billed or
   // have taken credits, which is what the panel says for these.
   ['network', undefined],
   ['response', undefined],
