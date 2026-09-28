@@ -58,11 +58,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-/** A Pay that collided with another operation holds the skeleton until it is re-read. */
+/** A Pay that collided with another operation keeps the form, with Pay locked, until it is re-read. */
 const view = computed(() =>
-  page.kind === 'capture' && page.outcome?.kind !== 'reconciling'
-    ? railView(page.rail)
-    : undefined
+  page.kind === 'capture' ? railView(page.rail) : undefined
 )
 
 const payContext = computed<PayContext>(() => {

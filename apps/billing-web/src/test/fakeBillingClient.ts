@@ -81,7 +81,7 @@ export interface FakeBillingClient {
     BillingClient['commands']['cancelSubscription']
   >
   readonly resubscribe: Mock<BillingClient['commands']['resubscribe']>
-  readonly recover: BillingClient['lifecycle']['recover']
+  readonly recover: Mock<BillingClient['lifecycle']['recover']>
   readonly readCapabilities: Mock<BillingClient['capabilities']['read']>
   readonly invalidateCapabilities: BillingClient['capabilities']['invalidate']
   readonly readStatus: Mock<BillingClient['status']['read']>
@@ -208,12 +208,14 @@ export function createFakeBillingClient(
       readAt: READ_AT
     } satisfies BillingStatusSnapshot
   }))
-  const recover = vi.fn(async () => {
-    if (recoverOutcome.status === 'ok' && recoverOutcome.value) {
-      publishOperation(recoverOutcome.value)
+  const recover: Mock<BillingClient['lifecycle']['recover']> = vi.fn(
+    async () => {
+      if (recoverOutcome.status === 'ok' && recoverOutcome.value) {
+        publishOperation(recoverOutcome.value)
+      }
+      return recoverOutcome
     }
-    return recoverOutcome
-  })
+  )
 
   const client: BillingClient = {
     lifecycle: {
@@ -366,7 +368,7 @@ export function succeededOperation(id = 'op_1'): TerminalBillingOperation {
 }
 
 /** Pending with no continuation on offer: the lifecycle is still polling it. */
-export function pendingOperation(id = 'op_1'): BillingOperationState {
+export function pendingOperation(id = 'op_1'): PendingBillingOperation {
   return {
     ...operationIdentity(id),
     phase: 'pending',

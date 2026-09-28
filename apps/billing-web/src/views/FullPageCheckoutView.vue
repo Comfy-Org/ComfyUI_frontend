@@ -9,6 +9,8 @@ import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.v
 import type { CheckoutSummary } from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import CheckoutSummaryColumn from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import { keepSubscriptionCopy } from '@/checkout/keepSubscription'
+import CheckoutTerminalCard from '@/components/fullPage/CheckoutTerminalCard.vue'
+import CheckoutWaitingColumn from '@/components/fullPage/CheckoutWaitingColumn.vue'
 import { useFullPageCheckout } from '@/composables/useFullPageCheckout'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { useBillingWebStripeKey } from '@/config/stripeKey'
@@ -40,7 +42,17 @@ const {
 } = useFullPageCheckout()
 
 const quote = computed(() =>
-  page.value.kind === 'capture' ? preview.value : undefined
+  page.value.kind === 'capture' || page.value.kind === 'waiting'
+    ? preview.value
+    : undefined
+)
+
+const planName = computed(() =>
+  preview.value === undefined
+    ? undefined
+    : t('checkout.fullPage.planName', {
+        tier: coded('tier', preview.value.new_plan.tier)
+      })
 )
 
 const summary = computed<CheckoutSummary | undefined>(() => {
@@ -49,9 +61,7 @@ const summary = computed<CheckoutSummary | undefined>(() => {
   const currency = quoted.currency ?? 'usd'
   const money = (cents: number) =>
     formatQuoteMoney(cents, currency, locale.value)
-  const plan = t('checkout.fullPage.planName', {
-    tier: coded('tier', quoted.new_plan.tier)
-  })
+  const plan = planName.value ?? ''
   const workspace = session.value?.workspace.name
   return {
     eyebrow:
@@ -91,6 +101,11 @@ const payFailureCopy = computed(() =>
 )
 
 const productName = computed(() => coded('product', entry.value?.product))
+const returnLabel = computed(() =>
+  returnLink.value === undefined
+    ? undefined
+    : t('hosted.returnTo', { product: productName.value })
+)
 
 function returnToProduct() {
   window.location.assign(returnLink.value)
@@ -98,8 +113,17 @@ function returnToProduct() {
 </script>
 
 <template>
+  <CheckoutTerminalCard
+    v-if="page.kind === 'terminal'"
+    :started="page.started"
+    :workspace="session?.workspace.name"
+    :plan="page.started ? planName : undefined"
+    :operation-id="page.operation?.id"
+    :return-label="returnLabel"
+    @return="returnToProduct"
+  />
   <main
-    v-if="page.kind === 'refused' || page.kind === 'unavailable'"
+    v-else-if="page.kind === 'refused' || page.kind === 'unavailable'"
     class="dark-theme fixed inset-0 flex items-center justify-center overflow-auto bg-base-background p-6 font-inter"
   >
     <section class="flex w-full max-w-96 flex-col gap-4">
@@ -133,7 +157,9 @@ function returnToProduct() {
     <h1 class="sr-only">{{ t('hosted.title.checkout') }}</h1>
     <div class="flex min-h-full flex-col lg:flex-row">
       <CheckoutSummaryColumn :summary @back="returnToProduct" />
+      <CheckoutWaitingColumn v-if="page.kind === 'waiting'" />
       <CheckoutPaymentColumn
+        v-else
         :page
         :charge
         :publishable-key="stripeKey ?? ''"

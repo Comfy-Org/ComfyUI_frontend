@@ -1,16 +1,25 @@
+import type { BillingOperationState } from '@comfyorg/account-core/billing'
+
 import type {
   CheckoutPage,
   CheckoutPageEvent,
+  OperationOutcome,
   PaymentTab,
   RailView,
   SavedArrival
 } from '@/checkout/checkoutPage'
 import {
   RESOLVING,
+  isParked,
   railAcceptsPay,
   railView,
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
+import {
+  failedOperation,
+  pendingOperation,
+  succeededOperation
+} from '@/test/fakeBillingClient'
 
 const quoted = (
   saved: SavedArrival,
@@ -58,7 +67,8 @@ const collect = (
 ): CheckoutPage => ({
   kind: 'capture',
   rail: { method: 'collect', element, saved, tab },
-  reactivation: 'not_required'
+  reactivation: 'not_required',
+  attempt: 'idle'
 })
 
 function replay(events: readonly CheckoutPageEvent[]): CheckoutPage {
@@ -131,7 +141,8 @@ describe('reduceCheckoutPage', () => {
       expected: {
         kind: 'capture',
         rail: { method: 'on_file' },
-        reactivation: 'not_required'
+        reactivation: 'not_required',
+        attempt: 'idle'
       },
       pay: true
     },
@@ -356,9 +367,9 @@ const requoted = (
 ): CheckoutPageEvent => ({ type: 'requoted', reactivation, priceUpdated })
 const consentMissing: CheckoutPageEvent = { type: 'consentMissing' }
 
-describe('reduceCheckoutPage after Pay', () => {
-  const live = [quoted(0), ready]
+const live = [quoted(0), ready]
 
+describe('reduceCheckoutPage after Pay', () => {
   it.for<{
     name: string
     events: CheckoutPageEvent[]
@@ -479,4 +490,245 @@ describe('reduceCheckoutPage after Pay', () => {
       expect(reduceCheckoutPage(RESOLVING, event)).toBe(RESOLVING)
     }
   )
+})
+
+const parkedOperation = (): BillingOperationState => ({
+  ...pendingOperation('op_parked'),
+  serverPhase: 'awaiting_payment_method'
+})
+const reconciled = (
+  operation: BillingOperationState | undefined,
+  outcome?: OperationOutcome
+): CheckoutPageEvent => ({
+  type: 'reconciled',
+  operation,
+  ...(outcome === undefined ? {} : { outcome })
+})
+const changed = (
+  operation: BillingOperationState,
+  outcome?: OperationOutcome
+): CheckoutPageEvent => ({
+  type: 'operationChanged',
+  operation,
+  ...(outcome === undefined ? {} : { outcome })
+})
+const settledOnTheSpot: CheckoutPageEvent = { type: 'paySettled' }
+const declinedElsewhere: OperationOutcome = {
+  kind: 'declined',
+  reason: 'card_declined',
+  operationId: 'op_1'
+}
+
+describe('reduceCheckoutPage reconciliation', () => {
+  it.for<{
+    name: string
+    events: CheckoutPageEvent[]
+    expected: Partial<CheckoutPage>
+    without?: 'outcome' | 'operation'
+  }>([
+    {
+      name: 'nothing pending keeps resolving until the quote',
+      events: [reconciled(undefined)],
+      expected: { kind: 'resolving' }
+    },
+    {
+      name: 'nothing pending then the quote is capture',
+      events: [reconciled(undefined), quoted(0)],
+      expected: { kind: 'capture', attempt: 'idle' }
+    },
+    {
+      name: 'money in flight on mount is waiting, and the quote cannot open a form over it',
+      events: [reconciled(pendingOperation()), quoted(0)],
+      expected: { kind: 'waiting', operation: pendingOperation() }
+    },
+    {
+      name: 'an operation parked on a card is capture (rule 4)',
+      events: [reconciled(parkedOperation()), quoted(0)],
+      expected: { kind: 'capture' },
+      without: 'outcome'
+    },
+    {
+      name: 'a parked operation whose last attempt declined opens capture on that card',
+      events: [reconciled(parkedOperation(), declinedElsewhere), quoted(0)],
+      expected: { kind: 'capture', outcome: declinedElsewhere }
+    },
+    {
+      name: 'a success found on mount is Already completed, unattributed',
+      events: [reconciled(succeededOperation()), quoted(0)],
+      expected: {
+        kind: 'terminal',
+        operation: succeededOperation(),
+        started: false
+      }
+    },
+    {
+      name: 'a failure found on mount opens capture on its card',
+      events: [
+        reconciled(failedOperation('card_declined'), declinedElsewhere),
+        quoted(0)
+      ],
+      expected: { kind: 'capture', outcome: declinedElsewhere }
+    },
+    {
+      name: 'a re-read from capture that finds money in flight leaves the form',
+      events: [...live, reconciled(pendingOperation())],
+      expected: { kind: 'waiting' }
+    },
+    {
+      name: 'a re-read from capture that finds nothing changes nothing',
+      events: [...live, reconciled(undefined)],
+      expected: collect('ready')
+    },
+    {
+      name: 'a collided Pay re-read as pending is waiting',
+      events: [...live, submitted, collided, reconciled(pendingOperation())],
+      expected: { kind: 'waiting' }
+    },
+    {
+      name: 'a collided Pay re-read as settled is Already completed, unattributed',
+      events: [...live, submitted, collided, reconciled(succeededOperation())],
+      expected: { kind: 'terminal', started: false }
+    },
+    {
+      name: 'a collided Pay re-read as nothing frees Pay again',
+      events: [...live, submitted, collided, reconciled(undefined)],
+      expected: collect('ready')
+    },
+    {
+      name: 'waiting follows the operation as it moves',
+      events: [
+        reconciled(pendingOperation()),
+        changed({ ...pendingOperation(), serverPhase: 'in_progress' })
+      ],
+      expected: {
+        kind: 'waiting',
+        operation: { ...pendingOperation(), serverPhase: 'in_progress' }
+      }
+    },
+    {
+      name: 'waiting settles into Already completed',
+      events: [reconciled(pendingOperation()), changed(succeededOperation())],
+      expected: { kind: 'terminal', started: false }
+    },
+    {
+      name: 'waiting that declines resolves a fresh capture on that card',
+      events: [
+        reconciled(pendingOperation()),
+        changed(failedOperation('card_declined'), declinedElsewhere)
+      ],
+      expected: { kind: 'resolving', outcome: declinedElsewhere }
+    },
+    {
+      name: 'waiting whose operation turns out parked on a card resolves a capture (rule 4)',
+      events: [reconciled(pendingOperation()), changed(parkedOperation())],
+      expected: { kind: 'resolving' },
+      without: 'outcome'
+    },
+    {
+      name: 'waiting whose operation vanishes resolves again',
+      events: [reconciled(pendingOperation()), reconciled(undefined)],
+      expected: { kind: 'resolving' }
+    },
+    {
+      name: "this page's own Pay stays on the form while its operation is pending",
+      events: [...live, submitted, changed(pendingOperation())],
+      expected: { kind: 'capture', attempt: 'sent' }
+    },
+    {
+      name: "this page's own Pay succeeding is attributed",
+      events: [...live, submitted, changed(succeededOperation())],
+      expected: { kind: 'terminal', started: true }
+    },
+    {
+      name: 'a plan the server activated with no operation is attributed',
+      events: [...live, submitted, settledOnTheSpot],
+      expected: { kind: 'terminal', started: true },
+      without: 'operation'
+    },
+    {
+      name: 'the operation arriving after the settle fills the terminal',
+      events: [
+        ...live,
+        submitted,
+        settledOnTheSpot,
+        changed(succeededOperation())
+      ],
+      expected: {
+        kind: 'terminal',
+        started: true,
+        operation: succeededOperation()
+      }
+    },
+    {
+      name: "this page's own failure is left to the Pay verdict",
+      events: [
+        ...live,
+        submitted,
+        changed(failedOperation('card_declined'), declinedElsewhere)
+      ],
+      expected: { kind: 'capture', attempt: 'sent' },
+      without: 'outcome'
+    },
+    {
+      name: 'a success after a decline card is still attributed to the retry',
+      events: [
+        ...live,
+        submitted,
+        declined,
+        submitted,
+        changed(succeededOperation())
+      ],
+      expected: { kind: 'terminal', started: true }
+    },
+    {
+      name: 'a terminal is sticky against a later re-read',
+      events: [
+        reconciled(succeededOperation()),
+        reconciled(undefined),
+        reconciled(pendingOperation())
+      ],
+      expected: { kind: 'terminal', started: false }
+    }
+  ])('$name', ({ events, expected }) => {
+    expect(replay(events)).toMatchObject(expected)
+  })
+
+  it.for<{
+    name: string
+    kind: 'refused' | 'unavailable'
+    events: CheckoutPageEvent[]
+  }>([
+    { name: 'a refusal', kind: 'refused', events: [refused] },
+    { name: 'an outage', kind: 'unavailable', events: [unavailable] }
+  ])('leaves $name alone whatever the lifecycle says', ({ kind, events }) => {
+    const page = replay(events)
+
+    expect(reduceCheckoutPage(page, reconciled(pendingOperation()))).toBe(page)
+    expect(reduceCheckoutPage(page, changed(succeededOperation()))).toBe(page)
+    expect(page.kind).toBe(kind)
+  })
+
+  it.for<{ name: string; operation: BillingOperationState; parked: boolean }>([
+    {
+      name: 'awaiting a payment method',
+      operation: parkedOperation(),
+      parked: true
+    },
+    {
+      name: 'pending with no phase',
+      operation: pendingOperation(),
+      parked: false
+    },
+    {
+      name: 'awaiting an invoice',
+      operation: {
+        ...pendingOperation(),
+        serverPhase: 'awaiting_invoice_payment'
+      },
+      parked: false
+    },
+    { name: 'succeeded', operation: succeededOperation(), parked: false }
+  ])('$name is parked: $parked', ({ operation, parked }) => {
+    expect(isParked(operation)).toBe(parked)
+  })
 })
