@@ -94,7 +94,7 @@ import {
   selectItemVariants,
   selectTriggerVariants,
   stopEscapeToDocument
-} from '@/components/ui/select/select.variants'
+} from '@comfyorg/design-system/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'

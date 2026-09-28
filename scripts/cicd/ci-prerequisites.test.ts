@@ -118,9 +118,32 @@ describe('candidate prerequisites', () => {
   )
 
   it.for([
+    ['success', 0],
+    ['failure', 1],
+    ['cancelled', 1],
+    ['skipped', 1]
+  ] satisfies [string, number][])(
+    'cloud shards ending with %s produce E2E exit status %s',
+    ([cloud, expected]) => {
+      expect(
+        verdict('e2e-status', {
+          PREFLIGHT: 'success',
+          CHANGES: 'success',
+          SHOULD_RUN: 'true',
+          SHARDED: 'success',
+          CLOUD: cloud,
+          BROWSERS: 'success',
+          VIDEO: 'skipped'
+        })
+      ).toBe(expected)
+    }
+  )
+
+  it.for([
     'unit',
     'ecosystem',
     'playwright-tests-chromium-sharded',
+    'playwright-tests-cloud-sharded',
     'playwright-tests',
     'playwright-video-new-tests'
   ])('%s cannot bypass the prerequisite job', (job) => {

@@ -1122,6 +1122,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     vi.mocked(useTelemetry())!.trackAgentPaywallShown.mockClear()
     vi.mocked(useTelemetry())!.trackAgentPaywallCtaClicked.mockClear()
     vi.mocked(useTelemetry())!.trackAddApiCreditButtonClicked.mockClear()
+    vi.mocked(useTelemetry())!.trackSubscription.mockClear()
 
     canTopUp = ref(true)
     canSubscribeSelfServe = ref(true)
@@ -1426,6 +1427,36 @@ describe('AgentPanelRoot paywall telemetry', () => {
       useTelemetry()!.trackAddApiCreditButtonClicked
     ).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { button: 'Subscribe', canSubscriberTopUp: false },
+    { button: 'Upgrade plan', canSubscriberTopUp: true }
+  ])(
+    'carries agent_paywall to the subscribe event from the $button CTA',
+    async ({ button, canSubscriberTopUp }) => {
+      canTopUp.value = canSubscriberTopUp
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      showPaywall()
+
+      await userEvent.click(await screen.findByRole('button', { name: button }))
+
+      expect(useTelemetry()!.trackSubscription).toHaveBeenCalledExactlyOnceWith(
+        'subscribe_clicked',
+        { current_tier: 'standard', reason: 'agent_paywall' }
+      )
+    }
+  )
+
+  it('does not report a subscribe click for the add-credits CTA', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    showPaywall()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add credits' })
+    )
+
+    expect(useTelemetry()!.trackSubscription).not.toHaveBeenCalled()
+  })
 })
 
 describe('AgentPanelRoot session notices', () => {
@@ -1705,7 +1736,7 @@ async function expectLaterClickCannotRestoreAccumulatedNodes(
 
 // Records what actually reached the upload endpoint, so an exclusion can be
 // asserted on the request rather than on a chip that has not rendered yet.
-function stubUploadFetch(uploaded: string[] = []): string[] {
+function stubUploadFetch(uploaded: string[] = [], status = 200): string[] {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1716,7 +1747,9 @@ function stubUploadFetch(uploaded: string[] = []): string[] {
         const file = body.get('image')
         if (file instanceof File) uploaded.push(file.name)
       }
-      return json(200, { name: 'uploaded', subfolder: '', type: 'input' })
+      return status === 200
+        ? json(200, { name: 'uploaded', subfolder: '', type: 'input' })
+        : json(status, {})
     })
   )
   return uploaded
@@ -2002,6 +2035,104 @@ describe('AgentPanelRoot attach flow', () => {
         telemetry.trackAgentAttachButtonClicked
       ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
     )
+  })
+
+  it('attaches a screenshot pasted into the composer and uploads it', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'image.png'
+      )
+    ).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+  })
+
+  // A spreadsheet or document copy puts a bitmap on the clipboard next to the
+  // text, so neither representation may be dropped for the other.
+  it('keeps both the attachment and the text of a mixed clipboard', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    clipboard.setData('text/plain', 'Q3 revenue by region')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'image.png'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByRole('textbox')).toHaveTextContent(
+      'Q3 revenue by region'
+    )
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+  })
+
+  // Pasting happens inside the composer, like typing or a drop; only the +
+  // menu's attach leaves the panel for the OS picker and ends node picking.
+  it('keeps picking nodes when a screenshot is pasted into the composer', async () => {
+    const uploaded = stubUploadFetch()
+    const selection = await startVueNodeSelection()
+
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+    expect(useAgentNodeSelectionStore().isActive).toBe(true)
+    expect([...selection.selectedItems]).toEqual(selection.nodes)
+  })
+
+  async function renderAndPasteScreenshot(): Promise<void> {
+    renderWithSelectedTarget()
+    await nextTick()
+    telemetry.trackAgentAttachButtonClicked.mockClear()
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+  }
+
+  it('tracks a pasted attachment as a paste once its upload lands', async () => {
+    const uploaded = stubUploadFetch()
+
+    await renderAndPasteScreenshot()
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentAttachButtonClicked
+      ).toHaveBeenCalledExactlyOnceWith({ method: 'paste' })
+    )
+  })
+
+  it('tracks no paste when the pasted upload is rejected', async () => {
+    stubUploadFetch([], 500)
+
+    await renderAndPasteScreenshot()
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: 'image.png could not be uploaded'
+        })
+      )
+    )
+    await nextTick()
+    expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
   })
 
   it('names every approved format in the picker accept list', async () => {
