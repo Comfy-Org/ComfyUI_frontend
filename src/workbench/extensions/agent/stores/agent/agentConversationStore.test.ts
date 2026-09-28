@@ -945,7 +945,7 @@ describe('useAgentConversationStore', () => {
     ])
   })
 
-  it('keeps a live reply when the persisted text differs at the same length', () => {
+  it('settles on a terminal persisted reply when live text diverges', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
     store.startTurn(T1)
@@ -962,12 +962,57 @@ describe('useAgentConversationStore', () => {
     ])
     store.resumeBackgroundTurn()
 
-    expect(partTexts(store)).toEqual(['All done!'])
-    expect(store.isStreaming).toBe(true)
+    expect(partTexts(store)).toEqual(['All done?'])
+    expect(store.isStreaming).toBe(false)
     expect(store.entries.map((entry) => entry.role)).toEqual([
       'user',
       'assistant'
     ])
+  })
+
+  it('keeps a settled live reply when the fetched row is still streaming', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(delta('t1', 'All '))
+    store.stashActiveTurn()
+    store.ingest(delta('t1', 'done.'))
+    store.ingest(done('t1'))
+
+    const staleRow = historyRow(2, 'assistant', 'server-turn', 'All ', 't1')
+    staleRow.status = 'streaming'
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      staleRow
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
+    expect(store.isStreaming).toBe(false)
+  })
+
+  it('settles on an empty terminal assistant row', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'stop')
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'stop'),
+      historyRow(2, 'assistant', 'server-turn', '', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages).toHaveLength(1)
+    expect(store.isStreaming).toBe(false)
   })
 
   /**
@@ -1225,6 +1270,59 @@ describe('useAgentConversationStore', () => {
 
     expect(partTexts(store)).toEqual(['still going'])
     expect(store.isStreaming).toBe(true)
+    expect(store.messages[0].parts).toContainEqual(
+      expect.objectContaining({
+        type: 'tool',
+        callId: 'call-1',
+        state: 'done'
+      })
+    )
+  })
+
+  it('keeps attachment names scoped to their turn within one thread', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.recordUser(T1, 'first', [{ name: 'First.png', ref: storedRef }])
+    store.recordUser(T2, 'second', [{ name: 'Second.png', ref: storedRef }])
+    const firstUser = historyRow(1, 'user', 'turn-1', 'first')
+    firstUser.content = { text: 'first', attachments: [storedRef] }
+    const secondUser = historyRow(3, 'user', 'turn-2', 'second')
+    secondUser.content = { text: 'second', attachments: [storedRef] }
+
+    store.hydrate([
+      firstUser,
+      historyRow(2, 'assistant', 'turn-1', 'Done', 't1'),
+      secondUser,
+      historyRow(4, 'assistant', 'turn-2', 'Done', 't2')
+    ])
+
+    expect(
+      store.entries
+        .filter((entry) => entry.role === 'user')
+        .map((entry) => entry.attachments?.[0].name)
+    ).toEqual(['First.png', 'Second.png'])
+  })
+
+  it('restores stashed attachments when history has no copy of the turn', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this', [
+      { name: 'Beach.png', ref: storedRef }
+    ])
+    store.stashActiveTurn()
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([])
+    store.resumeBackgroundTurn()
+
+    expect(store.entries[0]).toEqual(
+      expect.objectContaining({
+        role: 'user',
+        attachments: [{ name: 'Beach.png', ref: storedRef }]
+      })
+    )
   })
 
   /**

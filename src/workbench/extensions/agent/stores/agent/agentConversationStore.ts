@@ -37,6 +37,7 @@ interface BackgroundTurn {
   message: AssistantMessage
   transport: AgentEventTransport
   userText: string | undefined
+  userAttachments: UserAttachment[] | undefined
   settled: boolean
 }
 
@@ -85,20 +86,29 @@ export const useAgentConversationStore = defineStore(
      * The name the user attached, keyed by the storage ref the turn was posted
      * under. A persisted row names every file by that ref and nothing on the
      * request carries the name (PM-1705), so within a session this is the only
-     * place it survives. Keyed by thread as well as ref: two asset rows can
-     * share a hash, so an unscoped ref could hand one thread a name the user
-     * only ever typed in another. Deliberately not cleared by reset(): a New
-     * chat must not cost the user their labels, and a reload starts it empty,
-     * which is exactly the boundary PM-1705 draws.
+     * place it survives. Keyed by thread, turn, and ref: two asset rows can
+     * share a hash, and the same asset can be renamed between turns, so a
+     * broader key would rewrite an earlier bubble's label. Deliberately not
+     * cleared by reset(): a New chat must not cost the user their labels, and
+     * a reload starts it empty, which is exactly the boundary PM-1705 draws.
      */
-    const attachmentNamesByThread = new Map<string, Map<string, string>>()
+    const attachmentNamesByThread = new Map<
+      string,
+      Map<TurnId, Map<string, string>>
+    >()
 
-    function rememberAttachmentName(ref: string, name: string): void {
+    function rememberAttachmentName(
+      turnId: TurnId,
+      ref: string,
+      name: string
+    ): void {
       const thread = threadId.value
       if (thread === null) return
-      const names = attachmentNamesByThread.get(thread) ?? new Map()
+      const turns = attachmentNamesByThread.get(thread) ?? new Map()
+      const names = turns.get(turnId) ?? new Map()
       names.set(ref, name)
-      attachmentNamesByThread.set(thread, names)
+      turns.set(turnId, names)
+      attachmentNamesByThread.set(thread, turns)
     }
     const settledActiveTransports = new Set<AgentEventTransport>()
     const backgroundTurns = new Map<string, BackgroundTurn>()
@@ -149,6 +159,17 @@ export const useAgentConversationStore = defineStore(
       if (index >= 0) messages.value[index] = message
     }
 
+    function recordUserAttachments(
+      turnId: TurnId,
+      attachments: UserAttachment[] | undefined
+    ): void {
+      if (!attachments?.length) return
+      userAttachments.value.set(turnId, attachments)
+      for (const { name, ref } of attachments) {
+        if (ref && name) rememberAttachmentName(turnId, ref, name)
+      }
+    }
+
     function recordUser(
       turnId: TurnId,
       text: string,
@@ -157,11 +178,7 @@ export const useAgentConversationStore = defineStore(
       workflowReferences?: WorkflowReference[]
     ): void {
       userTexts.value.set(turnId, text)
-      if (attachments !== undefined && attachments.length > 0) {
-        userAttachments.value.set(turnId, attachments)
-        for (const { name, ref } of attachments)
-          if (ref) rememberAttachmentName(ref, name)
-      }
+      recordUserAttachments(turnId, attachments)
       if (tags !== undefined && tags.length > 0)
         userTags.value.set(turnId, tags)
       if (workflowReferences !== undefined && workflowReferences.length > 0)
@@ -349,6 +366,7 @@ export const useAgentConversationStore = defineStore(
         message: liveMessage,
         transport,
         userText: userTexts.value.get(liveMessage.id),
+        userAttachments: userAttachments.value.get(liveMessage.id),
         settled: false
       })
       clearActive()
@@ -364,19 +382,13 @@ export const useAgentConversationStore = defineStore(
     function hydratedCopySupersedes(
       entry: BackgroundTurn,
       kept: AssistantMessage[],
-      poppedHydratedCopy: boolean
+      poppedHydratedCopy: boolean,
+      removedSameIdCopy: AssistantMessage | undefined
     ): boolean {
       if (poppedHydratedCopy) return false
-      if (entry.settled) {
-        // Settled while away: the row is authoritative, and the same live-only
-        // parts still have nowhere else to go, so they ride across here too.
-        const hydratedTurnId = hydratedTurnIdsByRowId.get(entry.messageId)
-        if (hydratedTurnId === undefined) return false
-        const hydrated = kept.find((message) => message.id === hydratedTurnId)
-        if (hydrated) adoptLiveOnlyParts(hydrated, entry.message)
-        return true
-      }
-      return adoptHydratedTurn(entry, kept)?.keeps === 'hydrated'
+      return (
+        adoptHydratedTurn(entry, kept, removedSameIdCopy)?.keeps === 'hydrated'
+      )
     }
 
     function activateResumedTurn(entry: BackgroundTurn, index: number): void {
@@ -399,9 +411,19 @@ export const useAgentConversationStore = defineStore(
       // turn by the server's turn_id; row.id bridges the two. Matching turns by
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
+      const removedSameIdCopy = messages.value.find(
+        (message) => message.id === entry.message.id
+      )
       const kept = messages.value.filter((m) => m.id !== entry.message.id)
       const poppedHydratedCopy = removeHydratedCopy(entry, kept)
-      if (hydratedCopySupersedes(entry, kept, poppedHydratedCopy)) {
+      if (
+        hydratedCopySupersedes(
+          entry,
+          kept,
+          poppedHydratedCopy,
+          removedSameIdCopy
+        )
+      ) {
         entry.transport.dispose()
         return
       }
@@ -410,6 +432,11 @@ export const useAgentConversationStore = defineStore(
         !userTexts.value.has(entry.message.id)
       )
         userTexts.value.set(entry.message.id, entry.userText)
+      if (
+        entry.userAttachments !== undefined &&
+        !userAttachments.value.has(entry.message.id)
+      )
+        userAttachments.value.set(entry.message.id, entry.userAttachments)
       const index = kept.push(entry.message) - 1
       messages.value = kept
       if (entry.settled) {
@@ -465,46 +492,6 @@ export const useAgentConversationStore = defineStore(
     }
 
     /**
-     * A turn stashed mid-flight and hydrated while away comes back as two
-     * messages: the stash under the live turn id, and the hydrated copy under
-     * the server's turn_id. They are one turn -- the live id IS the assistant
-     * ROW's id (services/agent/server/agent_handler.go), which is why a row id
-     * resolves it -- and neither dedupe path above catches that. The stash
-     * holds the live transport and the deltas that arrived while away, the
-     * copy holds the user-side record hydrate() rebuilt; so the copy goes and
-     * its record moves onto the live turn.
-     */
-    function replyText(message: AssistantMessage): string {
-      return message.parts
-        .filter((part) => part.type === 'text')
-        .map((part) => part.text)
-        .join('')
-    }
-
-    /**
-     * Whether the row can stand in for the stash, compared on reply text only.
-     * Equal counts as superseding: a stash that received every delta but never
-     * the done frame holds exactly what the row holds, and reinstating it
-     * would leave the turn streaming with no transport left to finish it.
-     *
-     * Part counts are deliberately NOT compared. They are drawn from different
-     * alphabets -- a row carries tool parts and one text part, while a live
-     * transport also emits thinking, tab links and a fresh text part after
-     * each interruption -- so a narrated turn normally has more live parts
-     * than row parts, and requiring the row to match would strand exactly the
-     * turns this is meant to rescue. Nothing is lost by ignoring them: the
-     * call site has already excluded streaming rows, so a row that reaches
-     * here carries every tool call the service recorded.
-     */
-    function supersedesLiveReply(
-      hydrated: AssistantMessage,
-      live: AssistantMessage
-    ): boolean {
-      if (live.parts.length === 0) return hydrated.parts.length > 0
-      return replyText(hydrated).startsWith(replyText(live))
-    }
-
-    /**
      * The row wins, but the service wrote it and never saw the parts only a
      * live transport produces. Tab links, and any tool call the row has not
      * caught up on, ride onto it. Thinking is left behind on purpose: it is
@@ -557,32 +544,88 @@ export const useAgentConversationStore = defineStore(
       ]
     }
 
+    function adoptHydratedOnlyParts(
+      live: AssistantMessage,
+      hydrated: AssistantMessage
+    ): void {
+      const liveCallIds = new Set(
+        live.parts.flatMap((part) =>
+          part.type === 'tool' ? [part.callId] : []
+        )
+      )
+      const tools = hydrated.parts.filter(
+        (part) => part.type === 'tool' && !liveCallIds.has(part.callId)
+      )
+      if (tools.length > 0) live.parts = [...tools, ...live.parts]
+      if (!live.parts.some((part) => part.type === 'text')) {
+        const text = hydrated.parts.filter((part) => part.type === 'text')
+        if (text.length > 0) live.parts = [...live.parts, ...text]
+      }
+      adoptPendingAsks(hydrated, live)
+    }
+
+    function adoptFresherLiveText(
+      hydrated: AssistantMessage,
+      live: AssistantMessage
+    ): void {
+      const hydratedText = hydrated.parts
+        .filter((part) => part.type === 'text')
+        .map((part) => part.text)
+        .join('')
+      const liveText = live.parts
+        .filter((part) => part.type === 'text')
+        .map((part) => part.text)
+        .join('')
+      if (
+        liveText === '' ||
+        (hydratedText !== '' && !liveText.startsWith(hydratedText))
+      )
+        return
+      const textParts = live.parts.filter((part) => part.type === 'text')
+      const insertAt = hydrated.parts.findIndex((part) => part.type === 'text')
+      hydrated.parts = hydrated.parts.filter((part) => part.type !== 'text')
+      hydrated.parts.splice(
+        insertAt < 0 ? hydrated.parts.length : insertAt,
+        0,
+        ...textParts.map((part) => ({ ...part }))
+      )
+    }
+
     function adoptHydratedTurn(
       entry: BackgroundTurn,
-      kept: AssistantMessage[]
+      kept: AssistantMessage[],
+      removedSameIdCopy: AssistantMessage | undefined
     ): { keeps: 'live' | 'hydrated'; turnId: TurnId } | undefined {
       const hydratedTurnId = hydratedTurnIdsByRowId.get(entry.messageId)
-      if (hydratedTurnId === undefined || hydratedTurnId === entry.message.id)
-        return undefined
+      if (hydratedTurnId === undefined) return undefined
       const index = kept.findIndex((message) => message.id === hydratedTurnId)
-      if (index < 0) return undefined
-      const hydrated = kept[index]
-      // The stash is the better copy only while its transport was delivering.
-      // One that missed the end of its turn holds nothing, or half a reply,
-      // while the row behind it holds all of it -- and losing that is worse
-      // than the duplicate this dedupe exists to remove. Only for a row the
-      // service calls finished: a streaming row can already carry terminal
-      // tool calls while its reply is still coming, and keeping that copy
-      // would strand the turn with no transport left to finish it.
-      if (
-        !hydratedStreamingTurnIds.has(hydratedTurnId) &&
-        supersedesLiveReply(hydrated, entry.message)
-      ) {
+      const hydrated =
+        index >= 0
+          ? kept[index]
+          : removedSameIdCopy?.id === hydratedTurnId
+            ? removedSameIdCopy
+            : undefined
+      if (!hydrated) return undefined
+      if (!hydratedStreamingTurnIds.has(hydratedTurnId)) {
         adoptLiveOnlyParts(hydrated, entry.message)
         return { keeps: 'hydrated', turnId: hydratedTurnId }
       }
-      kept.splice(index, 1)
-      adoptPendingAsks(hydrated, entry.message)
+      if (index >= 0) kept.splice(index, 1)
+      if (entry.settled) {
+        adoptHydratedOnlyParts(entry.message, hydrated)
+      } else {
+        adoptLiveOnlyParts(hydrated, entry.message)
+        adoptFresherLiveText(hydrated, entry.message)
+        hydrated.streaming = true
+        entry.transport.dispose()
+        entry.message = hydrated
+        entry.transport = createAgentEventTransport(
+          hydrated,
+          replaceActive,
+          () => canvasSyncGate(),
+          () => canvasSyncOutcomeCount()
+        )
+      }
       moveUserRecord(hydratedTurnId, entry.message.id)
       return { keeps: 'live', turnId: entry.message.id }
     }
@@ -686,7 +729,7 @@ export const useAgentConversationStore = defineStore(
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       hydratedStreamingTurnIds = transcript.streamingTurnIds
       dropAttachmentPreviews()
-      const names =
+      const namesByTurn =
         threadId.value === null
           ? undefined
           : attachmentNamesByThread.get(threadId.value)
@@ -694,7 +737,15 @@ export const useAgentConversationStore = defineStore(
         [...transcript.userAttachments].map(([turnId, attachments]) => [
           turnId,
           attachments.map((attachment) => {
-            const name = attachment.ref ? names?.get(attachment.ref) : undefined
+            const liveTurnNames =
+              namesByTurn?.get(turnId) ??
+              [...(namesByTurn ?? [])].find(
+                ([liveTurnId]) =>
+                  hydratedTurnIdsByRowId.get(liveTurnId) === turnId
+              )?.[1]
+            const name = attachment.ref
+              ? liveTurnNames?.get(attachment.ref)
+              : undefined
             return name === undefined ? attachment : { ...attachment, name }
           })
         ])

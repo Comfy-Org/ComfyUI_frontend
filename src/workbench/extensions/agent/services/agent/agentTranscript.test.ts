@@ -201,6 +201,13 @@ describe('normalizeAgentTranscript', () => {
       expected: [{ name: 'fallback.jpg', ref: 'fallback.jpg' }]
     },
     {
+      content: {
+        attachments: ['', null],
+        attachment_refs: [{ name: 'fallback.jpg' }]
+      },
+      expected: [{ name: 'fallback.jpg', ref: 'fallback.jpg' }]
+    },
+    {
       content: { attachment_refs: { name: 'not-an-array.png' } },
       expected: undefined
     }

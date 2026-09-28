@@ -145,9 +145,13 @@ function parseUserAttachments(
   content: Record<string, unknown> | undefined
 ): UserAttachment[] | undefined {
   const resolved = resolvedAttachmentRefs(content?.attachment_refs)
-  const names = Array.isArray(content?.attachments)
+  const postedNames = Array.isArray(content?.attachments)
     ? content.attachments.filter(isNamedAttachment)
-    : attachmentRefNames(content?.attachment_refs)
+    : []
+  const names =
+    postedNames.length > 0
+      ? postedNames
+      : attachmentRefNames(content?.attachment_refs)
   return names.length > 0
     ? names.map((name) => ({ name, ref: name, ...resolved.get(name.trim()) }))
     : undefined
