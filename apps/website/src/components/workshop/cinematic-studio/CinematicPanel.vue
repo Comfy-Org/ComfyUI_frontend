@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, ChevronRight } from '@lucide/vue'
+import { ChevronDown, ChevronRight, Video } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -22,7 +22,6 @@ import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/mode
 import CinematicDirectionGrid from './CinematicDirectionGrid.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
-import CinematicOptionIcon from './CinematicOptionIcon.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
 import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
 import CinematicSceneField from './CinematicSceneField.vue'
@@ -167,38 +166,30 @@ const cardClass =
           :class="
             cn(
               cardClass,
+              'h-12 px-3',
               openPicker === 'camera' && 'border-primary-warm-white'
             )
           "
           @click="emit('open', 'camera')"
         >
+          <Video
+            class="size-5 shrink-0 text-primary-warm-white"
+            aria-hidden="true"
+          />
           <span
-            class="grid size-10 shrink-0 place-items-center rounded-xl bg-transparency-white-t8 text-primary-warm-white"
+            class="text-sm font-semibold whitespace-nowrap text-primary-warm-white"
           >
-            <CinematicOptionIcon
-              part="body"
-              :option="direction.body"
-              class="h-6 w-9"
-            />
+            {{ tc(cameraBody.label, locale) }}
           </span>
           <span
-            class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1"
+            class="flex min-w-0 flex-1 flex-wrap justify-end gap-1 text-[11px] text-primary-comfy-canvas"
           >
             <span
-              class="text-sm font-semibold whitespace-nowrap text-primary-warm-white"
+              v-for="spec in cameraSpecs"
+              :key="spec.id"
+              class="rounded-md bg-transparency-white-t8 px-1.5 py-0.5"
             >
-              {{ tc(cameraBody.label, locale) }}
-            </span>
-            <span
-              class="flex flex-wrap gap-1 text-[11px] text-primary-comfy-canvas"
-            >
-              <span
-                v-for="spec in cameraSpecs"
-                :key="spec.id"
-                class="rounded-md bg-transparency-white-t8 px-1.5 py-0.5"
-              >
-                {{ tc(spec.label, locale) }}
-              </span>
+              {{ tc(spec.label, locale) }}
             </span>
           </span>
           <ChevronRight
