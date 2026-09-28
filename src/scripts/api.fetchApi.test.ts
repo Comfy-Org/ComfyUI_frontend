@@ -76,6 +76,22 @@ describe('api.fetchApi', () => {
   })
 
   describe('header handling', () => {
+    beforeEach(() => {
+      mockDistribution.isCloud = false
+    })
+
+    it('reports that no auth header was attached off-cloud', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const onAuthHeader = vi.fn()
+
+      await api.fetchApi('/test', { onAuthHeader })
+
+      expect(onAuthHeader).toHaveBeenCalledExactlyOnceWith(false)
+      expect(vi.mocked(global.fetch).mock.calls[0][1]).not.toHaveProperty(
+        'onAuthHeader'
+      )
+    })
+
     it('should add Comfy-User header with plain object headers', async () => {
       const mockFetch = vi
         .mocked(global.fetch)

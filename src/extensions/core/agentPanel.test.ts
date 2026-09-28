@@ -55,6 +55,7 @@ let startupDecision: Promise<boolean> = Promise.resolve(true)
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     resolvedUserInfo: currentUser,
+    isAuthInitialized: computed(() => true),
     isLoggedIn: computed(() => currentUser.value !== null)
   })
 }))
@@ -1068,6 +1069,20 @@ describe('AgentPanel extension flag gate', () => {
     agentFlagEnabled.value = true
     await nextTick()
     expect(agentStore.enabled).toBe(true)
+  })
+
+  it('retries consent after a completed refresh with the same flag value', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    await loadEntryAndSetup()
+    vi.mocked(consentStore.load).mockClear()
+    const { remoteConfigRevision } =
+      await import('@/platform/remoteConfig/remoteConfig')
+
+    remoteConfigRevision.value++
+    await nextTick()
+
+    expect(consentStore.load).toHaveBeenCalledOnce()
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {
