@@ -20,8 +20,12 @@ interface GateSources {
 
 interface DeployToComfyApiGate {
   enabled: Readonly<Ref<boolean>>
-  /** Whether `enabled` is an answer for the current account yet. */
-  settled: Readonly<Ref<boolean>>
+  /**
+   * The account generation `enabled` answers for: bumped on every sign-in and
+   * sign-out, and `undefined` while the current account's answer is awaited.
+   * A live flag change for the same account keeps the same generation.
+   */
+  answeredFor: Readonly<Ref<number | undefined>>
   /** Asks for an answer if none is in hand or on its way. Call on menu open. */
   check: () => void
 }
@@ -41,16 +45,16 @@ export function createDeployToComfyApiGate({
   onSignOut
 }: GateSources): DeployToComfyApiGate {
   const enabled = ref(import.meta.env.MODE === 'development')
-  const settled = ref(true)
+  let session = 0
+  const answeredFor = ref<number | undefined>(session)
   if (enabled.value)
     return {
       enabled: readonly(enabled),
-      settled: readonly(settled),
+      answeredFor: readonly(answeredFor),
       check: () => {}
     }
 
   let signedInUser: string | undefined
-  let session = 0
   let askedInSession: number | undefined
   let posthog: FlagReader | undefined
   let loading = false
@@ -62,7 +66,8 @@ export function createDeployToComfyApiGate({
       posthog.get_distinct_id() === signedInUser
     enabled.value =
       identified && posthog?.isFeatureEnabled(DISTRIBUTIONS_FLAG) === true
-    settled.value = signedInUser === undefined || identified
+    answeredFor.value =
+      signedInUser === undefined || identified ? session : undefined
   }
 
   function loadPostHog(): void {
@@ -75,7 +80,7 @@ export function createDeployToComfyApiGate({
         reader.onFeatureFlags((_flags, _variants, context) => {
           if (!context?.errorsLoading) return syncFromPostHog()
           enabled.value = false
-          settled.value = true
+          answeredFor.value = session
         })
         syncFromPostHog()
       })
@@ -91,7 +96,7 @@ export function createDeployToComfyApiGate({
     void askPlatform().then((answer) => {
       if (asked !== session) return
       enabled.value = answer
-      settled.value = true
+      answeredFor.value = session
     })
   }
 
@@ -99,20 +104,20 @@ export function createDeployToComfyApiGate({
     signedInUser = undefined
     session++
     enabled.value = false
-    settled.value = true
+    answeredFor.value = session
   })
   onSignIn((userId) => {
     signedInUser = userId
     session++
     enabled.value = false
     if (isCloud) syncFromPostHog()
-    else settled.value = false
+    else answeredFor.value = undefined
   })
   loadPostHog()
 
   return {
     enabled: readonly(enabled),
-    settled: readonly(settled),
+    answeredFor: readonly(answeredFor),
     check: isCloud ? loadPostHog : askPlatformOnce
   }
 }
