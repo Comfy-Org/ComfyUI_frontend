@@ -255,7 +255,7 @@ workflow file is needed.`)
     }
   )
 
-  it('uploads nothing before the cut on localhost, which scans the install', () => {
+  it('uses neither hosted importer on localhost, which scans the install', () => {
     const document = buildAgentHandoffDocument({
       distribution: 'localhost',
       inputs
