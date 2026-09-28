@@ -264,6 +264,7 @@ const briefs = [
   </section>
 
   <section
+    id="usecase-videos"
     class="mx-auto max-w-10xl px-6 pt-28 lg:px-20 lg:pt-44"
     aria-labelledby="briefs-title"
   >
@@ -520,6 +521,8 @@ const briefs = [
     <div class="space-y-12">
       {faqs.map((faq, index) => <details
         open={index === 0}
+        data-faq
+        data-question={faq.question}
         class="group border-b border-primary-comfy-canvas/40 pb-8"
       >
         <summary
@@ -559,3 +562,29 @@ const briefs = [
     />
   </div>
 </BaseLayout>
+
+<script>
+  import {
+    captureAgentFaqExpanded,
+    captureAgentUsecaseVideoPlayed
+  } from '../../scripts/posthog'
+
+  document.querySelectorAll('[data-faq]').forEach((details) => {
+    details.addEventListener('toggle', () => {
+      if (!(details instanceof HTMLDetailsElement) || !details.open) return
+      const question = details.dataset.question
+      if (question) captureAgentFaqExpanded(question)
+    })
+  })
+
+  document
+    .querySelector('#usecase-videos')
+    ?.querySelectorAll('video')
+    .forEach((video) => {
+      video.addEventListener('play', () => {
+        captureAgentUsecaseVideoPlayed(
+          video.getAttribute('aria-label') ?? 'unknown'
+        )
+      })
+    })
+</script>
