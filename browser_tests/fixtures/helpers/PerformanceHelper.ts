@@ -46,13 +46,20 @@ export class PerformanceHelper {
   }
 
   async dispose(): Promise<void> {
+    const measurementInProgress = this.snapshot !== null
     this.snapshot = null
-    if (this.cdp) {
-      try {
-        await this.cdp.send('Performance.disable')
-      } finally {
-        await this.cdp.detach()
-        this.cdp = null
+    try {
+      if (measurementInProgress && !this.page.isClosed()) {
+        await this.stopFrameMeasurement()
+      }
+    } finally {
+      if (this.cdp) {
+        try {
+          await this.cdp.send('Performance.disable')
+        } finally {
+          await this.cdp.detach()
+          this.cdp = null
+        }
       }
     }
   }
