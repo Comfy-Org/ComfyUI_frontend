@@ -9828,6 +9828,7 @@ Enterprise`
     'zh-CN': '原型：此页面复刻 Cloud 登录页。真实账户请在此登录：'
   },
   'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
+  'workshop.card.comfyApp': { en: 'Comfy app', 'zh-CN': 'Comfy 应用' },
   'workshop.card.runs': { en: '{n} runs', 'zh-CN': '{n} 次运行' },
   'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
   'workshop.card.from': { en: 'from', 'zh-CN': '起' },

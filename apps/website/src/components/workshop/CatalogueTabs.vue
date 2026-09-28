@@ -8,13 +8,17 @@ import { t } from '../../i18n/translations'
 
 export type CatalogueTab = 'models' | 'workflows' | 'apps'
 
-const { locale = 'en', focusActive = false } = defineProps<{
+const {
+  tabs = ['models', 'workflows', 'apps'],
+  locale = 'en',
+  focusActive = false
+} = defineProps<{
+  tabs?: readonly CatalogueTab[]
   locale?: Locale
   focusActive?: boolean
 }>()
 const emit = defineEmits<{ focused: [] }>()
 const active = defineModel<CatalogueTab>({ required: true })
-const tabs = ['models', 'workflows', 'apps'] as const
 const labels = {
   models: 'workshop.hub.kind.models',
   workflows: 'workshop.hub.workflows',
@@ -33,12 +37,24 @@ const marker = computed(
 
 <template>
   <div
-    class="relative grid w-fit shrink-0 grid-cols-3 rounded-2xl bg-transparency-white-t8 p-1"
+    :class="
+      cn(
+        'relative grid w-fit shrink-0 rounded-2xl bg-transparency-white-t8 p-1',
+        tabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+      )
+    "
     role="group"
     :aria-label="t('workshop.catalogue.show', locale)"
     data-testid="catalogue-tabs"
   >
-    <div class="pointer-events-none absolute inset-1 grid grid-cols-3">
+    <div
+      :class="
+        cn(
+          'pointer-events-none absolute inset-1 grid',
+          tabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+        )
+      "
+    >
       <div
         class="rounded-xl bg-primary-warm-white transition-transform duration-300 ease-out motion-reduce:transition-none"
         :style="{ transform: marker }"
