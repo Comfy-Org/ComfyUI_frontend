@@ -137,6 +137,17 @@ export function transformInputSpecV1ToV2(
       ...chartOptions,
       chartType
     }
+  } else if (
+    inputSpecV1[0] === 'COMFY_DYNAMICCOMBO_V3' &&
+    inputSpecV1[1] === undefined
+  ) {
+    // Synthetic nodedefs (e.g. subgraphStore.ts boundary inputs) promote the
+    // type into a bare [type, undefined] tuple with no options supplied
+    return {
+      type: 'COMFY_DYNAMICCOMBO_V3',
+      ...baseProps,
+      options: []
+    }
   } else if (typeof inputSpecV1[0] === 'string') {
     // Handle standard types (INT, FLOAT, BOOLEAN, STRING) and custom types
     return {

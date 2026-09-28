@@ -4,6 +4,7 @@ import {
   refAutoReset,
   useElementHover,
   useEventListener,
+  useFocusWithin,
   useFullscreen,
   useMediaControls,
   useMouseInElement,
@@ -38,8 +39,10 @@ const {
   muteOnly = false,
   hideControls = false,
   hideFullscreen = false,
+  controlsOnHover = false,
   playButtonVariant = 'solid',
   fit = 'cover',
+  noCors = false,
   ariaLabel,
   class: className
 } = defineProps<{
@@ -62,11 +65,23 @@ const {
   muteOnly?: boolean
   hideControls?: boolean
   hideFullscreen?: boolean
+  /** Where the video is the content rather than something to operate, a
+   * paused frame should not carry a bar across it: the controls wait for a
+   * pointer. */
+  controlsOnHover?: boolean
   /** Style of the centered play/pause button in `minimal` mode. */
   playButtonVariant?: 'solid' | 'overlay'
   fit?: 'cover' | 'contain'
+  /** Load without a CORS request, for hosts such as generated-output buckets
+   * that send no CORS headers. Caption tracks still require CORS. */
+  noCors?: boolean
   ariaLabel?: string
   class?: HTMLAttributes['class']
+}>()
+
+const emit = defineEmits<{
+  loaded: [src: string]
+  failed: [src: string]
 }>()
 
 const playerEl = useTemplateRef<HTMLDivElement>('playerEl')
@@ -103,10 +118,15 @@ watch(
 
 // Controls fade
 const hovering = useElementHover(playerEl)
+const { focused } = useFocusWithin(playerEl)
 const recentActivity = refAutoReset(false, 800)
 
 const controlsVisible = computed(
-  () => !playing.value || hovering.value || recentActivity.value
+  () =>
+    focused.value ||
+    (controlsOnHover
+      ? hovering.value || recentActivity.value
+      : !playing.value || hovering.value || recentActivity.value)
 )
 
 function showControls() {
@@ -136,7 +156,9 @@ useEventListener(videoEl, 'durationchange', syncNativeDuration)
 // rejects with NotAllowedError when the browser lacks engagement-based
 // autoplay permission, and playback retries muted. flush: 'post'
 // guarantees this runs after useMediaControls' internal muted watcher
-// on the same source.
+// on the same source. `el.muted` is set directly so play() sees it
+// synchronously; `muted.value` is set alongside it (rather than left to the
+// volumechange round-trip) so the mute button reflects reality immediately.
 watch(
   [videoEl, () => src],
   async ([el]) => {
@@ -148,6 +170,7 @@ watch(
     if (autoplayUnmuted) {
       el.pause()
       el.muted = false
+      muted.value = false
       try {
         await el.play()
         return
@@ -156,6 +179,7 @@ watch(
       }
     }
     el.muted = true
+    muted.value = true
     el.play().catch((error: unknown) => {
       if (error instanceof Error && error.name === 'AbortError') return
       console.warn('VideoPlayer autoplay failed', error)
@@ -285,11 +309,13 @@ function toggleFullscreen() {
       :src
       :poster
       :preload="autoplay && !lazyAutoplay ? 'auto' : 'metadata'"
-      crossorigin="anonymous"
+      :crossorigin="noCors && !tracks.length ? undefined : 'anonymous'"
       playsinline
       :autoplay="autoplay && !lazyAutoplay"
       :loop
-      :muted="autoplay"
+      :muted="autoplay && !lazyAutoplay"
+      @loadeddata="emit('loaded', src)"
+      @error="emit('failed', src)"
       @click="hideControls || muteOnly ? undefined : (playing = !playing)"
     >
       <track
@@ -318,7 +344,7 @@ function toggleFullscreen() {
       />
       <button
         type="button"
-        class="bg-primary-comfy-yellow flex size-8 items-center justify-center rounded-lg lg:size-10"
+        class="flex size-8 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="
           muted ? t('player.unmute', locale) : t('player.mute', locale)
         "
@@ -385,7 +411,7 @@ function toggleFullscreen() {
         @touchstart.passive="scrubbing = true"
       >
         <div
-          class="bg-primary-comfy-yellow h-full rounded-full"
+          class="h-full rounded-full bg-primary-comfy-yellow"
           :style="{ width: `${progress * 100}%` }"
         />
       </div>
@@ -399,7 +425,7 @@ function toggleFullscreen() {
       <button
         v-if="!hideFullscreen"
         type="button"
-        class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
+        class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="t('player.fullscreen', locale)"
         @click="toggleFullscreen"
       >
@@ -443,7 +469,7 @@ function toggleFullscreen() {
       <!-- Mute / Unmute button -->
       <button
         type="button"
-        class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
+        class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="
           muted ? t('player.unmute', locale) : t('player.mute', locale)
         "

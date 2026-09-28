@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "在工作流程中儲存並還原畫布位置與縮放等級"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "在問題分頁中顯示缺少的模型",
+    "tooltip": "停用時，找不到的模型檔案不會列在問題分頁中，其節點也不會醒目顯示。"
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "即時預覽方式",
     "options": {
@@ -461,8 +465,13 @@
   "Comfy_Workflow_Persist": {
     "name": "保留工作流程狀態並於頁面重新載入時還原"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "顯示缺少模型警告"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "在問題分頁中顯示缺少的媒體",
+    "tooltip": "停用時，找不到的輸入影像、影片和音訊不會列在問題分頁中，其節點也不會醒目顯示。"
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "在問題分頁中顯示缺少的節點",
+    "tooltip": "停用時，缺少的節點套件不會列在問題分頁中，其節點也不會醒目顯示。在安裝前，工作流程仍無法執行。"
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "儲存工作流程時排序節點 ID"

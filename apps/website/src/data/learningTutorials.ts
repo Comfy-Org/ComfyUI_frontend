@@ -62,10 +62,10 @@ export const learningCategories: readonly LearningCategory[] = [
 ]
 
 export const categoryLabelKeys: Record<LearningCategory, TranslationKey> = {
-  basics: 'learning.categories.basics',
-  vfx: 'learning.categories.vfx',
-  animations: 'learning.categories.animations',
-  ads: 'learning.categories.ads'
+  basics: 'learning.categories.basics.label',
+  vfx: 'learning.categories.vfx.label',
+  animations: 'learning.categories.animations.label',
+  ads: 'learning.categories.ads.label'
 }
 
 export const categoryBlurbKeys: Record<LearningCategory, TranslationKey> = {

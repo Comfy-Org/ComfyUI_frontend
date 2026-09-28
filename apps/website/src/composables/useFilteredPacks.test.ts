@@ -4,7 +4,6 @@ import { ref } from 'vue'
 import type { GridPack, PackNode } from '../data/cloudNodes'
 
 import { useFilteredPacks } from './useFilteredPacks'
-import type { PackSortMode } from './useFilteredPacks'
 
 function pack(overrides: Partial<GridPack> = {}): GridPack {
   return {
@@ -54,7 +53,7 @@ describe('useFilteredPacks', () => {
     const { filteredPacks } = useFilteredPacks({
       packs,
       query: '',
-      sortMode: 'downloads' as PackSortMode
+      sortMode: 'downloads'
     })
     expect(filteredPacks.value.map((p) => p.id)).toEqual(['b', 'c', 'a'])
   })
@@ -63,7 +62,7 @@ describe('useFilteredPacks', () => {
     const { filteredPacks } = useFilteredPacks({
       packs,
       query: '',
-      sortMode: 'mostNodes' as PackSortMode
+      sortMode: 'mostNodes'
     })
     expect(filteredPacks.value.map((p) => p.id)).toEqual(['c', 'b', 'a'])
   })
@@ -72,7 +71,7 @@ describe('useFilteredPacks', () => {
     const { filteredPacks } = useFilteredPacks({
       packs,
       query: '',
-      sortMode: 'az' as PackSortMode
+      sortMode: 'az'
     })
     expect(filteredPacks.value.map((p) => p.displayName)).toEqual([
       'Alpha',
@@ -85,7 +84,7 @@ describe('useFilteredPacks', () => {
     const { filteredPacks } = useFilteredPacks({
       packs,
       query: '',
-      sortMode: 'recentlyUpdated' as PackSortMode
+      sortMode: 'recentlyUpdated'
     })
     expect(filteredPacks.value.map((p) => p.id)).toEqual(['b', 'c', 'a'])
   })
@@ -98,7 +97,7 @@ describe('useFilteredPacks', () => {
     const { filteredPacks } = useFilteredPacks({
       packs: broken,
       query: '',
-      sortMode: 'recentlyUpdated' as PackSortMode
+      sortMode: 'recentlyUpdated'
     })
     expect(filteredPacks.value[0].id).toBe('y')
   })
@@ -107,7 +106,7 @@ describe('useFilteredPacks', () => {
     const { filteredPacks } = useFilteredPacks({
       packs,
       query: 'beta',
-      sortMode: 'az' as PackSortMode
+      sortMode: 'az'
     })
     expect(filteredPacks.value.map((p) => p.id)).toEqual(['b'])
   })
@@ -116,7 +115,7 @@ describe('useFilteredPacks', () => {
     const { filteredPacks } = useFilteredPacks({
       packs,
       query: 'CAPYBARA',
-      sortMode: 'az' as PackSortMode
+      sortMode: 'az'
     })
     expect(filteredPacks.value.map((p) => p.id)).toEqual(['c'])
   })
@@ -125,7 +124,7 @@ describe('useFilteredPacks', () => {
     const { filteredPacks } = useFilteredPacks({
       packs,
       query: 'zzz-no-such-thing',
-      sortMode: 'az' as PackSortMode
+      sortMode: 'az'
     })
     expect(filteredPacks.value).toHaveLength(0)
   })
@@ -135,7 +134,7 @@ describe('useFilteredPacks', () => {
     const { filteredPacks } = useFilteredPacks({
       packs,
       query,
-      sortMode: 'az' as PackSortMode
+      sortMode: 'az'
     })
     expect(filteredPacks.value).toHaveLength(1)
     query.value = ''

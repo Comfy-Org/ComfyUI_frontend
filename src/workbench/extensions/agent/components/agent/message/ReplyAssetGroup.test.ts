@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,10 +7,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
-
-let showDialog: ReturnType<
-  typeof vi.mocked<ReturnType<typeof useDialogStore>['showDialog']>
->
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const findServerPreviewUrl = vi.hoisted(() =>
@@ -81,7 +77,6 @@ const toggle = () =>
 
 describe('ReplyAssetGroup', () => {
   beforeEach(() => {
-    showDialog = vi.mocked(useDialogStore().showDialog)
     isAssetPreviewSupported.mockReset().mockReturnValue(false)
     findServerPreviewUrl.mockReset().mockResolvedValue(null)
     findOutputAsset.mockReset().mockResolvedValue(undefined)
@@ -93,6 +88,27 @@ describe('ReplyAssetGroup', () => {
 
     expect(screen.getByRole('img', { name: 'i1.png' })).toBeInTheDocument()
     expect(screen.getByTestId('reply-video-preview')).toBeInTheDocument()
+  })
+
+  it('marks video previews with a play affordance but leaves other tiles unmarked', () => {
+    renderGroup([image(1), video, model])
+
+    expect(screen.getAllByTestId('reply-video-affordance')).toHaveLength(1)
+    expect(
+      within(screen.getByRole('button', { name: 'clip.mp4' })).getByTestId(
+        'reply-video-affordance'
+      )
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('button', { name: 'i1.png' })).queryByTestId(
+        'reply-video-affordance'
+      )
+    ).toBeNull()
+    expect(
+      within(screen.getByRole('button', { name: 'mesh.glb' })).queryByTestId(
+        'reply-video-affordance'
+      )
+    ).toBeNull()
   })
 
   it('T-09 / PM-652 / FE-1326 opens inspect view at the clicked visual asset', async () => {
@@ -154,7 +170,7 @@ describe('ReplyAssetGroup', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
 
-    expect(showDialog).toHaveBeenCalledWith(
+    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'asset-3d-viewer',
         title: 'mesh.glb',
@@ -225,7 +241,7 @@ describe('ReplyAssetGroup', () => {
     await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
 
     findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
-    const dialog = showDialog.mock.calls.at(-1)?.[0]
+    const dialog = vi.mocked(useDialogStore().showDialog).mock.calls.at(-1)?.[0]
     const onClose = dialog?.dialogComponentProps?.onClose
     expect(onClose).toBeTypeOf('function')
     onClose!()
@@ -244,7 +260,7 @@ describe('ReplyAssetGroup', () => {
     )
     await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
 
-    expect(showDialog).toHaveBeenCalledWith(
+    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
       expect.objectContaining({ title: '3d/ComfyUI_00001_.glb' })
     )
   })

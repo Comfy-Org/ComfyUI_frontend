@@ -13,13 +13,13 @@ const routes = getRoutes(locale)
 
 <template>
   <section
-    class="max-w-9xl mx-auto bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24"
+    class="mx-auto max-w-9xl bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24"
   >
     <GlassCard
       class="flex flex-col gap-12 lg:flex-row lg:items-stretch lg:gap-8"
     >
       <!-- Left: video -->
-      <div class="flex-1 overflow-hidden rounded-4xl">
+      <div class="relative aspect-video w-full lg:min-w-0 lg:flex-1">
         <VideoPlayer
           src="https://media.comfy.org/website/customers/blackmath/video.webm"
           poster="https://media.comfy.org/website/customers/blackmath/poster.webp"
@@ -33,35 +33,46 @@ const routes = getRoutes(locale)
             }
           ]"
           :locale
+          class="absolute inset-0 aspect-auto h-full"
         />
       </div>
 
       <!-- Right: content -->
       <div
         data-testid="case-study-content"
-        class="flex flex-col justify-between p-6 lg:flex-1"
+        class="flex flex-col justify-center p-4 lg:min-w-0 lg:flex-1 lg:p-6"
       >
-        <div class="flex flex-col gap-8">
+        <div>
           <p
-            class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
+            class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
           >
             {{ t('caseStudy.label', locale) }}
           </p>
           <h2
-            class="text-5xl font-light whitespace-pre-line text-primary-comfy-canvas"
+            class="mt-7 text-3xl leading-[135%] font-medium whitespace-pre-line text-primary-comfy-canvas"
           >
             {{ t('caseStudy.heading', locale) }}
           </h2>
-          <p class="text-primary-warm-gray text-base">
+          <p
+            class="mt-5 text-[17px] leading-[160%] font-light text-primary-comfy-canvas"
+          >
             {{ t('caseStudy.subheading', locale) }}
           </p>
         </div>
 
-        <div class="mt-8 flex flex-col items-start gap-3 sm:flex-row lg:mt-0">
-          <BrandButton :href="routes.customerVideoBlackMath" variant="solid">
+        <div class="mt-10 flex flex-col items-start gap-3 sm:flex-row">
+          <BrandButton
+            :href="routes.customerVideoBlackMath"
+            variant="solid"
+            class="font-bold"
+          >
             {{ t('caseStudy.watchStory', locale) }}
           </BrandButton>
-          <BrandButton :href="routes.customers" variant="outline">
+          <BrandButton
+            :href="routes.customers"
+            variant="outline"
+            class="font-bold"
+          >
             {{ t('caseStudy.seeAll', locale) }}
           </BrandButton>
         </div>

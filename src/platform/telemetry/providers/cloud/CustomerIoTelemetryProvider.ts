@@ -4,6 +4,8 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
+import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { AuthUserInfo } from '@/types/authTypes'
 
 import { TelemetryEvents } from '../../types'
@@ -67,20 +69,27 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     }
 
     void import('@customerio/cdp-analytics-browser')
-      .then(({ AnalyticsBrowser, InAppPlugin }) => {
+      .then(async ({ AnalyticsBrowser, InAppPlugin }) => {
         const analytics = AnalyticsBrowser.load({ writeKey })
-        const inAppRegistration = analytics.register(
-          InAppPlugin({
-            siteId,
-            events: null,
-            anonymousInApp: false,
-            _env: undefined,
-            _logging: undefined,
-            colorScheme: 'system'
+        const inAppRegistration = analytics
+          .register(
+            InAppPlugin({
+              siteId,
+              events: null,
+              anonymousInApp: false,
+              _env: undefined,
+              _logging: undefined,
+              colorScheme: 'system'
+            })
+          )
+          .catch((error) => {
+            reportError(error, {
+              errorType: 'customerio_in_app_plugin_registration_failure'
+            })
           })
-        )
-        this.analytics = analytics
 
+        await whenStoresReady()
+        this.analytics = analytics
         const currentUser = useCurrentUser()
         const identifyResolvedUser = (user: AuthUserInfo) => {
           const identity = {
@@ -117,17 +126,10 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         })
 
         void this.flushQueue()
-        void inAppRegistration
-          .catch((error) => {
-            console.error(
-              'Failed to initialize Customer.io in-app plugin:',
-              error
-            )
-          })
-          .finally(() => {
-            this.isPageViewTrackingReady = true
-            this.flushPageView()
-          })
+        void inAppRegistration.finally(() => {
+          this.isPageViewTrackingReady = true
+          this.flushPageView()
+        })
       })
       .catch((error) => {
         console.error('Failed to load Customer.io:', error)

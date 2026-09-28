@@ -4,6 +4,7 @@ import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -95,8 +96,29 @@ export async function launchCancellationFlow({
       }
     })
 
-    if (results.aborted === true) {
-      telemetry?.trackSubscriptionCancellation('abandoned', metadata)
+    switch (results.type) {
+      case 'discount-applied':
+        if (!isLaunchWorkspaceCurrent()) return
+        await billing.fetchStatus().catch((error) => {
+          reportError(error, {
+            errorType: 'error_refreshing_billing_after_churnkey_discount'
+          })
+          useToastStore().add({
+            severity: 'warn',
+            summary: t('subscription.cancelDialog.discountRefreshFailed'),
+            life: 8000
+          })
+        })
+        return
+      case 'abandoned':
+        telemetry?.trackSubscriptionCancellation('abandoned', metadata)
+        return
+      case 'closed':
+        return
+      default: {
+        const unreachable: never = results
+        return unreachable
+      }
     }
   } catch (error) {
     if (!isLaunchWorkspaceCurrent()) return

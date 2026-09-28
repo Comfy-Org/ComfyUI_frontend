@@ -69,9 +69,49 @@
       "count": 7
     }
   },
+  "src/extensions/core/load3d/Load3d.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "src/extensions/core/load3d/Load3dUtils.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/ModelAdapter.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/ModelExporter.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/extensions/core/load3d/RecordingManager.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/cameraFromMatrices.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/extensions/core/load3d/loader/FastPLYLoader.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/webcamCapture.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
   "src/lib/litegraph/src/LGraph.ts": {
     "comfy/no-new-error-throw": {
-      "count": 10
+      "count": 9
     }
   },
   "src/lib/litegraph/src/LGraphNode.ts": {
@@ -259,11 +299,6 @@
       "count": 11
     }
   },
-  "src/platform/workspace/stores/workspaceAuthStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/renderer/core/canvas/canvasStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
@@ -359,6 +394,21 @@
       "count": 1
     }
   },
+  "src/scripts/api.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 8
+    }
+  },
+  "src/scripts/app.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/scripts/metadata/avif.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
   "src/services/audioService.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
@@ -390,11 +440,6 @@
     }
   },
   "src/stores/assetsStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/stores/authStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
     }

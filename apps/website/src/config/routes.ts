@@ -1,4 +1,10 @@
-import type { Locale } from '../i18n/translations'
+import {
+  DEFAULT_LOCALE,
+  LOCALES,
+  localeHasRoute,
+  normalizeRoute
+} from './locales'
+import type { Locale } from './locales'
 
 const baseRoutes = {
   home: '/',
@@ -29,7 +35,7 @@ const baseRoutes = {
   agent: '/agent',
   platform: '/platform',
   platformComfyApi: '/platform/comfy-api',
-  platformModels: '/platform/models',
+  platformRouter: '/platform/router',
   platformBuilder: '/platform/builder',
   cli: '/cli',
   minimax: '/minimax-h3',
@@ -44,17 +50,23 @@ const baseRoutes = {
   wanAnimate2: '/wan-animate-2',
   cloudNodes: '/cloud-nodes',
   wan3: '/wan-3.0',
-  brand: '/brand'
+  chatgptImage25: '/chatgpt-image-2.5',
+  qwenImage21: '/qwen-image-2.1',
+  brand: '/brand',
+  // The catalogue answers to /models now. The keys keep their old names while
+  // the pull requests stacked on this branch are still open against them.
+  workshop: '/models',
+  workshopSignIn: '/login/',
+  cinematicStudio: '/cinematic-studio'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
 
 type Routes = Readonly<Record<RouteKey, string>>
 
-// Routes that are served only at their canonical path regardless of the
-// active locale. Localized variants of these routes intentionally do not
-// exist, so getRoutes(<non-en>) must not prefix them — emitting
-// /zh-CN/<route> would produce a dead link.
+// English-only routes: navigation and language metadata keep them on the
+// English path, because a locale prefix would link to a page that does not
+// exist. Remove a route from this list once its translation ships.
 //
 // affiliateTerms: legal-reviewed English-only document. See the comment
 // header in src/pages/affiliates/terms.astro and the affiliate-terms i18n
@@ -73,6 +85,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
+// workshop, workshopSignIn, cinematicStudio: prototype pages, English only for now.
+//
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
 // built from a single English-language caption track — a "translated" watch
 // page would either duplicate the English video under a Chinese path or lie
@@ -82,10 +96,11 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliateTerms',
   'termsOfService',
   'enterpriseMsa',
-  'enterprise',
-  'managedBuilds',
   'models',
   'minimaxLicenseProfessionalRequest',
+  'workshop',
+  'workshopSignIn',
+  'cinematicStudio',
   'customerVideoBlackMath',
   'customerVideoSilversideAi'
 ])
@@ -101,8 +116,13 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // workshop: the catalog is English-only. It is also build-gated until launch,
 // but enabled previews must not advertise a localized page that does not exist.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
+  // Auth surfaces render one page for every locale (copy localizes in the
+  // island); a /zh-CN twin does not exist and must not be advertised.
+  '/forgot-password',
+  '/login',
   '/pixal3d-trellis2',
   '/platform/serverless-animation',
+  '/signup',
   '/workshop'
 ]
 
@@ -111,26 +131,40 @@ const LOCALE_INVARIANT_PATHS = new Set<string>([
   ...LOCALE_INVARIANT_EXTRA_PATHS
 ])
 
-/**
- * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
- * URLs and locale-invariant routes pass through unchanged.
- */
 /** True for a locale-invariant route or anything nested under one. */
-export function isLocaleInvariantPath(pathname: string): boolean {
+function isLocaleInvariantPath(pathname: string): boolean {
   return [...LOCALE_INVARIANT_PATHS].some(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
   )
 }
 
-export function localizeHref(href: string, locale: Locale = 'en'): string {
-  if (locale === 'en' || !href.startsWith('/')) return href
-  if (LOCALE_INVARIANT_PATHS.has(href)) return href
-  if (locale === 'ja') return href === '/' ? '/ja/' : href
-  return `/${locale}${href}`
+const NOT_FOUND_PATHS = new Set(['/404', '/404.html'])
+
+export function supportsLocaleRoute(locale: Locale, pathname: string): boolean {
+  return (
+    !NOT_FOUND_PATHS.has(normalizeRoute(pathname)) &&
+    !isLocaleInvariantPath(pathname) &&
+    localeHasRoute(locale, pathname)
+  )
 }
 
-export function getRoutes(locale: Locale = 'en'): Routes {
-  if (locale === 'en') return baseRoutes
+/**
+ * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
+ * URLs and locale-invariant routes pass through unchanged.
+ */
+export function localizeHref(
+  href: string,
+  locale: Locale = DEFAULT_LOCALE
+): string {
+  if (locale === DEFAULT_LOCALE || !href.startsWith('/')) return href
+  const suffixAt = href.search(/[?#]/)
+  const path = suffixAt === -1 ? href : href.slice(0, suffixAt)
+  if (!supportsLocaleRoute(locale, path)) return href
+  return `${LOCALES[locale].prefix}${href}`
+}
+
+export function getRoutes(locale: Locale = DEFAULT_LOCALE): Routes {
+  if (locale === DEFAULT_LOCALE) return baseRoutes
   return Object.fromEntries(
     Object.entries(baseRoutes).map(([key, path]) => [
       key,
@@ -142,12 +176,16 @@ export function getRoutes(locale: Locale = 'en'): Routes {
 export const externalLinks = {
   affiliateApplicationForm: 'https://forms.gle/RS8L2ttcuGap4Q1v6',
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
+  routerApiKeys:
+    'https://platform.comfy.org/profile/api-keys?onboarding=router',
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',
+  cloudLogin: 'https://cloud.comfy.org/cloud/login',
   cloudCta: (content: string) =>
     `https://cloud.comfy.org/?utm_source=comfy_org&utm_medium=website&utm_campaign=free_tier&utm_content=${content}`,
   cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
+  eventHostApplicationForm: 'https://form.typeform.com/to/Fr2FrB6c',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
   comfyCliRepo: 'https://github.com/Comfy-Org/comfy-cli',
@@ -169,6 +207,8 @@ export const externalLinks = {
   docsUpdateComfyUI: 'https://docs.comfy.org/installation/update_comfyui',
   docsComfyRouter:
     'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart',
+  docsComfyRouterModels:
+    'https://docs.comfy.org/development/comfy-router/models',
   docsPlatform: 'https://docs.comfy.org/development/overview',
   docsPlatformExamples: 'https://docs.comfy.org/platform/examples',
   docsSdk: 'https://docs.comfy.org/development/api-development/sdks',
@@ -197,3 +237,18 @@ export const externalLinks = {
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const
+
+/**
+ * The platform creates a key on arrival and shows this product's onboarding.
+ * `model` is the website's model page id (`/models/<slug>`), not the Router id.
+ */
+type ApiKeysOnboarding =
+  | { onboarding: 'router' | 'comfy_api' }
+  | { onboarding: 'models'; model?: string }
+
+export function apiKeysLink(from: ApiKeysOnboarding): string {
+  const url = new URL(externalLinks.apiKeys)
+  url.searchParams.set('onboarding', from.onboarding)
+  if ('model' in from && from.model) url.searchParams.set('model', from.model)
+  return url.href
+}

@@ -20,6 +20,8 @@ import {
   setNodeSize
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import { toSelectableKey } from '@/core/selection/selectionState'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -55,6 +57,7 @@ import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
+import { realignGroupWidgetChildLinks } from './linkDeduplication'
 import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
 import {
   inputHasLink,
@@ -68,6 +71,7 @@ import {
 } from './node/slotLinks'
 import {
   createInputSlotView,
+  createOutputSlotView,
   resolveInputSlotView
 } from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
@@ -683,7 +687,29 @@ export class LGraphNode
   has_errors?: boolean
   removable?: boolean
   block_delete?: boolean
-  selected?: boolean
+  private detachedSelected = false
+
+  get selected(): boolean {
+    const scope = this.selectionScope
+    return scope
+      ? isSelectedIn(scope, toSelectableKey('node', this.id))
+      : this.detachedSelected
+  }
+
+  set selected(value: boolean | undefined) {
+    const scope = this.selectionScope
+    if (!scope) {
+      this.detachedSelected = !!value
+      return
+    }
+    this.detachedSelected = false
+    setSelectedIn(scope, toSelectableKey('node', this.id), !!value)
+  }
+
+  private get selectionScope(): GraphScope | undefined {
+    return this.graph ? graphScopeOf(this.graph) : undefined
+  }
+
   get showAdvanced(): boolean | undefined {
     return this._state.showAdvanced
   }
@@ -812,7 +838,7 @@ export class LGraphNode
     )
   }
 
-  public get is_selected(): boolean | undefined {
+  public get is_selected(): boolean {
     return this.selected
   }
 
@@ -1052,6 +1078,7 @@ export class LGraphNode
       type,
       this.title_mode
     )
+    this._state.outputs = createOutputSlotView(this, this._state.outputs)
     this._inputs = this._state.inputs
     this._outputs = this._state.outputs
     for (const property of [
@@ -1162,6 +1189,8 @@ export class LGraphNode
 
     // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
+
+    realignGroupWidgetChildLinks(this, info)
 
     const restoration = createWidgetRestorationState(
       info,
@@ -1986,10 +2015,12 @@ export class LGraphNode
 
     if (graph) {
       const previous = captureInputLayout(this)
+      const nextInputs = [...previous.inputs]
+      nextInputs.splice(slot, 1)
       const result = replaceNodeInputs(
         this,
         previous,
-        previous.inputs.toSpliced(slot, 1),
+        nextInputs,
         previous.links,
         true
       )
@@ -3689,6 +3720,9 @@ export class LGraphNode
 
   /* Forces to redraw or the main canvas (LGraphNode) or the bg canvas (links) */
   setDirtyCanvas(dirty_foreground: boolean, dirty_background?: boolean): void {
+    if (dirty_foreground && LiteGraph.vueNodesMode) {
+      for (const widget of this.widgets ?? []) widget.syncLiveDisabled?.()
+    }
     this.graph?.canvasAction((c) =>
       c.setDirty(dirty_foreground, dirty_background)
     )

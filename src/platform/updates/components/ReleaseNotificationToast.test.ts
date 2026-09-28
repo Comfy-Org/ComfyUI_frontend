@@ -1,4 +1,3 @@
-import type * as DistributionModule from '@/platform/distribution/types'
 import { useReleaseStore } from '../common/releaseStore'
 beforeEach(() => {
   Object.assign(useReleaseStore(), {
@@ -11,9 +10,6 @@ beforeEach(() => {
   vi.mocked(useReleaseStore().fetchReleases).mockResolvedValue(undefined)
 })
 import { useCommandStore } from '@/stores/commandStore'
-// @vitest-environment jsdom
-// dompurify is inert under happy-dom — see the tripwire note in
-// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -21,6 +17,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import type { ReleaseNote } from '../common/releaseService'
@@ -36,18 +33,7 @@ vi.hoisted(() => {
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
-const { commandExecuteMock } = vi.hoisted(() => ({
-  commandExecuteMock: vi.fn<ReturnType<typeof useCommandStore>['execute']>(
-    async () => undefined
-  )
-}))
-
-const { toastErrorHandlerMock } = vi.hoisted(() => ({
-  toastErrorHandlerMock: vi.fn()
-}))
-
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isNightly: false,
   get isDesktop() {
@@ -69,24 +55,12 @@ vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((content: string) => `<div>${content}</div>`)
 }))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: vi.fn(() => ({
-    toastErrorHandler: toastErrorHandlerMock
-  }))
-}))
-
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: vi.fn(() => ({
-    buildDocsUrl: vi.fn((path: string) => `https://docs.comfy.org${path}`),
-    staticUrls: {},
-    docsPaths: {}
-  }))
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 // Mock release store
 
 beforeEach(() => {
-  vi.mocked(useCommandStore().execute).mockImplementation(commandExecuteMock)
+  vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
 })
 
 describe('ReleaseNotificationToast', () => {
@@ -212,7 +186,7 @@ describe('ReleaseNotificationToast', () => {
       } as ReleaseNote
     })
 
-    commandExecuteMock.mockResolvedValueOnce(undefined)
+    vi.mocked(useCommandStore().execute).mockResolvedValueOnce(undefined)
 
     const mockWindowOpen = vi.fn()
     Object.defineProperty(window, 'open', {
@@ -225,11 +199,11 @@ describe('ReleaseNotificationToast', () => {
 
     await user.click(screen.getByRole('button', { name: /update/i }))
 
-    expect(commandExecuteMock).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy-Desktop.CheckForUpdates'
     )
     expect(mockWindowOpen).not.toHaveBeenCalled()
-    expect(toastErrorHandlerMock).not.toHaveBeenCalled()
+    expect(useErrorHandling().toastErrorHandler).not.toHaveBeenCalled()
   })
 
   it('shows an error toast if the desktop updater flow fails on desktop', async () => {
@@ -242,7 +216,7 @@ describe('ReleaseNotificationToast', () => {
     })
 
     const error = new Error('Command Comfy-Desktop.CheckForUpdates not found')
-    commandExecuteMock.mockRejectedValueOnce(error)
+    vi.mocked(useCommandStore().execute).mockRejectedValueOnce(error)
 
     const mockWindowOpen = vi.fn()
     Object.defineProperty(window, 'open', {
@@ -255,7 +229,7 @@ describe('ReleaseNotificationToast', () => {
 
     await user.click(screen.getByRole('button', { name: /update/i }))
 
-    expect(toastErrorHandlerMock).toHaveBeenCalledWith(error)
+    expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(error)
     expect(mockWindowOpen).not.toHaveBeenCalled()
   })
 

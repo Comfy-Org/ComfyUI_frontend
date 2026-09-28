@@ -5,17 +5,12 @@ import { computed, ref } from 'vue'
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
-
-let mockIsPackInstalled: MockedFunction<
-  ReturnType<typeof useComfyManagerStore>['isPackInstalled']
->
 let mockGetConflictsForPackageByID: MockedFunction<
   ReturnType<typeof useConflictDetectionStore>['getConflictsForPackageByID']
 >
 const mockShow = vi.fn()
 
 beforeEach(() => {
-  mockIsPackInstalled = vi.mocked(useComfyManagerStore().isPackInstalled)
   mockGetConflictsForPackageByID = vi.fn()
   Object.assign(useConflictDetectionStore(), {
     getConflictsForPackageByID: mockGetConflictsForPackageByID
@@ -32,7 +27,7 @@ vi.mock<unknown>(
 
 describe('useImportFailedDetection', () => {
   it('should return false for importFailed when package is not installed', () => {
-    mockIsPackInstalled.mockReturnValue(false)
+    vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
 
     const { importFailed } = useImportFailedDetection('test-package')
 
@@ -40,7 +35,7 @@ describe('useImportFailedDetection', () => {
   })
 
   it('should return false for importFailed when no conflicts exist', () => {
-    mockIsPackInstalled.mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
     mockGetConflictsForPackageByID.mockReturnValue(undefined)
 
     const { importFailed } = useImportFailedDetection('test-package')
@@ -49,7 +44,7 @@ describe('useImportFailedDetection', () => {
   })
 
   it('should return false for importFailed when conflicts exist but no import_failed type', () => {
-    mockIsPackInstalled.mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
     mockGetConflictsForPackageByID.mockReturnValue({
       package_id: 'test-package',
       package_name: 'Test Package',
@@ -75,7 +70,7 @@ describe('useImportFailedDetection', () => {
   })
 
   it('should return true for importFailed when import_failed conflicts exist', () => {
-    mockIsPackInstalled.mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
     mockGetConflictsForPackageByID.mockReturnValue({
       package_id: 'test-package',
       package_name: 'Test Package',
@@ -102,7 +97,7 @@ describe('useImportFailedDetection', () => {
 
   it('should work with computed ref packageId', () => {
     const packageId = ref('test-package')
-    mockIsPackInstalled.mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
     mockGetConflictsForPackageByID.mockReturnValue({
       package_id: 'test-package',
       package_name: 'Test Package',
@@ -144,7 +139,7 @@ describe('useImportFailedDetection', () => {
       }
     ]
 
-    mockIsPackInstalled.mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
     mockGetConflictsForPackageByID.mockReturnValue({
       package_id: 'test-package',
       package_name: 'Test Package',
@@ -174,7 +169,7 @@ describe('useImportFailedDetection', () => {
       }
     ]
 
-    mockIsPackInstalled.mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
     mockGetConflictsForPackageByID.mockReturnValue({
       package_id: 'test-package',
       package_name: 'Test Package',

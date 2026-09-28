@@ -357,6 +357,27 @@ describe('open-ended and free-precision inputs', () => {
     expect(field.kind).toBe('select')
   })
 
+  it('honors an outer enum that narrows an otherwise open string variant', () => {
+    const [field] = deriveWorkshopFields(
+      {
+        properties: {
+          duration: {
+            type: 'string',
+            anyOf: [{ enum: ['5s', '9s'] }, { type: 'string' }],
+            enum: ['5s', '9s'],
+            default: '5s'
+          }
+        }
+      },
+      []
+    )
+    expect(field).toMatchObject({
+      kind: 'select',
+      options: ['5s', '9s'],
+      defaultValue: '5s'
+    })
+  })
+
   it('does not invent a precision limit the schema never set', () => {
     const [free] = deriveWorkshopFields(
       { properties: { guidance: { type: 'number', minimum: 0, maximum: 10 } } },

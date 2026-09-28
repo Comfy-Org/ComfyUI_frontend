@@ -10,9 +10,6 @@ export const useColorsWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): IBaseWidget => {
     const spec = inputSpec as ColorsInputSpec
     const defaultValue: string[] = spec.default ? [...spec.default] : []
-    return node.addWidget('colors', spec.name, defaultValue, null, {
-      serialize: true,
-      canvasOnly: false
-    })
+    return node.addWidget('colors', spec.name, defaultValue, null)
   }
 }

@@ -1,7 +1,9 @@
 import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { isGaussianSplatPLY } from '@/scripts/metadata/ply'
 
 import type {
   EventManagerInterface,
@@ -14,6 +16,7 @@ import type {
   ModelAdapterCapabilities,
   ModelLoadContext
 } from './ModelAdapter'
+import { fetchModelData } from './ModelAdapter'
 
 function makeEventManagerStub() {
   return {
@@ -53,72 +56,59 @@ function makeModelManagerStub(): ModelManagerStub {
   }
 }
 
-const {
-  meshLoad,
-  splatLoad,
-  pointCloudLoad,
-  fetchModelDataMock,
-  isGaussianSplatPLYMock
-} = vi.hoisted(() => ({
+const { meshLoad, splatLoad, pointCloudLoad } = vi.hoisted(() => ({
   meshLoad: vi.fn(),
   splatLoad: vi.fn(),
-  pointCloudLoad: vi.fn(),
-  fetchModelDataMock: vi.fn<() => Promise<ArrayBuffer>>(),
-  isGaussianSplatPLYMock: vi.fn<(b: ArrayBuffer) => Promise<boolean>>()
+  pointCloudLoad: vi.fn()
 }))
 
-vi.mock('./MeshModelAdapter', () => ({
-  MeshModelAdapter: class {
-    readonly kind = 'mesh' as const
-    readonly extensions = ['stl', 'fbx', 'obj', 'gltf', 'glb'] as const
-    readonly capabilities = {}
-    load = meshLoad
-  }
-}))
-
-vi.mock('./PointCloudModelAdapter', () => ({
-  PointCloudModelAdapter: class {
-    readonly kind = 'pointCloud' as const
-    readonly extensions = ['ply'] as const
-    readonly capabilities = {}
-    load = pointCloudLoad
-  }
-}))
-
-vi.mock('./SplatModelAdapter', () => ({
-  SplatModelAdapter: class {
-    readonly kind = 'splat' as const
-    readonly extensions = ['spz', 'splat', 'ksplat', 'ply'] as const
-    readonly capabilities = {}
-    matches = async (
-      ext: string,
-      fetchBytes: () => Promise<ArrayBuffer>
-    ): Promise<boolean> => {
-      if (ext !== 'ply') return true
-      return isGaussianSplatPLYMock(await fetchBytes())
+vi.mock(import('./MeshModelAdapter'), () => ({
+  MeshModelAdapter: fromAny(
+    class {
+      readonly kind = 'mesh' as const
+      readonly extensions = ['stl', 'fbx', 'obj', 'gltf', 'glb'] as const
+      readonly capabilities = {}
+      load = meshLoad
     }
-    load = splatLoad
-  }
+  )
 }))
 
-vi.mock('./ModelAdapter', async () => {
-  const actual =
-    await vi.importActual<typeof import('./ModelAdapter')>('./ModelAdapter')
-  return { ...actual, fetchModelData: fetchModelDataMock }
-})
-
-vi.mock('@/scripts/metadata/ply', () => ({
-  isGaussianSplatPLY: isGaussianSplatPLYMock
+vi.mock(import('./PointCloudModelAdapter'), () => ({
+  PointCloudModelAdapter: fromAny(
+    class {
+      readonly kind = 'pointCloud' as const
+      readonly extensions = ['ply'] as const
+      readonly capabilities = {}
+      load = pointCloudLoad
+    }
+  )
 }))
 
-vi.mock('@/i18n', () => ({
-  t: (key: string) => key
+vi.mock(import('./SplatModelAdapter'), () => ({
+  SplatModelAdapter: fromAny(
+    class {
+      readonly kind = 'splat' as const
+      readonly extensions = ['spz', 'splat', 'ksplat', 'ply'] as const
+      readonly capabilities = {}
+      matches = async (
+        ext: string,
+        fetchBytes: () => Promise<ArrayBuffer>
+      ): Promise<boolean> => {
+        if (ext !== 'ply') return true
+        return isGaussianSplatPLY(await fetchBytes())
+      }
+      load = splatLoad
+    }
+  )
 }))
 
-let addAlert: ReturnType<typeof useToastStore>['addAlert']
-beforeEach(() => {
-  addAlert = useToastStore().addAlert
-})
+vi.mock(import('./ModelAdapter'), { spy: true })
+
+vi.mock(import('@/scripts/metadata/ply'), () => ({
+  isGaussianSplatPLY: vi.fn()
+}))
+
+vi.mock(import('@/i18n'))
 
 type LoaderManagerInternals = {
   pickAdapter(
@@ -136,9 +126,7 @@ function makeLoaderManager() {
   )
   const internals = lm as unknown as LoaderManagerInternals
   const pick = (ext: string) =>
-    internals.pickAdapter.call(lm, ext, () =>
-      fetchModelDataMock()
-    ) as Promise<ModelAdapter | null>
+    internals.pickAdapter.call(lm, ext, () => vi.mocked(fetchModelData)('', ''))
   return { lm, modelManager, eventManager, pick }
 }
 
@@ -147,8 +135,8 @@ describe('LoaderManager', () => {
     meshLoad.mockResolvedValue(null)
     splatLoad.mockResolvedValue(null)
     pointCloudLoad.mockResolvedValue(null)
-    fetchModelDataMock.mockResolvedValue(new ArrayBuffer(0))
-    isGaussianSplatPLYMock.mockResolvedValue(false)
+    vi.mocked(fetchModelData).mockResolvedValue(new ArrayBuffer(0))
+    vi.mocked(isGaussianSplatPLY).mockResolvedValue(false)
   })
 
   describe('getCurrentAdapter', () => {
@@ -297,13 +285,13 @@ describe('LoaderManager', () => {
     )
 
     it('routes .ply to the splat adapter when the bytes look like 3DGS', async () => {
-      isGaussianSplatPLYMock.mockResolvedValue(true)
+      vi.mocked(isGaussianSplatPLY).mockResolvedValue(true)
       const { pick } = makeLoaderManager()
       expect((await pick('ply'))?.kind).toBe('splat')
     })
 
     it('falls back to the point-cloud adapter for .ply that is not 3DGS', async () => {
-      isGaussianSplatPLYMock.mockResolvedValue(false)
+      vi.mocked(isGaussianSplatPLY).mockResolvedValue(false)
       const { pick } = makeLoaderManager()
       expect((await pick('ply'))?.kind).toBe('pointCloud')
     })
@@ -371,7 +359,7 @@ describe('LoaderManager', () => {
 
       await lm.loadModel('api/view?other=1')
 
-      expect(addAlert).toHaveBeenCalledWith(
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.couldNotDetermineFileType'
       )
       expect(modelManager.setupModel).not.toHaveBeenCalled()
@@ -443,7 +431,7 @@ describe('LoaderManager', () => {
     })
 
     it('routes .ply to the point-cloud adapter when the header does not look like 3DGS', async () => {
-      isGaussianSplatPLYMock.mockResolvedValue(false)
+      vi.mocked(isGaussianSplatPLY).mockResolvedValue(false)
       const { lm } = makeLoaderManager()
       pointCloudLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
@@ -455,7 +443,7 @@ describe('LoaderManager', () => {
     })
 
     it('reroutes .ply through the splat adapter when the header looks like 3DGS', async () => {
-      isGaussianSplatPLYMock.mockResolvedValue(true)
+      vi.mocked(isGaussianSplatPLY).mockResolvedValue(true)
       const { lm } = makeLoaderManager()
       splatLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
@@ -468,8 +456,8 @@ describe('LoaderManager', () => {
 
     it('shares a single fetch between matches() and load() so .ply is not re-downloaded', async () => {
       const buf = new ArrayBuffer(16)
-      fetchModelDataMock.mockResolvedValueOnce(buf)
-      isGaussianSplatPLYMock.mockResolvedValue(true)
+      vi.mocked(fetchModelData).mockResolvedValueOnce(buf)
+      vi.mocked(isGaussianSplatPLY).mockResolvedValue(true)
       const { lm } = makeLoaderManager()
       splatLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
@@ -483,7 +471,7 @@ describe('LoaderManager', () => {
         expect.any(Function)
       )
       // matches() called fetchBytes once; load()'s call hit the cached promise.
-      expect(fetchModelDataMock).toHaveBeenCalledTimes(1)
+      expect(fetchModelData).toHaveBeenCalledTimes(1)
     })
 
     it('dispatches .ply via the adapter matches() tiebreaker, not extension order — a splat adapter whose matches() returns false yields to point-cloud', async () => {
@@ -501,7 +489,7 @@ describe('LoaderManager', () => {
         extensions: ['ply', 'spz', 'splat', 'ksplat'] as const,
         capabilities: {} as never,
         matches: async (ext: string, fetchBytes: () => Promise<ArrayBuffer>) =>
-          ext === 'ply' ? isGaussianSplatPLYMock(await fetchBytes()) : true,
+          ext === 'ply' ? isGaussianSplatPLY(await fetchBytes()) : true,
         load: splatLoad
       }
       const pointCloudAdapter = {
@@ -514,7 +502,7 @@ describe('LoaderManager', () => {
         splatAdapter,
         pointCloudAdapter
       ])
-      isGaussianSplatPLYMock.mockResolvedValue(false)
+      vi.mocked(isGaussianSplatPLY).mockResolvedValue(false)
       pointCloudLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
       await lm.loadModel('api/view?filename=scan.ply')
@@ -538,7 +526,9 @@ describe('LoaderManager', () => {
         'modelLoadingEnd',
         null
       )
-      expect(addAlert).toHaveBeenCalledWith('toastMessages.errorLoadingModel')
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+        'toastMessages.errorLoadingModel'
+      )
       expect(consoleError).toHaveBeenCalled()
     })
 
@@ -557,7 +547,7 @@ describe('LoaderManager', () => {
       })
 
       expect(consoleError).toHaveBeenCalled()
-      expect(addAlert).not.toHaveBeenCalledWith(
+      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -574,7 +564,7 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(addAlert).not.toHaveBeenCalledWith(
+      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -588,7 +578,9 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(addAlert).toHaveBeenCalledWith('toastMessages.errorLoadingModel')
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+        'toastMessages.errorLoadingModel'
+      )
     })
 
     it('discards the result of a stale load when a newer one has started', async () => {
@@ -699,7 +691,7 @@ describe('LoaderManager', () => {
 
       await Promise.all([firstPromise, secondPromise])
 
-      expect(addAlert).not.toHaveBeenCalled()
+      expect(useToastStore().addAlert).not.toHaveBeenCalled()
       const endEmits = eventManager.emitEvent.mock.calls.filter(
         (call: unknown[]) => call[0] === 'modelLoadingEnd'
       )

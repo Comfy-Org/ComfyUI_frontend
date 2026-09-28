@@ -18,7 +18,7 @@ import { createMockWidget } from './widgetTestUtils'
 const mockCheckState = vi.hoisted(() => vi.fn())
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
-vi.mock<unknown>(import('@/scripts/api'))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'),
@@ -33,7 +33,7 @@ vi.mock(
 )
 
 const { mockMediaAssets } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // oxlint-disable-next-line typescript/no-require-imports
   const { ref } = require('vue')
   return {
     mockMediaAssets: {
@@ -56,7 +56,7 @@ const mockHandleFilesUpdate = vi.hoisted(() => vi.fn())
 
 const { mockItemsRef, mockSelectedSetRef, mockFilterSelectedRef } = vi.hoisted(
   () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // oxlint-disable-next-line typescript/no-require-imports
     const { ref } = require('vue')
     return {
       mockItemsRef: ref([]) as Ref<FormDropdownItem[]>,
@@ -69,7 +69,7 @@ const { mockItemsRef, mockSelectedSetRef, mockFilterSelectedRef } = vi.hoisted(
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'),
   () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // oxlint-disable-next-line typescript/no-require-imports
     const { computed } = require('vue')
     return {
       useWidgetSelectItems: () => ({

@@ -31,19 +31,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
-    getNodeByLocatorId: vi.fn()
-  }
-})
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    toastErrorHandler: vi.fn()
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock<unknown>(import('@/i18n'), () => ({
   st: vi.fn((key) => key),
@@ -143,7 +133,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     await nextTick()
 
     // Should call getNodeByLocatorId with correct locator ID
-    expect(vi.mocked(getNodeByLocatorId)).toHaveBeenCalledWith(
+    expect(getNodeByLocatorId).toHaveBeenCalledWith(
       expect.anything(),
       `${SUBGRAPH_ID}:test-node-1`
     )

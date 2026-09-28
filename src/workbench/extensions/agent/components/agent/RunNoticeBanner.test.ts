@@ -8,9 +8,12 @@ import RunNoticeBanner from './RunNoticeBanner.vue'
 
 const STORAGE_KEY = 'Comfy.AgentPanel.runNoticeDismissed'
 
-function mount(expanded = false) {
+function mount(
+  workflowName: string | undefined = '3d_hunyuan-v2.1',
+  expanded = false
+) {
   return render(RunNoticeBanner, {
-    props: { expanded },
+    props: { expanded, workflowName },
     global: { plugins: [i18n] }
   })
 }
@@ -20,17 +23,22 @@ describe('RunNoticeBanner', () => {
     localStorage.clear()
   })
 
-  it('shows the edit-graph run notice on first launch', () => {
+  it('names the one workflow the agent can edit', () => {
     mount()
-    expect(screen.getByText(i18n.global.t('agent.runNotice'))).not.toBeNull()
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time, and you can switch workflows during chat.'
+    )
   })
 
-  it('shows the expanded run notice in the maximized panel', () => {
-    mount(true)
-    expect(
-      screen.getByText(i18n.global.t('agent.runNoticeExpanded'))
-    ).not.toBeNull()
-  })
+  it.for([false, true])(
+    'shows the targetless notice for expanded=%s',
+    (expanded) => {
+      mount('', expanded)
+      expect(screen.getByRole('note')).toHaveTextContent(
+        i18n.global.t(expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice')
+      )
+    }
+  )
 
   it('hides the notice and persists the dismissal when X is clicked', async () => {
     mount()
@@ -43,5 +51,36 @@ describe('RunNoticeBanner', () => {
     localStorage.setItem(STORAGE_KEY, 'true')
     mount()
     expect(screen.queryByRole('note')).toBeNull()
+  })
+
+  it('shows mismatch despite educational dismissal and preserves that dismissal when resolved', async () => {
+    localStorage.setItem(STORAGE_KEY, 'true')
+    const { rerender, emitted } = render(RunNoticeBanner, {
+      props: { workflowName: 'portrait', context: 'mismatch' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.viewingDifferentWorkflow')
+    )
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show target workflow: portrait' })
+    )
+    expect(emitted('showTarget')).toHaveLength(1)
+
+    await rerender({ context: undefined })
+    expect(screen.queryByRole('note')).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('true')
+  })
+
+  it('explains all three ways to decide the target', () => {
+    render(RunNoticeBanner, {
+      props: { context: 'following', workflowName: 'portrait' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'Target workflow follows the visible tab until you choose a target, reference nodes, or send a message.'
+    )
+    expect(screen.queryByText(/The agent can now edit/)).toBeNull()
   })
 })

@@ -1,7 +1,12 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+
+import { i18n } from '@/i18n'
+
+import { toTurnId, zAgentWsEvent } from '../schemas/agentApiSchema'
+import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -36,6 +41,7 @@ const STATUS: AgentCrdtStatus = {
   outcomes: {
     received: 5,
     applied: 4,
+    appliedLive: 4,
     skipped: 1,
     errored: 0,
     gap: 0,
@@ -45,7 +51,10 @@ const STATUS: AgentCrdtStatus = {
 }
 
 function renderPanel() {
-  return render(CrdtDevPanel, { props: { status: STATUS } })
+  return render(CrdtDevPanel, {
+    props: { status: STATUS },
+    global: { plugins: [i18n] }
+  })
 }
 
 const chip = () => screen.queryByTestId('crdt-dev-panel-chip')
@@ -72,6 +81,7 @@ describe('CrdtDevPanel', () => {
   it('smoke-renders follower and document status from a live snapshot', async () => {
     const user = userEvent.setup()
     render(CrdtDevPanel, {
+      global: { plugins: [i18n] },
       props: {
         status: STATUS,
         snapshot: () => ({
@@ -198,28 +208,48 @@ describe('CrdtDevPanel', () => {
     expect(log).not.toContain('ws_out')
   })
 
-  it('shows the sensitive-source opt-ins as off, and lets them be turned on', async () => {
+  it('lists the materialization event in the kind filter and filters by it', async () => {
     const user = userEvent.setup()
+    recordDevEvent('doc_update', { seq: 1 }, { scope: 'doc' })
+    recordDevEvent(
+      'agent_node_adapters_materialized',
+      { nodeCount: 2 },
+      { scope: 'doc' }
+    )
     renderPanel()
+
     await user.click(chip()!)
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
 
-    // These three are the only consent gate on logs, settings and the workflow
-    // reaching the clipboard, so their state has to be readable. A bare
-    // <input type="checkbox"> renders at 0x0 here: agentPanel.css strips
-    // `appearance` from every input under #agent-panel-root.
-    for (const key of ['serverLogs', 'settings', 'workflow']) {
-      const toggle = screen.getByTestId(`crdt-dev-panel-include-${key}`)
-      expect(toggle.getAttribute('role')).toBe('switch')
-      expect(toggle.getAttribute('aria-checked')).toBe('false')
+    const kindFilter = screen.getByTestId('crdt-dev-panel-filter')
+    expect(
+      within(kindFilter)
+        .getAllByRole<HTMLOptionElement>('option')
+        .map((option) => option.value)
+    ).toContain('agent_node_adapters_materialized')
 
-      await user.click(toggle)
-      expect(
-        screen
-          .getByTestId(`crdt-dev-panel-include-${key}`)
-          .getAttribute('aria-checked')
-      ).toBe('true')
-    }
+    await user.selectOptions(kindFilter, 'agent_node_adapters_materialized')
+
+    const log = screen.getByTestId('crdt-dev-panel-log')
+    expect(
+      within(log).getByText('agent_node_adapters_materialized')
+    ).toBeInTheDocument()
+    expect(within(log).queryByText('doc_update')).not.toBeInTheDocument()
   })
+
+  it.for(['Server logs', 'Settings', 'Workflow JSON'])(
+    'includes %s by default and lets it be turned off',
+    async (name) => {
+      const user = userEvent.setup()
+      renderPanel()
+      await user.click(screen.getByTestId('crdt-dev-panel-chip'))
+
+      const toggle = screen.getByRole('switch', { name })
+      expect(toggle).toBeChecked()
+      await user.click(toggle)
+      expect(toggle).not.toBeChecked()
+    }
+  )
 
   it('explains a merge sequence without needing a backend', async () => {
     const user = userEvent.setup()
@@ -239,10 +269,11 @@ describe('CrdtDevPanel', () => {
     expect(trace).toContain('had already been deleted')
   })
 
-  it('reports a failure and flips to the failed state when report collection rejects', async () => {
+  it('offers a retry when report collection rejects without showing stale report text', async () => {
     const collectSpy = vi
       .spyOn(crdtDebugReport, 'collectCrdtDebugReport')
       .mockRejectedValueOnce(new Error('snapshot unavailable'))
+      .mockResolvedValueOnce('# recovered report')
     const user = userEvent.setup()
     renderPanel()
     await user.click(chip()!)
@@ -253,9 +284,81 @@ describe('CrdtDevPanel', () => {
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'crdt_dev_panel_report_copy_failed'
     })
-    expect(copyReportButton.textContent).toContain('Copy failed')
+    expect(copyReportButton).toHaveTextContent('Retry copy report')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Could not collect the report. Retry, or turn off optional sources and retry.'
+    )
+    expect(
+      screen.queryByRole('textbox', { name: 'Report to copy' })
+    ).not.toBeInTheDocument()
+
+    await user.click(copyReportButton)
+    expect(collectSpy).toHaveBeenCalledTimes(2)
+    expect(copyReportButton).toHaveTextContent('Copied')
+    expect(await navigator.clipboard.readText()).toBe('# recovered report')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 
     collectSpy.mockRestore()
+  })
+
+  it('passes turned-off privacy sources to the collector', async () => {
+    const collectSpy = vi
+      .spyOn(crdtDebugReport, 'collectCrdtDebugReport')
+      .mockResolvedValueOnce('# report')
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(chip()!)
+
+    for (const name of ['Server logs', 'Settings', 'Workflow JSON']) {
+      await user.click(screen.getByRole('switch', { name }))
+    }
+    await user.click(screen.getByTestId('crdt-dev-panel-copy-report'))
+
+    expect(collectSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sources: { serverLogs: false, settings: false, workflow: false }
+      })
+    )
+    expect(collectSpy.mock.calls[0][0]).not.toHaveProperty('workflow')
+    expect(collectSpy.mock.calls[0][0]).not.toHaveProperty('workflowError')
+  })
+
+  it('copies retained tool metadata from real conversation events without prompt content', async () => {
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('turn-tool-report')
+    conversation.setThreadId('thread-tool-report')
+    conversation.recordUser(turnId, 'private user prompt')
+    conversation.startTurn(turnId)
+    conversation.ingest(
+      zAgentWsEvent.parse({
+        type: 'agent_tool_call',
+        data: {
+          thread_id: 'thread-tool-report',
+          message_id: turnId,
+          tool_call_id: 'call-from-event',
+          tool_name: 'inspect_workflow',
+          status: 'success',
+          duration_ms: 73
+        }
+      })
+    )
+    conversation.ingest(
+      zAgentWsEvent.parse({
+        type: 'agent_message_done',
+        data: { thread_id: 'thread-tool-report', message_id: turnId }
+      })
+    )
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(chip()!)
+    await user.click(screen.getByTestId('crdt-dev-panel-copy-report'))
+
+    const report = await navigator.clipboard.readText()
+    expect(report).toContain('"callId": "call-from-event"')
+    expect(report).toContain('"turnId": "turn-tool-report"')
+    expect(report).toContain('"durationMs": 73')
+    expect(report).toContain('"ok": true')
+    expect(report).not.toContain('private user prompt')
   })
 
   it('passes an identifiers block to the report collector on every copy', async () => {
