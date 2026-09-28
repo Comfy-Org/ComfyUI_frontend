@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   RUN_APPROVAL_EVENT,
@@ -77,8 +77,8 @@ test.describe(
       turnLock.push(reconnected, RUN_APPROVAL_EVENT)
 
       test.fail()
-      // Answering is the whole point: a card the user cannot act on leaves the
-      // turn parked exactly as a missing card does.
+      // Recovery must restore both the card and its active turn identity;
+      // `answerAsk` deliberately refuses to POST without `activeTurnId`.
       await turnLock.panel
         .getByRole('button', {
           name: enMessages.agent.runApproval.run,
@@ -115,7 +115,9 @@ test.describe(
     // RUN_APPROVAL_EVENT that made it unparseable would surface as a failed
     // assertion rather than as three silently-vacuous pushes.
     test('the fixture pushes an ask the client can parse', () => {
-      const event: AgentWsEvent = RUN_APPROVAL_EVENT
+      const event = zAgentWsEvent.parse(
+        JSON.parse(JSON.stringify(RUN_APPROVAL_EVENT))
+      )
       expect(event.type).toBe('agent_ask')
       expect(event.data).toMatchObject({ kind: 'run_approval' })
     })

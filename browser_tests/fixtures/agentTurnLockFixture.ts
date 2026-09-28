@@ -6,9 +6,13 @@ import type {
   AgentCancelAccepted,
   AgentError,
   AgentMessage,
+  AgentPendingAsk,
   AgentTurnAccepted
 } from '@comfyorg/ingest-types'
-import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
+import {
+  zAgentPendingAsk,
+  zAgentPostMessageRequest
+} from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -128,6 +132,7 @@ class TurnLockServer {
   private rejected = 0
   private posts = 0
   private readonly answered: string[][] = []
+  private pendingAsk: AgentPendingAsk | undefined
 
   get turnIsStreaming(): boolean {
     return this.streaming
@@ -153,6 +158,12 @@ class TurnLockServer {
 
   recordAnswer(selected: string[]): void {
     this.answered.push(selected)
+    this.pendingAsk = undefined
+  }
+
+  recordAsk(event: AgentWsEvent): void {
+    if (event.type === 'agent_ask')
+      this.pendingAsk = zAgentPendingAsk.parse(event.data)
   }
 
   completeTurn(): void {
@@ -178,7 +189,8 @@ class TurnLockServer {
         seq: 2,
         role: 'assistant',
         status: this.streaming ? 'streaming' : 'complete',
-        workflow_id: WORKFLOW_ID
+        workflow_id: WORKFLOW_ID,
+        pending_ask: this.pendingAsk
       }
     ]
   }
@@ -233,8 +245,16 @@ async function routeTurnLock(
         body: JSON.stringify({ error: 'unknown thread or ask' })
       })
 
-    const body: unknown = route.request().postDataJSON()
-    const selected = zAnswerRequest.parse(body).selected
+    let body: unknown
+    try {
+      body = route.request().postDataJSON()
+    } catch {
+      return route.fulfill({ status: 400, body: 'invalid JSON' })
+    }
+    const parsed = zAnswerRequest.safeParse(body)
+    if (!parsed.success)
+      return route.fulfill({ status: 400, body: 'invalid answer' })
+    const selected = parsed.data.selected
     const offered: readonly string[] = RUN_APPROVAL_OPTION_IDS
     if (selected.length !== 1 || !offered.includes(selected[0]))
       return route.fulfill({
@@ -352,6 +372,7 @@ export class AgentTurnLockHarness {
   }
 
   push(ws: WebSocketRoute, event: AgentWsEvent): void {
+    this.server.recordAsk(event)
     ws.send(JSON.stringify(event))
   }
 

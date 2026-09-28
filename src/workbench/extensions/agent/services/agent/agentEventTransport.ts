@@ -137,6 +137,7 @@ export function createAgentEventTransport(
       .map((part) => [part.callId, part])
   )
   let settled = false
+  const reportedUndeliverableAskIds = new Set<string>()
   let lastTabTargetKey: string | undefined
   // Tool parts whose frame reported done but whose displayed state is held at
   // 'streaming' pending canvas catch-up. Each has its own bounded timer so a
@@ -316,14 +317,7 @@ export function createAgentEventTransport(
    */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
     if (data.kind !== 'run_approval') {
-      reportError(
-        new Error(`agent approval ask could not be delivered (unknown-kind)`),
-        {
-          errorType: 'failure_delivering_agent_approval_ask',
-          level: 'warning',
-          tags: { reason: 'unknown-kind', ask_kind: data.kind }
-        }
-      )
+      if (data.kind !== 'ask_user') reportUndeliverableAsk(data, 'unknown-kind')
       return false
     }
     dropDraft()
@@ -339,6 +333,25 @@ export function createAgentEventTransport(
     }
     message.parts.push(part)
     return true
+  }
+
+  function reportUndeliverableAsk(
+    data: AgentAskEvent['data'],
+    reason: 'unknown-kind' | 'settled-turn'
+  ): void {
+    if (reportedUndeliverableAskIds.has(data.ask_id)) return
+    reportedUndeliverableAskIds.add(data.ask_id)
+    reportError(
+      new Error(`agent approval ask could not be delivered (${reason})`),
+      {
+        errorType: 'failure_delivering_agent_approval_ask',
+        level: 'warning',
+        tags: {
+          reason,
+          ask_kind: data.kind?.slice(0, 64) || 'missing'
+        }
+      }
+    )
   }
 
   /** Applies one `agent_thinking` frame: appends its delta to the open
@@ -470,7 +483,11 @@ export function createAgentEventTransport(
   }
 
   function ingest(event: AgentChatEvent): void {
-    if (settled) return
+    if (settled) {
+      if (event.type === 'agent_ask')
+        reportUndeliverableAsk(event.data, 'settled-turn')
+      return
+    }
     if (applyChatEvent(event)) emit(snapshotMessage(message))
   }
 

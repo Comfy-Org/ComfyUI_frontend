@@ -937,6 +937,38 @@ describe('useAgentConversationStore', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('stays quiet for an ask belonging to an untracked thread', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.abortActiveTurn()
+
+      store.ingest(
+        chat({
+          ...runApproval('t1', 'turn-1:call-1'),
+          data: {
+            ...runApproval('t1', 'turn-1:call-1').data,
+            thread_id: 'another-thread'
+          }
+        })
+      )
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('reports the same dropped ask only once', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.abortActiveTurn()
+
+      const ask = runApproval('t1', 'turn-1:call-1')
+      store.ingest(ask)
+      store.ingest(ask)
+
+      expect(reportError).toHaveBeenCalledTimes(1)
+    })
+
     it('reports an ask kind the panel has no card for', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')

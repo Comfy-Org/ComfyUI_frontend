@@ -85,6 +85,8 @@ export const useAgentConversationStore = defineStore(
     const reportedPaywallImpressions = new Set<TurnId>()
     const approvalShownAtByAsk = new Map<string, number>()
     const shownApprovalIds = new Set<string>()
+    const reportedUndeliverableAskIds = new Set<string>()
+    let abortedTurn: { threadId: string; messageId: TurnId } | null = null
     const activeIndex = ref(-1)
 
     function recordApprovalShown(askId: string, shownAt: number): boolean {
@@ -196,6 +198,7 @@ export const useAgentConversationStore = defineStore(
 
     function startTurn(turnId: TurnId): void {
       if (transport) abortActiveTurn()
+      abortedTurn = null
       const message = createAssistantMessage(turnId)
       liveMessage = message
       activeTurnId.value = turnId
@@ -246,6 +249,8 @@ export const useAgentConversationStore = defineStore(
       reason: 'no-live-turn'
     ): void {
       if (event.type !== 'agent_ask') return
+      if (reportedUndeliverableAskIds.has(event.data.ask_id)) return
+      reportedUndeliverableAskIds.add(event.data.ask_id)
       reportError(
         new Error(`agent approval ask could not be delivered (${reason})`),
         {
@@ -253,7 +258,7 @@ export const useAgentConversationStore = defineStore(
           level: 'warning',
           tags: {
             reason,
-            ask_kind: event.data.kind,
+            ask_kind: event.data.kind?.slice(0, 64) || 'missing',
             has_active_turn: activeTurnId.value !== null,
             background_turn_count: backgroundTurns.size
           },
@@ -306,10 +311,11 @@ export const useAgentConversationStore = defineStore(
     ): void {
       const entry = backgroundTurns.get(eventThreadId)
       if (!entry || entry.messageId !== event.data.message_id) {
-        // The socket-drop teardown clears `transport` and empties
-        // `backgroundTurns`, so an ask for the turn it just abandoned lands
-        // here with nothing to route it to.
-        reportUndeliverableAsk(event, 'no-live-turn')
+        if (
+          abortedTurn?.threadId === eventThreadId &&
+          abortedTurn.messageId === event.data.message_id
+        )
+          reportUndeliverableAsk(event, 'no-live-turn')
         return
       }
       if (event.type === 'agent_message_done') {
@@ -348,6 +354,11 @@ export const useAgentConversationStore = defineStore(
 
     function abortActiveTurn(): void {
       if (!transport) return
+      if (threadId.value !== null && activeTurnId.value !== null)
+        abortedTurn = {
+          threadId: threadId.value,
+          messageId: activeTurnId.value
+        }
       transport.settle()
       // Not `settledActiveTransports`: an abort is not a natural completion
       // whose held parts might still catch up, so flush them to `done` and
@@ -499,6 +510,8 @@ export const useAgentConversationStore = defineStore(
       hydratedMessageIds = new Set()
       hydratedAssistantTurnIds = new Set()
       reportedPaywallImpressions.clear()
+      reportedUndeliverableAskIds.clear()
+      abortedTurn = null
       clearActive()
     }
 
