@@ -6,10 +6,16 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { SummaryLedger } from '@/checkout/summaryLedger'
 import CheckoutLedger from '@/components/fullPage/summary/CheckoutLedger.vue'
 
-const { ledger, locked = false } = defineProps<{
+const {
+  ledger,
+  locked = false,
+  repricing = false
+} = defineProps<{
   ledger?: SummaryLedger
   /** Money on its way: the back arrow goes with the rest of the page. */
   locked?: boolean
+  /** A promo re-quote is in flight, so the total on screen is not final. */
+  repricing?: boolean
 }>()
 
 const emit = defineEmits<{ back: [] }>()
@@ -24,7 +30,7 @@ const SKELETON_BAR =
   <section
     class="flex bg-base-background lg:w-1/2 lg:justify-end"
     :aria-label="t('checkout.fullPage.summary.label')"
-    :aria-busy="ledger === undefined"
+    :aria-busy="ledger === undefined || repricing"
   >
     <div class="flex w-full flex-col px-6 py-12 lg:max-w-lg lg:px-16">
       <div class="relative flex h-5 items-center">

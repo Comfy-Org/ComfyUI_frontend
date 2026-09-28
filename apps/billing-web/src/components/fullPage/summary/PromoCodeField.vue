@@ -68,6 +68,7 @@ function edit(event: Event) {
     <p
       v-if="error"
       :id="errorId"
+      role="alert"
       class="m-0 text-xs text-destructive-background"
     >
       {{ t(`${P}.${error}`) }}
