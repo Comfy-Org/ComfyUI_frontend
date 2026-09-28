@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { load3dViewerTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
 
@@ -57,12 +58,8 @@ test.describe('Load3D Viewer', { tag: '@vue-nodes' }, () => {
     load3d,
     viewer
   }) => {
-    await comfyPage.page.evaluate(() => {
-      document.documentElement.style.setProperty(
-        '--workspace-inset-right',
-        '420px'
-      )
-    })
+    const agentPanel = new AgentPanel(comfyPage.page)
+    await agentPanel.open()
     await load3d.openViewerButton.click()
     await viewer.waitForOpen()
 

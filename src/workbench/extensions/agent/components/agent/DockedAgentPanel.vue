@@ -40,6 +40,7 @@ import { storeToRefs } from 'pinia'
 import { defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
@@ -78,6 +79,7 @@ const { hasOpaqueNeighbor = false } = defineProps<{
 
 const agentPanelStore = useAgentPanelStore()
 const { isVisible: docked, width } = storeToRefs(agentPanelStore)
+useWorkspaceInsetRight(() => (docked.value ? width.value : 0))
 const agentRunModeStore = useAgentRunModeStore()
 
 void agentRunModeStore.load().catch((error: unknown) => {

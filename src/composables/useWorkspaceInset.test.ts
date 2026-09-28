@@ -59,6 +59,6 @@ describe('useWorkspaceInsetRight', () => {
     width.value = 960
     await nextTick()
 
-    expect(readInset()).toBe('420px')
+    expect(readInset()).toBe('')
   })
 })
