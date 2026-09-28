@@ -19,6 +19,7 @@ import { useWorkshopSession } from '../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../config/workshop-snippets'
 import { createWorkshopUrlUploader } from '../config/workshop-url-upload'
 import type { AspectRatio } from '../lib/workshop/cinematic-studio/catalog'
+import { frameParameters } from '../lib/workshop/cinematic-studio/frames'
 import { studioGate } from '../lib/workshop/cinematic-studio/gate'
 import type { Reel, ReelEvent } from '../lib/workshop/cinematic-studio/reel'
 import {
@@ -71,11 +72,14 @@ function takeFingerprint(
   ])
 }
 
-function shotParameters(request: ShotRequest) {
+function shotParameters(request: ShotRequest, model: WorkshopModelDetail) {
   return {
     prompt: request.prompt,
-    aspect_ratio: request.aspect,
-    resolution: request.resolutionPixels,
+    ...frameParameters(
+      model.execution,
+      request.aspect,
+      request.resolutionPixels
+    ),
     ...(request.references.length
       ? { reference_images: request.references }
       : {})
@@ -185,23 +189,27 @@ export function useCinematicStudioRun(
     const fingerprint = takeFingerprint(startedFor, model.slug, request, index)
     const { key, prepared } = unsettledTakeFor(fingerprint)
     try {
-      const result = await router_render(model.slug, shotParameters(request), {
-        model,
-        signal,
-        idempotencyKey: key,
-        prepared,
-        onPrepared: (ready) => {
-          unsettledTakes.set(fingerprint, { key, prepared: ready })
-        },
-        token: () => tokenFor(startedFor, signal),
-        uploadFile: async (file, uploadSignal) =>
-          uploadUrl(
-            file,
-            await tokenFor(startedFor, signal),
-            JSON.stringify([startedFor.uid, startedFor.workspace.id]),
-            uploadSignal
-          )
-      })
+      const result = await router_render(
+        model.slug,
+        shotParameters(request, model),
+        {
+          model,
+          signal,
+          idempotencyKey: key,
+          prepared,
+          onPrepared: (ready) => {
+            unsettledTakes.set(fingerprint, { key, prepared: ready })
+          },
+          token: () => tokenFor(startedFor, signal),
+          uploadFile: async (file, uploadSignal) =>
+            uploadUrl(
+              file,
+              await tokenFor(startedFor, signal),
+              JSON.stringify([startedFor.uid, startedFor.workspace.id]),
+              uploadSignal
+            )
+        }
+      )
       unsettledTakes.delete(fingerprint)
       const output = result.outputs.at(0)
       releaseRouterOutputs(result.outputs.slice(1))

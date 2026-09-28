@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, shallowRef } from 'vue'
+import { computed, onMounted, ref, shallowRef, watchEffect } from 'vue'
 
 import type {
   AspectRatio,
@@ -13,6 +13,11 @@ import {
 } from '../lib/workshop/cinematic-studio/catalog'
 import { shotEstimate } from '../lib/workshop/cinematic-studio/estimate'
 import type { CinematicModel } from '../lib/workshop/cinematic-studio/models'
+import {
+  shotAspects,
+  takesReferences
+} from '../lib/workshop/cinematic-studio/models'
+import { nearestAspect } from '../lib/workshop/cinematic-studio/frames'
 import { cinematicPrompt } from '../lib/workshop/cinematic-studio/prompt'
 import type { StarterShot } from '../lib/workshop/cinematic-studio/starters'
 import { isCinematicDemo, useCinematicDemoRun } from './useCinematicDemoRun'
@@ -49,6 +54,13 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const model = computed(() =>
     models.find((option) => option.slug === modelSlug.value)
   )
+  const aspects = computed(() =>
+    shotAspects(model.value, references.value.length > 0)
+  )
+  // A model that cannot make the chosen frame moves it to its nearest one.
+  watchEffect(() => {
+    if (aspects.value) aspect.value = nearestAspect(aspect.value, aspects.value)
+  })
   const estimate = computed(() =>
     shotEstimate(model.value?.prices, {
       aspect: aspect.value,
@@ -82,7 +94,7 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     () =>
       studio.gate.value === 'ready' &&
       scene.value.trim().length > 0 &&
-      !(references.value.length > 0 && !model.value?.referenceSlug)
+      takesReferences(model.value, references.value.length)
   )
 
   function generate() {
@@ -108,6 +120,7 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     enhance,
     direction,
     aspect,
+    aspects,
     resolution,
     takes,
     cast,

@@ -40,7 +40,8 @@ describe('priceCinematicModels', () => {
   })
 
   it('prices every Seedream 4.5 format, with and without references', () => {
-    expect(Object.keys(prices(SEEDREAM) ?? {})).toHaveLength(30)
+    // 7 frames x 2 resolutions x 0, 1 or 2 references
+    expect(Object.keys(prices(SEEDREAM) ?? {})).toHaveLength(42)
   })
 })
 

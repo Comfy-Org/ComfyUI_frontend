@@ -30,7 +30,8 @@ describe('runnableCinematicModels', () => {
         slug: SEEDREAM,
         name: 'Seedream 4.5',
         provider: 'ByteDance',
-        logo: '/icons/ai-models/bytedance.svg'
+        logo: '/icons/ai-models/bytedance.svg',
+        aspects: ['21:9', '16:9', '4:3', '3:2', '2:3', '1:1', '9:16']
       }
     ])
   })
@@ -83,6 +84,13 @@ describe('reference operations', () => {
   it('offers no reference operation for a model that would drop them', () => {
     expect(
       models.filter((model) => !model.referenceSlug).map((model) => model.slug)
-    ).toEqual(['krea--krea-2-large--generate-images'])
+    ).toEqual([
+      'krea--krea-2-large--generate-images',
+      'openai--gpt-image-2--generate-images',
+      'openai--gpt-image-2.5-flare--generate-images',
+      'openai--gpt-image-2.5-sunburst--generate-images',
+      'xai--grok-imagine-image-2.0--generate-images',
+      'recraft--v4.1-text-to-image--generate-images'
+    ])
   })
 })

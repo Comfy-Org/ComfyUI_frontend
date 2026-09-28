@@ -537,6 +537,14 @@ const copy = {
     en: 'Academy',
     'zh-CN': '学院比例'
   },
+  'cinematic.aspect.landscapePhoto': {
+    en: 'Landscape photo',
+    'zh-CN': '横向照片'
+  },
+  'cinematic.aspect.portraitPhoto': {
+    en: 'Portrait photo',
+    'zh-CN': '纵向照片'
+  },
   'cinematic.aspect.square': {
     en: 'Square',
     'zh-CN': '方形'

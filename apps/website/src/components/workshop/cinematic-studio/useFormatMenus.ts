@@ -18,10 +18,14 @@ export function useFormatMenus(
   aspect: ModelRef<AspectRatio>,
   resolution: ModelRef<Resolution>,
   takes: ModelRef<number>,
-  locale: () => Locale
+  locale: () => Locale,
+  /** The frames the chosen model can make; every frame when it returns none. */
+  aspects: () => readonly AspectRatio[] | undefined = () => undefined
 ) {
   const aspectOptions = computed(() =>
-    ASPECT_RATIOS.map((ratio) => ({
+    ASPECT_RATIOS.filter(
+      (ratio) => !aspects()?.length || aspects()?.includes(ratio.id)
+    ).map((ratio) => ({
       id: ratio.id,
       label: ratio.id,
       meta: tc(ratio.label, locale())

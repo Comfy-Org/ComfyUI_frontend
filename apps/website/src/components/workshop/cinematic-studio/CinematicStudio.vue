@@ -35,6 +35,7 @@ const {
   enhance,
   direction,
   aspect,
+  aspects,
   resolution,
   takes,
   cast,
@@ -149,6 +150,7 @@ function generateOn(slug: string) {
           v-model:cast="cast"
           v-model:palette="palette"
           :models
+          :aspects
           :direction
           :gate="studio.gate.value"
           :workspace-name="studio.session.value?.workspace.name"
