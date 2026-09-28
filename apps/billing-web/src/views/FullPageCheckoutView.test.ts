@@ -969,6 +969,9 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
     expect(form.mounts).toBe(1)
     expect(payButton()).toBeEnabled()
+    expect(
+      screen.queryByRole('link', { name: 'Contact support' })
+    ).not.toBeInTheDocument()
   })
 
   it('553-9297: a plan change on a plan set to end asks to keep it; Pay without the tick sends nothing, with it sends the consent', async () => {
@@ -1861,6 +1864,9 @@ describe('FullPageCheckoutView promo codes', () => {
     expect(screen.getByRole('button', { name: 'Add promo code' })).toBeEnabled()
     expect(screen.getAllByText('$28.00')).toHaveLength(2)
     expect(payButton()).toBeEnabled()
+    expect(
+      screen.queryByRole('link', { name: 'Contact support' })
+    ).not.toBeInTheDocument()
   })
 
   it('locks promo entry from the Pay click until the attempt resolves', async () => {

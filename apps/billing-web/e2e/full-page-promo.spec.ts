@@ -174,4 +174,5 @@ test('a code that lapses before Pay returns to capture with the expired card', a
   await expect(
     page.getByRole('button', { name: 'Pay and subscribe' })
   ).toBeEnabled()
+  await expect(page.getByRole('link', { name: 'Contact support' })).toBeHidden()
 })
