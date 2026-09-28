@@ -15,19 +15,21 @@ for (const path of PAGES) {
     page,
     context
   }) => {
-    // The Hub only draws its own toolbar and shelves once Workshop is on; with
-    // it off, /models/ shows the fallback and would hide the faces it uses.
-    await context.route('**/t.comfy.org/**', (route) =>
-      /\/(flags|decide)\//.test(route.request().url())
-        ? route.fulfill({
-            contentType: 'application/json',
-            json: {
-              featureFlags: { 'workshop-enabled': true },
-              featureFlagPayloads: {}
-            }
-          })
-        : route.abort('blockedbyclient')
-    )
+    if (path === '/models/') {
+      // The Hub only draws its own toolbar and shelves once Workshop is on;
+      // with it off, /models/ would hide the faces this case measures.
+      await context.route('**/t.comfy.org/**', (route) =>
+        /\/(flags|decide)\//.test(route.request().url())
+          ? route.fulfill({
+              contentType: 'application/json',
+              json: {
+                featureFlags: { 'workshop-enabled': true },
+                featureFlagPayloads: {}
+              }
+            })
+          : route.abort('blockedbyclient')
+      )
+    }
     await page.goto(path)
     if (path === '/models/') await page.getByTestId('workshop-hero').waitFor()
     await page.evaluate(() => document.fonts.ready)

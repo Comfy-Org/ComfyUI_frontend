@@ -1,17 +1,25 @@
 import { render, screen } from '@testing-library/vue'
-import { assert, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
 import WorkflowPage from './WorkflowPage.vue'
 
-const model = workflowDetailsBySlug.get('workflows/remove-background')
-assert(model)
+vi.mock(import('../../config/workshop-session-state'))
 
-// Who made the workflow stands over its name, and the shelf it sits on is the
-// one thing up there that leads somewhere.
+const model = workflowDetailsBySlug.get('workflows/remove-background')
+assert(model, 'the catalogue no longer carries the fixture workflow')
+const template = model.workflow.template
+assert(template, 'the fixture workflow no longer carries a template')
+
+const mount = (selected = model) =>
+  render(WorkflowPage, {
+    props: { model: selected },
+    global: { stubs: { WorkflowPlayground: true } }
+  })
+
 describe('WorkflowPage header', () => {
   it('sends the shelf it names to that shelf, filtered', () => {
-    render(WorkflowPage, { props: { model } })
+    mount()
 
     const shelf = screen.getByTestId('workflow-use-case')
     expect(shelf.textContent.trim()).toBe('Edit images')
@@ -19,29 +27,22 @@ describe('WorkflowPage header', () => {
   })
 
   it('says nothing about a shelf a workflow has none of', () => {
-    render(WorkflowPage, {
-      props: {
-        model: {
-          ...model,
-          useCases: [],
-          task: undefined,
-          modality: undefined
-        }
-      }
+    mount({
+      ...model,
+      useCases: [],
+      task: undefined,
+      modality: undefined
     })
 
     expect(screen.queryByTestId('workflow-use-case')).toBeNull()
   })
 
-  it.for([
-    { author: 'ComfyUI', authors: 1 },
-    { author: undefined, authors: 0 }
-  ] as const)('names $authors author(s)', ({ author, authors }) => {
-    render(WorkflowPage, { props: { model: { ...model, author } } })
+  it('credits the template and leaves the models to the Details tab', () => {
+    mount()
 
-    const named = screen.queryAllByTestId('workflow-author')
-    expect(named).toHaveLength(authors)
-    if (author) expect(named[0]).toHaveTextContent(author)
-    expect(screen.getByTestId('workflow-use-case')).toBeTruthy()
+    const hero = screen.getByTestId('workflow-hero')
+    expect(hero).toHaveTextContent(model.name)
+    expect(hero).toHaveTextContent(`Template by ${template.author}`)
+    for (const name of template.models) expect(hero).not.toHaveTextContent(name)
   })
 })

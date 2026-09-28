@@ -8,6 +8,8 @@ import WorkflowPreview from './WorkflowPreview.vue'
 
 const model = workflowDetailsBySlug.get('workflows/animate-reference-sheet')
 assert(model, 'the catalogue no longer carries the fixture workflow')
+const template = model.workflow.template
+assert(template, 'the fixture workflow no longer carries a template')
 
 const cloudHref = 'https://cloud.example.com/?template=animate-reference-sheet'
 
@@ -40,7 +42,7 @@ describe('WorkflowPreview', () => {
     // Panning a graph on a phone is not reading it, so the flat export the
     // page has always published is still one tap away.
     expect(screen.getByTestId('workflow-graph-full').getAttribute('href')).toBe(
-      model.workflow.template?.previewUrl
+      template.previewUrl
     )
 
     const actions = screen.getByTestId('workflow-actions')
@@ -53,8 +55,7 @@ describe('WorkflowPreview', () => {
 
     const runsOn = screen.getByTestId('workflow-runs-on')
     expect(runsOn).toHaveTextContent('Runs on')
-    for (const name of model.workflow.template?.models ?? [])
-      expect(runsOn).toHaveTextContent(name)
+    for (const name of template.models) expect(runsOn).toHaveTextContent(name)
   })
 
   // Three of the design's six facts; the other three — how often it has run,
@@ -82,9 +83,6 @@ describe('WorkflowPreview', () => {
     )
   })
 
-  // The template is optional on the type. Without one there is no graph and
-  // nothing it runs on, but where it runs and what it gives back are the
-  // workflow's own and stay.
   it('keeps the facts it owns when there is no template', () => {
     render(WorkflowPreview, {
       props: {
@@ -114,7 +112,24 @@ describe('WorkflowPreview', () => {
     expect(
       await screen.findByRole('img', { name: /nodes of this workflow/i })
     ).toBeTruthy()
-    expect(fetch).toHaveBeenCalledWith(model.workflow.template?.downloadUrl)
+    expect(fetch).toHaveBeenCalledWith(template.downloadUrl)
+  })
+
+  it('waits to download the graph until its tab first opens', async () => {
+    servingGraph(async () => Response.json(graphJson()))
+    const { rerender } = render(WorkflowPreview, {
+      props: { model, cloudHref, active: false }
+    })
+
+    expect(fetch).not.toHaveBeenCalled()
+
+    await rerender({ model, cloudHref, active: true })
+    await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+    expect(fetch).toHaveBeenCalledWith(template.downloadUrl)
+
+    await rerender({ model, cloudHref, active: false })
+    await rerender({ model, cloudHref, active: true })
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   // The flat export is what this page showed before, so it is what a graph
@@ -127,7 +142,7 @@ describe('WorkflowPreview', () => {
     await waitFor(() =>
       expect(
         screen.getByTestId('workflow-graph-flat').getAttribute('src')
-      ).toBe(model.workflow.template?.previewUrl)
+      ).toBe(template.previewUrl)
     )
   })
 })

@@ -17,6 +17,8 @@ const NOINDEX_ROUTES = [
   '/forgot-password',
   '/models/showcase',
   '/cinematic-studio',
+  '/models/apps/cinematic-studio',
+  '/models/apps/reshoot',
   '/checkout-opening',
   '/checkout-return',
   '/privacy-policy',

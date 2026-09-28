@@ -33,16 +33,14 @@ const panX = ref(0)
 const panY = ref(0)
 const dragging = ref(false)
 
-let requested = false
 const mounted = useMounted()
 watch(
   () => mounted.value && active,
   (visible) => {
-    if (!visible || requested) return
-    requested = true
+    if (!visible) return
     void load()
   },
-  { immediate: true }
+  { once: true }
 )
 
 async function load() {
@@ -105,7 +103,7 @@ const control =
 <template>
   <div
     ref="frame"
-    class="relative h-112 touch-pan-y overflow-hidden rounded-2xl bg-hub-surface select-none lg:h-128 lg:touch-none"
+    class="relative h-112 touch-pan-y overflow-hidden rounded-2xl bg-hub-surface select-none lg:h-128"
     :class="dragging ? 'cursor-grabbing' : 'cursor-grab'"
     data-testid="workflow-graph"
     @pointerdown="onPointerDown"
