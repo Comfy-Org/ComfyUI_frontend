@@ -1,4 +1,10 @@
+import { getActivePinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  markStoresPending,
+  markStoresReady
+} from '@/platform/telemetry/storeReadiness'
 
 const hoisted = vi.hoisted(() => {
   const analytics = {
@@ -13,6 +19,7 @@ const hoisted = vi.hoisted(() => {
   const resolvedUserInfo = { value: null as { id: string } | null }
   return {
     analytics,
+    reportError: vi.fn(),
     load: vi.fn(() => analytics),
     inAppPlugin: vi.fn(() => ({ name: 'Customer.io In-App Plugin' })),
     userEmail: { value: null as string | null },
@@ -39,6 +46,10 @@ const hoisted = vi.hoisted(() => {
     }
   }
 })
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: hoisted.reportError
+}))
 
 vi.mock('@customerio/cdp-analytics-browser', () => ({
   AnalyticsBrowser: { load: hoisted.load },
@@ -155,7 +166,6 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('continues tracking events and page views when the in-app plugin fails to register', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const registrationError = new Error('in-app setup failed')
     hoisted.analytics.register.mockRejectedValue(registrationError)
     const provider = createProvider()
@@ -171,10 +181,9 @@ describe('CustomerIoTelemetryProvider', () => {
       SOURCE
     )
     expect(hoisted.analytics.page).toHaveBeenCalledOnce()
-    expect(consoleError).toHaveBeenCalledWith(
-      'Failed to initialize Customer.io in-app plugin:',
-      registrationError
-    )
+    expect(hoisted.reportError).toHaveBeenCalledWith(registrationError, {
+      errorType: 'customerio_in_app_plugin_registration_failure'
+    })
 
     provider.trackAddApiCreditButtonClicked()
     await vi.waitFor(() =>
@@ -218,6 +227,26 @@ describe('CustomerIoTelemetryProvider', () => {
         { email: 'user@example.com', locale: 'en' }
       )
     )
+  })
+
+  it('defers user identification until stores are ready', async () => {
+    const pinia = getActivePinia()
+    setActivePinia(undefined)
+    markStoresPending()
+    try {
+      createProvider()
+      await vi.dynamicImportSettled()
+      await vi.waitFor(() => expect(hoisted.load).toHaveBeenCalled())
+
+      expect(hoisted.onUserResolved).not.toHaveBeenCalled()
+
+      markStoresReady()
+
+      await vi.waitFor(() => expect(hoisted.onUserResolved).toHaveBeenCalled())
+    } finally {
+      markStoresReady()
+      setActivePinia(pinia)
+    }
   })
 
   it('updates the identified user when the active locale changes', async () => {
