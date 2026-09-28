@@ -40,10 +40,9 @@ const OUTPUT_LABEL: Record<string, TranslationKey> = {
 const produces = computed(() => {
   const outputs = model.workflow.outputs ?? []
   if (!outputs.length) return undefined
-  const perRun = t('workshop.workflow.perRun').replace(
-    '{count}',
-    String(outputs.length)
-  )
+  const perRun = t('workshop.workflow.perRun', 'en', {
+    count: outputs.length
+  })
   const kinds = new Set(outputs.map((output) => output.kind))
   const only = kinds.size === 1 ? [...kinds][0] : undefined
   const label = only ? OUTPUT_LABEL[only] : undefined

@@ -1,0 +1,165 @@
+{
+  "reshoot": {
+    "title": "Re-shoot a video",
+    "prototype": "Prototype",
+    "panel": "Re-shoot settings",
+    "section": {
+      "video": "Video",
+      "camera": "New camera",
+      "move": "Camera move",
+      "prompt": "What the new view reveals",
+      "format": "Format"
+    },
+    "step": "Step {n}",
+    "step1": {
+      "label": "Prepare the clip",
+      "hint": "Choose the clip, its framing and what the new view should reveal. Depth is analyzed once; then you aim freely."
+    },
+    "step2": {
+      "label": "Aim and generate",
+      "hint": "Drag the preview or use the controls, key a move if you want one, then generate."
+    },
+    "continue": "Continue",
+    "back": "Back to the clip",
+    "edit": "Edit",
+    "credit": "Built on Cseti's CrossView-Warp LoRA and node",
+    "pick": {
+      "lead": "Aim a new camera at your clip and get the same moment from another angle.",
+      "drop": "Drop a video here",
+      "upload": "Upload a video",
+      "exampleMeta": "Try it without uploading anything",
+      "exampleTitle": "Sci-fi pilot"
+    },
+    "aim": {
+      "globe": "Drag the camera around your clip",
+      "more": "More: lens, height, keep aim",
+      "less": "Less",
+      "reading": "Reading the scene"
+    },
+    "axis": {
+      "rotation": "Rotation",
+      "tilt": "Tilt",
+      "lens": "Lens",
+      "height": "Height",
+      "azimuth": "Azimuth",
+      "elevation": "Elevation",
+      "distance": "Distance",
+      "fov": "Lens FOV",
+      "shift": "Vertical shift"
+    },
+    "view": {
+      "result": "Result",
+      "warp": "Warp guide",
+      "source": "Source"
+    },
+    "views": "Show",
+    "sound": {
+      "label": "Sound",
+      "generated": "Generated",
+      "original": "Original clip"
+    },
+    "warpNote": "The warp guide of a real run shows here: the clip pushed to the new camera, magenta where it has to be invented.",
+    "seed": "Seed",
+    "prompt": {
+      "dialogue": "The model also makes the sound: if your video has dialogue, write the lines here so the new take says them.",
+      "placeholder": "e.g. a stone wall behind her, more wheat to the left"
+    },
+    "clip": {
+      "length": "This clip is {seconds} s long. Use one between 5 and 15 seconds.",
+      "change": "Change",
+      "ready": "Scene read",
+      "yours": "Your clip",
+      "example": "Example",
+      "replace": "Choose another clip",
+      "help": "5–15 seconds, clear subject, no black bars"
+    },
+    "reuse": "Use this angle again",
+    "generate": {
+      "note": "Takes 1.5 to 5 minutes. Keep aiming while it renders.",
+      "wait": "MoGe estimates depth for every frame, about 20 to 40 seconds. The first run after a quiet spell also starts a server.",
+      "label": "Generate"
+    },
+    "expand": "Full screen",
+    "collapse": "Exit full screen",
+    "sample": {
+      "street": "Night street",
+      "diner": "Diner talk",
+      "train": "Train window",
+      "meta": "Sample"
+    },
+    "nudge": {
+      "up": "Camera higher",
+      "down": "Camera lower",
+      "left": "Camera left",
+      "right": "Camera right"
+    },
+    "advanced": {
+      "label": "Advanced",
+      "value": "Prompt, dialogue, seed"
+    },
+    "distanceHelp": "Distance is approximate; angles give the most control.",
+    "keepAimHelp": "Orbit the subject but keep looking where the original looked, as the training data does.",
+    "promptHelp": "Describe what should fill the areas the original camera never saw.",
+    "generatingHelp": "The first run after a quiet spell also loads the model.",
+    "take": {
+      "exampleHelp": "Example result: the clip re-shot from a new angle at 768p. Aim a camera of your own on the left.",
+      "aim": "Aim",
+      "example": "Example result",
+      "static": "Take {n} · az {az}° el {el}°",
+      "move": "Take {n} · move, {keys} keys",
+      "cancelled": "Cancelled"
+    },
+    "frames": "{frames} frames at 24 fps ({seconds} s)",
+    "speed": {
+      "480p": "Faster",
+      "768p": "Sharper"
+    },
+    "empty": {
+      "title": "Your re-shoot will appear here",
+      "hint": "Upload a clip on the left or try an example below."
+    },
+    "optional": "Optional",
+    "aspect": {
+      "label": "Aspect ratio",
+      "source": "Match source"
+    },
+    "size": {
+      "label": "Output size",
+      "480p": "0.4 MP · 864×480 · faster",
+      "768p": "1.0 MP · 1376×768 · sharper, slower"
+    },
+    "keepAim": "Keep the source camera's aim",
+    "zone": {
+      "green": "Inside the range the LoRA was checked on.",
+      "yellow": "Trained, but less reliable.",
+      "red": "Outside training. The hidden side will be invented."
+    },
+    "dragHint": "Drag to orbit · Scroll to move closer",
+    "needsDepth": "Analyze depth to aim a new camera.",
+    "stale": "Aspect ratio or size changed, so the depth has to be analyzed again.",
+    "move": {
+      "static": "Static",
+      "keys": "{count} keys",
+      "help": "Scrub to a frame, aim, press Key. Two or more keys make a move; the camera holds before the first and after the last.",
+      "frame": "Frame",
+      "key": "Key",
+      "remove": "Remove key at {time}",
+      "clear": "Clear keys",
+      "motion": "Motion"
+    },
+    "motion": {
+      "linear": "Linear",
+      "ease_in": "Ease in",
+      "ease_out": "Ease out",
+      "ease_in_out": "Ease in and out",
+      "smooth": "Smooth spline"
+    },
+    "analyze": "Analyze depth",
+    "analyzing": "Estimating depth…",
+    "cancel": "Cancel",
+    "generating": "Generating the new view",
+    "takes": "Takes",
+    "download": "Download",
+    "demoNote": "Design prototype: no jobs run. Takes show the example result."
+  }
+}

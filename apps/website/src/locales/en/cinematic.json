@@ -1,0 +1,210 @@
+{
+  "cinematic": {
+    "ux": {
+      "hub": "Hub · Apps tab",
+      "app": "App",
+      "heading": "Layout to review",
+      "composer": "E · Bottom composer",
+      "panel": "D · Side panel"
+    },
+    "hub": {
+      "eyebrow": "Hub",
+      "heading": "What will you make next?",
+      "subtitle": "Models, the workflows built on them, and apps made for one job.",
+      "tabs": "Show",
+      "models": "Models",
+      "workflows": "Workflows",
+      "apps": "Apps",
+      "appsIntro": "Tools built around one kind of work. Each one runs models and workflows for you.",
+      "elsewhere": "Models and workflows live in the new Hub prototype.",
+      "openHub": "Open the Hub",
+      "beta": "Beta",
+      "studioSummary": "Direct a shot with a real camera, light and grade, then run it on any image model.",
+      "studioMeta": "Image · 5 models",
+      "prototype": "Prototype",
+      "reshoot": "Re-shoot a video",
+      "reshootSummary": "Aim a new camera at your clip and generate the scene from that angle.",
+      "reshootMeta": "Video · MiniMax H3"
+    },
+    "stage": {
+      "renderingTake": "Rendering take {take}",
+      "longWait": "Still going. Some models take about a minute. Nothing is queued; yours already started.",
+      "again": "Generate again",
+      "useAsReference": "Use as reference",
+      "emptyTitle": "Your first shot appears here",
+      "emptyBody": "Write a scene, set the direction, then Generate.",
+      "label": "Shots",
+      "rendering": "Rendering…",
+      "shot": "Shot {number}",
+      "takes": "Takes",
+      "download": "Download",
+      "sequence": "Sequence",
+      "thumb": "Shot {shot}, take {take}"
+    },
+    "state": {
+      "failed": "This take failed",
+      "blocked": "Blocked by the model’s content policy",
+      "noCredits": "Not enough credits for this shot",
+      "cancelled": "You stopped this take",
+      "tryOn": "Try on {model}",
+      "editScene": "Edit scene"
+    },
+    "credits": {
+      "estimate": "~{credits} credits",
+      "perTake": "{takes} takes × ~{credits} credits",
+      "varies": "Cost varies",
+      "variesHint": "This model has no published price yet. Each take is charged what the model bills for it.",
+      "short": "{takes} takes need ~{credits} credits; you have {balance}.",
+      "shortOne": "1 take needs ~{credits} credits; you have {balance}.",
+      "reduce": "Use {takes} takes",
+      "reduceOne": "Use 1 take",
+      "skipped": "{failed} of {total} takes weren’t run: not enough credits",
+      "retrySkipped": "Run them now"
+    },
+    "output": {
+      "checking": "Checking…",
+      "takes": "Takes",
+      "fewerTakes": "Fewer takes",
+      "moreTakes": "More takes",
+      "aspect": "Aspect ratio",
+      "resolution": "Resolution",
+      "generate": "Generate",
+      "cancel": "Cancel",
+      "unavailable": "Running models is not available here yet."
+    },
+    "model": {
+      "degraded": "Slow now",
+      "heading": "Model"
+    },
+    "picker": {
+      "close": "Close"
+    },
+    "backToApps": "Back to apps",
+    "panel": {
+      "label": "Shot settings"
+    },
+    "section": {
+      "output": "Format",
+      "shot": "Shot",
+      "direction": "Direction",
+      "scene": "Scene",
+      "camera": "Camera",
+      "references": "References"
+    },
+    "scene": {
+      "placeholder": "Describe the moment. Who, where, what is happening.",
+      "enhance": "AI prompt",
+      "enhanceHint": "Adds “cinematic film still” to the prompt"
+    },
+    "reference": {
+      "optional": "Optional",
+      "cast": "Character",
+      "castAction": "Add a character reference",
+      "palette": "Palette",
+      "paletteAction": "Add a palette reference",
+      "remove": "Remove reference"
+    },
+    "title": "Cinematic Studio",
+    "beta": "Beta",
+    "meta": {
+      "description": "Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router."
+    },
+    "unavailable": {
+      "title": "Cinematic Studio is not open yet",
+      "link": "Browse models"
+    },
+    "composer": {
+      "label": "Direct the shot",
+      "references": "Add a reference image",
+      "format": "Format"
+    },
+    "firstRun": {
+      "body": "Describe the moment. Pick the camera, the light and the look. Switch models any time.",
+      "desert": "Lone rider crossing dunes at dawn",
+      "portrait": "Old fisherman on an overcast pier",
+      "train": "Night train window at blue hour"
+    },
+    "camera": {
+      "body": "Body",
+      "lens": "Lens",
+      "focal": "Focal length",
+      "aperture": "Aperture"
+    },
+    "part": {
+      "shot": "Shot",
+      "light": "Light",
+      "film": "Film",
+      "look": "Look",
+      "grade": "Grade"
+    },
+    "option": {
+      "auto": "Auto",
+      "digital": "Digital cinema",
+      "largeFormat": "Large format",
+      "super35": "Super 35",
+      "film35": "35mm film",
+      "film16": "16mm film",
+      "handheld": "Handheld",
+      "prime": "Spherical",
+      "anamorphic": "Anamorphic",
+      "vintage": "Vintage",
+      "macro": "Macro",
+      "tiltShift": "Tilt-shift",
+      "mm14": "14mm",
+      "mm24": "24mm",
+      "mm35": "35mm",
+      "mm50": "50mm",
+      "mm85": "85mm",
+      "mm135": "135mm",
+      "f14": "f/1.4",
+      "f2": "f/2",
+      "f28": "f/2.8",
+      "f4": "f/4",
+      "f8": "f/8",
+      "extremeWide": "Extreme wide",
+      "wide": "Wide",
+      "medium": "Medium",
+      "closeUp": "Close-up",
+      "extremeCloseUp": "Extreme close-up",
+      "overShoulder": "Over the shoulder",
+      "lowAngle": "Low angle",
+      "goldenHour": "Golden hour",
+      "overcast": "Overcast",
+      "blueHour": "Blue hour",
+      "practicalNight": "Practical night",
+      "neon": "Neon",
+      "lowKey": "Low key",
+      "silhouette": "Silhouette",
+      "digitalClean": "Digital clean",
+      "tungsten500": "Tungsten 500T",
+      "daylight250": "Daylight 250D",
+      "blackWhite400": "Black & white 400",
+      "reversal": "Reversal slide",
+      "expired": "Expired film",
+      "bleachBypass": "Bleach bypass",
+      "neoNoir": "Neo-noir",
+      "western": "Western",
+      "sciFi": "Science fiction",
+      "periodDrama": "Period drama",
+      "thriller": "Thriller",
+      "documentary": "Documentary",
+      "roadMovie": "Road movie",
+      "tealOrange": "Teal and orange",
+      "noir": "Noir",
+      "kodachrome": "Kodachrome",
+      "neonNight": "Neon night",
+      "desertDust": "Desert dust",
+      "nordicCold": "Nordic cold"
+    },
+    "aspect": {
+      "scope": "Scope",
+      "widescreen": "Widescreen",
+      "academy": "Academy",
+      "square": "Square",
+      "vertical": "Vertical"
+    },
+    "references": {
+      "unsupported": "{model} can't use references. Remove them or pick another model."
+    }
+  }
+}

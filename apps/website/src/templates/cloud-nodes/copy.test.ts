@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
-import { hasKey, t } from '../../i18n/translations'
+import { hasKey, t, tPlural } from '../../i18n/translations'
 
 const locales: Locale[] = ['en', 'zh-CN']
 
@@ -35,7 +35,6 @@ const staticKeys: TranslationKey[] = [
   'cloudNodesLaunch.models.subtitle',
   'cloudNodesLaunch.models.footnote',
   'cloudNodesLaunch.models.footnoteLink',
-  'cloudNodesLaunch.models.nodeCount',
   'cloudNodesLaunch.howItWorks.heading',
   'cloudNodesLaunch.howItWorks.subheading',
   'cloudNodesLaunch.why.heading',
@@ -47,17 +46,24 @@ const staticKeys: TranslationKey[] = [
   'breadcrumb.cloudNodes'
 ]
 
+const pluralKey: TranslationKey = 'cloudNodesLaunch.models.nodeCount'
+
 const allKeys: string[] = [...staticKeys, ...dynamicKeys]
 
 describe('cloud-nodes copy', () => {
   it('defines every key the page renders', () => {
-    const missing = allKeys.filter((key) => !hasKey(key))
+    const missing = [...allKeys, pluralKey].filter((key) => !hasKey(key))
     expect(missing).toEqual([])
   })
 
   it.for(locales)('has non-empty copy in %s', (locale) => {
-    for (const key of allKeys) {
-      expect(t(key as TranslationKey, locale).trim()).not.toBe('')
-    }
+    const empty = allKeys.filter(
+      (key) => t(key as TranslationKey, locale).trim() === ''
+    )
+    expect(empty).toEqual([])
+  })
+
+  it.for(locales)('has non-empty plural copy in %s', (locale) => {
+    expect(tPlural(pluralKey, 2, locale).trim()).not.toBe('')
   })
 })

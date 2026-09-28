@@ -35,8 +35,10 @@ file wins. These root rules do not apply here:
 - Copy lives in `apps/website/src/locales/<locale>/main.json` (nested JSON in
   vue-i18n message syntax), not in the app's root `src/locales/`. Read it with
   `t(key, locale, { name })` from `src/i18n/translations.ts`; never fill a
-  placeholder with `.replace`. Write a literal `@` or `|` as `{'@'}` or `{'|'}`.
-  Add `en` and `zh-CN` values for every new string.
+  placeholder with `.replace`. Write a literal `@`, `|`, `{` or `}` as `{'@'}`,
+  `{'|'}`, `{'{'}` or `{'}'}`. Add `en` and `zh-CN` values for every new string.
+  The Cinematic Studio, its re-shoot app and the Router page keep their copy in
+  their own catalogs beside `main.json`; see the README's Localization section.
 - The dev server is `pnpm --filter @comfyorg/website dev` on
   `http://localhost:4321`, not `pnpm dev` on 5173. The root
   `/verify-visually` command points at the wrong server for this site.
