@@ -1,6 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { AppMode } from '@/utils/appMode'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -209,21 +208,6 @@ export class AppModeHelper {
     }, inputs)
     await this.comfyPage.nextFrame()
     await this.toggleAppMode()
-  }
-
-  /** The active workflow's resolved app mode, as getWorkflowMode computes it. */
-  async getViewMode(): Promise<AppMode> {
-    return this.page.evaluate(() => {
-      const workflow = window.app!.extensionManager.workflow.activeWorkflow
-      return workflow?.activeMode ?? workflow?.initialMode ?? 'graph'
-    })
-  }
-
-  /** Filename of the active workflow, for confirming a load landed. */
-  async getActiveWorkflowName(): Promise<string> {
-    return this.page.evaluate(
-      () => window.app!.extensionManager.workflow.activeWorkflow?.filename ?? ''
-    )
   }
 
   /**

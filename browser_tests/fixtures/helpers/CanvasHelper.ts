@@ -186,23 +186,6 @@ export class CanvasHelper {
     return this.page.evaluate(() => window.app!.canvasEl.width)
   }
 
-  /** Camera state and the root-graph node count. */
-  async getFraming(): Promise<{
-    scale: number
-    offset: number[]
-    nodeCount: number
-  }> {
-    return this.page.evaluate(() => {
-      const app = window.app!
-      const { ds } = app.canvas
-      return {
-        scale: ds.scale,
-        offset: [...ds.offset],
-        nodeCount: app.rootGraph.nodes.length
-      }
-    })
-  }
-
   async waitForViewToSettle(): Promise<void> {
     await this.page.waitForFunction(
       () =>
