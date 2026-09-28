@@ -977,6 +977,23 @@ describe('CinematicStudio', () => {
     ).toHaveAttribute('href', '/models?type=apps')
   })
 
+  it('tucks camera, direction and references under Advanced settings, closed at first', async () => {
+    render(CinematicStudioPage, { props: { models } })
+
+    const advanced = await screen.findByTestId('cinematic-advanced')
+    expect(advanced).not.toHaveAttribute('open')
+    expect(
+      within(advanced).getByRole('heading', { name: 'Camera' })
+    ).toBeInTheDocument()
+    expect(
+      within(advanced).getByRole('heading', { name: 'Direction' })
+    ).toBeInTheDocument()
+    expect(
+      within(advanced).getByRole('heading', { name: 'References' })
+    ).toBeInTheDocument()
+    expect(within(advanced).queryByLabelText('Scene')).toBeNull()
+  })
+
   describe('layout switch', () => {
     const panel = () =>
       screen.queryByRole('complementary', { name: 'Shot settings' })

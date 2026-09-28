@@ -111,8 +111,8 @@ const cardClass =
     >
       {{ t('workshop.input.title', locale) }}
     </header>
-    <div class="flex flex-col divide-y divide-transparency-white-t8">
-      <section class="flex flex-col gap-2.5 p-5">
+    <div class="flex flex-col gap-6 p-5">
+      <section class="flex flex-col gap-2.5">
         <h2 :class="labelClass">
           {{ tc('cinematic.model.heading', locale) }}
         </h2>
@@ -146,86 +146,7 @@ const cardClass =
         :prompt-segments="promptSegments"
         :locale
       />
-
-      <section class="flex flex-col gap-2.5 p-5">
-        <h2 :class="labelClass">
-          {{ tc('cinematic.section.camera', locale) }}
-        </h2>
-        <button
-          type="button"
-          :aria-expanded="openPicker === 'camera'"
-          aria-haspopup="dialog"
-          :class="
-            cn(
-              cardClass,
-              openPicker === 'camera' && 'border-primary-warm-white'
-            )
-          "
-          @click="emit('open', 'camera')"
-        >
-          <span
-            class="grid size-10 shrink-0 place-items-center rounded-xl bg-transparency-white-t8 text-primary-warm-white"
-          >
-            <CinematicOptionIcon
-              part="body"
-              :option="direction.body"
-              class="h-6 w-9"
-            />
-          </span>
-          <span
-            class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1"
-          >
-            <span
-              class="text-sm font-semibold whitespace-nowrap text-primary-warm-white"
-            >
-              {{ tc(cameraBody.label, locale) }}
-            </span>
-            <span
-              class="flex flex-wrap gap-1 text-[11px] text-primary-comfy-canvas"
-            >
-              <span
-                v-for="spec in cameraSpecs"
-                :key="spec.id"
-                class="rounded-md bg-transparency-white-t8 px-1.5 py-0.5"
-              >
-                {{ tc(spec.label, locale) }}
-              </span>
-            </span>
-          </span>
-          <ChevronRight
-            class="size-4 text-primary-warm-gray"
-            aria-hidden="true"
-          />
-        </button>
-      </section>
-
-      <section class="flex flex-col gap-2.5 p-5">
-        <h2 :class="labelClass">
-          {{ tc('cinematic.section.direction', locale) }}
-        </h2>
-        <CinematicDirectionGrid
-          :direction
-          :open-picker="openPicker"
-          :locale
-          @open="emit('open', $event)"
-        />
-      </section>
-
-      <section class="flex flex-col gap-2.5 p-5">
-        <div class="flex items-center justify-between">
-          <h2 :class="labelClass">
-            {{ tc('cinematic.section.references', locale) }}
-          </h2>
-          <span class="text-[11px] text-primary-warm-gray">
-            {{ tc('cinematic.reference.optional', locale) }}
-          </span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
-          <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
-        </div>
-      </section>
-      <section class="flex flex-col gap-2.5 p-5">
+      <section class="flex flex-col gap-2.5">
         <h2 :class="labelClass">
           {{ tc('cinematic.section.output', locale) }}
         </h2>
@@ -236,10 +157,106 @@ const cardClass =
           :locale
         />
       </section>
+      <details
+        class="group rounded-2xl border border-transparency-white-t8"
+        data-testid="cinematic-advanced"
+      >
+        <summary
+          class="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase select-none hover:text-primary-warm-white [&::-webkit-details-marker]:hidden"
+        >
+          {{ t('workshop.form.advanced', locale) }}
+          <ChevronDown
+            class="size-4 transition-transform group-open:rotate-180"
+            aria-hidden="true"
+          />
+        </summary>
+        <div class="flex flex-col gap-6 px-4 pb-4">
+          <section class="flex flex-col gap-2.5">
+            <h2 :class="labelClass">
+              {{ tc('cinematic.section.camera', locale) }}
+            </h2>
+            <button
+              type="button"
+              :aria-expanded="openPicker === 'camera'"
+              aria-haspopup="dialog"
+              :class="
+                cn(
+                  cardClass,
+                  openPicker === 'camera' && 'border-primary-warm-white'
+                )
+              "
+              @click="emit('open', 'camera')"
+            >
+              <span
+                class="grid size-10 shrink-0 place-items-center rounded-xl bg-transparency-white-t8 text-primary-warm-white"
+              >
+                <CinematicOptionIcon
+                  part="body"
+                  :option="direction.body"
+                  class="h-6 w-9"
+                />
+              </span>
+              <span
+                class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1"
+              >
+                <span
+                  class="text-sm font-semibold whitespace-nowrap text-primary-warm-white"
+                >
+                  {{ tc(cameraBody.label, locale) }}
+                </span>
+                <span
+                  class="flex flex-wrap gap-1 text-[11px] text-primary-comfy-canvas"
+                >
+                  <span
+                    v-for="spec in cameraSpecs"
+                    :key="spec.id"
+                    class="rounded-md bg-transparency-white-t8 px-1.5 py-0.5"
+                  >
+                    {{ tc(spec.label, locale) }}
+                  </span>
+                </span>
+              </span>
+              <ChevronRight
+                class="size-4 text-primary-warm-gray"
+                aria-hidden="true"
+              />
+            </button>
+          </section>
+          <section class="flex flex-col gap-2.5">
+            <h2 :class="labelClass">
+              {{ tc('cinematic.section.direction', locale) }}
+            </h2>
+            <CinematicDirectionGrid
+              :direction
+              :open-picker="openPicker"
+              :locale
+              @open="emit('open', $event)"
+            />
+          </section>
+          <section class="flex flex-col gap-2.5">
+            <div class="flex items-center justify-between">
+              <h2 :class="labelClass">
+                {{ tc('cinematic.section.references', locale) }}
+              </h2>
+              <span class="text-[11px] text-primary-warm-gray">
+                {{ tc('cinematic.reference.optional', locale) }}
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
+              <CinematicReferenceSlot
+                v-model="palette"
+                kind="palette"
+                :locale
+              />
+            </div>
+          </section>
+        </div>
+      </details>
     </div>
 
     <footer
-      class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2.5 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
+      class="mt-auto flex flex-col gap-2.5 rounded-b-2xl border-t border-transparency-white-t8 p-3"
     >
       <CinematicGenerateAction
         :gate

@@ -27,7 +27,7 @@ const segmentClass: Record<PromptSegment['source'], string> = {
 </script>
 
 <template>
-  <section class="flex flex-col gap-2.5 p-5">
+  <section class="flex flex-col gap-2.5">
     <div class="flex items-center justify-between">
       <label for="cinematic-scene" :class="labelClass">
         {{ tc('cinematic.section.scene', locale) }}
