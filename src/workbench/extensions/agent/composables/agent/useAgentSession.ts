@@ -971,11 +971,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     generation: number,
     signal: AbortSignal
   ): Promise<void> {
+    let consecutiveThreadMissing = 0
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
       if (!isTurnLive(turn, generation)) return
       const outcome = await fetchTurnOutcome(turn, signal)
       if (!isTurnLive(turn, generation)) return
+      consecutiveThreadMissing =
+        outcome.kind === 'thread-missing' ? consecutiveThreadMissing + 1 : 0
+      if (outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2)
+        continue
       if (settleFinishedTurn(turn, outcome)) return
     }
   }

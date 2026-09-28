@@ -1485,6 +1485,7 @@ describe('useAgentSession (v1 composition root)', () => {
     status(true)
 
     await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    expect(rest.getMessages).toHaveBeenCalledTimes(2)
     expect(session.entries.value).toEqual([])
     expect(session.notices.value).toEqual([])
   })
@@ -1556,6 +1557,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     status(false)
     status(true)
+    await vi.advanceTimersByTimeAsync(1000)
 
     await vi.waitFor(() =>
       expect(
@@ -1724,10 +1726,7 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(g22) a settlement failure after the fetch is reported, not floated as an unhandled rejection', async () => {
-    const storageFailure = new Error('localStorage is unavailable')
-    vi.spyOn(localStorage, 'removeItem').mockImplementation((key: string) => {
-      if (key === StorageKeys.agentThread('personal')) throw storageFailure
-    })
+    const storageFailure = new Error('conversation reset failed')
     const rest = fakeRest({
       getMessages: vi.fn(async (): Promise<AgentMessages> => {
         throw new AgentApiError('gone', 404, undefined)
@@ -1735,6 +1734,10 @@ describe('useAgentSession (v1 composition root)', () => {
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
+    const conversationStore = useAgentConversationStore()
+    vi.spyOn(conversationStore, 'reset').mockImplementationOnce(() => {
+      throw storageFailure
+    })
     session.start()
     status(true)
 
@@ -1744,13 +1747,15 @@ describe('useAgentSession (v1 composition root)', () => {
     status(false)
     status(true)
 
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(1))
+    await vi.advanceTimersByTimeAsync(1000)
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(2))
     await vi.waitFor(() =>
       expect(reportError).toHaveBeenCalledWith(storageFailure, {
         errorType: 'failure_recovering_agent_turn'
       })
     )
-    expect(useAgentConversationStore().liveTurns()).toEqual([])
-    expect(session.threadId.value).toBe(null)
+    expect(conversationStore.liveTurns()).toHaveLength(1)
   })
 
   it('(h) attachments pass through to the postMessage wire body', async () => {
