@@ -41,7 +41,7 @@ const apps = computed<readonly HubApp[]>(() => [
     badge: 'cinematic.hub.beta',
     meta: 'cinematic.hub.studioMeta',
     image: '/images/cinematic-studio/neon-street.jpg',
-    href: `${getRoutes(locale).cinematicStudio}?ux=e`
+    href: getRoutes(locale).cinematicStudio
   },
   {
     key: 'reshoot',

@@ -398,13 +398,13 @@ describe('CinematicStudio', () => {
   it.for([
     {
       layout: 'the stage',
-      ux: '',
+      ux: '?ux=e',
       inFormat: true,
       settlement: 'pending' as const
     },
     {
       layout: 'the stage',
-      ux: '',
+      ux: '?ux=e',
       inFormat: true,
       settlement: 'terminal' as const
     },
@@ -981,20 +981,24 @@ describe('CinematicStudio', () => {
     const panel = () =>
       screen.queryByRole('complementary', { name: 'Shot settings' })
 
-    it('swaps to the side panel layout and remembers it in the address', async () => {
+    it('opens on the side panel and swaps to the bottom composer, remembering it in the address', async () => {
       render(CinematicStudioPage, { props: { models } })
       const user = userEvent.setup()
-      expect(panel()).toBeNull()
+      expect(
+        await screen.findByRole('complementary', { name: 'Shot settings' })
+      ).toBeInTheDocument()
 
       await user.click(
         await screen.findByRole('button', { name: /^Layout to review/ })
       )
       await user.click(
-        await screen.findByRole('menuitemradio', { name: /D · Side panel/ })
+        await screen.findByRole('menuitemradio', {
+          name: /E · Bottom composer/
+        })
       )
 
-      expect(panel()).toBeInTheDocument()
-      expect(window.location.search).toBe('?ux=d')
+      expect(panel()).toBeNull()
+      expect(window.location.search).toBe('?ux=e')
     })
 
     it('asks before a layout switch would cancel a take still rendering', async () => {
@@ -1014,20 +1018,28 @@ describe('CinematicStudio', () => {
         await screen.findByRole('button', { name: /^Layout to review/ })
       )
       await user.click(
-        await screen.findByRole('menuitemradio', { name: /D · Side panel/ })
+        await screen.findByRole('menuitemradio', {
+          name: /E · Bottom composer/
+        })
       )
       const dialog = await screen.findByRole('dialog', {
         name: t('workshop.run.leaveTitle')
       })
 
-      expect(panel()).toBeNull()
+      expect(
+        screen.getByRole('complementary', {
+          name: 'Shot settings',
+          hidden: true
+        }),
+        'The layout stays put while the dialog asks'
+      ).toBeInTheDocument()
       expect(signals[0].aborted).toBe(false)
       await user.click(
         within(dialog).getByRole('button', {
           name: t('workshop.run.leaveAnyway')
         })
       )
-      expect(panel()).toBeInTheDocument()
+      expect(panel()).toBeNull()
       expect(signals[0].aborted).toBe(true)
     })
 
@@ -1061,7 +1073,7 @@ describe('CinematicStudio', () => {
       const [firstApp, secondApp] = apps
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
-      ).toHaveAttribute('href', '/cinematic-studio?ux=e')
+      ).toHaveAttribute('href', '/cinematic-studio')
       expect(
         within(secondApp).getByRole('link', { name: 'Re-shoot a video' })
       ).toHaveAttribute('href', expect.stringContaining('crossview_warp_h3'))

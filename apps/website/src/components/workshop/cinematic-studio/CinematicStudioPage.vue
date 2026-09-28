@@ -38,7 +38,7 @@ const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const studioEnabled = computed(
   () => appsEnabled.value || workflowsEnabled.value
 )
-const layout = ref('e')
+const layout = ref('d')
 const app = ref('studio')
 const layoutOptions = computed(() =>
   LAYOUTS.map((option) => ({ id: option.id, label: tc(option.label, locale) }))
@@ -91,7 +91,7 @@ function pickApp(id: string) {
   guarded(() => {
     app.value = id
     remember('app', id)
-    if (layout.value === 'hub') setLayout('e')
+    if (layout.value === 'hub') setLayout('d')
   })
 }
 </script>
