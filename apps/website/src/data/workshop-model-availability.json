@@ -86,5 +86,9 @@
   "wan--happyhorse-image-to-video--animate-images": {
     "disabled": true,
     "reason": "Production image-to-video runs repeatedly returned provider errors; disable while the route is investigated."
+  },
+  "workflows/product-photo-to-video": {
+    "disabled": true,
+    "reason": "Cloud loses the worker after about 700 s on every run (\"RIP to the server your workflow was running on\"), 3 of 3 on 2026-09-28; the graph needs a lighter stitch before it can be re-enabled."
   }
 }

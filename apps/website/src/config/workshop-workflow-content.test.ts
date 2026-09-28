@@ -21,6 +21,7 @@ import {
 } from './workshop-workflow-content'
 import { prepareWorkflowRender } from './workflow-render'
 import { workflowCloudRequest } from './workshop-workflow-api'
+import { isWorkshopModelDisabled } from './workshop-model-availability'
 
 const pages = workshopDisplayEntriesSchema.parse(displayJson)
 const source = pages.find((page) => page.slug === 'workflows/change-material')
@@ -105,17 +106,17 @@ describe('curated workflow pages', () => {
     }
   )
 
-  it('publishes six outcomes in each launch category', () => {
+  it('publishes every enabled outcome in its launch category', () => {
     expect(
       Object.groupBy(workflows, (workflow) => workflow.category ?? '')
     ).toMatchObject({
       videos: { length: 6 },
       characters: { length: 6 },
-      product: { length: 6 },
+      product: { length: 5 },
       upscale: { length: 6 },
       cleanup: { length: 6 }
     })
-    expect(workflows).toHaveLength(30)
+    expect(workflows).toHaveLength(29)
   })
 
   it.for(categories)('highlights one published workflow in $id', (category) => {
@@ -231,6 +232,7 @@ describe('curated workflow pages', () => {
     ).toEqual(
       workflowCatalog
         .map((entry) => entry.id)
+        .filter((id) => !isWorkshopModelDisabled(id))
         .sort((a, b) => a.localeCompare(b))
     )
     expect(getWorkshopPageDetail('workflows/not-published')).toBeUndefined()
