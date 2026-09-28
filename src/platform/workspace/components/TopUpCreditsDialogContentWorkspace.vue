@@ -297,7 +297,10 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
-import type { CheckoutJourneyPhaseEvent } from '@/platform/telemetry/types'
+import type {
+  CheckoutJourneyPhaseEvent,
+  PaymentIntentSource
+} from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -312,6 +315,7 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
+  resolveEntrySource,
   toCheckoutJourneyContext
 } from '@/platform/workspace/utils/checkoutJourney'
 import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
@@ -320,8 +324,9 @@ import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { isInsufficientCredits = false } = defineProps<{
+const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
+  source?: PaymentIntentSource
 }>()
 
 const { n, t } = useI18n()
@@ -353,11 +358,13 @@ function enterTopupJourney(): void {
   const ownerUid = useAuthStore().userId
   if (!workspaceId || !ownerUid) return
 
+  const entrySource = resolveEntrySource(source, 'settings_billing')
   const resolved = resolveCheckoutJourney({
     actorUid: ownerUid,
     workspaceId,
     entryFlow: 'topup',
-    entrySource: 'settings_billing',
+    entrySource,
+    intent: entrySource,
     assignment: resolveCheckoutAssignment(api.getServerFeatures())
   })
   if (resolved.status === 'blocked' || resolved.resumed) return

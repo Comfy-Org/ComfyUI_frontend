@@ -67,7 +67,12 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   useColorPaletteStore: vi.fn(() => ({
-    completedActivePalette: { light_theme: false }
+    completedActivePalette: {
+      light_theme: false,
+      colors: {
+        litegraph_base: { NODE_SELECTED_TITLE_COLOR: '#fff' }
+      }
+    }
   }))
 }))
 

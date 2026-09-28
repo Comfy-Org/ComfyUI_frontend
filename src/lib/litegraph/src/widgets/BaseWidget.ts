@@ -157,6 +157,11 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.disabled = value ?? false
   }
 
+  syncLiveDisabled(): void {
+    if (Object.getOwnPropertyDescriptor(this, 'disabled')?.get)
+      this._state.disabled = this.disabled ?? false
+  }
+
   element?: HTMLElement
   callback?(
     value: TWidget['value'],

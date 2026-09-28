@@ -22,6 +22,7 @@ import type {
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
 
@@ -52,6 +53,20 @@ const HUG_CONTENT_CLASS =
  * shrink-wrap it around the content.
  */
 const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
+
+// A type alias, not an interface: `showDialog`'s props are index-signature
+// typed, and only object literal types get an implicit index signature.
+type TopUpCreditsDialogOptions = {
+  isInsufficientCredits?: boolean
+  source?: PaymentIntentSource
+}
+
+function topUpFallbackReason(
+  options?: TopUpCreditsDialogOptions
+): PaymentIntentSource {
+  if (options?.isInsufficientCredits) return 'out_of_credits'
+  return options?.source ?? 'top_up_blocked'
+}
 
 export type ConfirmationDialogType =
   | 'default'
@@ -340,9 +355,7 @@ export const useDialogService = () => {
     })
   }
 
-  async function showTopUpCreditsDialog(options?: {
-    isInsufficientCredits?: boolean
-  }) {
+  async function showTopUpCreditsDialog(options?: TopUpCreditsDialogOptions) {
     const { type } = useBillingContext()
     const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
       useBillingCapabilities()
@@ -352,9 +365,8 @@ export const useDialogService = () => {
     if (!isReady.value) return
     if (!canTopUp.value && canSubscribeSelfServe.value) {
       await showSubscriptionRequiredDialog({
-        reason: options?.isInsufficientCredits
-          ? 'out_of_credits'
-          : 'top_up_blocked'
+        reason: topUpFallbackReason(options),
+        paymentIntentSource: options?.source
       })
       return
     }
@@ -377,15 +389,20 @@ export const useDialogService = () => {
     }
     if (!canTopUp.value) return
 
-    const component =
-      type.value === 'workspace'
-        ? TopUpCreditsDialogContentWorkspace
-        : TopUpCreditsDialogContentLegacy
+    // Only the workspace rail's content declares `source`; the legacy one
+    // takes `isInsufficientCredits` alone, so forwarding the whole options
+    // object there lands `source` in attrs as a stray DOM attribute on its
+    // root rather than as attribution.
+    const isWorkspaceRail = type.value === 'workspace'
 
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component,
-      props: options,
+      component: isWorkspaceRail
+        ? TopUpCreditsDialogContentWorkspace
+        : TopUpCreditsDialogContentLegacy,
+      props: isWorkspaceRail
+        ? options
+        : { isInsufficientCredits: options?.isInsufficientCredits },
       dialogComponentProps: {
         renderer: 'reka',
         headless: true,
@@ -483,7 +500,35 @@ export const useDialogService = () => {
   async function showSubscriptionRequiredDialog(
     options?: SubscriptionDialogOptions
   ) {
-    if (!isCloud || !window.__CONFIG__?.subscription_required) {
+    if (!isCloud) return
+
+    // A caller (e.g. the agent panel's paywall card) can fire this before the
+    // bootstrap /features fetch resolves, most likely right after a fresh
+    // load. window.__CONFIG__ is then still empty and the flag check below
+    // would silently swallow the click. Await one fresh fetch before
+    // deciding, rather than trusting a config snapshot that was never taken.
+    if (!window.__CONFIG__?.subscription_required) {
+      const { remoteConfigState } =
+        await import('@/platform/remoteConfig/remoteConfig')
+      if (remoteConfigState.value === 'unloaded') {
+        const { refreshRemoteConfig } =
+          await import('@/platform/remoteConfig/refreshRemoteConfig')
+        await refreshRemoteConfig()
+      }
+    }
+
+    if (!window.__CONFIG__?.subscription_required) {
+      // This gate closing is never expected to be reachable from a cloud
+      // surface with subscriptions enabled. Report it instead of returning
+      // silently, so a caller's "Subscribe" button failing to do anything
+      // shows up in telemetry rather than only in a user's bug report.
+      const { reportError } = await import('@/platform/telemetry/reportError')
+      reportError(
+        new Error(
+          'showSubscriptionRequiredDialog: subscription_required gate closed'
+        ),
+        { errorType: 'error_opening_subscription_dialog_gate_closed' }
+      )
       return
     }
 

@@ -33,33 +33,46 @@ export default function lintStaged(stagedFiles: string[]) {
 }
 
 function lintCommands(codeFiles: string[], styleFiles: string[]) {
-  if (new Set([...codeFiles, ...styleFiles]).size > 10) {
-    return ['pnpm lint']
-  }
-
   return [
-    ...commandsWithFiles(styleFiles, 'pnpm exec stylelint --allow-empty-input'),
+    ...commandsWithFiles(
+      styleFiles,
+      'pnpm exec stylelint --cache --cache-strategy content --allow-empty-input'
+    ),
     ...commandsWithFiles(
       codeFiles,
-      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix',
-      'pnpm exec eslint --cache --fix --no-warn-ignored'
+      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix'
+    ),
+    ...commandsWithFiles(
+      codeFiles,
+      'pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored'
     )
   ]
 }
 
+const standaloneTypecheckScripts = {
+  'browser_tests/': 'typecheck:browser',
+  'scripts/': 'typecheck:scripts',
+  'tools/': 'typecheck:tools',
+  'apps/website/': 'typecheck:website'
+}
+
 function typecheckCommands(fileNames: string[]) {
-  if (fileNames.length === 0) {
-    return []
-  }
+  const isStandalone = (fileName: string) =>
+    Object.keys(standaloneTypecheckScripts).some((directory) =>
+      fileName.startsWith(directory)
+    )
+
+  const projectScripts = Object.entries(standaloneTypecheckScripts)
+    .filter(([directory]) =>
+      fileNames.some((fileName) => fileName.startsWith(directory))
+    )
+    .map(([, script]) => `pnpm ${script}`)
 
   return [
-    'pnpm typecheck',
-    ...(fileNames.some((fileName) => fileName.startsWith('browser_tests/'))
-      ? ['pnpm typecheck:browser']
+    ...(fileNames.some((fileName) => !isStandalone(fileName))
+      ? ['pnpm typecheck:app']
       : []),
-    ...(fileNames.some((fileName) => fileName.startsWith('apps/website/'))
-      ? ['pnpm typecheck:website']
-      : [])
+    ...projectScripts
   ]
 }
 

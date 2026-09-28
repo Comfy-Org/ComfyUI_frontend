@@ -61,6 +61,43 @@ describe('useAccountPreconditionDialog', () => {
     ).not.toHaveBeenCalled()
   })
 
+  it('attributes a subscription precondition to subscription_required when no source is named', () => {
+    useAccountPreconditionDialog().open('subscription')
+
+    expect(
+      mockDialogService.showSubscriptionRequiredDialog
+    ).toHaveBeenCalledWith({ reason: 'subscription_required' })
+  })
+
+  it('omits a source from the top-up dialog when none is named', () => {
+    useAccountPreconditionDialog().open('credits')
+
+    expect(mockDialogService.showTopUpCreditsDialog).toHaveBeenCalledWith({
+      isInsufficientCredits: true
+    })
+  })
+
+  it('attributes a subscription precondition to the source that triggered it', () => {
+    useAccountPreconditionDialog().open('subscription', {
+      source: 'agent_paywall'
+    })
+
+    expect(
+      mockDialogService.showSubscriptionRequiredDialog
+    ).toHaveBeenCalledWith({ reason: 'agent_paywall' })
+  })
+
+  it('carries the triggering source into the top-up dialog', () => {
+    useAccountPreconditionDialog().open('credits', {
+      source: 'agent_paywall'
+    })
+
+    expect(mockDialogService.showTopUpCreditsDialog).toHaveBeenCalledWith({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+  })
+
   it('refreshes the billing snapshot on a credit precondition so exhausted-state surfaces converge', () => {
     useAccountPreconditionDialog().open('credits')
 

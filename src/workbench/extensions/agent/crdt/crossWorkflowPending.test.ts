@@ -137,11 +137,11 @@ function deleteNode(nodeId: string): GraphOperation {
 function mountFollower(initial: string): {
   unmount: () => void
   workflowId: Ref<string | null>
-  enqueue: (operations: GraphOperation[]) => void
+  enqueue: (operations: GraphOperation[]) => Promise<void>
   status: () => AgentCrdtStatus
 } {
   const workflowId = ref<string | null>(initial)
-  let enqueue!: (operations: GraphOperation[]) => void
+  let enqueue!: (operations: GraphOperation[]) => Promise<void>
   let exposedStatus!: () => AgentCrdtStatus
   const host = defineComponent({
     setup() {
@@ -149,7 +149,10 @@ function mountFollower(initial: string): {
         workflowId,
         graphMutations
       )
-      enqueue = enqueueHumanOperations
+      enqueue = async (operations) => {
+        enqueueHumanOperations(operations)
+        await Promise.resolve()
+      }
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
     }
@@ -188,23 +191,23 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     vi.useFakeTimers()
   })
 
-  it('cancels pending sends and rejects new operations while the product gate is off', () => {
+  it('cancels pending sends and rejects new operations while the product gate is off', async () => {
     const store = useAgentPanelStore()
     const { enqueue, status } = mountFollower('wf-a')
     clientState.transportUp = false
-    enqueue([deleteNode('queued-before-revocation')])
+    await enqueue([deleteNode('queued-before-revocation')])
     expect(clientState.attempts).toHaveLength(1)
 
     store.enabled = false
     clientState.transportUp = true
-    enqueue([deleteNode('attempted-while-disabled')])
+    await enqueue([deleteNode('attempted-while-disabled')])
     vi.advanceTimersByTime(60_000)
     expect(status().enabled).toBe(false)
     expect(clientState.attempts).toHaveLength(1)
     expect(clientState.sent).toHaveLength(0)
 
     store.enabled = true
-    enqueue([deleteNode('new-lifetime')])
+    await enqueue([deleteNode('new-lifetime')])
     expect(clientState.sent).toHaveLength(1)
     expect(clientState.sent[0].ops).toMatchObject([
       { op: 'delete_node', node_id: 'new-lifetime' }
@@ -216,7 +219,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     bridgeState.transport.up = false
     clientState.transportUp = false
 
-    enqueue([deleteNode('a-queued')])
+    await enqueue([deleteNode('a-queued')])
     expect(clientState.sent).toHaveLength(0)
     expect(clientState.attempts).toHaveLength(1)
     const operationId = clientState.attempts[0].ops[0].op_id
@@ -243,7 +246,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     const { workflowId, enqueue, status } = mountFollower('wf-a')
 
     bridge().lastSequence = 41
-    enqueue([deleteNode('a-inflight')])
+    await enqueue([deleteNode('a-inflight')])
     expect(clientState.sent[0].ops[0]).toMatchObject({ base_version: 41 })
     const operationAId = clientState.sent[0].ops[0].op_id
     await switchWorkflow(workflowId, 'wf-b')
@@ -259,7 +262,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
         ops: [expect.objectContaining({ op_id: operationAId })]
       }
     )
-    enqueue([deleteNode('b-pending')])
+    await enqueue([deleteNode('b-pending')])
     expect(clientState.sent).toHaveLength(2)
     expect(clientState.sent[1]).toMatchObject({ workflowId: 'wf-b' })
     expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 0 })
@@ -305,11 +308,11 @@ describe('R-73 cross-workflow pending operation characterization', () => {
   it('does not settle workflow B from an anonymous workflow A result', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
-    enqueue([deleteNode('a-inflight')])
+    await enqueue([deleteNode('a-inflight')])
     const operationAId = clientState.sent[0].ops[0].op_id
     // The switch settles A unconfirmed (settlement 0) and B goes out at once.
     await switchWorkflow(workflowId, 'wf-b')
-    enqueue([deleteNode('b-pending')])
+    await enqueue([deleteNode('b-pending')])
     const operationBId = clientState.sent[1].ops[0].op_id
 
     // A's identified late result is ignored: its op_id is not in B's batch.
@@ -378,7 +381,7 @@ describe('abortIfUnbound settles delivered ops as undeliverable', () => {
   it('a batch the transport already accepted is never later reported undeliverable, even across a workflow retarget', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
-    enqueue([deleteNode('a-inflight')])
+    await enqueue([deleteNode('a-inflight')])
     // The transport accepted the batch: sendOps() returned true and it is
     // recorded as sent, not merely attempted.
     expect(clientState.sent).toHaveLength(1)

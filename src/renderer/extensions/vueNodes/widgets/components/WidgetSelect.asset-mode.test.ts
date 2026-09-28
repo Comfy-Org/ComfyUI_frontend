@@ -18,13 +18,15 @@ const flushPromises = () =>
 
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    shouldUseAssetBrowser: vi.fn(() => true),
-    isAssetAPIEnabled: vi.fn(() => true)
+    shouldUseWidgetAssetPicker: vi.fn(() => true),
+    isWidgetAssetPickerEnabled: vi.fn(() => true)
   }
 }))
 
 import { assetService } from '@/platform/assets/services/assetService'
-const mockShouldUseAssetBrowser = vi.mocked(assetService.shouldUseAssetBrowser)
+const mockShouldUseWidgetAssetPicker = vi.mocked(
+  assetService.shouldUseWidgetAssetPicker
+)
 
 const stubs = {
   WidgetSelectDropdown: {
@@ -48,7 +50,7 @@ describe('WidgetSelect asset mode', () => {
     })
 
   beforeEach(() => {
-    mockShouldUseAssetBrowser.mockReturnValue(true)
+    mockShouldUseWidgetAssetPicker.mockReturnValue(true)
   })
 
   const renderWidget = () => {
@@ -65,15 +67,15 @@ describe('WidgetSelect asset mode', () => {
     })
   }
 
-  it('uses dropdown when isCloud && UseAssetAPI && isEligible', async () => {
+  it('uses dropdown when isCloud && isEligible', async () => {
     renderWidget()
     await flushPromises()
 
     expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
   })
 
-  it('uses default widget when shouldUseAssetBrowser returns false', () => {
-    mockShouldUseAssetBrowser.mockReturnValue(false)
+  it('uses default widget when shouldUseWidgetAssetPicker returns false', () => {
+    mockShouldUseWidgetAssetPicker.mockReturnValue(false)
     renderWidget()
 
     expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()

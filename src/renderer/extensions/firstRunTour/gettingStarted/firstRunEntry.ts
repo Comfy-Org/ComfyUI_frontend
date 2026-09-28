@@ -1,6 +1,7 @@
 import {
   breakpointsTailwind,
   createSharedComposable,
+  until,
   useBreakpoints
 } from '@vueuse/core'
 import { readonly, ref } from 'vue'
@@ -9,12 +10,16 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useNewUserService } from '@/services/useNewUserService'
 import { useCommandStore } from '@/stores/commandStore'
 
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
+
+/** Waiters give up after this; a healthy boot settles well inside it. */
+const STARTUP_DECISION_TIMEOUT_MS = 60_000
 
 /**
  * Decides what a first-time user sees once startup reports its outcome: the
@@ -24,6 +29,8 @@ import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 export const useFirstRunEntry = createSharedComposable(() => {
   const settingStore = useSettingStore()
   const gettingStartedVisible = ref(false)
+  const startupDecided = ref(false)
+  const firstRunTookScreen = ref(false)
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
@@ -55,6 +62,14 @@ export const useFirstRunEntry = createSharedComposable(() => {
   // `url-intent` defers to handleUrlWorkflow: we don't know yet whether
   // anything arrived to tour, and TutorialCompleted is write-once.
   async function handleStartupOutcome(outcome: StartupOutcome) {
+    try {
+      await showFirstRunScreen(outcome)
+    } finally {
+      if (outcome !== 'url-intent') startupDecided.value = true
+    }
+  }
+
+  async function showFirstRunScreen(outcome: StartupOutcome) {
     if (outcome === 'restored') return
     if (settingStore.get('Comfy.TutorialCompleted')) return
 
@@ -67,6 +82,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
 
     if (decision === 'getting-started') {
       gettingStartedVisible.value = true
+      firstRunTookScreen.value = true
       return
     }
 
@@ -89,14 +105,31 @@ export const useFirstRunEntry = createSharedComposable(() => {
     templateId?: string,
     sharedStatus?: SharedWorkflowUrlLoadStatus
   ) {
-    if (outcome !== 'url-intent' || !isFirstRunCandidate()) return
-    const shareLoaded =
-      sharedStatus === 'loaded' || sharedStatus === 'loaded-without-assets'
-    if (templateId === undefined && !shareLoaded) return
-    const started = await useFirstRunTourController().beginTour(
-      shareLoaded ? undefined : templateId
-    )
-    if (started) await markTutorialCompleted()
+    try {
+      if (outcome !== 'url-intent' || !isFirstRunCandidate()) return
+      const shareLoaded =
+        sharedStatus === 'loaded' || sharedStatus === 'loaded-without-assets'
+      if (templateId === undefined && !shareLoaded) return
+      const started = await useFirstRunTourController().beginTour(
+        shareLoaded ? undefined : templateId
+      )
+      if (!started) return
+      firstRunTookScreen.value = true
+      await markTutorialCompleted()
+    } finally {
+      startupDecided.value = true
+    }
+  }
+
+  let startupDecision: Promise<boolean> | undefined
+  /** True once this boot's first-run stages have run, false if the grace period passes first. */
+  function whenStartupDecided(): Promise<boolean> {
+    if (startupDecided.value) return Promise.resolve(true)
+    startupDecision ??= until(startupDecided).toBe(true, {
+      timeout: STARTUP_DECISION_TIMEOUT_MS,
+      throwOnTimeout: false
+    })
+    return startupDecision
   }
 
   // Applied locally before the request, so a failed write is next launch's problem.
@@ -104,7 +137,10 @@ export const useFirstRunEntry = createSharedComposable(() => {
     try {
       await settingStore.set('Comfy.TutorialCompleted', true)
     } catch (error) {
-      console.error('Failed to persist Comfy.TutorialCompleted', error)
+      reportError(error, {
+        errorType: 'failure_writing_tutorial_completed_setting',
+        level: 'warning'
+      })
     }
   }
 
@@ -115,6 +151,8 @@ export const useFirstRunEntry = createSharedComposable(() => {
 
   return {
     gettingStartedVisible: readonly(gettingStartedVisible),
+    firstRunTookScreen: readonly(firstRunTookScreen),
+    whenStartupDecided,
     handleStartupOutcome,
     handleUrlWorkflow,
     dismissGettingStarted

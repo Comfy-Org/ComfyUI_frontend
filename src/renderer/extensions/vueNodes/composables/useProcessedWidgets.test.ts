@@ -11,6 +11,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
@@ -401,6 +402,36 @@ describe('promoted subgraph widgets', () => {
 })
 
 describe('computeProcessedWidgets', () => {
+  it('renders an opaque-ID widget before its graph is ready', () => {
+    const nodeId = toNodeId('insert:abc123:root:node:5')
+    const id = widgetId(GRAPH_ID, nodeId, 'text')
+    registerWidgetState(id, { type: 'text', value: 'before' })
+    const missingModelSpy = vi.spyOn(
+      useMissingModelStore(),
+      'isWidgetMissingModel'
+    )
+    const missingMediaSpy = vi.spyOn(
+      useMissingMediaStore(),
+      'isWidgetMissingMedia'
+    )
+    const clearErrorSpy = vi.spyOn(
+      useExecutionErrorStore(),
+      'clearWidgetRelatedErrors'
+    )
+
+    const [processed] = processWidgets({ widgetIds: [id], nodeId })
+
+    expect(processed.simplified.value).toBe('before')
+    expect(processed.hasError).toBe(false)
+    expect(missingModelSpy).not.toHaveBeenCalled()
+    expect(missingMediaSpy).not.toHaveBeenCalled()
+
+    processed.updateHandler('after')
+
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe('after')
+    expect(clearErrorSpy).not.toHaveBeenCalled()
+  })
+
   it('applies advanced border styling to advanced widgets', () => {
     const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
     registerWidgetState(id, { type: 'text', options: { advanced: true } })
@@ -596,6 +627,31 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     const [processed] = processUpdateWidgets([widget])
     processed.updateHandler(42)
 
+    expect(callback).toHaveBeenCalledWith(42, undefined, expect.any(LGraphNode))
+  })
+
+  it('fires the live widget callback for a node id carrying a colon that is not a subgraph-scope prefix (insert_workflow remap, PM-1580)', () => {
+    // comfy-multi-player's insert_workflow remaps every inserted node's id
+    // to a derived string with colons unrelated to subgraph scoping
+    // (insert:<opId>:root:node:<originalId>). A colon-rejecting locator-id
+    // path resolves no host LGraphNode for such a node, so the stored
+    // widget value updates but the widget's own callback is silently
+    // skipped.
+    const nodeId = toNodeId('insert:abc123:root:node:5')
+    const callback = vi.fn()
+    const id = widgetId(GRAPH_ID, nodeId, 'seed')
+    const widget = createMockWidget({ name: 'seed', widgetId: id, callback })
+    registerWidgetState(id, { type: 'combo', value: 0 })
+    const { graph } = createGraphWithNode([widget], nodeId)
+
+    const [processed] = processWidgets({
+      widgetIds: [id],
+      nodeId,
+      rootGraph: graph
+    })
+    processed.updateHandler(42)
+
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe(42)
     expect(callback).toHaveBeenCalledWith(42, undefined, expect.any(LGraphNode))
   })
 

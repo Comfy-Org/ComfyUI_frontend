@@ -363,8 +363,8 @@ export const useAssetsStore = defineStore('assets', () => {
    * to category internally using modelToNodeStore.getCategoryForNodeType().
    *
    * Runs on every distribution; whether anything fetches through it is
-   * decided by consumers via `assetService.isAssetAPIEnabled()`, which stays
-   * the authoritative off-cloud gate.
+   * decided by consumers via `assetService.isWidgetAssetPickerEnabled()`,
+   * which hard-gates widget surfaces to cloud.
    */
   const getModelState = () => {
     const modelStateByCategory = ref(new Map<string, ModelPaginationState>())

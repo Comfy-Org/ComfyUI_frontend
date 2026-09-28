@@ -20,6 +20,11 @@ interface AppReadiness {
   appInitialized: boolean
 }
 
+export interface TabSwitchLens {
+  afterConfigure: string[][]
+  removed: string[]
+}
+
 interface CapturedMessages {
   clientFeatureFlags: unknown
   serverFeatureFlags: unknown
@@ -48,6 +53,14 @@ declare global {
      * @see browser_tests/fixtures/ws.ts
      */
     __ws__?: Record<string, WebSocket>
+
+    /**
+     * Node ids observed at two moments of a workflow tab return: right after
+     * the canvas was rebuilt from the tab's snapshot, and every node removed
+     * from the live graph since the observer was installed.
+     * @see browser_tests/fixtures/agentConversationFixture.ts
+     */
+    __tabSwitchLens?: TabSwitchLens
   }
 
   const app: ComfyApp | undefined

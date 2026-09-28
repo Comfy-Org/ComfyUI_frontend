@@ -60,6 +60,14 @@ function renderFeedback(assets?: ReplyAsset[]) {
 
 describe('MessageFeedback', () => {
   beforeEach(() => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    )
     clipboard.copy.mockClear()
     fetchApi.mockReset()
   })

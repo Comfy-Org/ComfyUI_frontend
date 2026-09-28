@@ -54,11 +54,12 @@ export interface RunApprovalPart {
 
 export interface PaywallPart {
   type: 'paywall'
+  message?: string
 }
 
 export type ActivityPart = ThinkingPart | ToolPart
 
-type MessagePart =
+export type MessagePart =
   | TextPart
   | ThinkingPart
   | ToolPart

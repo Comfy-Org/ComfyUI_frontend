@@ -124,7 +124,7 @@ function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
       continue
 
     if (concreteDescriptor.get && concreteDescriptor.set) {
-      descriptors.set(key, {
+      const descriptor: PropertyDescriptor = {
         configurable: foreignDescriptor.configurable,
         enumerable: foreignDescriptor.enumerable,
         get() {
@@ -139,7 +139,10 @@ function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
             normalised === undefined ? value : normalised
           )
         }
-      })
+      }
+      if (key === 'disabled' && foreignDescriptor.get)
+        descriptor.get = foreignDescriptor.get
+      descriptors.set(key, descriptor)
     }
   }
 

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import Tag from '@/components/chip/Tag.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -29,33 +30,31 @@ const kindIconClass = computed(() =>
   <!-- `data-attachment-name` anchors black-box coverage of what a drop actually
        attached: the visible label truncates, so asserting on rendered text alone
        cannot tell one long filename from another. -->
-  <span
+  <Tag
     data-testid="agent-attachment-chip"
     :data-attachment-name="name"
-    class="text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-white/15 bg-white/4.5 px-2.5 text-xs/4 font-medium"
+    :label="name"
+    removable
+    :remove-label="$t('agent.remove')"
+    class="max-w-48"
+    @remove="emit('remove')"
   >
-    <span
-      v-if="uploading"
-      :aria-label="$t('agent.uploading')"
-      class="text-agent-fg-subtle icon-[lucide--loader-circle] size-3.5 animate-spin"
-    />
-    <!-- Only an image kind renders its preview: a server thumbnail for an
-         audio or 3D asset would repaint the broken-image chip this fixed. -->
-    <img
-      v-else-if="previewUrl && kind === 'image'"
-      :src="previewUrl"
-      :alt="name"
-      class="size-3.5 shrink-0 rounded-sm object-cover"
-    />
-    <span v-else :class="cn(kindIconClass, 'size-3.5 shrink-0')" />
-    <span class="max-w-32 truncate">{{ name }}</span>
-    <button
-      type="button"
-      :aria-label="$t('agent.remove')"
-      class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 shrink-0 cursor-pointer items-center justify-center p-0 transition-colors"
-      @click="emit('remove')"
-    >
-      <span class="icon-[lucide--x] size-3.5 shrink-0" />
-    </button>
-  </span>
+    <template #icon>
+      <span
+        v-if="uploading"
+        role="status"
+        :aria-label="$t('agent.uploading')"
+        class="icon-[lucide--loader-circle] size-3.5 animate-spin text-muted-foreground"
+      />
+      <!-- Only an image kind renders its preview: a server thumbnail for an
+           audio or 3D asset would repaint the broken-image chip this fixed. -->
+      <img
+        v-else-if="previewUrl && kind === 'image'"
+        :src="previewUrl"
+        :alt="name"
+        class="size-3.5 shrink-0 rounded-sm object-cover"
+      />
+      <span v-else :class="cn(kindIconClass, 'size-3.5 shrink-0')" />
+    </template>
+  </Tag>
 </template>

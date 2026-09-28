@@ -97,6 +97,28 @@ describe('useStringWidget (multiline)', () => {
     expect(entries.every((s) => s.type === 'customtext')).toBe(true)
   })
 
+  it('does not throw when a saved value is restored synchronously during construction', () => {
+    // Mirrors LGraphNode.addCustomWidget, which restores a saved widget
+    // value (from a loaded workflow) by invoking `options.setValue`
+    // synchronously, from inside `node.addDOMWidget(...)`, before that
+    // call returns.
+    const node = createMockDOMWidgetNode({
+      addDOMWidget: vi.fn(
+        (
+          name: string,
+          type: string,
+          element: HTMLElement,
+          options?: { setValue?: (v: string) => void }
+        ) => {
+          options?.setValue?.('restored-value')
+          return { name, type, element, options: options ?? {}, value: '' }
+        }
+      )
+    })
+
+    expect(() => createStringWidget(node)).not.toThrow()
+  })
+
   it('fires the widget callback on input', () => {
     const { inputEl, callback } = setup()
     inputEl.value = 'hello'

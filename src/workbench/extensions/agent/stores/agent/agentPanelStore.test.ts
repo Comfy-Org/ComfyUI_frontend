@@ -10,6 +10,8 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => telemetry
 }))
 
+import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
+
 import { useAgentPanelStore } from './agentPanelStore'
 
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
@@ -179,6 +181,185 @@ describe('agentPanelStore engagement telemetry', () => {
   })
 })
 
+describe('agentPanelStore pagehide teardown', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.useFakeTimers()
+  })
+
+  it('reports a pagehide close once while the panel is open, without touching persisted state', async () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    await nextTick()
+    vi.advanceTimersByTime(4000)
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledExactlyOnceWith({
+      source: 'pagehide',
+      open_duration_ms: 4000
+    })
+    expect(store.isOpen).toBe(true)
+    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
+  })
+
+  it('does not double-report across a bfcache pagehide/resume/pagehide cycle', () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+
+    window.dispatchEvent(new Event('pagehide'))
+    // A bfcache restore resumes the same frozen JS heap: nothing in the store
+    // changes, so the next pagehide (background again, or the real close)
+    // must not re-report the same open interval.
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledTimes(1)
+  })
+
+  function persistedPageshow(): Event {
+    const event = new Event('pageshow')
+    Object.defineProperty(event, 'persisted', { value: true })
+    return event
+  }
+
+  it('starts a fresh interval on a persisted pageshow restore, so a later close only measures time since resume', () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    vi.advanceTimersByTime(4000)
+    window.dispatchEvent(new Event('pagehide'))
+
+    vi.advanceTimersByTime(10000)
+    window.dispatchEvent(persistedPageshow())
+    vi.advanceTimersByTime(2000)
+    store.close('close_button')
+
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledTimes(2)
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenNthCalledWith(1, {
+      source: 'pagehide',
+      open_duration_ms: 4000
+    })
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenNthCalledWith(2, {
+      source: 'close_button',
+      open_duration_ms: 2000
+    })
+  })
+
+  it('can report pagehide again after a persisted pageshow resume', () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    window.dispatchEvent(new Event('pagehide'))
+
+    window.dispatchEvent(persistedPageshow())
+    vi.advanceTimersByTime(1500)
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledTimes(2)
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenNthCalledWith(2, {
+      source: 'pagehide',
+      open_duration_ms: 1500
+    })
+  })
+
+  it('ignores a non-persisted pageshow (a normal load, not a bfcache restore)', () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    vi.advanceTimersByTime(4000)
+    window.dispatchEvent(new Event('pagehide'))
+
+    vi.advanceTimersByTime(10000)
+    window.dispatchEvent(new Event('pageshow'))
+    vi.advanceTimersByTime(2000)
+    store.close('close_button')
+
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenNthCalledWith(2, {
+      source: 'close_button',
+      open_duration_ms: 16000
+    })
+  })
+
+  it('does not report a pagehide close while the panel is not open', () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(telemetry.trackAgentPanelClosed).not.toHaveBeenCalled()
+  })
+
+  it('does not report a pagehide close for an open panel gated behind consent', () => {
+    const store = useAgentPanelStore()
+    store.enabled = true
+    store.open()
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(telemetry.trackAgentPanelClosed).not.toHaveBeenCalled()
+  })
+
+  it('can report again for a fresh open session after a prior pagehide report', () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    window.dispatchEvent(new Event('pagehide'))
+    store.close('close_button')
+
+    store.open()
+    vi.advanceTimersByTime(1000)
+    window.dispatchEvent(new Event('pagehide'))
+
+    const pagehideCalls = telemetry.trackAgentPanelClosed.mock.calls.filter(
+      ([metadata]) => metadata.source === 'pagehide'
+    )
+    expect(pagehideCalls).toHaveLength(2)
+    expect(pagehideCalls[1][0]).toEqual({
+      source: 'pagehide',
+      open_duration_ms: 1000
+    })
+  })
+})
+
+describe('agentPanelStore discovery', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('stays undiscovered while the panel has never docked', async () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    await nextTick()
+
+    expect(store.hasEverOpened).toBe(false)
+  })
+
+  it('records discovery once the panel docks, and keeps it after a close', async () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    await nextTick()
+
+    expect(store.hasEverOpened).toBe(true)
+
+    store.close('topbar_button')
+    await nextTick()
+
+    expect(store.hasEverOpened).toBe(true)
+  })
+
+  it('records discovery for a panel restored from a previous visit', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    await nextTick()
+
+    expect(store.hasEverOpened).toBe(true)
+  })
+})
+
 describe('agentPanelStore open-state persistence', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -235,16 +416,73 @@ describe('agentPanelStore open-state persistence', () => {
     expect(store.gateSettled).toBe(false)
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBeNull()
   })
+})
 
-  it('clamps setWidth to the panel min and max bounds', () => {
-    const store = useAgentPanelStore()
+describe('agentPanelStore width', () => {
+  /** Side toolbar rail + sidebar minimum. */
+  const SIDEBAR_OPEN = 368
+  /** Side toolbar rail alone, with no sidebar tab showing. */
+  const SIDEBAR_CLOSED = 56
 
-    store.setWidth(100)
-    expect(store.width).toBe(420)
+  function resizeWindowTo(px: number): void {
+    window.innerWidth = px
+    window.dispatchEvent(new Event('resize'))
+  }
 
-    store.setWidth(2000)
-    expect(store.width).toBe(960)
+  beforeEach(() => {
+    resizeWindowTo(1920)
   })
+
+  it.for([
+    {
+      requested: 100,
+      windowWidth: 1920,
+      reserved: SIDEBAR_OPEN,
+      expected: 420
+    },
+    {
+      requested: 2000,
+      windowWidth: 1920,
+      reserved: SIDEBAR_OPEN,
+      expected: 960
+    },
+    {
+      requested: 700,
+      windowWidth: 1920,
+      reserved: SIDEBAR_OPEN,
+      expected: 700
+    },
+    {
+      requested: 2000,
+      windowWidth: 1200,
+      reserved: SIDEBAR_OPEN,
+      expected: 832
+    },
+    {
+      requested: 2000,
+      windowWidth: 1200,
+      reserved: SIDEBAR_CLOSED,
+      expected: 960
+    },
+    {
+      requested: 2000,
+      windowWidth: 900,
+      reserved: SIDEBAR_CLOSED,
+      expected: 844
+    },
+    { requested: 2000, windowWidth: 700, reserved: SIDEBAR_OPEN, expected: 332 }
+  ] as const)(
+    'clamps a requested $requested to $expected in a $windowWidth window reserving $reserved',
+    ({ requested, windowWidth, reserved, expected }) => {
+      resizeWindowTo(windowWidth)
+      const store = useAgentPanelStore()
+      store.setReservedWorkspaceWidth(reserved)
+
+      store.setWidth(requested)
+
+      expect(store.width).toBe(expected)
+    }
+  )
 
   it('toggleMaximize flips width between the min and max bounds', () => {
     const store = useAgentPanelStore()
@@ -257,5 +495,86 @@ describe('agentPanelStore open-state persistence', () => {
     store.toggleMaximize()
     expect(store.width).toBe(420)
     expect(store.isMaximized).toBe(false)
+  })
+
+  it('shrinks a maximized panel to fit a narrowed window and restores it', () => {
+    const store = useAgentPanelStore()
+    store.toggleMaximize()
+
+    resizeWindowTo(1200)
+    expect(store.width).toBe(832)
+    expect(store.isMaximized).toBe(true)
+
+    resizeWindowTo(1920)
+    expect(store.width).toBe(960)
+  })
+
+  it('gives a maximized panel the room back when the sidebar closes', () => {
+    const store = useAgentPanelStore()
+    store.toggleMaximize()
+    resizeWindowTo(1200)
+    expect(store.width).toBe(832)
+
+    store.setReservedWorkspaceWidth(SIDEBAR_CLOSED)
+
+    expect(store.width).toBe(960)
+  })
+
+  it('shrinks a panel that the opening sidebar would otherwise meet', () => {
+    const store = useAgentPanelStore()
+    store.setReservedWorkspaceWidth(SIDEBAR_CLOSED)
+    resizeWindowTo(1200)
+    store.setWidth(900)
+    expect(store.width).toBe(900)
+
+    store.setReservedWorkspaceWidth(SIDEBAR_OPEN)
+
+    expect(store.width).toBe(832)
+  })
+
+  it('follows a window too narrow for the panel minimum instead of leaving it', () => {
+    const store = useAgentPanelStore()
+    store.toggleMaximize()
+
+    resizeWindowTo(600)
+
+    expect(store.width).toBe(232)
+  })
+
+  it('restores the dragged width once the window has room for it again', () => {
+    const store = useAgentPanelStore()
+    resizeWindowTo(1000)
+
+    store.setWidth(900)
+    expect(store.width).toBe(632)
+
+    resizeWindowTo(1400)
+    expect(store.width).toBe(900)
+  })
+
+  it('drops the maximized state when the user drags the panel', () => {
+    const store = useAgentPanelStore()
+    store.toggleMaximize()
+
+    store.setWidth(600)
+
+    expect(store.isMaximized).toBe(false)
+    expect(store.width).toBe(600)
+  })
+
+  // `getAgentPanelOpen` powers the agent_panel_open run-attribution flag. It
+  // cannot import this store (platform/ may not import workbench/), so it reads
+  // OPEN_STORAGE_KEY directly. Renaming the key here without updating that util
+  // would silently pin the flag to false, so pin the pairing from this side.
+  it('persists isOpen where the run-attribution flag reads it', async () => {
+    const store = useAgentPanelStore()
+
+    store.open()
+    await nextTick()
+    expect(getAgentPanelOpen()).toBe(true)
+
+    store.close('topbar_button')
+    await nextTick()
+    expect(getAgentPanelOpen()).toBe(false)
   })
 })

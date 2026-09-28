@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "يحرر أو يدمج ما يصل إلى 5 صور مرجعية استنادًا إلى مطالبة نصية باستخدام نموذج Hunyuan Image من Tencent.",
+    "display_name": "Tencent HY Image: تحرير",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_watermark": {
+        "name": "العلامة المائية"
+      },
+      "model_width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "ينشئ صورًا من مطالبة نصية باستخدام نموذج Hunyuan Image من Tencent.",
+    "display_name": "Tencent HY Image: نص إلى صورة",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_watermark": {
+        "name": "العلامة المائية"
+      },
+      "model_width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "Hunyuan صورة إلى فيديو",
     "inputs": {
@@ -18366,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "مقدار الاستدلال الذي يجريه النموذج قبل الرسم. تحسّن المستويات الأعلى التفاصيل وتستهلك رموزًا أكثر. يُستخدم فقط بواسطة نماذج Arrow 2."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
@@ -18404,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "وصف نصي لمخرجات SVG المطلوبة."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "مقدار الاستدلال الذي يجريه النموذج قبل الرسم. تحسّن المستويات الأعلى التفاصيل وتستهلك رموزًا أكثر. يُستخدم فقط بواسطة نماذج Arrow 2."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19075,7 +19164,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "الطراز المستخدم للتوليد. طُرز recraftv4_styles مصممة لتوليد متسق في النمط وتتطلب دائمًا style_id أو style_references."
+        "tooltip": "النموذج المستخدم للتوليد. صُممت نماذج recraftv4_styles لتوليد متسق في الأسلوب وتتطلب دائمًا style_id أو style_references؛ أما recraftv4_1_flash فهو النموذج الأسرع والأقل تكلفة ولا يدعم أي أنماط إطلاقًا."
       },
       "model_size": {
         "name": "الحجم"
@@ -23968,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "أعلى p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "يستبدل موجّه النظام في قالب دردشة النموذج. يُتجاهل عند عدم استخدام القالب الافتراضي."
+      },
       "thinking": {
         "name": "التفكير",
         "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
@@ -23984,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "النص المولّد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "التفكير",
         "tooltip": null
       }
     }
@@ -24034,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "أعلى p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "يستبدل موجّه النظام في قالب دردشة النموذج. يُتجاهل عند عدم استخدام القالب الافتراضي."
+      },
       "thinking": {
         "name": "التفكير",
         "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
@@ -24050,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "النص المُولّد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "التفكير",
         "tooltip": null
       }
     }

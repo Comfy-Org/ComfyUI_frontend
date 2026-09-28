@@ -6,7 +6,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
@@ -279,7 +279,7 @@ export class ModelFolder {
 
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('models', () => {
-  const settingStore = useSettingStore()
+  const { flags } = useFeatureFlags()
   const modelFolderNames = ref<string[]>([])
   const modelFolderByName = ref<Record<string, ModelFolder>>({})
   const modelFolders = computed<ModelFolder[]>(() =>
@@ -298,7 +298,7 @@ export const useModelStore = defineStore('models', () => {
    * all-registered-folders view.
    */
   const visibleModelFolders = computed<ModelFolder[]>(() =>
-    usesAssetApi()
+    flags.assetsEnabled
       ? modelFolders.value.filter(
           (folder) =>
             folder.state !== ResourceState.Loaded ||
@@ -307,17 +307,8 @@ export const useModelStore = defineStore('models', () => {
       : modelFolders.value
   )
 
-  /**
-   * Whether model contents come from the asset API. Named to avoid confusion
-   * with assetService.isAssetAPIEnabled(), which is cloud-gated and governs
-   * the asset browser surfaces, not this store's data source.
-   */
-  function usesAssetApi(): boolean {
-    return settingStore.get('Comfy.Assets.UseAssetAPI')
-  }
-
   function createGetModelsFunc(): (folder: string) => Promise<ModelFile[]> {
-    return usesAssetApi()
+    return flags.assetsEnabled
       ? (folder) => assetService.getAssetModels(folder)
       : (folder) => api.getModels(folder)
   }
@@ -359,7 +350,7 @@ export const useModelStore = defineStore('models', () => {
         getModelsFunc,
         // Display filtering applies to the asset walk only; the legacy
         // listing keeps its historical server-side (global-set) filtering.
-        usesAssetApi() ? effectiveModelExtensions(folder.extensions) : []
+        flags.assetsEnabled ? effectiveModelExtensions(folder.extensions) : []
       )
     }
     return { requestId, names: resData.map((folder) => folder.name), folders }
@@ -485,7 +476,7 @@ export const useModelStore = defineStore('models', () => {
    */
   async function requestModelScan() {
     if (isCloud) return
-    if (!usesAssetApi()) return
+    if (!flags.assetsEnabled) return
     try {
       await assetService.seedModelAssets()
     } catch (error) {
@@ -535,17 +526,31 @@ export const useModelStore = defineStore('models', () => {
     unsubscribeModelsScanned()
   })
 
-  const { flags } = useFeatureFlags()
+  /**
+   * The WS `feature_flags` handshake can land after createGetModelsFunc()
+   * already captured its data-source choice at store-init time, so a flag
+   * flip after boot must force a reload to switch the sidebar's source.
+   *
+   * One handshake carrying both `assetsEnabled` and `supportsModelTypeTags`
+   * fires both watchers, issuing two concurrent reloadModels() calls. That is
+   * safe by design: prepareModelFolders()'s request-id discipline makes the
+   * stale response a no-op, so no debouncing is needed here.
+   */
+  watch(
+    () => flags.assetsEnabled,
+    () => {
+      reloadModels().catch((error) => {
+        reportError(error, { errorType: 'model_library_capability_reload' })
+      })
+    }
+  )
 
   watch(
     () => flags.supportsModelTypeTags,
     () =>
-      usesAssetApi() &&
+      flags.assetsEnabled &&
       reloadModels().catch((error) => {
-        console.error(
-          'Failed to reload the model library after a capability change',
-          error
-        )
+        reportError(error, { errorType: 'model_library_capability_reload' })
       })
   )
 

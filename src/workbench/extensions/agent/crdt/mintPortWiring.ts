@@ -6,8 +6,10 @@
  * over beforeLoadGraph/afterConfigureGraph: a failed load leaves mints
  * suppressed until the next load's pair recloses.
  */
+import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
@@ -47,6 +49,16 @@ export interface MintPortWiringDeps {
   localActorPrefix: string
   /** The live root graph, or null when no workflow is open. */
   getGraph(): MintableGraph | null
+  /**
+   * The bound workflow's own stored root graph id, or null when no workflow
+   * is bound. Read from the workflow's serialized state rather than the live
+   * canvas graph, so it names the bound document's graph even while a
+   * different tab is on screen or a tab switch is loading another workflow
+   * into the shared canvas graph. Scopes layout mints to that graph so a load
+   * already in flight when the binding flips cannot mint the new graph's
+   * nodes into the old document.
+   */
+  boundRootGraphId(): RootGraphId | null
 }
 
 export interface MintPortWiring {
@@ -111,11 +123,17 @@ export function runMintPortsIntentionalClear<T>(clear: () => T): T {
 }
 
 /**
- * Serialized save-format node, `widgets_values` NAME-KEYED via the node's own
- * `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
+ * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
+ * own `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
  * sidecar projection accepts only the pinned catalog's `widget_order` names;
  * control widgets like a `button` serialize a named entry but are not in
  * `widget_order`, and any extra key is an opaque server-side 500).
+ *
+ * A frontend-only class (`isVirtualNode`: Note, MarkdownNote, PrimitiveNode,
+ * Get/Set nodes from node packs, subgraph blueprint hosts) has no catalog
+ * entry. The applier rejects a name-keyed record for such a class
+ * (`uncatalogued_widget_write`) but stores a positional array opaquely, so
+ * those keep the positional form `serialize()` already produced.
  */
 function serializeForMint(node: LGraphNode): WorkflowNode | null {
   let serialized: Record<string, unknown>
@@ -127,17 +145,25 @@ function serializeForMint(node: LGraphNode): WorkflowNode | null {
   delete serialized.__incarnation
   const named = serialized.widgets_values_named
   if (named != null && typeof named === 'object') {
-    const filtered: Record<string, unknown> = {}
-    for (const [name, value] of Object.entries(named)) {
-      const widget = node.widgets?.find((candidate) => candidate.name === name)
-      if (widget && widget.type !== 'button' && widget.serialize !== false) {
-        filtered[name] = value
-      }
-    }
-    serialized.widgets_values = filtered
+    if (!node.isVirtualNode)
+      serialized.widgets_values = valueWidgetsOnly(node, named)
     delete serialized.widgets_values_named
   }
   return serialized as unknown as WorkflowNode
+}
+
+function valueWidgetsOnly(
+  node: LGraphNode,
+  named: object
+): Record<string, unknown> {
+  const filtered: Record<string, unknown> = {}
+  for (const [name, value] of Object.entries(named)) {
+    const widget = node.widgets?.find((candidate) => candidate.name === name)
+    if (widget && widget.type !== 'button' && widget.serialize !== false) {
+      filtered[name] = value
+    }
+  }
+  return filtered
 }
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
@@ -185,6 +211,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     localActorPrefix: deps.localActorPrefix,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
+    boundRootGraphId: deps.boundRootGraphId,
     source: {
       serializeNode(id) {
         const node = deps.getGraph()?.getNodeById(id as NodeId)
@@ -262,6 +289,17 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
 
   let loadBracketOpen = false
 
+  // The ports gate their sends on exactly this trio, so the same read also
+  // answers litegraph's mint-time question: a graph whose edits reach the doc
+  // is a graph the agent mints into too, and must mint from the disjoint
+  // range (`idAllocation.ts`).
+  const unregisterDocBoundProbe = registerDocBoundRootGraphProbe(() => {
+    if (!deps.isEnabled() || !deps.isDocBound()) return null
+    const graph = deps.getGraph()
+    if (!graph) return null
+    return graph.rootGraph?.id ?? graph.id
+  })
+
   const wiring: MintPortWiring = {
     session,
     runIntentionalClear(fn) {
@@ -279,6 +317,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     },
     detach() {
       activeWirings.delete(wiring)
+      unregisterDocBoundProbe()
       detachLinkActions()
       detachWidgetChanges()
       widgetPort.detach()

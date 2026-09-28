@@ -8,6 +8,8 @@ export class Topbar {
   private readonly menuTrigger: Locator
   readonly newWorkflowButton: Locator
   readonly workflowTabs: Locator
+  /** The individual open-workflow tabs inside {@link workflowTabs}. */
+  readonly tabs: Locator
   readonly integratedTabBarActions: Locator
 
   constructor(public readonly page: Page) {
@@ -15,6 +17,7 @@ export class Topbar {
     this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
+    this.tabs = this.workflowTabs.getByTestId(TestIds.topbar.workflowTab)
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
       TestIds.topbar.integratedTabBarActions
     )

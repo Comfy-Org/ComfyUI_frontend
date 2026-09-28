@@ -7,20 +7,37 @@ const {
   mockGetSetting,
   mockRegisterCommand,
   mockRegisterCommands,
-  mockBrowseModelAssets,
-  registeredCommands,
-  commandStoreCommands
+  mockOpenModelLibraryBrowser,
+  featureFlagState,
+  registeredCommands
 } = vi.hoisted(() => {
   const registeredCommands: { id: string; function: () => unknown }[] = []
   return {
     mockGetSetting: vi.fn(),
     mockRegisterCommand: vi.fn((command) => registeredCommands.push(command)),
     mockRegisterCommands: vi.fn(),
-    mockBrowseModelAssets: vi.fn(),
-    registeredCommands,
-    commandStoreCommands: [] as { id: string; function: () => unknown }[]
+    mockOpenModelLibraryBrowser: vi.fn(),
+    featureFlagState: { assetsEnabled: false },
+    registeredCommands
   }
 })
+
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get assetsEnabled() {
+        return featureFlagState.assetsEnabled
+      }
+    }
+  })
+}))
+
+vi.mock<unknown>(
+  import('@/platform/assets/composables/openModelLibraryBrowser'),
+  () => ({
+    openModelLibraryBrowser: mockOpenModelLibraryBrowser
+  })
+)
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -30,8 +47,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({
-    registerCommand: mockRegisterCommand,
-    commands: commandStoreCommands
+    registerCommand: mockRegisterCommand
   })
 }))
 
@@ -106,7 +122,8 @@ vi.mock('@/platform/workflow/management/composables/useAppsSidebarTab', () => ({
 describe('useSidebarTabStore', () => {
   beforeEach(() => {
     registeredCommands.length = 0
-    commandStoreCommands.length = 0
+    featureFlagState.assetsEnabled = false
+    mockOpenModelLibraryBrowser.mockClear()
   })
 
   const toggleModelLibrary = async () => {
@@ -181,10 +198,7 @@ describe('useSidebarTabStore', () => {
       mockGetSetting.mockImplementation((key: string) =>
         key === 'Comfy.ModelLibrary.UseAssetBrowser' ? false : undefined
       )
-      commandStoreCommands.push({
-        id: 'Comfy.BrowseModelAssets',
-        function: mockBrowseModelAssets
-      })
+      featureFlagState.assetsEnabled = true
 
       const store = useSidebarTabStore()
       store.registerCoreSidebarTabs()
@@ -192,38 +206,29 @@ describe('useSidebarTabStore', () => {
       await toggleModelLibrary()
 
       expect(store.activeSidebarTabId).toBe('model-library')
-      expect(mockBrowseModelAssets).not.toHaveBeenCalled()
+      expect(mockOpenModelLibraryBrowser).not.toHaveBeenCalled()
     })
 
-    it('opens the asset browser when the browser and asset API are enabled', async () => {
+    it('opens the asset browser when the asset view and the assets capability are both enabled', async () => {
       mockGetSetting.mockImplementation((key: string) =>
-        key === 'Comfy.ModelLibrary.UseAssetBrowser' ||
-        key === 'Comfy.Assets.UseAssetAPI'
-          ? true
-          : undefined
+        key === 'Comfy.ModelLibrary.UseAssetBrowser' ? true : undefined
       )
-      commandStoreCommands.push({
-        id: 'Comfy.BrowseModelAssets',
-        function: mockBrowseModelAssets
-      })
+      featureFlagState.assetsEnabled = true
 
       const store = useSidebarTabStore()
       store.registerCoreSidebarTabs()
 
       await toggleModelLibrary()
 
-      expect(mockBrowseModelAssets).toHaveBeenCalledOnce()
+      expect(mockOpenModelLibraryBrowser).toHaveBeenCalledOnce()
       expect(store.activeSidebarTabId).toBeNull()
     })
 
-    it('falls back to the sidebar tree when the asset API is disabled', async () => {
+    it('falls back to the sidebar tree when the assets capability is missing', async () => {
       mockGetSetting.mockImplementation((key: string) =>
         key === 'Comfy.ModelLibrary.UseAssetBrowser' ? true : false
       )
-      commandStoreCommands.push({
-        id: 'Comfy.BrowseModelAssets',
-        function: mockBrowseModelAssets
-      })
+      featureFlagState.assetsEnabled = false
 
       const store = useSidebarTabStore()
       store.registerCoreSidebarTabs()
@@ -231,7 +236,7 @@ describe('useSidebarTabStore', () => {
       await toggleModelLibrary()
 
       expect(store.activeSidebarTabId).toBe('model-library')
-      expect(mockBrowseModelAssets).not.toHaveBeenCalled()
+      expect(mockOpenModelLibraryBrowser).not.toHaveBeenCalled()
     })
   })
 })

@@ -25,10 +25,19 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+
+interface ResizeResult {
+  size: { width: number; height: number }
+  position?: { x: number; y: number }
+}
+
+type ResizeCallback = (result: ResizeResult, element: HTMLElement) => void
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
-  mockLgraphNode: null as Record<string, unknown> | null
+  mockLgraphNode: null as Record<string, unknown> | null,
+  resizeCallback: null as ResizeCallback | null
 }))
 
 vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
@@ -117,12 +126,19 @@ vi.mock('@/renderer/extensions/vueNodes/preview/useNodePreviewState', () => ({
 vi.mock(
   '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize',
   () => ({
-    useNodeResize: vi.fn(() => ({
-      startResize: vi.fn(),
-      isResizing: computed(() => false)
-    }))
+    useNodeResize: vi.fn((resizeCallback: ResizeCallback) => {
+      mockData.resizeCallback = resizeCallback
+      return {
+        startResize: vi.fn(),
+        isResizing: ref(false)
+      }
+    })
   })
 )
+
+vi.mock(import('@/renderer/core/layout/operations/graphLayoutAttachment'), {
+  spy: true
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -195,6 +211,7 @@ describe('LGraphNode', () => {
   beforeEach(() => {
     mockData.mockExecuting = false
     mockData.mockLgraphNode = null
+    mockData.resizeCallback = null
 
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
@@ -281,6 +298,100 @@ describe('LGraphNode', () => {
     })
 
     expect(await screen.findByRole('textbox')).toHaveValue('A projected prompt')
+  })
+
+  it.for([
+    { tier: 'advanced' as const, expectedHeight: '130px' },
+    { tier: 'shown' as const, expectedHeight: '362px' }
+  ])(
+    'reserves image preview height only for a $tier expanding widget',
+    ({ tier, expectedHeight }) => {
+      const fakeRootGraph: Record<string, unknown> = {
+        id: 'graph-test',
+        getNodeById: () => null,
+        subgraphs: new Map()
+      }
+      fakeRootGraph.rootGraph = fakeRootGraph
+      useCanvasStore().currentGraph = fromAny(fakeRootGraph)
+      useWidgetValueStore().registerWidget(
+        widgetId('graph-test', mockNodeData.id, 'prompt'),
+        { name: 'prompt', type: 'customtext', value: '', options: {} },
+        { advanced: tier === 'advanced' }
+      )
+      useNodeOutputStore().nodeOutputs['test-node-123'] = {
+        images: [{ filename: 'output.png', type: 'output' }]
+      }
+      vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+        '/output.png'
+      ])
+
+      const { container } = renderLGraphNode({
+        nodeData: { ...mockNodeData, graphId: 'graph-test' }
+      })
+
+      expect(
+        getNodeRoot(container).style.getPropertyValue('--node-height')
+      ).toBe(expectedHeight)
+    }
+  )
+
+  it('reconciles the preview reserve once across resize and preview removal', async () => {
+    const fakeRootGraph: Record<string, unknown> = {
+      id: 'graph-test',
+      getNodeById: () => mockData.mockLgraphNode,
+      subgraphs: new Map()
+    }
+    fakeRootGraph.rootGraph = fakeRootGraph
+    mockData.mockLgraphNode = { isSubgraphNode: () => false }
+    useCanvasStore().currentGraph = fromAny(fakeRootGraph)
+    useWidgetValueStore().registerWidget(
+      widgetId('graph-test', mockNodeData.id, 'prompt'),
+      { name: 'prompt', type: 'customtext', value: '', options: {} }
+    )
+    const outputs = useNodeOutputStore()
+    outputs.nodeOutputs['test-node-123'] = {
+      images: [{ filename: 'output.png', type: 'output' }]
+    }
+    vi.mocked(outputs.getNodeImageUrls).mockReturnValue(['/output.png'])
+    const { container } = renderLGraphNode({
+      nodeData: { ...mockNodeData, graphId: 'graph-test' }
+    })
+
+    mockData.resizeCallback?.(
+      {
+        size: { width: 300, height: 500 },
+        position: { x: 10, y: 20 }
+      },
+      document.createElement('div')
+    )
+    expect(resizeNodeLayout).toHaveBeenLastCalledWith(
+      mockData.mockLgraphNode,
+      { width: 300, height: 238 },
+      expect.objectContaining({ position: { x: 10, y: 20 } })
+    )
+
+    delete outputs.nodeOutputs['test-node-123']
+    await nextTick()
+    expect(getNodeRoot(container).style.getPropertyValue('--node-height')).toBe(
+      '130px'
+    )
+
+    outputs.nodeOutputs['test-node-123'] = {
+      images: [{ filename: 'output.png', type: 'output' }]
+    }
+    await nextTick()
+    expect(getNodeRoot(container).style.getPropertyValue('--node-height')).toBe(
+      '362px'
+    )
+
+    mockData.resizeCallback?.(
+      {
+        size: { width: 300, height: 500 },
+        position: { x: 10, y: 20 }
+      },
+      document.createElement('div')
+    )
+    expect(vi.mocked(resizeNodeLayout).mock.calls.at(-1)?.[1].height).toBe(238)
   })
 
   it('should apply selected styling when selected prop is true', async () => {

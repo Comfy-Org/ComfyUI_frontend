@@ -60,6 +60,18 @@ const scenarios = [
 ] as const satisfies readonly AgentRequestResponseScenario[]
 
 describe('AgentRequestResponseQueue', () => {
+  it('accepts a new chat request for the same workflow with an empty draft', () => {
+    const request = {
+      content: 'Start over',
+      workflowId: 'workflow-1',
+      draft: { content: { nodes: [], links: [] } }
+    } as const
+    const queue = new AgentRequestResponseQueue([{ request, responses: [] }])
+
+    expect(queue.take(request)).toEqual([])
+    expect(() => queue.assertComplete()).not.toThrow()
+  })
+
   it('consumes requests and interleaved responses in declaration order', () => {
     const queue = new AgentRequestResponseQueue(scenarios)
 

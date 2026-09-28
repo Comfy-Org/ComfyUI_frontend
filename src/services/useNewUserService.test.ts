@@ -23,6 +23,11 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 import { useNewUserService } from '@/services/useNewUserService'
+import { reportError } from '@/platform/telemetry/reportError'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 describe('useNewUserService', () => {
   let service: ReturnType<typeof useNewUserService>
@@ -167,14 +172,39 @@ describe('useNewUserService', () => {
     it('should identify new user when V2 draft index is malformed', async () => {
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockReturnValue(undefined)
+      const corrupt = '{"order":["workflows/client-brief.json", nope]}'
+
       mockLocalStorage.getItem.mockImplementation((key: string) => {
-        if (key === 'Comfy.Workflow.DraftIndex.v2:personal') return 'not json'
+        if (key === 'Comfy.Workflow.DraftIndex.v2:personal') return corrupt
         return null
       })
 
       await service.initializeIfNewUser()
 
       expect(service.isNewUser()).toBe(true)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        new Error('Workflow draft index is not valid JSON'),
+        {
+          errorType: 'error_parsing_workflow_draft_index',
+          level: 'warning',
+          context: { length: corrupt.length }
+        }
+      )
+    })
+
+    it('treats a draft index holding valid non-object JSON as empty, not corrupt', async () => {
+      mockSettingStore.settingValues = {}
+      mockSettingStore.get.mockReturnValue(undefined)
+
+      mockLocalStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'Comfy.Workflow.DraftIndex.v2:personal') return 'null'
+        return null
+      })
+
+      await service.initializeIfNewUser()
+
+      expect(service.isNewUser()).toBe(true)
+      expect(reportError).not.toHaveBeenCalled()
     })
 
     it('should identify new user when tutorial is explicitly false', async () => {

@@ -624,6 +624,23 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it('resolves agent API failures with catalog copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'agent_api_failed',
+          message: 'The agent request failed',
+          details: ''
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Comfy Agent error',
+      displayMessage: 'Comfy Agent hit a server error.'
+    })
+  })
+
   it('resolves an agent transport failure to overlay copy', () => {
     expect(
       resolveRunErrorMessage({

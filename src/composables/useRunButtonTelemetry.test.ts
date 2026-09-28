@@ -17,7 +17,8 @@ const state = vi.hoisted(() => ({
     has_toolkit_nodes: false,
     toolkit_node_names: []
   },
-  executionContextError: null as Error | null
+  executionContextError: null as Error | null,
+  agentPanelOpen: false
 }))
 
 vi.mock('@/composables/useAppMode', () => ({
@@ -38,6 +39,13 @@ vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
   }
 }))
 
+vi.mock<unknown>(
+  import('@/platform/telemetry/utils/getAgentPanelOpen'),
+  () => ({
+    getAgentPanelOpen: () => state.agentPanelOpen
+  })
+)
+
 import {
   getRunButtonTelemetryProperties,
   useRunButtonTelemetry
@@ -48,6 +56,7 @@ describe('useRunButtonTelemetry', () => {
     state.mode.value = 'graph'
     state.isAppMode.value = false
     state.executionContextError = null
+    state.agentPanelOpen = false
   })
 
   it('builds run button properties from workspace state', () => {
@@ -72,7 +81,16 @@ describe('useRunButtonTelemetry', () => {
       trigger_source: 'button',
       view_mode: 'graph',
       is_app_mode: false,
-      dock_state: 'floating'
+      dock_state: 'floating',
+      agent_panel_open: false
+    })
+  })
+
+  it('reports the agent panel as open when it is open at submit time', () => {
+    state.agentPanelOpen = true
+
+    expect(getRunButtonTelemetryProperties()).toMatchObject({
+      agent_panel_open: true
     })
   })
 

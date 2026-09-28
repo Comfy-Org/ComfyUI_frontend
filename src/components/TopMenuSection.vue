@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="!workspaceStore.focusMode"
-    class="ml-1 flex flex-col gap-1 pt-1"
+    class="ml-(--comfy-canvas-gutter) flex flex-col gap-1 pt-(--comfy-canvas-gutter)"
     @mouseenter="isTopMenuHovered = true"
     @mouseleave="isTopMenuHovered = false"
   >
@@ -19,7 +19,7 @@
         <SubgraphBreadcrumb />
       </div>
 
-      <div class="mx-1 flex flex-col items-end gap-1">
+      <div class="ml-(--comfy-canvas-gutter) flex flex-col items-end gap-1">
         <div
           data-testid="top-menu-actionbars"
           :inert="isActionBarsHidden"

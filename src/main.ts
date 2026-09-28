@@ -27,6 +27,10 @@ import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import {
+  markStoresPending,
+  markStoresReady
+} from '@/platform/telemetry/storeReadiness'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
@@ -53,6 +57,8 @@ await bootstrapTracer.settle('startup/remote-config', async () => {
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false })
 })
+
+markStoresPending()
 
 if (isCloud) {
   await bootstrapTracer.settle('startup/telemetry-init', async () => {
@@ -181,6 +187,8 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+markStoresReady()
 
 if (isCloud && hasHostTelemetryBridge) {
   syncHostUserIdWithFirebaseAuth()
