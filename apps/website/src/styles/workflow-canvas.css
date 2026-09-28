@@ -51,8 +51,7 @@ workflow-examples[data-paused] .wf-example * {
 .wf-user,
 .wf-generated-image,
 .wf-selection,
-.wf-video-cue,
-.wf-typed-character {
+.wf-video-cue {
   animation-duration: var(--wf-duration);
   animation-timing-function: linear;
   animation-iteration-count: infinite;
@@ -118,64 +117,6 @@ video.wf-node-image {
   font-size: max(7px, 0.6875cqw);
   font-weight: 600;
   line-height: 1.5;
-}
-.wf-typed-character {
-  opacity: 0;
-  animation-timing-function: step-end;
-}
-.wf-kind-reference {
-  background: url('/images/comfy-agent/peanut-reference-shell.svg') center /
-    100% 100%;
-}
-.wf-kind-reference .wf-node-heading {
-  left: 0.4375cqw;
-  top: 0.5625cqw;
-}
-.wf-kind-reference :is(.wf-node-image, .wf-image-well) {
-  left: 0.4375cqw;
-  top: 1.6875cqw;
-  width: 14.1875cqw;
-  height: 14.125cqw;
-  border-radius: 0.4375cqw;
-}
-.wf-kind-preview {
-  background: url('/images/comfy-agent/peanut-preview-shell.svg') center / 100%
-    100%;
-}
-.wf-kind-preview .wf-node-heading {
-  left: 1.125cqw;
-  top: 0.25cqw;
-}
-.wf-kind-preview :is(.wf-node-image, .wf-image-well) {
-  left: 0.2936cqw;
-  top: 1.1325cqw;
-  width: 9.5172cqw;
-  height: 9.4839cqw;
-  border-radius: 0.2936cqw;
-}
-.wf-kind-prompt .wf-prompt-well {
-  left: 0.625cqw;
-  top: 2.875cqw;
-  width: calc(100% - 1.25cqw);
-  height: 4.5625cqw;
-}
-.wf-kind-result {
-  /* Scale around the input port so the wire and cursor stay aligned. */
-  scale: 1.15;
-  transform-origin: 0.9375cqw 1.375cqw;
-  border-radius: 1.625cqw;
-  box-shadow: inset 0 0 0 1px #38383d;
-}
-.wf-kind-result .wf-node-heading {
-  left: 1.625cqw;
-  top: 1.0625cqw;
-}
-.wf-kind-result :is(.wf-node-image, .wf-image-well) {
-  left: 0.6875cqw;
-  top: 2.1875cqw;
-  width: 16.5cqw;
-  height: 16.75cqw;
-  border-radius: 0.8125cqw;
 }
 .wf-example[data-example='conditioner'] .wf-node-heading {
   display: flex;
@@ -349,7 +290,6 @@ video.wf-node-image {
     opacity: 1;
     transform: none;
   }
-  .wf-typed-character,
   .wf-generated-image,
   .wf-selection,
   .wf-user {

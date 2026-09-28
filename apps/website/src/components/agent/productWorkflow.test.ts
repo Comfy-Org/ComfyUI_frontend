@@ -11,21 +11,6 @@ import {
 } from './productWorkflow'
 import { createWorkflowMotion } from './workflowMotion'
 
-function parseKeyframes(css: string) {
-  return Array.from(
-    css
-      .replace(/\s+/g, '')
-      .matchAll(/@keyframes([^{]+)\{((?:[\d.]+%\{[^}]*\})+)\}/g),
-    ([, name, body]) => ({
-      name,
-      frames: Array.from(
-        body.matchAll(/([\d.]+)%\{([^}]+)\}/g),
-        ([, percentage, value]) => ({ percentage: Number(percentage), value })
-      )
-    })
-  ).toSorted((a, b) => a.name.localeCompare(b.name))
-}
-
 function animationFrames(
   motion: ReturnType<typeof createWorkflowMotion>,
   name: string
@@ -44,14 +29,14 @@ function animationFrames(
 }
 
 describe('conditioner workflow', () => {
-  const motion = createWorkflowMotion([productWorkflow], {
+  const motion = createWorkflowMotion(productWorkflow, {
     width: productWorkflowSize.width,
     holdDuration: productWorkflowHoldDuration,
     connectionSpeed: 2,
     agentRest: productWorkflowAgentRest,
     userRest: productWorkflowUserRest
   })
-  const scene = motion.scenes[0]
+  const { scene } = motion
   const connections = scene.timeline.flatMap((event) => {
     if (event.type === 'connect') return [event]
     if (event.type === 'connect-group') {
@@ -60,26 +45,24 @@ describe('conditioner workflow', () => {
     return []
   })
 
-  it('keeps the supplied animation names and timing synchronized with media playback', () => {
-    const imported = parseKeyframes(
-      readFileSync(
-        join(
-          import.meta.dirname,
-          '../../styles/product-workflow-keyframes.css'
-        ),
-        'utf8'
-      )
-    )
-    const generated = parseKeyframes(motion.css)
-    const cursors = [scene.userCursor.name, scene.agentCursor.name]
-
-    expect(imported.map(({ name }) => name)).toEqual(
-      generated.map(({ name }) => name)
-    )
-    expect(imported.filter(({ name }) => !cursors.includes(name))).toEqual(
-      generated.filter(({ name }) => !cursors.includes(name))
-    )
+  it('keeps the animation duration synchronized with media playback', () => {
     expect(motion.duration).toBeCloseTo(23.52772575250836, 6)
+  })
+
+  it('ships only the two authored cursor overrides alongside generated CSS', () => {
+    const overrides = readFileSync(
+      join(import.meta.dirname, '../../styles/product-workflow-keyframes.css'),
+      'utf8'
+    )
+    const names = Array.from(
+      overrides.matchAll(/@keyframes ([^{\s]+)/g),
+      ([, name]) => name
+    )
+
+    expect(names).toEqual([scene.userCursor.name, scene.agentCursor.name])
+    expect(
+      names.every((name) => motion.css.includes(`@keyframes ${name}{`))
+    ).toBe(true)
   })
 
   it.for(['base', 'products', 'motionref'])(
@@ -201,8 +184,6 @@ describe('conditioner workflow', () => {
         Math.max(...incoming.map((event) => event.end))
       ).toBeLessThanOrEqual(shells.start)
       expect(productWorkflow.nodes[processorIndex].text).toBe(text)
-      expect(scene.nodes[processorIndex].promptName).toBeUndefined()
-      expect(scene.nodes[processorIndex].characters).toBeUndefined()
       expect(shells.end).toBeLessThanOrEqual(outgoing[0].start)
       expect(outgoing).toHaveLength(outputCount)
       expect(Math.max(...outgoing.map((event) => event.end))).toBeLessThan(
@@ -291,7 +272,7 @@ describe('conditioner workflow', () => {
     }
   )
 
-  it('uses the supplied scene, motion, and final video with no pending frames or typed characters', () => {
+  it('uses the supplied scene, motion, and final video with no pending frames', () => {
     expect(productWorkflow.nodes.filter((node) => node.pending)).toEqual([])
     expect(
       productWorkflow.nodes.find((node) => node.id === 'base')?.image
@@ -304,7 +285,6 @@ describe('conditioner workflow', () => {
       'conditioner/motion-reference.mp4',
       'conditioner/result-purple.mp4'
     ])
-    expect(scene.nodes.filter((node) => node.characters)).toEqual([])
   })
 
   it('fits every settled node in the compact canvas without overlapping cards', () => {

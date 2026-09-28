@@ -3,15 +3,7 @@ import type { MotionNode, MotionWorkflow, Point } from './workflowMotion'
 export type WorkflowGraphNode = MotionNode & {
   label: string
   height: number
-  kind:
-    | 'reference'
-    | 'preview'
-    | 'prompt'
-    | 'result'
-    | 'landscape'
-    | 'featured'
-    | 'products'
-    | 'processor'
+  kind: 'landscape' | 'featured' | 'products' | 'processor'
   image?: string
   alt?: string
   video?: string

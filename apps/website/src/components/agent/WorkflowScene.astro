@@ -27,17 +27,17 @@ const unit = width / 100
 
 const { nodes } = workflow
 const imageRoot = 'https://media.comfy.org/website/comfy-agent'
-const motion = createWorkflowMotion([workflow], {
+const motion = createWorkflowMotion(workflow, {
   width,
   holdDuration,
   connectionSpeed: 2,
   agentRest,
   userRest
 })
-const scene = motion.scenes[0]
+const { scene } = motion
 ---
 
-<style is:inline set:html={motionCss ?? motion.css}></style>
+<style is:inline set:html={`${motion.css}\n${motionCss ?? ''}`}></style>
 <div
   style={`--wf-duration:${motion.duration}s;--wf-aspect:${width} / ${height}`}
   class="wf-example"

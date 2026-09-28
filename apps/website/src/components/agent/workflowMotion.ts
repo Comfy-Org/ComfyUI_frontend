@@ -3,7 +3,6 @@ export type MotionNode = Point & {
   id: string
   width: number
   text?: string
-  typingDuration?: number
   // All ports and cursor targets use absolute canvas coordinates.
   input?: Point
   output?: Point
@@ -22,23 +21,13 @@ export type MotionStep =
       type: 'place'
       node: string
       actor: 'user' | 'agent'
-      from?: Point
       duration?: number
     }
   | { type: 'show'; nodes: string[] }
   | { type: 'connect'; from: string; to: string }
   | { type: 'connect-group'; from: string; to: string[] }
-  | { type: 'type'; node: string }
-  | { type: 'prompt'; node: string }
   | { type: 'images'; nodes: string[]; delay?: number }
   | { type: 'select'; node: string }
-  | {
-      type: 'focus'
-      node: string
-      offset: Point
-      scale: number
-      duration?: number
-    }
   | { type: 'pause'; duration: number }
 export type MotionWorkflow = {
   id: string
@@ -59,9 +48,6 @@ type MotionEvent = MotionStep & {
   dropAt?: number
   drawStart?: number
   drawEnd?: number
-  typingStart?: number
-  typingEnd?: number
-  promptAt?: number
   imagesAt?: number
   selectionAt?: number
 }
@@ -73,8 +59,6 @@ type NodeState = {
   shownAt?: number
   imageAt?: number
   selectionAt?: number
-  characterTimes?: number[]
-  promptAt?: number
 }
 type CursorState = {
   point: Point
@@ -145,26 +129,14 @@ function sampleCurves(curves: MotionCurve[]): Point[] {
 }
 
 function placementDuration(step: StepOf<'place'>) {
-  const duration = step.duration ?? (step.from ? 0.8 : 0.4)
+  const duration = step.duration ?? 0.4
   if (!Number.isFinite(duration) || duration < 0.1)
     throw new Error('Workflow placement needs at least 0.1 seconds')
   return duration
 }
 
-function focusDuration(step: StepOf<'focus'>) {
-  const duration = step.duration ?? 0.8
-  const finite = [duration, step.scale, step.offset.x, step.offset.y].every(
-    Number.isFinite
-  )
-  if (!finite || duration < 0.1 || step.scale <= 0)
-    throw new Error(
-      'Workflow focus needs finite offsets, a positive scale, and at least 0.1 seconds'
-    )
-  return duration
-}
-
 export function createWorkflowMotion(
-  workflows: MotionWorkflow[],
+  workflow: MotionWorkflow,
   {
     width = 1600,
     holdDuration = 4,
@@ -174,7 +146,6 @@ export function createWorkflowMotion(
   }: MotionOptions = {}
 ) {
   if (
-    !workflows.length ||
     !Number.isFinite(width) ||
     width <= 0 ||
     !Number.isFinite(holdDuration) ||
@@ -183,14 +154,14 @@ export function createWorkflowMotion(
     connectionSpeed <= 0
   ) {
     throw new Error(
-      'Workflow motion needs scenes, a positive width/speed, and a nonnegative hold'
+      'Workflow motion needs a positive width/speed and a nonnegative hold'
     )
   }
   const position = (point: Point) =>
     `left:${(point.x / width) * 100}cqw;top:${(point.y / width) * 100}cqw;`
   const cursorValue = (point: Point, visible = true, scale = 1) =>
     `opacity:${visible ? 1 : 0};transform:scale(${scale});${position(point)}`
-  const plans = workflows.map((workflow) => {
+  const plan = (() => {
     const nodes: NodeState[] = workflow.nodes.map((node) => ({
       node,
       frames: [{ time: 0, value: hiddenNode }]
@@ -225,15 +196,22 @@ export function createWorkflowMotion(
       const length = distances[distances.length - 1]
       if (!Number.isFinite(length) || length <= 0)
         throw new Error('Workflow wires need finite, nonzero lengths')
-      return {
+      const wire: {
+        edge: MotionEdge
+        samples: Point[]
+        distances: number[]
+        length: number
+        drawStart?: number
+        drawEnd?: number
+        path: string
+      } = {
         edge,
         samples,
         distances,
         length,
-        drawStart: undefined as number | undefined,
-        drawEnd: undefined as number | undefined,
         path: `M ${samples[0].x} ${samples[0].y} ${curves.map(({ control1, control2, to }) => `C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${to.x} ${to.y}`).join(' ')}`
       }
+      return wire
     })
     const makeCursor = (rest: Point): CursorState => ({
       point: rest,
@@ -285,40 +263,7 @@ export function createWorkflowMotion(
       return state.shownAt
     }
     const timeline: MotionEvent[] = []
-    let focusAt: number | undefined
-    let focusFadeDuration = 0
     let time = 0.15
-    function carryNode(
-      state: NodeState,
-      origin: Point,
-      point: Point,
-      cursor: CursorState,
-      duration: number
-    ) {
-      const node = state.node
-      state.frames[0].value = 'opacity:0;transform:translate(0,0) scale(.96);'
-      const from = {
-        x: origin.x + point.x - node.x,
-        y: origin.y + point.y - node.y
-      }
-      const translate = `translate(${((origin.x - node.x) / width) * 100}cqw,${((origin.y - node.y) / width) * 100}cqw) scale(1)`
-      state.frames.push(
-        { time, value: `opacity:0;transform:${translate};` },
-        { time: time + 0.06, value: `opacity:1;transform:${translate};` },
-        { time: time + duration, value: shownNode }
-      )
-      cursor.frames.push(
-        { time, value: cursorValue(from, false) },
-        { time: time + 0.06, value: cursorValue(from) },
-        { time: time + duration, value: cursorValue(point) }
-      )
-      cursor.point = point
-      cursor.visible = true
-      time += duration
-      state.shownAt = time
-      return state.shownAt
-    }
-
     function placeNode(step: StepOf<'place'>, event: MotionEvent) {
       const state = getNode(step.node)
       const node = state.node
@@ -327,14 +272,9 @@ export function createWorkflowMotion(
       const cursor = cursors[step.actor]
       const point = node.clickPoint ?? { x: node.x + 24, y: node.y + portY }
       const duration = placementDuration(step)
-      let shownAt: number
-      if (step.from) {
-        shownAt = carryNode(state, step.from, point, cursor, duration)
-      } else {
-        moveCursor(cursor, point, time, duration)
-        time += duration
-        shownAt = reveal(state, time + 0.1)
-      }
+      moveCursor(cursor, point, time, duration)
+      time += duration
+      const shownAt = reveal(state, time + 0.1)
       event.dropAt = shownAt
       click(cursor, time)
       time = Math.max(time + 0.2, shownAt)
@@ -402,39 +342,6 @@ export function createWorkflowMotion(
       time = drawEnd + 0.35 / 1.15 / connectionSpeed
     }
 
-    function revealText(step: StepOf<'type' | 'prompt'>, event: MotionEvent) {
-      const state = requireShown(step.node, time)
-      const { node } = state
-      if (!node.text || state.characterTimes || state.promptAt !== undefined)
-        throw new Error(`Workflow typing needs untyped text: ${node.id}`)
-      const duration = node.typingDuration ?? 0.85
-      if (!Number.isFinite(duration) || duration <= 0)
-        throw new Error('Workflow typing duration must be positive')
-      const cursor = cursors.agent
-      moveCursor(
-        cursor,
-        { x: node.x + node.width - 12, y: node.y + 12 },
-        time,
-        0.18
-      )
-      time += 0.24
-      if (step.type === 'type') {
-        event.typingStart = time
-        const characters = Array.from(node.text)
-        state.characterTimes = characters.map(
-          (_, index) => time + ((index + 1) / characters.length) * duration
-        )
-        time += duration
-        event.typingEnd = time
-      } else {
-        state.promptAt = time
-        event.promptAt = time
-        time += 0.25
-      }
-      cursor.frames.push({ time, value: cursorValue(cursor.point) })
-      time += 0.1
-    }
-
     function revealImages(step: StepOf<'images'>, event: MotionEvent) {
       const delay = step.delay ?? 0.25
       if (!Number.isFinite(delay) || delay < 0)
@@ -478,59 +385,12 @@ export function createWorkflowMotion(
       time += 0.25
     }
 
-    function focusNode(step: StepOf<'focus'>) {
-      const state = requireShown(step.node, time)
-      if (state.imageAt === undefined || state.imageAt + 0.2 > time)
-        throw new Error('Workflow focus needs a completed image reveal')
-      const duration = focusDuration(step)
-      focusAt = time
-      focusFadeDuration = Math.min(0.15, duration)
-      state.frames = state.frames.map((frame) => ({
-        ...frame,
-        value: `${frame.value}z-index:0;`
-      }))
-      state.frames.push(
-        { time: time - 0.001, value: `${shownNode}z-index:0;` },
-        {
-          time,
-          value: `${shownNode}z-index:3;animation-timing-function:ease-in-out;`
-        },
-        {
-          time: time + duration,
-          value: `opacity:1;transform:translate(${(step.offset.x / width) * 100}cqw,${(step.offset.y / width) * 100}cqw) scale(${step.scale});z-index:3;`
-        }
-      )
-      for (const other of nodes) {
-        if (other === state || other.shownAt === undefined) continue
-        other.frames.push(
-          { time, value: shownNode },
-          {
-            time: time + focusFadeDuration,
-            value: 'opacity:0.25;transform:translate(0,0) scale(1);'
-          }
-        )
-      }
-      for (const cursor of Object.values(cursors)) {
-        cursor.frames.push(
-          { time, value: cursorValue(cursor.point, cursor.visible) },
-          {
-            time: time + focusFadeDuration,
-            value: cursorValue(cursor.point, false)
-          }
-        )
-        cursor.visible = false
-      }
-      time += duration
-    }
-
     function applyBuildStep(
-      step: StepOf<'connect' | 'connect-group' | 'type' | 'prompt' | 'images'>,
+      step: StepOf<'connect' | 'connect-group' | 'images'>,
       event: MotionEvent
     ) {
       if (step.type === 'connect' || step.type === 'connect-group') {
         connectNodes(step, event)
-      } else if (step.type === 'type' || step.type === 'prompt') {
-        revealText(step, event)
       } else {
         revealImages(step, event)
       }
@@ -553,17 +413,12 @@ export function createWorkflowMotion(
         case 'select':
           selectNode(step, event)
           break
-        case 'focus':
-          focusNode(step)
-          break
         default:
           applyBuildStep(step, event)
       }
     }
 
     for (const step of workflow.steps) {
-      if (focusAt !== undefined)
-        throw new Error('Workflow focus must be the final step')
       const start = time
       const event: MotionEvent = { ...step, start, end: start }
       applyStep(step, event)
@@ -577,13 +432,11 @@ export function createWorkflowMotion(
       wires,
       cursors,
       timeline,
-      focusAt,
-      focusFadeDuration,
       end,
       slot: end + 0.25
     }
-  })
-  const duration = plans.reduce((sum, plan) => sum + plan.slot, 0)
+  })()
+  const duration = plan.slot
   const keyframes = (name: string, frames: Frame[]) => {
     const ordered = [
       ...new Map(frames.map((frame) => [frame.time, frame])).values()
@@ -600,10 +453,8 @@ export function createWorkflowMotion(
       throw new Error('Workflow keyframes must be finite and inside the loop')
     return `@keyframes ${name}{${ordered.map(({ time, value }) => `${((time / duration) * 100).toFixed(6)}%{${value}}`).join('')}}`
   }
-  let offset = 0
-  const scenes = plans.map((plan) => {
-    const start = offset
-    offset += plan.slot
+  const scene = (() => {
+    const start = 0
     const end = start + plan.end
     const rules: string[] = []
     const closeFrames = (frames: Frame[], hidden: string) => [
@@ -635,56 +486,16 @@ export function createWorkflowMotion(
     const nodes = plan.nodes.map((state) => {
       const name = `wf-${plan.workflow.id}-${state.node.id}`
       const frames = closeFrames(state.frames, state.frames[0].value)
-      const focus = plan.timeline.find((event) => event.type === 'focus')
-      const nodeFrames =
-        focus?.node === state.node.id
-          ? [
-              ...frames.slice(0, -2),
-              {
-                time: end + 0.15,
-                value: state.frames[state.frames.length - 1].value.replace(
-                  'opacity:1;',
-                  'opacity:0;'
-                )
-              },
-              {
-                time: end + 0.16,
-                value: state.frames[0].value.replace('opacity:1;', 'opacity:0;')
-              },
-              frames[frames.length - 1]
-            ]
-          : frames
-      rules.push(keyframes(name, nodeFrames))
-      const characters = state.characterTimes?.map((time, index) => {
-        const name = `wf-${plan.workflow.id}-${state.node.id}-char-${index}`
-        rules.push(
-          keyframes(
-            name,
-            closeFrames(
-              [
-                { time: 0, value: 'opacity:0;' },
-                { time, value: 'opacity:1;' }
-              ],
-              'opacity:0;'
-            )
-          )
-        )
-        return { name }
-      })
+      rules.push(keyframes(name, frames))
       const imageName = addOpacityAnimation(`${name}-image`, state.imageAt, 0.2)
       const selectionName = addOpacityAnimation(
         `${name}-selection`,
         state.selectionAt,
         0.05
       )
-      const promptName = addOpacityAnimation(
-        `${name}-prompt`,
-        state.promptAt,
-        0.01
-      )
       const mediaTime = state.imageAt ?? state.shownAt
       const mediaAt = mediaTime === undefined ? undefined : mediaTime + start
-      return { name, characters, imageName, selectionName, mediaAt, promptName }
+      return { name, imageName, selectionName, mediaAt }
     })
     const wires = plan.wires.map((wire) => {
       const name = `wf-${plan.workflow.id}-${wire.edge.from}-${wire.edge.to}`
@@ -695,14 +506,6 @@ export function createWorkflowMotion(
           { time: wire.drawStart - 0.005, value: hidden },
           { time: wire.drawStart, value: 'stroke-dashoffset:1;opacity:1;' },
           { time: wire.drawEnd, value: 'stroke-dashoffset:0;opacity:1;' }
-        )
-      if (plan.focusAt !== undefined && wire.drawEnd !== undefined)
-        frames.push(
-          { time: plan.focusAt, value: 'stroke-dashoffset:0;opacity:1;' },
-          {
-            time: plan.focusAt + plan.focusFadeDuration,
-            value: 'stroke-dashoffset:0;opacity:0;'
-          }
         )
       rules.push(
         keyframes(name, closeFrames(frames, 'stroke-dashoffset:0;opacity:0;'))
@@ -743,6 +546,6 @@ export function createWorkflowMotion(
       timeline: plan.timeline,
       css: rules.join('\n')
     }
-  })
-  return { scenes, duration, css: scenes.map((scene) => scene.css).join('\n') }
+  })()
+  return { scene, duration, css: scene.css }
 }
