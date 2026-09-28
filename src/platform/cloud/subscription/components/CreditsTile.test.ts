@@ -174,6 +174,7 @@ describe('CreditsTile', () => {
             endDate: null,
             isCancelled: false,
             hasFunds: true,
+            agentHasFunds: true,
             ...state.subscription
           }
         : null

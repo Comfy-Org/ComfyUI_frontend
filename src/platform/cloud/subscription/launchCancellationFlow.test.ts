@@ -70,6 +70,7 @@ beforeEach(() => {
           renewalDate: null,
           isCancelled: false,
           hasFunds: true,
+          agentHasFunds: true,
           ...mocks.subscription.value
         }
       : null

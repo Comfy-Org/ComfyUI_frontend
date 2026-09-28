@@ -297,7 +297,7 @@ beforeEach(() => {
           ? null
           : fromPartial({
               hasFunds: paywallHasFunds.value,
-              agentHasFunds: paywallAgentHasFunds.value
+              agentHasFunds: paywallAgentHasFunds.value ?? paywallHasFunds.value
             })
       ),
       tier: computed(() => paywallBilling.tier),

@@ -134,6 +134,7 @@ beforeEach(() => {
           endDate: null,
           isCancelled: false,
           hasFunds: true,
+          agentHasFunds: true,
           ...mockSubscription.value
         }
       : null
