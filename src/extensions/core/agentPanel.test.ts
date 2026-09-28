@@ -293,6 +293,23 @@ describe('AgentPanel extension flag gate', () => {
     )
   })
 
+  it('does not reopen a dismissed activation panel after flag synchronization', async () => {
+    mocks.flagEnabled = true
+    agentStore.isOpen = false
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+    )
+
+    agentStore.close('close_button')
+    mocks.flagListener!()
+    await flush()
+
+    expect(agentStore.isOpen).toBe(false)
+    expect(agentStore.open).toHaveBeenCalledOnce()
+  })
+
   it('keeps the panel closed if the feature is disabled before acceptance', async () => {
     agentFlagEnabled.value = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
