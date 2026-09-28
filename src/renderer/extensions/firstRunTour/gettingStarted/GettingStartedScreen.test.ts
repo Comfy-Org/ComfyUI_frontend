@@ -296,6 +296,7 @@ describe('GettingStartedScreen', () => {
           mocks.dismissIntoTour,
           'A failed load must not dismiss the screen; the user would be left on a bare canvas'
         ).not.toHaveBeenCalled()
+        expect(mocks.dismiss).not.toHaveBeenCalled()
         expect(screen.getByText(enMessages.gettingStarted.retry)).toBeTruthy()
       }
     )
