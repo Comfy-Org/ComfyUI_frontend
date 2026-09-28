@@ -16,6 +16,12 @@ function deriveMsaSectionIds(): string[] {
 }
 
 describe('enterprise MSA i18n', () => {
+  it('exposes the sections in numeric order', () => {
+    expect(deriveMsaSectionIds().map((id) => parseInt(id))).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+    ])
+  })
+
   it('every derived section has a title and at least one block', () => {
     const sectionIds = deriveMsaSectionIds()
     expect(sectionIds.length).toBeGreaterThan(0)
