@@ -7,6 +7,10 @@ import {
   usePreviewSubscribe
 } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
+import type {
+  SubscribeInput,
+  SubscriptionPreview
+} from '@comfyorg/account-core/billing'
 import type { BillingEntry } from '@comfyorg/billing-contract'
 import { buildReturnUrl } from '@comfyorg/billing-contract'
 
@@ -22,6 +26,8 @@ import {
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
 import { planCreditsSettingsUrl } from '@/checkout/cloudLinks'
+import type { PayVerdict } from '@/checkout/payVerdict'
+import { payVerdictOf } from '@/checkout/payVerdict'
 import {
   buildSubscribeRequest,
   checkoutResultUrl
@@ -63,16 +69,23 @@ export function useFullPageCheckout() {
     page.value = reduceCheckoutPage(page.value, event)
   }
 
+  function quoteArrival(arrival: BillingEntry & { plan: string }) {
+    return quote({
+      planSlug: arrival.plan,
+      ...(arrival.teamCreditStopId === undefined
+        ? {}
+        : { teamCreditStopId: arrival.teamCreditStopId })
+    })
+  }
+
+  const asksReactivation = (quoted: SubscriptionPreview) =>
+    quoted.requires_reactivation_confirmation === true
+
   async function resolve(arrival: BillingEntry) {
     if (arrival.plan === undefined) return
     const [allowed, quoted, methods] = await Promise.all([
       capabilities.read(),
-      quote({
-        planSlug: arrival.plan,
-        ...(arrival.teamCreditStopId === undefined
-          ? {}
-          : { teamCreditStopId: arrival.teamCreditStopId })
-      }),
+      quoteArrival({ ...arrival, plan: arrival.plan }),
       saved.refresh(),
       awaitBillingWebStripeKey()
     ])
@@ -86,9 +99,18 @@ export function useFullPageCheckout() {
     } else if (quoted.status === 'error') {
       dispatch({ type: 'unavailable', code: quoted.code })
     } else if (quoted.value.transition_type === 'new_subscription') {
-      dispatch({ type: 'quoted', method: 'collect', saved: arrivalOf(methods) })
+      dispatch({
+        type: 'quoted',
+        method: 'collect',
+        saved: arrivalOf(methods),
+        reactivation: asksReactivation(quoted.value)
+      })
     } else {
-      dispatch({ type: 'quoted', method: 'on_file' })
+      dispatch({
+        type: 'quoted',
+        method: 'on_file',
+        reactivation: asksReactivation(quoted.value)
+      })
     }
   }
 
@@ -138,11 +160,12 @@ export function useFullPageCheckout() {
       checkout.operation.value === undefined
   )
 
-  const payFailure = computed(() =>
-    checkout.result.value?.status === 'error'
-      ? checkout.result.value.code
-      : undefined
-  )
+  const payFailure = computed(() => {
+    const result = checkout.result.value
+    if (result === undefined) return undefined
+    const verdict = payVerdictOf(result)
+    return verdict.kind === 'failure' ? verdict.code : undefined
+  })
 
   /** Back to the product, or to the workspace's Plan & Credits settings when this family has no destination for the link's target. */
   const returnLink = computed(() => {
@@ -158,30 +181,65 @@ export function useFullPageCheckout() {
     return host ?? planCreditsSettingsUrl(workspace)
   })
 
+  function requestFor(
+    arrival: BillingEntry & { plan: string },
+    quoted: SubscriptionPreview,
+    choice: PayChoice
+  ): SubscribeInput {
+    const current = page.value
+    return buildSubscribeRequest({
+      arrival,
+      plan: arrival.plan,
+      quoted,
+      confirmationToken:
+        choice && 'confirmationToken' in choice
+          ? choice.confirmationToken
+          : undefined,
+      ...(choice && 'savedMethodId' in choice
+        ? { savedPaymentMethodId: choice.savedMethodId }
+        : {}),
+      confirmReactivation:
+        current.kind === 'capture' && current.reactivation === 'confirmed',
+      returnUrl: checkoutResultUrl(
+        arrival,
+        billedWorkspace(),
+        window.location.origin
+      )
+    })
+  }
+
+  async function settle(
+    verdict: PayVerdict,
+    arrival: BillingEntry & { plan: string }
+  ) {
+    if (verdict.kind === 'outcome') {
+      if (verdict.outcome.kind === 'reconciling') {
+        dispatch({ type: 'payRejectedAsPending' })
+        return
+      }
+      checkout.reset()
+      dispatch({ type: 'payFailed', outcome: verdict.outcome })
+    } else if (verdict.kind === 'requote') {
+      const requoted = await quoteArrival(arrival)
+      if (requoted.status !== 'ok') return
+      dispatch({
+        type: 'requoted',
+        reactivation:
+          verdict.because === 'reactivation_required' ||
+          asksReactivation(requoted.value),
+        priceUpdated: verdict.because === 'quote_expired'
+      })
+    }
+  }
+
   async function pay(choice: PayChoice) {
     const arrival = entry.value
     const quoted = preview.value
     if (arrival?.plan === undefined || !quoted || !canPay.value) return
-    await checkout.subscribe(
-      buildSubscribeRequest({
-        arrival,
-        plan: arrival.plan,
-        quoted,
-        confirmationToken:
-          choice && 'confirmationToken' in choice
-            ? choice.confirmationToken
-            : undefined,
-        ...(choice && 'savedMethodId' in choice
-          ? { savedPaymentMethodId: choice.savedMethodId }
-          : {}),
-        confirmReactivation: false,
-        returnUrl: checkoutResultUrl(
-          arrival,
-          billedWorkspace(),
-          window.location.origin
-        )
-      })
-    )
+    const planned = { ...arrival, plan: arrival.plan }
+    dispatch({ type: 'paySubmitted' })
+    const result = await checkout.subscribe(requestFor(planned, quoted, choice))
+    await settle(payVerdictOf(result), planned)
   }
 
   return {
@@ -193,11 +251,12 @@ export function useFullPageCheckout() {
     returnLink,
     onPaymentPhase,
     savedMethods: saved.methods,
-    defaultSavedMethod: saved.defaultMethod,
     retryElement: () => dispatch({ type: 'elementRetried' }),
     retrySaved: () => void retrySaved(),
     retryColumn,
     selectTab: (tab: PaymentTab) => dispatch({ type: 'tabSelected', tab }),
+    confirmReactivation: (confirmed: boolean) =>
+      dispatch({ type: 'reactivationConfirmed', confirmed }),
     pay
   }
 }

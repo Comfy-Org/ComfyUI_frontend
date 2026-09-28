@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 
+import { declinedOperation } from './fixtures/scenario'
 import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
 
@@ -151,4 +152,50 @@ test('368-15401: a failed saved-methods read errors on Saved only, and Add new s
   await expect(page.getByText('visa •••• 4242')).toBeVisible()
   await expect(page.getByText(SAVED_FAILED)).toBeHidden()
   await expect(payButton(page)).toBeEnabled()
+})
+
+test('a declined Pay leaves the card above an unchanged Pay, with support one click away', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.operations.op_subscribe = {
+    ...declinedOperation('op_subscribe'),
+    decline_reason: 'insufficient_funds'
+  }
+  await signIn(CHECKOUT)
+
+  await payButton(page).click()
+
+  const card = page.getByRole('alert')
+  await expect(card).toContainText('Payment declined')
+  await expect(card).toContainText('Reported issue: Insufficient funds')
+  await expect(payButton(page)).toBeEnabled()
+  const support = page.getByRole('link', { name: 'Contact support' })
+  await expect(support).toHaveAttribute('href', /op_subscribe/)
+  await expect(support).toHaveAttribute('href', /insufficient_funds/)
+  await expect(page).toHaveURL(/\/v1\/checkout\?/)
+})
+
+test('a Pay that collides with a pending operation never shows a decline', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    pending_billing_op_id: 'op_elsewhere',
+    pending_billing_op_type: 'subscription'
+  }
+  await signIn(CHECKOUT)
+
+  await payButton(page).click()
+
+  await expect(payButton(page)).toBeDisabled()
+  await expect(page.getByText('Payment declined')).toBeHidden()
+  await expect(page.getByRole('link', { name: 'Contact support' })).toBeHidden()
+  expect(
+    cloud.requests.some((request) => request.path === '/billing/subscribe')
+  ).toBe(false)
 })

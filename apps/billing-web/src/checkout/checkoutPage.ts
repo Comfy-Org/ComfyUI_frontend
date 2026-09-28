@@ -1,4 +1,7 @@
-import type { CapabilityDenialReason } from '@comfyorg/account-core/billing'
+import type {
+  CapabilityDenialReason,
+  PaymentReasonKey
+} from '@comfyorg/account-core/billing'
 
 type ElementStatus = 'loading' | 'ready' | 'failed'
 
@@ -27,22 +30,46 @@ type PaymentRail =
 
 type CollectRail = Extract<PaymentRail, { method: 'collect' }>
 
+/**
+ * What the last Pay left above the button. `reconciling` is a Pay the server
+ * refused because an operation is already pending or settled: no card, Pay
+ * stays locked until the page re-reads that operation.
+ */
+export type InlineOutcome =
+  | {
+      readonly kind: 'declined'
+      readonly reason?: PaymentReasonKey
+      readonly operationId?: string
+    }
+  | { readonly kind: 'processing_error'; readonly operationId?: string }
+  | { readonly kind: 'verification_failed'; readonly operationId?: string }
+  | { readonly kind: 'price_updated' }
+  | { readonly kind: 'reconciling' }
+
+/** A cancelled subscription is reactivated only once the customer ticks the charge. */
+type Reactivation = 'not_required' | 'required' | 'confirmed'
+
+type Capture = {
+  readonly kind: 'capture'
+  readonly rail: PaymentRail
+  readonly reactivation: Reactivation
+  readonly outcome?: InlineOutcome
+}
+
 /** The full-page checkout, one state at a time. `resolving` renders the capture skeleton. */
 export type CheckoutPage =
   | { readonly kind: 'resolving' }
   | { readonly kind: 'refused'; readonly reason: CapabilityDenialReason }
   | { readonly kind: 'unavailable'; readonly code: string }
-  | { readonly kind: 'capture'; readonly rail: PaymentRail }
+  | Capture
 
 export type CheckoutPageEvent =
   | { readonly type: 'refused'; readonly reason: CapabilityDenialReason }
   | { readonly type: 'unavailable'; readonly code: string }
-  | {
-      readonly type: 'quoted'
-      readonly method: 'collect'
-      readonly saved: SavedArrival
-    }
-  | { readonly type: 'quoted'; readonly method: 'on_file' }
+  | ({ readonly type: 'quoted'; readonly reactivation: boolean } & (
+      | { readonly method: 'collect'; readonly saved: SavedArrival }
+      | { readonly method: 'on_file' }
+    ))
   | { readonly type: 'elementReady' }
   | { readonly type: 'elementFailed' }
   | { readonly type: 'elementRetried' }
@@ -50,6 +77,19 @@ export type CheckoutPageEvent =
   | { readonly type: 'savedFailed' }
   | { readonly type: 'savedRetried' }
   | { readonly type: 'tabSelected'; readonly tab: PaymentTab }
+  | { readonly type: 'reactivationConfirmed'; readonly confirmed: boolean }
+  | { readonly type: 'paySubmitted' }
+  | {
+      readonly type: 'payFailed'
+      readonly outcome: Exclude<InlineOutcome, { kind: 'reconciling' }>
+    }
+  | { readonly type: 'payRejectedAsPending' }
+  /** A fresh quote after the server refused the old one; the form stays as typed. */
+  | {
+      readonly type: 'requoted'
+      readonly reactivation: boolean
+      readonly priceUpdated: boolean
+    }
 
 export const RESOLVING: CheckoutPage = { kind: 'resolving' }
 
@@ -70,6 +110,19 @@ function withCollect(
   const next = change(page.rail)
   return next === undefined ? page : { ...page, rail: next }
 }
+
+/** Nothing about a Pay moves while the page re-reads the operation it collided with. */
+function withCapture(
+  page: CheckoutPage,
+  change: (capture: Capture) => Capture | undefined
+): CheckoutPage {
+  if (page.kind !== 'capture' || page.outcome?.kind === 'reconciling')
+    return page
+  return change(page) ?? page
+}
+
+const reactivationOf = (required: boolean): Reactivation =>
+  required ? 'required' : 'not_required'
 
 /**
  * A re-read that finds nothing hides the tab row, so the one rail left is
@@ -102,7 +155,8 @@ export function reduceCheckoutPage(
         rail:
           event.method === 'collect'
             ? arrivedRail(event.saved)
-            : { method: 'on_file' }
+            : { method: 'on_file' },
+        reactivation: reactivationOf(event.reactivation)
       }
     case 'elementReady':
       return withCollect(page, (rail) =>
@@ -134,6 +188,33 @@ export function reduceCheckoutPage(
           ? undefined
           : { ...rail, tab: event.tab }
       )
+    case 'reactivationConfirmed':
+      return withCapture(page, (capture) =>
+        capture.reactivation === 'not_required'
+          ? undefined
+          : {
+              ...capture,
+              reactivation: event.confirmed ? 'confirmed' : 'required'
+            }
+      )
+    case 'paySubmitted':
+      return withCapture(page, ({ outcome: _cleared, ...capture }) => capture)
+    case 'payFailed':
+      return withCapture(page, (capture) => ({
+        ...capture,
+        outcome: event.outcome
+      }))
+    case 'payRejectedAsPending':
+      return withCapture(page, (capture) => ({
+        ...capture,
+        outcome: { kind: 'reconciling' }
+      }))
+    case 'requoted':
+      return withCapture(page, ({ outcome: _replaced, ...capture }) => ({
+        ...capture,
+        reactivation: reactivationOf(event.reactivation),
+        ...(event.priceUpdated ? { outcome: { kind: 'price_updated' } } : {})
+      }))
   }
 }
 
@@ -165,9 +246,12 @@ export function railView(rail: PaymentRail): RailView {
 /**
  * Pay waits for the quote and for the rail the customer is on: the ready
  * element on Add new, a loaded list on Saved, nothing for a method on file.
+ * An unticked reactivation or a collided Pay keeps it locked.
  */
 export function railAcceptsPay(page: CheckoutPage): boolean {
   if (page.kind !== 'capture') return false
+  if (page.reactivation === 'required') return false
+  if (page.outcome?.kind === 'reconciling') return false
   const { rail } = page
   if (rail.method === 'on_file') return true
   return rail.tab === 'saved'
