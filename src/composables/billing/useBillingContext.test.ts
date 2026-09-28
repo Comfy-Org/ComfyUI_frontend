@@ -509,17 +509,17 @@ describe('useBillingContext', () => {
     { pending: 'op-1', found: true },
     { pending: undefined, found: false }
   ])(
-    'reads the checkout rail for a hosted payment (pending: $pending)',
+    'finds an operation the server reports after the first read (pending: $pending)',
     async ({ pending, found }) => {
-      mockBillingStatus.value = {
-        ...DEFAULT_BILLING_STATUS,
-        pending_billing_op_id: pending
-      }
       const context = useBillingContext()
       await vi.waitFor(() =>
         expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
       )
       vi.clearAllMocks()
+      mockBillingStatus.value = {
+        ...DEFAULT_BILLING_STATUS,
+        pending_billing_op_id: pending
+      }
 
       await expect(context.readCheckoutOperation()).resolves.toBe(found)
 
