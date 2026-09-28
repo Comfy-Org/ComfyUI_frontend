@@ -172,12 +172,19 @@ export function layoutHiddenLinkBadges(
   endpoints.sort(compareBadgeEndpoints)
 
   const hitAreas: BadgeHitArea[] = []
-  for (const { hitArea, socket, tip } of endpoints) {
+  let previousEndpoint: BadgeEndpoint | undefined
+  for (const endpoint of endpoints) {
+    const { hitArea, socket, tip, nodeId, side } = endpoint
     const [left, , width] = hitArea.boundingRect
-    const centerY = freeBadgeCenterY(hitAreas, left, socket[1], width)
+    const desiredCenterY =
+      previousEndpoint?.nodeId === nodeId && previousEndpoint.side === side
+        ? Math.max(socket[1], previousEndpoint.tip[1])
+        : socket[1]
+    const centerY = freeBadgeCenterY(hitAreas, left, desiredCenterY, width)
     hitArea.boundingRect[1] = centerY - BADGE_HEIGHT / 2
     tip[1] = centerY
     hitAreas.push(hitArea)
+    previousEndpoint = endpoint
   }
   hitAreasByHost.set(host, hitAreas)
   return layouts

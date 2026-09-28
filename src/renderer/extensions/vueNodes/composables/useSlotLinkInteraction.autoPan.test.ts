@@ -10,7 +10,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 
 import { toNodeId } from '@/types/nodeId'
 import { toLinkId } from '@/types/linkId'
@@ -223,7 +223,6 @@ vi.mocked(useEventListener).mockImplementation((event, handler) => {
   }
   return vi.fn()
 })
-vi.mocked(tryOnScopeDispose).mockImplementation(() => true)
 
 vi.mock<unknown>(import('@/lib/litegraph/src/LLink'), () => ({
   LLink: { getReroutes: () => [] },
@@ -282,7 +281,6 @@ describe('useSlotLinkInteraction auto-pan', () => {
       }
       return vi.fn()
     })
-    vi.mocked(tryOnScopeDispose).mockImplementation(() => true)
     capturedOnPan.current = null
     capturedAutoPan.current = null
     for (const k of Object.keys(capturedHandlers)) {
@@ -334,17 +332,45 @@ describe('useSlotLinkInteraction auto-pan', () => {
 
   it.for([
     {
-      name: 'pointerup',
-      finish: () => capturedHandlers.pointerup(pointerEvent(400, 300))
+      name: 'pointerup after leaving the slot',
+      moveHover: (hover: ReturnType<typeof useSlotLinkReveal>) =>
+        hover.unrevealLinks(),
+      finish: () => capturedHandlers.pointerup(pointerEvent(400, 300)),
+      remainsRevealed: false
     },
     {
-      name: 'pointercancel',
-      finish: () => capturedHandlers.pointercancel(pointerEvent(400, 300))
+      name: 'pointercancel after leaving the slot',
+      moveHover: (hover: ReturnType<typeof useSlotLinkReveal>) =>
+        hover.unrevealLinks(),
+      finish: () => capturedHandlers.pointercancel(pointerEvent(400, 300)),
+      remainsRevealed: false
     },
-    { name: 'scope disposal', finish: (scope: EffectScope) => scope.stop() }
+    {
+      name: 'scope disposal after leaving the slot',
+      moveHover: (hover: ReturnType<typeof useSlotLinkReveal>) =>
+        hover.unrevealLinks(),
+      finish: (scope: EffectScope) => scope.stop(),
+      remainsRevealed: false
+    },
+    {
+      name: 'pointerup while still hovering the slot',
+      moveHover: () => {},
+      finish: () => capturedHandlers.pointerup(pointerEvent(400, 300)),
+      remainsRevealed: true
+    },
+    {
+      name: 'pointerup after re-entering and leaving the slot',
+      moveHover: (hover: ReturnType<typeof useSlotLinkReveal>) => {
+        hover.unrevealLinks()
+        hover.revealLinks()
+        hover.unrevealLinks()
+      },
+      finish: () => capturedHandlers.pointerup(pointerEvent(400, 300)),
+      remainsRevealed: false
+    }
   ])(
-    'keeps the source link revealed after slot leave until $name',
-    ({ finish }) => {
+    'preserves drag and hover reveals through $name',
+    ({ moveHover, finish, remainsRevealed }) => {
       const graphScope = {
         rootGraphId: toRootGraphId('autopan-graph'),
         owningGraphId: toOwningGraphId('autopan-graph')
@@ -377,12 +403,17 @@ describe('useSlotLinkInteraction auto-pan', () => {
       expect(isLinkRevealed(graphScope.rootGraphId, linkId)).toBe(true)
 
       const dragScope = startDrag()
-      hover.unrevealLinks()
+      moveHover(hover)
 
       expect(isLinkRevealed(graphScope.rootGraphId, linkId)).toBe(true)
 
       finish(dragScope)
 
+      expect(isLinkRevealed(graphScope.rootGraphId, linkId)).toBe(
+        remainsRevealed
+      )
+
+      hover.unrevealLinks()
       expect(isLinkRevealed(graphScope.rootGraphId, linkId)).toBe(false)
     }
   )

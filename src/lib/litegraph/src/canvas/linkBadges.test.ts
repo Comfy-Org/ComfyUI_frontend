@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import type { Point, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { LLink } from '@/lib/litegraph/src/LLink'
@@ -175,6 +176,85 @@ describe('link badge frame layout', () => {
     expect(queryLinkBadgeAtPoint(host, 120, 144)).toBe(toLinkId(3))
     expect(queryLinkBadgeAtPoint(host, 120, 111)).toBeUndefined()
     expect(queryLinkBadgeAtPoint(host, 120, 133)).toBeUndefined()
+  })
+
+  it('keeps non-overlapping badges aligned with their slots', () => {
+    const host = document.createElement('canvas')
+    layoutHiddenLinkBadges(host, createContext(), [
+      {
+        link: new LLink(toLinkId(1), 'MODEL', 4, 0, 5, 0),
+        presentation: { hidden: true },
+        startPos: [100, 100],
+        endPos: [400, 300],
+        color: BADGE_COLOR
+      },
+      {
+        link: new LLink(toLinkId(2), 'MODEL', 4, 1, 5, 1),
+        presentation: { hidden: true },
+        startPos: [100, 120],
+        endPos: [400, 320],
+        color: BADGE_COLOR
+      }
+    ])
+
+    expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(1))
+    expect(queryLinkBadgeAtPoint(host, 120, 112)).toBe(toLinkId(2))
+    expect(queryLinkBadgeAtPoint(host, 340, 312)).toBe(toLinkId(2))
+  })
+
+  it('preserves slot order when a wider upper badge collides with another node', () => {
+    const host = document.createElement('canvas')
+    const ctx = createMockCanvasRenderingContext2D({
+      measureText: vi.fn((text: string) =>
+        fromPartial<TextMetrics>({ width: text.length * 6 })
+      )
+    })
+    const layouts = layoutHiddenLinkBadges(host, ctx, [
+      {
+        link: new LLink(toLinkId(3), 'MODEL', 2, 0, 20, 0),
+        presentation: { hidden: true, label: 'Long upper output' },
+        startPos: [34, 100],
+        endPos: [900, 400],
+        color: BADGE_COLOR
+      },
+      {
+        link: new LLink(toLinkId(4), 'MODEL', 2, 1, 21, 0),
+        presentation: { hidden: true, label: 'X' },
+        startPos: [34, 120],
+        endPos: [900, 500],
+        color: BADGE_COLOR
+      },
+      {
+        link: new LLink(toLinkId(1), 'MODEL', 10, 0, 1, 0),
+        presentation: { hidden: true, label: 'Other input' },
+        startPos: [700, -200],
+        endPos: [200, 100],
+        color: BADGE_COLOR
+      },
+      {
+        link: new LLink(toLinkId(2), 'MODEL', 11, 0, 1, 1),
+        presentation: { hidden: true, label: 'Other input' },
+        startPos: [700, -100],
+        endPos: [200, 120],
+        color: BADGE_COLOR
+      }
+    ])
+    const upper = layouts.get(toLinkId(3))
+    const lower = layouts.get(toLinkId(4))
+    assert.exists(upper)
+    assert.exists(lower)
+
+    expect(upper.output.tip[1]).toBeGreaterThan(120)
+    expect(lower.output.hitArea.boundingRect[1]).toBeGreaterThan(
+      upper.output.hitArea.boundingRect[1] +
+        upper.output.hitArea.boundingRect[3]
+    )
+    expect(queryLinkBadgeAtPoint(host, 50, upper.output.tip[1])).toBe(
+      toLinkId(3)
+    )
+    expect(queryLinkBadgeAtPoint(host, 50, lower.output.tip[1])).toBe(
+      toLinkId(4)
+    )
   })
 
   it('culls using reversed and stacked badge extents', () => {
