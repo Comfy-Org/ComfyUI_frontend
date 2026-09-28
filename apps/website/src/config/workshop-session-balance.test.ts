@@ -294,6 +294,39 @@ describe('useWorkshopSessionBalance', () => {
     expect(balance.value).toEqual({ status: 'ok', credits: 890 })
   })
 
+  it('ignores a read from before the same account signed out and back in', async () => {
+    const pending: ((response: Response) => void)[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(
+        () =>
+          new Promise<Response>((resolve) => {
+            pending.push(resolve)
+          })
+      )
+    )
+    const session = shallowRef<WebSession | undefined>(SESSION)
+    const balance = await mountOn(session)
+    await vi.waitFor(() => expect(pending).toHaveLength(1))
+
+    session.value = undefined
+    await nextTick()
+    session.value = sessionFor('uid-1')
+    await nextTick()
+    pending[0](answer(401, { code: 'session_revoked' }))
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(balance.value).toEqual({ status: 'unknown' })
+    await vi.waitFor(() => expect(pending).toHaveLength(2))
+    pending[1](answer(200, BALANCE_BODY))
+    await vi.waitFor(() =>
+      expect(balance.value).toEqual({ status: 'ok', credits: 445 })
+    )
+
+    window.dispatchEvent(new Event('focus'))
+    await vi.waitFor(() => expect(pending).toHaveLength(3))
+  })
+
   it('keeps the balance when the same account republishes its session', async () => {
     const { sent, fetchImpl } = recordingFetch(() => answer(200, BALANCE_BODY))
     vi.stubGlobal('fetch', fetchImpl)

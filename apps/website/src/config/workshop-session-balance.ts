@@ -70,32 +70,36 @@ export async function readSessionBalance(
     : { status: 'ok', credits: centsToCredits(cents) }
 }
 
+interface Generation {
+  readonly account: string | undefined
+}
+
 const balance = shallowRef<SessionBalanceState>({ status: 'unknown' })
-let account: string | undefined
+let generation: Generation = { account: undefined }
 let inFlight:
-  | { readonly account: string; readonly read: Promise<void> }
+  | { readonly generation: Generation; readonly read: Promise<void> }
   | undefined
 
 function refresh(session: WebSession): Promise<void> {
   if (balance.value.status === 'session_ended') return Promise.resolve()
-  const reader = session.user.id
-  if (inFlight?.account === reader) return inFlight.read
+  const owner = generation
+  if (inFlight?.generation === owner) return inFlight.read
   const read = readSessionBalance(session, (...args) =>
     globalThis.fetch(...args)
   )
     .then((next) => {
-      if (account === reader) balance.value = next
+      if (generation === owner) balance.value = next
     })
     .finally(() => {
       if (inFlight?.read === read) inFlight = undefined
     })
-  inFlight = { account: reader, read }
+  inFlight = { generation: owner, read }
   return read
 }
 
 function follow(session: WebSession | undefined) {
-  if (session?.user.id === account) return
-  account = session?.user.id
+  if (session?.user.id === generation.account) return
+  generation = { account: session?.user.id }
   balance.value = { status: 'unknown' }
   if (session) void refresh(session)
 }
