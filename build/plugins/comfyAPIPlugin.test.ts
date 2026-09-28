@@ -2,64 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import path from 'path'
 import { describe, expect, it, vi } from 'vitest'
 
-import { comfyAPIPlugin, isLegacyFile } from './comfyAPIPlugin'
-
-describe('isLegacyFile', () => {
-  const srcRoot = '/repo/src'
-
-  it.for([
-    {
-      name: "matches this package's own legacy scripts/",
-      id: '/repo/src/scripts/api.ts',
-      expected: true
-    },
-    {
-      name: "matches this package's own legacy extensions/core/",
-      id: '/repo/src/extensions/core/groupNode.ts',
-      expected: true
-    },
-    {
-      name: "does not match another package's src/scripts",
-      id: '/repo/apps/website/src/scripts/customerio.ts',
-      expected: false
-    },
-    {
-      name: "does not match another package's src/extensions/core",
-      id: '/repo/apps/website/src/extensions/core/whatever.ts',
-      expected: false
-    },
-    {
-      name: 'does not match non-.ts files',
-      id: '/repo/src/scripts/api.vue',
-      expected: false
-    },
-    {
-      name: 'does not match src/ files outside legacy directories',
-      id: '/repo/src/components/App.ts',
-      expected: false
-    },
-    {
-      name: 'does not match files entirely outside src/',
-      id: '/repo/build/plugins/other.ts',
-      expected: false
-    },
-    {
-      name: 'does not match sibling directory names starting with scripts',
-      id: '/repo/src/scripts-old/api.ts',
-      expected: false
-    }
-  ])('$name', ({ id, expected }) => {
-    expect(isLegacyFile(id, srcRoot)).toBe(expected)
-  })
-
-  it('defaults the base to <cwd>/src', () => {
-    const root = process.cwd()
-    expect(isLegacyFile(path.join(root, 'src/scripts/api.ts'))).toBe(true)
-    expect(
-      isLegacyFile(path.join(root, 'apps/website/src/scripts/customerio.ts'))
-    ).toBe(false)
-  })
-})
+import { comfyAPIPlugin } from './comfyAPIPlugin'
 
 describe('comfyAPIPlugin transform', () => {
   const root = process.cwd()
@@ -72,6 +15,67 @@ describe('comfyAPIPlugin transform', () => {
     const result = handler.call(context, source, id)
     return { result, emitFile }
   }
+
+  it.for([
+    {
+      name: "matches this package's own legacy scripts/",
+      id: path.join(root, 'src/scripts/api.ts'),
+      expected: true
+    },
+    {
+      name: "matches this package's own legacy extensions/core/",
+      id: path.join(root, 'src/extensions/core/groupNode.ts'),
+      expected: true
+    },
+    {
+      name: "does not match another package's src/scripts",
+      id: path.join(root, 'apps/website/src/scripts/customerio.ts'),
+      expected: false
+    },
+    {
+      name: "does not match another package's src/extensions/core",
+      id: path.join(root, 'apps/website/src/extensions/core/whatever.ts'),
+      expected: false
+    },
+    {
+      name: 'does not match non-.ts files',
+      id: path.join(root, 'src/scripts/api.vue'),
+      expected: false
+    },
+    {
+      name: 'does not match src/ files outside legacy directories',
+      id: path.join(root, 'src/components/App.ts'),
+      expected: false
+    },
+    {
+      name: 'does not match files entirely outside src/',
+      id: path.join(root, 'build/plugins/other.ts'),
+      expected: false
+    },
+    {
+      name: 'does not match sibling directory names starting with scripts',
+      id: path.join(root, 'src/scripts-old/api.ts'),
+      expected: false
+    }
+  ])('$name', ({ id, expected }) => {
+    const { result, emitFile } = runTransform(false, id)
+
+    expect(result !== undefined).toBe(expected)
+    expect(emitFile).toHaveBeenCalledTimes(expected ? 1 : 0)
+  })
+
+  it('uses <cwd>/src as the transform root', () => {
+    const accepted = runTransform(false, path.join(root, 'src/scripts/api.ts'))
+    const rejected = runTransform(
+      false,
+      path.join(root, 'apps/website/src/scripts/customerio.ts')
+    )
+
+    expect(accepted.emitFile).toHaveBeenCalledOnce()
+    expect(accepted.result).toBeDefined()
+    expect(rejected.emitFile).not.toHaveBeenCalled()
+    expect(rejected.result).toBeUndefined()
+  })
 
   it('emits an output-root-relative shim for a legacy scripts/ file', () => {
     const { result, emitFile } = runTransform(
