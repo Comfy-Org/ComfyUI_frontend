@@ -131,7 +131,7 @@ useEventListener(scrollContainer, 'scroll', () => {
 
 function followLatestAfterResize(): void {
   const element = scrollContainer.value
-  if (!element) return
+  if (!element || element.clientHeight === 0) return
   atBottom.value =
     element.scrollHeight - element.scrollTop - element.clientHeight <=
     bottomGracePx
