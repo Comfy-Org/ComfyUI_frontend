@@ -13,7 +13,14 @@ import {
 } from '@/stores/subgraphNavigationStore'
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
+  const mockCanvasElement = document.createElement('canvas')
+  Object.defineProperties(mockCanvasElement, {
+    offsetParent: { value: document.body },
+    offsetWidth: { value: 1920 },
+    offsetHeight: { value: 1080 }
+  })
   const mockCanvas = {
+    canvas: mockCanvasElement,
     subgraph: undefined as unknown,
     graph: undefined as unknown,
     ds: {
@@ -58,6 +65,20 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: vi.fn() }))
 
 vi.mock(import('@/services/litegraphService'))
+
+vi.mock(import('@/renderer/core/canvas/useCanvasScheduler'), () => ({
+  useCanvasScheduler: () => ({
+    schedule: (operation: { isCurrent?: () => boolean; run: () => void }) => {
+      requestAnimationFrame(() => {
+        if (operation.isCurrent?.() !== false) operation.run()
+      })
+    },
+    flush: vi.fn(),
+    clear: vi.fn(),
+    pending: () => 0,
+    isCanvasReady: () => true
+  })
+}))
 
 const mockCanvas = app.canvas
 
