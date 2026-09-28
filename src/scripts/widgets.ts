@@ -26,7 +26,7 @@ import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
-import type { ComfyApp } from './app'
+import type { ComfyApp } from '@/types/comfy'
 import './domWidget'
 import './errorNodeWidgets'
 

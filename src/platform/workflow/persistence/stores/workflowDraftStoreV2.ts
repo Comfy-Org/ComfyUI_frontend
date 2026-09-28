@@ -9,7 +9,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import { app as comfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 import type { DraftIndexV2 } from '../base/draftTypes'
 import { MAX_DRAFTS } from '../base/draftTypes'
@@ -363,7 +363,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     if (!payload) return false
     try {
       const workflow = JSON.parse(payload)
-      await comfyApp.loadGraphData(workflow, true, true, workflowName)
+      await useApp().loadGraphData(workflow, true, true, workflowName)
       return true
     } catch (err) {
       console.error('Failed to load persisted workflow', err)

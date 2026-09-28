@@ -10,6 +10,13 @@ import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConc
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { registerApp } from '@/scripts/appRegistry'
+import {
+  clipspace,
+  copyToClipspace,
+  pasteFromClipspace
+} from '@/scripts/clipspace'
+import type { Clipspace } from '@/scripts/clipspace'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
@@ -68,8 +75,7 @@ import {
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
   ExecutionErrorWsMessage,
-  NodeExecutionOutput,
-  ResultItem
+  NodeExecutionOutput
 } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
@@ -105,7 +111,12 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import type { ComfyExtension } from '@/types/comfy'
+import type {
+  ComfyApp as IComfyApp,
+  ComfyExtension,
+  LoadGraphDataOptions,
+  QueuePromptOptions
+} from '@/types/comfy'
 import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type {
   ExtensionManager,
@@ -186,7 +197,7 @@ import {
   pasteVideoNodes
 } from '@/composables/usePaste'
 
-export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
+export { ANIM_PREVIEW_WIDGET } from '@/composables/node/useNodeAnimatedImage'
 
 function isMeshModelFile(file: File): boolean {
   const name = file.name.toLowerCase()
@@ -236,26 +247,6 @@ function syncPromotedComboHostOptions(rootGraph: LGraph): void {
   })
 }
 
-type Clipspace = {
-  widgets?: Pick<IBaseWidget, 'type' | 'name' | 'value'>[] | null
-  imgs?: HTMLImageElement[] | null
-  original_imgs?: HTMLImageElement[] | null
-  images?: ResultItem[] | null
-  selectedIndex: number
-  img_paste_mode: string
-  paintedIndex: number
-  combinedIndex?: number
-}
-
-/**
- * Optional inputs to {@link ComfyApp.queuePrompt}. `intent` is telemetry
- * attribution only and never affects what gets executed.
- */
-export interface QueuePromptOptions {
-  queueNodeIds?: NodeExecutionId[]
-  intent?: WorkflowQueueIntent
-}
-
 function createNodeOutputsMutationView(
   outputs: Partial<Record<string, NodeExecutionOutput>>,
   commit: (id: string, output: NodeExecutionOutput | undefined) => void
@@ -297,7 +288,7 @@ function createNodeOutputsMutationView(
   })
 }
 
-export class ComfyApp {
+export class ComfyApp implements IComfyApp {
   /**
    * List of entries to queue
    */
@@ -315,14 +306,36 @@ export class ComfyApp {
   private processingQueue: boolean = false
 
   /**
-   * Content Clipboard
-   * @type {serialized node object}
+   * Content Clipboard, kept as statics for custom-node compatibility.
+   * State lives in `@/scripts/clipspace`.
    */
-  static clipspace: Clipspace | null = null
-  static clipspace_invalidate_handler: (() => void) | null = null
+  static get clipspace(): Clipspace | null {
+    return clipspace.current
+  }
+  static set clipspace(value: Clipspace | null) {
+    clipspace.current = value
+  }
+  static get clipspace_invalidate_handler(): (() => void) | null {
+    return clipspace.invalidateHandler
+  }
+  static set clipspace_invalidate_handler(value: (() => void) | null) {
+    clipspace.invalidateHandler = value
+  }
+  static get clipspace_return_node(): LGraphNode | null {
+    return clipspace.returnNode
+  }
+  static set clipspace_return_node(value: LGraphNode | null) {
+    clipspace.returnNode = value
+  }
   static open_maskeditor: (() => void) | null = null
-  static maskeditor_is_opended: (() => boolean) | null = null
-  static clipspace_return_node: LGraphNode | null = null
+  static get maskeditor_is_opended(): (() => boolean) | null {
+    return clipspace.maskEditorIsOpened
+  }
+  static set maskeditor_is_opended(value: (() => boolean) | null) {
+    clipspace.maskEditorIsOpened = value
+  }
+  static copyToClipspace = copyToClipspace
+  static pasteFromClipspace = pasteFromClipspace
 
   vueAppReady: boolean
   api: ComfyApi
@@ -557,172 +570,13 @@ export class ComfyApp {
   }
 
   static onClipspaceEditorSave() {
-    if (ComfyApp.clipspace_return_node) {
-      ComfyApp.pasteFromClipspace(ComfyApp.clipspace_return_node)
+    if (clipspace.returnNode) {
+      pasteFromClipspace(clipspace.returnNode)
     }
   }
 
   static onClipspaceEditorClosed() {
-    ComfyApp.clipspace_return_node = null
-  }
-
-  static copyToClipspace(node: LGraphNode) {
-    let widgets = null
-    if (node.widgets) {
-      widgets = node.widgets.map(({ type, name, value }) => ({
-        type,
-        name,
-        value
-      }))
-    }
-
-    let imgs = undefined
-    let orig_imgs = undefined
-    if (node.imgs != undefined) {
-      imgs = []
-      orig_imgs = []
-
-      for (let i = 0; i < node.imgs.length; i++) {
-        imgs[i] = new Image()
-        imgs[i].src = node.imgs[i].src
-        orig_imgs[i] = imgs[i]
-      }
-    }
-
-    let selectedIndex = 0
-    if (node.imageIndex) {
-      selectedIndex = node.imageIndex
-    }
-
-    const paintedIndex = imgs ? imgs.length + 1 : 1
-    const combinedIndex = imgs ? imgs.length + 2 : 2
-
-    // for vueNodes mode
-    const images = useNodeOutputStore().getNodeOutputs(node)?.images
-
-    ComfyApp.clipspace = {
-      widgets: widgets,
-      imgs: imgs,
-      original_imgs: orig_imgs,
-      images: images,
-      selectedIndex: selectedIndex,
-      img_paste_mode: 'selected', // reset to default im_paste_mode state on copy action
-      paintedIndex: paintedIndex,
-      combinedIndex: combinedIndex
-    }
-
-    ComfyApp.clipspace_return_node = null
-
-    if (ComfyApp.clipspace_invalidate_handler) {
-      ComfyApp.clipspace_invalidate_handler()
-    }
-  }
-
-  static pasteFromClipspace(node: LGraphNode) {
-    if (ComfyApp.clipspace) {
-      // image paste
-      let combinedImgSrc: string | undefined
-      if (
-        ComfyApp.clipspace.combinedIndex !== undefined &&
-        ComfyApp.clipspace.imgs &&
-        ComfyApp.clipspace.combinedIndex < ComfyApp.clipspace.imgs.length
-      ) {
-        combinedImgSrc =
-          ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex].src
-      }
-      if (ComfyApp.clipspace.imgs && node.imgs) {
-        // Update node.images even if it's initially undefined (vueNodes mode)
-        if (ComfyApp.clipspace.images) {
-          const images =
-            ComfyApp.clipspace['img_paste_mode'] == 'selected'
-              ? [ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]]
-              : ComfyApp.clipspace.images
-          useNodeOutputStore().setNodeOutputImages(node, images)
-        }
-
-        // deep-copy to cut link with clipspace
-        if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
-          const img = new Image()
-          img.src =
-            ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
-          node.imgs = [img]
-          node.imageIndex = 0
-        } else {
-          const imgs = []
-          for (let i = 0; i < ComfyApp.clipspace.imgs.length; i++) {
-            imgs[i] = new Image()
-            imgs[i].src = ComfyApp.clipspace.imgs[i].src
-            node.imgs = imgs
-          }
-        }
-      }
-
-      // Paste the RGB canvas if paintedindex exists
-      if (
-        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.paintedIndex] &&
-        node.imgs
-      ) {
-        const paintedImg = new Image()
-        paintedImg.src =
-          ComfyApp.clipspace.imgs[ComfyApp.clipspace.paintedIndex].src
-        node.imgs.push(paintedImg) // Add the RGB canvas to the node's images
-      }
-
-      // Store only combined image inside the node if it exists
-      if (node.imgs && combinedImgSrc) {
-        const combinedImg = new Image()
-        combinedImg.src = combinedImgSrc
-        node.imgs = [combinedImg]
-      }
-
-      if (node.widgets) {
-        if (ComfyApp.clipspace.images) {
-          const clip_image =
-            ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
-          const index = node.widgets.findIndex((obj) => obj.name === 'image')
-          if (index >= 0) {
-            if (
-              node.widgets[index].type != 'image' &&
-              typeof node.widgets[index].value == 'string' &&
-              clip_image.filename
-            ) {
-              node.widgets[index].value =
-                (clip_image.subfolder ? clip_image.subfolder + '/' : '') +
-                clip_image.filename +
-                (clip_image.type ? ` [${clip_image.type}]` : '')
-            } else {
-              node.widgets[index].value = clip_image
-            }
-          }
-        }
-        if (ComfyApp.clipspace.widgets) {
-          ComfyApp.clipspace.widgets.forEach(({ type, name, value }) => {
-            const prop = node.widgets?.find(
-              (obj) => obj.type === type && obj.name === name
-            )
-            if (prop && prop.type != 'button') {
-              const valueObj = value as Record<string, unknown> | undefined
-              if (
-                prop.type != 'image' &&
-                typeof prop.value == 'string' &&
-                valueObj?.filename
-              ) {
-                const resultItem = value as ResultItem
-                prop.value =
-                  (resultItem.subfolder ? resultItem.subfolder + '/' : '') +
-                  resultItem.filename +
-                  (resultItem.type ? ` [${resultItem.type}]` : '')
-              } else {
-                prop.value = value
-                prop.callback?.(value)
-              }
-            }
-          })
-        }
-      }
-
-      app.canvas.setDirty(true)
-    }
+    clipspace.returnNode = null
   }
 
   /**
@@ -1296,15 +1150,7 @@ export class ComfyApp {
     clean: boolean = true,
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
-    options: {
-      checkForRerouteMigration?: boolean
-      openSource?: WorkflowOpenSource
-      shareId?: string
-      deferWarnings?: boolean
-      skipAssetScans?: boolean
-      silentAssetErrors?: boolean
-      workflowNavigationId?: number
-    } = {}
+    options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean> {
     const {
       checkForRerouteMigration = false,
@@ -2747,3 +2593,4 @@ export class ComfyApp {
 }
 
 export const app = new ComfyApp()
+registerApp(app)

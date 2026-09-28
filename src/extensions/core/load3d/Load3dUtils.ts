@@ -1,7 +1,7 @@
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 class Load3dUtils {
   static async uploadTempImage(
@@ -118,7 +118,7 @@ class Load3dUtils {
       'filename=' + encodeURIComponent(filename),
       'type=' + type,
       'subfolder=' + subfolder,
-      app.getRandParam().substring(1)
+      useApp().getRandParam().substring(1)
     ].join('&')
 
     return `/view?${params}`
