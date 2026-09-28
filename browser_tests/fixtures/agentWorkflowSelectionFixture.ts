@@ -1,4 +1,7 @@
-import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+import { mergeTests } from '@playwright/test'
+
+import { networkIsolationFixture } from '@e2e/fixtures/networkIsolationFixture'
+import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import type { UserDataFullInfo } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -13,6 +16,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 type WorkflowSelection = {
   savedPaths: string[]
   postedMessages: string[]
+  completeLatestWorkflowMessage: () => Promise<void>
   finishSave: (success: boolean) => void
   failNextWorkflowMessage: () => void
   pauseWorkflowLookups: () => void
@@ -21,12 +25,14 @@ type WorkflowSelection = {
   workflowLookups: () => number
 }
 
+const base = mergeTests(networkIsolationFixture, webSocketFixture)
+
 export const workflowSelectionTest = base.extend<{
   nodeDefinitions: Record<string, ComfyNodeDef> | undefined
   workflowSelection: WorkflowSelection
 }>({
   nodeDefinitions: [undefined, { option: true }],
-  workflowSelection: async ({ page, nodeDefinitions }, use) => {
+  workflowSelection: async ({ page, nodeDefinitions, getWebSocket }, use) => {
     await bootAgentApp(page, true, {
       objectInfo: nodeDefinitions
     })
@@ -138,6 +144,20 @@ export const workflowSelectionTest = base.extend<{
     await use({
       savedPaths,
       postedMessages,
+      completeLatestWorkflowMessage: async () => {
+        if (postedMessages.length === 0)
+          throw new Error('no accepted workflow message to complete')
+        const socket = await getWebSocket()
+        socket.send(
+          JSON.stringify({
+            type: 'agent_message_done',
+            data: {
+              thread_id: '6f4b1e2a-7c3d-4e5f-8a9b-0c1d2e3f4a5b',
+              message_id: `0a1b2c3d-4e5f-4a6b-8c7d-${String(postedMessages.length).padStart(12, '0')}`
+            }
+          })
+        )
+      },
       finishSave: (success) => finishSave(success),
       failNextWorkflowMessage: () => {
         nextWorkflowMessageResponse = 'fail'

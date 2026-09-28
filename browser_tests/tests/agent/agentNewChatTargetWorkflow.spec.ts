@@ -50,6 +50,10 @@ test.describe(
       await initialComposer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
       await expect(initialComposer).toHaveText('')
+      await workflowSelection.completeLatestWorkflowMessage()
+      await expect(
+        panel.getByRole('button', { name: enMessages.agent.stop })
+      ).toHaveCount(0)
       await initialComposer.fill('Unsent draft')
 
       // Open a second workflow tab (B), then switch back to A so B is just
@@ -126,6 +130,10 @@ test.describe(
       await initialComposer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
       await expect(initialComposer).toHaveText('')
+      await workflowSelection.completeLatestWorkflowMessage()
+      await expect(
+        panel.getByRole('button', { name: enMessages.agent.stop })
+      ).toHaveCount(0)
       await initialComposer.fill('Unsent draft')
 
       // Create a brand new, still-unsaved tab - it becomes the one on screen.
