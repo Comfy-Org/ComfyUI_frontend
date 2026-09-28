@@ -123,11 +123,14 @@ export {
 export {
   OPERATION_POLL_BUDGET,
   OPERATION_POLL_TIMING,
+  customerCanActHere,
   hasExhaustedPollBudget,
   isParkedOnCustomer,
   nextPollDelayMs,
+  pendingOperationActionHold,
   pollBudgetMs
 } from './operationPolicy.js'
+export type { CustomerActionHold } from './operationPolicy.js'
 export type {
   BillingOperationPointer,
   BillingOperationPointerStorage,

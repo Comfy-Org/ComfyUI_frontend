@@ -26,6 +26,7 @@
     "./session": "./src/core/session.ts",
     "./webSession": "./src/core/webSession.ts",
     "./requestAuth": "./src/core/requestAuth.ts",
+    "./sessionTokenMint": "./src/core/sessionTokenMint.ts",
     "./webSessionIdentity": "./src/core/webSessionIdentity.ts",
     "./billing": "./src/core/billing/index.ts",
     "./firebase": "./src/firebase/index.ts",
@@ -60,6 +61,10 @@
       "./requestAuth": {
         "types": "./dist/core/requestAuth.d.ts",
         "import": "./dist/core/requestAuth.js"
+      },
+      "./sessionTokenMint": {
+        "types": "./dist/core/sessionTokenMint.d.ts",
+        "import": "./dist/core/sessionTokenMint.js"
       },
       "./webSessionIdentity": {
         "types": "./dist/core/webSessionIdentity.d.ts",
@@ -133,7 +138,7 @@
     "lint": "oxlint src --type-aware && eslint src",
     "smoke:pack": "tsx scripts/smokePack.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit && tsc -p scripts/tsconfig.json"
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit && tsx ../../scripts/vue-tsc-native.ts -p scripts/tsconfig.json"
   },
   "dependencies": {
     "@comfyorg/ingest-types": "workspace:^"

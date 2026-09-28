@@ -115,6 +115,7 @@ let mockFetch: ReturnType<typeof vi.fn>
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: false })
+  vi.spyOn(Math, 'random').mockReturnValue(0)
   mockDistributionTypes.isCloud = true
   mockEnsureSessionCookie.mockResolvedValue(undefined)
   mockFetch = vi.fn((_url: string, init: { body: string }) => {
