@@ -643,6 +643,12 @@ export const useAgentConversationStore = defineStore(
     }
 
     /**
+     * Two ways the live copy is already the better record of this call, and
+     * the row must not overwrite it.
+     *
+     * A `done` state means the transport watched the call end itself, and it
+     * carries the duration it measured, which the row does not.
+     *
      * PM-1575: an `ok` already set while the state is still `streaming` is
      * the canvas gate holding a call that DID succeed until its edit shows up
      * on the graph -- not a call whose end the transport missed. Settling

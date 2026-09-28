@@ -1584,6 +1584,64 @@ describe('useAgentConversationStore', () => {
   })
 
   /**
+   * The other half of "the live copy already holds this call's outcome": a
+   * call the transport watched end carries the duration it measured, which
+   * the row never records, so the row must not overwrite it.
+   */
+  it('keeps the duration the transport measured over the row copy', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'find a node')
+    store.ingest(
+      chat({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: 'call-search_nodes',
+          tool_name: 'search_nodes',
+          status: 'success',
+          duration_ms: 1234,
+          message_id: 't1',
+          thread_id: 'th'
+        }
+      })
+    )
+    store.stashActiveTurn()
+
+    const streamingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+    streamingRow.status = 'streaming'
+    streamingRow.content = {
+      tool_calls: [
+        {
+          id: 'call-search_nodes',
+          tool_name: 'search_nodes',
+          status: 'ok',
+          duration_ms: 9999
+        }
+      ]
+    }
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'find a node'),
+      streamingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(
+      store.messages[0].parts.filter((part) => part.type === 'tool')
+    ).toEqual([
+      expect.objectContaining({
+        callId: 'call-search_nodes',
+        state: 'done',
+        ok: true,
+        durationMs: 1234
+      })
+    ])
+  })
+
+  /**
    * PM-1575: a canvas-mutating call that succeeded is held at the spinner
    * with `ok` already true until its edit reaches the graph. The row calls
    * that same call finished, and adopting that verbatim would put the
