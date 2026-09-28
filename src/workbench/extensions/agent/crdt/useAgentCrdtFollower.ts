@@ -29,7 +29,7 @@ import { recordDevEvent } from './devPanelLog'
 import { wireLog } from './crdtLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
-import type { DocFrameTransport } from './docFrameClient'
+import type { DocFrameTransport, DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
@@ -514,9 +514,12 @@ function startAgentCrdtFollower(
     }
     return pending
   }
-  const adapter = new EcsFollowerAdapter(graphMutations, {
-    pendingDeletes: pendingHumanDeletes
-  })
+  const adapter = new EcsFollowerAdapter(
+    graphMutations,
+    { pendingDeletes: pendingHumanDeletes },
+    (docId, update) => completeRecoveredFrame(docId, update),
+    (docId) => isTargetActive.value && docId === subscribedWorkflowId.value
+  )
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   // FE-1901 (poc-2): a `doc_subscribed {ok:false}` is a SERVER refusal — e.g.
@@ -720,6 +723,7 @@ function startAgentCrdtFollower(
       }
     }
     const materialized = applied ? reconcileLiveGraph(update.workflowId) : []
+    if (applied && update.catchUp) refreshMissingModelsAfterSync()
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -943,8 +947,8 @@ function startAgentCrdtFollower(
       events
     )
   }
-  function reconcileAfterActivation(docId: string): void {
-    reconcileAndReportPending(docId)
+  function refreshMissingModelsAfterSync(): void {
+    if (!getGraph()) return
     void app
       .refreshMissingModels({ silent: true, reloadDefs: false })
       .catch((error: unknown) =>
@@ -953,6 +957,21 @@ function startAgentCrdtFollower(
             'error_refreshing_missing_models_after_agent_tab_activation'
         })
       )
+  }
+  function completeRecoveredFrame(docId: string, update: DocUpdate): void {
+    if (!isTargetActive.value || docId !== subscribedWorkflowId.value) return
+    const catchUp = 'catchUp' in update && update.catchUp === true
+    outcomes.value = {
+      ...outcomes.value,
+      applied: outcomes.value.applied + 1,
+      appliedLive: outcomes.value.appliedLive + (catchUp ? 0 : 1),
+      skipped: Math.max(0, outcomes.value.skipped - 1)
+    }
+    reconcileAndReportPending(docId)
+    if (catchUp) refreshMissingModelsAfterSync()
+  }
+  function reconcileAfterActivation(docId: string): void {
+    reconcileAndReportPending(docId)
   }
   // Readiness only. The other ordering -- graph ready first, target activated
   // second -- cannot be caught here: `getGraph` does not change when activity

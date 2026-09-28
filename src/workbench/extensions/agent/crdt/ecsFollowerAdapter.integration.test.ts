@@ -575,7 +575,15 @@ describe('EcsFollowerAdapter integration', () => {
           opIds: ['distinctive-op-id']
         })
       )
-      expect(onReconcileRetryCommitted).toHaveBeenCalledExactlyOnceWith('wf')
+      expect(onReconcileRetryCommitted).toHaveBeenCalledExactlyOnceWith(
+        'wf',
+        expect.objectContaining({
+          workflowId: 'wf',
+          seq: 7,
+          actor: 'agent:distinctive-actor',
+          opIds: ['distinctive-op-id']
+        })
+      )
 
       adapter.destroy()
       follower.destroy()

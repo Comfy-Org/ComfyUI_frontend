@@ -23,7 +23,9 @@ async function appliedFrameCount(page: Page): Promise<number> {
     (await outcomesCell.innerText()).split('/')[1] ?? '',
     10
   )
-  return Number.isNaN(applied) ? -1 : applied
+  if (Number.isNaN(applied))
+    throw new Error('CRDT outcomes cell is not in total/applied form')
+  return applied
 }
 
 // A host add pushed after the tab-return catch-up. Frames reach the follower

@@ -40,6 +40,7 @@ type NodeRootAction = 'add' | 'update' | 'delete'
 const RECONCILE_FAST_RETRY_LIMIT = 20
 const RECONCILE_RETRY_INTERVAL_MS = 200
 const RECONCILE_SLOW_RETRY_INTERVAL_MS = 2_000
+const RECOVERY_OP_ID_LIMIT = 100
 
 /**
  * Node-map keys whose by-key edits trigger a field resync. Structural keys
@@ -351,7 +352,9 @@ function frameContext(update: DocUpdate): RemoteMutationContext {
 }
 
 function mergeRecoveryFrame(first: DocUpdate, latest: DocUpdate): DocUpdate {
-  const opIds = [...new Set([...(first.opIds ?? []), ...(latest.opIds ?? [])])]
+  const opIds = [
+    ...new Set([...(first.opIds ?? []), ...(latest.opIds ?? [])])
+  ].slice(-RECOVERY_OP_ID_LIMIT)
   return {
     ...latest,
     actor:
@@ -400,7 +403,11 @@ type BatchRecoveryState =
 type LiveSweepRecoveryState =
   | { kind: 'idle' }
   | { kind: 'running' }
-  | { kind: 'scheduled'; timer: ReturnType<typeof setTimeout> }
+  | {
+      kind: 'scheduled'
+      timer: ReturnType<typeof setTimeout>
+      failureReported: boolean
+    }
 
 type BatchChanges = {
   batch: GraphMutationBatch
@@ -430,8 +437,10 @@ export class EcsFollowerAdapter {
     private readonly mutations: MutationsForTarget,
     private readonly intent: LocalIntent = NO_LOCAL_INTENT,
     private readonly onReconcileRetryCommitted: (
-      workflowId: string
-    ) => void = () => undefined
+      workflowId: string,
+      update: DocUpdate
+    ) => void = () => undefined,
+    private readonly canRetry: (workflowId: string) => boolean = () => true
   ) {}
 
   bind(workflowId: string, follower: FollowerDoc): void {
@@ -481,7 +490,7 @@ export class EcsFollowerAdapter {
     this.discardSessionPending(session)
     this.clearReconcileRetry(session)
     this.clearLiveSweepRetry(session)
-    session.reconcileNextFrame = false
+    session.reconcileNextFrame = true
     return session.mutations.clearSemanticGraph(context)
   }
 
@@ -494,7 +503,7 @@ export class EcsFollowerAdapter {
     // re-apply the very state that gate just refused.
     this.clearReconcileRetry(session)
     this.clearLiveSweepRetry(session)
-    session.reconcileNextFrame = false
+    session.reconcileNextFrame = true
   }
 
   destroy(): void {
@@ -590,9 +599,9 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
       link && !isIncompatibleLinkType(link) ? [] : [Number(id)]
     )
-    const result = session.mutations.batchResult(
-      frameContext(update),
-      (batch) =>
+    let result: GraphMutationBatchResult
+    try {
+      result = session.mutations.batchResult(frameContext(update), (batch) =>
         this.applyBatchChanges({
           batch,
           session,
@@ -607,7 +616,13 @@ export class EcsFollowerAdapter {
           changedWidgets,
           changedLinks
         })
-    )
+      )
+    } catch (error) {
+      session.reconcileNextFrame = true
+      if (session.batchRecovery.kind === 'idle')
+        this.scheduleReconcileRetry(session, update, 0)
+      throw error
+    }
 
     // The pending sets were snapshotted and cleared before `batch` ran, so a
     // rejected batch (no scope, or validation failure) has already lost the
@@ -658,7 +673,7 @@ export class EcsFollowerAdapter {
           : []
       }),
       session.reportedErrors
-    )
+    ).filter((link) => this.hasProjectedSlots(link, nodes, session))
     batch.removeMissing(
       nodes.map(({ id }) => toNodeId(id)),
       links.map(({ id }) => id)
@@ -808,6 +823,34 @@ export class EcsFollowerAdapter {
     else batch.reconcileNode(payload)
   }
 
+  private hasProjectedSlots(
+    link: SemanticLinkPayload,
+    nodes: readonly SemanticNodePayload[],
+    session: TargetSession
+  ): boolean {
+    const byId = new Map(nodes.map((node) => [String(node.id), node]))
+    const origin = byId.get(String(link.originNodeId))
+    const target = byId.get(String(link.targetNodeId))
+    const valid =
+      Array.isArray(origin?.outputs) &&
+      link.originSlot >= 0 &&
+      link.originSlot < origin.outputs.length &&
+      Array.isArray(target?.inputs) &&
+      link.targetSlot >= 0 &&
+      link.targetSlot < target.inputs.length
+    if (!valid)
+      reportOnce(
+        session.reportedErrors,
+        `link-slot:${link.id}`,
+        new Error(`Link ${link.id} references a slot absent from its node`),
+        {
+          errorType: 'error_reconciling_agent_missing_link_slot',
+          context: { linkId: link.id }
+        }
+      )
+    return valid
+  }
+
   private handleReconcileOutcome(
     session: TargetSession,
     update: DocUpdate,
@@ -857,6 +900,7 @@ export class EcsFollowerAdapter {
         if (this.targets.get(session.workflowId) !== session) return
         if (session.batchRecovery !== scheduled) return
         if (!session.reconcileNextFrame) return
+        if (!this.canRetry(session.workflowId)) return
         const applying = {
           kind: 'applying',
           attempt: scheduled.attempt,
@@ -867,7 +911,9 @@ export class EcsFollowerAdapter {
         try {
           committed = this.applyFrame(applying.frame)
         } catch (error) {
-          reportError(
+          reportOnce(
+            session.reportedErrors,
+            'reconcile-retry-threw',
             error instanceof Error ? error : new Error(String(error)),
             {
               errorType: 'error_agent_reconcile_retry_threw',
@@ -882,7 +928,7 @@ export class EcsFollowerAdapter {
             )
           return
         }
-        if (committed) this.runLiveGraphSweep(session)
+        if (committed) this.runLiveGraphSweep(session, applying.frame)
       }, delay),
       attempt,
       frame
@@ -890,20 +936,25 @@ export class EcsFollowerAdapter {
     session.batchRecovery = scheduled
   }
 
-  private runLiveGraphSweep(session: TargetSession): void {
+  private runLiveGraphSweep(
+    session: TargetSession,
+    update: DocUpdate,
+    failureReported = false
+  ): void {
     if (session.liveSweepRecovery.kind === 'scheduled')
       clearTimeout(session.liveSweepRecovery.timer)
     const running = { kind: 'running' } satisfies LiveSweepRecoveryState
     session.liveSweepRecovery = running
     try {
-      this.onReconcileRetryCommitted(session.workflowId)
+      this.onReconcileRetryCommitted(session.workflowId, update)
       if (session.liveSweepRecovery === running)
         session.liveSweepRecovery = { kind: 'idle' }
     } catch (error) {
-      reportError(error instanceof Error ? error : new Error(String(error)), {
-        errorType: 'error_agent_reconcile_live_sweep_threw',
-        context: { workflowId: session.workflowId }
-      })
+      if (!failureReported)
+        reportError(error instanceof Error ? error : new Error(String(error)), {
+          errorType: 'error_agent_reconcile_live_sweep_threw',
+          context: { workflowId: session.workflowId }
+        })
       if (session.liveSweepRecovery !== running) return
       const scheduled: Extract<LiveSweepRecoveryState, { kind: 'scheduled' }> =
         {
@@ -911,8 +962,9 @@ export class EcsFollowerAdapter {
           timer: setTimeout(() => {
             if (this.targets.get(session.workflowId) !== session) return
             if (session.liveSweepRecovery !== scheduled) return
-            this.runLiveGraphSweep(session)
-          }, RECONCILE_SLOW_RETRY_INTERVAL_MS)
+            this.runLiveGraphSweep(session, update, true)
+          }, RECONCILE_SLOW_RETRY_INTERVAL_MS),
+          failureReported: true
         }
       session.liveSweepRecovery = scheduled
     }

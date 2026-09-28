@@ -1006,6 +1006,13 @@ describe('useAgentCrdtFollower', () => {
         fakeGraph,
         fakeDefinitions
       )
+      expect(appState.refreshMissingModels).not.toHaveBeenCalled()
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 1,
+        catchUp: true
+      })
       expect(appState.refreshMissingModels).toHaveBeenCalledExactlyOnceWith({
         silent: true,
         reloadDefs: false
