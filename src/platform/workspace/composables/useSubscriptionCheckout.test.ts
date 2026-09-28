@@ -543,7 +543,7 @@ describe('useSubscriptionCheckout', () => {
     mockSubscribe.mockReset()
     mockPreviewSubscribe.mockReset()
     mockFetchPlans.mockReset()
-    mockFetchStatus.mockReset()
+    mockFetchStatus.mockReset().mockResolvedValue(undefined)
     vi.mocked(useBillingOperationStore().startOperation).mockReset()
     mockListSavedPaymentMethods.mockReset()
     mockOpenHostedBillingTab.mockReset().mockReturnValue(false)
@@ -1564,6 +1564,38 @@ describe('useSubscriptionCheckout', () => {
       unmount()
 
       expect(mockToastRemoveGroup).toHaveBeenCalledWith('payment-recovery')
+    })
+
+    it('refreshes status on return even after checkout is disposed', async () => {
+      mockOpen.mockReturnValueOnce(null)
+      mockPreviewSubscribe.mockRejectedValueOnce(
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED', 'error')
+      )
+      let checkout!: ReturnType<typeof useSubscriptionCheckout>
+      const { unmount } = render(
+        {
+          setup() {
+            checkout = useSubscriptionCheckout(emit)
+            return () => null
+          }
+        },
+        { global: { plugins: [i18n] } }
+      )
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+
+      // Click retry (a real gesture opens the popup this time), then close
+      // checkout — completing payment in that popup and returning must still
+      // refresh status even though the checkout that armed this is gone.
+      mockOpen.mockReturnValueOnce({})
+      detail.onAction()
+      unmount()
+
+      window.dispatchEvent(new Event('focus'))
+      await vi.waitFor(() => expect(mockFetchStatus).toHaveBeenCalledOnce())
     })
 
     it('keeps the original error path for non-payment transition failures', async () => {

@@ -1,6 +1,5 @@
 import { useToast } from 'primevue/usetoast'
 import { computed, onScopeDispose, ref } from 'vue'
-import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -33,6 +32,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
+import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -113,6 +113,20 @@ function parseBillingPortalUrl(url: unknown): URL | null {
   }
 }
 
+// Module-scoped, not checkout-scoped: closing checkout while the Stripe tab
+// is still open must not drop this the way a component-owned focus listener
+// would. Mirrors openHostedBillingTab.ts's own armReturnRefresh.
+let stopPaymentRecoveryReturnRefresh: (() => void) | null = null
+
+function armPaymentRecoveryReturnRefresh(): void {
+  stopPaymentRecoveryReturnRefresh?.()
+  // Resolved inside the call, not captured ahead of time, so a checkout that
+  // has already been disposed by the time the customer returns still reaches
+  // the live shared billing context instead of a stale one.
+  const { fetchStatus } = useBillingContext()
+  stopPaymentRecoveryReturnRefresh = registerRefreshOnReturn(fetchStatus)
+}
+
 /** Thrown by `assertReactivationAmountUnchanged` when a fresh preview no
  *  longer matches the billing state the reactivation banner showed and the
  *  user consented to. Caught by the surrounding try/catch and surfaced
@@ -179,14 +193,8 @@ export function useSubscriptionCheckout(
   let promotionPreviewRequestId = 0
   let checkoutMutationOwner = 0
   let checkoutMutationSeq = 0
-  let refreshStatusOnFocus = false
   let activeCheckoutAttemptStartedAt: number | undefined
   let lastEmittedPreviewRevision: string | undefined
-  useEventListener(window, 'focus', () => {
-    if (!refreshStatusOnFocus) return
-    refreshStatusOnFocus = false
-    void fetchStatus()
-  })
   // The payment-recovery toast is sticky and can outlive this checkout;
   // drop it with the checkout rather than leave a button for a dead context.
   onScopeDispose(() => toast.removeGroup('payment-recovery'))
@@ -626,13 +634,13 @@ export function useSubscriptionCheckout(
             onAction: () => {
               if (!isCurrent()) return
               window.open(portalUrl.href, '_blank')
-              refreshStatusOnFocus = true
+              armPaymentRecoveryReturnRefresh()
             }
           }
         })
         return 'blocked'
       }
-      refreshStatusOnFocus = true
+      armPaymentRecoveryReturnRefresh()
       return 'opened'
     } catch (portalError) {
       if (!isCurrent()) return null
