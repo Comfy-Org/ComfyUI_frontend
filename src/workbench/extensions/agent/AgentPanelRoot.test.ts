@@ -3988,6 +3988,10 @@ describe('AgentPanelRoot workflow binding', () => {
   it('does not resume a consent-held send after the panel unmounts', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
+    const settleSubmission = vi.spyOn(
+      useAgentComposerStore(),
+      'settleSubmission'
+    )
     Object.assign(useAgentConsentStore(), { accepted: false })
     let accept = () => {}
     withConsent.mockImplementationOnce(
@@ -4008,7 +4012,10 @@ describe('AgentPanelRoot workflow binding', () => {
 
     unmount()
     accept()
-    await waitFor(() => expect(bodies).toHaveLength(0))
+    await waitFor(() =>
+      expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
+    )
+    expect(bodies).toHaveLength(0)
   })
 
   it('reports a message sent from an empty-state suggestion chip as a suggestion', async () => {
