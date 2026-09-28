@@ -80,6 +80,11 @@ function pastedClipboard(kind: 'workflow JSON' | 'an image'): DataTransfer {
   return dataTransfer
 }
 
+function clipboardHtml(data: unknown, attribute = 'data-comfy-metadata') {
+  const encoded = btoa(JSON.stringify(data))
+  return `<meta charset="utf-8"><div><span ${attribute}="${encoded}"></span></div><span style="white-space:pre-wrap;">Text</span>`
+}
+
 function mountRichTextEditor() {
   const editor = document.createElement('div')
   editor.contentEditable = 'true'
@@ -687,8 +692,7 @@ describe('usePaste', () => {
       links: [],
       subgraphs: []
     }
-    const encoded = btoa(JSON.stringify(data))
-    const html = `<div data-comfy-metadata="${encoded}"></div>`
+    const html = clipboardHtml(data)
 
     usePaste()
 
@@ -708,8 +712,7 @@ describe('usePaste', () => {
 
   it('accepts validated legacy data-metadata clipboard items', async () => {
     const data = { nodes: [] }
-    const encoded = btoa(JSON.stringify(data))
-    const html = `<div data-metadata="${encoded}"></div>`
+    const html = clipboardHtml(data, 'data-metadata')
 
     usePaste()
 
@@ -728,24 +731,13 @@ describe('usePaste', () => {
     })
   })
 
-  it.for([
-    { name: 'null payload', data: null },
-    { name: 'empty object', data: {} },
-    { name: 'malformed node', data: { nodes: [{ type: 'KSampler' }] } },
-    { name: 'malformed group', data: { groups: [{ id: 1 }] } },
-    { name: 'malformed reroute', data: { reroutes: [{ id: 1 }] } },
-    { name: 'malformed link', data: { links: [{ id: 1 }] } },
-    { name: 'malformed subgraph', data: { subgraphs: [{ id: 'invalid' }] } }
-  ])('falls back for malformed Comfy metadata: $name', async ({ data }) => {
-    const encoded = btoa(JSON.stringify(data))
-    const html = `<div data-comfy-metadata="${encoded}"></div>`
+  it('does not treat metadata embedded in arbitrary HTML as a Comfy clipboard', async () => {
+    const encoded = btoa(JSON.stringify({ nodes: [] }))
+    const html = `<article><span data-comfy-metadata="${encoded}"></span></article>`
 
     usePaste()
-
     const dataTransfer = new DataTransfer()
     dataTransfer.setData('text/html', html)
-    dataTransfer.setData('text/plain', 'some text')
-
     document.dispatchEvent(
       new ClipboardEvent('paste', { clipboardData: dataTransfer })
     )
@@ -756,10 +748,41 @@ describe('usePaste', () => {
     })
   })
 
-  it('falls back when Comfy metadata is not valid JSON', async () => {
-    const parseError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    onTestFinished(() => parseError.mockRestore())
-    const html = `<div data-comfy-metadata="${btoa('{')}"></div>`
+  it.for([
+    { name: 'null payload', data: null },
+    { name: 'empty object', data: {} },
+    { name: 'malformed node', data: { nodes: [{ type: 'KSampler' }] } },
+    { name: 'malformed group', data: { groups: [{ id: 1 }] } },
+    { name: 'malformed reroute', data: { reroutes: [{ id: 1 }] } },
+    { name: 'malformed link', data: { links: [{ id: 1 }] } },
+    { name: 'malformed subgraph', data: { subgraphs: [{ id: 'invalid' }] } }
+  ])(
+    'rejects malformed Comfy metadata without stale fallback: $name',
+    async ({ data }) => {
+      const html = clipboardHtml(data)
+
+      usePaste()
+
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData('text/html', html)
+      dataTransfer.setData('text/plain', 'some text')
+
+      document.dispatchEvent(
+        new ClipboardEvent('paste', { clipboardData: dataTransfer })
+      )
+
+      await vi.waitFor(() => {
+        expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+        expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+        expect(useToastStore().add).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error' })
+        )
+      })
+    }
+  )
+
+  it('rejects invalid Comfy JSON without stale fallback', async () => {
+    const html = `<meta charset="utf-8"><div><span data-comfy-metadata="${btoa('{')}"></span></div><span style="white-space:pre-wrap;">Text</span>`
 
     usePaste()
 
@@ -772,9 +795,11 @@ describe('usePaste', () => {
     )
 
     await vi.waitFor(() => {
-      expect(parseError).toHaveBeenCalledOnce()
       expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
-      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
     })
   })
 
@@ -790,8 +815,7 @@ describe('usePaste', () => {
       links: [],
       subgraphs: []
     }
-    const encoded = btoa(JSON.stringify(data))
-    const html = `<div data-comfy-metadata="${encoded}"></div>`
+    const html = clipboardHtml(data)
 
     usePaste()
 
@@ -822,8 +846,7 @@ describe('usePaste', () => {
     usePaste()
 
     const nodeData = { nodes: [{ type: 'KSampler' }] }
-    const encoded = btoa(JSON.stringify(nodeData))
-    const html = `<div data-comfy-metadata="${encoded}"></div>`
+    const html = clipboardHtml(nodeData)
 
     const dataTransfer = new DataTransfer()
     dataTransfer.setData('text/html', html)

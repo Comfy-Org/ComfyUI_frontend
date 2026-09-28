@@ -230,8 +230,11 @@ export class GroupNodeConfig {
       if (!linksFrom) return
 
       const firstLink = linksFrom[0]?.at(0)
+      const linkedType: unknown = firstLink?.at(5)
       let type: string | number | null = firstLink
-        ? slotTypeKey(firstLink[5])
+        ? linkedType == null
+          ? null
+          : slotTypeKey(linkedType as ISlotType)
         : null
       if (type === 'COMBO') {
         // Use the array items

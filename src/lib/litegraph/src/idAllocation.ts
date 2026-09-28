@@ -41,16 +41,12 @@ export function findNextAvailableId(
 }
 
 function mintSequentialId(lastId: number, reservedIds: ReservedIds): number {
-  if (Number.isSafeInteger(lastId) && lastId >= 0) {
-    const nextId = lastId + 1
-    if (
-      Number.isSafeInteger(nextId) &&
-      (typeof reservedIds === 'function' || !reservedIds.has(nextId))
-    )
-      return nextId
-  }
   const usedIds =
     typeof reservedIds === 'function' ? reservedIds() : reservedIds
+  if (Number.isSafeInteger(lastId) && lastId >= 0) {
+    const nextId = lastId + 1
+    if (Number.isSafeInteger(nextId) && !usedIds.has(nextId)) return nextId
+  }
   return findNextAvailableId(usedIds, lastId + 1)
 }
 
@@ -168,7 +164,7 @@ export function mintNodeId(
 ): NodeId {
   if (mode === 'crdt-disjoint') return mintCrdtDisjointNodeId()
   const id = mintSequentialId(state.lastNodeId, reservedIds)
-  if (id > state.lastNodeId) state.lastNodeId = id
+  state.lastNodeId = id
   return toNodeId(id)
 }
 
@@ -177,7 +173,7 @@ export function mintGroupId(
   reservedIds: ReservedIds
 ): GroupId {
   const id = mintSequentialId(state.lastGroupId, reservedIds)
-  if (id > state.lastGroupId) state.lastGroupId = id
+  state.lastGroupId = id
   return toGroupId(id)
 }
 
@@ -187,7 +183,7 @@ export function mintLinkId(
 ): LinkId {
   const lastLinkId = Number(state.lastLinkId)
   const id = mintSequentialId(lastLinkId, reservedIds)
-  if (id > lastLinkId) state.lastLinkId = toLinkId(id)
+  state.lastLinkId = toLinkId(id)
   return toLinkId(id)
 }
 
@@ -197,7 +193,7 @@ export function mintRerouteId(
 ): RerouteId {
   const lastRerouteId = Number(state.lastRerouteId)
   const id = mintSequentialId(lastRerouteId, reservedIds)
-  if (id > lastRerouteId) state.lastRerouteId = toRerouteId(id)
+  state.lastRerouteId = toRerouteId(id)
   return toRerouteId(id)
 }
 

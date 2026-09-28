@@ -397,9 +397,11 @@ describe('parseComfyWorkflow', () => {
 
 describe('zClipboardItems', () => {
   it('normalizes array-like widget values and preserves array slot types', () => {
-    const node = JSON.parse(JSON.stringify(defaultGraph.nodes[0]))
-    node.inputs = [{ name: 'input', type: ['IMAGE', 'MASK'] }]
-    node.widgets_values = { 0: 'first', 1: 2, length: 2 }
+    const node = {
+      ...structuredClone(defaultGraph.nodes[0]),
+      inputs: [{ name: 'input', type: ['IMAGE', 'MASK'] }],
+      widgets_values: { 0: 'first', 1: 2, length: 2 }
+    }
 
     const result = zClipboardItems.safeParse({ nodes: [node] })
 
@@ -410,8 +412,10 @@ describe('zClipboardItems', () => {
   })
 
   it('preserves indices when normalizing sparse widget values', () => {
-    const node = JSON.parse(JSON.stringify(defaultGraph.nodes[0]))
-    node.widgets_values = { 0: 'first', 2: 'third', length: 3 }
+    const node = {
+      ...structuredClone(defaultGraph.nodes[0]),
+      widgets_values: { 0: 'first', 2: 'third', length: 3 }
+    }
 
     const result = zClipboardItems.safeParse({ nodes: [node] })
 
@@ -425,9 +429,40 @@ describe('zClipboardItems', () => {
   })
 
   it('rejects an impractically large sparse widget values length', () => {
-    const node = JSON.parse(JSON.stringify(defaultGraph.nodes[0]))
-    node.widgets_values = { 0: 'first', length: 10_001 }
+    const node = {
+      ...structuredClone(defaultGraph.nodes[0]),
+      widgets_values: { 0: 'first', length: 10_001 }
+    }
 
     expect(zClipboardItems.safeParse({ nodes: [node] }).success).toBe(false)
+  })
+
+  it('preserves named-record widget values as named values', () => {
+    const node = {
+      ...structuredClone(defaultGraph.nodes[0]),
+      widgets_values: { seed: 42, steps: 20 }
+    }
+
+    const result = zClipboardItems.safeParse({ nodes: [node] })
+
+    expect(result.success).toBe(true)
+    if (!result.success) throw result.error
+    expect(result.data.nodes?.[0].widgets_values).toBeUndefined()
+    expect(result.data.nodes?.[0].widgets_values_named).toEqual({
+      seed: 42,
+      steps: 20
+    })
+  })
+
+  it('defaults omitted legacy group and reroute fields', () => {
+    const result = zClipboardItems.safeParse({
+      groups: [{ title: 'Legacy group', bounding: [0, 0, 100, 100] }],
+      reroutes: [{ id: 4, pos: [10, 20] }]
+    })
+
+    expect(result.success).toBe(true)
+    if (!result.success) throw result.error
+    expect(result.data.groups?.[0].id).toBe(-1)
+    expect(result.data.reroutes?.[0].linkIds).toEqual([])
   })
 })

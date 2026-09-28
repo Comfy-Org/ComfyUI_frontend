@@ -265,6 +265,20 @@ function normalizeClipboardWidgetValues(
   return normalized
 }
 
+function normalizeClipboardNodeWidgets<
+  T extends { widgets_values?: z.output<typeof zWidgetValues> }
+>(node: T) {
+  const values = node.widgets_values
+  if (values && !Array.isArray(values) && typeof values.length !== 'number') {
+    return {
+      ...node,
+      widgets_values: undefined,
+      widgets_values_named: { ...values }
+    }
+  }
+  return { ...node, widgets_values: normalizeClipboardWidgetValues(values) }
+}
+
 const zComfyNode = z
   .object({
     id: zNodeId,
@@ -562,12 +576,7 @@ const zClipboardNode = zComfyNode
       message: 'Clipboard widget values length is too large'
     }
   )
-  .transform((node) => {
-    return {
-      ...node,
-      widgets_values: normalizeClipboardWidgetValues(node.widgets_values)
-    }
-  })
+  .transform(normalizeClipboardNodeWidgets)
 
 const zClipboardSubgraphInstance = zSubgraphInstance
   .refine(
@@ -577,15 +586,16 @@ const zClipboardSubgraphInstance = zSubgraphInstance
       message: 'Clipboard widget values length is too large'
     }
   )
-  .transform((node) => {
-    return {
-      ...node,
-      widgets_values: normalizeClipboardWidgetValues(node.widgets_values)
-    }
-  })
+  .transform(normalizeClipboardNodeWidgets)
 
-const zClipboardGroup = zGroup.extend({ id: z.number() })
-const zClipboardReroute = zReroute.extend({ linkIds: z.array(z.number()) })
+const zClipboardGroup = zGroup.transform((group) => ({
+  ...group,
+  id: group.id ?? -1
+}))
+const zClipboardReroute = zReroute.transform((reroute) => ({
+  ...reroute,
+  linkIds: reroute.linkIds ?? []
+}))
 
 interface ClipboardSubgraphInput extends Omit<
   z.input<typeof zSubgraphDefinition>,

@@ -125,6 +125,53 @@ describe('clipboard ID allocation', () => {
     expect(before).toHaveBeenCalledOnce()
     expect(after).toHaveBeenCalledOnce()
   })
+
+  it('clones extension values that structuredClone cannot clone', () => {
+    const nodeType = 'test/clipboard-function-property'
+    registerClipboardNodeType(nodeType)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+    const extensionCallback = () => 'extension value'
+    const node = createSerialisedNode(1, nodeType)
+    node.properties = { extensionCallback }
+
+    const result = canvas._deserializeItems({ nodes: [node] }, {})
+
+    const pasted = [...(result?.nodes.values() ?? [])][0]
+    expect(pasted).toBeDefined()
+    expect(pasted.properties.extensionCallback).toBe(extensionCallback)
+    expect(node.id).toBe(1)
+  })
+
+  it('rolls back every created item when paste throws part-way through', () => {
+    const workingType = 'test/clipboard-rollback-working'
+    const throwingType = 'test/clipboard-rollback-throwing'
+    registerClipboardNodeType(workingType)
+    class ThrowingClipboardNode extends LGraphNode {
+      override configure(info: ISerialisedNode): void {
+        super.configure(info)
+        throw new Error('configure failed')
+      }
+    }
+    LiteGraph.registerNodeType(throwingType, ThrowingClipboardNode)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+
+    expect(() =>
+      canvas._deserializeItems(
+        {
+          groups: [{ id: 1, title: 'Group', bounding: [0, 0, 100, 100] }],
+          nodes: [
+            createSerialisedNode(1, workingType),
+            createSerialisedNode(2, throwingType)
+          ]
+        },
+        {}
+      )
+    ).toThrow('configure failed')
+    expect(rootGraph.nodes).toEqual([])
+    expect(rootGraph.groups).toEqual([])
+  })
 })
 
 function createCanvas(graph: LGraph): LGraphCanvas {

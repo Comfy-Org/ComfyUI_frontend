@@ -1,5 +1,5 @@
 import { default as DOMPurify } from 'dompurify'
-import { toString } from 'es-toolkit/compat'
+import { cloneDeep, toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
@@ -4288,10 +4288,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     graph.beforeChange()
     this.emitBeforeChange()
 
+    let result: ClipboardPasteResult | undefined
     try {
       const items = initializeClipboardItems(clipboardItems)
       const [offsetX, offsetY] = clipboardOffset(items)
-      const result = createClipboardPasteResult()
+      result = createClipboardPasteResult()
       const context: ClipboardPasteContext = {
         connectInputs,
         dx: position[0] - offsetX,
@@ -4317,6 +4318,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       forEachNode(graph, (n) => n.onAfterGraphConfigured?.())
 
       return result
+    } catch (error) {
+      if (result) rollbackClipboardPaste(graph, result)
+      throw error
     } finally {
       graph.afterChange()
       this.emitAfterChange()
@@ -8797,7 +8801,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 function initializeClipboardItems(
   clipboardItems: ClipboardItems
 ): InitializedClipboardItems {
-  const items = structuredClone(clipboardItems)
+  const items = cloneDeep(clipboardItems)
   return {
     groups: items.groups ?? [],
     links: items.links ?? [],
@@ -8828,6 +8832,32 @@ function createClipboardPasteResult(): ClipboardPasteResult {
     nodes: new Map(),
     reroutes: new Map(),
     subgraphs: new Map()
+  }
+}
+
+function rollbackClipboardPaste(
+  graph: LGraph,
+  result: ClipboardPasteResult
+): void {
+  for (const item of [...result.created].reverse()) {
+    try {
+      if (item instanceof LGraphNode || item instanceof LGraphGroup) {
+        graph.remove(item)
+      } else if (item instanceof Reroute) {
+        graph.removeReroute(item.id)
+      }
+    } catch (error) {
+      console.error('Failed to fully roll back a pasted canvas item', error)
+    }
+  }
+
+  const registeredSubgraphs = [...result.subgraphs.values()].filter(
+    (subgraph) => graph.rootGraph.subgraphs.get(subgraph.id) === subgraph
+  )
+  try {
+    graph.releaseSubgraphs(registeredSubgraphs)
+  } catch (error) {
+    console.error('Failed to fully roll back pasted subgraphs', error)
   }
 }
 
@@ -8878,11 +8908,11 @@ function createClipboardNodes(context: ClipboardPasteContext): void {
     const linkByInputName = detachSerialisedLinks(info)
     node.pos = [info.pos[0] + dx, info.pos[1] + dy]
     graph.add(node)
+    result.created.push(node)
     node.configure(info)
 
     recordClipboardTargetSlots(info, linkByInputName, targetSlotByLink)
     configurePastedSubgraphNode(node, info)
-    result.created.push(node)
   }
 }
 

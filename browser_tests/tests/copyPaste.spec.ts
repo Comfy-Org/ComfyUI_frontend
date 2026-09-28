@@ -211,7 +211,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       const dataTransfer = new DataTransfer()
       dataTransfer.setData(
         'text/html',
-        `<div data-comfy-metadata="${encoded}"></div>`
+        `<meta charset="utf-8"><div><span data-comfy-metadata="${encoded}"></span></div><span style="white-space:pre-wrap;">Text</span>`
       )
       document.dispatchEvent(
         new ClipboardEvent('paste', {

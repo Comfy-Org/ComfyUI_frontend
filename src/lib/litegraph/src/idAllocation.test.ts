@@ -185,7 +185,7 @@ describe('idAllocation', () => {
     expect(mintGroupId(state, new Set([2]))).toBe(3)
   })
 
-  it('collects reservations only when the counter reaches its boundary', () => {
+  it('checks thunk reservations before taking the fast path', () => {
     const state = createLGraphState()
     let collections = 0
     const collectReservedIds = () => {
@@ -193,12 +193,52 @@ describe('idAllocation', () => {
       return new Set([1])
     }
 
-    expect(mintGroupId(state, collectReservedIds)).toBe(1)
-    expect(collections).toBe(0)
+    expect(mintGroupId(state, collectReservedIds)).toBe(2)
+    expect(collections).toBe(1)
 
     state.lastGroupId = Number.MAX_SAFE_INTEGER
     expect(mintGroupId(state, collectReservedIds)).toBe(2)
-    expect(collections).toBe(1)
+    expect(collections).toBe(2)
+  })
+
+  it.for([
+    {
+      name: 'node',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastNodeId = Number.MAX_SAFE_INTEGER
+      },
+      mint: (state: ReturnType<typeof createLGraphState>) =>
+        Number(mintNodeId(state, 'sequential', new Set()))
+    },
+    {
+      name: 'group',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastGroupId = Number.MAX_SAFE_INTEGER
+      },
+      mint: (state: ReturnType<typeof createLGraphState>) =>
+        Number(mintGroupId(state, new Set()))
+    },
+    {
+      name: 'link',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastLinkId = toLinkId(Number.MAX_SAFE_INTEGER)
+      },
+      mint: (state: ReturnType<typeof createLGraphState>) =>
+        Number(mintLinkId(state, new Set()))
+    },
+    {
+      name: 'reroute',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastRerouteId = toRerouteId(Number.MAX_SAFE_INTEGER)
+      },
+      mint: (state: ReturnType<typeof createLGraphState>) =>
+        Number(mintRerouteId(state, new Set()))
+    }
+  ])('advances $name allocation after wrapping', ({ setCounter, mint }) => {
+    const state = createLGraphState()
+    setCounter(state)
+
+    expect([mint(state), mint(state)]).toEqual([1, 2])
   })
 
   it('wraps a reserved maximum candidate to the first available ID', () => {

@@ -45,7 +45,7 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
 function pasteClipboardItems(data: DataTransfer): boolean {
   const rawData = data.getData('text/html')
   const match = rawData.match(
-    /data-(?:comfy-)?metadata="([A-Za-z0-9+/=]+)"/
+    /^<meta charset="utf-8"><div><span data-(?:comfy-)?metadata="([A-Za-z0-9+/=]+)"><\/span><\/div><span style="white-space:pre-wrap;">Text<\/span>$/
   )?.[1]
   if (!match) return false
 
@@ -56,12 +56,15 @@ function pasteClipboardItems(data: DataTransfer): boolean {
     const decodedData = new TextDecoder().decode(bytes)
     parsed = JSON.parse(decodedData)
   } catch (err) {
-    console.error(err)
-    return false
+    useErrorHandling().toastErrorHandler(err)
+    return true
   }
 
   const clipboardItems = zClipboardItems.safeParse(parsed)
-  if (!clipboardItems.success) return false
+  if (!clipboardItems.success) {
+    useErrorHandling().toastErrorHandler(clipboardItems.error)
+    return true
+  }
 
   try {
     useCanvasStore().getCanvas()._deserializeItems(clipboardItems.data, {})
