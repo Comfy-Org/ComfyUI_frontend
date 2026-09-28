@@ -356,6 +356,10 @@
           "startsYearly": "Starts {date}, billed yearly"
         },
         "subtotal": "Subtotal",
+        "discount": {
+          "fallbackLabel": "Promo code",
+          "amount": "−{amount}"
+        },
         "trailing": {
           "renewsAt": "Renews at {amount} on {date}",
           "renewsAtAmount": "Renews at {amount}",
