@@ -105,15 +105,18 @@ function scrollToLatest(): void {
     )
   }
   if (typeof element.scrollTo === 'function') {
-    element.scrollTo({ top: element.scrollHeight, behavior: 'instant' })
+    element.scrollTo({ top: target, behavior: 'instant' })
   } else {
-    element.scrollTop = element.scrollHeight
+    element.scrollTop = target
   }
 }
 
 useEventListener(scrollContainer, 'scroll', () => {
   const element = scrollContainer.value
   if (!element) return
+  atBottom.value =
+    element.scrollHeight - element.scrollTop - element.clientHeight <=
+    bottomGracePx
   if (
     pendingProgrammaticTarget !== null &&
     Math.abs(element.scrollTop - pendingProgrammaticTarget) <= bottomGracePx
@@ -121,9 +124,6 @@ useEventListener(scrollContainer, 'scroll', () => {
     clearPendingProgrammaticScroll()
     return
   }
-  atBottom.value =
-    element.scrollHeight - element.scrollTop - element.clientHeight <=
-    bottomGracePx
   shouldFollowLatest.value = atBottom.value
   clearPendingProgrammaticScroll()
 })
