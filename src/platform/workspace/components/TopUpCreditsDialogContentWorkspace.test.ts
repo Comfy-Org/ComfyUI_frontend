@@ -194,7 +194,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('enables purchase after capabilities resolve and blocks a revoked capability', async () => {
-    setCanTopUp(false)
+    const canTopUp = ref(false)
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
     renderDialog()
     const addCredits = screen.getByRole('button', { name: 'Add credits' })
     expect(addCredits).toBeDisabled()
@@ -202,20 +203,20 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(
       screen.queryByRole('button', { name: 'Pay $50.00' })
     ).not.toBeInTheDocument()
-    expect(mockTopup).not.toHaveBeenCalled()
+    expect(mockBillingContext().topup).not.toHaveBeenCalled()
 
-    setCanTopUp(true)
+    canTopUp.value = true
     await nextTick()
     expect(addCredits).toBeEnabled()
     await userEvent.click(addCredits)
     const pay = screen.getByRole('button', { name: 'Pay $50.00' })
     expect(pay).toBeEnabled()
 
-    setCanTopUp(false)
+    canTopUp.value = false
     await nextTick()
     expect(pay).toBeDisabled()
     await userEvent.click(pay)
-    expect(mockTopup).not.toHaveBeenCalled()
+    expect(mockBillingContext().topup).not.toHaveBeenCalled()
   })
 
   it('fires a started event before the purchase resolves', async () => {
@@ -421,7 +422,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByText('$50.00')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
     expect(mockBillingContext().topup).not.toHaveBeenCalled()
-    expect(mockTrackBillingEvent).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith({
       operation: 'topup',
       stage: 'intent',
       outcome: 'pending'
@@ -969,8 +970,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
-    expect(mockTrackBillingEvent).toHaveBeenCalledTimes(5)
-    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledTimes(5)
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'succeeded',
       outcome: 'success',

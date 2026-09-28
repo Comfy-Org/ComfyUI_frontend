@@ -503,7 +503,7 @@ describe('useSubscriptionCheckout', () => {
       tierKey: 'standard',
       billingCycle: 'yearly'
     })
-    expect(mockTrackBillingEvent).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith({
       operation: 'subscription_checkout',
       stage: 'intent',
       outcome: 'pending',
@@ -515,14 +515,14 @@ describe('useSubscriptionCheckout', () => {
   })
 
   it('does not record selection intent when capabilities block checkout', async () => {
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
     const checkout = await setup()
-    mockCapabilities.value.canSubscribeSelfServe = false
-    mockCapabilities.value.canChangeSeats = false
     await checkout.handleSubscribeClick({
       tierKey: 'standard',
       billingCycle: 'yearly'
     })
-    expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     expect(mockPreviewSubscribe).not.toHaveBeenCalled()
   })
 
@@ -1939,7 +1939,7 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.previewData.value).toStrictEqual(preview)
       expect(checkout.checkoutStep.value).toBe('success')
-      expect(mockTrackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ stage: 'intent', outcome: 'pending' })
       )
       expect(mockToastAdd).not.toHaveBeenCalled()
@@ -1997,7 +1997,9 @@ describe('useSubscriptionCheckout', () => {
       expect(
         useTelemetry()?.trackMonthlySubscriptionSucceeded
       ).not.toHaveBeenCalled()
-      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ stage: 'intent', outcome: 'pending' })
+      )
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'success',
@@ -2023,7 +2025,7 @@ describe('useSubscriptionCheckout', () => {
       })
 
       expect(checkout.checkoutStep.value).toBe('success')
-      expect(mockTrackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ stage: 'intent', outcome: 'pending' })
       )
     })
@@ -3114,7 +3116,7 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ stage: 'intent', outcome: 'pending' })
       )
     })
@@ -3204,7 +3206,7 @@ describe('useSubscriptionCheckout', () => {
           detail: 'status unavailable'
         })
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ stage: 'intent', outcome: 'pending' })
       )
     })

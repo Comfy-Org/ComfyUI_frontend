@@ -877,17 +877,21 @@ describe('UnifiedPricingTable capability gating', () => {
   })
 
   it('enables subscription when the server grants it without change-seats permission', async () => {
-    mockCanDowngradeToPersonal.value = false
-    mockCanManageSubscription.value = false
-    mockCanChangeSeats.value = false
-    mockRawCanReactivate.value = false
+    const canSubscribeSelfServe = ref(false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(
+      () => canSubscribeSelfServe.value
+    )
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
+    useBillingCapabilities().snapshotAuthoritative = computed(() => true)
     const { emitted } = renderComponent()
     const subscribe = screen.getByRole('button', {
       name: 'Subscribe to Standard Yearly'
     })
     expect(subscribe).toBeDisabled()
 
-    mockCanManageSubscription.value = true
+    canSubscribeSelfServe.value = true
     await nextTick()
     expect(subscribe).toBeEnabled()
     await userEvent.click(subscribe)
@@ -895,7 +899,7 @@ describe('UnifiedPricingTable capability gating', () => {
       [{ tierKey: 'standard', billingCycle: 'yearly' }]
     ])
 
-    mockCanManageSubscription.value = false
+    canSubscribeSelfServe.value = false
     await nextTick()
     expect(subscribe).toBeDisabled()
     await userEvent.click(subscribe)

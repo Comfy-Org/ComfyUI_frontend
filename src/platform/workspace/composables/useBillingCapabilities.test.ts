@@ -221,7 +221,9 @@ describe('useBillingCapabilities', () => {
       const registry = new TelemetryRegistry()
       registry.registerProvider({ trackBillingEvent: record })
       setTelemetryRegistry(registry)
-      mockGetBillingCapabilities.mockImplementationOnce(response)
+      vi.mocked(workspaceApi.getBillingCapabilities).mockImplementationOnce(
+        response
+      )
       await billingCapabilities.initialize()
       if (stage === undefined) {
         expect(record).not.toHaveBeenCalled()

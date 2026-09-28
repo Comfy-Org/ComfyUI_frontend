@@ -90,6 +90,7 @@ describe('billingOperationStore', () => {
   ] as const)(
     'records %s completion only after the backend reports %s',
     async ([type, status]) => {
+      const trackBillingEvent = vi.mocked(useTelemetry()?.trackBillingEvent)
       const pending: BillingOpStatusResponse = {
         id: 'op-completion',
         status: 'pending',
@@ -103,7 +104,7 @@ describe('billingOperationStore', () => {
       })
       await vi.advanceTimersByTimeAsync(0)
       expect(store.getOperation('op-completion')?.status).toBe('pending')
-      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect(trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'succeeded' })
       )
 
@@ -115,7 +116,7 @@ describe('billingOperationStore', () => {
       expect((await terminal).status).toBe(status)
       const operation =
         type === 'subscription' ? 'subscription_checkout' : 'topup'
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation,
           stage: status,
@@ -123,13 +124,13 @@ describe('billingOperationStore', () => {
           billing_op_id: 'op-completion'
         })
       )
-      const terminalEvents = mockTrackBillingEvent.mock.calls.filter(
+      const terminalEvents = trackBillingEvent?.mock.calls.filter(
         ([event]) => event.operation === operation && event.stage === status
       )
       expect(terminalEvents).toHaveLength(1)
       await vi.advanceTimersByTimeAsync(4_000)
       expect(
-        mockTrackBillingEvent.mock.calls.filter(
+        trackBillingEvent?.mock.calls.filter(
           ([event]) => event.operation === operation && event.stage === status
         )
       ).toHaveLength(1)
