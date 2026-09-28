@@ -22,7 +22,7 @@ export interface PayContext {
 const {
   disabled,
   loading = false,
-  phase = { kind: 'capture' },
+  phase,
   canCancel = false,
   failure,
   outcome,
@@ -31,6 +31,7 @@ const {
   PayContext & {
     disabled: boolean
     loading?: boolean
+    /** The submit area's phase; only the visible pay action carries one, so the page has one live region. */
     phase?: SubmitPhase
     /** Cancel payment renders only once the server can cancel a pending payment. */
     canCancel?: boolean
@@ -62,24 +63,18 @@ function guardConsent(event: Event) {
 
 /** The line above Pay for a phase in flight; empty at rest so the live region stays mounted. */
 const footnote = computed(() => {
-  switch (phase.kind) {
-    case 'capture':
-      return ''
-    case 'challenge':
-      return t('checkout.fullPage.phase.challenge')
-    case 'processing':
-      return t('checkout.fullPage.phase.processing')
-    case 'redirecting': {
-      const named = `checkout.fullPage.phase.methods.${phase.method}`
-      return te(named)
-        ? t('checkout.fullPage.phase.redirecting', { method: t(named) })
-        : t('checkout.fullPage.phase.redirectingUnnamed')
-    }
-  }
+  if (phase === undefined || phase.kind === 'capture') return ''
+  if (phase.kind === 'challenge') return t('checkout.fullPage.phase.challenge')
+  if (phase.kind === 'processing')
+    return t('checkout.fullPage.phase.processing')
+  const named = `checkout.fullPage.phase.methods.${phase.method}`
+  return te(named)
+    ? t('checkout.fullPage.phase.redirecting', { method: t(named) })
+    : t('checkout.fullPage.phase.redirectingUnnamed')
 })
 
 const challenge = computed(() =>
-  phase.kind === 'challenge' ? phase.operation : undefined
+  phase?.kind === 'challenge' ? phase.operation : undefined
 )
 
 const GHOST_BUTTON =
@@ -106,6 +101,7 @@ const GHOST_BUTTON =
       @confirm="emit('confirmReactivation', $event)"
     />
     <p
+      v-if="phase"
       role="status"
       aria-live="polite"
       :class="

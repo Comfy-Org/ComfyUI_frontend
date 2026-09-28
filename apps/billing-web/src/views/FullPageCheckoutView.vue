@@ -172,11 +172,7 @@ function viewPlans() {
   >
     <h1 class="sr-only">{{ t('hosted.title.checkout') }}</h1>
     <div class="flex min-h-full flex-col lg:flex-row">
-      <CheckoutSummaryColumn
-        :summary
-        :locked
-        @back="returnToProduct"
-      />
+      <CheckoutSummaryColumn :summary :locked @back="returnToProduct" />
       <CheckoutPaymentColumn
         v-if="
           page.kind === 'resolving' ||

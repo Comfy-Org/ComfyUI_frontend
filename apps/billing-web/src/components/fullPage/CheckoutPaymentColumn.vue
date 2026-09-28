@@ -91,6 +91,9 @@ const tabbed = computed(() =>
   view.value?.kind === 'tabs' ? view.value : undefined
 )
 
+/** The card form stays mounted behind the Saved tab; only the shown pay action carries the phase. */
+const formShown = computed(() => !tabbed.value || tabbed.value.tab === 'new')
+
 const elementLive = computed(() => {
   const current = view.value
   return (
@@ -151,9 +154,9 @@ const copy = computed<StripePaymentCopy>(() => ({
           :phase
           :can-cancel="canCancel"
           @confirm-reactivation="emit('confirmReactivation', $event)"
-          @consent-missing=\"emit('consentMissing')\"
-          @cancel=\"emit('cancel')\"
-          @continue-verification=\"emit('continueVerification')\"
+          @consent-missing="emit('consentMissing')"
+          @cancel="emit('cancel')"
+          @continue-verification="emit('continueVerification')"
         />
       </form>
       <div v-else class="flex flex-col gap-6">
@@ -180,15 +183,15 @@ const copy = computed<StripePaymentCopy>(() => ({
               :phase
               :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"
-              @consent-missing=\"emit('consentMissing')\"
-              @cancel=\"emit('cancel')\"
-              @continue-verification=\"emit('continueVerification')\"
+              @consent-missing="emit('consentMissing')"
+              @cancel="emit('cancel')"
+              @continue-verification="emit('continueVerification')"
             />
           </template>
         </PaymentTabsRail>
         <StripePaymentForm
           v-if="elementLive && charge"
-          v-show="!tabbed || tabbed.tab === 'new'"
+          v-show="formShown"
           :publishable-key
           :amount-cents="charge.amountCents"
           :currency="charge.currency"
@@ -208,12 +211,12 @@ const copy = computed<StripePaymentCopy>(() => ({
               v-bind="payContext"
               :disabled
               :loading
-              :phase
+              :phase="formShown ? phase : undefined"
               :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"
-              @consent-missing=\"emit('consentMissing')\"
-              @cancel=\"emit('cancel')\"
-              @continue-verification=\"emit('continueVerification')\"
+              @consent-missing="emit('consentMissing')"
+              @cancel="emit('cancel')"
+              @continue-verification="emit('continueVerification')"
             />
           </template>
         </StripePaymentForm>
