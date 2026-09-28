@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { t, tAround, translationKeys } from './translations'
+import { LOCALE_CODES } from '../config/locales'
+import { hasKey, t, tAround, translationKeys } from './translations'
 
 describe('translation keys', () => {
   it('never uses a key as the prefix of another key', () => {
@@ -15,7 +16,7 @@ describe('translation keys', () => {
   })
 })
 
-describe('t() fallback semantics', () => {
+describe('t()', () => {
   it('returns Japanese copy when it exists', () => {
     expect(t('hero.title', 'ja')).toBe('ビジュアルAIを自在にコントロール')
   })
@@ -23,9 +24,7 @@ describe('t() fallback semantics', () => {
   it('falls back to English when Japanese copy is missing', () => {
     expect(t('tags.partnerNodes', 'ja')).toBe('Partner Nodes')
   })
-})
 
-describe('t() named values', () => {
   it('interpolates named values in the locale word order', () => {
     expect(
       t('models.list.heroTitle', 'zh-CN', { name: 'Flux', brand: 'ComfyUI' })
@@ -43,16 +42,38 @@ describe('t() named values', () => {
     expect(message).not.toMatch(/\{\w+\}/)
   })
 
+  it('inserts values literally', () => {
+    expect(t('validation.minLength', 'en', { length: '$&' })).toBe(
+      'Must be at least $& characters'
+    )
+  })
+
   it('keeps missing named values visible', () => {
     expect(t('validation.minLength', 'en')).toBe(
       'Must be at least {length} characters'
     )
   })
 
-  it('inserts values literally', () => {
-    expect(t('validation.minLength', 'en', { length: '$&' })).toBe(
-      'Must be at least $& characters'
-    )
+  it('renders escaped special characters literally', () => {
+    expect(t('auth.errors.signupBlocked')).toContain('support@comfy.org')
+  })
+
+  it('keeps interleaved page locales isolated', () => {
+    expect(t('hero.title', 'ja')).toBe('ビジュアルAIを自在にコントロール')
+    expect(t('hero.title', 'en')).toBe('Professional Control\nof Visual AI')
+    expect(t('hero.title', 'ja')).toBe('ビジュアルAIを自在にコントロール')
+  })
+
+  it.for(LOCALE_CODES)('compiles every %s message', (locale) => {
+    const failing = translationKeys.filter((key) => {
+      try {
+        t(key, locale)
+        return false
+      } catch {
+        return true
+      }
+    })
+    expect(failing).toEqual([])
   })
 })
 
@@ -94,4 +115,12 @@ describe('tAround', () => {
       ).toThrow(error)
     }
   )
+})
+
+describe('hasKey', () => {
+  it('accepts leaf keys only', () => {
+    expect(hasKey('hero.title')).toBe(true)
+    expect(hasKey('hero')).toBe(false)
+    expect(hasKey('toString')).toBe(false)
+  })
 })
