@@ -173,61 +173,55 @@ const getCycleFromStatus = (
 const isExpired = (attempt: PendingSubscriptionCheckoutAttempt): boolean =>
   Date.now() - attempt.started_at_ms > PENDING_SUBSCRIPTION_CHECKOUT_MAX_AGE_MS
 
+const isCheckoutAttemptCore = (
+  value: Record<string, unknown>
+): value is Record<string, unknown> & {
+  attempt_id: string
+  started_at_ms: number
+  tier: TierKey
+  cycle: BillingCycle
+  checkout_type: SubscriptionCheckoutType
+} =>
+  typeof value.attempt_id === 'string' &&
+  typeof value.started_at_ms === 'number' &&
+  isTierKey(value.tier) &&
+  (value.cycle === 'monthly' || value.cycle === 'yearly') &&
+  (value.checkout_type === 'new' || value.checkout_type === 'change')
+
+const optionalCheckoutAttemptFields = (
+  candidate: Record<string, unknown>
+): Partial<PendingSubscriptionCheckoutAttempt> => ({
+  ...(isTierKey(candidate.previous_tier)
+    ? { previous_tier: candidate.previous_tier }
+    : {}),
+  ...(candidate.previous_cycle === 'monthly' ||
+  candidate.previous_cycle === 'yearly'
+    ? { previous_cycle: candidate.previous_cycle }
+    : {}),
+  ...(isPaymentIntentSource(candidate.payment_intent_source)
+    ? { payment_intent_source: candidate.payment_intent_source }
+    : {}),
+  ...(candidate.operation === 'resubscribe'
+    ? { operation: 'resubscribe' }
+    : {}),
+  ...(candidate.resubscribe_source === 'pricing_dialog' ||
+  candidate.resubscribe_source === 'settings_billing_panel'
+    ? { resubscribe_source: candidate.resubscribe_source }
+    : {})
+})
+
 const normalizeAttempt = (
   value: unknown
 ): PendingSubscriptionCheckoutAttempt | null => {
-  if (!isUnknownRecord(value)) {
-    return null
-  }
-
-  const candidate = value
-
-  if (
-    typeof candidate.attempt_id !== 'string' ||
-    typeof candidate.started_at_ms !== 'number' ||
-    typeof candidate.tier !== 'string' ||
-    typeof candidate.cycle !== 'string' ||
-    typeof candidate.checkout_type !== 'string'
-  ) {
-    return null
-  }
-
-  if (
-    !isTierKey(candidate.tier) ||
-    (candidate.cycle !== 'monthly' && candidate.cycle !== 'yearly') ||
-    (candidate.checkout_type !== 'new' && candidate.checkout_type !== 'change')
-  ) {
-    return null
-  }
-
-  const tier = candidate.tier
-  const cycle = candidate.cycle
-  const checkoutType = candidate.checkout_type
+  if (!isUnknownRecord(value) || !isCheckoutAttemptCore(value)) return null
 
   return {
-    attempt_id: candidate.attempt_id,
-    started_at_ms: candidate.started_at_ms,
-    tier,
-    cycle,
-    checkout_type: checkoutType,
-    ...(typeof candidate.previous_tier === 'string' &&
-    isTierKey(candidate.previous_tier)
-      ? { previous_tier: candidate.previous_tier }
-      : {}),
-    ...(candidate.previous_cycle === 'monthly' ||
-    candidate.previous_cycle === 'yearly'
-      ? { previous_cycle: candidate.previous_cycle }
-      : {}),
-    ...(isPaymentIntentSource(candidate.payment_intent_source)
-      ? { payment_intent_source: candidate.payment_intent_source }
-      : {}),
-    ...(candidate.operation === 'resubscribe'
-      ? { operation: 'resubscribe' }
-      : {}),
-    ...(candidate.resubscribe_source === 'pricing_dialog' ||
-    candidate.resubscribe_source === 'settings_billing_panel'
-      ? { resubscribe_source: candidate.resubscribe_source }
-      : {})
+    attempt_id: value.attempt_id,
+    started_at_ms: value.started_at_ms,
+    tier: value.tier,
+    cycle: value.cycle,
+    checkout_type: value.checkout_type,
+    ...optionalCheckoutAttemptFields(value)
   }
 }
 

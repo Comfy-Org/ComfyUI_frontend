@@ -1121,48 +1121,50 @@ export function getBillingTelemetryEventName(
   return `billing.${event.operation}.${event.stage}` as BillingTelemetryEventName
 }
 
+type BillingTelemetryPayload = Record<string, unknown>
+
+function copyBillingPayloadField(
+  payload: BillingTelemetryPayload,
+  event: BillingTelemetryEvent,
+  field: string,
+  omitUndefined = false
+): void {
+  if (!(field in event)) return
+  const value = (event as unknown as BillingTelemetryPayload)[field]
+  if (!omitUndefined || value !== undefined) payload[field] = value
+}
+
 export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
-  return {
+  const payload: BillingTelemetryPayload = {
     operation: event.operation,
     stage: event.stage,
-    outcome: event.outcome,
-    ...('billing_op_id' in event &&
-      event.billing_op_id !== undefined && {
-        billing_op_id: event.billing_op_id
-      }),
-    ...('operation_type' in event && {
-      operation_type: event.operation_type
-    }),
-    ...('checkout_attempt_id' in event &&
-      event.checkout_attempt_id !== undefined && {
-        checkout_attempt_id: event.checkout_attempt_id
-      }),
-    ...('tier' in event && event.tier !== undefined && { tier: event.tier }),
-    ...('cycle' in event &&
-      event.cycle !== undefined && { cycle: event.cycle }),
-    ...('checkout_type' in event &&
-      event.checkout_type !== undefined && {
-        checkout_type: event.checkout_type
-      }),
-    ...('payment_intent_source' in event &&
-      event.payment_intent_source !== undefined && {
-        payment_intent_source: event.payment_intent_source
-      }),
-    ...('source' in event && { source: event.source }),
-    ...('failure_category' in event && {
-      failure_category: event.failure_category
-    }),
-    ...('error_code' in event &&
-      event.error_code !== undefined && { error_code: event.error_code }),
-    ...('member_removal_count' in event && {
-      member_removal_count: event.member_removal_count,
-      member_removal_failures: event.member_removal_failures
-    }),
-    ...('target_tier' in event &&
-      event.target_tier !== undefined && { target_tier: event.target_tier }),
-    ...('duration_ms' in event &&
-      event.duration_ms !== undefined && { duration_ms: event.duration_ms })
+    outcome: event.outcome
   }
+
+  for (const field of [
+    'billing_op_id',
+    'checkout_attempt_id',
+    'tier',
+    'cycle',
+    'checkout_type',
+    'payment_intent_source',
+    'error_code',
+    'target_tier',
+    'duration_ms'
+  ]) {
+    copyBillingPayloadField(payload, event, field, true)
+  }
+  for (const field of [
+    'operation_type',
+    'source',
+    'failure_category',
+    'member_removal_count',
+    'member_removal_failures'
+  ]) {
+    copyBillingPayloadField(payload, event, field)
+  }
+
+  return payload
 }
 
 /**

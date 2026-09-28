@@ -28,6 +28,7 @@ import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
@@ -350,6 +351,28 @@ function useSubscriptionInternal() {
     source?: ResubscribeClickMetadata['source']
   }
 
+  const getPreviousCycle = (): BillingCycle | undefined => {
+    if (subscriptionDuration.value === 'ANNUAL') return 'yearly'
+    if (subscriptionDuration.value === 'MONTHLY') return 'monthly'
+  }
+
+  const recordStandardCheckoutAttempt = (options?: SubscribeDirectOptions) => {
+    const previousTier = subscriptionTier.value
+      ? toTierKey(subscriptionTier.value)
+      : null
+    const previousCycle = getPreviousCycle()
+
+    recordPendingSubscriptionCheckoutAttempt({
+      tier: 'standard',
+      cycle: 'monthly',
+      checkout_type: canAccessSubscriptionFeatures.value ? 'change' : 'new',
+      ...(previousTier ? { previous_tier: previousTier } : {}),
+      ...(previousCycle ? { previous_cycle: previousCycle } : {}),
+      ...(options?.operation ? { operation: options.operation } : {}),
+      ...(options?.source ? { resubscribe_source: options.source } : {})
+    })
+  }
+
   /** Unwrapped `subscribe`, for callers that need rejections to propagate (e.g. telemetry). */
   const subscribeDirect = async (
     options?: SubscribeDirectOptions
@@ -369,23 +392,7 @@ function useSubscriptionInternal() {
       return
     }
 
-    const previousTierKey = subscriptionTier.value
-      ? toTierKey(subscriptionTier.value)
-      : null
-
-    recordPendingSubscriptionCheckoutAttempt({
-      tier: 'standard',
-      cycle: 'monthly',
-      checkout_type: canAccessSubscriptionFeatures.value ? 'change' : 'new',
-      ...(previousTierKey ? { previous_tier: previousTierKey } : {}),
-      ...(subscriptionDuration.value === 'ANNUAL'
-        ? { previous_cycle: 'yearly' as const }
-        : subscriptionDuration.value === 'MONTHLY'
-          ? { previous_cycle: 'monthly' as const }
-          : {}),
-      ...(options?.operation ? { operation: options.operation } : {}),
-      ...(options?.source ? { resubscribe_source: options.source } : {})
-    })
+    recordStandardCheckoutAttempt(options)
   }
 
   const subscribe = wrapWithErrorHandlingAsync(subscribeDirect, reportError)
