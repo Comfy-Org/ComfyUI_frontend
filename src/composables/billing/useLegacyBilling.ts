@@ -76,7 +76,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
       renewalDate: legacySubscriptionStatus.value?.renewal_date ?? null,
       endDate: legacySubscriptionStatus.value?.cancel_at ?? null,
       isCancelled: isCancelled.value,
-      hasFunds: (authStore.balance?.amount_micros ?? 0) > 0
+      hasFunds: (authStore.balance?.amount_micros ?? 0) > 0,
+      agentHasFunds: (authStore.balance?.amount_micros ?? 0) > 0
     }
   })
 
