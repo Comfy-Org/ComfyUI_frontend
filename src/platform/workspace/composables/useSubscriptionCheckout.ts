@@ -1,6 +1,5 @@
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
-import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -179,14 +178,8 @@ export function useSubscriptionCheckout(
   let promotionPreviewRequestId = 0
   let checkoutMutationOwner = 0
   let checkoutMutationSeq = 0
-  let refreshStatusOnFocus = false
   let activeCheckoutAttemptStartedAt: number | undefined
   let lastEmittedPreviewRevision: string | undefined
-  useEventListener(window, 'focus', () => {
-    if (!refreshStatusOnFocus) return
-    refreshStatusOnFocus = false
-    void fetchStatus()
-  })
   // Some legacy-rail status reads cannot expose a scheduled cancellation even
   // though the subscribe authority can see it in Stripe. Once that authority
   // rejects an unconfirmed change, keep the consent screen in reactivation
@@ -606,16 +599,11 @@ export function useSubscriptionCheckout(
           })
         )
       }
-      const paymentWindow = window.open(portalUrl.href, '_blank')
-      if (!paymentWindow) {
-        toast.add({
-          severity: 'warn',
-          summary: t('g.warning'),
-          detail: t('subscription.preview.paymentPopupBlocked')
-        })
-        return 'blocked'
-      }
-      refreshStatusOnFocus = true
+      // A popup opened here would run after the awaited fetch above, with no
+      // user gesture behind it, so browsers silently block it. Navigate the
+      // same tab instead; the portal session's return URL brings the
+      // customer back to this page once they're done.
+      globalThis.location.href = portalUrl.href
       return 'opened'
     } catch (portalError) {
       if (!isCurrent()) return null

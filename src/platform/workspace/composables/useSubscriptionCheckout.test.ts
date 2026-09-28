@@ -1456,7 +1456,7 @@ describe('useSubscriptionCheckout', () => {
       ['OUTSTANDING_PAYMENT_REQUIRED', null],
       ['TRANSITION_NOT_ALLOWED', 'payment_failed']
     ] as const)(
-      'routes %s previews to the billing portal',
+      'routes %s previews to the billing portal in the same tab',
       async ([code, status]) => {
         if (status) {
           mockGetBillingStatus.mockResolvedValueOnce({ billing_status: status })
@@ -1466,39 +1466,14 @@ describe('useSubscriptionCheckout', () => {
         expect(mockGetPaymentPortalUrl).toHaveBeenCalledWith(
           'https://app.test/subscribe'
         )
-        expect(mockOpen).toHaveBeenCalledWith(
-          'https://billing.stripe.com/portal',
-          '_blank'
-        )
+        // Same-tab navigation, not a popup: a `window.open` here would run
+        // after an await with no user gesture behind it and get blocked.
+        expect(mockOpen).not.toHaveBeenCalled()
         expect(globalThis.location.href).toBe(
-          'https://app.test/subscribe?invite=secret#token'
+          'https://billing.stripe.com/portal'
         )
-        expect(mockFetchStatus).not.toHaveBeenCalled()
-
-        window.dispatchEvent(new Event('focus'))
-        await vi.waitFor(() => expect(mockFetchStatus).toHaveBeenCalledOnce())
-        window.dispatchEvent(new Event('focus'))
-        expect(mockFetchStatus).toHaveBeenCalledOnce()
       }
     )
-
-    it('preserves the checkout when the billing portal popup is blocked', async () => {
-      mockOpen.mockReturnValueOnce(null)
-      const checkout = await submitRejectedPreview(
-        'SUBSCRIPTION_PAYMENT_REQUIRED'
-      )
-
-      expect(checkout.selectedTierKey.value).toBe('standard')
-      expect(globalThis.location.href).toBe(
-        'https://app.test/subscribe?invite=secret#token'
-      )
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'warn',
-          detail: 'Payment popup blocked'
-        })
-      )
-    })
 
     it('keeps the original error path for non-payment transition failures', async () => {
       await submitRejectedPreview(
@@ -1624,9 +1599,8 @@ describe('useSubscriptionCheckout', () => {
 
         expect(readStatus).toHaveBeenCalledOnce()
         expect(mockGetBillingStatus).not.toHaveBeenCalled()
-        expect(mockOpen).toHaveBeenCalledWith(
-          'https://billing.stripe.com/portal',
-          '_blank'
+        expect(globalThis.location.href).toBe(
+          'https://billing.stripe.com/portal'
         )
       })
 
@@ -1667,7 +1641,7 @@ describe('useSubscriptionCheckout', () => {
           'https://app.test/subscribe'
         )
         expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
-        expect(mockOpen).toHaveBeenCalledWith(RAIL_PORTAL, '_blank')
+        expect(globalThis.location.href).toBe(RAIL_PORTAL)
       })
 
       it('falls back to the legacy client when the route is not deployed', async () => {
@@ -1681,9 +1655,8 @@ describe('useSubscriptionCheckout', () => {
         expect(mockGetPaymentPortalUrl).toHaveBeenCalledWith(
           'https://app.test/subscribe'
         )
-        expect(mockOpen).toHaveBeenCalledWith(
-          'https://billing.stripe.com/portal',
-          '_blank'
+        expect(globalThis.location.href).toBe(
+          'https://billing.stripe.com/portal'
         )
       })
 
@@ -4902,10 +4875,7 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleConfirmTransition()
 
-      expect(mockOpen).toHaveBeenCalledWith(
-        'https://billing.stripe.com/portal',
-        '_blank'
-      )
+      expect(globalThis.location.href).toBe('https://billing.stripe.com/portal')
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
