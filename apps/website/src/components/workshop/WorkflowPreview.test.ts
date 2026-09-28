@@ -115,6 +115,23 @@ describe('WorkflowPreview', () => {
     expect(fetch).toHaveBeenCalledWith(template.downloadUrl)
   })
 
+  it('waits to download the graph until its tab first opens', async () => {
+    servingGraph(async () => Response.json(graphJson()))
+    const { rerender } = render(WorkflowPreview, {
+      props: { model, cloudHref, active: false }
+    })
+
+    expect(fetch).not.toHaveBeenCalled()
+
+    await rerender({ model, cloudHref, active: true })
+    await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+    expect(fetch).toHaveBeenCalledWith(template.downloadUrl)
+
+    await rerender({ model, cloudHref, active: false })
+    await rerender({ model, cloudHref, active: true })
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
   // The flat export is what this page showed before, so it is what a graph
   // that cannot be read falls back to.
   it('falls back to the flat export when the template cannot be read', async () => {
