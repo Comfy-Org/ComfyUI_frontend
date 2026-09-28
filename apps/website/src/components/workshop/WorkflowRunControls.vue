@@ -40,17 +40,20 @@ const canCancel = computed(() => {
 </script>
 
 <template>
-  <a
+  <Button
     v-if="!signedIn"
+    as="a"
+    size="lg"
+    class="w-full"
     :href="signInHref"
-    class="flex min-h-12 items-center justify-center rounded-xl bg-primary-comfy-yellow text-sm font-bold text-primary-comfy-ink hover:bg-primary-comfy-yellow/90"
     @click="leaveForSignIn($event, signInHref)"
-    >{{ t('workshop.run.signIn') }}</a
+    >{{ t('workshop.run.signIn') }}</Button
   >
   <Button
     v-else
     type="submit"
-    class="min-h-12 w-full"
+    size="lg"
+    class="w-full"
     :disabled="!canStart"
     data-testid="workflow-run"
   >
