@@ -2174,9 +2174,14 @@ export class LGraph
     const subgraphs = data.map((definition) =>
       this.createNormalizedSubgraph(definition)
     )
-    for (const definition of topologicalSortSubgraphs(data))
-      this.subgraphs.get(definition.id)?.configure(definition)
-    return subgraphs
+    try {
+      for (const definition of topologicalSortSubgraphs(data))
+        this.subgraphs.get(definition.id)?.configure(definition)
+      return subgraphs
+    } catch (error) {
+      this.releaseSubgraphs(subgraphs)
+      throw error
+    }
   }
 
   private createNormalizedSubgraph(normalized: ExportedSubgraph): Subgraph {

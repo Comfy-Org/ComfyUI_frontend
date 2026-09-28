@@ -24,6 +24,7 @@ import {
   LGraphCanvas,
   LGraphNode,
   LiteGraph,
+  Subgraph,
   SubgraphNode,
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
@@ -178,7 +179,117 @@ describe('clipboard ID allocation', () => {
     expect(rootGraph.nodes).toEqual([])
     expect(rootGraph.groups).toEqual([])
   })
+
+  it('rolls back a node inserted before its onAdded callback throws', () => {
+    const nodeType = 'test/clipboard-rollback-on-added'
+    let callbackRan = false
+    class ThrowingOnAddedNode extends LGraphNode {
+      override onAdded(): void {
+        callbackRan = true
+        throw new Error('onAdded failed')
+      }
+    }
+    LiteGraph.registerNodeType(nodeType, ThrowingOnAddedNode)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+
+    expect(() =>
+      canvas._deserializeItems(
+        { nodes: [createSerialisedNode(1, nodeType)] },
+        {}
+      )
+    ).toThrow('onAdded failed')
+    expect(callbackRan).toBe(true)
+    expect(rootGraph.nodes).toEqual([])
+  })
+
+  it('releases registered subgraphs when their configuration throws', () => {
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+    const subgraph = createClipboardSubgraph(createUuidv4())
+    let configureRan = false
+    const configure = vi
+      .spyOn(Subgraph.prototype, 'configure')
+      .mockImplementationOnce(() => {
+        configureRan = true
+        throw new Error('subgraph configure failed')
+      })
+    onTestFinished(() => configure.mockRestore())
+
+    expect(() =>
+      canvas._deserializeItems({ subgraphs: [subgraph] }, {})
+    ).toThrow('subgraph configure failed')
+    expect(configureRan).toBe(true)
+    expect(rootGraph.subgraphs.size).toBe(0)
+  })
+
+  it('rolls back nodes, links, and reroutes after a late lifecycle failure', () => {
+    const nodeType = 'test/clipboard-rollback-late'
+    let callbackRan = false
+    class ThrowingConfiguredNode extends LGraphNode {
+      override onGraphConfigured(): void {
+        callbackRan = true
+        throw new Error('graph configured failed')
+      }
+    }
+    LiteGraph.registerNodeType(nodeType, ThrowingConfiguredNode)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+    const origin = createSerialisedNode(1, nodeType)
+    const target = createSerialisedNode(2, nodeType)
+    origin.outputs = [{ name: 'output', type: '*', links: [1] }]
+    target.inputs = [{ name: 'input', type: '*', link: 1 }]
+
+    expect(() =>
+      canvas._deserializeItems(
+        {
+          nodes: [origin, target],
+          links: [
+            {
+              id: 1,
+              origin_id: 1,
+              origin_slot: 0,
+              target_id: 2,
+              target_slot: 0,
+              type: '*',
+              parentId: 1
+            }
+          ],
+          reroutes: [{ id: 1, pos: [20, 20], linkIds: [1] }]
+        },
+        {}
+      )
+    ).toThrow('graph configured failed')
+    expect(callbackRan).toBe(true)
+    expect(rootGraph.nodes).toEqual([])
+    expect(rootGraph.links.size).toBe(0)
+    expect(rootGraph.reroutes.size).toBe(0)
+  })
 })
+
+function createClipboardSubgraph(id: string): ExportedSubgraph {
+  return {
+    id,
+    version: 1,
+    revision: 0,
+    state: {
+      lastNodeId: 0,
+      lastLinkId: 0,
+      lastGroupId: 0,
+      lastRerouteId: 0
+    },
+    config: {},
+    name: 'Pasted Subgraph',
+    inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
+    outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
+    inputs: [],
+    outputs: [],
+    widgets: [],
+    nodes: [],
+    links: [],
+    groups: []
+  }
+}
 
 function createCanvas(graph: LGraph): LGraphCanvas {
   const el = document.createElement('canvas')

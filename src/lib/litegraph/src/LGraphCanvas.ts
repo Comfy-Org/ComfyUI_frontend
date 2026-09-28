@@ -8907,8 +8907,13 @@ function createClipboardNodes(context: ClipboardPasteContext): void {
     info.id = -1
     const linkByInputName = detachSerialisedLinks(info)
     node.pos = [info.pos[0] + dx, info.pos[1] + dy]
-    graph.add(node)
-    result.created.push(node)
+    try {
+      graph.add(node)
+      result.created.push(node)
+    } catch (error) {
+      if (graph.nodes.includes(node)) result.created.push(node)
+      throw error
+    }
     node.configure(info)
 
     recordClipboardTargetSlots(info, linkByInputName, targetSlotByLink)
