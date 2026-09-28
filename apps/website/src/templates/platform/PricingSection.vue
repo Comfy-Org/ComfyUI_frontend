@@ -4,6 +4,15 @@ import { Coins as CreditsIcon } from '@lucide/vue'
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import {
+  formatCreditsPerGbMonth,
+  formatCreditsPerHour,
+  formatStorageExampleAmount,
+  formatUsdPerGbMonth,
+  formatUsdPerHour,
+  getStorageRate,
+  rateCard
+} from '../../data/rateCard'
 
 const {
   locale = 'en',
@@ -19,41 +28,45 @@ const {
   headingSize?: 'compact' | 'subsection'
 }>()
 
-// GA rate card (USD and Comfy Credits).
-const gpuRates = [
-  {
-    gpu: 'RTX PRO 6000',
-    vram: '96 GB',
-    price: '$4.54/hr',
-    credits: '957.94/hr'
-  },
-  { gpu: 'H100', vram: '80 GB', price: '$6.23/hr', credits: '1314.53/hr' },
-  { gpu: 'H200', vram: '141 GB', price: '$7.71/hr', credits: '1626.81/hr' },
-  { gpu: 'B200', vram: '180 GB', price: '$11.23/hr', credits: '2369.53/hr' }
-]
+const gpuRates = rateCard.gpus.map((rate) => ({
+  gpu: rate.label,
+  vram: `${rate.vramGb} GB`,
+  price: formatUsdPerHour(rate.pricePerHourUsd),
+  credits: formatCreditsPerHour(rate.creditsPerHour)
+}))
 
-const storageRates = [
-  {
-    key: 'standardUnder1tb',
-    price: '$0.20/GB/mo',
-    credits: '42.20/GB/mo'
-  },
-  {
-    key: 'standardOver1tb',
-    price: '$0.20/GB/mo',
-    credits: '42.20/GB/mo'
-  },
-  {
-    key: 'highPerformance',
-    price: '$0.20/GB/mo',
-    credits: '42.20/GB/mo'
-  },
-  {
-    key: 'containerDisk',
-    price: '$0.15/GB/mo',
-    credits: '31.65/GB/mo'
+type StorageLabelKey =
+  | 'standardUnder1tb'
+  | 'standardOver1tb'
+  | 'highPerformance'
+  | 'containerDisk'
+
+// Maps the rate card's stable storageType to the i18n label keys below,
+// which predate the rate card and read better split into title + sub-label.
+const STORAGE_TYPE_LABEL_KEYS: Record<string, StorageLabelKey> = {
+  network_standard: 'standardUnder1tb',
+  network_standard_1tb_plus: 'standardOver1tb',
+  network_high_performance: 'highPerformance',
+  container_disk: 'containerDisk'
+}
+
+function storageLabelKey(storageType: string): StorageLabelKey {
+  const key = STORAGE_TYPE_LABEL_KEYS[storageType]
+  if (!key) {
+    throw new Error(`No pricing label mapped for storage type: ${storageType}`)
   }
-] as const
+  return key
+}
+
+const storageRates = rateCard.storage.map((rate) => ({
+  key: storageLabelKey(rate.storageType),
+  price: formatUsdPerGbMonth(rate.pricePerGbMonthUsd),
+  credits: formatCreditsPerGbMonth(rate.creditsPerGbMonth)
+}))
+
+const storageExampleAmount = formatStorageExampleAmount(
+  getStorageRate('network_standard')
+)
 
 const mobileGpuRows = gpuRates.map((rate) => ({
   ...rate,
@@ -162,6 +175,14 @@ const mobileStorageRows = storageRates.map((rate) => ({
         </ul>
         <p class="mt-6 text-xs/relaxed text-primary-warm-gray">
           {{ t('platform.pricing.storageNote', locale) }}
+        </p>
+        <p class="mt-2 text-xs/relaxed text-primary-warm-gray">
+          {{
+            t('platform.pricing.storageExample', locale).replace(
+              '{amount}',
+              storageExampleAmount
+            )
+          }}
         </p>
       </article>
     </div>
@@ -280,6 +301,14 @@ const mobileStorageRows = storageRates.map((rate) => ({
           </div>
           <p class="mt-auto px-2 pt-6 text-xs/relaxed text-primary-warm-gray">
             {{ t('platform.pricing.storageNote', locale) }}
+          </p>
+          <p class="mt-2 px-2 text-xs/relaxed text-primary-warm-gray">
+            {{
+              t('platform.pricing.storageExample', locale).replace(
+                '{amount}',
+                storageExampleAmount
+              )
+            }}
           </p>
         </article>
       </div>
