@@ -64,6 +64,7 @@ export function bootWorkshopWebSession(
       sessionUser.value = state.session.user
       decide('session')
     } else if (state.phase === 'signed_out') {
+      sessionUser.value = undefined
       decide('firebase')
     }
   })
