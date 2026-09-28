@@ -163,7 +163,7 @@ export function useImageMenuOptions() {
 
     if (canExportOutputs) {
       options.push({
-        label: t('contextMenu.Export Images'),
+        label: t('contextMenu.Download Images'),
         icon: 'icon-[lucide--folder-down]',
         action: () => showOutputsExportDialog(node)
       })

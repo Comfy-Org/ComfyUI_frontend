@@ -23,16 +23,17 @@ function renderDialog() {
 }
 
 const checkbox = (name: string) => screen.getByRole('checkbox', { name })
-const exportButton = () => screen.getByRole('button', { name: /^Export/ })
+const downloadButton = () =>
+  screen.getByRole('button', { name: /^Download \(/ })
 
 describe('NodeOutputsExportDialog', () => {
   it('starts with every output selected', async () => {
     const { onExport, user } = renderDialog()
 
     expect(screen.queryAllByRole('checkbox', { checked: false })).toEqual([])
-    expect(exportButton()).toHaveTextContent('Export (3)')
+    expect(downloadButton()).toHaveTextContent('Download (3)')
 
-    await user.click(exportButton())
+    await user.click(downloadButton())
 
     expect(onExport).toHaveBeenCalledWith([0, 1, 2])
   })
@@ -43,9 +44,9 @@ describe('NodeOutputsExportDialog', () => {
     await user.click(checkbox('shot_002.exr'))
 
     expect(checkbox('Download all')).not.toBeChecked()
-    expect(exportButton()).toHaveTextContent('Export (2)')
+    expect(downloadButton()).toHaveTextContent('Download (2)')
 
-    await user.click(exportButton())
+    await user.click(downloadButton())
 
     expect(onExport).toHaveBeenCalledWith([0, 2])
   })
@@ -56,10 +57,10 @@ describe('NodeOutputsExportDialog', () => {
     await user.click(checkbox('Download all'))
 
     expect(screen.queryAllByRole('checkbox', { checked: true })).toEqual([])
-    expect(exportButton()).toBeDisabled()
+    expect(downloadButton()).toBeDisabled()
 
     await user.click(checkbox('Download all'))
-    await user.click(exportButton())
+    await user.click(downloadButton())
 
     expect(onExport).toHaveBeenCalledWith([0, 1, 2])
   })

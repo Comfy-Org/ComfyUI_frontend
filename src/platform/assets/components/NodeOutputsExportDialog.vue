@@ -38,7 +38,9 @@
         :disabled="selectedIndices.length === 0"
         @click="onExport(selectedIndices)"
       >
-        {{ $t('nodeOutputsExport.export', { count: selectedIndices.length }) }}
+        {{
+          $t('nodeOutputsExport.download', { count: selectedIndices.length })
+        }}
       </Button>
     </div>
   </div>

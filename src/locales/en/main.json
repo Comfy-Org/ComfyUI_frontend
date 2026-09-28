@@ -12,7 +12,7 @@
     "downloadImage": "Download image",
     "downloadVideo": "Download video",
     "downloadAudio": "Download audio",
-    "exportImages": "Export images",
+    "downloadImages": "Download images",
     "editOrMaskImage": "Edit or mask image",
     "editImage": "Edit image",
     "openLayerEditor": "Open layer editor",
@@ -687,7 +687,7 @@
     "Copy Image": "Copy Image",
     "Paste Image": "Paste Image",
     "Save Image": "Save Image",
-    "Export Images": "Export Images",
+    "Download Images": "Download Images",
     "Rename": "Rename",
     "RenameWidget": "Rename Widget",
     "FavoriteWidget": "Favorite Widget",
@@ -4100,9 +4100,9 @@
     }
   },
   "nodeOutputsExport": {
-    "title": "Export Assets",
+    "title": "Download Assets",
     "downloadAll": "Download all",
-    "export": "Export ({count})"
+    "download": "Download ({count})"
   },
   "mediaAsset": {
     "assetDelete": {

@@ -43,7 +43,7 @@ function mountComposable(): ReturnType<typeof useNodeOutputsExport> {
 async function openExportDialog(node: LGraphNode) {
   const { showOutputsExportDialog } = mountComposable()
   showOutputsExportDialog(node)
-  const dialog = await screen.findByRole('dialog', { name: 'Export Assets' })
+  const dialog = await screen.findByRole('dialog', { name: 'Download Assets' })
   return { dialog, user: userEvent.setup() }
 }
 
@@ -51,7 +51,7 @@ async function exportFromDialog(node: LGraphNode, deselect: string[] = []) {
   const { dialog, user } = await openExportDialog(node)
   for (const name of deselect)
     await user.click(within(dialog).getByRole('checkbox', { name }))
-  await user.click(within(dialog).getByRole('button', { name: /^Export/ }))
+  await user.click(within(dialog).getByRole('button', { name: /^Download \(/ }))
 
   await waitFor(() => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()

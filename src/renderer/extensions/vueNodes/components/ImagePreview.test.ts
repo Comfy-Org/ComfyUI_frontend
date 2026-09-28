@@ -37,7 +37,7 @@ const i18n = createI18n({
       g: {
         editOrMaskImage: 'Edit or mask image',
         downloadImage: 'Download image',
-        exportImages: 'Export images',
+        downloadImages: 'Download images',
         removeImage: 'Remove image',
         viewImageOfTotal: 'View image {index} of {total}',
         imagePreview:
@@ -126,7 +126,7 @@ describe('ImagePreview', () => {
     images: ResultItem[]
     expected: number
   }[])(
-    'offers exporting images in the grid for $name',
+    'offers downloading all images in the grid for $name',
     ({ props, images, expected }) => {
       vi.mocked(resolveNode).mockReturnValue(createMockLGraphNode({ id: 1 }))
       vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
@@ -136,10 +136,28 @@ describe('ImagePreview', () => {
       renderImagePreview(props)
 
       expect(
-        screen.queryAllByRole('button', { name: 'Export images' })
+        screen.queryAllByRole('button', { name: 'Download images' })
       ).toHaveLength(expected)
     }
   )
+
+  it('offers only the single image download in gallery view', async () => {
+    vi.mocked(resolveNode).mockReturnValue(createMockLGraphNode({ id: 1 }))
+    vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+      images: [{ filename: 'test1.png' }, { filename: 'test2.png' }]
+    })
+    renderImagePreview({ nodeId: '1' })
+    const user = userEvent.setup()
+
+    await switchToGallery(user)
+
+    expect(
+      screen.getByRole('button', { name: 'Download image' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Download images' })
+    ).not.toBeInTheDocument()
+  })
 
   it('offers the HDR viewer instead of an <img> for exr outputs', () => {
     renderImagePreview({

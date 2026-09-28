@@ -48,8 +48,8 @@
       >
         <button
           :class="actionButtonClass"
-          :title="$t('g.exportImages')"
-          :aria-label="$t('g.exportImages')"
+          :title="$t('g.downloadImages')"
+          :aria-label="$t('g.downloadImages')"
           @click="handleExportOutputs"
         >
           <i class="icon-[lucide--folder-down] size-4" />
@@ -151,16 +151,6 @@
           @click="handleDownload"
         >
           <i class="icon-[lucide--download] size-4" />
-        </button>
-
-        <button
-          v-if="canExportOutputs"
-          :class="actionButtonClass"
-          :title="$t('g.exportImages')"
-          :aria-label="$t('g.exportImages')"
-          @click="handleExportOutputs"
-        >
-          <i class="icon-[lucide--folder-down] size-4" />
         </button>
 
         <!-- Back to Grid Button -->

@@ -19,7 +19,7 @@ const i18n = createI18n({
         'Copy Image': 'Copy Image',
         'Paste Image': 'Paste Image',
         'Save Image': 'Save Image',
-        'Export Images': 'Export Images'
+        'Download Images': 'Download Images'
       }
     }
   }
@@ -95,7 +95,7 @@ describe('useImageMenuOptions', () => {
       {
         name: 'several outputs that never loaded as <img> (e.g. EXR)',
         images: [{ filename: 'f1.exr' }, { filename: 'f2.exr' }],
-        expected: ['Export Images']
+        expected: ['Download Images']
       },
       {
         name: 'a single output',
