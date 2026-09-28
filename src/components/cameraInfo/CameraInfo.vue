@@ -93,7 +93,7 @@ import {
 import { useCameraInfo } from '@/composables/useCameraInfo'
 import type { TransformGizmoMode } from '@/extensions/core/cameraInfo/CameraInfoViewport'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ComponentWidget } from '@/scripts/domWidget'
+import type { ComponentWidget } from '@/types/domWidget'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'

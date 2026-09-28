@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 
-import type { MenuOption } from './useMoreOptionsMenu'
+import type { MenuOption } from './menuOption'
 import { useNodeCustomization } from './useNodeCustomization'
 import { useSelectedNodeActions } from './useSelectedNodeActions'
 import type { NodeSelectionState } from './useSelectionState'

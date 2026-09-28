@@ -93,7 +93,7 @@ import type { NodeError } from '@/platform/remote/comfyui/types'
 import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
-import type { BaseDOMWidget } from '@/scripts/domWidget'
+import type { BaseDOMWidget } from '@/types/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -563,7 +563,7 @@ export class ComfyApp implements IComfyApp {
     this.bodyBottom = $el('div.comfyui-body-bottom')
     this.canvasContainer = $el('div.graph-canvas-container')
 
-    this.menu = new ComfyAppMenu(this)
+    this.menu = new ComfyAppMenu()
 
     /**
      * Stores the execution output data for each node

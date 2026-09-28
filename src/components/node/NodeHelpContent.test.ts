@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 import NodeHelpContent from './NodeHelpContent.vue'
 

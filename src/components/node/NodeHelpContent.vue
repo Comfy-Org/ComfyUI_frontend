@@ -79,7 +79,7 @@ import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const { node } = defineProps<{
   node: ComfyNodeDefImpl

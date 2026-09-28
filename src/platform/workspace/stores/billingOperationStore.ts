@@ -1379,7 +1379,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     getOperation,
     startOperation,
     retryPaymentAuthentication,
-    pollPendingOperations,
     clearOperation,
     dismissOperation
   }

@@ -264,7 +264,7 @@ import {
 } from '@/services/nodeOrganizationService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'

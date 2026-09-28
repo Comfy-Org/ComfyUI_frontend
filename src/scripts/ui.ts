@@ -5,13 +5,17 @@ import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import type {
   ExecutedWsMessage,
+  ExecutionErrorWsMessage,
   StatusWsMessageStatus
 } from '@/platform/remote/comfyui/execution/types'
-import type { WorkflowQueueIntent } from '@/platform/telemetry/types'
+import type {
+  WorkflowOpenSource,
+  WorkflowQueueIntent
+} from '@/platform/telemetry/types'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCommandStore } from '@/stores/commandStore'
 
 import { api } from './api'
-import type { ComfyApp } from '@/types/comfy'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
 import { $el as _$el } from './ui/utils'
 import { ComfySettingsDialog } from './ui/settings'
@@ -23,6 +27,26 @@ export const $el = _$el
 type Position2D = {
   x: number
   y: number
+}
+
+/** The slice of the app the legacy menu drives. `ComfyApp` implements it. */
+export interface LegacyUIApp {
+  readonly lastExecutionError: ExecutionErrorWsMessage | null
+  loadGraphData(
+    graphData?: ComfyWorkflowJSON,
+    clean?: boolean,
+    restore_view?: boolean
+  ): Promise<unknown>
+  queuePrompt(
+    number: number,
+    batchCount?: number,
+    options?: { intent?: WorkflowQueueIntent }
+  ): Promise<boolean>
+  showErrorOnFileLoad(file: File): void
+  handleFile(file: File, openSource?: WorkflowOpenSource): Promise<void>
+  refreshComboInNodes(): Promise<void>
+  openClipspace(): void
+  clean(): void
 }
 
 function dragElement(dragEl: HTMLElement): () => void {
@@ -187,7 +211,7 @@ class ComfyList {
   button?: HTMLButtonElement
 
   constructor(
-    private readonly app: ComfyApp,
+    private readonly app: LegacyUIApp,
     private readonly host: LegacyMenuHost,
     text: string,
     type?: string,
@@ -304,7 +328,7 @@ class ComfyList {
 }
 
 export class ComfyUI {
-  app: ComfyApp
+  app: LegacyUIApp
   private readonly host: LegacyMenuHost
   dialog: _ComfyDialog
   settings: ComfySettingsDialog
@@ -320,11 +344,11 @@ export class ComfyUI {
   restoreMenuPosition = () => {}
   loadFile = () => {}
 
-  constructor(app: ComfyApp, host: LegacyMenuHost) {
+  constructor(app: LegacyUIApp, host: LegacyMenuHost) {
     this.app = app
     this.host = host
     this.dialog = new ComfyDialog()
-    this.settings = new ComfySettingsDialog(app)
+    this.settings = new ComfySettingsDialog()
 
     this.batchCount = 1
     this.lastQueueSize = 0

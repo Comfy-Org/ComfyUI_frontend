@@ -8,7 +8,7 @@ import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { BaseDOMWidget } from '@/scripts/domWidget'
+import type { BaseDOMWidget } from '@/types/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { toNodeId } from '@/types/nodeId'
 

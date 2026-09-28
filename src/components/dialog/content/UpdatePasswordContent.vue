@@ -19,15 +19,16 @@ import { ref } from 'vue'
 
 import PasswordFields from '@/components/dialog/content/signin/PasswordFields.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useUpdatePassword } from '@/composables/auth/useUpdatePassword'
 import { updatePasswordSchema } from '@/schemas/signInSchema'
 
-const authActions = useAuthActions()
-const loading = ref(false)
-
-const { onSuccess } = defineProps<{
+const { requestSignIn, onSuccess } = defineProps<{
+  requestSignIn: () => Promise<boolean>
   onSuccess: () => void
 }>()
+
+const updatePassword = useUpdatePassword(requestSignIn)
+const loading = ref(false)
 
 const { handleSubmit } = useForm({
   validationSchema: toTypedSchema(updatePasswordSchema),
@@ -37,7 +38,7 @@ const { handleSubmit } = useForm({
 const onSubmit = handleSubmit(async ({ password }) => {
   loading.value = true
   try {
-    await authActions.updatePassword(password)
+    await updatePassword(password)
     onSuccess()
   } finally {
     loading.value = false

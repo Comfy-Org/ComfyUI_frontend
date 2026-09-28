@@ -6,7 +6,7 @@ import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutpu
 import { useCommandStore } from '@/stores/commandStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 
-import type { MenuOption } from './useMoreOptionsMenu'
+import type { MenuOption } from './menuOption'
 
 type ImageMenuAvailability = Record<CoreMediaMenuActionKind, boolean>
 
