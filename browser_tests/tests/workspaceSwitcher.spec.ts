@@ -1,17 +1,9 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import type {
-  AgentMessage,
-  AgentRunMode,
-  AgentThreadListResponse,
-  GlobalSetting
-} from '@comfyorg/ingest-types'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   LONG_WORKSPACE_NAME,
   OFF_SCREEN_WORKSPACE_NAME,
@@ -19,39 +11,40 @@ import {
   TEAM_WORKSPACE_NAME,
   createManyWorkspacesResponse
 } from '@e2e/fixtures/data/workspaceSwitcher'
+import { identityPersistenceFixture } from '@e2e/fixtures/identityPersistenceFixture'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
-import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFixture'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { workspaceSwitcherTest } from '@e2e/fixtures/workspaceSwitcherFixture'
+
+const test = mergeTests(workspaceSwitcherTest, identityPersistenceFixture)
 
 // text-sm rows render a single 20px line; a wrapped name is 40px+.
 const SINGLE_LINE_MAX_HEIGHT_PX = 28
 
 test.describe('Workspace switcher', { tag: '@cloud' }, () => {
   test('renders a long team workspace name on a single line', async ({
-    comfyPage
+    comfyPage,
+    workspaceAuth
   }) => {
     const page = comfyPage.page
 
     await comfyPage.toast.closeToasts()
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByText(PERSONAL_WORKSPACE_NAME).click()
+    await workspaceAuth.openSwitcherPanel()
 
     const longName = page.getByText(LONG_WORKSPACE_NAME)
     await expect(longName).toBeVisible()
-
-    const box = await longName.boundingBox()
-    expect(box).not.toBeNull()
-    expect(box!.height).toBeLessThan(SINGLE_LINE_MAX_HEIGHT_PX)
+    await expect
+      .poll(async () => (await longName.boundingBox())?.height ?? Infinity)
+      .toBeLessThan(SINGLE_LINE_MAX_HEIGHT_PX)
   })
 
   test('opens the switcher to the left of the profile menu without overlap', async ({
-    comfyPage
+    comfyPage,
+    workspaceAuth
   }) => {
     const page = comfyPage.page
 
     await comfyPage.toast.closeToasts()
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('workspace-switcher-trigger').click()
+    await workspaceAuth.openSwitcherPanel()
 
     const panel = page.getByTestId('workspace-switcher-panel')
     await expect(panel).toBeVisible()
@@ -60,17 +53,25 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     ).toHaveCount(0)
 
     const profileMenu = page.locator('.current-user-popover')
-    const panelBox = await panel.boundingBox()
-    const profileBox = await profileMenu.boundingBox()
-    expect(panelBox).not.toBeNull()
-    expect(profileBox).not.toBeNull()
-    expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(profileBox!.x)
+    await expect
+      .poll(async () => {
+        const [panelBox, profileBox] = await Promise.all([
+          panel.boundingBox(),
+          profileMenu.boundingBox()
+        ])
+        return (
+          panelBox !== null &&
+          profileBox !== null &&
+          panelBox.x + panelBox.width <= profileBox.x
+        )
+      })
+      .toBe(true)
   })
 
   test(
     'scrolls the list to reveal workspaces past the visible area',
     { tag: '@screenshot' },
-    async ({ comfyPage }) => {
+    async ({ comfyPage, workspaceAuth }) => {
       const page = comfyPage.page
 
       await mockWorkspaceList(page, createManyWorkspacesResponse())
@@ -79,8 +80,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       await comfyPage.workflow.reloadAndWaitForApp()
 
       await comfyPage.toast.closeToasts()
-      await page.getByRole('button', { name: 'Current user' }).click()
-      await page.getByTestId('workspace-switcher-trigger').click()
+      await workspaceAuth.openSwitcherPanel()
 
       const list = page.getByTestId('workspace-switcher-list')
       await expect(list).toBeVisible()
@@ -106,13 +106,13 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
   )
 
   test('opens the create-workspace dialog with DES-246 copy', async ({
-    comfyPage
+    comfyPage,
+    workspaceAuth
   }) => {
     const page = comfyPage.page
 
     await comfyPage.toast.closeToasts()
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('workspace-switcher-trigger').click()
+    await workspaceAuth.openSwitcherPanel()
 
     await page.getByText('Create a workspace').click()
 
@@ -125,14 +125,15 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
   })
 
   test('refreshes billing capabilities after switching workspaces', async ({
-    comfyPage
+    comfyPage,
+    workspaceAuth
   }) => {
     const page = comfyPage.page
 
     await comfyPage.toast.closeToasts()
     await page.getByRole('button', { name: 'Current user' }).click()
     await expect(page.getByTestId('add-credits-button')).toBeVisible()
-    await page.getByTestId('workspace-switcher-trigger').click()
+    await workspaceAuth.openSwitcherPanel()
     await page
       .getByTestId('workspace-switcher-panel')
       .getByText(LONG_WORKSPACE_NAME, { exact: true })
@@ -150,7 +151,8 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
   })
 
   test('isolates all open workflow tabs between workspaces', async ({
-    comfyPage
+    comfyPage,
+    workspaceAuth
   }) => {
     test.slow()
     const page = comfyPage.page
@@ -168,8 +170,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await comfyPage.menu.topbar.saveWorkflow(personalWorkflows[1])
 
     await comfyPage.toast.closeToasts()
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('workspace-switcher-trigger').click()
+    await workspaceAuth.openSwitcherPanel()
     await page
       .getByTestId('workspace-switcher-panel')
       .getByText(TEAM_WORKSPACE_NAME, { exact: true })
@@ -183,8 +184,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     await comfyPage.menu.topbar.saveWorkflow(teamWorkflows[1])
 
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('workspace-switcher-trigger').click()
+    await workspaceAuth.openSwitcherPanel()
     await page
       .getByTestId('workspace-switcher-panel')
       .getByText(PERSONAL_WORKSPACE_NAME, { exact: true })
@@ -203,8 +203,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       .poll(() => comfyPage.menu.topbar.getTabNames())
       .toEqual(personalWorkflows)
 
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('workspace-switcher-trigger').click()
+    await workspaceAuth.openSwitcherPanel()
     await page
       .getByTestId('workspace-switcher-panel')
       .getByText(TEAM_WORKSPACE_NAME, { exact: true })
@@ -225,10 +224,13 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
   })
 
   test('isolates workflow and Agent state after a workspace switch and reload', async ({
-    comfyPage
+    comfyPage,
+    identityPersistence,
+    workspaceAuth
   }) => {
     test.slow()
     const page = comfyPage.page
+    const agentPanel = new AgentPanel(page)
     const userId = 'test-user-e2e'
     const personalScope = unsafeStorageScope(`${userId}:ws-personal`)
     const teamScope = unsafeStorageScope(`${userId}:ws-team`)
@@ -240,210 +242,97 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     const teamWorkflow = 'team draft sentinel'
     const personalBinding = 'personal-binding-sentinel'
     const teamBinding = 'team-binding-sentinel'
-
-    const messages = new Map<string, AgentMessage[]>([
-      [
-        personalThread,
-        [
-          {
-            id: 'personal-message',
-            thread_id: personalThread,
-            turn_id: '11111111-1111-4111-8111-111111111112',
-            seq: 1,
-            role: 'user',
-            status: 'complete',
-            content: { text: personalTranscript }
-          }
-        ]
-      ],
-      [
-        teamThread,
-        [
-          {
-            id: 'team-message',
-            thread_id: teamThread,
-            turn_id: '22222222-2222-4222-8222-222222222223',
-            seq: 1,
-            role: 'user',
-            status: 'complete',
-            content: { text: teamTranscript }
-          }
-        ]
-      ]
-    ])
-    const threads: AgentThreadListResponse = {
-      threads: [
-        {
-          id: personalThread,
-          title: 'Personal thread sentinel',
-          preview: personalTranscript,
-          workflow_id: personalBinding,
-          status: 'active',
-          message_count: 1,
-          created_at: '2026-09-28T00:00:00Z',
-          updated_at: '2026-09-28T00:00:00Z',
-          last_message_at: '2026-09-28T00:00:00Z'
-        },
-        {
-          id: teamThread,
-          title: 'Team thread sentinel',
-          preview: teamTranscript,
-          workflow_id: teamBinding,
-          status: 'active',
-          message_count: 1,
-          created_at: '2026-09-28T00:00:00Z',
-          updated_at: '2026-09-28T00:00:00Z',
-          last_message_at: '2026-09-28T00:00:00Z'
-        }
-      ],
-      pagination: { offset: 0, limit: 100, total: 2, has_more: false }
-    }
-    await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute(threads))
-    )
-    await page.route('**/api/agent/threads/*/messages', (route) => {
-      const threadId = new URL(route.request().url()).pathname.split('/').at(-2)
-      return route.fulfill(jsonRoute(messages.get(threadId ?? '') ?? []))
-    })
-    const runMode: AgentRunMode = {
-      mode: 'ask_approval',
-      credit_limit: null
-    }
-    await page.route('**/api/agent/run-mode', (route) =>
-      route.fulfill(jsonRoute(runMode))
-    )
-    const consent: GlobalSetting = {
-      key: AGENT_CONSENT_SETTING_ID,
-      value: true,
-      updated_at: '2026-09-28T00:00:00Z'
-    }
-    await page.route(
-      `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
-      (route) => route.fulfill(jsonRoute(consent))
-    )
-    await page.route('**/api/features', (route) =>
-      route.fulfill(
-        jsonRoute({
-          unified_cloud_auth: true,
-          'agent-in-app-experience': true
-        })
-      )
-    )
-    await page.evaluate(
-      ({
-        personalThreadKey,
-        teamThreadKey,
-        personalBindingKey,
-        teamBindingKey,
-        personalOnboardingKey,
-        teamOnboardingKey,
-        personalThread,
-        teamThread,
-        personalBinding,
-        teamBinding
-      }) => {
-        localStorage.setItem(personalThreadKey, personalThread)
-        localStorage.setItem(teamThreadKey, teamThread)
-        localStorage.setItem(
-          personalBindingKey,
-          JSON.stringify({
-            [personalBinding]: {
-              tabPath: 'workflows/personal.json',
-              graphId: null,
-              confirmedAt: Date.now()
-            }
-          })
-        )
-        localStorage.setItem(
-          teamBindingKey,
-          JSON.stringify({
-            [teamBinding]: {
-              tabPath: 'workflows/team.json',
-              graphId: null,
-              confirmedAt: Date.now()
-            }
-          })
-        )
-        localStorage.setItem(personalOnboardingKey, 'true')
-        localStorage.setItem(teamOnboardingKey, 'true')
+    const identityStates = [
+      {
+        userId,
+        workspaceId: 'ws-personal',
+        threadId: personalThread,
+        transcript: personalTranscript,
+        bindingId: personalBinding,
+        tabPath: 'workflows/personal.json'
       },
       {
-        personalThreadKey: StorageKeys.agentThread(personalScope),
-        teamThreadKey: StorageKeys.agentThread(teamScope),
-        personalBindingKey: StorageKeys.agentWorkflowTabBindings(personalScope),
-        teamBindingKey: StorageKeys.agentWorkflowTabBindings(teamScope),
-        personalOnboardingKey: `Comfy.AgentPanel.onboarded.${userId}.ws-personal`,
-        teamOnboardingKey: `Comfy.AgentPanel.onboarded.${userId}.ws-team`,
-        personalThread,
-        teamThread,
-        personalBinding,
-        teamBinding
+        userId,
+        workspaceId: 'ws-team',
+        threadId: teamThread,
+        transcript: teamTranscript,
+        bindingId: teamBinding,
+        tabPath: 'workflows/team.json'
       }
-    )
-    await comfyPage.workflow.reloadAndWaitForApp()
+    ]
 
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
-    await comfyPage.menu.topbar.saveWorkflow(personalWorkflow)
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel.getByTestId('user-message-bubble')).toHaveText([
-      personalTranscript
-    ])
-    await expect(panel.getByText(teamTranscript)).toHaveCount(0)
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
+    await test.step('Seed Agent state for both workspaces', async () => {
+      await identityPersistence.mockAgentApi(identityStates)
+      await page.route('**/api/features', (route) =>
+        route.fulfill({
+          json: {
+            unified_cloud_auth: true,
+            'agent-in-app-experience': true
+          }
+        })
+      )
+      await identityPersistence.seed(identityStates)
+      await comfyPage.workflow.reloadAndWaitForApp()
+    })
 
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('workspace-switcher-trigger').click()
-    await page
-      .getByTestId('workspace-switcher-panel')
-      .getByText(TEAM_WORKSPACE_NAME, { exact: true })
-      .click()
-    await comfyPage.waitForAppReady()
+    await test.step('Establish the personal workspace state', async () => {
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.settings.setSetting(
+        'Comfy.Workflow.WorkflowTabsPosition',
+        'Topbar'
+      )
+      await comfyPage.menu.topbar.saveWorkflow(personalWorkflow)
+      await agentPanel.open()
+      await expect(agentPanel.userMessages).toHaveText([personalTranscript])
+      await expect(agentPanel.root.getByText(teamTranscript)).toHaveCount(0)
+      await agentPanel.close()
+    })
 
-    await expect
-      .poll(() => comfyPage.menu.topbar.getTabNames())
-      .not.toContain(personalWorkflow)
-    await comfyPage.menu.topbar.saveWorkflow(teamWorkflow)
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
-    await expect(panel.getByTestId('user-message-bubble')).toHaveText([
-      teamTranscript
-    ])
-    await expect(panel.getByText(personalTranscript)).toHaveCount(0)
+    await test.step('Switch to and establish the team workspace state', async () => {
+      await workspaceAuth.openSwitcherPanel()
+      await page
+        .getByTestId('workspace-switcher-panel')
+        .getByText(TEAM_WORKSPACE_NAME, { exact: true })
+        .click()
+      await comfyPage.waitForAppReady()
 
-    await comfyPage.workflow.reloadAndWaitForApp()
-    await expect
-      .poll(() => comfyPage.menu.topbar.getTabNames())
-      .toContain(teamWorkflow)
-    await expect
-      .poll(() => comfyPage.menu.topbar.getTabNames())
-      .not.toContain(personalWorkflow)
-    await expect(panel.getByTestId('user-message-bubble')).toHaveText([
-      teamTranscript
-    ])
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames())
+        .not.toContain(personalWorkflow)
+      await comfyPage.menu.topbar.saveWorkflow(teamWorkflow)
+      await agentPanel.open()
+      await expect(agentPanel.userMessages).toHaveText([teamTranscript])
+      await expect(agentPanel.root.getByText(personalTranscript)).toHaveCount(0)
+      await agentPanel.close()
+    })
 
-    const persistedBindings = await page.evaluate(
-      ({ personalBindingKey, teamBindingKey }) => ({
-        personal: localStorage.getItem(personalBindingKey),
-        team: localStorage.getItem(teamBindingKey)
-      }),
-      {
-        personalBindingKey: StorageKeys.agentWorkflowTabBindings(personalScope),
-        teamBindingKey: StorageKeys.agentWorkflowTabBindings(teamScope)
-      }
-    )
-    expect(persistedBindings.personal).toContain(personalBinding)
-    expect(persistedBindings.personal).not.toContain(teamBinding)
-    expect(persistedBindings.team).toContain(teamBinding)
-    expect(persistedBindings.team).not.toContain(personalBinding)
+    await test.step('Reload the team workspace and verify isolation', async () => {
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames())
+        .toContain(teamWorkflow)
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames())
+        .not.toContain(personalWorkflow)
+      await agentPanel.open()
+      await expect(agentPanel.userMessages).toHaveText([teamTranscript])
+      await agentPanel.close()
+
+      const persistedBindings = await page.evaluate(
+        ({ personalBindingKey, teamBindingKey }) => ({
+          personal: localStorage.getItem(personalBindingKey),
+          team: localStorage.getItem(teamBindingKey)
+        }),
+        {
+          personalBindingKey:
+            StorageKeys.agentWorkflowTabBindings(personalScope),
+          teamBindingKey: StorageKeys.agentWorkflowTabBindings(teamScope)
+        }
+      )
+      expect(persistedBindings.personal).toContain(personalBinding)
+      expect(persistedBindings.personal).not.toContain(teamBinding)
+      expect(persistedBindings.team).toContain(teamBinding)
+      expect(persistedBindings.team).not.toContain(personalBinding)
+    })
   })
 })

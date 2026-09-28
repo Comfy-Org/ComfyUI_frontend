@@ -1,27 +1,14 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import type {
-  AgentRunMode,
-  AgentMessage,
-  AgentThreadSummary,
-  AgentThreadListResponse,
-  GlobalSetting
-} from '@comfyorg/ingest-types'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
-import type {
-  DraftIndexV2,
-  DraftPayloadV2
-} from '@/platform/workflow/persistence/base/draftTypes'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import type { Page } from '@playwright/test'
 
-import { ComfyPage, comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { ComfyPage, comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import {
   CLOUD_REMOTE_CONFIG,
@@ -30,10 +17,12 @@ import {
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
+import { identityPersistenceFixture } from '@e2e/fixtures/identityPersistenceFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { member } from '@e2e/fixtures/utils/workspaceMocks'
+
+const test = mergeTests(comfyPageFixture, identityPersistenceFixture)
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:8188'
 
@@ -71,144 +60,6 @@ const IDENTITY_SENTINELS = {
     binding: 'account-b-binding-sentinel'
   }
 } as const
-
-async function installIdentitySentinels(page: Page): Promise<void> {
-  const workspaceId = TEAM_WORKSPACE.id
-  const entries: Array<[string, string]> = []
-  for (const account of [ACCOUNT_A, ACCOUNT_B]) {
-    entries.push(...identitySentinelEntries(account, workspaceId))
-  }
-  await page.addInitScript((storageEntries) => {
-    const seededKey = 'e2e-identity-sentinels-seeded'
-    if (sessionStorage.getItem(seededKey) === 'true') return
-    sessionStorage.setItem(seededKey, 'true')
-    for (const [key, value] of storageEntries) localStorage.setItem(key, value)
-  }, entries)
-
-  const messages = Object.values(IDENTITY_SENTINELS).map(
-    (sentinel): AgentMessage => ({
-      id: `${sentinel.thread}-message`,
-      thread_id: sentinel.thread,
-      turn_id: sentinel.thread,
-      seq: 1,
-      role: 'user',
-      status: 'complete',
-      content: { text: sentinel.transcript }
-    })
-  )
-  const threads: AgentThreadListResponse = {
-    threads: Object.values(IDENTITY_SENTINELS).map(
-      (sentinel): AgentThreadSummary => ({
-        id: sentinel.thread,
-        title: sentinel.transcript,
-        preview: sentinel.transcript,
-        workflow_id: sentinel.binding,
-        status: 'active',
-        message_count: 1,
-        created_at: '2026-09-28T00:00:00Z',
-        updated_at: '2026-09-28T00:00:00Z',
-        last_message_at: '2026-09-28T00:00:00Z'
-      })
-    ),
-    pagination: { offset: 0, limit: 100, total: 2, has_more: false }
-  }
-  await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute(threads))
-  )
-  await page.route('**/api/agent/threads/*/messages', (route) => {
-    const threadId = new URL(route.request().url()).pathname.split('/').at(-2)
-    return route.fulfill(
-      jsonRoute(messages.filter((message) => message.thread_id === threadId))
-    )
-  })
-  const runMode: AgentRunMode = {
-    mode: 'ask_approval',
-    credit_limit: null
-  }
-  await page.route('**/api/agent/run-mode', (route) =>
-    route.fulfill(jsonRoute(runMode))
-  )
-  const consent: GlobalSetting = {
-    key: AGENT_CONSENT_SETTING_ID,
-    value: true,
-    updated_at: '2026-09-28T00:00:00Z'
-  }
-  await page.route(
-    `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
-    (route) => route.fulfill(jsonRoute(consent))
-  )
-}
-
-function identitySentinelEntries(
-  account: MockAccount,
-  workspaceId: string
-): Array<[string, string]> {
-  const sentinel = IDENTITY_SENTINELS[account.id]
-  const scope = unsafeStorageScope(`${account.uid}:${workspaceId}`)
-  const path = `workflows/${sentinel.draft}.json`
-  const draftKey = StorageKeys.draftKey(path)
-  const updatedAt = Date.now()
-  const index: DraftIndexV2 = {
-    v: 2,
-    updatedAt,
-    order: [draftKey],
-    entries: {
-      [draftKey]: {
-        path,
-        name: `${sentinel.draft}.json`,
-        isTemporary: true,
-        updatedAt
-      }
-    }
-  }
-  const payload: DraftPayloadV2 = {
-    data: JSON.stringify({
-      last_node_id: 0,
-      last_link_id: 0,
-      nodes: [],
-      links: [],
-      groups: [],
-      config: {},
-      extra: { identitySentinel: sentinel.draft },
-      version: 0.4
-    }),
-    updatedAt
-  }
-  return [
-    [StorageKeys.draftIndex(scope), JSON.stringify(index)],
-    [StorageKeys.draftPayload(path, scope), JSON.stringify(payload)],
-    [
-      StorageKeys.lastActivePath(scope),
-      JSON.stringify({ workspaceId: scope, path })
-    ],
-    [
-      StorageKeys.lastOpenPaths(scope),
-      JSON.stringify({ workspaceId: scope, paths: [path], activeIndex: 0 })
-    ],
-    [StorageKeys.agentThread(scope), sentinel.thread],
-    [
-      StorageKeys.agentWorkflowTabBindings(scope),
-      JSON.stringify({
-        [sentinel.binding]: {
-          tabPath: path,
-          graphId: null,
-          confirmedAt: updatedAt
-        }
-      })
-    ],
-    [`Comfy.AgentPanel.onboarded.${account.uid}.${workspaceId}`, 'true']
-  ]
-}
-
-async function seedIdentitySentinel(
-  page: Page,
-  account: MockAccount
-): Promise<void> {
-  const entries = identitySentinelEntries(account, TEAM_WORKSPACE.id)
-  await page.evaluate((storageEntries) => {
-    for (const [key, value] of storageEntries) localStorage.setItem(key, value)
-  }, entries)
-}
 
 interface FirebasePasswordSignInResponse {
   kind: 'identitytoolkit#VerifyPasswordResponse'
@@ -294,10 +145,31 @@ function firebaseLookupResponse(account: MockAccount): FirebaseLookupResponse {
 test.describe('Cloud account switch', { tag: '@cloud' }, () => {
   test('keeps workspace bearer and session cookie on the switched account', async ({
     page,
-    request
+    request,
+    identityPersistence
   }) => {
     test.setTimeout(60_000)
     const comfyPage = new ComfyPage(page, request)
+    const agentPanel = new AgentPanel(page)
+    const accountAIdentity = {
+      userId: ACCOUNT_A.uid,
+      workspaceId: TEAM_WORKSPACE.id,
+      threadId: IDENTITY_SENTINELS.a.thread,
+      transcript: IDENTITY_SENTINELS.a.transcript,
+      bindingId: IDENTITY_SENTINELS.a.binding,
+      tabPath: `workflows/${IDENTITY_SENTINELS.a.draft}.json`,
+      draftName: IDENTITY_SENTINELS.a.draft
+    }
+    const accountBIdentity = {
+      userId: ACCOUNT_B.uid,
+      workspaceId: TEAM_WORKSPACE.id,
+      threadId: IDENTITY_SENTINELS.b.thread,
+      transcript: IDENTITY_SENTINELS.b.transcript,
+      bindingId: IDENTITY_SENTINELS.b.binding,
+      tabPath: `workflows/${IDENTITY_SENTINELS.b.draft}.json`,
+      draftName: IDENTITY_SENTINELS.b.draft
+    }
+    const identityStates = [accountAIdentity, accountBIdentity]
 
     await new CloudWorkspaceMockHelper(page).setup([
       ...DEFAULT_TEAM_MEMBERS,
@@ -466,7 +338,8 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       })
     })
 
-    await installIdentitySentinels(page)
+    await identityPersistence.mockAgentApi(identityStates)
+    await identityPersistence.seedAtStartup(identityStates)
 
     await test.step('Establish account A credentials', async () => {
       await page.goto(APP_URL, { waitUntil: 'domcontentloaded' })
@@ -488,25 +361,14 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
           exact: true
         })
       ).toHaveCount(0)
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
-      const panel = page.locator('#agent-panel-root')
-      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+      await agentPanel.open()
+      await expect(agentPanel.userMessages).toHaveText([
         IDENTITY_SENTINELS.a.transcript
       ])
       await expect(
-        panel.getByText(IDENTITY_SENTINELS.b.transcript)
+        agentPanel.root.getByText(IDENTITY_SENTINELS.b.transcript)
       ).toHaveCount(0)
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await agentPanel.close()
     })
 
     await test.step('Switch to account B', async () => {
@@ -558,7 +420,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       )
       await page.reload({ waitUntil: 'domcontentloaded' })
       await comfyPage.waitForAppReady()
-      await seedIdentitySentinel(page, ACCOUNT_B)
+      await identityPersistence.seed([accountBIdentity])
       await page.reload({ waitUntil: 'domcontentloaded' })
       await comfyPage.waitForAppReady()
       await expect(
@@ -567,48 +429,38 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
           exact: true
         })
       ).toBeVisible()
-      expect(
-        await page.evaluate(() => window.app!.graph.extra.identitySentinel)
-      ).toBe(IDENTITY_SENTINELS.b.draft)
+      await expect
+        .poll(() =>
+          page.evaluate(() => window.app!.graph.extra.identitySentinel)
+        )
+        .toBe(IDENTITY_SENTINELS.b.draft)
       await expect(
         page.getByRole('tab', {
           name: IDENTITY_SENTINELS.a.draft,
           exact: true
         })
       ).toHaveCount(0)
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
-      const panel = page.locator('#agent-panel-root')
-      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+      await agentPanel.open()
+      await expect(agentPanel.userMessages).toHaveText([
         IDENTITY_SENTINELS.b.transcript
       ])
       await expect(
-        panel.getByText(IDENTITY_SENTINELS.a.transcript)
+        agentPanel.root.getByText(IDENTITY_SENTINELS.a.transcript)
       ).toHaveCount(0)
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await agentPanel.close()
 
       const bindings = await page.evaluate(
-        ({ workspaceId, userA, userB }) => {
-          const key = (userId: string) =>
-            `Comfy.Agent.WorkflowTabBindings:${userId}:${workspaceId}`
-          return {
-            a: localStorage.getItem(key(userA)),
-            b: localStorage.getItem(key(userB))
-          }
-        },
+        ({ accountAKey, accountBKey }) => ({
+          a: localStorage.getItem(accountAKey),
+          b: localStorage.getItem(accountBKey)
+        }),
         {
-          workspaceId: TEAM_WORKSPACE.id,
-          userA: ACCOUNT_A.uid,
-          userB: ACCOUNT_B.uid
+          accountAKey: StorageKeys.agentWorkflowTabBindings(
+            unsafeStorageScope(`${ACCOUNT_A.uid}:${TEAM_WORKSPACE.id}`)
+          ),
+          accountBKey: StorageKeys.agentWorkflowTabBindings(
+            unsafeStorageScope(`${ACCOUNT_B.uid}:${TEAM_WORKSPACE.id}`)
+          )
         }
       )
       expect(bindings.a).toContain(IDENTITY_SENTINELS.a.binding)
@@ -683,10 +535,32 @@ async function expectSignedOut(page: Page, message: string): Promise<void> {
 // one tab must reach the other through the SDK and the app's reaction to it.
 test.describe('Cloud cross-tab sign-out', { tag: '@cloud' }, () => {
   test('logout clears only the departing identity persistence scope', async ({
-    page
+    page,
+    identityPersistence
   }) => {
     test.setTimeout(90_000)
-    await installIdentitySentinels(page)
+    const identityStates = [
+      {
+        userId: ACCOUNT_A.uid,
+        workspaceId: TEAM_WORKSPACE.id,
+        threadId: IDENTITY_SENTINELS.a.thread,
+        transcript: IDENTITY_SENTINELS.a.transcript,
+        bindingId: IDENTITY_SENTINELS.a.binding,
+        tabPath: `workflows/${IDENTITY_SENTINELS.a.draft}.json`,
+        draftName: IDENTITY_SENTINELS.a.draft
+      },
+      {
+        userId: ACCOUNT_B.uid,
+        workspaceId: TEAM_WORKSPACE.id,
+        threadId: IDENTITY_SENTINELS.b.thread,
+        transcript: IDENTITY_SENTINELS.b.transcript,
+        bindingId: IDENTITY_SENTINELS.b.binding,
+        tabPath: `workflows/${IDENTITY_SENTINELS.b.draft}.json`,
+        draftName: IDENTITY_SENTINELS.b.draft
+      }
+    ]
+    await identityPersistence.mockAgentApi(identityStates)
+    await identityPersistence.seedAtStartup(identityStates)
     await bootSignedIn(page)
 
     await expect(
@@ -704,27 +578,36 @@ test.describe('Cloud cross-tab sign-out', { tag: '@cloud' }, () => {
     await clickLogout(page)
     await expectSignedOut(page, 'logout must complete before cleanup is read')
 
+    const accountAScope = unsafeStorageScope(
+      `${ACCOUNT_A.uid}:${TEAM_WORKSPACE.id}`
+    )
+    const accountBScope = unsafeStorageScope(
+      `${ACCOUNT_B.uid}:${TEAM_WORKSPACE.id}`
+    )
     const storage = await page.evaluate(
-      ({ workspaceId, userA, userB }) => {
-        const prefix = (userId: string) => `${userId}:${workspaceId}`
-        const values = (userId: string) => {
-          const scope = prefix(userId)
-          return {
-            draft: localStorage.getItem(
-              `Comfy.Workflow.DraftIndex.v2:${scope}`
-            ),
-            thread: localStorage.getItem(`Comfy.Agent.ThreadId:${scope}`),
-            binding: localStorage.getItem(
-              `Comfy.Agent.WorkflowTabBindings:${scope}`
-            )
-          }
+      ({ accountAKeys, accountBKeys }) => ({
+        a: {
+          draft: localStorage.getItem(accountAKeys.draft),
+          thread: localStorage.getItem(accountAKeys.thread),
+          binding: localStorage.getItem(accountAKeys.binding)
+        },
+        b: {
+          draft: localStorage.getItem(accountBKeys.draft),
+          thread: localStorage.getItem(accountBKeys.thread),
+          binding: localStorage.getItem(accountBKeys.binding)
         }
-        return { a: values(userA), b: values(userB) }
-      },
+      }),
       {
-        workspaceId: TEAM_WORKSPACE.id,
-        userA: ACCOUNT_A.uid,
-        userB: ACCOUNT_B.uid
+        accountAKeys: {
+          draft: StorageKeys.draftIndex(accountAScope),
+          thread: StorageKeys.agentThread(accountAScope),
+          binding: StorageKeys.agentWorkflowTabBindings(accountAScope)
+        },
+        accountBKeys: {
+          draft: StorageKeys.draftIndex(accountBScope),
+          thread: StorageKeys.agentThread(accountBScope),
+          binding: StorageKeys.agentWorkflowTabBindings(accountBScope)
+        }
       }
     )
     expect(storage.a).toEqual({ draft: null, thread: null, binding: null })
