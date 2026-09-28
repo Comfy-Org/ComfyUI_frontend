@@ -68,7 +68,7 @@ describe('WorkshopSections', () => {
     render(WorkshopSections, { props: { models, labelKey } })
 
     const row = within(screen.getByTestId('section-generate-videos'))
-    await user.click(row.getByRole('link', { name: /^a\b/i }))
+    await user.click(row.getByRole('link', { name: /\ba\b/i }))
     expect(lastShelf('/models/a/')).toBe('generate-videos')
   })
 
@@ -86,7 +86,7 @@ describe('WorkshopSections', () => {
 
       // userEvent.click cannot express a non-primary button or click modifier.
       // eslint-disable-next-line testing-library/prefer-user-event
-      await fireEvent.click(row.getByRole('link', { name: /^a\b/i }), event)
+      await fireEvent.click(row.getByRole('link', { name: /\ba\b/i }), event)
 
       expect(lastShelf('/models/a/')).toBeUndefined()
     }
