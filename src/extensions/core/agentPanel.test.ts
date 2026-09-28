@@ -40,6 +40,12 @@ import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { toNodeId } from '@/types/nodeId'
 
+type AgentPanelApp = Parameters<
+  NonNullable<ComfyExtension['beforeLoadGraph']>
+>[0]
+
+const agentPanelApp = fromPartial<AgentPanelApp>({})
+
 let agentStore: Mocked<ReturnType<typeof useAgentPanelStore>>
 let nodeSelectionStore: Mocked<ReturnType<typeof useAgentNodeSelectionStore>>
 let workflowStore: ReturnType<typeof useWorkflowStore>
@@ -1041,9 +1047,9 @@ describe('AgentPanel extension flag gate', () => {
     )
     agentStore.enabled = true
     agentStore.consentAccepted = false
-    await extension!.beforeLoadGraph!({} as never)
+    await extension!.beforeLoadGraph!(agentPanelApp)
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
-    await extension!.afterConfigureGraph!([], {} as never)
+    await extension!.afterConfigureGraph!([], agentPanelApp)
   })
 
   it('enables the panel when the flag turns true', async () => {
@@ -1187,7 +1193,7 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.enabled = true
     agentStore.consentAccepted = true
 
-    await extension!.beforeLoadGraph!({} as never)
+    await extension!.beforeLoadGraph!(agentPanelApp)
 
     expect(nodeSelectionStore.beginWorkflowLoad).toHaveBeenCalledOnce()
 
@@ -1209,7 +1215,7 @@ describe('AgentPanel extension flag gate', () => {
     expect(selectItems).toHaveBeenCalledWith([secondNode])
     expect(nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith(['12'])
     expect(nodeSelectionStore.finishWorkflowLoad).not.toHaveBeenCalled()
-    await extension!.afterConfigureGraph!([], {} as never)
+    await extension!.afterConfigureGraph!([], agentPanelApp)
   })
 
   it('disarms the restore guard on an empty restore instead of leaving it armed', async () => {
@@ -1282,10 +1288,10 @@ describe('AgentPanel extension flag gate', () => {
     )
     agentStore.isOpen = false
 
-    await extension!.beforeLoadGraph!({} as never)
+    await extension!.beforeLoadGraph!(agentPanelApp)
 
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
-    await extension!.afterConfigureGraph!([], {} as never)
+    await extension!.afterConfigureGraph!([], agentPanelApp)
   })
 
   it('finishes restoration when the panel closes during graph load', async () => {
@@ -1314,7 +1320,7 @@ describe('AgentPanel extension flag gate', () => {
 
     await extension!.onGraphLoadError!(
       new Error('bad workflow json'),
-      {} as never
+      agentPanelApp
     )
 
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
@@ -1349,10 +1355,10 @@ describe('AgentPanel extension flag gate', () => {
       (item) => item.name === 'Comfy.AgentPanel'
     )
 
-    await extension!.beforeLoadGraph!({} as never)
+    await extension!.beforeLoadGraph!(agentPanelApp)
 
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
-    await extension!.afterConfigureGraph!([], {} as never)
+    await extension!.afterConfigureGraph!([], agentPanelApp)
   })
 
   it('does not self-register when its module is imported', async () => {
