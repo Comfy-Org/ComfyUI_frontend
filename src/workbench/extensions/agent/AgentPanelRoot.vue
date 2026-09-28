@@ -288,26 +288,22 @@ const showStandingPaywall = computed(
  * `useBillingBanner` scopes its dismissal to one episode.
  */
 let reportedExhaustionImpression = false
-watch(
-  [showStandingPaywall, creditsExhausted],
-  ([visible, exhausted]) => {
-    if (!exhausted) {
-      reportedExhaustionImpression = false
-      return
-    }
-    if (!visible || reportedExhaustionImpression) return
-    const telemetry = useTelemetry()
-    if (!telemetry) return
-    reportedExhaustionImpression = true
-    telemetry.trackAgentPaywallShown({
-      reason: snapshotAuthoritative.value
-        ? toAgentPaywallReason(paywallPresentation.value)
-        : 'unknown',
-      surface: 'credits_exhausted'
-    })
-  },
-  { immediate: true }
-)
+watch(creditsExhausted, (exhausted) => {
+  if (!exhausted) reportedExhaustionImpression = false
+})
+
+function onStandingPaywallShown(): void {
+  if (!showStandingPaywall.value || reportedExhaustionImpression) return
+  const telemetry = useTelemetry()
+  if (!telemetry) return
+  reportedExhaustionImpression = true
+  telemetry.trackAgentPaywallShown({
+    reason: snapshotAuthoritative.value
+      ? toAgentPaywallReason(paywallPresentation.value)
+      : 'unknown',
+    surface: 'credits_exhausted'
+  })
+}
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -1480,6 +1476,7 @@ function onPanelDrop(event: DragEvent): void {
       @open-workflow="onOpenApprovalWorkflow"
       @open-reference-workflow="onNavigateToReferenceWorkflow"
       @paywall-action="onPaywallAction"
+      @standing-paywall-shown="onStandingPaywallShown"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
