@@ -482,11 +482,13 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       node: Awaited<ReturnType<typeof dynamicComboNode>>,
       type: string
     ) {
-      const inputs = await node.getProperty<
-        { type: string; link: number | null }[] | undefined
-      >('inputs')
-      return (inputs ?? []).some(
-        (input) => input.type === type && input.link != null
+      return await node.comfyPage.page.evaluate(
+        ([nodeId, type]) => {
+          const graphNode = window.app!.canvas.graph!.getNodeById(nodeId)
+          if (!graphNode) throw new Error(`Node ${nodeId} not found`)
+          return graphNode.findInputByType(type)?.slot.link != null
+        },
+        [node.id, type] as const
       )
     }
 
