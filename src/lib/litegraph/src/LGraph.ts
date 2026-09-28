@@ -2179,7 +2179,16 @@ export class LGraph
         this.subgraphs.get(definition.id)?.configure(definition)
       return subgraphs
     } catch (error) {
-      this.releaseSubgraphs(subgraphs)
+      try {
+        this.releaseSubgraphs(subgraphs)
+      } catch (cleanupError) {
+        const combinedError = new AggregateError(
+          [error, cleanupError],
+          'Subgraph configuration and rollback both failed',
+          { cause: error }
+        )
+        throw combinedError
+      }
       throw error
     }
   }
