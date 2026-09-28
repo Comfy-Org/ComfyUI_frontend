@@ -39,6 +39,8 @@ interface Props {
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
+  /** PP Formula faces this page renders above the fold beyond the site-wide set. */
+  preloadFonts?: readonly string[]
 }
 
 const {
@@ -51,7 +53,8 @@ const {
   breadcrumbs,
   mainEntityId,
   extraJsonLd,
-  minimal = false
+  minimal = false,
+  preloadFonts = []
 } = Astro.props
 
 const keywordsContent =
@@ -162,6 +165,15 @@ const structuredData = shouldNoindex
       href="/fonts/PPFormula-NarrowSemibold.woff2"
       crossorigin
     />
+    {preloadFonts.map((face) => (
+      <link
+        rel="preload"
+        as="font"
+        type="font/woff2"
+        href={`/fonts/PPFormula-${face}.woff2`}
+        crossorigin
+      />
+    ))}
     {!shouldNoindex && (
       <link
         rel="alternate"
