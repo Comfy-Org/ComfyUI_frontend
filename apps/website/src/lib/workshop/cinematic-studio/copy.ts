@@ -200,6 +200,14 @@ const copy = {
     en: 'Beta',
     'zh-CN': '测试版'
   },
+  'cinematic.repo.view': {
+    en: 'View on GitHub',
+    'zh-CN': '在 GitHub 上查看'
+  },
+  'cinematic.repo.soon': {
+    en: 'GitHub · Coming soon',
+    'zh-CN': 'GitHub · 即将推出'
+  },
   'cinematic.meta.description': {
     en: 'Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router.',
     'zh-CN':
