@@ -911,6 +911,7 @@ watch(
 const executionErrorStore = useExecutionErrorStore()
 
 function surfaceAgentError(type: 'agent_api_failed', details: string): void {
+  console.error('[conversation replay diagnostic]', details)
   executionErrorStore.recordPromptError({
     type,
     message: t(`errorCatalog.promptErrors.${type}.desc`),
