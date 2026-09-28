@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -36,5 +37,19 @@ describe('ServerlessDeploySection', () => {
     ]) {
       expect(transcript).toContain(line)
     }
+  })
+
+  it('copies the agent setup prompt and confirms the action', async () => {
+    const user = userEvent.setup()
+    render(ServerlessDeploySection, { props: { locale: 'en' } })
+
+    await user.click(screen.getByRole('button', { name: 'COPY AGENT PROMPT' }))
+
+    expect(await navigator.clipboard.readText()).toContain(
+      'pip install -U comfy-cli'
+    )
+    expect(
+      screen.getByRole('button', { name: 'AGENT PROMPT COPIED' })
+    ).toBeTruthy()
   })
 })

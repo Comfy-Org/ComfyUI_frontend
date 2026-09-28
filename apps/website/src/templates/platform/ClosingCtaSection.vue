@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { defineAsyncComponent, onMounted, ref } from 'vue'
 
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
@@ -12,12 +13,14 @@ const {
   locale = 'en',
   visual = 'shader',
   badgeOnly = false,
+  dense = false,
   headingAfterBadge,
   headingLead,
   primaryHref,
   subtitle
 } = defineProps<{
   badgeOnly?: boolean
+  dense?: boolean
   headingAfterBadge?: string
   headingLead?: string
   locale?: Locale
@@ -41,7 +44,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="relative isolate overflow-hidden bg-primary-comfy-ink">
+  <div
+    role="region"
+    :aria-label="t('platform.hero.badge', locale)"
+    :data-density="dense ? 'dense' : 'default'"
+    class="relative isolate overflow-hidden bg-primary-comfy-ink"
+  >
     <div
       v-if="visual === 'shader'"
       class="pointer-events-none absolute inset-0 mask-platform-terminal-feather"
@@ -52,7 +60,12 @@ onMounted(() => {
     <ClosingCtaColumnField v-else />
     <CtaCenter01
       compact
-      class="relative z-10 min-h-96 justify-center"
+      :class="
+        cn(
+          'relative z-10 justify-center',
+          dense ? 'min-h-0 py-12 lg:py-16' : 'min-h-96'
+        )
+      "
       :heading="
         badgeOnly
           ? `${t('platform.hero.badge', locale)} ${t('nav.badgeBeta', locale)}`

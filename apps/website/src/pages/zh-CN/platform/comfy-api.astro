@@ -2,6 +2,8 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../../components/common/ProductCardsSection.vue'
 import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
+import PricingSection from '../../../templates/platform/PricingSection.vue'
+import ServerlessAppsSection from '../../../templates/platform/ServerlessAppsSection.vue'
 import ServerlessDeploySection from '../../../templates/platform/ServerlessDeploySection.vue'
 import ServerlessHero from '../../../templates/platform/ServerlessHero.vue'
 import ServerlessHowItWorksSection from '../../../templates/platform/ServerlessHowItWorksSection.vue'
@@ -16,10 +18,13 @@ import { t } from '../../../i18n/translations'
   <ServerlessHero locale="zh-CN" client:load />
   <ServerlessHowItWorksSection locale="zh-CN" client:visible />
   <ServerlessDeploySection locale="zh-CN" client:visible />
+  <ServerlessAppsSection locale="zh-CN" />
   <ServerlessScaleSection locale="zh-CN" client:visible />
+  <PricingSection locale="zh-CN" />
   <ClosingCtaSection
     locale="zh-CN"
     heading-after-badge={t('platform.closing.headingAfterBadge', 'zh-CN')}
+    dense
     client:visible
   />
   <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
