@@ -47,7 +47,7 @@ const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
     <div class="space-y-2">
       <h2
         id="workflow-api-heading"
-        class="text-2xl font-light text-primary-comfy-canvas"
+        class="text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
       >
         {{ t('workshop.api.heading') }}
       </h2>
