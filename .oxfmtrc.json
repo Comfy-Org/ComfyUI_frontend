@@ -13,6 +13,7 @@
     "src/__ecs_matrix__/**",
     "src/types/generatedManagerTypes.ts",
     "src/locales/**/*.json",
+    "apps/website/src/locales/**/*.json",
     "**/__fixtures__/**/*.json",
     "apps/website/src/content/**/*.mdx",
     "apps/website/src/assets/world-countries.json",

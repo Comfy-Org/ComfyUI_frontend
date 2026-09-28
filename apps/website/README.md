@@ -34,6 +34,32 @@ to use Oxfmt. The website's `.prettierrc.json` matches the repository's style
 and preserves whitespace around inline HTML elements. The Astro editor
 extension also reads this configuration.
 
+## Localization
+
+The site ships English, Simplified Chinese (`zh-CN`) and Japanese (`ja`).
+Catalogs live in `src/locales/<locale>/main.json` in the same nested JSON
+layout and [vue-i18n message syntax](https://vue-i18n.intlify.dev/guide/essentials/syntax)
+as the application's `src/locales/` at the repository root:
+
+- Named placeholders: `"Show {n} models"`, filled with
+  `t('workshop.search.show', locale, { n })`.
+- Plural forms separated by `|`: `"{count} node | {count} nodes"`, picked with
+  `tPlural('cloudNodesLaunch.models.nodeCount', count, locale)`.
+- The characters `{`, `}`, `@` and `|` are message syntax, so literal ones are
+  written as `{'@'}` and `{'|'}`. A bare `@` fails to compile; a bare `|`
+  silently truncates the message at the pipe.
+
+`src/i18n/translations.ts` wraps a vue-i18n instance whose locale is passed
+explicitly on every call (`t(key, locale, named?)`), never switched globally,
+because the site is rendered statically per locale. Any key the requested
+locale lacks falls back to English. A unit test compiles every message in
+every locale, so a syntax mistake fails `pnpm test:unit` rather than a page.
+
+Add new English copy to `src/locales/en/main.json`. Existing translated copy
+remains in the corresponding locale catalog. Shared generation is introduced
+in the following stack change together with translation ownership and
+exclusion policy; this catalog migration does not enable generation.
+
 ## Ashby careers integration
 
 `/careers` and `/zh-CN/careers` are rendered from Ashby's public job board
