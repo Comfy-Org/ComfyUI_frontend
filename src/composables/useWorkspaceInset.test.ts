@@ -12,10 +12,11 @@ function readInset(): string {
 
 const scopes: ReturnType<typeof effectScope>[] = []
 
-function runInScope(widthPx: () => number): void {
+function runInScope(widthPx: () => number): ReturnType<typeof effectScope> {
   const scope = effectScope()
   scopes.push(scope)
   scope.run(() => useWorkspaceInsetRight(widthPx))
+  return scope
 }
 
 afterEach(() => {
@@ -68,16 +69,13 @@ describe('useWorkspaceInsetRight', () => {
   ])(
     'keeps the incoming inset during a %s host switch',
     async (_direction, outgoingWidth, incomingWidth) => {
-      const outgoing = effectScope()
-      outgoing.run(() => useWorkspaceInsetRight(() => outgoingWidth))
-      const incoming = effectScope()
-      incoming.run(() => useWorkspaceInsetRight(() => incomingWidth))
+      const outgoing = runInScope(() => outgoingWidth)
+      runInScope(() => incomingWidth)
 
       outgoing.stop()
       await nextTick()
 
       expect(readInset()).toBe(`${incomingWidth}px`)
-      incoming.stop()
     }
   )
 })
