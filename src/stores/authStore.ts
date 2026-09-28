@@ -682,7 +682,10 @@ export const useAuthStore = defineStore('auth', () => {
             credential
           ),
         onRollbackFailure: (error) => {
-          reportError(error, { errorType: 'auth_signup_rollback_failed' })
+          reportError(error, {
+            surface: 'auth',
+            errorType: 'auth_signup_rollback_failed'
+          })
           console.warn(
             'Failed to roll back orphaned Firebase user after customer creation failed',
             error

@@ -134,6 +134,7 @@ describe('launchCancellationFlow', () => {
 
     expect(showFallback).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'billing',
       errorType: 'error_refreshing_billing_after_churnkey_discount'
     })
     expect(useToastStore().add).toHaveBeenCalledExactlyOnceWith(

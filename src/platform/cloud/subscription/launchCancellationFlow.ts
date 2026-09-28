@@ -210,6 +210,7 @@ export async function launchCancellationFlow({
         if (!isLaunchWorkspaceCurrent()) return
         await billing.fetchStatus().catch((error) => {
           reportError(error, {
+            surface: 'billing',
             errorType: 'error_refreshing_billing_after_churnkey_discount'
           })
           useToastStore().add({

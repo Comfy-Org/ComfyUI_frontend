@@ -805,6 +805,7 @@ describe('useAgentConsent', () => {
     expect(onOpen).not.toHaveBeenCalled()
     expect(useDialogStore().dialogStack).toHaveLength(0)
     expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'agent',
       errorType: 'agent_consent_sign_in_failure'
     })
     expect(useToastStore().add).toHaveBeenCalledWith(

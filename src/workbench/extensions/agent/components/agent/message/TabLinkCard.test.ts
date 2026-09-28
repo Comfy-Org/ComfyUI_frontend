@@ -281,6 +281,7 @@ describe('TabLinkCard', () => {
     await userEvent.click(screen.getByRole('button'))
 
     expect(mocks.reportError).toHaveBeenCalledWith(error, {
+      surface: 'agent',
       errorType: 'agent_target_navigation_failure'
     })
   })

@@ -225,6 +225,7 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
       cleanup()
     } catch (error) {
       reportError(error, {
+        surface: 'agent',
         errorType: 'failure_tearing_down_agent_crdt_follower'
       })
     }

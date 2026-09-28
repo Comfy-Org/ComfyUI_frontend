@@ -394,6 +394,7 @@ export function registerAgentPanelExtension(): void {
           .catch((error: unknown) => {
             reportOfferExit('startup_probe_failed', 'startup')
             reportError(error, {
+              surface: 'agent',
               errorType: 'agent_consent_auto_offer_failure'
             })
           })
@@ -445,6 +446,7 @@ export function registerAgentPanelExtension(): void {
           .catch((error: unknown) => {
             reportOfferExit('consent_read_failed', 'load')
             reportError(error, {
+              surface: 'agent',
               errorType: 'agent_consent_setting_load_failure'
             })
           })
