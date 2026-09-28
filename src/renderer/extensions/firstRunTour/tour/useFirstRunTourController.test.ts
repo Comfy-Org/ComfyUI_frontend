@@ -547,7 +547,10 @@ describe('useFirstRunTourController', () => {
     it('recovers when a rejected renderer enable is retried', async () => {
       useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
       vi.mocked(useSettingStore().set)
-        .mockRejectedValueOnce(new Error('failed to persist renderer setting'))
+        .mockImplementationOnce(async (key, value) => {
+          Object.assign(useSettingStore().settingValues, { [key]: value })
+          throw new Error('failed to persist renderer setting')
+        })
         .mockImplementation(async (key, value) => {
           Object.assign(useSettingStore().settingValues, { [key]: value })
         })
@@ -556,11 +559,25 @@ describe('useFirstRunTourController', () => {
       await expect(controller.beginTour('image_z_image_turbo')).rejects.toThrow(
         'failed to persist renderer setting'
       )
+      expect(useSettingStore().settingValues['Comfy.VueNodes.Enabled']).toBe(
+        true
+      )
       vi.mocked(useOnboardingTourStore().startTour).mockResolvedValue(false)
       const retrying = controller.beginTour('image_z_image_turbo')
       await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
 
       await expect(retrying).resolves.toBe(false)
+      expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(useSettingStore().set)).toHaveBeenNthCalledWith(
+        1,
+        'Comfy.VueNodes.Enabled',
+        true
+      )
+      expect(vi.mocked(useSettingStore().set)).toHaveBeenNthCalledWith(
+        2,
+        'Comfy.VueNodes.Enabled',
+        false
+      )
       expect(useSettingStore().settingValues['Comfy.VueNodes.Enabled']).toBe(
         false
       )
