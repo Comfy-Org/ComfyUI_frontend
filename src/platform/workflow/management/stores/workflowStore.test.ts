@@ -21,6 +21,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { isValidUuid } from '@/utils/formatUtil'
+import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
   createMockCanvas,
@@ -29,7 +30,7 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 
 // Add mock for api at the top of the file
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getUserData: vi.fn(),
     storeUserData: vi.fn(),
@@ -40,16 +41,21 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock comfyApp globally for the store setup
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    canvas: {} // Start with empty canvas object
+    canvas: {}, // Start with empty canvas object
+    get canvasOrUndefined() {
+      return this.canvas
+    }
   }
 }))
 
 // Mock isSubgraph
-vi.mock('@/utils/typeGuardUtil', () => ({
+vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isSubgraph: vi.fn(() => false)
 }))
+
+vi.mock(import('@/utils/syncUtil'), { spy: true })
 
 describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
@@ -369,7 +375,7 @@ describe('useWorkflowStore', () => {
       const workflow = store.getWorkflowByPath('workflows/a.json')!
       const draftGraph = JSON.parse(defaultGraphJSON)
       draftGraph.extra = {
-        ...(draftGraph.extra ?? {}),
+        ...draftGraph.extra,
         draftMarker: 'v2'
       }
 
@@ -400,7 +406,7 @@ describe('useWorkflowStore', () => {
       const workflow = store.getWorkflowByPath('workflows/a.json')!
       const draftGraph = JSON.parse(defaultGraphJSON)
       draftGraph.extra = {
-        ...(draftGraph.extra ?? {}),
+        ...draftGraph.extra,
         draftMarker: 'stale-v2'
       }
       const draftStore = saveV2Draft(workflow.path, {
@@ -698,6 +704,104 @@ describe('useWorkflowStore', () => {
       // Verify bookmark was removed
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
     })
+
+    it('should remove a deleted workflow without closing other tabs', async () => {
+      const survivor = store.createTemporary('survivor.json')
+      const doomed = store.createTemporary('doomed.json')
+      vi.spyOn(doomed, 'delete').mockResolvedValue()
+      await store.openWorkflow(survivor)
+      await store.openWorkflow(doomed)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([
+        survivor.path,
+        doomed.path
+      ])
+
+      await store.deleteWorkflow(doomed)
+
+      expect(store.isOpen(doomed)).toBe(false)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([survivor.path])
+    })
+  })
+
+  describe('openWorkflows integrity', () => {
+    it('should retain a missing active workflow until it becomes inactive', async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json'])
+      vi.mocked(api.getUserData).mockImplementation(() =>
+        Promise.resolve(new Response(defaultGraphJSON, { status: 200 }))
+      )
+      const survivor = store.getWorkflowByPath('workflows/a.json')!
+      const removed = store.getWorkflowByPath('workflows/b.json')!
+      await store.openWorkflow(survivor)
+      await store.openWorkflow(removed)
+
+      await syncRemoteWorkflows(['a.json'])
+
+      expect(store.activeWorkflow).toBe(removed)
+      expect(store.getWorkflowByPath(removed.path)).toBe(removed)
+      expect(store.isOpen(removed)).toBe(true)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([
+        survivor.path,
+        removed.path
+      ])
+
+      await store.openWorkflow(survivor)
+      await syncRemoteWorkflows(['a.json'])
+
+      expect(store.activeWorkflow).toBe(survivor)
+      expect(store.getWorkflowByPath(removed.path)).toBeNull()
+      expect(store.isOpen(removed)).toBe(false)
+      expect(store.openWorkflows).toEqual([survivor])
+    })
+
+    it('should not expose open paths whose lookup record was removed', async () => {
+      const workflow = store.createTemporary('orphan.json')
+      await store.openWorkflow(workflow)
+      vi.mocked(syncEntities).mockImplementationOnce(
+        async (_dir, entityByPath) => {
+          delete entityByPath[workflow.path]
+        }
+      )
+
+      await store.syncWorkflows()
+
+      expect(store.isOpen(workflow)).toBe(true)
+      expect(store.openWorkflows).toEqual([])
+    })
+
+    it.for([
+      { openOrder: ['orphan', 'alpha', 'beta'] },
+      { openOrder: ['alpha', 'orphan', 'beta'] }
+    ])(
+      'should navigate and reorder tabs by their surviving index when opened as $openOrder',
+      async ({ openOrder }) => {
+        const workflows = Object.fromEntries(
+          openOrder.map((name) => [name, store.createTemporary(`${name}.json`)])
+        )
+        for (const name of openOrder) await store.openWorkflow(workflows[name])
+        await store.openWorkflow(workflows.alpha)
+        vi.mocked(syncEntities).mockImplementationOnce(
+          async (_dir, entityByPath) => {
+            delete entityByPath[workflows.orphan.path]
+          }
+        )
+
+        await store.syncWorkflows()
+
+        expect(store.openedWorkflowIndexShift(1)?.path).toBe(
+          workflows.beta.path
+        )
+        expect(store.openedWorkflowIndexShift(-1)?.path).toBe(
+          workflows.beta.path
+        )
+
+        store.reorderWorkflows(0, 1)
+
+        expect(store.openWorkflows.map((w) => w.path)).toEqual([
+          workflows.beta.path,
+          workflows.alpha.path
+        ])
+      }
+    )
   })
 
   describe('save', () => {

@@ -24,7 +24,7 @@ describe('DOM widget layout-read matrix', () => {
           })
       )
 
-      for (const widget of widgets) widget.computeLayoutSize(node)
+      for (const widget of widgets) widget.computeLayoutSize()
 
       expect(getStyle).toHaveBeenCalledTimes(count)
     }
@@ -47,7 +47,7 @@ describe('DOM widget layout-read matrix', () => {
           })
       )
 
-      for (const widget of widgets) widget.computeLayoutSize(node)
+      for (const widget of widgets) widget.computeLayoutSize()
 
       expect(getStyle).not.toHaveBeenCalled()
     }

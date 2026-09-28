@@ -15,7 +15,7 @@ import {
   isLevelEnabled
 } from './crdtDebugGate'
 import type { CrdtLogScope, DevEventKind } from './devPanelLog'
-import { recordDevEvent } from './devPanelLog'
+import { recordDevEvent, sanitizeDevEventDetail } from './devPanelLog'
 
 /**
  * Console tint per scope, so a busy log reads as layers rather than as one
@@ -45,10 +45,9 @@ interface CrdtLogEntry {
 /**
  * Emit one CRDT-internal event.
  *
- * The ring buffer records even when the console is quiet: a tester who only
- * turns the panel on AFTER something went wrong still needs the run-up in the
- * copied report, and 500 capped entries cost nothing. An explicit opt-out is
- * the one case that skips recording too.
+ * The ring buffer records while the debug instrument is enabled even when the
+ * selected console level is quiet. Ordinary production sessions retain no
+ * frame or actor details; a tester must opt in before reproducing an issue.
  */
 function crdtLog(entry: CrdtLogEntry): void {
   const { scope, level, kind, message, detail } = entry
@@ -63,7 +62,8 @@ function crdtLog(entry: CrdtLogEntry): void {
   // fail-closed follower is never silent. The MESSAGE is what earns that
   // exemption — dumping document state into an opted-out user's console does
   // not. The detail is still in the ring buffer for whoever opted in.
-  if (detail !== undefined && isCrdtDebugEnabled()) args.push(detail)
+  if (detail !== undefined && isCrdtDebugEnabled())
+    args.push(sanitizeDevEventDetail(detail))
   console[CONSOLE_METHOD[level]](...args)
 }
 

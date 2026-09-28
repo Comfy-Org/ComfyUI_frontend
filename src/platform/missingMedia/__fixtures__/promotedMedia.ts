@@ -216,7 +216,6 @@ export function createPromotedMediaRuntime({
     })
     rootGraph.add(host)
     const hostWidget = host.widgets[0]
-    if (!hostWidget) throw new Error('Expected promoted image host widget')
     hostWidget.value = hostValue
     hostWidget.options.values = [...(hostOptions ?? sourceOptions)]
     return host

@@ -16,7 +16,7 @@ export function createGraphThumbnail(): string | null {
   const workflowStore = useWorkflowStore()
 
   const graph = workflowStore.activeSubgraph || canvasStore.canvas?.graph
-  if (!graph || !graph._nodes || graph._nodes.length === 0) {
+  if (!graph || graph._nodes.length === 0) {
     return null
   }
 

@@ -1,41 +1,60 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, reactive } from 'vue'
+import { computed, reactive, watch } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
+import SafeRichText from './SafeRichTextContent'
+
+export interface FaqItem {
+  question: string
+  answer: string
+}
 
 const {
   locale = 'en',
+  heading,
+  items,
   headingKey,
   faqPrefix,
-  faqCount,
+  faqCount = 0,
   footerKey
 } = defineProps<{
   locale?: Locale
-  headingKey: TranslationKey
-  faqPrefix: string
-  faqCount: number
+  /** Copy already resolved by a page that keeps its own translations. */
+  heading?: string
+  items?: readonly FaqItem[]
+  headingKey?: TranslationKey
+  faqPrefix?: string
+  faqCount?: number
   footerKey?: TranslationKey
 }>()
 
-const faqKeys: Array<{ q: TranslationKey; a: TranslationKey }> = Array.from(
-  { length: faqCount },
-  (_, i) => ({
-    q: `${faqPrefix}.${i + 1}.q` as TranslationKey,
-    a: `${faqPrefix}.${i + 1}.a` as TranslationKey
-  })
+const title = computed(
+  () => heading ?? (headingKey === undefined ? '' : t(headingKey, locale))
 )
 
-const faqs = computed(() =>
-  faqKeys.map(({ q, a }) => ({
-    question: t(q, locale),
-    answer: t(a, locale)
-  }))
+const faqs = computed<readonly FaqItem[]>(
+  () =>
+    items ??
+    Array.from({ length: faqCount }, (_, i) => ({
+      question: t(`${faqPrefix}.${i + 1}.q` as TranslationKey, locale),
+      answer: t(`${faqPrefix}.${i + 1}.a` as TranslationKey, locale)
+    }))
 )
 
-const expanded = reactive(faqKeys.map(() => false))
+const expanded = reactive<boolean[]>([])
+
+// Re-sync when the FAQ list changes (locale switch, replaced items) so a
+// question can't inherit another's open state by index.
+watch(
+  faqs,
+  (nextFaqs) => {
+    expanded.splice(0, expanded.length, ...nextFaqs.map(() => false))
+  },
+  { immediate: true }
+)
 
 function toggle(index: number) {
   expanded[index] = !expanded[index]
@@ -43,13 +62,13 @@ function toggle(index: number) {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-4 py-24 md:px-20 md:py-40">
+  <section class="mx-auto max-w-9xl px-4 py-24 md:px-20 md:py-40">
     <div class="flex flex-col gap-6 md:flex-row md:gap-16">
       <div
         class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 md:top-28 md:w-80 md:py-0"
       >
         <h2 class="text-4xl font-light text-primary-comfy-canvas md:text-5xl">
-          {{ t(headingKey, locale) }}
+          {{ title }}
         </h2>
       </div>
 
@@ -85,7 +104,7 @@ function toggle(index: number) {
               {{ faq.question }}
             </span>
             <span
-              class="text-primary-comfy-yellow ml-4 shrink-0 text-2xl"
+              class="ml-4 shrink-0 text-2xl text-primary-comfy-yellow"
               aria-hidden="true"
             >
               {{ expanded[index] ? '−' : '+' }}
@@ -98,17 +117,19 @@ function toggle(index: number) {
             :aria-labelledby="`faq-trigger-${index}`"
             class="pb-6"
           >
-            <p
-              class="[&_a]:text-primary-comfy-yellow text-sm whitespace-pre-line text-primary-comfy-canvas/70 [&_a]:underline"
-              v-html="faq.answer"
+            <SafeRichText
+              as="p"
+              class="text-sm whitespace-pre-line text-primary-comfy-canvas/70 [&_a]:text-primary-comfy-yellow [&_a]:underline"
+              :html="faq.answer"
             />
           </section>
         </div>
 
-        <p
+        <SafeRichText
           v-if="footerKey"
-          class="[&_a]:text-primary-comfy-yellow mt-8 text-sm text-primary-comfy-canvas/70 [&_a]:underline"
-          v-html="t(footerKey, locale)"
+          as="p"
+          class="mt-8 text-sm text-primary-comfy-canvas/70 [&_a]:text-primary-comfy-yellow [&_a]:underline"
+          :html="t(footerKey, locale)"
         />
       </div>
     </div>

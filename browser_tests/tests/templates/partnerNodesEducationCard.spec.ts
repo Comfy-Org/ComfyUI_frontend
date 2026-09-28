@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockPaidTemplate } from '@e2e/fixtures/helpers/TemplateHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const PAID_TEMPLATE = 'paid-template'
 const PARTNER_WORKFLOW = 'browser_tests/assets/partner_api_node.json'
@@ -12,6 +13,11 @@ test.describe('Partner nodes education card (local)', () => {
     comfyPage
   }) => {
     const page = comfyPage.page
+    await page.route(
+      'https://media.comfy.org/website/partner-nodes/*.webm',
+      (route) =>
+        route.fulfill({ path: assetPath('video/video-preview-wide.webm') })
+    )
     const templates = await mockPaidTemplate(
       page,
       PAID_TEMPLATE,

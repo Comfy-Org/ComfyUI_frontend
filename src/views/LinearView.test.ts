@@ -2,9 +2,16 @@ import { render, screen, within } from '@testing-library/vue'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import LinearView from './LinearView.vue'
+
+vi.mock(import('firebase/auth'))
 
 interface ViewState {
   sidebarLocation: 'left' | 'right'
@@ -14,51 +21,9 @@ interface ViewState {
   hasOutputs: boolean
 }
 
-const state = vi.hoisted<ViewState>(() => ({
-  sidebarLocation: 'left',
-  isBuilderMode: false,
-  isArrangeMode: false,
-  activeTab: null,
-  hasOutputs: false
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) =>
-      key === 'Comfy.Sidebar.Location' ? state.sidebarLocation : undefined
-  })
-}))
-
-vi.mock('@/stores/workspaceStore', () => ({
-  useWorkspaceStore: () => ({
-    sidebarTab: {
-      get activeSidebarTab() {
-        return state.activeTab
-      }
-    }
-  })
-}))
-
-vi.mock('@/composables/useAppMode', async () => {
-  const { computed } = await import('vue')
-  return {
-    useAppMode: () => ({
-      isBuilderMode: computed(() => state.isBuilderMode),
-      isArrangeMode: computed(() => state.isArrangeMode)
-    })
-  }
-})
-
-vi.mock('@/stores/appModeStore', async () => {
-  const { reactive, computed } = await import('vue')
-  return {
-    useAppModeStore: () =>
-      reactive({ hasOutputs: computed(() => state.hasOutputs) })
-  }
-})
-
 vi.mock(
-  '@/workbench/extensions/agent/composables/useAgentDockMount',
+  import('@/workbench/extensions/agent/composables/useAgentDockMount'),
+
   async () => {
     const { computed, defineComponent, h } = await import('vue')
     return {
@@ -73,7 +38,7 @@ vi.mock(
   }
 )
 
-vi.mock('@/composables/useStablePrimeVueSplitterSizer', () => ({
+vi.mock(import('@/composables/useStablePrimeVueSplitterSizer'), () => ({
   useStablePrimeVueSplitterSizer: () => ({ onResizeEnd: vi.fn() })
 }))
 
@@ -98,7 +63,11 @@ function leafStub(testId: string) {
 const baseStubs = {
   Splitter: passthroughStub,
   SplitterPanel: passthroughStub,
-  DockedAgentPanel: leafStub('docked-agent-panel'),
+  DockedAgentPanel: {
+    props: { hasOpaqueNeighbor: Boolean },
+    template:
+      '<div data-testid="docked-agent-panel" :data-has-opaque-neighbor="String(hasOpaqueNeighbor)" />'
+  },
   MobileDisplay: leafStub('mobile-display'),
   AppBuilder: leafStub('app-builder'),
   AppModeToolbar: leafStub('app-mode-toolbar'),
@@ -113,7 +82,25 @@ const baseStubs = {
 }
 
 function renderView(overrides: Partial<ViewState> = {}) {
-  Object.assign(state, overrides)
+  const state: ViewState = {
+    sidebarLocation: 'left',
+    isBuilderMode: false,
+    isArrangeMode: false,
+    activeTab: null,
+    hasOutputs: false,
+    ...overrides
+  }
+  useWorkflowStore().activeWorkflow = createMockLoadedWorkflow({
+    activeMode: state.isArrangeMode
+      ? 'builder:arrange'
+      : state.isBuilderMode
+        ? 'builder:inputs'
+        : 'app'
+  })
+  useSettingStore().settingValues['Comfy.Sidebar.Location'] =
+    state.sidebarLocation
+  Object.assign(useSidebarTabStore(), { activeSidebarTab: state.activeTab })
+  Object.assign(useAppModeStore(), { hasOutputs: state.hasOutputs })
   return render(LinearView, {
     global: { stubs: baseStubs }
   })
@@ -135,13 +122,6 @@ function expectRenderedBefore(first: HTMLElement, second: HTMLElement) {
 describe('LinearView', () => {
   beforeEach(() => {
     setViewport(DESKTOP_WIDTH)
-    Object.assign(state, {
-      sidebarLocation: 'left',
-      isBuilderMode: false,
-      isArrangeMode: false,
-      activeTab: null,
-      hasOutputs: false
-    } satisfies ViewState)
   })
 
   it('renders only the mobile display on small screens', () => {
@@ -230,12 +210,25 @@ describe('LinearView', () => {
     expect(screen.queryByTestId('side-toolbar')).not.toBeInTheDocument()
   })
 
-  it('docks the agent panel beside the workspace column, not inside it', () => {
+  it('tells the panel its neighbour is opaque, since app mode hides the canvas', () => {
     renderView()
 
+    expect(screen.getByTestId('docked-agent-panel')).toHaveAttribute(
+      'data-has-opaque-neighbor',
+      'true'
+    )
+  })
+
+  it('docks the agent panel beside the workspace column, below the full-width tab bar', () => {
+    renderView()
+
+    // The tab bar spans above both, so neither it nor the panel sits inside
+    // the workspace column any more.
     const column = within(screen.getByTestId('linear-workspace-column'))
-    expect(column.getByTestId('workflow-tabs')).toBeInTheDocument()
+    expect(column.queryByTestId('workflow-tabs')).toBeNull()
     expect(column.queryByTestId('docked-agent-panel')).toBeNull()
+
+    expect(screen.getByTestId('workflow-tabs')).toBeInTheDocument()
     expect(screen.getByTestId('docked-agent-panel')).toBeInTheDocument()
   })
 })

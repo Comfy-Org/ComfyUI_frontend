@@ -1,13 +1,15 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { NodeSearchService } from '@/services/nodeSearchService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 
 import NodeLibrarySidebarTab from './NodeLibrarySidebarTab.vue'
 
@@ -15,7 +17,6 @@ const {
   captureRoot,
   getRoot,
   resetRoot,
-  mockAddNodeOnGraph,
   mockSearchNode,
   mockOrganizeNodes,
   mockToggleNodeOnEvent
@@ -29,7 +30,6 @@ const {
     resetRoot: () => {
       capturedRoot = null
     },
-    mockAddNodeOnGraph: vi.fn(),
     mockSearchNode: vi.fn(() => []),
     mockOrganizeNodes: vi.fn(
       (): TreeNode => ({
@@ -42,11 +42,9 @@ const {
   }
 })
 
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
-}))
+vi.mock(import('@/services/litegraphService'))
 
-vi.mock('@/services/nodeOrganizationService', () => ({
+vi.mock<unknown>(import('@/services/nodeOrganizationService'), () => ({
   DEFAULT_GROUPING_ID: 'group',
   DEFAULT_SORTING_ID: 'sort',
   nodeOrganizationService: {
@@ -58,42 +56,14 @@ vi.mock('@/services/nodeOrganizationService', () => ({
   }
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => ({
-    visibleNodeDefs: [],
-    nodeSearchService: { searchNode: mockSearchNode }
-  })
-}))
-
-vi.mock('@/stores/nodeBookmarkStore', () => ({
-  useNodeBookmarkStore: () => ({
-    bookmarks: []
-  })
-}))
-
-vi.mock('@/stores/workspace/nodeHelpStore', () => ({
-  useNodeHelpStore: () => ({
-    currentHelpNode: ref(null),
-    isHelpOpen: ref(false),
-    openHelp: vi.fn(),
-    closeHelp: vi.fn()
-  })
-}))
-
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    execute: vi.fn()
-  })
-}))
-
-vi.mock('@/composables/useTreeExpansion', () => ({
+vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
     expandNode: vi.fn(),
     toggleNodeOnEvent: mockToggleNodeOnEvent
   })
 }))
 
-vi.mock('@/components/common/TreeExplorer.vue', () => ({
+vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), () => ({
   default: {
     name: 'TreeExplorer',
     template: '<div data-testid="tree-explorer" />',
@@ -104,19 +74,7 @@ vi.mock('@/components/common/TreeExplorer.vue', () => ({
   }
 }))
 
-vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
-  default: {
-    name: 'SearchInput',
-    template: '<input data-testid="search-input" />',
-    props: ['modelValue', 'placeholder'],
-    setup() {
-      return { focus: vi.fn() }
-    },
-    expose: ['focus']
-  }
-}))
-
-vi.mock('./nodeLibrary/NodeBookmarkTreeExplorer.vue', () => ({
+vi.mock<unknown>(import('./nodeLibrary/NodeBookmarkTreeExplorer.vue'), () => ({
   default: {
     name: 'NodeBookmarkTreeExplorer',
     template: '<div />',
@@ -124,14 +82,14 @@ vi.mock('./nodeLibrary/NodeBookmarkTreeExplorer.vue', () => ({
   }
 }))
 
-vi.mock('./SidebarTabTemplate.vue', () => ({
+vi.mock<unknown>(import('./SidebarTabTemplate.vue'), () => ({
   default: {
     name: 'SidebarTabTemplate',
     template: '<div><slot name="header" /><slot name="body" /></div>'
   }
 }))
 
-vi.mock('@/components/common/SearchFilterChip.vue', () => ({
+vi.mock<unknown>(import('@/components/common/SearchFilterChip.vue'), () => ({
   default: {
     name: 'SearchFilterChip',
     template:
@@ -140,22 +98,11 @@ vi.mock('@/components/common/SearchFilterChip.vue', () => ({
   }
 }))
 
-vi.mock('@/components/searchbox/NodeSearchFilter.vue', () => ({
+vi.mock<unknown>(import('@/components/searchbox/NodeSearchFilter.vue'), () => ({
   default: {
     name: 'NodeSearchFilter',
     template:
       "<div data-testid=\"node-search-filter\" @click=\"$emit('add-filter', { filterDef: { invokeSequence: 'test' }, value: 'test-val' })\" />"
-  }
-}))
-
-vi.mock('primevue/divider', () => ({
-  default: { name: 'Divider', template: '<div />' }
-}))
-vi.mock('primevue/popover', () => ({
-  default: {
-    name: 'Popover',
-    template: '<div><slot /></div>',
-    methods: { toggle: vi.fn(), hide: vi.fn() }
   }
 }))
 
@@ -173,12 +120,18 @@ const mockNode = fromPartial<ComfyNodeDefImpl>({
 describe('NodeLibrarySidebarTab', () => {
   beforeEach(() => {
     resetRoot()
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.NodeLibrary.Bookmarks.V2': [] }
+    })
+    vi.spyOn(NodeSearchService.prototype, 'searchNode').mockImplementation(
+      mockSearchNode
+    )
   })
 
   function renderComponent() {
     return render(NodeLibrarySidebarTab, {
       global: {
-        plugins: [createTestingPinia({ stubActions: false }), i18n],
+        plugins: [i18n],
         stubs: { teleport: true }
       }
     })
@@ -199,7 +152,7 @@ describe('NodeLibrarySidebarTab', () => {
     expect(leaf?.leaf).toBe(true)
 
     await leaf?.handleClick?.(new MouseEvent('click'))
-    expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNode)
+    expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(mockNode)
   })
 
   it('adds and removes filters', async () => {
@@ -208,6 +161,7 @@ describe('NodeLibrarySidebarTab', () => {
     await nextTick()
 
     // Add filter by clicking the mocked search filter
+    await user.click(screen.getByRole('button', { name: 'g.filter' }))
     const searchFilter = screen.getByTestId('node-search-filter')
     await user.click(searchFilter)
     await nextTick()

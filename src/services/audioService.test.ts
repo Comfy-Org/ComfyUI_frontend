@@ -1,34 +1,22 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
 import { useAudioService } from '@/services/audioService'
 import type { AudioRecordingError } from '@/services/audioService'
 
 const mockRegister = vi.hoisted(() => vi.fn())
 const mockConnect = vi.hoisted(() => vi.fn())
 
-const mockApi = vi.hoisted(() => ({
-  fetchApi: vi.fn()
-}))
-
-const mockToastStore = vi.hoisted(() => ({
-  addAlert: vi.fn()
-}))
-
-vi.mock('extendable-media-recorder', () => ({
+vi.mock(import('extendable-media-recorder'), () => ({
   register: mockRegister
 }))
 
-vi.mock('extendable-media-recorder-wav-encoder', () => ({
+vi.mock(import('extendable-media-recorder-wav-encoder'), () => ({
   connect: mockConnect
 }))
 
-vi.mock('@/scripts/api', () => ({
-  api: mockApi
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => mockToastStore)
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useAudioService', () => {
   let service: ReturnType<typeof useAudioService>
@@ -43,10 +31,9 @@ describe('useAudioService', () => {
 
     mockConnect.mockResolvedValue('mock-encoder')
     mockRegister.mockResolvedValue(undefined)
-    mockApi.fetchApi.mockResolvedValue({
-      status: 200,
-      json: () => Promise.resolve(mockUploadResponse)
-    })
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      new Response(JSON.stringify(mockUploadResponse), { status: 200 })
+    )
 
     service = useAudioService()
   })
@@ -145,7 +132,7 @@ describe('useAudioService', () => {
     it('should convert blob to file and upload successfully', async () => {
       const result = await service.convertBlobToFileAndSubmit(mockBlob)
 
-      expect(mockApi.fetchApi).toHaveBeenCalledWith('/upload/image', {
+      expect(api.fetchApi).toHaveBeenCalledWith('/upload/image', {
         method: 'POST',
         body: expect.any(FormData)
       })
@@ -159,8 +146,10 @@ describe('useAudioService', () => {
 
       await service.convertBlobToFileAndSubmit(mockBlob)
 
-      const formDataCall = mockApi.fetchApi.mock.calls[0][1].body as FormData
-      const uploadedFile = formDataCall.get('image') as File
+      const requestBody = vi.mocked(api.fetchApi).mock.calls[0][1]?.body
+      assert.instanceOf(requestBody, FormData)
+      const uploadedFile = requestBody.get('image')
+      assert.instanceOf(uploadedFile, File)
 
       expect(uploadedFile).toBeInstanceOf(File)
       expect(uploadedFile.name).toBe(`recording-${mockTimestamp}.wav`)
@@ -170,11 +159,12 @@ describe('useAudioService', () => {
     it('should set correct form data fields', async () => {
       await service.convertBlobToFileAndSubmit(mockBlob)
 
-      const formDataCall = mockApi.fetchApi.mock.calls[0][1].body as FormData
+      const requestBody = vi.mocked(api.fetchApi).mock.calls[0][1]?.body
+      assert.instanceOf(requestBody, FormData)
 
-      expect(formDataCall.get('subfolder')).toBe('audio')
-      expect(formDataCall.get('type')).toBe('temp')
-      expect(formDataCall.get('image')).toBeInstanceOf(File)
+      expect(requestBody.get('subfolder')).toBe('audio')
+      expect(requestBody.get('type')).toBe('temp')
+      expect(requestBody.get('image')).toBeInstanceOf(File)
     })
 
     it('should handle blob with different type', async () => {
@@ -182,8 +172,10 @@ describe('useAudioService', () => {
 
       await service.convertBlobToFileAndSubmit(customBlob)
 
-      const formDataCall = mockApi.fetchApi.mock.calls[0][1].body as FormData
-      const uploadedFile = formDataCall.get('image') as File
+      const requestBody = vi.mocked(api.fetchApi).mock.calls[0][1]?.body
+      assert.instanceOf(requestBody, FormData)
+      const uploadedFile = requestBody.get('image')
+      assert.instanceOf(uploadedFile, File)
 
       expect(uploadedFile.type).toBe('audio/ogg')
     })
@@ -193,17 +185,21 @@ describe('useAudioService', () => {
 
       await service.convertBlobToFileAndSubmit(customBlob)
 
-      const formDataCall = mockApi.fetchApi.mock.calls[0][1].body as FormData
-      const uploadedFile = formDataCall.get('image') as File
+      const requestBody = vi.mocked(api.fetchApi).mock.calls[0][1]?.body
+      assert.instanceOf(requestBody, FormData)
+      const uploadedFile = requestBody.get('image')
+      assert.instanceOf(uploadedFile, File)
 
       expect(uploadedFile.type).toBe('audio/wav') // Should default to audio/wav
     })
 
     it('should handle upload failure with error status', async () => {
-      mockApi.fetchApi.mockResolvedValueOnce({
-        status: 500,
-        statusText: 'Internal Server Error'
-      })
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response(null, {
+          status: 500,
+          statusText: 'Internal Server Error'
+        })
+      )
 
       await expect(
         service.convertBlobToFileAndSubmit(mockBlob)
@@ -211,14 +207,14 @@ describe('useAudioService', () => {
         'Error uploading temp file: 500 - Internal Server Error'
       )
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'Error uploading temp file: 500 - Internal Server Error'
       )
     })
 
     it('should handle network errors', async () => {
       const networkError = new Error('Network Error')
-      mockApi.fetchApi.mockRejectedValueOnce(networkError)
+      vi.mocked(api.fetchApi).mockRejectedValueOnce(networkError)
 
       await expect(
         service.convertBlobToFileAndSubmit(mockBlob)
@@ -234,7 +230,9 @@ describe('useAudioService', () => {
       ]
 
       for (const testCase of testCases) {
-        mockApi.fetchApi.mockResolvedValueOnce(testCase)
+        vi.mocked(api.fetchApi).mockResolvedValueOnce(
+          new Response(null, testCase)
+        )
 
         await expect(
           service.convertBlobToFileAndSubmit(mockBlob)
@@ -242,19 +240,18 @@ describe('useAudioService', () => {
           `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
         )
 
-        expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        expect(useToastStore().addAlert).toHaveBeenCalledWith(
           `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
         )
 
-        mockToastStore.addAlert.mockClear()
+        vi.mocked(useToastStore().addAlert).mockClear()
       }
     })
 
     it('should handle malformed response JSON', async () => {
-      mockApi.fetchApi.mockResolvedValueOnce({
-        status: 200,
-        json: () => Promise.reject(new Error('Invalid JSON'))
-      })
+      const response = new Response()
+      vi.spyOn(response, 'json').mockRejectedValue(new Error('Invalid JSON'))
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(response)
 
       await expect(
         service.convertBlobToFileAndSubmit(mockBlob)
@@ -262,10 +259,9 @@ describe('useAudioService', () => {
     })
 
     it('should handle empty response', async () => {
-      mockApi.fetchApi.mockResolvedValueOnce({
-        status: 200,
-        json: () => Promise.resolve({})
-      })
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response(JSON.stringify({}), { status: 200 })
+      )
 
       const result = await service.convertBlobToFileAndSubmit(mockBlob)
 
@@ -308,13 +304,13 @@ describe('useAudioService', () => {
 
   describe('edge cases', () => {
     it('should handle very large blobs', async () => {
-      const largeData = new Array(1000000).fill('a').join('')
+      const largeData = 'a'.repeat(1000000)
       const largeBlob = new Blob([largeData], { type: 'audio/wav' })
 
       const result = await service.convertBlobToFileAndSubmit(largeBlob)
 
       expect(result).toBe('audio/test-audio-123.wav [temp]')
-      expect(mockApi.fetchApi).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).toHaveBeenCalledTimes(1)
     })
 
     it('should handle empty blob', async () => {

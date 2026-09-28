@@ -19,6 +19,7 @@
         >
           {{ confirmTitle }}
         </h2>
+        <div class="size-8 shrink-0" aria-hidden="true" />
       </div>
       <div
         v-if="isReactivating"
@@ -245,50 +246,23 @@
       >
         {{
           authenticationError ||
-          (canRetryAuthentication
-            ? $t('billingOperation.authenticationFailedDetail')
-            : $t('billingOperation.authenticationManagerRequired'))
+          $t('billingOperation.authenticationFailedDetail')
         }}
       </div>
 
-      <Button
-        v-if="
-          embeddedCheckoutEnabled &&
-          (authenticationState === 'failed_retryable' ||
-            authenticationState === 'requires_action') &&
-          canRetryAuthentication
-        "
-        variant="inverted"
-        size="lg"
-        class="w-full rounded-lg"
-        :loading="isAuthenticating"
-        @click="$emit('retryAuthentication')"
-      >
-        {{
-          $t(
-            authenticationState === 'failed_retryable'
-              ? 'billingOperation.retryVerification'
-              : 'subscription.preview.completeVerification'
-          )
-        }}
-      </Button>
-
-      <Button
-        v-if="
-          actionUrl &&
-          !(
-            (authenticationState === 'failed_retryable' ||
-              authenticationState === 'requires_action') &&
-            canRetryAuthentication
-          )
-        "
-        variant="inverted"
-        size="lg"
-        class="w-full rounded-lg"
-        @click="openVerification"
-      >
-        {{ $t('subscription.preview.completeVerification') }}
-      </Button>
+      <template v-if="verificationOffered">
+        <p role="status" class="m-0 text-sm text-muted-foreground">
+          {{ $t('subscription.preview.pendingVerificationDetail') }}
+        </p>
+        <Button
+          variant="inverted"
+          size="lg"
+          class="w-full rounded-lg"
+          @click="openVerification"
+        >
+          {{ $t('subscription.preview.completeVerification') }}
+        </Button>
+      </template>
 
       <Button
         :variant="actionUrl ? 'tertiary' : 'inverted'"
@@ -343,8 +317,6 @@ const {
   forceReactivation = false,
   authenticationState = null,
   authenticationError = null,
-  canRetryAuthentication = false,
-  isAuthenticating = false,
   reconciliationOperationId = null,
   quoteIsCurrent = false,
   isApplyingPromotionCode = false,
@@ -361,8 +333,6 @@ const {
   forceReactivation?: boolean
   authenticationState?: BillingAuthenticationState | null
   authenticationError?: string | null
-  canRetryAuthentication?: boolean
-  isAuthenticating?: boolean
   reconciliationOperationId?: string | null
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
@@ -376,16 +346,19 @@ const emit = defineEmits<{
   back: []
   applyPromotionCode: [code: string]
   invalidateQuote: []
-  retryAuthentication: []
 }>()
 
 const { locale, n, t, te } = useI18n()
+const verificationOffered = computed(
+  () => Boolean(actionUrl) && authenticationState !== 'failed_retryable'
+)
 const verificationRecoveryActive = computed(
   () =>
-    embeddedCheckoutEnabled &&
-    (authenticationState === 'requires_action' ||
-      authenticationState === 'failed_retryable' ||
-      Boolean(reconciliationOperationId))
+    verificationOffered.value ||
+    (embeddedCheckoutEnabled &&
+      (authenticationState === 'requires_action' ||
+        authenticationState === 'failed_retryable' ||
+        Boolean(reconciliationOperationId)))
 )
 const quoteIsUsable = computed(() => !embeddedCheckoutEnabled || quoteIsCurrent)
 const interactionLocked = computed(() => isLoading || isApplyingPromotionCode)

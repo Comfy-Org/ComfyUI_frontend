@@ -2,6 +2,8 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
 const SUBGRAPH_LINKS_EXPECTED = {
   rootLinks: [
     '4:0->HOST:0',
@@ -22,7 +24,6 @@ test(
   { tag: ['@slow', '@subgraph', '@vue-nodes'] },
   async ({ comfyPage }) => {
     await test.step('Select both nodes in the default workflow', async () => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
       await comfyPage.workflow.loadWorkflow('default')
 
       // VAE Decode sits past the right edge of the 1280px canvas at the default

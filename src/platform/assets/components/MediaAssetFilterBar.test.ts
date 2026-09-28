@@ -9,7 +9,7 @@ import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBa
 import { MEDIA_ASSET_VIEW_MODE } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 const i18n = createI18n({
   legacy: false,

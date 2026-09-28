@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,9 +22,12 @@ const mockCheckoutStep = ref<'pricing' | 'preview' | 'success'>('pricing')
 const mockPreviewData = ref<{ transition_type: string } | null>(null)
 const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
-  useSubscriptionCheckout: mockUseSubscriptionCheckout
-}))
+vi.mock(
+  import('@/platform/workspace/composables/useSubscriptionCheckout'),
+  () => ({
+    useSubscriptionCheckout: mockUseSubscriptionCheckout
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -85,6 +88,7 @@ function renderComponent(
   props: {
     onClose?: () => void
     reason?: PaymentIntentSource
+    paymentIntentSource?: PaymentIntentSource
     isPersonal?: boolean
     initialCheckout?: SubscriptionCheckoutSelection
   } = {}
@@ -92,6 +96,7 @@ function renderComponent(
   return render(SubscriptionRequiredDialogContentWorkspace, {
     props: {
       onClose: props.onClose ?? vi.fn(),
+      paymentIntentSource: props.paymentIntentSource,
       ...(props.reason ? { reason: props.reason } : {}),
       ...(props.isPersonal !== undefined
         ? { isPersonal: props.isPersonal }
@@ -101,10 +106,7 @@ function renderComponent(
         : {})
     },
     global: {
-      plugins: [
-        createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-        i18n
-      ],
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         PricingTableWorkspace: PricingTableStub,
         SubscriptionAddPaymentPreviewWorkspace: AddPaymentPreviewStub,
@@ -150,14 +152,18 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(screen.queryByTestId('transition-preview')).not.toBeInTheDocument()
   })
 
-  it('passes the reason into subscription checkout', () => {
-    renderComponent({ reason: 'out_of_credits' })
+  it('passes the surface, not the copy reason, into subscription checkout', () => {
+    renderComponent({
+      reason: 'out_of_credits',
+      paymentIntentSource: 'agent_paywall'
+    })
 
     expect(mockUseSubscriptionCheckout).toHaveBeenCalledWith(
       expect.any(Function),
-      'out_of_credits',
+      'agent_paywall',
       { tierPlanType: 'team' }
     )
+    expect(screen.getByText('Insufficient Credits')).toBeInTheDocument()
   })
 
   it('marks the legacy Personal table as a personal-plan target', () => {

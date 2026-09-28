@@ -25,12 +25,7 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 beforeEach(() => {
   resetSubgraphFixtureState()

@@ -12,12 +12,17 @@ import type {
   JobDetail,
   JobOutputAsset
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import {
+  extractApiPrompt,
+  extractWorkflow
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { TaskOutput } from '@/schemas/apiSchema'
+import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
-import { ResultItemImpl } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { findResultIndexByUrl } from '@/utils/resultItemUrl'
+import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 
 const MAX_TASK_CACHE_SIZE = 50
@@ -41,10 +46,10 @@ let latestTaskRequestId: string | null = null
 // ===== Task Output Caching =====
 
 export function findActiveIndex(
-  items: readonly ResultItemImpl[],
+  items: readonly AugmentedResultItem[],
   url?: string
 ): number {
-  return ResultItemImpl.findByUrl(items, url)
+  return findResultIndexByUrl(items, url)
 }
 
 /**
@@ -53,8 +58,8 @@ export function findActiveIndex(
  */
 export async function getOutputsForTask(
   task: TaskItemImpl
-): Promise<ResultItemImpl[] | null> {
-  const requestId = String(task.jobId)
+): Promise<AugmentedResultItem[] | null> {
+  const requestId = task.jobId
   latestTaskRequestId = requestId
 
   const outputsCount = task.outputsCount ?? 0
@@ -85,14 +90,14 @@ export async function getOutputsForTask(
   }
 }
 
-function getPreviewableOutputs(outputs?: TaskOutput): ResultItemImpl[] {
+function getPreviewableOutputs(outputs?: TaskOutput): AugmentedResultItem[] {
   if (!outputs) return []
-  return ResultItemImpl.filterPreviewable(parseTaskOutput(outputs))
+  return filterPreviewableResults(parseTaskOutput(outputs))
 }
 
 export function getPreviewableOutputsFromJobDetail(
   jobDetail?: JobDetail
-): ResultItemImpl[] {
+): AugmentedResultItem[] {
   return getPreviewableOutputs(jobDetail?.outputs)
 }
 
@@ -147,4 +152,13 @@ export async function getJobWorkflow(
 ): Promise<ComfyWorkflowJSON | undefined> {
   const detail = await getJobDetail(jobId)
   return await extractWorkflow(detail)
+}
+
+/**
+ * The API-format graph a job stores, available only for jobs that embed no
+ * editor workflow. Returned unvalidated — see `extractApiPrompt`.
+ */
+export async function getJobApiPrompt(jobId: string): Promise<unknown> {
+  const detail = await getJobDetail(jobId)
+  return extractApiPrompt(detail)
 }

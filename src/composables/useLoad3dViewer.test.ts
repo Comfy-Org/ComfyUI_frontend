@@ -10,16 +10,13 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useLoad3dService } from '@/services/load3dService'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { api } from '@/scripts/api'
 
-vi.mock('@/services/load3dService', () => ({
+vi.mock(import('@/services/load3dService'), () => ({
   useLoad3dService: vi.fn()
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn()
-}))
-
-vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
+vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   default: {
     uploadFile: vi.fn(),
     splitFilePath: vi.fn((path: string) => {
@@ -33,28 +30,22 @@ vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    apiURL: vi.fn((url: string) => `/${url}`)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@/i18n', () => ({
-  t: vi.fn((key) => key)
-}))
+vi.mock(import('@/i18n'))
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const persistThumbnail = vi.hoisted(() => vi.fn(async () => {}))
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported,
   persistThumbnail
 }))
 
-vi.mock('@/extensions/core/load3d/Load3d', () => ({
+vi.mock(import('@/extensions/core/load3d/Load3d'), () => ({
   default: vi.fn()
 }))
 
-vi.mock('@/extensions/core/load3d/createLoad3d', () => ({
+vi.mock(import('@/extensions/core/load3d/createLoad3d'), () => ({
   createLoad3d: vi.fn()
 }))
 
@@ -79,6 +70,10 @@ describe('useLoad3dViewer', () => {
   let mockLoad3dService: ReturnType<typeof useLoad3dService>
   let mockToastStore: ReturnType<typeof useToastStore>
   let mockNode: LGraphNode
+
+  beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((url) => `/${url}`)
+  })
 
   beforeEach(() => {
     mockNode = createMockLGraphNode({
@@ -129,7 +124,7 @@ describe('useLoad3dViewer', () => {
       forceRender: vi.fn(),
       remove: vi.fn(),
       setTargetSize: vi.fn(),
-      loadModel: vi.fn().mockResolvedValue(undefined),
+      loadModel: vi.fn().mockResolvedValue(true),
       captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,x'),
       setCameraState: vi.fn(),
       addEventListener: vi.fn(),
@@ -194,12 +189,7 @@ describe('useLoad3dViewer', () => {
     >
     vi.mocked(useLoad3dService).mockReturnValue(mockLoad3dService)
 
-    mockToastStore = {
-      addAlert: vi.fn()
-    } as Partial<ReturnType<typeof useToastStore>> as ReturnType<
-      typeof useToastStore
-    >
-    vi.mocked(useToastStore).mockReturnValue(mockToastStore)
+    mockToastStore = useToastStore()
   })
 
   describe('initialization', () => {
@@ -635,6 +625,22 @@ describe('useLoad3dViewer', () => {
   })
 
   describe('handleModelDrop', () => {
+    it('does not publish dropped-model state when the load was superseded', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        '3d/superseded.glb'
+      )
+      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce(false)
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      vi.mocked(mockLoad3d.getCurrentModelCapabilities!).mockClear()
+
+      await viewer.handleModelDrop(new File([''], 'superseded.glb'))
+
+      expect(mockNode.widgets).toEqual([])
+      expect(mockLoad3d.getCurrentModelCapabilities).not.toHaveBeenCalled()
+    })
+
     it('refreshes the capability refs after the dropped model loads, so the sidebar reflects the new model', async () => {
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
         '3d/dropped.splat'
@@ -860,6 +866,39 @@ describe('useLoad3dViewer', () => {
       const newViewer = useLoad3dViewer()
       await newViewer.initializeStandaloneViewer(containerRef, modelUrl)
       expect(newViewer.backgroundColor.value).toBe('#0000ff')
+    })
+
+    it('completes viewer setup when a concurrent call supersedes the first load', async () => {
+      let settleFirstLoad!: (accepted: boolean) => void
+      vi.mocked(mockLoad3d.loadModel!)
+        .mockImplementationOnce(
+          () =>
+            new Promise<boolean>((resolve) => {
+              settleFirstLoad = resolve
+            })
+        )
+        .mockResolvedValueOnce(true)
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+
+      const first = viewer.initializeStandaloneViewer(containerRef, 'a.glb')
+      const replacement = viewer.initializeStandaloneViewer(
+        containerRef,
+        'b.glb'
+      )
+      settleFirstLoad(false)
+      await Promise.all([first, replacement])
+
+      expect(createLoad3d).toHaveBeenCalledTimes(1)
+      expect(viewer.isPreview.value).toBe(true)
+      expect(mockLoad3d.addEventListener).toHaveBeenCalledWith(
+        'animationListChange',
+        expect.any(Function)
+      )
+      expect(mockLoad3d.addEventListener).toHaveBeenCalledWith(
+        'animationProgressChange',
+        expect.any(Function)
+      )
     })
   })
 

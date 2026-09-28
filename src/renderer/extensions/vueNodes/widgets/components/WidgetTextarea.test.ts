@@ -10,13 +10,13 @@ import { createMockWidget } from './widgetTestUtils'
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
     copyToClipboard: mockCopyToClipboard
   }))
 }))
 
-vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({
+vi.mock(import('@/composables/graph/useMoreOptionsMenu'), () => ({
   isNodeOptionsOpen: mockIsNodeOptionsOpen
 }))
 

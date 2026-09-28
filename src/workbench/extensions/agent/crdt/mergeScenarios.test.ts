@@ -47,7 +47,8 @@ describe('merge scenarios', () => {
 
   it('reads an incumbent stamp at the losing op position inside one batch', () => {
     const source = scenario('stale-write-loses')
-    const [winnerOp, loserOp] = source.batches.flat()
+    const winnerOp = source.batches.flat().at(0)
+    const loserOp = source.batches.flat().at(1)
     if (!winnerOp || !loserOp) throw new Error('scenario needs two writes')
     const laterOp = {
       ...winnerOp,

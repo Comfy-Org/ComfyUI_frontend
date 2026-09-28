@@ -1,12 +1,13 @@
 import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import Tag from 'primevue/tag'
 import Tooltip from 'primevue/tooltip'
 import { defineComponent, h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import Badge from '@/components/ui/badge/Badge.vue'
 
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
 import type { SettingParams } from '@/platform/settings/types'
@@ -16,7 +17,7 @@ const i18n = createI18n({
   locale: 'en'
 })
 
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock(import('@/utils/formatUtil'), () => ({
   normalizeI18nKey: vi.fn()
 }))
 
@@ -37,8 +38,8 @@ describe('SettingItem', () => {
   function renderComponent(setting: SettingParams) {
     return render(SettingItem, {
       global: {
-        plugins: [PrimeVue, i18n, createPinia()],
-        components: { Tag },
+        plugins: [PrimeVue, i18n, getActivePinia()!],
+        components: { Badge },
         stubs: {
           FormItem: FormItemStub,
           'i-material-symbols:experiment-outline': true

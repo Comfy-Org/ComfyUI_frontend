@@ -38,9 +38,27 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it('drops browser-extension messaging noise', () => {
+    const event = createErrorEvent(
+      'Error: Invalid call to runtime.sendMessage(). Tab not found.'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
   it('drops the console echo of an assertion the reporter also reports', () => {
     const event = createErrorEvent(
       '[Assertion failed]: graph is corrupt',
+      undefined,
+      'console'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('drops the console echo of an error reportError already sent', () => {
+    const event = createErrorEvent(
+      '[Reported error]: canvas_layout_listener_failed Error: listener failed',
       undefined,
       'console'
     )

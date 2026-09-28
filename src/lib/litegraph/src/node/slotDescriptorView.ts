@@ -1,6 +1,10 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/interfaces'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { toClass } from '@/lib/litegraph/src/utils/type'
 
 const assignedInputViews = new WeakMap<
@@ -28,6 +32,21 @@ export function createInputSlotView(
   return view
 }
 
+export function createOutputSlotView(
+  node: LGraphNode,
+  outputs: INodeOutputSlot[]
+): INodeOutputSlot[] {
+  return new Proxy(outputs, {
+    set(target, property, value: unknown, receiver) {
+      const output =
+        isArrayIndex(property) && isOutputSlot(value)
+          ? toClass(NodeOutputSlot, value, node)
+          : value
+      return Reflect.set(target, property, output, receiver)
+    }
+  })
+}
+
 export function resolveInputSlotView(
   inputs: INodeInputSlot[],
   input: INodeInputSlot
@@ -47,6 +66,15 @@ function isArrayIndex(property: string | symbol): property is string {
 }
 
 function isInputSlot(value: unknown): value is INodeInputSlot {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'name' in value &&
+    'type' in value
+  )
+}
+
+function isOutputSlot(value: unknown): value is INodeOutputSlot {
   return (
     value !== null &&
     typeof value === 'object' &&
