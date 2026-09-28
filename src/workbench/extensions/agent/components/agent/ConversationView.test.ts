@@ -232,7 +232,7 @@ describe('ConversationView', () => {
     const scrollTo = vi.fn()
     Element.prototype.scrollTo = scrollTo
 
-    render(ConversationView, {
+    const { rerender } = render(ConversationView, {
       props: { entries: [assistant] },
       global: { plugins: [i18n] }
     })
@@ -249,6 +249,102 @@ describe('ConversationView', () => {
     expect(jump).toHaveTextContent('')
 
     await userEvent.click(jump)
+    expect(scrollTo).toHaveBeenCalled()
+    expect(
+      screen.queryByRole('button', { name: 'Latest' })
+    ).not.toBeInTheDocument()
+
+    scrollTo.mockClear()
+    await rerender({
+      entries: [
+        {
+          ...assistant,
+          parts: [{ type: 'text', text: 'hello again', state: 'done' }]
+        }
+      ]
+    })
+    await nextTick()
+    expect(scrollTo).toHaveBeenCalled()
+  })
+
+  it('resumes following when the conversation identity changes', async () => {
+    const assistant: AssistantMessage = {
+      id: 'msg-1' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'first thread', state: 'done' }],
+      streaming: false,
+      thinking: false
+    }
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
+    const { rerender } = render(ConversationView, {
+      props: { entries: [assistant] },
+      global: { plugins: [i18n] }
+    })
+
+    await nextTick()
+    await fireEvent.wheel(screen.getByTestId('agent-conversation-scroll'), {
+      deltaY: -1
+    })
+    expect(
+      await screen.findByRole('button', { name: 'Latest' })
+    ).toBeInTheDocument()
+
+    scrollTo.mockClear()
+    await rerender({
+      entries: [
+        {
+          ...assistant,
+          id: 'msg-2' as TurnId,
+          parts: [{ type: 'text', text: 'second thread', state: 'done' }]
+        }
+      ]
+    })
+    await nextTick()
+
+    expect(
+      screen.queryByRole('button', { name: 'Latest' })
+    ).not.toBeInTheDocument()
+    expect(scrollTo).toHaveBeenCalled()
+  })
+
+  it('keeps following within the fractional bottom tolerance', async () => {
+    const assistant: AssistantMessage = {
+      id: 'msg-1' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'hello', state: 'done' }],
+      streaming: false,
+      thinking: false
+    }
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
+    const { rerender } = render(ConversationView, {
+      props: { entries: [assistant] },
+      global: { plugins: [i18n] }
+    })
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollHeight: { value: 1_000 },
+      scrollTop: { value: 485 },
+      clientHeight: { value: 500 }
+    })
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    await fireEvent.scroll(scrollContainer)
+
+    scrollTo.mockClear()
+    await rerender({
+      entries: [
+        {
+          ...assistant,
+          parts: [{ type: 'text', text: 'hello again', state: 'done' }]
+        }
+      ]
+    })
+    await nextTick()
+
+    expect(
+      screen.queryByRole('button', { name: 'Latest' })
+    ).not.toBeInTheDocument()
     expect(scrollTo).toHaveBeenCalled()
   })
 
