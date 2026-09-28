@@ -1441,7 +1441,7 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it('(g10) a failing history fetch surfaces one notice and leaves the turn live for the socket', async () => {
+  it('(g10) a failing recovery fetch stays silent and leaves the turn live for the socket', async () => {
     const rest = fakeRest({
       getMessages: vi.fn(async (): Promise<AgentMessages> => {
         throw new TypeError('Failed to fetch')
@@ -1460,9 +1460,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await vi.advanceTimersByTimeAsync(60_000)
 
     expect(rest.getMessages).toHaveBeenCalledTimes(6)
-    expect(session.notices.value).toEqual([
-      { level: 'error', text: 'Failed to fetch' }
-    ])
+    expect(session.notices.value).toEqual([])
     expect(session.isStreaming.value).toBe(true)
 
     emit(done('msg-1'))

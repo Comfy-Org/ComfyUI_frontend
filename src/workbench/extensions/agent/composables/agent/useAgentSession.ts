@@ -960,17 +960,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     generation: number,
     signal: AbortSignal
   ): Promise<void> {
-    let noticed = false
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
       if (!isTurnLive(turn, generation)) return
       const outcome = await fetchTurnOutcome(turn, signal)
       if (!isTurnLive(turn, generation)) return
       if (settleFinishedTurn(turn, outcome)) return
-      if (outcome.kind === 'error' && !noticed) {
-        noticed = true
-        pushError(outcome.message)
-      }
     }
   }
 
