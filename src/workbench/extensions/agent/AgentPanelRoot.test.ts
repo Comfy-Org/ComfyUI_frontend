@@ -1597,6 +1597,38 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
   })
 
+  it('reports only after returning from chat history', async () => {
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await screen.findByRole('heading', { name: i18n.global.t('agent.history') })
+
+    paywallHasFunds.value = false
+    await nextTick()
+    expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.backToPreviousChat')
+      })
+    )
+
+    await waitFor(() =>
+      expect(
+        useTelemetry()!.trackAgentPaywallShown
+      ).toHaveBeenCalledExactlyOnceWith({
+        reason: 'no_funds',
+        surface: 'credits_exhausted'
+      })
+    )
+  })
+
   it('disappears once funds arrive', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
