@@ -284,6 +284,17 @@ export async function installMockCloud(
     return json(route, reply)
   })
 
+  // The host app's front page, where plan selection lives: a return lands here.
+  await context.route(
+    (url) => url.origin === CLOUD_ORIGIN && url.pathname === '/',
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: '<!doctype html><title>Host app</title><h1>Host app</h1>'
+      })
+  )
+
   // Where a hosted redirect lands: a page of its own, so a spec can assert
   // the navigation without the browser reaching the provider.
   await context.route(`${PORTAL_URL}*`, (route) =>
