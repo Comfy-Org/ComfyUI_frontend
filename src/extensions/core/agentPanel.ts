@@ -5,7 +5,10 @@ import { computed, ref, watch } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
+import {
+  authenticatedRemoteConfigState,
+  remoteConfigRevision
+} from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentConsentNotOfferedReason } from '@/platform/telemetry/types'
@@ -173,7 +176,8 @@ export function registerAgentPanelExtension(): void {
       const consentStore = useAgentConsentStore()
       const { enabled } = storeToRefs(agentPanelStore)
       const workspaceStore = useTeamWorkspaceStore()
-      const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
+      const { resolvedUserInfo, isAuthInitialized, isLoggedIn } =
+        useCurrentUser()
       const { withConsent } = useAgentConsent()
       const { firstRunTookScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
@@ -330,20 +334,29 @@ export function registerAgentPanelExtension(): void {
           loadConsentIfEligible()
         }
       )
-      setupFlagGate(loadConsentIfEligible)
+      setupFlagGate(
+        loadConsentIfEligible,
+        () => isAuthInitialized.value && resolvedUserInfo.value === null
+      )
     }
   })
 }
 
-function setupFlagGate(loadConsentIfEligible: () => void): void {
+function setupFlagGate(
+  loadConsentIfEligible: () => void,
+  isSignedOut: () => boolean
+): void {
   const agentPanelStore = useAgentPanelStore()
   const { flags } = useFeatureFlags()
 
   watch(
     () =>
-      import.meta.env.MODE === 'development' ||
-      flags.agentInAppExperienceEnabled,
-    (enabled) => {
+      [
+        import.meta.env.MODE === 'development' ||
+          flags.agentInAppExperienceEnabled,
+        remoteConfigRevision.value
+      ] as const,
+    ([enabled]) => {
       agentPanelStore.enabled = enabled
       loadConsentIfEligible()
       if (!enabled) {
@@ -358,15 +371,30 @@ function setupFlagGate(loadConsentIfEligible: () => void): void {
   const settle = (): void => {
     agentPanelStore.gateSettled = true
   }
+  let settleTimer: ReturnType<typeof setTimeout> | undefined
+  const clearSettleTimer = (): void => {
+    clearTimeout(settleTimer)
+    settleTimer = undefined
+  }
+  const scheduleSignedOutFallback = (): void => {
+    clearSettleTimer()
+    settleTimer = setTimeout(() => {
+      if (isSignedOut()) settle()
+    }, GATE_SETTLE_TIMEOUT_MS)
+  }
   watch(
     () =>
-      import.meta.env.MODE === 'development' ||
-      remoteConfigState.value === 'authenticated' ||
-      remoteConfigState.value === 'error',
-    (decided) => {
-      if (decided) settle()
+      [
+        import.meta.env.MODE === 'development' ||
+          authenticatedRemoteConfigState.value === 'authenticated' ||
+          authenticatedRemoteConfigState.value === 'error',
+        isSignedOut()
+      ] as const,
+    ([decided, signedOut]) => {
+      agentPanelStore.gateSettled = decided
+      clearSettleTimer()
+      if (!decided && signedOut) scheduleSignedOutFallback()
     },
     { immediate: true }
   )
-  setTimeout(settle, GATE_SETTLE_TIMEOUT_MS)
 }
