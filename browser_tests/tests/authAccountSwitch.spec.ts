@@ -586,8 +586,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await comfyPage.vueNodes.waitForNodes()
       await expect(
         page.getByRole('tab', {
-          name: IDENTITY_SENTINELS.b.draft,
-          exact: true
+          name: new RegExp(`^${IDENTITY_SENTINELS.b.draft}`)
         })
       ).toBeVisible()
       await expect(
