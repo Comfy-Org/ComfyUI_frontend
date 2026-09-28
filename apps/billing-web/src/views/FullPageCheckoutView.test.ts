@@ -6,6 +6,7 @@ import type { VNode } from 'vue'
 import type {
   BillingOperationState,
   BillingResult,
+  PendingBillingOperation,
   PreviewSubscribeResult,
   SavedPaymentMethod
 } from '@comfyorg/account-core/billing'
@@ -13,7 +14,10 @@ import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
-import { parseBillingEntry } from '@comfyorg/billing-contract'
+import {
+  parseBillingEntry,
+  parseReturnResult
+} from '@comfyorg/billing-contract'
 
 import type { OperationNotice } from '@/checkout/operationChannel'
 
@@ -733,12 +737,66 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       await screen.findByRole('heading', { name: "You're all set" })
     ).toBeInTheDocument()
     expect(
-      screen.getByText(
-        'Your Creator Plan subscription for Acme Team is active.'
-      )
+      screen.getByText('Your plan for Acme Team has been successfully updated.')
     ).toBeInTheDocument()
-    expect(screen.queryByText(/Reference:/)).not.toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
+      'Creator$28.00 USD / mo'
+    )
+    expect(screen.queryByTestId('checkout-ending-code')).not.toBeInTheDocument()
     expect(fake.subscribe).toHaveBeenCalledOnce()
+  })
+
+  describe('Close', () => {
+    const SETTLED: FakeBillingClientOptions = {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_mine') }
+      }
+    }
+
+    afterEach(() => {
+      Reflect.deleteProperty(window, 'opener')
+    })
+
+    it('goes back to return_to with the outcome and reference when no script opened the tab', async () => {
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      const close = vi.spyOn(window, 'close').mockImplementation(() => {})
+      await payReady(SETTLED)
+      form.emit('confirm', 'ctoken_1')
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Close' })
+      )
+
+      expect(close).not.toHaveBeenCalled()
+      expect(assign).toHaveBeenCalledOnce()
+      expect(parseReturnResult(String(assign.mock.calls[0][0]))).toEqual({
+        result: 'success',
+        reference: 'op_mine'
+      })
+    })
+
+    it('closes a tab a script opened, and navigates nowhere', async () => {
+      Object.defineProperty(window, 'opener', {
+        value: {},
+        configurable: true
+      })
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      const close = vi.spyOn(window, 'close').mockImplementation(() => {})
+      await payReady(SETTLED)
+      form.emit('confirm', 'ctoken_1')
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Close' })
+      )
+
+      expect(close).toHaveBeenCalledOnce()
+      expect(assign).not.toHaveBeenCalled()
+    })
   })
 
   it('lands on the terminal for a plan the server activated with no operation to follow', async () => {
@@ -915,6 +973,12 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
 
 const waitingStatus = () => screen.findByRole('status')
 
+const settlingOperation = (id: string): PendingBillingOperation => ({
+  ...pendingOperation(id),
+  authenticationState: 'processing',
+  serverPhase: 'in_progress'
+})
+
 /** Every read the capture needs has answered by the next macrotask. */
 const capturePromisesFlushed = () =>
   new Promise((resolve) => setTimeout(resolve))
@@ -974,8 +1038,10 @@ describe('FullPageCheckoutView mount reconciliation', () => {
         "This payment for Acme Team already went through. You won't be charged again."
       )
     ).toBeInTheDocument()
-    expect(screen.getByText('Reference: op_reloaded')).toBeInTheDocument()
-    expect(screen.queryByText(/Creator Plan/)).not.toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'op_reloaded'
+    )
+    expect(screen.queryByTestId('checkout-ending-plan')).not.toBeInTheDocument()
     expect(form.mounts).toBe(0)
   })
 
@@ -1074,6 +1140,70 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     ).toBeInTheDocument()
     expect(form.mounts).toBe(0)
   })
+
+  it('renders Payment in progress for a capture the bank is still settling, then follows it to a card-less success', async () => {
+    const fake = await renderCheckout({
+      recover: { status: 'ok', value: settlingOperation('op_bank') }
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Payment in progress' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'op_bank'
+    )
+    expect(screen.getByRole('link', { name: 'Contact support' })).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Close' })
+    ).not.toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+
+    fake.publishOperation({
+      ...settlingOperation('op_bank'),
+      authenticationState: 'succeeded'
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Payment received' })
+    ).toBeInTheDocument()
+
+    fake.publishOperation(succeededOperation('op_bank'))
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+    expect(fake.subscribe).not.toHaveBeenCalled()
+  })
+
+  it.for<{ name: string; watched: PendingBillingOperation; heading: string }>([
+    {
+      name: 'a settling capture keeps Payment in progress',
+      watched: settlingOperation('op_lapsed'),
+      heading: 'Payment in progress'
+    },
+    {
+      name: 'money still being verified says it could not confirm',
+      watched: pendingOperation('op_lapsed'),
+      heading: "We couldn't confirm your payment"
+    }
+  ])(
+    'follows a watch whose poll budget ran out afresh: $name',
+    async ({ watched, heading }) => {
+      const fake = await renderCheckout({
+        recover: { status: 'ok', value: watched }
+      })
+      await waitFor(() => expect(fake.recover).toHaveBeenCalledOnce())
+
+      fake.publishOperation({
+        ...succeededOperation('op_lapsed'),
+        phase: 'timed_out'
+      })
+
+      expect(
+        await screen.findByRole('heading', { name: heading })
+      ).toBeInTheDocument()
+      await waitFor(() => expect(fake.recover).toHaveBeenCalledTimes(2))
+      expect(form.mounts).toBe(0)
+    }
+  )
 })
 
 function pageShow(persisted: boolean): Event {
@@ -1166,7 +1296,9 @@ describe('FullPageCheckoutView re-reconciliation', () => {
     expect(
       await screen.findByRole('heading', { name: 'Already completed' })
     ).toBeInTheDocument()
-    expect(screen.getByText('Reference: op_from_server')).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'op_from_server'
+    )
     expect(fake.recover).toHaveBeenCalledTimes(2)
   })
 

@@ -3,14 +3,19 @@ import { useEventListener } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { formatQuoteMoney } from '@comfyorg/account-ui/billing/checkout'
+import {
+  formatQuoteMoney,
+  isAnnualDuration
+} from '@comfyorg/account-ui/billing/checkout'
 
+import { endingOf } from '@/checkout/endingScreen'
+import type { EndingPlan } from '@/components/fullPage/CheckoutEnding.vue'
+import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import type { CheckoutCharge } from '@/components/fullPage/CheckoutPaymentColumn.vue'
 import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.vue'
 import type { CheckoutSummary } from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import CheckoutSummaryColumn from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import { keepSubscriptionCopy } from '@/checkout/keepSubscription'
-import CheckoutTerminalCard from '@/components/fullPage/CheckoutTerminalCard.vue'
 import CheckoutWaitingColumn from '@/components/fullPage/CheckoutWaitingColumn.vue'
 import { useFullPageCheckout } from '@/composables/useFullPageCheckout'
 import { useHostedCopy } from '@/composables/useHostedCopy'
@@ -30,6 +35,8 @@ const {
   submitting,
   payFailure,
   returnLink,
+  canClose,
+  close,
   onPaymentPhase,
   savedMethods,
   retryElement,
@@ -108,12 +115,29 @@ const payFailureCopy = computed(() =>
     : coded('failure', payFailure.value)
 )
 
+const ending = computed(() => endingOf(page.value))
+
+/** The plan this page's own Pay bought, as its quote priced it. */
+const endingPlan = computed<EndingPlan | undefined>(() => {
+  const quoted = preview.value
+  if (!quoted) return undefined
+  return {
+    name: coded('tier', quoted.new_plan.tier),
+    price: formatQuoteMoney(
+      quoted.new_plan.price_cents,
+      quoted.currency ?? 'usd',
+      locale.value
+    ),
+    period: t(
+      isAnnualDuration(quoted.new_plan.duration)
+        ? 'checkout.fullPage.ending.perYear'
+        : 'checkout.fullPage.ending.perMonth',
+      { currency: (quoted.currency ?? 'usd').toUpperCase() }
+    )
+  }
+})
+
 const productName = computed(() => coded('product', entry.value?.product))
-const returnLabel = computed(() =>
-  returnLink.value === undefined
-    ? undefined
-    : t('hosted.returnTo', { product: productName.value })
-)
 
 function returnToProduct() {
   window.location.assign(returnLink.value)
@@ -121,14 +145,15 @@ function returnToProduct() {
 </script>
 
 <template>
-  <CheckoutTerminalCard
-    v-if="page.kind === 'terminal'"
-    :started="page.started"
-    :workspace="session?.workspace.name"
-    :plan="page.started ? planName : undefined"
-    :operation-id="page.operation?.id"
-    :return-label="returnLabel"
-    @return="returnToProduct"
+  <CheckoutEnding
+    v-if="ending"
+    :screen="ending"
+    :workspace="
+      session?.workspace.name ?? t('checkout.fullPage.ending.thisWorkspace')
+    "
+    :plan="endingPlan"
+    :can-close="canClose"
+    @close="close"
   />
   <main
     v-else-if="page.kind === 'refused' || page.kind === 'unavailable'"
@@ -167,7 +192,7 @@ function returnToProduct() {
       <CheckoutSummaryColumn :summary @back="returnToProduct" />
       <CheckoutWaitingColumn v-if="page.kind === 'waiting'" />
       <CheckoutPaymentColumn
-        v-else
+        v-else-if="page.kind === 'resolving' || page.kind === 'capture'"
         :page
         :charge
         :publishable-key="stripeKey ?? ''"

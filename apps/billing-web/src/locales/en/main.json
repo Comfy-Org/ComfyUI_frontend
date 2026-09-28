@@ -258,17 +258,45 @@
         "status": "Finishing your payment…",
         "body": "A payment for this workspace is still going through. This page will update on its own; nothing more is needed from you."
       },
-      "terminal": {
+      "ending": {
+        "thisWorkspace": "this workspace",
+        "perMonth": "{currency} / mo",
+        "perYear": "{currency} / yr",
+        "copy": "Copy code",
+        "copied": "Copied",
+        "closeLine": "You can close this page. We'll email your invoice once this goes through and this page will automatically update.",
+        "actions": {
+          "close": "Close"
+        },
         "success": {
           "title": "You're all set",
-          "body": "Your payment for {workspace} went through.",
-          "bodyPlan": "Your {plan} subscription for {workspace} is active."
+          "body": "Your plan for {workspace} has been successfully updated."
         },
         "completed": {
-          "title": "Already completed",
-          "body": "This payment for {workspace} already went through. You won't be charged again."
+          "title": "You're all set",
+          "body": "A payment on this workspace completed — check your plan in settings.",
+          "codeLabel": "Your reference for this payment:"
         },
-        "reference": "Reference: {operationId}"
+        "already_completed": {
+          "title": "Already completed",
+          "body": "This payment for {workspace} already went through. You won't be charged again.",
+          "codeLabel": "Your reference for this payment:"
+        },
+        "in_progress": {
+          "title": "Payment in progress",
+          "body": "Your bank is still settling this payment — this can take up to a day. Nothing more is needed from you, and don't pay again: you could be charged twice.",
+          "codeLabel": "If nothing has changed after 24 hours, contact support with this code:"
+        },
+        "received": {
+          "title": "Payment received",
+          "body": "Your payment went through and you should receive your credits or subscription soon. You won't be charged again.",
+          "codeLabel": "If nothing has changed after 24 hours, contact support with this code:"
+        },
+        "unconfirmed": {
+          "title": "We couldn't confirm your payment",
+          "body": "Your payment may or may not have gone through. Don't pay again yet, you could be charged twice.",
+          "codeLabel": "If this page still can't confirm it after a few minutes, contact support with this code:"
+        }
       }
     }
   },
