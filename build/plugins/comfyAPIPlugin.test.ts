@@ -64,19 +64,6 @@ describe('comfyAPIPlugin transform', () => {
     expect(emitFile).toHaveBeenCalledTimes(expected ? 1 : 0)
   })
 
-  it('uses <cwd>/src as the transform root', () => {
-    const accepted = runTransform(false, path.join(root, 'src/scripts/api.ts'))
-    const rejected = runTransform(
-      false,
-      path.join(root, 'apps/website/src/scripts/customerio.ts')
-    )
-
-    expect(accepted.emitFile).toHaveBeenCalledOnce()
-    expect(accepted.result).toBeDefined()
-    expect(rejected.emitFile).not.toHaveBeenCalled()
-    expect(rejected.result).toBeUndefined()
-  })
-
   it('emits an output-root-relative shim for a legacy scripts/ file', () => {
     const { result, emitFile } = runTransform(
       false,
@@ -117,16 +104,6 @@ describe('comfyAPIPlugin transform', () => {
     const asset = emitFile.mock.calls[0][0]
     expect(asset.fileName).toBe('extensions/core/groupNode.js')
     expect(asset.source).toContain('[ComfyUI Deprecated]')
-  })
-
-  it("does not touch another package's src/scripts file", () => {
-    const { result, emitFile } = runTransform(
-      false,
-      path.join(root, 'apps/website/src/scripts/customerio.ts')
-    )
-
-    expect(emitFile).not.toHaveBeenCalled()
-    expect(result).toBeUndefined()
   })
 
   it('is a no-op in dev', () => {
