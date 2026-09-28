@@ -1484,6 +1484,158 @@ describe('useAgentConversationStore', () => {
   })
 
   /**
+   * A delta that fails validation on the way in is dropped with no replay,
+   * so the row can hold reply the transport never got. Only the tail it adds
+   * rides across -- handing the whole row over would print what is already
+   * on screen twice.
+   */
+  it('recovers only the reply tail a streaming row is ahead by', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(delta('t1', 'All '))
+    store.stashActiveTurn()
+
+    const streamingRow = historyRow(
+      2,
+      'assistant',
+      'server-turn',
+      'All done.',
+      't1'
+    )
+    streamingRow.status = 'streaming'
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      streamingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
+  })
+
+  /**
+   * A draft is provisional narration the next frame withdraws, so it must
+   * not pass for reply the transport has already delivered and stop the
+   * row's real text coming across.
+   */
+  it('does not let a draft stand in for reply text the row holds', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(
+      chat({
+        type: 'agent_message_draft',
+        data: { text: 'thinking out loud', message_id: 't1', thread_id: 'th' }
+      })
+    )
+    store.stashActiveTurn()
+
+    const streamingRow = historyRow(2, 'assistant', 'server-turn', 'Done', 't1')
+    streamingRow.status = 'streaming'
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      streamingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['Done'])
+  })
+
+  /**
+   * The mirror of the case above it: the row is the one that watched this
+   * call finish, so its outcome settles a live copy the transport never got
+   * a terminal frame for -- nothing else would, `settle()` leaves tool parts
+   * alone.
+   */
+  it('settles a running live tool call from the outcome the row recorded', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'find a node')
+    store.ingest(toolCall('t1', 'search_nodes', 'running'))
+    store.stashActiveTurn()
+
+    const streamingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+    streamingRow.status = 'streaming'
+    streamingRow.content = {
+      tool_calls: [
+        { id: 'call-search_nodes', tool_name: 'search_nodes', status: 'ok' }
+      ]
+    }
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'find a node'),
+      streamingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(
+      store.messages[0].parts.filter((part) => part.type === 'tool')
+    ).toEqual([
+      expect.objectContaining({
+        callId: 'call-search_nodes',
+        state: 'done',
+        ok: true
+      })
+    ])
+  })
+
+  /**
+   * A call adopted off the row has to be registered with the transport that
+   * survived the resume, or that call's next frame arrives as a stranger and
+   * pushes a second card for the same work.
+   */
+  it('updates a tool call adopted from the row in place when its frame lands', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'find a node')
+    store.stashActiveTurn()
+
+    const streamingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+    streamingRow.status = 'streaming'
+    streamingRow.content = {
+      tool_calls: [
+        {
+          id: 'call-search_nodes',
+          tool_name: 'search_nodes',
+          status: 'running'
+        }
+      ]
+    }
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'find a node'),
+      streamingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    store.ingest(toolCall('t1', 'search_nodes', 'success'))
+
+    expect(
+      store.messages[0].parts.filter((part) => part.type === 'tool')
+    ).toEqual([
+      expect.objectContaining({
+        callId: 'call-search_nodes',
+        state: 'done',
+        ok: true
+      })
+    ])
+  })
+
+  /**
    * A terminal row is written when the service gives up, which can be behind
    * the last delta the transport actually delivered. Text that strictly
    * extends the row is the fuller copy and outlives it, settled because this

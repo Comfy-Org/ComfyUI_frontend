@@ -71,6 +71,27 @@ export interface AgentEventTransport {
   ingest: (event: AgentChatEvent) => void
   settle: () => void
   /**
+   * Teaches this transport about a tool part the caller merged in from a
+   * persisted row, so that call's next frame updates the part in place
+   * instead of pushing a second copy of the same call beside it. Placement
+   * within `message.parts` stays the caller's business.
+   */
+  adoptToolPart: (part: ToolPart) => void
+  /**
+   * Appends reply text this transport never received -- recovered from a
+   * persisted row while it was stashed -- to the part it is currently
+   * writing, so the next delta continues the same paragraph rather than
+   * starting one beside it.
+   */
+  appendReplyText: (text: string) => void
+  /**
+   * The provisional narration part, when one is on screen. It holds the
+   * whole reply so far and the next delta, tool call or ask withdraws it, so
+   * a caller weighing this message's reply against another copy must not
+   * count it as committed text.
+   */
+  openDraft: () => TextPart | null
+  /**
    * PM-1575: called whenever the bound workflow's CRDT follower applies a
    * fresh doc update, so any tool-call parts this transport held back
    * pending canvas catch-up (see `shouldAwaitCanvasSync` below) can settle to
@@ -373,6 +394,17 @@ export function createAgentEventTransport(
     draft = null
   }
 
+  function adoptToolPart(part: ToolPart): void {
+    tools.set(part.callId, part)
+    canvasSyncBaseline.set(part, canvasSyncOutcomeWatermark)
+  }
+
+  function appendReplyText(text: string): void {
+    if (text === '') return
+    dropDraft()
+    ;(openText ?? openNewText()).text += text
+  }
+
   /** Applies one `agent_message_draft` frame: the whole reply so far replaces
    * the last draft, and an empty one withdraws it. */
   function handleMessageDraftEvent(data: AgentMessageDraftEvent['data']): void {
@@ -470,5 +502,14 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
-  return { ingest, settle, notifyCanvasCaughtUp, hasPendingCanvasSync, dispose }
+  return {
+    ingest,
+    settle,
+    adoptToolPart,
+    appendReplyText,
+    openDraft: () => draft,
+    notifyCanvasCaughtUp,
+    hasPendingCanvasSync,
+    dispose
+  }
 }

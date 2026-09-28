@@ -10,7 +10,9 @@ import type {
 import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
 import type {
   AssistantMessage,
-  MessagePart
+  MessagePart,
+  TextPart,
+  ToolPart
 } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
@@ -553,35 +555,124 @@ export const useAgentConversationStore = defineStore(
         ]
       })
       if (carried.length === 0) return
-      const insertAt =
-        hydrated.parts.findLastIndex(
-          (part) => part.type !== 'text' && part.type !== 'runApproval'
-        ) + 1
-      hydrated.parts = [
-        ...hydrated.parts.slice(0, insertAt),
-        ...carried,
-        ...hydrated.parts.slice(insertAt)
-      ]
+      hydrated.parts = spliceBeforeTrailingReply(hydrated.parts, carried)
     }
 
+    /**
+     * Before the run of reply text and approval card a message ends on, so a
+     * call the agent made while working does not render underneath the answer
+     * it preceded.
+     */
+    function spliceBeforeTrailingReply(
+      parts: MessagePart[],
+      carried: MessagePart[]
+    ): MessagePart[] {
+      const insertAt =
+        parts.findLastIndex(
+          (part) => part.type !== 'text' && part.type !== 'runApproval'
+        ) + 1
+      return [...parts.slice(0, insertAt), ...carried, ...parts.slice(insertAt)]
+    }
+
+    function replyText(
+      message: AssistantMessage,
+      draft: TextPart | null
+    ): string {
+      return message.parts
+        .filter((part) => part.type === 'text')
+        .filter((part) => part !== draft)
+        .map((part) => part.text)
+        .join('')
+    }
+
+    /**
+     * The live message survives, so the row contributes only what the
+     * transport never delivered.
+     *
+     * `transport` is the one still bound to `live`, or undefined when the
+     * caller is about to dispose it. It decides two things a plain merge
+     * cannot: an adopted call has to be registered with a surviving
+     * transport or the call's next frame pushes a second copy beside it, and
+     * an adopted call that is still running has to be forced terminal when
+     * no transport survives, because nothing would be left to settle it.
+     */
     function adoptHydratedOnlyParts(
       live: AssistantMessage,
-      hydrated: AssistantMessage
+      hydrated: AssistantMessage,
+      transport: AgentEventTransport | undefined
     ): void {
-      const liveCallIds = new Set(
+      adoptHydratedTools(live, hydrated, transport)
+      adoptFresherHydratedText(live, hydrated, transport)
+      adoptPendingAsks(hydrated, live)
+    }
+
+    /**
+     * A row and the transport can hold the same call at different stages.
+     * Whichever watched it finish wins, and the live copy wins a tie -- it
+     * carries the duration the transport measured. A live copy is updated in
+     * place rather than replaced, so the transport's own handle on it stays
+     * good.
+     */
+    function adoptHydratedTools(
+      live: AssistantMessage,
+      hydrated: AssistantMessage,
+      transport: AgentEventTransport | undefined
+    ): void {
+      const liveTools = new Map(
         live.parts.flatMap((part) =>
-          part.type === 'tool' ? [part.callId] : []
+          part.type === 'tool' ? [[part.callId, part] as const] : []
         )
       )
-      const tools = hydrated.parts.filter(
-        (part) => part.type === 'tool' && !liveCallIds.has(part.callId)
-      )
-      if (tools.length > 0) live.parts = [...tools, ...live.parts]
-      if (!live.parts.some((part) => part.type === 'text')) {
-        const text = hydrated.parts.filter((part) => part.type === 'text')
-        if (text.length > 0) live.parts = [...live.parts, ...text]
+      const adopted: ToolPart[] = []
+      for (const part of hydrated.parts) {
+        if (part.type !== 'tool') continue
+        const alreadyLive = liveTools.get(part.callId)
+        if (alreadyLive === undefined) {
+          const copy: ToolPart =
+            transport === undefined && part.state === 'streaming'
+              ? { ...part, state: 'done', ok: part.ok ?? false }
+              : { ...part }
+          adopted.push(copy)
+          transport?.adoptToolPart(copy)
+          continue
+        }
+        if (alreadyLive.state === 'done' || part.state !== 'done') continue
+        alreadyLive.state = 'done'
+        alreadyLive.ok = part.ok
+        if (part.durationMs !== undefined)
+          alreadyLive.durationMs = part.durationMs
       }
-      adoptPendingAsks(hydrated, live)
+      if (adopted.length === 0) return
+      live.parts = spliceBeforeTrailingReply(live.parts, adopted)
+    }
+
+    /**
+     * Reply the service persisted but the transport never delivered -- a
+     * frame that failed validation on the way in, or one that landed while
+     * the stash was away. Only text that strictly extends what the live copy
+     * holds rides across, and only the tail of it: handing the whole row
+     * across would duplicate the part already on screen. Divergent text
+     * means the transport is telling a different story, and it is the one
+     * still connected.
+     */
+    function adoptFresherHydratedText(
+      live: AssistantMessage,
+      hydrated: AssistantMessage,
+      transport: AgentEventTransport | undefined
+    ): void {
+      const liveText = replyText(live, transport?.openDraft() ?? null)
+      const hydratedText = replyText(hydrated, null)
+      if (hydratedText === liveText || !hydratedText.startsWith(liveText))
+        return
+      const missing = hydratedText.slice(liveText.length)
+      if (transport !== undefined) {
+        transport.appendReplyText(missing)
+        return
+      }
+      live.parts = [
+        ...live.parts,
+        { type: 'text', text: missing, state: 'done' }
+      ]
     }
 
     /**
@@ -598,23 +689,20 @@ export const useAgentConversationStore = defineStore(
      */
     function adoptFresherLiveText(
       hydrated: AssistantMessage,
-      live: AssistantMessage
+      live: AssistantMessage,
+      draft: TextPart | null
     ): void {
-      const hydratedText = hydrated.parts
-        .filter((part) => part.type === 'text')
-        .map((part) => part.text)
-        .join('')
-      const liveText = live.parts
-        .filter((part) => part.type === 'text')
-        .map((part) => part.text)
-        .join('')
+      const hydratedText = replyText(hydrated, null)
+      const liveText = replyText(live, draft)
       if (
         liveText === '' ||
         liveText === hydratedText ||
         !liveText.startsWith(hydratedText)
       )
         return
-      const textParts = live.parts.filter((part) => part.type === 'text')
+      const textParts = live.parts
+        .filter((part) => part.type === 'text')
+        .filter((part) => part !== draft)
       const insertAt = hydrated.parts.findIndex((part) => part.type === 'text')
       hydrated.parts = hydrated.parts.filter((part) => part.type !== 'text')
       hydrated.parts.splice(
@@ -641,11 +729,21 @@ export const useAgentConversationStore = defineStore(
       if (!hydrated || hydrated === entry.message) return undefined
       if (!hydratedStreamingTurnIds.has(hydratedTurnId)) {
         adoptLiveOnlyParts(hydrated, entry.message)
-        adoptFresherLiveText(hydrated, entry.message)
+        adoptFresherLiveText(
+          hydrated,
+          entry.message,
+          entry.transport.openDraft()
+        )
         return { keeps: 'hydrated', turnId: hydratedTurnId }
       }
       if (index >= 0) kept.splice(index, 1)
-      adoptHydratedOnlyParts(entry.message, hydrated)
+      // A settled stash keeps its parts but loses its transport right after
+      // this, in the `entry.settled` branch of resumeBackgroundTurn.
+      adoptHydratedOnlyParts(
+        entry.message,
+        hydrated,
+        entry.settled ? undefined : entry.transport
+      )
       moveUserRecord(hydratedTurnId, entry.message.id)
       return { keeps: 'live', turnId: entry.message.id }
     }
