@@ -2,8 +2,8 @@
  * A fake `js.stripe.com` at the network boundary: enough of `window.Stripe`
  * for `StripePaymentForm` and the embedded-challenge port to run their real
  * code against, without a request ever reaching Stripe. Elements are inert
- * (`mount`/`on`/`destroy` no-ops); `createConfirmationToken` and
- * `handleNextAction` always succeed, which is all the current specs need —
+ * apart from reporting `ready` on the next task; `createConfirmationToken`
+ * and `handleNextAction` always succeed, which is all the current specs need —
  * a decline or a timeout is modelled on the mocked Cloud's operation, not
  * on the payment provider.
  *
@@ -22,12 +22,24 @@ const FAKE_STRIPE_JS = `
     // can tell "called correctly" from "called with the wrong secret".
     nextActionCalls: []
   }
-  function fakeElement() {
-    return { mount() {}, unmount() {}, destroy() {}, on() {} }
+  // A spec sets window.__e2eStripeLoadErrors before load to make that many
+  // payment elements report loaderror instead of ready.
+  function fakeElement(kind) {
+    const failing = kind === 'payment' && (window.__e2eStripeLoadErrors ?? 0) > 0
+    if (failing) window.__e2eStripeLoadErrors -= 1
+    return {
+      mount() {},
+      unmount() {},
+      destroy() {},
+      on(event, handler) {
+        if (event === (failing ? 'loaderror' : 'ready'))
+          setTimeout(() => handler({ error: { code: 'e2e_load_error' } }))
+      }
+    }
   }
   function fakeElements() {
     return {
-      create: () => fakeElement(),
+      create: (kind) => fakeElement(kind),
       update: () => Promise.resolve(),
       submit: () => Promise.resolve({})
     }
