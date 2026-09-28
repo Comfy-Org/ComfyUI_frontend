@@ -828,47 +828,55 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
-  it.for(['before hydration', 'after hydration'] as const)(
-    'keeps socket completion authoritative when it arrives %s while returning to a thread',
-    (completion) => {
-      const store = useAgentConversationStore()
-      store.setThreadId('th')
-      store.startTurn(T1)
-      store.recordUser(T1, 'go')
-      store.ingest(delta('t1', 'socket reply'))
-      store.stashActiveTurn()
-      const complete = () => store.ingest(done('t1'))
-      const hydrate = () =>
-        store.hydrate([
-          historyRow(1, 'user', 'server-turn', 'go'),
-          {
-            ...historyRow(2, 'assistant', 'server-turn', '', 't1'),
-            status: 'streaming'
-          }
-        ])
-      const actions = {
-        'before hydration': () => {
-          complete()
-          hydrate()
-        },
-        'after hydration': () => {
-          hydrate()
-          complete()
-        }
+  it('keeps socket completion authoritative when it arrives before hydration', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'socket reply'))
+    store.stashActiveTurn()
+
+    store.ingest(done('t1'))
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'server-turn', '', 't1'),
+        status: 'streaming'
       }
+    ])
+    store.resumeBackgroundTurn()
 
-      actions[completion]()
-      store.resumeBackgroundTurn()
+    expect(store.isStreaming).toBe(false)
+    expect(store.activeTurnId).toBeNull()
+    expect(store.liveTurns()).toEqual([])
+    expect(partTexts(store)).toEqual(['socket reply'])
+    expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
+  })
 
-      expect(store.isStreaming).toBe(false)
-      expect(store.activeTurnId).toBeNull()
-      expect(store.liveTurns()).toEqual([])
-      expect(partTexts(store)).toEqual(['socket reply'])
-      expect(store.messages.map((message) => message.id)).toEqual([
-        'server-turn'
-      ])
-    }
-  )
+  it('keeps socket completion authoritative when it arrives after hydration', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'socket reply'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'server-turn', '', 't1'),
+        status: 'streaming'
+      }
+    ])
+    store.ingest(done('t1'))
+    store.resumeBackgroundTurn()
+
+    expect(store.isStreaming).toBe(false)
+    expect(store.activeTurnId).toBeNull()
+    expect(store.liveTurns()).toEqual([])
+    expect(partTexts(store)).toEqual(['socket reply'])
+    expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
+  })
 
   it('resumes one live transport with the persisted turn identity and attachments', () => {
     const store = useAgentConversationStore()
