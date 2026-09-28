@@ -171,8 +171,6 @@
     "unavailable": "The payment form isn't available right now. Please try again later.",
     "fullPage": {
       "logo": "Comfy",
-      "eyebrow": "Subscribe to {plan} · {workspace}",
-      "eyebrowPlanOnly": "Subscribe to {plan}",
       "planName": "{tier} Plan",
       "terms": {
         "agreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method each billing period until you cancel.",
