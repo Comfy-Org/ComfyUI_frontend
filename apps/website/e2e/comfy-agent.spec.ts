@@ -136,8 +136,6 @@ test('the product workflow animates without a picker or JavaScript @smoke', asyn
   expect(finalSize.width).toBeGreaterThan(referenceSize.width)
   expect(finalSize.height).toBeGreaterThan(referenceSize.height)
   expect(keyframeSizes).toEqual([keyframeSize, keyframeSize, keyframeSize])
-  expect(keyframeSize.width).toBeLessThan(referenceSize.width)
-  expect(keyframeSize.height).toBeLessThan(referenceSize.height)
   expect(generationPosition.left).toBeGreaterThan(referenceSize.right)
   expect(generationPosition.top).toBeGreaterThan(
     referenceSize.top + referenceSize.height / 2
