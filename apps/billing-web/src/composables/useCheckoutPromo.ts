@@ -39,7 +39,9 @@ export function useCheckoutPromo({
   }
 
   async function apply() {
-    if (!live()) return
+    const typed = entry.value
+    if (!live() || (typed.kind !== 'editing' && typed.kind !== 'rejected'))
+      return
     dispatch({ type: 'applyRequested' })
     const current = entry.value
     if (current.kind !== 'applying') return

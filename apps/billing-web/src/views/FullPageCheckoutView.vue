@@ -163,6 +163,7 @@ function viewPlans() {
         v-slot="{ ledger: shown }"
         :ledger
         :locked
+        :repricing="promo.busy.value"
         @back="returnToProduct"
       >
         <PromoCodeEntry
