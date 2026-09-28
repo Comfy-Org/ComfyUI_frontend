@@ -428,15 +428,12 @@ function ackResubscribe(workflowId: string): void {
 }
 
 /**
- * These pins cover one observable same-page-session scenario: the socket
- * drops, the retry budget expires, the suspended tab resumes, and the socket
- * returns. After the resubscribe acknowledgment, `opSender` must replay the
- * retained edit with its original `op_id`; retry exhaustion is not a terminal
- * discard. Persistence across a full page reload is a separate decision and is
- * not asserted here.
- *
- * Accepted policy (ADR-012, clarification dated 2026-09-28):
- * https://github.com/christian-byrne/in-app-agent-program/blob/955f4dd3eab7e3a6992e409239463ddc5fa5c296/decisions/ADR-012-lifecycle-and-reconnect-semantics.md#clarification-2026-09-28
+ * These pins exercise one observable same-page-session transport sequence:
+ * mark the transport down, exhaust the retry budget, mark it up, emit
+ * `reconnected`, and acknowledge resubscription. The three separate pins cover
+ * eventual delivery, retention of the original `op_id`, and exactly-once
+ * delivery after the matching host result. They do not exercise tab suspension
+ * or persistence across a full page reload.
  */
 describe('a human edit made while the document connection is down', () => {
   const RETRY_INTERVAL_MS = 500
@@ -455,11 +452,10 @@ describe('a human edit made while the document connection is down', () => {
   })
 
   /**
-   * Characterization of today, NOT a desired property. Under the ruling above
-   * this behaviour is the defect: the budget is a delivery budget, so the batch
-   * is dropped rather than retained. When retention lands this test goes red and
-   * the three pins below go green, in the same change. Do not "fix" it by
-   * relaxing the assertion.
+   * Characterization of today, NOT a desired property: the retry budget is a
+   * delivery budget, so the batch is dropped rather than retained. If retention
+   * lands, this test goes red and the three pins below go green in the same
+   * change. Do not "fix" it by relaxing the assertion.
    */
   it('is abandoned once the retry budget runs out, and nothing retains it', async () => {
     const { enqueue } = mountFollower('wf-a')
@@ -520,8 +516,9 @@ describe('a human edit made while the document connection is down', () => {
    * each one starts reporting on the property it is named for instead of one
    * masking the other two.
    *
-   * All three are same-page-session: socket drop, budget exhaustion, socket
-   * return. None asserts survival across a reload; see the describe docstring.
+   * All three use the same transport-down, budget-exhaustion, reconnect-event,
+   * and resubscribe-ack sequence. None asserts tab lifecycle behavior or
+   * survival across a reload; see the describe docstring.
    */
   it.fails('KNOWN GAP: still reaches the host after reconnect, in the same session', async () => {
     const { enqueue } = mountFollower('wf-a')
