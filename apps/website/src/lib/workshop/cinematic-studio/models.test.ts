@@ -5,7 +5,7 @@ import { workshopContract } from '../../../config/workshop-contract-catalog'
 import { getAuthoredRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
 import { cinematicStudioHref, runnableCinematicModels } from './models'
 
-const SEEDREAM = 'byteplus--seedream-4-5--generate-images'
+const SEEDREAM = 'byteplus--seedream-5-pro--generate-images'
 const FLUX = 'bfl--flux-2-pro--generate-images'
 const execution = workshopContract('bfl/flux-2-pro')
 
@@ -13,7 +13,12 @@ describe('runnableCinematicModels', () => {
   it('lists only studio models that can run, with their logos', () => {
     const models = runnableCinematicModels((slug) => {
       if (slug === SEEDREAM)
-        return { slug, name: 'Seedream 4.5', provider: 'ByteDance', execution }
+        return {
+          slug,
+          name: 'Seedream 5.0 Pro',
+          provider: 'ByteDance',
+          execution
+        }
       if (slug === FLUX)
         return {
           slug,
@@ -28,7 +33,7 @@ describe('runnableCinematicModels', () => {
     expect(models).toEqual([
       {
         slug: SEEDREAM,
-        name: 'Seedream 4.5',
+        name: 'Seedream 5.0 Pro',
         provider: 'ByteDance',
         logo: '/icons/ai-models/bytedance.svg',
         aspects: ['21:9', '16:9', '4:3', '3:2', '2:3', '1:1', '9:16']

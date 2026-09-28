@@ -32,14 +32,13 @@ export interface CinematicModel {
 }
 
 const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
-  'byteplus--seedream-4-5--generate-images': '/icons/ai-models/bytedance.svg',
+  'byteplus--seedream-5-pro--generate-images': '/icons/ai-models/bytedance.svg',
   'vertexai--gemini-3-pro-image--generate-images':
     '/icons/ai-models/gemini.svg',
   'bfl--flux-2-pro--generate-images': '/icons/ai-models/bfl.svg',
   'krea--krea-2-large--generate-images': '/icons/ai-models/krea.svg',
   'qwen--qwen-image-3.0-pro-text-to-image--generate-images':
     '/icons/ai-models/qwen.svg',
-  'byteplus--seedream-5-pro--generate-images': '/icons/ai-models/bytedance.svg',
   'bfl--flux-2-max--generate-images': '/icons/ai-models/bfl.svg',
   'vertexai--gemini-nano-banana-2--generate-images':
     '/icons/ai-models/gemini.svg',
@@ -56,8 +55,6 @@ const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
 /** Models whose references go to a separate edit operation. The rest keep
  * references themselves when their own contract takes them. */
 const REFERENCE_OPERATIONS: Readonly<Record<string, string>> = {
-  'byteplus--seedream-4-5--generate-images':
-    'byteplus--seedream-4-5--edit-images',
   'byteplus--seedream-5-pro--generate-images':
     'byteplus--seedream-5-pro--edit-images',
   'vertexai--gemini-3-pro-image--generate-images':
