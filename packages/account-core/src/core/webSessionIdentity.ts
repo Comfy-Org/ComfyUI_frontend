@@ -576,10 +576,16 @@ function createAccountIdentity(
     })
   }
 
+  function invalidatePendingSignIns(): void {
+    signOuts += 1
+    liveSignIn = 0
+  }
+
   function adopt(message: unknown): void {
     const parsed = zSharedMessage.safeParse(message)
     if (!parsed.success) return
     const { from, result } = parsed.data
+    if (from === 'sign_out') invalidatePendingSignIns()
     const observed = {
       type: 'session_observed',
       from: `sibling_${from}`
@@ -734,8 +740,7 @@ function createAccountIdentity(
       return result
     },
     signOut: async () => {
-      signOuts += 1
-      liveSignIn = 0
+      invalidatePendingSignIns()
       dispatch({ type: 'sign_out_requested' })
       const result = await deleteWebSession(options.session)
       if (result.status === 'ok') publish('sign_out', revoked)

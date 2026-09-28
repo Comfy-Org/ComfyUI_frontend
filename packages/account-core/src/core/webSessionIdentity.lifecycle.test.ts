@@ -316,6 +316,38 @@ describe('tabs of one site', () => {
     ])
   })
 
+  it('a sibling tab signing out invalidates a pending sign-in in this tab', async () => {
+    const endpoint = liveEndpoint({ kind: 'dead', code: 'no_session' })
+    const site = createFakeSiteBus()
+    let releasePost = () => {}
+    const postHeld = new Promise<void>((resolve) => {
+      releasePost = resolve
+    })
+    const acting = openTab({
+      endpoint,
+      site,
+      remembered: null,
+      fetchImpl: async (input, init) => {
+        if (init?.method === 'POST') await postHeld
+        return endpoint.fetch(input, init)
+      }
+    })
+    const sibling = openTab({ endpoint, site, remembered: null })
+    await settle()
+
+    const signingIn = acting.identity.signedIn(async () => 'fresh-proof')
+    await settle()
+    await sibling.identity.signOut()
+    releasePost()
+    const answer = await signingIn
+    await settle()
+
+    expect(answer).toMatchObject({ status: 'error', code: 'SESSION_REVOKED' })
+    expect(summarize(acting.identity.getState())).toBe('signed_out:signed_out')
+    expect(summarize(sibling.identity.getState())).toBe('signed_out:signed_out')
+    expect(endpoint.state.kind).toBe('dead')
+  })
+
   it('a stale sign-in never deletes the session a later sign-in created', async () => {
     const endpoint = liveEndpoint({ kind: 'dead', code: 'no_session' })
     let releaseFirstPost = () => {}
