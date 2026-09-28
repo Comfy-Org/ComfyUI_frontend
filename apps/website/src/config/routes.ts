@@ -169,6 +169,7 @@ export const externalLinks = {
   docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
   comfyCliRepo: 'https://github.com/Comfy-Org/comfy-cli',
   comfyMcpRepo: 'https://github.com/Comfy-Org/comfy-mcp',
+  docsInAppAgent: 'https://docs.comfy.org/agent-tools/in-app-agent',
   docsCli: 'https://docs.comfy.org/agent-tools/cli',
   // Markdown variant handed to agents in the "ask your agent" cards, same
   // rationale as docsMcpMd below.
