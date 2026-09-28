@@ -33,17 +33,21 @@ const test = mergeTests(agentTest, webSocketFixture)
  * and then the FRONTEND-observable half of the actual complaint: a widget
  * write the doc host rejects with an `opaque_widgets`-shaped failure
  * (`<node> is absent from the pinned catalog, so its widgets_values is
- * stored opaquely (schema §1.2) and is not name-addressable`) never reaches
- * the human as any visible indication -- the edited widget just keeps
- * showing the human's typed value while the shared document silently keeps
- * the old one.
+ * stored opaquely (schema §1.2) and is not name-addressable`) leaves the
+ * canvas and the shared document holding different values -- the edited
+ * widget keeps showing the human's typed value while the document keeps the
+ * old one.
  *
- * `opaque_widgets` itself is a cloud doc-host error code with no frontend
- * equivalent (`docFrameClient.ts`'s `DocOpFailure.code` is opaque wire text,
- * never matched against a fixed vocabulary), so this repro injects the
- * host's raw wire response directly rather than trying to make the real
- * `comfy-multi-player` applier produce it -- exactly what a real doc host
- * running this rejection logic would put on the wire.
+ * PM-1716 made that divergence VISIBLE rather than silent: `rejectedOpNotice`
+ * matches the host's `code` against the applier's rejection vocabulary and
+ * raises a toast. The divergence itself is unchanged and is still pinned
+ * below -- a rejected write is not rolled back on the canvas.
+ *
+ * `opaque_widgets` is a cloud doc-host error code the frontend never
+ * produces, so this repro injects the host's raw wire response directly
+ * rather than trying to make the real `comfy-multi-player` applier produce
+ * it -- exactly what a real doc host running this rejection logic would put
+ * on the wire.
  */
 
 const WORKFLOW_ID = 'b3f1c4a2-0000-4000-8000-000000000030'
@@ -396,7 +400,7 @@ async function driveThroughRejectedWidgetEdit(
 }
 
 test.describe(
-  'Agent duplicate insert_workflow + opaque widget-write silent failure',
+  'Agent duplicate insert_workflow + opaque widget-write rejection',
   { tag: ['@cloud', '@agent', '@canvas', '@node', '@widget'] },
   () => {
     test.use({ connectWebSocketToServer: false })
@@ -454,22 +458,15 @@ test.describe(
       expect(boxB).toEqual(boxA)
     })
 
-    test('a widget edit the host rejects as opaque leaves the human-typed value on screen and the shared document silently unrevised', async ({
+    test('a rejected widget edit is reported to the human, and leaves the canvas and the document holding different values', async ({
       page,
       getWebSocket
     }) => {
       const { host, seedInput, copyBNodeId } =
         await driveThroughRejectedWidgetEdit(page, getWebSocket)
 
-      // What the human sees: the widget still shows what they typed. Nothing
-      // rolled it back, and nothing marked it as failed.
       await expect(seedInput).toHaveValue(String(EDITED_SEED_VALUE))
-      await expect(new ToastHelper(page).toastErrors).toHaveCount(0)
-      await expect(page.getByRole('alert')).toHaveCount(0)
 
-      // What the shared document actually has: still the ORIGINAL seed, since
-      // the write never applied. The widget the human is looking at and the
-      // document a subsequent run would read from have now silently diverged.
       const projected = host.projection()
       const sampler = projected.nodes.find(
         (node) => String(node.id) === copyBNodeId
@@ -477,26 +474,14 @@ test.describe(
       expect(sampler?.widgets_values).toEqual(
         expect.arrayContaining([SEED_VALUE])
       )
-    })
 
-    test('defect: a rejected widget write tells the user that their edit was not saved', async ({
-      page,
-      getWebSocket
-    }) => {
-      await driveThroughRejectedWidgetEdit(page, getWebSocket)
-
-      // PM-1716: KEEP-ALIVE #12 requires uncatalogued widget writes to fail
-      // loudly. Pin an actionable user-visible contract rather than merely
-      // requiring some generic error chrome.
-      // `toastErrors` is not filtered on `:visible` (only `visibleToasts` is),
-      // and `toContainText` passes on any matching node in the collection. Both
-      // together would accept a rejection message the user never sees, which is
-      // the opposite of "fail loudly". Filter to the message and require it on
-      // screen.
+      // `toastErrors` is not filtered on `:visible` (only `visibleToasts` is)
+      // and `toContainText` passes on any node in the collection, so either
+      // alone would accept a message the user never sees. Filter to the text
+      // and require it on screen.
       const rejectionToast = new ToastHelper(page).toastErrors.filter({
         hasText: 'Widget edit was rejected and was not saved'
       })
-      test.fail()
       await expect(rejectionToast).toBeVisible({ timeout: 3_000 })
     })
   }

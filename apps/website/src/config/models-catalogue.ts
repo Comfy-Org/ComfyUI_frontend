@@ -159,7 +159,18 @@ export type WorkflowWorkshopModel = WorkshopPresentation & {
   readonly author?: string
 }
 
-export type WorkshopModel = RouterWorkshopModel | WorkflowWorkshopModel
+export type AppWorkshopModel = WorkshopPresentation & {
+  readonly type: 'APP'
+  /** Which app page runs it: see `WorkshopAppEntry.app`. */
+  readonly appId: 'studio' | 'reshoot'
+  readonly routerId?: never
+  readonly workflowId?: never
+}
+
+export type WorkshopModel =
+  | RouterWorkshopModel
+  | WorkflowWorkshopModel
+  | AppWorkshopModel
 
 interface WorkshopDetailPresentation {
   readonly nodeDisplayName?: string
@@ -186,7 +197,7 @@ export type WorkshopModelDetail =
   | WorkflowWorkshopModelDetail
 
 export function workshopExecutionId(model: WorkshopModel): string {
-  return model.routerId ?? model.workflowId
+  return model.routerId ?? model.workflowId ?? model.slug
 }
 
 // makes it image/video/audio-to-X, anything else is text-to-X.
@@ -461,7 +472,7 @@ function searchText(model: WorkshopModel): string {
   return [
     model.name,
     model.provider ?? '',
-    ...(model.routerId === undefined
+    ...(model.type === 'CLOUD' || model.type === 'SERVERLESS'
       ? [model.category ?? '', model.author ?? '', ...(model.models ?? [])]
       : []),
     ...useCasesFor(model).map((value) => value.replaceAll('-', ' ')),

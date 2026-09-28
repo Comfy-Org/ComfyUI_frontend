@@ -11,6 +11,7 @@ import {
   ref
 } from 'vue'
 import type { EffectScope } from 'vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import {
@@ -53,6 +54,7 @@ let consentStore: ReturnType<typeof useAgentConsentStore>
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
+const isAuthInitialized = ref(true)
 const firstRunTookScreen = ref(false)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
@@ -137,6 +139,10 @@ vi.mock(import('@/composables/useFeatureFlags'), () => ({
     })
 }))
 
+const { registerAgentPanelExtension } = await import('./agentPanel')
+const importRegistrationCount = mocks.capturedExtensions.length
+registerAgentPanelExtension()
+
 const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -147,7 +153,6 @@ const notOffered = async () =>
   )
 
 async function loadEntryAndSetup(): Promise<void> {
-  const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
   const ext = mocks.capturedExtensions.find(
     (e) => e.name === 'Comfy.AgentPanel'
@@ -160,11 +165,11 @@ async function loadEntryAndSetup(): Promise<void> {
 }
 
 async function setRemoteConfigState(
-  state: 'unloaded' | 'anonymous' | 'authenticated' | 'error'
+  state: 'unloaded' | 'loading' | 'authenticated' | 'error'
 ): Promise<void> {
-  const { remoteConfigState } =
+  const { authenticatedRemoteConfigState } =
     await import('@/platform/remoteConfig/remoteConfig')
-  remoteConfigState.value = state
+  authenticatedRemoteConfigState.value = state
   await nextTick()
 }
 
@@ -182,14 +187,16 @@ function closeDialog(key = DESKTOP_APPROVAL_KEY): void {
 describe('AgentPanel extension flag gate', () => {
   afterEach(() => setupScope.stop())
 
-  beforeEach(async () => {
-    vi.resetModules()
-    const { useCurrentUser } = await import('@/composables/auth/useCurrentUser')
+  beforeEach(() => {
     const currentUserService = vi.mocked(useCurrentUser())
     currentUserService.resolvedUserInfo = computed(() => currentUser.value)
+    currentUserService.isAuthInitialized = computed(
+      () => isAuthInitialized.value
+    )
     currentUserService.isLoggedIn = computed(() => currentUser.value !== null)
     setupScope = effectScope()
     currentUser.value = { id: 'account-a' }
+    isAuthInitialized.value = true
     consentStore = useAgentConsentStore()
     workspaceStore = useTeamWorkspaceStore()
     Object.assign(workspaceStore, {
@@ -208,7 +215,6 @@ describe('AgentPanel extension flag gate', () => {
     nodeSelectionStore = vi.mocked(useAgentNodeSelectionStore())
     workflowStore = useWorkflowStore()
     nodeSelectionStore.restoreNodeIds.mockImplementation(() => {})
-    mocks.capturedExtensions.length = 0
     agentStore.close.mockClear()
     agentStore.enabled = false
     agentStore.isOpen = true
@@ -996,12 +1002,6 @@ describe('AgentPanel extension flag gate', () => {
     expect(await notOffered()).not.toHaveBeenCalled()
   })
 
-  it('does not self-register when its module is imported', async () => {
-    await import('./agentPanel')
-
-    expect(mocks.capturedExtensions).toEqual([])
-  })
-
   it('forces the panel on in development even while the flag is false', async () => {
     vi.stubEnv('MODE', 'development')
     agentFlagEnabled.value = false
@@ -1057,6 +1057,7 @@ describe('AgentPanel extension flag gate', () => {
     await extension!.beforeLoadGraph!({} as never)
     expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
+    await extension!.afterConfigureGraph!([], {} as never)
   })
 
   it('enables the panel when the flag turns true', async () => {
@@ -1067,7 +1068,7 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('leaves the gate unsettled while only the anonymous config has landed', async () => {
-    await setRemoteConfigState('anonymous')
+    await setRemoteConfigState('unloaded')
 
     await loadEntryAndSetup()
 
@@ -1092,7 +1093,8 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('settles the gate on the fallback when no authenticated config ever lands', async () => {
-    await setRemoteConfigState('anonymous')
+    currentUser.value = null
+    await setRemoteConfigState('unloaded')
     await loadEntryAndSetup()
     expect(agentStore.gateSettled).toBe(false)
 
@@ -1100,6 +1102,65 @@ describe('AgentPanel extension flag gate', () => {
     await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
 
     expect(agentStore.gateSettled).toBe(true)
+  })
+
+  it('does not settle a signed-in gate while authenticated config is slow', async () => {
+    await setRemoteConfigState('loading')
+    await loadEntryAndSetup()
+
+    const { GATE_SETTLE_TIMEOUT_MS } = await import('./agentPanel')
+    await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.gateSettled).toBe(false)
+  })
+
+  it('does not treat unresolved auth as signed out', async () => {
+    currentUser.value = null
+    isAuthInitialized.value = false
+    await setRemoteConfigState('unloaded')
+    await loadEntryAndSetup()
+
+    const { GATE_SETTLE_TIMEOUT_MS } = await import('./agentPanel')
+    await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.gateSettled).toBe(false)
+  })
+
+  it('re-arms the signed-out fallback after an identity change', async () => {
+    await setRemoteConfigState('authenticated')
+    await loadEntryAndSetup()
+    expect(agentStore.gateSettled).toBe(true)
+
+    currentUser.value = null
+    await setRemoteConfigState('unloaded')
+    const { GATE_SETTLE_TIMEOUT_MS } = await import('./agentPanel')
+    await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.gateSettled).toBe(true)
+  })
+
+  it('returns the gate to unsettled when authenticated config reloads', async () => {
+    await setRemoteConfigState('authenticated')
+    await loadEntryAndSetup()
+    expect(agentStore.gateSettled).toBe(true)
+
+    await setRemoteConfigState('loading')
+
+    expect(agentStore.gateSettled).toBe(false)
+  })
+
+  it('retries consent after a completed refresh with the same flag value', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    await loadEntryAndSetup()
+    vi.mocked(consentStore.load).mockClear()
+    const { remoteConfigRevision } =
+      await import('@/platform/remoteConfig/remoteConfig')
+
+    remoteConfigRevision.value++
+    await nextTick()
+
+    expect(consentStore.load).toHaveBeenCalledOnce()
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {
@@ -1163,6 +1224,7 @@ describe('AgentPanel extension flag gate', () => {
     expect(selectItems).toHaveBeenCalledWith([secondNode])
     expect(nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith(['12'])
     expect(nodeSelectionStore.finishWorkflowLoad).not.toHaveBeenCalled()
+    await extension!.afterConfigureGraph!([], {} as never)
   })
 
   it('disarms the restore guard on an empty restore instead of leaving it armed', async () => {
@@ -1347,6 +1409,7 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
+    await extension!.afterConfigureGraph!([], {} as never)
   })
 
   it('finishes restoration when the panel closes during graph load', async () => {
@@ -1428,5 +1491,10 @@ describe('AgentPanel extension flag gate', () => {
     await extension!.beforeLoadGraph!({} as never)
 
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
+    await extension!.afterConfigureGraph!([], {} as never)
+  })
+
+  it('does not self-register when its module is imported', () => {
+    expect(importRegistrationCount).toBe(0)
   })
 })

@@ -30,6 +30,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -1421,6 +1422,43 @@ describe('useAuthStore', () => {
       })
     })
 
+    describe('finishing a closed popup’s late result', () => {
+      const credential = {
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential
+
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
+        '%s finishes the handed-over credential without opening another popup',
+        async (method) => {
+          const result = await store[method]({
+            resumed: Promise.resolve(credential)
+          })
+
+          expect(result).toBe(credential)
+          expect(firebaseAuth.signInWithPopup).not.toHaveBeenCalled()
+          expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledOnce()
+        }
+      )
+
+      it.for([
+        ['loginWithGoogle', 'signInWithGoogle'],
+        ['loginWithGithub', 'signInWithGitHub']
+      ] as const)(
+        '%s hands the popup options to the identity',
+        async ([method, identityMethod]) => {
+          const signIn = vi
+            .spyOn(firebaseIdentity, identityMethod)
+            .mockResolvedValue(credential)
+          const popup = { onResumed: vi.fn(), keepLateResult: () => true }
+
+          await store[method]({ popup })
+
+          expect(signIn).toHaveBeenCalledWith(popup)
+        }
+      )
+    })
+
     describe('loginWithGithub', () => {
       it('should sign in with Github', async () => {
         const mockUserCredential = { user: mockUser }
@@ -2268,15 +2306,17 @@ describe('useAuthStore', () => {
           (_route, options) =>
             new Promise<Response>((resolve) => {
               accountASignal = options?.signal ?? undefined
+              options?.onAuthHeader?.(true)
               resolveAccountA = resolve
             })
         )
-        .mockResolvedValueOnce(
-          new Response(
+        .mockImplementationOnce(async (_route, options) => {
+          options?.onAuthHeader?.(true)
+          return new Response(
             JSON.stringify({ legacy_billing_migration_enabled: false }),
             { status: 200 }
           )
-        )
+        })
 
       const accountARefresh = refreshRemoteConfig()
       await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
