@@ -35,7 +35,6 @@ const {
   submitting,
   payFailure,
   returnLink,
-  canClose,
   close,
   onPaymentPhase,
   savedMethods,
@@ -152,7 +151,6 @@ function returnToProduct() {
       session?.workspace.name ?? t('checkout.fullPage.ending.thisWorkspace')
     "
     :plan="endingPlan"
-    :can-close="canClose"
     @close="close"
   />
   <main

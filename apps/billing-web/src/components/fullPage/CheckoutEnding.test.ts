@@ -8,12 +8,9 @@ import { createBillingI18n } from '@/i18n'
 
 const PLAN: EndingPlan = { name: 'Pro', price: '$50.00', period: 'USD / mo' }
 
-function renderEnding(
-  ending: EndingScreen,
-  props: { canClose?: boolean } = {}
-) {
+function renderEnding(ending: EndingScreen) {
   return render(CheckoutEnding, {
-    props: { screen: ending, workspace: 'Acme Team', plan: PLAN, ...props },
+    props: { screen: ending, workspace: 'Acme Team', plan: PLAN },
     global: { plugins: [createBillingI18n()] }
   })
 }
@@ -90,7 +87,7 @@ describe('CheckoutEnding', () => {
   ])(
     '$ending.kind reads as designed',
     ({ ending, title, body, codeLabel, close, support, closeLine }) => {
-      renderEnding(ending, { canClose: true })
+      renderEnding(ending)
 
       expect(screen.getByRole('heading', { name: title })).toBeInTheDocument()
       expect(screen.getByText(body)).toBeInTheDocument()
@@ -123,17 +120,8 @@ describe('CheckoutEnding', () => {
     )
   })
 
-  it.for<EndingScreen>([{ kind: 'success' }, { kind: 'already_completed' }])(
-    'never offers $kind a Close it cannot perform',
-    (ending) => {
-      renderEnding(ending, { canClose: false })
-
-      expect(screen.queryByRole('button', { name: 'Close' })).toBeNull()
-    }
-  )
-
   it('Close emits close', async () => {
-    const { emitted } = renderEnding({ kind: 'success' }, { canClose: true })
+    const { emitted } = renderEnding({ kind: 'success' })
 
     await userEvent.click(screen.getByRole('button', { name: 'Close' }))
 
