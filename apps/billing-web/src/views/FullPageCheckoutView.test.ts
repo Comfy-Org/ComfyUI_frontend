@@ -4,6 +4,8 @@ import { nextTick, ref } from 'vue'
 import type { VNode } from 'vue'
 
 import type {
+  BillingOperationState,
+  BillingResult,
   PreviewSubscribeResult,
   SavedPaymentMethod
 } from '@comfyorg/account-core/billing'
@@ -23,7 +25,8 @@ import {
   createFakeBillingClient,
   failedOperation,
   pendingOperation,
-  previewOf
+  previewOf,
+  succeededOperation
 } from '@/test/fakeBillingClient'
 import FullPageCheckoutView from '@/views/FullPageCheckoutView.vue'
 
@@ -281,7 +284,7 @@ describe('FullPageCheckoutView', () => {
     expect(payButton()).toBeDisabled()
   })
 
-  it('locks Pay once an operation is in flight, so a second click cannot charge twice', async () => {
+  it('leaves the form for the waiting state once money is in flight, so a second click cannot charge twice', async () => {
     const fake = await renderCheckout({
       preview: {
         status: 'ok',
@@ -293,7 +296,15 @@ describe('FullPageCheckoutView', () => {
 
     fake.publishOperation(pendingOperation())
 
-    await waitFor(() => expect(payButton()).toBeDisabled())
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Finishing your payment…'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Pay and subscribe' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByText('Subscribe to Creator Plan · Acme Team')
+    ).toBeInTheDocument()
   })
 
   it.for<{
@@ -617,24 +628,97 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     }
   )
 
-  it.for<{ name: string; code: 'OPERATION_ALREADY_PENDING' | 'CONFLICT' }>([
-    { name: 'an operation already pending', code: 'OPERATION_ALREADY_PENDING' },
-    { name: 'a server conflict', code: 'CONFLICT' }
+  it.for<{
+    name: string
+    code: 'OPERATION_ALREADY_PENDING' | 'CONFLICT'
+    found: BillingOperationState
+    lands: string
+  }>([
+    {
+      name: 'an operation already pending, still in flight',
+      code: 'OPERATION_ALREADY_PENDING',
+      found: pendingOperation('op_elsewhere'),
+      lands: 'Finishing your payment…'
+    },
+    {
+      name: 'a server conflict over a payment that went through',
+      code: 'CONFLICT',
+      found: succeededOperation('op_elsewhere'),
+      lands: 'Already completed'
+    }
   ])(
-    'never shows a decline for $name, and keeps Pay locked',
-    async ({ code }) => {
+    'never shows a decline for $name: it re-reads the operation and lands on it',
+    async ({ code, found, lands }) => {
       const fake = await payReady({ subscribe: { status: 'error', code } })
+      fake.recover.mockImplementationOnce(async () => {
+        fake.publishOperation(found)
+        return { status: 'ok', value: found }
+      })
 
       form.emit('confirm', 'ctoken_1')
 
-      await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
-      await waitFor(() => expect(payButton()).toBeDisabled())
+      expect(await screen.findByText(lands)).toBeInTheDocument()
+      expect(fake.subscribe).toHaveBeenCalledOnce()
+      expect(fake.recover).toHaveBeenCalledTimes(2)
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Pay and subscribe' })
+      ).not.toBeInTheDocument()
       expect(
         screen.queryByRole('link', { name: 'Contact support' })
       ).not.toBeInTheDocument()
     }
   )
+
+  it('frees Pay again when the collision re-reads as nothing pending', async () => {
+    const fake = await payReady({
+      subscribe: { status: 'error', code: 'OPERATION_ALREADY_PENDING' }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    await waitFor(() => expect(fake.recover).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    expect(form.mounts).toBe(1)
+  })
+
+  it("names the plan and the workspace once this page's own Pay goes through", async () => {
+    const fake = await payReady({
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_mine') }
+      }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Your Creator Plan subscription for Acme Team is active.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Reference:/)).not.toBeInTheDocument()
+    expect(fake.subscribe).toHaveBeenCalledOnce()
+  })
+
+  it('lands on the terminal for a plan the server activated with no operation to follow', async () => {
+    await payReady({
+      preview: {
+        status: 'ok',
+        value: previewOf({ transition_type: 'upgrade' })
+      },
+      subscribe: { status: 'ok', value: { phase: 'succeeded' } }
+    })
+
+    await userEvent.click(payButton())
+
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+  })
 
   it('re-prices an expired quote and says so, without charging', async () => {
     const fake = await payReady({
@@ -790,4 +874,167 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       ).not.toBeInTheDocument()
     }
   )
+})
+
+const waitingStatus = () => screen.findByRole('status')
+
+/** Every read the capture needs has answered by the next macrotask. */
+const capturePromisesFlushed = () =>
+  new Promise((resolve) => setTimeout(resolve))
+
+describe('FullPageCheckoutView mount reconciliation', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
+  it('holds the skeleton until reconciliation answers, even with the quote in hand', async () => {
+    let answerRecovery: (
+      result: BillingResult<BillingOperationState | undefined>
+    ) => void = () => {}
+    await renderCheckout({}, (fake) =>
+      fake.recover.mockImplementationOnce(
+        () => new Promise((resolve) => (answerRecovery = resolve))
+      )
+    )
+    await waitFor(() => expect(screen.getByText('Loading…')).toBeVisible())
+    await capturePromisesFlushed()
+
+    expect(
+      screen.queryByText('Subscribe to Creator Plan · Acme Team')
+    ).not.toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+    expect(payButton()).toBeDisabled()
+
+    answerRecovery({ status: 'ok', value: undefined })
+
+    expect(
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    ).toBeInTheDocument()
+    expect(form.mounts).toBe(1)
+  })
+
+  it('renders the waiting state, never a form, for money already in flight, and follows it to Already completed', async () => {
+    const fake = await renderCheckout({
+      recover: { status: 'ok', value: pendingOperation('op_reloaded') }
+    })
+
+    expect(await waitingStatus()).toHaveTextContent('Finishing your payment…')
+    expect(
+      screen.getByText('Subscribe to Creator Plan · Acme Team')
+    ).toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+    expect(
+      screen.queryByRole('button', { name: 'Pay and subscribe' })
+    ).not.toBeInTheDocument()
+
+    fake.publishOperation(succeededOperation('op_reloaded'))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Already completed' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "This payment for Acme Team already went through. You won't be charged again."
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByText('Reference: op_reloaded')).toBeInTheDocument()
+    expect(screen.queryByText(/Creator Plan/)).not.toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+  })
+
+  it.for<{
+    name: string
+    serverPhase: 'awaiting_invoice_payment' | 'in_progress'
+  }>([
+    {
+      name: 'an invoice awaiting payment',
+      serverPhase: 'awaiting_invoice_payment'
+    },
+    { name: 'a charge in progress', serverPhase: 'in_progress' }
+  ])('treats $name as money in flight', async ({ serverPhase }) => {
+    await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: { ...pendingOperation(), serverPhase }
+      }
+    })
+
+    expect(await waitingStatus()).toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+  })
+
+  it('renders capture with Pay live for an operation parked on a payment method (rule 4)', async () => {
+    const fake = await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: {
+          ...pendingOperation('op_parked'),
+          serverPhase: 'awaiting_payment_method'
+        }
+      }
+    })
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    form.emit('confirm', 'ctoken_1')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+  })
+
+  it('opens capture on the card of a recovered operation that already declined', async () => {
+    await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: failedOperation('insufficient_funds', 'op_declined_elsewhere')
+      }
+    })
+
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent('Payment declined')
+    expect(card).toHaveTextContent('Reported issue: Insufficient funds')
+    expect(
+      screen.getByRole('link', { name: 'Contact support' }).getAttribute('href')
+    ).toContain('op_declined_elsewhere')
+    expect(form.mounts).toBe(1)
+  })
+
+  it('lands on Already completed for a payment the server already settled', async () => {
+    await renderCheckout({
+      recover: { status: 'ok', value: succeededOperation('op_done') }
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Already completed' })
+    ).toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+  })
+
+  it('resolves a fresh capture, on its card, when the awaited operation declines', async () => {
+    const fake = await renderCheckout({
+      recover: { status: 'ok', value: pendingOperation('op_awaited') }
+    })
+    await waitingStatus()
+
+    fake.publishOperation(failedOperation('card_declined', 'op_awaited'))
+
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent('Payment declined')
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(form.mounts).toBe(1)
+  })
+
+  it('says so instead of a form when the recovery itself fails', async () => {
+    await renderCheckout({
+      recover: { status: 'error', code: 'REQUEST_FAILED' }
+    })
+
+    expect(
+      await screen.findByText(
+        "We couldn't reach the billing service. Please try again."
+      )
+    ).toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+  })
 })

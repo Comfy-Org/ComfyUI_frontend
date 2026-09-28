@@ -1,4 +1,4 @@
-import { computed, shallowReadonly, shallowRef } from 'vue'
+import { computed, shallowReadonly, shallowRef, watch } from 'vue'
 
 import {
   useBillingClient,
@@ -8,6 +8,8 @@ import {
 } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import type {
+  BillingOperationState,
+  BillingResult,
   SubscribeInput,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
@@ -22,13 +24,14 @@ import type {
 } from '@/checkout/checkoutPage'
 import {
   RESOLVING,
+  isParked,
   needsConsent,
   railAcceptsPay,
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
 import { planCreditsSettingsUrl } from '@/checkout/cloudLinks'
 import type { PayVerdict } from '@/checkout/payVerdict'
-import { payVerdictOf } from '@/checkout/payVerdict'
+import { operationOutcomeOf, payVerdictOf } from '@/checkout/payVerdict'
 import {
   buildSubscribeRequest,
   checkoutResultUrl
@@ -45,19 +48,28 @@ export type PayChoice =
   | { readonly savedMethodId: string }
   | undefined
 
+type PlannedEntry = BillingEntry & { plan: string }
+
 /**
  * The full-page checkout's effects around one `CheckoutPage` state: the
- * capabilities read, the quote, the saved methods and the Stripe key on
- * arrival, the payment element's readiness, and the subscribe on Pay. Every change goes through
+ * reconciliation with whatever operation the workspace is already waiting
+ * on, the capabilities read, the quote, the saved methods and the Stripe key
+ * on arrival, the payment element's readiness, the operation the lifecycle
+ * follows, and the subscribe on Pay. Every change goes through
  * `reduceCheckoutPage`; the quote itself stays with `usePreviewSubscribe`.
  * The key is awaited because the payment form reads it only when it mounts.
+ *
+ * Reconciliation converges: every run reads the server afresh, and a run
+ * that a later one overtook drops its answer, so a reload, a return from a
+ * provider page, a restore from the back-forward cache and a sibling tab's
+ * nudge all land on the same page for the same server state.
  */
 export function useFullPageCheckout() {
   const { entry } = useBillingEntry()
   const billedWorkspace = useBilledWorkspace()
-  const { capabilities, status } = useBillingClient<'capabilities' | 'status'>(
-    undefined
-  )
+  const { capabilities, lifecycle, status } = useBillingClient<
+    'capabilities' | 'lifecycle' | 'status'
+  >(undefined)
   const { preview, quote } = usePreviewSubscribe()
   const saved = usePaymentMethods({ immediate: false })
   const checkout = useCheckout({
@@ -68,11 +80,40 @@ export function useFullPageCheckout() {
 
   const page = shallowRef<CheckoutPage>(RESOLVING)
 
+  /** A page sent back to resolving by the lifecycle reads its capture again. */
   function dispatch(event: CheckoutPageEvent) {
-    page.value = reduceCheckoutPage(page.value, event)
+    const before = page.value
+    page.value = reduceCheckoutPage(before, event)
+    if (before.kind !== 'resolving' && page.value.kind === 'resolving')
+      void readCapture()
   }
 
-  function quoteArrival(arrival: BillingEntry & { plan: string }) {
+  let generation = 0
+  let latest: Promise<void> = Promise.resolve()
+
+  async function reconcileOnce(): Promise<void> {
+    const mine = ++generation
+    const recovered = await lifecycle.recover()
+    if (mine !== generation) return
+    dispatch(reconciledEvent(recovered))
+  }
+
+  /** Re-reads what the workspace is waiting on; the newest run's answer wins. */
+  function reconcile(): Promise<void> {
+    latest = reconcileOnce()
+    return latest
+  }
+
+  /** Resolves once no reconciliation started before now is still unanswered. */
+  async function reconciliationSettled(): Promise<void> {
+    let awaited: Promise<void> | undefined
+    while (awaited !== latest) {
+      awaited = latest
+      await awaited
+    }
+  }
+
+  function quoteArrival(arrival: PlannedEntry) {
     return quote({
       planSlug: arrival.plan,
       ...(arrival.teamCreditStopId === undefined
@@ -98,37 +139,42 @@ export function useFullPageCheckout() {
     return asked
   }
 
-  async function resolve(arrival: BillingEntry) {
-    if (arrival.plan === undefined) return
+  async function captureEvent(
+    arrival: PlannedEntry
+  ): Promise<CheckoutPageEvent> {
     const [allowed, quoted, methods] = await Promise.all([
       capabilities.read(),
-      quoteArrival({ ...arrival, plan: arrival.plan }),
+      quoteArrival(arrival),
       saved.refresh(),
       awaitBillingWebStripeKey()
     ])
-    if (allowed.status === 'error') {
-      dispatch({ type: 'unavailable', code: allowed.code })
-    } else if (!allowed.value.capabilities.can_subscribe_self_serve) {
-      dispatch({
+    if (allowed.status === 'error')
+      return { type: 'unavailable', code: allowed.code }
+    if (!allowed.value.capabilities.can_subscribe_self_serve)
+      return {
         type: 'refused',
         reason: allowed.value.denials.can_subscribe_self_serve ?? 'unspecified'
-      })
-    } else if (quoted.status === 'error') {
-      dispatch({ type: 'unavailable', code: quoted.code })
-    } else if (quoted.value.transition_type === 'new_subscription') {
-      dispatch({
-        type: 'quoted',
-        method: 'collect',
-        saved: arrivalOf(methods),
-        reactivation: consentAsked(asksReactivation(quoted.value))
-      })
-    } else {
-      dispatch({
-        type: 'quoted',
-        method: 'on_file',
-        reactivation: consentAsked(asksReactivation(quoted.value))
-      })
-    }
+      }
+    if (quoted.status === 'error')
+      return { type: 'unavailable', code: quoted.code }
+    const reactivation = consentAsked(asksReactivation(quoted.value))
+    return quoted.value.transition_type === 'new_subscription'
+      ? {
+          type: 'quoted',
+          method: 'collect',
+          saved: arrivalOf(methods),
+          reactivation
+        }
+      : { type: 'quoted', method: 'on_file', reactivation }
+  }
+
+  /** Capture never renders before reconciliation has answered (rule 3). */
+  async function readCapture() {
+    const arrival = entry.value
+    if (arrival?.plan === undefined) return
+    const event = await captureEvent({ ...arrival, plan: arrival.plan })
+    await reconciliationSettled()
+    dispatch(event)
   }
 
   function arrivalOf(
@@ -160,7 +206,19 @@ export function useFullPageCheckout() {
       void retrySaved()
   }
 
-  if (entry.value !== undefined) void resolve(entry.value)
+  if (entry.value !== undefined) {
+    void reconcile()
+    void readCapture()
+  }
+
+  watch(checkout.operation, (operation) => {
+    if (operation === undefined) return
+    dispatch({
+      type: 'operationChanged',
+      operation,
+      ...outcomeFor(operation)
+    })
+  })
 
   function onPaymentPhase(phase: StripePaymentPhase) {
     if (phase.phase === 'payment_element_ready' && phase.element === 'payment')
@@ -169,13 +227,17 @@ export function useFullPageCheckout() {
       dispatch({ type: 'elementFailed' })
   }
 
-  /** A started operation keeps Pay locked, so a second click cannot charge twice. */
-  const canPay = computed(
-    () =>
-      railAcceptsPay(page.value) &&
-      preview.value?.allowed === true &&
-      checkout.operation.value === undefined
-  )
+  /**
+   * Money in flight keeps Pay locked, so a second click cannot charge twice.
+   * An operation parked on a card is what a Pay resubmits, so it does not.
+   */
+  const canPay = computed(() => {
+    const operation = checkout.operation.value
+    const inFlight = operation?.phase === 'pending' && !isParked(operation)
+    return (
+      railAcceptsPay(page.value) && preview.value?.allowed === true && !inFlight
+    )
+  })
 
   const payFailure = computed(() => {
     const result = checkout.result.value
@@ -199,7 +261,7 @@ export function useFullPageCheckout() {
   })
 
   function requestFor(
-    arrival: BillingEntry & { plan: string },
+    arrival: PlannedEntry,
     quoted: SubscriptionPreview,
     choice: PayChoice
   ): SubscribeInput {
@@ -225,13 +287,14 @@ export function useFullPageCheckout() {
     })
   }
 
-  async function settle(
-    verdict: PayVerdict,
-    arrival: BillingEntry & { plan: string }
-  ) {
-    if (verdict.kind === 'outcome') {
+  /** A Pay the server refused for an operation already under way re-reads it, never a decline (rule 18). */
+  async function settle(verdict: PayVerdict, arrival: PlannedEntry) {
+    if (verdict.kind === 'settled') {
+      dispatch({ type: 'paySettled' })
+    } else if (verdict.kind === 'outcome') {
       if (verdict.outcome.kind === 'reconciling') {
         dispatch({ type: 'payRejectedAsPending' })
+        await reconcile()
         return
       }
       checkout.reset()
@@ -285,6 +348,7 @@ export function useFullPageCheckout() {
     returnLink,
     onPaymentPhase,
     savedMethods: saved.methods,
+    reconcile,
     retryElement: () => dispatch({ type: 'elementRetried' }),
     retrySaved: () => void retrySaved(),
     retryColumn,
@@ -294,5 +358,29 @@ export function useFullPageCheckout() {
     payWithoutConsent,
     cancelAt: shallowReadonly(cancelAt),
     pay
+  }
+}
+
+function outcomeFor(operation: BillingOperationState) {
+  const outcome = operationOutcomeOf(operation)
+  return outcome === undefined ? {} : { outcome }
+}
+
+/**
+ * A recovery the lifecycle refused is an unknown, not "nothing pending": in
+ * resolving it reads as the billing service being unreachable, and anywhere
+ * else the page keeps what it has rather than opening a form over money it
+ * cannot see.
+ */
+function reconciledEvent(
+  recovered: BillingResult<BillingOperationState | undefined>
+): CheckoutPageEvent {
+  if (recovered.status === 'error')
+    return { type: 'unavailable', code: recovered.code }
+  const operation = recovered.value
+  return {
+    type: 'reconciled',
+    operation,
+    ...(operation === undefined ? {} : outcomeFor(operation))
   }
 }

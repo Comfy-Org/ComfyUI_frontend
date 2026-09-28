@@ -1,6 +1,9 @@
 import type {
+  BillingOperationState,
   CapabilityDenialReason,
-  PaymentReasonKey
+  PaymentReasonKey,
+  PendingBillingOperation,
+  TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
 
 type ElementStatus = 'loading' | 'ready' | 'failed'
@@ -53,19 +56,45 @@ export type InlineOutcome =
  */
 export type Reactivation = 'not_required' | 'required' | 'invalid' | 'confirmed'
 
+/**
+ * `sent` from the Pay click until the attempt settles, so an operation the
+ * lifecycle publishes meanwhile is known to be this page's own.
+ */
+type Attempt = 'idle' | 'sent'
+
 type Capture = {
   readonly kind: 'capture'
   readonly rail: PaymentRail
   readonly reactivation: Reactivation
+  readonly attempt: Attempt
   readonly outcome?: InlineOutcome
 }
 
-/** The full-page checkout, one state at a time. `resolving` renders the capture skeleton. */
+/**
+ * The full-page checkout, one state at a time. `resolving` renders the
+ * capture skeleton, and carries a verdict a recovered operation already
+ * reached so the capture it resolves into opens on that card. `waiting` is
+ * money in flight that this page did not start: no fresh form until it
+ * settles. `terminal` is a payment that went through; `started` is whether
+ * this page's own Pay did it, which is what lets the outcome name the plan.
+ */
 export type CheckoutPage =
-  | { readonly kind: 'resolving' }
+  | { readonly kind: 'resolving'; readonly outcome?: InlineOutcome }
   | { readonly kind: 'refused'; readonly reason: CapabilityDenialReason }
   | { readonly kind: 'unavailable'; readonly code: string }
   | Capture
+  | { readonly kind: 'waiting'; readonly operation: PendingBillingOperation }
+  | {
+      readonly kind: 'terminal'
+      readonly operation?: TerminalBillingOperation
+      readonly started: boolean
+    }
+
+/** A verdict an operation reached on its own, for the card above Pay. */
+export type OperationOutcome = Exclude<
+  InlineOutcome,
+  { kind: 'reconciling' | 'price_updated' }
+>
 
 export type CheckoutPageEvent =
   | { readonly type: 'refused'; readonly reason: CapabilityDenialReason }
@@ -90,6 +119,8 @@ export type CheckoutPageEvent =
       readonly outcome: Exclude<InlineOutcome, { kind: 'reconciling' }>
     }
   | { readonly type: 'payRejectedAsPending' }
+  /** The server activated the plan on the spot, issuing no operation to follow. */
+  | { readonly type: 'paySettled' }
   /** A fresh quote after the server refused the old one; the form stays as typed. */
   | {
       readonly type: 'requoted'
@@ -98,6 +129,18 @@ export type CheckoutPageEvent =
     }
   /** The mandatory re-quote failed, so the refused price cannot be paid again. */
   | { readonly type: 'requoteFailed'; readonly code: string }
+  /** The lifecycle's answer to "what is this workspace waiting on": an operation, or nothing. */
+  | {
+      readonly type: 'reconciled'
+      readonly operation: BillingOperationState | undefined
+      readonly outcome?: OperationOutcome
+    }
+  /** A followed operation moved; `outcome` is its verdict once it has one. */
+  | {
+      readonly type: 'operationChanged'
+      readonly operation: BillingOperationState
+      readonly outcome?: OperationOutcome
+    }
 
 export const RESOLVING: CheckoutPage = { kind: 'resolving' }
 
@@ -166,15 +209,29 @@ export function reduceCheckoutPage(
     case 'requoteFailed':
       return leavingCapture(page, { kind: 'unavailable', code: event.code })
     case 'quoted':
-      if (page.kind !== 'resolving') return page
-      return {
-        kind: 'capture',
-        rail:
-          event.method === 'collect'
-            ? arrivedRail(event.saved)
-            : { method: 'on_file' },
-        reactivation: reactivationOf(event.reactivation)
-      }
+      return page.kind === 'resolving' ? arrived(page, event) : page
+    case 'reconciled':
+      return event.operation === undefined
+        ? nothingPending(page)
+        : followed(page, event.operation, event.outcome)
+    case 'operationChanged':
+      return followed(page, event.operation, event.outcome)
+  }
+}
+
+function arrived(
+  page: Extract<CheckoutPage, { kind: 'resolving' }>,
+  event: Extract<CheckoutPageEvent, { type: 'quoted' }>
+): Capture {
+  return {
+    kind: 'capture',
+    rail:
+      event.method === 'collect'
+        ? arrivedRail(event.saved)
+        : { method: 'on_file' },
+    reactivation: reactivationOf(event.reactivation),
+    attempt: 'idle',
+    ...(page.outcome === undefined ? {} : { outcome: page.outcome })
   }
 }
 
@@ -251,6 +308,7 @@ type AttemptEvent = Extract<
       | 'paySubmitted'
       | 'payFailed'
       | 'payRejectedAsPending'
+      | 'paySettled'
       | 'requoted'
   }
 >
@@ -261,6 +319,7 @@ const ATTEMPT_EVENT: Readonly<Record<AttemptEvent['type'], true>> = {
   paySubmitted: true,
   payFailed: true,
   payRejectedAsPending: true,
+  paySettled: true,
   requoted: true
 }
 
@@ -287,24 +346,129 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
           : undefined
       )
     case 'paySubmitted':
-      return withCapture(page, ({ outcome: _cleared, ...capture }) => capture)
+      return withCapture(page, ({ outcome: _cleared, ...capture }) => ({
+        ...capture,
+        attempt: 'sent'
+      }))
     case 'payFailed':
       return withCapture(page, (capture) => ({
         ...capture,
+        attempt: 'idle',
         outcome: event.outcome
       }))
     case 'payRejectedAsPending':
       return withCapture(page, (capture) => ({
         ...capture,
+        attempt: 'idle',
         outcome: { kind: 'reconciling' }
       }))
+    case 'paySettled':
+      return page.kind === 'capture'
+        ? { kind: 'terminal', started: true }
+        : page
     case 'requoted':
       return withCapture(page, ({ outcome: _replaced, ...capture }) => ({
         ...capture,
+        attempt: 'idle',
         reactivation: reactivationOf(event.reactivation),
         ...(event.priceUpdated ? { outcome: { kind: 'price_updated' } } : {})
       }))
   }
+}
+
+/** Parked on a card is capture's business, not money in flight (rule 4). */
+export function isParked(operation: BillingOperationState): boolean {
+  return (
+    operation.phase === 'pending' &&
+    operation.serverPhase === 'awaiting_payment_method'
+  )
+}
+
+/** In flight past card collection: an invoice, a challenge, or processing. */
+function isInFlight(
+  operation: BillingOperationState
+): operation is PendingBillingOperation {
+  return operation.phase === 'pending' && !isParked(operation)
+}
+
+/**
+ * Nothing pending releases a Pay that was held for a re-read, and sends a
+ * page that was waiting on an operation back to resolve a fresh capture.
+ */
+function nothingPending(page: CheckoutPage): CheckoutPage {
+  switch (page.kind) {
+    case 'waiting':
+      return { kind: 'resolving' }
+    case 'capture':
+      return page.outcome?.kind === 'reconciling'
+        ? { ...page, attempt: 'idle', outcome: undefined }
+        : page
+    default:
+      return page
+  }
+}
+
+/**
+ * Where an operation the lifecycle follows puts the page. Money in flight
+ * that this page did not send lands on `waiting`; a success lands on
+ * `terminal`, attributed to this page only while its own Pay is out. A
+ * failure of this page's own Pay is left to that Pay's verdict, which also
+ * knows about re-quotes; any other failure becomes the card above Pay.
+ */
+function followed(
+  page: CheckoutPage,
+  operation: BillingOperationState,
+  outcome: OperationOutcome | undefined
+): CheckoutPage {
+  switch (page.kind) {
+    case 'refused':
+    case 'unavailable':
+      return page
+    case 'terminal':
+      return operation.phase === 'succeeded' && page.operation === undefined
+        ? { ...page, operation }
+        : page
+    case 'resolving':
+    case 'waiting':
+      return followedBeforeCapture(page, operation, outcome)
+    case 'capture':
+      return followedInCapture(page, operation, outcome)
+  }
+}
+
+/**
+ * No form yet: a success is Already completed, money in flight is waiting,
+ * and anything else (parked on a card, or settled short of success) resolves
+ * a capture, opening on the verdict when there is one.
+ */
+function followedBeforeCapture(
+  page: Extract<CheckoutPage, { kind: 'resolving' | 'waiting' }>,
+  operation: BillingOperationState,
+  outcome: OperationOutcome | undefined
+): CheckoutPage {
+  if (operation.phase === 'succeeded')
+    return { kind: 'terminal', operation, started: false }
+  if (isInFlight(operation)) return { kind: 'waiting', operation }
+  if (outcome !== undefined) return { kind: 'resolving', outcome }
+  return page.kind === 'resolving' ? page : { kind: 'resolving' }
+}
+
+/**
+ * This page's own Pay stays on the form until its verdict, which the Pay
+ * itself reports; a success is attributed to it. An operation nobody here
+ * sent takes the form away while in flight, or lands its verdict above Pay.
+ */
+function followedInCapture(
+  page: Capture,
+  operation: BillingOperationState,
+  outcome: OperationOutcome | undefined
+): CheckoutPage {
+  const started = page.attempt === 'sent'
+  if (operation.phase === 'succeeded')
+    return { kind: 'terminal', operation, started }
+  if (started) return page
+  if (isInFlight(operation)) return { kind: 'waiting', operation }
+  return outcome === undefined ? page : { ...page, attempt: 'idle', outcome }
 }
 
 /**

@@ -1,12 +1,22 @@
 import type {
+  BillingOperationState,
   SubscriptionCommandResult,
   TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
 import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 
+import type { OperationOutcome } from '@/checkout/checkoutPage'
 import type { PayVerdict } from '@/checkout/payVerdict'
-import { payVerdictOf, supportLinkFor } from '@/checkout/payVerdict'
-import { failedOperation, succeededOperation } from '@/test/fakeBillingClient'
+import {
+  operationOutcomeOf,
+  payVerdictOf,
+  supportLinkFor
+} from '@/checkout/payVerdict'
+import {
+  failedOperation,
+  pendingOperation,
+  succeededOperation
+} from '@/test/fakeBillingClient'
 
 function settledAs(
   operation?: TerminalBillingOperation
@@ -129,6 +139,65 @@ describe('payVerdictOf', () => {
     }
   ])('$name', ({ result, expected }) => {
     expect(payVerdictOf(result)).toEqual(expected)
+  })
+})
+
+describe('operationOutcomeOf', () => {
+  it.for<{
+    name: string
+    operation: BillingOperationState
+    outcome: OperationOutcome | undefined
+  }>([
+    {
+      name: 'a decline keeps its reason',
+      operation: failedOperation('expired_card', 'op_x'),
+      outcome: { kind: 'declined', reason: 'expired_card', operationId: 'op_x' }
+    },
+    {
+      name: 'a challenge the customer did not complete',
+      operation: failedOperation('authentication_failed', 'op_x'),
+      outcome: { kind: 'not_completed', operationId: 'op_x' }
+    },
+    {
+      name: 'a processing fault',
+      operation: failedOperation('processing_error', 'op_x'),
+      outcome: { kind: 'processing_error', operationId: 'op_x' }
+    },
+    {
+      name: 'a parked attempt whose last try declined',
+      operation: {
+        ...pendingOperation('op_x'),
+        serverPhase: 'awaiting_payment_method',
+        declineReason: 'card_declined'
+      },
+      outcome: {
+        kind: 'declined',
+        reason: 'card_declined',
+        operationId: 'op_x'
+      }
+    },
+    {
+      name: 'a charge in flight has no verdict yet',
+      operation: pendingOperation('op_x'),
+      outcome: undefined
+    },
+    {
+      name: 'a success is not a card',
+      operation: succeededOperation('op_x'),
+      outcome: undefined
+    },
+    {
+      name: 'a poll budget that ran out is unknown, never a card (rule 12)',
+      operation: { ...succeededOperation('op_x'), phase: 'timed_out' },
+      outcome: undefined
+    },
+    {
+      name: 'a superseded operation says nothing',
+      operation: { ...succeededOperation('op_x'), phase: 'superseded' },
+      outcome: undefined
+    }
+  ])('$name', ({ operation, outcome }) => {
+    expect(operationOutcomeOf(operation)).toEqual(outcome)
   })
 })
 

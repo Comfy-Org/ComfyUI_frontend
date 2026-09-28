@@ -253,6 +253,22 @@
           "commitment": "Changing your commitment keeps your subscription, and it renews that day at {amount}.",
           "other": "This change keeps your subscription, and it renews that day at {amount}."
         }
+      },
+      "waiting": {
+        "status": "Finishing your payment…",
+        "body": "A payment for this workspace is still going through. This page will update on its own; nothing more is needed from you."
+      },
+      "terminal": {
+        "success": {
+          "title": "You're all set",
+          "body": "Your payment for {workspace} went through.",
+          "bodyPlan": "Your {plan} subscription for {workspace} is active."
+        },
+        "completed": {
+          "title": "Already completed",
+          "body": "This payment for {workspace} already went through. You won't be charged again."
+        },
+        "reference": "Reference: {operationId}"
       }
     }
   },
