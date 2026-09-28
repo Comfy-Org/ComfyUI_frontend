@@ -160,8 +160,7 @@ const conversationStore = useAgentConversationStore()
 watch(
   subscription,
   (currentSubscription) => {
-    if (currentSubscription?.agentHasFunds ?? currentSubscription?.hasFunds)
-      conversationStore.resolvePaywalls()
+    if (currentSubscription?.agentHasFunds) conversationStore.resolvePaywalls()
   },
   { immediate: true }
 )
@@ -268,9 +267,7 @@ watch(
  * Non-blocking by construction — it renders beside the composer and disables
  * nothing.
  */
-const agentHasFunds = computed(
-  () => subscription.value?.agentHasFunds ?? subscription.value?.hasFunds
-)
+const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
 const creditsExhausted = computed(() => {
   if (billingType.value !== 'workspace') return false
   // Same gate as the impression report above: an unsettled read cannot say

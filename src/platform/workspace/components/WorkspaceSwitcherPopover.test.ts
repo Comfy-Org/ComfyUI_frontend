@@ -190,7 +190,18 @@ describe('WorkspaceSwitcherPopover', () => {
   })
 
   it('does not render a tier badge on team workspace rows', () => {
-    billingMocks.subscription.value = { tier: 'PRO', duration: 'MONTHLY' }
+    useBillingContext().subscription = computed(() => ({
+      isActive: true,
+      tier: 'PRO',
+      duration: 'MONTHLY',
+      planSlug: null,
+      scheduledChange: null,
+      renewalDate: null,
+      endDate: null,
+      isCancelled: false,
+      hasFunds: true,
+      agentHasFunds: true
+    }))
 
     renderComponent({
       activeWorkspaceId: 'ws-team',

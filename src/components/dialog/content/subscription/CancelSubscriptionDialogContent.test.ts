@@ -63,14 +63,23 @@ const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 const mockCanManageSubscriptionLifecycle = vi.hoisted(() => ({ value: true }))
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: vi.fn(() => ({
-    cancelSubscription: mockCancelSubscription,
-    fetchStatus: mockFetchStatus,
-    subscription: mockSubscription,
-    tier: mockTier
-  }))
-}))
+function subscription(
+  overrides: Partial<SubscriptionInfo> = {}
+): SubscriptionInfo {
+  return {
+    isActive: true,
+    tier: 'STANDARD',
+    duration: null,
+    planSlug: null,
+    scheduledChange: null,
+    renewalDate: null,
+    endDate: null,
+    isCancelled: false,
+    hasFunds: true,
+    agentHasFunds: true,
+    ...overrides
+  }
+}
 
 vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
