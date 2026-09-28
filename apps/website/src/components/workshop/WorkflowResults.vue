@@ -50,7 +50,8 @@ const runningState = computed<RunState>(() => ({
       observation.value?.run.createdAt ??
       now.value.toISOString()
   ),
-  label: statusLabel
+  label: statusLabel,
+  stalled: state.phase === 'interrupted'
 }))
 const outputs = computed(() =>
   observation.value ? workflowOutputs(observation.value) : []

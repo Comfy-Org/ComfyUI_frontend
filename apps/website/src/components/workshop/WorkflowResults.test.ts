@@ -199,6 +199,38 @@ describe('WorkflowResults', () => {
     await waitFor(() => expect(f.fetch).toHaveBeenCalledTimes(4))
     expect(f.state.value.phase).toBe('settled')
   })
+
+  it('hands an interrupted run to the panel without a clock', () => {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    render(WorkflowResults, {
+      props: {
+        model,
+        state: {
+          phase: 'interrupted',
+          record: {
+            version: 2,
+            cancelRequested: false,
+            stage: 'run',
+            runId: id,
+            workflowId: model.workflowId,
+            definitionVersion: '1'
+          },
+          error: new WorkshopWorkflowError('network')
+        },
+        exampleIndex: 0,
+        busy: true,
+        statusLabel: 'Connection interrupted',
+        canStart: false,
+        refreshOutput: () => undefined
+      }
+    })
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Connection interrupted'
+    )
+    expect(screen.queryByTestId('run-elapsed')).toBeNull()
+  })
 })
 
 // A request Cloud turns down used to leave the panel showing the example: a

@@ -22,6 +22,7 @@ const image = readFileSync('e2e/assets/placeholder-1x1.webp')
 async function setup(context: BrowserContext) {
   let enabled = true
   let generation = 0
+  let reachable = true
   await context.route('https://apis.google.com/js/api.js*', (route) =>
     route.abort('blockedbyclient')
   )
@@ -93,6 +94,7 @@ async function setup(context: BrowserContext) {
     const request = route.request()
     const url = new URL(request.url())
     const method = request.method()
+    if (!reachable) return route.abort('failed')
     commands.push({
       method,
       path: url.pathname,
@@ -114,6 +116,9 @@ async function setup(context: BrowserContext) {
     succeed,
     disable() {
       enabled = false
+    },
+    drop() {
+      reachable = false
     },
     cancel() {
       current = { ...current, status: 'cancelled', update_time: Date.now() }
@@ -323,4 +328,32 @@ test('workflow cancellation survives disabled admission and hides on sign-out', 
       (command) => command.method === 'POST' && command.path === '/api/prompt'
     )
   ).toHaveLength(1)
+})
+
+test('a run the page stops hearing about holds the panel still', async ({
+  page,
+  context,
+  modelsAccount
+}) => {
+  const cloud = await setup(context)
+  await signInAndRun(page, modelsAccount)
+  const panel = page.getByTestId('playground-output')
+  const run = page.getByTestId('workflow-run')
+  await expect(panel).toHaveAttribute('data-state', 'running')
+  await expect(panel.getByTestId('run-spinner')).toBeVisible()
+  await expect(panel.getByTestId('run-elapsed')).toBeVisible()
+  await expect(run.getByTestId('run-button-spinner')).toBeVisible()
+
+  cloud.drop()
+  await page.clock.fastForward(2100)
+
+  await expect(panel.getByRole('status')).toHaveText('Connection interrupted')
+  await expect(panel).toHaveAttribute('data-state', 'running')
+  await expect(panel.getByTestId('run-spinner')).toHaveCount(0)
+  await expect(panel.getByTestId('run-elapsed')).toHaveCount(0)
+  await expect(run).toHaveText('Connection interrupted')
+  await expect(run.getByTestId('run-button-spinner')).toHaveCount(0)
+  await expect(
+    page.getByRole('button', { name: 'Reconnect to this run' })
+  ).toBeVisible()
 })
