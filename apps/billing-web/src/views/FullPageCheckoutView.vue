@@ -20,12 +20,10 @@ import CheckoutWaitingColumn from '@/components/fullPage/CheckoutWaitingColumn.v
 import { useFullPageCheckout } from '@/composables/useFullPageCheckout'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { useBillingWebStripeKey } from '@/config/stripeKey'
-import { useBillingEntry } from '@/entry/billingEntry'
 import { useBillingWebSession } from '@/session/billingWebSession'
 
 const { t, locale } = useI18n()
 const { coded } = useHostedCopy()
-const { entry } = useBillingEntry()
 const { session } = useBillingWebSession()
 const stripeKey = useBillingWebStripeKey()
 const {
@@ -36,6 +34,7 @@ const {
   payFailure,
   returnLink,
   close,
+  retryLoad,
   onPaymentPhase,
   savedMethods,
   retryElement,
@@ -136,8 +135,6 @@ const endingPlan = computed<EndingPlan | undefined>(() => {
   }
 })
 
-const productName = computed(() => coded('product', entry.value?.product))
-
 function returnToProduct() {
   window.location.assign(returnLink.value)
 }
@@ -152,35 +149,9 @@ function returnToProduct() {
     "
     :plan="endingPlan"
     @close="close"
+    @retry="retryLoad"
+    @view-plans="returnToProduct"
   />
-  <main
-    v-else-if="page.kind === 'refused' || page.kind === 'unavailable'"
-    class="dark-theme fixed inset-0 flex items-center justify-center overflow-auto bg-base-background p-6 font-inter"
-  >
-    <section class="flex w-full max-w-96 flex-col gap-4">
-      <h1 class="m-0 text-2xl font-semibold text-base-foreground">
-        {{
-          page.kind === 'refused'
-            ? t('checkout.fullPage.refused.title')
-            : t('hosted.title.checkout')
-        }}
-      </h1>
-      <p class="m-0 text-sm/5 text-muted-foreground">
-        {{
-          page.kind === 'refused'
-            ? t('checkout.fullPage.refused.body')
-            : coded('failure', page.code)
-        }}
-      </p>
-      <button
-        type="button"
-        class="mt-2 h-10 w-full cursor-pointer rounded-lg bg-secondary-background px-4 text-sm font-semibold text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none"
-        @click="returnToProduct"
-      >
-        {{ t('hosted.returnTo', { product: productName }) }}
-      </button>
-    </section>
-  </main>
   <main
     v-else
     class="dark-theme fixed inset-0 overflow-auto bg-secondary-background font-inter"

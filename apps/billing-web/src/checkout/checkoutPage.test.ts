@@ -776,6 +776,8 @@ const parkedForAHuman = (): BillingOperationState => ({
   ...succeededOperation(),
   phase: 'reconciliation_needed'
 })
+const planUnavailable: CheckoutPageEvent = { type: 'planUnavailable' }
+const tryAgain: CheckoutPageEvent = { type: 'retried' }
 const UNCONFIRMED: CheckoutPage = { kind: 'unconfirmed', operationId: 'op_1' }
 
 describe('reduceCheckoutPage endings', () => {
@@ -784,6 +786,21 @@ describe('reduceCheckoutPage endings', () => {
     events: CheckoutPageEvent[]
     expected: CheckoutPage
   }>([
+    {
+      name: 'a plan the catalog lacks is Plan not available',
+      events: [planUnavailable],
+      expected: { kind: 'plan_unavailable' }
+    },
+    {
+      name: 'Try again after a failed load resolves again',
+      events: [unavailable, tryAgain],
+      expected: RESOLVING
+    },
+    {
+      name: 'Try again then a quote is capture',
+      events: [unavailable, tryAgain, quoted(0)],
+      expected: collect('loading')
+    },
     {
       name: 'an operation parked for a human on mount is unconfirmed, and the quote cannot open a form over it',
       events: [reconciled(parkedForAHuman()), quoted(0)],
@@ -879,12 +896,24 @@ describe('reduceCheckoutPage endings', () => {
   })
 
   it.for<{ name: string; from: CheckoutPage; event: CheckoutPageEvent }>([
-    { name: 'a quote over unconfirmed', from: UNCONFIRMED, event: quoted(0) },
+    { name: 'Try again on capture', from: collect('ready'), event: tryAgain },
+    { name: 'Try again while resolving', from: RESOLVING, event: tryAgain },
     {
-      name: 'a refusal over unconfirmed',
-      from: UNCONFIRMED,
-      event: refused
-    }
+      name: 'a late unknown plan after capture',
+      from: collect('ready'),
+      event: planUnavailable
+    },
+    {
+      name: 'the lifecycle over Plan not available',
+      from: replay([planUnavailable]),
+      event: reconciled(pendingOperation())
+    },
+    {
+      name: 'Try again on Plan not available',
+      from: replay([planUnavailable]),
+      event: tryAgain
+    },
+    { name: 'a quote over unconfirmed', from: UNCONFIRMED, event: quoted(0) }
   ])('ignores $name', ({ from, event }) => {
     expect(reduceCheckoutPage(from, event)).toBe(from)
   })
