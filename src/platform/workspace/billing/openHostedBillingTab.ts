@@ -52,23 +52,34 @@ const OPERATION_POLL_MS = 4_000
 const OPERATION_WATCH_MS = 15 * 60_000
 
 /**
- * A payment billing-web takes never pushes back to this tab, but each status
- * read resumes the operation the server reports pending, which shows the same
- * progress and outcome toasts the embedded checkout shows. Reading it while
- * the hosted tab is open is what lets this tab show them too. A read still in
- * flight skips the tick, and a failed read waits for the next one.
+ * A payment billing-web takes never pushes back to this tab, but a status read
+ * resumes the operation the server reports pending, and that operation then
+ * polls itself and shows the same progress and outcome toasts the embedded
+ * checkout shows. This reads until one is found, for the workspace the tab
+ * was opened for only. A read still in flight skips the tick, and a failed
+ * read waits for the next one.
  */
-function watchForHostedOperation(readStatus: () => Promise<unknown>) {
+function watchForHostedOperation(
+  readOperation: () => Promise<boolean>,
+  workspaceId: string | undefined
+) {
+  const workspaceStore = useTeamWorkspaceStore()
   const startedAt = Date.now()
   let reading = false
   const timer = setInterval(() => {
-    if (Date.now() - startedAt >= OPERATION_WATCH_MS) {
+    if (
+      Date.now() - startedAt >= OPERATION_WATCH_MS ||
+      (workspaceStore.activeWorkspaceId ?? undefined) !== workspaceId
+    ) {
       clearInterval(timer)
       return
     }
     if (reading) return
     reading = true
-    void readStatus()
+    void readOperation()
+      .then((found) => {
+        if (found) clearInterval(timer)
+      })
       .catch(() => undefined)
       .finally(() => {
         reading = false
@@ -77,12 +88,15 @@ function watchForHostedOperation(readStatus: () => Promise<unknown>) {
   return () => clearInterval(timer)
 }
 
-function armReturnRefresh(intent: BillingIntent): void {
+function armReturnRefresh(
+  intent: BillingIntent,
+  workspaceId: string | undefined
+): void {
   disarmHostedBillingReturnRefresh()
   // Resolved inside the call, not at module scope: useBillingContext ->
   // useWorkspaceBilling -> this module would otherwise dereference the
   // shared context before its state is constructed.
-  const { fetchStatus, fetchBalance, reconcileSubscriptionSuccess } =
+  const { fetchStatus, fetchBalance, readCheckoutOperation } =
     useBillingContext()
   stopReturnRefresh = registerRefreshOnReturn(() =>
     Promise.allSettled([
@@ -92,7 +106,10 @@ function armReturnRefresh(intent: BillingIntent): void {
     ])
   )
   if (OPERATION_INTENTS.has(intent)) {
-    stopOperationWatch = watchForHostedOperation(reconcileSubscriptionSuccess)
+    stopOperationWatch = watchForHostedOperation(
+      readCheckoutOperation,
+      workspaceId
+    )
   }
 }
 
@@ -117,7 +134,7 @@ export function openHostedBillingTabOutcome(
   })
   if (route.kind !== 'billing_web') return 'unavailable'
   if (!openDisownedTab(route.url)) return 'blocked'
-  armReturnRefresh(intent)
+  armReturnRefresh(intent, workspaceId)
   return 'opened'
 }
 

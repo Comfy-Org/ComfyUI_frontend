@@ -6,6 +6,7 @@ import {
   shallowRef,
   watch
 } from 'vue'
+import type { ComputedRef } from 'vue'
 
 import type { PreviewSubscribeInput } from '@comfyorg/account-core/billing'
 
@@ -169,7 +170,13 @@ function seatCapacityFrom(status: BillingStatusResponse): SeatCapacity | null {
  * Used for team workspaces.
  * @internal - Use useBillingContext() instead of importing directly.
  */
-export function useWorkspaceBilling(): BillingState & BillingActions {
+export type WorkspaceBilling = BillingState &
+  BillingActions & {
+    /** Whether the last status read reported an operation still pending. */
+    hasPendingOperation: ComputedRef<boolean>
+  }
+
+export function useWorkspaceBilling(): WorkspaceBilling {
   const billingPlans = useBillingPlans()
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -181,6 +188,9 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const error = ref<string | null>(null)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
+  const hasPendingOperation = computed(
+    () => !!statusData.value?.pending_billing_op_id
+  )
   const seatCapacity = shallowRef<SeatCapacity | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
   // Prevent older status and balance responses from overwriting newer state.
@@ -764,6 +774,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     subscriptionStatus,
     tier,
     renewalDate,
+    hasPendingOperation,
 
     // Actions
     initialize,

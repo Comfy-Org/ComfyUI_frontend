@@ -17,12 +17,12 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 
 const mockFetchStatus = vi.hoisted(() => vi.fn(async () => {}))
 const mockFetchBalance = vi.hoisted(() => vi.fn(async () => {}))
-const mockReconcile = vi.hoisted(() => vi.fn(async () => {}))
+const mockReadOperation = vi.hoisted(() => vi.fn(async () => false))
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     fetchStatus: mockFetchStatus,
     fetchBalance: mockFetchBalance,
-    reconcileSubscriptionSuccess: mockReconcile
+    readCheckoutOperation: mockReadOperation
   })
 }))
 
@@ -175,6 +175,7 @@ describe('openHostedBillingTab', () => {
     beforeEach(() => {
       vi.useFakeTimers()
       vi.spyOn(window, 'open').mockReturnValue(fakeTab())
+      mockReadOperation.mockReset().mockResolvedValue(false)
     })
 
     afterEach(() => {
@@ -185,76 +186,93 @@ describe('openHostedBillingTab', () => {
       're-reads the checkout status so the app picks up the payment %s starts',
       async (intent) => {
         openHostedBillingTab(intent)
-        mockReconcile.mockClear()
 
         await vi.advanceTimersByTimeAsync(4_000)
-        expect(mockReconcile).toHaveBeenCalledTimes(1)
+        expect(mockReadOperation).toHaveBeenCalledTimes(1)
         await vi.advanceTimersByTimeAsync(4_000)
-        expect(mockReconcile).toHaveBeenCalledTimes(2)
+        expect(mockReadOperation).toHaveBeenCalledTimes(2)
       }
     )
 
-    it('does not watch for an intent that starts no payment', () => {
-      openHostedBillingTab('payment-methods')
-      mockReconcile.mockClear()
-
-      vi.advanceTimersByTime(60_000)
-
-      expect(mockReconcile).not.toHaveBeenCalled()
-    })
-
-    it('stops watching after fifteen minutes', () => {
+    it('hands off once a read finds the pending operation', async () => {
+      mockReadOperation.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
       openHostedBillingTab('checkout')
-      vi.advanceTimersByTime(15 * 60_000)
-      mockReconcile.mockClear()
 
-      vi.advanceTimersByTime(60_000)
+      await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(mockReconcile).not.toHaveBeenCalled()
+      expect(mockReadOperation).toHaveBeenCalledTimes(2)
     })
 
-    it('stops watching when disarmed', () => {
+    it('stops watching once the workspace the tab was opened for is left', async () => {
+      openHostedBillingTab('checkout')
+      await vi.advanceTimersByTimeAsync(4_000)
+      expect(mockReadOperation).toHaveBeenCalledOnce()
+
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-other' })
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(mockReadOperation).toHaveBeenCalledOnce()
+    })
+
+    it('does not watch for an intent that starts no payment', async () => {
+      openHostedBillingTab('payment-methods')
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(mockReadOperation).not.toHaveBeenCalled()
+    })
+
+    it('reads until fifteen minutes pass, then stops', async () => {
+      openHostedBillingTab('checkout')
+
+      await vi.advanceTimersByTimeAsync(15 * 60_000 - 1)
+      const readsBeforeExpiry = mockReadOperation.mock.calls.length
+      expect(readsBeforeExpiry).toBeGreaterThan(200)
+
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(mockReadOperation).toHaveBeenCalledTimes(readsBeforeExpiry)
+    })
+
+    it('stops watching when disarmed', async () => {
       openHostedBillingTab('checkout')
       disarmHostedBillingReturnRefresh()
-      mockReconcile.mockClear()
 
-      vi.advanceTimersByTime(60_000)
+      await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(mockReconcile).not.toHaveBeenCalled()
+      expect(mockReadOperation).not.toHaveBeenCalled()
     })
 
     it('skips a tick while the previous read is still in flight', async () => {
-      let settle: () => void = () => {}
-      mockReconcile.mockImplementationOnce(
-        () => new Promise<void>((resolve) => (settle = resolve))
+      let settle: (found: boolean) => void = () => {}
+      mockReadOperation.mockImplementationOnce(
+        () => new Promise<boolean>((resolve) => (settle = resolve))
       )
       openHostedBillingTab('checkout')
 
-      vi.advanceTimersByTime(8_000)
-      expect(mockReconcile).toHaveBeenCalledOnce()
+      await vi.advanceTimersByTimeAsync(8_000)
+      expect(mockReadOperation).toHaveBeenCalledOnce()
 
-      settle()
+      settle(false)
       await vi.advanceTimersByTimeAsync(4_000)
-      expect(mockReconcile).toHaveBeenCalledTimes(2)
+      expect(mockReadOperation).toHaveBeenCalledTimes(2)
     })
 
     it('keeps watching after a read fails', async () => {
-      mockReconcile.mockRejectedValueOnce(new Error('status read failed'))
+      mockReadOperation.mockRejectedValueOnce(new Error('status read failed'))
       openHostedBillingTab('checkout')
 
       await vi.advanceTimersByTimeAsync(8_000)
 
-      expect(mockReconcile).toHaveBeenCalledTimes(2)
+      expect(mockReadOperation).toHaveBeenCalledTimes(2)
     })
 
-    it('stops watching when a tab that starts no payment opens next', () => {
+    it('stops watching when a tab that starts no payment opens next', async () => {
       openHostedBillingTab('checkout')
       openHostedBillingTab('payment-methods')
-      mockReconcile.mockClear()
 
-      vi.advanceTimersByTime(60_000)
+      await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(mockReconcile).not.toHaveBeenCalled()
+      expect(mockReadOperation).not.toHaveBeenCalled()
     })
   })
 })

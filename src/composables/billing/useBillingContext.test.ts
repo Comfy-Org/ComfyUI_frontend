@@ -505,6 +505,29 @@ describe('useBillingContext', () => {
     expect(useAuthStore().fetchBalance).not.toHaveBeenCalled()
   })
 
+  it.for([
+    { pending: 'op-1', found: true },
+    { pending: undefined, found: false }
+  ])(
+    'reads the checkout rail for a hosted payment (pending: $pending)',
+    async ({ pending, found }) => {
+      mockBillingStatus.value = {
+        ...DEFAULT_BILLING_STATUS,
+        pending_billing_op_id: pending
+      }
+      const context = useBillingContext()
+      await vi.waitFor(() =>
+        expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
+      )
+      vi.clearAllMocks()
+
+      await expect(context.readCheckoutOperation()).resolves.toBe(found)
+
+      expect(workspaceApi.getBillingStatus).toHaveBeenCalledOnce()
+      expect(workspaceApi.getBillingBalance).not.toHaveBeenCalled()
+    }
+  )
+
   it('rejects topup amounts that are not positive whole-dollar cents', async () => {
     const { topup } = useBillingContext()
     await expect(topup(550)).rejects.toThrow()
