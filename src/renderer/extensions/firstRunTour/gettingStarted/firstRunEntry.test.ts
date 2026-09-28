@@ -898,5 +898,17 @@ describe('useFirstRunEntry', () => {
         'a hold that outlives its handoff is the latch this replaced'
       ).toBe(false)
     })
+
+    it('cancels a pending handoff when the signed-in account changes', async () => {
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
+
+      await entry.dismissIntoFirstRunTour('image_z_image_turbo')
+      const [, shouldCancel] = mocks.beginTour.mock.calls.at(-1)!
+
+      expect(shouldCancel()).toBe(false)
+      Object.assign(useAuthStore(), { userId: 'account-b' })
+      expect(shouldCancel()).toBe(true)
+    })
   })
 })

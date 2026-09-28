@@ -197,10 +197,14 @@ export const useFirstRunEntry = createSharedComposable(() => {
    * graph is already loaded, so the caller decides what a failed tour means.
    */
   async function dismissIntoFirstRunTour(templateId: string): Promise<void> {
+    const ownerId = authStore.userId
     tourHandoffs.value++
     try {
       await dismissGettingStarted()
-      await useFirstRunTourController().beginTour(templateId)
+      await useFirstRunTourController().beginTour(
+        templateId,
+        () => authStore.userId !== ownerId
+      )
     } finally {
       tourHandoffs.value--
     }
