@@ -1,5 +1,7 @@
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type {
+  BillingCycle,
+  TierKey
+} from '@/platform/cloud/subscription/constants/tierKey'
 import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
 const STORAGE_KEY = 'comfy:pending-subscription-checkout'

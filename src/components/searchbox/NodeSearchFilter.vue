@@ -27,7 +27,7 @@ import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 

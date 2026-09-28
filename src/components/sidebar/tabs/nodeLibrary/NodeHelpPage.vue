@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import NodeHelpContent from '@/components/node/NodeHelpContent.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const { node } = defineProps<{ node: ComfyNodeDefImpl }>()
 

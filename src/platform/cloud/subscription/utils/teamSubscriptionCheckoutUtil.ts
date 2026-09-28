@@ -12,7 +12,7 @@ import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscri
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 import { paymentReturnUrl } from './paymentReturnUrl'
-import type { BillingCycle } from './subscriptionTierRank'
+import type { BillingCycle } from '@/platform/cloud/subscription/constants/tierKey'
 
 interface PerformTeamSubscriptionCheckoutOptions {
   paymentIntentSource?: PaymentIntentSource

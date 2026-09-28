@@ -5,7 +5,7 @@ import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 

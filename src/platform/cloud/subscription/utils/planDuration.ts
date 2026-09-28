@@ -1,6 +1,6 @@
 import type { SubscriptionDuration } from '@/platform/workspace/api/workspaceApi'
 
-import type { BillingCycle } from './subscriptionTierRank'
+import type { BillingCycle } from '@/platform/cloud/subscription/constants/tierKey'
 
 /** Backend plan duration `'ANNUAL'` maps to the FE's yearly billing cycle. */
 export const isAnnualDuration = (

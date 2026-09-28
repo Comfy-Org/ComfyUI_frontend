@@ -2,7 +2,7 @@ import {
   getTierCredits,
   getTierFeatures
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierKey'
 
 type BenefitType = 'metric' | 'feature'
 

@@ -8,7 +8,7 @@ import {
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 
 function renderItem(
   props: Partial<ComponentProps<typeof NodeSearchListItem>> = {}

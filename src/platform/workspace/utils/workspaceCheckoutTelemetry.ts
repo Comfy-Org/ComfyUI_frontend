@@ -4,7 +4,7 @@ import type {
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type { BillingCycle } from '@/platform/cloud/subscription/constants/tierKey'
 import { useAuthStore } from '@/stores/authStore'
 
 interface TrackWorkspaceCheckoutStartedOptions {

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComponentWidget } from '@/scripts/domWidget'
+import type { ComponentWidget } from '@/types/domWidget'
 
 import MultiSelectWidget from './MultiSelectWidget.vue'
 

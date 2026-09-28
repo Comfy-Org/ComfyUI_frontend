@@ -8,8 +8,10 @@ import { computed, ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type {
+  BillingCycle,
+  TierKey
+} from '@/platform/cloud/subscription/constants/tierKey'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -1271,7 +1273,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     getOperation,
     startOperation,
     retryPaymentAuthentication,
-    pollPendingOperations,
     clearOperation,
     dismissOperation
   }

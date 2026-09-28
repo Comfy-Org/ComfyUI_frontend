@@ -90,6 +90,7 @@ export function useAuthDialogs() {
       component: UpdatePasswordContent,
       headerComponent: ComfyOrgHeader,
       props: {
+        requestSignIn: showSignInDialog,
         onSuccess: () =>
           dialogStore.closeDialog({ key: 'global-update-password' })
       },

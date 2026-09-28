@@ -360,7 +360,6 @@ import {
   getTierCredits,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDuration'
 import {
   formatAmountDueToday,
@@ -368,7 +367,10 @@ import {
   formatRenewalAmount,
   resolveRenewalDate
 } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type {
+  BillingCycle,
+  TierKey
+} from '@/platform/cloud/subscription/constants/tierKey'
 import type {
   BillingAuthenticationState,
   PreviewSubscribeResponse,

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { setAssertReporter } from '@/base/assert'
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 describe('flattenInputSpecs', () => {
   it('includes a dynamic combo input alongside its nested per-option inputs', () => {
