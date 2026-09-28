@@ -205,7 +205,8 @@ describe('shared workflow rendering', () => {
           class_type: 'Example',
           inputs: { text: '', seed: 0, enabled: false }
         }
-      }
+      },
+      extra_data: { auth_token_comfy_org: 'caller' }
     })
   })
 

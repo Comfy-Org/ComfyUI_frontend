@@ -23,18 +23,24 @@ const {
 }>()
 
 const workflow = computed(() =>
-  model.routerId === undefined ? model : undefined
+  model.type === 'CLOUD' || model.type === 'SERVERLESS' ? model : undefined
 )
-const providerName = computed(
-  () =>
-    workflow.value?.models?.join(', ') ??
-    model.provider ??
-    t('workshop.card.partnerNode', locale)
+const workflowModels = computed(() =>
+  model.type === 'CLOUD' || model.type === 'SERVERLESS'
+    ? model.models
+    : undefined
+)
+const providerName = computed(() =>
+  model.type === 'APP'
+    ? t('workshop.card.comfyApp', locale)
+    : (workflowModels.value?.join(', ') ??
+      model.provider ??
+      t('workshop.card.partnerNode', locale))
 )
 
 const logo = computed(
   () =>
-    getLogoPath(workflow.value?.models?.[0] ?? model.provider ?? '') ??
+    getLogoPath(workflowModels.value?.[0] ?? model.provider ?? '') ??
     getLogoPath(model.name)
 )
 
@@ -52,7 +58,7 @@ const pillClass =
     :href="model.href"
     class="group flex cursor-pointer flex-col gap-3 overflow-hidden rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     data-testid="workshop-model-card"
-    :data-kind="workflow ? 'workflow' : 'model'"
+    :data-kind="model.type === 'APP' ? 'app' : workflow ? 'workflow' : 'model'"
   >
     <div
       class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface"

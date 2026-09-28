@@ -28,20 +28,20 @@ export interface CatalogueApp {
 }
 
 export function catalogueApps(locale: Locale = 'en'): CatalogueApp[] {
-  const studio = getRoutes(locale).cinematicStudio
+  const routes = getRoutes(locale)
   return [
     {
       key: 'cinematic-studio',
       name: ac('studioName', locale),
       task: ac('studioTask', locale),
-      href: studio,
+      href: routes.cinematicStudio,
       image: '/images/cinematic-studio/neon-street.jpg'
     },
     {
       key: 'reshoot',
       name: ac('reshootName', locale),
       task: ac('reshootTask', locale),
-      href: `${studio}?app=reshoot`,
+      href: routes.reshoot,
       image: '/images/cinematic-studio/train.jpg'
     }
   ]

@@ -15,8 +15,8 @@ describe('catalogueApps', () => {
 
   it('opens Re-shoot inside Cinematic Studio', () => {
     expect(catalogueApps().map((app) => app.href)).toEqual([
-      '/cinematic-studio',
-      '/cinematic-studio?app=reshoot'
+      '/models/apps/cinematic-studio',
+      '/models/apps/reshoot'
     ])
   })
 
