@@ -231,22 +231,48 @@ workflow file is needed.`)
   it.for([
     {
       distribution: 'cloud' as const,
-      directory: '.',
       importer: '--from-workflow "<path-to-file>"'
     },
     {
-      distribution: 'localhost' as const,
-      directory: '"<install>"',
-      importer: null
-    },
-    {
       distribution: 'desktop' as const,
-      directory: '.',
       importer: '--from-snapshot "<newest-snapshot>"'
     }
   ])(
-    'takes $distribution to a green release, asking before each upload',
-    ({ distribution, directory, importer }) => {
+    'asks before $distribution uploads to the importer, and again before the cut',
+    ({ distribution, importer }) => {
+      const document = buildAgentHandoffDocument({ distribution, inputs })
+      const importDisclosure = document.indexOf(
+        'wait for a yes before you\nrun it'
+      )
+      const importCommand = document.indexOf(importer)
+      const cutDisclosure = document.indexOf(
+        'Before anything is pushed or cut, tell the user, and wait for a yes:'
+      )
+
+      expect(importDisclosure).toBeGreaterThan(-1)
+      expect(importCommand).toBeGreaterThan(importDisclosure)
+      expect(cutDisclosure).toBeGreaterThan(importCommand)
+    }
+  )
+
+  it('uploads nothing before the cut on localhost, which scans the install', () => {
+    const document = buildAgentHandoffDocument({
+      distribution: 'localhost',
+      inputs
+    })
+
+    expect(document).not.toContain('is uploaded')
+    expect(document).not.toContain('--from-workflow')
+    expect(document).not.toContain('--from-snapshot')
+  })
+
+  it.for([
+    { distribution: 'cloud' as const, directory: '.' },
+    { distribution: 'localhost' as const, directory: '"<install>"' },
+    { distribution: 'desktop' as const, directory: '.' }
+  ])(
+    'takes $distribution to a green release after the cut consent',
+    ({ distribution, directory }) => {
       const document = buildAgentHandoffDocument({ distribution, inputs })
       const cutDisclosure = document.indexOf(
         'Before anything is pushed or cut, tell the user, and wait for a yes:'
@@ -256,16 +282,6 @@ workflow file is needed.`)
         `comfy build release create ${directory} --target linux/nvidia\n`
       )
 
-      if (importer) {
-        const importDisclosure = document.indexOf(
-          'wait for a yes before you\nrun it'
-        )
-        expect(importDisclosure).toBeGreaterThan(-1)
-        expect(document.indexOf(importer)).toBeGreaterThan(importDisclosure)
-        expect(cutDisclosure).toBeGreaterThan(document.indexOf(importer))
-      } else {
-        expect(document).not.toContain('is uploaded')
-      }
       expect(cutDisclosure).toBeGreaterThan(-1)
       expect(push).toBeGreaterThan(cutDisclosure)
       expect(release).toBeGreaterThan(push)
