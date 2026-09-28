@@ -55,16 +55,24 @@ const OPERATION_WATCH_MS = 15 * 60_000
  * A payment billing-web takes never pushes back to this tab, but each status
  * read resumes the operation the server reports pending, which shows the same
  * progress and outcome toasts the embedded checkout shows. Reading it while
- * the hosted tab is open is what lets this tab show them too.
+ * the hosted tab is open is what lets this tab show them too. A read still in
+ * flight skips the tick, and a failed read waits for the next one.
  */
-function watchForHostedOperation(fetchStatus: () => Promise<unknown>) {
+function watchForHostedOperation(readStatus: () => Promise<unknown>) {
   const startedAt = Date.now()
+  let reading = false
   const timer = setInterval(() => {
     if (Date.now() - startedAt >= OPERATION_WATCH_MS) {
       clearInterval(timer)
       return
     }
-    void fetchStatus()
+    if (reading) return
+    reading = true
+    void readStatus()
+      .catch(() => undefined)
+      .finally(() => {
+        reading = false
+      })
   }, OPERATION_POLL_MS)
   return () => clearInterval(timer)
 }
@@ -74,7 +82,8 @@ function armReturnRefresh(intent: BillingIntent): void {
   // Resolved inside the call, not at module scope: useBillingContext ->
   // useWorkspaceBilling -> this module would otherwise dereference the
   // shared context before its state is constructed.
-  const { fetchStatus, fetchBalance } = useBillingContext()
+  const { fetchStatus, fetchBalance, reconcileSubscriptionSuccess } =
+    useBillingContext()
   stopReturnRefresh = registerRefreshOnReturn(() =>
     Promise.allSettled([
       fetchStatus(),
@@ -83,7 +92,7 @@ function armReturnRefresh(intent: BillingIntent): void {
     ])
   )
   if (OPERATION_INTENTS.has(intent)) {
-    stopOperationWatch = watchForHostedOperation(fetchStatus)
+    stopOperationWatch = watchForHostedOperation(reconcileSubscriptionSuccess)
   }
 }
 
