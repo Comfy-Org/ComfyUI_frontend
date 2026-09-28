@@ -228,6 +228,8 @@ export type PromptQueuedEventPayload = FrontendApiCalls['promptQueued']
 
 /** Dictionary of calls originating from ComfyUI core */
 interface BackendApiCalls {
+  /** Agent-effective funds changed for the active workspace. */
+  agent_billing_status: { has_funds: boolean; as_of_ns: number }
   progress: ProgressWsMessage
   executing: ExecutingWsMessage
   executed: ExecutedWsMessage
@@ -1036,6 +1038,7 @@ export class ComfyApi extends EventTarget {
               )
               break
             case 'execution_start':
+            case 'agent_billing_status':
             case 'execution_error':
             case 'execution_interrupted':
             case 'execution_cached':
