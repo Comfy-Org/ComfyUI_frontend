@@ -7,12 +7,15 @@ import { mapConcurrent } from './router-model-batch'
 import { publishedWorkflows, workflow_render } from './workflow-render'
 import type { WorkflowCheckResult, WorkflowRunResult } from './workflow-sweep'
 import {
-  checkPassed,
   cloudErrorOf,
+  delivered,
   failureReason,
+  hasFunds,
   parseRepeats,
+  retryServerError,
   runPassed,
   settledRunOutcome,
+  sweepPassed,
   workflowChecks,
   workflowSweepMarkdown
 } from './workflow-sweep'
@@ -80,9 +83,8 @@ async function fetchStatus(url: string): Promise<number | 'error'> {
   }
 }
 
-async function probe(url: string): Promise<number | 'error'> {
-  const first = await fetchStatus(url)
-  return typeof first === 'number' && first < 500 ? first : fetchStatus(url)
+function probe(url: string): Promise<number | 'error'> {
+  return retryServerError(() => fetchStatus(url))
 }
 
 async function runChecks(): Promise<WorkflowCheckResult[]> {
@@ -111,10 +113,8 @@ async function assertFunded(token: string) {
       signal: AbortSignal.timeout(30_000)
     }
   )
-  const status = (await response.json().catch(() => ({}))) as {
-    has_funds?: boolean
-  }
-  if (!response.ok || status.has_funds !== true)
+  const status: unknown = await response.json().catch(() => undefined)
+  if (!response.ok || !hasFunds(status))
     throw new Error(
       'The COMFY_API_KEY workspace has no Cloud funds; live workflow runs would be refused.'
     )
@@ -132,7 +132,8 @@ async function deliveredOutputs(
 }
 
 async function jobError(runId: string | undefined, token: string) {
-  return runId ? cloudErrorOf(await cloudJob(runId, token)) : undefined
+  if (!runId) return undefined
+  return cloudErrorOf(await cloudJob(runId, token).catch(() => undefined))
 }
 
 async function settledRun(
@@ -155,7 +156,7 @@ async function settledRun(
   const outcome = settledRunOutcome(
     result.run.run.state,
     result.run.outputs.length,
-    outputs.length
+    outputs.filter(delivered).length
   )
   if (outcome.status === 'passed')
     return { slug, attempt, runId, outputs, status: 'passed' }
@@ -227,4 +228,4 @@ if (values.output) {
   )
   await writeFile(join(values.output, 'workflow-sweep.md'), markdown)
 }
-if (!checks.every(checkPassed) || !runs.every(runPassed)) process.exitCode = 1
+if (!sweepPassed(checks, runs)) process.exitCode = 1

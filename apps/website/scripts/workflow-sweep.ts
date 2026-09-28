@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 import type { WorkflowWorkshopModelDetail } from '../src/config/models-catalogue'
 
 export interface WorkflowCheck {
@@ -56,18 +58,40 @@ export function workflowChecks(
   return checks
 }
 
-export function checkPassed(result: WorkflowCheckResult): boolean {
+export function delivered(result: { status: number | 'error' }): boolean {
   return typeof result.status === 'number' && result.status < 400
+}
+
+export function checkPassed(result: WorkflowCheckResult): boolean {
+  return delivered(result)
 }
 
 export function runPassed(result: WorkflowRunResult): boolean {
   return (
     result.status === 'passed' &&
     result.outputs.length > 0 &&
-    result.outputs.every(
-      (output) => typeof output.status === 'number' && output.status < 400
-    )
+    result.outputs.every(delivered)
   )
+}
+
+export function sweepPassed(
+  checks: readonly WorkflowCheckResult[],
+  runs: readonly WorkflowRunResult[]
+): boolean {
+  return checks.every(checkPassed) && runs.every(runPassed)
+}
+
+export async function retryServerError(
+  request: () => Promise<number | 'error'>
+): Promise<number | 'error'> {
+  const first = await request()
+  return typeof first === 'number' && first < 500 ? first : request()
+}
+
+const fundedBillingStatus = z.object({ has_funds: z.literal(true) })
+
+export function hasFunds(billingStatus: unknown): boolean {
+  return fundedBillingStatus.safeParse(billingStatus).success
 }
 
 export function cloudErrorOf(job: unknown): WorkflowCloudError | undefined {
@@ -128,9 +152,16 @@ export function workflowSweepMarkdown(
 export function parseRepeats(entries: readonly string[]): Map<string, number> {
   return new Map(
     entries.map((entry) => {
-      const [slug, count] = entry.split('=')
+      const parts = entry.split('=')
+      const [slug, count] = parts
       const n = Number(count)
-      if (!slug || !Number.isInteger(n) || n < 1 || n > 10)
+      if (
+        parts.length !== 2 ||
+        !slug ||
+        !Number.isInteger(n) ||
+        n < 1 ||
+        n > 10
+      )
         throw new Error(`--repeat expects SLUG=N with N 1–10: ${entry}`)
       return [slug, n] as const
     })

@@ -6,9 +6,12 @@ import {
   checkPassed,
   cloudErrorOf,
   failureReason,
+  hasFunds,
   parseRepeats,
+  retryServerError,
   runPassed,
   settledRunOutcome,
+  sweepPassed,
   workflowChecks,
   workflowSweepMarkdown
 } from './workflow-sweep'
@@ -141,8 +144,60 @@ describe('workflow sweep inputs and outcomes', () => {
         ['workflows/b', 1]
       ])
     )
-    for (const bad of ['workflows/a', 'workflows/a=0', 'workflows/a=11', '=2'])
+    for (const bad of [
+      'workflows/a',
+      'workflows/a=0',
+      'workflows/a=11',
+      '=2',
+      'workflows/a=2=extra'
+    ])
       expect(() => parseRepeats([bad])).toThrow('--repeat expects')
+  })
+
+  it.for([
+    { responses: [200], expected: 200, requests: 1 },
+    { responses: [404], expected: 404, requests: 1 },
+    { responses: [503, 200], expected: 200, requests: 2 },
+    { responses: ['error' as const, 206], expected: 206, requests: 2 },
+    { responses: [502, 502], expected: 502, requests: 2 }
+  ])(
+    'retries a server error or network failure once: $responses',
+    async ({ responses, expected, requests }) => {
+      const pending = [...responses]
+      let made = 0
+      const status = await retryServerError(async () => {
+        made++
+        return pending.shift() ?? 'error'
+      })
+      expect({ status, made }).toEqual({ status: expected, made: requests })
+    }
+  )
+
+  it.for([
+    { body: { has_funds: true, balance: 10 }, funded: true },
+    { body: { has_funds: false }, funded: false },
+    { body: {}, funded: false },
+    { body: null, funded: false },
+    { body: undefined, funded: false }
+  ])('reads billing status $body as funded=$funded', ({ body, funded }) => {
+    expect(hasFunds(body)).toBe(funded)
+  })
+
+  it('fails the sweep when any check or live run fails', () => {
+    const page = {
+      slug: 'a',
+      kind: 'page' as const,
+      url: 'https://comfy.org/a/',
+      status: 200
+    }
+    expect(sweepPassed([page], [passed])).toBe(true)
+    expect(sweepPassed([{ ...page, status: 404 }], [passed])).toBe(false)
+    expect(
+      sweepPassed(
+        [page],
+        [{ ...passed, outputs: [{ kind: 'image', status: 'error' }] }]
+      )
+    ).toBe(false)
   })
 
   it.for([
