@@ -327,12 +327,14 @@ test.describe('Operation recovery rail (FE-2485)', { tag: '@cloud' }, () => {
     expect(new Set(transports(routes.pollRequests)).size).toBe(1)
     expect(transports(routes.pollRequests)).not.toContain('xhr')
 
-    // Adopting on this rail also *offers* the parked hosted step, unprompted,
-    // at boot — the legacy row below records that the legacy rail does not.
-    // Once per operation, not once per poll.
-    await expect
-      .poll(() => routes.hostedOpens())
-      .toEqual([PENDING_OPERATION.action_url])
+    // An operation reattached at boot is never offered unprompted: no click of
+    // this page started it, so the browser would block the tab and warn on
+    // every load. The step waits behind the checkout's own button instead,
+    // as on the legacy rail below.
+    await cloudAppExpect
+      .poll(() => routes.pollRequests.length)
+      .toBeGreaterThan(1)
+    expect(await routes.hostedOpens()).toEqual([])
   })
 
   test('still restores the tier and cycle from the host pointer when recovery fails', async ({
