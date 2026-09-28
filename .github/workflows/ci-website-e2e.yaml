@@ -57,6 +57,42 @@ jobs:
           PUBLIC_CUSTOMERIO_WRITE_KEY: test-e2e-write-key
         run: pnpm --filter @comfyorg/website build
 
+      - name: Upload built website
+        uses: actions/upload-artifact@v6
+        with:
+          name: website-dist
+          path: apps/website/dist/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  website-e2e-shard:
+    needs: website-build
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Download built website
+        uses: actions/download-artifact@v8
+        with:
+          name: website-dist
+          path: apps/website/dist/
+
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: tests
         run: pnpm --filter @comfyorg/website test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
