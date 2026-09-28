@@ -26,6 +26,7 @@ import type {
   Plan
 } from '@/platform/workspace/api/workspaceApi'
 import {
+  authenticatedRemoteConfigState,
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
@@ -163,6 +164,7 @@ describe('useBillingContext', () => {
     vi.mocked(workspaceStore.updateActiveWorkspace).mockImplementation(() => {})
     remoteConfig.value = {}
     remoteConfigState.value = 'unloaded'
+    authenticatedRemoteConfigState.value = 'unloaded'
     mockIsPersonal.value = true
     mockBillingRail.value = undefined
     vi.mocked(
@@ -223,6 +225,7 @@ describe('useBillingContext', () => {
   describe('canRunWorkflows', () => {
     it('is true when not on free tier', async () => {
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       useSubscription().subscriptionTier = computed(() => 'PRO')
       mockIsCloud.value = true
       mockFreeTierExecutionPermitted.value = false
@@ -233,6 +236,7 @@ describe('useBillingContext', () => {
 
     it('is true when on free tier and freeTierExecutionPermitted is true', async () => {
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       useSubscription().subscriptionTier = computed(() => 'FREE')
       mockBillingStatus.value.subscription_tier = 'FREE'
       useSubscription().subscriptionStatus.value = {
@@ -248,6 +252,7 @@ describe('useBillingContext', () => {
 
     it('is false when on free tier on cloud and freeTierExecutionPermitted is false', async () => {
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       useSubscription().subscriptionTier = computed(() => 'FREE')
       mockBillingStatus.value.subscription_tier = 'FREE'
       useSubscription().subscriptionStatus.value = {
@@ -263,6 +268,7 @@ describe('useBillingContext', () => {
 
     it('is true when on free tier off cloud even if freeTierExecutionPermitted is false', async () => {
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       useSubscription().subscriptionTier = computed(() => 'FREE')
       mockBillingStatus.value.subscription_tier = 'FREE'
       useSubscription().subscriptionStatus.value = {
@@ -278,6 +284,7 @@ describe('useBillingContext', () => {
 
     it('is true when config is not loaded, even if freeTierExecutionPermitted is false', async () => {
       remoteConfigState.value = 'unloaded'
+      authenticatedRemoteConfigState.value = 'unloaded'
       useSubscription().subscriptionTier = computed(() => 'FREE')
       mockBillingStatus.value.subscription_tier = 'FREE'
       useSubscription().subscriptionStatus.value = {
@@ -445,6 +452,7 @@ describe('useBillingContext', () => {
   it('routes migrated legacy Stripe topups through workspace billing', async () => {
     remoteConfig.value = { legacy_billing_migration_enabled: true }
     remoteConfigState.value = 'authenticated'
+    authenticatedRemoteConfigState.value = 'authenticated'
     mockBillingRail.value = 'legacy_stripe'
 
     const context = useBillingContext()
