@@ -1,0 +1,38 @@
+---
+import type { GetStaticPaths } from 'astro'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import CinematicStudioPage from '../../components/workshop/cinematic-studio/CinematicStudioPage.vue'
+import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { runnableCinematicModels } from '../../lib/workshop/cinematic-studio/models'
+import { priceCinematicModels } from '../../lib/workshop/cinematic-studio/pricing'
+import { tc } from '../../lib/workshop/cinematic-studio/copy'
+import { appPagePaths } from '../../config/workshop-app-content'
+import type { AppWorkshopModel } from '../../config/models-catalogue'
+
+export const getStaticPaths: GetStaticPaths = () => appPagePaths()
+
+interface Props {
+  readonly model: AppWorkshopModel
+}
+
+const { model } = Astro.props
+const app = model.appId
+
+const models = await priceCinematicModels(
+  runnableCinematicModels(getRouterWorkshopModelDetail),
+  getRouterWorkshopModelDetail
+)
+if (!models.length) throw new Error('Cinematic Studio has no runnable models')
+---
+
+<BaseLayout
+  title={`${model.name} - Comfy`}
+  description={model.summary ?? tc('cinematic.meta.description')}
+  ogImage={model.thumbnailUrl}
+  noindex
+>
+  <CinematicStudioPage models={models} initialApp={app} client:load />
+  <noscript>
+    <p class="p-8 text-center">{tc('cinematic.unavailable.title')}</p>
+  </noscript>
+</BaseLayout>
