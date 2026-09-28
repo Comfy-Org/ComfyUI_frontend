@@ -137,10 +137,7 @@ async function renderCheckout(
   recordBillingEntry(parseBillingEntry(path))
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [
-      { path: '/v1/checkout', component: CheckoutView },
-      { path: '/v1/subscription', component: { template: '<div />' } }
-    ]
+    routes: [{ path: '/v1/checkout', component: CheckoutView }]
   })
   const fake = createFakeBillingClient({
     preview: {
@@ -600,38 +597,20 @@ describe('CheckoutView', () => {
     ).toBeEnabled()
   })
 
-  it('goes back to the plans with the same request', async () => {
-    const { router } = await renderCheckout()
-    await screen.findByText('Creator · Monthly')
+  it.for(['Back', 'Close'])(
+    'returns to the product, where plans are chosen, on %s',
+    async (action) => {
+      const assign = stubNavigation()
+      await renderCheckout()
+      await screen.findByText('Creator · Monthly')
 
-    await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+      await userEvent.click(screen.getByRole('button', { name: action }))
 
-    expect(router.currentRoute.value.fullPath).toBe(
-      `/v1/subscription?${ENTRY_QUERY}&plan=creator_monthly`
-    )
-  })
-
-  it('returns to the product on close once there is somewhere to go', async () => {
-    const assign = stubNavigation()
-    await renderCheckout()
-    await screen.findByText('Creator · Monthly')
-
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
-
-    expect(assign).toHaveBeenCalledWith('https://testcloud.comfy.org/')
-  })
-
-  it('asks for a plan when the link names none', async () => {
-    await renderCheckout(`/v1/checkout?${ENTRY_QUERY}`)
-
-    expect(
-      await screen.findByRole('heading', { name: 'Choose a plan first' })
-    ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'See plans' })).toHaveAttribute(
-      'href',
-      `/v1/subscription?${ENTRY_QUERY}`
-    )
-  })
+      expect(assign).toHaveBeenCalledExactlyOnceWith(
+        'https://testcloud.comfy.org/'
+      )
+    }
+  )
 
   it.for([
     ['upgrade', true, 2800] as const,
@@ -674,9 +653,15 @@ describe('CheckoutView', () => {
       preview: { status: 'error', code: 'NO_ACTIVE_SUBSCRIPTION' }
     })
 
+    const assign = stubNavigation()
     expect(
       await screen.findByText('There is no active subscription to change.')
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+
+    expect(assign).toHaveBeenCalledExactlyOnceWith(
+      'https://testcloud.comfy.org/'
+    )
   })
 })

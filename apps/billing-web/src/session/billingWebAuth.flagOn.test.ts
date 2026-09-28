@@ -33,6 +33,7 @@ vi.mock<unknown>(import('firebase/auth'), () => ({
 
 vi.mock(import('@/config/env'), () => ({
   CLOUD_BASE_URL: 'https://testcloud.comfy.org',
+  BILLING_WEB_ENV: 'test' as const,
   STRIPE_PUBLISHABLE_KEY: undefined
 }))
 
