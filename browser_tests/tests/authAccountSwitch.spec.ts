@@ -520,7 +520,6 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await page.getByLabel('Email').fill(ACCOUNT_B.email)
       await page.getByLabel('Password').fill('password')
       await page.getByRole('button', { name: 'Sign in' }).click()
-      await new ComfyPage(page, request).waitForAppReady()
 
       await expect(
         page.getByRole('button', { name: 'Current user' })
@@ -539,6 +538,8 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       expect(credentialEvents.indexOf(`session:${ACCOUNT_B.id}`)).toBeLessThan(
         credentialEvents.indexOf(`workspace:${ACCOUNT_B.id}`)
       )
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await new ComfyPage(page, request).waitForAppReady()
       await expect(
         page.getByRole('tab', {
           name: IDENTITY_SENTINELS.b.draft,
