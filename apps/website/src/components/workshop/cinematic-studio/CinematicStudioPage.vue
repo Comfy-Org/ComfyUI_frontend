@@ -57,6 +57,8 @@ onMounted(() => {
 
 function showApp(id: WorkshopAppId) {
   app.value = id
+  const name = appOptions.value.find((option) => option.id === id)?.label
+  if (name) document.title = `${name} - Comfy`
   const url = new URL(window.location.href)
   url.pathname = `${workshopAppHref(id, locale)}/`
   url.searchParams.delete('app')

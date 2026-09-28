@@ -66,6 +66,6 @@ test('sends the old studio address to the app page it named', async ({
   context
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
-  await page.goto('/cinematic-studio/?app=reshoot&ux=d')
-  await expect(page).toHaveURL(/\/models\/apps\/reshoot\/\?ux=d$/)
+  await page.goto('/cinematic-studio/?app=reshoot&ux=d&model=flux')
+  await expect(page).toHaveURL(/\/models\/apps\/reshoot\/\?ux=d&model=flux$/)
 })

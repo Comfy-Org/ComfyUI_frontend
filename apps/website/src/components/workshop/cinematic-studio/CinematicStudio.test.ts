@@ -1008,6 +1008,7 @@ describe('CinematicStudio', () => {
       expect(panel()).toBeNull()
       expect(window.location.pathname).toBe('/models/apps/reshoot/')
       expect(window.location.search).toBe('?ux=d')
+      expect(document.title).toBe('Re-shoot a video - Comfy')
     })
 
     it('lists Cinematic Studio first and Re-shoot a video next in the Hub apps tab', async () => {

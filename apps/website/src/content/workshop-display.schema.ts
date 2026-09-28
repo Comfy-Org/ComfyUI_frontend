@@ -142,6 +142,14 @@ export const workshopDisplaySchema = workshopDisplaySourceSchema
   )
   .refine(
     (entry) =>
+      entry.type === 'APP' ||
+      [entry.media.thumbnail, ...(entry.media.samples ?? [])].every(
+        (asset) => asset === undefined || !asset.url.startsWith('/')
+      ),
+    'Only app pages may use media this site serves; others use an absolute URL'
+  )
+  .refine(
+    (entry) =>
       (entry.type !== 'CLOUD' && entry.type !== 'SERVERLESS') ||
       (entry.inputs !== undefined && entry.displayName !== undefined),
     'Workflow pages require a display name and declared inputs'
