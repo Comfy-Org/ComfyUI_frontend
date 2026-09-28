@@ -1,5 +1,5 @@
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
+import { computed, onScopeDispose, ref } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
@@ -187,6 +187,9 @@ export function useSubscriptionCheckout(
     refreshStatusOnFocus = false
     void fetchStatus()
   })
+  // The payment-recovery toast is sticky and can outlive this checkout;
+  // drop it with the checkout rather than leave a button for a dead context.
+  onScopeDispose(() => toast.removeGroup('payment-recovery'))
   // Some legacy-rail status reads cannot expose a scheduled cancellation even
   // though the subscribe authority can see it in Stripe. Once that authority
   // rejects an unconfirmed change, keep the consent screen in reactivation
@@ -618,7 +621,10 @@ export function useSubscriptionCheckout(
           detail: {
             text: t('subscription.preview.paymentPopupBlocked'),
             actionLabel: t('subscription.planLoadErrorRetry'),
+            // The toast can outlive this attempt (a newer one started, or the
+            // checkout reset); a stale click must not reopen its captured URL.
             onAction: () => {
+              if (!isCurrent()) return
               window.open(portalUrl.href, '_blank')
               refreshStatusOnFocus = true
             }
@@ -1098,6 +1104,7 @@ export function useSubscriptionCheckout(
     selectedTeamCheckout.value = null
     activeCheckoutOperationId.value = null
     activeCheckoutAttemptStartedAt = undefined
+    toast.removeGroup('payment-recovery')
   }
 
   function handleBackToPricing() {
@@ -1559,6 +1566,7 @@ export function useSubscriptionCheckout(
       const paymentWindow = window.open(initialActionUrl, '_blank')
       if (!paymentWindow) {
         const paymentMethodUrl = initialActionUrl
+        const opId = response.billing_op_id
         toast.add({
           group: 'payment-recovery',
           severity: 'warn',
@@ -1566,7 +1574,14 @@ export function useSubscriptionCheckout(
           detail: {
             text: t('subscription.preview.paymentPopupBlocked'),
             actionLabel: t('subscription.planLoadErrorRetry'),
-            onAction: () => window.open(paymentMethodUrl, '_blank')
+            // Not the mutation lock: that's released as soon as the operation
+            // is adopted below, on purpose, so the checkout stays usable while
+            // this op is still awaiting the payment method. `activeCheckoutOperationId`
+            // is what a newer attempt (or a reset) actually reassigns.
+            onAction: () => {
+              if (activeCheckoutOperationId.value !== opId) return
+              window.open(paymentMethodUrl, '_blank')
+            }
           }
         })
       }
