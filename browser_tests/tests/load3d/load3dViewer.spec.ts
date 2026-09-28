@@ -58,20 +58,23 @@ test.describe('Load3D Viewer', { tag: '@vue-nodes' }, () => {
     load3d,
     viewer
   }) => {
+    await comfyPage.page.setViewportSize({ width: 500, height: 800 })
     const agentPanel = new AgentPanel(comfyPage.page)
     await agentPanel.open()
     await load3d.openViewerButton.click()
     await viewer.waitForOpen()
 
     const dialogBox = await viewer.dialog.boundingBox()
+    const panelBox = await comfyPage.page
+      .getByTestId('docked-agent-panel')
+      .boundingBox()
     const viewport = comfyPage.page.viewportSize()
     expect(dialogBox).not.toBeNull()
+    expect(panelBox).not.toBeNull()
     expect(viewport).not.toBeNull()
     expect(dialogBox!.x).toBeGreaterThanOrEqual(0)
     expect(dialogBox!.y).toBeGreaterThanOrEqual(0)
-    expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(
-      viewport!.width - 420 + 1
-    )
+    expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(panelBox!.x + 1)
     expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(
       viewport!.height + 1
     )
