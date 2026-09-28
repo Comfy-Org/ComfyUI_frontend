@@ -53,11 +53,15 @@ function finishWithPersistedText(
   }
   const firstTextIndex = kept.findIndex((part) => part.type === 'text')
   const withoutText = kept.filter((part) => part.type !== 'text')
-  withoutText.splice(firstTextIndex < 0 ? withoutText.length : firstTextIndex, 0, {
-    type: 'text',
-    text: persistedText,
-    state: 'done'
-  })
+  withoutText.splice(
+    firstTextIndex < 0 ? withoutText.length : firstTextIndex,
+    0,
+    {
+      type: 'text',
+      text: persistedText,
+      state: 'done'
+    }
+  )
   message.parts = withoutText
 }
 

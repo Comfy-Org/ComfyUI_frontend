@@ -1266,11 +1266,13 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(g5a) recovery preserves every persisted assistant row in a turn', async () => {
     const rest = fakeRest({
-      getMessages: vi.fn(async (): Promise<AgentMessages> => [
-        historyRow(1, 'user', 'msg-1', 'go'),
-        historyRow(2, 'assistant', 'msg-1', 'first ', 'msg-1'),
-        historyRow(3, 'assistant', 'msg-1', 'second')
-      ])
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          historyRow(2, 'assistant', 'msg-1', 'first ', 'msg-1'),
+          historyRow(3, 'assistant', 'msg-1', 'second')
+        ]
+      )
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
