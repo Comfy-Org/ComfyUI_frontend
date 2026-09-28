@@ -391,6 +391,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
@@ -464,8 +465,8 @@ const { copyToClipboard } = useCopyToClipboard()
 const { focusNode } = useFocusNode()
 const rightSidePanelStore = useRightSidePanelStore()
 const missingModelStore = useMissingModelStore()
-const { shouldShowManagerButtons, shouldShowInstallButton, openManager } =
-  useManagerState()
+const { shouldShowManagerButtons, shouldShowInstallButton } = useManagerState()
+const { openManager } = useManagerDialog()
 const { missingNodePacks } = useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   usePackInstall(() => missingNodePacks.value)
