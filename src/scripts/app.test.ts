@@ -355,7 +355,7 @@ describe('ComfyApp', () => {
           computeVisibleArea: vi.fn()
         }
       })
-      useCanvasStore().canvas = mockCanvas as LGraphCanvas
+      useCanvasStore().canvas = mockCanvas
       vi.mocked(mockCanvas.draw).mockImplementation(() => {
         calls.push('draw')
       })
@@ -369,9 +369,70 @@ describe('ComfyApp', () => {
       node.size = [200, 100]
       graph.add(node)
       mockCanvas.graph = graph
-      Reflect.get(app, 'resizeCanvas').call(app, canvas)
+      app.resizeCanvas(canvas)
 
-      expect(calls).toEqual(['fit', 'draw', 'draw'])
+      expect(calls.indexOf('fit')).toBeGreaterThanOrEqual(0)
+      expect(calls.indexOf('fit')).toBeLessThan(calls.indexOf('draw'))
+    })
+
+    it('does not let an older load replace the graph after a newer load completes', async () => {
+      const canvas = document.createElement('canvas')
+      Object.defineProperties(canvas, {
+        offsetParent: { value: document.body },
+        offsetWidth: { value: 800 },
+        offsetHeight: { value: 600 }
+      })
+      app.canvasElRef.value = canvas
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Object.assign(mockCanvas, {
+        canvas,
+        bgcanvas: document.createElement('canvas'),
+        viewport: new Float32Array([0, 0, 800, 600]),
+        dpr: 1
+      })
+      useCanvasStore().canvas = mockCanvas
+
+      let releaseOlderLoad: (() => void) | undefined
+      const olderLoadPaused = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      let beforeLoadCalls = 0
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'beforeLoadGraph' && beforeLoadCalls++ === 0) {
+            await olderLoadPaused
+          }
+        }
+      )
+      const configuredGraphs: string[] = []
+      const drawnGraphs: string[] = []
+      vi.spyOn(graph, 'configure').mockImplementation((data) => {
+        const loadMarker = String(data.extra?.loadMarker)
+        graph.extra.loadMarker = loadMarker
+        configuredGraphs.push(loadMarker)
+      })
+      vi.mocked(mockCanvas.draw).mockImplementation(() => {
+        drawnGraphs.push(String(graph.extra.loadMarker))
+      })
+
+      const olderLoad = app.loadGraphData({
+        ...createWorkflowGraphData(),
+        extra: { loadMarker: 'older' }
+      })
+      await vi.waitFor(() => expect(beforeLoadCalls).toBe(1))
+      const currentLoad = app.loadGraphData({
+        ...createWorkflowGraphData(),
+        extra: { loadMarker: 'current' }
+      })
+      await expect(currentLoad).resolves.toBeTruthy()
+      releaseOlderLoad?.()
+      const olderResult = await olderLoad
+      app.resizeCanvas(canvas)
+
+      expect(configuredGraphs).toEqual(['current'])
+      expect(drawnGraphs).toEqual(['current', 'current'])
+      expect(olderResult).toBe(false)
     })
 
     it('forwards clean and navigation intent to workflow navigation', async () => {

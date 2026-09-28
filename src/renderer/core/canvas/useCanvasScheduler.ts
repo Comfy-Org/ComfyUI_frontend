@@ -5,7 +5,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 type CanvasOp = () => void
 interface CameraIntent {
-  key: string
   isCurrent: () => boolean
   run: CanvasOp
 }
@@ -58,9 +57,7 @@ export const useCanvasScheduler = createSharedComposable(
 
     function scheduleCameraIntent(intent: CameraIntent): void {
       if (!intent.isCurrent()) return
-      const index = queue.findIndex(
-        (entry) => entry.type === 'camera' && entry.intent.key === intent.key
-      )
+      const index = queue.findIndex((entry) => entry.type === 'camera')
       if (index >= 0) queue.splice(index, 1)
       queue.push({ type: 'camera', intent })
       if (isCanvasReady()) requestFlush()

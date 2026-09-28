@@ -169,7 +169,6 @@ describe('useCanvasScheduler', () => {
     const stale = vi.fn()
     let isCurrent = true
     scheduler.scheduleCameraIntent({
-      key: 'stale-workflow-load',
       isCurrent: () => isCurrent,
       run: stale
     })
@@ -185,12 +184,10 @@ describe('useCanvasScheduler', () => {
     const current = vi.fn()
     const stale = vi.fn()
     scheduler.scheduleCameraIntent({
-      key: 'workflow-load',
       isCurrent: () => true,
       run: current
     })
     scheduler.scheduleCameraIntent({
-      key: 'workflow-load',
       isCurrent: () => false,
       run: stale
     })
@@ -201,29 +198,22 @@ describe('useCanvasScheduler', () => {
     expect(current).toHaveBeenCalledOnce()
   })
 
-  it('preserves unrelated work when replacing same-key camera intent', async () => {
+  it('preserves ordinary work when replacing the pending camera intent', async () => {
     const scheduler = await createScheduler()
     const calls: string[] = []
 
     scheduler.schedule(() => calls.push('ordinary'))
     scheduler.scheduleCameraIntent({
-      key: 'subgraph-camera',
-      isCurrent: () => true,
-      run: () => calls.push('different-key')
-    })
-    scheduler.scheduleCameraIntent({
-      key: 'workflow-load',
       isCurrent: () => true,
       run: () => calls.push('superseded')
     })
     scheduler.scheduleCameraIntent({
-      key: 'workflow-load',
       isCurrent: () => true,
       run: () => calls.push('current')
     })
 
     runNextAnimationFrame()
-    expect(calls).toEqual(['ordinary', 'different-key', 'current'])
+    expect(calls).toEqual(['ordinary', 'current'])
   })
 
   it('continues executing remaining ops when one throws', async () => {

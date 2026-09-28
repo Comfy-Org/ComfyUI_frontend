@@ -1083,7 +1083,7 @@ export class ComfyApp {
   }
 
   /** @deprecated Use {@link measureViewportFromElement} + {@link applyViewport} directly. */
-  private resizeCanvas(canvas: HTMLCanvasElement) {
+  resizeCanvas(canvas: HTMLCanvasElement) {
     const viewport = measureViewportFromElement(canvas)
     applyViewport(viewport, canvas, this.canvas.bgcanvas)
     this.canvas.dpr = viewport.dpr
@@ -1280,6 +1280,7 @@ export class ComfyApp {
     } = options
     useWorkflowService().beforeLoadNewGraph(clean !== false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    if (loadId !== this.graphLoadId) return false
 
     if (skipAssetScans) {
       // Only reset candidates; preserve UI state (fileSizes, etc.)
@@ -1322,6 +1323,7 @@ export class ComfyApp {
     if (useSettingStore().get('Comfy.Validation.Workflows')) {
       const { graphData: validatedGraphData } =
         await useWorkflowValidation().validateWorkflow(graphData)
+      if (loadId !== this.graphLoadId) return false
 
       // If the validation failed, use the original graph data.
       // Ideally we should not block users from loading the workflow.
@@ -1350,9 +1352,11 @@ export class ComfyApp {
       graphData,
       missingNodeTypes
     )
+    if (loadId !== this.graphLoadId) return false
 
     const nodeReplacementStore = useNodeReplacementStore()
     await nodeReplacementStore.load()
+    if (loadId !== this.graphLoadId) return false
 
     // Collect missing node types from all nodes (root + subgraphs)
     const collectMissingNodes = (
@@ -1473,7 +1477,6 @@ export class ComfyApp {
         }
 
         canvasScheduler.scheduleCameraIntent({
-          key: 'workflow-load',
           isCurrent: () => loadId === this.graphLoadId,
           run: () => {
             const vp = measureViewportFromElement(this.canvasEl)

@@ -1,7 +1,7 @@
 import { mergeTests } from '@playwright/test'
 
 import appTemplate from '@e2e/assets/linear-basic-app-1.json' with { type: 'json' }
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -11,19 +11,21 @@ import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
 import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
 
 const test = mergeTests(comfyPageFixture, templateApiFixture)
-const TEMPLATE = 'pm-1733-app-template'
 
 test.describe('App mode template load', { tag: ['@canvas'] }, () => {
   test.beforeEach(async ({ templateApi }) => {
-    const workflow = structuredClone(
-      appTemplate
-    ) as unknown as ComfyWorkflowJSON
+    const workflow = zComfyWorkflow.parse(structuredClone(appTemplate))
     workflow.extra = { ...workflow.extra, linearMode: true }
     templateApi.configure(
-      withTemplates([makeTemplate({ name: TEMPLATE, title: 'App Template' })])
+      withTemplates([
+        makeTemplate({
+          name: 'pm-1733-app-template',
+          title: 'App Template'
+        })
+      ])
     )
     await templateApi.mock()
-    await templateApi.mockWorkflowData(TEMPLATE, workflow)
+    await templateApi.mockWorkflowData('pm-1733-app-template', workflow)
   })
 
   test.afterEach(async ({ comfyPage }) => {
@@ -48,25 +50,19 @@ test.describe('App mode template load', { tag: ['@canvas'] }, () => {
         ds.scale = 0.05
       })
 
-      await templateApi.load(TEMPLATE)
+      await templateApi.load('pm-1733-app-template')
       await expect
-        .poll(() =>
-          page.evaluate(
-            () =>
-              window.app!.extensionManager.workflow.activeWorkflow?.filename ??
-              ''
-          )
-        )
-        .toContain(TEMPLATE)
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toContain('pm-1733-app-template')
       await comfyPage.workflow.waitForWorkflowIdle()
       await expect
-        .poll(() =>
-          page.evaluate(() => {
-            const workflow =
-              window.app!.extensionManager.workflow.activeWorkflow
-            return workflow?.activeMode ?? workflow?.initialMode ?? 'graph'
-          })
-        )
+        .poll(async () => {
+          return (
+            (await comfyPage.workflow.getActiveWorkflowActiveAppMode()) ??
+            (await comfyPage.workflow.getActiveWorkflowInitialMode()) ??
+            'graph'
+          )
+        })
         .toBe('app')
       await expect
         .poll(() => page.evaluate(() => window.app!.canvasEl.width))
@@ -92,12 +88,10 @@ test.describe('App mode template load', { tag: ['@canvas'] }, () => {
         )
         .toBeGreaterThan(0)
 
-      const camera = await page.evaluate(() => ({
-        scale: window.app!.canvas.ds.scale,
-        offset: [...window.app!.canvas.ds.offset]
-      }))
-      expect(camera.scale).toBeGreaterThan(0)
-      expect(camera.offset.every(Number.isFinite)).toBe(true)
+      const scale = await comfyPage.canvasOps.getScale()
+      const offset = await comfyPage.canvasOps.getOffset()
+      expect(scale).toBeGreaterThan(0)
+      expect(offset.every(Number.isFinite)).toBe(true)
     })
   })
 })
