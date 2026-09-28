@@ -440,8 +440,6 @@ test.describe('Workflow Persistence', () => {
       test(`copied links keep copied endpoints after saved reload with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
         comfyPage
       }) => {
-        test.setTimeout(30_000)
-
         await comfyPage.workflow.loadWorkflow('default')
         await fitToViewInstant(comfyPage)
 
@@ -962,8 +960,6 @@ test.describe('Workflow Persistence', () => {
   test('Restores saved workflow drafts from inactive restored tabs', async ({
     comfyPage
   }) => {
-    test.setTimeout(30_000)
-
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
     await comfyPage.settings.setSetting(

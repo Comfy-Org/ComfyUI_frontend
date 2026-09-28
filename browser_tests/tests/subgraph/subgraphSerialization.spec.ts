@@ -611,8 +611,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     test('Promoted widget tuples are stable after full page reload boot path', async ({
       comfyPage
     }) => {
-      test.setTimeout(30_000)
-
       await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW)
 
       const beforeSnapshot =
