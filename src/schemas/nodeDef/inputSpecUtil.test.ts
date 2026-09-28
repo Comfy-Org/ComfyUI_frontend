@@ -1,8 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 describe('flattenInputSpecs', () => {
   it('includes a dynamic combo input alongside its nested per-option inputs', () => {
@@ -180,7 +185,7 @@ describe('flattenInputSpecs', () => {
     expect(result.map((spec) => spec.name)).toEqual(['model'])
   })
 
-  it('skips a dynamic combo whose options field is not an array', () => {
+  it('reports and skips a dynamic combo whose options field is not an array', () => {
     const nodeDef: ComfyNodeDefV1 = {
       name: 'MalformedOptionsNode',
       display_name: 'Malformed Options Node',
@@ -200,16 +205,27 @@ describe('flattenInputSpecs', () => {
     }
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
     const result = flattenInputSpecs(nodeDefImpl.inputs)
 
     expect(result.map((spec) => spec.name)).toEqual(['model'])
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('Unparseable COMFY_DYNAMICCOMBO_V3 spec'),
-      expect.anything()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'error_parsing_node_input_spec',
+        tags: {
+          failure_kind: 'degraded',
+          feature_area: 'node_definition',
+          operation: 'parse_input_spec',
+          outcome: 'recovered'
+        },
+        context: {
+          controlType: 'COMFY_DYNAMICCOMBO_V3',
+          optionIndex: undefined,
+          issueCount: expect.any(Number)
+        },
+        level: 'warning'
+      })
     )
-    warn.mockRestore()
   })
 
   it('keeps well-formed sibling options when one option is unparseable', () => {
@@ -240,15 +256,14 @@ describe('flattenInputSpecs', () => {
     }
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
     const result = flattenInputSpecs(nodeDefImpl.inputs)
 
     expect(result.map((spec) => spec.name)).toEqual(['model', 'image'])
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('option index 1'),
-      expect.anything()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({ optionIndex: 1 })
+      })
     )
-    warn.mockRestore()
   })
 })

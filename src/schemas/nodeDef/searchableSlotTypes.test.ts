@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { OutputSpec as OutputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
@@ -7,6 +8,10 @@ import {
   collectSearchableOutputTypes
 } from '@/schemas/nodeDef/searchableSlotTypes'
 import type { ComfyInputsSpec, InputSpec } from '@/schemas/nodeDefSchema'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 function dynamicCombo(
   options: { key: string; inputs: ComfyInputsSpec }[]
@@ -91,8 +96,6 @@ describe('collectSearchableInputTypes', () => {
     })
 
     it('keeps sibling option types when one option is unparseable', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
       const spec: InputSpec = [
         'COMFY_DYNAMICCOMBO_V3',
         {
@@ -104,21 +107,14 @@ describe('collectSearchableInputTypes', () => {
       ]
 
       expect(collectSearchableInputTypes(toV2(spec))).toEqual(['IMAGE'])
-      expect(warn).toHaveBeenCalled()
-      warn.mockRestore()
+      expect(reportError).toHaveBeenCalled()
     })
 
-    it('warns and yields nothing for a spec with no options array', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
+    it('reports and yields nothing for a spec with no options array', () => {
       expect(
         collectSearchableInputTypes(toV2(['COMFY_DYNAMICCOMBO_V3', {}]))
       ).toEqual([])
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining('Unparseable COMFY_DYNAMICCOMBO_V3 spec'),
-        expect.anything()
-      )
-      warn.mockRestore()
+      expect(reportError).toHaveBeenCalled()
     })
   })
 
@@ -184,19 +180,13 @@ describe('collectSearchableInputTypes', () => {
   })
 
   describe('COMFY_AUTOGROW_V3', () => {
-    it('warns and yields nothing when the template is malformed', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
+    it('reports and yields nothing when the template is malformed', () => {
       expect(
         collectSearchableInputTypes(
           toV2(['COMFY_AUTOGROW_V3', { template: {} }])
         )
       ).toEqual([])
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining('Unparseable COMFY_AUTOGROW_V3 spec'),
-        expect.anything()
-      )
-      warn.mockRestore()
+      expect(reportError).toHaveBeenCalled()
     })
   })
 
@@ -205,17 +195,14 @@ describe('collectSearchableInputTypes', () => {
       expect(resolve(matchType('IMAGE, MASK'))).toEqual(['IMAGE', 'MASK'])
     })
 
-    it('warns and yields nothing when template_id is missing', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
+    it('reports and yields nothing when template_id is missing', () => {
       const spec: InputSpec = [
         'COMFY_MATCHTYPE_V3',
         { template: { allowed_types: 'IMAGE' } }
       ]
 
       expect(collectSearchableInputTypes(toV2(spec))).toEqual([])
-      expect(warn).toHaveBeenCalled()
-      warn.mockRestore()
+      expect(reportError).toHaveBeenCalled()
     })
   })
 })
