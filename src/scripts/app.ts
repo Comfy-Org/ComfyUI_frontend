@@ -1127,10 +1127,8 @@ export class ComfyApp {
     pending.run()
   }
 
-  private beginGraphReplacement(graphSwapped = true) {
-    // An in-place reload keeps the same root graph, so a fit still owed to it
-    // is still owed after the reload. Only a real swap invalidates it.
-    if (graphSwapped) this.pendingFitView = undefined
+  private beginGraphReplacement() {
+    this.pendingFitView = undefined
     return ++this.graphLoadId
   }
 
@@ -1339,7 +1337,7 @@ export class ComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
-    const loadId = this.beginGraphReplacement(clean)
+    const loadId = this.beginGraphReplacement()
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
