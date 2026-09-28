@@ -6,12 +6,6 @@ import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 
-declare global {
-  interface Window {
-    __autoShownReads: number
-  }
-}
-
 test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
   test.use({
     agentConsentAccepted: false,
@@ -535,6 +529,7 @@ test.describe(
   { tag: ['@cloud', '@ui'] },
   () => {
     test.use({
+      agentAutoShownReadProbe: true,
       agentConsentAccepted: false,
       initialSettings: { 'Comfy.TutorialCompleted': false },
       initialFeatureFlags: {
