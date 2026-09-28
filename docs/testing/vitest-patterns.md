@@ -192,7 +192,7 @@ Use [Vitest 5's `vi.when`](https://vitest.dev/guide/recipes/conditional-mocking)
 when a mock returns fixed values for specific arguments. Keep
 `mockImplementation` for calculations and side effects. See
 [`UsageLogsTable.test.ts`](../../src/components/dialog/content/setting/UsageLogsTable.test.ts)
-for typed event-label and severity mappings.
+for a typed paginated event response.
 
 Register behaviors inside the test or `beforeEach`; `mockReset` clears them
 before the next test. Preserve unmatched-call behavior with `onUnmatched`.

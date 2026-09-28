@@ -3,24 +3,44 @@ import { ref } from 'vue'
 
 import type * as real from '../customerEventsService'
 
+type CustomerEventsService = ReturnType<typeof real.useCustomerEventsService>
+
 export const { EventType } = await vi.importActual<typeof real>(
   '../customerEventsService'
 )
 
-const customerEventsService: ReturnType<typeof real.useCustomerEventsService> =
-  {
-    isLoading: ref(false),
-    error: ref(null),
-    getMyEvents: vi.fn(async () => null),
-    formatEventType: vi.fn((type) => type),
-    getEventSeverity: vi.fn(() => 'info' as const),
-    formatAmount: vi.fn(() => '0.00'),
-    hasAdditionalInfo: vi.fn(() => false),
-    formatDate: vi.fn((date) => date),
-    formatJsonKey: vi.fn((key) => key),
-    formatJsonValue: vi.fn((value) => value),
-    getTooltipContent: vi.fn(() => '')
-  }
+const eventLabels = new Map<string, string>([
+  [EventType.CREDIT_ADDED, 'Credits Added'],
+  [EventType.ACCOUNT_CREATED, 'Account Created'],
+  [EventType.API_USAGE_COMPLETED, 'API Usage']
+])
+const eventSeverities = new Map<
+  string,
+  ReturnType<CustomerEventsService['getEventSeverity']>
+>([
+  [EventType.CREDIT_ADDED, 'success'],
+  [EventType.API_USAGE_COMPLETED, 'warning']
+])
+
+const customerEventsService: CustomerEventsService = {
+  isLoading: ref(false),
+  error: ref(null),
+  getMyEvents: vi.fn(async () => ({ events: [] })),
+  formatEventType: vi.fn((type) => eventLabels.get(type) ?? type),
+  getEventSeverity: vi.fn((type) => eventSeverities.get(type) ?? 'info'),
+  formatAmount: vi.fn((amount) => {
+    if (!amount) return '0.00'
+    return (amount / 100).toFixed(2)
+  }),
+  hasAdditionalInfo: vi.fn((event) => {
+    const { amount, api_name, model, ...otherParams } = event.params ?? {}
+    return Object.keys(otherParams).length > 0
+  }),
+  formatDate: vi.fn((date) => new Date(date).toLocaleDateString()),
+  formatJsonKey: vi.fn((key) => key),
+  formatJsonValue: vi.fn((value) => value),
+  getTooltipContent: vi.fn(() => '')
+}
 
 export const useCustomerEventsService = vi.fn<
   typeof real.useCustomerEventsService

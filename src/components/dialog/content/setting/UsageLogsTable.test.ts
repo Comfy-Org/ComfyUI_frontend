@@ -8,7 +8,6 @@ import { createI18n } from 'vue-i18n'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 
-import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,
   useCustomerEventsService
@@ -125,9 +124,9 @@ describe('UsageLogsTable', () => {
 
   beforeEach(() => {
     setWorkspaceBilling(false)
-    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
-      mockEventsResponse
-    )
+    vi.when(useCustomerEventsService().getMyEvents)
+      .calledWith({ page: 1, limit: 7 })
+      .thenResolve(mockEventsResponse)
     vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
       mockEventsResponse
     )
@@ -136,40 +135,8 @@ describe('UsageLogsTable', () => {
       value: mockEventsResponse
     })
     mockBillingReadRail.enabled = false
-    vi.when(useCustomerEventsService().formatEventType, {
-      onUnmatched: (type) => type
-    })
-      .calledWith(EventType.CREDIT_ADDED)
-      .thenReturn('Credits Added')
-      .calledWith(EventType.ACCOUNT_CREATED)
-      .thenReturn('Account Created')
-      .calledWith(EventType.API_USAGE_COMPLETED)
-      .thenReturn('API Usage')
-    vi.when(useCustomerEventsService().getEventSeverity, {
-      onUnmatched: () => 'info'
-    })
-      .calledWith(EventType.CREDIT_ADDED)
-      .thenReturn('success')
-      .calledWith(EventType.API_USAGE_COMPLETED)
-      .thenReturn('warning')
-    vi.mocked(useCustomerEventsService().formatAmount).mockImplementation(
-      (amount) => {
-        if (!amount) return '0.00'
-        return (amount / 100).toFixed(2)
-      }
-    )
-    vi.mocked(useCustomerEventsService().formatDate).mockImplementation(
-      (dateString: string) => new Date(dateString).toLocaleDateString()
-    )
-    vi.mocked(useCustomerEventsService().hasAdditionalInfo).mockImplementation(
-      (event: AuditLog) => {
-        const { amount, api_name, model, ...otherParams } =
-          event.params as Record<string, unknown>
-        return Object.keys(otherParams).length > 0
-      }
-    )
-    vi.mocked(useCustomerEventsService().getTooltipContent).mockImplementation(
-      () => '<strong>Transaction Id:</strong> txn-123'
+    vi.mocked(useCustomerEventsService().getTooltipContent).mockReturnValue(
+      '<strong>Transaction Id:</strong> txn-123'
     )
   })
 
