@@ -8,6 +8,7 @@ import type {
   Plan
 } from '@/platform/workspace/api/workspaceApi'
 import {
+  authenticatedRemoteConfigState,
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
@@ -182,6 +183,7 @@ describe('useBillingContext', () => {
   beforeEach(() => {
     remoteConfig.value = {}
     remoteConfigState.value = 'unloaded'
+    authenticatedRemoteConfigState.value = 'unloaded'
     mockIsPersonal.value = true
     mockBillingRail.value = undefined
     mockSetWorkspaceBillingRail.mockImplementation(
@@ -358,6 +360,7 @@ describe('useBillingContext', () => {
   it('routes migrated legacy Stripe topups through workspace billing', async () => {
     remoteConfig.value = { legacy_billing_migration_enabled: true }
     remoteConfigState.value = 'authenticated'
+    authenticatedRemoteConfigState.value = 'authenticated'
     mockBillingRail.value = 'legacy_stripe'
 
     const context = useBillingContext()
