@@ -48,11 +48,11 @@ declare global {
     changeCount?: number
     widgetValue?: unknown
     __commandExecutionCounts?: Record<string, number>
+    __perfFrameState?: PerfFrameState
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
     __appReadiness?: AppReadiness
-    __perfFrameState?: PerfFrameState
 
     /**
      * WebSocket store used by test fixtures for mocking WebSocket connections.
