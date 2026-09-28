@@ -186,7 +186,7 @@ export class DragAndScale {
    */
   fitToBounds(
     bounds: ReadOnlyRect,
-    { zoom = 0.75 }: { zoom?: number } = {}
+    { zoom = 0.75, viewport }: { zoom?: number; viewport?: ReadOnlyRect } = {}
   ): void {
     //If element hasn't initialized (browser tab is in background)
     //it has a size of 300x150 and a more reasonable default is used instead.
@@ -198,26 +198,23 @@ export class DragAndScale {
       this.element.width === 300 && this.element.height === 150
         ? [1920, 1080]
         : [this.element.width, this.element.height]
-    const cw = width / window.devicePixelRatio
-    const ch = height / window.devicePixelRatio
-    if (!(cw > 0) || !(ch > 0)) return
+    const fullCw = width / window.devicePixelRatio
+    const fullCh = height / window.devicePixelRatio
+    const [vx, vy, vw, vh] = viewport ?? [0, 0, fullCw, fullCh]
+    if (!(vw > 0) || !(vh > 0)) return
     let targetScale = this.scale
 
     if (zoom > 0) {
-      const targetScaleX = (zoom * cw) / Math.max(bounds[2], 300)
-      const targetScaleY = (zoom * ch) / Math.max(bounds[3], 300)
+      const targetScaleX = (zoom * vw) / Math.max(bounds[2], 300)
+      const targetScaleY = (zoom * vh) / Math.max(bounds[3], 300)
 
       // Choose the smaller scale to ensure the node fits into the viewport
       // Ensure we don't go over the max scale
       targetScale = Math.min(targetScaleX, targetScaleY, this.max_scale)
     }
 
-    const scaledWidth = cw / targetScale
-    const scaledHeight = ch / targetScale
-
-    // Calculate the target position to center the bounds in the viewport
-    const targetX = -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5
-    const targetY = -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5
+    const targetX = (vx + vw * 0.5) / targetScale - bounds[0] - bounds[2] * 0.5
+    const targetY = (vy + vh * 0.5) / targetScale - bounds[1] - bounds[3] * 0.5
 
     // Apply the changes immediately
     this.offset[0] = targetX
