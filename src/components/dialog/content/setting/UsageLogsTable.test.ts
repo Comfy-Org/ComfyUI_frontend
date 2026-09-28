@@ -1,7 +1,6 @@
 import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
-import type { Mocked } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -102,9 +101,6 @@ function makeEventsResponse(
 }
 
 describe('UsageLogsTable', () => {
-  let mockCustomerEventsService: Mocked<
-    ReturnType<typeof useCustomerEventsService>
-  >
   const mockEventsResponse = makeEventsResponse([
     {
       event_id: 'event-1',
@@ -128,9 +124,10 @@ describe('UsageLogsTable', () => {
   ])
 
   beforeEach(() => {
-    mockCustomerEventsService = vi.mocked(useCustomerEventsService())
     setWorkspaceBilling(false)
-    mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
+    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+      mockEventsResponse
+    )
     vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
       mockEventsResponse
     )
@@ -139,7 +136,7 @@ describe('UsageLogsTable', () => {
       value: mockEventsResponse
     })
     mockBillingReadRail.enabled = false
-    vi.when(mockCustomerEventsService.formatEventType, {
+    vi.when(useCustomerEventsService().formatEventType, {
       onUnmatched: (type) => type
     })
       .calledWith(EventType.CREDIT_ADDED)
@@ -148,28 +145,30 @@ describe('UsageLogsTable', () => {
       .thenReturn('Account Created')
       .calledWith(EventType.API_USAGE_COMPLETED)
       .thenReturn('API Usage')
-    vi.when(mockCustomerEventsService.getEventSeverity, {
+    vi.when(useCustomerEventsService().getEventSeverity, {
       onUnmatched: () => 'info'
     })
       .calledWith(EventType.CREDIT_ADDED)
       .thenReturn('success')
       .calledWith(EventType.API_USAGE_COMPLETED)
       .thenReturn('warning')
-    mockCustomerEventsService.formatAmount.mockImplementation((amount) => {
-      if (!amount) return '0.00'
-      return (amount / 100).toFixed(2)
-    })
-    mockCustomerEventsService.formatDate.mockImplementation(
+    vi.mocked(useCustomerEventsService().formatAmount).mockImplementation(
+      (amount) => {
+        if (!amount) return '0.00'
+        return (amount / 100).toFixed(2)
+      }
+    )
+    vi.mocked(useCustomerEventsService().formatDate).mockImplementation(
       (dateString: string) => new Date(dateString).toLocaleDateString()
     )
-    mockCustomerEventsService.hasAdditionalInfo.mockImplementation(
+    vi.mocked(useCustomerEventsService().hasAdditionalInfo).mockImplementation(
       (event: AuditLog) => {
         const { amount, api_name, model, ...otherParams } =
           event.params as Record<string, unknown>
         return Object.keys(otherParams).length > 0
       }
     )
-    mockCustomerEventsService.getTooltipContent.mockImplementation(
+    vi.mocked(useCustomerEventsService().getTooltipContent).mockImplementation(
       () => '<strong>Transaction Id:</strong> txn-123'
     )
   })
@@ -195,7 +194,7 @@ describe('UsageLogsTable', () => {
     it('loads activity on mount without an external refresh', async () => {
       await renderLoaded()
 
-      expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledTimes(1)
+      expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledTimes(1)
     })
 
     it('loads activity on mount on the workspace billing rail', async () => {
@@ -207,7 +206,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('shows a loading spinner while the initial load is in flight', () => {
-      mockCustomerEventsService.getMyEvents.mockReturnValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockReturnValue(
         new Promise(() => {})
       )
 
@@ -218,8 +217,8 @@ describe('UsageLogsTable', () => {
     })
 
     it('shows error message when service returns null', async () => {
-      mockCustomerEventsService.getMyEvents.mockResolvedValue(null)
-      mockCustomerEventsService.error.value = 'Failed to load events'
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(null)
+      useCustomerEventsService().error.value = 'Failed to load events'
 
       renderComponent()
 
@@ -229,7 +228,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('shows a localized fallback instead of a raw Error message', async () => {
-      mockCustomerEventsService.getMyEvents.mockRejectedValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockRejectedValue(
         new Error('Network error')
       )
 
@@ -246,8 +245,8 @@ describe('UsageLogsTable', () => {
     })
 
     it('shows a localized fallback when the service reports no message', async () => {
-      mockCustomerEventsService.getMyEvents.mockResolvedValue(null)
-      mockCustomerEventsService.error.value = null
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(null)
+      useCustomerEventsService().error.value = null
 
       renderComponent()
 
@@ -271,15 +270,15 @@ describe('UsageLogsTable', () => {
     it('renders event type badges', async () => {
       await renderLoaded()
 
-      expect(mockCustomerEventsService.formatEventType).toHaveBeenCalled()
-      expect(mockCustomerEventsService.getEventSeverity).toHaveBeenCalled()
+      expect(useCustomerEventsService().formatEventType).toHaveBeenCalled()
+      expect(useCustomerEventsService().getEventSeverity).toHaveBeenCalled()
     })
 
     it('renders credit added details with formatted amount', async () => {
       await renderLoaded()
 
       expect(screen.getByText(/Added \$/)).toBeInTheDocument()
-      expect(mockCustomerEventsService.formatAmount).toHaveBeenCalled()
+      expect(useCustomerEventsService().formatAmount).toHaveBeenCalled()
     })
 
     it('renders API usage details with api name and model', async () => {
@@ -290,7 +289,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('renders account created details', async () => {
-      mockCustomerEventsService.getMyEvents.mockResolvedValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'event-3',
@@ -311,11 +310,13 @@ describe('UsageLogsTable', () => {
     it('renders formatted dates', async () => {
       await renderLoaded()
 
-      expect(mockCustomerEventsService.formatDate).toHaveBeenCalled()
+      expect(useCustomerEventsService().formatDate).toHaveBeenCalled()
     })
 
     it('renders info buttons for events with additional info', async () => {
-      mockCustomerEventsService.hasAdditionalInfo.mockReturnValue(true)
+      vi.mocked(useCustomerEventsService().hasAdditionalInfo).mockReturnValue(
+        true
+      )
 
       await renderLoaded()
 
@@ -326,7 +327,9 @@ describe('UsageLogsTable', () => {
     })
 
     it('does not render info buttons when no additional info', async () => {
-      mockCustomerEventsService.hasAdditionalInfo.mockReturnValue(false)
+      vi.mocked(useCustomerEventsService().hasAdditionalInfo).mockReturnValue(
+        false
+      )
 
       await renderLoaded()
 
@@ -340,7 +343,7 @@ describe('UsageLogsTable', () => {
     it('calls getMyEvents with initial page params', async () => {
       await renderLoaded()
 
-      expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledWith({
+      expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledWith({
         page: 1,
         limit: 7
       })
@@ -351,7 +354,7 @@ describe('UsageLogsTable', () => {
     it('calls getMyEvents on refresh with page 1', async () => {
       await renderLoaded()
 
-      expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledWith({
+      expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledWith({
         page: 1,
         limit: 7
       })
@@ -368,7 +371,7 @@ describe('UsageLogsTable', () => {
         page: 1,
         limit: 7
       })
-      expect(mockCustomerEventsService.getMyEvents).not.toHaveBeenCalled()
+      expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
     })
 
     it('discards a stale legacy response when routing flips mid-fetch', async () => {
@@ -377,7 +380,7 @@ describe('UsageLogsTable', () => {
         () => workspaceBilling.value
       )
       let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
-      mockCustomerEventsService.getMyEvents.mockReturnValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockReturnValue(
         new Promise((resolve) => {
           resolveLegacy = resolve
         })
@@ -424,7 +427,7 @@ describe('UsageLogsTable', () => {
       )
       mockPendingTopup.isPendingTopupCompleted.mockReturnValue(true)
       let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
-      mockCustomerEventsService.getMyEvents.mockReturnValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockReturnValue(
         new Promise((resolve) => {
           resolveLegacy = resolve
         })
@@ -493,7 +496,7 @@ describe('UsageLogsTable', () => {
     )
 
     const readers = {
-      legacy: () => mockCustomerEventsService.getMyEvents,
+      legacy: () => useCustomerEventsService().getMyEvents,
       workspaceApi: () => workspaceApi.getBillingEvents,
       rail: () => mockBillingReadRail.readEvents
     }
@@ -643,7 +646,7 @@ describe('UsageLogsTable', () => {
 
   describe('EventType integration', () => {
     it('renders credit_added event with correct detail template', async () => {
-      mockCustomerEventsService.getMyEvents.mockResolvedValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'event-1',
@@ -657,11 +660,11 @@ describe('UsageLogsTable', () => {
       await renderLoaded()
 
       expect(screen.getByText(/Added \$/)).toBeInTheDocument()
-      expect(mockCustomerEventsService.formatAmount).toHaveBeenCalled()
+      expect(useCustomerEventsService().formatAmount).toHaveBeenCalled()
     })
 
     it('renders api_usage_completed event with correct detail template', async () => {
-      mockCustomerEventsService.getMyEvents.mockResolvedValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'event-2',
