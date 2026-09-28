@@ -33,7 +33,7 @@ interface AssetDownloadMessage {
   bytes_total: number
   bytes_downloaded: number
   progress: number
-  status: 'created' | 'running' | 'completed' | 'failed'
+  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
   asset_id?: string
   error?: string
 }
@@ -171,6 +171,49 @@ test.describe(
       await toast.getByRole('button', { name: 'Close' }).click()
 
       await expect(toast).toBeHidden()
+    })
+
+    test('cancels a running download and renders the backend terminal state (PM-1309)', async ({
+      comfyPage
+    }) => {
+      const { page } = comfyPage
+      const taskId = '1396cc07-bab2-4f12-9b54-741f83f9224c'
+      const cancellationRequest = page.waitForRequest(
+        (request) =>
+          request.url().endsWith(`/tasks/${taskId}`) &&
+          request.method() === 'DELETE'
+      )
+      await page.route(`**/tasks/${taskId}`, async (route) => {
+        expect(route.request().method()).toBe('DELETE')
+        await route.fulfill({ status: 204 })
+      })
+
+      await dispatchAssetDownload(page, {
+        task_id: taskId,
+        asset_name: ASSET_NAME,
+        bytes_total: 1000,
+        bytes_downloaded: 200,
+        progress: 20,
+        status: 'running'
+      })
+
+      const toast = page.getByRole('status').filter({ hasText: ASSET_NAME })
+      await toast.getByRole('button', { name: 'Cancel Download' }).click()
+      await cancellationRequest
+
+      await dispatchAssetDownload(page, {
+        task_id: taskId,
+        asset_name: ASSET_NAME,
+        bytes_total: 1000,
+        bytes_downloaded: 200,
+        progress: 20,
+        status: 'cancelled'
+      })
+
+      await expect(toast.getByText('Cancelled', { exact: true })).toBeVisible()
+      await expect(
+        toast.getByRole('button', { name: 'Cancel Download' })
+      ).toBeHidden()
     })
 
     test('closing a failed download while polling does not reopen its toast', async ({
