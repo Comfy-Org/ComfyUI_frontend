@@ -8,9 +8,15 @@ import type { TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkflowGraph from './WorkflowGraph.vue'
 
-const { model, cloudHref } = defineProps<{
+const {
+  model,
+  cloudHref,
+  active = true
+} = defineProps<{
   model: WorkflowWorkshopModelDetail
   cloudHref?: string
+  /** Whether this tab is showing; the graph waits until it first is. */
+  active?: boolean
 }>()
 
 const template = model.workflow.template
@@ -92,6 +98,7 @@ const bandHeading =
           :source="template.downloadUrl"
           :samples
           :fallback="template.previewUrl"
+          :active
         />
         <a
           v-else-if="template?.previewUrl"

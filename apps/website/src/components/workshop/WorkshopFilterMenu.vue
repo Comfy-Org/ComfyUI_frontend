@@ -133,6 +133,8 @@ function clearAll() {
   models.value = []
 }
 
+defineExpose({ focus: () => trigger.value?.focus() })
+
 const sheetLabels = computed(() => ({
   title: label.value,
   search: t('workshop.filter.search', locale),

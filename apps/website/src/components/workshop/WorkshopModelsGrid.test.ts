@@ -198,6 +198,14 @@ describe('WorkshopModelsGrid', () => {
       'Generate videos'
     )
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+    // The pressed cross went with its chip; focus stays in the row.
+    expect(
+      screen.getByRole('button', { name: 'Remove Generate videos' })
+    ).toHaveFocus()
+
+    await user.click(screen.getByTestId('workshop-filter-chips-clear'))
+    expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Use cases' })).toHaveFocus()
   })
 
   it('replaces a browsed section with a use-case filter', async () => {
