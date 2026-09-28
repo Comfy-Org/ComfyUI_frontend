@@ -136,7 +136,7 @@ const {
             )
           "
           :button-class="`${AUTH_BRAND_GHOST_BUTTON_CLASS} w-full gap-3`"
-          label-class="relative top-[0.15em] inline-block"
+          label-class="inline-block"
           :disabled="busy"
           @google="signInWith('google')"
           @github="signInWith('github')"

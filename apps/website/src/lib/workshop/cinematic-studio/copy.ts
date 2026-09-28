@@ -1,3 +1,5 @@
+import type { NamedValues } from '../../../i18n/interpolate'
+import { interpolate } from '../../../i18n/interpolate'
 import type { Locale, LocalizedText } from '../../../i18n/translations'
 
 /**
@@ -33,7 +35,6 @@ const copy = {
   },
   'cinematic.hub.openHub': { en: 'Open the Hub', 'zh-CN': '打开 Hub' },
   'cinematic.hub.beta': { en: 'Beta', 'zh-CN': '测试版' },
-  'cinematic.hub.soon': { en: 'Coming soon', 'zh-CN': '即将推出' },
   'cinematic.hub.studioSummary': {
     en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
     'zh-CN':
@@ -52,21 +53,6 @@ const copy = {
   'cinematic.hub.reshootMeta': {
     en: 'Video · MiniMax H3',
     'zh-CN': '视频 · MiniMax H3'
-  },
-  'cinematic.hub.to3d': { en: 'Image to 3D', 'zh-CN': '图像转 3D' },
-  'cinematic.hub.to3dSummary': {
-    en: 'Turn a product photo into a 3D model you can spin and export.',
-    'zh-CN': '把产品照片变成可旋转、可导出的 3D 模型。'
-  },
-  'cinematic.hub.product': { en: 'Product Shots', 'zh-CN': '产品图' },
-  'cinematic.hub.productSummary': {
-    en: 'Place a product in studio or lifestyle scenes, on a clean background or in context.',
-    'zh-CN': '把产品放进棚拍或生活场景，干净背景或真实环境都可以。'
-  },
-  'cinematic.hub.storyboard': { en: 'Storyboard', 'zh-CN': '分镜' },
-  'cinematic.hub.storyboardSummary': {
-    en: 'Write a sequence and get consistent frames, ready to animate.',
-    'zh-CN': '写下一段情节，生成风格一致、可直接做动画的分镜。'
   },
   'cinematic.stage.renderingTake': {
     en: 'Rendering take {take}',
@@ -667,7 +653,11 @@ const copy = {
 
 export type CinematicCopyKey = keyof typeof copy
 
-export function tc(key: CinematicCopyKey, locale: Locale = 'en'): string {
+export function tc(
+  key: CinematicCopyKey,
+  locale: Locale = 'en',
+  named: NamedValues = {}
+): string {
   const entry: LocalizedText = copy[key]
-  return entry[locale] ?? entry.en
+  return interpolate(entry[locale] ?? entry.en, named)
 }

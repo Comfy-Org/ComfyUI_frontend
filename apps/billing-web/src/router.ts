@@ -13,13 +13,12 @@ import {
 
 import { BILLING_WEB_ENV } from '@/config/env'
 import { recordBillingEntry } from '@/entry/billingEntry'
-import { bindEntryWorkspace } from '@/entry/workspaceBinding'
 import {
-  billingWebSessionClient,
-  billingWebSessionPhase
-} from '@/session/billingWebSession'
+  billingWebPhase,
+  onBillingWebEntryWorkspace
+} from '@/session/billingWebAuth'
 import BillingHomeView from '@/views/BillingHomeView.vue'
-import CheckoutView from '@/views/CheckoutView.vue'
+import CheckoutRouteView from '@/views/CheckoutRouteView.vue'
 import EntryErrorView from '@/views/EntryErrorView.vue'
 import InvoicesView from '@/views/InvoicesView.vue'
 import PaymentMethodsView from '@/views/PaymentMethodsView.vue'
@@ -35,7 +34,7 @@ export const SIGN_IN_PATH = '/sign-in'
 const INTENT_VIEWS: Record<BillingIntent, Component> = {
   pricing: EntryErrorView,
   subscription: SubscriptionView,
-  checkout: CheckoutView,
+  checkout: CheckoutRouteView,
   'payment-methods': PaymentMethodsView,
   invoices: InvoicesView,
   result: ResultView
@@ -70,18 +69,6 @@ const routes: RouteRecordRaw[] = [
 
 export type BillingWebSessionPhase = SessionSnapshot['phase']
 
-/**
- * Rebinds the tab to a newly-arrived entry's workspace and, only when that
- * actually changes the binding, mints for it right away — so a credential
- * for the workspace this tab is leaving is never left to answer a request
- * meant for the new one. A signed-out tab's call is a no-op: `ensureFresh`
- * with no user to mint for resolves immediately.
- */
-function defaultOnEntryWorkspace(workspaceId: string): void {
-  if (!bindEntryWorkspace(workspaceId)) return
-  void billingWebSessionClient().ensureFresh(undefined, { workspaceId })
-}
-
 /** Plan selection is the host app's: billing-web only takes a chosen plan to checkout. */
 function hostOwnsPlanSelection(entry: BillingEntry): boolean {
   return (
@@ -115,12 +102,15 @@ function leaveForHost(href: string): void {
  * own entry path carries no product request and clears what a previous link
  * left behind. A link that still needs a plan chosen goes back to its host
  * before any session is asked for; with nowhere to go back to, it is an entry
- * error.
+ * error. The phase is read on every route, sign-in included, because it is
+ * what settles which sign-in this page load runs on.
  */
 export function createBillingRouter(
   history: RouterHistory = createWebHistory(import.meta.env.BASE_URL),
-  readPhase: () => BillingWebSessionPhase = billingWebSessionPhase,
-  onEntryWorkspace: (workspaceId: string) => void = defaultOnEntryWorkspace,
+  readPhase: () =>
+    | BillingWebSessionPhase
+    | Promise<BillingWebSessionPhase> = billingWebPhase,
+  onEntryWorkspace: (workspaceId: string) => void = onBillingWebEntryWorkspace,
   leave: (href: string) => void = leaveForHost
 ) {
   const router = createRouter({ history, routes })
@@ -160,10 +150,11 @@ export function createBillingRouter(
     return admitEntry(entry)
   }
 
-  router.beforeEach((to) => {
+  router.beforeEach(async (to) => {
     if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)
     else if (to.path !== SIGN_IN_PATH && !readEntry(to.fullPath)) return false
-    if (to.path === SIGN_IN_PATH || readPhase() === 'authenticated') return true
+    const phase = await readPhase()
+    if (to.path === SIGN_IN_PATH || phase === 'authenticated') return true
     return { path: SIGN_IN_PATH, query: { returnTo: to.fullPath } }
   })
 
