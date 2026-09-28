@@ -428,39 +428,15 @@ function ackResubscribe(workflowId: string): void {
 }
 
 /**
- * Queue-and-replay of an edit made while the connection was down is WANTED
- * product behaviour, ruled 2026-09-26: "yes we definitely want queued and
- * replay edits. edits while connection is down should definitely still be
- * pushed eventually. if adrs are saying otherwise, change the adrs as well."
+ * These pins cover one observable same-page-session scenario: the socket
+ * drops, the retry budget expires, the suspended tab resumes, and the socket
+ * returns. After the resubscribe acknowledgment, `opSender` must replay the
+ * retained edit with its original `op_id`; retry exhaustion is not a terminal
+ * discard. Persistence across a full page reload is a separate decision and is
+ * not asserted here.
  *
- * That ruling is why the expected failures below are pins on desired behaviour
- * rather than an argument with a decision. Exactly ONE recorded sentence is in
- * the way -- CRDT-AUTHORITY-0035 decision 3, "The frontend does not persist or
- * re-send operations dropped as `undeliverable`" -- and it is being amended
- * rather than obeyed. It is `Status: Proposed` and agent-authored (#18064).
- * Do not delete these pins to reconcile the suite with that clause.
- *
- * CRDT-WRITE-0035 is NOT in the way and needs no reversal: it already holds a
- * delete minted before a tab switch and delivers it on return, which is this
- * same direction. What it rejects is "a retry queue that resends undeliverable
- * ops when the workflow rebinds", because that "duplicates the sender's
- * ordering and never-re-mint rules outside the module that owns them" -- a
- * PLACEMENT objection protecting FORECLOSE #7 (never regenerate `op_id` on
- * retry) and KEEP-ALIVE #2 (the creator mints `op_id` once). It stands, and the
- * pin below on id retention is what holds us to it: retention belongs inside
- * `opSender`, not in a second queue beside it.
- *
- * What has to change is smaller than "add a queue": the sender's five retries
- * 500 ms apart are a DELIVERY budget where the ruling wants a RETENTION budget.
- * Stop `undeliverable` being terminal.
- *
- * SCOPE, because the pins are narrower than the product property and the two
- * are easy to conflate. Everything below lives inside ONE page session: the
- * socket drops, the retry budget runs out, the socket returns. Surviving a
- * RELOAD is a strictly stronger property that needs persistence, which is what
- * the parked human-op outbox stack (#18510, #18519, #18533, #18537, #18538,
- * #18545) was actually built for. Nothing here asserts it, and no pin here
- * should be read as covering it.
+ * Accepted policy (ADR-012, clarification dated 2026-09-28):
+ * https://github.com/christian-byrne/in-app-agent-program/blob/955f4dd3eab7e3a6992e409239463ddc5fa5c296/decisions/ADR-012-lifecycle-and-reconnect-semantics.md#clarification-2026-09-28
  */
 describe('a human edit made while the document connection is down', () => {
   const RETRY_INTERVAL_MS = 500
@@ -576,9 +552,7 @@ describe('a human edit made while the document connection is down', () => {
     ackResubscribe('wf-a')
 
     // Re-minting would defeat the applier's op_id dedupe and let a replay
-    // apply the edit a second time (FORECLOSE #7). Retention has to live in
-    // the module that owns minting, which is why CRDT-WRITE-0035's rejection
-    // of a queue beside the sender still stands.
+    // apply the edit a second time.
     expect(clientState.sent[0]?.ops[0]).toMatchObject({
       op_id: operationId,
       op: 'delete_node',
