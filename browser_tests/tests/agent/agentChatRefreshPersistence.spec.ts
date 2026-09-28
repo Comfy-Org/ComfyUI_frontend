@@ -132,9 +132,11 @@ test(
       .poll(() =>
         scrollContainer.evaluate(
           (element) =>
-            element.scrollHeight - element.scrollTop - element.clientHeight
+            Math.abs(
+              element.scrollHeight - element.scrollTop - element.clientHeight
+            )
         )
       )
-      .toBeLessThanOrEqual(16)
+      .toBeLessThanOrEqual(1)
   }
 )

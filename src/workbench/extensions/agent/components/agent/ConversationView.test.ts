@@ -26,7 +26,6 @@ vi.mocked(useResizeObserver).mockImplementation((_target, callback) => {
 })
 
 import { i18n } from '@/i18n'
-import type { TurnId } from '../../schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
@@ -34,7 +33,17 @@ import { useAgentConversationStore } from '../../stores/agent/agentConversationS
 
 import ConversationView from './ConversationView.vue'
 
-const T = 'msg-1' as TurnId
+const T = toTurnId('msg-1')
+const assistantMessage = (
+  overrides: Partial<AssistantMessage> = {}
+): AssistantMessage => ({
+  id: toTurnId('msg-1'),
+  role: 'assistant',
+  parts: [{ type: 'text', text: 'hello', state: 'done' }],
+  streaming: false,
+  thinking: false,
+  ...overrides
+})
 const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string) =>
   chat({
@@ -177,13 +186,9 @@ describe('ConversationView', () => {
   })
 
   it('starts a restored conversation at the latest message', async () => {
-    const assistant: AssistantMessage = {
-      id: toTurnId('msg-1'),
-      role: 'assistant',
+    const assistant = assistantMessage({
       parts: [{ type: 'text', text: 'latest reply', state: 'done' }],
-      streaming: false,
-      thinking: false
-    }
+    })
     render(ConversationView, {
       props: { entries: [assistant] },
       global: { plugins: [i18n] }
@@ -234,13 +239,7 @@ describe('ConversationView', () => {
   })
 
   it('shows a scroll-to-latest button when scrolled up and returns to bottom on click', async () => {
-    const assistant: AssistantMessage = {
-      id: toTurnId('msg-1'),
-      role: 'assistant',
-      parts: [{ type: 'text', text: 'hello', state: 'done' }],
-      streaming: false,
-      thinking: false
-    }
+    const assistant = assistantMessage()
     let scrollTop = 100
     const scrollTo = vi.fn(
       (optionsOrX?: ScrollToOptions | number, y?: number) => {
@@ -297,13 +296,9 @@ describe('ConversationView', () => {
   })
 
   it('resumes following when the conversation identity changes', async () => {
-    const assistant: AssistantMessage = {
-      id: toTurnId('msg-1'),
-      role: 'assistant',
+    const assistant = assistantMessage({
       parts: [{ type: 'text', text: 'first thread', state: 'done' }],
-      streaming: false,
-      thinking: false
-    }
+    })
     const scrollTo = vi.fn()
     Element.prototype.scrollTo = scrollTo
     const { rerender } = render(ConversationView, {
@@ -350,13 +345,10 @@ describe('ConversationView', () => {
   })
 
   it('does not re-enable following when a new conversation receives its id', async () => {
-    const assistant: AssistantMessage = {
-      id: toTurnId('msg-1'),
-      role: 'assistant',
+    const assistant = assistantMessage({
       parts: [{ type: 'text', text: 'first reply', state: 'done' }],
-      streaming: true,
-      thinking: false
-    }
+      streaming: true
+    })
     const scrollTo = vi.fn()
     Element.prototype.scrollTo = scrollTo
     const { rerender } = render(ConversationView, {
@@ -394,18 +386,13 @@ describe('ConversationView', () => {
   })
 
   it.for([
-    { distance: 16, follows: true },
-    { distance: 17, follows: false }
+    { distance: 0.5, follows: true },
+    { distance: 1.1, follows: false },
+    { distance: 16.4, follows: false }
   ])(
-    'measures the bottom tolerance at $distance px',
+    'follows only within the intent tolerance at $distance px',
     async ({ distance, follows }) => {
-      const assistant: AssistantMessage = {
-        id: toTurnId('msg-1'),
-        role: 'assistant',
-        parts: [{ type: 'text', text: 'hello', state: 'done' }],
-        streaming: false,
-        thinking: false
-      }
+      const assistant = assistantMessage()
       const scrollTo = vi.fn()
       Element.prototype.scrollTo = scrollTo
       const { rerender } = render(ConversationView, {
@@ -442,14 +429,43 @@ describe('ConversationView', () => {
     }
   )
 
+  it('preserves a scroll-away while the content watcher waits to render', async () => {
+    const assistant = assistantMessage({ streaming: true })
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
+    const { rerender } = render(ConversationView, {
+      props: { entries: [assistant] },
+      global: { plugins: [i18n] }
+    })
+    let scrollTop = 500
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollHeight: { value: 1_000 },
+      scrollTop: { get: () => scrollTop },
+      clientHeight: { value: 500 }
+    })
+    await nextTick()
+    scrollTo.mockClear()
+
+    const rendering = rerender({
+      entries: [
+        {
+          ...assistant,
+          parts: [{ type: 'text', text: 'hello again', state: 'done' }]
+        }
+      ]
+    })
+    scrollTop = 480
+    scrollContainer.dispatchEvent(new Event('scroll'))
+    await rendering
+    await nextTick()
+
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Latest' })).toBeInTheDocument()
+  })
+
   it('fades only the edges where content continues past the view', async () => {
-    const assistant: AssistantMessage = {
-      id: 'msg-1' as TurnId,
-      role: 'assistant',
-      parts: [{ type: 'text', text: 'hello', state: 'done' }],
-      streaming: false,
-      thinking: false
-    }
+    const assistant = assistantMessage()
 
     const { container } = render(ConversationView, {
       props: { entries: [assistant] },
