@@ -60,6 +60,12 @@ export function useStorageScopeLifecycle(): void {
     )
   }
 
+  function resetWorkspaceForIdentityReplacement(): boolean {
+    if (!isCloud || getStorageIdentity() === null) return false
+    teamWorkspaceStore.resetForIdentityChange()
+    return true
+  }
+
   watch(
     resolvedUserInfo,
     (user) => {
@@ -68,13 +74,15 @@ export function useStorageScopeLifecycle(): void {
 
       stopPendingWorkspaceReadinessWatcher()
       if (isCloud) prepareWorkflowLogoutTransition()
-      if (isCloud && getStorageIdentity() !== null) {
-        teamWorkspaceStore.resetForIdentityChange()
-      }
+      const isIdentityReplacement = resetWorkspaceForIdentityReplacement()
       setStorageIdentity(nextIdentity)
       setStorageWorkspaceId(null)
 
-      if (isCloud && nextIdentity !== null) releaseIdentityFenceWhenReady()
+      if (!isCloud || nextIdentity === null) return
+      if (isIdentityReplacement) {
+        void teamWorkspaceStore.initialize().catch(() => undefined)
+      }
+      releaseIdentityFenceWhenReady()
     },
     { immediate: true, flush: 'sync' }
   )
