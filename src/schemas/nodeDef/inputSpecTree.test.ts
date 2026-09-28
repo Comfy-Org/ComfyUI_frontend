@@ -10,12 +10,14 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
-const malformedControls: {
+interface BadSpecScenario {
   name: string
   spec: InputSpec
   resolve: (spec: InputSpecV2) => unknown
   optionIndex?: number
-}[] = [
+}
+
+const malformedControls: BadSpecScenario[] = [
   {
     name: 'DynamicCombo specification',
     spec: ['COMFY_DYNAMICCOMBO_V3', {}],
