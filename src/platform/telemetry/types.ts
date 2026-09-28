@@ -16,7 +16,11 @@ import {
   AUTH_TELEMETRY_EVENT,
   SESSION_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
-import type { AgentRunMode } from '@comfyorg/ingest-types'
+import type {
+  AgentRunMode,
+  CreateTopupResponse,
+  SubscribeResponse
+} from '@comfyorg/ingest-types'
 import type {
   AuthErrorMetadata,
   AuthFlowAction,
@@ -45,6 +49,7 @@ export type PaymentIntentSource =
   | 'upload_model_upgrade'
   | 'team_upgrade_resume'
   | 'free_tier_quota'
+  | 'agent_paywall'
 
 export type SubscriptionCheckoutType = 'new' | 'change'
 export type SubscriptionCheckoutTier = TierKey | 'team'
@@ -93,8 +98,46 @@ export interface UnifiedAuthRefreshMetadata {
   retry_count?: number
 }
 
+/**
+ * One failed image preview. An `<img>` error event reports no status, so
+ * everything past `source` is reconstructed by `describeImageLoadFailure()`:
+ * `status` comes from re-requesting the URL once, the rest from the URL and the
+ * page. Fields are optional because a probe that was capped, blocked or never
+ * applicable must still produce a report — a missing field is a real outcome,
+ * recorded in `probe_outcome` rather than guessed at.
+ */
 export interface ImageLoadFailureMetadata {
-  source: 'node_image_preview'
+  /**
+   * Which surface failed. `node_image_preview` is the Vue node renderer;
+   * `canvas_node_image` / `canvas_node_video` are the litegraph canvas previews
+   * that every user gets by default, since `Comfy.VueNodes.Enabled` is off
+   * unless App Builder turns it on. Splitting on this is what keeps a rate
+   * measured on one renderer from being read as the rate for everyone.
+   */
+  source: 'node_image_preview' | 'canvas_node_image' | 'canvas_node_video'
+  /** Load attempts made before giving up, including the first. */
+  attempts?: number
+  /** True when the load timed out rather than erroring — a stall, not a rejection. */
+  timed_out?: boolean
+  /** HTTP status of the follow-up probe. Absent unless `probe_outcome` is `probed`. */
+  status?: number
+  probe_outcome?:
+    | 'probed'
+    | 'probe_failed'
+    | 'probe_timeout'
+    | 'probe_capped'
+    | 'probe_blocked'
+    | 'probe_redirected'
+    | 'probe_abandoned'
+    | 'invalid_src'
+  /** `/api/view?type=` — separates an expired output from a missing upload. */
+  resource_kind?: 'output' | 'input' | 'temp' | 'unspecified' | 'not_api_view'
+  /** Filename shape only; never the filename, which is user-authored. */
+  filename_kind?: 'content_hash' | 'template' | 'named' | 'none'
+  /** Time since this page loaded. Auth-expiry failures skew old; 404s do not. */
+  page_age_ms?: number
+  online?: boolean
+  same_origin?: boolean
 }
 
 /**
@@ -234,6 +277,8 @@ export interface RunButtonProperties {
   view_mode: AppMode
   is_app_mode: boolean
   dock_state: ActionbarDockState
+  /** Whether the agent panel was open when the run was submitted. */
+  agent_panel_open: boolean
 }
 
 /**
@@ -854,6 +899,24 @@ export interface AddCreditsClickMetadata {
     | 'avatar_menu'
     | 'settings_billing_panel'
     | 'deep_link'
+    | 'agent_paywall'
+}
+
+export type AgentPaywallReason =
+  | 'no_funds'
+  | 'subscription_inactive'
+  | 'member_cannot_pay'
+  | 'sales_managed'
+  | 'unknown'
+
+export interface AgentPaywallShownMetadata {
+  reason: AgentPaywallReason
+}
+
+export type AgentPaywallCta = 'subscribe' | 'add_credits' | 'upgrade'
+
+export interface AgentPaywallCtaMetadata {
+  cta: AgentPaywallCta
 }
 
 export interface SubscriptionCancellationMetadata {
@@ -964,6 +1027,23 @@ export interface BillingFailure {
   error_code?: BillingErrorCode
 }
 
+type BillingIntent = {
+  stage: 'intent'
+  outcome: 'pending'
+}
+
+type BillingRequestSent = {
+  stage: 'request_sent'
+  outcome: 'pending'
+}
+
+type BillingCheckoutReceived<Status extends string> = {
+  stage: 'checkout_received'
+  outcome: 'pending'
+  billing_op_id: string
+  checkout_status: Status
+}
+
 type BillingStarted = {
   stage: 'started'
   outcome: 'pending'
@@ -997,7 +1077,14 @@ type SubscriptionCheckoutBillingEvent = {
    * `started` event through to this terminal event.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (
+  | BillingIntent
+  | BillingCheckoutReceived<SubscribeResponse['status']>
+  | BillingRequestSent
+  | BillingStarted
+  | BillingSucceeded
+  | BillingFailed
+)
 
 type BillingOperationBillingEvent = {
   operation: 'operation'
@@ -1032,7 +1119,14 @@ type TopupBillingEvent = {
    * `started` event through to this terminal event.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (
+  | BillingIntent
+  | BillingCheckoutReceived<CreateTopupResponse['status']>
+  | BillingRequestSent
+  | BillingStarted
+  | BillingSucceeded
+  | BillingFailed
+)
 
 type DowngradeToPersonalBillingEvent = {
   operation: 'downgrade_to_personal'
@@ -1046,7 +1140,12 @@ type DowngradeToPersonalBillingEvent = {
   duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)
 
+type CapabilityReadBillingEvent = {
+  operation: 'capability_read'
+} & (BillingSucceeded | Pick<BillingFailed, 'stage' | 'outcome'>)
+
 export type BillingTelemetryEvent =
+  | CapabilityReadBillingEvent
   | SubscriptionCheckoutBillingEvent
   | BillingOperationBillingEvent
   | ResubscribeBillingEvent
@@ -1076,6 +1175,9 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
       event.billing_op_id !== undefined && {
         billing_op_id: event.billing_op_id
       }),
+    ...('checkout_status' in event && {
+      checkout_status: event.checkout_status
+    }),
     ...('operation_type' in event && {
       operation_type: event.operation_type
     }),
@@ -1134,6 +1236,7 @@ export type CheckoutEntrySource =
   | 'settings_billing'
   | 'other'
   | 'unknown'
+  | 'agent_paywall'
 type CheckoutElementPhase = 'init' | 'mount' | 'update'
 /** Which Stripe element in the shared group the observation came from. */
 type CheckoutElementKind = 'payment' | 'address'
@@ -1330,6 +1433,9 @@ export interface TelemetryProvider {
   /** Emit a checkout-journey lifecycle event to this provider. */
   trackCheckoutJourneyEvent?(event: CheckoutJourneyTelemetryEvent): void
 
+  trackAgentPaywallShown?(metadata: AgentPaywallShownMetadata): void
+  trackAgentPaywallCtaClicked?(metadata: AgentPaywallCtaMetadata): void
+
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
 
@@ -1497,13 +1603,26 @@ export const TelemetryEvents = {
   WORKSPACE_INVITE_FAILED: 'app:workspace_invite_failed',
   BEGIN_CHECKOUT: 'begin_checkout',
 
+  AGENT_PAYWALL_SHOWN: 'app:agent_paywall_shown',
+  AGENT_PAYWALL_CTA_CLICKED: 'app:agent_paywall_cta_clicked',
+
   // Canonical Billing Lifecycle
+  BILLING_SUBSCRIPTION_CHECKOUT_RECEIVED:
+    'billing.subscription_checkout.checkout_received',
+  BILLING_TOPUP_CHECKOUT_RECEIVED: 'billing.topup.checkout_received',
+  BILLING_SUBSCRIPTION_CHECKOUT_REQUEST_SENT:
+    'billing.subscription_checkout.request_sent',
+  BILLING_TOPUP_REQUEST_SENT: 'billing.topup.request_sent',
+  BILLING_SUBSCRIPTION_CHECKOUT_INTENT: 'billing.subscription_checkout.intent',
+  BILLING_TOPUP_INTENT: 'billing.topup.intent',
   BILLING_SUBSCRIPTION_CHECKOUT_STARTED:
     'billing.subscription_checkout.started',
   BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
     'billing.subscription_checkout.succeeded',
   BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
   BILLING_OPERATION_STARTED: 'billing.operation.started',
+  BILLING_CAPABILITY_READ_SUCCEEDED: 'billing.capability_read.succeeded',
+  BILLING_CAPABILITY_READ_FAILED: 'billing.capability_read.failed',
   BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
   BILLING_OPERATION_FAILED: 'billing.operation.failed',
   BILLING_OPERATION_TIMEOUT: 'billing.operation.timeout',
@@ -1723,4 +1842,6 @@ export type TelemetryEventProperties =
   | WorkspaceInviteFailedMetadata
   | BillingTelemetryEvent
   | CheckoutJourneyTelemetryEventPayload
+  | AgentPaywallShownMetadata
+  | AgentPaywallCtaMetadata
   | FetchTimeoutMetadata

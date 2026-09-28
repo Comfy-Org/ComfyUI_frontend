@@ -101,6 +101,11 @@ describe('file source selection', () => {
         const preview = within(trigger).getByTestId('video-source-thumbnail')
         expect(preview).toBeInstanceOf(HTMLVideoElement)
         expect(preview.getAttribute('src')).toMatch(/^blob:/)
+      } else if (type.startsWith('audio/')) {
+        // A recording is played where another kind of file shows its type.
+        expect(
+          screen.getByRole('button', { name: `Play ${name}` })
+        ).toBeTruthy()
       } else {
         expect(screen.getByText(label)).toBeTruthy()
       }

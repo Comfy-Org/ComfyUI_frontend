@@ -186,6 +186,7 @@ const declaredDefault = computed(() =>
   field.kind === 'file' ||
   field.kind === 'select' ||
   field.kind === 'toggle' ||
+  (field.kind === 'text' && field.multiline) ||
   isSlider.value
     ? undefined
     : field.defaultValue

@@ -46,6 +46,7 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
+  resolveEntrySource,
   toCheckoutJourneyContext
 } from '@/platform/workspace/utils/checkoutJourney'
 import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
@@ -824,6 +825,14 @@ export function useSubscriptionCheckout(
       return
     }
 
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'intent',
+      outcome: 'pending',
+      tier: payload.tierKey,
+      cycle: payload.billingCycle,
+      payment_intent_source: paymentIntentSource
+    })
     const { tierKey, billingCycle } = payload
     promotionPreviewRequestId += 1
 
@@ -925,6 +934,15 @@ export function useSubscriptionCheckout(
     const checkoutType = payload.isChange ? 'change' : 'new'
     if (isSubscribing.value || !canPerformCheckout(checkoutType)) return
 
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'intent',
+      outcome: 'pending',
+      tier: 'team',
+      cycle: payload.billingCycle,
+      checkout_type: checkoutType,
+      payment_intent_source: paymentIntentSource
+    })
     const previewRequestId = ++teamPreviewRequestId
     promotionPreviewRequestId += 1
     reactivationRequired.value = false
@@ -1328,12 +1346,20 @@ export function useSubscriptionCheckout(
     const ownerUid = useAuthStore().userId
     if (!workspaceId || !ownerUid) return null
 
+    const entrySource = resolveEntrySource(paymentIntentSource, 'pricing')
     const resolved = resolveCheckoutJourney({
       actorUid: ownerUid,
       workspaceId,
       entryFlow: currentSubscriptionEntryFlow(),
-      entrySource: 'pricing',
-      intent,
+      entrySource,
+      // Keyed by source as well as tier/cycle, the way the top-up rail keys by
+      // source alone. Resume matches on actor, workspace, flow and intent but
+      // not source, so without this an abandoned `pricing` preview for a plan
+      // would be resumed by an agent-paywall entry for that same plan and keep
+      // reporting `pricing` for the rest of the journey. A journey already
+      // bound to an operation still wins the slot: a non-match falls through
+      // to the bound-journey check below rather than evicting it.
+      intent: `${entrySource}:${intent}`,
       uiMode: embeddedCheckoutEnabled ? 'embedded' : 'hosted',
       assignment: resolveCheckoutAssignment(api.getServerFeatures())
     })

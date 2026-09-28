@@ -176,11 +176,11 @@ export class AgentConversationHarness {
   readonly vueNodes: VueNodeHelpers
   readonly topbar: Topbar
   readonly composer: Locator
+  readonly summaries: Locator
 
   private readonly host: HostDoc
   private readonly hostSocket: AgentFollowerHostSocket
   private readonly streams: Locator
-  private readonly summaries: Locator
   // Every node id the host has held so far, seed included.
   private readonly seenIds: Set<string>
   private readonly expectations: ExpectedTurn[]
@@ -939,6 +939,12 @@ export class AgentConversationHarness {
     await this.selectWorkflowTarget()
   }
 
+  // Sends one more doc_update that resyncs `widget` on `nodeId` to its
+  // current doc value — the same effect on a live widget as a stale echo,
+  // a reconnect resync, or an unrelated full-graph reconcile has whenever
+  // that frame's changed-widgets sweep happens to touch it. Lets a test
+  // race this deterministically against a live keystroke instead of
+  // waiting on the timing a real run happens to produce.
   async resyncWidget(nodeId: string, widget: string): Promise<void> {
     const widgets = z
       .record(z.string(), z.unknown())

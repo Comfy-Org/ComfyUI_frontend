@@ -9,6 +9,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
 import type {
@@ -18,6 +19,8 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
@@ -515,6 +518,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PAYWALL_SHOWN, metadata)
+  }
+
+  trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
+  }
+
   trackRunButton(properties: RunButtonProperties): void {
     this.lastTriggerSource = properties.trigger_source
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
@@ -671,6 +682,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.captureRaw(TelemetryEvents.EXECUTION_START, {
       ...getExecutionContext(),
       trigger_source: this.lastTriggerSource ?? 'unknown',
+      // Sampled here rather than carried from the click: no successful run
+      // path puts an asynchronous boundary between the two calls, so a carried
+      // value could only differ from this read on a click that never executed
+      // — and there it would linger and attach a stale panel state to an
+      // unrelated later run.
+      agent_panel_open: getAgentPanelOpen(),
       event_source: EXECUTION_EVENT_SOURCE
     })
     this.lastTriggerSource = undefined

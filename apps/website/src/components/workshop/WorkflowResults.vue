@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { useNow } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import type { RunState } from '../../config/workshop-run'
+import type { RunOutput, RunState } from '../../config/workshop-run'
+import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
 import type { WorkflowState } from '../../config/workshop-workflow-state'
 import { workflowOutputs } from '../../config/workshop-workflow-response'
 import { outputLabels } from '../../lib/workshop/output-labels'
 import { t } from '../../i18n/translations'
+import { captureWorkshopEvent } from '../../scripts/posthog'
+import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
+import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 
 const {
@@ -18,7 +22,9 @@ const {
   busy,
   statusLabel,
   canStart,
-  refreshOutput
+  refreshOutput,
+  analytics,
+  visible = true
 } = defineProps<{
   model: WorkflowWorkshopModelDetail
   state: WorkflowState
@@ -27,6 +33,8 @@ const {
   statusLabel: string
   canStart: boolean
   refreshOutput: (id: string) => Promise<void> | undefined
+  analytics?: WorkshopRunAnalytics
+  visible?: boolean
 }>()
 const emit = defineEmits<{ retry: []; retryDelivery: [] }>()
 const now = useNow({ interval: 1000 })
@@ -83,6 +91,41 @@ const retryableDelivery = computed(
 const refreshing = ref<ReadonlySet<string>>(new Set())
 const failedMedia = ref<ReadonlySet<string>>(new Set())
 const automaticRefreshes = new Set<string>()
+const delivery = useWorkshopDelivery()
+let deliveryRunId: string | undefined
+watch(
+  () => [state, analytics, visible] as const,
+  () => {
+    if (!visible || state.phase !== 'settled') {
+      delivery.cancel()
+      return
+    }
+    const result = observation.value
+    if (
+      !analytics ||
+      result?.run.state !== 'succeeded' ||
+      deliveryRunId === result.run.id
+    )
+      return
+    deliveryRunId = result.run.id
+    const output = outputs.value[0]
+    if (output) delivery.start(analytics, result.run.id, output)
+    else
+      captureWorkshopEvent({
+        name: 'delivery_finished',
+        properties: {
+          ...analytics,
+          request_id: result.run.id,
+          duration_ms: 0,
+          output_kind: model.modality ?? 'other',
+          status: 'failed',
+          reason: 'media_error',
+          failure_stage: 'delivery'
+        }
+      })
+  },
+  { immediate: true }
+)
 const unavailableOutputs = computed(() => {
   const items = observation.value?.outputs ?? []
   const labels = outputLabels(items)
@@ -111,6 +154,7 @@ function refreshUrl(url: string) {
 }
 
 function onDelivery(url: string, status: 'succeeded' | 'failed' | 'cancelled') {
+  delivery.settle(url, status)
   const id = outputs.value.find((item) => item.url === url)?.id
   if (!id || status === 'cancelled') return
   failedMedia.value =
@@ -121,6 +165,13 @@ function onDelivery(url: string, status: 'succeeded' | 'failed' | 'cancelled') {
     automaticRefreshes.add(id)
     void refreshAccess(id)
   }
+}
+
+function captureDownload(kind: RunOutput['kind']) {
+  captureWorkshopEvent({
+    name: 'output_download_clicked',
+    properties: { ...workshopModelAnalytics(model), output_kind: kind }
+  })
 }
 </script>
 
@@ -136,6 +187,8 @@ function onDelivery(url: string, status: 'succeeded' | 'failed' | 'cancelled') {
     @retry="emit('retry')"
     @refresh="refreshUrl"
     @delivery="onDelivery"
+    @playback-started="delivery.beginPlayback"
+    @download="captureDownload"
   >
     <template #example-hint>{{ t('workshop.workflow.exampleHint') }}</template>
   </PlaygroundOutput>

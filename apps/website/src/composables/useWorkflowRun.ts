@@ -3,15 +3,26 @@ import { useEventListener } from '@vueuse/core'
 
 import type { WorkflowWorkshopModelDetail } from '../config/models-catalogue'
 import type { FormValues } from '../config/workshop-playground'
+import { validateForm } from '../config/workshop-playground'
+import { initialWorkshopPageState } from '../config/workshop-page-state'
 import { useWorkshopSession } from '../config/workshop-session-state'
-import { refreshWorkshopCredits } from '../config/workshop-credits'
+import { markWorkshopCreditsDirty } from '../config/workshop-credits'
 import {
   createWorkflowApi,
   WorkshopWorkflowError
 } from '../config/workshop-workflow-api'
 import { createWorkflowController } from '../config/workshop-workflow-controller'
 import type { WorkflowState } from '../config/workshop-workflow-state'
+import { workflowSettled } from '../config/workshop-workflow-response'
 import { workflowStorage } from '../config/workshop-workflow-storage'
+import { workshopIdempotencyKey } from '../config/workshop-snippets'
+import { captureWorkshopEvent } from '../scripts/posthog'
+import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
+import {
+  workshopFieldErrorCodes,
+  workshopModelAnalytics,
+  workshopWorkflowFailureAnalytics
+} from '../scripts/workshop-analytics'
 
 export function useWorkflowRun(
   model: WorkflowWorkshopModelDetail,
@@ -21,7 +32,56 @@ export function useWorkflowRun(
   const session = useWorkshopSession()
   const state = shallowRef<WorkflowState>({ phase: 'idle' })
   const lifetime = new AbortController()
+  const initial = initialWorkshopPageState(model)
+  const modelAnalytics = workshopModelAnalytics(model)
+  const attempt = shallowRef<{
+    analytics: WorkshopRunAnalytics
+    startedAt: number
+    finished: boolean
+  }>()
   let controller: ReturnType<typeof createWorkflowController> | undefined
+
+  function observeAttempt(next: WorkflowState) {
+    const active = attempt.value
+    if (!active || active.finished) return
+    if (next.phase !== 'settled' && next.phase !== 'failed') return
+    attempt.value = { ...active, finished: true }
+    const common = {
+      ...active.analytics,
+      duration_ms: Date.now() - active.startedAt
+    }
+    if (next.phase === 'failed') {
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...common,
+          status: 'failed',
+          ...workshopWorkflowFailureAnalytics(next.error, initial.schema)
+        }
+      })
+      return
+    }
+    const run = next.observation.run
+    const outcome =
+      run.state === 'succeeded'
+        ? {
+            status: 'succeeded' as const,
+            output_count: next.observation.outputs.length
+          }
+        : run.state === 'cancelled'
+          ? { status: 'cancelled' as const }
+          : {
+              status: 'failed' as const,
+              ...workshopWorkflowFailureAnalytics(
+                new WorkshopWorkflowError('execution_failed'),
+                initial.schema
+              )
+            }
+    captureWorkshopEvent({
+      name: 'run_finished',
+      properties: { ...common, request_id: run.id, ...outcome }
+    })
+  }
 
   function sameCaller() {
     const current = session.session.value
@@ -53,10 +113,25 @@ export function useWorkflowRun(
     }
   })
 
+  const unchargedRuns = new Set<string>()
+
+  function observeCharge(previous: WorkflowState, next: WorkflowState) {
+    if (!('record' in next) || next.record.stage !== 'run') return
+    const submittedHere =
+      'record' in previous && previous.record.stage === 'intent'
+    const seenUnfinished =
+      next.observation !== undefined && !workflowSettled(next.observation)
+    if (submittedHere || seenUnfinished) unchargedRuns.add(next.record.runId)
+  }
+
   async function settle(command?: Promise<void>) {
     await command
     if (lifetime.signal.aborted || !sameCaller()) return
-    if (state.value.phase === 'settled') await refreshWorkshopCredits()
+    if (
+      state.value.phase === 'settled' &&
+      unchargedRuns.delete(state.value.observation.run.id)
+    )
+      markWorkshopCreditsDirty()
   }
 
   onMounted(async () => {
@@ -74,7 +149,12 @@ export function useWorkflowRun(
         api,
         storage,
         onChange: (next) => {
-          if (!lifetime.signal.aborted && sameCaller()) state.value = next
+          if (!lifetime.signal.aborted && sameCaller()) {
+            const previous = state.value
+            state.value = next
+            observeCharge(previous, next)
+            observeAttempt(next)
+          }
         }
       })
       await settle(controller.resume())
@@ -99,17 +179,90 @@ export function useWorkflowRun(
     lifetime.abort()
   })
 
+  async function start(inputs: FormValues) {
+    const owner = sameCaller()
+    if (
+      !controller ||
+      !owner ||
+      lifetime.signal.aborted ||
+      ['preparing', 'active', 'interrupted'].includes(state.value.phase)
+    )
+      return
+    const errors = validateForm(initial.schema, {
+      ...initial.values,
+      ...inputs
+    })
+    if (Object.keys(errors).length) {
+      captureWorkshopEvent({
+        name: 'run_validation_failed',
+        properties: {
+          ...modelAnalytics,
+          field_error_codes: workshopFieldErrorCodes(errors),
+          field_error_names: initial.schema
+            .filter((field) => Object.hasOwn(errors, field.name))
+            .map((field) => field.name)
+        }
+      })
+      return settle(controller.start(inputs))
+    }
+    const analytics: WorkshopRunAnalytics = {
+      ...modelAnalytics,
+      user_id: owner.uid,
+      workspace_id: owner.workspace.id,
+      attempt_id: workshopIdempotencyKey()
+    }
+    attempt.value = { analytics, startedAt: Date.now(), finished: false }
+    captureWorkshopEvent({ name: 'run_started', properties: analytics })
+    await settle(controller.start(inputs))
+  }
+
+  async function cancel() {
+    await settle(controller?.cancel())
+    const active = attempt.value
+    if (
+      active &&
+      !active.finished &&
+      state.value.phase === 'idle' &&
+      !lifetime.signal.aborted &&
+      sameCaller()
+    ) {
+      attempt.value = { ...active, finished: true }
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...active.analytics,
+          duration_ms: Date.now() - active.startedAt,
+          status: 'cancelled'
+        }
+      })
+    }
+  }
+
+  function dismiss() {
+    const previous = state.value
+    controller?.dismiss()
+    if (
+      previous.phase === 'interrupted' &&
+      previous.record.stage === 'intent' &&
+      state.value.phase === 'idle' &&
+      !lifetime.signal.aborted &&
+      sameCaller()
+    )
+      observeAttempt({ phase: 'failed', error: previous.error })
+  }
+
   return {
     state,
+    analytics: computed(() => attempt.value?.analytics),
     identitySettled: session.settled,
     signedIn: computed(() => Boolean(sameCaller())),
     observation: computed(() =>
       'observation' in state.value ? state.value.observation : undefined
     ),
-    start: (inputs: FormValues) => settle(controller?.start(inputs)),
+    start,
     resume: () => settle(controller?.resume()),
-    cancel: () => settle(controller?.cancel()),
-    dismiss: () => controller?.dismiss(),
+    cancel,
+    dismiss,
     retryDelivery: () => settle(controller?.retryDelivery()),
     refreshOutput: (id: string) => controller?.refreshOutput(id)
   }
