@@ -417,6 +417,22 @@ describe('reduceCheckoutPage after Pay', () => {
       pay: true
     },
     {
+      name: 'a promo code lapsed before Pay: the card names it, never a decline',
+      events: [
+        ...live,
+        submitted,
+        {
+          type: 'requoted',
+          reactivation: false,
+          priceUpdated: true,
+          expiredPromo: 'LAUNCH20'
+        }
+      ],
+      outcome: 'promo_expired',
+      reactivation: 'not_required',
+      pay: true
+    },
+    {
       name: 'a quote that asks to keep the subscription leaves Pay live',
       events: [quoted(0, true), ready],
       outcome: undefined,

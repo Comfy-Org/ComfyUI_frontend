@@ -47,6 +47,7 @@ export type InlineOutcome =
   | { readonly kind: 'processing_error'; readonly operationId?: string }
   | { readonly kind: 'not_completed'; readonly operationId?: string }
   | { readonly kind: 'price_updated' }
+  | { readonly kind: 'promo_expired'; readonly code: string }
   | { readonly kind: 'reconciling' }
 
 /**
@@ -155,6 +156,8 @@ export type CheckoutPageEvent =
       readonly type: 'requoted'
       readonly reactivation: boolean
       readonly priceUpdated: boolean
+      /** The applied code Pay found lapsed; the fresh quote is priced without it. */
+      readonly expiredPromo?: string
     }
   /** The lifecycle's answer to "what is this workspace waiting on": an operation, or nothing. */
   | {
@@ -226,6 +229,14 @@ function settledSaved(rail: CollectRail, count: number): CollectRail {
   return count > 0
     ? { ...rail, saved: 'ready' }
     : { ...rail, saved: 'none', tab: 'new' }
+}
+
+function requoteNotice(
+  event: Extract<CheckoutPageEvent, { type: 'requoted' }>
+): Pick<Capture, 'outcome'> {
+  if (event.expiredPromo !== undefined)
+    return { outcome: { kind: 'promo_expired', code: event.expiredPromo } }
+  return event.priceUpdated ? { outcome: { kind: 'price_updated' } } : {}
 }
 
 /** An event that means nothing in the current state returns it untouched. */
@@ -418,7 +429,7 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
         ...capture,
         attempt: IDLE,
         reactivation: reactivationOf(event.reactivation),
-        ...(event.priceUpdated ? { outcome: { kind: 'price_updated' } } : {})
+        ...requoteNotice(event)
       }))
   }
 }
