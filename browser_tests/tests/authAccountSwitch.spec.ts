@@ -21,7 +21,7 @@ import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspa
 
 import type { Page } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { ComfyPage, comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import {
   CLOUD_REMOTE_CONFIG,
@@ -276,7 +276,8 @@ function firebaseLookupResponse(account: MockAccount): FirebaseLookupResponse {
 
 test.describe('Cloud account switch', { tag: '@cloud' }, () => {
   test('keeps workspace bearer and session cookie on the switched account', async ({
-    page
+    page,
+    request
   }) => {
     test.setTimeout(60_000)
 
@@ -519,6 +520,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await page.getByLabel('Email').fill(ACCOUNT_B.email)
       await page.getByLabel('Password').fill('password')
       await page.getByRole('button', { name: 'Sign in' }).click()
+      await new ComfyPage(page, request).waitForAppReady()
 
       await expect(
         page.getByRole('button', { name: 'Current user' })
