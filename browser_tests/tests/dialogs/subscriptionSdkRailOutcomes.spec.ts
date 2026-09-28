@@ -22,6 +22,7 @@ import {
 import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscriptionDialog'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
@@ -48,41 +49,27 @@ const SUBSCRIPTION_RAIL_ONLY = {
 const OPERATION_ID = 'op-e2e-outcome'
 const HOSTED_PAYMENT_URL = 'https://checkout.stripe.example/pay/op-e2e-outcome'
 
-function annualPlan(
-  slug: string,
-  tier: Plan['tier'],
-  priceCents: number,
-  creditsCents: number
-): Plan {
-  return {
-    slug,
-    tier,
-    duration: 'ANNUAL',
-    price_cents: priceCents,
-    credits_cents: creditsCents,
-    max_seats: 1,
-    availability: { available: true },
-    seat_summary: {
-      seat_count: 1,
-      total_cost_cents: priceCents,
-      total_credits_cents: creditsCents
-    }
-  }
-}
-
-const STANDARD_ANNUAL_PLAN = annualPlan(
-  'standard-annual',
-  'STANDARD',
-  19_200,
-  4_200
-)
-const CREATOR_ANNUAL_PLAN = annualPlan(
-  'creator-annual',
-  'CREATOR',
-  33_600,
-  7_400
-)
-const PRO_ANNUAL_PLAN = annualPlan('pro-annual', 'PRO', 96_000, 21_100)
+const STANDARD_ANNUAL_PLAN = createPlan({
+  slug: 'standard-annual',
+  tier: 'STANDARD',
+  duration: 'ANNUAL',
+  priceCents: 19_200,
+  monthlyCredits: 4_200
+})
+const CREATOR_ANNUAL_PLAN = createPlan({
+  slug: 'creator-annual',
+  tier: 'CREATOR',
+  duration: 'ANNUAL',
+  priceCents: 33_600,
+  monthlyCredits: 7_400
+})
+const PRO_ANNUAL_PLAN = createPlan({
+  slug: 'pro-annual',
+  tier: 'PRO',
+  duration: 'ANNUAL',
+  priceCents: 96_000,
+  monthlyCredits: 21_100
+})
 
 const ACTIVE_STANDARD_STATUS = {
   is_active: true,
