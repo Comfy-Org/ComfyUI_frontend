@@ -18,50 +18,34 @@ describe('comfyAPIPlugin transform', () => {
 
   it.for([
     {
-      name: "matches this package's own legacy scripts/",
-      id: path.join(root, 'src/scripts/api.ts'),
-      expected: true
-    },
-    {
-      name: "matches this package's own legacy extensions/core/",
-      id: path.join(root, 'src/extensions/core/groupNode.ts'),
-      expected: true
-    },
-    {
       name: "does not match another package's src/scripts",
-      id: path.join(root, 'apps/website/src/scripts/customerio.ts'),
-      expected: false
+      id: path.join(root, 'apps/website/src/scripts/customerio.ts')
     },
     {
       name: "does not match another package's src/extensions/core",
-      id: path.join(root, 'apps/website/src/extensions/core/whatever.ts'),
-      expected: false
+      id: path.join(root, 'apps/website/src/extensions/core/whatever.ts')
     },
     {
       name: 'does not match non-.ts files',
-      id: path.join(root, 'src/scripts/api.vue'),
-      expected: false
+      id: path.join(root, 'src/scripts/api.vue')
     },
     {
       name: 'does not match src/ files outside legacy directories',
-      id: path.join(root, 'src/components/App.ts'),
-      expected: false
+      id: path.join(root, 'src/components/App.ts')
     },
     {
       name: 'does not match files entirely outside src/',
-      id: path.join(root, 'build/plugins/other.ts'),
-      expected: false
+      id: path.join(root, 'build/plugins/other.ts')
     },
     {
       name: 'does not match sibling directory names starting with scripts',
-      id: path.join(root, 'src/scripts-old/api.ts'),
-      expected: false
+      id: path.join(root, 'src/scripts-old/api.ts')
     }
-  ])('$name', ({ id, expected }) => {
+  ])('$name', ({ id }) => {
     const { result, emitFile } = runTransform(false, id)
 
-    expect(result !== undefined).toBe(expected)
-    expect(emitFile).toHaveBeenCalledTimes(expected ? 1 : 0)
+    expect(result).toBeUndefined()
+    expect(emitFile).not.toHaveBeenCalled()
   })
 
   it('emits an output-root-relative shim for a legacy scripts/ file', () => {
