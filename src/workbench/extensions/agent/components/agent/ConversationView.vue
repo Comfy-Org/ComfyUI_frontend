@@ -4,7 +4,7 @@ import {
   useIntersectionObserver,
   useResizeObserver
 } from '@vueuse/core'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -54,7 +54,10 @@ const content = ref<HTMLElement>()
 const shouldFollowLatest = ref(true)
 const atBottom = ref(true)
 const bottomTolerance = 16
-let programmaticScrollTargets: number[] = []
+let pendingProgrammaticTarget: number | null = null
+let pendingProgrammaticTimeout: ReturnType<typeof setTimeout> | undefined
+let pendingConversationId: string | null | undefined
+let pendingConversationReset = false
 
 const top = ref<HTMLElement>()
 const atTop = ref(true)
@@ -63,13 +66,36 @@ useIntersectionObserver(top, ([entry]) => {
   atTop.value = entry?.isIntersecting ?? true
 })
 
+function clearPendingProgrammaticScroll(): void {
+  pendingProgrammaticTarget = null
+  clearTimeout(pendingProgrammaticTimeout)
+}
+
+useEventListener(scrollContainer, 'pointerdown', clearPendingProgrammaticScroll)
+useEventListener(scrollContainer, 'keydown', clearPendingProgrammaticScroll)
+useEventListener(scrollContainer, 'wheel', clearPendingProgrammaticScroll, {
+  passive: true
+})
+useEventListener(
+  scrollContainer,
+  'touchstart',
+  clearPendingProgrammaticScroll,
+  {
+    passive: true
+  }
+)
+
+onBeforeUnmount(clearPendingProgrammaticScroll)
+
 function scrollToLatest(): void {
   const element = scrollContainer.value
   if (!element) return
   shouldFollowLatest.value = true
   atBottom.value = true
   const target = Math.max(0, element.scrollHeight - element.clientHeight)
-  programmaticScrollTargets = [...programmaticScrollTargets, target].slice(-10)
+  clearPendingProgrammaticScroll()
+  pendingProgrammaticTarget = target
+  pendingProgrammaticTimeout = setTimeout(clearPendingProgrammaticScroll, 100)
   if (typeof element.scrollTo === 'function') {
     element.scrollTo({ top: element.scrollHeight })
   } else {
@@ -80,18 +106,18 @@ function scrollToLatest(): void {
 useEventListener(scrollContainer, 'scroll', () => {
   const element = scrollContainer.value
   if (!element) return
-  const targetIndex = programmaticScrollTargets.findIndex(
-    (target) => Math.abs(element.scrollTop - target) <= bottomTolerance
-  )
-  if (targetIndex !== -1) {
-    programmaticScrollTargets.splice(targetIndex, 1)
+  if (
+    pendingProgrammaticTarget !== null &&
+    Math.abs(element.scrollTop - pendingProgrammaticTarget) <= bottomTolerance
+  ) {
+    clearPendingProgrammaticScroll()
     return
   }
   atBottom.value =
     element.scrollHeight - element.scrollTop - element.clientHeight <=
     bottomTolerance
   shouldFollowLatest.value = atBottom.value
-  programmaticScrollTargets = []
+  clearPendingProgrammaticScroll()
 })
 
 function followLatestAfterResize(): void {
@@ -119,8 +145,21 @@ const latestContentSignal = computed(() => {
 
 watch(
   () => conversationId,
-  async (current, previous) => {
+  (current, previous) => {
     if (current === previous) return
+    pendingConversationId = current
+    pendingConversationReset = true
+    shouldFollowLatest.value = true
+  }
+)
+
+watch(
+  () => entries,
+  async () => {
+    if (!pendingConversationReset || pendingConversationId !== conversationId)
+      return
+    pendingConversationReset = false
+    pendingConversationId = undefined
     shouldFollowLatest.value = true
     await nextTick()
     scrollToLatest()
