@@ -113,16 +113,11 @@ function parseBillingPortalUrl(url: unknown): URL | null {
   }
 }
 
-// Module-scoped, not checkout-scoped: closing checkout while the Stripe tab
-// is still open must not drop this the way a component-owned focus listener
-// would. Mirrors openHostedBillingTab.ts's own armReturnRefresh.
+// Module-scoped so closing checkout while Stripe is open doesn't drop the return refresh.
 let stopPaymentRecoveryReturnRefresh: (() => void) | null = null
 
 function armPaymentRecoveryReturnRefresh(): void {
   stopPaymentRecoveryReturnRefresh?.()
-  // Resolved inside the call, not captured ahead of time, so a checkout that
-  // has already been disposed by the time the customer returns still reaches
-  // the live shared billing context instead of a stale one.
   const { fetchStatus } = useBillingContext()
   stopPaymentRecoveryReturnRefresh = registerRefreshOnReturn(fetchStatus)
 }
