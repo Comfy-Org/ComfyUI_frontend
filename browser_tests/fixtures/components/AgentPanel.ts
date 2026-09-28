@@ -16,6 +16,7 @@ export class AgentPanel {
   public readonly fileInput: Locator
   public readonly composerAssetSection: Locator
   public readonly attachmentChips: Locator
+  public readonly composer: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -41,6 +42,7 @@ export class AgentPanel {
     this.fileInput = this.root.getByTestId('agent-file-input')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
+    this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
   }
 
   /**
