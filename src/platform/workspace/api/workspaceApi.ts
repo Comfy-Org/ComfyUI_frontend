@@ -309,14 +309,60 @@ export const workspaceApi = {
   },
 
   /**
-   * Clear the pick; this browser runs on Comfy Cloud again.
+   * Clear the pick: this browser runs on Comfy Cloud, or with
+   * `follow: 'workspace'` on whatever the workspace says (its default
+   * Release, or Comfy Cloud when it has none).
    * DELETE /api/workspaces/:id/release
    */
-  async clearRelease(workspaceId: WorkspaceId): Promise<void> {
+  async clearRelease(
+    workspaceId: WorkspaceId,
+    options: { follow?: 'workspace' } = {}
+  ): Promise<void> {
     const headers = await getAuthHeaderOrThrow()
     try {
       await workspaceApiClient.delete(
         workspaceApiUrl(`/workspaces/${workspaceId}/release`),
+        {
+          headers,
+          params: options.follow ? { follow: options.follow } : undefined
+        }
+      )
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Set the Release members of the workspace run on when their browser has
+   * no pick of its own (BE-17480). Owner only.
+   * PUT /api/workspaces/:id/default-release
+   */
+  async setDefaultRelease(
+    workspaceId: WorkspaceId,
+    payload: PickWorkspaceReleaseRequest
+  ): Promise<void> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      await workspaceApiClient.put(
+        workspaceApiUrl(`/workspaces/${workspaceId}/default-release`),
+        payload,
+        { headers }
+      )
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Clear the workspace's default Release; members with no pick are back on
+   * Comfy Cloud. Owner only.
+   * DELETE /api/workspaces/:id/default-release
+   */
+  async clearDefaultRelease(workspaceId: WorkspaceId): Promise<void> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      await workspaceApiClient.delete(
+        workspaceApiUrl(`/workspaces/${workspaceId}/default-release`),
         { headers }
       )
     } catch (err) {

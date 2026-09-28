@@ -11,7 +11,9 @@ import { useReleasePickStore } from './releasePickStore'
 const mockWorkspaceApi = vi.hoisted(() => ({
   listReleases: vi.fn(),
   pickRelease: vi.fn(),
-  clearRelease: vi.fn()
+  clearRelease: vi.fn(),
+  setDefaultRelease: vi.fn(),
+  clearDefaultRelease: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), async () => {
@@ -31,6 +33,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), async () => {
 const listing: WorkspaceReleaseList = {
   builds_visible: true,
   picked_release_id: 'r-2',
+  pick_source: 'browser',
   releases: [
     {
       release_id: 'r-2',
@@ -75,6 +78,121 @@ describe('useReleasePickStore', () => {
     expect(store.releases).toHaveLength(2)
     expect(store.pickedReleaseId).toBe('r-2')
     expect(store.pickedRelease?.build_name).toBe('Studio Build')
+    expect(store.pickSource).toBe('browser')
+    expect(store.followsWorkspace).toBe(false)
+    expect(store.defaultReleaseId).toBeNull()
+    expect(store.canSetDefault).toBe(false)
+  })
+
+  it('follows the workspace default when the browser has no pick of its own', async () => {
+    mockWorkspaceApi.listReleases.mockResolvedValue({
+      ...listing,
+      pick_source: 'workspace_default',
+      default_release_id: 'r-2'
+    })
+    const store = useReleasePickStore()
+    await store.load()
+
+    expect(store.pickedReleaseId).toBe('r-2')
+    expect(store.pickSource).toBe('workspace_default')
+    expect(store.followsWorkspace).toBe(true)
+    expect(store.defaultReleaseId).toBe('r-2')
+    expect(store.defaultRelease?.version).toBe(2)
+
+    // Already following: nothing to drop.
+    await expect(store.followWorkspace()).resolves.toBeNull()
+    expect(mockWorkspaceApi.clearRelease).not.toHaveBeenCalled()
+
+    // Picking Comfy Cloud is this browser's own choice, even though nothing
+    // is "picked" yet: it goes through the clear route and reloads.
+    mockWorkspaceApi.clearRelease.mockResolvedValue(undefined)
+    await expect(store.pick(null)).resolves.toBeNull()
+    expect(mockWorkspaceApi.clearRelease).toHaveBeenCalledWith('ws-1')
+    expect(reload).toHaveBeenCalledOnce()
+  })
+
+  it('drops its own pick to follow the workspace, through the clear route with follow=workspace', async () => {
+    mockWorkspaceApi.listReleases.mockResolvedValue({
+      ...listing,
+      picked_release_id: 'r-1',
+      default_release_id: 'r-2'
+    })
+    mockWorkspaceApi.clearRelease.mockResolvedValue(undefined)
+    const store = useReleasePickStore()
+    await store.load()
+
+    await expect(store.followWorkspace()).resolves.toBeNull()
+
+    expect(mockWorkspaceApi.clearRelease).toHaveBeenCalledWith('ws-1', {
+      follow: 'workspace'
+    })
+    expect(reload).toHaveBeenCalledOnce()
+  })
+
+  it('an owner sets the picked Release as the workspace default and the listing refreshes', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      workspaceId: 'ws-1',
+      activeWorkspace: { id: 'ws-1', role: 'owner' }
+    })
+    mockWorkspaceApi.listReleases
+      .mockResolvedValueOnce(listing)
+      .mockResolvedValueOnce({ ...listing, default_release_id: 'r-2' })
+    mockWorkspaceApi.setDefaultRelease.mockResolvedValue(undefined)
+    const store = useReleasePickStore()
+    await store.load()
+    expect(store.canSetDefault).toBe(true)
+
+    await expect(store.setDefault('r-2')).resolves.toBeNull()
+
+    expect(mockWorkspaceApi.setDefaultRelease).toHaveBeenCalledWith('ws-1', {
+      release_id: 'r-2'
+    })
+    expect(reload).not.toHaveBeenCalled()
+    expect(store.state.phase).toBe('ready')
+    expect(store.defaultReleaseId).toBe('r-2')
+
+    // Clearing it, likewise; setting what is already set is a no-op.
+    await expect(store.setDefault('r-2')).resolves.toBeNull()
+    expect(mockWorkspaceApi.setDefaultRelease).toHaveBeenCalledOnce()
+    mockWorkspaceApi.listReleases.mockResolvedValueOnce(listing)
+    mockWorkspaceApi.clearDefaultRelease.mockResolvedValue(undefined)
+    await expect(store.setDefault(null)).resolves.toBeNull()
+    expect(mockWorkspaceApi.clearDefaultRelease).toHaveBeenCalledWith('ws-1')
+    expect(store.defaultReleaseId).toBeNull()
+  })
+
+  it('a browser that follows the workspace reloads when its owner changes the default', async () => {
+    mockWorkspaceApi.listReleases.mockResolvedValue({
+      ...listing,
+      picked_release_id: undefined,
+      pick_source: undefined
+    })
+    mockWorkspaceApi.setDefaultRelease.mockResolvedValue(undefined)
+    const store = useReleasePickStore()
+    await store.load()
+    expect(store.followsWorkspace).toBe(true)
+
+    await expect(store.setDefault('r-2')).resolves.toBeNull()
+    expect(reload).toHaveBeenCalledOnce()
+  })
+
+  it("hands back the server's refusal of a default and stays ready", async () => {
+    mockWorkspaceApi.listReleases.mockResolvedValue(listing)
+    mockWorkspaceApi.setDefaultRelease.mockRejectedValue(
+      new WorkspaceApiError(
+        'only a workspace owner can set the default release',
+        403
+      )
+    )
+    const store = useReleasePickStore()
+    await store.load()
+
+    await expect(store.setDefault('r-1')).resolves.toBe(
+      'only a workspace owner can set the default release'
+    )
+    expect(store.state.phase).toBe('ready')
+    expect(store.defaultReleaseId).toBeNull()
+    expect(reload).not.toHaveBeenCalled()
   })
 
   it('hides itself when the account is outside the rollout', async () => {

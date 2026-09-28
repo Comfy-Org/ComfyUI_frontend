@@ -81,6 +81,8 @@ export const Default: Story = seeded({
   phase: 'ready',
   releases: [studioV2, experimentsV3, studioV1],
   pickedReleaseId: null,
+  pickSource: null,
+  defaultReleaseId: null,
   buildsVisible: true
 })
 
@@ -89,6 +91,34 @@ export const Picked: Story = seeded({
   phase: 'ready',
   releases: [studioV2, experimentsV3, studioV1],
   pickedReleaseId: studioV2.release_id,
+  pickSource: 'browser',
+  defaultReleaseId: null,
+  buildsVisible: true
+})
+
+/**
+ * An owner set a workspace default (BE-17480) and this browser has no pick
+ * of its own, so it follows it; the trigger says so.
+ */
+export const FollowingWorkspaceDefault: Story = seeded({
+  phase: 'ready',
+  releases: [studioV2, experimentsV3, studioV1],
+  pickedReleaseId: studioV2.release_id,
+  pickSource: 'workspace_default',
+  defaultReleaseId: studioV2.release_id,
+  buildsVisible: true
+})
+
+/**
+ * This browser picked for itself while the workspace has a default: the
+ * panel offers the default as a row to go back to.
+ */
+export const OwnPickOverWorkspaceDefault: Story = seeded({
+  phase: 'ready',
+  releases: [studioV2, experimentsV3, studioV1],
+  pickedReleaseId: experimentsV3.release_id,
+  pickSource: 'browser',
+  defaultReleaseId: studioV2.release_id,
   buildsVisible: true
 })
 
@@ -106,6 +136,8 @@ export const Empty: Story = seeded({
   phase: 'ready',
   releases: [],
   pickedReleaseId: null,
+  pickSource: null,
+  defaultReleaseId: null,
   buildsVisible: true
 })
 
@@ -128,5 +160,7 @@ export const BuildsHidden: Story = seeded({
     }
   ],
   pickedReleaseId: studioV2.release_id,
+  pickSource: 'browser',
+  defaultReleaseId: null,
   buildsVisible: false
 })
