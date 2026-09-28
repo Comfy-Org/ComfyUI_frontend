@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { t, tAround, tPlural, translationKeys } from './translations'
+import { t, tAround, translationKeys } from './translations'
 
 describe('translation keys', () => {
   it('never uses a key as the prefix of another key', () => {
@@ -56,17 +56,6 @@ describe('t() named values', () => {
   })
 })
 
-describe('tPlural', () => {
-  it.for([
-    [1, '1 node'],
-    [3, '3 nodes']
-  ] as const)('renders count %s', ([count, expected]) => {
-    expect(tPlural('cloudNodesLaunch.models.nodeCount', count, 'en')).toBe(
-      expected
-    )
-  })
-})
-
 describe('tAround', () => {
   it.for([
     { locale: 'en', parts: ['Flux in ', ''] },
@@ -79,6 +68,12 @@ describe('tAround', () => {
       ).toEqual(parts)
     }
   )
+
+  it('keeps a value shaped like the slot marker literal', () => {
+    expect(
+      tAround('models.list.heroTitle', 'en', 'brand', { name: '{brand}' })
+    ).toEqual(['{brand} in ', ''])
+  })
 
   it.for([
     {

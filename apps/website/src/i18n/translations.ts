@@ -11279,10 +11279,7 @@ export function tAround(
   named: NamedValues = {}
 ): [string, string] {
   const marker = `{${slot}}`
-  const message = t(key, locale, {
-    ...named,
-    [slot]: marker
-  })
+  const [message] = resolve(key, locale)
   const markerIndex = message.indexOf(marker)
   if (markerIndex === -1) {
     throw new Error(`Translation ${key} is missing slot ${marker}`)
@@ -11291,8 +11288,8 @@ export function tAround(
     throw new Error(`Translation ${key} repeats slot ${marker}`)
   }
   return [
-    message.slice(0, markerIndex),
-    message.slice(markerIndex + marker.length)
+    interpolate(message.slice(0, markerIndex), named),
+    interpolate(message.slice(markerIndex + marker.length), named)
   ]
 }
 
