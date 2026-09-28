@@ -122,7 +122,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     getWorkspaceToken,
     hasValidWorkspaceToken,
     retireLegacyToken,
-    stopRefreshTimer,
+    dispose: disposeLegacyTokenRail,
     clearLegacyContext
   } = createLegacyWorkspaceTokenRail({
     currentWorkspace,
@@ -181,7 +181,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function destroy(): void {
-    stopRefreshTimer()
+    disposeLegacyTokenRail()
     stopUnifiedFlagWatch()
     unifiedSessionClient.dispose()
     clearUnifiedContext()
