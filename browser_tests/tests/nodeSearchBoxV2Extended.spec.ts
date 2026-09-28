@@ -482,11 +482,12 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       node: Awaited<ReturnType<typeof dynamicComboNode>>,
       type: string
     ) {
-      const inputs =
-        await node.getProperty<{ type: string; link: number | null }[]>(
-          'inputs'
-        )
-      return inputs.some((input) => input.type === type && input.link != null)
+      const inputs = await node.getProperty<
+        { type: string; link: number | null }[] | undefined
+      >('inputs')
+      return (inputs ?? []).some(
+        (input) => input.type === type && input.link != null
+      )
     }
 
     async function dynamicComboNode(comfyPage: ComfyPage) {
