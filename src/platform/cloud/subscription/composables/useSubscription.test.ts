@@ -796,7 +796,7 @@ describe('useSubscription', () => {
         subscription_tier: 'STANDARD',
         subscription_duration: 'MONTHLY'
       })
-      await vi.advanceTimersByTimeAsync(10 * 60 * 1000)
+      await vi.advanceTimersByTimeAsync(557_000)
 
       expect(mockReportTelemetryError).not.toHaveBeenCalled()
       expect(mockTelemetry.trackBillingEvent).not.toHaveBeenCalledWith(
@@ -805,6 +805,47 @@ describe('useSubscription', () => {
       expect(
         localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
       ).toBeNull()
+    })
+
+    it('bounds a deadline refresh that never settles', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-hung-deadline-refresh',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      mockGetBillingStatus.mockImplementation(
+        () => new Promise(() => undefined)
+      )
+
+      await vi.advanceTimersByTimeAsync(557_000)
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+      expect(mockReportTelemetryError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'cloud_checkout_recovery_unreachable',
+          context: expect.objectContaining({
+            checkout_attempt_id: 'attempt-hung-deadline-refresh'
+          })
+        })
+      )
     })
 
     it('does not carry a past network failure into a reachable-billing report', async () => {

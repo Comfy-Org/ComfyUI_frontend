@@ -52,6 +52,24 @@ const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
 /** The ladder above exhausts 43s after the checkout tab opens, well inside the
  * time a real user spends on card entry and 3DS. */
 const PENDING_CHECKOUT_COMPLETION_DEADLINE_MS = 10 * 60 * 1000
+const PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS = 10_000
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new Error('Billing status deadline refresh timed out')),
+          timeoutMs
+        )
+      })
+    ])
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
 
 function useSubscriptionInternal() {
   const subscriptionStatus = ref<BillingStatusResponse | null>(null)
@@ -168,7 +186,7 @@ function useSubscriptionInternal() {
 
     pendingCheckoutRecoveryTimeout = defaultWindow.setTimeout(() => {
       pendingCheckoutRecoveryTimeout = null
-      void recoverPendingSubscriptionCheckout('retry')
+      void recoverPendingSubscriptionCheckout('deadline')
     }, remainingMs)
   }
 
@@ -210,29 +228,24 @@ function useSubscriptionInternal() {
           outcome: 'timed_out' as const
         }
 
-    reportTelemetryError(
-      new Error(report.message),
-      {
-        errorType: report.errorType,
-        tags: {
-          failure_kind: report.failureKind,
-          feature_area: 'billing',
-          operation: 'sync',
-          outcome: report.outcome
-        },
-        context: {
-          checkout_attempt_id: attempt.attempt_id,
-          checkout_type: attempt.checkout_type,
-          attempt_age_ms: attemptAgeMs,
-          tier: attempt.tier,
-          cycle: attempt.cycle,
-          ...(attempt.operation
-            ? { checkout_operation: attempt.operation }
-            : {})
-        },
-        level: 'warning'
-      }
-    )
+    reportTelemetryError(new Error(report.message), {
+      errorType: report.errorType,
+      tags: {
+        failure_kind: report.failureKind,
+        feature_area: 'billing',
+        operation: 'sync',
+        outcome: report.outcome
+      },
+      context: {
+        checkout_attempt_id: attempt.attempt_id,
+        checkout_type: attempt.checkout_type,
+        attempt_age_ms: attemptAgeMs,
+        tier: attempt.tier,
+        cycle: attempt.cycle,
+        ...(attempt.operation ? { checkout_operation: attempt.operation } : {})
+      },
+      level: 'warning'
+    })
     telemetry?.trackBillingEvent({
       operation: 'subscription_checkout',
       stage: 'timeout',
@@ -426,7 +439,7 @@ function useSubscriptionInternal() {
   }
 
   const recoverPendingSubscriptionCheckout = async (
-    source: 'bootstrap' | 'pageshow' | 'visibilitychange' | 'retry'
+    source: 'bootstrap' | 'pageshow' | 'visibilitychange' | 'retry' | 'deadline'
   ) => {
     if (
       !isCloud ||
@@ -440,7 +453,15 @@ function useSubscriptionInternal() {
     isRecoveringPendingCheckout = true
 
     try {
-      await fetchSubscriptionStatus()
+      const statusFetch = fetchSubscriptionStatus()
+      if (source === 'deadline') {
+        await withTimeout(
+          statusFetch,
+          PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS
+        )
+      } else {
+        await statusFetch
+      }
     } catch (error) {
       console.error(
         `[Subscription] Failed to recover pending checkout on ${source}:`,
