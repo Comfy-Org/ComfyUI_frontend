@@ -185,10 +185,6 @@ const { isHeaderCollapsed, handlePanelScroll, resetHeaderCollapse } =
 watch(activeCategoryKey, resetHeaderCollapse)
 onBeforeUnmount(resetHeaderCollapse)
 
-// Written from outside this dialog too (SubscriptionPanelContentWorkspace also
-// renders in WorkspacePanelContent), so never trust the inherited value.
-resetHeaderCollapse()
-
 const navItems = computed(() => navGroups.value.flatMap((group) => group.items))
 const searchableNavItems = computed(() =>
   navItems.value.map((item) => ({

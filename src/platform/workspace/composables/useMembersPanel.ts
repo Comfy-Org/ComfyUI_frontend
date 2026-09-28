@@ -22,7 +22,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useDialogService } from '@/services/dialogService'
 
 type ActiveView = 'active' | 'pending'
-type SortField = 'inviteDate' | 'expiryDate' | 'role'
+type SortField = 'inviteDate' | 'expiryDate'
 type SortDirection = 'asc' | 'desc'
 
 export function sortMembers(
@@ -66,23 +66,14 @@ export function filterBySearch<T extends { email: string; name?: string }>(
   )
 }
 
-type InviteSortField = 'inviteDate' | 'expiryDate'
-
-// Pending invites carry no role, so the members' 'role' sort has no equivalent
-// here and falls back to the invite date.
-function toInviteSortField(sortField: SortField): InviteSortField {
-  return sortField === 'expiryDate' ? 'expiryDate' : 'inviteDate'
-}
-
 export function sortPendingInvites(
   invites: WorkspacePendingInvite[],
   sortField: SortField,
   sortDirection: SortDirection
 ): WorkspacePendingInvite[] {
-  const field = toInviteSortField(sortField)
   return [...invites].sort((a, b) => {
-    const aDate = getInviteDate(a, field)
-    const bDate = getInviteDate(b, field)
+    const aDate = getInviteDate(a, sortField)
+    const bDate = getInviteDate(b, sortField)
     if (!aDate || !bDate) return 0
     const aValue = aDate.getTime()
     const bValue = bDate.getTime()
@@ -92,7 +83,7 @@ export function sortPendingInvites(
 
 function getInviteDate(
   invite: WorkspacePendingInvite,
-  field: InviteSortField
+  field: SortField
 ): Date | undefined {
   return invite[field]
 }
@@ -383,7 +374,7 @@ export function useMembersPanel() {
     return sortMembers(
       searched,
       userEmail.value ?? null,
-      sortDirection.value,
+      'desc',
       originalOwnerId.value
     )
   })

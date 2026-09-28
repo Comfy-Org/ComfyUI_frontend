@@ -232,19 +232,6 @@ describe('sortPendingInvites', () => {
     expect(result[1].id).toBe('l')
   })
 
-  it('falls back to inviteDate when sortField is role', () => {
-    const early = createInvite({
-      id: 'e',
-      inviteDate: new Date('2025-01-01')
-    })
-    const late = createInvite({
-      id: 'l',
-      inviteDate: new Date('2025-06-01')
-    })
-    const result = sortPendingInvites([early, late], 'role', 'desc')
-    expect(result[0].id).toBe('l')
-  })
-
   it('does not mutate the input array', () => {
     const invites = [
       createInvite({
@@ -656,6 +643,34 @@ describe('useMembersPanel', () => {
       panel.searchQuery.value = 'alice'
       expect(panel.filteredMembers.value).toHaveLength(1)
       expect(panel.filteredMembers.value[0].name).toBe('Alice')
+    })
+
+    it('keeps the members order when the Pending sort changes', async () => {
+      const founder = createMember({
+        id: 'founder',
+        email: 'founder@example.com',
+        role: 'owner',
+        isOriginalOwner: true
+      })
+      const coOwner = createMember({
+        id: 'co-owner',
+        email: 'co@example.com',
+        role: 'owner'
+      })
+      const member = createMember({
+        id: 'member',
+        email: 'member@example.com',
+        role: 'member'
+      })
+      mockMembers.value = [member, coOwner, founder]
+      const panel = await setup()
+      const before = panel.filteredMembers.value.map((m) => m.id)
+
+      panel.toggleSort('inviteDate')
+      expect(panel.sortDirection.value).toBe('asc')
+
+      expect(panel.filteredMembers.value.map((m) => m.id)).toEqual(before)
+      expect(before).toEqual(['founder', 'co-owner', 'member'])
     })
   })
 

@@ -89,7 +89,7 @@
       </div>
     </Teleport>
     <div
-      class="border-inter flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
+      class="flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
     >
       <!-- Members Content -->
       <div class="flex min-h-0 flex-1 flex-col">
@@ -220,10 +220,16 @@
     >
       <p class="text-sm text-muted-foreground">
         {{
-          $t('workspacePanel.members.totalMembersCount', {
-            count: totalMembers,
-            maxSeats: maxSeats
-          })
+          maxSeats === 0
+            ? $t(
+                'workspacePanel.members.totalMembersUnlimited',
+                { count: totalMembers },
+                totalMembers
+              )
+            : $t('workspacePanel.members.totalMembersCount', {
+                count: totalMembers,
+                maxSeats: maxSeats
+              })
         }}
         {{ $t('workspacePanel.members.needMoreMembers') }}
       </p>

@@ -3352,12 +3352,12 @@
       "upsellBanner": "To add teammates, upgrade your plan.",
       "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
       "resubscribe": "Resubscribe",
-        "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
-        "endedTeamTitle": "Your team plan has ended",
-        "endedEnterpriseTitle": "Your Enterprise plan has ended",
-        "endedPlanTitle": "Your plan has ended",
-        "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
-        "contactSales": "Contact sales",
+      "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
+      "endedTeamTitle": "Your team plan has ended",
+      "endedEnterpriseTitle": "Your Enterprise plan has ended",
+      "endedPlanTitle": "Your plan has ended",
+      "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
+      "contactSales": "Contact sales",
       "upgradeToTeam": "Upgrade to Team",
       "reactivateTeam": "Reactivate Team",
       "totalMembersCount": "{count} of {maxSeats} total members.",
@@ -3368,7 +3368,8 @@
       "noMembers": "No members",
       "noMembersMatch": "No members match \"{query}\"",
       "searchPlaceholder": "Search...",
-      "loadFailed": "Couldn't load members."
+      "loadFailed": "Couldn't load members.",
+      "totalMembersUnlimited": "{count} total member. | {count} total members."
     },
     "partnerNodes": {
       "title": "Partner models",

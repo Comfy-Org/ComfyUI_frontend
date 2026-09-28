@@ -193,6 +193,8 @@ const i18n = createI18n({
           noMembers: 'No members',
           noMembersMatch: 'No members match "{query}"',
           totalMembersCount: '{count} of {maxSeats} total members.',
+          totalMembersUnlimited:
+            '{count} total member. | {count} total members.',
           noInvites: 'No pending invites',
           noInvitesMatch: 'No invites match "{query}"'
         }
@@ -711,6 +713,14 @@ describe('MembersPanelContent', () => {
     it('counts the members against the seats the plan bought', () => {
       renderComponent()
       expect(screen.getByText(/2 of 20 total members\./)).toBeInTheDocument()
+    })
+
+    it('shows only the count on an unlimited-seat plan', () => {
+      mockMaxSeats.value = 0
+      mockTotalMembers.value = 140
+      renderComponent()
+      expect(screen.getByText(/140 total members\./)).toBeInTheDocument()
+      expect(screen.queryByText(/of 0/)).toBeNull()
     })
 
     it('shows the server total when it exceeds the fetched page', () => {
