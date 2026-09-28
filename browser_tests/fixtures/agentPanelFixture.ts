@@ -15,13 +15,9 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 function agentFeatures(agentFlag: boolean): RemoteConfig {
   return {
+    'agent-in-app-experience': agentFlag,
     posthog_project_token: 'phc_e2e_agent_panel',
-    posthog_config: {
-      advanced_disable_flags: true,
-      bootstrap: {
-        featureFlags: { 'agent-in-app-experience': agentFlag }
-      }
-    }
+    posthog_config: { advanced_disable_flags: true }
   }
 }
 

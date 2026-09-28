@@ -1204,7 +1204,13 @@ function onMentionPick(node: SelectedNode): void {
 }
 
 function onRemoveSelectionTag(id: string): void {
+  const node = canvasStore.selectedItems
+    .filter(isLGraphNode)
+    .find((item) => selectedNodeKey(toSelectedNode(item)) === id)
   removeSelectionTag(id)
+  if (node) {
+    canvasStore.canvas?.deselect(node)
+  }
 }
 
 function onClosePanel(): void {
