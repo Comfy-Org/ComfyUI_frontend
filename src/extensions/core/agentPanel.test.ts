@@ -61,25 +61,9 @@ const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
 
 /**
- * Every automatic offer attempt passes through `whenStartupDecided` exactly
- * once, so counting the probe counts attempts, and `offerAttempts` past the
- * boot's own is the release watcher re-driving the offer.
- *
- * The cap is a circuit breaker, not a behaviour. A release watcher that
- * disagrees with the hold about what "the screen" is (`agentPanel.ts:210-216`)
- * releases the offer while the first run still owns the screen; the next
- * attempt re-holds it on the same tick, and the pair spins. The spin is pure
- * microtasks, so it starves the macrotask queue: `flush()` never resolves, no
- * expectation is ever evaluated, and the worker dies of an OOM ~45 s in. That
- * is a regression this suite *detects* and cannot *report* — CI shows it as a
- * dead runner, which gets retried, rather than as a red test, which gets read.
- * Past the cap the probe simply never answers, which is the one ending that
- * costs nothing: no telemetry, no hold, no third path through the code under
- * test. The cycle unwinds and every test reaches its own assertions.
- *
- * 20 is 5x the most any passing test in this file needs (measured: 4, in
- * `offers independently for …`, whose two identity changes each re-drive the
- * offer). Raise it only for a test that legitimately makes more attempts.
+ * Bounds the release watcher in the three single-holder cases below. If
+ * release disagrees with hold, the offer is repeatedly released and re-held;
+ * leaving the probe pending turns that cycle into an ordinary assertion.
  */
 const OFFER_ATTEMPT_CAP = 20
 let offerAttempts = 0
