@@ -318,7 +318,6 @@ const billingIdentity = computed(
  */
 watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
-  onStandingPaywallShown()
 })
 
 function onStandingPaywallShown(): void {
