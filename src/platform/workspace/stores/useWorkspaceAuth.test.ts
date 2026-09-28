@@ -1442,6 +1442,7 @@ describe('useWorkspaceAuthStore', () => {
 
   describe('refreshToken retry/race paths', () => {
     it('ends an expired workspace session behind the workflow write barrier', async () => {
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0)
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -1485,9 +1486,11 @@ describe('useWorkspaceAuthStore', () => {
       expect(
         sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
       ).toBeNull()
+      randomSpy.mockRestore()
     })
 
     it('retries up to 3 times with exponential backoff on TOKEN_EXCHANGE_FAILED, then preserves valid context', async () => {
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5)
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -1525,27 +1528,27 @@ describe('useWorkspaceAuthStore', () => {
 
       // Drain only the retry backoff delays; do not advance to the scheduled
       // proactive refresh timer for the still-valid token.
-      await vi.advanceTimersByTimeAsync(1000)
-      await vi.advanceTimersByTimeAsync(2000)
-      await vi.advanceTimersByTimeAsync(4000)
+      await vi.advanceTimersByTimeAsync(1500)
+      await vi.advanceTimersByTimeAsync(2500)
+      await vi.advanceTimersByTimeAsync(4500)
       await refreshPromise
 
       // 1 initial switchWorkspace + 4 refresh attempts = 5 total fetch calls.
       expect(mockFetch).toHaveBeenCalledTimes(5)
-      // Backoff: 1s + 2s + 4s = 7s of cumulative warn-logged delays.
+      // Each exponential-backoff delay includes bounded jitter.
       expect(
         consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 1000ms/.test(String(c[0]))
+          /retrying in 1500ms/.test(String(c[0]))
         )
       ).toBe(true)
       expect(
         consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 2000ms/.test(String(c[0]))
+          /retrying in 2500ms/.test(String(c[0]))
         )
       ).toBe(true)
       expect(
         consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 4000ms/.test(String(c[0]))
+          /retrying in 4500ms/.test(String(c[0]))
         )
       ).toBe(true)
 
@@ -1570,8 +1573,8 @@ describe('useWorkspaceAuthStore', () => {
           Promise.resolve({ ...mockTokenResponse, token: 'retry-token' })
       })
 
-      // Retry is scheduled at baseDelayMs * 2^maxRetries = 8000ms.
-      await vi.advanceTimersByTimeAsync(7999)
+      // The scheduled retry also includes bounded jitter (8000ms + 500ms).
+      await vi.advanceTimersByTimeAsync(8499)
       expect(mockFetch).toHaveBeenCalledTimes(5)
 
       await vi.advanceTimersByTimeAsync(1)
@@ -1582,6 +1585,45 @@ describe('useWorkspaceAuthStore', () => {
 
       consoleErrorSpy.mockRestore()
       consoleWarnSpy.mockRestore()
+      randomSpy.mockRestore()
+    })
+
+    it('does not let an in-flight refresh re-arm timers after destroy', async () => {
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.switchWorkspace('workspace-123')
+
+      let resolveRefreshFetch: (value: unknown) => void = () => {}
+      mockFetch.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveRefreshFetch = resolve
+        })
+      )
+
+      const refreshPromise = store.refreshToken()
+      await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2))
+      store.destroy()
+      resolveRefreshFetch({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'late-refresh-token'
+          })
+      })
+      await refreshPromise
+
+      expect(store.workspaceToken).toBe('workspace-token-abc')
+      await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+      expect(mockFetch).toHaveBeenCalledTimes(2)
     })
 
     it('clears context immediately on INVALID_FIREBASE_TOKEN without retrying', async () => {
