@@ -3871,7 +3871,15 @@
     "noReleases": "This workspace has no Releases yet.",
     "buildsHidden": "Build names are not visible to this account.",
     "reloadNote": "The editor reloads to show the Release's nodes.",
-    "failedToSwitch": "Could not switch"
+    "failedToSwitch": "Could not switch",
+    "workspaceDefault": "Workspace default",
+    "workspaceDefaultIs": "Workspace default: {release}",
+    "noWorkspaceDefault": "No workspace default: members start on Comfy Cloud.",
+    "followWorkspace": "Use the workspace default",
+    "followWorkspaceCaption": "Drop this browser's own pick and run on {release}",
+    "setAsDefault": "Set as workspace default",
+    "clearDefault": "Clear workspace default",
+    "failedToSetDefault": "Could not change the workspace default"
   },
   "selectionToolbox": {
     "executeButton": {
