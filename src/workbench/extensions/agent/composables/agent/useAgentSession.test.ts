@@ -1142,8 +1142,6 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(vi.mocked(rest.getMessages).mock.calls.at(-1)?.[0]).toBe('th-1')
     expect(vi.mocked(rest.postMessage).mock.calls.length).toBe(postsBefore)
 
-    // The fake server's history has no row for msg-1, so nothing can be
-    // reconciled from REST; the live socket still owns the turn.
     emit(done('msg-1'))
     expect(session.isStreaming.value).toBe(false)
   })
