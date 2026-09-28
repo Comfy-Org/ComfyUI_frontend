@@ -40,6 +40,7 @@ import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { ComfyApp, app as singletonApp } from './app'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { useLitegraphService } from '@/services/litegraphService'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 import { createNode } from '@/utils/litegraphUtil'
@@ -470,7 +471,7 @@ describe('ComfyApp', () => {
           graph: app.rootGraph,
           resize: vi.fn(),
           viewport: undefined,
-          visible_area: new Float32Array(4),
+          visible_area: new Rectangle(),
           ds: {
             offset: [0, 0],
             scale: 1,
@@ -493,7 +494,7 @@ describe('ComfyApp', () => {
         expect(app.canvas.ds.scale).toBe(0.5)
       })
 
-      it('lets a superseded load fit the graph that replaced it', async () => {
+      it('keeps the pending fit owned by the load that was not superseded', async () => {
         const canvasEl = hideCanvas()
         const fitView = vi.fn()
         vi.mocked(useLitegraphService).mockReturnValue({
@@ -519,6 +520,8 @@ describe('ComfyApp', () => {
         // The two loads fit differently: a template always calls through to
         // litegraph, while a workflow with a saved viewport restores it and
         // measures instead. That is what identifies the closure that ran.
+        // Note the superseded load configures the graph last, so this pins
+        // closure ownership, not which graph ends up live.
         const supersededLoad = app.loadGraphData(
           createWorkflowGraphData(),
           true,
@@ -545,6 +548,37 @@ describe('ComfyApp', () => {
 
         expect(app.canvas.ds.computeVisibleArea).toHaveBeenCalled()
         expect(fitView).not.toHaveBeenCalled()
+      })
+
+      it('fits once the hidden canvas regains a size', async () => {
+        const canvasEl = hideCanvas()
+        const fitView = vi.fn()
+        vi.mocked(useLitegraphService).mockReturnValue({
+          ...useLitegraphService(),
+          fitView
+        })
+
+        await app.loadGraphData(
+          createWorkflowGraphData(),
+          true,
+          true,
+          'hidden-template',
+          { openSource: 'template' }
+        )
+
+        expect(fitView).not.toHaveBeenCalled()
+
+        vi.spyOn(canvasEl, 'getBoundingClientRect').mockReturnValue(
+          fromPartial<DOMRect>({ width: 1600, height: 900 })
+        )
+        const resizeCanvas = Reflect.get(app, 'resizeCanvas') as (
+          canvas: HTMLCanvasElement
+        ) => void
+        resizeCanvas.call(app, canvasEl)
+
+        expect(canvasEl.width).toBeGreaterThan(0)
+
+        expect(fitView).toHaveBeenCalledTimes(1)
       })
     })
 
