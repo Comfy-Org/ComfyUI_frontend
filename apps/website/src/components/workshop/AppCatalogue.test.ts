@@ -2,15 +2,18 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
+import type { AppWorkshopModel } from '../../config/models-catalogue'
 import AppCatalogue from './AppCatalogue.vue'
 
-function appsOf(count: number): CatalogueApp[] {
+function appsOf(count: number): AppWorkshopModel[] {
   return Array.from({ length: count }, (_, index) => ({
-    key: `app-${index}`,
+    slug: `app-${index}`,
     name: `App ${index}`,
-    task: `Task ${index}`,
-    href: `/apps/${index}`
+    workflowCount: 1,
+    href: `/apps/${index}`,
+    capabilities: [],
+    type: 'APP',
+    appId: index % 2 ? 'reshoot' : 'studio'
   }))
 }
 
