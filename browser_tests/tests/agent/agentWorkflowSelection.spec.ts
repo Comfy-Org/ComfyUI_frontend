@@ -149,6 +149,7 @@ test.describe(
           `${enMessages.agent.sendFailed}: workflow not found or access denied`
         )
       ).toBeVisible()
+      await expect(composer).toHaveText('first attempt')
 
       await page.reload()
       const reloadedPanel = page.locator('#agent-panel-root')
@@ -210,6 +211,7 @@ test.describe(
 
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await composer.fill('Start in this workflow')
+      workflowSelection.failNextWorkflowMessage()
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
       await expect(composer).toHaveText('Start in this workflow')
@@ -300,6 +302,7 @@ test.describe(
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await composer.fill('Start in this workflow')
+      workflowSelection.failNextWorkflowMessage()
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
       await expect(composer).toHaveText('Start in this workflow')
@@ -499,6 +502,7 @@ test.describe(
       await expect(composer).toHaveText('Find a workflow for skin upscaling')
       expect(workflowSelection.postedMessages).toHaveLength(0)
 
+      workflowSelection.failNextWorkflowMessage()
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
       await expect(composer).toHaveText('Find a workflow for skin upscaling')

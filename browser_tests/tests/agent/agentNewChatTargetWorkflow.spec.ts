@@ -47,6 +47,7 @@ test.describe(
         includeHidden: true
       })
       await initialComposer.fill('Start in this workflow')
+      workflowSelection.failNextWorkflowMessage()
       await initialComposer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
       await expect(initialComposer).toHaveText('Start in this workflow')
@@ -123,6 +124,7 @@ test.describe(
         includeHidden: true
       })
       await initialComposer.fill('Start in this workflow')
+      workflowSelection.failNextWorkflowMessage()
       await initialComposer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
       await expect(initialComposer).toHaveText('Start in this workflow')

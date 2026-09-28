@@ -14,6 +14,7 @@ type WorkflowSelection = {
   savedPaths: string[]
   postedMessages: string[]
   finishSave: (success: boolean) => void
+  failNextWorkflowMessage: () => void
   pauseWorkflowLookups: () => void
   refuseNextWorkflowMessage: () => void
   resumeWorkflowLookups: () => void
@@ -39,6 +40,7 @@ export const workflowSelectionTest = base.extend<{
     let resumeWorkflowLookups = () => {}
     let lookupCount = 0
     let refuseNextWorkflowMessage = false
+    let failNextWorkflowMessage = false
     await page.route('**/api/workflows?*', async (route) => {
       lookupCount++
       await pendingLookup
@@ -61,6 +63,13 @@ export const workflowSelectionTest = base.extend<{
         new URL(request.url()).pathname.endsWith('/messages')
       ) {
         postedMessages.push(route.request().postData() ?? '')
+        if (failNextWorkflowMessage) {
+          failNextWorkflowMessage = false
+          return route.fulfill({
+            ...jsonRoute({ error: 'send unavailable' }),
+            status: 500
+          })
+        }
         if (refuseNextWorkflowMessage) {
           refuseNextWorkflowMessage = false
           const refusedId = route.request().postDataJSON().workflow_id
@@ -131,6 +140,9 @@ export const workflowSelectionTest = base.extend<{
       savedPaths,
       postedMessages,
       finishSave: (success) => finishSave(success),
+      failNextWorkflowMessage: () => {
+        failNextWorkflowMessage = true
+      },
       pauseWorkflowLookups: () => {
         pendingLookup = new Promise<void>((resolve) => {
           resumeWorkflowLookups = resolve
