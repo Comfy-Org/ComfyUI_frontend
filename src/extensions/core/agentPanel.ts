@@ -1,6 +1,6 @@
 import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -174,7 +174,8 @@ export function registerAgentPanelExtension(): void {
       const consentStore = useAgentConsentStore()
       const { enabled } = storeToRefs(agentPanelStore)
       const workspaceStore = useTeamWorkspaceStore()
-      const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
+      const { isAuthInitialized, resolvedUserInfo, isLoggedIn } =
+        useCurrentUser()
       const { withConsent } = useAgentConsent()
       const { firstRunTookScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
@@ -334,7 +335,7 @@ export function registerAgentPanelExtension(): void {
       )
       setupFlagGate(
         loadConsentIfEligible,
-        () => resolvedUserInfo.value === null
+        () => isAuthInitialized.value && resolvedUserInfo.value === null
       )
     }
   })
@@ -369,21 +370,33 @@ function setupFlagGate(
   const settle = (): void => {
     agentPanelStore.gateSettled = true
   }
+  let settleTimer: ReturnType<typeof setTimeout> | undefined
+  const clearSettleTimer = (): void => {
+    clearTimeout(settleTimer)
+    settleTimer = undefined
+  }
+  const scheduleSignedOutFallback = (): void => {
+    clearSettleTimer()
+    settleTimer = setTimeout(() => {
+      if (isSignedOut()) settle()
+    }, GATE_SETTLE_TIMEOUT_MS)
+  }
   watch(
     () =>
-      import.meta.env.MODE === 'development' ||
-      authenticatedRemoteConfigState.value === 'authenticated' ||
-      authenticatedRemoteConfigState.value === 'error',
-    (decided) => {
+      [
+        import.meta.env.MODE === 'development' ||
+          authenticatedRemoteConfigState.value === 'authenticated' ||
+          authenticatedRemoteConfigState.value === 'error',
+        isSignedOut()
+      ] as const,
+    ([decided, signedOut]) => {
       agentPanelStore.gateSettled = decided
+      clearSettleTimer()
+      if (!decided && signedOut) scheduleSignedOutFallback()
     },
     { immediate: true }
   )
   // A signed-out session never runs the authenticated /features refresh
   // (WorkspaceAuthGate returns early with no user), so the watch above never
   // reaches a decided state for it.
-  const settleTimer = setTimeout(() => {
-    if (isSignedOut()) settle()
-  }, GATE_SETTLE_TIMEOUT_MS)
-  onScopeDispose(() => clearTimeout(settleTimer))
 }

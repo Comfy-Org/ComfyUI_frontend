@@ -53,6 +53,7 @@ let consentStore: ReturnType<typeof useAgentConsentStore>
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
+const isAuthInitialized = ref(true)
 const firstRunTookScreen = ref(false)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
@@ -187,9 +188,13 @@ describe('AgentPanel extension flag gate', () => {
     const { useCurrentUser } = await import('@/composables/auth/useCurrentUser')
     const currentUserService = vi.mocked(useCurrentUser())
     currentUserService.resolvedUserInfo = computed(() => currentUser.value)
+    currentUserService.isAuthInitialized = computed(
+      () => isAuthInitialized.value
+    )
     currentUserService.isLoggedIn = computed(() => currentUser.value !== null)
     setupScope = effectScope()
     currentUser.value = { id: 'account-a' }
+    isAuthInitialized.value = true
     consentStore = useAgentConsentStore()
     workspaceStore = useTeamWorkspaceStore()
     Object.assign(workspaceStore, {
@@ -1111,6 +1116,31 @@ describe('AgentPanel extension flag gate', () => {
     await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
 
     expect(agentStore.gateSettled).toBe(false)
+  })
+
+  it('does not treat unresolved auth as signed out', async () => {
+    currentUser.value = null
+    isAuthInitialized.value = false
+    await setRemoteConfigState('unloaded')
+    await loadEntryAndSetup()
+
+    const { GATE_SETTLE_TIMEOUT_MS } = await import('./agentPanel')
+    await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.gateSettled).toBe(false)
+  })
+
+  it('re-arms the signed-out fallback after an identity change', async () => {
+    await setRemoteConfigState('authenticated')
+    await loadEntryAndSetup()
+    expect(agentStore.gateSettled).toBe(true)
+
+    currentUser.value = null
+    await setRemoteConfigState('unloaded')
+    const { GATE_SETTLE_TIMEOUT_MS } = await import('./agentPanel')
+    await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.gateSettled).toBe(true)
   })
 
   it('returns the gate to unsettled when authenticated config reloads', async () => {
