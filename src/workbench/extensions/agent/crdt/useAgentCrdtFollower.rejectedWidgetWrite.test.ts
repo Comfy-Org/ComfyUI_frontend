@@ -208,8 +208,8 @@ describe('a human edit the doc host rejects', () => {
   )
 
   // `op_id` is optional on the wire — the relay omits it when it cannot map
-  // the failing index. Resolving by index is the only path left, and an
-  // fixed-position implementation would misclassify this as generic.
+  // the failing index. Resolving by index is the only path left, and a first-
+  // or last-position implementation would misclassify this as generic.
   it('identifies the rejected op by index when the host sends no op_id', async () => {
     const { submitBatch } = mountFollower()
     const frames = await submitBatch([NODE_ADD, WIDGET_EDIT, NODE_DELETE])
@@ -224,6 +224,38 @@ describe('a human edit the doc host rejects', () => {
       skipped: [],
       failed: {
         index: 1,
+        code: 'opaque_widgets',
+        message: 'node is absent from the pinned catalog'
+      }
+    })
+
+    expect(toastDetails()).toEqual([
+      expect.stringContaining(WIDGET_REJECTION_TEXT)
+    ])
+  })
+
+  // A deliberately non-conforming frame. The relay derives `index` and
+  // `op_id` from one position and omits `op_id` rather than mis-state it, so
+  // real traffic never disagrees; preferring the minted id over a
+  // host-supplied position is defence in depth at the trust boundary. Every
+  // other fixture agrees on both or sends no `op_id`, so without this one an
+  // index-only lookup satisfies them all.
+  it('prefers the minted op_id over a disagreeing index', async () => {
+    const { submitBatch } = mountFollower()
+    const frames = await submitBatch([NODE_ADD, WIDGET_EDIT, NODE_DELETE])
+    expect(frames).toHaveLength(1)
+    const [[, widgetOpId]] = frames
+    expect(widgetOpId).toBeDefined()
+
+    answerWithOpsResult({
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 2,
+        op_id: widgetOpId,
         code: 'opaque_widgets',
         message: 'node is absent from the pinned catalog'
       }
