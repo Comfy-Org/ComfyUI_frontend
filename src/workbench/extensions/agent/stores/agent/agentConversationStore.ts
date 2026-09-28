@@ -309,6 +309,11 @@ export const useAgentConversationStore = defineStore(
     function abortActiveTurn(): void {
       if (!transport) return
       transport.settle()
+      // `settle()` clears the streaming flag and the open text, but not an
+      // approval ask: only its resolution frame removes that, and an aborted
+      // turn will not get one. Left behind it renders an enabled card whose
+      // answer `answerAsk` drops, there being no active turn to post against.
+      if (liveMessage !== null) settleLiveMessage(liveMessage)
       // Not `settledActiveTransports`: an abort is not a natural completion
       // whose held parts might still catch up, so flush them to `done` and
       // cancel their timers now rather than leaving them reachable only by
