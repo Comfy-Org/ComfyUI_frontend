@@ -33,7 +33,7 @@ test(
       const vaeDecode = await comfyPage.vueNodes.getFixtureByTitle('VAE Decode')
       await expect(vaeDecode.header).toBeInViewport({ ratio: 1 })
 
-      await comfyPage.nodeOps.selectNodes(['KSampler', 'VAE Decode'])
+      await comfyPage.vueNodes.selectNodes(['3', '8'])
       expect(
         await comfyPage.nodeOps.getSelectedNodeIds(),
         'both nodes must be selected, or the conversion under test is not the one being asserted'
