@@ -809,10 +809,7 @@ const {
         severity: 'error',
         summary: t('agent.workflowSyncFailedTitle'),
         detail: formatWorkflowSyncErrorDetail(t, message, code),
-        // Sticky: this is a permanent, unrecoverable desync (PM-1604 /
-        // BE-11437) — the canvas can silently stay stale well past a 5 s
-        // toast, so this one specific error must wait for the person to
-        // dismiss it rather than expiring on its own.
+        // A permanent desync remains visible until the person dismisses it.
         life: 0
       })
   },

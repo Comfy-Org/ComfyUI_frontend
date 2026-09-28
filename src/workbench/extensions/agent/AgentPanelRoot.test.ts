@@ -91,11 +91,7 @@ const ws = vi.hoisted(() => {
     listeners.get(type)?.delete(listener)
   }
   const emit = (type: string, data?: unknown): void => {
-    // A real CustomEvent, not a plain `{ detail }` object: the CRDT doc-frame
-    // pipeline (docFrameClient.ts, useAgentCrdtFollower.ts) checks
-    // `event instanceof CustomEvent` before reading `.detail`, so a plain
-    // object silently drops there even though other listeners here only
-    // ever read `.detail` and don't care which shape it arrives in.
+    // The doc-frame pipeline ignores events that are not CustomEvent instances.
     const event = new CustomEvent(type, { detail: data })
     for (const listener of listeners.get(type) ?? []) listener(event)
   }
@@ -5511,10 +5507,6 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeInTheDocument()
   })
 
-  // PM-1604 / BE-11437: end-to-end proof of the `onSyncError` wiring itself
-  // (the follower/formatter halves each have their own unit coverage, but
-  // nothing previously asserted the two are actually connected through
-  // AgentPanelRoot.vue - see the review finding this closes).
   it('shows a sticky error toast when the doc-host permanently refuses the subscribe', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
