@@ -408,7 +408,7 @@ export function normalizeAgentTranscript(
   // Only the thread's newest turn can still be running. A `streaming` row an
   // older one left behind is a stale write the thread has moved past, and
   // restoring it would hand the composer a turn nothing will ever settle.
-  const liveTurn = turnOrder.at(-1)
+  const liveTurn = [...assistants.keys()].at(-1)
   if (
     pending &&
     (liveTurn === undefined || pending.message !== assistants.get(liveTurn))

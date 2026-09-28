@@ -491,7 +491,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('go')
     emit(thinking('msg-1', 'planning'))
 
-    const reselect = session.loadThread('th-1')
+    void session.loadThread('th-1')
     emit(done('msg-1'))
     session.stop()
 
@@ -499,8 +499,51 @@ describe('useAgentSession (v1 composition root)', () => {
     // stash is still here to receive what the buffer was holding.
     conversation.resumeBackgroundTurn()
     expect(conversation.isStreaming).toBe(false)
+  })
 
-    await Promise.race([reselect, Promise.resolve()])
+  // Both halves of the hazard at once, which (b4c)/(b4d) and (b4e) only cover
+  // apart: a stash owns the turn, so the replay is a candidate for buffering
+  // again, and hydrates of that thread are stacked with only the newest
+  // resolving. Nothing bounds the older ones -- `loadThread` discards a stale
+  // response but never aborts its request.
+  it('(b4f) delivers a done through stacked hydrates of a stashed turn', async () => {
+    const conversation = useAgentConversationStore()
+    const deliver: ((history: AgentMessages) => void)[] = []
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliver.push(resolve)
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('go')
+    emit(thinking('msg-1', 'planning'))
+
+    // Each re-select stashes the live turn and stacks another hydrate of the
+    // same thread on the one still fetching.
+    const reselects = [
+      session.loadThread('th-1'),
+      session.loadThread('th-1'),
+      session.loadThread('th-1')
+    ]
+    emit(done('msg-1'))
+
+    deliver[2]([
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+    await reselects[2]
+
+    expect(conversation.isStreaming).toBe(false)
+    expect(conversation.activeTurnId).toBeNull()
   })
 
   // Two overlapping hydrates of one thread, which `onSelectHistory` reaches on

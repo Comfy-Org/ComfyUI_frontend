@@ -330,20 +330,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   /**
    * Arms a buffer for the thread a hydrate is about to fetch, taking over the
-   * frames any earlier in-flight hydrate of that thread is holding.
+   * frames -- and the registration -- of any in-flight hydrate of that thread,
+   * so a thread never has more than one buffer holding for it.
    *
    * Claimed here rather than when that earlier hydrate finishes, because the
    * two GETs can resolve in either order and only this end of the overlap is
    * ordered. Replayed after ours, its older delta lands on a turn our
    * `agent_message_done` has already settled -- and both `ingest` and a
    * settled transport drop what they cannot place.
+   *
+   * Retired, not merely emptied: a superseded buffer left registered is one
+   * `bufferFor` finds again while a later drain replays through it, holding
+   * the frame instead of delivering it. An `agent_message_done` held there is
+   * a turn `resumeBackgroundTurn` restores as permanently running -- PM-1776's
+   * own symptom, through the machinery that exists to prevent it.
    */
   function armHydration(threadId: string): HydrationBuffer {
+    const superseded = hydrations.filter((armed) => armed.threadId === threadId)
+    for (const armed of superseded)
+      hydrations.splice(hydrations.indexOf(armed), 1)
     const buffer: HydrationBuffer = {
       threadId,
-      events: hydrations
-        .filter((armed) => armed.threadId === threadId)
-        .flatMap((armed) => armed.events.splice(0))
+      events: superseded.flatMap((armed) => armed.events)
     }
     hydrations.push(buffer)
     return buffer

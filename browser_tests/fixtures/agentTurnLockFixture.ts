@@ -335,11 +335,10 @@ export class AgentTurnLockHarness {
    * one case that can race: a restore over a turn the unmount abandoned. That
    * turn keeps its parts and renders `Worked...`, and hydration replaces it
    * with a contentless row that renders none, so the summary going away is a
-   * real settle — without it a frame pushed straight after a restore can reach
-   * `ingest` before the replacement transport exists and be dropped for a
-   * reason the caller never intended. It is a no-op, not a guarantee, when
-   * there was no turn to abandon or when a fix keeps one live across the
-   * remount; neither case leaves a summary on screen to wait on.
+   * real settle — it is what lets a caller assert on the restored turn rather
+   * than on the abandoned one still on screen. It is a no-op, not a
+   * guarantee, when there was no turn to abandon; that case leaves no summary
+   * to wait on.
    */
   async restorePanel(): Promise<void> {
     await this.entryButton.click()
