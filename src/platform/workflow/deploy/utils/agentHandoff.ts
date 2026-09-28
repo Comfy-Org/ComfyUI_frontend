@@ -127,7 +127,10 @@ it — the download directory is the first place to look:
 ls -t ~/Downloads/*.json | head -5
 \`\`\`
 
-Build the definition from it in a directory of its own, and keep the report:
+The import sends the workflow file to the Comfy builder to resolve it. Tell the
+user that the whole workflow JSON is uploaded, and wait for a yes before you
+run it. Then build the definition in a directory of its own, and keep the
+report:
 
 \`\`\`bash
 mkdir -p comfy-build && cd comfy-build
@@ -143,8 +146,10 @@ things need settling by hand:
   candidates: \`comfy build refs resolve '<filename>'\`. Then write each chosen
   candidate into \`definition.models\` in \`comfy-build.yaml\`, as \`type\` (the
   directory under \`models/\` the loader reads), \`filename\`, \`sourceUri\` and
-  \`sha256\`. A model left out is not in the build. Prefer a candidate with a
-  \`sha256\`, and tell the user about any model with no candidate
+  \`sha256\` when the candidate has one. A model left out is not in the build.
+  Prefer a candidate with a \`sha256\`. One without is an unpinned fetch: tell
+  the user and get their agreement before you choose it. Tell the user about
+  any model with no candidate
 - Pin every pack in \`comfy-build.yaml\`. There is no command for this; edit
   the file. The pack ids and versions listed below are what the workflow
   recorded, not registry results. Look each pack up with
@@ -206,6 +211,10 @@ it is not there. Use the newest snapshot:
 \`\`\`bash
 ls -t "<install>"/.launcher/snapshots/*.json | head -1
 \`\`\`
+
+The import sends that snapshot to the Comfy builder to resolve it. Tell the
+user that the whole snapshot JSON is uploaded, and wait for a yes before you
+run it:
 
 \`\`\`bash
 mkdir -p comfy-build && cd comfy-build
@@ -287,39 +296,53 @@ you report the build as complete.`
 function cut(directory: string): string {
   return `## Cut the release
 
-Nothing has been sent yet. Before anything is, tell the user what goes: the
-packs and their sources, the models, and the \`--dry-run\` upload total as an
-upper bound. If \`comfy-build.yaml\` has \`pipDependencies\`, empty it for the
-first cut; the build owns torch and resolves the rest from the packs. Wait for
-a yes.
+Before anything is pushed or cut, tell the user, and wait for a yes:
 
-The API runs on \`linux/nvidia\`, and only a ready \`linux/nvidia\` artifact
-makes a release deployable, so that target is required. Other targets are
-optional additions; list what the platform offers and name the ones you cut to
-the user:
+- What goes: the packs and their sources, the models, and the \`--dry-run\`
+  upload total as an upper bound
+- The targets you will cut. \`linux/nvidia\` is required: the API runs there,
+  and only a ready \`linux/nvidia\` artifact makes a release deployable. Other
+  targets are optional additions from \`comfy build refs build-targets\`
+- That the release takes one of the workspace's release slots, and that a
+  failed cut is fixed by a new cut, three at most
+- That the release records its model and partner-node policy for good. Ask
+  whether to leave it open or list the models and nodes the workflow uses
+
+If \`comfy-build.yaml\` has \`pipDependencies\`, empty it for the first cut; the
+build owns torch and resolves the rest from the packs.
 
 \`\`\`bash
 comfy build refs build-targets
 \`\`\`
 
 Then push the definition and cut a release, adding one \`--target\` for each
-optional target the user wants:
+optional target the user agreed to. Note the release id \`release create\`
+prints; every later command takes it:
 
 \`\`\`bash
 comfy build push ${directory}
-comfy build release create ${directory} --target linux/nvidia --watch
+comfy build release create ${directory} --target linux/nvidia
+comfy build release show <release-id>
 \`\`\`
 
-\`--watch\` polls until every target finishes. The release is green when
-\`comfy build release show\` reports \`status\` \`complete\` and
-\`deployable: true\`. A release that is \`complete\` with \`deployable: false\` has
-no ready \`linux/nvidia\` artifact: either that target failed, or it was not
-cut, and then the fix is to cut it. When a target fails, read its
-\`artifacts[].failureReason\`, then
-\`comfy build release logs --target <os>/<gpu>\`. Fix one cause per cut. Before
-every new push and cut, tell the user the cause, the exact edit and which cut
-this is, and wait for a new yes; the first yes does not cover a retry. Stop
-after three cuts.`
+Run \`release show <release-id>\` again every few minutes. \`queued\` and
+\`building\` are normal. The release is green when \`status\` is \`complete\` and
+\`deployable: true\`. After 30 minutes without that, stop checking and report
+the release id as still running; \`comfy build release show <release-id>\`
+resumes the check later.
+
+A release that is \`complete\` with \`deployable: false\` has no ready
+\`linux/nvidia\` artifact: either that target failed, or it was not cut, and
+then the fix is to cut it. When a target fails, read its
+\`artifacts[].failureReason\` from \`release show <release-id>\`, then:
+
+\`\`\`bash
+comfy build release logs <release-id> --target linux/nvidia
+\`\`\`
+
+Fix one cause per cut. Before every new push and cut, tell the user the cause,
+the exact edit and which cut this is, and wait for a new yes; the first yes
+does not cover a retry. Stop after three cuts.`
 }
 
 function closing(): string {
