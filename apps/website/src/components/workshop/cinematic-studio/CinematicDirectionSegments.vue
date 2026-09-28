@@ -14,6 +14,7 @@ import {
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import CinematicTooltip from './CinematicTooltip.vue'
 
 const {
   direction,
@@ -53,44 +54,45 @@ const segments = computed(() =>
         class="h-4 w-px shrink-0 bg-transparency-white-t8"
         aria-hidden="true"
       />
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        :aria-expanded="open === segment.part"
-        :aria-label="`${segment.title}: ${segment.label}`"
-        :title="`${segment.title}: ${segment.label}`"
-        :class="
-          cn(
-            'grid h-full place-items-center px-1.5 transition-colors hover:bg-transparency-white-t4',
-            open === segment.part && 'bg-transparency-white-t8'
-          )
-        "
-        @click="emit('open', segment.part)"
-      >
-        <img
-          v-if="segment.preview"
-          :src="segment.preview"
-          alt=""
-          class="size-6 shrink-0 rounded-md object-cover"
-        />
-        <span
-          v-else-if="segment.palette"
-          class="flex size-6 shrink-0 overflow-hidden rounded-md"
-          aria-hidden="true"
+      <CinematicTooltip :text="`${segment.title}: ${segment.label}`">
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          :aria-expanded="open === segment.part"
+          :aria-label="`${segment.title}: ${segment.label}`"
+          :class="
+            cn(
+              'grid h-full place-items-center px-1.5 transition-colors hover:bg-transparency-white-t4',
+              open === segment.part && 'bg-transparency-white-t8'
+            )
+          "
+          @click="emit('open', segment.part)"
         >
-          <span
-            v-for="(color, stripe) in segment.palette"
-            :key="stripe"
-            class="h-full flex-1"
-            :style="{ backgroundColor: color }"
+          <img
+            v-if="segment.preview"
+            :src="segment.preview"
+            alt=""
+            class="size-6 shrink-0 rounded-md object-cover"
           />
-        </span>
-        <span
-          v-else
-          class="size-6 shrink-0 rounded-md bg-transparency-white-t8"
-          aria-hidden="true"
-        />
-      </button>
+          <span
+            v-else-if="segment.palette"
+            class="flex size-6 shrink-0 overflow-hidden rounded-md"
+            aria-hidden="true"
+          >
+            <span
+              v-for="(color, stripe) in segment.palette"
+              :key="stripe"
+              class="h-full flex-1"
+              :style="{ backgroundColor: color }"
+            />
+          </span>
+          <span
+            v-else
+            class="size-6 shrink-0 rounded-md bg-transparency-white-t8"
+            aria-hidden="true"
+          />
+        </button>
+      </CinematicTooltip>
     </template>
   </div>
 </template>

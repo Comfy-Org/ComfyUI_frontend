@@ -6,6 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { DirectionGroup } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import CinematicCheckBadge from './CinematicCheckBadge.vue'
 
 const {
   group,
@@ -65,6 +66,7 @@ const emit = defineEmits<{ choose: [id: string] }>()
             :style="{ backgroundColor: color }"
           />
         </template>
+        <CinematicCheckBadge v-if="selected === option.id" />
       </span>
       <span
         class="truncate px-1 text-sm text-primary-comfy-canvas group-hover:text-primary-warm-white"

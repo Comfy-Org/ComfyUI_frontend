@@ -358,6 +358,24 @@ describe('CinematicStudio', () => {
     )
   })
 
+  it.for([
+    { control: /^Light:/, tooltip: /^Light: / },
+    { control: /Large format/, tooltip: /^Camera: Large format · / },
+    { control: 'Resolution: 2K', tooltip: 'Resolution: 2K' }
+  ])(
+    'names the composer control $control in a tooltip on hover',
+    async ({ control, tooltip }) => {
+      const user = renderStudio()
+      const trigger = screen.getByRole('button', { name: control })
+
+      await user.hover(trigger)
+
+      await vi.waitFor(() =>
+        expect(trigger).toHaveAccessibleDescription(tooltip)
+      )
+    }
+  )
+
   it('keeps the camera picker open across columns until clicked away', async () => {
     const user = renderStudio()
 

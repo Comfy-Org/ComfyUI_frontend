@@ -75,6 +75,7 @@ const segmentClass =
       :options="aspectOptions"
       :heading="tc('cinematic.output.aspect', locale)"
       :trigger-class="segmentClass"
+      tooltip
     >
       <span class="grid size-4 place-items-center" aria-hidden="true">
         <span
@@ -90,6 +91,7 @@ const segmentClass =
       :options="resolutionOptions"
       :heading="tc('cinematic.output.resolution', locale)"
       :trigger-class="segmentClass"
+      tooltip
     >
       {{ resolution }}
     </CinematicMenu>
@@ -99,6 +101,7 @@ const segmentClass =
       :options="takeOptions"
       :heading="tc('cinematic.output.takes', locale)"
       :trigger-class="segmentClass"
+      tooltip
     >
       ×{{ takes }}
     </CinematicMenu>

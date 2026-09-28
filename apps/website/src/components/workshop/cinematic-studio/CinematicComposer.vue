@@ -10,7 +10,10 @@ import type {
   Direction,
   Resolution
 } from '../../../lib/workshop/cinematic-studio/catalog'
-import { directionOption } from '../../../lib/workshop/cinematic-studio/catalog'
+import {
+  cameraGroups,
+  directionOption
+} from '../../../lib/workshop/cinematic-studio/catalog'
 import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
 import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
@@ -22,6 +25,7 @@ import CinematicFormatSegments from './CinematicFormatSegments.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
+import CinematicTooltip from './CinematicTooltip.vue'
 import type { PopoverKey } from './picker-key'
 
 const {
@@ -77,6 +81,12 @@ const model = computed(() =>
 
 const bodyLabel = computed(() =>
   tc(directionOption('body', direction).label, locale)
+)
+const cameraSummary = computed(
+  () =>
+    `${tc('cinematic.section.camera', locale)}: ${cameraGroups
+      .map((group) => tc(directionOption(group.part, direction).label, locale))
+      .join(' · ')}`
 )
 const focalLabel = computed(() => {
   const focal = directionOption('focal', direction)
@@ -171,6 +181,7 @@ const chipClass = (key: PopoverKey) =>
           v-model="modelSlug"
           :options="modelOptions"
           :heading="tc('cinematic.model.heading', locale)"
+          tooltip
           trigger-class="h-9 shrink-0 gap-2 rounded-xl px-3 text-[13px] whitespace-nowrap text-primary-warm-white hover:bg-transparency-white-t8"
         >
           <img
@@ -185,23 +196,25 @@ const chipClass = (key: PopoverKey) =>
             aria-hidden="true"
           />
         </CinematicMenu>
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          :aria-expanded="openPopover === 'camera'"
-          :class="chipClass('camera')"
-          @click="emit('open', 'camera')"
-        >
-          <CinematicOptionIcon
-            part="body"
-            :option="direction.body"
-            class="h-5 w-8 shrink-0"
-          />
-          {{ bodyLabel }}
-          <span v-if="focalLabel" class="text-primary-warm-gray">
-            {{ focalLabel }}
-          </span>
-        </button>
+        <CinematicTooltip :text="cameraSummary">
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            :aria-expanded="openPopover === 'camera'"
+            :class="chipClass('camera')"
+            @click="emit('open', 'camera')"
+          >
+            <CinematicOptionIcon
+              part="body"
+              :option="direction.body"
+              class="h-5 w-8 shrink-0"
+            />
+            {{ bodyLabel }}
+            <span v-if="focalLabel" class="text-primary-warm-gray">
+              {{ focalLabel }}
+            </span>
+          </button>
+        </CinematicTooltip>
         <CinematicDirectionSegments
           :direction
           :open="openPopover"
