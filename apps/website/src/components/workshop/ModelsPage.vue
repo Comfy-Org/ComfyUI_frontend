@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useMounted } from '@vueuse/core'
-import { defineAsyncComponent, h, shallowRef, watch } from 'vue'
+import { computed, defineAsyncComponent, h, shallowRef, watch } from 'vue'
 import type { FunctionalComponent } from 'vue'
 
+import { isWorkflowSlug } from '../../config/models-catalogue'
 import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { t } from '../../i18n/translations'
@@ -17,7 +18,7 @@ const { slug, workflowId } = defineProps<{
 }>()
 
 const loadingLabel = t('workshop.load.pending', 'en')
-const isWorkflow = slug?.startsWith('workflows/') ?? false
+const isWorkflow = computed(() => (slug ? isWorkflowSlug(slug) : false))
 const mounted = useMounted()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const recoveringWorkflow = shallowRef(false)
@@ -89,7 +90,7 @@ function createContent() {
   return defineAsyncComponent({
     loader: async () => {
       if (slug) {
-        const preload = slug.startsWith('workflows/')
+        const preload = isWorkflowSlug(slug)
           ? import('./WorkflowPage.vue')
           : import('./ModelPage.vue')
         void preload.catch(() => undefined)
