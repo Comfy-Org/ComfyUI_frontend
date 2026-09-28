@@ -210,6 +210,21 @@ export class AppModeHelper {
     await this.toggleAppMode()
   }
 
+  /** The active workflow's resolved app mode, as getWorkflowMode computes it. */
+  async getViewMode(): Promise<string> {
+    return this.page.evaluate(() => {
+      const workflow = window.app!.extensionManager.workflow.activeWorkflow
+      return workflow?.activeMode ?? workflow?.initialMode ?? 'graph'
+    })
+  }
+
+  /** Filename of the active workflow, for confirming a load landed. */
+  async getActiveWorkflowName(): Promise<string> {
+    return this.page.evaluate(
+      () => window.app!.extensionManager.workflow.activeWorkflow?.filename ?? ''
+    )
+  }
+
   /**
    * Get the actions menu trigger for a widget in the app mode widget list.
    * @param widgetName Text shown in the widget label (e.g. "seed").

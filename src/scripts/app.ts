@@ -389,7 +389,7 @@ export class ComfyApp {
   }
 
   private configuringGraphLevel: number = 0
-  private pendingFitView: (() => void) | undefined
+  private pendingFitView: { loadId: number; run: () => void } | undefined
   private graphLoadId = 0
   get configuringGraph() {
     return this.configuringGraphLevel > 0
@@ -1115,15 +1115,17 @@ export class ComfyApp {
     this.canvas.draw(true, true)
   }
 
-  /**
-   * Fitting a zero-size canvas is a no-op, so a load that lands while App Mode
-   * hides it defers the fit here until the element regains a size.
-   */
   private flushPendingFitView(canvas: HTMLCanvasElement) {
-    const fitView = this.pendingFitView
-    if (!fitView || !canvas.width || !canvas.height) return
+    const pending = this.pendingFitView
+    if (!pending || !canvas.width || !canvas.height) return
     this.pendingFitView = undefined
-    fitView()
+    if (pending.loadId !== this.graphLoadId) return
+    pending.run()
+  }
+
+  private beginGraphReplacement() {
+    this.pendingFitView = undefined
+    return ++this.graphLoadId
   }
 
   private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDefV1>) {
@@ -1331,8 +1333,7 @@ export class ComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
-    const loadId = ++this.graphLoadId
-    this.pendingFitView = undefined
+    const loadId = this.beginGraphReplacement()
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
@@ -1537,6 +1538,9 @@ export class ComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
+        // Superseded: a newer load already owns the root graph and its camera.
+        if (loadId !== this.graphLoadId) return false
+
         // @ts-expect-error Discrepancies between zod and litegraph - in progress
         this.rootGraph.configure(graphData)
 
@@ -1558,14 +1562,11 @@ export class ComfyApp {
 
         if (canvasVisible) {
           fitView()
-        } else if (
-          loadId === this.graphLoadId &&
-          (!workflow || typeof workflow === 'string')
-        ) {
+        } else if (!workflow || typeof workflow === 'string') {
           // Armed here rather than after the awaits below so a throw in
           // between still leaves the recovery in place.
           if (viewRestoreEnabled()) restoreSavedViewport()
-          this.pendingFitView = fitView
+          this.pendingFitView = { loadId, run: fitView }
         }
       } catch (error) {
         await this.reportGraphLoadFailure(error)
@@ -1662,7 +1663,7 @@ export class ComfyApp {
       // The fit above is skipped while App Mode hides the canvas, and a load
       // can also be superseded mid-flight. Defer it to the next resize that
       // reports a real size, for this load only.
-      if (this.pendingFitView && loadId === this.graphLoadId) {
+      if (this.pendingFitView?.loadId === loadId) {
         this.canvas.resize()
         requestAnimationFrame(() => this.flushPendingFitView(this.canvasEl))
       }
@@ -2253,6 +2254,7 @@ export class ComfyApp {
         async () => {
           try {
             // false: final destination; no later load republishes the hash.
+            this.beginGraphReplacement()
             useWorkflowService().beforeLoadNewGraph(false)
             await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
           } finally {
@@ -2429,6 +2431,7 @@ export class ComfyApp {
     options: { deferWarnings?: boolean } = {}
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
+    this.beginGraphReplacement()
     useWorkflowService().beforeLoadNewGraph(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     this.canvas.setGraph(this.rootGraph)

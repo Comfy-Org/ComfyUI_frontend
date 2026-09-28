@@ -476,6 +476,15 @@ describe('ComfyApp', () => {
     })
 
     describe('a load that lands while the canvas is hidden', () => {
+      function driveResizeCanvas(canvasEl: HTMLCanvasElement) {
+        vi.spyOn(canvasEl, 'getBoundingClientRect').mockReturnValue(
+          fromPartial<DOMRect>({ width: 1600, height: 900 })
+        )
+        Reflect.apply(Reflect.get(app, 'resizeCanvas') as () => void, app, [
+          canvasEl
+        ])
+      }
+
       function hideCanvas() {
         const canvasEl = document.createElement('canvas')
         canvasEl.width = 0
@@ -511,6 +520,7 @@ describe('ComfyApp', () => {
 
       it('keeps the pending fit owned by the load that was not superseded', async () => {
         const canvasEl = hideCanvas()
+        const configure = vi.spyOn(app.rootGraph, 'configure')
         const fitView = vi.fn()
         vi.mocked(useLitegraphService).mockReturnValue({
           ...useLitegraphService(),
@@ -532,13 +542,13 @@ describe('ComfyApp', () => {
           )
         })
 
-        // The two loads fit differently: a template always calls through to
-        // litegraph, while a workflow with a saved viewport restores it and
-        // measures instead. That is what identifies the closure that ran.
-        // Note the superseded load configures the graph last, so this pins
-        // closure ownership, not which graph ends up live.
+        // A template always calls through to litegraph, while a workflow with
+        // a saved viewport restores it instead, so the camera identifies which
+        // load owns it.
+        const supersededData = createWorkflowGraphData()
+        supersededData.extra = { loadMarker: 'superseded' }
         const supersededLoad = app.loadGraphData(
-          createWorkflowGraphData(),
+          supersededData,
           true,
           true,
           'superseded',
@@ -547,24 +557,53 @@ describe('ComfyApp', () => {
         await supersededReachedHook
 
         const winnerData = createWorkflowGraphData()
-        winnerData.extra = { ds: { offset: [7, 9], scale: 0.25 } }
+        winnerData.extra = {
+          loadMarker: 'winner',
+          ds: { offset: [7, 9], scale: 0.25 }
+        }
         await app.loadGraphData(winnerData, true, true, 'winner')
 
         releaseSuperseded()
-        await supersededLoad
+        await expect(supersededLoad).resolves.toBe(false)
 
-        vi.spyOn(canvasEl, 'getBoundingClientRect').mockReturnValue(
-          fromPartial<DOMRect>({ width: 1600, height: 900 })
+        driveResizeCanvas(canvasEl)
+
+        const configuredMarkers = configure.mock.calls.map(
+          ([data]) => (data as ComfyWorkflowJSON).extra?.loadMarker
         )
-        const resizeCanvas = Reflect.get(app, 'resizeCanvas') as (
-          canvas: HTMLCanvasElement
-        ) => void
-        resizeCanvas.call(app, canvasEl)
-
+        expect(configuredMarkers).toEqual(['winner'])
         expect(app.canvas.ds.computeVisibleArea).toHaveBeenCalled()
         expect(fitView).not.toHaveBeenCalled()
         expect(app.canvas.ds.offset).toEqual([7, 9])
         expect(app.canvas.ds.scale).toBe(0.25)
+      })
+
+      it('drops a pending fit when an API import replaces the graph', async () => {
+        const canvasEl = hideCanvas()
+        const fitView = vi.fn()
+        vi.mocked(useLitegraphService).mockReturnValue({
+          ...useLitegraphService(),
+          fitView
+        })
+
+        await app.loadGraphData(
+          createWorkflowGraphData(),
+          true,
+          true,
+          'hidden-template',
+          { openSource: 'template' }
+        )
+
+        // loadApiJson reads the module singleton for one pass, so point it at
+        // this instance's graph.
+        Reflect.set(singletonApp, 'rootGraphInternal', app.rootGraph)
+
+        // Replaces the root graph without going through loadGraphData, so the
+        // template's queued fit must not frame the imported graph.
+        await app.loadApiJson(fromPartial<ComfyApiWorkflow>({}), 'imported')
+        driveResizeCanvas(canvasEl)
+
+        expect(fitView).not.toHaveBeenCalled()
       })
 
       it('drops the queued fallback fit when a newer load starts', async () => {
@@ -619,16 +658,9 @@ describe('ComfyApp', () => {
 
         expect(fitView).not.toHaveBeenCalled()
 
-        vi.spyOn(canvasEl, 'getBoundingClientRect').mockReturnValue(
-          fromPartial<DOMRect>({ width: 1600, height: 900 })
-        )
-        const resizeCanvas = Reflect.get(app, 'resizeCanvas') as (
-          canvas: HTMLCanvasElement
-        ) => void
-        resizeCanvas.call(app, canvasEl)
+        driveResizeCanvas(canvasEl)
 
         expect(canvasEl.width).toBeGreaterThan(0)
-
         expect(fitView).toHaveBeenCalledTimes(1)
       })
     })

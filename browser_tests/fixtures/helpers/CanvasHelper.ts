@@ -181,6 +181,48 @@ export class CanvasHelper {
     )
   }
 
+  /** Backing-store width of the canvas element; 0 while App Mode hides it. */
+  async getElementWidth(): Promise<number> {
+    return this.page.evaluate(() => window.app!.canvasEl.width)
+  }
+
+  /** Camera state plus how many root-graph nodes fall inside the visible area. */
+  async getFraming(): Promise<{
+    scale: number
+    offset: number[]
+    nodeCount: number
+    nodesInView: number
+  }> {
+    return this.page.evaluate(() => {
+      const app = window.app!
+      const { ds } = app.canvas
+      const [vx, vy, vw, vh] = ds.visible_area
+      const nodesInView = app.rootGraph.nodes.filter((node) => {
+        const [x, y, w, h] = node.boundingRect
+        return x < vx + vw && vx < x + w && y < vy + vh && vy < y + h
+      }).length
+      return {
+        scale: ds.scale,
+        offset: [...ds.offset],
+        nodeCount: app.rootGraph.nodes.length,
+        nodesInView
+      }
+    })
+  }
+
+  /** Moves the camera well away from all content, for framing regressions. */
+  async parkOffscreen(offset: number, scale: number): Promise<void> {
+    await this.page.evaluate(
+      (camera) => {
+        const { ds } = window.app!.canvas
+        ds.offset[0] = camera.offset
+        ds.offset[1] = camera.offset
+        ds.scale = camera.scale
+      },
+      { offset, scale }
+    )
+  }
+
   async waitForViewToSettle(): Promise<void> {
     await this.page.waitForFunction(
       () =>

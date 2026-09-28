@@ -32,43 +32,7 @@ test.describe('App mode template load', { tag: ['@canvas'] }, () => {
     comfyPage,
     templateApi
   }) => {
-    const page = comfyPage.page
-
-    function canvasWidth() {
-      return page.evaluate(() => window.app!.canvasEl.width)
-    }
-
-    function activeWorkflowName() {
-      return page.evaluate(
-        () =>
-          window.app!.extensionManager.workflow.activeWorkflow?.filename ?? ''
-      )
-    }
-
-    function viewMode() {
-      return page.evaluate(() => {
-        const workflow = window.app!.extensionManager.workflow.activeWorkflow
-        return workflow?.activeMode ?? workflow?.initialMode ?? 'graph'
-      })
-    }
-
-    function framing() {
-      return page.evaluate(() => {
-        const app = window.app!
-        const { ds } = app.canvas
-        const [vx, vy, vw, vh] = ds.visible_area
-        const nodesInView = app.rootGraph.nodes.filter((node) => {
-          const [x, y, w, h] = node.boundingRect
-          return x < vx + vw && vx < x + w && y < vy + vh && vy < y + h
-        }).length
-        return {
-          scale: ds.scale,
-          offset: [...ds.offset],
-          nodeCount: app.rootGraph.nodes.length,
-          nodesInView
-        }
-      })
-    }
+    const { appMode, canvasOps } = comfyPage
 
     templateApi.configure(
       withTemplates([makeTemplate({ name: TEMPLATE, title: 'App Template' })])
@@ -77,39 +41,37 @@ test.describe('App mode template load', { tag: ['@canvas'] }, () => {
     await templateApi.mockWorkflow(TEMPLATE, TEMPLATE_WORKFLOW)
 
     await test.step('app mode hides the canvas', async () => {
-      await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
-      await expect(comfyPage.appMode.centerPanel).toBeVisible()
-      await expect.poll(canvasWidth).toBe(0)
+      await appMode.enterAppModeWithInputs([['3', 'seed']])
+      await expect(appMode.centerPanel).toBeVisible()
+      await expect.poll(() => canvasOps.getElementWidth()).toBe(0)
     })
 
     await test.step('the camera starts off the nodes', async () => {
-      // Without the deferred fit this is the camera the user returns to, so
-      // parking it here is what makes the final assertion discriminating.
-      await page.evaluate((camera) => {
-        const { ds } = window.app!.canvas
-        ds.offset[0] = camera.offset
-        ds.offset[1] = camera.offset
-        ds.scale = camera.scale
-      }, OFFSCREEN_CAMERA)
+      await canvasOps.parkOffscreen(
+        OFFSCREEN_CAMERA.offset,
+        OFFSCREEN_CAMERA.scale
+      )
     })
 
     await test.step('the template loads while the canvas is hidden', async () => {
       await templateApi.load(TEMPLATE)
-      await expect.poll(activeWorkflowName).toContain(TEMPLATE)
+      await expect
+        .poll(() => appMode.getActiveWorkflowName())
+        .toContain(TEMPLATE)
       await comfyPage.workflow.waitForWorkflowIdle()
-      await expect.poll(viewMode).toBe('app')
-      await expect.poll(canvasWidth).toBe(0)
+      await expect.poll(() => appMode.getViewMode()).toBe('app')
+      await expect.poll(() => canvasOps.getElementWidth()).toBe(0)
     })
 
     await test.step('returning to the graph frames the template', async () => {
-      await comfyPage.appMode.toggleAppMode()
-      await expect.poll(viewMode).toBe('graph')
-      await expect.poll(canvasWidth).toBeGreaterThan(0)
+      await appMode.toggleAppMode()
+      await expect.poll(() => appMode.getViewMode()).toBe('graph')
+      await expect.poll(() => canvasOps.getElementWidth()).toBeGreaterThan(0)
       await expect
-        .poll(async () => (await framing()).nodesInView)
+        .poll(async () => (await canvasOps.getFraming()).nodesInView)
         .toBeGreaterThan(0)
 
-      const { scale, offset, nodeCount } = await framing()
+      const { scale, offset, nodeCount } = await canvasOps.getFraming()
       expect(nodeCount).toBeGreaterThan(0)
       expect(scale).toBeGreaterThan(0)
       expect(
