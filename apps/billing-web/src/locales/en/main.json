@@ -161,7 +161,34 @@
       "promoApplied": "{code} applied.",
       "promoRenews": "Renews at {amount} on {date}"
     },
-    "error": "Error"
+    "error": "Error",
+    "totalDueToday": "Total due today",
+    "paymentMethod": "Payment method",
+    "payAndSubscribe": "Pay and subscribe",
+    "methodChoice": "Choose how you would like to pay.",
+    "billingAddress": "Billing address",
+    "alipayRenewalNote": "Alipay renews this plan automatically each period until you cancel.",
+    "unavailable": "The payment form isn't available right now. Please try again later.",
+    "fullPage": {
+      "logo": "Comfy",
+      "eyebrow": "Subscribe to {plan} · {workspace}",
+      "eyebrowPlanOnly": "Subscribe to {plan}",
+      "planName": "{tier} Plan",
+      "terms": {
+        "agreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method each billing period until you cancel.",
+        "terms": "Terms",
+        "privacyPolicy": "Privacy Policy"
+      },
+      "formFailed": {
+        "title": "The payment form couldn't load",
+        "body": "Nothing has been charged. Check your connection and try again — your order details are unaffected.",
+        "retry": "Try again"
+      },
+      "refused": {
+        "title": "You can't subscribe from this account",
+        "body": "This account can't start or change a subscription for this workspace. Ask the workspace owner, or go back and choose another workspace."
+      }
+    }
   },
   "hosted": {
     "loading": "Loading…",
