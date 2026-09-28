@@ -1,0 +1,7 @@
+diff --git a/browser_tests/tests/example.spec.ts b/browser_tests/tests/example.spec.ts
+index 1111111..2222222 100644
+--- a/browser_tests/tests/example.spec.ts
++++ b/browser_tests/tests/example.spec.ts
+@@ -1 +1 @@
+-test('works', async () => {})
++test.fixme('works', async () => {})
