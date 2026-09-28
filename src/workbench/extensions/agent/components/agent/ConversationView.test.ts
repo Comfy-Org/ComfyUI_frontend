@@ -180,23 +180,19 @@ describe('ConversationView', () => {
       streaming: false,
       thinking: false
     }
-    const scrollTo = vi.fn()
-    Element.prototype.scrollTo = scrollTo
-
     render(ConversationView, {
       props: { entries: [assistant] },
       global: { plugins: [i18n] }
     })
-    Object.defineProperty(
-      screen.getByTestId('agent-conversation-scroll'),
-      'scrollHeight',
-      {
-        value: 512
-      }
-    )
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollTo: { value: undefined },
+      scrollHeight: { value: 512 },
+      scrollTop: { value: 0, writable: true }
+    })
     await nextTick()
 
-    expect(scrollTo).toHaveBeenCalledWith({ top: 512 })
+    expect(scrollContainer.scrollTop).toBe(512)
   })
 
   it('does not follow new content after the user scrolls up', async () => {
@@ -214,6 +210,7 @@ describe('ConversationView', () => {
       scrollTop: { value: 0 },
       clientHeight: { value: 500 }
     })
+    await fireEvent.wheel(scrollContainer, { deltaY: -1 })
     await fireEvent.scroll(scrollContainer)
     for (const callback of resizeCallbacks) callback()
 
@@ -244,7 +241,10 @@ describe('ConversationView', () => {
       screen.queryByRole('button', { name: 'Latest' })
     ).not.toBeInTheDocument()
 
-    for (const cb of intersectionCallbacks) cb([{ isIntersecting: false }])
+    await nextTick()
+    await fireEvent.wheel(screen.getByTestId('agent-conversation-scroll'), {
+      deltaY: -1
+    })
     const jump = await screen.findByRole('button', { name: 'Latest' })
     expect(jump).toHaveTextContent('')
 
@@ -271,8 +271,7 @@ describe('ConversationView', () => {
     const topMask = 'mask-t-from-[calc(100%-2rem)]'
     const bottomMask = 'mask-b-from-[calc(100%-2rem)]'
 
-    // ConversationView registers the bottom observer before the top one.
-    const [fireBottom, fireTop] = intersectionCallbacks
+    const [fireTop] = intersectionCallbacks
 
     expect(scroll.classList.contains(topMask)).toBe(false)
     expect(scroll.classList.contains(bottomMask)).toBe(false)
@@ -286,8 +285,7 @@ describe('ConversationView', () => {
     await nextTick()
     expect(scroll.classList.contains(topMask)).toBe(false)
 
-    fireBottom([{ isIntersecting: false }])
-    await nextTick()
+    await fireEvent.wheel(scroll, { deltaY: -1 })
     expect(scroll.classList.contains(bottomMask)).toBe(true)
     expect(scroll.classList.contains(topMask)).toBe(false)
   })
