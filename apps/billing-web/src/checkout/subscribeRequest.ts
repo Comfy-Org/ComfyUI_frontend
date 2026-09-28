@@ -16,9 +16,30 @@ export function checkoutResultUrl(
   workspaceId: string | undefined,
   billingOrigin: string
 ): string | undefined {
+  return returnUrlFor('result', arrival, workspaceId, billingOrigin)
+}
+
+/**
+ * The full page's own URL, same request: a return from a provider's site is
+ * a fresh mount that reconciles with the operation, never a result page.
+ */
+export function checkoutReturnUrl(
+  arrival: BillingEntry,
+  workspaceId: string | undefined,
+  billingOrigin: string
+): string | undefined {
+  return returnUrlFor('checkout', arrival, workspaceId, billingOrigin)
+}
+
+function returnUrlFor(
+  intent: 'checkout' | 'result',
+  arrival: BillingEntry,
+  workspaceId: string | undefined,
+  billingOrigin: string
+): string | undefined {
   const built = buildBillingEntryUrl({
     billingOrigin,
-    intent: 'result',
+    intent,
     product: arrival.product,
     returnTo: arrival.returnTo,
     ...(arrival.plan === undefined ? {} : { plan: arrival.plan }),

@@ -10,7 +10,7 @@ const capture: CheckoutPage = {
   kind: 'capture',
   rail: { method: 'on_file' },
   reactivation: 'not_required',
-  attempt: 'idle'
+  attempt: { kind: 'idle' }
 }
 
 describe('endingOf', () => {

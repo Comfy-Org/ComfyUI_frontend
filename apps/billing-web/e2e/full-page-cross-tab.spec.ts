@@ -30,11 +30,11 @@ const test = base.extend<{ fullPage: void }>({
 })
 
 const CHECKOUT = entryPath('checkout', { plan: 'pro_monthly' })
-const WAITING = 'Finishing your payment…'
+const WAITING = "This payment is already processing and can't be canceled."
 
 const payButton = (page: Page) =>
   page.getByRole('button', { name: 'Pay and subscribe' })
-const waiting = (page: Page) => page.getByRole('status')
+const waiting = (page: Page) => page.getByTestId('checkout-phase-footnote')
 
 /** The server reports the operation pending once a subscribe has been issued. */
 function pendingAfterSubscribe(cloud: MockCloud, id: string) {
@@ -73,7 +73,7 @@ test('a Pay in one tab takes a sibling tab on the same checkout to the waiting s
   await payButton(page).click()
 
   await expect(waiting(sibling)).toHaveText(WAITING)
-  await expect(payButton(sibling)).toBeHidden()
+  await expect(payButton(sibling)).toBeDisabled()
   expect(
     cloud.requests.filter((request) => request.path === '/billing/status')
       .length
@@ -105,7 +105,7 @@ test('a page restored from the back-forward cache re-reads the operation instead
   })
 
   await expect(waiting(page)).toHaveText(WAITING)
-  await expect(payButton(page)).toBeHidden()
+  await expect(payButton(page)).toBeDisabled()
   expect(
     cloud.requests.filter((request) => request.path === '/billing/subscribe')
   ).toHaveLength(0)
