@@ -46,25 +46,11 @@ const cloudHref = template
       >
         {{ model.summary }}
       </p>
-      <div
-        v-if="template"
-        class="mt-5 flex flex-wrap gap-2 text-xs text-primary-warm-gray"
-      >
-        <span
-          v-for="name in template.models"
-          :key="name"
-          class="rounded-full border border-transparency-white-t20 px-3 py-1.5"
-          >{{ name }}</span
-        >
-        <span class="px-2 py-1.5">
-          {{
-            t('workshop.workflow.templateBy').replace(
-              '{author}',
-              template.author
-            )
-          }}
-        </span>
-      </div>
+      <p v-if="template" class="mt-5 text-xs text-primary-warm-gray">
+        {{
+          t('workshop.workflow.templateBy').replace('{author}', template.author)
+        }}
+      </p>
     </header>
 
     <WorkflowPlayground
