@@ -156,16 +156,18 @@ interface SavedSlot {
  * A widget input only becomes a socket on the canvas once something is linked
  * to it; until then the editor draws it as the widget it is.
  */
+function readSlot(slot: unknown, index: number): SavedSlot | undefined {
+  if (!slot || typeof slot !== 'object') return undefined
+  const record = slot as Record<string, unknown>
+  if (record.widget && record.link == null) return undefined
+  const type = text(record.type)
+  const name = text(record.name) || type
+  return name ? { index, name, type } : undefined
+}
+
 function readSlots(value: unknown): readonly SavedSlot[] {
   if (!Array.isArray(value)) return []
-  return value.flatMap((slot, index) => {
-    if (!slot || typeof slot !== 'object') return []
-    const record = slot as Record<string, unknown>
-    if (record.widget && record.link == null) return []
-    const name = typeof record.name === 'string' ? record.name : ''
-    const type = typeof record.type === 'string' ? record.type : ''
-    return name || type ? [{ index, name: name || type, type }] : []
-  })
+  return value.flatMap((slot, index) => readSlot(slot, index) ?? [])
 }
 
 /** The least room a sample is worth drawing in. */
