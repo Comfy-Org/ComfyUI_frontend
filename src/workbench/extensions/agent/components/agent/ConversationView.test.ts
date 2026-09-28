@@ -370,9 +370,7 @@ describe('ConversationView', () => {
       clientHeight: { value: 500 }
     })
     await nextTick()
-    await userEvent.pointer([
-      { target: scrollContainer, keys: '[MouseLeft>]' }
-    ])
+    await userEvent.pointer([{ target: scrollContainer, keys: '[MouseLeft>]' }])
     await fireEvent.scroll(scrollContainer)
     scrollTo.mockClear()
 
@@ -382,7 +380,9 @@ describe('ConversationView', () => {
       entries: [
         {
           ...assistant,
-          parts: [{ type: 'text', text: 'first reply continued', state: 'done' }]
+          parts: [
+            { type: 'text', text: 'first reply continued', state: 'done' }
+          ]
         }
       ]
     })
@@ -390,9 +390,7 @@ describe('ConversationView', () => {
     await nextTick()
 
     expect(scrollTo).not.toHaveBeenCalled()
-    expect(
-      screen.getByRole('button', { name: 'Latest' })
-    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Latest' })).toBeInTheDocument()
   })
 
   it.for([
