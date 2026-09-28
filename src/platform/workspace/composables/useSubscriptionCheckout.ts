@@ -1574,10 +1574,7 @@ export function useSubscriptionCheckout(
           detail: {
             text: t('subscription.preview.paymentPopupBlocked'),
             actionLabel: t('subscription.planLoadErrorRetry'),
-            // Not the mutation lock: that's released as soon as the operation
-            // is adopted below, on purpose, so the checkout stays usable while
-            // this op is still awaiting the payment method. `activeCheckoutOperationId`
-            // is what a newer attempt (or a reset) actually reassigns.
+            // Not the mutation lock, which is released once the op is adopted.
             onAction: () => {
               if (activeCheckoutOperationId.value !== opId) return
               window.open(paymentMethodUrl, '_blank')
