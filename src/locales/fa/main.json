@@ -5174,6 +5174,13 @@
     },
     "invite": "دعوت",
     "inviteLimitReached": "به حداکثر تعداد {count} عضو رسیده‌اید",
+    "inviteLinks": {
+      "copied": "کپی شد!",
+      "copyAll": "کپی پیوند دعوت | کپی همه پیوندها ({count})",
+      "copyLink": "کپی پیوند دعوت",
+      "sentLead": "هر دعوت یک پیوند شخصی دارد که می‌توانید مستقیماً به اشتراک بگذارید:",
+      "sentTitle": "{count} دعوت ارسال شد | {count} دعوت ارسال شد"
+    },
     "inviteMember": "دعوت عضو",
     "inviteMemberDialog": {
       "failedCount": "ارسال {count} دعوت‌نامه ناموفق بود. دوباره تلاش کنید. | ارسال {count} دعوت‌نامه ناموفق بود. دوباره تلاش کنید.",
@@ -5201,6 +5208,7 @@
       "actions": {
         "cancelInvite": "لغو دعوت‌نامه",
         "changeRole": "تغییر نقش",
+        "copyInviteLink": "کپی پیوند دعوت",
         "removeMember": "حذف عضو",
         "resendInvite": "ارسال مجدد دعوت‌نامه",
         "setCreditLimit": "تنظیم سقف اعتبار"

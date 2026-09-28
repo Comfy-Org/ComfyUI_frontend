@@ -5174,6 +5174,13 @@
     },
     "invite": "Convidar",
     "inviteLimitReached": "Você atingiu o máximo de {count} membros",
+    "inviteLinks": {
+      "copied": "Copiado!",
+      "copyAll": "Copiar link de convite | Copiar todos os links ({count})",
+      "copyLink": "Copiar link de convite",
+      "sentLead": "Cada convite tem um link pessoal que você pode compartilhar diretamente:",
+      "sentTitle": "{count} convite enviado | {count} convites enviados"
+    },
     "inviteMember": "Convidar membro",
     "inviteMemberDialog": {
       "failedCount": "Não foi possível enviar {count} convite. Tente novamente. | Não foi possível enviar {count} convites. Tente novamente.",
@@ -5201,6 +5208,7 @@
       "actions": {
         "cancelInvite": "Cancelar convite",
         "changeRole": "Alterar função",
+        "copyInviteLink": "Copiar link de convite",
         "removeMember": "Remover membro",
         "resendInvite": "Reenviar convite",
         "setCreditLimit": "Definir limite de crédito"

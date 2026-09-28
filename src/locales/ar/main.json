@@ -5174,6 +5174,13 @@
     },
     "invite": "دعوة",
     "inviteLimitReached": "لقد وصلت إلى الحد الأقصى البالغ {count} من الأعضاء",
+    "inviteLinks": {
+      "copied": "تم النسخ!",
+      "copyAll": "نسخ رابط الدعوة | نسخ كل الروابط ({count})",
+      "copyLink": "نسخ رابط الدعوة",
+      "sentLead": "لكل دعوة رابط شخصي يمكنك مشاركته مباشرةً:",
+      "sentTitle": "تم إرسال {count} دعوة | تم إرسال {count} دعوات"
+    },
     "inviteMember": "دعوة عضو",
     "inviteMemberDialog": {
       "failedCount": "تعذر إرسال {count} دعوة. حاول مرة أخرى. | تعذر إرسال {count} دعوات. حاول مرة أخرى.",
@@ -5201,6 +5208,7 @@
       "actions": {
         "cancelInvite": "إلغاء الدعوة",
         "changeRole": "تغيير الدور",
+        "copyInviteLink": "نسخ رابط الدعوة",
         "removeMember": "إزالة العضو",
         "resendInvite": "إعادة إرسال الدعوة",
         "setCreditLimit": "تعيين حد الرصيد"

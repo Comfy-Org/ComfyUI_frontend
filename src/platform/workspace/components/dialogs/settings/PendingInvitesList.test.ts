@@ -7,6 +7,8 @@ import { createI18n } from 'vue-i18n'
 
 import PendingInvitesList from './PendingInvitesList.vue'
 
+import enMain from '@/locales/en/main.json'
+
 import type { WorkspacePendingInvite } from '../../../stores/teamWorkspaceStore'
 
 const mockMenuClose = vi.hoisted(() => vi.fn())
@@ -20,6 +22,14 @@ const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+const shippedI18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMain },
   missingWarn: false,
   fallbackWarn: false
 })
@@ -139,5 +149,28 @@ describe('PendingInvitesList', () => {
       })
     ).toBeInTheDocument()
     consoleError.mockRestore()
+  })
+
+  it('labels every menu action from the shipped English bundle', () => {
+    render(PendingInvitesList, {
+      props: {
+        invites: [createInvite({ token: 'tok-9' })],
+        gridCols: 'grid-cols-[50%_20%_20%_10%]'
+      },
+      global: { plugins: [shippedI18n] }
+    })
+
+    for (const button of screen.getAllByRole('button')) {
+      expect(button).not.toHaveAccessibleName(/^workspacePanel\./)
+    }
+    expect(
+      screen.getByRole('button', { name: 'Copy invite link' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Resend invite' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Cancel invite' })
+    ).toBeInTheDocument()
   })
 })
