@@ -53,9 +53,9 @@ const scrollContainer = ref<HTMLElement>()
 const content = ref<HTMLElement>()
 const shouldFollowLatest = ref(true)
 const atBottom = ref(true)
-const bottomTolerance = 16
+const bottomGracePx = 16
 let pendingProgrammaticTarget: number | null = null
-let pendingProgrammaticTimeout: ReturnType<typeof setTimeout> | undefined
+let pendingProgrammaticFrame: number | undefined
 let pendingConversationId: string | null | undefined
 let pendingConversationReset = false
 
@@ -68,7 +68,9 @@ useIntersectionObserver(top, ([entry]) => {
 
 function clearPendingProgrammaticScroll(): void {
   pendingProgrammaticTarget = null
-  clearTimeout(pendingProgrammaticTimeout)
+  if (pendingProgrammaticFrame !== undefined)
+    cancelAnimationFrame(pendingProgrammaticFrame)
+  pendingProgrammaticFrame = undefined
 }
 
 useEventListener(scrollContainer, 'pointerdown', clearPendingProgrammaticScroll)
@@ -94,10 +96,17 @@ function scrollToLatest(): void {
   atBottom.value = true
   const target = Math.max(0, element.scrollHeight - element.clientHeight)
   clearPendingProgrammaticScroll()
-  pendingProgrammaticTarget = target
-  pendingProgrammaticTimeout = setTimeout(clearPendingProgrammaticScroll, 100)
+  const willMove =
+    element.scrollHeight > element.clientHeight &&
+    Math.abs(element.scrollTop - target) > bottomGracePx
+  if (willMove) {
+    pendingProgrammaticTarget = target
+    pendingProgrammaticFrame = requestAnimationFrame(
+      clearPendingProgrammaticScroll
+    )
+  }
   if (typeof element.scrollTo === 'function') {
-    element.scrollTo({ top: element.scrollHeight })
+    element.scrollTo({ top: element.scrollHeight, behavior: 'instant' })
   } else {
     element.scrollTop = element.scrollHeight
   }
@@ -108,14 +117,14 @@ useEventListener(scrollContainer, 'scroll', () => {
   if (!element) return
   if (
     pendingProgrammaticTarget !== null &&
-    Math.abs(element.scrollTop - pendingProgrammaticTarget) <= bottomTolerance
+    Math.abs(element.scrollTop - pendingProgrammaticTarget) <= bottomGracePx
   ) {
     clearPendingProgrammaticScroll()
     return
   }
   atBottom.value =
     element.scrollHeight - element.scrollTop - element.clientHeight <=
-    bottomTolerance
+    bottomGracePx
   shouldFollowLatest.value = atBottom.value
   clearPendingProgrammaticScroll()
 })
@@ -125,7 +134,7 @@ function followLatestAfterResize(): void {
   if (!element) return
   atBottom.value =
     element.scrollHeight - element.scrollTop - element.clientHeight <=
-    bottomTolerance
+    bottomGracePx
   if (shouldFollowLatest.value) scrollToLatest()
 }
 
@@ -146,7 +155,7 @@ const latestContentSignal = computed(() => {
 watch(
   () => conversationId,
   (current, previous) => {
-    if (current === previous) return
+    if (current == null || previous == null) return
     pendingConversationId = current
     pendingConversationReset = true
     shouldFollowLatest.value = true
@@ -156,6 +165,12 @@ watch(
 watch(
   () => entries,
   async () => {
+    if (entries.length === 0) {
+      pendingConversationReset = false
+      pendingConversationId = undefined
+      shouldFollowLatest.value = true
+      return
+    }
     if (!pendingConversationReset || pendingConversationId !== conversationId)
       return
     pendingConversationReset = false
@@ -234,7 +249,7 @@ watch(
     </div>
 
     <Button
-      v-if="!atBottom"
+      v-if="!shouldFollowLatest"
       v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
       type="button"
       variant="secondary"
