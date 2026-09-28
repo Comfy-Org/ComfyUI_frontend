@@ -823,11 +823,6 @@ export class EcsFollowerAdapter {
       return
     }
 
-    if (session.nodes.size > 0) {
-      this.clearReconcileRetry(session)
-      return
-    }
-
     if (session.batchRecovery.kind === 'scheduled') {
       session.batchRecovery.frame = mergeRecoveryFrame(
         session.batchRecovery.frame,
