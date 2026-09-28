@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { gunzipSync } from 'node:zlib'
 
 import type { BrowserContext, Page } from '@playwright/test'
@@ -182,8 +183,17 @@ test.describe('agent workflow motion', () => {
   })
 
   test('offscreen playback resumes in place, but reduced motion restores the poster until the next cue', async ({
-    page
+    page,
+    context
   }) => {
+    await context.route('**/conditioner/motion-reference.mp4', (route) =>
+      route.fulfill({
+        path: fileURLToPath(
+          new URL('./assets/validation-16s.mp4', import.meta.url)
+        ),
+        contentType: 'video/mp4'
+      })
+    )
     await page.goto('/agent')
     const workflow = page.locator('workflow-examples')
     const video = workflow.locator('video').first()
