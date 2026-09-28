@@ -85,7 +85,6 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   return { ...base, ...overrides }
 }
 
-/** A history GET that, like the real client, settles only when aborted. */
 function hangingGetMessages(
   _threadId: string,
   options: { signal?: AbortSignal } = {}
