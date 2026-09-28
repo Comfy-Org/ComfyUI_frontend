@@ -5,7 +5,10 @@ import { initialWorkshopPageState } from './workshop-page-state'
 import type { FormValues } from './workshop-playground'
 import { urlUploadField } from './workshop-playground'
 import { workflowRequest } from './workflow-render'
-import { workflowCloudRequest } from './workshop-workflow-api'
+import {
+  withPartnerNodeCredential,
+  workflowCloudRequest
+} from './workshop-workflow-api'
 
 export function workflowSnippetRequest(
   model: WorkflowWorkshopModelDetail,
@@ -20,7 +23,11 @@ export function workflowSnippetRequest(
     )
       inputs[field.name] = `UPLOADED_${field.name}_FILENAME`
   }
-  return workflowCloudRequest(model.workflow, workflowRequest(model, inputs))
+  return withPartnerNodeCredential(
+    workflowCloudRequest(model.workflow, workflowRequest(model, inputs)),
+    'api-key',
+    'YOUR_API_KEY'
+  )
 }
 
 export function workflowCurl(request: PromptRequest): string {

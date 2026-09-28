@@ -90,9 +90,13 @@ describe('Workshop workflow HTTP client', () => {
         '83': { class_type: 'LoadImage', inputs: { image: 'material-hash' } },
         '170:151': { inputs: { prompt: '', image2: ['83', 0] } },
         '170:169': { inputs: { seed: 677909188488042 } }
-      }
+      },
+      extra_data: { auth_token_comfy_org: 'before' }
     })
-    expect(bodies[1]).toEqual(bodies[0])
+    expect(bodies[1]).toEqual({
+      ...(bodies[0] as object),
+      extra_data: { auth_token_comfy_org: 'after' }
+    })
     expect(source.cloud.workflow).toEqual(original)
     expect(
       fetch.mock.calls.map(([, init]) =>
@@ -170,7 +174,7 @@ describe('Workshop workflow HTTP client', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('uses the caller API key header for CLI submissions', async () => {
+  it('authenticates CLI submissions and their partner nodes with the caller API key', async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockResolvedValue(Response.json({ prompt_id: id }))
@@ -187,6 +191,10 @@ describe('Workshop workflow HTTP client', () => {
     const headers = new Headers(fetch.mock.calls[0][1]?.headers)
     expect(headers.get('X-API-Key')).toBe('caller-key')
     expect(headers.has('Authorization')).toBe(false)
+    expect(JSON.parse(String(fetch.mock.calls[0][1]?.body))).toHaveProperty(
+      'extra_data',
+      { api_key_comfy_org: 'caller-key' }
+    )
   })
 
   it('discards authentication renewed after caller cancellation', async () => {
