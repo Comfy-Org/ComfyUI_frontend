@@ -9,20 +9,19 @@
       "signInCaption": "パートナーノードにはアカウントが必要です",
       "signInToRun": "実行するにはサインイン"
     },
-    "share": "共有",
     "shareTooltip": "ワークフローを共有"
   },
   "agent": {
     "addFromAssets": "アセットパネルからアセットをドラッグ",
     "addNodesFromGraph": "グラフのノードに言及",
     "addToPrompt": "プロンプトに追加",
-    "alpha": "アルファ",
     "assetNotAttachable": "画像、動画、音声、3Dモデル、テキストファイルを添付できます",
     "attach": "ファイルを添付",
     "attachFiles": "画像またはファイルをアップロード",
     "attachmentTooLarge": "{name} は {limit} を超えています",
     "attachmentUploadFailed": "{name} をアップロードできませんでした",
     "backToPreviousChat": "前のチャットに戻る",
+    "beta": "ベータ",
     "changeWorkflowForChat": "エージェントが編集できるワークフローを変更",
     "chatOptions": "チャットオプション",
     "chooseWorkflow": "ワークフローを選択",
@@ -35,8 +34,8 @@
     "coachHistoryTitle": "前回の続きから再開",
     "coachProgress": "{total}件中{current}件",
     "coachTitle": "Comfy Agentの紹介",
-    "coachWorkflowBody": "エージェントが編集するのは、選択したワークフローのみです。参照ファイルをアップロードしたり、他のワークフローに言及したりすることもできます。",
-    "coachWorkflowTitle": "エージェントが編集するワークフローを選択",
+    "coachWorkflowBody": "メッセージを送信するか、ワークフローを選択するか、ノード参照を追加するまで、タブの切り替えに合わせて切り替わります。",
+    "coachWorkflowTitle": "エージェントが表示中のワークフローを編集します",
     "consent": {
       "accept": "Comfy Agent を使い始める",
       "body1": "Comfy Agent は、ワークフローの計画、構築、実行、改善を支援します。作成したいものを説明すると、Comfy Agent が強力なチームメイトとして働きます。",
@@ -126,6 +125,7 @@
     "runApproval": {
       "cancel": "キャンセル",
       "lead": "このツールはワークフローを実行しようとしています：",
+      "leadBound": "このツールはこのワークフローを実行しようとしています。",
       "question": "承認しますか？",
       "run": "実行",
       "thisWorkflow": "このワークフロー"
@@ -158,6 +158,8 @@
     "showChatHistory": "チャット履歴を表示",
     "showLess": "表示を減らす",
     "showMore": "さらに表示",
+    "showTarget": "ターゲットを表示",
+    "showTargetWorkflow": "ターゲットワークフローを表示: {workflowName}",
     "skip": "スキップ",
     "stop": "停止",
     "stopShortcut": "Esc",
@@ -170,6 +172,8 @@
     ],
     "switchWorkflow": "ワークフローを切り替え",
     "switchWorkflowForNodes": "ノードを追加するには{workflowName}に切り替えてください。",
+    "takeTour": "ツアーを見る",
+    "targetFollowsVisibleWorkflow": "ターゲットを選択する、参照ノードを指定する、またはメッセージを送信するまで、ターゲットワークフローは表示中のタブに従います。",
     "targetForThisChat": "このチャットのエージェント対象",
     "targetNavigationUnavailable": "このワークフローのターゲットは利用できなくなりました。",
     "thinking": "考え中...",
@@ -188,11 +192,15 @@
     "updatingGraph": "エージェントがグラフを更新しています",
     "uploading": "アップロード中",
     "viewAddedNodes": "ノードを表示 | ノードを表示",
+    "viewingDifferentWorkflow": "ターゲットとは異なるワークフローを表示しています。",
     "worked": "完了",
     "workedForMinutes": "{minutes}分{seconds}秒間処理しました",
     "workedForSeconds": "{seconds}秒間処理しました",
     "workflowEditNotice": "エージェントが{workflow}を編集できるようになりました。一度に作業できるワークフローは1つですが、チャット中に切り替えられます。",
     "workflowReferenceUnavailableReason": "参照されているこのワークフローは利用できなくなったか、アクセス権がありません。",
+    "workflowSyncFailedDetail": "このワークフローは互換性のないドキュメントバージョンで作成されました。キャンバスは変更されていません。",
+    "workflowSyncFailedDetailCatalogMismatch": "このワークフローは、このワークスペースと互換性のないノードカタログを使用しています。キャンバスは変更されていません。",
+    "workflowSyncFailedTitle": "このワークフローは同期できません",
     "workflows": "ワークフロー",
     "working": "処理中..."
   },
@@ -540,6 +548,7 @@
     "expiredCardDetail": "このカードの有効期限が切れています。別のお支払い方法をご利用ください。",
     "incorrectCvcDetail": "カードのセキュリティコードが正しくありません。確認してもう一度お試しください。",
     "insufficientFundsDetail": "このお支払い方法には残高が不足しています。別のお支払い方法を試すか、ご利用の銀行にお問い合わせください。",
+    "operationAlreadyPendingDetail": "以前に開始した支払いがまだ処理中です。別のプランを選択する前に、その処理が完了する必要があります。",
     "paymentDeclinedDetail": "ご利用の銀行によりこの支払いが拒否されました。別のお支払い方法を試すか、ご利用の銀行にお問い合わせください。",
     "processingErrorDetail": "お支払いを処理できませんでした。もう一度試すか、別のお支払い方法をご利用ください。",
     "reconciliationDetail": "お支払いを受け取りましたが、ワークスペースの更新を完了できませんでした。サポートにお問い合わせの際は、この操作IDを含めてください:",
@@ -717,6 +726,8 @@
         "selectAtLeastOne": "少なくとも1つ選択してください。"
       },
       "intro": "ComfyUIの体験をより最適化するためにご協力ください。",
+      "navigationFailed": "アンケートは保存されましたが、オンボーディングを続行できませんでした",
+      "navigationFailedDetail": "もう一度お試しください。",
       "options": {
         "experience": {
           "new": "ComfyUIは初めて",
@@ -757,6 +768,8 @@
       },
       "otherPlaceholder": "詳細をお聞かせください",
       "placeholder": "アンケート質問のプレースホルダー",
+      "submitFailed": "アンケートを送信できませんでした",
+      "submitFailedDetail": "回答は保存されませんでした。もう一度お試しください。",
       "title": "クラウドアンケート"
     }
   },
@@ -2100,6 +2113,9 @@
     "updating": "{id}を更新中",
     "upload": "アップロード",
     "uploadAlreadyInProgress": "アップロードはすでに進行中です",
+    "uploadFailed": "アップロードに失敗しました: {reason}",
+    "uploadFileTooLarge": "ファイルが大きすぎるためアップロードできません。",
+    "uploadFileTooLargeWithLimit": "ファイルが大きすぎるためアップロードできません（上限: {limit} MB）。",
     "uploadTimedOut": "アップロードがタイムアウトしました。もう一度お試しください。",
     "usageHint": "使用ヒント",
     "use": "使用",
@@ -3090,6 +3106,7 @@
     "Refresh Node Definitions": "ノード定義を更新",
     "Reinstall": "再インストール",
     "Rename": "名前を変更",
+    "Replay Onboarding": "オンボーディングを再表示",
     "Reset View": "ビューをリセット",
     "Resize Selected Nodes": "選択したノードのサイズ変更",
     "Restart": "再起動",
@@ -3214,7 +3231,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -3282,6 +3298,7 @@
     "mask": "マスク",
     "merging": "マージ",
     "mesh": "メッシュ",
+    "ming image": "ming image",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -3542,6 +3559,12 @@
     "next": "次へ",
     "skip": "スキップ",
     "stepLabel": "ステップ {current} / {total}"
+  },
+  "onboardingReplay": {
+    "confirmMessage": "これによりComfyUIが再読み込みされ、この環境で利用可能なオンボーディング手順がリセットされます。ワークフローには影響しません。",
+    "confirmTitle": "オンボーディングを再表示しますか？",
+    "failedDetail": "オンボーディングの状態をリセットできませんでした。もう一度お試しください。",
+    "failedSummary": "オンボーディングを再表示できませんでした"
   },
   "openSharedWorkflow": {
     "author": "作成者：",
@@ -4387,9 +4410,12 @@
       "message": "チーム向けの請求機能が近日中に追加されます。ワークスペースごとに席数単位でプランに加入できるようになります。今後のアップデートをお待ちください。",
       "title": "近日公開"
     },
+    "billingTabBlocked": "請求ページを開けませんでした。このサイトのポップアップを許可して、もう一度お試しください。",
     "cancelDialog": {
       "confirmCancel": "サブスクリプションをキャンセル",
       "description": "アクセスは{date}まで継続されます。今後請求されることはなく、ワークスペースとクレジットは保持されます。いつでも再購読できます。",
+      "discountApplied": "割引が適用されたため、このサブスクリプションはキャンセルされませんでした。このウィンドウを閉じると、更新されたプランを確認できます。",
+      "discountRefreshFailed": "割引が適用されました。ページを更新して、更新されたプランを確認してください。",
       "endOfBillingPeriod": "請求期間の終了",
       "failed": "サブスクリプションのキャンセルに失敗しました",
       "keepSubscription": "サブスクリプションを維持する",
@@ -4464,6 +4490,7 @@
       "memberTitle": "このワークスペースのサブスクリプションは無効です",
       "runLabel": "実行"
     },
+    "inactiveEnterpriseDescription": "ワークフローを実行したり、新しいメンバーを追加したりすることはできません。アクセスを復元するには営業担当までお問い合わせください。",
     "inactiveTeamDescription": "チームプランを再有効化して、メンバーを追加したりワークフローを実行したりできます",
     "inactiveTeamPlanIncludes": "有効なプランには{plan}のすべてに加えて、以下が含まれます：",
     "inactiveTeamTitle": "チームサブスクリプションが無効です",
@@ -4579,6 +4606,7 @@
       "payAndSubscribe": "支払って購読する",
       "paymentMethod": "お支払い方法",
       "paymentPopupBlocked": "支払いページを開けませんでした。ポップアップを許可して再試行してください。",
+      "pendingVerificationDetail": "以前に開始した支払いには、まだ対応が必要です。完了すると、そのときに選択したプランが有効になります。完了後に別のプランを選択できます。",
       "perMember": "/ メンバー",
       "privacyPolicy": "プライバシーポリシー",
       "promoCodePlaceholder": "プロモーションコード",
@@ -4646,6 +4674,8 @@
     "resubscribeFailed": "サブスクリプションの再有効化に失敗しました",
     "resubscribeSuccess": "サブスクリプションが再開されました",
     "resubscribeTo": "{plan}を再開",
+    "salesManagedCreditsEndedNote": "プランのクレジットは、サブスクリプションの終了とともに失効しました。",
+    "salesManagedInactiveCreditsNote": "プランが復元されると利用できます。",
     "salesManagedRunBlockedDetail": "このワークスペースのプランは現在無効です。アクセスを復元するには、Comfyのアカウントマネージャーにお問い合わせください。",
     "salesManagedRunBlockedTitle": "プランが無効です",
     "saveYearly": "20%お得",
@@ -4656,7 +4686,7 @@
     "subscribe": "購読する",
     "subscribeFailed": "購読に失敗しました",
     "subscribeForMore": "アップグレード",
-    "subscribeNow": "今すぐ購読",
+    "subscribeNow": "購読する",
     "subscribeTo": "{plan}に登録",
     "subscribeToComfyCloud": "Comfy Cloudを購読",
     "subscribeToRun": "購読する",
@@ -4812,6 +4842,7 @@
     "clearAllFilters": "すべてのフィルターをクリア",
     "error": {
       "loading": "テンプレートを開けませんでした。もう一度お試しください。",
+      "preparingMedia": "一部のサンプルメディアを準備できませんでした。ワークフローは開きます。不足している入力には、ご自身のファイルを選択してください。",
       "templateNotFound": "テンプレート「{templateName}」が見つかりません"
     },
     "filtersApplied": "{count} 件のフィルターが適用されました",
@@ -4828,6 +4859,7 @@
       "credits": "クレジットで実行",
       "title": "プレミアムテンプレート"
     },
+    "preparingMedia": "サンプルメディアを準備しています...",
     "resultsCount": "{total}件中{count}件のテンプレートを表示中",
     "runsOnFilter": "実行環境",
     "runsOnSelected": "{count} 回実行",
@@ -5131,6 +5163,8 @@
     "billingStatus": {
       "ending": {
         "body": "それまでメンバーはすべての機能を利用できます。共有クレジットとシートを維持するには、サブスクリプションを再開してください。",
+        "enterpriseBody": "それまではメンバーは完全なアクセスを維持できます。延長するには営業チームまでお問い合わせください。",
+        "enterpriseTitle": "Enterpriseプランは{date}に終了します",
         "reactivate": "サブスクリプションを再開",
         "title": "チームプランは{date}に終了します"
       },
@@ -5244,6 +5278,7 @@
         "inviteDate": "招待日",
         "role": "役割"
       },
+      "contactSales": "営業担当に問い合わせる",
       "contactUs": "お問い合わせ",
       "creditLimitDialog": {
         "description": "この上限に達すると、ワークフローの実行ができなくなります。",
@@ -5254,6 +5289,9 @@
         "update": "上限を更新",
         "warning": "このユーザーはすでに {credits} クレジットを使用しています。現在の使用量以下に上限を設定すると、来月まで実行できなくなります。"
       },
+      "endedEnterpriseTitle": "Enterpriseプランは終了しました",
+      "endedPlanTitle": "プランは終了しました",
+      "endedTeamTitle": "チームプランは終了しました",
       "header": "メンバー",
       "membersCount": "{maxSeats}人中{count}人のメンバー",
       "needMoreMembers": "さらにメンバーが必要ですか？",
@@ -5261,6 +5299,7 @@
       "noMembers": "メンバーがいません",
       "pendingInvitesCount": "{count}件の招待保留中",
       "reactivateTeam": "チームを再有効化",
+      "resubscribe": "再購読",
       "searchPlaceholder": "検索...",
       "tabs": {
         "active": "アクティブ",
@@ -5268,6 +5307,8 @@
       },
       "upgradeToTeam": "チームにアップグレード",
       "upsellBanner": "チームメンバーを追加するには、プランをアップグレードしてください。",
+      "upsellBannerEnterpriseEnded": "Enterpriseプランを再有効化するには、営業担当までお問い合わせください。",
+      "upsellBannerPlanEnded": "プランを再有効化するには、営業担当までお問い合わせください。",
       "upsellBannerReactivate": "さらにメンバーを追加するには、プランを再有効化してください。"
     },
     "menu": {

@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Renderiza o vídeo final em 1080p de um rascunho do Seedance 2.5. O resultado final mantém a cena e o movimento do rascunho e reutiliza seu prompt, referências, duração, proporção de aspecto e configuração de áudio.",
+    "display_name": "ByteDance Seedance 2.5 Rascunho para Vídeo Final",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "A saída draft_task_id de um nó do Seedance 2.5 executado com o modelo Seedance 2.5 Draft ou um ID de tarefa de rascunho colado. Defina o controle de seed desse nó como fixo; caso contrário, a próxima execução gerará um novo rascunho em vez de reutilizar aquele que você revisou. Um rascunho pode ser renderizado por 7 dias após sua criação."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Se deve adicionar uma marca-d'água ao vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Gere vídeo usando Seedance 2.0 a partir de uma imagem do primeiro frame e, opcionalmente, uma imagem do último frame.",
     "display_name": "ByteDance Seedance 2.0 Primeiro-Último-Frame para Vídeo",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída mp4/mov; Seedance 2.0 para qualidade máxima e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p cujo draft_task_id renderiza o resultado final em 1080p no nó Seedance 2.5 Draft para Vídeo Final; Seedance 2.0 para qualidade máxima e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID da tarefa de uma execução do Seedance 2.5 Draft. Conecte-o ao nó Seedance 2.5 Draft para Vídeo Final para renderizar o resultado final em 1080p."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída mp4/mov; Seedance 2.0 para qualidade máxima e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p cujo draft_task_id renderiza o resultado final em 1080p no nó Seedance 2.5 Draft para Vídeo Final; Seedance 2.0 para qualidade máxima e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída mp4/mov; Seedance 2.0 para qualidade máxima e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p cujo draft_task_id renderiza o resultado final em 1080p no nó Seedance 2.5 Draft para Vídeo Final; Seedance 2.0 para qualidade máxima e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID da tarefa de uma execução do Seedance 2.5 Draft. Conecte-o ao nó Seedance 2.5 Draft para Vídeo Final para renderizar o resultado final em 1080p."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em mp4/mov; Seedance 2.0 para máxima qualidade e 4K; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p cujo draft_task_id renderiza o resultado final em 1080p no nó Seedance 2.5 Draft para Vídeo Final; Seedance 2.0 para qualidade máxima e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID da tarefa de uma execução do Seedance 2.5 Draft. Conecte-o ao nó Seedance 2.5 Draft para renderizar o resultado final em 1080p."
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Decompõe uma imagem em uma placa de fundo mais até 16 camadas transparentes reposicionáveis, cada uma com ordem de empilhamento, caixa delimitadora, nome e descrição.",
-    "display_name": "ByteDance Seedream 5.0 Pro Separação de Camadas",
+    "display_name": "ByteDance Seedream 5.0 Pro Separação de Camadas (Legado)",
     "inputs": {
       "control_after_generate": {
         "name": "controle após gerar"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "pilha de camadas",
         "tooltip": "Documento de camadas pronto para edição para Criar Imagem em Camadas: a placa base mais cada elemento como sua própria camada nomeada, recortada e posicionada corretamente com ordem de empilhamento. Conecte diretamente ou estenda com Adicionar Camada."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Decompõe uma imagem em uma placa de fundo e até 16 camadas transparentes reposicionáveis, cada uma com ordem de empilhamento, caixa delimitadora, nome e descrição.",
+    "display_name": "ByteDance Seedream 5.0 Separação de Camadas",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "tamanho"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "A imagem base (placa de fundo) sobre a qual as camadas são empilhadas."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Transparência da imagem base (1 = transparente, convenção do LoadImage); atualmente, sempre totalmente opaca."
+      },
+      "2": {
+        "name": "camadas",
+        "tooltip": "Camadas transparentes ordenadas de baixo para cima. Modo de tela inteira: posicionadas em uma tela preta do tamanho da base na posição de sua caixa delimitadora. Modo de tamanho mínimo: recortadas à sua caixa delimitadora, ancoradas no canto superior esquerdo e preenchidas até o tamanho da maior camada."
+      },
+      "3": {
+        "name": "máscaras",
+        "tooltip": "Transparência por camada, alinhada por índice ao lote de camadas (1 = transparente, convenção do LoadImage). Para composição no estilo ImageCompositeMasked, adicione primeiro InvertMask."
+      },
+      "4": {
+        "name": "caixas delimitadoras",
+        "tooltip": "Uma caixa de posicionamento por camada, alinhada por índice ao lote de camadas (forneça ambas, além de masks, para Layers From Bounding Boxes reconstruir o posicionamento por camada): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] é a região de conteúdo da camada dentro de seu próprio quadro; ela é posicionada na tela na posição da caixa mais esse deslocamento."
+      },
+      "5": {
+        "name": "pilha_de_camadas",
+        "tooltip": "Documento de camadas pronto para edição para Create Layered Image: a placa base mais cada elemento em sua própria camada nomeada, recortada de forma justa, em sua posição e ordem de empilhamento reais. Conecte diretamente ou estenda com Add Layer."
       }
     }
   },
@@ -8491,12 +8578,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Converte sRGB, Rec.709 linear, HDR (Rec.2020 HLG) e HDR PQ (Rec.2020 PQ). Linear 1.0 usa o mesmo branco de referência de 203 nits do sRGB; HLG usa uma tela de referência de 1000 nits. A saída linear e as conversões de linear para HDR preservam valores estendidos sem mapeamento de tons. A saída SDR e a conversão de PQ para HLG aplicam mapeamento de tons ao excesso de luminância em todo o lote e comprimem cores fora da gama. As conversões são calculadas em float32 e retornam o dispositivo e dtype intermediários. O alfa reto não passa por transformação de cor.",
+    "description": "Converte sRGB, Rec.709 linear, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 e HDR ACEScct. LogC3 usa a curva EI 800 com primárias Rec.709 e códigos limitados a [0, 1]. ACEScct usa primárias AP1 e branco D60, com adaptação Bradford para D65. Converta LogC3 ou ACEScct para linear ao salvar em EXR. O linear 1.0 usa o mesmo branco de referência de 203 nits que sRGB; HLG usa uma tela de referência de 1000 nits. Saídas lineares e ACEScct preservam valores estendidos. Conversões de linear para HDR preservam os realces sem mapeamento de tons; saídas HLG e PQ cortam canais negativos. A saída SDR e a conversão de PQ para HLG aplicam mapeamento de tons ao excesso de luminância em todo o lote e comprimem cores fora da gama. As conversões calculam em float32 e retornam o dispositivo e o dtype intermediários. Alpha reto não sofre transformação de cor.",
     "display_name": "Converter Espaço de Cor da Imagem",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Espaço de cor dos pixels de saída. Defina o nó de salvamento para este mesmo espaço de cor."
+        "tooltip": "Espaço de cores dos pixels de saída. Defina o nó de salvamento para este mesmo espaço de cores. Converta LogC3 ou ACEScct para linear antes de salvar EXR, ou para sRGB/HDR/HDR PQ antes de salvar vídeo."
       },
       "image": {
         "name": "image"
@@ -16893,7 +16980,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Quanto o modelo raciocina antes de responder. 'default' deixa a escolha para o modelo. Os níveis compatíveis variam conforme o modelo: GPT-6 Astra low-max, GPT-5.6 none-max (sem minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 não tem raciocínio. Níveis não compatíveis são rejeitados antes do envio da solicitação."
+        "tooltip": "Quanto o modelo raciocina antes de responder. 'default' deixa a escolha para o modelo. Os níveis compatíveis variam conforme o modelo: GPT-6 Astra low-max, GPT-6 Sol/Luna e GPT-5.6 none-max (sem minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, série o low-high; GPT-4.1 não tem raciocínio. Níveis não compatíveis são rejeitados antes do envio da solicitação."
       },
       "truncation": {
         "name": "truncation",
@@ -17053,40 +17140,6 @@
       "file": {
         "name": "arquivo",
         "tooltip": "Arquivos de entrada para incluir como contexto para o modelo. Aceita apenas arquivos de texto (.txt) e PDF (.pdf) por enquanto."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIVideoSora2": {
-    "description": "Geração de vídeo e áudio da OpenAI.",
-    "display_name": "OpenAI Sora - Vídeo",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controle após gerar"
-      },
-      "duration": {
-        "name": "duração"
-      },
-      "image": {
-        "name": "imagem"
-      },
-      "model": {
-        "name": "modelo"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Texto guia; pode estar vazio se houver uma imagem de entrada."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente do seed."
-      },
-      "size": {
-        "name": "tamanho"
       }
     },
     "outputs": {
@@ -23888,6 +23941,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Codificação de Texto Ming Image Edit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "Imagens de referência opcionais, vistas pelo codificador de texto e adicionadas à sequência latente como quadros limpos. As imagens posteriores são redimensionadas para a primeira, e o latent amostrado deve corresponder ao seu tamanho."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Sem um VAE, as imagens apenas condicionam o codificador de texto por meio da torre de visão."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "Codificação de Texto Qwen Image 2.1",
     "inputs": {
@@ -28732,6 +28809,10 @@
       },
       "positive": {
         "name": "positivo"
+      },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "Preenche os quadros de preenchimento do condicionamento de imagem com esta imagem em vez de cinza, fixando a identidade sem fixar quadros (preenchimento antideriva no estilo SVI, usado por modelos como ID-V2V)."
       },
       "start_image": {
         "name": "imagem_inicial"

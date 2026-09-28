@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "渲染 Seedance 2.5 草稿的 1080p 最終影片。最終版會保留草稿的場景與動作，並重複使用其提示詞、參考資料、時長、長寬比及音訊設定。",
+    "display_name": "ByteDance Seedance 2.5 草稿轉最終影片",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "以 Seedance 2.5 Draft 模型執行的 Seedance 2.5 節點所輸出的 draft_task_id，或貼上的草稿任務 ID。請將該節點的種子控制設為固定，否則下一次執行會產生新的草稿，而非重複使用您檢閱過的草稿。草稿建立後 7 天內可進行渲染。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在影片中加入浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0，從首幀圖像與可選的末幀圖像產生影片。",
     "display_name": "ByteDance Seedance 2.0 首末幀轉影片",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 適用於最新模型、最長 30 秒的影片，以及 mp4/mov 輸出；Seedance 2.0 適用於最高品質與 4k；Fast 針對速度最佳化；Mini 則提供最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒的影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快且成本最低。"
       },
       "model_duration": {
         "name": "時長"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 執行的任務 ID。將其連接至 Seedance 2.5 Draft to Final Video 節點以渲染 1080p 最終影片。"
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 適用於最新模型、最長 30 秒的影片，以及 mp4/mov 輸出；Seedance 2.0 適用於最高品質與 4k；Fast 針對速度最佳化；Mini 則提供最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒的影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快且成本最低。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 適用於最新模型、最長 30 秒的影片，以及 mp4/mov 輸出；Seedance 2.0 適用於最高品質與 4k；Fast 針對速度最佳化；Mini 則提供最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒的影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快且成本最低。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 執行的任務 ID。將其連接至 Seedance 2.5 Draft to Final Video 節點以渲染 1080p 最終影片。"
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.0 提供最高品質與 4K；Fast 針對速度最佳化；Mini 可提供最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒的影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快且成本最低。"
       },
       "model_duration": {
         "name": "時長"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 執行的任務 ID。將其連接至 Seedance 2.5 Draft to Final Video 節點以渲染 1080p 最終影片。"
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "將一張圖片分解為背景底圖以及最多 16 個可重新定位的透明圖層，每個圖層具有堆疊順序、邊界框、名稱與描述。",
-    "display_name": "ByteDance Seedream 5.0 Pro 圖層分離",
+    "display_name": "ByteDance Seedream 5.0 Pro 圖層分離（舊版）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "圖層堆疊",
         "tooltip": "可編輯的圖層文件（供 Create Layered Image 使用）：基底底圖加上每個元素作為獨立命名、緊密裁切的圖層，保留其實際位置與堆疊順序。可直接連接，或用 Add Layer 擴充。"
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "將圖像分解為背景底板及最多 16 個可重新定位的透明圖層，每個圖層都包含堆疊順序、邊界框、名稱與說明。",
+    "display_name": "ByteDance Seedream 5.0 圖層分離",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_size": {
+        "name": "尺寸"
+      },
+      "model_watermark": {
+        "name": "浮水印"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "圖層所堆疊於其上的基底圖像（背景底板）。"
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "基底圖像的透明度（1 = 透明，遵循 LoadImage 慣例）；目前一律完全不透明。"
+      },
+      "2": {
+        "name": "圖層",
+        "tooltip": "由底至頂排序的透明圖層。完整畫布模式：依其邊界框位置放置於與基底相同大小的黑色畫布上。最小尺寸模式：裁切至其邊界框、錨定於左上角，並填補至最大圖層的尺寸。"
+      },
+      "3": {
+        "name": "遮罩",
+        "tooltip": "各圖層的透明度，索引與 layers 批次對齊（1 = 透明，遵循 LoadImage 慣例）。若要使用 ImageCompositeMasked 風格的合成，請先加入 InvertMask。"
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "每個圖層各有一個放置框，索引與 layers 批次對齊（將兩者連同 masks 輸入至從邊界框建立圖層，以重建各圖層的位置）：{x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height] 是圖層在自身畫格內的內容區域；它會以框的位置加上該偏移量放置於畫布上。"
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "可直接編輯的圖層文件，可用於建立圖層圖像：包含基底底板，以及每個各自具名稱、緊密裁切，且位於其實際位置與堆疊順序的元素圖層。可直接連接，或使用新增圖層擴充。"
       }
     }
   },
@@ -8491,12 +8578,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "轉換 sRGB、線性 Rec.709、HDR（Rec.2020 HLG）及 HDR PQ（Rec.2020 PQ）。線性 1.0 使用與 sRGB 相同的 203 尼特參考白；HLG 使用 1000 尼特參考顯示器。線性輸出與線性轉 HDR 的轉換會保留延伸值，不進行色調對應。SDR 輸出及 PQ 轉 HLG 會對整個批次的過量亮度進行色調對應，並壓縮超出色域的色彩。轉換會以 float32 計算，並傳回中介裝置與資料型別。非預乘 alpha 不會進行色彩轉換。",
+    "description": "轉換 sRGB、線性 Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3 與 HDR ACEScct。LogC3 使用 EI 800 曲線與 Rec.709 原色，並將編碼值限制於 [0, 1]。ACEScct 使用 AP1 原色與 D60 白點，並透過 Bradford 適應轉換至 D65。儲存 EXR 時，請先將 LogC3 或 ACEScct 轉為線性。線性 1.0 與 sRGB 採用相同的 203 尼特參考白；HLG 採用 1000 尼特參考顯示器。線性與 ACEScct 輸出會保留擴展範圍值。線性轉 HDR 的轉換會在不進行色調映射的情況下保留亮部；HLG 與 PQ 輸出會裁切負值通道。SDR 輸出及 PQ 轉 HLG 會對整個批次的過量亮度進行色調映射，並壓縮超出色域的色彩。轉換以 float32 計算，並回傳中間結果的裝置與 dtype。非預乘 alpha 不會進行色彩轉換。",
     "display_name": "轉換影像色彩空間",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "輸出像素的色彩空間。請將儲存節點設為相同的色彩空間。"
+        "tooltip": "輸出像素的色彩空間。請將儲存節點設為相同的色彩空間。在儲存 EXR 前，請將 LogC3 或 ACEScct 轉換為線性；在儲存影片前，請轉換為 sRGB/HDR/HDR PQ。"
       },
       "image": {
         "name": "image"
@@ -16893,7 +16980,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "模型在回答前進行多少推理。'default' 會將選擇權交由模型。支援的等級因模型而異：GPT-6 Astra low-max、GPT-5.6 none-max（不含 minimal）、GPT-5.5 none-xhigh、GPT-5.5 Pro medium-xhigh、GPT-5 minimal-high、o-series low-high；GPT-4.1 不具推理能力。不支援的等級會在傳送請求前遭到拒絕。"
+        "tooltip": "模型在回答前進行多少推理。'default' 將選擇權交給模型。各模型支援的等級不同：GPT-6 Astra low-max、GPT-6 Sol/Luna 與 GPT-5.6 none-max（不含 minimal）、GPT-5.5 none-xhigh、GPT-5.5 Pro medium-xhigh、GPT-5 minimal-high、o-series low-high；GPT-4.1 不具推理能力。不支援的等級會在傳送請求前遭到拒絕。"
       },
       "truncation": {
         "name": "truncation",
@@ -17053,40 +17140,6 @@
       "file": {
         "name": "file",
         "tooltip": "要作為模型上下文包含的輸入文件。目前僅接受文字 (.txt) 和 PDF (.pdf) 文件。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIVideoSora2": {
-    "description": "OpenAI 影片和音訊生成。",
-    "display_name": "OpenAI Sora - 影片",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image": {
-        "name": "image"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "引導文字；如果存在輸入圖像，可以為空。"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "決定節點是否應重新運行的種子；無論種子如何，實際結果都是非確定性的。"
-      },
-      "size": {
-        "name": "size"
       }
     },
     "outputs": {
@@ -23888,6 +23941,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "文字編碼 Ming 圖像編輯",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "圖像",
+        "tooltip": "選用的參考圖像，文字編碼器可看見這些圖像，並將其作為乾淨影格附加至 latent 序列。後續圖像會調整為與第一張相同的尺寸，採樣的 latent 應與其尺寸相符。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "若沒有 VAE，圖像只會透過視覺塔對文字編碼器提供條件控制。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "文字編碼 Qwen Image 2.1",
     "inputs": {
@@ -28732,6 +28809,10 @@
       },
       "positive": {
         "name": "正向"
+      },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "以此圖像而非灰色填滿圖像條件控制的填補影格，在不固定影格的情況下錨定身分特徵（SVI 風格的防漂移填補，由 ID-V2V 等模型使用）。"
       },
       "start_image": {
         "name": "起始影像"

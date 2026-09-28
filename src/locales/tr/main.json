@@ -9,20 +9,19 @@
       "signInCaption": "İş ortağı düğümleri hesap gerektirir",
       "signInToRun": "Çalıştırmak için oturum açın"
     },
-    "share": "Paylaş",
     "shareTooltip": "İş akışını paylaş"
   },
   "agent": {
     "addFromAssets": "Varlık panelinden varlık sürükleyip bırakın",
     "addNodesFromGraph": "Graftaki düğümlerden bahsedin",
     "addToPrompt": "İsteme ekle",
-    "alpha": "ALFA",
     "assetNotAttachable": "Görüntüler, videolar, sesler, 3D modeller ve metin dosyaları eklenebilir",
     "attach": "Dosya ekle",
     "attachFiles": "Görüntü veya dosya yükleyin",
     "attachmentTooLarge": "{name}, {limit} değerinden daha büyük",
     "attachmentUploadFailed": "{name} yüklenemedi",
     "backToPreviousChat": "Önceki sohbete dön",
+    "beta": "BETA",
     "changeWorkflowForChat": "Ajanın düzenleyebileceği iş akışını değiştirin",
     "chatOptions": "Sohbet seçenekleri",
     "chooseWorkflow": "Bir iş akışı seçin",
@@ -35,8 +34,8 @@
     "coachHistoryTitle": "Kaldığınız yerden devam edin",
     "coachProgress": "{current} / {total}",
     "coachTitle": "Comfy Agent'inizle tanışın",
-    "coachWorkflowBody": "Araç yalnızca seçtiğiniz iş akışını düzenler. Ayrıca referans dosyaları yükleyebilir veya diğer iş akışlarından bahsedebilirsiniz.",
-    "coachWorkflowTitle": "Aracınızın düzenlemesi için bir iş akışı seçin",
+    "coachWorkflowBody": "Siz bir mesaj gönderene, bir iş akışı seçene veya bir düğüm referansı ekleyene kadar sekmelerinizle birlikte geçiş yapar.",
+    "coachWorkflowTitle": "Aracınız görüntülediğiniz iş akışını düzenler",
     "consent": {
       "accept": "Comfy Agent'ı kullanmaya başla",
       "body1": "Comfy Agent, iş akışlarını planlamanıza, oluşturmanıza, çalıştırmanıza ve yinelemenize yardımcı olur. Oluşturmak istediğiniz şeyi açıklayın; Comfy Agent güçlü ekip arkadaşınız olarak çalışacaktır.",
@@ -126,6 +125,7 @@
     "runApproval": {
       "cancel": "İptal",
       "lead": "Bu araç iş akışını yürütmek istiyor:",
+      "leadBound": "Bu araç bu iş akışını çalıştırmak istiyor.",
       "question": "Onaylıyor musunuz?",
       "run": "Çalıştır",
       "thisWorkflow": "bu iş akışını"
@@ -158,6 +158,8 @@
     "showChatHistory": "Sohbet geçmişini göster",
     "showLess": "Daha az göster",
     "showMore": "Daha fazlasını göster",
+    "showTarget": "Hedefi göster",
+    "showTargetWorkflow": "Hedef iş akışını göster: {workflowName}",
     "skip": "Atla",
     "stop": "Durdur",
     "stopShortcut": "Esc",
@@ -170,6 +172,8 @@
     ],
     "switchWorkflow": "İş akışını değiştir",
     "switchWorkflowForNodes": "Düğüm eklemek için {workflowName} iş akışına geçin.",
+    "takeTour": "Turu başlat",
+    "targetFollowsVisibleWorkflow": "Bir hedef seçene, düğümlere başvurana veya mesaj gönderene kadar hedef iş akışı görünür sekmeyi takip eder.",
     "targetForThisChat": "Bu sohbet için ajan hedefi",
     "targetNavigationUnavailable": "Bu iş akışı hedefi artık kullanılamıyor.",
     "thinking": "Düşünüyor...",
@@ -188,11 +192,15 @@
     "updatingGraph": "Aracı grafiği güncelliyor",
     "uploading": "Yükleniyor",
     "viewAddedNodes": "Düğümü görüntüle | Düğümleri görüntüle",
+    "viewingDifferentWorkflow": "Hedeften farklı bir iş akışını görüntülüyorsunuz.",
     "worked": "Çalıştı",
     "workedForMinutes": "{minutes} dk. {seconds} sn. çalıştı",
     "workedForSeconds": "{seconds} saniye çalıştı",
     "workflowEditNotice": "Ajan artık {workflow} iş akışını düzenleyebilir. Aynı anda 1 iş akışında çalışır ve sohbet sırasında iş akışları arasında geçiş yapabilirsiniz.",
     "workflowReferenceUnavailableReason": "Referans verilen bu iş akışı artık kullanılamıyor veya erişim izniniz yok.",
+    "workflowSyncFailedDetail": "Bu iş akışı uyumsuz bir belge sürümüyle oluşturuldu. Tuvaliniz değiştirilmeden bırakıldı.",
+    "workflowSyncFailedDetailCatalogMismatch": "Bu iş akışı, bu çalışma alanıyla uyumsuz bir düğüm kataloğu kullanıyor. Tuvaliniz değiştirilmeden bırakıldı.",
+    "workflowSyncFailedTitle": "Bu iş akışı senkronize edilemiyor",
     "workflows": "İş akışları",
     "working": "Çalışıyor..."
   },
@@ -540,6 +548,7 @@
     "expiredCardDetail": "Bu kartın süresi dolmuş. Farklı bir ödeme yöntemi kullanın.",
     "incorrectCvcDetail": "Kart güvenlik kodu yanlış. Kontrol edip tekrar deneyin.",
     "insufficientFundsDetail": "Bu ödeme yönteminde yetersiz bakiye var. Başka bir ödeme yöntemi deneyin veya bankanızla iletişime geçin.",
+    "operationAlreadyPendingDetail": "Daha önce başlattığınız bir ödeme hâlâ işleniyor. Farklı bir plan seçebilmeniz için önce tamamlanması gerekir.",
     "paymentDeclinedDetail": "Bankanız bu ödemeyi reddetti. Başka bir ödeme yöntemi deneyin veya bankanızla iletişime geçin.",
     "processingErrorDetail": "Ödemeniz işlenemedi. Tekrar deneyin veya başka bir ödeme yöntemi kullanın.",
     "reconciliationDetail": "Ödemeniz alındı, ancak çalışma alanınızı güncellemeyi tamamlayamadık. Destek ekibiyle iletişime geçin ve şu işlem kimliğini ekleyin:",
@@ -717,6 +726,8 @@
         "selectAtLeastOne": "Lütfen en az bir seçenek seçin."
       },
       "intro": "ComfyUI deneyiminizi size özel hale getirmemize yardımcı olun.",
+      "navigationFailed": "Anket kaydedildi, ancak başlangıç sürecine devam edilemedi",
+      "navigationFailedDetail": "Lütfen tekrar deneyin.",
       "options": {
         "experience": {
           "new": "ComfyUI'ye yeni",
@@ -757,6 +768,8 @@
       },
       "otherPlaceholder": "Daha fazla bilgi verin",
       "placeholder": "Anket soruları yer tutucusu",
+      "submitFailed": "Anket gönderilemedi",
+      "submitFailedDetail": "Yanıtlarınız kaydedilmedi. Lütfen tekrar deneyin.",
       "title": "Bulut Anketi"
     }
   },
@@ -2100,6 +2113,9 @@
     "updating": "{id} güncelleniyor",
     "upload": "Yükle",
     "uploadAlreadyInProgress": "Yükleme zaten devam ediyor",
+    "uploadFailed": "Yükleme başarısız oldu: {reason}",
+    "uploadFileTooLarge": "Dosya yüklemek için çok büyük.",
+    "uploadFileTooLargeWithLimit": "Dosya yüklemek için çok büyük (sınır: {limit} MB).",
     "uploadTimedOut": "Yükleme zaman aşımına uğradı. Lütfen tekrar deneyin.",
     "usageHint": "Kullanım ipucu",
     "use": "Kullan",
@@ -3090,6 +3106,7 @@
     "Refresh Node Definitions": "Düğüm Tanımlarını Yenile",
     "Reinstall": "Yeniden Yükle",
     "Rename": "Yeniden Adlandır",
+    "Replay Onboarding": "Tanıtımı Yeniden Oynat",
     "Reset View": "Görünümü Sıfırla",
     "Resize Selected Nodes": "Seçili Düğümleri Yeniden Boyutlandır",
     "Restart": "Yeniden Başlat",
@@ -3214,7 +3231,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -3282,6 +3298,7 @@
     "mask": "maske",
     "merging": "birleştirme",
     "mesh": "mesh",
+    "ming image": "ming image",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -3542,6 +3559,12 @@
     "next": "İleri",
     "skip": "Atla",
     "stepLabel": "Adım {current} / {total}"
+  },
+  "onboardingReplay": {
+    "confirmMessage": "Bu işlem ComfyUI'yi yeniden yükler ve bu ortamda kullanılabilir başlangıç adımlarını sıfırlar. İş akışlarınız etkilenmez.",
+    "confirmTitle": "Başlangıç süreci yeniden oynatılsın mı?",
+    "failedDetail": "Başlangıç durumunuz sıfırlanamadı. Lütfen tekrar deneyin.",
+    "failedSummary": "Başlangıç süreci yeniden oynatılamadı"
   },
   "openSharedWorkflow": {
     "author": "Yazar:",
@@ -4387,9 +4410,12 @@
       "message": "Takım faturalandırması yakında geliyor. Çalışma alanınız için koltuk başına fiyatlandırma ile bir plana abone olabileceksiniz. Güncellemeler için bizi takip edin.",
       "title": "Yakında"
     },
+    "billingTabBlocked": "Faturalandırma sayfası açılamadı. Bu site için açılır pencerelere izin verin ve tekrar deneyin.",
     "cancelDialog": {
       "confirmCancel": "Aboneliği iptal et",
       "description": "Erişiminiz {date} tarihine kadar devam edecek. Tekrar ücretlendirilmeyeceksiniz ve çalışma alanınız ile kredileriniz korunacak. İstediğiniz zaman yeniden abone olabilirsiniz.",
+      "discountApplied": "İndiriminiz uygulandı, bu nedenle bu abonelik iptal edilmedi. Güncellenmiş planınızı görmek için bu pencereyi kapatın.",
+      "discountRefreshFailed": "İndiriminiz uygulandı. Güncellenmiş planınızı görmek için sayfayı yenileyin.",
       "endOfBillingPeriod": "fatura dönemi sonu",
       "failed": "Abonelik iptali başarısız oldu",
       "keepSubscription": "Aboneliği sürdür",
@@ -4464,6 +4490,7 @@
       "memberTitle": "Bu çalışma alanının aboneliği etkin değil",
       "runLabel": "Çalıştır"
     },
+    "inactiveEnterpriseDescription": "İş akışlarını çalıştıramaz veya yeni üyeler ekleyemezsiniz. Erişimi geri yüklemek için satış ekibiyle iletişime geçin.",
     "inactiveTeamDescription": "Daha fazla üye eklemek ve iş akışlarını çalıştırmak için ekip planınızı yeniden etkinleştirin",
     "inactiveTeamPlanIncludes": "Aktif bir plan, {plan} içeriğine ek olarak şunları da içerir:",
     "inactiveTeamTitle": "Pasif ekip aboneliği",
@@ -4579,6 +4606,7 @@
       "payAndSubscribe": "Öde ve abone ol",
       "paymentMethod": "Ödeme yöntemi",
       "paymentPopupBlocked": "Ödeme sayfası açılamadı — lütfen açılır pencerelere izin verin ve tekrar deneyin.",
+      "pendingVerificationDetail": "Daha önce başlattığınız bir ödeme hâlâ ilginizi gerektiriyor. Tamamladığınızda, o zaman seçtiğiniz plan etkinleşir. Tamamlandığında farklı bir plan seçebilirsiniz.",
       "perMember": "/ üye",
       "privacyPolicy": "Gizlilik Politikası",
       "promoCodePlaceholder": "Promosyon kodu",
@@ -4646,6 +4674,8 @@
     "resubscribeFailed": "Abonelik yeniden etkinleştirilemedi",
     "resubscribeSuccess": "Abonelik başarıyla yeniden etkinleştirildi",
     "resubscribeTo": "{plan} planını sürdür",
+    "salesManagedCreditsEndedNote": "Plan kredileri aboneliğinizle birlikte sona erdi.",
+    "salesManagedInactiveCreditsNote": "Planınız geri yüklendiğinde kullanılabilir.",
     "salesManagedRunBlockedDetail": "Bu çalışma alanının planı artık etkin değil. Erişimi geri yüklemek için Comfy hesap yöneticinizle iletişime geçin.",
     "salesManagedRunBlockedTitle": "Plan etkin değil",
     "saveYearly": "%20 tasarruf",
@@ -4656,7 +4686,7 @@
     "subscribe": "Abone ol",
     "subscribeFailed": "Abonelik başarısız oldu",
     "subscribeForMore": "Yükselt",
-    "subscribeNow": "Hemen Abone Ol",
+    "subscribeNow": "Abone Ol",
     "subscribeTo": "{plan} abonesi ol",
     "subscribeToComfyCloud": "Comfy Cloud'a Abone Ol",
     "subscribeToRun": "Abone Ol",
@@ -4812,6 +4842,7 @@
     "clearAllFilters": "Tüm filtreleri temizle",
     "error": {
       "loading": "Şablon açılamadı. Lütfen tekrar deneyin.",
+      "preparingMedia": "Bazı örnek medya hazırlanamadı. İş akışı açılacak; eksik girdiler için kendi dosyalarınızı seçin.",
       "templateNotFound": "\"{templateName}\" şablonu bulunamadı"
     },
     "filtersApplied": "{count} filtre uygulandı | {count} filtre uygulandı",
@@ -4828,6 +4859,7 @@
       "credits": "Kredilerle çalışır",
       "title": "Premium şablon"
     },
+    "preparingMedia": "Örnek medya hazırlanıyor...",
     "resultsCount": "{total} şablondan {count} tanesi gösteriliyor",
     "runsOnFilter": "Üzerinde çalışır",
     "runsOnSelected": "{count} Üzerinde Çalışır",
@@ -5131,6 +5163,8 @@
     "billingStatus": {
       "ending": {
         "body": "Üyeler o zamana kadar tam erişimi korur. Paylaşılan kredilerinizi ve koltuklarınızı korumak için aboneliğinizi sürdürün.",
+        "enterpriseBody": "Üyeler o zamana kadar tam erişime sahip olmaya devam eder. Uzatmak için satış ekibimizle iletişime geçin.",
+        "enterpriseTitle": "Enterprise planınız {date} tarihinde sona eriyor",
         "reactivate": "Aboneliği sürdür",
         "title": "Ekip planınız {date} tarihinde sona eriyor"
       },
@@ -5244,6 +5278,7 @@
         "inviteDate": "Davet tarihi",
         "role": "Rol"
       },
+      "contactSales": "Satış ekibiyle iletişime geçin",
       "contactUs": "Bize ulaşın",
       "creditLimitDialog": {
         "description": "Bu limite ulaştıklarında, iş akışlarını çalıştıramazlar.",
@@ -5254,6 +5289,9 @@
         "update": "Limiti güncelle",
         "warning": "Bu kullanıcı zaten {credits} kredi harcadı. Limiti mevcut kullanımına eşit veya daha düşük ayarlamak, bir sonraki aya kadar daha fazla çalıştırmayı engeller."
       },
+      "endedEnterpriseTitle": "Enterprise planınız sona erdi",
+      "endedPlanTitle": "Planınız sona erdi",
+      "endedTeamTitle": "Ekip planınız sona erdi",
       "header": "Üyeler",
       "membersCount": "{maxSeats} üyeden {count} üye",
       "needMoreMembers": "Daha fazla üyeye mi ihtiyacınız var?",
@@ -5261,6 +5299,7 @@
       "noMembers": "Üye yok",
       "pendingInvitesCount": "{count} bekleyen davet | {count} bekleyen davet",
       "reactivateTeam": "Takımı Yeniden Etkinleştir",
+      "resubscribe": "Yeniden Abone Ol",
       "searchPlaceholder": "Ara...",
       "tabs": {
         "active": "Aktif",
@@ -5268,6 +5307,8 @@
       },
       "upgradeToTeam": "Takıma Yükselt",
       "upsellBanner": "Takım arkadaşları eklemek için planınızı yükseltin.",
+      "upsellBannerEnterpriseEnded": "Enterprise planınızı yeniden etkinleştirmek için satış ekibiyle iletişime geçin.",
+      "upsellBannerPlanEnded": "Planınızı yeniden etkinleştirmek için satış ekibiyle iletişime geçin.",
       "upsellBannerReactivate": "Daha fazla takım arkadaşı eklemek için planınızı yeniden etkinleştirin."
     },
     "menu": {

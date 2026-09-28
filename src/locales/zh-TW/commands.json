@@ -230,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "新增空白工作流程"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "重新播放新手引導"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
