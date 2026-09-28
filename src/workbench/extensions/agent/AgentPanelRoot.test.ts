@@ -268,6 +268,7 @@ const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
 }))
 const paywallHasFunds = ref<boolean | null>(false)
+const paywallAgentHasFunds = ref<boolean | undefined>()
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -340,7 +341,10 @@ beforeEach(() => {
       subscription: computed(() =>
         paywallHasFunds.value === null
           ? null
-          : fromPartial({ hasFunds: paywallHasFunds.value })
+          : fromPartial({
+              hasFunds: paywallHasFunds.value,
+              agentHasFunds: paywallAgentHasFunds.value
+            })
       ),
       tier: computed(() => paywallBilling.tier)
     })
@@ -409,6 +413,7 @@ beforeEach(() => {
   paywallCapabilities.snapshotAuthoritative = true
   paywallBilling.tier = 'STANDARD'
   paywallHasFunds.value = false
+  paywallAgentHasFunds.value = undefined
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -1512,6 +1517,16 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
   it('stays hidden while the workspace has funds', async () => {
     paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  it('stays hidden while Agent-scoped gratis can fund the turn', async () => {
+    paywallHasFunds.value = false
+    paywallAgentHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
 

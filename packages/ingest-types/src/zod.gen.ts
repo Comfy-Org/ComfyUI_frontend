@@ -2420,6 +2420,7 @@ export const zBillingStatusResponse = z.object({
   billing_rail: z.enum(['legacy_stripe', 'metronome', 'stripe']).optional(),
   billing_status: zBillingStatus.optional(),
   cancel_at: z.string().datetime().optional(),
+  agent_has_funds: z.boolean().optional(),
   has_funds: z.boolean(),
   is_active: z.boolean(),
   max_seats: z.number().int(),
