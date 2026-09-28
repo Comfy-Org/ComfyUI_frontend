@@ -89,9 +89,14 @@ function renderStudio(studioModels: readonly CinematicModel[] = models) {
   return userEvent.setup()
 }
 
-async function addTake(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: /^Format/ }))
-  await user.click(screen.getByRole('button', { name: 'More takes' }))
+async function chooseTakes(
+  user: ReturnType<typeof userEvent.setup>,
+  takes: number
+) {
+  await user.click(screen.getByRole('button', { name: /^Takes: / }))
+  await user.click(
+    await screen.findByRole('menuitemradio', { name: `×${takes}` })
+  )
 }
 
 const generateButton = () => screen.getByTestId('cinematic-generate')
@@ -136,7 +141,7 @@ describe('CinematicStudio', () => {
     const user = renderStudio()
 
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
-    await addTake(user)
+    await chooseTakes(user, 2)
     await user.click(generateButton())
 
     expect(await screen.findByRole('radio', { name: 'B' })).toBeInTheDocument()
@@ -160,6 +165,25 @@ describe('CinematicStudio', () => {
       'blob:shot'
     )
     expect(screen.getByText(`${first.name} · 21:9`)).toBeInTheDocument()
+  })
+
+  it('sends the aspect and AI prompt setting chosen in the composer', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio()
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(screen.getByRole('button', { name: 'Aspect ratio: 21:9' }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /16:9/ }))
+    await user.click(screen.getByRole('switch', { name: 'AI prompt' }))
+    await user.click(generateButton())
+
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(1))
+    expect(
+      screen.getByRole('button', { name: 'Aspect ratio: 16:9' })
+    ).toBeInTheDocument()
+    const [, parameters] = vi.mocked(router_render).mock.calls[0]
+    expect(parameters).toMatchObject({ aspect_ratio: '16:9' })
+    expect(parameters?.prompt).not.toContain('Cinematic film still')
   })
 
   it('runs the shot on the model picked in the composer', async () => {
@@ -399,24 +423,24 @@ describe('CinematicStudio', () => {
     {
       layout: 'the stage',
       ux: '?ux=e',
-      inFormat: true,
+      inComposer: true,
       settlement: 'pending' as const
     },
     {
       layout: 'the stage',
       ux: '?ux=e',
-      inFormat: true,
+      inComposer: true,
       settlement: 'terminal' as const
     },
     {
       layout: 'the side panel',
       ux: '?ux=d',
-      inFormat: false,
+      inComposer: false,
       settlement: 'pending' as const
     }
   ])(
     'tries only the failed take again on $layout after a $settlement failure',
-    async ({ ux, inFormat, settlement }) => {
+    async ({ ux, inComposer, settlement }) => {
       window.history.replaceState(null, '', `/cinematic-studio${ux}`)
       const first: {
         key: unknown
@@ -446,9 +470,8 @@ describe('CinematicStudio', () => {
       const user = userEvent.setup()
 
       await user.type(await screen.findByLabelText('Scene'), 'A diner at dawn')
-      if (inFormat)
-        await user.click(screen.getByRole('button', { name: /^Format/ }))
-      await user.click(screen.getByRole('button', { name: 'More takes' }))
+      if (inComposer) await chooseTakes(user, 2)
+      else await user.click(screen.getByRole('button', { name: 'More takes' }))
       await user.click(generateButton())
       await user.click(await screen.findByRole('radio', { name: 'B' }))
       await user.click(
@@ -552,7 +575,7 @@ describe('CinematicStudio', () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
-    await addTake(user)
+    await chooseTakes(user, 2)
     await user.click(generateButton())
 
     const takeA = await screen.findByRole('radio', { name: 'A' })
@@ -688,9 +711,7 @@ describe('CinematicStudio', () => {
       user: ReturnType<typeof userEvent.setup>,
       takes: number
     ) {
-      await user.click(screen.getByRole('button', { name: /^Format/ }))
-      const more = screen.getByRole('button', { name: 'More takes' })
-      for (let shown = 1; shown < takes; shown++) await user.click(more)
+      if (takes > 1) await chooseTakes(user, takes)
     }
 
     function withBalance(amount: number) {
@@ -718,7 +739,7 @@ describe('CinematicStudio', () => {
     it('scales the estimate with takes and resolution', async () => {
       const user = renderStudio(priced)
 
-      await addTake(user)
+      await chooseTakes(user, 2)
       expect(await estimate()).toHaveTextContent(credits(12))
       expect(await estimate()).toHaveTextContent('2 takes × ~6 credits')
 

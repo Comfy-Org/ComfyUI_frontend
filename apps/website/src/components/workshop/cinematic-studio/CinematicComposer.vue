@@ -17,8 +17,9 @@ import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import { framedStyle } from './aspect-style'
 import CinematicDirectionChips from './CinematicDirectionChips.vue'
+import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
+import CinematicFormatSegments from './CinematicFormatSegments.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
@@ -27,8 +28,6 @@ import type { PopoverKey } from './picker-key'
 const {
   models,
   direction,
-  aspect,
-  resolution,
   references,
   gate,
   workspaceName,
@@ -41,8 +40,6 @@ const {
 } = defineProps<{
   models: readonly CinematicModel[]
   direction: Direction
-  aspect: AspectRatio
-  resolution: Resolution
   references: readonly File[]
   gate: StudioGate
   workspaceName?: string
@@ -63,6 +60,9 @@ const emit = defineEmits<{
 const scene = defineModel<string>('scene', { required: true })
 const modelSlug = defineModel<string>('model', { required: true })
 const takes = defineModel<number>('takes', { required: true })
+const aspect = defineModel<AspectRatio>('aspect', { required: true })
+const resolution = defineModel<Resolution>('resolution', { required: true })
+const enhance = defineModel<boolean>('enhance', { required: true })
 
 const modelOptions = computed(() =>
   models.map((model) => ({
@@ -149,11 +149,16 @@ const chipClass = (key: PopoverKey) =>
       <textarea
         id="cinematic-scene"
         v-model="scene"
-        rows="2"
+        rows="1"
         :placeholder="tc('cinematic.scene.placeholder', locale)"
-        class="field-sizing-content max-h-40 min-h-11 flex-1 resize-none bg-transparent pt-1.5 text-base/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
+        class="field-sizing-content max-h-[calc(4lh+0.375rem)] min-h-9 flex-1 resize-none bg-transparent pt-1.5 text-base/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
         @keydown.enter.meta.prevent="generateFromKeyboard"
         @keydown.enter.ctrl.prevent="generateFromKeyboard"
+      />
+      <CinematicEnhanceSwitch
+        v-model="enhance"
+        :locale
+        class="h-9 shrink-0 text-primary-comfy-canvas"
       />
     </div>
 
@@ -204,28 +209,12 @@ const chipClass = (key: PopoverKey) =>
           :locale
           @open="emit('open', 'direction')"
         />
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          :aria-expanded="openPopover === 'format'"
-          :aria-label="`${tc('cinematic.composer.format', locale)}: ${aspect}, ${resolution}, ×${takes}`"
-          :class="cn(chipClass('format'), 'gap-0 px-0')"
-          @click="emit('open', 'format')"
-        >
-          <span class="flex items-center gap-2 px-3">
-            <span class="grid size-4 place-items-center" aria-hidden="true">
-              <span
-                class="block max-h-full rounded-xs border-[1.5px] border-current"
-                :style="framedStyle(aspect, '1rem')"
-              />
-            </span>
-            {{ aspect }}
-          </span>
-          <span class="h-4 w-px bg-transparency-white-t8" aria-hidden="true" />
-          <span class="px-3">{{ resolution }}</span>
-          <span class="h-4 w-px bg-transparency-white-t8" aria-hidden="true" />
-          <span class="px-3">×{{ takes }}</span>
-        </button>
+        <CinematicFormatSegments
+          v-model:aspect="aspect"
+          v-model:resolution="resolution"
+          v-model:takes="takes"
+          :locale
+        />
       </div>
       <CinematicGenerateAction
         :gate

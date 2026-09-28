@@ -14,8 +14,6 @@ import type { Locale } from '../../../i18n/translations'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicComposer from './CinematicComposer.vue'
-import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
-import CinematicOutputControls from './CinematicOutputControls.vue'
 import CinematicPicker from './CinematicPicker.vue'
 import CinematicPopover from './CinematicPopover.vue'
 import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
@@ -61,8 +59,7 @@ const {
 const POPOVER_WIDTH: Readonly<Partial<Record<PopoverKey, string>>> = {
   camera: 'lg:w-4xl',
   direction: 'lg:w-2xl',
-  references: 'lg:w-96',
-  format: 'lg:w-96'
+  references: 'lg:w-96'
 }
 const popoverClass = computed(() =>
   cn(
@@ -168,28 +165,20 @@ function generateOn(slug: string) {
           :class="popoverClass"
           @close="closePopover"
         >
-          <div v-if="popover === 'references'" class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-2 gap-2">
             <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
             <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
-          </div>
-          <div v-else class="flex flex-col gap-3">
-            <CinematicOutputControls
-              v-model:aspect="aspect"
-              v-model:resolution="resolution"
-              v-model:takes="takes"
-              :locale
-            />
-            <CinematicEnhanceSwitch v-model="enhance" :locale class="px-1" />
           </div>
         </CinematicPopover>
         <CinematicComposer
           v-model:scene="scene"
           v-model:model="modelSlug"
           v-model:takes="takes"
+          v-model:aspect="aspect"
+          v-model:resolution="resolution"
+          v-model:enhance="enhance"
           :models
           :direction
-          :aspect
-          :resolution
           :references
           :gate="studio.gate.value"
           :workspace-name="studio.session.value?.workspace.name"
