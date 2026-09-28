@@ -154,7 +154,8 @@ const conversationStore = useAgentConversationStore()
 watch(
   subscription,
   (currentSubscription) => {
-    if (currentSubscription?.hasFunds) conversationStore.resolvePaywalls()
+    if (currentSubscription?.agentHasFunds ?? currentSubscription?.hasFunds)
+      conversationStore.resolvePaywalls()
   },
   { immediate: true }
 )
@@ -274,7 +275,11 @@ const creditsExhausted = computed(() => {
   // which presentation is right, and a card naming the wrong remediation is
   // worse than no card.
   if (!capabilityReadSettled.value) return false
-  if (subscription.value?.hasFunds !== false) return false
+  if (
+    (subscription.value?.agentHasFunds ?? subscription.value?.hasFunds) !==
+    false
+  )
+    return false
   // `unavailable` renders a body with no action at all, so showing it standing
   // would be noise the user cannot act on. The inline card still uses it,
   // because there a refusal already happened and needs explaining.
