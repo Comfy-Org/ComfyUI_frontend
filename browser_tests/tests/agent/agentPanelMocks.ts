@@ -74,7 +74,7 @@ function createDeferredGate(): DeferredGate {
   return { promise, release: () => release() }
 }
 
-export class AgentBillingFixture {
+class AgentBillingFixture {
   private status: BillingStatusResponse = FUNDED_BILLING_STATUS
   private available = true
   private heldRefresh:
