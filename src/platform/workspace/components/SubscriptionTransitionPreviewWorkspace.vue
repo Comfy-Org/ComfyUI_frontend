@@ -162,14 +162,7 @@
 
       <!-- Total Due (immediate changes carry their addends: one sum under
            one divider, per Figma 5344-35724) -->
-      <div
-        :class="
-          cn(
-            'flex flex-col gap-2 border-t border-border-subtle pt-6',
-            !isImmediate && 'mt-10'
-          )
-        "
-      >
+      <div class="mt-10 flex flex-col gap-2 border-t border-border-subtle pt-6">
         <template v-if="isImmediate && previewData.discounts?.length">
           <div class="flex items-center justify-between text-muted-foreground">
             <span>{{ $t('subscription.preview.discountComposition') }}</span>
