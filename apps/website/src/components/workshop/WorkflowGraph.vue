@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { useMounted } from '@vueuse/core'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import type { GraphPicture } from '../../lib/workshop/workflow-graph'
 import { linkPath, readGraphPicture } from '../../lib/workshop/workflow-graph'
@@ -9,7 +10,8 @@ import WorkflowGraphNode from './WorkflowGraphNode.vue'
 const {
   source,
   samples = [],
-  fallback
+  fallback,
+  active = true
 } = defineProps<{
   /** Where the template JSON is published. */
   source: string
@@ -17,18 +19,33 @@ const {
   samples?: readonly string[]
   /** The flat export, for when the JSON cannot be read. */
   fallback?: string
+  /** Whether the graph is on screen; it is not fetched until it first is. */
+  active?: boolean
 }>()
 
 const picture = ref<GraphPicture>()
 const failed = ref(false)
 
 const frame = useTemplateRef<HTMLDivElement>('frame')
+const canvas = useTemplateRef<SVGSVGElement>('canvas')
 const scale = ref(1)
 const panX = ref(0)
 const panY = ref(0)
 const dragging = ref(false)
 
-onMounted(async () => {
+let requested = false
+const mounted = useMounted()
+watch(
+  () => mounted.value && active,
+  (visible) => {
+    if (!visible || requested) return
+    requested = true
+    void load()
+  },
+  { immediate: true }
+)
+
+async function load() {
   try {
     const response = await fetch(source)
     if (!response.ok) throw new Error(String(response.status))
@@ -39,11 +56,17 @@ onMounted(async () => {
   } catch {
     failed.value = true
   }
-})
+}
 
-const transform = computed(
-  () => `translate(${panX.value} ${panY.value}) scale(${scale.value})`
-)
+// Zoom about the middle of the drawing: published graphs sit thousands of
+// units from the origin, so scaling about (0, 0) would carry them off-screen.
+const transform = computed(() => {
+  if (!picture.value) return undefined
+  const [x, y, width, height] = picture.value.viewBox.split(' ').map(Number)
+  const cx = x + width / 2
+  const cy = y + height / 2
+  return `translate(${panX.value} ${panY.value}) translate(${cx} ${cy}) scale(${scale.value}) translate(${-cx} ${-cy})`
+})
 
 function zoomBy(factor: number) {
   scale.value = Math.min(3, Math.max(0.2, scale.value * factor))
@@ -56,14 +79,18 @@ function reset() {
 }
 
 function onPointerDown(event: PointerEvent) {
+  // Capturing a press on a zoom control would retarget its click to the frame.
+  if ((event.target as Element).closest('button')) return
   dragging.value = true
   frame.value?.setPointerCapture(event.pointerId)
 }
 
 function onPointerMove(event: PointerEvent) {
   if (!dragging.value) return
-  panX.value += event.movementX
-  panY.value += event.movementY
+  // The pan is in drawing units; the pointer moves in screen pixels.
+  const pixelsPerUnit = canvas.value?.getScreenCTM()?.a || 1
+  panX.value += event.movementX / pixelsPerUnit
+  panY.value += event.movementY / pixelsPerUnit
 }
 
 function onPointerUp(event: PointerEvent) {
@@ -78,7 +105,7 @@ const control =
 <template>
   <div
     ref="frame"
-    class="relative h-112 touch-none overflow-hidden rounded-2xl bg-hub-surface select-none lg:h-128"
+    class="relative h-112 touch-pan-y overflow-hidden rounded-2xl bg-hub-surface select-none lg:h-128 lg:touch-none"
     :class="dragging ? 'cursor-grabbing' : 'cursor-grab'"
     data-testid="workflow-graph"
     @pointerdown="onPointerDown"
@@ -88,6 +115,7 @@ const control =
   >
     <svg
       v-if="picture"
+      ref="canvas"
       :viewBox="picture.viewBox"
       class="size-full"
       role="img"

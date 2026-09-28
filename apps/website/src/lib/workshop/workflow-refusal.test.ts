@@ -21,9 +21,11 @@ const REFUSALS: readonly [
 ][] = [
   ['insufficient_credits', 'noCredits'],
   ['rate_limited', 'rateLimit'],
-  ['network', 'network'],
-  ['response', 'response'],
-  ['execution_failed', 'provider'],
+  // A refused request never ran, so nothing may still complete, be billed or
+  // have taken credits, which is what the panel says for these.
+  ['network', undefined],
+  ['response', undefined],
+  ['execution_failed', undefined],
   // What is wrong with an input belongs beside the input, and the panel's own
   // words for a rejection it cannot pin to a field are about a model.
   ['invalid_request', undefined],
