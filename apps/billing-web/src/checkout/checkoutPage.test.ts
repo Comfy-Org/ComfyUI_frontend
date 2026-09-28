@@ -73,7 +73,7 @@ const collect = (
   kind: 'capture',
   rail: { method: 'collect', element, saved, tab },
   reactivation: 'not_required',
-  attempt: 'idle'
+  attempt: { kind: 'idle' }
 })
 
 function replay(events: readonly CheckoutPageEvent[]): CheckoutPage {
@@ -147,7 +147,7 @@ describe('reduceCheckoutPage', () => {
         kind: 'capture',
         rail: { method: 'on_file' },
         reactivation: 'not_required',
-        attempt: 'idle'
+        attempt: { kind: 'idle' }
       },
       pay: true
     },
@@ -390,11 +390,11 @@ describe('reduceCheckoutPage after Pay', () => {
       pay: true
     },
     {
-      name: 'the next Pay clears the card',
+      name: 'the next Pay clears the card and holds Pay until it settles',
       events: [...live, submitted, declined, submitted],
       outcome: undefined,
       reactivation: 'not_required',
-      pay: true
+      pay: false
     },
     {
       name: 'a collided Pay locks the page for reconciliation',
@@ -559,7 +559,7 @@ describe('reduceCheckoutPage reconciliation', () => {
     {
       name: 'nothing pending then the quote is capture',
       events: [reconciled(undefined), quoted(0)],
-      expected: { kind: 'capture', attempt: 'idle' }
+      expected: { kind: 'capture', attempt: { kind: 'idle' } }
     },
     {
       name: 'money in flight on mount is waiting, and the quote cannot open a form over it',
@@ -657,7 +657,7 @@ describe('reduceCheckoutPage reconciliation', () => {
     {
       name: "this page's own Pay stays on the form while its operation is pending",
       events: [...live, submitted, changed(pendingOperation())],
-      expected: { kind: 'capture', attempt: 'sent' }
+      expected: { kind: 'capture', attempt: { kind: 'sent' } }
     },
     {
       name: "this page's own Pay succeeding is attributed",
@@ -691,7 +691,7 @@ describe('reduceCheckoutPage reconciliation', () => {
         submitted,
         changed(failedOperation('card_declined'), declinedElsewhere)
       ],
-      expected: { kind: 'capture', attempt: 'sent' },
+      expected: { kind: 'capture', attempt: { kind: 'sent' } },
       without: 'outcome'
     },
     {

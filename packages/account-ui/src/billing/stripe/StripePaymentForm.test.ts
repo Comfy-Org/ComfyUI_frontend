@@ -144,7 +144,10 @@ describe('StripePaymentForm', () => {
     stripeMocks.submit.mockResolvedValue({})
     stripeMocks.update.mockResolvedValue(undefined)
     stripeMocks.createConfirmationToken.mockResolvedValue({
-      confirmationToken: { id: 'ctoken_1' }
+      confirmationToken: {
+        id: 'ctoken_1',
+        payment_method_preview: { type: 'card' }
+      }
     })
   })
 
@@ -391,7 +394,12 @@ describe('StripePaymentForm', () => {
         screen.getByRole('button', { name: 'Pay and subscribe' })
       )
       unmount()
-      resolveToken({ confirmationToken: { id: 'ctoken_late' } })
+      resolveToken({
+        confirmationToken: {
+          id: 'ctoken_late',
+          payment_method_preview: { type: 'card' }
+        }
+      })
       await new Promise((resolve) => setTimeout(resolve, 0))
 
       expect(confirmed).toStrictEqual([])
@@ -447,7 +455,7 @@ describe('StripePaymentForm', () => {
     expect(stripeMocks.createConfirmationToken).toHaveBeenCalledWith({
       elements: stripeMocks.elements
     })
-    expect(emitted().confirm).toEqual([['ctoken_1']])
+    expect(emitted().confirm).toEqual([['ctoken_1', 'card']])
   })
 
   it('collects a billing address alongside the payment element', async () => {

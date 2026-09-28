@@ -337,12 +337,11 @@ describe('FullPageCheckoutView', () => {
 
     fake.publishOperation(pendingOperation())
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Finishing your payment…'
+    await screen.findByTestId('checkout-waiting')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "This payment is already processing and can't be canceled."
     )
-    expect(
-      screen.queryByRole('button', { name: 'Pay and subscribe' })
-    ).not.toBeInTheDocument()
+    expect(payButton()).toBeDisabled()
     expect(
       screen.getByText('Subscribe to Creator Plan · Acme Team')
     ).toBeInTheDocument()
@@ -774,22 +773,25 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     code: 'OPERATION_ALREADY_PENDING' | 'CONFLICT'
     found: BillingOperationState
     lands: string
+    pay: 'disabled' | 'absent'
   }>([
     {
       name: 'an operation already pending, still in flight',
       code: 'OPERATION_ALREADY_PENDING',
       found: pendingOperation('op_elsewhere'),
-      lands: 'Finishing your payment…'
+      lands: "This payment is already processing and can't be canceled.",
+      pay: 'disabled'
     },
     {
       name: 'a server conflict over a payment that went through',
       code: 'CONFLICT',
       found: succeededOperation('op_elsewhere'),
-      lands: 'Already completed'
+      lands: 'Already completed',
+      pay: 'absent'
     }
   ])(
     'never shows a decline for $name: it re-reads the operation and lands on it',
-    async ({ code, found, lands }) => {
+    async ({ code, found, lands, pay }) => {
       const fake = await payReady({ subscribe: { status: 'error', code } })
       fake.recover.mockImplementationOnce(async () => {
         fake.publishOperation(found)
@@ -802,9 +804,9 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       expect(fake.subscribe).toHaveBeenCalledOnce()
       expect(fake.recover).toHaveBeenCalledTimes(2)
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-      expect(
-        screen.queryByRole('button', { name: 'Pay and subscribe' })
-      ).not.toBeInTheDocument()
+      const button = screen.queryByRole('button', { name: 'Pay and subscribe' })
+      if (pay === 'absent') expect(button).not.toBeInTheDocument()
+      else expect(button).toBeDisabled()
       expect(
         screen.queryByRole('link', { name: 'Contact support' })
       ).not.toBeInTheDocument()
@@ -1105,7 +1107,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
   )
 })
 
-const waitingStatus = () => screen.findByRole('status')
+const waitingStatus = () => screen.findByTestId('checkout-waiting')
 
 const settlingOperation = (id: string): PendingBillingOperation => ({
   ...pendingOperation(id),
@@ -1153,14 +1155,15 @@ describe('FullPageCheckoutView mount reconciliation', () => {
       recover: { status: 'ok', value: pendingOperation('op_reloaded') }
     })
 
-    expect(await waitingStatus()).toHaveTextContent('Finishing your payment…')
+    await waitingStatus()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "This payment is already processing and can't be canceled."
+    )
     expect(
       screen.getByText('Subscribe to Creator Plan · Acme Team')
     ).toBeInTheDocument()
     expect(form.mounts).toBe(0)
-    expect(
-      screen.queryByRole('button', { name: 'Pay and subscribe' })
-    ).not.toBeInTheDocument()
+    expect(payButton()).toBeDisabled()
 
     fake.publishOperation(succeededOperation('op_reloaded'))
 
@@ -1214,7 +1217,7 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     reportPhase({ phase: 'payment_element_ready', element: 'payment' })
 
     await waitFor(() => expect(payButton()).toBeEnabled())
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('checkout-waiting')).not.toBeInTheDocument()
     form.emit('confirm', 'ctoken_1')
 
     await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
@@ -1376,9 +1379,7 @@ describe('FullPageCheckoutView re-reconciliation', () => {
 
     expect(await waitingStatus()).toBeInTheDocument()
     expect(fake.recover).toHaveBeenCalledTimes(2)
-    expect(
-      screen.queryByRole('button', { name: 'Pay and subscribe' })
-    ).not.toBeInTheDocument()
+    expect(payButton()).toBeDisabled()
   })
 
   it('leaves a fresh navigation alone', async () => {
@@ -1411,7 +1412,7 @@ describe('FullPageCheckoutView re-reconciliation', () => {
     answerFirst({ status: 'ok', value: undefined })
     await capturePromisesFlushed()
 
-    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-waiting')).toBeInTheDocument()
     expect(form.mounts).toBe(0)
   })
 

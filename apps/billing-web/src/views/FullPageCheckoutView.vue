@@ -8,6 +8,10 @@ import {
   isAnnualDuration
 } from '@comfyorg/account-ui/billing/checkout'
 
+import {
+  PENDING_PAYMENT_CANCEL_AVAILABLE,
+  isLocked
+} from '@/checkout/checkoutPage'
 import { endingOf } from '@/checkout/endingScreen'
 import type { EndingPlan } from '@/components/fullPage/CheckoutEnding.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
@@ -16,7 +20,6 @@ import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.v
 import type { CheckoutSummary } from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import CheckoutSummaryColumn from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import { keepSubscriptionCopy } from '@/checkout/keepSubscription'
-import CheckoutWaitingColumn from '@/components/fullPage/CheckoutWaitingColumn.vue'
 import { useFullPageCheckout } from '@/composables/useFullPageCheckout'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { useBillingWebStripeKey } from '@/config/stripeKey'
@@ -46,6 +49,7 @@ const {
   payWithoutConsent,
   cancelAt,
   pay,
+  continueVerification,
   reconcile
 } = useFullPageCheckout()
 
@@ -116,6 +120,11 @@ const payFailureCopy = computed(() =>
 
 const ending = computed(() => endingOf(page.value))
 
+const locked = computed(() => isLocked(page.value))
+
+/** The server cannot cancel a pending payment yet; the click has nowhere honest to go. */
+function cancelPayment() {}
+
 /** The plan this page's own Pay bought, as its quote priced it. */
 const endingPlan = computed<EndingPlan | undefined>(() => {
   const quoted = preview.value
@@ -163,15 +172,23 @@ function viewPlans() {
   >
     <h1 class="sr-only">{{ t('hosted.title.checkout') }}</h1>
     <div class="flex min-h-full flex-col lg:flex-row">
-      <CheckoutSummaryColumn :summary @back="returnToProduct" />
-      <CheckoutWaitingColumn v-if="page.kind === 'waiting'" />
+      <CheckoutSummaryColumn
+        :summary
+        :locked
+        @back="returnToProduct"
+      />
       <CheckoutPaymentColumn
-        v-else-if="page.kind === 'resolving' || page.kind === 'capture'"
+        v-if="
+          page.kind === 'resolving' ||
+          page.kind === 'capture' ||
+          page.kind === 'waiting'
+        "
         :page
         :charge
         :publishable-key="stripeKey ?? ''"
         :can-pay="canPay"
         :submitting
+        :can-cancel="PENDING_PAYMENT_CANCEL_AVAILABLE"
         :failure="payFailureCopy"
         :keep-subscription="keepSubscription"
         :saved-methods="savedMethods"
@@ -183,6 +200,8 @@ function viewPlans() {
         @select-tab="selectTab"
         @confirm-reactivation="confirmReactivation"
         @consent-missing="payWithoutConsent"
+        @cancel="cancelPayment"
+        @continue-verification="continueVerification"
       />
     </div>
   </main>

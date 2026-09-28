@@ -10,8 +10,10 @@ export interface CheckoutSummary {
   readonly total: string
 }
 
-const { summary } = defineProps<{
+const { summary, locked = false } = defineProps<{
   summary?: CheckoutSummary
+  /** Money on its way: the back arrow goes with the rest of the page. */
+  locked?: boolean
 }>()
 
 const emit = defineEmits<{ back: [] }>()
@@ -30,6 +32,7 @@ const SKELETON_BAR =
     <div class="flex w-full flex-col px-6 py-12 lg:max-w-lg lg:px-16">
       <div class="relative flex h-5 items-center">
         <button
+          v-if="!locked"
           type="button"
           :aria-label="t('checkout.back')"
           class="absolute -left-10 flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary-background hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none max-lg:static max-lg:mr-2"

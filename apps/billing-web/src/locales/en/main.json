@@ -250,9 +250,16 @@
           "other": "This change keeps your subscription, and it renews that day at {amount}."
         }
       },
-      "waiting": {
-        "status": "Finishing your payment…",
-        "body": "A payment for this workspace is still going through. This page will update on its own; nothing more is needed from you."
+      "phase": {
+        "challenge": "Nothing has been charged yet.",
+        "processing": "This payment is already processing and can't be canceled.",
+        "redirecting": "Taking you to {method} to finish paying. Nothing has been charged yet.",
+        "redirectingUnnamed": "Taking you to your payment provider to finish paying. Nothing has been charged yet.",
+        "methods": {
+          "alipay": "Alipay"
+        },
+        "continueVerification": "Continue verification",
+        "cancel": "Cancel payment"
       },
       "ending": {
         "thisWorkspace": "this workspace",

@@ -47,10 +47,17 @@ const FAKE_STRIPE_JS = `
   window.Stripe = function fakeStripeFactory() {
     return {
       elements: () => fakeElements(),
+      // A spec sets window.__e2eStripeMethodType before load to mint a
+      // token for a redirect method such as alipay instead of a card.
       createConfirmationToken: () => {
         window.__e2eFakeStripe.confirmationTokens += 1
         return Promise.resolve({
-          confirmationToken: { id: 'ctok_e2e_fake' }
+          confirmationToken: {
+            id: 'ctok_e2e_fake',
+            payment_method_preview: {
+              type: window.__e2eStripeMethodType ?? 'card'
+            }
+          }
         })
       },
       handleNextAction: (args) => {

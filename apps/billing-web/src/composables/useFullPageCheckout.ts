@@ -39,7 +39,7 @@ import type { PayVerdict } from '@/checkout/payVerdict'
 import { operationOutcomeOf, payVerdictOf } from '@/checkout/payVerdict'
 import {
   buildSubscribeRequest,
-  checkoutResultUrl
+  checkoutReturnUrl
 } from '@/checkout/subscribeRequest'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { BILLING_WEB_ENV } from '@/config/env'
@@ -48,11 +48,24 @@ import { useBillingEntry } from '@/entry/billingEntry'
 import { useBillingWebSession } from '@/session/billingWebSession'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
-/** What Pay charges: a new card's token, a saved method, or the method on file. */
+/**
+ * What Pay charges: a new method's token, a saved method, or the method on
+ * file. `methodType` is the provider's type (`card`, `alipay`, …); any
+ * non-card type finishes paying on its own site.
+ */
 export type PayChoice =
-  | { readonly confirmationToken: string }
-  | { readonly savedMethodId: string }
+  | { readonly confirmationToken: string; readonly methodType: string }
+  | { readonly savedMethodId: string; readonly methodType: string }
   | undefined
+
+const CARD_METHOD_TYPE = 'card'
+
+/** The method's type when it authenticates away from this page, else nothing. */
+function redirectMethodOf(choice: PayChoice): string | undefined {
+  if (choice === undefined || choice.methodType === CARD_METHOD_TYPE)
+    return undefined
+  return choice.methodType
+}
 
 type PlannedEntry = BillingEntry & { plan: string }
 
@@ -273,7 +286,8 @@ export function useFullPageCheckout() {
 
   watch(checkout.operation, (operation) => {
     if (operation === undefined) return
-    const own = page.value.kind === 'capture' && page.value.attempt === 'sent'
+    const own =
+      page.value.kind === 'capture' && page.value.attempt.kind === 'sent'
     dispatch({
       type: 'operationChanged',
       operation,
@@ -385,7 +399,7 @@ export function useFullPageCheckout() {
         : {}),
       confirmReactivation:
         current.kind === 'capture' && current.reactivation === 'confirmed',
-      returnUrl: checkoutResultUrl(
+      returnUrl: checkoutReturnUrl(
         arrival,
         billedWorkspace(),
         window.location.origin
@@ -434,22 +448,41 @@ export function useFullPageCheckout() {
     dispatch({ type: 'consentMissing' })
   }
 
+  let payGeneration = 0
+
+  /**
+   * A challenge the bank refused leaves the operation pending, so the
+   * subscribe never resolves for that attempt; the page has already moved on
+   * from the operation's own verdict, and a later Pay owns the form. Only
+   * the newest Pay's result may settle it.
+   */
   async function pay(choice: PayChoice) {
     const arrival = entry.value
     const quoted = preview.value
     if (arrival?.plan === undefined || !quoted || !canPay.value) return
     if (needsConsent(page.value)) return payWithoutConsent()
     const planned = { ...arrival, plan: arrival.plan }
-    dispatch({ type: 'paySubmitted' })
+    const mine = ++payGeneration
+    const redirectMethod = redirectMethodOf(choice)
+    dispatch({
+      type: 'paySubmitted',
+      ...(redirectMethod === undefined ? {} : { redirectMethod })
+    })
     const result = await checkout.subscribe(requestFor(planned, quoted, choice))
+    if (mine !== payGeneration) return
     await settle(payVerdictOf(result), planned)
   }
+
+  /** Busy from the Pay click until the attempt resolves, whatever the lifecycle's promise does. */
+  const submitting = computed(
+    () => page.value.kind === 'capture' && page.value.attempt.kind === 'sent'
+  )
 
   return {
     page: shallowReadonly(page),
     preview,
     canPay,
-    submitting: checkout.submitting,
+    submitting,
     payFailure,
     returnLink,
     viewPlansLink,
@@ -466,7 +499,8 @@ export function useFullPageCheckout() {
       dispatch({ type: 'reactivationConfirmed', confirmed }),
     payWithoutConsent,
     cancelAt: shallowReadonly(cancelAt),
-    pay
+    pay,
+    continueVerification: checkout.continueVerification
   }
 }
 
