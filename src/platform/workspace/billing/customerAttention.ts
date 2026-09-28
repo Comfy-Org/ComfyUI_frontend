@@ -47,14 +47,18 @@ interface ProgressToastOperation {
 
 /**
  * A checkout parked on a card with no link to offer is a state the customer
- * leaves by subscribing again, not a payment in flight, so neither progress
- * toast is true of it. A served link turns it back into a verification ask.
+ * leaves by subscribing again, not a payment in flight, so no surface may
+ * describe it as one. A served link turns it back into a verification ask.
  */
+export function isParkedCheckout(operation: ProgressToastOperation): boolean {
+  return !operation.actionUrl && operation.phase === 'awaiting_payment_method'
+}
+
 export function progressToastKind(
   operation: ProgressToastOperation
 ): ProgressToastKind | undefined {
   if (operation.actionUrl) return 'action'
-  if (operation.phase === 'awaiting_payment_method') return undefined
+  if (isParkedCheckout(operation)) return undefined
   return 'processing'
 }
 

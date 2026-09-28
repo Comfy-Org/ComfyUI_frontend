@@ -32,6 +32,7 @@ import type {
 import type { ProgressToastKind } from '@/platform/workspace/billing/customerAttention'
 import {
   isBlockedOnCustomerPhase,
+  isParkedCheckout,
   legacyOperationActionHold,
   needsCustomerAttention,
   progressToastKind
@@ -178,6 +179,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         op.status === 'pending' &&
         op.authenticationState !== 'requires_action' &&
         op.authenticationState !== 'failed_retryable' &&
+        !isParkedCheckout(op) &&
         op.type === 'subscription' &&
         op.workspaceId === workspaceStore.activeWorkspaceId
     )
