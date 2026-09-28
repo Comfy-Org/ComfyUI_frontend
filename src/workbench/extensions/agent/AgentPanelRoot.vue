@@ -32,6 +32,7 @@ import {
   hasVideoType
 } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useAuthStore } from '@/stores/authStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -110,6 +111,7 @@ import {
 } from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import { refreshNodeCatalogOnRestart } from './services/agent/nodeCatalogRefresh'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
@@ -196,6 +198,20 @@ const agentIdentity = resolveAgentIdentity({
   }
 })
 onBeforeUnmount(() => agentIdentity.stop())
+
+// A node from a pack the agent just wrote or installed must not stay a
+// missing-type placeholder until the page is reloaded.
+const stopNodeCatalogRefresh = refreshNodeCatalogOnRestart(events, {
+  refreshNodeDefinitions: () =>
+    useCommandStore().execute('Comfy.RefreshNodeDefinitions'),
+  reloadCurrentWorkflow: () => useWorkflowService().reloadCurrentWorkflow(),
+  onFailure: (error) =>
+    reportError(error, {
+      errorType: 'agent_node_catalog_refresh_failed',
+      level: 'warning'
+    })
+})
+onBeforeUnmount(stopNodeCatalogRefresh)
 
 // Signing out or switching accounts must not leave the agent socket
 // authenticated as the previous account, nor canvas ops stamped with its
