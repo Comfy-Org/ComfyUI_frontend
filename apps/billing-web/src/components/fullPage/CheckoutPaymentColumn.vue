@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
+import { formatQuoteMoney } from '@comfyorg/account-ui/billing/checkout'
 import type {
   StripePaymentCopy,
   StripePaymentPhase
@@ -11,6 +12,7 @@ import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
 
 import type { CheckoutPage, PaymentTab } from '@/checkout/checkoutPage'
 import { railView } from '@/checkout/checkoutPage'
+import type { PayContext } from '@/components/fullPage/CheckoutPayAction.vue'
 import CheckoutPayAction from '@/components/fullPage/CheckoutPayAction.vue'
 import PaymentFormError from '@/components/fullPage/PaymentFormError.vue'
 import PaymentTabsRail from '@/components/fullPage/PaymentTabsRail.vue'
@@ -47,13 +49,38 @@ const emit = defineEmits<{
   retrySaved: []
   retryColumn: []
   selectTab: [tab: PaymentTab]
+  confirmReactivation: [confirmed: boolean]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
+/** A Pay that collided with another operation holds the skeleton until it is re-read. */
 const view = computed(() =>
-  page.kind === 'capture' ? railView(page.rail) : undefined
+  page.kind === 'capture' && page.outcome?.kind !== 'reconciling'
+    ? railView(page.rail)
+    : undefined
 )
+
+const payContext = computed<PayContext>(() => {
+  if (page.kind !== 'capture') return {}
+  const { outcome, reactivation } = page
+  return {
+    failure,
+    ...(outcome === undefined || outcome.kind === 'reconciling'
+      ? {}
+      : { outcome }),
+    ...(reactivation === 'not_required' ? {} : { reactivation }),
+    ...(charge === undefined
+      ? {}
+      : {
+          amount: formatQuoteMoney(
+            charge.amountCents,
+            charge.currency,
+            locale.value
+          )
+        })
+  }
+})
 
 const tabbed = computed(() =>
   view.value?.kind === 'tabs' ? view.value : undefined
@@ -100,7 +127,12 @@ const copy = computed<StripePaymentCopy>(() => ({
         class="flex flex-col gap-6"
         @submit.prevent="emit('pay', undefined)"
       >
-        <CheckoutPayAction :disabled="!canPay" :loading="submitting" :failure />
+        <CheckoutPayAction
+          v-bind="payContext"
+          :disabled="!canPay"
+          :loading="submitting"
+          @confirm-reactivation="emit('confirmReactivation', $event)"
+        />
       </form>
       <div v-else class="flex flex-col gap-6">
         <PaymentTabsRail
@@ -114,9 +146,10 @@ const copy = computed<StripePaymentCopy>(() => ({
         >
           <template #pay>
             <CheckoutPayAction
+              v-bind="payContext"
               :disabled="!canPay"
               :loading="submitting"
-              :failure
+              @confirm-reactivation="emit('confirmReactivation', $event)"
             />
           </template>
         </PaymentTabsRail>
@@ -134,7 +167,12 @@ const copy = computed<StripePaymentCopy>(() => ({
           @confirm="emit('pay', { confirmationToken: $event })"
         >
           <template #submit="{ disabled, loading }">
-            <CheckoutPayAction :disabled :loading :failure />
+            <CheckoutPayAction
+              v-bind="payContext"
+              :disabled
+              :loading
+              @confirm-reactivation="emit('confirmReactivation', $event)"
+            />
           </template>
         </StripePaymentForm>
       </div>

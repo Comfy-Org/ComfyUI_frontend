@@ -7,6 +7,7 @@ import type {
   PreviewSubscribeResult,
   SavedPaymentMethod
 } from '@comfyorg/account-core/billing'
+import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
@@ -20,6 +21,7 @@ import type {
 } from '@/test/fakeBillingClient'
 import {
   createFakeBillingClient,
+  failedOperation,
   pendingOperation,
   previewOf
 } from '@/test/fakeBillingClient'
@@ -528,5 +530,171 @@ describe('FullPageCheckoutView saved methods and rail failures', () => {
     await waitFor(() =>
       expect(fake.readPaymentMethods).toHaveBeenCalledTimes(2)
     )
+  })
+})
+
+const payReady = async (options: FakeBillingClientOptions = {}) => {
+  const fake = await renderQuoted(options)
+  reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+  await waitFor(() => expect(payButton()).toBeEnabled())
+  return fake
+}
+
+describe('FullPageCheckoutView outcomes after Pay', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
+  it('puts a decline above Pay with its reason, keeps the typed form, and clears it on the next Pay', async () => {
+    const fake = await payReady({
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'failed',
+          operation: failedOperation('insufficient_funds', 'op_declined')
+        }
+      }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent('Payment declined')
+    expect(card).toHaveTextContent('Reported issue: Insufficient funds')
+    expect(card).toHaveFocus()
+    const support = screen.getByRole('link', { name: 'Contact support' })
+    expect(support.getAttribute('href')).toContain('op_declined')
+    expect(support.getAttribute('href')).toContain('insufficient_funds')
+    expect(form.mounts).toBe(1)
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'ok',
+      value: { phase: 'succeeded' }
+    })
+    form.emit('confirm', 'ctoken_2')
+
+    await waitFor(() =>
+      expect(screen.queryByText('Payment declined')).not.toBeInTheDocument()
+    )
+    expect(
+      screen.queryByRole('link', { name: 'Contact support' })
+    ).not.toBeInTheDocument()
+    expect(fake.subscribe).toHaveBeenCalledTimes(2)
+  })
+
+  it.for<{
+    name: string
+    declineReason: 'authentication_failed' | 'processing_error'
+    title: string
+  }>([
+    {
+      name: 'a failed verification',
+      declineReason: 'authentication_failed',
+      title: 'Payment not verified'
+    },
+    {
+      name: 'a processing fault',
+      declineReason: 'processing_error',
+      title: "Payment couldn't be processed"
+    }
+  ])(
+    'names $name in its own card, with no reason line',
+    async ({ declineReason, title }) => {
+      await payReady({
+        subscribe: {
+          status: 'ok',
+          value: { phase: 'failed', operation: failedOperation(declineReason) }
+        }
+      })
+
+      form.emit('confirm', 'ctoken_1')
+
+      const card = await screen.findByRole('alert')
+      expect(card).toHaveTextContent(title)
+      expect(card).not.toHaveTextContent('Reported issue')
+      expect(payButton()).toBeInTheDocument()
+    }
+  )
+
+  it.for<{ name: string; code: 'OPERATION_ALREADY_PENDING' | 'CONFLICT' }>([
+    { name: 'an operation already pending', code: 'OPERATION_ALREADY_PENDING' },
+    { name: 'a server conflict', code: 'CONFLICT' }
+  ])(
+    'never shows a decline for $name, and keeps Pay locked',
+    async ({ code }) => {
+      const fake = await payReady({ subscribe: { status: 'error', code } })
+
+      form.emit('confirm', 'ctoken_1')
+
+      await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+      await waitFor(() => expect(payButton()).toBeDisabled())
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('link', { name: 'Contact support' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it('re-prices an expired quote and says so, without charging', async () => {
+    const fake = await payReady({
+      subscribe: {
+        status: 'error',
+        code: 'CONFLICT',
+        serverCode: readBillingErrorCode({
+          code: 'PRORATION_QUOTE_EXPIRED',
+          message: 'expired'
+        })
+      }
+    })
+    fake.previewSubscribe.mockResolvedValueOnce({
+      status: 'ok',
+      value: previewOf({ amount_due_cents: 3100 })
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The price has updated'
+    )
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(form.mounts).toBe(1)
+    expect(payButton()).toBeEnabled()
+  })
+
+  it('asks a cancelled subscriber to confirm the reactivation charge before Pay', async () => {
+    const fake = await renderQuoted({
+      preview: {
+        status: 'ok',
+        value: previewOf({ requires_reactivation_confirmation: true })
+      }
+    })
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await nextTick()
+
+    expect(payButton()).toBeDisabled()
+    await userEvent.click(screen.getByRole('checkbox'))
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1')
+
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledWith(
+        expect.objectContaining({ confirm_reactivation: true })
+      )
+    )
+  })
+
+  it('re-quotes and asks when the server wants the reactivation confirmed', async () => {
+    const fake = await payReady({
+      subscribe: { status: 'error', code: 'REACTIVATION_CONFIRMATION_REQUIRED' }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    expect(await screen.findByRole('checkbox')).not.toBeChecked()
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(payButton()).toBeDisabled()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

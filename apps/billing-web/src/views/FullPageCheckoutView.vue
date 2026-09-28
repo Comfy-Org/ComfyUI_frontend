@@ -32,6 +32,7 @@ const {
   retrySaved,
   retryColumn,
   selectTab,
+  confirmReactivation,
   pay
 } = useFullPageCheckout()
 
@@ -133,6 +134,7 @@ function returnToProduct() {
         @retry-saved="retrySaved"
         @retry-column="retryColumn"
         @select-tab="selectTab"
+        @confirm-reactivation="confirmReactivation"
       />
     </div>
   </main>

@@ -208,6 +208,37 @@
       "refused": {
         "title": "You can't subscribe from this account",
         "body": "This account can't start or change a subscription for this workspace. Ask the workspace owner, or go back and choose another workspace."
+      },
+      "outcome": {
+        "declined": {
+          "title": "Payment declined",
+          "body": "Your card couldn't be charged. Try another card, or contact your bank if this looks wrong."
+        },
+        "processing_error": {
+          "title": "Payment couldn't be processed",
+          "body": "There was a technical problem on the payment side. Try again, or refresh the page if it keeps happening."
+        },
+        "verification_failed": {
+          "title": "Payment not verified",
+          "body": "Your bank didn't confirm this payment, so you haven't been charged. Pay to try again, or use a different payment method."
+        },
+        "price_updated": {
+          "title": "The price has updated",
+          "body": "Your quote expired, so the numbers were refreshed. Review the new total before paying — you have not been charged."
+        },
+        "reportedIssue": "Reported issue: {reason}",
+        "reasons": {
+          "card_declined": "Card declined",
+          "insufficient_funds": "Insufficient funds",
+          "expired_card": "Expired card",
+          "incorrect_cvc": "Incorrect security code",
+          "authentication_required": "Authentication required",
+          "authentication_failed": "Authentication failed",
+          "processing_error": "Processing error",
+          "checkout_expired": "Checkout expired",
+          "generic": "Unspecified"
+        },
+        "contactSupport": "Contact support"
       }
     }
   },

@@ -12,12 +12,20 @@ import {
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
 
-const quoted = (saved: SavedArrival): CheckoutPageEvent => ({
+const quoted = (
+  saved: SavedArrival,
+  reactivation = false
+): CheckoutPageEvent => ({
   type: 'quoted',
   method: 'collect',
-  saved
+  saved,
+  reactivation
 })
-const quotedOnFile: CheckoutPageEvent = { type: 'quoted', method: 'on_file' }
+const quotedOnFile: CheckoutPageEvent = {
+  type: 'quoted',
+  method: 'on_file',
+  reactivation: false
+}
 const refused: CheckoutPageEvent = {
   type: 'refused',
   reason: 'not_workspace_owner'
@@ -49,7 +57,8 @@ const collect = (
   tab: PaymentTab = saved === 'none' ? 'new' : 'saved'
 ): CheckoutPage => ({
   kind: 'capture',
-  rail: { method: 'collect', element, saved, tab }
+  rail: { method: 'collect', element, saved, tab },
+  reactivation: 'not_required'
 })
 
 function replay(events: readonly CheckoutPageEvent[]): CheckoutPage {
@@ -119,7 +128,11 @@ describe('reduceCheckoutPage', () => {
     {
       name: 'a quote charged to the method on file',
       events: [quotedOnFile],
-      expected: { kind: 'capture', rail: { method: 'on_file' } },
+      expected: {
+        kind: 'capture',
+        rail: { method: 'on_file' },
+        reactivation: 'not_required'
+      },
       pay: true
     },
     {
@@ -321,4 +334,133 @@ describe('railView', () => {
   ])('$name', ({ events, expected }) => {
     expect(viewOf(replay(events))).toEqual(expected)
   })
+})
+
+const submitted: CheckoutPageEvent = { type: 'paySubmitted' }
+const declined: CheckoutPageEvent = {
+  type: 'payFailed',
+  outcome: {
+    kind: 'declined',
+    reason: 'insufficient_funds',
+    operationId: 'op_1'
+  }
+}
+const collided: CheckoutPageEvent = { type: 'payRejectedAsPending' }
+const tick = (confirmed: boolean): CheckoutPageEvent => ({
+  type: 'reactivationConfirmed',
+  confirmed
+})
+const requoted = (
+  reactivation: boolean,
+  priceUpdated: boolean
+): CheckoutPageEvent => ({ type: 'requoted', reactivation, priceUpdated })
+
+describe('reduceCheckoutPage after Pay', () => {
+  const live = [quoted(0), ready]
+
+  it.for<{
+    name: string
+    events: CheckoutPageEvent[]
+    outcome: string | undefined
+    reactivation: string
+    pay: boolean
+  }>([
+    {
+      name: 'a decline leaves its card and Pay live',
+      events: [...live, submitted, declined],
+      outcome: 'declined',
+      reactivation: 'not_required',
+      pay: true
+    },
+    {
+      name: 'the next Pay clears the card',
+      events: [...live, submitted, declined, submitted],
+      outcome: undefined,
+      reactivation: 'not_required',
+      pay: true
+    },
+    {
+      name: 'a collided Pay locks the page for reconciliation',
+      events: [...live, submitted, collided],
+      outcome: 'reconciling',
+      reactivation: 'not_required',
+      pay: false
+    },
+    {
+      name: 'an expired quote re-priced',
+      events: [...live, submitted, requoted(false, true)],
+      outcome: 'price_updated',
+      reactivation: 'not_required',
+      pay: true
+    },
+    {
+      name: 'a quote that asks for reactivation locks Pay',
+      events: [quoted(0, true), ready],
+      outcome: undefined,
+      reactivation: 'required',
+      pay: false
+    },
+    {
+      name: 'ticking the reactivation charge frees Pay',
+      events: [quoted(0, true), ready, tick(true)],
+      outcome: undefined,
+      reactivation: 'confirmed',
+      pay: true
+    },
+    {
+      name: 'unticking it locks Pay again',
+      events: [quoted(0, true), ready, tick(true), tick(false)],
+      outcome: undefined,
+      reactivation: 'required',
+      pay: false
+    },
+    {
+      name: 'the server asking for reactivation re-asks, even after a tick',
+      events: [quoted(0, true), ready, tick(true), requoted(true, false)],
+      outcome: undefined,
+      reactivation: 'required',
+      pay: false
+    },
+    {
+      name: 'a tick nobody was asked for',
+      events: [...live, tick(true)],
+      outcome: undefined,
+      reactivation: 'not_required',
+      pay: true
+    }
+  ])('$name', ({ events, outcome, reactivation, pay }) => {
+    const page = replay(events)
+
+    expect(page).toMatchObject({ kind: 'capture', reactivation })
+    expect(page.kind === 'capture' && page.outcome?.kind).toBe(outcome)
+    expect(railAcceptsPay(page)).toBe(pay)
+  })
+
+  it('never touches the payment element or the tab on a decline', () => {
+    const before = replay([quoted(1), ready, select('new'), submitted])
+
+    const after = reduceCheckoutPage(before, declined)
+
+    expect(after.kind === 'capture' && after.rail).toBe(
+      before.kind === 'capture' && before.rail
+    )
+  })
+
+  it.for<{ name: string; event: CheckoutPageEvent }>([
+    { name: 'a decline', event: declined },
+    { name: 'a new Pay', event: submitted },
+    { name: 'a re-quote', event: requoted(false, true) },
+    { name: 'a reactivation tick', event: tick(true) }
+  ])('holds reconciliation against $name', ({ event }) => {
+    const reconciling = replay([...live, submitted, collided])
+
+    expect(reduceCheckoutPage(reconciling, event)).toBe(reconciling)
+  })
+
+  it.for<CheckoutPageEvent>([submitted, declined, collided, tick(true)])(
+    'ignores $type outside capture',
+    (event) => {
+      expect(reduceCheckoutPage(RESOLVING, event)).toBe(RESOLVING)
+    }
+  )
 })
