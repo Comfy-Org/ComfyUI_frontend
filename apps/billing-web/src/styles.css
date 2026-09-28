@@ -2,3 +2,4 @@
 @import '@comfyorg/design-system/css/style.css';
 
 @source './**/*.{ts,vue}';
+@source '../../../packages/account-ui/src/billing/checkout/**/*.vue';
