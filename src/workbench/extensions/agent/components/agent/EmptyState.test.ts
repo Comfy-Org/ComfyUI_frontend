@@ -1,30 +1,45 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 
 import { starterPromptTextHash } from '../../utils/starterPrompts'
 import EmptyState from './EmptyState.vue'
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
+
 const PROMPTS = [
-  { id: 'generate_image', text: 'Generate a yellow duck with a hockey mask' },
-  { id: 'list_workflows', text: 'List my saved workflows' },
-  { id: 'find_workflow', text: 'Find the best workflow for skin upscaling' },
+  {
+    id: 'generate_image',
+    text: 'Build a workflow using my installed models'
+  },
+  { id: 'list_workflows', text: 'Fix the errors in this workflow' },
+  { id: 'find_workflow', text: "Improve this workflow's image quality" },
   { id: 'explain_selected_node', text: 'Explain the selected node' },
   {
     id: 'build_video_workflow',
-    text: 'Build a workflow for image to video with 3 models'
+    text: 'Help me install the missing nodes for this workflow'
   }
 ] as const
 
 describe('EmptyState', () => {
-  it('T-22 / PM-649 / FE-1288 renders every suggestion without truncating the inserted prompt', async () => {
+  beforeEach(() => {
+    distribution.isCloud = false
+  })
+
+  it('renders every local suggestion without truncating the inserted prompt', async () => {
     const user = userEvent.setup()
     const { emitted } = render(EmptyState, {
       global: { plugins: [i18n] }
     })
-    const prompt = 'Build a workflow for image to video with 3 models'
+    const prompt = 'Help me install the missing nodes for this workflow'
     const suggestion = screen.getByRole('button', { name: prompt })
 
     expect(screen.getAllByRole('button')).toHaveLength(5)
@@ -43,6 +58,25 @@ describe('EmptyState', () => {
         }
       ]
     ])
+  })
+
+  it('renders suggestions matched to cloud capabilities', () => {
+    distribution.isCloud = true
+
+    render(EmptyState, {
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Turn an image into a short video'
+      })
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('button', {
+        name: 'Help me install the missing nodes for this workflow'
+      })
+    ).not.toBeInTheDocument()
   })
 
   it.for(PROMPTS.map((prompt, index) => ({ ...prompt, index })))(

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
+import { isCloud } from '@/platform/distribution/types'
 
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { starterPromptAttribution } from '../../utils/starterPrompts'
@@ -15,7 +16,12 @@ const emit = defineEmits<{
 
 const { t, tm, locale } = useI18n()
 
-const prompts = computed(() => tm('agent.suggestedPrompts') as string[])
+const prompts = computed(
+  () =>
+    tm(
+      isCloud ? 'agent.suggestedPrompts.cloud' : 'agent.suggestedPrompts.local'
+    ) as string[]
+)
 
 /**
  * One emit per click, carrying the slot's stable id rather than its text. Fires
