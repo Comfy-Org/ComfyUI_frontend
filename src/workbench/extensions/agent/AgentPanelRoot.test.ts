@@ -91,7 +91,9 @@ const ws = vi.hoisted(() => {
     listeners.get(type)?.delete(listener)
   }
   const emit = (type: string, data?: unknown): void => {
-    for (const listener of listeners.get(type) ?? []) listener({ detail: data })
+    // The doc-frame pipeline ignores events that are not CustomEvent instances.
+    const event = new CustomEvent(type, { detail: data })
+    for (const listener of listeners.get(type) ?? []) listener(event)
   }
   const clear = (): void => listeners.clear()
   return { add, remove, emit, clear }
@@ -104,6 +106,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     getServerFeature,
     socket: { readyState: 1, send: socketSend },
+    dispatchCustomEvent: vi.fn(),
     addEventListener: ws.add,
     removeEventListener: ws.remove,
     addCustomEventListener: ws.add,
@@ -133,6 +136,7 @@ const appMock = vi.hoisted(() => {
   Object.assign(graph, { rootGraph: graph })
   return {
     loadGraphData: vi.fn(),
+    ui: { autoQueueEnabled: false },
     graph,
     rootGraph: graph,
     isGraphReady: false,
@@ -545,6 +549,68 @@ describe('AgentPanelRoot onboarding', () => {
     localStorage.removeItem(SCOPED_KEY)
   })
 
+  it('shows the scoped coach after first consent despite a legacy seen flag', async () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+    const consentStore = useAgentConsentStore()
+    Object.assign(consentStore, { accepted: false })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(localStorage.getItem(SCOPED_KEY)).toBeNull()
+
+    Object.assign(consentStore, { accepted: true })
+
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
+  })
+
+  it('still carries the legacy seen flag for an already-consented scope', () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(localStorage.getItem(SCOPED_KEY)).toBe('true')
+    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBeNull()
+  })
+
+  it('replays a finished tour from the header and reports it shown again', async () => {
+    localStorage.setItem(SCOPED_KEY, 'true')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).not.toBeInTheDocument()
+    vi.mocked(useTelemetry()!.trackAgentOnboardingShown).mockClear()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Take the tour' }))
+
+    // Routing matters, not just the effect: the mounted coach has to take the
+    // transition. Clearing storage instead would still show the card here while
+    // silently skipping the shown event.
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+    expect(useTelemetry()!.trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
+  })
+
+  it('holds a replay requested while App Mode has the coach deferred', async () => {
+    localStorage.setItem(SCOPED_KEY, 'true')
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).not.toBeInTheDocument()
+
+    // No coach is mounted to take the transition, so the request has to persist.
+    await userEvent.click(screen.getByRole('button', { name: 'Take the tour' }))
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
+
+    canvasStore.linearMode = false
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+  })
+
   it('defers the tour in App Mode without completing it or blocking the composer', async () => {
     canvasStore.linearMode = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -676,9 +742,9 @@ describe('AgentPanelRoot onboarding', () => {
           'Describe your ideas, ask it to build and run workflows. It sees your canvas and files.'
       },
       {
-        title: 'Select a workflow for your agent to edit',
+        title: "Your agent edits the workflow you're viewing",
         description:
-          'The agent edits only the workflow you choose. You can also upload reference files or mention other workflows.'
+          'It switches with your tabs until you send a message, choose a workflow, or add a node reference.'
       },
       {
         title: 'Let the agent run while you edit',
@@ -3498,7 +3564,6 @@ describe('AgentPanelRoot run approval telemetry', () => {
     const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
     const workflow = addTab('workflows/Portrait workflow.json')
     workflowStore.activeWorkflow = workflow
-    useAgentWorkflowTabBindingStore().bind('workflow-1', workflow.path)
 
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const store = useAgentConversationStore()
@@ -5440,6 +5505,30 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       await screen.findByText(i18n.global.t('agent.working'))
     ).toBeInTheDocument()
+  })
+
+  it('shows a sticky error toast when the doc-host permanently refuses the subscribe', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add a node')
+
+    ws.emit('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-42',
+      ok: false,
+      code: 'schema_version_mismatch',
+      message: 'Expected schema 2, found 1'
+    })
+
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        summary: i18n.global.t('agent.workflowSyncFailedTitle'),
+        detail: `${i18n.global.t('agent.workflowSyncFailedDetail')} (Expected schema 2, found 1)`,
+        life: 0
+      })
+    )
   })
 
   it('moves the spinner to the tab the agent creates mid-turn', async () => {
