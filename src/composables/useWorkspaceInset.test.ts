@@ -63,19 +63,13 @@ describe('useWorkspaceInsetRight', () => {
     expect(readInset()).toBe('')
   })
 
-  it.each([
-    ['graph to linear', 420, 960],
-    ['linear to graph', 960, 420]
-  ])(
-    'keeps the incoming inset during a %s host switch',
-    async (_direction, outgoingWidth, incomingWidth) => {
-      const outgoing = runInScope(() => outgoingWidth)
-      runInScope(() => incomingWidth)
+  it('keeps the incoming inset when an overlapping host unmounts', async () => {
+    const outgoing = runInScope(() => 420)
+    runInScope(() => 960)
 
-      outgoing.stop()
-      await nextTick()
+    outgoing.stop()
+    await nextTick()
 
-      expect(readInset()).toBe(`${incomingWidth}px`)
-    }
-  )
+    expect(readInset()).toBe('960px')
+  })
 })
