@@ -47,6 +47,7 @@ function ledgerOf(
 
 const JULY_28 = '2026-07-28T00:00:00.000Z'
 const JUNE_28_2027 = '2027-06-28T00:00:00.000Z'
+const PRICED_AT = '2026-07-10T09:30:00.000Z'
 
 describe('buildSummaryLedger', () => {
   it.for<{
@@ -145,9 +146,10 @@ describe('buildSummaryLedger', () => {
       }
     },
     {
-      name: 'tier upgrade: the prorated charge, a credits delta with its verb and expiry',
+      name: 'tier upgrade priced at a proration instant: the prorated charge, a credits delta with its verb and expiry',
       quote: {
         transition_type: 'upgrade',
+        proration_at: PRICED_AT,
         amount_due_cents: 3250,
         cost_today_cents: 3250,
         renewal_amount_cents: 10_000,
@@ -184,9 +186,40 @@ describe('buildSummaryLedger', () => {
       }
     },
     {
-      name: 'monthly to yearly: not prorated, a bare grant and the overlap note',
+      name: 'tier upgrade without a proration instant: a plain charge, never labelled prorated',
+      quote: {
+        transition_type: 'upgrade',
+        amount_due_cents: 3250,
+        cost_today_cents: 3250,
+        renewal_amount_cents: 10_000,
+        renewal_at: JULY_28,
+        credits_today_cents: 3250,
+        credits_next_period_cents: 10_000,
+        current_plan: planOf('CREATOR', 'MONTHLY', 3500),
+        new_plan: planOf('PRO', 'MONTHLY', 10_000)
+      },
+      ledger: {
+        family: 'charge_now',
+        eyebrow: 'Upgrade to Pro Plan · Comfy Studios',
+        headline: { amount: '$32.50', currency: 'USD' },
+        credits: { count: '21,100', qualifier: 'credits per month' },
+        items: [
+          {
+            label: 'Pro Plan',
+            amount: '$100.00',
+            sublines: ['$100 /mo, billed monthly']
+          }
+        ],
+        adjustments: [],
+        total: '$32.50',
+        trailing: ['Renews at $100.00 on July 28, 2026']
+      }
+    },
+    {
+      name: 'monthly to yearly priced at a proration instant: not prorated, a bare grant and the overlap note',
       quote: {
         transition_type: 'duration_change',
+        proration_at: PRICED_AT,
         amount_due_cents: 33_600,
         cost_today_cents: 33_600,
         renewal_amount_cents: 33_600,
@@ -254,10 +287,11 @@ describe('buildSummaryLedger', () => {
       }
     },
     {
-      name: 'tier downgrade: scheduled, the future rate as headline, $0 today',
+      name: 'tier downgrade priced at a proration instant: scheduled, the future rate as headline, $0 today',
       quote: {
         transition_type: 'downgrade',
         is_immediate: false,
+        proration_at: PRICED_AT,
         effective_at: JULY_28,
         amount_due_cents: 0,
         cost_today_cents: 0,
@@ -322,9 +356,10 @@ describe('buildSummaryLedger', () => {
       }
     },
     {
-      name: 'team commit change: neutral, no proration copy and no credits delta',
+      name: 'team commit change priced at a proration instant: neutral, no proration copy and no credits delta',
       quote: {
         transition_type: 'upgrade',
+        proration_at: PRICED_AT,
         amount_due_cents: 12_345,
         cost_today_cents: 12_345,
         renewal_amount_cents: 140_000,
