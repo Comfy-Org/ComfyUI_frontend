@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ChevronDown, Layers, Maximize } from '@lucide/vue'
-
 import type {
   AspectRatio,
   Resolution
@@ -28,56 +26,50 @@ const {
   takesValue
 } = useFormatMenus(aspect, resolution, takes, () => locale)
 
-const triggerClass =
-  'h-10 w-full gap-2 border border-transparency-white-t8 px-3 text-sm text-primary-warm-white hover:border-transparency-white-t20'
+const segmentClass =
+  'h-full gap-2 rounded-none px-3 text-primary-comfy-canvas hover:bg-transparency-white-t4 hover:text-primary-warm-white data-[state=open]:text-primary-warm-white'
 </script>
 
 <template>
   <div
     role="group"
-    :aria-label="tc('cinematic.section.output', locale)"
-    class="grid grid-cols-3 gap-2"
+    :aria-label="tc('cinematic.composer.format', locale)"
+    class="flex h-9 shrink-0 items-center overflow-hidden rounded-xl text-[13px] whitespace-nowrap ring-1 ring-transparency-white-t8 ring-inset"
   >
     <CinematicMenu
       v-model="aspectValue"
       :options="aspectOptions"
       :heading="tc('cinematic.output.aspect', locale)"
-      side="bottom"
+      :trigger-class="segmentClass"
       tooltip
-      :trigger-class="triggerClass"
     >
       <span class="grid size-4 place-items-center" aria-hidden="true">
         <span
-          class="block max-h-full rounded-xs border-[1.5px] border-primary-warm-gray"
+          class="block max-h-full rounded-xs border-[1.5px] border-current"
           :style="framedStyle(aspect, '1rem')"
         />
       </span>
-      <span class="flex-1 text-left tabular-nums">{{ aspect }}</span>
-      <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
+      {{ aspect }}
     </CinematicMenu>
+    <span class="h-4 w-px bg-transparency-white-t8" aria-hidden="true" />
     <CinematicMenu
       v-model="resolutionValue"
       :options="resolutionOptions"
       :heading="tc('cinematic.output.resolution', locale)"
-      side="bottom"
+      :trigger-class="segmentClass"
       tooltip
-      :trigger-class="triggerClass"
     >
-      <Maximize class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
-      <span class="flex-1 text-left">{{ resolution }}</span>
-      <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
+      {{ resolution }}
     </CinematicMenu>
+    <span class="h-4 w-px bg-transparency-white-t8" aria-hidden="true" />
     <CinematicMenu
       v-model="takesValue"
       :options="takeOptions"
       :heading="tc('cinematic.output.takes', locale)"
-      side="bottom"
+      :trigger-class="segmentClass"
       tooltip
-      :trigger-class="triggerClass"
     >
-      <Layers class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
-      <span class="flex-1 text-left tabular-nums">×{{ takes }}</span>
-      <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
+      ×{{ takes }}
     </CinematicMenu>
   </div>
 </template>
