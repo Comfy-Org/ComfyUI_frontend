@@ -5,7 +5,10 @@ import { assert } from '@/base/assert'
 import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  ComfyWorkflow,
+  WorkflowChangeTracker
+} from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
@@ -251,7 +254,7 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
   assert(false, `ChangeTracker.${method}() called on inactive tracker`)
 }
 
-export class ChangeTracker {
+export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.

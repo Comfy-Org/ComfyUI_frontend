@@ -2,7 +2,7 @@ import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowS
 import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
 import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
-import type { MissingModelCandidate, MissingModelViewModel } from './types'
+import type { MissingModelCandidate } from './types'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -551,30 +551,4 @@ function isAssetInstalled(
     const f = normalizePath(getAssetFilename(a))
     return f === normalizedName || f.endsWith('/' + normalizedName)
   })
-}
-
-export function groupCandidatesByName(
-  candidates: MissingModelCandidate[]
-): MissingModelViewModel[] {
-  const map = new Map<string, MissingModelViewModel>()
-  for (const c of candidates) {
-    const existing = map.get(c.name)
-    if (existing) {
-      if (c.nodeId) {
-        existing.referencingNodes.push({
-          nodeId: c.nodeId,
-          widgetName: c.widgetName
-        })
-      }
-    } else {
-      map.set(c.name, {
-        name: c.name,
-        representative: c,
-        referencingNodes: c.nodeId
-          ? [{ nodeId: c.nodeId, widgetName: c.widgetName }]
-          : []
-      })
-    }
-  }
-  return Array.from(map.values())
 }
