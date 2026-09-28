@@ -26,7 +26,7 @@ const blockedNetworkFetch: typeof globalThis.fetch = (input, init) => {
     new Error(
       `Blocked a real network request to ${requestUrl} from a unit test. ` +
         'Mock the module that issues it (or stub globalThis.fetch in the ' +
-        'test) instead of letting the request escape - see vitest.setup.ts.'
+        'test) instead of letting the request escape - see vitest.network.setup.ts.'
     )
   )
 }
