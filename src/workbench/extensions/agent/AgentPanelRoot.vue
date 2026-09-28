@@ -1140,6 +1140,8 @@ async function onAnswerAsk(
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
+  if (composerStore.submission?.id === consentHeldSubmissionId)
+    composerStore.invalidateSubmission()
   mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()
@@ -1262,6 +1264,23 @@ const coachSteps = computed<CoachStep[]>(() => [
   }
 ])
 
+let consentHeldSubmissionId: number | undefined
+async function consentAllowsSubmission(
+  submissionId: number | undefined
+): Promise<boolean> {
+  let hasConsent = false
+  consentHeldSubmissionId = submissionId
+  try {
+    await withConsent('first_message', () => {
+      hasConsent = true
+    })
+  } finally {
+    if (consentHeldSubmissionId === submissionId)
+      consentHeldSubmissionId = undefined
+  }
+  return composerStore.submission?.id === submissionId && hasConsent
+}
+
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
   onSubmit: agentPanelStore.retainWorkflowTarget,
@@ -1275,13 +1294,12 @@ const { submit: onSend } = useAgentDraftSubmission({
     exit: exitNodeSelectionMode
   },
   send: async (text, attachments, nodes, references, meta) => {
-    if (!consentAccepted.value) {
-      let hasConsent = false
-      await withConsent('first_message', () => {
-        hasConsent = true
-      })
-      if (!hasConsent) return false
-    }
+    const submissionId = composerStore.submission?.id
+    if (
+      !consentAccepted.value &&
+      !(await consentAllowsSubmission(submissionId))
+    )
+      return false
 
     // The same origin `performSend` pins the turn to, taken in the same tick,
     // so the report follows the tab the turn is posted against. Everything but

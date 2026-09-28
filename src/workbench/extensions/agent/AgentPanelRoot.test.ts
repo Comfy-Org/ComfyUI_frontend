@@ -3954,6 +3954,32 @@ describe('AgentPanelRoot workflow binding', () => {
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
 
+  it('does not resume a consent-held send after the panel unmounts', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let accept = () => {}
+    withConsent.mockImplementationOnce(
+      (_trigger, onAccept) =>
+        new Promise<void>((resolve) => {
+          accept = () => {
+            onAccept()
+            resolve()
+          }
+        })
+    )
+    const { unmount } = renderWithSelectedTarget()
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('build me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    unmount()
+    accept()
+    await waitFor(() => expect(bodies).toHaveLength(0))
+  })
+
   it('reports a message sent from an empty-state suggestion chip as a suggestion', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
