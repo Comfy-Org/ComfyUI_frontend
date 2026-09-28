@@ -1,9 +1,11 @@
 import * as VueUse from '@vueuse/core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
+import { useAuthStore } from '@/stores/authStore'
 
 const mocks = vi.hoisted(() => ({
   isCloud: true,
@@ -14,7 +16,8 @@ const mocks = vi.hoisted(() => ({
   execute: vi.fn(),
   settings: {} as Record<string, unknown>,
   setSetting: vi.fn(),
-  beginTour: vi.fn()
+  beginTour: vi.fn(),
+  cancelPendingStart: vi.fn(async () => {})
 }))
 
 const sharedComposable = vi.hoisted(() => {
@@ -78,6 +81,18 @@ vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({ execute: mocks.execute })
 }))
 
+vi.mock('@/stores/authStore', async () => {
+  const { reactive } = await import('vue')
+  const authStore = reactive({ userId: 'account-a' })
+  return { useAuthStore: () => authStore }
+})
+
+vi.mock('@/platform/onboarding/onboardingTourStore', async () => {
+  const { reactive } = await import('vue')
+  const tourStore = reactive({ activeTour: null, postpone: vi.fn() })
+  return { useOnboardingTourStore: () => tourStore }
+})
+
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: (key: string) => mocks.settings[key],
@@ -90,7 +105,10 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 vi.mock('../tour/useFirstRunTourController', () => ({
-  useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
+  useFirstRunTourController: () => ({
+    beginTour: mocks.beginTour,
+    cancelPendingStart: mocks.cancelPendingStart
+  })
 }))
 
 import { useFirstRunEntry } from './firstRunEntry'
@@ -105,6 +123,8 @@ describe('useFirstRunEntry', () => {
     mocks.isNewUser = true
     mocks.tourFlag = true
     mocks.settings = {}
+    Object.assign(useAuthStore(), { userId: 'account-a' })
+    mocks.cancelPendingStart.mockClear()
     mocks.setSetting.mockImplementation((key: string, value: unknown) => {
       mocks.settings[key] = value
     })
@@ -127,52 +147,6 @@ describe('useFirstRunEntry', () => {
   ] as const
 
   describe('what the boot reports to surfaces that must yield to it', () => {
-    it('records that Getting Started took the screen', async () => {
-      const entry = useFirstRunEntry()
-
-      await entry.handleStartupOutcome('fresh')
-
-      expect(entry.firstRunTookScreen.value).toBe(true)
-    })
-
-    it('records that a url-intent tour took the screen', async () => {
-      const entry = useFirstRunEntry()
-
-      await entry.handleStartupOutcome('url-intent')
-      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
-
-      expect(entry.firstRunTookScreen.value).toBe(true)
-    })
-
-    it.for([
-      {
-        label: 'restored work',
-        boot: async (entry: FirstRunEntry) =>
-          entry.handleStartupOutcome('restored')
-      },
-      {
-        label: 'a boot that only deferred',
-        boot: async (entry: FirstRunEntry) => {
-          mocks.isDesktopWidth = false
-          await entry.handleStartupOutcome('fresh')
-        }
-      },
-      {
-        label: 'a url-intent boot whose tour did not start',
-        boot: async (entry: FirstRunEntry) => {
-          mocks.beginTour.mockResolvedValue(false)
-          await entry.handleStartupOutcome('url-intent')
-          await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
-        }
-      }
-    ])('reports no first-run screen for $label', async ({ boot }) => {
-      const entry = useFirstRunEntry()
-
-      await boot(entry)
-
-      expect(entry.firstRunTookScreen.value).toBe(false)
-    })
-
     it('settles a url-intent boot only once the url stage has run', async () => {
       const entry = useFirstRunEntry()
       let decided: boolean | undefined
@@ -249,12 +223,10 @@ describe('useFirstRunEntry', () => {
       )
       await new Promise((resolve) => setTimeout(resolve))
       expect(decided).toBeUndefined()
-      expect(entry.firstRunTookScreen.value).toBe(false)
 
       start(true)
       await urlStage
       await vi.waitFor(() => expect(decided).toBe(true))
-      expect(entry.firstRunTookScreen.value).toBe(true)
     })
 
     it('settles the startup decision even when the tour fails to start', async () => {
@@ -267,7 +239,6 @@ describe('useFirstRunEntry', () => {
       ).rejects.toThrow('offline')
 
       await expect(entry.whenStartupDecided()).resolves.toBe(true)
-      expect(entry.firstRunTookScreen.value).toBe(false)
     })
 
     it('gives up with false only once the grace period has fully passed', async () => {
@@ -671,6 +642,146 @@ describe('useFirstRunEntry', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
       errorType: 'failure_writing_tutorial_completed_setting',
       level: 'warning'
+    })
+  })
+
+  describe('handing the screen over to the first-run tour', () => {
+    it('hides the screen before it asks for the tour', async () => {
+      const entry = useFirstRunEntry()
+      mocks.beginTour.mockImplementation(async () => {
+        expect(entry.gettingStartedVisible.value).toBe(false)
+        return true
+      })
+      await entry.handleStartupOutcome('fresh')
+
+      await entry.dismissIntoFirstRunTour('image_z_image_turbo')
+
+      expect(mocks.beginTour).toHaveBeenCalledOnce()
+    })
+
+    it('holds the screen across the handoff, from the dismissal until the tour opens', async () => {
+      let finishTour: ((started: boolean) => void) | undefined
+      mocks.beginTour.mockImplementation(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishTour = resolve
+          })
+      )
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
+
+      const handoff = entry.dismissIntoFirstRunTour('image_z_image_turbo')
+      await vi.waitFor(() => expect(finishTour).toBeTypeOf('function'))
+
+      expect(entry.gettingStartedVisible.value).toBe(false)
+      expect(entry.firstRunHoldsScreen.value).toBe(true)
+
+      assert.exists(finishTour)
+      finishTour(true)
+      await handoff
+      expect(entry.firstRunHoldsScreen.value).toBe(false)
+    })
+
+    it('releases the screen when the handoff produces no tour', async () => {
+      const entry = useFirstRunEntry()
+      mocks.beginTour.mockResolvedValue(false)
+      await entry.handleStartupOutcome('fresh')
+
+      await entry.dismissIntoFirstRunTour('image_z_image_turbo')
+
+      expect(entry.firstRunHoldsScreen.value).toBe(false)
+    })
+
+    it('releases the screen when the tour throws', async () => {
+      const entry = useFirstRunEntry()
+      mocks.beginTour.mockRejectedValue(new Error('tour unavailable'))
+      await entry.handleStartupOutcome('fresh')
+
+      await expect(
+        entry.dismissIntoFirstRunTour('image_z_image_turbo')
+      ).rejects.toThrow('tour unavailable')
+
+      expect(entry.firstRunHoldsScreen.value).toBe(false)
+    })
+
+    it('cancels a deferred handoff across an account round trip', async () => {
+      let finishDismissal: (() => void) | undefined
+      vi.mocked(useSettingStore().set).mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishDismissal = resolve
+          })
+      )
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
+
+      const handoff = entry.dismissIntoFirstRunTour('image_z_image_turbo')
+      await vi.waitFor(() => expect(finishDismissal).toBeTypeOf('function'))
+      Object.assign(useAuthStore(), { userId: 'account-b' })
+      Object.assign(useAuthStore(), { userId: 'account-a' })
+      assert.exists(finishDismissal)
+      finishDismissal()
+      await handoff
+
+      expect(mocks.beginTour).not.toHaveBeenCalled()
+    })
+
+    it('releases a pending handoff hold at the account boundary', async () => {
+      let finishTour: ((started: boolean) => void) | undefined
+      mocks.beginTour.mockImplementation(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishTour = resolve
+          })
+      )
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
+
+      const handoff = entry.dismissIntoFirstRunTour('image_z_image_turbo')
+      await vi.waitFor(() => expect(mocks.beginTour).toHaveBeenCalled())
+      expect(entry.firstRunHoldsScreen.value).toBe(true)
+
+      Object.assign(useAuthStore(), { userId: 'account-b' })
+
+      expect(entry.firstRunHoldsScreen.value).toBe(false)
+      expect(mocks.cancelPendingStart).toHaveBeenCalled()
+      assert.exists(finishTour)
+      finishTour(false)
+      await handoff
+      expect(entry.firstRunHoldsScreen.value).toBe(false)
+    })
+
+    it("keeps account B's hold when account A's stale handoff completes", async () => {
+      const finishTours: Array<(started: boolean) => void> = []
+      mocks.beginTour.mockImplementation(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishTours.push(resolve)
+          })
+      )
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
+
+      const accountAHandoff = entry.dismissIntoFirstRunTour(
+        'image_z_image_turbo'
+      )
+      await vi.waitFor(() => expect(finishTours).toHaveLength(1))
+      Object.assign(useAuthStore(), { userId: 'account-b' })
+      const accountBHandoff = entry.dismissIntoFirstRunTour(
+        'image_z_image_turbo'
+      )
+      await vi.waitFor(() => expect(finishTours).toHaveLength(2))
+
+      const [finishAccountA, finishAccountB] = finishTours
+      assert.exists(finishAccountA)
+      finishAccountA(false)
+      await accountAHandoff
+      expect(entry.firstRunHoldsScreen.value).toBe(true)
+
+      assert.exists(finishAccountB)
+      finishAccountB(false)
+      await accountBHandoff
+      expect(entry.firstRunHoldsScreen.value).toBe(false)
     })
   })
 })

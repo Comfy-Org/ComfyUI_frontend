@@ -47,6 +47,7 @@ let consentStore: ReturnType<typeof useAgentConsentStore>
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
+const isAuthInitialized = ref(true)
 const firstRunTookScreen = ref(false)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
@@ -54,6 +55,7 @@ let startupDecision: Promise<boolean> = Promise.resolve(true)
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     resolvedUserInfo: currentUser,
+    isAuthInitialized,
     isLoggedIn: computed(() => currentUser.value !== null)
   })
 }))
@@ -93,7 +95,7 @@ vi.mock(
   () => ({
     useFirstRunEntry: () =>
       fromPartial<ReturnType<typeof useFirstRunEntry>>({
-        firstRunTookScreen,
+        firstRunHoldsScreen: firstRunTookScreen,
         whenStartupDecided: () => startupDecision
       })
   })

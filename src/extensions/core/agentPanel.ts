@@ -179,7 +179,7 @@ export function registerAgentPanelExtension(): void {
       const { resolvedUserInfo, isAuthInitialized, isLoggedIn } =
         useCurrentUser()
       const { withConsent } = useAgentConsent()
-      const { firstRunTookScreen, whenStartupDecided } = useFirstRunEntry()
+      const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
       registerWorkflowTabActivityTracker(enabled)
@@ -200,7 +200,7 @@ export function registerAgentPanelExtension(): void {
             : null
       const screenIsClear = computed(() => screenBusyReason() === null)
       const screenHolder = (): AgentConsentNotOfferedReason | null =>
-        firstRunTookScreen.value ? 'first_run_screen' : screenBusyReason()
+        firstRunHoldsScreen.value ? 'first_run_screen' : screenBusyReason()
 
       const reportedWithheld = new Set<string>()
       const withholdOffer = (
