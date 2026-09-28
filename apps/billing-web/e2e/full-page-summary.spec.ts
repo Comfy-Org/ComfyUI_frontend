@@ -60,6 +60,7 @@ test('a tier upgrade reads the prorated charge and a dated credits delta', async
   cloud.scenario.preview = {
     ...preview,
     transition_type: 'upgrade',
+    proration_at: '2026-07-10T09:30:00.000Z',
     amount_due_cents: 3250,
     cost_today_cents: 3250,
     credits_today_cents: 3250,

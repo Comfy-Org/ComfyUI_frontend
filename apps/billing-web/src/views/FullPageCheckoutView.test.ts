@@ -992,7 +992,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
         cancel_at: '2026-07-28T00:00:00.000Z'
       }
     })
-    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await screen.findByText('Upgrade to Creator Plan · Acme Team')
 
     expect(
       await screen.findByText('Your plan was set to end on July 28, 2026')
