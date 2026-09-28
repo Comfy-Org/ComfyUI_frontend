@@ -1427,11 +1427,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(g8) a recovery result landing after the session stopped touches nothing', async () => {
     const pendingHistory: Array<(rows: AgentMessages) => void> = []
-    const getMessages = vi.fn(
-      () =>
-        new Promise<AgentMessages>((resolve) => {
-          pendingHistory.push(resolve)
-        })
+    let deliveredResponses = 0
+    const getMessages = vi.fn(() =>
+      new Promise<AgentMessages>((resolve) => {
+        pendingHistory.push(resolve)
+      }).then((rows) => {
+        deliveredResponses += 1
+        return rows
+      })
     )
     const rest = fakeRest({ getMessages })
     const { source, emit, status } = fakeEvents()
@@ -1466,7 +1469,7 @@ describe('useAgentSession (v1 composition root)', () => {
       historyRow(1, 'user', 'msg-1', 'go'),
       historyRow(2, 'assistant', 'msg-1', 'stale', 'msg-1')
     ])
-    await vi.waitFor(() => expect(successor.isStreaming.value).toBe(true))
+    await vi.waitFor(() => expect(deliveredResponses).toBe(2))
     const assistant = successor.entries.value.at(-1)
     assert(assistant?.role === 'assistant')
     expect(assistant.parts).toEqual([
@@ -1634,7 +1637,6 @@ describe('useAgentSession (v1 composition root)', () => {
         'th-1'
       ])
     )
-    await vi.advanceTimersByTimeAsync(1000)
     await vi.waitFor(() =>
       expect(
         useAgentConversationStore()
@@ -1771,11 +1773,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(g21) a terminal event that beats the pending history fetch keeps the socket transcript', async () => {
     const pendingHistory: Array<(rows: AgentMessages) => void> = []
-    const getMessages = vi.fn(
-      () =>
-        new Promise<AgentMessages>((resolve) => {
-          pendingHistory.push(resolve)
-        })
+    let deliveredResponses = 0
+    const getMessages = vi.fn(() =>
+      new Promise<AgentMessages>((resolve) => {
+        pendingHistory.push(resolve)
+      }).then((rows) => {
+        deliveredResponses += 1
+        return rows
+      })
     )
     const rest = fakeRest({ getMessages })
     const { source, emit, status } = fakeEvents()
@@ -1801,6 +1806,7 @@ describe('useAgentSession (v1 composition root)', () => {
       historyRow(2, 'assistant', 'msg-1', 'rest wins', 'msg-1')
     ])
     await vi.waitFor(() => {
+      expect(deliveredResponses).toBe(1)
       expect(getMessages).toHaveBeenCalledTimes(1)
       const assistant = session.entries.value.at(-1)
       assert(assistant?.role === 'assistant')

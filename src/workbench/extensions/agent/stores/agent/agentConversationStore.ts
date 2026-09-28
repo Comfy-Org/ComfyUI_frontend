@@ -42,36 +42,101 @@ export interface LiveTurn {
   messageId: TurnId
 }
 
-function localPartsBySemanticSlot(
+interface AnchoredLocalPart {
+  part: AssistantMessage['parts'][number]
+  toolCount: number
+  textOffset: number
+}
+
+function anchorLocalParts(
   parts: AssistantMessage['parts']
-): Map<number, AssistantMessage['parts']> {
-  const localParts = new Map<number, AssistantMessage['parts']>()
-  let semanticSlot = 0
+): AnchoredLocalPart[] {
+  const localParts: AnchoredLocalPart[] = []
+  let toolCount = 0
+  let textOffset = 0
   for (const part of parts) {
-    if (part.type === 'text' || part.type === 'tool') {
-      semanticSlot += 1
+    if (part.type === 'text') {
+      textOffset += part.text.length
+      continue
+    }
+    if (part.type === 'tool') {
+      toolCount += 1
+      textOffset = 0
       continue
     }
     if (part.type === 'runApproval') continue
-    const slot = localParts.get(semanticSlot) ?? []
-    slot.push(part)
-    localParts.set(semanticSlot, slot)
+    localParts.push({ part, toolCount, textOffset })
   }
   return localParts
 }
 
+function textSplitAt(
+  part: Extract<AssistantMessage['parts'][number], { type: 'text' }>,
+  toolCount: number,
+  textOffset: number,
+  anchor: AnchoredLocalPart
+): number | undefined {
+  if (toolCount !== anchor.toolCount) return undefined
+  const splitAt = anchor.textOffset - textOffset
+  return splitAt >= 0 && splitAt <= part.text.length ? splitAt : undefined
+}
+
+function replaceTextWithLocalPart(
+  parts: AssistantMessage['parts'],
+  index: number,
+  part: Extract<AssistantMessage['parts'][number], { type: 'text' }>,
+  localPart: AssistantMessage['parts'][number],
+  splitAt: number
+): void {
+  const before = { ...part, text: part.text.slice(0, splitAt) }
+  const after = { ...part, text: part.text.slice(splitAt) }
+  parts.splice(
+    index,
+    1,
+    ...(before.text ? [before] : []),
+    localPart,
+    ...(after.text ? [after] : [])
+  )
+}
+
+function insertAnchoredLocalPart(
+  parts: AssistantMessage['parts'],
+  anchor: AnchoredLocalPart
+): void {
+  let toolCount = 0
+  let textOffset = 0
+  for (let index = 0; index < parts.length; index += 1) {
+    const part = parts[index]
+    if (part.type === 'tool') {
+      const atAnchor =
+        toolCount === anchor.toolCount && textOffset === anchor.textOffset
+      if (atAnchor) {
+        parts.splice(index, 0, anchor.part)
+        return
+      }
+      toolCount += 1
+      textOffset = 0
+      continue
+    }
+    if (part.type !== 'text') continue
+    const splitAt = textSplitAt(part, toolCount, textOffset, anchor)
+    if (splitAt === undefined) {
+      textOffset += part.text.length
+      continue
+    }
+    replaceTextWithLocalPart(parts, index, part, anchor.part, splitAt)
+    return
+  }
+  parts.push(anchor.part)
+}
+
 function interleaveLocalParts(
   persistedParts: AssistantMessage['parts'],
-  localParts: Map<number, AssistantMessage['parts']>
+  localParts: AnchoredLocalPart[]
 ): AssistantMessage['parts'] {
-  const mergedParts: AssistantMessage['parts'] = []
-  for (let index = 0; index <= persistedParts.length; index += 1) {
-    mergedParts.push(...(localParts.get(index) ?? []))
-    if (index < persistedParts.length) mergedParts.push(persistedParts[index])
-  }
-  for (const [index, parts] of localParts) {
-    if (index > persistedParts.length) mergedParts.push(...parts)
-  }
+  const mergedParts = [...persistedParts]
+  for (const localPart of localParts)
+    insertAnchoredLocalPart(mergedParts, localPart)
   return mergedParts
 }
 
@@ -85,7 +150,7 @@ function finishWithPersistedParts(
   }
   message.parts = interleaveLocalParts(
     persistedParts,
-    localPartsBySemanticSlot(message.parts)
+    anchorLocalParts(message.parts)
   )
 }
 
