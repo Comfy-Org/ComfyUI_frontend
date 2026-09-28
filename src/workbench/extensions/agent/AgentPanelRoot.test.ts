@@ -4791,6 +4791,50 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
+  it('returns to the intact Current chat on Back after its switch fails, without reopening', async () => {
+    const target = makeTab('wf-42')
+    mockMessagesEndpoint(
+      'wf-42',
+      [{ id: 'wf-42', name: 'current' }],
+      [
+        agentThread({
+          id: 'th-1',
+          title: 'Current chat',
+          last_message_at: '2026-09-25T00:00:00Z'
+        })
+      ]
+    )
+    renderWithSelectedTarget()
+    await sendFromComposer('Keep working on this workflow')
+    const other = addTab('workflows/other.json')
+    workflowStore.activeWorkflow = other
+    const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
+    openWorkflow.mockResolvedValueOnce(false)
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Current chat' })
+    )
+    await screen.findByRole('alert')
+    const attempts = openWorkflow.mock.calls.length
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+    expect(await screen.findByTestId('user-message-bubble')).toHaveTextContent(
+      'Keep working on this workflow'
+    )
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
+    expect(openWorkflow).toHaveBeenCalledTimes(attempts)
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+    expect(workflowStore.activeWorkflow.path).toBe(other.path)
+  })
+
   it('restores Current after remounting an interrupted return instead of reusing stale messages', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint(

@@ -1223,16 +1223,18 @@ async function refreshHistory(): Promise<void> {
 
 void refreshHistory()
 
+const currentChatReady = computed(
+  () =>
+    isTranscriptReady.value &&
+    threadId.value === history.activeId &&
+    selectedTarget.value !== null
+)
+
 async function onSelectHistory(
   id: string,
   isCurrent: () => boolean
 ): Promise<boolean> {
-  if (
-    isTranscriptReady.value &&
-    id === history.activeId &&
-    id === threadId.value &&
-    selectedTarget.value !== null
-  )
+  if (currentChatReady.value && id === threadId.value)
     return onShowTarget(isCurrent, warnRestoreFailed)
 
   composerStore.invalidateSubmission()
@@ -1678,6 +1680,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :is-maximized="agentPanelStore.isMaximized"
       :history-groups="history.grouped"
       :select-history="onSelectHistory"
+      :current-chat-ready="currentChatReady"
       :session-id="threadId"
       :custom-title="history.titleFor(threadId)"
       :selection-tags="selectionTags"

@@ -69,6 +69,7 @@ const {
   getMentionNodes = () => [],
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   sessionId = null,
+  currentChatReady = false,
   customTitle,
   historyGroups,
   selectHistory = async () => false,
@@ -101,6 +102,7 @@ const {
   getMentionNodes?: () => SelectedNode[]
   paywallPresentation?: AgentPaywallPresentation
   sessionId?: string | null
+  currentChatReady?: boolean
   customTitle?: string
   historyGroups: HistoryGroups
   selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
@@ -196,8 +198,8 @@ async function onSelectHistory(id: string): Promise<void> {
 function onBackFromHistory(): void {
   if (view.value.screen !== 'history') return
   if (
-    view.value.selection.status === 'idle' &&
-    sessionId === view.value.previousThreadId
+    sessionId === view.value.previousThreadId &&
+    (view.value.selection.status === 'idle' || currentChatReady)
   )
     view.value = { screen: 'chat' }
   else if (view.value.previousThreadId === null) onNewChat()

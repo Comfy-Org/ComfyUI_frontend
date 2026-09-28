@@ -38,7 +38,9 @@ continues to use the existing serialized loader; it is not a rollback transactio
 
 Other rows and New Chat remain available. A superseded result cannot reveal its
 chat. Back during an unfinished or failed selection reloads the original chat
-instead of exposing whichever transcript has partially hydrated underneath.
+instead of exposing whichever transcript has partially hydrated underneath,
+unless the Current chat is still loaded with its retained target; then Back
+returns to it without retrying the switch.
 Closing the panel preserves history and makes an interrupted selection retryable.
 Remounting in that state subscribes to events without hydrating or activating the
 unfinished transport thread. A history selection updates the persisted session
