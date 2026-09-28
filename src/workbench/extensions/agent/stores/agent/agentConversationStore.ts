@@ -500,7 +500,11 @@ export const useAgentConversationStore = defineStore(
      *
      * Demoted rather than merely skipped: the snapshot stays on screen when
      * its row id differs from the stash's, and a second live-looking row is
-     * exactly what the caller is hydrating to get rid of.
+     * exactly what the caller is hydrating to get rid of. It does still show:
+     * `resumeBackgroundTurn` keys the stash by row id and the snapshot by
+     * `turn_id`, so `removeHydratedCopy` cannot match the two and both render
+     * until the turn settles. That duplicate predates this guard, which only
+     * keeps the second row from also claiming to be live.
      */
     function unstashedLiveTurn(
       transcript: NormalizedAgentTranscript
