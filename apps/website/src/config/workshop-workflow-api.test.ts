@@ -386,6 +386,57 @@ describe('Workshop workflow HTTP client', () => {
     }
   )
 
+  it.for([
+    {
+      name: 'the failing node and exception type',
+      error: {
+        node_id: '213:184',
+        node_type: 'ComfyMathExpression',
+        exception_type: 'simpleeval.NameNotDefined'
+      },
+      failure: {
+        nodeId: '213:184',
+        nodeType: 'ComfyMathExpression',
+        exceptionType: 'simpleeval.NameNotDefined'
+      }
+    },
+    {
+      name: 'nothing that is not an identifier',
+      error: {
+        node_id: '',
+        node_type: 'Please login first',
+        exception_type: 'E'.repeat(121)
+      },
+      failure: undefined
+    }
+  ])('keeps $name from a failed Cloud job', async ({ error, failure }) => {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      Response.json(
+        observation({
+          status: 'failed',
+          outputs: {},
+          execution_error: {
+            ...error,
+            exception_message: 'private prompt text',
+            traceback: ['private frame'],
+            current_inputs: {},
+            current_outputs: {}
+          }
+        })
+      )
+    )
+    const api = createWorkflowApi({
+      definition: definition(),
+      fetch,
+      token: 'caller'
+    })
+
+    const result = await api.read(id, new AbortController().signal)
+
+    expect(result.failure).toEqual(failure)
+    expect(JSON.stringify(result)).not.toContain('private')
+  })
+
   it('returns only selected URL outputs and refreshes media without new inference', async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()

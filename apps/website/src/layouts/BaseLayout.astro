@@ -28,6 +28,9 @@ import { buildPageGraph, pageContext } from '../utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
 import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
+type PPFormulaFace =
+  'Light' | 'Regular' | 'Medium' | 'Semibold' | 'Bold' | 'NarrowSemibold'
+
 interface Props {
   title: string
   description?: string
@@ -40,6 +43,8 @@ interface Props {
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
   hideAnnouncementBanner?: boolean
+  /** PP Formula faces this page renders above the fold beyond the site-wide set. */
+  preloadFonts?: readonly PPFormulaFace[]
 }
 
 const {
@@ -53,7 +58,8 @@ const {
   mainEntityId,
   extraJsonLd,
   minimal = false,
-  hideAnnouncementBanner = false
+  hideAnnouncementBanner = false,
+  preloadFonts = []
 } = Astro.props
 
 const keywordsContent =
@@ -166,6 +172,15 @@ const structuredData = shouldNoindex
       href="/fonts/PPFormula-NarrowSemibold.woff2"
       crossorigin
     />
+    {preloadFonts.map((face) => (
+      <link
+        rel="preload"
+        as="font"
+        type="font/woff2"
+        href={`/fonts/PPFormula-${face}.woff2`}
+        crossorigin
+      />
+    ))}
     {!shouldNoindex && (
       <link
         rel="alternate"

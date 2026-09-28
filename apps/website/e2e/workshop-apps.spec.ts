@@ -36,7 +36,7 @@ test('opens Cinematic Studio on the apps flag alone', async ({
   )
 })
 
-test('keeps Cinematic Studio closed when only the workflows flag is on', async ({
+test('keeps Cinematic Studio closed on the workflows flag alone', async ({
   page,
   context
 }) => {
@@ -52,13 +52,17 @@ test('lists both apps in the catalogue Apps tab, on /models/apps/ pages', async 
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/models/?type=apps')
-  const cards = page.getByTestId('apps-list').getByTestId('workshop-model-card')
+  const shelf = page.getByTestId('app-shelf')
+  const cards = shelf.getByRole('link')
   await expect(cards).toHaveCount(2)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/models/apps/cinematic-studio/'
   )
   await expect(cards.nth(1)).toHaveAttribute('href', '/models/apps/reshoot/')
+  await expect(
+    page.getByRole('button', { name: /Browse all apps/ })
+  ).toHaveCount(0)
 })
 
 test('sends the old studio address to the app page it named', async ({
