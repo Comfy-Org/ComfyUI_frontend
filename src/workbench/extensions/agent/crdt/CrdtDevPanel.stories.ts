@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import CrdtDevPanel from './CrdtDevPanel.vue'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 const status: AgentCrdtStatus = {
   enabled: true,
@@ -12,6 +12,7 @@ const status: AgentCrdtStatus = {
   outcomes: {
     received: 20,
     applied: 17,
+    appliedLive: 17,
     skipped: 2,
     errored: 0,
     gap: 1,
