@@ -1,13 +1,12 @@
 import { computed, ref } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import type { CloudWorkflowRef } from '@/platform/workflow/cloud/cloudWorkflowPages'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { cloudWorkflowName } from '@/platform/workflow/management/utils/cloudWorkflowName'
 
-import type {
-  AgentRestClient,
-  OpenTabsSnapshot
-} from '../../services/agent/agentRestClient'
+import type { OpenTabsSnapshot } from '../../services/agent/agentRestClient'
 import type { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type {
   WorkflowReferenceMetadata,
@@ -23,7 +22,7 @@ type WorkflowResolverDeps = {
     ReturnType<typeof useAgentWorkflowTabBindingStore>,
     'workflowIdFor' | 'tabPathFor' | 'matchesWorkflow' | 'unbind'
   >
-  listCloudWorkflows: AgentRestClient['listCloudWorkflows']
+  listCloudWorkflows: () => Promise<CloudWorkflowRef[]>
 }
 
 export function useAgentWorkflowResolver({
@@ -70,12 +69,6 @@ export function useAgentWorkflowResolver({
    */
   function forgetCloudWorkflowId(workflowId: string): void {
     cloudIndex.value = cloudIndex.value.filter(({ id }) => id !== workflowId)
-  }
-
-  function cloudWorkflowName(workflow: ComfyWorkflow): string {
-    return workflow.suffix === 'app.json'
-      ? `${workflow.filename}.app`
-      : workflow.filename
   }
 
   function savedMatches(

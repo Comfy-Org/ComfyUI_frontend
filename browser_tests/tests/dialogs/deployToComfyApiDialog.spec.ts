@@ -22,7 +22,7 @@ test.describe('Deploy to Comfy API', { tag: '@auth' }, () => {
       card.getByRole('heading', { name: 'Deploy to Comfy API' })
     ).toBeVisible()
     await expect(
-      card.getByRole('link', { name: 'Deploy on Platform' })
-    ).toHaveAttribute('target', '_blank')
+      card.getByRole('button', { name: 'Deploy on Platform' })
+    ).toBeEnabled()
   })
 })

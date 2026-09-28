@@ -1,3 +1,7 @@
+import type {
+  CloudWorkflowEntry,
+  CloudWorkflowRef
+} from '@/platform/workflow/cloud/cloudWorkflowPages'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type {
@@ -444,6 +448,20 @@ function agentThread({
     updated_at: last_message_at,
     workflow_id: '',
     ...overrides
+  }
+}
+
+function cloudWorkflowEntry({
+  id,
+  name
+}: CloudWorkflowRef): CloudWorkflowEntry {
+  return {
+    id,
+    name,
+    created_at: '2026-09-01T00:00:00Z',
+    updated_at: '2026-09-01T00:00:00Z',
+    created_by: 'user-1',
+    latest_version: 1
   }
 }
 
@@ -4095,7 +4113,7 @@ describe('AgentPanelRoot workflow binding', () => {
               ? cloudWorkflows()
               : cloudWorkflows
           return json(200, {
-            data: workflows,
+            data: workflows.map(cloudWorkflowEntry),
             pagination: {
               offset: 0,
               limit: 100,
@@ -5299,7 +5317,7 @@ describe('AgentPanelRoot workflow binding', () => {
             lookupCount++
             await pendingLookup
             return json(200, {
-              data: [{ id: 'wf-other', name: 'other' }],
+              data: [cloudWorkflowEntry({ id: 'wf-other', name: 'other' })],
               pagination: { offset: 0, limit: 100, total: 1, has_more: false }
             })
           }
@@ -5937,7 +5955,9 @@ describe('AgentPanelRoot workflow binding', () => {
             // Re-targeting the fresh tab saves it as a new cloud workflow.
             data: fresh.isTemporary
               ? []
-              : [{ id: 'wf-new', name: 'Unsaved Workflow' }],
+              : [
+                  cloudWorkflowEntry({ id: 'wf-new', name: 'Unsaved Workflow' })
+                ],
             pagination: { offset: 0, limit: 100, total: 0, has_more: false }
           })
         return json(200, agentThreadList())
@@ -6589,7 +6609,12 @@ describe('AgentPanelRoot workflow binding', () => {
           const data =
             workflowsCalls === 1
               ? []
-              : [{ id: 'wf-cloud-current', name: 'current' }]
+              : [
+                  cloudWorkflowEntry({
+                    id: 'wf-cloud-current',
+                    name: 'current'
+                  })
+                ]
           return new Response(
             JSON.stringify({
               data,
@@ -7834,7 +7859,12 @@ describe('AgentPanelRoot workflow binding', () => {
           if (workflowRequestCount === 1) return initialWorkflowResponse
           return Promise.resolve(
             json(200, {
-              data: [{ id: 'wf-video', name: 'video_minimax_h3_i2v' }],
+              data: [
+                cloudWorkflowEntry({
+                  id: 'wf-video',
+                  name: 'video_minimax_h3_i2v'
+                })
+              ],
               pagination: {
                 offset: 0,
                 limit: 100,

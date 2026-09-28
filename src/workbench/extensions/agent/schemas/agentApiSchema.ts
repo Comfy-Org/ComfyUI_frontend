@@ -6,8 +6,7 @@ import {
   zAgentMessage as zGeneratedAgentMessage,
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
-  zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
-  zWorkflowListResponse
+  zAgentTurnAccepted as zGeneratedAgentTurnAccepted
 } from '@comfyorg/ingest-types/zod'
 import type {
   AgentAnswerAccepted,
@@ -136,17 +135,6 @@ export const zAgentMessages = z.array(zAgentMessage)
 export type AgentMessages = z.infer<typeof zAgentMessages>
 
 export const zAgentThreads = zGeneratedAgentThreadListResponse.passthrough()
-
-export const zCloudWorkflowIndex = zWorkflowListResponse
-  .pick({ pagination: true })
-  .extend({
-    data: z.array(
-      z.object({ id: z.string(), name: z.string().optional() }).passthrough()
-    )
-  })
-export type CloudWorkflowEntry = z.infer<
-  typeof zCloudWorkflowIndex
->['data'][number]
 
 export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
 

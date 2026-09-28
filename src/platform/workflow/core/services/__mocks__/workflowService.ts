@@ -1,9 +1,12 @@
-import { vi } from 'vitest'
+import { assert, vi } from 'vitest'
 
 import type { useWorkflowService as realUseWorkflowService } from '../workflowService'
 
 const workflowService: ReturnType<typeof realUseWorkflowService> = {
   exportWorkflow: vi.fn(async () => {}),
+  prepareWorkflowJson: vi.fn(() =>
+    assert.fail('Configure prepareWorkflowJson for this test')
+  ),
   saveWorkflowAs: vi.fn(async () => true),
   saveWorkflow: vi.fn(async () => true),
   loadDefaultWorkflow: vi.fn(async () => true),

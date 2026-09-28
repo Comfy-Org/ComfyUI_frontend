@@ -2,7 +2,11 @@ import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  ISerialisedGraph,
+  Point,
+  SerialisableGraph
+} from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
@@ -44,6 +48,7 @@ import {
   generateUUID
 } from '@/utils/formatUtil'
 import type { AppMode } from '@/utils/appMode'
+import { serializeWorkflow } from '@/utils/executionUtil'
 import type { UUID } from '@/utils/uuid'
 import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
 
@@ -225,7 +230,7 @@ export const useWorkflowService = () => {
    * Adds scale and offset from litegraph canvas to the workflow JSON.
    * @param workflow The workflow to add the view restore data to
    */
-  function addViewRestore(workflow: ComfyWorkflowJSON) {
+  function addViewRestore(workflow: ComfyWorkflowJSON | ISerialisedGraph) {
     if (!settingStore.get('Comfy.EnableWorkflowViewRestore')) return
 
     const { offset, scale } = app.canvas.ds
@@ -233,6 +238,20 @@ export const useWorkflowService = () => {
 
     workflow.extra ??= {}
     workflow.extra.ds = { scale, offset: [x, y] }
+  }
+
+  /**
+   * The open graph as a workflow file carries it, with the canvas view when
+   * view restore is on. It skips `graphToPrompt`'s execution-time hooks
+   * (virtual-node `applyToGraph`, widget `serializeValue`); `onSerialize`
+   * callbacks still run, as they do on save.
+   */
+  function prepareWorkflowJson(): ISerialisedGraph {
+    const workflow = serializeWorkflow(app.rootGraph, {
+      sortNodes: settingStore.get('Comfy.Workflow.SortNodeIdOnSave')
+    })
+    addViewRestore(workflow)
+    return workflow
   }
 
   /**
@@ -916,6 +935,7 @@ export const useWorkflowService = () => {
 
   return {
     exportWorkflow,
+    prepareWorkflowJson,
     saveWorkflowAs,
     saveWorkflow,
     loadDefaultWorkflow,

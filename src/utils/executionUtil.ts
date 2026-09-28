@@ -1,6 +1,7 @@
 import type {
   ExecutableLGraphNode,
   ExecutionId,
+  ISerialisedGraph,
   LGraph
 } from '@/lib/litegraph/src/litegraph'
 import {
@@ -48,6 +49,32 @@ export function unwrapExportedWidgetValue(value: unknown): unknown {
 }
 
 /**
+ * The graph as a workflow file carries it: without localized slot names and
+ * with the frontend version. `graph.serialize()` still runs `onSerialize`
+ * callbacks; what this skips is `graphToPrompt`'s execution-time pass.
+ */
+export function serializeWorkflow(
+  graph: LGraph,
+  { sortNodes = false }: { sortNodes?: boolean } = {}
+): ISerialisedGraph {
+  const workflow = graph.serialize({ sortNodes })
+
+  for (const node of workflow.nodes) {
+    for (const slot of node.inputs ?? []) {
+      delete slot.localized_name
+    }
+    for (const slot of node.outputs ?? []) {
+      delete slot.localized_name
+    }
+  }
+
+  compressWidgetInputSlots(workflow)
+  workflow.extra ??= {}
+  workflow.extra.frontendVersion = __COMFYUI_FRONTEND_VERSION__
+  return workflow
+}
+
+/**
  * Converts the current graph workflow for sending to the API.
  * @note Node widgets are updated before serialization to prepare queueing.
  *
@@ -73,21 +100,7 @@ export const graphToPrompt = async (
     }
   }
 
-  const workflow = graph.serialize({ sortNodes })
-
-  // Remove localized_name from the workflow
-  for (const node of workflow.nodes) {
-    for (const slot of node.inputs ?? []) {
-      delete slot.localized_name
-    }
-    for (const slot of node.outputs ?? []) {
-      delete slot.localized_name
-    }
-  }
-
-  compressWidgetInputSlots(workflow)
-  workflow.extra ??= {}
-  workflow.extra.frontendVersion = __COMFYUI_FRONTEND_VERSION__
+  const workflow = serializeWorkflow(graph, { sortNodes })
 
   const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
   for (const node of graph.computeExecutionOrder(false)) {

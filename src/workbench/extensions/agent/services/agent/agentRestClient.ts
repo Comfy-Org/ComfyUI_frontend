@@ -5,6 +5,12 @@ import type {
 import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
+import type { CloudWorkflowEntry } from '@/platform/workflow/cloud/cloudWorkflowPages'
+import {
+  cloudWorkflowPageRoute,
+  nextCloudWorkflowPage,
+  zCloudWorkflowPage
+} from '@/platform/workflow/cloud/cloudWorkflowPages'
 import { api } from '@/scripts/api'
 
 import {
@@ -14,8 +20,7 @@ import {
   zAgentMessages,
   zAgentRunMode,
   zAgentThreads,
-  zAgentTurnAccepted,
-  zCloudWorkflowIndex
+  zAgentTurnAccepted
 } from '../../schemas/agentApiSchema'
 import type {
   AgentAnswerAccepted,
@@ -23,11 +28,8 @@ import type {
   AgentMessages,
   AgentRunModePreference,
   AgentThreadSummary,
-  AgentTurnAccepted,
-  CloudWorkflowEntry
+  AgentTurnAccepted
 } from '../../schemas/agentApiSchema'
-
-const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
 export class AgentApiError extends Error {
   readonly status: number
@@ -410,30 +412,25 @@ export function createAgentRestClient() {
 
   async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
     const entries: CloudWorkflowEntry[] = []
-    let hasMore: boolean
-    let cursor: string | undefined
-    const seenCursors = new Set<string>()
-    do {
-      const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
-      const result = await request(
-        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}${after}`,
+    const seen = new Set<string>()
+    let after: string | undefined
+    for (;;) {
+      const page = await request(
+        cloudWorkflowPageRoute({ after }),
         { method: 'GET' },
-        zCloudWorkflowIndex
+        zCloudWorkflowPage
       )
-      entries.push(...result.data)
-      hasMore = result.pagination.has_more
-      if (hasMore) {
-        const nextCursor = result.pagination.next_cursor
-        if (!nextCursor || seenCursors.has(nextCursor)) break
-        seenCursors.add(nextCursor)
-        cursor = nextCursor
+      entries.push(...page.data)
+      const next = nextCloudWorkflowPage(page, seen)
+      if (next.kind === 'done') return entries
+      if (next.kind === 'broken') {
+        console.warn(
+          `[agent] cloud workflow index truncated at ${entries.length} entries`
+        )
+        return entries
       }
-    } while (hasMore)
-    if (hasMore)
-      console.warn(
-        `[agent] cloud workflow index truncated at ${entries.length} entries`
-      )
-    return entries
+      after = next.cursor
+    }
   }
 
   async function cancelMessage(

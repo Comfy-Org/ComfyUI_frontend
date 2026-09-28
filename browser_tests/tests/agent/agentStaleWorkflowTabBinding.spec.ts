@@ -9,10 +9,8 @@ import type {
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-import type {
-  AgentTurnAccepted,
-  CloudWorkflowEntry
-} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { CloudWorkflowEntry } from '@/platform/workflow/cloud/cloudWorkflowPages'
+import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   agentTest as test,
@@ -205,7 +203,11 @@ test.describe(
           return route.fulfill({ status: 404 })
         cloudWorkflows.push({
           id: 'a81718a4-02ae-41e6-ae85-000000000001',
-          name: path.slice('workflows/'.length, -'.json'.length)
+          name: path.slice('workflows/'.length, -'.json'.length),
+          created_at: '2026-09-01T00:00:00Z',
+          updated_at: '2026-09-01T00:00:00Z',
+          created_by: 'test-user-e2e',
+          latest_version: 1
         })
         const file: UserDataFullInfo = {
           path,
