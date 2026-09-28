@@ -196,26 +196,8 @@ export function registerAgentPanelExtension(): void {
           : dialogStore.dialogStack.length > 0
             ? 'dialog_open'
             : null
-      /**
-       * `firstRunHoldsScreen` rather than `gettingStartedVisible`, which only
-       * says whether the screen is rendered. On the template path the screen is
-       * dismissed and the coachmark tour opens ~500 ms later, so there is a
-       * window where the screen is gone, no tour is active yet, and the canvas
-       * belongs to the tour's intro preview. Releasing into that window lands
-       * the card on the tour about to open over it — the exact failure the
-       * first-run hold was built for. `firstRunHoldsScreen` stays true across
-       * that handoff; once the tour is up, `screenBusyReason`'s `tour_active`
-       * branch takes over.
-       */
       const screenHolder = (): AgentConsentNotOfferedReason | null =>
         firstRunHoldsScreen.value ? 'first_run_screen' : screenBusyReason()
-      /**
-       * Must be the negation of `screenHolder`, not of `screenBusyReason`:
-       * release has to agree with hold about what counts as "the screen". When
-       * it only knew about tours and dialogs it read as clear while Getting
-       * Started was still up, so releasing a first-run hold would have gone
-       * straight back into `screenHolder` and re-held on the same tick.
-       */
       const screenIsClear = computed(() => screenHolder() === null)
 
       const reportedWithheld = new Set<string>()
@@ -235,11 +217,6 @@ export function registerAgentPanelExtension(): void {
         useTelemetry()?.trackAgentConsentNotOffered({ reason })
       }
 
-      /**
-       * Every hold is a deferral. `first_run_screen` used to be excluded here,
-       * which made it the one reason that dropped the offer outright rather
-       * than queueing it behind the surface that was in the way.
-       */
       const offerHeld = ref(false)
       const holdOffer = (
         reason: AgentConsentNotOfferedReason,

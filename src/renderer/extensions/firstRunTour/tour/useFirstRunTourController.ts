@@ -266,21 +266,17 @@ function useFirstRunTourControllerInternal() {
     return !shouldCancel() && !engine.activeTour && canvasContextHolds.value
   }
 
-  async function settleRendererWrite(
+  async function ignoreRendererPersistenceFailure(
     enablement: RendererEnablement
   ): Promise<void> {
-    try {
-      await enablement.write
-    } catch {
-      // The local setting may already have changed before persistence failed.
-    }
+    await enablement.write?.catch(() => undefined)
   }
 
   async function adoptRendererEnablement(ownership: symbol): Promise<void> {
     const enablement = rendererEnablement
     if (enablement === undefined) return
     enablement.owner = ownership
-    await settleRendererWrite(enablement)
+    await ignoreRendererPersistenceFailure(enablement)
     if (
       rendererEnablement !== enablement ||
       enablement.owner !== ownership ||
@@ -325,7 +321,7 @@ function useFirstRunTourControllerInternal() {
     const ownership = Symbol('cancelled-first-run-tour-start')
     enablement.owner = ownership
     try {
-      await settleRendererWrite(enablement)
+      await ignoreRendererPersistenceFailure(enablement)
       if (
         rendererEnablement === enablement &&
         enablement.owner === ownership &&

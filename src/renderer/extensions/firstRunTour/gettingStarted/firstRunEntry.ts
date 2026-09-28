@@ -227,7 +227,6 @@ export const useFirstRunEntry = createSharedComposable(() => {
     await markTutorialCompleted()
   }
 
-  /** Dismisses into a tour without exposing the transition as a clear screen. */
   async function dismissIntoFirstRunTour(templateId: string): Promise<void> {
     const ownerId = authStore.userId
     const ownerGeneration = authGeneration

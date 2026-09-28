@@ -22,9 +22,6 @@ const mocks = vi.hoisted(() => ({
   loadingTemplateId: { value: null as string | null }
 }))
 
-// The screen hands the template path to `dismissIntoFirstRunTour` as one call,
-// so this file cannot see - and must not restate - how the dismissal and the
-// tour are ordered inside it. That is pinned in `firstRunEntry.test.ts`.
 vi.mock<unknown>(import('./firstRunEntry'), () => ({
   useFirstRunEntry: () => ({
     dismissGettingStarted: mocks.dismiss,

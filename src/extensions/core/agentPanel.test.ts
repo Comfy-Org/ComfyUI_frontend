@@ -65,14 +65,9 @@ const firstRunHoldsScreen = computed(
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
 
-/**
- * Bounds a release/hold disagreement in holder tests so assertions can fail
- * normally instead of repeatedly releasing and re-holding the offer.
- */
 const OFFER_ATTEMPT_CAP = 20
-// Probe here rather than `consentStore.load`, which individual tests replace.
-const startupProbe = vi.fn(() =>
-  startupProbe.mock.calls.length > OFFER_ATTEMPT_CAP
+const boundedStartupDecision = vi.fn(() =>
+  boundedStartupDecision.mock.calls.length > OFFER_ATTEMPT_CAP
     ? new Promise<boolean>(() => {})
     : startupDecision
 )
@@ -128,7 +123,7 @@ vi.mock(
       fromPartial<ReturnType<typeof useFirstRunEntry>>({
         gettingStartedVisible,
         firstRunHoldsScreen,
-        whenStartupDecided: startupProbe
+        whenStartupDecided: boundedStartupDecision
       })
   })
 )
@@ -438,13 +433,6 @@ describe('AgentPanel extension flag gate', () => {
     await loadEntryAndSetup()
     await flush()
 
-    // Production order, which is the whole point of this test: the screen goes
-    // first and the coachmark tour opens after its intro preview, so there is a
-    // stretch with no screen rendered and no tour active yet. Reading that as a
-    // free screen lands the card on the tour about to open over it - the exact
-    // failure the first-run hold exists to prevent. Asserting the other order
-    // (tour active *before* the screen closes) passes without pinning any of
-    // this, because the tour alone already holds the offer.
     beginFirstRunScreenHandoff()
     await flush()
     expect(

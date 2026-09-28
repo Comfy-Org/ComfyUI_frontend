@@ -754,7 +754,6 @@ describe('useFirstRunEntry', () => {
   })
 
   describe('handing the screen over to the first-run tour', () => {
-    /** Stands in for the preview before `beginTour` activates the tour. */
     const INTRO_PREVIEW_MS = 500
 
     function tourOpeningAfterIntroPreview(): Promise<boolean> {
