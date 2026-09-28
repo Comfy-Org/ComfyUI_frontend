@@ -1336,6 +1336,9 @@ importers:
       '@iconify/utils':
         specifier: 'catalog:'
         version: 3.1.4
+      cva:
+        specifier: 'catalog:'
+        version: 1.0.0-beta.4(typescript@6.0.3)
       tailwindcss-primeui:
         specifier: 'catalog:'
         version: 0.6.1(tailwindcss@4.3.2)

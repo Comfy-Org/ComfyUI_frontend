@@ -13,7 +13,7 @@ import DropdownItem from '@/components/common/DropdownItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
-import type { ButtonVariants } from '../ui/button/button.variants'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 
 defineOptions({
   inheritAttrs: false
