@@ -1,19 +1,24 @@
-import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type {
   AgentMessage,
-  AgentPostMessageRequest,
   AgentThreadListResponse
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
-import type { WorkflowSelection } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import {
+  BARE_DIGEST,
+  dropLibraryAsset,
+  openAgentPanel,
+  PLAIN_FILENAME,
+  reopenAfterReload,
+  resolvedImageRefs,
+  sendTurn,
+  serveHistory,
+  THREAD_KEY
+} from '@e2e/fixtures/helpers/agentAttachmentRehydration'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
@@ -35,160 +40,6 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
  */
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
-
-/**
- * Cloud keys a library upload as `hash + filepath.Ext(name)`, so a name with
- * no extension leaves a bare digest as the storage key — and after a refresh
- * that ref is the only name the turn still has.
- */
-const BARE_DIGEST = 'a'.repeat(64)
-/** Agent threads are keyed per workspace since FE-2405; 'personal' is the
- * workspace every agent spec boots into. */
-const THREAD_KEY = StorageKeys.agentThread('personal')
-const PLAIN_FILENAME = 'ComfyUI_00002_.png'
-
-interface DroppedLibraryAsset {
-  displayName: string
-  ref: string
-  kind: MediaKind
-}
-
-/**
- * A deliberate subset of what `startAssetDrag` puts on the DataTransfer
- * (assetDragUtil.ts): the keys `getDroppedAsset` reads, minus `preview_url`,
- * so the pre-refresh preview resolves through the mocked `/view` route rather
- * than a URL this arrange would also have to serve.
- */
-async function dropLibraryAsset(
-  page: Page,
-  panel: Locator,
-  asset: DroppedLibraryAsset
-): Promise<void> {
-  await panel.dispatchEvent('drop', {
-    dataTransfer: await page.evaluateHandle(
-      ({ mime, displayName, ref, kind }) => {
-        const dataTransfer = new DataTransfer()
-        dataTransfer.setData(
-          mime,
-          JSON.stringify({
-            filename: displayName,
-            display_name: displayName,
-            subfolder: '',
-            type: 'output',
-            attachment_ref: ref,
-            media_kind: kind
-          })
-        )
-        return dataTransfer
-      },
-      { mime: MIME_ASSET_INFO, ...asset }
-    )
-  })
-}
-
-function resolvedImageRefs(
-  posted: AgentPostMessageRequest
-): Record<string, unknown> {
-  return {
-    text: posted.content,
-    attachments: posted.attachments,
-    attachment_refs: (posted.attachments ?? []).map((name) => ({
-      name,
-      id: 'asset-rehydrated',
-      kind: 'image'
-    }))
-  }
-}
-
-/** Serves the reload's history GET; POST stays on the fixture's handler. */
-async function serveHistory(
-  page: Page,
-  requests: AgentPostMessageRequest[],
-  content: (posted: AgentPostMessageRequest) => Record<string, unknown>
-): Promise<void> {
-  await page.route('**/api/agent/threads/*/messages', (route) => {
-    if (route.request().method() !== 'GET') return route.fallback()
-    const posted = requests.at(0)
-    if (!posted) return route.fallback()
-    const threadId = new URL(route.request().url()).pathname.split('/').at(-2)!
-    const turnId = 'e2e-rehydrated-turn'
-    const messages: AgentMessage[] = [
-      {
-        id: 'e2e-rehydrated-user',
-        thread_id: threadId,
-        turn_id: turnId,
-        seq: 1,
-        role: 'user',
-        status: 'complete',
-        content: content(posted)
-      },
-      {
-        id: turnId,
-        thread_id: threadId,
-        turn_id: turnId,
-        seq: 2,
-        role: 'assistant',
-        status: 'complete',
-        content: { text: 'Looks good.' }
-      }
-    ]
-    return route.fulfill(jsonRoute(messages))
-  })
-}
-
-async function openAgentPanel(
-  page: Page,
-  workflowSelection: WorkflowSelection
-): Promise<Locator> {
-  await page
-    .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-    .click()
-  await page
-    .getByRole('button', {
-      name: enMessages.sideToolbar.newBlankWorkflow,
-      exact: true
-    })
-    .click()
-  const panel = page.locator('#agent-panel-root')
-  await expect(panel).toBeVisible()
-  await panel
-    .getByRole('button', { name: enMessages.agent.switchWorkflow })
-    .click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-  workflowSelection.finishSave(true)
-  return panel
-}
-
-async function sendTurn(panel: Locator, prompt: string): Promise<void> {
-  await panel
-    .getByRole('textbox', { name: /^Describe ideas/ })
-    .pressSequentially(prompt)
-  await panel
-    .getByRole('button', { name: enMessages.agent.send, exact: true })
-    .click()
-}
-
-/**
- * Settles the (WS-less) turn so the reload is not racing a permanently
- * streaming assistant message, then reloads and waits the panel back up.
- */
-async function reopenAfterReload(panel: Locator, page: Page): Promise<Locator> {
-  await panel
-    .getByRole('button', { name: enMessages.agent.stop, exact: true })
-    .click()
-  await page.reload()
-  await expect(page.getByTestId('integrated-tab-bar-actions')).toHaveAttribute(
-    'data-agent-gate-settled',
-    'true',
-    { timeout: 30_000 }
-  )
-  const reopened = page.locator('#agent-panel-root')
-  await expect(reopened).toBeVisible({ timeout: 30_000 })
-  return reopened
-}
 
 test(
   'previews a refreshed attachment whose only surviving name is an extensionless ref',
