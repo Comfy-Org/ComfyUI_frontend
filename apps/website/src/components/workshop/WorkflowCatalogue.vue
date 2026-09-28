@@ -133,7 +133,7 @@ const chips = computed<FilterChip[]>(() => [
   })),
   ...runsOn.value.map((name) => ({
     key: `model:${name}`,
-    label: t('workshop.filter.runsOn', locale).replace('{model}', name)
+    label: t('workshop.filter.runsOn', locale, { model: name })
   }))
 ])
 
