@@ -1326,6 +1326,194 @@ describe('useAgentConversationStore', () => {
   })
 
   /**
+   * The stash and the map hold the same attachment objects, so the hydrate
+   * that ran while away already revoked this object URL. Handing it back
+   * would beat the `/view` fallback `UserMessage` would otherwise render.
+   */
+  it('drops a revoked object URL when restoring a stashed attachment', () => {
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this', [
+      {
+        name: 'Beach.png',
+        ref: storedRef,
+        previewUrl: 'blob:http://localhost/dead'
+      }
+    ])
+    store.stashActiveTurn()
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([])
+    store.resumeBackgroundTurn()
+
+    expect(
+      store.entries
+        .filter((entry) => entry.role === 'user')
+        .map((entry) => entry.attachments?.[0].previewUrl)
+    ).toEqual([undefined])
+  })
+
+  /**
+   * The row the resume reconciles against is a snapshot: an ask broadcast
+   * after it was taken exists only on the stash. Losing it leaves the agent
+   * blocked on an answer the user has no card left to give.
+   */
+  it('keeps a live pending ask the fetched row was taken before', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'run it')
+    store.ingest(delta('t1', 'working on it'))
+    store.ingest(
+      chat({
+        type: 'agent_ask',
+        data: {
+          message_id: 't1',
+          thread_id: 'th',
+          ask_id: 'server-turn:call-1',
+          kind: 'run_approval',
+          context: {
+            workflow_id: 'workflow-1',
+            workflow_name: 'Portrait workflow'
+          },
+          prompt: 'Run workflow “Portrait workflow”?',
+          options: [
+            { id: 'run', label: 'Run' },
+            { id: 'cancel', label: 'Cancel' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+    store.stashActiveTurn()
+
+    const streamingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+    streamingRow.status = 'streaming'
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'run it'),
+      streamingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages[0].parts).toContainEqual(
+      expect.objectContaining({
+        type: 'runApproval',
+        askId: 'server-turn:call-1'
+      })
+    )
+  })
+
+  /**
+   * A streaming row can carry the same call the transport already watched
+   * finish. The row's copy is the stale one -- reading `running` off it puts
+   * a red cross on a call the client knows succeeded.
+   */
+  it('keeps the live outcome of a tool call the streaming row still calls running', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'find a node')
+    store.ingest(toolCall('t1', 'search_nodes', 'success'))
+    store.stashActiveTurn()
+
+    const streamingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+    streamingRow.status = 'streaming'
+    streamingRow.content = {
+      tool_calls: [
+        {
+          id: 'call-search_nodes',
+          tool_name: 'search_nodes',
+          status: 'running'
+        }
+      ]
+    }
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'find a node'),
+      streamingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(
+      store.messages[0].parts.filter((part) => part.type === 'tool')
+    ).toEqual([
+      expect.objectContaining({
+        callId: 'call-search_nodes',
+        state: 'done',
+        ok: true
+      })
+    ])
+  })
+
+  /**
+   * The transport that owns the open text part survives the resume, so the
+   * next delta extends the reply instead of starting a second part beside it.
+   */
+  it('appends to the open reply after resuming onto a streaming row', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(delta('t1', 'All '))
+    store.stashActiveTurn()
+
+    const streamingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+    streamingRow.status = 'streaming'
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      streamingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    store.ingest(delta('t1', 'done.'))
+
+    expect(partTexts(store)).toEqual(['All done.'])
+  })
+
+  /**
+   * A terminal row is written when the service gives up, which can be behind
+   * the last delta the transport actually delivered. Text that strictly
+   * extends the row is the fuller copy and outlives it, settled because this
+   * branch keeps the row and drops the transport.
+   */
+  it('recovers live reply text a terminal row stops short of', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(delta('t1', 'All '))
+    store.stashActiveTurn()
+    store.ingest(delta('t1', 'done.'))
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      historyRow(2, 'assistant', 'server-turn', 'All ', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
+    expect(
+      store.messages[0].parts.filter((part) => part.type === 'text')
+    ).toEqual([expect.objectContaining({ state: 'done' })])
+  })
+
+  /**
    * PM-1643 / PM-1149 / PM-717. The ask the turn is waiting on was persisted
    * on the row, never broadcast, so it exists only on the copy resume drops.
    * Losing it with the copy leaves the turn unanswerable — worse than the

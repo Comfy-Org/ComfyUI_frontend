@@ -391,6 +391,23 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    /**
+     * A stash holds the same attachment objects the map does, so the
+     * `dropAttachmentPreviews()` inside the hydrate that ran while away
+     * revoked their object URLs. Restoring one verbatim would render a dead
+     * `blob:`, which `UserMessage` prefers over the `/view` URL it could have
+     * fallen back to.
+     */
+    function withoutRevokedPreviews(
+      attachments: UserAttachment[]
+    ): UserAttachment[] {
+      return attachments.map((attachment) =>
+        attachment.previewUrl?.startsWith('blob:')
+          ? { ...attachment, previewUrl: undefined }
+          : attachment
+      )
+    }
+
     function activateResumedTurn(entry: BackgroundTurn, index: number): void {
       // A hydrate that landed on a mid-ask row left its own transport in the
       // active slot, and this resume supersedes it. Dispose rather than
@@ -436,7 +453,10 @@ export const useAgentConversationStore = defineStore(
         entry.userAttachments !== undefined &&
         !userAttachments.value.has(entry.message.id)
       )
-        userAttachments.value.set(entry.message.id, entry.userAttachments)
+        userAttachments.value.set(
+          entry.message.id,
+          withoutRevokedPreviews(entry.userAttachments)
+        )
       const index = kept.push(entry.message) - 1
       messages.value = kept
       if (entry.settled) {
@@ -564,6 +584,18 @@ export const useAgentConversationStore = defineStore(
       adoptPendingAsks(hydrated, live)
     }
 
+    /**
+     * The row wins the turn, but a terminal row can still hold less reply than
+     * the transport actually delivered -- an interrupted or errored turn is
+     * written when the service gives up, not when the last delta landed. Only
+     * text that strictly extends the row rides across: divergent text means
+     * the row is telling a different story (stop copy, an error message) and
+     * the row is authoritative for that.
+     *
+     * Copied parts are forced to `done`. The caller is the branch that keeps
+     * the row and disposes the live transport, so a part left `streaming`
+     * would spin with nothing able to settle it.
+     */
     function adoptFresherLiveText(
       hydrated: AssistantMessage,
       live: AssistantMessage
@@ -578,7 +610,8 @@ export const useAgentConversationStore = defineStore(
         .join('')
       if (
         liveText === '' ||
-        (hydratedText !== '' && !liveText.startsWith(hydratedText))
+        liveText === hydratedText ||
+        !liveText.startsWith(hydratedText)
       )
         return
       const textParts = live.parts.filter((part) => part.type === 'text')
@@ -587,7 +620,7 @@ export const useAgentConversationStore = defineStore(
       hydrated.parts.splice(
         insertAt < 0 ? hydrated.parts.length : insertAt,
         0,
-        ...textParts.map((part) => ({ ...part }))
+        ...textParts.map((part) => ({ ...part, state: 'done' as const }))
       )
     }
 
@@ -605,27 +638,14 @@ export const useAgentConversationStore = defineStore(
           : removedSameIdCopy?.id === hydratedTurnId
             ? removedSameIdCopy
             : undefined
-      if (!hydrated) return undefined
+      if (!hydrated || hydrated === entry.message) return undefined
       if (!hydratedStreamingTurnIds.has(hydratedTurnId)) {
         adoptLiveOnlyParts(hydrated, entry.message)
+        adoptFresherLiveText(hydrated, entry.message)
         return { keeps: 'hydrated', turnId: hydratedTurnId }
       }
       if (index >= 0) kept.splice(index, 1)
-      if (entry.settled) {
-        adoptHydratedOnlyParts(entry.message, hydrated)
-      } else {
-        adoptLiveOnlyParts(hydrated, entry.message)
-        adoptFresherLiveText(hydrated, entry.message)
-        hydrated.streaming = true
-        entry.transport.dispose()
-        entry.message = hydrated
-        entry.transport = createAgentEventTransport(
-          hydrated,
-          replaceActive,
-          () => canvasSyncGate(),
-          () => canvasSyncOutcomeCount()
-        )
-      }
+      adoptHydratedOnlyParts(entry.message, hydrated)
       moveUserRecord(hydratedTurnId, entry.message.id)
       return { keeps: 'live', turnId: entry.message.id }
     }
