@@ -262,7 +262,6 @@ export class AgentTurnLockHarness {
     ws.send(JSON.stringify(event))
   }
 
-  /** Ends the turn in the ordering this fixture models: release the lock, then announce done. */
   finishTurn(ws: WebSocketRoute): void {
     this.server.completeTurn()
     this.push(ws, TURN_DONE_EVENT)
