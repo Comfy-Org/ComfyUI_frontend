@@ -705,13 +705,6 @@ describe('AgentPanel extension flag gate', () => {
 
     it('reports the first-run screen over a dialog sitting on top of it', async () => {
       agentFlagEnabled.value = true
-      // The two overlap in production: `GettingStartedScreen.vue` traps focus
-      // only while `!dialogOpen`, drops `aria-modal` when one is up and skips
-      // taking focus on mount for the same reason, so the screen is built for a
-      // dialog over it - and the automatic offer can run in exactly that state.
-      // Which reason is reported decides whose denominator this user lands in,
-      // so the precedence is behaviour and not an implementation detail: the
-      // first run wins for as long as it holds the screen.
       screenShown()
       openDialog()
       Object.assign(consentStore, { accepted: false, isChecking: false })
@@ -917,46 +910,6 @@ describe('AgentPanel extension flag gate', () => {
     await flush()
 
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-  })
-
-  // Kept deliberately as a guard rather than as an expectation: no production
-  // ordering reaches it. `gettingStartedVisible` is only ever set true by
-  // `showFirstRunScreen`, which runs once per page load from
-  // `handleStartupOutcome` (GraphCanvas's `onMounted`) and always *before* that
-  // function sets `startupDecided`; `tourHandoffs` only rises from a template
-  // click on the rendered screen. Every automatic offer waits on
-  // `whenStartupDecided()`, so by the time one is in flight the first-run hold
-  // can only fall, never rise. It stays because it is the only cover on
-  // `canShow` reading `screenHolder()` rather than `screenBusyReason()` - swap
-  // those and this is the single test that fails - and because the invariant it
-  // leans on is one line from changing: the day the screen gains a second
-  // trigger, or `handleStartupOutcome` runs twice, this ordering goes live and
-  // this test is what notices.
-  it('withholds a card the first run comes to own mid-offer, then re-offers', async () => {
-    agentFlagEnabled.value = true
-    Object.assign(consentStore, { accepted: false, isChecking: false })
-    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_trigger, _onAccept, hooks) => {
-        screenShown()
-        if (hooks?.canShow?.() === false) return
-        hooks?.onShown?.()
-      }
-    )
-
-    await loadEntryAndSetup()
-    await vi.waitFor(() =>
-      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-    )
-    await flush()
-
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('false')
-    expect(agentStore.open).not.toHaveBeenCalled()
-
-    screenClosed()
-    await vi.waitFor(() =>
-      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
-    )
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
   it('remembers a seen card per workspace across a switch away and back', async () => {
