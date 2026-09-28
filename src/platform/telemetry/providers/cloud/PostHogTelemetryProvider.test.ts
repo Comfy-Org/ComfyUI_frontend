@@ -794,6 +794,18 @@ describe('PostHogTelemetryProvider', () => {
         properties: { reason: 'tour_active' }
       },
       {
+        event: TelemetryEvents.FIRST_RUN_SCREEN_DISMISSED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackFirstRunScreenDismissed({
+            method: 'template_selected',
+            visible_duration_ms: 8400
+          }),
+        properties: {
+          method: 'template_selected',
+          visible_duration_ms: 8400
+        }
+      },
+      {
         event: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentOnboardingNotShown({

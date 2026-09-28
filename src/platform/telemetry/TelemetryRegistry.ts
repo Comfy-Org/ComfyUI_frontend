@@ -32,6 +32,7 @@ import type {
   ExecutionErrorMetadata,
   ExecutionOutcomeMetadata,
   ExecutionSuccessMetadata,
+  FirstRunScreenDismissedMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -474,6 +475,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   ): void {
     this.dispatch((provider) =>
       provider.trackAgentOnboardingNotShown?.(metadata)
+    )
+  }
+
+  trackFirstRunScreenDismissed(
+    metadata: FirstRunScreenDismissedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackFirstRunScreenDismissed?.(metadata)
     )
   }
 

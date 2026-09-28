@@ -8,7 +8,7 @@
         :aria-modal="!dialogOpen"
         :aria-label="t('gettingStarted.title')"
         tabindex="-1"
-        @keydown.escape.capture.prevent="dismissGettingStarted()"
+        @keydown.escape.capture.prevent="dismissGettingStarted('escape')"
       >
         <div class="m-auto flex w-full flex-col items-center gap-8 px-8 py-16">
           <div class="flex flex-col items-center gap-3">
@@ -109,7 +109,7 @@
           <Button
             variant="muted-textonly"
             data-testid="getting-started-blank"
-            @click="dismissGettingStarted()"
+            @click="dismissGettingStarted('start_blank')"
           >
             {{ t('gettingStarted.startBlank') }}
           </Button>
@@ -236,7 +236,7 @@ async function onSelectTemplate(id: string) {
 
   const result = await loadWorkflowTemplate(id, 'default')
   if (result === 'loaded') {
-    await dismissGettingStarted()
+    await dismissGettingStarted('template_selected')
     try {
       await beginTour(id)
     } catch (error) {
