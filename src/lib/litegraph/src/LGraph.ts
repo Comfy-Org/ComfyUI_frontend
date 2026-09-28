@@ -241,6 +241,8 @@ export interface GraphAddOptions {
 
 /** Options for {@link LGraph.remove} method. */
 export interface GraphRemoveOptions {
+  /** Remove an item even when it normally opts out via `ignore_remove`. */
+  force?: boolean
   /**
    * Detach an adapter after another authority has reconciled canonical stores.
    * Same-id replacement state is left intact.
@@ -1513,7 +1515,11 @@ export class LGraph
       return
     }
     // cannot be removed
-    if (node.ignore_remove && !options.preserveCanonicalState) {
+    if (
+      node.ignore_remove &&
+      !options.force &&
+      !options.preserveCanonicalState
+    ) {
       console.warn('LiteGraph: node cannot be removed', node)
       return
     }

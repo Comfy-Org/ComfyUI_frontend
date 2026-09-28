@@ -146,13 +146,19 @@ describe('clipboard ID allocation', () => {
   it('rolls back every created item when paste throws part-way through', () => {
     const workingType = 'test/clipboard-rollback-working'
     const throwingType = 'test/clipboard-rollback-throwing'
-    registerClipboardNodeType(workingType)
+    class ProtectedClipboardNode extends LGraphNode {
+      override configure(info: ISerialisedNode): void {
+        super.configure(info)
+        this.ignore_remove = true
+      }
+    }
     class ThrowingClipboardNode extends LGraphNode {
       override configure(info: ISerialisedNode): void {
         super.configure(info)
         throw new Error('configure failed')
       }
     }
+    LiteGraph.registerNodeType(workingType, ProtectedClipboardNode)
     LiteGraph.registerNodeType(throwingType, ThrowingClipboardNode)
     const rootGraph = new LGraph()
     const canvas = createCanvas(rootGraph)

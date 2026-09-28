@@ -8842,7 +8842,7 @@ function rollbackClipboardPaste(
   for (const item of [...result.created].reverse()) {
     try {
       if (item instanceof LGraphNode || item instanceof LGraphGroup) {
-        graph.remove(item)
+        graph.remove(item, { force: true })
       } else if (item instanceof Reroute) {
         graph.removeReroute(item.id)
       }
