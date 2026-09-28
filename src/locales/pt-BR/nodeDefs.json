@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Decompõe uma imagem em uma placa de fundo mais até 16 camadas transparentes reposicionáveis, cada uma com ordem de empilhamento, caixa delimitadora, nome e descrição.",
-    "display_name": "ByteDance Seedream 5.0 Pro Separação de Camadas",
+    "display_name": "Separação de Camadas ByteDance Seedream 5.0 Pro (Legado)",
     "inputs": {
       "control_after_generate": {
         "name": "controle após gerar"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "pilha de camadas",
         "tooltip": "Documento de camadas pronto para edição para Criar Imagem em Camadas: a placa base mais cada elemento como sua própria camada nomeada, recortada e posicionada corretamente com ordem de empilhamento. Conecte diretamente ou estenda com Adicionar Camada."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Decompõe uma imagem em uma placa de fundo e até 16 camadas transparentes reposicionáveis, cada uma com ordem de empilhamento, caixa delimitadora, nome e descrição.",
+    "display_name": "Separação de Camadas ByteDance Seedream 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_crop_layers": {
+        "name": "recortar_camadas"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "otimização_de_prompt"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_size": {
+        "name": "tamanho"
+      },
+      "model_watermark": {
+        "name": "marca_d'água"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagem_base",
+        "tooltip": "A imagem base (placa de fundo) sobre a qual as camadas são empilhadas."
+      },
+      "1": {
+        "name": "máscara_base",
+        "tooltip": "Transparência da imagem base (1 = transparente, convenção do LoadImage); atualmente, sempre totalmente opaca."
+      },
+      "2": {
+        "name": "camadas",
+        "tooltip": "Camadas transparentes ordenadas de baixo para cima. Modo de tela inteira: posicionadas em uma tela preta do tamanho da base, na posição da caixa delimitadora. Modo de tamanho mínimo: recortadas à caixa delimitadora, ancoradas no canto superior esquerdo e preenchidas até o tamanho da maior camada."
+      },
+      "3": {
+        "name": "máscaras",
+        "tooltip": "Transparência por camada, alinhada por índice ao lote de camadas (1 = transparente, convenção do LoadImage). Para composição no estilo ImageCompositeMasked, adicione InvertMask primeiro."
+      },
+      "4": {
+        "name": "caixas_delimitadoras",
+        "tooltip": "Uma caixa de posicionamento por camada, alinhada por índice ao lote de camadas (insira ambas, junto com as máscaras, em Layers From Bounding Boxes para reconstruir o posicionamento por camada): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] é a região de conteúdo da camada dentro de seu próprio quadro; ela é posicionada na tela na posição da caixa mais esse deslocamento."
+      },
+      "5": {
+        "name": "pilha_de_camadas",
+        "tooltip": "Documento de camadas pronto para edição para Create Layered Image: a placa base e cada elemento como sua própria camada nomeada e bem recortada, em sua posição e ordem de empilhamento reais. Conecte diretamente ou estenda com Add Layer."
       }
     }
   },
@@ -16893,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Quanto o modelo raciocina antes de responder. 'default' deixa a escolha para o modelo. Os níveis compatíveis variam conforme o modelo: GPT-6 Astra low-max, GPT-5.6 none-max (sem minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 não tem raciocínio. Níveis não compatíveis são rejeitados antes do envio da solicitação."
+        "tooltip": "Quanto o modelo raciocina antes de responder. 'default' deixa a escolha para o modelo. Os níveis compatíveis variam por modelo: GPT-6 Astra low-max, GPT-6 Sol/Luna e GPT-5.6 none-max (sem minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 não tem raciocínio. Níveis não compatíveis são rejeitados antes do envio da solicitação."
       },
       "truncation": {
         "name": "truncation",
@@ -23884,6 +23940,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Codificação de Texto para Edição de Imagem Ming",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "Imagens de referência opcionais, vistas pelo codificador de texto e adicionadas à sequência de latent como quadros limpos. As imagens posteriores são redimensionadas para a primeira, e o latent amostrado deve corresponder ao seu tamanho."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Sem um VAE, as imagens condicionam o codificador de texto apenas por meio da torre de visão."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

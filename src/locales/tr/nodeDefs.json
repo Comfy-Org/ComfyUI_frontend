@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Bir görüntüyü, arka plan plakası ve her biri yığılma sırası, sınırlayıcı kutusu, adı ve açıklaması olan, yeniden konumlandırılabilir en fazla 16 şeffaf katmana ayırır.",
-    "display_name": "ByteDance Seedream 5.0 Pro Katman Ayrıştırma",
+    "display_name": "ByteDance Seedream 5.0 Pro Katman Ayırma (Eski)",
     "inputs": {
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "katman_yığını",
         "tooltip": "Katmanlı Görüntü Oluştur için düzenlemeye hazır katman belgesi: taban plaka ve her bir öğe, kendi adıyla, sıkı kırpılmış katman olarak gerçek konumunda ve yığılma sırasıyla. Doğrudan bağlayın veya Katman Ekle ile genişletin."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Bir görüntüyü arka plan plakası ve her biri yığın sırası, sınırlayıcı kutu, ad ve açıklamaya sahip, yeniden konumlandırılabilir en fazla 16 saydam katmana ayırır.",
+    "display_name": "ByteDance Seedream 5.0 Katman Ayırma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "Katmanların üzerine yığıldığı temel görüntü (arka plan plakası)."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Temel görüntünün saydamlığı (1 = saydam, LoadImage kuralı); şu anda her zaman tamamen opaktır."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "Alttan üste sıralanmış saydam katmanlar. Tam tuval modu: sınırlayıcı kutu konumlarında, temel görüntü boyutunda siyah bir tuvale yerleştirilir. En küçük boyut modu: sınırlayıcı kutularına göre kırpılır, sol üste sabitlenir ve en büyük katmanın boyutuna kadar doldurulur."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "Katman toplu işlemiyle dizin açısından hizalanmış katman başına saydamlık (1 = saydam, LoadImage kuralı). ImageCompositeMasked tarzı birleştirme için önce InvertMask ekleyin."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Katman toplu işlemiyle dizin açısından hizalanmış, katman başına bir yerleştirme kutusu (katman başına yerleşimi yeniden oluşturmak için her ikisini de mask'lerle birlikte Layers From Bounding Boxes'a besleyin): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height], katmanın kendi çerçevesi içindeki içerik bölgesidir; tuvale kutu konumuna bu ofset eklenerek yerleştirilir."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Create Layered Image için düzenlemeye hazır katman belgesi: temel plaka ve her öğe, gerçek konumunda ve yığın sırasıyla kendi adlandırılmış, sıkı kırpılmış katmanı olarak bulunur. Doğrudan bağlayın veya Add Layer ile genişletin."
       }
     }
   },
@@ -16893,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Modelin yanıtlamadan önce ne ölçüde muhakeme yürüttüğü. 'default' seçimi modele bırakır. Desteklenen düzeyler modele göre farklılık gösterir: GPT-6 Astra low-max, GPT-5.6 none-max (no minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1'de muhakeme yoktur. Desteklenmeyen düzeyler, istek gönderilmeden önce reddedilir."
+        "tooltip": "Modelin yanıtlamadan önce ne kadar düşündüğü. 'default' seçimi modele bırakır. Desteklenen düzeyler modele göre değişir: GPT-6 Astra low-max, GPT-6 Sol/Luna ve GPT-5.6 none-max (minimal yok), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-serisi low-high; GPT-4.1 düşünmeyi desteklemez. Desteklenmeyen düzeyler istek gönderilmeden önce reddedilir."
       },
       "truncation": {
         "name": "kırpma",
@@ -23884,6 +23940,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Metin Kodlama Ming Görüntü Düzenleme",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Metin kodlayıcının gördüğü ve temiz kareler olarak latent dizisine eklenen isteğe bağlı referans görüntüler. Sonraki görüntüler ilk görüntünün boyutuna yeniden boyutlandırılır ve örneklenen latent bunun boyutuyla eşleşmelidir."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE olmadan görüntüler, metin kodlayıcıyı yalnızca vision tower aracılığıyla koşullandırır."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

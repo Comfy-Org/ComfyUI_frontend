@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "تفكيك صورة إلى لوحة خلفية بالإضافة إلى ما يصل إلى ١٦ طبقة شفافة قابلة لإعادة الترتيب، كل منها مع ترتيب تراكب، صندوق حدودي، اسم ووصف.",
-    "display_name": "ByteDance Seedream 5.0 Pro فصل الطبقات",
+    "display_name": "ByteDance Seedream 5.0 Pro فصل الطبقات (قديم)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "مستند طبقات جاهز للتحرير لـ Create Layered Image: اللوحة الأساسية بالإضافة إلى كل عنصر كطبقة منفصلة، مقصوصة بإحكام في موضعها الحقيقي وترتيب تكديسها. صِل مباشرة، أو أضف طبقات مع Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "يفكك صورة إلى لوحة خلفية وما يصل إلى 16 طبقة شفافة قابلة لإعادة التموضع، لكل منها ترتيب تكديس ومربع إحاطة واسم ووصف.",
+    "display_name": "ByteDance Seedream 5.0 فصل الطبقات",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "الصورة الأساسية (لوحة الخلفية) التي تتراكم عليها الطبقات."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "شفافية الصورة الأساسية (1 = شفاف، وفق اصطلاح LoadImage)؛ وهي حاليًا معتمة بالكامل دائمًا."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "طبقات شفافة مرتبة من الأسفل إلى الأعلى. وضع اللوحة الكاملة: توضع على لوحة سوداء بحجم الصورة الأساسية عند موضع مربع إحاطتها. وضع الحجم الأدنى: تُقتص إلى مربع إحاطتها، وتُثبّت عند أعلى اليسار، وتُبطّن إلى حجم أكبر طبقة."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "شفافية كل طبقة، بمحاذاة الفهرس مع دفعة layers (1 = شفاف، وفق اصطلاح LoadImage). للتركيب بأسلوب ImageCompositeMasked، أضف InvertMask أولًا."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "مربع موضع واحد لكل طبقة، بمحاذاة الفهرس مع دفعة layers (مرر كليهما، مع masks، إلى Layers From Bounding Boxes لإعادة إنشاء موضع كل طبقة): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] هي منطقة محتوى الطبقة داخل إطارها الخاص؛ وتوضع على اللوحة عند موضع المربع مضافًا إليه ذلك الإزاحة."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "مستند طبقات جاهز للتحرير لـ Create Layered Image: اللوحة الأساسية وكل عنصر كطبقة مسماة خاصة به، مقتصة بإحكام، في موضعه الفعلي وترتيب تكديسه. وصّله مباشرة، أو وسّعه باستخدام Add Layer."
       }
     }
   },
@@ -16893,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "مقدار استدلال النموذج قبل الإجابة. يترك 'default' الاختيار للنموذج. تختلف المستويات المدعومة حسب النموذج: GPT-6 Astra من low إلى max، وGPT-5.6 من none إلى max (دون minimal)، وGPT-5.5 من none إلى xhigh، وGPT-5.5 Pro من medium إلى xhigh، وGPT-5 من minimal إلى high، وسلسلة o من low إلى high؛ لا يدعم GPT-4.1 الاستدلال. تُرفض المستويات غير المدعومة قبل إرسال الطلب."
+        "tooltip": "يحدد مقدار استدلال النموذج قبل الإجابة. يترك 'default' الخيار للنموذج. تختلف المستويات المدعومة حسب النموذج: GPT-6 Astra من low إلى max، وGPT-6 Sol/Luna وGPT-5.6 من none إلى max (من دون minimal)، وGPT-5.5 من none إلى xhigh، وGPT-5.5 Pro من medium إلى xhigh، وGPT-5 من minimal إلى high، وسلسلة o من low إلى high؛ لا يدعم GPT-4.1 الاستدلال. تُرفض المستويات غير المدعومة قبل إرسال الطلب."
       },
       "truncation": {
         "name": "الاقتصاص",
@@ -23884,6 +23940,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "ترميز النص لتحرير صورة Ming",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "صور مرجعية اختيارية، يراها مُرمِّز النص وتُلحق بتسلسل latent كإطارات نظيفة. تُغيّر الصور اللاحقة حجمها ليتطابق مع الأولى، ويجب أن يطابق حجم latent الذي تم أخذ عينات منه حجمها."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "بدون VAE، لا تُكيّف الصور مُرمِّز النص إلا عبر برج الرؤية."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
