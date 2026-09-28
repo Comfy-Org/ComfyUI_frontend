@@ -420,10 +420,6 @@ describe('buildSummaryLedger', () => {
     expect(ledgerOf({}, null).eyebrow).toBe('Subscribe to Creator Plan')
   })
 
-  it('leaves Subtotal out while a single money row precedes the total', () => {
-    expect(ledgerOf({}).subtotal).toBeUndefined()
-  })
-
   it('drops the prorated row too when the quote leaves its gap to the total unexplained', () => {
     expect(
       ledgerOf({
@@ -545,13 +541,13 @@ describe('buildSummaryLedger discounts', () => {
       }
     },
     {
-      name: 'a held discount before an entered code: Subtotal names the base the code applied to',
+      name: 'a held discount before an entered code still leaves Subtotal out: the quote reports no pre-discount base',
       discounts: [ANNUAL_RATE, EDUCATION, entered('COMFY50', 302_400)],
       promotionCode: 'COMFY50',
       amountDueCents: 302_400,
       slots: {
         adjustments: [{ label: 'Education discount', amount: '−$1,512.00' }],
-        subtotal: '$6,048.00',
+        subtotal: undefined,
         promo: { label: 'Promo code', amount: '−$3,024.00' },
         chips: [
           { code: 'COMFY-EDU', removable: false },

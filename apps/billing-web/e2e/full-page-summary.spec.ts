@@ -89,7 +89,7 @@ test('a tier upgrade reads the prorated charge and a dated credits delta', async
   ])
 })
 
-test('a held discount and an entered code read as rows, with the Subtotal between them', async ({
+test('a held discount and an entered code read as rows, with no Subtotal the quote never reported', async ({
   page,
   cloud,
   signIn
@@ -114,11 +114,10 @@ test('a held discount and an entered code read as rows, with the Subtotal betwee
   await expectSummary(page, [
     'Pro Plan$50.00',
     'Education discount−$10.00',
-    'Subtotal$40.00',
     'Promo code−$20.00',
     'Total due today$20.00'
   ])
-  await expect(
-    page.getByRole('region', { name: 'Order summary' })
-  ).not.toContainText('−$9.99')
+  const summary = page.getByRole('region', { name: 'Order summary' })
+  await expect(summary).not.toContainText('−$9.99')
+  await expect(summary).not.toContainText('Subtotal')
 })
