@@ -256,7 +256,18 @@ export function useFullPageCheckout() {
       ...outcomeFor(operation)
     })
     if (own) announce(operation)
+    if (operation.phase === 'timed_out' && watchingMoney()) void reconcile()
   })
+
+  /**
+   * A watch whose poll budget ran out re-reads the server, which follows the
+   * operation afresh: these screens promise to update on their own, and a
+   * bank debit can take hours to settle.
+   */
+  function watchingMoney() {
+    const kind = page.value.kind
+    return kind === 'waiting' || kind === 'unconfirmed'
+  }
 
   function onPaymentPhase(phase: StripePaymentPhase) {
     if (phase.phase === 'payment_element_ready' && phase.element === 'payment')
@@ -284,19 +295,39 @@ export function useFullPageCheckout() {
     return verdict.kind === 'failure' ? verdict.code : undefined
   })
 
-  /** Back to the product, or to the workspace's Plan & Credits settings when this family has no destination for the link's target. */
+  /**
+   * Back to the product, with a settled payment's outcome and reference, or
+   * to the workspace's Plan & Credits settings when this family has no
+   * destination for the link's target.
+   */
   const returnLink = computed(() => {
     const workspace = billedWorkspace()
     const arrival = entry.value
+    const current = page.value
     const host =
       arrival &&
       buildReturnUrl({
         target: arrival.returnTo,
         environment: BILLING_WEB_ENV,
-        workspace
+        workspace,
+        ...(current.kind === 'terminal'
+          ? { result: 'success', reference: current.operation?.id }
+          : {})
       })?.href
     return host ?? planCreditsSettingsUrl(workspace)
   })
+
+  /** Only a tab a script opened can close itself; any other goes back to `return_to`. */
+  const openedByScript = window.opener !== null
+  const canClose = computed(
+    () => openedByScript || returnLink.value !== undefined
+  )
+
+  function close() {
+    if (openedByScript) window.close()
+    else if (returnLink.value !== undefined)
+      window.location.assign(returnLink.value)
+  }
 
   function requestFor(
     arrival: PlannedEntry,
@@ -374,6 +405,8 @@ export function useFullPageCheckout() {
     submitting: checkout.submitting,
     payFailure,
     returnLink,
+    canClose,
+    close,
     onPaymentPhase,
     savedMethods: saved.methods,
     reconcile,

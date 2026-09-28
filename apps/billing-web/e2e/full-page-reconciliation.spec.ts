@@ -84,8 +84,10 @@ test('a reload while a payment is in flight renders the waiting state, never a f
   await expect(
     page.getByRole('heading', { name: 'Already completed' })
   ).toBeVisible()
-  await expect(page.getByText('Reference: op_in_flight')).toBeVisible()
-  await expect(page.getByText('Pro Plan')).toBeHidden()
+  await expect(page.getByTestId('checkout-ending-code')).toHaveText(
+    'op_in_flight'
+  )
+  await expect(page.getByTestId('checkout-ending-plan')).toBeHidden()
   expect(subscribeRequests(cloud)).toHaveLength(0)
 })
 

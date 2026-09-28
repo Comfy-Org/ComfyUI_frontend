@@ -71,12 +71,21 @@ type Capture = {
 }
 
 /**
+ * Who a settled payment belongs to, which decides what its screen may claim.
+ * `started`: this page's own Pay, so it names the plan it quoted. `followed`:
+ * money this page did not send, watched settle from a screen that promised
+ * to update. `settled`: found already through on arrival or on a re-read.
+ */
+type Attribution = 'started' | 'followed' | 'settled'
+
+/**
  * The full-page checkout, one state at a time. `resolving` renders the
  * capture skeleton, and carries a verdict a recovered operation already
  * reached so the capture it resolves into opens on that card. `waiting` is
  * money in flight that this page did not start: no fresh form until it
- * settles. `terminal` is a payment that went through; `started` is whether
- * this page's own Pay did it, which is what lets the outcome name the plan.
+ * settles. `unconfirmed` is money whose outcome the page could not learn, so
+ * it neither offers a form nor claims a charge. `terminal` is a payment that
+ * went through.
  */
 export type CheckoutPage =
   | { readonly kind: 'resolving'; readonly outcome?: InlineOutcome }
@@ -84,10 +93,11 @@ export type CheckoutPage =
   | { readonly kind: 'unavailable'; readonly code: string }
   | Capture
   | { readonly kind: 'waiting'; readonly operation: PendingBillingOperation }
+  | { readonly kind: 'unconfirmed'; readonly operationId: string }
   | {
       readonly kind: 'terminal'
       readonly operation?: TerminalBillingOperation
-      readonly started: boolean
+      readonly attribution: Attribution
     }
 
 /** A verdict an operation reached on its own, for the card above Pay. */
@@ -355,7 +365,7 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
       }))
     case 'paySettled':
       return page.kind === 'capture'
-        ? { kind: 'terminal', started: true }
+        ? { kind: 'terminal', attribution: 'started' }
         : page
     case 'requoted':
       return withCapture(page, ({ outcome: _replaced, ...capture }) => ({
@@ -384,12 +394,13 @@ function isInFlight(
 
 /**
  * Nothing pending releases a Pay that was held for a re-read, and sends a
- * page that was waiting on an operation back to resolve a fresh capture.
+ * page that was watching money back to resolve a fresh capture.
  */
 function nothingPending(page: CheckoutPage): CheckoutPage {
   switch (page.kind) {
     case 'waiting':
-      return { kind: 'resolving' }
+    case 'unconfirmed':
+      return RESOLVING
     case 'capture':
       return page.outcome?.kind === 'reconciling'
         ? { ...page, attempt: 'idle', outcome: undefined }
@@ -400,31 +411,61 @@ function nothingPending(page: CheckoutPage): CheckoutPage {
 }
 
 /**
+ * What money in flight is waiting on, from the operation's own facts.
+ * `received`: the charge went through and the plan is still landing.
+ * `settling`: the bank is still capturing it, with nothing for the customer
+ * to do. `verifying`: anything else, which the page is still checking.
+ */
+export type WaitingOn = 'verifying' | 'settling' | 'received'
+
+export function waitingOn(operation: PendingBillingOperation): WaitingOn {
+  if (operation.authenticationState === 'succeeded') return 'received'
+  const settling =
+    operation.authenticationState === 'processing' &&
+    operation.serverPhase === 'in_progress' &&
+    operation.actionUrl === undefined
+  return settling ? 'settling' : 'verifying'
+}
+
+/** The server parked the operation for a human and cannot say whether money moved. */
+const outcomeUnknown = (operation: BillingOperationState) =>
+  operation.phase === 'reconciliation_needed'
+
+const unconfirmed = (operation: { readonly id: string }): CheckoutPage => ({
+  kind: 'unconfirmed',
+  operationId: operation.id
+})
+
+/**
  * Where an operation the lifecycle follows puts the page. Money in flight
  * that this page did not send lands on `waiting`; a success lands on
- * `terminal`, attributed to this page only while its own Pay is out. A
- * failure of this page's own Pay is left to that Pay's verdict, which also
- * knows about re-quotes; any other failure becomes the card above Pay.
+ * `terminal`, attributed by who sent it. A failure of this page's own Pay is
+ * left to that Pay's verdict, which also knows about re-quotes; any other
+ * failure becomes the card above Pay. An outcome nobody can vouch for is
+ * never a card and never a claim (rule 12).
  */
 function followed(
   page: CheckoutPage,
   operation: BillingOperationState,
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
-  switch (page.kind) {
-    case 'refused':
-    case 'unavailable':
-      return page
-    case 'terminal':
-      return operation.phase === 'succeeded' && page.operation === undefined
-        ? { ...page, operation }
-        : page
-    case 'resolving':
-    case 'waiting':
-      return followedBeforeCapture(page, operation, outcome)
-    case 'capture':
-      return followedInCapture(page, operation, outcome)
-  }
+  if (page.kind === 'terminal') return withSettled(page, operation)
+  if (page.kind === 'resolving') return arrivedOn(page, operation, outcome)
+  if (page.kind === 'capture')
+    return followedInCapture(page, operation, outcome)
+  if (page.kind === 'waiting' || page.kind === 'unconfirmed')
+    return watched(page, operation, outcome)
+  return page
+}
+
+/** A terminal reached before its operation arrived takes the operation's id. */
+function withSettled(
+  page: Extract<CheckoutPage, { kind: 'terminal' }>,
+  operation: BillingOperationState
+): CheckoutPage {
+  return operation.phase === 'succeeded' && page.operation === undefined
+    ? { ...page, operation }
+    : page
 }
 
 /**
@@ -432,17 +473,59 @@ function followed(
  * and anything else (parked on a card, or settled short of success) resolves
  * a capture, opening on the verdict when there is one.
  */
-function followedBeforeCapture(
-  page: Extract<CheckoutPage, { kind: 'resolving' | 'waiting' }>,
+function arrivedOn(
+  page: Extract<CheckoutPage, { kind: 'resolving' }>,
   operation: BillingOperationState,
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
   if (operation.phase === 'succeeded')
-    return { kind: 'terminal', operation, started: false }
+    return { kind: 'terminal', operation, attribution: 'settled' }
   if (isInFlight(operation)) return { kind: 'waiting', operation }
-  if (outcome !== undefined) return { kind: 'resolving', outcome }
-  return page.kind === 'resolving' ? page : { kind: 'resolving' }
+  if (outcomeUnknown(operation)) return unconfirmed(operation)
+  return outcome === undefined ? page : { kind: 'resolving', outcome }
 }
+
+/**
+ * Money this page is watching but did not send. A watch that lapses while
+ * the page was still verifying becomes "we couldn't confirm"; one over a
+ * charge it knows is settling or received keeps its screen while the page
+ * re-reads. An unconfirmed page holds until a verdict arrives.
+ */
+function watched(
+  page: Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>,
+  operation: BillingOperationState,
+  outcome: OperationOutcome | undefined
+): CheckoutPage {
+  if (operation.phase === 'succeeded')
+    return { kind: 'terminal', operation, attribution: attributionOf(page) }
+  if (outcomeUnknown(operation)) return unconfirmed(operation)
+  if (page.kind === 'unconfirmed')
+    return isInFlight(operation) || operation.phase === 'timed_out'
+      ? page
+      : resolvingOn(outcome)
+  if (operation.phase === 'timed_out')
+    return waitingOn(page.operation) === 'verifying'
+      ? unconfirmed(operation)
+      : page
+  if (isInFlight(operation)) return { kind: 'waiting', operation }
+  return resolvingOn(outcome)
+}
+
+/**
+ * A screen that promised to update on its own resolves to the success it
+ * was waiting for. A first read that finds the money already through, which
+ * the page only ever saw as verifying, was settled before it arrived.
+ */
+function attributionOf(
+  page: Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>
+): Attribution {
+  return page.kind === 'waiting' && waitingOn(page.operation) === 'verifying'
+    ? 'settled'
+    : 'followed'
+}
+
+const resolvingOn = (outcome: OperationOutcome | undefined): CheckoutPage =>
+  outcome === undefined ? RESOLVING : { kind: 'resolving', outcome }
 
 /**
  * This page's own Pay stays on the form until its verdict, which the Pay
@@ -456,7 +539,12 @@ function followedInCapture(
 ): CheckoutPage {
   const started = page.attempt === 'sent'
   if (operation.phase === 'succeeded')
-    return { kind: 'terminal', operation, started }
+    return {
+      kind: 'terminal',
+      operation,
+      attribution: started ? 'started' : 'settled'
+    }
+  if (outcomeUnknown(operation)) return unconfirmed(operation)
   if (started) return page
   if (isInFlight(operation)) return { kind: 'waiting', operation }
   return outcome === undefined ? page : { ...page, attempt: 'idle', outcome }
