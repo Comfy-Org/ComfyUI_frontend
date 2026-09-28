@@ -122,9 +122,18 @@ const structuredData = shouldNoindex
     <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
 
-    <!-- Preload the PP Formula faces used on first paint (body copy, headings,
-         and the narrow display face) so they're ready before CSS requests
-         them, avoiding a visible swap from the fallback font mid-load. -->
+    <!-- Every PP Formula face that renders above the fold. `font-display:
+         optional` drops a face that misses its short block period for the
+         whole page load, so an unpreloaded face silently renders as the
+         fallback — which is what put a fallback headline into a committed
+         visual baseline. -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/PPFormula-Light.woff2"
+      crossorigin
+    />
     <link
       rel="preload"
       as="font"
@@ -137,6 +146,13 @@ const structuredData = shouldNoindex
       as="font"
       type="font/woff2"
       href="/fonts/PPFormula-Bold.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/PPFormula-Semibold.woff2"
       crossorigin
     />
     <link
