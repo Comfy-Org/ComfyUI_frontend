@@ -1672,6 +1672,26 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
   })
 
+  it('shows the standing card when a normal reply follows an older unresolved inline card', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const conversation = useAgentConversationStore()
+    conversation.recordPaywall(toTurnId('msg-paywall'), 'continue')
+    await waitFor(() =>
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    )
+
+    conversation.messages.push({
+      id: toTurnId('msg-later'),
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'Later reply', state: 'done' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
+  })
+
   it('returns after the inline paywall is resolved and credits run out again', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
