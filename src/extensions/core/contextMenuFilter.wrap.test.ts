@@ -8,13 +8,23 @@ await import('./contextMenuFilter')
 const ext = vi.mocked(app.registerExtension).mock.calls[0][0]
 
 describe('Comfy.ContextMenuFilter', () => {
-  it('keeps LiteGraph.ContextMenu callable without new for wrapping extensions', () => {
-    void ext.init?.(app)
+  void ext.init?.(app)
+  const wrapped = LiteGraph.ContextMenu
 
-    const orig = LiteGraph.ContextMenu
-    const menu = Reflect.apply(orig, {}, [['a', 'b'], { title: 'wrapped' }])
-
+  it.for([
+    {
+      via: 'call',
+      make: () => Reflect.apply(wrapped, {}, [['a'], { title: 'wrapped' }])
+    },
+    { via: 'new', make: () => new wrapped(['a'], { title: 'wrapped' }) }
+  ])('constructs a ContextMenu via $via', ({ make }) => {
+    const menu = make()
     expect(menu).toBeInstanceOf(ContextMenu)
     expect(menu.options.title).toBe('wrapped')
+  })
+
+  it('keeps statics and prototype', () => {
+    expect(wrapped.trigger).toBe(ContextMenu.trigger)
+    expect(wrapped.prototype).toBe(ContextMenu.prototype)
   })
 })

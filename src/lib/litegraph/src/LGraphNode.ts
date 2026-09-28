@@ -75,9 +75,11 @@ import {
   resolveInputSlotView
 } from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
+import type { NodeCanonicalField } from './extensionPersistence'
 import {
   extensionConfigureView,
   hydrateExtensionPayload,
+  isNodeCanonicalField,
   NODE_CANONICAL_FIELDS,
   runExtensionSerializeHook
 } from './extensionPersistence'
@@ -202,6 +204,32 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
     named[widget.name] = serialisedValue
   }
   return { widgets_values: positional, widgets_values_named: named }
+}
+
+function configureCanonicalField(
+  target: Partial<Record<NodeCanonicalField, unknown>>,
+  key: NodeCanonicalField,
+  incoming: unknown
+): void {
+  if (incoming == null) return
+  if (typeof incoming !== 'object') {
+    target[key] = incoming
+    return
+  }
+  const current = target[key]
+  if (
+    current &&
+    typeof current === 'object' &&
+    'configure' in current &&
+    typeof current.configure === 'function'
+  ) {
+    current.configure(incoming)
+  } else {
+    target[key] = LiteGraph.cloneObject(
+      incoming,
+      typeof current === 'object' && current !== null ? current : undefined
+    )
+  }
 }
 
 export function createWidgetRestorationState(
@@ -1118,10 +1146,8 @@ export class LGraphNode
     if (this.graph) {
       this.graph.incrementVersion()
     }
-    const target = this as unknown as Record<string, unknown>
-    const source = info as unknown as Record<string, unknown>
-    for (const j in source) {
-      if (!NODE_CANONICAL_FIELDS.has(j)) continue
+    for (const j in info) {
+      if (!isNodeCanonicalField(j)) continue
       if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container
         for (const k in info.properties) {
@@ -1143,29 +1169,7 @@ export class LGraphNode
         continue
       }
 
-      if (source[j] == null) {
-        continue
-      } else if (typeof source[j] == 'object') {
-        const current = target[j]
-        if (
-          current &&
-          typeof current === 'object' &&
-          'configure' in current &&
-          typeof current.configure === 'function'
-        ) {
-          current.configure(source[j])
-        } else {
-          target[j] = LiteGraph.cloneObject(
-            source[j],
-            typeof current === 'object' && current !== null
-              ? current
-              : undefined
-          )
-        }
-      } else {
-        // value
-        target[j] = source[j]
-      }
+      configureCanonicalField(this, j, info[j])
     }
 
     if (!info.title) {

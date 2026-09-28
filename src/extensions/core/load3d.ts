@@ -568,7 +568,7 @@ useExtensionService().registerExtension({
     if ('Preview3D' === nodeData.name) {
       const input = (nodeData.input ??= {})
       const required = (input.required ??= {})
-      required.image = ['PREVIEW_3D', {}]
+      required.image = ['PREVIEW_3D']
     }
   },
 

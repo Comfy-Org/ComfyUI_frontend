@@ -330,12 +330,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
           bounding: [300, 0, 120, 60]
         }
       }),
-      version: 2,
+      version: 2 as 1,
       futureFeature: 'unknown_data'
     }
 
     expect(() => {
-      // @ts-expect-error version 2 is not a known SerialisableGraph version
       const subgraph = new Subgraph(new LGraph(), futureFormat)
       expect(subgraph.name).toBe('Future Subgraph')
       expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)

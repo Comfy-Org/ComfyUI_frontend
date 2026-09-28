@@ -413,17 +413,17 @@ function connectSearchBoxNodeFrom(
   slotFrom: IShowSearchOptions['slot_from'],
   node: LGraphNode | null
 ): void {
-  const iS = searchBoxOutputSlotIndex(nodeFrom, slotFrom)
-  if (iS < 0) return
+  const slotIndex = searchBoxOutputSlotIndex(nodeFrom, slotFrom)
+  if (slotIndex < 0) return
   if (node == null)
     throw new TypeError('options.slot_from was null when showing search box')
 
   nodeFrom.connectByType(
-    iS,
+    slotIndex,
     node,
     nodeFrom instanceof SubgraphInputNode
-      ? nodeFrom.slots[iS].type
-      : nodeFrom.outputs[iS].type
+      ? nodeFrom.slots[slotIndex].type
+      : nodeFrom.outputs[slotIndex].type
   )
 }
 
@@ -432,17 +432,17 @@ function connectSearchBoxNodeTo(
   slotFrom: IShowSearchOptions['slot_from'],
   node: LGraphNode | null
 ): void {
-  const iS = searchBoxInputSlotIndex(nodeTo, slotFrom)
-  if (iS < 0) return
+  const slotIndex = searchBoxInputSlotIndex(nodeTo, slotFrom)
+  if (slotIndex < 0) return
   if (node == null)
     throw new TypeError('options.slot_from was null when showing search box')
 
   nodeTo.connectByTypeOutput(
-    iS,
+    slotIndex,
     node,
     nodeTo instanceof SubgraphOutputNode
-      ? nodeTo.slots[iS].type
-      : nodeTo.inputs[iS].type
+      ? nodeTo.slots[slotIndex].type
+      : nodeTo.inputs[slotIndex].type
   )
 }
 
@@ -1701,11 +1701,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   // TODO refactor :: this is used fot title but not for properties!
   static onShowPropertyEditor(
-    item: { property?: keyof LGraphNode; type: string },
+    item: { property?: 'title' | 'font_size' },
     _options: IContextMenuOptions<string>,
     e: MouseEvent,
     _menu: ContextMenu<string>,
-    node: LGraphNode
+    node: { title: string; font_size?: number }
   ): void {
     const property = item.property ?? 'title'
     const value = node[property]
@@ -1790,13 +1790,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       setValue(input.value)
     }
 
-    function setValue(value: NodeProperty) {
-      if (item.type == 'Number') {
-        value = Number(value)
-      } else if (item.type == 'Boolean') {
-        value = Boolean(value)
-      }
-      Object.assign(node, { [property]: value })
+    function setValue(value: string) {
+      if (property === 'font_size') node.font_size = Number(value)
+      else node.title = value
       dialog.remove()
       canvas.setDirty(true, true)
     }

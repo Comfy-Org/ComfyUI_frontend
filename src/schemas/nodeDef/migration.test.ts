@@ -241,6 +241,16 @@ describe('NodeDef Migration', () => {
     expect(result.options).toEqual([])
   })
 
+  it('should transform an input spec without options', () => {
+    const result = transformInputSpecV1ToV2(['PREVIEW_3D'], { name: 'image' })
+
+    expect(result).toEqual({
+      type: 'PREVIEW_3D',
+      name: 'image',
+      isOptional: false
+    })
+  })
+
   it('should preserve chartType across a V2 to V1 round trip', () => {
     const inputSpec = transformInputSpecV1ToV2(['CHART', { type: 'bar' }], {
       name: 'chartInput'
