@@ -33,7 +33,6 @@
           :value="option.value"
           :disabled="option.isDisabled"
           :aria-disabled="option.isDisabled"
-          :aria-label="option.label"
           class="flex cursor-pointer items-center justify-between rounded-md px-3 py-2 outline-none data-disabled:cursor-not-allowed data-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
         >
           <div class="flex items-center gap-2">

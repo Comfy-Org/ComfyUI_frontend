@@ -1,5 +1,25 @@
 <template>
-  <SelectRoot v-model="selectedItem" v-model:open="isOpen" :disabled>
+  <SearchableSingleSelect
+    v-if="searchable"
+    v-model="selectedItem"
+    v-bind="attrsWithoutClass"
+    :class="attrsClass"
+    :label
+    :options
+    :size
+    :invalid
+    :loading
+    :disabled
+    :search-placeholder
+    :list-max-height
+    :popover-min-width
+    :popover-max-width
+    :content-style
+  >
+    <template #icon><slot name="icon" /></template>
+  </SearchableSingleSelect>
+
+  <SelectRoot v-else v-model="selectedItem" v-model:open="isOpen" :disabled>
     <SelectTrigger
       v-bind="attrsWithoutClass"
       :aria-label="label || t('g.singleSelectDropdown')"
@@ -44,28 +64,12 @@
         :class="cn(selectContentClass, 'min-w-(--reka-select-trigger-width)')"
         @keydown="onContentKeydown"
       >
-        <div v-if="searchable" class="px-2 pt-2">
-          <div
-            class="flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5"
-          >
-            <i class="icon-[lucide--search] text-muted-foreground" />
-            <input
-              ref="searchInputRef"
-              v-model="searchQuery"
-              type="text"
-              :aria-label="t('g.search')"
-              :placeholder="searchPlaceholder ?? t('g.search')"
-              class="w-full border-none bg-transparent text-sm outline-none"
-              @keydown="onSearchKeydown"
-            />
-          </div>
-        </div>
         <SelectViewport
           :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
           class="scrollbar-custom w-full"
         >
           <SelectItem
-            v-for="opt in filteredOptions"
+            v-for="opt in options"
             :key="opt.value"
             :value="opt.value"
             :class="selectItemVariants({ layout: 'single' })"
@@ -100,7 +104,7 @@ import {
   SelectValue,
   SelectViewport
 } from 'reka-ui'
-import { nextTick, ref, watch } from 'vue'
+import { ref } from 'vue'
 import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -112,11 +116,12 @@ import {
   stopEscapeToDocument
 } from '@comfyorg/design-system/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
-import { useSelectSearch } from '@/components/ui/select/useSelectSearch'
 import { useAttrsClass } from '@/composables/useAttrsClass'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import SearchableSingleSelect from './SearchableSingleSelect.vue'
 
 defineOptions({
   inheritAttrs: false
@@ -165,23 +170,7 @@ const selectedItem = defineModel<string | number | undefined>({
 
 const { t } = useI18n()
 const isOpen = ref(false)
-const searchQuery = ref('')
-const searchInputRef = ref<HTMLInputElement | null>(null)
 const liftedContentStyle = useModalLiftedZIndex(isOpen)
-const filteredOptions = useSelectSearch(searchQuery, () => options)
-
-watch(isOpen, async (open) => {
-  if (!open || !searchable) return
-  searchQuery.value = ''
-  await nextTick()
-  searchInputRef.value?.focus()
-})
-
-function onSearchKeydown(event: KeyboardEvent) {
-  if (!['ArrowDown', 'ArrowUp', 'Escape'].includes(event.key)) {
-    event.stopPropagation()
-  }
-}
 
 function onContentKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {

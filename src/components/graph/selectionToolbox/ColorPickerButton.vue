@@ -118,6 +118,8 @@ const selectedColorOption = ref<ColorOption | null>(null)
 const applyColorName = (value: unknown) => {
   if (typeof value === 'string') {
     applyColor(colorOptions.find((option) => option.name === value) ?? null)
+  } else {
+    applyColor(null)
   }
 }
 const applyColor = (colorOption: ColorOption | null) => {
@@ -134,6 +136,7 @@ const applyColor = (colorOption: ColorOption | null) => {
   }
 
   canvasStore.canvas?.setDirty(true, true)
+  selectedColorOption.value = colorOption
   currentColorOption.value = canvasColorOption
   showColorPicker.value = false
   workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()

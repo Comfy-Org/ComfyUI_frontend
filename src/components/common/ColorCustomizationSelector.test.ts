@@ -70,18 +70,17 @@ describe('ColorCustomizationSelector', () => {
   })
 
   it('shows color picker when custom option is selected', async () => {
-    const { container, user } = renderComponent({ modelValue: '#0d6efd' })
+    const { user } = renderComponent({ modelValue: '#0d6efd' })
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container -- count buttons to detect the ColorPicker popover trigger appearing
-    const initialButtonCount = container.querySelectorAll('button').length
+    expect(
+      screen.queryByRole('button', { name: /#0d6efd/i })
+    ).not.toBeInTheDocument()
     const toggleButtons = getToggleButtons()
     await user.click(toggleButtons[toggleButtons.length - 1])
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container -- count buttons to detect the ColorPicker popover trigger appearing
-    const afterButtonCount = container.querySelectorAll('button').length
-    expect(afterButtonCount).toBe(initialButtonCount + 1)
+    expect(screen.getByRole('button', { name: /#0d6efd/i })).toBeInTheDocument()
   })
 
   it('emits update when predefined color is selected', async () => {

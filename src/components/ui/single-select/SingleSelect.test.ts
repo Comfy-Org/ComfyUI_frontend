@@ -15,7 +15,8 @@ const i18n = createI18n({
     en: {
       g: {
         singleSelectDropdown: 'Single-select dropdown',
-        search: 'Search'
+        search: 'Search',
+        noResultsFound: 'No results found'
       }
     }
   }
@@ -49,7 +50,7 @@ function renderInParent(
 
   const Parent = {
     template:
-      '<div @keydown.escape="onEsc"><SingleSelect v-model="sel" :options="options" label="Pick" v-bind="extraProps" /></div>',
+      '<div @keydown.escape="onEsc"><SingleSelect v-model="sel" :options="options" label="Pick" v-bind="extraProps" /><button>After</button></div>',
     components: { SingleSelect },
     setup() {
       return {
@@ -84,6 +85,10 @@ async function openSelect(triggerEl: HTMLElement) {
     })
   )
   await nextTick()
+  if (triggerEl.dataset.state === 'closed') {
+    triggerEl.click()
+    await nextTick()
+  }
 }
 
 let openModal: HTMLElement | undefined
@@ -100,8 +105,9 @@ describe('SingleSelect', () => {
     const user = userEvent.setup()
     const { unmount } = renderInParent(undefined, { searchable: true })
 
-    await openSelect(screen.getByRole('combobox'))
-    const searchInput = screen.getByRole('textbox', { name: 'Search' })
+    await openSelect(screen.getByLabelText('Pick'))
+    const searchInput = screen.getByRole('combobox', { name: 'Search' })
+    expect(searchInput).toHaveFocus()
     await user.type(searchInput, 'C')
 
     expect(screen.getByRole('option', { name: 'Option C' })).toBeInTheDocument()
@@ -116,12 +122,58 @@ describe('SingleSelect', () => {
     const user = userEvent.setup()
     const { unmount } = renderInParent(undefined, { searchable: true })
 
-    await openSelect(screen.getByRole('combobox'))
-    const searchInput = screen.getByRole('textbox', { name: 'Search' })
+    await openSelect(screen.getByLabelText('Pick'))
+    const searchInput = screen.getByRole('combobox', { name: 'Search' })
     await user.type(searchInput, 'C')
     await user.keyboard('{ArrowDown}{Enter}')
 
-    expect(screen.getByRole('combobox')).toHaveTextContent('Option C')
+    expect(screen.getByLabelText('Pick')).toHaveTextContent('Option C')
+
+    unmount()
+  })
+
+  it('shows an empty result and keeps the search input focused', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderInParent(undefined, { searchable: true })
+
+    await openSelect(screen.getByLabelText('Pick'))
+    const searchInput = screen.getByRole('combobox', { name: 'Search' })
+    await user.type(searchInput, 'missing')
+
+    expect(screen.getByText('No results found')).toBeInTheDocument()
+    expect(searchInput).toHaveFocus()
+
+    unmount()
+  })
+
+  it('closes on Tab and returns focus to the trigger', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderInParent(undefined, { searchable: true })
+
+    const trigger = screen.getByLabelText('Pick')
+    await openSelect(trigger)
+    await user.tab()
+
+    expect(trigger).toHaveAttribute('data-state', 'closed')
+    expect(trigger).toHaveFocus()
+
+    unmount()
+  })
+
+  it('clears the search and restores focus when reopened', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderInParent(undefined, { searchable: true })
+
+    const trigger = screen.getByLabelText('Pick')
+    await openSelect(trigger)
+    await user.type(screen.getByRole('combobox', { name: 'Search' }), 'C')
+    await user.keyboard('{Escape}')
+    await openSelect(trigger)
+
+    const searchInput = screen.getByRole('combobox', { name: 'Search' })
+    expect(searchInput).toHaveValue('')
+    expect(searchInput).toHaveFocus()
+    expect(screen.getAllByRole('option')).toHaveLength(3)
 
     unmount()
   })
@@ -132,7 +184,7 @@ describe('SingleSelect', () => {
     const dialogZIndex = Number(openModal.style.zIndex)
     const { unmount } = renderInParent()
 
-    await openSelect(screen.getByRole('combobox'))
+    await openSelect(screen.getByLabelText('Pick'))
 
     const content = findContentElement()
     expect(content).not.toBeNull()
@@ -149,7 +201,7 @@ describe('SingleSelect', () => {
       contentStyle: { zIndex: 3000 }
     })
 
-    await openSelect(screen.getByRole('combobox'))
+    await openSelect(screen.getByLabelText('Pick'))
 
     const content = findContentElement()
     expect(content).not.toBeNull()
@@ -174,9 +226,11 @@ describe('SingleSelect', () => {
 
   describe('Escape key propagation', () => {
     it('stops Escape from propagating to parent when popover is open', async () => {
-      const { unmount, parentEscapeCount } = renderInParent()
+      const { unmount, parentEscapeCount } = renderInParent(undefined, {
+        searchable: true
+      })
 
-      const trigger = screen.getByRole('combobox')
+      const trigger = screen.getByLabelText('Pick')
       await openSelect(trigger)
 
       const content = findContentElement()

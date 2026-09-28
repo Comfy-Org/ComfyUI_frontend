@@ -22,14 +22,14 @@
       </ToggleGroupItem>
     </ToggleGroup>
     <ColorPicker
-      v-if="selectedColorOption.name === '_custom'"
+      v-if="selectedColorName === '_custom'"
       v-model="customColorValue"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
@@ -57,42 +57,31 @@ const emit = defineEmits<{
   'update:modelValue': [value: string | null]
 }>()
 
-const selectedColorOption = ref(customColorOption)
-const selectedColorName = computed({
-  get: () => selectedColorOption.value.name,
-  set: (name: string) => {
-    selectedColorOption.value =
-      colorOptionsWithCustom.value.find((option) => option.name === name) ??
-      selectedColorOption.value
-  }
-})
-const customColorValue = ref('')
+const initialColorOption = colorOptions.find(
+  (option) => option.value === modelValue
+)
+const selectedColorName = ref(
+  initialColorOption?.name ?? customColorOption.name
+)
+const customColorValue = ref(initialColorOption ? '' : (modelValue ?? ''))
 
-// Initialize the component with the provided modelValue
-onMounted(() => {
-  if (modelValue) {
-    const predefinedColor = colorOptions.find((opt) => opt.value === modelValue)
-    if (predefinedColor) {
-      selectedColorOption.value = predefinedColor
-    } else {
-      selectedColorOption.value = customColorOption
-      customColorValue.value = modelValue
-    }
-  }
-})
+watch(selectedColorName, (newName, oldName) => {
+  const newOption = colorOptionsWithCustom.value.find(
+    (option) => option.name === newName
+  )
+  if (!newOption) return
 
-// Watch for changes in selection and emit updates
-watch(selectedColorOption, (newOption, oldOption) => {
-  if (newOption.name === '_custom') {
-    // Inherit the color from previous selection
-    customColorValue.value = oldOption.value
+  if (newName === customColorOption.name) {
+    customColorValue.value =
+      colorOptionsWithCustom.value.find((option) => option.name === oldName)
+        ?.value ?? ''
   } else {
     emit('update:modelValue', newOption.value)
   }
 })
 
 watch(customColorValue, (newValue) => {
-  if (selectedColorOption.value.name === '_custom') {
+  if (selectedColorName.value === customColorOption.name) {
     emit('update:modelValue', newValue || null)
   }
 })

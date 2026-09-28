@@ -299,13 +299,19 @@ describe('PackVersionSelectorPopover', () => {
         props: { nodePack: { ...mockNodePack, latest_version: versions[0] } }
       })
 
-      const option = await screen.findByRole('option', { name: label })
+      const option = await screen.findByRole('option', {
+        name: `${label} Flagged`
+      })
       expect(within(option).getByText('Flagged')).toBeVisible()
       expect(
         screen
           .getAllByRole('option', { name: /^Latest/ })
-          .map((item) => item.getAttribute('aria-label'))
-      ).toEqual(latestLabels)
+          .map((item) => item.textContent)
+      ).toEqual(
+        latestLabels.map((latestLabel) =>
+          latestLabel === label ? `${latestLabel} Flagged` : latestLabel
+        )
+      )
       expect(
         within(screen.getByRole('option', { name: activeLabel })).queryByText(
           'Flagged'
@@ -389,7 +395,9 @@ describe('PackVersionSelectorPopover', () => {
     const stable = await screen.findByRole('option', {
       name: 'Latest stable (0.9.0)'
     })
-    const latest = screen.getByRole('option', { name: 'Latest (1.2.0)' })
+    const latest = screen.getByRole('option', {
+      name: 'Latest (1.2.0) Flagged'
+    })
     expect(screen.getAllByRole('option').slice(0, 2)).toEqual([latest, stable])
     expect(stable).toHaveAttribute('aria-selected', 'true')
     expect(latest).toHaveAttribute('aria-selected', 'false')
@@ -713,15 +721,14 @@ describe('PackVersionSelectorPopover', () => {
     })
 
     it.for([
-      { status: 'NodeVersionStatusBanned', type: 'banned', label: '1.0.0' },
+      { status: 'NodeVersionStatusBanned', type: 'banned' },
       {
         status: 'NodeVersionStatusPending',
-        type: 'pending',
-        label: 'Latest (1.0.0)'
+        type: 'pending'
       }
     ] as const)(
       'shows $type warnings from version status',
-      async ({ status, type, label }) => {
+      async ({ status, type }) => {
         const versions: components['schemas']['NodeVersion'][] = [
           { ...defaultMockVersions[0], status }
         ]
@@ -735,7 +742,9 @@ describe('PackVersionSelectorPopover', () => {
           })
         )
         renderComponent()
-        const latest = await screen.findByRole('option', { name: label })
+        const latest = await screen.findByRole('option', {
+          name: new RegExp(`${type}.*1\\.0\\.0`, 'i')
+        })
         expect(
           within(latest).getByRole('img', { name: /banned|pending/i })
         ).toBeVisible()

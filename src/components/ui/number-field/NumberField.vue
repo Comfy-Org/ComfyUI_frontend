@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { NumberFieldRootEmits, NumberFieldRootProps } from 'reka-ui'
+import type { NumberFieldRootProps } from 'reka-ui'
 import { NumberFieldRoot, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
@@ -12,7 +12,9 @@ const {
   ...restProps
 } = defineProps<NumberFieldRootProps & { class?: HTMLAttributes['class'] }>()
 
-const emits = defineEmits<NumberFieldRootEmits>()
+const emits = defineEmits<{
+  'update:modelValue': [value: number]
+}>()
 
 const forwarded = useForwardProps(restProps)
 

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { expect, it } from 'vitest'
+import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -31,4 +32,23 @@ it('reveals and hides the password', async () => {
 
   await user.click(toggle)
   expect(input).toHaveAttribute('type', 'password')
+})
+
+it('updates a controlled parent model when edited', async () => {
+  const user = userEvent.setup()
+  const Harness = defineComponent({
+    components: { PasswordInput },
+    setup: () => ({ password: ref('initial') }),
+    template: `
+      <PasswordInput v-model="password" aria-label="Password" />
+      <output>{{ password }}</output>
+    `
+  })
+  render(Harness, { global: { plugins: [i18n] } })
+
+  const input = screen.getByLabelText('Password')
+  await user.clear(input)
+  await user.type(input, 'changed')
+
+  expect(screen.getByRole('status')).toHaveTextContent('changed')
 })

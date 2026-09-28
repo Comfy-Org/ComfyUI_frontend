@@ -20,6 +20,7 @@
         list-class="mt-1 space-y-1"
         unmet-class="text-destructive-background"
       />
+      <FieldError v-if="errors.length && !isPasswordFocused" :errors />
     </Field>
   </VeeField>
 

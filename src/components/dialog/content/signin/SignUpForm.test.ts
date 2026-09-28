@@ -182,24 +182,44 @@ describe('SignUpForm', () => {
     })
   })
 
-  it('renders the password rule list with the markup the platform ships', async () => {
+  it('marks the unmet password rules while the field is focused', async () => {
     const { user } = renderComponent()
     await user.type(
       screen.getByLabelText(enMessages.auth.signup.passwordLabel),
       'short'
     )
 
+    expect(screen.getAllByRole('listitem')).toHaveLength(5)
     expect(
-      screen.getByText(`${enMessages.validation.password.requirements}:`)
-        .outerHTML
-    ).toBe(
-      '<div class="text-sm">Password requirements: <ul class="mt-1 space-y-1">' +
-        '<li class="text-destructive-background">Must be between 8 and 32 characters</li>' +
-        '<li class="text-destructive-background">Must contain at least one uppercase letter</li>' +
-        '<li class="">Must contain at least one lowercase letter</li>' +
-        '<li class="text-destructive-background">Must contain at least one number</li>' +
-        '<li class="text-destructive-background">Must contain at least one special character</li>' +
-        '</ul></div>'
+      screen.getByText(enMessages.validation.password.minLength)
+    ).toHaveClass('text-destructive-background')
+    expect(
+      screen.getByText(enMessages.validation.password.uppercase)
+    ).toHaveClass('text-destructive-background')
+    expect(
+      screen.getByText(enMessages.validation.password.lowercase)
+    ).not.toHaveClass('text-destructive-background')
+    expect(screen.getByText(enMessages.validation.password.number)).toHaveClass(
+      'text-destructive-background'
+    )
+    expect(
+      screen.getByText(enMessages.validation.password.special)
+    ).toHaveClass('text-destructive-background')
+  })
+
+  it('shows the primary password schema error after blur', async () => {
+    const { user } = renderComponent()
+    const passwordInput = screen.getByLabelText(
+      enMessages.auth.signup.passwordLabel
+    )
+
+    await user.type(passwordInput, 'short')
+    await user.tab()
+    await user.tab()
+
+    expect(passwordInput).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Must be at least 8 characters'
     )
   })
 

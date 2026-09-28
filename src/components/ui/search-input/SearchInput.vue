@@ -19,6 +19,7 @@
           :class="cn('absolute', sizeConfig.clearPos)"
           variant="textonly"
           size="icon-sm"
+          :disabled
           :aria-label="$t('g.clear')"
           @click.stop="clearSearch"
         >

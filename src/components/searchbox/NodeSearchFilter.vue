@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
@@ -30,18 +30,14 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 
+const nodeDefStore = useNodeDefStore()
 const filters = computed(() => nodeDefStore.nodeSearchService.nodeFilters)
-const selectedFilter = ref<FuseFilter<ComfyNodeDefImpl, string>>()
-const selectedFilterName = computed({
-  get: () => selectedFilter.value?.name,
-  set: (name: string) => {
-    const filter = filters.value.find((filter) => filter.name === name)
-    if (!filter) return
-
-    selectedFilter.value = filter
-    updateSelectedFilterValue()
-  }
-})
+const selectedFilterName = ref(filters.value[0]?.name)
+const selectedFilter = computed<
+  FuseFilter<ComfyNodeDefImpl, string> | undefined
+>(() =>
+  filters.value.find((filter) => filter.name === selectedFilterName.value)
+)
 const filterValues = computed(() =>
   (selectedFilter.value?.fuseSearch.data ?? []).map((value) => ({
     name: value,
@@ -49,13 +45,6 @@ const filterValues = computed(() =>
   }))
 )
 const selectedFilterValue = ref<string>('')
-
-const nodeDefStore = useNodeDefStore()
-
-onMounted(() => {
-  selectedFilter.value = nodeDefStore.nodeSearchService.nodeFilters[0]
-  updateSelectedFilterValue()
-})
 
 const emit = defineEmits<{
   (
@@ -72,6 +61,8 @@ const updateSelectedFilterValue = () => {
   }
   selectedFilterValue.value = String(filterValues.value[0]?.value ?? '')
 }
+
+watch(selectedFilterName, updateSelectedFilterValue, { immediate: true })
 
 const submit = () => {
   if (!selectedFilter.value) {

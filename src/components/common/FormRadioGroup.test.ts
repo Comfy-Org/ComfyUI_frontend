@@ -175,7 +175,7 @@ describe('FormRadioGroup', () => {
       expect(screen.getByText('No')).toHaveAttribute('for', 'confirm-radio-No')
     })
 
-    it('sets aria-describedby attribute correctly', () => {
+    it('uses labels without redundant descriptions', () => {
       renderComponent({
         modelValue: 'opt1',
         options: [
@@ -186,8 +186,10 @@ describe('FormRadioGroup', () => {
       })
 
       const radios = screen.getAllByRole('radio')
-      expect(radios[0]).toHaveAttribute('aria-describedby', 'Option 1-label')
-      expect(radios[1]).toHaveAttribute('aria-describedby', 'Option 2-label')
+      expect(radios[0]).not.toHaveAttribute('aria-describedby')
+      expect(radios[1]).not.toHaveAttribute('aria-describedby')
+      expect(screen.getByText('Option 1')).not.toHaveAttribute('id')
+      expect(screen.getByText('Option 2')).not.toHaveAttribute('id')
     })
   })
 })

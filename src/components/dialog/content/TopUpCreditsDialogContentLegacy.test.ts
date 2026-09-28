@@ -139,8 +139,9 @@ describe('TopUpCreditsDialogContentLegacy', () => {
 
     await user.click(payInput)
     await user.tab()
-    expect(screen.getByRole('button', { name: '$50' })).toHaveClass(
-      'bg-secondary-background-selected'
+    expect(screen.getByRole('button', { name: '$50' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
     )
 
     const creditsIncrement = screen.getAllByRole('button', {
@@ -149,8 +150,9 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     await user.click(creditsIncrement)
 
     expect(payInput).toHaveValue('55')
-    expect(screen.getByRole('button', { name: '$50' })).not.toHaveClass(
-      'bg-secondary-background-selected'
+    expect(screen.getByRole('button', { name: '$50' })).toHaveAttribute(
+      'aria-pressed',
+      'false'
     )
   })
 

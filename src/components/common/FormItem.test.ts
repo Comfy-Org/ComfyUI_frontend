@@ -1,5 +1,7 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
+import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -52,27 +54,44 @@ describe('FormItem', () => {
   })
 
   it.for(['slider', 'knob'] as const)(
-    'labels both controls in a %s field',
-    (type) => {
-      render(FormItem, {
-        props: {
-          formValue: 5,
-          id: type,
-          item: { name: 'Volume', type }
-        },
-        global: {
-          plugins: [
-            createI18n({
-              legacy: false,
-              locale: 'en',
-              messages: { en: enMessages }
-            })
-          ],
-          directives: { tooltip: {} }
+    'updates the parent value through both controls in a %s field',
+    async (type) => {
+      const user = userEvent.setup()
+      render(
+        defineComponent({
+          components: { FormItem },
+          setup() {
+            return { value: ref(5), type }
+          },
+          template: `
+            <FormItem
+              v-model:form-value="value"
+              :item="{ name: 'Volume', type }"
+              :id="type"
+            />
+            <output>{{ value }}</output>
+          `
+        }),
+        {
+          global: {
+            plugins: [
+              createI18n({
+                legacy: false,
+                locale: 'en',
+                messages: { en: enMessages }
+              })
+            ],
+            directives: { tooltip: {} }
+          }
         }
-      })
+      )
 
       expect(screen.getAllByLabelText('Volume')).toHaveLength(2)
+      const numberInput = screen.getByRole('spinbutton', { name: 'Volume' })
+      await user.clear(numberInput)
+      await user.type(numberInput, '8')
+      await user.tab()
+      expect(screen.getByRole('status')).toHaveTextContent('8')
     }
   )
 

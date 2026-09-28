@@ -20,10 +20,15 @@ describe('ToggleGroup', () => {
     })
 
     render(Harness)
-    const selected = screen.getByRole('button', { name: 'One' })
+    const first = screen.getByRole('button', { name: 'One' })
+    const second = screen.getByRole('button', { name: 'Two' })
 
-    await user.click(selected)
+    await user.click(second)
+    expect(first).toHaveAttribute('aria-pressed', 'false')
+    expect(second).toHaveAttribute('aria-pressed', 'true')
 
-    expect(selected).toHaveAttribute('aria-pressed', 'true')
+    await user.click(second)
+
+    expect(second).toHaveAttribute('aria-pressed', 'true')
   })
 })

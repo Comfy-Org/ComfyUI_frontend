@@ -10,16 +10,8 @@
       :key="option.value"
       class="flex items-center"
     >
-      <RadioGroupItem
-        :id="`${id}-${option.value}`"
-        :value="option.value"
-        :aria-describedby="`${option.text}-label`"
-      />
-      <label
-        :id="`${option.text}-label`"
-        :for="`${id}-${option.value}`"
-        class="ml-2 cursor-pointer"
-      >
+      <RadioGroupItem :id="`${id}-${option.value}`" :value="option.value" />
+      <label :for="`${id}-${option.value}`" class="ml-2 cursor-pointer">
         {{ option.text }}
       </label>
     </div>

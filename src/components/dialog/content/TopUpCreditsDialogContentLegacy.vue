@@ -38,6 +38,7 @@
           :autofocus="amount === 50"
           variant="secondary"
           size="lg"
+          :aria-pressed="selectedPreset === amount"
           :class="
             cn(
               'h-10 w-full text-base font-medium focus-visible:ring-border-default',
