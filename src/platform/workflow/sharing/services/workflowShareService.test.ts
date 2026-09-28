@@ -191,6 +191,7 @@ describe(useWorkflowShareService, () => {
           sample_image_urls: ['https://example.com/img1.png'],
           workflow_json: {},
           assets: [],
+          is_app: false,
           profile: { username: 'builder' }
         } satisfies HubWorkflowDetail
 
