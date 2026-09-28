@@ -1,4 +1,4 @@
-import type { APIRequestContext, BrowserContext, Page } from '@playwright/test'
+import type { BrowserContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -104,39 +104,42 @@ test('shows model content without Run when the flag is disabled', async ({
   expect(firebaseRequests).toEqual([])
 })
 
-async function expectHubHeadingAndDirectory(
-  page: Page,
-  request: APIRequestContext
-) {
+async function expectHubHeadingAndDirectory(page: Page) {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'ComfyUI models'
   )
   await expect(
     page.getByTestId('models-directory').getByRole('link')
-  ).toHaveCount((await publishedModelSlugs(request)).size)
+  ).toHaveCount(publishedModelSlugs.size)
 }
 
 test('/models/ keeps its heading and model links when the catalogue fails', async ({
-  page,
-  request
+  page
 }) => {
   await page.route('**/models/catalogue.json', (route) =>
     route.fulfill({ status: 500 })
   )
   await page.goto('/models/')
   await expect(page.getByTestId('models-load-error')).toBeVisible()
-  await expectHubHeadingAndDirectory(page, request)
+  await expectHubHeadingAndDirectory(page)
 })
 
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false })
 
-  test('/models/ shows its heading and every model link', async ({
-    page,
-    request
-  }) => {
+  test('/models/ shows its heading and every model link', async ({ page }) => {
     await page.goto('/models/')
-    await expectHubHeadingAndDirectory(page, request)
+    await expectHubHeadingAndDirectory(page)
+  })
+
+  test('a /models/ directory link opens its model page', async ({ page }) => {
+    await page.goto('/models/')
+    const link = page
+      .getByTestId('models-directory')
+      .getByRole('link', { name: MODEL_NAME, exact: true })
+    await link.click()
+    await expect(page).toHaveURL(MODEL_PATH)
+    await expect(page).toHaveTitle(new RegExp(`^${MODEL_NAME} · `))
   })
 
   for (const path of ['/models/', MODEL_PATH]) {

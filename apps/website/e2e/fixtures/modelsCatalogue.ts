@@ -1,16 +1,12 @@
-import type { APIRequestContext } from '@playwright/test'
-import { expect } from '@playwright/test'
-import { z } from 'astro/zod'
+import { readdirSync, readFileSync } from 'node:fs'
 
-import { modelSchema } from '../../src/config/models-catalogue-data'
+const NON_MODEL_ROUTES = new Set(['showcase', 'workflows'])
 
-export async function publishedModelSlugs(request: APIRequestContext) {
-  const response = await request.get('/models/catalogue.json')
-  expect(response.ok()).toBe(true)
-  const catalogue = z.array(modelSchema).parse(await response.json())
-  const slugs = new Set(
-    catalogue.flatMap((model) => (model.routerId ? [model.slug] : []))
-  )
-  expect(slugs.size).toBeGreaterThan(0)
-  return slugs
-}
+/** Every canonical model page in the build, read from dist rather than the data that renders the directory. */
+export const publishedModelSlugs = new Set(
+  readdirSync('dist/models', { withFileTypes: true }).flatMap((entry) => {
+    if (!entry.isDirectory() || NON_MODEL_ROUTES.has(entry.name)) return []
+    const html = readFileSync(`dist/models/${entry.name}/index.html`, 'utf8')
+    return html.includes('http-equiv="refresh"') ? [] : [entry.name]
+  })
+)
