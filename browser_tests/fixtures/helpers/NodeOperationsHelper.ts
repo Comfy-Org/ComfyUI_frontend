@@ -184,11 +184,8 @@ export class NodeOperationsHelper {
 
   async getSerializedGraphWithoutViewport() {
     return this.page.evaluate(() => {
-      const data = window.app!.graph.serialize() as unknown as Record<
-        string,
-        unknown
-      >
-      const extra = { ...(data.extra as Record<string, unknown> | undefined) }
+      const data = window.app!.graph.serialize()
+      const extra = { ...data.extra }
       delete extra.ds
       return { ...data, extra }
     })
