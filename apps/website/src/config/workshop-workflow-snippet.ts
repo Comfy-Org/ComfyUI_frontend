@@ -33,6 +33,7 @@ export function workflowSnippetRequest(
 export function workflowCurl(request: PromptRequest): string {
   const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`
   return [
+    '# Replace YOUR_API_KEY in the X-API-Key header and in extra_data.api_key_comfy_org.',
     `curl --fail-with-body --max-time 60 --request POST ${quote(`${WORKSHOP_CLOUD_BASE_URL}/api/prompt`)} \\`,
     `  --header 'X-API-Key: YOUR_API_KEY' \\`,
     `  --header 'Content-Type: application/json' \\`,
