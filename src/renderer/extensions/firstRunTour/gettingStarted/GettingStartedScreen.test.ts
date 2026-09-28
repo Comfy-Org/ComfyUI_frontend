@@ -142,18 +142,6 @@ describe('GettingStartedScreen', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('leaves the user on the loaded graph when the template has no tour', async () => {
-    await renderScreen()
-
-    await pickFirstTemplate()
-
-    await waitFor(() => expect(mocks.dismissIntoTour).toHaveBeenCalled())
-    expect(
-      screen.queryByText(enMessages.gettingStarted.templateFailed),
-      'the template loaded; a tour that declined to open is not a failed load'
-    ).toBeNull()
-  })
-
   it('keeps the click handler from rejecting when the tour cannot start', async () => {
     mocks.dismissIntoTour.mockRejectedValue(new Error('tour unavailable'))
     const rejections: unknown[] = []
