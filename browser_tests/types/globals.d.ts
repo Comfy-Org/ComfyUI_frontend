@@ -67,6 +67,13 @@ declare global {
      */
     __tabSwitchLens?: TabSwitchLens
     __agentRecoveryGraph?: LGraph
+
+    /**
+     * Every canvas node id mounted since the recorder was installed.
+     * @see browser_tests/tests/agent/agentClearedWorkflowStaysCleared.spec.ts
+     */
+    __mountedNodeIds?: Set<string>
+    __mountedNodeObserver?: MutationObserver
   }
 
   const app: ComfyApp | undefined
