@@ -4,12 +4,16 @@ import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { workshopApps } from '../../../lib/workshop/apps'
+import type { AppWorkshopModel } from '../../../config/models-catalogue'
 import type { Locale } from '../../../i18n/translations'
 import type { CinematicCopyKey } from '../../../lib/workshop/cinematic-studio/copy'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicAppCard from './CinematicAppCard.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { models, locale = 'en' } = defineProps<{
+  models: readonly AppWorkshopModel[]
+  locale?: Locale
+}>()
 
 const HUB_PROTOTYPE = 'https://comfy-website-preview-pr-17804.vercel.app/hub/'
 
@@ -22,7 +26,7 @@ type Tab = keyof typeof TAB_LABEL
 const TABS: readonly Tab[] = ['models', 'workflows', 'apps']
 const tab = ref<Tab>('apps')
 
-const apps = computed(() => workshopApps(locale))
+const apps = computed(() => workshopApps(locale, models))
 
 const markerOffset = computed(
   () => `translateX(${TABS.indexOf(tab.value) * 100}%)`
