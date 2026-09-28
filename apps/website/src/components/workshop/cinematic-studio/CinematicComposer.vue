@@ -195,7 +195,7 @@ const chipClass = (key: PopoverKey) =>
           <CinematicOptionIcon
             part="body"
             :option="direction.body"
-            class="h-4 w-7 shrink-0"
+            class="h-5 w-8 shrink-0"
           />
           {{ bodyLabel }}
           <span v-if="focalLabel" class="text-primary-warm-gray">
