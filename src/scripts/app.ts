@@ -1495,9 +1495,7 @@ export class ComfyApp {
       return false
     }
 
-    // Read at the fit site below, after configure: an awaited hook before it
-    // can enter App Mode and hide the canvas.
-    const canvasVisible = () => !!(this.canvasEl.width && this.canvasEl.height)
+    const canvasVisible = !!(this.canvasEl.width && this.canvasEl.height)
     const viewRestoreEnabled = () =>
       restore_view && useSettingStore().get('Comfy.EnableWorkflowViewRestore')
 
@@ -1554,7 +1552,7 @@ export class ComfyApp {
           )
         }
 
-        if (canvasVisible()) {
+        if (canvasVisible) {
           fitView()
         } else if (
           loadId === this.graphLoadId &&
