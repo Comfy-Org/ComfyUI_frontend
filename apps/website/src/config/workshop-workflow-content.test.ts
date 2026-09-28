@@ -21,6 +21,7 @@ import {
 } from './workshop-workflow-content'
 import { prepareWorkflowRender } from './workflow-render'
 import { workflowCloudRequest } from './workshop-workflow-api'
+import { isWorkshopModelDisabled } from './workshop-model-availability'
 
 const pages = workshopDisplayEntriesSchema.parse(displayJson)
 const source = pages.find((page) => page.slug === 'workflows/change-material')
@@ -29,11 +30,6 @@ const page = source
 const workflows = workshopPages.filter((model) => model.routerId === undefined)
 const publicDirectory = join(import.meta.dirname, '../../public')
 
-const partialExamples: Record<string, Record<string, string>> = {
-  'workflows/remove-object': { mask: 'required' },
-  'workflows/virtual-try-on': { image1: 'required' }
-}
-
 describe('curated workflow pages', () => {
   it.for(workflows)(
     'opens $slug with its example in the shared form',
@@ -41,9 +37,7 @@ describe('curated workflow pages', () => {
       const detail = getWorkshopPageDetail(model.slug)
       assert.exists(detail)
       const state = initialWorkshopPageState(detail)
-      expect(validateForm(state.schema, state.values)).toEqual(
-        partialExamples[model.slug] ?? {}
-      )
+      expect(validateForm(state.schema, state.values)).toEqual({})
     }
   )
 
@@ -62,10 +56,14 @@ describe('curated workflow pages', () => {
     }
   )
 
-  it('explains that the Bria example needs a mask', () => {
-    const detail = getWorkshopPageDetail('workflows/remove-object')
-    assert.exists(detail)
-    expect(detail.examples[0].description).toContain('mask is not included')
+  it.for([
+    'workflows/product-photo-to-video',
+    'workflows/remove-object',
+    'workflows/virtual-try-on'
+  ])('withholds %s while it is disabled as non-functional', (slug) => {
+    expect(isWorkshopModelDisabled(slug)).toBe(true)
+    expect(getWorkshopPageDetail(slug)).toBeUndefined()
+    expect(workshopPagePaths).not.toContain(slug)
   })
 
   it('opens the inpainting example with the original image and its transparency mask', () => {
@@ -105,17 +103,17 @@ describe('curated workflow pages', () => {
     }
   )
 
-  it('publishes six outcomes in each launch category', () => {
+  it('publishes every enabled outcome in its launch category', () => {
     expect(
       Object.groupBy(workflows, (workflow) => workflow.category ?? '')
     ).toMatchObject({
       videos: { length: 6 },
       characters: { length: 6 },
-      product: { length: 6 },
+      product: { length: 4 },
       upscale: { length: 6 },
-      cleanup: { length: 6 }
+      cleanup: { length: 5 }
     })
-    expect(workflows).toHaveLength(30)
+    expect(workflows).toHaveLength(27)
   })
 
   it.for(categories)('highlights one published workflow in $id', (category) => {
@@ -231,6 +229,7 @@ describe('curated workflow pages', () => {
     ).toEqual(
       workflowCatalog
         .map((entry) => entry.id)
+        .filter((id) => !isWorkshopModelDisabled(id))
         .sort((a, b) => a.localeCompare(b))
     )
     expect(getWorkshopPageDetail('workflows/not-published')).toBeUndefined()

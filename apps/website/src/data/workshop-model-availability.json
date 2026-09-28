@@ -86,5 +86,17 @@
   "wan--happyhorse-image-to-video--animate-images": {
     "disabled": true,
     "reason": "Production image-to-video runs repeatedly returned provider errors; disable while the route is investigated."
+  },
+  "workflows/product-photo-to-video": {
+    "disabled": true,
+    "reason": "Building the combined video decodes MiniMax clips into frames and exceeds the 10 GiB limit for CPU-only Cloud jobs (BE-6855): the worker dies (\"RIP to the server your workflow was running on\") on every run, 2026-09-28. Re-enable with #19284, which ships the three clips without the combined video."
+  },
+  "workflows/remove-object": {
+    "disabled": true,
+    "reason": "The default example has no mask, so the default run fails its own input validation (2026-09-28 live sweep). Re-enable with #19272, which adds a website-owned default mask."
+  },
+  "workflows/virtual-try-on": {
+    "disabled": true,
+    "reason": "The default example has no subject image (image1), so the default run fails its own input validation (2026-09-28 live sweep). Re-enable with #19272, which adds the default subject."
   }
 }
