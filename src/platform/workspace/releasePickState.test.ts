@@ -17,6 +17,8 @@ const loaded: ReleasePickEvent = {
   type: 'loaded',
   releases: [release],
   pickedReleaseId: 'r-1',
+  pickSource: 'browser',
+  defaultReleaseId: null,
   buildsVisible: true
 }
 
@@ -24,6 +26,8 @@ const ready: ReleasePickState = {
   phase: 'ready',
   releases: [release],
   pickedReleaseId: 'r-1',
+  pickSource: 'browser',
+  defaultReleaseId: null,
   buildsVisible: true
 }
 

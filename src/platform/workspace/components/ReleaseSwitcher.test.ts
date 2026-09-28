@@ -16,7 +16,9 @@ import ReleaseSwitcher from './ReleaseSwitcher.vue'
 const mockWorkspaceApi = vi.hoisted(() => ({
   listReleases: vi.fn(),
   pickRelease: vi.fn(),
-  clearRelease: vi.fn()
+  clearRelease: vi.fn(),
+  setDefaultRelease: vi.fn(),
+  clearDefaultRelease: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), async () => {
@@ -188,6 +190,106 @@ describe('ReleaseSwitcher', () => {
     )
     expect(reload).not.toHaveBeenCalled()
     expect(screen.queryByTestId('release-switcher-panel')).toBeNull()
+  })
+
+  it('says it follows the workspace default, and marks that Release in the list', async () => {
+    mockWorkspaceApi.listReleases.mockResolvedValue({
+      ...listing,
+      picked_release_id: 'aaaaaaaa-0000-4000-8000-000000000002',
+      pick_source: 'workspace_default',
+      default_release_id: 'aaaaaaaa-0000-4000-8000-000000000002'
+    })
+    renderSwitcher()
+    await waitFor(() =>
+      expect(screen.getByTestId('release-switcher-current')).toHaveTextContent(
+        'Studio Build v2'
+      )
+    )
+    expect(screen.getByTestId('release-switcher-following')).toHaveTextContent(
+      'Workspace default'
+    )
+    await userEvent.click(screen.getByTestId('release-switcher-trigger'))
+    expect(
+      screen.getByTestId('release-row-aaaaaaaa-0000-4000-8000-000000000002')
+    ).toHaveTextContent('Workspace default')
+    expect(screen.queryByTestId('release-row-follow')).toBeNull()
+    expect(screen.queryByTestId('release-switcher-owner')).toBeNull()
+  })
+
+  it('offers a browser with its own pick the workspace default, which clears with follow=workspace', async () => {
+    mockWorkspaceApi.listReleases.mockResolvedValue({
+      ...listing,
+      pick_source: 'browser',
+      default_release_id: 'aaaaaaaa-0000-4000-8000-000000000002'
+    })
+    mockWorkspaceApi.clearRelease.mockResolvedValue(undefined)
+    renderSwitcher()
+    await userEvent.click(await screen.findByTestId('release-switcher-trigger'))
+    expect(screen.queryByTestId('release-switcher-following')).toBeNull()
+
+    const follow = screen.getByTestId('release-row-follow')
+    expect(follow).toHaveTextContent('Studio Build v2')
+    await userEvent.click(follow)
+
+    expect(mockWorkspaceApi.clearRelease).toHaveBeenCalledWith('ws-1', {
+      follow: 'workspace'
+    })
+    await waitFor(() => expect(reload).toHaveBeenCalledOnce())
+  })
+
+  it('lets an owner set the picked Release as the workspace default, and clear it', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      workspaceId: 'ws-1',
+      activeWorkspace: { id: 'ws-1', role: 'owner' }
+    })
+    mockWorkspaceApi.listReleases
+      .mockResolvedValueOnce({
+        ...listing,
+        picked_release_id: 'aaaaaaaa-0000-4000-8000-000000000002',
+        pick_source: 'browser'
+      })
+      .mockResolvedValue({
+        ...listing,
+        picked_release_id: 'aaaaaaaa-0000-4000-8000-000000000002',
+        pick_source: 'browser',
+        default_release_id: 'aaaaaaaa-0000-4000-8000-000000000002'
+      })
+    mockWorkspaceApi.setDefaultRelease.mockResolvedValue(undefined)
+    mockWorkspaceApi.clearDefaultRelease.mockResolvedValue(undefined)
+    renderSwitcher()
+    await userEvent.click(await screen.findByTestId('release-switcher-trigger'))
+
+    const owner = screen.getByTestId('release-switcher-owner')
+    expect(owner).toHaveTextContent('No workspace default')
+    expect(screen.queryByTestId('release-switcher-clear-default')).toBeNull()
+    await userEvent.click(screen.getByTestId('release-switcher-set-default'))
+
+    expect(mockWorkspaceApi.setDefaultRelease).toHaveBeenCalledWith('ws-1', {
+      release_id: 'aaaaaaaa-0000-4000-8000-000000000002'
+    })
+    await waitFor(() =>
+      expect(owner).toHaveTextContent('Workspace default: Studio Build v2')
+    )
+    expect(reload).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('release-switcher-set-default')).toBeNull()
+
+    await userEvent.click(screen.getByTestId('release-switcher-clear-default'))
+    expect(mockWorkspaceApi.clearDefaultRelease).toHaveBeenCalledWith('ws-1')
+  })
+
+  it('shows a member the workspace default but no way to change it', async () => {
+    mockWorkspaceApi.listReleases.mockResolvedValue({
+      ...listing,
+      picked_release_id: 'aaaaaaaa-0000-4000-8000-000000000002',
+      pick_source: 'browser',
+      default_release_id: 'bbbbbbbb-0000-4000-8000-000000000009'
+    })
+    renderSwitcher()
+    await userEvent.click(await screen.findByTestId('release-switcher-trigger'))
+    expect(screen.queryByTestId('release-switcher-owner')).toBeNull()
+    expect(screen.getByTestId('release-row-follow')).toHaveTextContent(
+      'Release bbbbbbbb'
+    )
   })
 
   it('shows why the list is unavailable', async () => {
