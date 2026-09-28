@@ -8,12 +8,14 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { render } from '@testing-library/vue'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useDeployToComfyApiGate } from '@/platform/workflow/deploy/composables/useDeployToComfyApiGate'
 import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/composables/useWorkflowActionsMenu'
+import en from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
 import { toNodeId } from '@/types/nodeId'
@@ -41,7 +43,17 @@ let mockAppModeStore: ReturnType<typeof useAppModeStore>
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
+const mockOpenDeployDialog = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+vi.mock(
+  import('@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'),
+  () => ({ openDeployToComfyApiDialog: mockOpenDeployDialog })
+)
+
 vi.mock(import('@/composables/useFeatureFlags'))
+
+vi.mock(
+  import('@/platform/workflow/deploy/composables/useDeployToComfyApiGate')
+)
 function useWorkflowActionsMenu(
   ...args: Parameters<typeof useWorkflowActionsMenuComposable>
 ) {
@@ -76,6 +88,11 @@ function findItem(items: MenuItems, label: string): WorkflowMenuAction {
 
 describe('useWorkflowActionsMenu', () => {
   beforeEach(() => {
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({
+      enabled: ref(false),
+      settled: ref(true),
+      check: vi.fn()
+    })
     mockBookmarkStore = useWorkflowBookmarkStore()
     mockWorkflowStore = useWorkflowStore()
     mockCommandStore = useCommandStore()
@@ -353,6 +370,142 @@ describe('useWorkflowActionsMenu', () => {
     expect(bookmark.disabled).toBe(true)
   })
 
+  it('offers Deploy to Comfy API as a new root-level item once the platform has distributions on', () => {
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({
+      enabled: ref(true),
+      settled: ref(true),
+      check: vi.fn()
+    })
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const deploy = findItem(menuItems.value, 'deployToComfyApi.buttonLabel')
+
+    expect(en.deployToComfyApi.buttonLabel).toBe('Deploy to Comfy API')
+    expect(deploy.isNew).toBe(true)
+    expect(deploy.badge).toBe('g.new')
+
+    const nested = useWorkflowActionsMenu(vi.fn(), { isRoot: false })
+    expect(menuLabels(nested.menuItems.value)).not.toContain(
+      'deployToComfyApi.buttonLabel'
+    )
+  })
+
+  it('keeps Deploy to Comfy API hidden until the platform has distributions on', () => {
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+
+    expect(menuLabels(menuItems.value)).not.toContain(
+      'deployToComfyApi.buttonLabel'
+    )
+  })
+
+  it('holds the Deploy to Comfy API row still while the menu is open, and follows the flag once it closes', async () => {
+    const enabled = ref(false)
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({
+      enabled,
+      settled: ref(true),
+      check: vi.fn()
+    })
+    const isOpen = ref(true)
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
+      isRoot: true,
+      isOpen
+    })
+
+    enabled.value = true
+    await nextTick()
+    expect(menuLabels(menuItems.value)).not.toContain(
+      'deployToComfyApi.buttonLabel'
+    )
+
+    isOpen.value = false
+    await nextTick()
+    expect(menuLabels(menuItems.value)).toContain(
+      'deployToComfyApi.buttonLabel'
+    )
+  })
+
+  it('checks the gate each time the menu opens', async () => {
+    const check = vi.fn()
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({
+      enabled: ref(false),
+      settled: ref(true),
+      check
+    })
+    const isOpen = ref(false)
+    useWorkflowActionsMenu(vi.fn(), { isRoot: true, isOpen })
+    expect(check).not.toHaveBeenCalled()
+
+    isOpen.value = true
+    await nextTick()
+
+    expect(check).toHaveBeenCalledOnce()
+  })
+
+  it('shows the row in the same open when the menu opened before the account had an answer', async () => {
+    const enabled = ref(false)
+    const settled = ref(false)
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({
+      enabled,
+      settled,
+      check: vi.fn()
+    })
+    const isOpen = ref(false)
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
+      isRoot: true,
+      isOpen
+    })
+    isOpen.value = true
+    await nextTick()
+
+    enabled.value = true
+    settled.value = true
+    await nextTick()
+
+    expect(menuLabels(menuItems.value)).toContain(
+      'deployToComfyApi.buttonLabel'
+    )
+  })
+
+  it('keeps the Deploy to Comfy API row in place but inert when the account loses access while the menu is open', async () => {
+    const enabled = ref(true)
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({
+      enabled,
+      settled: ref(true),
+      check: vi.fn()
+    })
+    const isOpen = ref(true)
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
+      isRoot: true,
+      isOpen
+    })
+
+    enabled.value = false
+    await nextTick()
+    const deploy = findItem(menuItems.value, 'deployToComfyApi.buttonLabel')
+    expect(deploy.disabled).toBe(true)
+    await deploy.command?.()
+    expect(mockOpenDeployDialog).not.toHaveBeenCalled()
+
+    isOpen.value = false
+    await nextTick()
+    expect(menuLabels(menuItems.value)).not.toContain(
+      'deployToComfyApi.buttonLabel'
+    )
+  })
+
+  it('deploy command opens the Deploy to Comfy API dialog', async () => {
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({
+      enabled: ref(true),
+      settled: ref(true),
+      check: vi.fn()
+    })
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const deploy = findItem(menuItems.value, 'deployToComfyApi.buttonLabel')
+
+    await deploy.command?.()
+
+    expect(mockOpenDeployDialog).toHaveBeenCalledOnce()
+  })
+
   it('switches to custom workflow before executing rename', async () => {
     const customWorkflow = ref({
       path: 'other.json',
@@ -370,5 +523,73 @@ describe('useWorkflowActionsMenu', () => {
       customWorkflow.value
     )
     expect(startRename).toHaveBeenCalled()
+  })
+
+  it('switches to the right-clicked workflow before opening the deploy dialog', async () => {
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({
+      enabled: ref(true),
+      settled: ref(true),
+      check: vi.fn()
+    })
+    const customWorkflow = ref(
+      fromPartial<ComfyWorkflow>({ path: 'other.json', isPersisted: true })
+    )
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
+      isRoot: true,
+      workflow: customWorkflow
+    })
+    const activation: { finish?: () => void } = {}
+    vi.mocked(useWorkflowService().openWorkflow).mockReturnValueOnce(
+      new Promise<boolean>((resolve) => {
+        activation.finish = () => resolve(true)
+      })
+    )
+
+    const deploying = findItem(
+      menuItems.value,
+      'deployToComfyApi.buttonLabel'
+    ).command?.()
+
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      customWorkflow.value
+    )
+    expect(mockOpenDeployDialog).not.toHaveBeenCalled()
+    expect(activation.finish).toBeTypeOf('function')
+    activation.finish?.()
+    await deploying
+    expect(mockOpenDeployDialog).toHaveBeenCalledOnce()
+  })
+
+  it('does not open the deploy dialog when access is revoked while the workflow switch is pending', async () => {
+    const enabled = ref(true)
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({
+      enabled,
+      settled: ref(true),
+      check: vi.fn()
+    })
+    const customWorkflow = ref(
+      fromPartial<ComfyWorkflow>({ path: 'other.json', isPersisted: true })
+    )
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
+      isRoot: true,
+      workflow: customWorkflow
+    })
+    const activation: { finish?: () => void } = {}
+    vi.mocked(useWorkflowService().openWorkflow).mockReturnValueOnce(
+      new Promise<boolean>((resolve) => {
+        activation.finish = () => resolve(true)
+      })
+    )
+
+    const deploying = findItem(
+      menuItems.value,
+      'deployToComfyApi.buttonLabel'
+    ).command?.()
+    enabled.value = false
+    activation.finish?.()
+    await deploying
+
+    expect(mockOpenDeployDialog).not.toHaveBeenCalled()
   })
 })

@@ -1,5 +1,5 @@
 <template>
-  <ContextMenuRoot :modal="false">
+  <ContextMenuRoot :modal="false" @update:open="contextMenuOpen = $event">
     <ContextMenuTrigger as-child>
       <div
         ref="workflowTabRef"
@@ -299,9 +299,10 @@ const onCloseWorkflow = async (option: WorkflowOption) => {
 const commandStore = useCommandStore()
 const workflow = computed(() => props.workflowOption.workflow)
 
+const contextMenuOpen = ref(false)
 const { menuItems: baseMenuItems } = useWorkflowActionsMenu(
   () => commandStore.execute('Comfy.RenameWorkflow'),
-  { includeDelete: false, workflow }
+  { includeDelete: false, workflow, isOpen: contextMenuOpen }
 )
 
 const contextMenuItems = computed<WorkflowMenuItem[]>(() => [

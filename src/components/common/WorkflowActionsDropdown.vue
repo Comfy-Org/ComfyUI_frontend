@@ -50,7 +50,7 @@ const appModeStore = useAppModeStore()
 
 const { menuItems } = useWorkflowActionsMenu(
   () => useCommandStore().execute('Comfy.RenameWorkflow'),
-  { isRoot: true }
+  { isRoot: true, isOpen: dropdownOpen }
 )
 const { hasUnseenItems, markAsSeen } = useNewMenuItemIndicator(
   () => menuItems.value
