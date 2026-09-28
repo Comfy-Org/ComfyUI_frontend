@@ -414,6 +414,42 @@ describe('useModelStore', () => {
     ])
   })
 
+  it('preserves a folder opened while replacement contents load', async () => {
+    enableMocks(true)
+    store = useModelStore()
+    await store.loadModelFolders()
+    await store.getLoadedModelFolder('checkpoints')
+
+    let resolveReplacement!: (
+      models: Awaited<ReturnType<typeof assetService.getAssetModels>>
+    ) => void
+    vi.mocked(assetService.getAssetModels).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveReplacement = resolve
+      })
+    )
+    const rebuild = store.loadModelFolders()
+    await vi.waitFor(() => {
+      expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
+    })
+
+    vi.mocked(assetService.getAssetModels).mockResolvedValue([
+      { name: 'vae.safetensors', pathIndex: 0 }
+    ])
+    await store.getLoadedModelFolder('vae')
+    expect(store.models.map((model) => model.key)).toContain(
+      'vae/vae.safetensors'
+    )
+
+    resolveReplacement([{ name: 'fresh.safetensors', pathIndex: 0 }])
+    await rebuild
+
+    expect(store.models.map((model) => model.key)).toEqual([
+      'checkpoints/fresh.safetensors',
+      'vae/vae.safetensors'
+    ])
+  })
+
   describe('refreshModelFolder races', () => {
     it('keeps the newer refresh when an older one for the same folder finishes last', async () => {
       enableMocks()
