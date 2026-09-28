@@ -4,7 +4,8 @@ import {
   cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigErrorStatus,
-  remoteConfigState
+  remoteConfigState,
+  sessionAgentGrant
 } from './remoteConfig'
 
 // Cap the bootstrap fetch so a wedged /features endpoint can never block app.mount indefinitely.
@@ -40,6 +41,7 @@ export function invalidateRemoteConfig(): void {
   remoteConfigErrorStatus.value = null
   remoteConfigState.value = 'unloaded'
   cachedLegacyBillingMigrationEnabled.value = undefined
+  sessionAgentGrant.value = undefined
 }
 
 async function fetchRemoteConfig(
@@ -99,6 +101,7 @@ export async function refreshRemoteConfig(
           config.legacy_billing_migration_enabled
         )
         cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
+        sessionAgentGrant.value = config['agent-in-app-experience'] === true
       }
       return
     }
@@ -108,6 +111,7 @@ export async function refreshRemoteConfig(
       window.__CONFIG__ = {}
       remoteConfig.value = {}
       remoteConfigErrorStatus.value = response.status
+      sessionAgentGrant.value = undefined
     } else {
       remoteConfigErrorStatus.value = null
     }
