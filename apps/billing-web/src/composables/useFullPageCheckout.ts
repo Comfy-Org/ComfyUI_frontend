@@ -15,6 +15,7 @@ import {
   railAcceptsPay,
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
+import { planCreditsSettingsUrl } from '@/checkout/cloudLinks'
 import {
   buildSubscribeRequest,
   checkoutResultUrl
@@ -104,14 +105,18 @@ export function useFullPageCheckout() {
       : undefined
   )
 
+  /** Back to the product, or to the workspace's Plan & Credits settings when this family has no destination for the link's target. */
   const returnLink = computed(() => {
+    const workspace = billedWorkspace()
     const arrival = entry.value
-    if (!arrival) return undefined
-    return buildReturnUrl({
-      target: arrival.returnTo,
-      environment: BILLING_WEB_ENV,
-      workspace: billedWorkspace()
-    })?.href
+    const host =
+      arrival &&
+      buildReturnUrl({
+        target: arrival.returnTo,
+        environment: BILLING_WEB_ENV,
+        workspace
+      })?.href
+    return host ?? planCreditsSettingsUrl(workspace)
   })
 
   async function pay(confirmationToken?: string) {

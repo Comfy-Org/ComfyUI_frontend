@@ -75,7 +75,7 @@ const payFailureCopy = computed(() =>
 const productName = computed(() => coded('product', entry.value?.product))
 
 function returnToProduct() {
-  if (returnLink.value !== undefined) window.location.assign(returnLink.value)
+  window.location.assign(returnLink.value)
 }
 </script>
 
@@ -100,7 +100,6 @@ function returnToProduct() {
         }}
       </p>
       <button
-        v-if="returnLink"
         type="button"
         class="mt-2 h-10 w-full cursor-pointer rounded-lg bg-secondary-background px-4 text-sm font-semibold text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none"
         @click="returnToProduct"
@@ -115,11 +114,7 @@ function returnToProduct() {
   >
     <h1 class="sr-only">{{ t('hosted.title.checkout') }}</h1>
     <div class="flex min-h-full flex-col lg:flex-row">
-      <CheckoutSummaryColumn
-        :summary
-        :can-go-back="returnLink !== undefined"
-        @back="returnToProduct"
-      />
+      <CheckoutSummaryColumn :summary @back="returnToProduct" />
       <CheckoutPaymentColumn
         :page
         :charge
