@@ -10872,13 +10872,6 @@ Enterprise`
     'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
-  'workshop.cinematic.badge': { en: 'New · Beta', 'zh-CN': '新 · 测试版' },
-  'workshop.cinematic.summary': {
-    en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
-    'zh-CN':
-      '用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。'
-  },
-  'workshop.cinematic.cta': { en: 'Open studio', 'zh-CN': '打开工作室' },
   'workshop.cinematic.openInStudio': {
     en: 'Open in Cinematic Studio',
     'zh-CN': '在 Cinematic Studio 中打开'

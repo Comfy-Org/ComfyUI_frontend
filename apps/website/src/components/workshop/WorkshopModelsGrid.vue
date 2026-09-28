@@ -36,8 +36,7 @@ import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
-import { modelSlides, studioSlide } from '../../lib/workshop/featured-slides'
-import { useWorkshopAppsEnabled } from '../../scripts/posthog'
+import { modelSlides } from '../../lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
@@ -169,11 +168,7 @@ const featured = computed(() => {
     'popular'
   )
 })
-const studioEnabled = useWorkshopAppsEnabled()
-const featuredSlides = computed(() => [
-  ...(studioEnabled.value ? [studioSlide(locale)] : []),
-  ...modelSlides(featured.value, locale)
-])
+const featuredSlides = computed(() => modelSlides(featured.value, locale))
 
 function openSection(value: UseCase | 'other') {
   selectedUseCases.value = openedUseCases(value)
