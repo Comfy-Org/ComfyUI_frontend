@@ -27,10 +27,31 @@ interface RefreshRemoteConfigOptions {
 }
 
 let refreshGeneration = 0
+let authenticatedLoadingGeneration: number | undefined
+let agentGrantExpiryTimer: ReturnType<typeof setTimeout> | undefined
 const activeRefreshControllers = new Set<AbortController>()
+
+function clearSessionAgentGrant(): void {
+  clearTimeout(agentGrantExpiryTimer)
+  agentGrantExpiryTimer = undefined
+  sessionAgentGrant.value = undefined
+  sessionAgentGrantValidUntil.value = undefined
+}
+
+function cacheSessionAgentGrant(granted: boolean): void {
+  clearTimeout(agentGrantExpiryTimer)
+  sessionAgentGrant.value = granted
+  const validUntil = Date.now() + AGENT_GRANT_FALLBACK_MS
+  sessionAgentGrantValidUntil.value = validUntil
+  agentGrantExpiryTimer = setTimeout(() => {
+    if (sessionAgentGrantValidUntil.value !== validUntil) return
+    clearSessionAgentGrant()
+  }, AGENT_GRANT_FALLBACK_MS)
+}
 
 export function invalidateRemoteConfig(): void {
   refreshGeneration++
+  authenticatedLoadingGeneration = undefined
   for (const controller of activeRefreshControllers) controller.abort()
   activeRefreshControllers.clear()
   const { comfy_api_base_url, comfy_cloud_base_url, comfy_platform_base_url } =
@@ -46,8 +67,7 @@ export function invalidateRemoteConfig(): void {
   remoteConfigState.value = 'unloaded'
   authenticatedRemoteConfigState.value = 'unloaded'
   cachedLegacyBillingMigrationEnabled.value = undefined
-  sessionAgentGrant.value = undefined
-  sessionAgentGrantValidUntil.value = undefined
+  clearSessionAgentGrant()
 }
 
 async function fetchRemoteConfig(
@@ -85,13 +105,16 @@ function commitRemoteConfigSuccess(
   remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
   if (useAuth) {
     authenticatedRemoteConfigState.value = 'authenticated'
+    authenticatedLoadingGeneration = undefined
     cachedBillingControlEnabled.value = Boolean(config.billing_control_enabled)
     cachedLegacyBillingMigrationEnabled.value = Boolean(
       config.legacy_billing_migration_enabled
     )
     cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
-    sessionAgentGrant.value = config['agent-in-app-experience'] === true
-    sessionAgentGrantValidUntil.value = Date.now() + AGENT_GRANT_FALLBACK_MS
+    cacheSessionAgentGrant(config['agent-in-app-experience'] === true)
+  } else {
+    authenticatedRemoteConfigState.value = 'unloaded'
+    clearSessionAgentGrant()
   }
   remoteConfigRevision.value++
 }
@@ -99,18 +122,22 @@ function commitRemoteConfigSuccess(
 function commitRemoteConfigFailure(response: Response, useAuth: boolean): void {
   console.warn('Failed to load remote config:', response.statusText)
   if (response.status === 401 || response.status === 403) {
-    remoteConfigErrorStatus.value = response.status
     if (useAuth) {
+      remoteConfigErrorStatus.value = response.status
       window.__CONFIG__ = {}
       remoteConfig.value = {}
-      sessionAgentGrant.value = undefined
-      sessionAgentGrantValidUntil.value = undefined
+      clearSessionAgentGrant()
+    } else {
+      remoteConfigErrorStatus.value = null
     }
   } else {
     remoteConfigErrorStatus.value = null
   }
   if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
-  if (useAuth) authenticatedRemoteConfigState.value = 'error'
+  if (useAuth) {
+    authenticatedRemoteConfigState.value = 'error'
+    authenticatedLoadingGeneration = undefined
+  }
   remoteConfigState.value = 'error'
   remoteConfigRevision.value++
 }
@@ -119,7 +146,10 @@ function commitRemoteConfigException(error: unknown, useAuth: boolean): void {
   console.error('Failed to fetch remote config:', error)
   remoteConfigErrorStatus.value = null
   if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
-  if (useAuth) authenticatedRemoteConfigState.value = 'error'
+  if (useAuth) {
+    authenticatedRemoteConfigState.value = 'error'
+    authenticatedLoadingGeneration = undefined
+  }
   remoteConfigState.value = 'error'
   remoteConfigRevision.value++
 }
@@ -137,8 +167,12 @@ export async function refreshRemoteConfig(
   options: RefreshRemoteConfigOptions = {}
 ): Promise<void> {
   const { useAuth = true, signal } = options
-  if (useAuth) authenticatedRemoteConfigState.value = 'loading'
   const generation = ++refreshGeneration
+  const previousAuthenticatedState = authenticatedRemoteConfigState.value
+  if (useAuth && previousAuthenticatedState !== 'authenticated') {
+    authenticatedRemoteConfigState.value = 'loading'
+    authenticatedLoadingGeneration = generation
+  }
   const controller = new AbortController()
   activeRefreshControllers.add(controller)
   const abort = () => controller.abort()
@@ -164,6 +198,12 @@ export async function refreshRemoteConfig(
       if (signal?.aborted) return
       if (useAuth && !authenticated) {
         authenticatedRemoteConfigState.value = 'error'
+        authenticatedLoadingGeneration = undefined
+        remoteConfigErrorStatus.value = null
+        remoteConfigState.value = 'error'
+        console.warn(
+          'Rejected authenticated remote config response without credentials'
+        )
         remoteConfigRevision.value++
         return
       }
@@ -176,6 +216,10 @@ export async function refreshRemoteConfig(
     if (signal?.aborted) return
     commitRemoteConfigException(error, useAuth)
   } finally {
+    if (authenticatedLoadingGeneration === generation) {
+      authenticatedRemoteConfigState.value = previousAuthenticatedState
+      authenticatedLoadingGeneration = undefined
+    }
     clearTimeout(timeoutId)
     signal?.removeEventListener('abort', abort)
     activeRefreshControllers.delete(controller)

@@ -44,9 +44,7 @@ export const remoteConfigErrorStatus = ref<number | null>(null)
 
 /** Whether the authenticated config has been loaded. */
 export const isAuthenticatedConfigLoaded = computed(
-  () =>
-    authenticatedRemoteConfigState.value === 'authenticated' ||
-    remoteConfigState.value === 'authenticated'
+  () => authenticatedRemoteConfigState.value === 'authenticated'
 )
 
 /**

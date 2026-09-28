@@ -124,7 +124,29 @@ describe('refreshRemoteConfig', () => {
 
       expect(remoteConfig.value).toEqual({ subscription_required: true })
       expect(authenticatedRemoteConfigState.value).toBe('error')
+      expect(remoteConfigState.value).toBe('error')
       expect(remoteConfigRevision.value).toBe(1)
+    })
+
+    it('restores the prior state when the caller cancels the refresh', async () => {
+      authenticatedRemoteConfigState.value = 'error'
+      vi.mocked(api.fetchApi).mockImplementation(
+        (_route, options) =>
+          new Promise<Response>((_, reject) => {
+            options?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('Aborted', 'AbortError'))
+            })
+          })
+      )
+      const controller = new AbortController()
+
+      const refresh = refreshRemoteConfig({ signal: controller.signal })
+      expect(authenticatedRemoteConfigState.value).toBe('loading')
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledOnce())
+      controller.abort()
+      await refresh
+
+      expect(authenticatedRemoteConfigState.value).toBe('error')
     })
 
     it('caches authenticated legacy billing migration eligibility', async () => {
@@ -205,6 +227,25 @@ describe('refreshRemoteConfig', () => {
       expect(remoteConfigErrorStatus.value).toBe(500)
       expect(window.__CONFIG__).toEqual(existingConfig)
     })
+
+    it('keeps authenticated state settled while polling', async () => {
+      authenticatedRemoteConfigState.value = 'authenticated'
+      let resolveRefresh: ((response: Response) => void) | undefined
+      vi.mocked(api.fetchApi).mockImplementation(
+        (_route, options) =>
+          new Promise<Response>((resolve) => {
+            options?.onAuthHeader?.(true)
+            resolveRefresh = resolve
+          })
+      )
+
+      const refresh = refreshRemoteConfig()
+
+      expect(authenticatedRemoteConfigState.value).toBe('authenticated')
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledOnce())
+      resolveRefresh?.(mockSuccessResponse())
+      await refresh
+    })
   })
 
   describe('without auth', () => {
@@ -223,6 +264,19 @@ describe('refreshRemoteConfig', () => {
       expect(remoteConfig.value).toEqual(mockConfig)
       expect(window.__CONFIG__).toEqual(mockConfig)
       expect(cachedLegacyBillingMigrationEnabled.value).toBe(true)
+    })
+
+    it('clears authenticated state and its grant when anonymous config commits', async () => {
+      authenticatedRemoteConfigState.value = 'authenticated'
+      sessionAgentGrant.value = true
+      sessionAgentGrantValidUntil.value = Date.now() + 60_000
+      vi.mocked(global.fetch).mockResolvedValue(mockSuccessResponse())
+
+      await refreshRemoteConfig({ useAuth: false })
+
+      expect(authenticatedRemoteConfigState.value).toBe('unloaded')
+      expect(sessionAgentGrant.value).toBeUndefined()
+      expect(sessionAgentGrantValidUntil.value).toBeUndefined()
     })
 
     it('does not erase authenticated config or its grant on an anonymous 401', async () => {
@@ -245,6 +299,7 @@ describe('refreshRemoteConfig', () => {
       expect(window.__CONFIG__).toEqual(existingConfig)
       expect(sessionAgentGrant.value).toBe(true)
       expect(authenticatedRemoteConfigState.value).toBe('authenticated')
+      expect(remoteConfigErrorStatus.value).toBeNull()
     })
   })
 
@@ -296,6 +351,19 @@ describe('refreshRemoteConfig', () => {
       expect(sessionAgentGrantValidUntil.value).toBeGreaterThan(Date.now())
       expect(storageEntries(localStorage)).toEqual(localStorageBefore)
       expect(storageEntries(sessionStorage)).toEqual(sessionStorageBefore)
+    })
+
+    it('reactively expires the transient session grant', async () => {
+      vi.useFakeTimers()
+      mockAuthenticatedFetch(
+        mockSuccessResponse({ 'agent-in-app-experience': true })
+      )
+
+      await refreshRemoteConfig()
+      await vi.advanceTimersByTimeAsync(15 * 60_000)
+
+      expect(sessionAgentGrant.value).toBeUndefined()
+      expect(sessionAgentGrantValidUntil.value).toBeUndefined()
     })
 
     it('keeps this session granted when the poll fails transiently', async () => {
