@@ -10,12 +10,10 @@ import { test } from './fixtures/blockExternalMedia'
 // were captured in the fallback while every preloaded weight matched exactly.
 const PAGES = ['/', '/pricing', '/download', '/about', '/customers']
 
-test('every PP Formula face rendered above the fold is preloaded', async ({
-  page
-}) => {
-  const missing: string[] = []
-
-  for (const path of PAGES) {
+for (const path of PAGES) {
+  test(`every PP Formula face rendered above the fold on ${path} is preloaded`, async ({
+    page
+  }) => {
     await page.goto(path)
     await page.evaluate(() => document.fonts.ready)
 
@@ -64,7 +62,10 @@ test('every PP Formula face rendered above the fold is preloaded', async ({
 
         const box = element.getBoundingClientRect()
         if (box.width === 0 || box.height === 0) continue
-        if (box.top >= window.innerHeight) continue
+        // A tenth of a viewport of slack: an element sitting exactly on the
+        // fold flips in and out as lazy images and the banner settle, and a
+        // set that changes between runs would take the assertion with it.
+        if (box.top >= window.innerHeight * 1.1) continue
 
         const carriesText = [...element.childNodes].some(
           (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim()
@@ -97,8 +98,6 @@ test('every PP Formula face rendered above the fold is preloaded', async ({
         .filter((gap): gap is string => gap !== null)
     })
 
-    missing.push(...gaps.map((gap) => `${path}: ${gap}`))
-  }
-
-  expect([...new Set(missing)]).toEqual([])
-})
+    expect(gaps).toEqual([])
+  })
+}
