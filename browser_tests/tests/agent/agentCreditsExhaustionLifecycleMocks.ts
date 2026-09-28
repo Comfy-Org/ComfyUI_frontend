@@ -1,7 +1,10 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
-import type { AgentTurnAccepted,AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AgentTurnAccepted,
+  AgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { webSocketFixture } from '@e2e/fixtures/ws'
