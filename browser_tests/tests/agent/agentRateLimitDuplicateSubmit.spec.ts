@@ -24,6 +24,8 @@ test.describe(
       await expect(
         agentPanel.root.getByText(FUNDS_UNAVAILABLE_MESSAGE)
       ).toBeVisible()
+      await expect(agentPanel.composer).toHaveText(prompt)
+      await expect(agentPanel.sendButton).toBeEnabled()
 
       test.fail(
         true,
@@ -31,6 +33,8 @@ test.describe(
       )
       await agentPanel.composer.press('Enter')
       await agentPanel.composer.press('Enter')
+      await expect(agentPanel.composer).toHaveText(prompt)
+      await expect(agentPanel.sendButton).toBeEnabled()
 
       await expect(
         agentPanel.root.getByTestId('user-message-bubble')

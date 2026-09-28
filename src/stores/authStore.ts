@@ -1,6 +1,8 @@
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes, getAdditionalUserInfo } from 'firebase/auth'
 import type { User, UserCredential } from 'firebase/auth'
+
+import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -13,6 +15,7 @@ import {
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
 import { clearOnboardingReplay } from '@/platform/onboarding/onboardingReplay'
@@ -49,6 +52,14 @@ type AccessBillingPortalResponse =
   operations['AccessBillingPortal']['responses']['200']['content']['application/json']
 type AccessBillingPortalReqBody =
   operations['AccessBillingPortal']['requestBody']
+export interface SocialSignInOptions {
+  readonly isNewUser?: boolean
+  /** How a closed popup's late result is finished or discarded. */
+  readonly popup?: PopupSignInOptions
+  /** A closed popup's late credential to finish instead of opening a popup. */
+  readonly resumed?: Promise<UserCredential>
+}
+
 export type BillingPortalTargetTier = NonNullable<
   NonNullable<
     NonNullable<AccessBillingPortalReqBody>['content']
@@ -583,6 +594,7 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
+    useCloudWebSessionStore().signedInInteractively(result.user)
     useTelemetry()?.trackAuth({
       method: 'email',
       is_new_user: false,
@@ -617,6 +629,7 @@ export const useAuthStore = defineStore('auth', () => {
       })
     )
 
+    useCloudWebSessionStore().signedInInteractively(result.user)
     useTelemetry()?.trackAuth({
       method: 'email',
       is_new_user: true,
@@ -644,18 +657,20 @@ export const useAuthStore = defineStore('auth', () => {
     await createCustomer(payload, completedCredential)
   }
 
-  const loginWithGoogle = async (options?: {
-    isNewUser?: boolean
-  }): Promise<UserCredential> => {
+  const loginWithGoogle = async (
+    options?: SocialSignInOptions
+  ): Promise<UserCredential> => {
     const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
-        signIn: firebaseIdentity.signInWithGoogle,
+        signIn: () =>
+          options?.resumed ?? firebaseIdentity.signInWithGoogle(options?.popup),
         provisionCustomer: (credential) =>
           provisionCustomerForSignedInUser(undefined, credential)
       })
     )
 
     const additionalUserInfo = getAdditionalUserInfo(result)
+    useCloudWebSessionStore().signedInInteractively(result.user)
     useTelemetry()?.trackAuth({
       method: 'google',
       is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
@@ -667,18 +682,20 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const loginWithGithub = async (options?: {
-    isNewUser?: boolean
-  }): Promise<UserCredential> => {
+  const loginWithGithub = async (
+    options?: SocialSignInOptions
+  ): Promise<UserCredential> => {
     const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
-        signIn: firebaseIdentity.signInWithGitHub,
+        signIn: () =>
+          options?.resumed ?? firebaseIdentity.signInWithGitHub(options?.popup),
         provisionCustomer: (credential) =>
           provisionCustomerForSignedInUser(undefined, credential)
       })
     )
 
     const additionalUserInfo = getAdditionalUserInfo(result)
+    useCloudWebSessionStore().signedInInteractively(result.user)
     useTelemetry()?.trackAuth({
       method: 'github',
       is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
@@ -691,7 +708,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = async (): Promise<void> =>
-    executeAuthAction(firebaseIdentity.signOut)
+    executeAuthAction(async () => {
+      await useCloudWebSessionStore().signOut()
+      await firebaseIdentity.signOut()
+    })
 
   const sendPasswordReset = async (email: string): Promise<void> =>
     executeAuthAction(() => firebaseIdentity.sendPasswordReset(email))
