@@ -177,11 +177,14 @@ export function useFullPageCheckout() {
       read.status === 'ok' ? read.value.status.cancel_at : undefined
   }
 
+  /** An operation parked on a card is what a Pay resubmits, so it is not money in flight. */
+  const moneyInFlight = computed(() => {
+    const operation = checkout.operation.value
+    return operation?.phase === 'pending' && !isParked(operation)
+  })
+
   const promoLive = computed(() =>
-    promoEntryLive(
-      page.value,
-      checkout.submitting.value || checkout.operation.value !== undefined
-    )
+    promoEntryLive(page.value, checkout.submitting.value || moneyInFlight.value)
   )
 
   const promo = useCheckoutPromo({
@@ -203,15 +206,18 @@ export function useFullPageCheckout() {
     return asked
   }
 
+  /** A capture read again after the page went back to resolving keeps the applied code. */
   async function captureEvent(
     arrival: PlannedEntry
   ): Promise<CheckoutPageEvent> {
-    const [allowed, quoted, methods] = await Promise.all([
-      capabilities.read(),
-      quoteArrival(arrival),
-      saved.refresh(),
-      awaitBillingWebStripeKey()
-    ])
+    const [allowed, { requoted: quoted, expiredPromo }, methods] =
+      await Promise.all([
+        capabilities.read(),
+        requoteWithPromo(arrival),
+        saved.refresh(),
+        awaitBillingWebStripeKey()
+      ])
+    if (expiredPromo !== undefined) promo.expire()
     const stopped = capabilityStop(allowed)
     if (stopped !== undefined) return stopped
     if (quoted.status === 'error')
@@ -337,19 +343,15 @@ export function useFullPageCheckout() {
 
   /**
    * Money in flight keeps Pay locked, so a second click cannot charge twice.
-   * An operation parked on a card is what a Pay resubmits, so it does not.
    * A re-quote for a promo code holds Pay until the price settles.
    */
-  const canPay = computed(() => {
-    const operation = checkout.operation.value
-    const inFlight = operation?.phase === 'pending' && !isParked(operation)
-    return (
+  const canPay = computed(
+    () =>
       railAcceptsPay(page.value) &&
       preview.value?.allowed === true &&
-      !inFlight &&
+      !moneyInFlight.value &&
       !promo.busy.value
-    )
-  })
+  )
 
   const payFailure = computed(() => {
     const result = checkout.result.value

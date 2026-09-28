@@ -2,6 +2,7 @@ import type { PreviewSubscribeResult } from '@comfyorg/account-core/billing'
 import { matchesServerCode } from '@comfyorg/account-core/billing'
 
 import type { CheckoutPage } from '@/checkout/checkoutPage'
+import { isLocked } from '@/checkout/checkoutPage'
 
 /**
  * Why Apply left the field open. `invalid` is the server refusing the code;
@@ -144,6 +145,7 @@ export function promoEntryLive(
 ): boolean {
   return (
     page.kind === 'capture' &&
+    !isLocked(page) &&
     page.outcome?.kind !== 'reconciling' &&
     !payInFlight
   )

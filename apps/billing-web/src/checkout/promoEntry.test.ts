@@ -1,7 +1,7 @@
 import type { PreviewSubscribeResult } from '@comfyorg/account-core/billing'
 import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 
-import type { CheckoutPage } from '@/checkout/checkoutPage'
+import type { Attempt, CheckoutPage } from '@/checkout/checkoutPage'
 import type { PromoEntry, PromoEntryEvent } from '@/checkout/promoEntry'
 import {
   initialPromoEntry,
@@ -162,11 +162,14 @@ describe('promoRejectionOf', () => {
   })
 })
 
-const capture = (outcome?: 'reconciling' | 'price_updated'): CheckoutPage => ({
+const capture = (
+  outcome?: 'reconciling' | 'price_updated',
+  attempt: Attempt = { kind: 'idle' }
+): CheckoutPage => ({
   kind: 'capture',
   rail: { method: 'on_file' },
   reactivation: 'not_required',
-  attempt: { kind: 'idle' },
+  attempt,
   ...(outcome === undefined ? {} : { outcome: { kind: outcome } })
 })
 
@@ -193,6 +196,12 @@ describe('promoEntryLive', () => {
       name: 'from the Pay click through every in-flight state',
       page: capture(),
       payInFlight: true,
+      live: false
+    },
+    {
+      name: 'while the page is locked on its own sent Pay',
+      page: capture(undefined, { kind: 'sent' }),
+      payInFlight: false,
       live: false
     },
     {
