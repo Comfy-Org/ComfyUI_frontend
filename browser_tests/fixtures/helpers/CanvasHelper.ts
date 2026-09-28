@@ -22,6 +22,18 @@ export class CanvasHelper {
     private resetViewButton: Locator
   ) {}
 
+  async getBounds() {
+    let bounds: Awaited<ReturnType<Locator['boundingBox']>> = null
+    await expect
+      .poll(async () => {
+        bounds = await this.canvas.boundingBox()
+        return bounds
+      })
+      .not.toBeNull()
+    if (!bounds) throw new Error('Canvas bounding box not available')
+    return bounds
+  }
+
   async resetView(): Promise<void> {
     if (await this.resetViewButton.isVisible()) {
       await this.resetViewButton.click()

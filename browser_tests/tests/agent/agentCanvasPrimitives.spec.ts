@@ -32,7 +32,7 @@ test.describe('Agent canvas primitives', { tag: '@agent' }, () => {
     // Push the node away from the centre first, otherwise the assertions below
     // hold even if centerOnNode() does nothing at all.
     await comfyPage.canvasOps.shiftViewport(-400, -250)
-    const view = (await comfyPage.canvas.boundingBox())!
+    const view = await comfyPage.canvasOps.getBounds()
     const centre = { x: view.x + view.width / 2, y: view.y + view.height / 2 }
     const offCentre = await comfyPage.canvasOps.getNodeCenterOnScreen(node.id)
     expect(
