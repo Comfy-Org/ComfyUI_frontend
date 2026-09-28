@@ -3,13 +3,9 @@ import { computed, readonly, watch } from 'vue'
 
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
-import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import type { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 export enum ManagerUIState {
   DISABLED = 'disabled',
@@ -26,8 +22,12 @@ export enum ManagerUIState {
  */
 let incompatibleToastShown = false
 
-const showIncompatibleToast = (): void => {
-  if (incompatibleToastShown) return
+/**
+ * Shows the Manager upgrade toast. Guarded to once per session unless
+ * `force` is set, which explicit user actions use to re-surface guidance.
+ */
+export const showIncompatibleManagerToast = ({ force = false } = {}): void => {
+  if (incompatibleToastShown && !force) return
   incompatibleToastShown = true
   useToast().warning(t('manager.incompatibleVersion.title'), {
     description: t('manager.incompatibleVersion.message'),
@@ -39,7 +39,6 @@ export function useManagerState() {
   const systemStatsStore = useSystemStatsStore()
   const { systemStats, isInitialized: systemInitialized } =
     storeToRefs(systemStatsStore)
-  const managerDialog = useManagerDialog()
 
   /**
    * The current manager UI state.
@@ -197,77 +196,11 @@ export function useManagerState() {
     managerUIState,
     (state) => {
       if (state === ManagerUIState.INCOMPATIBLE) {
-        showIncompatibleToast()
+        showIncompatibleManagerToast()
       }
     },
     { immediate: true }
   )
-
-  /**
-   * Opens the manager UI based on current state
-   * Centralizes the logic for opening manager across the app
-   * @param options - Optional configuration for opening the manager
-   * @param options.initialTab - Initial tab to show (for NEW_UI mode)
-   * @param options.legacyCommand - Legacy command to execute (for LEGACY_UI mode)
-   * @param options.showToastOnLegacyError - Whether to show toast on legacy command failure
-   * @param options.isLegacyOnly - If true, shows error in NEW_UI mode instead of opening manager
-   */
-  const openManager = async (options?: {
-    initialTab?: ManagerTab
-    initialPackId?: string
-    legacyCommand?: string
-    showToastOnLegacyError?: boolean
-    isLegacyOnly?: boolean
-  }): Promise<void> => {
-    const state = managerUIState.value
-    const settingsDialog = useSettingsDialog()
-    const commandStore = useCommandStore()
-
-    switch (state) {
-      case ManagerUIState.DISABLED:
-        settingsDialog.show('extension')
-        break
-
-      case ManagerUIState.INCOMPATIBLE:
-        // Re-emit the upgrade toast on explicit user action. We intentionally
-        // bypass the once-per-session guard so repeated clicks on a hidden
-        // entry point (e.g. a stale shortcut) still surface guidance,
-        // without redirecting into settings like DISABLED does.
-        incompatibleToastShown = false
-        showIncompatibleToast()
-        break
-
-      case ManagerUIState.LEGACY_UI: {
-        const command =
-          options?.legacyCommand || 'Comfy.Manager.Menu.ToggleVisibility'
-        try {
-          await commandStore.execute(command)
-        } catch {
-          // If legacy command doesn't exist
-          if (options?.showToastOnLegacyError !== false) {
-            useToast().error(t('g.error'), {
-              description: t('manager.legacyMenuNotAvailable')
-            })
-          }
-          // Fallback to extensions panel if not showing toast
-          if (options?.showToastOnLegacyError === false) {
-            settingsDialog.show('extension')
-          }
-        }
-        break
-      }
-
-      case ManagerUIState.NEW_UI:
-        if (options?.isLegacyOnly) {
-          useToast().error(t('g.error'), {
-            description: t('manager.legacyMenuNotAvailable')
-          })
-        } else {
-          managerDialog.show(options?.initialTab, options?.initialPackId)
-        }
-        break
-    }
-  }
 
   return {
     managerUIState,
@@ -277,8 +210,7 @@ export function useManagerState() {
     isIncompatibleManager,
     shouldShowInstallButton,
     shouldShowManagerButtons,
-    shouldShowExtensionsButton,
-    openManager
+    shouldShowExtensionsButton
   }
 }
 
