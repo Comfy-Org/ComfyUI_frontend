@@ -12,6 +12,7 @@ const status: AgentCrdtStatus = {
   outcomes: {
     received: 20,
     applied: 17,
+    appliedLive: 17,
     skipped: 2,
     errored: 0,
     gap: 1,
