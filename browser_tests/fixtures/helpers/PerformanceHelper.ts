@@ -100,37 +100,46 @@ export class PerformanceHelper {
     })
   }
 
-  /**
-   * Measure individual frame durations via rAF timing over a sample window.
-   * Returns all per-frame durations so callers can compute avg, p95, etc.
-   */
-  private async measureFrameDurations(sampleFrames = 30): Promise<number[]> {
-    return this.page.evaluate((frames) => {
-      return new Promise<number[]>((resolve) => {
-        const timeout = setTimeout(() => resolve([]), 5000)
-        const timestamps: number[] = []
-        let count = 0
-        function tick(ts: number) {
-          timestamps.push(ts)
-          count++
-          if (count <= frames) {
-            requestAnimationFrame(tick)
-          } else {
-            clearTimeout(timeout)
-            if (timestamps.length < 2) {
-              resolve([])
-              return
-            }
-            const durations: number[] = []
-            for (let i = 1; i < timestamps.length; i++) {
-              durations.push(timestamps[i] - timestamps[i - 1])
-            }
-            resolve(durations)
-          }
+  /** Start collecting frame intervals for the duration of the measurement. */
+  private async startFrameMeasurement(): Promise<void> {
+    await this.page.evaluate(() => {
+      const win = window as unknown as Record<string, unknown>
+      const state: {
+        frameRequestId: number
+        lastTimestamp: number | null
+        durationsMs: number[]
+      } = {
+        frameRequestId: 0,
+        lastTimestamp: null,
+        durationsMs: []
+      }
+
+      function tick(timestamp: number) {
+        if (state.lastTimestamp !== null) {
+          state.durationsMs.push(timestamp - state.lastTimestamp)
         }
-        requestAnimationFrame(tick)
-      })
-    }, sampleFrames)
+        state.lastTimestamp = timestamp
+        state.frameRequestId = requestAnimationFrame(tick)
+      }
+
+      state.frameRequestId = requestAnimationFrame(tick)
+      win.__perfFrameState = state
+    })
+  }
+
+  /** Stop the active frame sampler and return only intervals from its window. */
+  private async stopFrameMeasurement(): Promise<number[]> {
+    return this.page.evaluate(() => {
+      const win = window as unknown as Record<string, unknown>
+      const state = win.__perfFrameState as
+        | { frameRequestId: number; durationsMs: number[] }
+        | undefined
+      if (!state) return []
+
+      cancelAnimationFrame(state.frameRequestId)
+      delete win.__perfFrameState
+      return state.durationsMs
+    })
   }
 
   async startMeasuring(): Promise<void> {
@@ -168,11 +177,15 @@ export class PerformanceHelper {
       state.observer.takeRecords()
     })
     this.snapshot = await this.getSnapshot()
+    await this.startFrameMeasurement()
   }
 
   async stopMeasuring(name: string): Promise<PerfMeasurement> {
     if (!this.snapshot) throw new Error('Call startMeasuring() first')
-    const after = await this.getSnapshot()
+    const [after, allFrameDurationsMs] = await Promise.all([
+      this.getSnapshot(),
+      this.stopFrameMeasurement()
+    ])
     const before = this.snapshot
     this.snapshot = null
 
@@ -180,10 +193,7 @@ export class PerformanceHelper {
       return after[key] - before[key]
     }
 
-    const [totalBlockingTimeMs, allFrameDurationsMs] = await Promise.all([
-      this.collectTBT(),
-      this.measureFrameDurations()
-    ])
+    const totalBlockingTimeMs = await this.collectTBT()
 
     const frameDurationMs =
       allFrameDurationsMs.length > 0
