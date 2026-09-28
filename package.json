@@ -62,6 +62,7 @@
     "test:assets-flag-artifact": "tsx scripts/checkAssetsFlagArtifact.ts",
     "test:browser": "pnpm exec playwright test",
     "test:browser:coverage": "cross-env COLLECT_COVERAGE=true pnpm test:browser",
+    "test:browser:local-agent": "cross-env PLAYWRIGHT_TEST_URL=http://127.0.0.1:6255 pnpm exec playwright test --project local-agent",
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm test:browser",
     "custom-node-quarantine": "tsx scripts/customNodeQuarantine.ts",
     "custom-node-shard": "tsx scripts/customNodeShard.ts",
