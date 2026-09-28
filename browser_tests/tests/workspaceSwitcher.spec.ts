@@ -1,5 +1,14 @@
 import { expect } from '@playwright/test'
 
+import type {
+  AgentMessage,
+  AgentThreadListResponse
+} from '@comfyorg/ingest-types'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
+
 import {
   LONG_WORKSPACE_NAME,
   OFF_SCREEN_WORKSPACE_NAME,
@@ -9,6 +18,7 @@ import {
 } from '@e2e/fixtures/data/workspaceSwitcher'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFixture'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 // text-sm rows render a single 20px line; a wrapped name is 40px+.
 const SINGLE_LINE_MAX_HEIGHT_PX = 28
@@ -209,5 +219,188 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await expect
       .poll(() => comfyPage.menu.topbar.getTabNames())
       .toEqual(teamWorkflows)
+  })
+
+  test('isolates workflow and Agent state after a workspace switch and reload', async ({
+    comfyPage
+  }) => {
+    test.slow()
+    const page = comfyPage.page
+    const userId = 'test-user-e2e'
+    const personalScope = unsafeStorageScope(`${userId}:ws-personal`)
+    const teamScope = unsafeStorageScope(`${userId}:ws-team`)
+    const personalThread = '11111111-1111-4111-8111-111111111111'
+    const teamThread = '22222222-2222-4222-8222-222222222222'
+    const personalTranscript = 'personal transcript sentinel'
+    const teamTranscript = 'team transcript sentinel'
+    const personalWorkflow = 'personal draft sentinel'
+    const teamWorkflow = 'team draft sentinel'
+    const personalBinding = 'personal-binding-sentinel'
+    const teamBinding = 'team-binding-sentinel'
+
+    const messages = new Map<string, AgentMessage[]>([
+      [
+        personalThread,
+        [
+          {
+            id: 'personal-message',
+            thread_id: personalThread,
+            turn_id: '11111111-1111-4111-8111-111111111112',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            content: { text: personalTranscript }
+          }
+        ]
+      ],
+      [
+        teamThread,
+        [
+          {
+            id: 'team-message',
+            thread_id: teamThread,
+            turn_id: '22222222-2222-4222-8222-222222222223',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            content: { text: teamTranscript }
+          }
+        ]
+      ]
+    ])
+    const threads: AgentThreadListResponse = {
+      threads: [
+        {
+          id: personalThread,
+          title: 'Personal thread sentinel',
+          preview: personalTranscript,
+          workflow_id: personalBinding,
+          status: 'active',
+          message_count: 1,
+          created_at: '2026-09-28T00:00:00Z',
+          updated_at: '2026-09-28T00:00:00Z',
+          last_message_at: '2026-09-28T00:00:00Z'
+        },
+        {
+          id: teamThread,
+          title: 'Team thread sentinel',
+          preview: teamTranscript,
+          workflow_id: teamBinding,
+          status: 'active',
+          message_count: 1,
+          created_at: '2026-09-28T00:00:00Z',
+          updated_at: '2026-09-28T00:00:00Z',
+          last_message_at: '2026-09-28T00:00:00Z'
+        }
+      ],
+      pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+    }
+    await page.route('**/api/agent/threads', (route) =>
+      route.fulfill(jsonRoute(threads))
+    )
+    await page.route('**/api/agent/threads/*/messages', (route) => {
+      const threadId = new URL(route.request().url()).pathname.split('/').at(-2)
+      return route.fulfill(jsonRoute(messages.get(threadId ?? '') ?? []))
+    })
+    await page.route('**/api/features', (route) =>
+      route.fulfill(
+        jsonRoute({
+          unified_cloud_auth: true,
+          'agent-in-app-experience': true
+        })
+      )
+    )
+    await page.evaluate(
+      ({
+        personalThreadKey,
+        teamThreadKey,
+        personalBindingKey,
+        teamBindingKey,
+        personalThread,
+        teamThread,
+        personalBinding,
+        teamBinding
+      }) => {
+        localStorage.setItem(personalThreadKey, personalThread)
+        localStorage.setItem(teamThreadKey, teamThread)
+        localStorage.setItem(
+          personalBindingKey,
+          JSON.stringify({ [personalBinding]: 'workflows/personal.json' })
+        )
+        localStorage.setItem(
+          teamBindingKey,
+          JSON.stringify({ [teamBinding]: 'workflows/team.json' })
+        )
+      },
+      {
+        personalThreadKey: StorageKeys.agentThread(personalScope),
+        teamThreadKey: StorageKeys.agentThread(teamScope),
+        personalBindingKey: StorageKeys.agentWorkflowTabBindings(personalScope),
+        teamBindingKey: StorageKeys.agentWorkflowTabBindings(teamScope),
+        personalThread,
+        teamThread,
+        personalBinding,
+        teamBinding
+      }
+    )
+    await comfyPage.workflow.reloadAndWaitForApp()
+
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
+    await comfyPage.menu.topbar.saveWorkflow(personalWorkflow)
+    await page
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
+      .click()
+    const panel = page.locator('#agent-panel-root')
+    await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+      personalTranscript
+    ])
+    await expect(panel.getByText(teamTranscript)).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('workspace-switcher-trigger').click()
+    await page
+      .getByTestId('workspace-switcher-panel')
+      .getByText(TEAM_WORKSPACE_NAME, { exact: true })
+      .click()
+    await comfyPage.waitForAppReady()
+
+    await expect
+      .poll(() => comfyPage.menu.topbar.getTabNames())
+      .not.toContain(personalWorkflow)
+    await comfyPage.menu.topbar.saveWorkflow(teamWorkflow)
+    await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+      teamTranscript
+    ])
+    await expect(panel.getByText(personalTranscript)).toHaveCount(0)
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await expect
+      .poll(() => comfyPage.menu.topbar.getTabNames())
+      .toContain(teamWorkflow)
+    await expect
+      .poll(() => comfyPage.menu.topbar.getTabNames())
+      .not.toContain(personalWorkflow)
+    await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+      teamTranscript
+    ])
+
+    const persistedBindings = await page.evaluate(
+      ({ personalBindingKey, teamBindingKey }) => ({
+        personal: localStorage.getItem(personalBindingKey),
+        team: localStorage.getItem(teamBindingKey)
+      }),
+      {
+        personalBindingKey: StorageKeys.agentWorkflowTabBindings(personalScope),
+        teamBindingKey: StorageKeys.agentWorkflowTabBindings(teamScope)
+      }
+    )
+    expect(persistedBindings.personal).toContain(personalBinding)
+    expect(persistedBindings.personal).not.toContain(teamBinding)
+    expect(persistedBindings.team).toContain(teamBinding)
+    expect(persistedBindings.team).not.toContain(personalBinding)
   })
 })
