@@ -1,7 +1,9 @@
 import { render, screen } from '@testing-library/vue'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -12,6 +14,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 // The mocked module factory throws, so the dynamic import itself rejects -
 // the chunk-load failure path, distinct from a runtime error inside a
@@ -24,6 +27,9 @@ describe('DockedAgentPanel chunk-load failure', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.mocked(reportError).mockClear()
+    vi.mocked(useBillingContext).mockReturnValue({
+      subscription: ref({ hasFunds: false, agentHasFunds: false })
+    } as ReturnType<typeof useBillingContext>)
   })
 
   it('reports the failure and shows the error state when the chunk cannot load', async () => {
