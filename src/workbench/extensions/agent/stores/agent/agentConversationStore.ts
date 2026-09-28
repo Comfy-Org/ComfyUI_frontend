@@ -51,10 +51,14 @@ function finishWithPersistedText(
     message.parts = kept
     return
   }
-  message.parts = [
-    ...kept.filter((part) => part.type !== 'text'),
-    { type: 'text', text: persistedText, state: 'done' }
-  ]
+  const firstTextIndex = kept.findIndex((part) => part.type === 'text')
+  const withoutText = kept.filter((part) => part.type !== 'text')
+  withoutText.splice(firstTextIndex < 0 ? withoutText.length : firstTextIndex, 0, {
+    type: 'text',
+    text: persistedText,
+    state: 'done'
+  })
+  message.parts = withoutText
 }
 
 export const useAgentConversationStore = defineStore(
