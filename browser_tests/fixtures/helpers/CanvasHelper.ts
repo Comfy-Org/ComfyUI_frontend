@@ -23,14 +23,11 @@ export class CanvasHelper {
   ) {}
 
   async getBounds() {
-    let bounds: Awaited<ReturnType<Locator['boundingBox']>> = null
     await expect
-      .poll(async () => {
-        bounds = await this.canvas.boundingBox()
-        return bounds
-      })
-      .not.toBeNull()
-    if (!bounds) throw new Error('Canvas bounding box not available')
+      .poll(async () => (await this.canvas.boundingBox()) !== null)
+      .toBe(true)
+    const bounds = await this.canvas.boundingBox()
+    if (bounds === null) throw new Error('Canvas bounding box not available')
     return bounds
   }
 
