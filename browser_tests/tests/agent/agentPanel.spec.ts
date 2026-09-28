@@ -1,10 +1,19 @@
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
+import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AgentTurnAccepted,
+  AgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  zAgentAdmissionError,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   INTERMEDIATE_MESSAGE_EVENT,
@@ -171,6 +180,233 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText('Opened a new tab')).toBeVisible()
     await expect(panel.getByText('Resize image node')).toBeVisible()
+  })
+
+  test('shows an admission paywall without losing the rejected prompt', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    const panel = agentPanel.root
+    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const prompt = 'Build a product photo workflow'
+
+    await test.step('reject the next turn with a no-funds admission error', async () => {
+      // Scoped to POST so the fixture's GET handler for the same URL still
+      // serves the thread's message history.
+      await page.route('**/api/agent/threads/*/messages', async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        await route.fulfill({
+          status: 402,
+          contentType: 'application/json',
+          body: JSON.stringify(NO_FUNDS_ERROR)
+        })
+      })
+    })
+
+    await test.step('open the agent panel on a workflow', async () => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+    })
+
+    await test.step('send a prompt the server will reject', async () => {
+      await composer.fill(prompt)
+      await panel.getByRole('button', { name: 'Send' }).click()
+    })
+
+    await test.step('keep the rejected prompt and surface the paywall', async () => {
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
+      await expect(composer).toHaveText(prompt)
+      const paywall = panel.getByRole('alert')
+      await expect(paywall).toContainText(enMessages.agent.paywall.title)
+      await expect(paywall).toContainText('Add credits to continue.')
+    })
+  })
+
+  test('keeps the standing paywall in sync across turn completion and panel close', async ({
+    agentPanel,
+    comfyPage,
+    getWebSocket,
+    postedMessages
+  }) => {
+    test.setTimeout(30_000)
+    const page = comfyPage.page
+    const paywall = page.getByTestId('agent-credits-exhausted-paywall')
+    const fundedStatus = {
+      billing_rail: 'stripe',
+      billing_status: 'paid',
+      has_funds: true,
+      is_active: true,
+      max_seats: 1,
+      occupied_seats: 1,
+      scoped_effective_has_funds: { agent: true },
+      scheduled_change: null,
+      subscription_duration: 'MONTHLY',
+      subscription_status: 'active',
+      subscription_tier: 'STANDARD',
+      team_credit_stop: null
+    } satisfies BillingStatusResponse
+    let billingStatus: BillingStatusResponse = fundedStatus
+    let releaseFundedRefresh: (() => void) | undefined
+    let resolveFundedRefresh: (() => void) | undefined
+    const fundedRefreshSettled = new Promise<void>((resolve) => {
+      resolveFundedRefresh = resolve
+    })
+    let holdFundedRefresh = false
+
+    await page.route('**/api/billing/status', async (route) => {
+      const response = billingStatus
+      if (holdFundedRefresh && response.scoped_effective_has_funds?.agent) {
+        await new Promise<void>((resolve) => {
+          releaseFundedRefresh = resolve
+        })
+      }
+      await route.fulfill(jsonRoute(response))
+      if (response.scoped_effective_has_funds?.agent) {
+        resolveFundedRefresh?.()
+      }
+    })
+    await page.reload()
+
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const ws = await getWebSocket()
+
+    billingStatus = {
+      ...fundedStatus,
+      has_funds: false,
+      scoped_effective_has_funds: { agent: false }
+    }
+    await agentPanel.sendMessage('Complete this workflow without a refusal')
+    await expect.poll(() => postedMessages.length).toBe(1)
+    pushEvent(ws, THINKING_EVENT)
+    await expect(
+      agentPanel.root.getByRole('button', { name: 'Stop' })
+    ).toBeVisible()
+    pushEvent(ws, MESSAGE_DONE_EVENT)
+    await expect(paywall).toBeVisible()
+
+    billingStatus = fundedStatus
+    holdFundedRefresh = true
+    await paywall.getByRole('button', { name: 'Add Credits' }).click()
+    const topUpDialog = page.getByRole('dialog')
+    await expect(topUpDialog).toBeVisible()
+    await topUpDialog.getByRole('button', { name: enMessages.g.close }).click()
+    await agentPanel.root
+      .getByRole('button', { name: enMessages.g.close })
+      .click()
+    await expect(agentPanel.root).toHaveCount(0)
+    releaseFundedRefresh?.()
+    await fundedRefreshSettled
+    holdFundedRefresh = false
+
+    billingStatus = {
+      ...fundedStatus,
+      has_funds: false,
+      scoped_effective_has_funds: { agent: false }
+    }
+    const secondTurn: AgentTurnAccepted = {
+      message_id: '31e8d859-8e4b-4585-a7fd-6be159d09a76',
+      thread_id: 'd4c016c4-3b8c-44cf-97de-1ae27e43e718',
+      workflow_id: 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
+    }
+    let secondTurnPosts = 0
+    await page.route('**/api/agent/threads/*/messages', (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      secondTurnPosts += 1
+      return route.fulfill(jsonRoute(secondTurn))
+    })
+    await agentPanel.open()
+    await agentPanel.sendMessage('Complete another workflow without a refusal')
+    await expect.poll(() => secondTurnPosts).toBe(1)
+    pushEvent(
+      ws,
+      zAgentWsEvent.parse({
+        ...THINKING_EVENT,
+        data: { ...THINKING_EVENT.data, message_id: secondTurn.message_id }
+      })
+    )
+    await expect(
+      agentPanel.root.getByRole('button', { name: 'Stop' })
+    ).toBeVisible()
+    pushEvent(
+      ws,
+      zAgentWsEvent.parse({
+        ...MESSAGE_DONE_EVENT,
+        data: { ...MESSAGE_DONE_EVENT.data, message_id: secondTurn.message_id }
+      })
+    )
+    await expect(paywall).toBeVisible()
+
+    billingStatus = fundedStatus
+    await paywall.getByRole('button', { name: 'Add Credits' }).click()
+    await expect(paywall).toHaveCount(0)
+  })
+
+  test.describe('diagnostic report', () => {
+    test.use({
+      permissions: ['clipboard-read', 'clipboard-write'],
+      crdtDebugEnabled: true
+    })
+
+    test('copies retained tool metadata with privacy sources turned off', async ({
+      agentPanel,
+      comfyPage,
+      getWebSocket
+    }) => {
+      await test.step('turn off every optional privacy source', async () => {
+        await agentPanel.open()
+        await expect(agentPanel.debugHeading).toBeVisible()
+        await agentPanel.turnOffOptionalReportSources()
+      })
+
+      await test.step('retain tool metadata without conversation content', async () => {
+        await agentPanel.selectWorkflow()
+        const composer = agentPanel.root.getByRole('textbox', {
+          name: /^Describe ideas/
+        })
+        await composer.fill('private diagnostic prompt')
+        await agentPanel.root.getByRole('button', { name: 'Send' }).click()
+        await expect(
+          agentPanel.root.getByRole('button', { name: 'Stop' })
+        ).toBeVisible()
+        const ws = await getWebSocket()
+        pushEvent(ws, THINKING_EVENT)
+        await expect(
+          agentPanel.root.getByText(THINKING_TEXT, { exact: true })
+        ).toBeVisible()
+
+        pushEvent(ws, TOOL_CALL_EVENT)
+        await expect(agentPanel.root.getByText('Set widget')).toBeVisible()
+      })
+
+      await test.step('copy a report with bounded tool metadata', async () => {
+        await agentPanel.copyReportButton.click()
+        await expect(agentPanel.copiedButton).toBeVisible()
+        await expect
+          .poll(async () => {
+            const report = await comfyPage.clipboard.readText()
+            return {
+              serverLogs: report.includes('- Server logs: turned off'),
+              settings: report.includes('- Settings: turned off'),
+              workflow: report.includes('- Workflow: turned off'),
+              toolStatus: report.includes(
+                '- Agent tool calls: collected (1/1 retained calls)'
+              ),
+              toolName: report.includes('"name": "set_widget"'),
+              privateThinking: report.includes(THINKING_TEXT)
+            }
+          })
+          .toEqual({
+            serverLogs: true,
+            settings: true,
+            workflow: true,
+            toolStatus: true,
+            toolName: true,
+            privateThinking: false
+          })
+      })
+    })
   })
 
   test.describe('composer sizing', () => {
