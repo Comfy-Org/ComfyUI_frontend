@@ -2,9 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import { revealDynamicInputSlot } from '@/core/graph/widgets/revealDynamicInputSlot'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const defaultOptions = [
   { key: 'text_to_image', inputs: { required: { prompt: ['STRING', {}] } } },
@@ -159,7 +164,6 @@ describe('revealDynamicInputSlot', () => {
   })
 
   it('does nothing for a malformed spec', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const node = nodeWithCombo()
     Object.assign(node.constructor, {
       nodeData: {
@@ -173,10 +177,15 @@ describe('revealDynamicInputSlot', () => {
     })
 
     expect(revealDynamicInputSlot(node, 'IMAGE')).toBe(false)
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('Unparseable COMFY_DYNAMICCOMBO_V3 spec'),
-      expect.anything()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'error_parsing_node_input_spec',
+        context: expect.objectContaining({
+          controlType: 'COMFY_DYNAMICCOMBO_V3',
+          optionIndex: 0
+        })
+      })
     )
-    warn.mockRestore()
   })
 })
