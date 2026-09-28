@@ -560,7 +560,7 @@ test.describe(
 
       await test.step('The automatic offer waits without spending its one-time attempt', async () => {
         await expect
-          .poll(() => page.evaluate(() => window.__autoShownReads), {
+          .poll(() => page.evaluate(() => window.__autoShownReads ?? 0), {
             message:
               'the held-offer decision reads the unspent one-shot marker',
             timeout: 15_000
@@ -595,7 +595,7 @@ test.describe(
       await test.step('Reload does not repeat the spent automatic offer', async () => {
         await comfyPage.workflow.reloadAndWaitForApp()
         await expect
-          .poll(() => page.evaluate(() => window.__autoShownReads))
+          .poll(() => page.evaluate(() => window.__autoShownReads ?? 0))
           .toBeGreaterThan(0)
         await expect(consent).toHaveCount(0)
         await expect(agentPanel.root).toHaveCount(0)

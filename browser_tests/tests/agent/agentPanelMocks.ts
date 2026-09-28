@@ -187,7 +187,8 @@ async function mockAgentBoot(
         const originalGetItem = Storage.prototype.getItem
         window.__autoShownReads = 0
         Storage.prototype.getItem = function (candidate: string) {
-          if (candidate === autoShownKey) window.__autoShownReads++
+          if (candidate === autoShownKey)
+            window.__autoShownReads = (window.__autoShownReads ?? 0) + 1
           return originalGetItem.call(this, candidate)
         }
       }
