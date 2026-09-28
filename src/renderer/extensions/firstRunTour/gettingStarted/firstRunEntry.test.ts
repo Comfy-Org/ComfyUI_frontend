@@ -33,17 +33,17 @@ const mocks = vi.hoisted<{
 }))
 
 const sharedComposable = vi.hoisted(() => {
-  let reset = () => {}
+  const resets: (() => void)[] = []
 
   function create<T>(composable: () => T): () => T {
     let result: T | undefined
-    reset = () => {
+    resets.push(() => {
       result = undefined
-    }
+    })
     return () => (result ??= composable())
   }
 
-  return { create, reset: () => reset() }
+  return { create, reset: () => resets.forEach((reset) => reset()) }
 })
 
 const OWNER_ID = 'account-a'

@@ -12,8 +12,8 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { api } from './api'
-import type { ComfyApp } from './app'
-import { app } from './app'
+import type { ComfyApp } from '@/types/comfy'
+import { useApp } from '@/scripts/appInstance'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
 import { $el as _$el } from './ui/utils'
 import { ComfySettingsDialog } from './ui/settings'
@@ -237,7 +237,7 @@ class ComfyList {
                     const job = await api.getJobDetail(item.id)
                     if (!job) return
                     const workflow = await extractWorkflow(job)
-                    await app.loadGraphData(workflow, true, false)
+                    await useApp().loadGraphData(workflow, true, false)
                     if ('outputs' in job && job.outputs) {
                       useNodeOutputStore().restoreOutputs(job.outputs)
                     }
@@ -352,10 +352,10 @@ export class ComfyUI {
         const file = fileInput.files?.[0]
         if (file) {
           try {
-            await app.handleFile(file, 'file_button')
+            await useApp().handleFile(file, 'file_button')
           } catch (error) {
             console.error('Failed to load file:', error)
-            app.showErrorOnFileLoad(file)
+            useApp().showErrorOnFileLoad(file)
           } finally {
             fileInput.value = ''
           }
@@ -390,7 +390,7 @@ export class ComfyUI {
       if (this.autoQueueMode === 'change' && this.autoQueueEnabled) {
         if (this.lastQueueSize === 0) {
           this.graphHasChanged = false
-          void app.queuePrompt(0, this.batchCount, {
+          void useApp().queuePrompt(0, this.batchCount, {
             intent: { trigger_source: 'auto_queue' }
           })
         } else {
@@ -443,7 +443,7 @@ export class ComfyUI {
             } as const
             useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
             useTelemetry()?.trackWorkflowExecution()
-            void app.queuePrompt(0, this.batchCount, {
+            void useApp().queuePrompt(0, this.batchCount, {
               intent: workflowQueueIntent
             })
           }
@@ -554,7 +554,7 @@ export class ComfyUI {
               } as const
               useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
               useTelemetry()?.trackWorkflowExecution()
-              void app.queuePrompt(-1, this.batchCount, {
+              void useApp().queuePrompt(-1, this.batchCount, {
                 intent: workflowQueueIntent
               })
             }
@@ -604,13 +604,15 @@ export class ComfyUI {
           id: 'comfy-refresh-button',
           textContent: 'Refresh',
           onclick: () => {
-            void app.refreshComboInNodes().catch(() => {})
+            void useApp()
+              .refreshComboInNodes()
+              .catch(() => {})
           }
         }),
         $el('button', {
           id: 'comfy-clipspace-button',
           textContent: 'Clipspace',
-          onclick: () => app.openClipspace()
+          onclick: () => useApp().openClipspace()
         }),
         $el('button', {
           id: 'comfy-clear-button',
@@ -620,7 +622,7 @@ export class ComfyUI {
               !useSettingStore().get('Comfy.ConfirmClear') ||
               confirm('Clear workflow?')
             ) {
-              runMintPortsIntentionalClear(() => app.clean())
+              runMintPortsIntentionalClear(() => useApp().clean())
               useLitegraphService().resetView()
               api.dispatchCustomEvent('graphCleared')
             }
@@ -635,7 +637,7 @@ export class ComfyUI {
               confirm('Load default workflow?')
             ) {
               useLitegraphService().resetView()
-              await app.loadGraphData()
+              await useApp().loadGraphData()
             }
           }
         }),
@@ -666,9 +668,9 @@ export class ComfyUI {
       queueRemaining == 0 &&
       this.autoQueueEnabled &&
       (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
-      !app.lastExecutionError
+      !useApp().lastExecutionError
     ) {
-      void app.queuePrompt(0, this.batchCount, {
+      void useApp().queuePrompt(0, this.batchCount, {
         intent: { trigger_source: 'auto_queue' }
       })
       this.graphHasChanged = false

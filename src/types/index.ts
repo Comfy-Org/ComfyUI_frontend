@@ -19,7 +19,7 @@ import type {
   TerminalSize
 } from '@/platform/remote/comfyui/execution/types'
 import type { Settings } from '@/platform/settings/types'
-import type { ComfyApp } from '@/scripts/app'
+import type { ComfyApp } from '@/types/comfy'
 
 import type {
   BottomPanelExtension,
@@ -41,7 +41,7 @@ export { slotId } from './slotId'
 export type { ComfyExtension } from './comfy'
 export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 export type { ComfyApi } from '@/scripts/api'
-export type { ComfyApp } from '@/scripts/app'
+export type { ComfyApp } from '@/types/comfy'
 export type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 export type { InputSpec } from '@/schemas/nodeDefSchema'
 export type {

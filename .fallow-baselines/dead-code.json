@@ -85,7 +85,14 @@
     "src/workbench/extensions/manager/components/manager/ManagerDialog.vue->src/workbench/extensions/manager/composables/nodePack/useUpdateAvailableNodes.ts->src/workbench/extensions/manager/composables/useManagerDialog.ts->src/workbench/extensions/manager/composables/useManagerState.ts->src/workbench/extensions/manager/services/comfyManagerService.ts->src/workbench/extensions/manager/stores/comfyManagerStore.ts",
     "src/workbench/extensions/manager/components/manager/ManagerDialog.vue->src/workbench/extensions/manager/composables/useManagerDialog.ts->src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts->src/workbench/extensions/manager/composables/useManagerState.ts->src/workbench/extensions/manager/services/comfyManagerService.ts->src/workbench/extensions/manager/stores/comfyManagerStore.ts",
     "src/workbench/extensions/manager/components/manager/ManagerDialog.vue->src/workbench/extensions/manager/composables/useManagerDialog.ts->src/workbench/extensions/manager/composables/useManagerState.ts",
-    "src/workbench/extensions/manager/components/manager/ManagerDialog.vue->src/workbench/extensions/manager/composables/useManagerDialog.ts->src/workbench/extensions/manager/composables/useManagerState.ts->src/workbench/extensions/manager/services/comfyManagerService.ts->src/workbench/extensions/manager/stores/comfyManagerStore.ts"
+    "src/workbench/extensions/manager/components/manager/ManagerDialog.vue->src/workbench/extensions/manager/composables/useManagerDialog.ts->src/workbench/extensions/manager/composables/useManagerState.ts->src/workbench/extensions/manager/services/comfyManagerService.ts->src/workbench/extensions/manager/stores/comfyManagerStore.ts",
+    "src/composables/useAppMode.ts->src/platform/workflow/management/stores/workflowStore.ts->src/stores/executionStore.ts",
+    "src/platform/workflow/management/stores/workflowStore.ts->src/stores/executionStore.ts->src/stores/nodeOutputStore.ts",
+    "src/core/graph/subgraph/promotionUtils.ts->src/renderer/core/canvas/canvasStore.ts->src/services/litegraphService.ts",
+    "src/core/graph/subgraph/promotionUtils.ts->src/renderer/core/canvas/canvasStore.ts->src/stores/subgraphNavigationStore.ts",
+    "src/core/graph/subgraph/promotionUtils.ts->src/services/litegraphService.ts->src/stores/subgraphNavigationStore.ts",
+    "src/platform/workflow/management/stores/comfyWorkflow.ts->src/platform/workflow/management/stores/workflowStore.ts->src/scripts/changeTracker.ts",
+    "src/platform/workflow/management/stores/workflowStore.ts->src/stores/executionErrorStore.ts->src/stores/executionStore.ts"
   ],
   "re_export_cycles": [],
   "unused_optional_dependencies": [],

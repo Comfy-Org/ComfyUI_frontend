@@ -19,8 +19,8 @@ import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
-import type { ComfyApp } from './app'
-import { app } from './app'
+import { useApp } from '@/scripts/appInstance'
+import { clipspace } from '@/scripts/clipspace'
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
@@ -42,9 +42,10 @@ function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
 }
 
 function isAutoQueueOnChange(): boolean {
+  const { ui } = useApp()
   return (
     useQueueSettingsStore().mode === 'change' ||
-    (app.ui.autoQueueEnabled && app.ui.autoQueueMode === 'change')
+    (ui.autoQueueEnabled && ui.autoQueueMode === 'change')
   )
 }
 
@@ -304,10 +305,8 @@ export class ChangeTracker {
   }
 
   store() {
-    this.ds = {
-      scale: app.canvas.ds.scale,
-      offset: [app.canvas.ds.offset[0], app.canvas.ds.offset[1]]
-    }
+    const { ds } = useApp().canvas
+    this.ds = { scale: ds.scale, offset: [ds.offset[0], ds.offset[1]] }
     this.nodeOutputs = useNodeOutputStore().snapshotOutputs()
     const navigation = useSubgraphNavigationStore().exportState()
     // Always store the navigation state, even if empty (root level)
@@ -347,6 +346,7 @@ export class ChangeTracker {
   }
 
   restore() {
+    const app = useApp()
     if (this.ds) {
       app.canvas.ds.scale = this.ds.scale
       app.canvas.ds.offset = this.ds.offset
@@ -410,7 +410,7 @@ export class ChangeTracker {
     const isUndoRedoing = this._restoringState
     const isInsideChangeTransaction = this.changeCount > 0
     if (
-      !app.isGraphReady ||
+      !useApp().isGraphReady ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
       ChangeTracker.isLoadingGraph
@@ -422,7 +422,9 @@ export class ChangeTracker {
       return
     }
 
-    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+    const currentState = clone(
+      useApp().rootGraph.serialize()
+    ) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
       const previousState = this.activeState
       this.undoQueue.push(previousState)
@@ -443,7 +445,9 @@ export class ChangeTracker {
     )
       return
 
-    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+    const currentState = clone(
+      useApp().rootGraph.serialize()
+    ) as ComfyWorkflowJSON
     if (ChangeTracker.graphEqual(this.activeState, currentState)) return
 
     const previousState = this.activeState
@@ -475,7 +479,7 @@ export class ChangeTracker {
       target.push(previousState)
       this._restoringState = true
       try {
-        await app.loadGraphData(prevState, false, false, this.workflow, {
+        await useApp().loadGraphData(prevState, false, false, this.workflow, {
           checkForRerouteMigration: false,
           silentAssetErrors: true
         })
@@ -495,7 +499,7 @@ export class ChangeTracker {
     await this.updateState(this.redoQueue, this.undoQueue)
   }
 
-  async undoRedo(e: KeyboardEvent, selectOnly = isSelectOnly(app.canvas)) {
+  async undoRedo(e: KeyboardEvent, selectOnly = isSelectOnly(useApp().canvas)) {
     const shortcut = historyShortcut(e)
     if (!shortcut) return
     if (!selectOnly) {
@@ -529,19 +533,19 @@ export class ChangeTracker {
         if (e.repeat) return
 
         // If the mask editor is opened, we don't want to trigger on key events
-        const comfyApp = app.constructor as typeof ComfyApp
-        if (comfyApp.maskeditor_is_opended?.()) return
+        if (clipspace.maskEditorIsOpened?.()) return
         if (isModalOpen(dialogStore.dialogStack.length)) return
 
         // The layer editor has its own session-local undo history
         if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
         const activeEl = document.activeElement
-        const selectOnlyAtKeydown = isSelectOnly(app.canvas)
+        const { canvas, ui } = useApp()
+        const selectOnlyAtKeydown = isSelectOnly(canvas)
         requestAnimationFrame(async () => {
           let bindInputEl: Element | null = null
           // If we are auto queue in change mode then we do want to trigger on inputs
-          if (!app.ui.autoQueueEnabled || app.ui.autoQueueMode === 'instant') {
+          if (!ui.autoQueueEnabled || ui.autoQueueMode === 'instant') {
             if (
               activeEl?.tagName === 'INPUT' ||
               (activeEl && 'type' in activeEl && activeEl.type === 'textarea')

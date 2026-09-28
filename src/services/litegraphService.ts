@@ -53,7 +53,12 @@ import type {
   OutputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyApp, app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import {
+  clipspace,
+  copyToClipspace,
+  pasteFromClipspace
+} from '@/scripts/clipspace'
 import { $el } from '@/scripts/ui/utils'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -255,12 +260,12 @@ export const useLitegraphService = () => {
       }
     }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
-      if (app.dragOverNode?.id == this.id) {
+      if (useApp().dragOverNode?.id == this.id) {
         return { color: 'dodgerblue' }
       }
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
-      if (app.lastExecutionError?.node_id == this.id) {
+      if (useApp().lastExecutionError?.node_id == this.id) {
         return { color: LiteGraph.NODE_ERROR_COLOUR, lineWidth: 3 }
       }
     }
@@ -304,7 +309,7 @@ export const useLitegraphService = () => {
       node,
       inputName,
       transformInputSpecV2ToV1(widgetInputSpec),
-      app
+      useApp()
     )
     const wrappedResult = result && !('type' in result) ? result : undefined
     const { minWidth = 1, minHeight = 1 } = wrappedResult ?? {}
@@ -415,7 +420,7 @@ export const useLitegraphService = () => {
       static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
       constructor() {
-        super(app.rootGraph, subgraph, instanceData)
+        super(useApp().rootGraph, subgraph, instanceData)
 
         subgraph.events.addEventListener('widget-promoted', () => {
           invalidateSubgraphPseudoWidgetCache(this)
@@ -733,19 +738,19 @@ export const useLitegraphService = () => {
       })
 
       // prevent conflict of clipspace content
-      if (!ComfyApp.clipspace_return_node) {
+      if (!clipspace.returnNode) {
         options.push({
           content: 'Copy (Clipspace)',
           callback: () => {
-            ComfyApp.copyToClipspace(this)
+            copyToClipspace(this)
           }
         })
 
-        if (ComfyApp.clipspace != null) {
+        if (clipspace.current != null) {
           options.push({
             content: 'Paste (Clipspace)',
             callback: markCoreMediaMenuCallback(() => {
-              ComfyApp.pasteFromClipspace(this)
+              pasteFromClipspace(this)
             }, 'input')
           })
         }
@@ -937,7 +942,7 @@ export const useLitegraphService = () => {
       options
     )
 
-    const graph = useWorkflowStore().activeSubgraph ?? app.graph
+    const graph = useWorkflowStore().activeSubgraph ?? useApp().graph
     if (!node) return null
 
     graph.add(node, addOptions)
@@ -946,8 +951,8 @@ export const useLitegraphService = () => {
 
   function getCanvasCenter(): Point {
     const dpi = Math.max(window.devicePixelRatio || 1, 1)
-    if (!app.isGraphReady) return [0, 0]
-    const visibleArea = app.canvas.ds.visible_area
+    if (!useApp().isGraphReady) return [0, 0]
+    const visibleArea = useApp().canvas.ds.visible_area
     const [x, y, w, h] = visibleArea
     return [x + w / dpi / 2, y + h / dpi / 2]
   }
@@ -955,9 +960,9 @@ export const useLitegraphService = () => {
   function goToNode(nodeId: SerializedNodeId) {
     const parsedNodeId = parseNodeId(nodeId)
     if (!parsedNodeId) return
-    const graphNode = app.canvas.graph?.getNodeById(parsedNodeId)
+    const graphNode = useApp().canvas.graph?.getNodeById(parsedNodeId)
     if (!graphNode) return
-    app.canvas.animateToBounds(graphNode.boundingRect)
+    useApp().canvas.animateToBounds(graphNode.boundingRect)
   }
 
   function ensureBounds(nodes: LGraphNode[]) {
