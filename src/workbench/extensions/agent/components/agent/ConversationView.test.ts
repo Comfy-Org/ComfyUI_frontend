@@ -278,6 +278,7 @@ describe('ConversationView', () => {
     await userEvent.click(jump)
     expect(scrollTo).toHaveBeenCalled()
     expect(scrollContainer.scrollTop).toBe(500)
+    await fireEvent.scroll(scrollContainer)
     expect(
       screen.queryByRole('button', { name: 'Latest' })
     ).not.toBeInTheDocument()
@@ -346,6 +347,52 @@ describe('ConversationView', () => {
       screen.queryByRole('button', { name: 'Latest' })
     ).not.toBeInTheDocument()
     expect(scrollTo).toHaveBeenCalled()
+  })
+
+  it('does not re-enable following when a new conversation receives its id', async () => {
+    const assistant: AssistantMessage = {
+      id: toTurnId('msg-1'),
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'first reply', state: 'done' }],
+      streaming: true,
+      thinking: false
+    }
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
+    const { rerender } = render(ConversationView, {
+      props: { entries: [assistant], conversationId: null },
+      global: { plugins: [i18n] }
+    })
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollHeight: { value: 1_000 },
+      scrollTop: { value: 100 },
+      clientHeight: { value: 500 }
+    })
+    await nextTick()
+    await userEvent.pointer([
+      { target: scrollContainer, keys: '[MouseLeft>]' }
+    ])
+    await fireEvent.scroll(scrollContainer)
+    scrollTo.mockClear()
+
+    await rerender({ entries: [assistant], conversationId: 'thread-1' })
+    await rerender({
+      conversationId: 'thread-1',
+      entries: [
+        {
+          ...assistant,
+          parts: [{ type: 'text', text: 'first reply continued', state: 'done' }]
+        }
+      ]
+    })
+    await nextTick()
+    await nextTick()
+
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', { name: 'Latest' })
+    ).toBeInTheDocument()
   })
 
   it.for([
