@@ -26,6 +26,7 @@ const actionClass =
       {{ tc('cinematic.stage.again', locale) }}
     </button>
     <button
+      v-if="take.output.kind === 'image'"
       type="button"
       :class="actionClass"
       @click="emit('reference', take.output.url, take.output.fileName)"

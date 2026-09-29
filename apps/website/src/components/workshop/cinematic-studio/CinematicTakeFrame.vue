@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { EyeOff } from '@lucide/vue'
 import { ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
 import { framedStyle } from './aspect-style'
+import CinematicTakeMedia from './CinematicTakeMedia.vue'
 import CinematicTakeNotice from './CinematicTakeNotice.vue'
 import CinematicTakeProgress from './CinematicTakeProgress.vue'
 
@@ -74,33 +73,12 @@ function frameTone(take: Take): string | undefined {
     "
   >
     <template v-if="current.status === 'done'">
-      <img
-        :src="current.output.url"
-        :alt="current.prompt"
-        :class="
-          cn(
-            'block h-auto w-auto max-w-full',
-            current.output.nsfw && !revealed && 'blur-2xl'
-          )
-        "
-        :style="{ maxHeight: height }"
+      <CinematicTakeMedia
+        v-model:revealed="revealed"
+        :current
+        :height
+        :locale
       />
-      <div
-        v-if="current.output.nsfw && !revealed"
-        class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-primary-comfy-ink/40 text-center"
-      >
-        <EyeOff class="size-5 text-primary-warm-white" aria-hidden="true" />
-        <span class="text-sm text-primary-warm-white">
-          {{ t('workshop.output.nsfw', locale) }}
-        </span>
-        <button
-          type="button"
-          class="h-8 rounded-full px-4 text-xs font-bold tracking-wider text-primary-warm-white uppercase ring-1 ring-transparency-white-t20 ring-inset hover:bg-transparency-white-t8"
-          @click="revealed = true"
-        >
-          {{ t('workshop.output.reveal', locale) }}
-        </button>
-      </div>
     </template>
     <CinematicTakeProgress
       v-else-if="current.status === 'rendering'"

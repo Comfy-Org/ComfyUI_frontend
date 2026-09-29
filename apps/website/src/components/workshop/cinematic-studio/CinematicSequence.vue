@@ -107,8 +107,21 @@ const thumbs = computed(() =>
       :style="aspectStyle(thumb.take.aspect)"
       @click="emit('select', thumb.take.id)"
     >
+      <video
+        v-if="
+          thumb.take.status === 'done' && thumb.take.output.kind === 'video'
+        "
+        :src="thumb.take.output.url"
+        muted
+        playsinline
+        preload="metadata"
+        aria-hidden="true"
+        :class="
+          cn('size-full object-cover', thumb.take.output.nsfw && 'blur-md')
+        "
+      />
       <img
-        v-if="thumb.take.status === 'done'"
+        v-else-if="thumb.take.status === 'done'"
         :src="thumb.take.output.url"
         alt=""
         :class="
