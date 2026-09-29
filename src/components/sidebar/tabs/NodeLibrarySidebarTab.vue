@@ -3,6 +3,7 @@
     <SidebarTabTemplate
       v-if="!isHelpOpen"
       :title="$t('sideToolbar.nodeLibrary')"
+      closable
     >
       <template #tool-buttons>
         <Button

@@ -101,11 +101,10 @@ const i18n = createI18n({
 
 const sidebarTabTemplateStub = {
   props: ['title', 'closable'],
-  emits: ['close'],
   template: `
     <section>
       <h2 v-if="title">{{ title }}</h2>
-      <button v-if="closable" aria-label="Close" @click="$emit('close')" />
+      <button v-if="closable" aria-label="Close" />
       <div data-testid="folder-title"><slot name="alt-title" /></div>
       <div data-testid="folder-controls"><slot name="header" /></div>
       <slot name="body" />
@@ -203,14 +202,12 @@ describe('AssetsSidebarTab close button', () => {
   it.for([
     { view: 'the asset list', open: async () => {} },
     { view: 'folder view', open: enterFolderView }
-  ])('closes the sidebar panel from $view', async ({ open }) => {
+  ])('is shown in $view while open in the sidebar', async ({ open }) => {
     useSidebarTabStore().activeSidebarTabId = 'assets'
     renderTab()
     await open()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
-
-    expect(useSidebarTabStore().activeSidebarTabId).toBeNull()
+    expect(screen.getByRole('button', { name: 'Close' })).toBeVisible()
   })
 
   it('is hidden when the tab is not open in the sidebar', () => {

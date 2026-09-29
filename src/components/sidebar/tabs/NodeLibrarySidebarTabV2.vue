@@ -8,8 +8,9 @@
             class="transition-[margin-top] duration-200 ease-out"
             :style="{ marginTop: `${headerTop}px` }"
           >
-            <div class="px-4 pt-4 pb-2 font-bold">
-              {{ $t('sideToolbar.nodes') }}
+            <div class="flex items-center justify-between gap-2 px-4 pt-3 pb-1">
+              <span class="font-bold">{{ $t('sideToolbar.nodes') }}</span>
+              <SidebarTabCloseButton />
             </div>
             <div class="px-4 pt-2 pb-0">
               <TabList v-model="selectedTab">
@@ -166,6 +167,7 @@ import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
 import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
+import SidebarTabCloseButton from './SidebarTabCloseButton.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 
 const { flags } = useFeatureFlags()

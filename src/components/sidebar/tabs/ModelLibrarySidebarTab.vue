@@ -1,5 +1,5 @@
 <template>
-  <SidebarTabTemplate :title="$t('sideToolbar.modelLibrary')">
+  <SidebarTabTemplate closable :title="$t('sideToolbar.modelLibrary')">
     <template #tool-buttons>
       <Button
         v-tooltip.bottom="$t('g.refresh')"

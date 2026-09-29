@@ -2,6 +2,7 @@
   <SidebarTabTemplate
     data-testid="job-history-sidebar"
     :title="$t('queue.jobHistory')"
+    closable
   >
     <template #alt-title>
       <div class="ml-auto flex shrink-0 items-center">

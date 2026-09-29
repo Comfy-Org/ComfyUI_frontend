@@ -4,7 +4,6 @@
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
     :closable="sidebarTabStore.activeSidebarTabId === 'assets'"
     v-bind="$attrs"
-    @close="sidebarTabStore.toggleSidebarTab('assets')"
   >
     <template #alt-title>
       <div
@@ -200,7 +199,6 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -329,7 +327,7 @@ const {
   deactivate: deactivateSelection
 } = useAssetSelection()
 
-const panelRef = useTemplateRef<ComponentPublicInstance>('panelRef')
+const panelRef = useTemplateRef('panelRef')
 const marqueePanelRef = computed(() => {
   const el = unrefElement(panelRef)
   return el instanceof HTMLElement ? el : undefined

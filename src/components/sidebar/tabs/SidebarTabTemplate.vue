@@ -24,17 +24,7 @@
           >
             <slot name="tool-buttons" />
           </div>
-          <Button
-            v-if="closable"
-            v-tooltip.bottom="{ value: $t('g.close'), showDelay: 300 }"
-            variant="muted-textonly"
-            size="icon"
-            class="shrink-0"
-            :aria-label="$t('g.close')"
-            @click="emit('close')"
-          >
-            <i class="icon-[lucide--x] size-4" />
-          </Button>
+          <SidebarTabCloseButton v-if="closable" />
         </div>
       </div>
       <slot name="header" />
@@ -51,16 +41,12 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
+import SidebarTabCloseButton from '@/components/sidebar/tabs/SidebarTabCloseButton.vue'
 
 const props = defineProps<{
   title: string
   class?: string
   hideToolbar?: boolean
   closable?: boolean
-}>()
-
-const emit = defineEmits<{
-  close: []
 }>()
 </script>
