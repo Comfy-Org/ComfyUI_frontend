@@ -23,15 +23,15 @@ function renderTemplate(closable?: boolean) {
 describe('SidebarTabTemplate', () => {
   it('closes the sidebar panel from the close button', async () => {
     useSidebarTabStore().activeSidebarTabId = 'model-library'
-    renderTemplate(true)
+    renderTemplate()
 
     await userEvent.click(screen.getByRole('button', { name: 'Close sidebar' }))
 
     expect(useSidebarTabStore().activeSidebarTabId).toBeNull()
   })
 
-  it('has no close button unless closable', () => {
-    renderTemplate()
+  it('has no close button when closable is false', () => {
+    renderTemplate(false)
 
     expect(
       screen.queryByRole('button', { name: 'Close sidebar' })

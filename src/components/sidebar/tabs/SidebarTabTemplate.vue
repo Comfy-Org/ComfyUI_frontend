@@ -3,7 +3,7 @@
     :class="
       cn(
         'comfy-vue-side-bar-container group/sidebar-tab flex size-full flex-col',
-        props.class
+        className
       )
     "
   >
@@ -13,8 +13,8 @@
         class="flex min-h-16 items-center justify-between border-b border-interface-stroke bg-transparent px-3 2xl:px-4"
       >
         <div class="flex min-w-0 flex-1 items-center overflow-hidden">
-          <span class="truncate font-bold" :title="props.title">
-            {{ props.title }}
+          <span class="truncate font-bold" :title="title">
+            {{ title }}
           </span>
           <slot name="alt-title" />
         </div>
@@ -43,7 +43,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import SidebarTabCloseButton from '@/components/sidebar/tabs/SidebarTabCloseButton.vue'
 
-const props = defineProps<{
+const {
+  title,
+  class: className,
+  hideToolbar,
+  closable = true
+} = defineProps<{
   title: string
   class?: string
   hideToolbar?: boolean

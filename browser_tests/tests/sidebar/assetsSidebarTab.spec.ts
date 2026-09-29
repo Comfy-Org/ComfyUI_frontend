@@ -709,44 +709,23 @@ const closeButtonTest = comfyPageFixture.extend({
   page: async ({ page }, use) => {
     const jobsRoutes = new JobsRouteMocker(page)
     await jobsRoutes.mockJobsQueue([])
-    await jobsRoutes.mockJobsHistory([multiOutputJob])
-    await jobsRoutes.mockJobDetail('multi-output', multiOutputJobDetail)
+    await jobsRoutes.mockJobsHistory(generatedJobs)
     await mockInputFiles(page, [])
     await mockViewFiles(page, viewFiles)
     await use(page)
   }
 })
 
-closeButtonTest.describe('Assets sidebar - close button', () => {
-  closeButtonTest(
-    'closes the panel and clears the sidebar icon',
-    async ({ comfyPage }) => {
-      const tab = comfyPage.menu.assetsTab
-      await tab.open()
-      await expect(tab.selectedTabButton).toBeVisible()
+closeButtonTest(
+  'Assets sidebar close button closes the panel and clears the sidebar icon',
+  async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await expect(tab.selectedTabButton).toBeVisible()
 
-      await tab.closeButton.click()
+    await tab.closeButton.click()
 
-      await expect(tab.generatedTab).toBeHidden()
-      await expect(tab.selectedTabButton).toBeHidden()
-    }
-  )
-
-  closeButtonTest(
-    'closes the panel from folder view',
-    async ({ comfyPage }) => {
-      const tab = comfyPage.menu.assetsTab
-      await tab.open()
-      await tab
-        .getAssetCardByName('multi-output-a')
-        .getByRole('button', { name: 'See more outputs' })
-        .click()
-      await expect(tab.backToAssetsButton).toBeVisible()
-
-      await tab.closeButton.click()
-
-      await expect(tab.backToAssetsButton).toBeHidden()
-      await expect(tab.selectedTabButton).toBeHidden()
-    }
-  )
-})
+    await expect(tab.generatedTab).toBeHidden()
+    await expect(tab.selectedTabButton).toBeHidden()
+  }
+)

@@ -13,7 +13,7 @@
       <span class="ml-2 flex-1 truncate font-semibold">
         {{ node.display_name }}
       </span>
-      <SidebarTabCloseButton @click="$emit('close')" />
+      <SidebarTabCloseButton />
     </div>
     <div class="grow p-4">
       <NodeHelpContent :node />

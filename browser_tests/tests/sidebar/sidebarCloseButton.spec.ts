@@ -2,35 +2,40 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { SidebarTab } from '@e2e/fixtures/components/SidebarTab'
 
-const cases = [
+const cases: {
+  name: string
+  settings?: Record<string, boolean>
+  tab: (comfyPage: ComfyPage) => SidebarTab
+}[] = [
   {
     name: 'node library',
-    newNodeLibrary: true,
-    tab: (comfyPage: ComfyPage) => comfyPage.menu.nodeLibraryTabV2
+    tab: (comfyPage) => comfyPage.menu.nodeLibraryTabV2
   },
   {
     name: 'legacy node library',
-    newNodeLibrary: false,
-    tab: (comfyPage: ComfyPage) => comfyPage.menu.nodeLibraryTab
+    settings: { 'Comfy.NodeLibrary.NewDesign': false },
+    tab: (comfyPage) => comfyPage.menu.nodeLibraryTab
   },
   {
     name: 'model library',
-    newNodeLibrary: true,
-    tab: (comfyPage: ComfyPage) => comfyPage.menu.modelLibraryTab
+    tab: (comfyPage) => comfyPage.menu.modelLibraryTab
   },
   {
     name: 'workflows',
-    newNodeLibrary: true,
-    tab: (comfyPage: ComfyPage) => comfyPage.menu.workflowsTab
+    tab: (comfyPage) => comfyPage.menu.workflowsTab
+  },
+  {
+    name: 'job history',
+    settings: { 'Comfy.Queue.QPOV2': true },
+    tab: (comfyPage) => new SidebarTab(comfyPage.page, 'job-history')
   }
 ]
 
-for (const { name, newNodeLibrary, tab } of cases) {
+for (const { name, settings, tab } of cases) {
   test.describe(`${name} sidebar close button`, () => {
-    test.use({
-      initialSettings: { 'Comfy.NodeLibrary.NewDesign': newNodeLibrary }
-    })
+    if (settings) test.use({ initialSettings: settings })
 
     test('closes the panel and clears the sidebar icon', async ({
       comfyPage

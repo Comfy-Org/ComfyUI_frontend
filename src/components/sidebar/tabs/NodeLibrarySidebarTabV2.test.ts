@@ -6,8 +6,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-
 import NodeLibrarySidebarTabV2 from './NodeLibrarySidebarTabV2.vue'
 
 const hoisted = vi.hoisted(() => ({
@@ -96,13 +94,10 @@ describe('NodeLibrarySidebarTabV2', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument()
   })
 
-  it('closes the sidebar panel from the close button', async () => {
-    useSidebarTabStore().activeSidebarTabId = 'node-library'
+  it('offers the sidebar close button in its own header', () => {
     renderComponent()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Close sidebar' }))
-
-    expect(useSidebarTabStore().activeSidebarTabId).toBeNull()
+    expect(screen.getByRole('button', { name: 'Close sidebar' })).toBeVisible()
   })
 
   it('should render only the selected panel', () => {

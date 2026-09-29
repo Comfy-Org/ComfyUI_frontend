@@ -1,7 +1,6 @@
 <template>
   <SidebarTabTemplate
     :title="title"
-    closable
     v-bind="$attrs"
     :data-testid="dataTestid"
     class="workflows-sidebar-tab"

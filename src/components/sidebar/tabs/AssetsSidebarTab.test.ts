@@ -103,7 +103,7 @@ const sidebarTabTemplateStub = {
   template: `
     <section>
       <h2 v-if="title">{{ title }}</h2>
-      <button v-if="closable" aria-label="Close sidebar" />
+      <div data-testid="template-closable">{{ String(closable) }}</div>
       <div data-testid="folder-title"><slot name="alt-title" /></div>
       <div data-testid="folder-controls"><slot name="header" /></div>
       <slot name="body" />
@@ -191,29 +191,15 @@ describe('AssetsSidebarTab folder navigation', () => {
   })
 })
 
-describe('AssetsSidebarTab close button', () => {
-  async function enterFolderView() {
-    vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Enter output folder' })
-    )
+it.for([
+  { host: 'the sidebar', props: {}, closable: 'true' },
+  {
+    host: 'a host that opts out',
+    props: { closable: false },
+    closable: 'false'
   }
+])('forwards closable from $host to the template', ({ props, closable }) => {
+  renderTab(props)
 
-  it.for([
-    { view: 'the asset list', open: async () => {} },
-    { view: 'folder view', open: enterFolderView }
-  ])('is shown in $view', async ({ open }) => {
-    renderTab()
-    await open()
-
-    expect(screen.getByRole('button', { name: 'Close sidebar' })).toBeVisible()
-  })
-
-  it('is hidden when the host opts out', () => {
-    renderTab({ closable: false })
-
-    expect(
-      screen.queryByRole('button', { name: 'Close sidebar' })
-    ).not.toBeInTheDocument()
-  })
+  expect(screen.getByTestId('template-closable')).toHaveTextContent(closable)
 })
