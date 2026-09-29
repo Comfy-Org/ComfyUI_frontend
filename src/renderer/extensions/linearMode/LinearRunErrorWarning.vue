@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
@@ -8,14 +9,21 @@ import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/l
 
 const { t } = useI18n()
 const { viewErrorsInGraph } = useViewErrorsInGraph()
-const { overlayMessage, overlayTitle } = useErrorOverlayState()
+const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
 </script>
 
 <template>
   <div
     role="status"
     data-testid="linear-validation-warning"
-    class="mb-3 flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border-default border-l-destructive-background bg-base-background p-3 shadow-interface transition-colors duration-200 ease-in-out"
+    :class="
+      cn(
+        'mb-3 flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border-default bg-base-background p-3 shadow-interface transition-colors duration-200 ease-in-out',
+        hasError
+          ? 'border-l-destructive-background'
+          : 'border-l-warning-foreground'
+      )
+    "
   >
     <div
       :id="LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID"
@@ -25,8 +33,16 @@ const { overlayMessage, overlayTitle } = useErrorOverlayState()
       <div class="flex w-full items-start gap-2">
         <i
           aria-hidden="true"
-          class="mt-0.5 icon-[lucide--circle-x] size-4 shrink-0 text-destructive-background"
+          :class="
+            cn(
+              'mt-0.5 size-4 shrink-0',
+              hasError
+                ? 'icon-[lucide--circle-x] text-destructive-background'
+                : 'icon-[lucide--triangle-alert] text-warning-foreground'
+            )
+          "
         />
+        <span class="sr-only">{{ t(hasError ? 'g.error' : 'g.warning') }}</span>
         <span
           class="min-w-0 flex-1 truncate text-sm text-base-foreground"
           :title="overlayTitle"
