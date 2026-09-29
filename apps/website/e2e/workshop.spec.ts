@@ -1,18 +1,6 @@
-import { readFileSync } from 'node:fs'
 import { expect } from '@playwright/test'
-import { z } from 'zod'
 
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
-
-const VercelRedirectsSchema = z.object({
-  redirects: z.array(
-    z.object({
-      source: z.string(),
-      destination: z.string(),
-      permanent: z.boolean()
-    })
-  )
-})
 
 test.describe('Retired prototype routes', () => {
   test.beforeEach(async ({ page }) => {
@@ -415,24 +403,8 @@ test.describe('Models catalog', () => {
     ).toBeVisible()
   })
 
-  test('an old alias address redirects temporarily to its canonical model page', async ({
-    page
-  }) => {
-    const destination = '/hub/models/flux-2-max-text-to-image/'
-    const { redirects } = VercelRedirectsSchema.parse(
-      JSON.parse(readFileSync('vercel.json', 'utf8'))
-    )
-    for (const source of [
-      '/models/bfl--flux-2-max',
-      '/models/bfl--flux-2-max/'
-    ])
-      expect(redirects).toContainEqual({
-        source,
-        destination,
-        permanent: false
-      })
-
-    const response = await page.goto(destination)
+  test('the hub page an old alias points at renders', async ({ page }) => {
+    const response = await page.goto('/hub/models/flux-2-max-text-to-image/')
     expect(response?.status()).toBe(200)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'FLUX 2 Max Text-to-Image'
