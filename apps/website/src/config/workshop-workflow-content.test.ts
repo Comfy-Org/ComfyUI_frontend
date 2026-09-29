@@ -156,6 +156,21 @@ describe('curated workflow pages', () => {
     expect(validateForm(state.schema, state.values)).toEqual({})
   })
 
+  it('keeps every audited material example with the form-facing prompt copy', () => {
+    const detail = getWorkshopPageDetail('workflows/change-material')
+    assert.exists(detail)
+
+    expect(detail.examples.map(({ title }) => title)).toEqual([
+      'A softer finish for a leather sofa',
+      'A camper van woven from rattan',
+      'Enamel cherries in amber glass',
+      'A sports car in celadon porcelain'
+    ])
+    expect(detail.examples[0]?.values.prompt).toBe(
+      'Give the sofa the fur texture from the material reference instead of its leather.'
+    )
+  })
+
   it('uses the master INPUTS widgets and prepared defaults in the shared form', () => {
     const detail = getWorkshopPageDetail(page.slug)
     if (!detail) throw new Error('Missing workflow detail')
