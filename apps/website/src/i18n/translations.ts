@@ -10600,9 +10600,9 @@ Enterprise`
     en: 'API documentation',
     'zh-CN': 'API 文档'
   },
-  'workshop.workflow.apiUploads': {
-    en: 'Upload media first',
-    'zh-CN': '先上传媒体'
+  'workshop.workflow.apiSteps': {
+    en: 'The whole call, step by step',
+    'zh-CN': '完整调用步骤'
   },
   'workshop.workflow.apiUploadGrant': {
     en: 'POST /api/inputs/upload-url with {"content_type":"image/png"} on the Cloud origin, using your workspace credential.',
