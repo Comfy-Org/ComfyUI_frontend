@@ -45,7 +45,8 @@ const EXCLUDED_PAGES = new Set([
   '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
   '/platform/serverless-animation', // noindex temporary motion study, not a real page
   '/workshop', // build-gated; static public/llms.txt cannot vary by build shape
-  '/video-sitemap.xml' // machine-readable sitemap output, not a page for agents to read
+  '/video-sitemap.xml', // machine-readable sitemap output, not a page for agents to read
+  '/models/catalogue.json' // data the /models catalogue island loads, not a page
 ])
 
 const LLMS_TXT_NOINDEX_EXCEPTIONS = new Set([
@@ -92,6 +93,20 @@ const WORKFLOW_APP_ROUTES = [
 ]
 
 /** Turn `src/pages/learning/[category]/[slug].astro` into a matcher for `/learning/x/y`. */
+function routeMatcher(route: string): RegExp {
+  const pattern = route
+    .split('/')
+    .map((segment) =>
+      segment.startsWith('[...')
+        ? '.+'
+        : segment.startsWith('[')
+          ? '[^/]+'
+          : segment.replace(/[.*+?^${}()|\\]/g, '\\$&')
+    )
+    .join('/')
+  return new RegExp(`^${pattern}$`)
+}
+
 function pageMatchers(root: string): {
   static: Set<string>
   dynamic: RegExp[]
@@ -109,19 +124,8 @@ function pageMatchers(root: string): {
       .replace(/\.(astro|ts)$/, '')
     if (root === pagesDir && relative.startsWith('/zh-CN/')) continue
     const route = relative.replace(/\/index$/, '') || '/'
-    if (route.includes('[')) {
-      const pattern = route
-        .split('/')
-        .map((segment) =>
-          segment.startsWith('[')
-            ? '[^/]+'
-            : segment.replace(/[.*+?^${}()|\\]/g, '\\$&')
-        )
-        .join('/')
-      dynamic.push(new RegExp(`^${pattern}$`))
-    } else {
-      staticPages.add(route)
-    }
+    if (route.includes('[')) dynamic.push(routeMatcher(route))
+    else staticPages.add(route)
   }
   return { static: staticPages, dynamic }
 }
@@ -130,7 +134,10 @@ describe('llms.txt', () => {
   const links = parseLlmsTxtLinks(llmsTxt)
   const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
-  for (const route of modelsBuildRoutes(false)) staticPages.add(route.pattern)
+  for (const { pattern } of modelsBuildRoutes(false)) {
+    if (pattern.includes('[')) dynamic.push(routeMatcher(pattern))
+    else staticPages.add(pattern)
+  }
   const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
 
   it('follows the llms.txt shape: one H1, a summary blockquote, Optional last', () => {
