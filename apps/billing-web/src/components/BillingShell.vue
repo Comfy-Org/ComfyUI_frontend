@@ -16,10 +16,12 @@ import {
 
 import { createBillingWebClient } from '@/session/billingWebClient'
 import { billingWebSessionClient } from '@/session/billingWebSession'
+import { provideWorkspaceInvites } from '@/session/workspaceInvites'
 
 const client = createBillingWebClient(billingWebSessionClient())
 
 provideBillingClient(client)
+provideWorkspaceInvites(client.invites)
 onUnmounted(() => disposeBillingClient(client))
 </script>
 

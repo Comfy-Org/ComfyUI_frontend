@@ -126,7 +126,7 @@ import {
   isValidEmail,
   normalizeEmail,
   sanitizeInviteEmails
-} from '@/platform/workspace/utils/inviteEmails'
+} from '@comfyorg/account-ui/billing/checkout'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const MAX_INVITES_PER_BATCH = 30

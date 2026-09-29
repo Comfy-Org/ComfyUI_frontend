@@ -1,5 +1,6 @@
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
+import type { ToastMessageOptions } from 'primevue/toast'
+import { computed, ref, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
@@ -7,7 +8,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { paymentReturnUrl } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
-import { amountDueTodayChanged } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
+import { amountDueTodayChanged } from '@comfyorg/account-ui/billing/checkout'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -1202,16 +1203,27 @@ export function useSubscriptionCheckout(
     }
   }
 
+  // A refused attempt's toast stays until dismissed; a later attempt that
+  // succeeds takes them down rather than leaving a decline over the success.
+  const attemptErrorToasts: ToastMessageOptions[] = []
+
   function showSubscribeError(error: unknown) {
-    toast.add({
+    const message: ToastMessageOptions = {
       severity: 'error',
       summary: t('g.error'),
       detail:
         error instanceof Error
           ? error.message
           : t('subscription.subscribeFailed')
-    })
+    }
+    attemptErrorToasts.push(message)
+    toast.add(message)
   }
+
+  watch(checkoutStep, (step) => {
+    if (step !== 'success') return
+    for (const message of attemptErrorToasts.splice(0)) toast.remove(message)
+  })
 
   async function recoverStaleQuote(error: unknown): Promise<boolean> {
     if (!hasErrorCode(error, 'SUBSCRIPTION_QUOTE_STALE')) return false
