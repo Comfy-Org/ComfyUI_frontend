@@ -10,7 +10,7 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAuthStore } from '@/stores/authStore'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 const plans = ref<Plan[]>([])
 const currentPlanSlug = ref<string | null>(null)
@@ -22,9 +22,29 @@ let fetchPromiseScopeKey: string | null = null
 let adoptedScopeKey: string | null = null
 
 function billingScopeKey(): string {
-  const identity = useAuthStore().userId ?? 'anonymous'
+  const identity = useCurrentUser().resolvedUserInfo.value?.id ?? 'anonymous'
   const workspace = useTeamWorkspaceStore().activeWorkspaceId ?? 'personal'
   return `${identity}:${workspace}`
+}
+
+function hasCatalogForScope(scopeKey: string): boolean {
+  return adoptedScopeKey === scopeKey && plans.value.length > 0
+}
+
+function reportCatalogFallback(err: unknown, hasCachedPlans: boolean): void {
+  const hasTeamCreditStops = (teamCreditStops.value?.stops.length ?? 0) > 0
+  reportError(err, {
+    errorType: 'cloud_billing_plan_catalog_fallback',
+    tags: {
+      failure_kind: hasCachedPlans ? 'degraded' : 'caught_unexpected',
+      feature_area: 'billing',
+      has_cached_plans: hasCachedPlans,
+      has_team_credit_stops: hasTeamCreditStops,
+      operation: 'load',
+      outcome: hasCachedPlans ? 'recovered' : 'failed'
+    },
+    level: hasCachedPlans ? 'warning' : 'error'
+  })
 }
 
 export function useBillingPlans() {
@@ -87,24 +107,7 @@ export function useBillingPlans() {
         }
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch plans'
-        const hasCachedPlans =
-          adoptedScopeKey === scopeKey &&
-          Array.isArray(plans.value) &&
-          plans.value.length > 0
-        reportError(err, {
-          errorType: 'cloud_billing_plan_catalog_fallback',
-          tags: {
-            failure_kind: hasCachedPlans ? 'degraded' : 'caught_unexpected',
-            feature_area: 'billing',
-            has_cached_plans: hasCachedPlans,
-            has_team_credit_stops:
-              Array.isArray(teamCreditStops.value?.stops) &&
-              teamCreditStops.value.stops.length > 0,
-            operation: 'load',
-            outcome: hasCachedPlans ? 'recovered' : 'failed'
-          },
-          level: hasCachedPlans ? 'warning' : 'error'
-        })
+        reportCatalogFallback(err, hasCatalogForScope(scopeKey))
       })
       .finally(() => {
         if (fetchPromise !== request) return

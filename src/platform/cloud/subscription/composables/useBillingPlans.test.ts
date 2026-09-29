@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { computed } from 'vue'
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -11,10 +12,11 @@ vi.mock(import('@/platform/telemetry/reportError'))
 const railState = vi.hoisted(() => ({
   rail: null as { readPlans: ReturnType<typeof vi.fn> } | null
 }))
-const scopeState = vi.hoisted(() => ({ workspaceId: 'workspace-1' as string | null }))
 const identityState = vi.hoisted(() => ({ userId: 'user-1' }))
-vi.mock(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({ userId: identityState.userId })
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
+  useCurrentUser: () => ({
+    resolvedUserInfo: computed(() => ({ id: identityState.userId }))
+  })
 }))
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingReadRail'),
@@ -49,13 +51,10 @@ describe('useBillingPlans', () => {
   beforeEach(() => {
     vi.resetModules()
     railState.rail = null
-    scopeState.workspaceId = 'workspace-1'
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-1'
+    })
     identityState.userId = 'user-1'
-    vi.spyOn(
-      useTeamWorkspaceStore(),
-      'activeWorkspaceId',
-      'get'
-    ).mockImplementation(() => scopeState.workspaceId)
   })
 
   describe('fetchPlans', () => {
@@ -178,7 +177,9 @@ describe('useBillingPlans', () => {
       const { fetchPlans, plans } = useBillingPlans()
 
       const first = fetchPlans()
-      scopeState.workspaceId = 'workspace-2'
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
       const second = fetchPlans()
       await second
       resolveFirst({ plans: [buildPlan()] })
@@ -204,14 +205,14 @@ describe('useBillingPlans', () => {
       const { fetchPlans, plans, error } = useBillingPlans()
 
       const first = fetchPlans()
-      scopeState.workspaceId = 'workspace-2'
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
       resolveFirst({ plans: [buildPlan()] })
       await first
 
       await vi.waitFor(() =>
-        expect(plans.value).toEqual([
-          buildPlan({ slug: 'creator-monthly' })
-        ])
+        expect(plans.value).toEqual([buildPlan({ slug: 'creator-monthly' })])
       )
       expect(workspaceApi.getBillingPlans).toHaveBeenCalledTimes(2)
       expect(error.value).toBeNull()
@@ -339,7 +340,9 @@ describe('useBillingPlans', () => {
       const { fetchPlans, plans } = useBillingPlans()
 
       await fetchPlans()
-      scopeState.workspaceId = 'workspace-2'
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
       await fetchPlans()
 
       expect(plans.value).toEqual([])
@@ -357,7 +360,7 @@ describe('useBillingPlans', () => {
 
     it('does not reuse a personal catalog after the signed-in user changes', async () => {
       const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
-      scopeState.workspaceId = null
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
       vi.mocked(workspaceApi.getBillingPlans)
         .mockResolvedValueOnce({ plans: [buildPlan()] })
         .mockResolvedValueOnce({
