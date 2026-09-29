@@ -118,12 +118,12 @@ function attachmentIconClass(name: string): string {
  * file; an image without one still has its local preview. Text and other
  * kinds have no grid treatment and keep the compact tiles.
  *
- * A rehydrated attachment carries the kind the server resolved from the
- * asset's MIME type, which outranks the one guessed from the name: a library
- * asset is attached under its content hash, and a hash has no extension to
- * read a kind off. That column holds whatever the uploading client declared,
- * so a mis-declared type now outranks a correct extension -- the same
- * mime-before-name order the service itself applies.
+ * The kind is read off the storage filename the grid fetches, not the display
+ * name: a renamed attachment still serves the bytes its ref names, and that
+ * ref is what the lightbox opens. Only a ref with no extension to read -- a
+ * library asset attached under its content hash -- falls through to the kind
+ * the server resolved from the asset's MIME type, and then to the display
+ * name, which is all a freshly dragged asset carries before its row exists.
  */
 const GRID_KINDS: ReadonlySet<MediaType> = new Set<ReplyAsset['kind']>([
   'image',
@@ -153,13 +153,18 @@ function replyAssetIdentity(
 }
 
 function gridAsset(item: UserAttachment): ReplyAsset | undefined {
-  const kind = item.kind ?? getMediaTypeFromFilename(item.name)
+  const identity = replyAssetIdentity(item)
+  const stored = getMediaTypeFromFilename(identity.filename)
+  const kind =
+    stored === 'other'
+      ? (item.kind ?? getMediaTypeFromFilename(item.name))
+      : stored
   const url = attachmentUrl(item)
   if (!url || !isGridKind(kind)) return undefined
   return {
     url,
     kind,
-    ...replyAssetIdentity(item)
+    ...identity
   }
 }
 

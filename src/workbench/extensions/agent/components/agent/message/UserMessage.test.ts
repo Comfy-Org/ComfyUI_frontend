@@ -226,6 +226,30 @@ describe('UserMessage', () => {
     ])
   })
 
+  // A library asset dropped but not yet persisted: its ref is a content hash
+  // and no row has resolved a kind, leaving the dragged name to classify it.
+  it('classifies a freshly dragged asset by name when its ref carries no kind', () => {
+    renderMessage({
+      text: '',
+      attachments: [
+        {
+          name: 'portrait.png',
+          ref: 'b'.repeat(64),
+          previewUrl: 'blob:portrait'
+        }
+      ]
+    })
+
+    expect(stubbedAssets()).toEqual([
+      {
+        url: 'blob:portrait',
+        filename: 'b'.repeat(64),
+        kind: 'image',
+        label: 'portrait.png'
+      }
+    ])
+  })
+
   /**
    * PM-1643 / PM-717 item 3. Dragging a library asset in attaches it under
    * `getAssetUrlFilename`, i.e. `asset.hash` (assetDragUtil.ts,
