@@ -16,6 +16,7 @@ import {
   getAuthoredRouterWorkshopModelDetail,
   getRouterWorkshopModelDetail
 } from './workshop-router-content'
+import { hubModelHref } from './hub-models'
 
 describe('canonical model display names', () => {
   it('does not publish editorial prices as exact Router charges', () => {
@@ -35,7 +36,7 @@ describe('canonical model display names', () => {
       expect(getAuthoredRouterWorkshopModelDetail(model.slug)?.name).toBe(
         model.name
       )
-      expect(model.href).toBe(`/models/${model.slug}/`)
+      expect(model.href).toBe(hubModelHref(model.slug))
     }
   })
 

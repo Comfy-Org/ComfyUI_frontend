@@ -11,6 +11,8 @@ import {
   siteRedirects,
   toVercelRedirects
 } from './redirects'
+import { hubModelAliases, hubModelSlugs } from './hub-models'
+import { modelsUrlKind } from './models-url-registry'
 import { getRoutes } from './routes'
 
 const appDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -98,6 +100,19 @@ describe('generated Vercel rules', () => {
     {
       source: '/p/supported-models/t5xxl-fp8-e4m3fn-scaled',
       destination: '/p/supported-models/t5xxl-fp16/'
+    },
+    { source: '/models', destination: '/hub/models/' },
+    {
+      source: '/models/bfl--flux-2-max--generate-images',
+      destination: '/hub/models/flux-2-max-text-to-image/'
+    },
+    {
+      source: '/models/byteplus--seedance-2-5-text-to-video--generate-videos',
+      destination: '/hub/models/seedance-2-5-text-to-video/'
+    },
+    {
+      source: '/models/vertexai--gemini-3-pro-image',
+      destination: `/hub/models/${hubModelAliases.get('vertexai--gemini-3-pro-image')}/`
     }
   ])(
     'send $source and $source/ to $destination permanently',
@@ -143,13 +158,16 @@ describe('generated Vercel rules', () => {
 })
 
 describe('Astro redirects', () => {
-  it('cover every internal row whose slash form redirects', () => {
+  it('cover every internal row whose slash form redirects, except old Models addresses', () => {
+    const isOldModelsAddress = (source: string) =>
+      source === '/models' || source.startsWith('/models/')
     expect(Object.keys(astroRedirects)).toEqual(
       siteRedirects
         .filter(
-          ({ destination, slashFormIsPageBecause }) =>
+          ({ source, destination, slashFormIsPageBecause }) =>
             isInternalDestination(destination) &&
-            slashFormIsPageBecause === undefined
+            slashFormIsPageBecause === undefined &&
+            !isOldModelsAddress(source)
         )
         .map(({ source }) => source)
     )
@@ -158,5 +176,31 @@ describe('Astro redirects', () => {
   it('leave off-site rows to Vercel', () => {
     expect(astroRedirects['/blog']).toBeUndefined()
     expect(astroRedirects['/login']).toBeUndefined()
+  })
+})
+
+describe('old Models addresses', () => {
+  const vercelRedirects = toVercelRedirects(siteRedirects)
+  const oldPaths = [
+    '/models',
+    ...[...hubModelSlugs.keys(), ...hubModelAliases.keys()].map(
+      (slug) => `/models/${slug}`
+    )
+  ].flatMap((path) => [path, `${path}/`])
+
+  it('each redirect once, permanently, to a page the site builds', () => {
+    const landsOnPage = (destination: string) =>
+      ['model', 'hub'].includes(modelsUrlKind(destination) ?? '')
+    expect(
+      oldPaths.filter((path) => {
+        const rows = vercelRedirects.filter(({ source }) => source === path)
+        return (
+          modelsUrlKind(path) !== 'alias' ||
+          rows.length !== 1 ||
+          !rows[0].permanent ||
+          !landsOnPage(rows[0].destination)
+        )
+      })
+    ).toEqual([])
   })
 })

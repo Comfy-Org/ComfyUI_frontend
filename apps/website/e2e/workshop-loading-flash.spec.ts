@@ -4,7 +4,7 @@ import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 import { MODEL_PATH } from './fixtures/modelsAccount'
 
-for (const path of ['/models/', MODEL_PATH]) {
+for (const path of ['/hub/models/', MODEL_PATH]) {
   test(`static HTML at ${path} paints only the loading frame`, async ({
     request
   }) => {
@@ -56,7 +56,7 @@ test.describe('enabled workshop', () => {
   })
 
   test('client-side navigation does not flash marketing', async ({ page }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await waitForIsland(page, page.getByTestId('workshop-search'))
     await page
       .getByRole('link', { name: /Grok Imagine Image/i })

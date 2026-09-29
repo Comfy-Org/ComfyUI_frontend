@@ -28,7 +28,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
   await page.getByTestId('catalogue-tab-workflows').click()
   const catalogue = page.getByTestId('workflow-catalogue')
@@ -93,7 +93,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await expect(shelf).toHaveText('Edit images')
   await expect(shelf).toHaveAttribute(
     'href',
-    '/models?type=workflows&category=product'
+    '/hub/models/?type=workflows&category=product'
   )
   await expect(
     page.getByRole('group', { name: 'Your original image' })
@@ -137,7 +137,9 @@ test('workflow launch groups lead to the existing shared form', async ({
     expect(response.headers()['content-type']).toContain(type)
   }
   await shelf.click()
-  await expect(page).toHaveURL(/\/models\/?\?type=workflows&category=product$/)
+  await expect(page).toHaveURL(
+    /\/hub\/models\/?\?type=workflows&category=product$/
+  )
   await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
     'aria-pressed',
     'true'
@@ -202,7 +204,7 @@ test('withholds workflow discovery and direct pages when the workflow flag is of
   context
 }) => {
   await mockWorkflowVisibility(context, false)
-  await page.goto('/models/?type=workflows')
+  await page.goto('/hub/models/?type=workflows')
   await expect(page.getByTestId('workshop-search')).toBeVisible()
   await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
   await page.getByTestId('workshop-search').fill('Change a material')
@@ -229,7 +231,7 @@ test('cold workflow filters focus their controls and respect dismissal while loa
     await released.promise
     await route.continue()
   })
-  await page.goto('/models/?type=workflows')
+  await page.goto('/hub/models/?type=workflows')
   const trigger = page.getByTestId('workshop-filter')
   await trigger.click()
   await requested.promise
@@ -266,7 +268,7 @@ test('workflow search and category filters share the mobile controls @mobile', a
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
   await page.getByTestId('catalogue-tab-workflows').click()
   await page.getByTestId('workshop-filter').click()
@@ -316,7 +318,7 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
   await page.getByTestId('catalogue-tab-workflows').click()
   const outcomes = page
@@ -340,7 +342,7 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
   await expect(outcomes).toHaveCount(30)
 
-  await page.goto('/models/?type=workflows&model=LTX-2.3')
+  await page.goto('/hub/models/?type=workflows&model=LTX-2.3')
   await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   await expect(outcomes).toHaveCount(7)
 })
@@ -410,11 +412,11 @@ for (const { path, group, file } of [
   })
 
 const tabletToolbars = [640, 700, 768].flatMap((width) => [
-  { width, half: 'Models', path: '/models/' },
+  { width, half: 'Models', path: '/hub/models/' },
   {
     width,
     half: 'Workflows with a category selected',
-    path: '/models/?type=workflows&category=upscale'
+    path: '/hub/models/?type=workflows&category=upscale'
   }
 ])
 

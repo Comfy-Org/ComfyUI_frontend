@@ -7,14 +7,14 @@ import { MODEL_PATH } from './fixtures/modelsAccount'
 test('public HTML excludes catalogue and playground markup', async ({
   request
 }) => {
-  for (const path of ['/', '/models/', MODEL_PATH]) {
+  for (const path of ['/', '/hub/models/', MODEL_PATH]) {
     const response = await request.get(path)
     expect(response.ok()).toBe(true)
     const html = await response.text()
     expect(html).not.toMatch(
       /data-testid="(?:workshop-search|model-discovery|model-hero|model-detail)"/
     )
-    if (path === '/models/') {
+    if (path === '/hub/models/') {
       expect(html).not.toContain('noindex')
     }
   }
@@ -41,7 +41,7 @@ test('keeps the public site when PostHog is unavailable', async ({ page }) => {
     page.getByRole('link', { name: 'Explore Seedance 2.5' })
   ).toHaveAttribute('href', '/seedance-2.5')
 
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   await expect(
     page.getByRole('link', { name: /Grok Imagine/i }).first()
   ).toBeVisible()
@@ -69,7 +69,7 @@ test('keeps the public Models page when the flag is disabled', async ({
   const response = page.waitForResponse((response) =>
     /t\.comfy\.org\/(flags|decide)\//.test(response.url())
   )
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   await response
   await expect(page.getByTestId('workshop-search')).toHaveCount(0)
   await expect(
@@ -99,7 +99,7 @@ test('does not initialize Firebase on public pages', async ({
   const flags = page.waitForResponse((response) =>
     /t\.comfy\.org\/(flags|decide)\//.test(response.url())
   )
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   await flags
   await waitForIsland(
     page,
@@ -117,7 +117,7 @@ test.describe('without JavaScript', () => {
   test('renders the public Models page without exposing the catalogue', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await expect(page.getByTestId('workshop-loading')).toBeHidden()
     await expect(page.getByTestId('workshop-search')).toHaveCount(0)
     await expect(

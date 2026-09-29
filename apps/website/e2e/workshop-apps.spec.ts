@@ -51,7 +51,7 @@ test('lists both apps in the catalogue Apps tab, on /models/apps/ pages', async 
   context
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
-  await page.goto('/models/?type=apps')
+  await page.goto('/hub/models/?type=apps')
   const shelf = page.getByTestId('app-shelf')
   const cards = shelf.getByRole('link')
   await expect(cards).toHaveCount(2)
