@@ -54,6 +54,7 @@ const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
  * time a real user spends on card entry and 3DS. */
 const PENDING_CHECKOUT_COMPLETION_DEADLINE_MS = 10 * 60 * 1000
 const PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS = 10_000
+const MAX_TIMER_DELAY_MS = 2_147_483_647
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
   let timeoutId: ReturnType<typeof setTimeout> | undefined
@@ -186,10 +187,13 @@ function useSubscriptionInternal() {
       return
     }
 
-    pendingCheckoutRecoveryTimeout = defaultWindow.setTimeout(() => {
-      pendingCheckoutRecoveryTimeout = null
-      void recoverPendingSubscriptionCheckout('deadline')
-    }, remainingMs)
+    pendingCheckoutRecoveryTimeout = defaultWindow.setTimeout(
+      () => {
+        pendingCheckoutRecoveryTimeout = null
+        void recoverPendingSubscriptionCheckout('deadline')
+      },
+      Math.min(Math.max(remainingMs, 0), MAX_TIMER_DELAY_MS)
+    )
   }
 
   const reportMissingCheckoutCompletion = () => {

@@ -184,6 +184,8 @@ const isCheckoutAttemptCore = (
 } =>
   typeof value.attempt_id === 'string' &&
   typeof value.started_at_ms === 'number' &&
+  Number.isFinite(value.started_at_ms) &&
+  value.started_at_ms <= Date.now() &&
   isTierKey(value.tier) &&
   (value.cycle === 'monthly' || value.cycle === 'yearly') &&
   (value.checkout_type === 'new' || value.checkout_type === 'change')
