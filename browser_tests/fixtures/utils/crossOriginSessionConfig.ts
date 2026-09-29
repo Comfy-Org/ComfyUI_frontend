@@ -76,6 +76,8 @@ const crossOriginSessionEnvSchema = z.object({
   SESSION_E2E_PLATFORM_URL: nonProductionComfyOrigin.optional(),
   SESSION_E2E_EMAIL: z.string().email().optional(),
   SESSION_E2E_PASSWORD: z.string().min(1).optional(),
+  SESSION_E2E_FLAG_OFF_EMAIL: z.string().email().optional(),
+  SESSION_E2E_FLAG_OFF_PASSWORD: z.string().min(1).optional(),
   SESSION_E2E_TEAM_WORKSPACE_ID: z.string().min(1).optional(),
   SESSION_E2E_EXTRA_ORIGINS: originList.optional()
 })

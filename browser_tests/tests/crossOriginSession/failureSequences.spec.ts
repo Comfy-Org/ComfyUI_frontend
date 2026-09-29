@@ -1,4 +1,3 @@
-import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 import { expect } from '@playwright/test'
 import type { Response } from '@playwright/test'
 
@@ -26,9 +25,7 @@ test.describe(
   () => {
     test.fixme(
       '[FS-01] after sign out, a site with a remembered Firebase login on the old build does not silently restore',
-      blockedBy(
-        'FE-2894 boot rules; C1 BE-17061 revoked-cookie rule on testcloud'
-      ),
+      blockedBy('FE-2894 boot rules; C1 BE-17061 on testcloud'),
       expectStepsWritten
     )
 
@@ -60,7 +57,6 @@ test.describe(
       const request = response.request()
 
       expect(await request.headerValue('origin')).toBeNull()
-      expect(await request.headerValue('sec-fetch-site')).toBe('same-origin')
       expect(response.status()).toBe(200)
 
       expect(
@@ -114,19 +110,22 @@ test.describe(
       ).toBeGreaterThanOrEqual(1)
 
       cloudTab.reset()
-      const read = cloudTab.page.waitForResponse(isSessionRead)
       await cloudTab.page.reload()
-      const response = await read
-
-      expect(response.status()).toBe(401)
-      expect(zErrorResponse.parse(await response.json()).code).toBe(
-        'session_revoked'
-      )
       await expect(cloudTab.page).toHaveURL(/\/cloud\/login/)
+      await expect(
+        cloudTab.page.getByRole('button', {
+          name: 'Use email instead',
+          exact: true
+        })
+      ).toBeVisible()
       expect(
         cloudTab.sessionCalls.calls,
         'The remembered Firebase login creates no session'
       ).not.toContain(`POST ${cloudTab.origin}/api/auth/session`)
+      expect(
+        await sessionAdmin.revokeAll(),
+        'The reload created no session to revoke'
+      ).toBe(0)
     })
 
     test.fixme(

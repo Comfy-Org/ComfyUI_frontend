@@ -6,22 +6,18 @@ import {
   crossOriginSessionFixture as test,
   expectActiveWorkspace,
   expectOffWebSession,
-  expectOnWebSession,
   expectStepsWritten,
+  expectWorkspaceScope,
   signInOnCloud,
   waitForCloudApp
 } from '@e2e/fixtures/crossOriginSessionFixture'
 
 const WORKSPACE_LINK = /[?&]workspace=/
-const FLAG_ON = 'unified_web_session:true'
-const FLAG_OFF = 'unified_web_session:false'
 
-async function reloadAndReadScope(tab: SessionTab) {
+async function reloadAndReadSocket(tab: SessionTab) {
   tab.reset()
   await tab.page.reload()
-  const request = await tab.nextSessionRequest(tab.origin)
-  const socket = new URL((await tab.cloudSocket()).url())
-  return { request, socket }
+  return new URL((await tab.cloudSocket()).url())
 }
 
 test.describe(
@@ -65,21 +61,15 @@ test.describe(
       await waitForCloudApp(teamTab)
       await expectActiveWorkspace(teamTab, team.name)
 
-      const inTeam = await reloadAndReadScope(teamTab)
-      expect(inTeam.request).toEqual({
-        workspaceId: team.id,
-        authorization: null
-      })
-      expect(inTeam.socket.searchParams.get('workspace_id')).toBe(team.id)
-      expect(inTeam.socket.searchParams.has('token')).toBe(false)
+      const teamSocket = await reloadAndReadSocket(teamTab)
+      await expectWorkspaceScope(teamTab, team.id)
+      expect(teamSocket.searchParams.get('workspace_id')).toBe(team.id)
+      expect(teamSocket.searchParams.has('token')).toBe(false)
 
-      const inPersonal = await reloadAndReadScope(cloudTab)
-      expect(inPersonal.request).toEqual({
-        workspaceId: null,
-        authorization: null
-      })
-      expect(inPersonal.socket.searchParams.has('workspace_id')).toBe(false)
-      expect(inPersonal.socket.searchParams.has('token')).toBe(false)
+      const personalSocket = await reloadAndReadSocket(cloudTab)
+      await expectWorkspaceScope(cloudTab, null)
+      expect(personalSocket.searchParams.has('workspace_id')).toBe(false)
+      expect(personalSocket.searchParams.has('token')).toBe(false)
 
       teamTab.tokenMints.expectNone('The team tab mints no workspace token')
       cloudTab.tokenMints.expectNone('The personal tab mints no token')
@@ -113,38 +103,16 @@ test.describe(
       expectStepsWritten
     )
 
-    test(
+    test.fixme(
       '[E2E-09] an already signed-in user crosses each rollout step without being signed out',
       {
         annotation: {
-          type: 'pending-step',
+          type: 'blocked-by',
           description:
-            'The website step waits for PR 2 (BE-17276: probe on testcloud)'
+            'Needs rollout-step control on testcloud (FE-2907), or a dev-build Cloud upstream where the ff: localStorage override applies before start()'
         }
       },
-      async ({ sessionAccount, newCloudTab }) => {
-        const cloud = await newCloudTab({ unifiedWebSession: false })
-
-        await signInOnCloud(cloud, sessionAccount, { unifiedWebSession: false })
-        await waitForCloudApp(cloud)
-        await expectOffWebSession(cloud)
-
-        cloud.reset()
-        await cloud.goto('/', { ff: FLAG_ON })
-        await waitForCloudApp(cloud)
-        await expectOnWebSession(cloud)
-        expect(
-          cloud.sessionCalls.calls.filter(
-            (call) => call === `POST ${cloud.origin}/api/auth/session`
-          ).length,
-          'Turning the flag on creates at most one session'
-        ).toBeLessThanOrEqual(1)
-
-        cloud.reset()
-        await cloud.goto('/', { ff: FLAG_OFF })
-        await waitForCloudApp(cloud)
-        await expectOffWebSession(cloud)
-      }
+      expectStepsWritten
     )
   }
 )

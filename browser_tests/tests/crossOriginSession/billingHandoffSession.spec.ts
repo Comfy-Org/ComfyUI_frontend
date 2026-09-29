@@ -5,6 +5,7 @@ import {
   crossOriginSessionFixture as test,
   expectActiveWorkspace,
   expectOnWebSession,
+  expectWorkspaceScope,
   expectStepsWritten,
   submitEmailSignIn,
   waitForCloudApp
@@ -99,8 +100,7 @@ test.describe(
 
       cloudTab.reset()
       await cloudTab.page.reload()
-      const request = await cloudTab.nextSessionRequest(cloudTab.origin)
-      expect(request.workspaceId).toBe(team.id)
+      await expectWorkspaceScope(cloudTab, team.id)
       await expectOnWebSession(cloudTab)
     })
 

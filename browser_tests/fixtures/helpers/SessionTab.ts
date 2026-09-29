@@ -30,6 +30,19 @@ function isTokenMintRequest(url: URL): boolean {
 
 type RequestHeaders = Record<string, string>
 
+function isScopedRequest({
+  url,
+  headers
+}: {
+  url: URL
+  headers: RequestHeaders
+}): boolean {
+  return (
+    CLIENT_HEADER in headers &&
+    !UNSCOPED_API_PATHS.some((path) => url.pathname.startsWith(path))
+  )
+}
+
 export type SessionRequest = {
   workspaceId: string | null
   authorization: string | null
@@ -99,7 +112,7 @@ type LoggedRequest = { url: URL; headers: RequestHeaders }
 
 /** Every request a tab makes, with headers, until the next reset. */
 class RequestLog {
-  private readonly entries: Promise<LoggedRequest>[] = []
+  private readonly entries: Promise<LoggedRequest | undefined>[] = []
 
   constructor(page: Page) {
     page.on('request', (request: Request) => {
@@ -107,8 +120,24 @@ class RequestLog {
         request
           .allHeaders()
           .then((headers) => ({ url: new URL(request.url()), headers }))
+          .catch(() => undefined)
       )
     })
+  }
+
+  async allMatching(
+    apiOrigin: string,
+    matches: (request: LoggedRequest) => boolean
+  ): Promise<RequestHeaders[]> {
+    const logged = await Promise.all(this.entries)
+    return logged.flatMap((request) =>
+      request &&
+      request.url.origin === apiOrigin &&
+      request.url.pathname.startsWith('/api/') &&
+      matches(request)
+        ? [request.headers]
+        : []
+    )
   }
 
   reset() {
@@ -122,6 +151,7 @@ class RequestLog {
     for (const entry of this.entries) {
       const request = await entry
       if (
+        request &&
         request.url.origin === apiOrigin &&
         request.url.pathname.startsWith('/api/') &&
         matches(request)
@@ -200,12 +230,16 @@ export class SessionTab {
     return toSessionRequest(
       await this.requests.firstMatching(
         apiOrigin,
-        ({ url, headers }) =>
-          CLIENT_HEADER in headers &&
-          !UNSCOPED_API_PATHS.some((path) => url.pathname.startsWith(path)),
+        isScopedRequest,
         'A workspace-scoped session request'
       )
     )
+  }
+
+  /** Every workspace-scoped session request since the last reset, in order. */
+  async sessionRequests(apiOrigin: string): Promise<SessionRequest[]> {
+    const headers = await this.requests.allMatching(apiOrigin, isScopedRequest)
+    return headers.map(toSessionRequest)
   }
 
   /** The first Bearer-authorized API request since the last reset. */

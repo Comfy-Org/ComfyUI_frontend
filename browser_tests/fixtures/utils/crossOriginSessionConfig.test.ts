@@ -19,6 +19,14 @@ describe('parseCrossOriginSessionEnv', () => {
     )
   })
 
+  it('accepts a separate flag-off account', () => {
+    const env = {
+      SESSION_E2E_FLAG_OFF_EMAIL: 'flag-off@comfy.org',
+      SESSION_E2E_FLAG_OFF_PASSWORD: 'secret'
+    }
+    expect(parseCrossOriginSessionEnv(env)).toEqual(env)
+  })
+
   it.for([
     [
       'a production Cloud origin',
@@ -45,7 +53,8 @@ describe('parseCrossOriginSessionEnv', () => {
       'a remote upstream',
       'SESSION_E2E_WEBSITE_UPSTREAM',
       'https://www.comfy.org'
-    ]
+    ],
+    ['a flag-off email that is not an email', 'SESSION_E2E_FLAG_OFF_EMAIL', 'x']
   ])('rejects %s', ([, key, value]) => {
     expect(() => parseCrossOriginSessionEnv({ [key]: value })).toThrow(key)
   })
@@ -122,6 +131,15 @@ describe('session env helpers', () => {
         new Set(['https://cloud.comfy.org'])
       )
     ).toBe('Production')
+  })
+
+  it('names the flag-off account variables a test still needs', () => {
+    expect(
+      missingSessionEnv(env, [
+        'SESSION_E2E_FLAG_OFF_EMAIL',
+        'SESSION_E2E_FLAG_OFF_PASSWORD'
+      ])
+    ).toEqual(['SESSION_E2E_FLAG_OFF_EMAIL', 'SESSION_E2E_FLAG_OFF_PASSWORD'])
   })
 
   it('names the variables a test still needs', () => {

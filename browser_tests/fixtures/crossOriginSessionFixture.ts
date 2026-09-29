@@ -26,6 +26,7 @@ type StringEnvKey = Exclude<
 >
 
 const UNIFIED_WEB_SESSION = 'unified_web_session'
+const AGENT_INTRO_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
 
 /** Set on responses the harness served from a local upstream. */
 export const SERVED_LOCALLY_HEADER = 'x-session-e2e-upstream'
@@ -164,6 +165,33 @@ export async function expectActiveWorkspace(cloud: SessionTab, name: string) {
   await expect(switcher).toBeHidden()
 }
 
+/**
+ * Waits for the tab's newest workspace-scoped request to carry `workspaceId`
+ * (null for the personal workspace), then checks no scoped request ever
+ * carried a Firebase token, or, for personal, a workspace header.
+ */
+export async function expectWorkspaceScope(
+  cloud: SessionTab,
+  workspaceId: string | null
+) {
+  await expect
+    .poll(async () => (await cloud.sessionRequests(cloud.origin)).at(-1), {
+      message: `Cloud scopes its requests to ${workspaceId ?? 'personal'}`
+    })
+    .toEqual({ workspaceId, authorization: null })
+  const requests = await cloud.sessionRequests(cloud.origin)
+  expect(
+    requests.map(({ authorization }) => authorization),
+    'No scoped request carries a token'
+  ).toEqual(requests.map(() => null))
+  if (workspaceId === null) {
+    expect(
+      requests.map((request) => request.workspaceId),
+      'The personal tab never sends a workspace header'
+    ).toEqual(requests.map(() => null))
+  }
+}
+
 export async function expectOnWebSession(cloud: SessionTab) {
   await expect
     .poll(() => cloud.sessionCalls.calls, {
@@ -227,25 +255,32 @@ export const crossOriginSessionFixture = base.extend<
     use
   ) => {
     await context.addInitScript(
-      ({ flag, enabled }) => {
-        if (location.protocol.startsWith('http')) {
-          localStorage.setItem(`ff:${flag}`, JSON.stringify(enabled))
+      ({ flag, enabled, introPrefix }) => {
+        if (!location.protocol.startsWith('http')) return
+        localStorage.setItem(`ff:${flag}`, JSON.stringify(enabled))
+        const read = Storage.prototype.getItem
+        Storage.prototype.getItem = function (key: string) {
+          return key.startsWith(introPrefix) ? 'true' : read.call(this, key)
         }
       },
-      { flag: UNIFIED_WEB_SESSION, enabled: unifiedWebSession }
+      {
+        flag: UNIFIED_WEB_SESSION,
+        enabled: unifiedWebSession,
+        introPrefix: AGENT_INTRO_AUTO_SHOWN_PREFIX
+      }
     )
     await installSessionRouting(context, sessionEnv, networkPolicy)
     await use(context)
   },
-  sessionAccount: async ({ sessionEnv }, use, testInfo) => {
-    requireEnv(
-      sessionEnv,
-      ['SESSION_E2E_EMAIL', 'SESSION_E2E_PASSWORD'],
-      testInfo
-    )
+  sessionAccount: async ({ sessionEnv, unifiedWebSession }, use, testInfo) => {
+    const keys: [StringEnvKey, StringEnvKey] = unifiedWebSession
+      ? ['SESSION_E2E_EMAIL', 'SESSION_E2E_PASSWORD']
+      : ['SESSION_E2E_FLAG_OFF_EMAIL', 'SESSION_E2E_FLAG_OFF_PASSWORD']
+    requireEnv(sessionEnv, keys, testInfo)
+    const [emailKey, passwordKey] = keys
     await use({
-      email: envValue(sessionEnv, 'SESSION_E2E_EMAIL'),
-      password: envValue(sessionEnv, 'SESSION_E2E_PASSWORD')
+      email: envValue(sessionEnv, emailKey),
+      password: envValue(sessionEnv, passwordKey)
     })
   },
   teamWorkspaceId: async ({ sessionEnv }, use, testInfo) => {

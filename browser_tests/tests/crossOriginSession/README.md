@@ -37,19 +37,21 @@ with `op run`. Never commit credentials. Production hosts are rejected as
 variables, and a request to one is blocked and fails the test, even when listed
 in `SESSION_E2E_EXTRA_ORIGINS`.
 
-| Variable                        | Example                           | Needed by                           |
-| ------------------------------- | --------------------------------- | ----------------------------------- |
-| `SESSION_E2E_CLOUD_URL`         | `https://testcloud.comfy.org`     | Cloud tab                           |
-| `SESSION_E2E_CLOUD_UPSTREAM`    | `http://localhost:4173`           | Flag-on tests: Cloud's local build  |
-| `SESSION_E2E_WEBSITE_URL`       | `https://testwebsite.comfy.org`   | Website tab; must be on test's list |
-| `SESSION_E2E_WEBSITE_UPSTREAM`  | `http://localhost:4321`           | Website tab                         |
-| `SESSION_E2E_BILLING_URL`       | `https://testbilling.comfy.org`   | billing-web tab                     |
-| `SESSION_E2E_BILLING_UPSTREAM`  | `http://localhost:5174`           | Optional: serve billing-web locally |
-| `SESSION_E2E_PLATFORM_URL`      | test platform origin              | Platform tab                        |
-| `SESSION_E2E_EMAIL`             | an email/password test-env user   | Signed-in tests                     |
-| `SESSION_E2E_PASSWORD`          |                                   | Signed-in tests                     |
-| `SESSION_E2E_TEAM_WORKSPACE_ID` | a team workspace the account owns | Workspace tests                     |
-| `SESSION_E2E_EXTRA_ORIGINS`     | `https://testapi.comfy.org`       | Other origins a run must reach      |
+| Variable                        | Example                           | Needed by                               |
+| ------------------------------- | --------------------------------- | --------------------------------------- |
+| `SESSION_E2E_CLOUD_URL`         | `https://testcloud.comfy.org`     | Cloud tab                               |
+| `SESSION_E2E_CLOUD_UPSTREAM`    | `http://localhost:4173`           | Flag-on tests: Cloud's local build      |
+| `SESSION_E2E_WEBSITE_URL`       | `https://testwebsite.comfy.org`   | Website tab; must be on test's list     |
+| `SESSION_E2E_WEBSITE_UPSTREAM`  | `http://localhost:4321`           | Website tab                             |
+| `SESSION_E2E_BILLING_URL`       | `https://testbilling.comfy.org`   | billing-web tab                         |
+| `SESSION_E2E_BILLING_UPSTREAM`  | `http://localhost:5174`           | Optional: serve billing-web locally     |
+| `SESSION_E2E_PLATFORM_URL`      | test platform origin              | Platform tab                            |
+| `SESSION_E2E_EMAIL`             | an email/password test-env user   | Signed-in tests                         |
+| `SESSION_E2E_PASSWORD`          |                                   | Signed-in tests                         |
+| `SESSION_E2E_FLAG_OFF_EMAIL`    | a user outside the PostHog flags  | Flag-off tests (`HARNESS-01`, `E2E-08`) |
+| `SESSION_E2E_FLAG_OFF_PASSWORD` |                                   | Flag-off tests                          |
+| `SESSION_E2E_TEAM_WORKSPACE_ID` | a team workspace the account owns | Workspace tests                         |
+| `SESSION_E2E_EXTRA_ORIGINS`     | `https://testapi.comfy.org`       | Other origins a run must reach          |
 
 A test whose variables are missing is skipped with the names it needs.
 
@@ -75,7 +77,14 @@ from `ff:`. The server rule (BE-17135) still requires `web_session_enabled` for
 the account in PostHog; `revoke-all` returns 404 when it is off, and the suite
 fails with that message.
 
-The account is dedicated to this suite. In the `session-flag-on` project every
+Testcloud serves the flag on for any account in the PostHog `unified_web_session`
+and `web_session_enabled` conditions, and `?ff=` is honoured only after Firebase
+knows the user, later than the session store reads the flag. The flag-off
+project therefore signs in with `SESSION_E2E_FLAG_OFF_EMAIL` and
+`SESSION_E2E_FLAG_OFF_PASSWORD`, an account outside those conditions. Without
+them the flag-off tests are skipped with those names.
+
+The flag-on account is dedicated to this suite. In the `session-flag-on` project every
 test signs the account out of all devices before it starts and again when it
 ends, so nothing else may use the account while the suite runs. Runs are serial
 (one worker). `POST /api/auth/session` has an hourly create limit; a 429 there
@@ -92,6 +101,10 @@ flag comes from `?ff=` for a verified `@comfy.org` user. Remove the upstream
 once testcloud serves 1.56 or later.
 
 `SESSION_E2E_CLOUD_UPSTREAM` must be a local address, like the other upstreams.
+
+The fixture also marks the Comfy Agent intro as already offered (the
+`Comfy.AgentConsent.AutoShown.*` localStorage keys), so its modal never blocks
+clicks in a fresh browser context.
 
 ## Run locally
 
@@ -116,8 +129,8 @@ sign-in.
 
 ## Test ids
 
-Runnable today: `HARNESS-01`, `E2E-03`, `E2E-08`, `E2E-09` (Cloud steps),
-`FS-07`, `FS-12` and `SO5`. Every other row is a definition-level `test.fixme`
+Runnable today: `HARNESS-01`, `E2E-03`, `E2E-08`, `FS-07`, `FS-12` and `SO5`.
+`E2E-09` waits for rollout-step control on testcloud (FE-2907). Every other row is a definition-level `test.fixme`
 with no body, so it skips before any fixture runs. Its `blocked-by` annotation
 names what it really waits for: the probe on testcloud (BE-17276), a member
 account, a backend clarification, or a row unit tests already cover. Write the
@@ -136,7 +149,8 @@ requests per tab (`expectNone(label)` once the tab has settled), and
 `tab.sockets.waitForSocket()`, `waitForClose()` and `tab.cloudSocket()` observe
 sockets. `tab.nextSessionRequest()` returns the workspace header and the
 Authorization of the first workspace-scoped session request since the last
-reset, and `tab.nextTokenRequest()` the first Bearer request. `tab.goto(path, {
+reset, and `tab.sessionRequests()` all of them in order (`expectWorkspaceScope()` asserts
+the newest), and `tab.nextTokenRequest()` the first Bearer request. `tab.goto(path, {
 ff })` overrides the flag for one navigation. `signInOnCloud()`,
 `submitEmailSignIn()` sign in through the Cloud login
 page, and `expectOnWebSession()` and
