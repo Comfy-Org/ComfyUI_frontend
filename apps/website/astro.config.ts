@@ -3,7 +3,7 @@ import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
-import { isExcludedFromSitemap } from './src/config/indexing'
+import { isExcludedFromSitemap, isIndexableBuild } from './src/config/indexing'
 import { DEFAULT_LOCALE, LOCALE_CODES } from './src/config/locales'
 import { redirects } from './src/config/redirects'
 import { markdownTwins } from './src/integrations/markdown-twins'
@@ -30,7 +30,10 @@ export default defineConfig({
     mdx(),
     sitemap({
       filter: (page) => !isExcludedFromSitemap(page),
-      serialize: (item) => ({ ...item, links: sitemapAlternates(item.url) })
+      serialize: (item) =>
+        isIndexableBuild()
+          ? { ...item, links: sitemapAlternates(item.url) }
+          : item
     }),
     markdownTwins(),
     workshopReleaseGate()
