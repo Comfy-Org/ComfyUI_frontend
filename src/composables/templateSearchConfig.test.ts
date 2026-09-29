@@ -122,14 +122,25 @@ describe('searchTemplates', () => {
   const buildIndex = (templates: TemplateInfo[]) =>
     createTemplateSearchIndex(templates)
 
-  it('keeps searching when two templates share a name', () => {
+  it('indexes templates that share a name across packs by their key', () => {
     const index = buildIndex([
-      buildTemplate({ name: 'decimate', title: 'Alpha Mesh' }),
-      buildTemplate({ name: 'decimate', title: 'Beta Mesh' }),
+      buildTemplate({
+        name: 'decimate',
+        title: 'Alpha Mesh',
+        sourceModule: 'pack-a',
+        templateKey: 'pack-a/decimate'
+      }),
+      buildTemplate({
+        name: 'decimate',
+        title: 'Beta Mesh',
+        sourceModule: 'pack-b',
+        templateKey: 'pack-b/decimate'
+      }),
       buildTemplate({ name: 'h3', title: 'MiniMax H3 Video' })
     ])
-    expect(searchTemplates(index, 'alpha')).toEqual(['decimate'])
-    expect(searchTemplates(index, 'beta')).toEqual([])
+    expect(searchTemplates(index, 'alpha')).toEqual(['pack-a/decimate'])
+    expect(searchTemplates(index, 'beta')).toEqual(['pack-b/decimate'])
+    expect(searchTemplates(index, 'mesh')).toHaveLength(2)
     expect(searchTemplates(index, 'h3')).toEqual(['h3'])
   })
 

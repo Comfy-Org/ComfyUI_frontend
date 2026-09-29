@@ -19,6 +19,7 @@ import type {
 // Enhanced template interface for easier filtering
 interface EnhancedTemplate extends TemplateInfo {
   sourceModule: string
+  templateKey: string
   category?: string
   categoryType?: string
   categoryGroup?: string // 'GENERATION TYPE' or 'CLOSED SOURCE MODELS'
@@ -236,6 +237,7 @@ export const useWorkflowTemplatesStore = defineStore(
           const enhancedTemplate: EnhancedTemplate = {
             ...template,
             sourceModule: category.moduleName,
+            templateKey: template.name,
             category: category.title,
             categoryType: category.type,
             categoryGroup: category.category,
@@ -265,6 +267,8 @@ export const useWorkflowTemplatesStore = defineStore(
               mediaType: 'image',
               mediaSubtype: 'jpg',
               sourceModule: moduleName,
+              // Custom templates are named by filename, so two packs can collide.
+              templateKey: `${moduleName}/${name}`,
               category: 'Extensions',
               categoryType: 'extension',
               searchableText: `${name} ${moduleName} extension`

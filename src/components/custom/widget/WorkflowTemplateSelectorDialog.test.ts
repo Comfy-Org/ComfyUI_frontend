@@ -68,6 +68,7 @@ beforeEach(() => {
     {
       name: 'example',
       sourceModule: 'default',
+      templateKey: 'example',
       title: 'Example',
       description: 'Example workflow',
       mediaType: 'image',
@@ -153,5 +154,38 @@ describe('template picker close lifecycle', () => {
     expect(afterClose).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackTemplateLibraryClosed).not.toHaveBeenCalled()
     expect(store.loadingTemplateId).toBe('previous')
+  })
+})
+
+describe('custom templates that share a filename', () => {
+  it('renders each pack and loads the clicked one from its own pack', async () => {
+    const store = useWorkflowTemplatesStore()
+    const duplicate = (pack: string) => ({
+      name: 'decimate',
+      sourceModule: pack,
+      templateKey: `${pack}/decimate`,
+      title: 'decimate',
+      description: 'decimate',
+      mediaType: 'image',
+      mediaSubtype: 'jpg'
+    })
+    Object.assign(store, {
+      enhancedTemplates: [duplicate('pack-a'), duplicate('pack-b')]
+    })
+    renderPicker()
+
+    expect(
+      await screen.findByTestId('template-workflow-pack-a/decimate')
+    ).toBeInTheDocument()
+    await userEvent.click(
+      screen.getByTestId('template-workflow-pack-b/decimate')
+    )
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/workflow_templates/pack-b/decimate.json'),
+        expect.anything()
+      )
+    )
   })
 })

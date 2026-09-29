@@ -21,6 +21,10 @@ export function isAppTemplate(template: TemplateInfo): boolean {
   return template.isApp === true
 }
 
+export function getTemplateKey(template: TemplateInfo): string {
+  return template.templateKey ?? template.name
+}
+
 export function filterTemplatesByType<T extends TemplateInfo>(
   templates: T[],
   type: TemplateTypeFilter

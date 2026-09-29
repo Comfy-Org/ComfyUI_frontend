@@ -525,6 +525,7 @@ describe('useTemplateWorkflows', () => {
     mockWorkflowTemplatesStore.enhancedTemplates.push({
       name: 'video',
       sourceModule: 'default',
+      templateKey: 'video',
       description: 'Video editing',
       mediaType: 'image',
       mediaSubtype: 'webp',
