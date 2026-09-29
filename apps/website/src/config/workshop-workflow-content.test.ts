@@ -264,3 +264,10 @@ describe('curated workflow pages', () => {
     }
   )
 })
+
+describe('workshop pages', () => {
+  it('gives every model and workflow page its own display name', () => {
+    const names = workshopPages.map((model) => model.name)
+    expect(new Set(names).size).toBe(names.length)
+  })
+})
