@@ -5,7 +5,10 @@ import { usePaymentReturnUrlLoader } from '@/platform/cloud/subscription/composa
 import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTopUpUrlLoader } from '@/platform/cloud/subscription/composables/useTopUpUrlLoader'
-import { STRIPE_RETURN_PARAMS } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
+import {
+  BILLING_WEB_RETURN_PARAMS,
+  STRIPE_RETURN_PARAMS
+} from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -59,7 +62,8 @@ const HANDLED_PARAMS = [
   'topup',
   'settings',
   'assets',
-  ...STRIPE_RETURN_PARAMS
+  ...STRIPE_RETURN_PARAMS,
+  ...BILLING_WEB_RETURN_PARAMS
 ]
 
 /**
