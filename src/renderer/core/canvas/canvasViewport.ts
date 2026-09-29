@@ -53,11 +53,12 @@ function applyViewport(
 ): CanvasViewport {
   fg.width = viewport.physicalWidth
   fg.height = viewport.physicalHeight
-  bg.width = viewport.physicalWidth
-  bg.height = viewport.physicalHeight
-
   fg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
-  bg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
+  if (bg !== fg) {
+    bg.width = viewport.physicalWidth
+    bg.height = viewport.physicalHeight
+    bg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
+  }
 
   currentGeneration = viewport.generation
   return viewport

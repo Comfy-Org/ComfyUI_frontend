@@ -112,6 +112,15 @@ describe('applyViewport', () => {
     expect(bg.scaleArgs).toEqual([[2, 2]])
   })
 
+  it('scales a shared foreground/background context only once', () => {
+    const vp = measureViewport(800, 600, 2, 0)
+    const canvas = mockCanvas()
+
+    applyViewport(vp, canvas, canvas)
+
+    expect(canvas.scaleArgs).toEqual([[2, 2]])
+  })
+
   it('produces identical dimensions on both canvases', () => {
     const vp = measureViewport(1920, 1080, 2.5, 0)
     const fg = mockCanvas(100, 100)
