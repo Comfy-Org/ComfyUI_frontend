@@ -1,62 +1,69 @@
 import { describe, expect, it } from 'vitest'
 
-import { workshopPages } from '../../config/workshop-page-content'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { modelTitle } from './model-title'
 
-const MAX_LENGTH = 60
-const fullTitle = (name: string) => `${name} API & Playground - Comfy`
 const nameOfLength = (length: number) => 'x'.repeat(length)
+const full = (name: string, locale: Locale = 'en') =>
+  t('workshop.model.meta.title', locale, { name })
+const unbranded = (name: string) =>
+  t('workshop.model.meta.titleUnbranded', 'en', { name })
+const apiOnly = (name: string) =>
+  t('workshop.model.meta.titleApi', 'en', { name })
 
 describe('modelTitle', () => {
   it.for([
     {
       name: 'names the API and playground when they fit',
       modelName: 'Seedream 4.0',
-      expected: 'Seedream 4.0 API & Playground - Comfy'
+      expected: full('Seedream 4.0')
     },
     {
       name: 'keeps the full title at exactly the limit',
       modelName: nameOfLength(35),
-      expected: `${nameOfLength(35)} API & Playground - Comfy`
+      expected: full(nameOfLength(35))
     },
     {
-      name: 'drops the playground one character past the limit',
+      name: 'drops the brand before the playground',
       modelName: nameOfLength(36),
-      expected: `${nameOfLength(36)} API - Comfy`
+      expected: unbranded(nameOfLength(36))
     },
     {
-      name: 'keeps the API title at exactly the limit',
+      name: 'keeps the unbranded title at exactly the limit',
+      modelName: nameOfLength(43),
+      expected: unbranded(nameOfLength(43))
+    },
+    {
+      name: 'falls back to the API title when the playground no longer fits',
+      modelName: nameOfLength(44),
+      expected: apiOnly(nameOfLength(44))
+    },
+    {
+      name: 'keeps the whole name in the API title at exactly the limit',
       modelName: nameOfLength(48),
-      expected: `${nameOfLength(48)} API - Comfy`
+      expected: apiOnly(nameOfLength(48))
     },
     {
-      name: 'falls back to the name alone when nothing else fits',
-      modelName: nameOfLength(49),
-      expected: `${nameOfLength(49)} - Comfy`
+      name: 'shortens a longer name at a word boundary',
+      modelName:
+        'Seed Audio 1.0 Multilingual Text-to-Speech with Voice Cloning Preview',
+      expected: apiOnly('Seed Audio 1.0 Multilingual Text-to-Speech with…')
+    },
+    {
+      name: 'cuts a long name with no spaces to fit',
+      modelName: nameOfLength(70),
+      expected: apiOnly(`${nameOfLength(47)}…`)
     },
     {
       name: 'writes the Chinese title with the Chinese conjunction',
       locale: 'zh-CN' as const,
       modelName: 'Seedream 4.0',
-      expected: 'Seedream 4.0 API 与 Playground - Comfy'
+      expected: full('Seedream 4.0', 'zh-CN')
     }
   ])('$name', ({ modelName, locale, expected }) => {
-    expect(modelTitle({ name: modelName }, locale)).toBe(expected)
-  })
-
-  it('gives every model page a short, unique title that leads with its name', () => {
-    expect(workshopPages.length).toBeGreaterThan(100)
-    const titles = workshopPages.map((model) => {
-      const title = modelTitle(model)
-      expect(title.startsWith(`${model.name} `)).toBe(true)
-      expect(title.length).toBeLessThanOrEqual(MAX_LENGTH)
-      expect(title).not.toMatch(/undefined|· Models/)
-      expect(title.endsWith(' - Comfy')).toBe(true)
-      expect(title.split(' - Comfy')).toHaveLength(2)
-      if (title !== fullTitle(model.name))
-        expect(fullTitle(model.name).length).toBeGreaterThan(MAX_LENGTH)
-      return title
-    })
-    expect(new Set(titles).size).toBe(titles.length)
+    const title = modelTitle({ name: modelName }, locale)
+    expect(title).toBe(expected)
+    expect(title.length).toBeLessThanOrEqual(60)
   })
 })

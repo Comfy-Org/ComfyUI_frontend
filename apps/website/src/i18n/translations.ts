@@ -9759,13 +9759,13 @@ Enterprise`
     en: '{name} API & Playground - Comfy',
     'zh-CN': '{name} API 与 Playground - Comfy'
   },
+  'workshop.model.meta.titleUnbranded': {
+    en: '{name} API & Playground',
+    'zh-CN': '{name} API 与 Playground'
+  },
   'workshop.model.meta.titleApi': {
     en: '{name} API - Comfy',
     'zh-CN': '{name} API - Comfy'
-  },
-  'workshop.model.meta.titleName': {
-    en: '{name} - Comfy',
-    'zh-CN': '{name} - Comfy'
   },
   'workshop.model.relatedProvider': {
     en: 'More from {provider}',
