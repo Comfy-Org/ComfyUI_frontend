@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
-import { computed, onMounted, ref, shallowRef } from 'vue'
+import { useMounted } from '@vueuse/core'
+import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 
 import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGuard'
 import type { AppWorkshopModel } from '../../../config/models-catalogue'
@@ -9,7 +10,11 @@ import { workshopAppHref } from '../../../lib/workshop/apps'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import { useWorkshopAppsEnabled } from '../../../scripts/posthog'
+import {
+  captureWorkshopEvent,
+  useWorkshopAppsEnabled,
+  useWorkshopEnabled
+} from '../../../scripts/posthog'
 import { rc } from '../../../lib/workshop/cinematic-studio/reshoot-copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import WorkshopGate from '../WorkshopGate.vue'
@@ -43,6 +48,28 @@ const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 const studioEnabled = useWorkshopAppsEnabled()
 const layout = ref('d')
 const app = ref<WorkshopAppId>(initialApp)
+const workshopEnabled = useWorkshopEnabled()
+const mounted = useMounted()
+const viewedApps = new Set<WorkshopAppId>()
+watch(
+  () =>
+    mounted.value && workshopEnabled.value && studioEnabled.value
+      ? app.value
+      : undefined,
+  (shown) => {
+    const model = apps.find((candidate) => candidate.appId === shown)
+    if (!shown || !model || viewedApps.has(shown)) return
+    viewedApps.add(shown)
+    captureWorkshopEvent({
+      name: 'model_viewed',
+      properties: {
+        model_slug: model.slug,
+        page_type: 'app',
+        app_slug: model.slug
+      }
+    })
+  }
+)
 const layoutOptions = computed(() =>
   LAYOUTS.map((option) => ({ id: option.id, label: tc(option.label, locale) }))
 )

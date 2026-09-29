@@ -1,5 +1,5 @@
 import { zErrorResponse } from '@comfyorg/ingest-types/zod'
-import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import type { WebSession } from '@comfyorg/account-core/webSession'
 
 /** The user, session epoch and workspace one request was started for. */
@@ -16,12 +16,8 @@ export interface WebSessionFetchPorts {
     scope: WebSessionRequestScope
   ) => Promise<WebSessionRequestScope | undefined>
   readonly workspaceDenied: (workspaceId: string) => void
+  readonly authorize: RequestAuthorizer
 }
-
-const authorize = createRequestAuthorizer({
-  getWorkspaceToken: () =>
-    Promise.reject(new Error('The cloud app sends no resource requests yet'))
-})
 
 async function refusalCode(response: Response): Promise<string | undefined> {
   if (response.status !== 403) return undefined
@@ -45,7 +41,7 @@ export async function fetchOnWebSession(
   ports: WebSessionFetchPorts
 ): Promise<Response> {
   const send = async (current: WebSessionRequestScope) => {
-    const { headers, credentials } = await authorize(
+    const { headers, credentials } = await ports.authorize(
       { kind: 'session', session: current.session },
       {
         target: 'ingest',
@@ -81,6 +77,10 @@ export interface WebSessionRequests {
     init: RequestInit,
     scope: WebSessionRequestScope
   ) => Promise<Response>
+  /** Bearer headers for a service other than ingest; mints on first use. Rejects with SessionTokenError. */
+  readonly authorizeResource: (
+    scope: WebSessionRequestScope
+  ) => Promise<Readonly<Record<string, string>>>
 }
 
 let provided: WebSessionRequests | undefined
@@ -97,4 +97,27 @@ export function provideWebSessionRequests(
 
 export function webSessionRequests(): WebSessionRequests | undefined {
   return provided
+}
+
+export type WebSessionSend = (
+  url: string,
+  init: RequestInit
+) => Promise<Response>
+
+/** Sends on the signed-in session, or undefined when this tab is not on it. */
+export async function webSessionSend(): Promise<WebSessionSend | undefined> {
+  const requests = webSessionRequests()
+  if (!requests) return undefined
+  const scope = await requests.scope()
+  return scope && ((url, init) => requests.send(url, init, scope))
+}
+
+/** Undefined unless the session is on and this tab is signed in on it. */
+export async function webSessionResourceHeader(): Promise<
+  Readonly<Record<string, string>> | undefined
+> {
+  const requests = provided
+  if (!requests) return undefined
+  const scope = await requests.scope()
+  return scope && requests.authorizeResource(scope)
 }

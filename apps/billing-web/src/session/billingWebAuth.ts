@@ -11,8 +11,6 @@
 import type { ComputedRef } from 'vue'
 import { computed, shallowRef } from 'vue'
 
-import type { BillingClient } from '@comfyorg/account-ui/billing'
-
 import type { SignInPort } from '@/auth/useSignInController'
 import { sessionClientPort } from '@/auth/useSignInController'
 import { CLOUD_BASE_URL } from '@/config/env'
@@ -20,6 +18,7 @@ import { resolveBillingWebIdentity } from '@/config/firebase'
 import { readBillingWebUnifiedWebSession } from '@/config/unifiedWebSession'
 import { bindEntryWorkspace, boundWorkspaceId } from '@/entry/workspaceBinding'
 import type { BillingWebSessionPhase } from '@/router'
+import type { BillingWebClient } from '@/session/billingWebClient'
 import {
   createBillingWebClient,
   createWebSessionBillingClient
@@ -150,7 +149,7 @@ export function billingWebSignInPort(): SignInPort {
   }
 }
 
-export function createModeBillingClient(): BillingClient {
+export function createModeBillingClient(): BillingWebClient {
   return mode.value === 'web-session'
     ? createWebSessionBillingClient(unifiedSession())
     : createBillingWebClient(billingWebSessionClient())
