@@ -513,3 +513,23 @@ test('keeps the workflow form inside a phone screen @mobile', async ({
   const box = await footer.boundingBox()
   expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewportWidth)
 })
+
+test('@mobile keeps the catalogue tabs in place when a tab changes the hero subtitle', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/models/')
+  const models = page.getByTestId('catalogue-tab-models')
+  const workflows = page.getByTestId('catalogue-tab-workflows')
+  await expect(workflows).toBeVisible()
+  const before = await workflows.boundingBox()
+
+  await workflows.click()
+  await expect(workflows).toHaveAttribute('aria-pressed', 'true')
+  expect((await workflows.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
+
+  await models.click()
+  await expect(models).toHaveAttribute('aria-pressed', 'true')
+  expect((await models.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
+})
