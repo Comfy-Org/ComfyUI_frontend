@@ -138,7 +138,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     getIdToken: () => useAuthStore().getIdToken(),
     hasSignedInUser: () => useAuthStore().currentUser !== null,
     activeWorkspaceId: () => useTeamWorkspaceStore().activeWorkspaceId,
-    switchWorkspace: switchTokenWorkspace,
+    switchWorkspace,
     endWorkspaceSession,
     persistWorkspaceIdentity,
     clearSessionStorage,
