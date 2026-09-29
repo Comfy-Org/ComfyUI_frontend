@@ -17,7 +17,7 @@ const PLAN_UNAVAILABLE_CODE: Readonly<Record<PlanUnavailableReason, string>> = {
  * Which explanation Checkout not available gives. A reason with no copy of
  * its own, a change already scheduled included, reads as `unknown`.
  */
-export type RefusalCopy = 'owner' | 'sales_managed' | 'unfinished' | 'unknown'
+type RefusalCopy = 'owner' | 'sales_managed' | 'unfinished' | 'unknown'
 
 const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   not_workspace_owner: 'owner',
