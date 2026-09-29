@@ -225,6 +225,26 @@ describe('compileModelUrlMap', () => {
     ])
   })
 
+  it('flags a frozen slug whose display name now suggests another', () => {
+    const model = {
+      slug: 'google--veo-3--generate-videos',
+      name: 'Veo 3.1 Text-to-Video',
+      provider: 'Google',
+      routerId: 'veo/veo-3.1-generate-001'
+    }
+    const map = compileModelUrlMap(
+      [model],
+      new Map(),
+      new Map([[model.slug, 'veo-3-text-to-video']])
+    )
+    expect(map.pages).toEqual([
+      { oldSlug: model.slug, newSlug: 'veo-3-text-to-video' }
+    ])
+    expect(renderModelUrlTable([model], map)).toContain(
+      '| `veo-3-text-to-video` | Veo 3.1 Text-to-Video | frozen at `veo-3-text-to-video`, name now suggests `veo-3-1-text-to-video` |'
+    )
+  })
+
   it('rejects a new page that takes a published slug', () => {
     expect(() =>
       compileModelUrlMap(
