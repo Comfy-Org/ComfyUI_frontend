@@ -1,6 +1,6 @@
 <template>
   <form class="flex min-h-0 flex-col gap-6 xl:flex-1" @submit.prevent="submit">
-    <div class="flex items-start justify-between gap-4">
+    <div v-if="!pageLayout" class="flex items-start justify-between gap-4">
       <div>
         <h3
           :id="headingId"
@@ -23,13 +23,21 @@
          below hold their positions regardless of which method is expanded. -->
     <div
       role="group"
-      :aria-labelledby="headingId"
+      :aria-labelledby="pageLayout ? undefined : headingId"
+      :aria-label="pageLayout ? copy.paymentMethod : undefined"
       :inert="locked"
       class="flex flex-col gap-6 xl:min-h-0 xl:flex-1 xl:overflow-x-hidden xl:overflow-y-auto xl:pr-1"
     >
       <div ref="paymentElementTarget" />
       <div class="flex flex-col gap-3">
-        <h4 class="m-0 text-sm font-medium text-base-foreground">
+        <h4
+          :class="
+            cn(
+              'm-0 text-base-foreground',
+              pageLayout ? 'text-base font-normal' : 'text-sm font-medium'
+            )
+          "
+        >
           {{ copy.billingAddress }}
         </h4>
         <div ref="addressElementTarget" />
@@ -75,6 +83,8 @@ import type {
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type {
   StripePaymentCopy,
   StripePaymentPhase,
@@ -91,7 +101,8 @@ const {
   verificationPending = false,
   canSubmit = true,
   locked = false,
-  themeKey = ''
+  themeKey = '',
+  pageLayout = false
 } = defineProps<{
   publishableKey: string
   amountCents: number
@@ -111,6 +122,9 @@ const {
    *  re-read their appearance in place instead of keeping the colours
    *  resolved at creation. */
   themeKey?: string
+  /** The full-page checkout titles the column itself, so the form drops its
+   *  heading and subtitle and sets the address label in the body style. */
+  pageLayout?: boolean
 }>()
 
 const emit = defineEmits<{
