@@ -27,6 +27,7 @@ import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -1159,15 +1160,21 @@ const attachment = useAttachment({
   upload: async (file, signal) => {
     const uploaded = await rest.uploadImage(file, file.name, signal, null)
     const filename = uploaded.name!
+    const uploadType = uploaded.type || 'input'
+    if (uploadType !== 'input') {
+      return Promise.reject(
+        new Error(`Unsupported attachment upload location: ${uploadType}`)
+      )
+    }
     const params = new URLSearchParams({
       filename,
-      type: uploaded.type || 'input'
+      type: uploadType
     })
     if (uploaded.subfolder) params.set('subfolder', uploaded.subfolder)
     return {
-      ref: uploaded.subfolder ? `${uploaded.subfolder}/${filename}` : filename,
+      ref: filename,
       subfolder: uploaded.subfolder || undefined,
-      uploadType: uploaded.type || 'input',
+      uploadType,
       url: api.apiURL(`/view?${params.toString()}`)
     }
   },
@@ -1181,9 +1188,6 @@ const attachment = useAttachment({
       api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
         'max_upload_size'
       )
-    // The server contract uses zero for unlimited. The fixed client cap is an
-    // independent composer safety policy, not a substitute server limit.
-    if (serverLimit === 0) return 100 * 1024 * 1024
     const absoluteClientCap = 100 * 1024 * 1024
     return typeof serverLimit === 'number' &&
       Number.isFinite(serverLimit) &&
@@ -1317,25 +1321,41 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     return
   }
 
-  if (asset.ref) {
+  const assetFilename = asset.filename ?? asset.name
+  const safeRef =
+    asset.ref &&
+    !asset.ref.startsWith('/') &&
+    !asset.ref.includes('\\') &&
+    !asset.ref.split('/').some((segment) => segment === '..')
+  if (
+    asset.ref &&
+    safeRef &&
+    asset.kind !== undefined &&
+    asset.kind !== 'other' &&
+    getMediaTypeFromFilename(assetFilename) === asset.kind
+  ) {
     panelRef.value?.addAttachment({
       id: `asset:${asset.ref}`,
-      name: asset.name,
+      name: assetFilename,
       ref: asset.ref,
       previewUrl: asset.previewUrl
     })
     return
   }
 
-  if (!isAgentAttachable(new File([], asset.filename ?? asset.name))) {
+  if (!isAgentAttachable(new File([], assetFilename))) {
     toast.add({ severity: 'warn', detail: t('agent.assetNotAttachable') })
     return
   }
 
   const result = await attachment.addDeferredFile(
-    asset.name,
+    assetFilename,
     async (signal, maxBytes) => {
-      const file = await fetchDroppedAsset(asset, signal, maxBytes)
+      const file = await fetchDroppedAsset(
+        { ...asset, name: assetFilename },
+        signal,
+        maxBytes
+      )
       return file
     }
   )

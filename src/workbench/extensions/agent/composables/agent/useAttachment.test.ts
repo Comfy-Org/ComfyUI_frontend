@@ -487,19 +487,23 @@ describe('useAttachment', () => {
     )
     const onError = vi.fn()
     const registry = chipRegistry()
+    const remove = vi.fn(registry.remove)
     const pending = useAttachment({
       upload,
       onError,
       isPresent: (id) => registry.chips.some((chip) => chip.id === id),
-      ...registry
+      ...registry,
+      remove
     }).addFiles([fileOfSize('dismissed.png', 1)])
 
+    const dismissedId = registry.chips[0].id
     registry.chips.splice(0)
     rejectUpload(new Error('upload failed'))
     await pending
 
     expect(onError).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
+    expect(remove).toHaveBeenCalledWith(dismissedId)
   })
 
   it('never resolves a deferred source cancelled while it waited in the queue', async () => {
@@ -529,10 +533,12 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
   })
 
-  it('releases a deferred fetch slot before its upload settles', async () => {
+  it('keeps deferred fetch bytes within the upload-slot bound', async () => {
+    const uploadResolvers: Array<(value: { ref: string }) => void> = []
     const upload = vi.fn(
       (_file: File, signal: AbortSignal) =>
-        new Promise<{ ref: string }>((_resolve, reject) => {
+        new Promise<{ ref: string }>((resolve, reject) => {
+          uploadResolvers.push(resolve)
           signal.addEventListener('abort', () => reject(signal.reason), {
             once: true
           })
@@ -549,6 +555,9 @@ describe('useAttachment', () => {
       void addDeferredFile(name, async () => fileOfSize(name, 1))
     void addDeferredFile('fourth', fourthSource)
 
+    await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(3))
+    expect(fourthSource).not.toHaveBeenCalled()
+    uploadResolvers[0]({ ref: 'a' })
     await vi.waitFor(() => expect(fourthSource).toHaveBeenCalledOnce())
     cancelAllUploads()
   })

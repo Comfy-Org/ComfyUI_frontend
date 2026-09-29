@@ -24,6 +24,8 @@ export class DroppedAssetTooLargeError extends RangeError {
   }
 }
 
+const MAX_DROPPED_ASSET_BYTES = 100 * 1024 * 1024
+
 export function getDroppedAsset(
   dataTransfer: DataTransfer
 ): DroppedAsset | undefined {
@@ -54,7 +56,14 @@ export async function fetchDroppedAsset(
   maxBytes?: number
 ): Promise<File | undefined> {
   if (!uri) return undefined
-  const response = await fetch(uri, { signal })
+  const url = new URL(uri, window.location.href)
+  if (
+    !['http:', 'https:'].includes(url.protocol) ||
+    url.origin !== window.location.origin ||
+    !url.pathname.endsWith('/api/view')
+  )
+    return undefined
+  const response = await fetch(url, { signal })
   if (!response.ok) {
     await cancelResponseBody(response)
     throw new DroppedAssetFetchError(response.status)
@@ -129,7 +138,11 @@ export async function extractFilesFromDragEvent(
   const asset = getDroppedAsset(event.dataTransfer)
   if (!asset) return []
 
-  const file = await fetchDroppedAsset(asset).catch(() => undefined)
+  const file = await fetchDroppedAsset(
+    asset,
+    undefined,
+    MAX_DROPPED_ASSET_BYTES
+  ).catch(() => undefined)
   return file ? [file] : []
 }
 

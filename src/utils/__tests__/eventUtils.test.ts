@@ -21,7 +21,7 @@ describe('eventUtils', () => {
 
     await expect(
       fetchDroppedAsset(
-        { name: 'large.png', uri: 'https://example.com' },
+        { name: 'large.png', uri: '/api/view?filename=large.png' },
         undefined,
         100
       )
@@ -42,9 +42,26 @@ describe('eventUtils', () => {
     )
 
     await expect(
-      fetchDroppedAsset({ name: 'asset.png', uri: 'https://example.com' })
+      fetchDroppedAsset({
+        name: 'asset.png',
+        uri: '/api/view?filename=asset.png'
+      })
     ).rejects.toThrow('Dropped asset fetch failed with HTTP 503')
     expect(cancel).toHaveBeenCalledOnce()
+  })
+
+  it.for([
+    'https://example.com/api/view?filename=private.png',
+    '/api/settings',
+    'data:text/plain,private'
+  ])('rejects an untrusted dropped-asset URI: %s', async (uri) => {
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+
+    await expect(
+      fetchDroppedAsset({ name: 'asset.png', uri })
+    ).resolves.toBeUndefined()
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 
   it('cancels an unknown-length stream once its byte limit is crossed', async () => {
@@ -65,7 +82,7 @@ describe('eventUtils', () => {
 
     await expect(
       fetchDroppedAsset(
-        { name: 'streamed.png', uri: 'https://example.com' },
+        { name: 'streamed.png', uri: '/api/view?filename=streamed.png' },
         undefined,
         100
       )
@@ -177,7 +194,7 @@ describe('eventUtils', () => {
     })
 
     it('should fetch URI and return as File when text/uri-list is present', async () => {
-      const uri = 'https://example.com/api/view?filename=test.png&type=input'
+      const uri = '/api/view?filename=test.png&type=input'
       const imageBlob = new Blob([new Uint8Array([0x89, 0x50])], {
         type: 'image/png'
       })
@@ -197,7 +214,7 @@ describe('eventUtils', () => {
     })
 
     it('should handle text/x-moz-url type', async () => {
-      const uri = 'https://example.com/api/view?filename=test.png&type=input'
+      const uri = '/api/view?filename=test.png&type=input'
       const imageBlob = new Blob([new Uint8Array([0x89, 0x50])], {
         type: 'image/png'
       })
@@ -234,7 +251,7 @@ describe('eventUtils', () => {
         status: 200,
         contentType: 'application/json',
         body: '{"nodes":[],"links":[],"version":0.4}',
-        fileTypes: ['application/json']
+        fileTypes: []
       }
     ])(
       'yields files only for an OK response, given $response',
@@ -259,7 +276,7 @@ describe('eventUtils', () => {
     )
 
     it('should return empty array when URI fetch fails', async () => {
-      const uri = 'https://example.com/api/view?filename=test.png&type=input'
+      const uri = '/api/view?filename=test.png&type=input'
       fetchSpy.mockRejectedValue(new TypeError('Failed to fetch'))
 
       const dataTransfer = new DataTransfer()

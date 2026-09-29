@@ -1358,7 +1358,7 @@ describe('AgentPanelRoot attach flow', () => {
           ? json(200, {
               name: 'stored.png',
               subfolder: 'nested folder',
-              type: 'temp'
+              type: 'input'
             })
           : json(200, { data: [] })
       )
@@ -1372,10 +1372,14 @@ describe('AgentPanelRoot attach flow', () => {
 
     const preview = await screen.findByAltText('cat.png')
     expect(preview.getAttribute('src')).toContain(
-      '/api/view?filename=stored.png&type=temp&subfolder=nested+folder'
+      '/api/view?filename=stored.png&type=input&subfolder=nested+folder'
     )
     expect(useAgentComposerStore().attachments).toEqual([
-      expect.objectContaining({ ref: 'nested folder/stored.png' })
+      expect.objectContaining({
+        ref: 'stored.png',
+        subfolder: 'nested folder',
+        uploadType: 'input'
+      })
     ])
     expect(revoke).toHaveBeenCalledWith('blob:mock-url')
     revoke.mockRestore()
@@ -1501,7 +1505,7 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(uploaded).toEqual(['huge.png']))
   })
 
-  it.for([null, '104857600', Number.NaN, -1])(
+  it.for([null, '104857600', Number.NaN, -1, 0])(
     'uses the conservative limit for malformed server value %s',
     async (serverLimit) => {
       getServerFeature.mockReturnValue(serverLimit)
@@ -1871,7 +1875,7 @@ describe('AgentPanelRoot attach flow', () => {
         getData: (type: string) =>
           type === 'application/x-comfy-asset-info'
             ? JSON.stringify({ filename, type: 'input' })
-            : `http://localhost/api/view?filename=${filename}`
+            : `/api/view?filename=${filename}`
       }
 
       dispatchDrag(target, 'dragenter', dragData)
@@ -1995,7 +1999,7 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(
       within(await screen.findByTestId('composer-asset-section')).getByText(
-        'Renamed model'
+        'model.obj'
       )
     ).toBeInTheDocument()
     expect(

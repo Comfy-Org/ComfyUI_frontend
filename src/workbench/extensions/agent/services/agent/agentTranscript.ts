@@ -54,14 +54,19 @@ function parseAttachment(value: unknown): UserAttachment | undefined {
     'subfolder' in value && typeof value.subfolder === 'string'
       ? value.subfolder
       : undefined
-  const uploadType =
+  const rawUploadType =
     ('uploadType' in value && typeof value.uploadType === 'string'
       ? value.uploadType
       : undefined) ??
     ('upload_type' in value && typeof value.upload_type === 'string'
       ? value.upload_type
-      : undefined) ??
-    ('type' in value && typeof value.type === 'string' ? value.type : undefined)
+      : undefined)
+  const uploadType =
+    rawUploadType === 'input' ||
+    rawUploadType === 'output' ||
+    rawUploadType === 'temp'
+      ? rawUploadType
+      : undefined
   const ref =
     subfolder && rawRef.startsWith(`${subfolder}/`)
       ? rawRef.slice(subfolder.length + 1)

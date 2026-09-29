@@ -967,14 +967,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.sendMessage('with files', [
       { ref: 'upload_a.png', name: 'a.png', previewUrl: 'blob:a' },
-      { ref: 'upload_b.png', name: 'b.png' }
+      { ref: 'upload_b.png', name: 'b.png', subfolder: 'nested' }
     ])
 
     expect(rest.postMessage).toHaveBeenCalledWith('new', {
       content: 'with files',
       workflowReferences: [],
       selection: undefined,
-      attachments: ['upload_a.png', 'upload_b.png']
+      attachments: ['upload_a.png', 'nested/upload_b.png']
     })
   })
 

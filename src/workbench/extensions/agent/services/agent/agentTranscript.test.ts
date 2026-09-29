@@ -182,6 +182,19 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('does not treat an attachment MIME type as an upload location', () => {
+    const message = row(1, 'user', 'turn-a', 'check this image', 'row-1')
+    message.content = {
+      attachments: [{ name: 'stored.png', type: 'image/png' }]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+      { name: 'stored.png', ref: 'stored.png' }
+    ])
+  })
+
   it('leaves userAttachments empty for a turn with no attachment fields', () => {
     const message = row(1, 'user', 'turn-a', 'no attachments here', 'row-1')
 

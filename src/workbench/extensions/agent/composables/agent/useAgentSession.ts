@@ -314,7 +314,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
             tags !== undefined && tags.length > 0
               ? { node_ids: tags.map((tag) => tag.id) }
               : undefined,
-          attachments: attachments?.map((attachment) => attachment.ref),
+          attachments: attachments?.map((attachment) =>
+            attachment.subfolder
+              ? `${attachment.subfolder}/${attachment.ref}`
+              : attachment.ref
+          ),
           ...(unboundTarget ? { currentTabUnbound: true } : {}),
           ...(shouldSendDraft ? { draft } : {})
         }
