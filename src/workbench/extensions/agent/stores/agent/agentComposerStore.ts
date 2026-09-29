@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
+import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -17,6 +18,7 @@ import type {
   WorkflowReference
 } from '../../types/workflowReference'
 import { insertComposerReference } from '../../utils/composerPrompt'
+import type { AgentStarterPromptSource } from '../../utils/starterPrompts'
 
 interface ComposerDraft extends PromptSnapshot {
   attachments: ComposerAttachment[]
@@ -65,6 +67,13 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   )
   const nodeScope = ref<string | null>(null)
   const promptEpoch = ref(0)
+  // Set by the affordance that supplied the text; read once at submission and
+  // reset there, so it describes the message being sent rather than the panel.
+  const promptOrigin = ref<AgentInputMethod>('typed')
+  // Which starter prompt supplied the text, when one did. Lives and dies with
+  // `promptOrigin` — same submission lifecycle, same retry restore — so the two
+  // can never disagree about whether this draft came from a chip.
+  const starterPrompt = ref<AgentStarterPromptSource | null>(null)
   const insertionPoint = shallowRef<ComposerInsertionPoint>({
     textOffset: 0,
     referenceIndex: 0
@@ -77,6 +86,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     phase: 'pending' | 'failed'
     stopRequested: boolean
     revision: number
+    origin: AgentInputMethod
+    starterPrompt: AgentStarterPromptSource | null
     snapshot: SubmittedDraft
   } | null>(null)
   let revision = 0
@@ -123,10 +134,27 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       undoAssets.set(attachment.id, attachment)
       return [{ ...item, attachment }]
     })
+    if (
+      !next.text.trim() &&
+      references.length === 0 &&
+      promptOrigin.value === 'suggestion'
+    ) {
+      promptOrigin.value = 'typed'
+      starterPrompt.value = null
+    }
     updateDraft({ text: next.text, references })
   }
 
+  function markSuggestedPrompt(source?: AgentStarterPromptSource): void {
+    promptOrigin.value = 'suggestion'
+    // Cleared, not left stale, when the affordance did not identify itself: an
+    // unattributed insert is not the previous chip's click.
+    starterPrompt.value = source ?? null
+  }
+
   function replacePrompt(next: PromptSnapshot): void {
+    promptOrigin.value = 'edited'
+    starterPrompt.value = null
     resetPromptHistory()
     updateDraft({
       text: next.text,
@@ -334,6 +362,13 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function startSubmission(snapshot: SubmittedDraft): number {
     resetPromptHistory()
+    // Held with the snapshot, not dropped: a send that fails puts this draft
+    // back in the composer, and the retry came from the same chip or edited
+    // prompt the first attempt did.
+    const origin = promptOrigin.value
+    const chip = starterPrompt.value
+    promptOrigin.value = 'typed'
+    starterPrompt.value = null
     updateDraft({ text: '', references: [] })
     insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
     const id = ++nextSubmissionId
@@ -342,6 +377,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       phase: 'pending',
       stopRequested: false,
       revision,
+      origin,
+      starterPrompt: chip,
       snapshot
     }
     return id
@@ -368,7 +405,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     const failed = submission.value
     if (failed?.phase !== 'failed') return
     submission.value = null
-    if (failed.revision === revision) return failed.snapshot
+    if (failed.revision !== revision) return
+    promptOrigin.value = failed.origin
+    starterPrompt.value = failed.starterPrompt
+    return failed.snapshot
   }
 
   function invalidateSubmission(): void {
@@ -384,12 +424,15 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     nodes,
     nodeScope,
     promptEpoch,
+    promptOrigin,
+    starterPrompt,
     insertionPoint,
     submission,
     setText,
     setInsertionPoint,
     resetPromptHistory,
     applyEditorPrompt,
+    markSuggestedPrompt,
     replacePrompt,
     restorePrompt,
     replaceDraft,

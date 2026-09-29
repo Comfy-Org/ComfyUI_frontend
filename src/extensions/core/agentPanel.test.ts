@@ -26,6 +26,7 @@ import {
 import type { useExtensionService } from '@/services/extensionService'
 import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -70,7 +71,11 @@ vi.mock(
   () => {
     const consent = fromPartial<ReturnType<typeof useAgentConsent>>({
       withConsent: vi.fn(
-        async (onAccept: () => void, hooks?: ConsentOfferHooks) => {
+        async (
+          _trigger: AgentConsentTrigger,
+          onAccept: () => void,
+          hooks?: ConsentOfferHooks
+        ) => {
           if (hooks?.canShow?.() === false) return
           hooks?.onShown?.()
           onAccept()
@@ -242,7 +247,7 @@ describe('AgentPanel extension flag gate', () => {
       })
     )
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (onAccept, hooks) => {
+      async (_trigger, onAccept, hooks) => {
         hooks?.onShown?.()
         await Promise.resolve().then(() => {
           Object.assign(consentStore, { accepted: true })
@@ -256,6 +261,9 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() => expect(agentStore.isVisible).toBe(true))
 
     expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    expect(vi.mocked(useAgentConsent().withConsent).mock.calls[0][0]).toBe(
+      'first_load'
+    )
     expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('automatic_consent')
     expect(trackAgentPanelOpened).toHaveBeenCalledExactlyOnceWith({
       source: 'automatic_consent'
@@ -271,7 +279,7 @@ describe('AgentPanel extension flag gate', () => {
       finish = resolve
     })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (onAccept) => {
+      async (_trigger, onAccept) => {
         accept = onAccept
         await pending
       }
@@ -300,7 +308,7 @@ describe('AgentPanel extension flag gate', () => {
       finish = resolve
     })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_onAccept, hooks) => {
+      async (_trigger, _onAccept, hooks) => {
         show = hooks?.onShown ?? show
         await pending
       }
@@ -493,7 +501,7 @@ describe('AgentPanel extension flag gate', () => {
     agentFlagEnabled.value = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_onAccept, hooks) => {
+      async (_trigger, _onAccept, hooks) => {
         activeTour.value = 'appMode'
         await flush()
         if (hooks?.canShow?.() === false) return
@@ -620,7 +628,7 @@ describe('AgentPanel extension flag gate', () => {
         'true'
       )
       vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-        async (_onAccept, hooks) => {
+        async (_trigger, _onAccept, hooks) => {
           Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
           activeTour.value = 'appMode'
           await flush()
@@ -741,7 +749,7 @@ describe('AgentPanel extension flag gate', () => {
     agentFlagEnabled.value = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_onAccept, hooks) => {
+      async (_trigger, _onAccept, hooks) => {
         openDialog()
         await flush()
         if (hooks?.canShow?.() === false) return
@@ -806,7 +814,7 @@ describe('AgentPanel extension flag gate', () => {
     agentFlagEnabled.value = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_onAccept, hooks) => {
+      async (_trigger, _onAccept, hooks) => {
         firstRunTookScreen.value = true
         if (hooks?.canShow?.() === false) return
         hooks?.onShown?.()
@@ -937,7 +945,7 @@ describe('AgentPanel extension flag gate', () => {
       agentFlagEnabled.value = true
       Object.assign(consentStore, { accepted: false, isChecking: false })
       vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-        async (_onAccept, hooks) => {
+        async (_trigger, _onAccept, hooks) => {
           hooks?.onShown?.()
           openDialog(CONSENT_DIALOG_KEY)
           await flush()

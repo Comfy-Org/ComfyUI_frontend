@@ -1,14 +1,19 @@
 import type {
   AddCreditsClickMetadata,
   AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
+  AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
@@ -378,8 +383,32 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAgentCloseButtonClicked?.())
   }
 
+  trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
+    this.dispatch((provider) => provider.trackAgentConsentShown?.(metadata))
+  }
+
+  trackAgentConsentResolved(metadata: AgentConsentResolvedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentConsentResolved?.(metadata))
+  }
+
+  trackAgentOnboardingShown(): void {
+    this.dispatch((provider) => provider.trackAgentOnboardingShown?.())
+  }
+
+  trackAgentOnboardingStep(metadata: AgentOnboardingStepMetadata): void {
+    this.dispatch((provider) => provider.trackAgentOnboardingStep?.(metadata))
+  }
+
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
     this.dispatch((provider) => provider.trackAgentMessageSent?.(metadata))
+  }
+
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentStarterPromptClicked?.(metadata)
+    )
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
@@ -402,6 +431,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
     this.dispatch((provider) =>
       provider.trackAgentConsentNotOffered?.(metadata)
+    )
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentConsentOfferExited?.(metadata)
     )
   }
 

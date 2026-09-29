@@ -5,6 +5,9 @@ import type {
 import type {
   AddCreditsClickMetadata,
   AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
@@ -12,7 +15,9 @@ import type {
   AgentOnboardingNotShownMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
+  AgentOnboardingStepMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
@@ -324,8 +329,22 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED)
   }
 
+  trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_SHOWN, metadata)
+  }
+
+  trackAgentConsentResolved(metadata: AgentConsentResolvedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_RESOLVED, metadata)
+  }
+
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
     this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
+  }
+
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
@@ -340,8 +359,22 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
   }
 
+  trackAgentOnboardingShown(): void {
+    this.capture(TelemetryEvents.AGENT_ONBOARDING_SHOWN)
+  }
+
+  trackAgentOnboardingStep(metadata: AgentOnboardingStepMetadata): void {
+    this.capture(TelemetryEvents.AGENT_ONBOARDING_STEP, metadata)
+  }
+
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
     this.capture(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_OFFER_EXITED, metadata)
   }
 
   trackAgentOnboardingNotShown(

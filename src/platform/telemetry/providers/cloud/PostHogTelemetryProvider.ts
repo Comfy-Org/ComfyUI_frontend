@@ -13,14 +13,19 @@ import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionCont
 import type {
   AddCreditsClickMetadata,
   AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
+  AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
@@ -704,8 +709,30 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED, {})
   }
 
+  trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_CONSENT_SHOWN, metadata)
+  }
+
+  trackAgentConsentResolved(metadata: AgentConsentResolvedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_CONSENT_RESOLVED, metadata)
+  }
+
+  trackAgentOnboardingShown(): void {
+    this.trackEvent(TelemetryEvents.AGENT_ONBOARDING_SHOWN, {})
+  }
+
+  trackAgentOnboardingStep(metadata: AgentOnboardingStepMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_ONBOARDING_STEP, metadata)
+  }
+
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
+  }
+
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
@@ -727,6 +754,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_CONSENT_OFFER_EXITED, metadata)
   }
 
   trackAgentOnboardingNotShown(
