@@ -772,6 +772,10 @@ const copy = {
   'cinematic.stage.takeName': {
     en: 'Shot {shot}, take {take}',
     'zh-CN': '镜头 {shot}，第 {take} 条'
+  },
+  'cinematic.stage.renderingTakeName': {
+    en: 'Rendering Shot {shot}, take {take}',
+    'zh-CN': '正在渲染镜头 {shot}，第 {take} 条'
   }
 } as const satisfies Record<string, LocalizedText>
 
