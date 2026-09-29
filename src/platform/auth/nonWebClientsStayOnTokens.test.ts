@@ -19,6 +19,7 @@ import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { useDialogService } from '@/services/dialogService'
 import type { useExtensionService } from '@/services/extensionService'
@@ -353,6 +354,26 @@ describe('clients the web session leaves on tokens', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(recorder.all).toEqual(apiKeyGolden(row.uca))
+      expectNoSessionTraffic(recorder.all)
+    }
+  )
+
+  it.for(API_KEY_SESSION_ROWS)(
+    'an API-key workspace switch never touches a session ($name)',
+    async (row) => {
+      localStorage.setItem('comfy_api_key', API_KEY)
+      const recorder = installFetchRecorder(featuresFor(row))
+      await refreshRemoteConfig({ useAuth: false })
+      hooks = wireSessionCookieExtension()
+      identity.resolveSignedOut()
+      await vi.advanceTimersByTimeAsync(0)
+      recorder.all.length = 0
+
+      await useWorkspaceAuthStore()
+        .switchWorkspace('ws-team')
+        .catch(() => {})
+      await vi.advanceTimersByTimeAsync(0)
+
       expectNoSessionTraffic(recorder.all)
     }
   )

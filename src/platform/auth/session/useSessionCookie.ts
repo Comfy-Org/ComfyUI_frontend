@@ -122,7 +122,7 @@ export const useSessionCookie = () => {
     useCurrentUser().isApiKeyLogin.value
 
   const ensureSessionCookie = async (): Promise<void> => {
-    if (!isCloud) return
+    if (!isCloud || isApiKeyOnWebSession()) return
     const webSession = useCloudWebSessionStore()
     if (webSession.start()) return webSession.whenReady()
     await establishSession(currentOwnerUidOrThrow(), false)
