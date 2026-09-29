@@ -24,7 +24,7 @@ export function buildVideoSitemap(
 ): string {
   const urls = stories
     .map((story) => {
-      const pageUrl = `${origin}${customerVideoPath(story.slug)}/`
+      const pageUrl = `${origin}${customerVideoPath(story.slug)}`
       // Video sitemap duration is a plain integer count of seconds, not the
       // ISO 8601 duration used in schema.org JSON-LD.
       const durationSeconds = story.durationSeconds

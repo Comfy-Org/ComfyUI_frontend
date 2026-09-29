@@ -29,7 +29,7 @@ test.describe('Customer watch pages @smoke', () => {
       )
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
         'href',
-        `https://comfy.org${customerVideoPath(story.slug)}/`
+        `https://comfy.org${customerVideoPath(story.slug)}`
       )
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(
         story.title
@@ -45,7 +45,7 @@ test.describe('Customer watch pages @smoke', () => {
         breadcrumb.getByRole('link', {
           name: t('nav.customerStories', 'en')
         })
-      ).toHaveAttribute('href', '/customers')
+      ).toHaveAttribute('href', '/customers/')
       // The current page is plain text, never a link, in both the visible
       // breadcrumb and the JSON-LD BreadcrumbList.
       await expect(breadcrumb.getByText(story.title)).toBeVisible()
@@ -102,7 +102,7 @@ test.describe('Customer watch pages @smoke', () => {
 
       await expect(
         page.getByRole('link', { name: t('customers.watch.browseAll', 'en') })
-      ).toHaveAttribute('href', '/customers')
+      ).toHaveAttribute('href', '/customers/')
     })
   }
 
@@ -121,7 +121,7 @@ test.describe('Customer watch pages @smoke', () => {
     ).toBeVisible()
     expect(silverside.relatedStorySlug).toBe('svedka-silverside')
     await expect(
-      page.locator(`a[href="/customers/${silverside.relatedStorySlug}"]`, {
+      page.locator(`a[href="/customers/${silverside.relatedStorySlug}/"]`, {
         hasText: t('customers.watch.readWrittenStory', 'en')
       })
     ).toBeVisible()

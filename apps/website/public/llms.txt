@@ -280,7 +280,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 - [About Comfy](https://comfy.org/about/): Company background, mission, and the team behind ComfyUI.
 - [Careers](https://comfy.org/careers/): Open roles across engineering, design, marketing, and more.
 - [Contact](https://comfy.org/contact/): Sales, partnership, and general contact form, with answers on Enterprise, Forward Deployed Creatives, MiniMax licenses, and SOC 2.
-- [Brand Portal](https://comfy.org/brand): Logos, color, typography, and voice guidelines for Comfy.
+- [Brand Portal](https://comfy.org/brand/): Logos, color, typography, and voice guidelines for Comfy.
 - [Affiliate Program](https://comfy.org/affiliates/): 30% recurring commission for 3 months on referred Comfy Cloud subscriptions.
 - [Affiliate Terms](https://comfy.org/affiliates/terms/): Terms and conditions of the Comfy affiliate program.
 - [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz): Security documentation and real-time control status; a SOC 2 Type II audit is in progress.

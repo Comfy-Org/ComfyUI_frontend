@@ -8,57 +8,57 @@ import type { Locale } from './locales'
 
 const baseRoutes = {
   home: '/',
-  download: '/download',
-  cloud: '/cloud',
-  pricing: '/pricing',
-  enterprise: '/enterprise',
-  managedBuilds: '/enterprise/managed-builds',
-  gallery: '/gallery',
-  launches: '/launches',
-  events: '/events',
-  about: '/about',
-  careers: '/careers',
-  customers: '/customers',
-  customerVideoBlackMath: '/customers/videos/black-math',
-  customerVideoSilversideAi: '/customers/videos/silverside-ai',
-  demos: '/demos',
-  learning: '/learning',
-  termsOfService: '/terms-of-service',
-  enterpriseMsa: '/enterprise-msa',
-  privacyPolicy: '/privacy-policy',
-  affiliates: '/affiliates',
-  affiliateTerms: '/affiliates/terms',
-  contact: '/contact',
-  models: '/p/supported-models',
-  modelsShowcase: '/models',
-  mcp: '/mcp',
-  agent: '/agent',
-  platform: '/platform',
-  platformComfyApi: '/platform/comfy-api',
-  platformRouter: '/platform/router',
-  platformBuilder: '/platform/builder',
-  cli: '/cli',
-  minimax: '/minimax-h3',
-  minimaxMusic3: '/minimax-music-3',
-  minimaxLicense: '/minimax/license',
-  minimaxLicenseProfessionalRequest: '/minimax/license/professional-request',
-  flux3: '/flux-3',
-  seedance: '/seedance-2.5',
-  fdct: '/forward-deployed-creatives',
-  ltx: '/ltx-2.5',
-  geminiOmni: '/gemini-omni',
-  wanAnimate2: '/wan-animate-2',
-  cloudNodes: '/cloud-nodes',
-  wan3: '/wan-3.0',
-  chatgptImage25: '/chatgpt-image-2.5',
-  qwenImage21: '/qwen-image-2.1',
-  brand: '/brand',
+  download: '/download/',
+  cloud: '/cloud/',
+  pricing: '/pricing/',
+  enterprise: '/enterprise/',
+  managedBuilds: '/enterprise/managed-builds/',
+  gallery: '/gallery/',
+  launches: '/launches/',
+  events: '/events/',
+  about: '/about/',
+  careers: '/careers/',
+  customers: '/customers/',
+  customerVideoBlackMath: '/customers/videos/black-math/',
+  customerVideoSilversideAi: '/customers/videos/silverside-ai/',
+  demos: '/demos/',
+  learning: '/learning/',
+  termsOfService: '/terms-of-service/',
+  enterpriseMsa: '/enterprise-msa/',
+  privacyPolicy: '/privacy-policy/',
+  affiliates: '/affiliates/',
+  affiliateTerms: '/affiliates/terms/',
+  contact: '/contact/',
+  models: '/p/supported-models/',
+  modelsShowcase: '/models/',
+  mcp: '/mcp/',
+  agent: '/agent/',
+  platform: '/platform/',
+  platformComfyApi: '/platform/comfy-api/',
+  platformRouter: '/platform/router/',
+  platformBuilder: '/platform/builder/',
+  cli: '/cli/',
+  minimax: '/minimax-h3/',
+  minimaxMusic3: '/minimax-music-3/',
+  minimaxLicense: '/minimax/license/',
+  minimaxLicenseProfessionalRequest: '/minimax/license/professional-request/',
+  flux3: '/flux-3/',
+  seedance: '/seedance-2.5/',
+  fdct: '/forward-deployed-creatives/',
+  ltx: '/ltx-2.5/',
+  geminiOmni: '/gemini-omni/',
+  wanAnimate2: '/wan-animate-2/',
+  cloudNodes: '/cloud-nodes/',
+  wan3: '/wan-3.0/',
+  chatgptImage25: '/chatgpt-image-2.5/',
+  qwenImage21: '/qwen-image-2.1/',
+  brand: '/brand/',
   // The catalogue answers to /models now. The keys keep their old names while
   // the pull requests stacked on this branch are still open against them.
-  workshop: '/models',
+  workshop: '/models/',
   workshopSignIn: '/login/',
-  cinematicStudio: '/models/apps/cinematic-studio',
-  reshoot: '/models/apps/reshoot'
+  cinematicStudio: '/models/apps/cinematic-studio/',
+  reshoot: '/models/apps/reshoot/'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
@@ -130,14 +130,17 @@ const LOCALE_INVARIANT_EXTRA_PATHS = [
 ]
 
 const LOCALE_INVARIANT_PATHS = new Set<string>([
-  ...[...LOCALE_INVARIANT_ROUTE_KEYS].map((key) => baseRoutes[key]),
+  ...[...LOCALE_INVARIANT_ROUTE_KEYS].map((key) =>
+    normalizeRoute(baseRoutes[key])
+  ),
   ...LOCALE_INVARIANT_EXTRA_PATHS
 ])
 
 /** True for a locale-invariant route or anything nested under one. */
 function isLocaleInvariantPath(pathname: string): boolean {
+  const route = normalizeRoute(pathname)
   return [...LOCALE_INVARIANT_PATHS].some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`)
+    (path) => route === path || route.startsWith(`${path}/`)
   )
 }
 
@@ -152,7 +155,7 @@ export function supportsLocaleRoute(locale: Locale, pathname: string): boolean {
 }
 
 /**
- * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
+ * Prefix an internal path with the locale (`/mcp/` → `/zh-CN/mcp/`). External
  * URLs and locale-invariant routes pass through unchanged.
  */
 export function localizeHref(
@@ -230,7 +233,7 @@ export const externalLinks = {
   platform: 'https://platform.comfy.org',
   platformBuilds: 'https://platform.comfy.org/profile/builds',
   platformUsage: 'https://platform.comfy.org/profile/usage',
-  pricing: 'https://comfy.org/pricing',
+  pricing: 'https://comfy.org/pricing/',
   reddit: 'https://www.reddit.com/r/comfyui/',
   support: 'https://support.comfy.org/hc/en-us',
   trustCenter: 'https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz',

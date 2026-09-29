@@ -25,8 +25,8 @@ async function badgePlacement(row: Locator, label: string) {
 
 const minimaxLabel = 'MiniMax H3'
 const minimaxLabelZh = 'MiniMax H3'
-const minimaxRoute = '/minimax-h3'
-const minimaxRouteZh = '/zh-CN/minimax-h3'
+const minimaxRoute = '/minimax-h3/'
+const minimaxRouteZh = '/zh-CN/minimax-h3/'
 
 const TOP_LEVEL_LABELS = [
   'Models',
@@ -40,14 +40,14 @@ const RETIRED_BADGE_PANELS = [
   {
     section: 'Products',
     badged: 'Comfy Agent',
-    bare: [{ label: 'Comfy CLI', href: '/cli' }]
+    bare: [{ label: 'Comfy CLI', href: '/cli/' }]
   },
   {
     section: 'Community',
     badged: 'Events',
     bare: [
-      { label: 'Affiliates', href: '/affiliates' },
-      { label: 'Learning', href: '/learning' }
+      { label: 'Affiliates', href: '/affiliates/' },
+      { label: 'Learning', href: '/learning/' }
     ]
   }
 ] as const
@@ -185,7 +185,7 @@ test.describe('Desktop dropdown @interaction', () => {
       const card = nav.getByTestId('nav-dropdown').getByRole('link', {
         name: 'Explore the Gemini Omni 1.1 Flash release'
       })
-      await expect(card).toHaveAttribute('href', '/gemini-omni')
+      await expect(card).toHaveAttribute('href', '/gemini-omni/')
       const video = card.locator('video')
       await expect(video).toHaveAttribute(
         'src',
@@ -210,7 +210,7 @@ test.describe('Desktop dropdown @interaction', () => {
       .getByRole('link', { name: 'Watch the Product Photography demo' })
     await expect(card).toHaveAttribute(
       'href',
-      '/learning/ads/product-photography'
+      '/learning/ads/product-photography/'
     )
     await expect(
       card.getByRole('img', { name: 'Product Photography workflow demo image' })

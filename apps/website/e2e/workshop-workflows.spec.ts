@@ -93,7 +93,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await expect(shelf).toHaveText('Edit images')
   await expect(shelf).toHaveAttribute(
     'href',
-    '/models?type=workflows&category=product'
+    '/models/?type=workflows&category=product'
   )
   await expect(
     page.getByRole('group', { name: 'Your original image' })

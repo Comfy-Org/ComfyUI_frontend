@@ -66,10 +66,10 @@ describe('toCalendarEvent', () => {
     const event: ComfyEvent = { ...baseEvent, liveVideoId: 'abc123' }
 
     expect(toCalendarEvent(event, 'en').description).toBe(
-      'A livestream.\n\nhttps://comfy.org/events/test-event'
+      'A livestream.\n\nhttps://comfy.org/events/test-event/'
     )
     expect(toCalendarEvent(event, 'zh-CN').description).toBe(
-      '直播。\n\nhttps://comfy.org/zh-CN/events/test-event'
+      '直播。\n\nhttps://comfy.org/zh-CN/events/test-event/'
     )
   })
 
@@ -213,8 +213,8 @@ describe('deriveFeaturedEvents', () => {
   it('links slides to the event page when the event has one', () => {
     const [past, upcoming] = deriveFeaturedEvents(list, now)
 
-    expect(past.href?.en).toBe('/events/first-slide')
-    expect(upcoming.href?.en).toBe('/events/second-slide')
+    expect(past.href?.en).toBe('/events/first-slide/')
+    expect(upcoming.href?.en).toBe('/events/second-slide/')
     expect(upcoming.autoplayMs).toBe(5000)
     expect(upcoming.showTitle).toBe(false)
   })

@@ -1683,10 +1683,10 @@ describe('CinematicStudio', () => {
       const [firstApp, secondApp] = apps
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
-      ).toHaveAttribute('href', '/models/apps/cinematic-studio')
+      ).toHaveAttribute('href', '/models/apps/cinematic-studio/')
       expect(
         within(secondApp).getByRole('link', { name: 'Re-shoot a video' })
-      ).toHaveAttribute('href', '/models/apps/reshoot')
+      ).toHaveAttribute('href', '/models/apps/reshoot/')
     })
 
     it('runs a shot from the side panel on the model picked there', async () => {

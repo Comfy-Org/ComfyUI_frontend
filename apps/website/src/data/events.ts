@@ -102,8 +102,8 @@ function eventVideo(
 }
 
 const launchesHref: LocalizedText = {
-  en: localizeHref('/launches', 'en'),
-  'zh-CN': localizeHref('/launches', 'zh-CN')
+  en: localizeHref('/launches/', 'en'),
+  'zh-CN': localizeHref('/launches/', 'zh-CN')
 }
 
 export function youtubeWatchHref(videoId: string): LocalizedText {
@@ -112,7 +112,7 @@ export function youtubeWatchHref(videoId: string): LocalizedText {
 }
 
 export const eventPath = (event: { id: string }): string =>
-  `/events/${event.id}`
+  `/events/${event.id}/`
 
 function eventPageHref(id: string): LocalizedText {
   return {

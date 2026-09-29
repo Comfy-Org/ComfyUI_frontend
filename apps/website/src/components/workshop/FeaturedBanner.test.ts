@@ -84,7 +84,7 @@ describe('FeaturedBanner', () => {
     )
     expect(screen.getByRole('link', { name: 'Open studio' })).toHaveAttribute(
       'href',
-      '/models/apps/cinematic-studio'
+      '/models/apps/cinematic-studio/'
     )
     expect(screen.queryByTestId('featured-docs-link')).toBeNull()
     expect(screen.getByRole('button', { name: 'Flux' })).toBeTruthy()

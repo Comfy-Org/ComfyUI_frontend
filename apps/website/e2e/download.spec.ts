@@ -351,7 +351,7 @@ test.describe('Download page @smoke', () => {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
 
-    for (const href of ['/cloud', '/platform', '/enterprise']) {
+    for (const href of ['/cloud/', '/platform/', '/enterprise/']) {
       await expect(section.locator(`a[href="${href}"]`)).toBeVisible()
     }
   })

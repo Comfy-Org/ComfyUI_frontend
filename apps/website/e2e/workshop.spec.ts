@@ -308,7 +308,7 @@ test.describe('Models catalog', () => {
     await expect(back).toHaveText('Back to Generate videos')
     await expect(back).toHaveAttribute(
       'href',
-      '/models?useCase=generate-videos'
+      '/models/?useCase=generate-videos'
     )
     await back.click()
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
@@ -451,7 +451,7 @@ test.describe('Models catalog', () => {
     const tag = page
       .getByTestId('model-tags')
       .getByRole('link', { name: 'premium', exact: true })
-    await expect(tag).toHaveAttribute('href', '/models?q=premium')
+    await expect(tag).toHaveAttribute('href', '/models/?q=premium')
     await tag.click()
     await expect(page).toHaveURL(/\/models\/?\?q=premium$/)
     await expect(page.getByTestId('workshop-search')).toHaveValue('premium')

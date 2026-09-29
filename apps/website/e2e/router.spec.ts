@@ -39,7 +39,7 @@ test.describe('Router page @smoke', () => {
     ).toHaveAttribute('href', /\/models\/google\/nano-banana-pro\/code$/)
     await expect(
       coverage.getByRole('link', { name: /^Browse all \d+ models$/ })
-    ).toHaveAttribute('href', '/models')
+    ).toHaveAttribute('href', '/models/')
   })
 
   test('adds the chosen provider to the code sample', async ({ page }) => {

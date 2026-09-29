@@ -87,12 +87,12 @@ describe('ModelReleaseSection', () => {
     enabled.value = false
     render(ModelReleaseSection, { props: { modelLinks: enabledLinks } })
     const explore = screen.getByRole('link', { name: 'Explore Seedance 2.5' })
-    expect(explore.getAttribute('href')).toBe('/seedance-2.5')
+    expect(explore.getAttribute('href')).toBe('/seedance-2.5/')
     enabled.value = true
     await nextTick()
     expect(explore.getAttribute('href')).toBe(enabledLinks['seedance-2-5'])
     enabled.value = false
     await nextTick()
-    expect(explore.getAttribute('href')).toBe('/seedance-2.5')
+    expect(explore.getAttribute('href')).toBe('/seedance-2.5/')
   })
 })

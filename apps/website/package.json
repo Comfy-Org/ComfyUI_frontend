@@ -37,6 +37,7 @@
     "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
     "check:hreflang": "tsx ./scripts/check-hreflang.ts",
     "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts",
+    "check:link-slashes": "tsx ./scripts/check-internal-link-slashes.ts",
     "workshop:generate": "tsx ./scripts/generate-workshop-models.ts",
     "workshop:generate-versions": "tsx ./scripts/generate-workshop-versions.ts",
     "hub:backfill-media-type": "tsx ./scripts/backfill-template-media-type.ts",

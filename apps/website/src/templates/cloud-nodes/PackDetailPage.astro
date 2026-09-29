@@ -65,13 +65,13 @@ const software = softwareApplicationNode({
     },
     {
       name: 'Comfy Cloud',
-      url: absoluteUrl(Astro.site, localizeHref('/cloud', locale))
+      url: absoluteUrl(Astro.site, localizeHref('/cloud/', locale))
     },
     {
       name: t('breadcrumb.supportedNodes', locale),
       url: absoluteUrl(
         Astro.site,
-        localizeHref('/cloud/supported-nodes', locale)
+        localizeHref('/cloud/supported-nodes/', locale)
       )
     },
     { name: pack.displayName }

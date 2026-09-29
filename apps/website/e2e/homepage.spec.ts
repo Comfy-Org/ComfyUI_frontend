@@ -56,10 +56,10 @@ test.describe('Homepage @smoke', () => {
       section.getByRole('heading', { name: /ready to run/i })
     ).toBeVisible()
     const bytedance = section.getByRole('link', { name: /ByteDance/ }).first()
-    await expect(bytedance).toHaveAttribute('href', '/models?q=ByteDance')
+    await expect(bytedance).toHaveAttribute('href', '/models/?q=ByteDance')
     await expect(
       section.getByRole('link', { name: 'Browse all models' })
-    ).toHaveAttribute('href', '/models')
+    ).toHaveAttribute('href', '/models/')
   })
 
   test('FeaturedWorkflowsSection carousel is visible', async ({ page }) => {
@@ -252,7 +252,12 @@ test.describe('Product cards links @smoke', () => {
     })
     const products = section.getByRole('group', { name: 'Products' })
 
-    for (const href of ['/download', '/cloud', '/platform', '/enterprise']) {
+    for (const href of [
+      '/download/',
+      '/cloud/',
+      '/platform/',
+      '/enterprise/'
+    ]) {
       await expect(products.locator(`a[href="${href}"]`)).toBeVisible()
     }
   })
@@ -268,7 +273,7 @@ test.describe('Get started section links @smoke', () => {
 
     const downloadLink = section.getByRole('link', { name: 'Download Desktop' })
     await expect(downloadLink).toBeVisible()
-    await expect(downloadLink).toHaveAttribute('href', '/download')
+    await expect(downloadLink).toHaveAttribute('href', '/download/')
 
     const cloudLink = section.getByRole('link', { name: 'Try Cloud for free' })
     await expect(cloudLink).toBeVisible()

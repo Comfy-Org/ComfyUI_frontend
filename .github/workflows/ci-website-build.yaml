@@ -50,6 +50,9 @@ jobs:
       - name: Validate llms.txt links
         run: pnpm --filter @comfyorg/website validate:llms-txt-links
 
+      - name: Check internal links end with a slash
+        run: pnpm --filter @comfyorg/website check:link-slashes
+
       # Same shape as validate:jsonld: reads the built dist/ and exits non-zero.
       # Which routes are locale-invariant is hand-maintained, so this is what
       # catches a cluster that points at a page the build never produced.
@@ -63,6 +66,7 @@ jobs:
           WORKSHOP_IN_BUILD: '0'
         run: |
           pnpm --filter @comfyorg/website build
+          pnpm --filter @comfyorg/website check:link-slashes
           if [ -d apps/website/dist/workshop ]; then
             echo "::error title=Workshop leaked into a release build::apps/website/dist/workshop exists with WORKSHOP_IN_BUILD=0. The retired Workshop routes must not deploy. See apps/website/src/integrations/workshop-release-gate.ts."
             exit 1

@@ -97,7 +97,7 @@ export function getCustomerVideoStory(
 
 /** Canonical path for a video story's watch page (English-only, no locale twin). */
 export function customerVideoPath(slug: CustomerVideoStory['slug']): string {
-  return `/customers/videos/${slug}`
+  return `/customers/videos/${slug}/`
 }
 
 /** ISO 8601 duration (e.g. "PT4M32S") for VideoObject JSON-LD, or undefined. */

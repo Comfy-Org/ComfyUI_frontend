@@ -39,7 +39,7 @@ test('keeps the public site when PostHog is unavailable', async ({ page }) => {
     .scrollIntoViewIfNeeded()
   await expect(
     page.getByRole('link', { name: 'Explore Seedance 2.5' })
-  ).toHaveAttribute('href', '/seedance-2.5')
+  ).toHaveAttribute('href', '/seedance-2.5/')
 
   await page.goto('/models/')
   await expect(
