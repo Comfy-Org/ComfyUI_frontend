@@ -2,6 +2,11 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import {
+  ModuleKind,
+  flattenDiagnosticMessageText,
+  transpileModule
+} from 'typescript'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
@@ -192,6 +197,29 @@ describe('modelUrlFlags', () => {
     ]
   ] as const)('flags %s', ([, slug, routerId, newSlug, flags]) => {
     expect(modelUrlFlags({ slug, routerId }, newSlug)).toEqual(flags)
+  })
+})
+
+describe('renderModelUrlsModule', () => {
+  it.for([
+    'Veo 3\nText-to-Video',
+    "Veo's 3 \\ Text\tto\rVideo",
+    'Veo 3\u2028Text-to-Video'
+  ])('writes %j back as the same string', (name) => {
+    const source = renderModelUrlsModule({
+      pages: [{ oldSlug: 'veo--veo-3', newSlug: 'veo-3', name }],
+      aliases: []
+    })
+    const { outputText, diagnostics } = transpileModule(source, {
+      compilerOptions: { module: ModuleKind.CommonJS },
+      reportDiagnostics: true
+    })
+    expect(
+      diagnostics?.map((d) => flattenDiagnosticMessageText(d.messageText, ''))
+    ).toEqual([])
+    const module = { exports: { modelPageUrls: [] as { name: string }[] } }
+    new Function('module', 'exports', outputText)(module, module.exports)
+    expect(module.exports.modelPageUrls[0].name).toBe(name)
   })
 })
 
