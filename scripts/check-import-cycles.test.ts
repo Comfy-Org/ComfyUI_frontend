@@ -42,6 +42,11 @@ describe('cyclicEdges', () => {
       expected: { a: ['b'], b: ['c'], c: ['a'] }
     },
     {
+      name: 'self-import is a one-module cycle',
+      edges: { a: ['a', 'b'], b: [] },
+      expected: { a: ['a'] }
+    },
+    {
       name: 'cross-edges into completed components stay outside later cycles',
       edges: {
         a: ['b'],
@@ -142,6 +147,12 @@ describe('baselineViolations', () => {
       expected: [expect.stringContaining('a\n    -> b\n    -> a')]
     },
     {
+      name: 'new self-import reports the one-module cycle',
+      edges: { a: ['a'] },
+      baseline: {},
+      expected: [expect.stringContaining('a\n    -> a')]
+    },
+    {
       name: 'stale entry fails',
       edges: { a: ['b'], b: [] },
       baseline: { a: ['b'], b: ['a'] },
@@ -180,7 +191,7 @@ describe('shortestCyclePath', () => {
 })
 
 describe('graphFromCruise', () => {
-  it('keeps only src modules and drops self and external edges', () => {
+  it('keeps src modules and self edges, and drops external edges', () => {
     const result = graphFromCruise([
       {
         source: 'src/a.ts',
@@ -194,7 +205,7 @@ describe('graphFromCruise', () => {
       { source: 'packages/x/index.ts', dependencies: [] }
     ])
     expect(result).toEqual(
-      graph({ 'src/a.ts': ['src/b.ts'], 'src/b.ts': ['src/a.ts'] })
+      graph({ 'src/a.ts': ['src/b.ts', 'src/a.ts'], 'src/b.ts': ['src/a.ts'] })
     )
   })
 })

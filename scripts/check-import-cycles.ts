@@ -28,10 +28,7 @@ export function graphFromCruise(modules: CruiseModule[]): Graph {
     if (!module.source.startsWith(SOURCE_PREFIX)) continue
     const targets = new Set<string>()
     for (const dependency of module.dependencies) {
-      if (
-        dependency.resolved.startsWith(SOURCE_PREFIX) &&
-        dependency.resolved !== module.source
-      ) {
+      if (dependency.resolved.startsWith(SOURCE_PREFIX)) {
         targets.add(dependency.resolved)
       }
     }
@@ -160,7 +157,7 @@ export function shortestCyclePath(
 
 function componentStats(graph: Graph) {
   const cyclic = stronglyConnectedComponents(graph).filter(
-    (component) => component.length > 1
+    ([first, ...rest]) => rest.length > 0 || graph.get(first)?.has(first)
   )
   return {
     modulesInCycles: cyclic.reduce((sum, c) => sum + c.length, 0),
