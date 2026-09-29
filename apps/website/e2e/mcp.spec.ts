@@ -31,13 +31,18 @@ test.describe('MCP page @smoke', () => {
     }
   })
 
-  test('agent beta banner links to the waitlist page', async ({ page }) => {
-    await expect(
-      page.getByText('The Comfy Agent is in beta. Get early access.')
-    ).toBeVisible()
+  test('promotes the launched Agent without the retired waitlist', async ({
+    page
+  }) => {
+    const agentLink = page.getByRole('link', {
+      name: 'Try It for Free',
+      exact: true
+    })
+    await expect(agentLink).toBeVisible()
+    await expect(agentLink).toHaveAttribute('href', '/agent')
     await expect(
       page.getByRole('link', { name: 'Join the waitlist' })
-    ).toHaveAttribute('href', '/agent')
+    ).toHaveCount(0)
   })
 
   test('cloud is the default connection with Claude Desktop active', async ({
