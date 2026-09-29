@@ -160,6 +160,15 @@ const CINEMATIC_VIDEO_MODELS: Readonly<Record<string, VideoEntry>> = {
     logo: '/icons/ai-models/bytedance.svg',
     firstFrame: 'byteplus--seedance-2-image-to-video--animate-images'
   },
+  'byteplus--seedance-2-fast-text-to-video--generate-videos': {
+    name: 'Seedance 2.0 Fast',
+    logo: '/icons/ai-models/bytedance.svg',
+    firstFrame: 'byteplus--seedance-2-fast-first-last-frame--animate-images'
+  },
+  'byteplus--seedance-2-mini-text-to-video--generate-videos': {
+    name: 'Seedance 2.0 Mini',
+    logo: '/icons/ai-models/bytedance.svg'
+  },
   'wan--text-to-video-3.0--generate-videos': {
     name: 'Wan 3.0',
     logo: '/icons/ai-models/wan.svg',
@@ -184,15 +193,6 @@ const CINEMATIC_VIDEO_MODELS: Readonly<Record<string, VideoEntry>> = {
     name: 'Kling 3.0',
     logo: '/icons/ai-models/kling.svg',
     firstFrame: 'kling--v3--animate-images'
-  },
-  'byteplus--seedance-2-fast-text-to-video--generate-videos': {
-    name: 'Seedance 2.0 Fast',
-    logo: '/icons/ai-models/bytedance.svg',
-    firstFrame: 'byteplus--seedance-2-fast-first-last-frame--animate-images'
-  },
-  'byteplus--seedance-2-mini-text-to-video--generate-videos': {
-    name: 'Seedance 2.0 Mini',
-    logo: '/icons/ai-models/bytedance.svg'
   }
 }
 

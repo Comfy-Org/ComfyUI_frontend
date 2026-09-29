@@ -76,13 +76,13 @@ describe('runnableCinematicVideoModels', () => {
       'Seedance 2.5',
       'Seedance 2.5 Edit',
       'Seedance 2.0',
+      'Seedance 2.0 Fast',
+      'Seedance 2.0 Mini',
       'Wan 3.0',
       'FLUX.3 Video',
       'Gemini Omni Flash 1.1',
       'Grok Imagine 1.5',
-      'Kling 3.0',
-      'Seedance 2.0 Fast',
-      'Seedance 2.0 Mini'
+      'Kling 3.0'
     ])
     expect(models.every((model) => model.mode === 'video')).toBe(true)
   })
