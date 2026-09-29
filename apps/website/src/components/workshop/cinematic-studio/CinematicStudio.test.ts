@@ -14,6 +14,7 @@ import type {
   RouterRenderResult
 } from '../../../config/router-render'
 import {
+  refreshWorkshopCredits,
   useTopUpWatch,
   useWorkshopCredits
 } from '../../../config/workshop-credits'
@@ -467,6 +468,47 @@ describe('CinematicStudio', () => {
     ).toHaveLength(1)
   })
 
+  it.for([
+    { name: 'arrives', page: servePageData },
+    {
+      name: 'fails',
+      page: async () => new Response('unavailable', { status: 500 })
+    }
+  ])(
+    'records no run for a take cancelled before its model page $name',
+    async ({ page }) => {
+      const requested = Promise.withResolvers<void>()
+      const cancelled = Promise.withResolvers<void>()
+      fetchData.mockImplementation(async (input) => {
+        if (String(input).startsWith('blob:')) return servePageData(input)
+        requested.resolve()
+        await cancelled.promise
+        return page(input)
+      })
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderStudio()
+
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await requested.promise
+      await user.click(await screen.findByRole('button', { name: 'Cancel' }))
+      vi.mocked(refreshWorkshopCredits).mockClear()
+      cancelled.resolve()
+
+      await vi.waitFor(() =>
+        expect(refreshWorkshopCredits).toHaveBeenCalledWith({ force: true })
+      )
+      expect(router_render).not.toHaveBeenCalled()
+      expect(
+        vi
+          .mocked(captureWorkshopEvent)
+          .mock.calls.filter(([event]) => event.name.startsWith('run_'))
+      ).toEqual([])
+    }
+  )
+
   it('records a take download as an app download', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
@@ -494,19 +536,30 @@ describe('CinematicStudio', () => {
     })
   })
 
-  it('records each app page once it can be seen', async () => {
+  it('records each app page once, however often it is picked', async () => {
     render(CinematicStudioPage, { props: { apps: appModels, models } })
+    const user = userEvent.setup()
+    const pick = async (name: string) => {
+      await user.click(
+        await screen.findByRole('button', { name: /^Layout to review/ })
+      )
+      await user.click(await screen.findByRole('menuitemradio', { name }))
+    }
 
-    await vi.waitFor(() =>
-      expect(captureWorkshopEvent).toHaveBeenCalledWith({
-        name: 'model_viewed',
-        properties: {
-          model_slug: CINEMATIC_STUDIO_APP_SLUG,
-          page_type: 'app',
-          app_slug: CINEMATIC_STUDIO_APP_SLUG
-        }
-      })
-    )
+    await pick('Re-shoot a video')
+    await pick('Cinematic Studio')
+    await pick('Re-shoot a video')
+
+    const viewed = (slug: string) => ({
+      name: 'model_viewed',
+      properties: { model_slug: slug, page_type: 'app', app_slug: slug }
+    })
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.filter(([event]) => event.name === 'model_viewed')
+        .map(([event]) => event)
+    ).toEqual([viewed(CINEMATIC_STUDIO_APP_SLUG), viewed('apps/reshoot')])
     expect(appModels.find((app) => app.appId === 'studio')?.slug).toBe(
       CINEMATIC_STUDIO_APP_SLUG
     )

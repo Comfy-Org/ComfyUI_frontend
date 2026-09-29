@@ -375,9 +375,11 @@ export function useCinematicStudioRun(
       await Promise.all(
         takes.map(async ({ id, index, slug, request }) => {
           const model = await loadModel(slug).catch((error: unknown) => {
-            recordUnloadedTake(takeAnalytics(startedFor, slug), error)
+            if (!attempt.signal.aborted)
+              recordUnloadedTake(takeAnalytics(startedFor, slug), error)
             throw error
           })
+          attempt.signal.throwIfAborted()
           return renderTake(
             id,
             index,
