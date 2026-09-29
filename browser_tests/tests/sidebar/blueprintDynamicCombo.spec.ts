@@ -20,7 +20,7 @@ test.describe('Blueprint dynamic combo preview', { tag: '@ui' }, () => {
     await tab.getNode('Dynamic combo blueprint').hover()
     await expect(tab.nodePreview).toBeVisible()
     const inputsSection = tab.nodePreview
-      .getByRole('heading', { name: 'Inputs' })
+      .getByRole('heading', { name: 'Inputs', exact: true })
       .locator('..')
     await expect(
       inputsSection.getByText('boundary_model', { exact: true })
