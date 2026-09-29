@@ -17,10 +17,6 @@ export function isDownloadCancelled(status: AssetDownloadStatus) {
   return status === 'cancellation_pending' || status === 'cancelled'
 }
 
-function isDownloadCancellationPending(status: AssetDownloadStatus) {
-  return status === 'cancellation_pending'
-}
-
 function isDownloadFinished(status: AssetDownloadStatus) {
   return status === 'completed' || status === 'failed' || status === 'cancelled'
 }
@@ -95,8 +91,8 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const hasActiveDownloads = computed(() => activeDownloads.value.length > 0)
   const hasDownloads = computed(() => downloads.value.size > 0)
   const hasPendingCancellation = computed(() =>
-    downloadList.value.some((download) =>
-      isDownloadCancellationPending(download.status)
+    downloadList.value.some(
+      (download) => download.status === 'cancellation_pending'
     )
   )
   // `failed` downloads are included because the backend can broadcast a

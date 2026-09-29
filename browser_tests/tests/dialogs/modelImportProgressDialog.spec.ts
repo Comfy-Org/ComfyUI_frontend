@@ -4,7 +4,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import { dispatchAssetDownload } from '@e2e/fixtures/helpers/AssetDownloadHelper'
+import { dispatchAssetDownload } from '@e2e/fixtures/utils/assetDownload'
 
 /**
  * REGRESSION COVERAGE PM-1302 / PM-1309 (frontend half):
@@ -18,9 +18,6 @@ import { dispatchAssetDownload } from '@e2e/fixtures/helpers/AssetDownloadHelper
  * from getting stuck reporting a download as failed forever when it actually
  * finished successfully.
  *
- * These tests drive recovery and cancellation through the real
- * `asset_download` client event that `assetDownloadStore` listens on in
- * production.
  */
 test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
   test('recovers from a premature failed status once the backend silently retries and completes it (PM-1302)', async ({
@@ -30,57 +27,56 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     const taskId = 'pm-1302-repro-task'
     const assetName = 'stuck-model.safetensors'
 
-    // 1. Download starts.
-    await dispatchAssetDownload(page, {
-      task_id: taskId,
-      asset_name: assetName,
-      bytes_total: 1000,
-      bytes_downloaded: 200,
-      progress: 20,
-      status: 'running'
-    })
+    await test.step('show a running model import', async () => {
+      await dispatchAssetDownload(page, {
+        task_id: taskId,
+        asset_name: assetName,
+        bytes_total: 1000,
+        bytes_downloaded: 200,
+        progress: 20,
+        status: 'running'
+      })
 
-    const toastHeader = page.getByText('Importing Models', { exact: true })
-    await expect(toastHeader).toBeVisible()
-
-    // 2. Backend hits a retryable error and (per the bug in
-    // download_file.go's HandleDownloadFile) broadcasts a premature
-    // terminal `failed` message before it decides to retry.
-    await dispatchAssetDownload(page, {
-      task_id: taskId,
-      asset_name: assetName,
-      bytes_total: 1000,
-      bytes_downloaded: 200,
-      progress: 20,
-      status: 'failed',
-      error: 'Source server error'
+      await expect(
+        page.getByText('Importing Models', { exact: true })
+      ).toBeVisible()
     })
 
     const failedFooterText = page.getByText('1 download failed', {
       exact: true
     })
-    await expect(failedFooterText).toBeVisible()
 
-    // 3. Backend silently retried (asynq's StatusMiddleware reset the task
-    // to pending) and the retry succeeded - cloud broadcasts the real,
-    // later `completed` message for the same task_id.
-    await dispatchAssetDownload(page, {
-      task_id: taskId,
-      asset_name: assetName,
-      asset_id: 'asset-pm-1302',
-      bytes_total: 1000,
-      bytes_downloaded: 1000,
-      progress: 100,
-      status: 'completed'
+    await test.step('show the retryable failure reported by the backend', async () => {
+      await dispatchAssetDownload(page, {
+        task_id: taskId,
+        asset_name: assetName,
+        bytes_total: 1000,
+        bytes_downloaded: 200,
+        progress: 20,
+        status: 'failed',
+        error: 'Source server error'
+      })
+
+      await expect(failedFooterText).toBeVisible()
     })
-    await comfyPage.nextFrame()
 
-    // The later `completed` message updates the download rather than
-    // being dropped, so the toast reflects the real, successful outcome.
-    await expect(failedFooterText).toBeHidden()
-    await expect(
-      page.getByText('All downloads completed', { exact: true })
-    ).toBeVisible()
+    await test.step('recover after the backend retry succeeds', async () => {
+      await dispatchAssetDownload(page, {
+        task_id: taskId,
+        asset_name: assetName,
+        asset_id: 'asset-pm-1302',
+        bytes_total: 1000,
+        bytes_downloaded: 1000,
+        progress: 100,
+        status: 'completed'
+      })
+      await comfyPage.nextFrame()
+
+      await expect(failedFooterText).toBeHidden()
+      await expect(
+        page.getByText('All downloads completed', { exact: true })
+      ).toBeVisible()
+    })
 
     // Scoped to the toast: a full-`body` screenshot also captures the
     // canvas graph background, which isn't pixel-stable across CI runs.
@@ -88,7 +84,6 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       .getByRole('status')
       .filter({ hasText: 'All downloads completed' })
 
-    // Visual proof of the recovered, completed toast state.
     await expect(toast).toHaveScreenshot(
       'model-import-progress-toast-recovered-completed.png',
       { mask: [toast.locator('.timestamp')] }
@@ -102,26 +97,24 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     const taskId = 'pm-1302-dismiss-task'
     const assetName = 'stuck-model.safetensors'
 
-    // Same premature-failed sequence as above, minus the later `completed`
-    // message - the point here is only whether the user can get rid of a
-    // failed toast on their own when the backend never does send a
-    // recovery message.
-    await dispatchAssetDownload(page, {
-      task_id: taskId,
-      asset_name: assetName,
-      bytes_total: 1000,
-      bytes_downloaded: 200,
-      progress: 20,
-      status: 'running'
-    })
-    await dispatchAssetDownload(page, {
-      task_id: taskId,
-      asset_name: assetName,
-      bytes_total: 1000,
-      bytes_downloaded: 200,
-      progress: 20,
-      status: 'failed',
-      error: 'Source server error'
+    await test.step('show a failed model import', async () => {
+      await dispatchAssetDownload(page, {
+        task_id: taskId,
+        asset_name: assetName,
+        bytes_total: 1000,
+        bytes_downloaded: 200,
+        progress: 20,
+        status: 'running'
+      })
+      await dispatchAssetDownload(page, {
+        task_id: taskId,
+        asset_name: assetName,
+        bytes_total: 1000,
+        bytes_downloaded: 200,
+        progress: 20,
+        status: 'failed',
+        error: 'Source server error'
+      })
     })
 
     // Scoped by footer text: `getByRole('status')` alone also matches the
@@ -135,18 +128,14 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       page.getByText('1 download failed', { exact: true })
     ).toBeVisible()
 
-    // `isInProgress` is false once a `failed` status lands, so
-    // ModelImportProgressDialog's close (X) button renders and is
-    // clickable regardless of whether a later recovery message ever
-    // arrives.
-    //
     // Scoped to `toast`: `page.getByRole('button', { name: 'Close' })`
     // alone also matches the canvas minimap's close button
     // (`data-testid="close-minimap-button"`) and is a strict-mode
     // violation with the minimap visible.
-    await toast.getByRole('button', { name: 'Close' }).click()
-
-    await expect(toast).toBeHidden()
+    await test.step('dismiss the failed model import', async () => {
+      await toast.getByRole('button', { name: 'Close' }).click()
+      await expect(toast).toBeHidden()
+    })
   })
 
   test('cancels a running download and renders the backend terminal state (PM-1309)', async ({
@@ -209,6 +198,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       await expect(
         toast.getByText('Cancelled', { exact: true }).first()
       ).toBeVisible()
+      await expect(toast.getByRole('button', { name: 'Close' })).toBeHidden()
     })
 
     await test.step('keep the terminal backend state rendered', async () => {
@@ -227,6 +217,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       await expect(
         toast.getByRole('button', { name: 'Cancel Download' })
       ).toBeHidden()
+      await expect(toast.getByRole('button', { name: 'Close' })).toBeVisible()
     })
   })
 
@@ -254,30 +245,39 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       await responseReady
       await route.fulfill({ json: response })
     })
-    await page.clock.install()
-    await dispatchAssetDownload(page, {
-      task_id: taskId,
-      asset_name: assetName,
-      bytes_total: 1000,
-      bytes_downloaded: 200,
-      progress: 20,
-      status: 'failed',
-      error: 'Source server error'
+
+    await test.step('start reconciling a failed model import', async () => {
+      await page.clock.install()
+      await dispatchAssetDownload(page, {
+        task_id: taskId,
+        asset_name: assetName,
+        bytes_total: 1000,
+        bytes_downloaded: 200,
+        progress: 20,
+        status: 'failed',
+        error: 'Source server error'
+      })
+      const request = page.waitForRequest(`**/tasks/${taskId}`)
+      await page.clock.runFor(10_000)
+      await request
     })
-    const request = page.waitForRequest(`**/tasks/${taskId}`)
-    await page.clock.runFor(10_000)
-    await request
 
     const toast = page
       .getByRole('status')
       .filter({ hasText: '1 download failed' })
-    await toast.getByRole('button', { name: 'Close' }).click()
-    await expect(toast).toBeHidden()
-    const completedResponse = page.waitForResponse(`**/tasks/${taskId}`)
-    releaseResponse()
-    await (await completedResponse).finished()
-    await page.clock.runFor(100)
 
-    await expect(toast).toBeHidden()
+    await test.step('dismiss the model import during reconciliation', async () => {
+      await toast.getByRole('button', { name: 'Close' }).click()
+      await expect(toast).toBeHidden()
+    })
+
+    await test.step('keep the model import dismissed after polling settles', async () => {
+      const completedResponse = page.waitForResponse(`**/tasks/${taskId}`)
+      releaseResponse()
+      await (await completedResponse).finished()
+      await page.clock.runFor(100)
+
+      await expect(toast).toBeHidden()
+    })
   })
 })

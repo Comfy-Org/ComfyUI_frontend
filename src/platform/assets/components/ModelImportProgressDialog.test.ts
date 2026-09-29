@@ -84,12 +84,15 @@ describe('ModelImportProgressDialog cancellation', () => {
     expect(screen.getAllByText('Cancelled')).not.toHaveLength(0)
   })
 
-  it('allows failed downloads to be dismissed while reconciliation continues', async () => {
+  it('dismisses a failed download while reconciliation continues', async () => {
+    const user = userEvent.setup()
     const store = renderDialog()
 
     store.downloadList[0].status = 'failed'
     await nextTick()
 
-    expect(screen.getByRole('button', { name: 'Close' })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(screen.queryByRole('status')).toBeNull()
   })
 })

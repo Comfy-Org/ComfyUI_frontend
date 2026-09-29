@@ -15,12 +15,9 @@ import { api } from '@/scripts/api'
 
 const TASKS_ENDPOINT = '/tasks'
 
-const zTaskStatus = z.enum([
-  'created',
-  'running',
-  'completed',
-  'failed',
-  'cancelled'
+const zTaskStatus = z.union([
+  zGeneratedTaskResponse.shape.status,
+  z.literal('cancelled')
 ])
 
 const zDownloadFileResult = z.object({
