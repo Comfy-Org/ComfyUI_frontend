@@ -2,6 +2,7 @@ import { createSharedComposable } from '@vueuse/core'
 import { watch } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { reportError } from '@/platform/telemetry/reportError'
 
 export interface CanvasOperation {
   key?: string
@@ -65,15 +66,14 @@ export function createCanvasScheduler(): CanvasScheduler {
       try {
         operation.run()
       } catch (err) {
-        console.error(
-          '[CanvasScheduler] Scheduled canvas operation failed during flush',
-          {
-            error: err,
+        reportError(err, {
+          errorType: 'canvas_scheduled_operation_failed',
+          context: {
             remainingInBatch: operations.length - index - 1,
             pendingQueue: queue.length,
             canvasReady: isCanvasReady()
           }
-        )
+        })
       }
     }
   }

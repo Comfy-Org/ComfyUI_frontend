@@ -38,7 +38,7 @@ interface CanvasViewport {
 
 Two functions operate on this type:
 
-- **`measureViewport(container, dpr?)`** — a pure function that produces a new `CanvasViewport` from DOM measurements. Accepts an optional DPR override for testing and for scenarios where DPR changes mid-session (display switching).
+- **`measureViewport(cssWidth, cssHeight, rawDpr, prevGeneration?)`** — a pure function that produces a new `CanvasViewport` from numeric dimensions and DPR. The optional previous generation supports deterministic generation tracking. `measureViewportFromElement(element, rawDpr?, prevGeneration?)` is the DOM adapter used by canvas lifecycle code.
 - **`applyViewport(viewport, fgCanvas, bgCanvas)`** — a side-effecting function that atomically sizes both foreground and background canvases to the viewport's physical dimensions and scales their 2D contexts. Both canvases are updated in a single call, eliminating the possibility of a partial resize.
 
 The existing `LGraphCanvas.resize()` method and `resizeCanvas()` in app.ts are both replaced by calls through the viewport system. Both paths collapse into one: measure → apply → draw.
