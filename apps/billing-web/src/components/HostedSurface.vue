@@ -9,6 +9,7 @@ import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
+import { returnToHost } from '@/entry/returnToHost'
 import { useBilledScope } from '@/session/billingWebAuth'
 
 /** What the trip back should say, when the surface has a result to report. */
@@ -66,6 +67,7 @@ const returnLink = computed(() => {
           v-if="returnLink"
           :href="returnLink.href"
           class="text-sm text-muted-foreground underline underline-offset-4 hover:text-base-foreground"
+          @click.prevent="returnToHost(returnLink.href)"
         >
           {{ returnLink.label }}
         </a>
