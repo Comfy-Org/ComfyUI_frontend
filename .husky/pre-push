@@ -2,6 +2,13 @@
 
 set -e
 
+git fetch --quiet --no-tags origin main
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+  case "$local_sha" in
+    *[!0]*) bash .github/scripts/check-ai-co-authors.sh FETCH_HEAD "$local_sha" >&2 ;;
+  esac
+done
+
 # Skip in CI: the canonical checks run in CI on every PR, and bot workflows
 # (e.g. i18n-update-core) populate ComfyUI/ via setup-comfyui-server, which
 # contaminates static-analysis project globs with the devtools copy under
@@ -11,7 +18,6 @@ if [ -n "${CI-}" ]; then
 fi
 
 pnpm knip 1>&2
-git fetch --quiet --no-tags origin main
 base="$(git merge-base HEAD FETCH_HEAD)"
 diff_file="$(mktemp)"
 trap 'rm -f "$diff_file"' 0
