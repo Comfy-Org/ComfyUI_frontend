@@ -14,7 +14,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-const PROMPTS = [
+const LOCAL_PROMPTS = [
   {
     id: 'slot_1',
     text: 'Generate a realistic portrait of an astronaut'
@@ -32,6 +32,14 @@ const PROMPTS = [
     id: 'slot_5',
     text: 'Fix the errors in this workflow'
   }
+] as const
+
+const CLOUD_PROMPTS = [
+  { id: 'slot_1', text: 'Generate a character sheet of an astronaut' },
+  { id: 'slot_2', text: 'Turn the product image into a short ad' },
+  { id: 'slot_3', text: 'Explain the selected nodes' },
+  { id: 'slot_4', text: 'Best image upscale workflow for 4K' },
+  { id: 'slot_5', text: 'Fix the errors in this workflow' }
 ] as const
 
 describe('EmptyState', () => {
@@ -65,46 +73,21 @@ describe('EmptyState', () => {
     ])
   })
 
-  it('renders suggestions matched to cloud capabilities', () => {
-    distribution.isCloud = true
-
-    render(EmptyState, {
-      global: { plugins: [i18n] }
-    })
-
-    const productAdPrompt = screen.getByRole('button', {
-      name: 'Turn the product image into a short ad'
-    })
-
-    expect(productAdPrompt).toBeVisible()
-    expect(screen.getByTestId('starter-prompt-icon-1')).toHaveClass(
-      'icon-[lucide--video]'
-    )
-    expect(
-      screen.queryByRole('button', {
-        name: 'Help me install the missing nodes for this workflow'
-      })
-    ).not.toBeInTheDocument()
-  })
-
-  it('matches local-only prompt icons to their copy', () => {
-    render(EmptyState, {
-      global: { plugins: [i18n] }
-    })
-
-    const missingNodesPrompt = screen.getByRole('button', {
-      name: 'Help me install the missing nodes for this workflow'
-    })
-
-    expect(missingNodesPrompt).toBeVisible()
-    expect(screen.getByTestId('starter-prompt-icon-3')).toHaveClass(
-      'icon-[lucide--puzzle]'
-    )
-  })
-
-  it.for(PROMPTS.map((prompt, index) => ({ ...prompt, index })))(
-    'identifies the $id chip by its slot, not its text',
-    async ({ id, text, index }) => {
+  it.for([
+    ...LOCAL_PROMPTS.map((prompt, index) => ({
+      ...prompt,
+      index,
+      distribution: 'local' as const
+    })),
+    ...CLOUD_PROMPTS.map((prompt, index) => ({
+      ...prompt,
+      index,
+      distribution: 'cloud' as const
+    }))
+  ])(
+    'renders $distribution slot $index as $text and attributes it to $id',
+    async ({ id, text, index, distribution: promptDistribution }) => {
+      distribution.isCloud = promptDistribution === 'cloud'
       const user = userEvent.setup()
       const { emitted } = render(EmptyState, {
         global: { plugins: [i18n] }
@@ -132,8 +115,12 @@ describe('EmptyState', () => {
     const user = userEvent.setup()
     const { emitted } = render(EmptyState, { global: { plugins: [i18n] } })
 
-    await user.click(screen.getByRole('button', { name: PROMPTS[0].text }))
-    await user.click(screen.getByRole('button', { name: PROMPTS[1].text }))
+    await user.click(
+      screen.getByRole('button', { name: LOCAL_PROMPTS[0].text })
+    )
+    await user.click(
+      screen.getByRole('button', { name: LOCAL_PROMPTS[1].text })
+    )
 
     expect(
       emitted().insert.map((call) => (call as unknown[])[1])
@@ -144,7 +131,9 @@ describe('EmptyState', () => {
     const user = userEvent.setup()
     const { emitted } = render(EmptyState, { global: { plugins: [i18n] } })
 
-    await user.click(screen.getByRole('button', { name: PROMPTS[1].text }))
+    await user.click(
+      screen.getByRole('button', { name: LOCAL_PROMPTS[1].text })
+    )
 
     const [[, attribution]] = emitted().insert as [
       string,
@@ -152,7 +141,7 @@ describe('EmptyState', () => {
     ][]
     expect(attribution.promptTextHash).toBe('ebed5d67')
     expect(attribution.promptTextHash).not.toBe('90a652b3')
-    expect(Object.values(attribution)).not.toContain(PROMPTS[1].text)
+    expect(Object.values(attribution)).not.toContain(LOCAL_PROMPTS[1].text)
   })
 
   it('attributes fallback English copy to its source locale', async () => {
@@ -176,6 +165,33 @@ describe('EmptyState', () => {
       ])
     } finally {
       i18n.global.locale.value = previousLocale
+    }
+  })
+
+  it('attributes translated copy to the locale that supplied it', async () => {
+    const previousLocale = i18n.global.locale.value
+    const previousMessages = structuredClone(i18n.global.getLocaleMessage('zh'))
+    const translatedPrompts = LOCAL_PROMPTS.map(
+      ({ text }, index) => `translated ${index + 1}: ${text}`
+    )
+    i18n.global.mergeLocaleMessage('zh', {
+      agent: { suggestedPrompts: { local: translatedPrompts } }
+    })
+    i18n.global.locale.value = 'zh'
+    try {
+      const user = userEvent.setup()
+      const { emitted } = render(EmptyState, { global: { plugins: [i18n] } })
+
+      await user.click(
+        screen.getByRole('button', { name: translatedPrompts[0] })
+      )
+
+      expect(emitted().insert).toEqual([
+        [translatedPrompts[0], expect.objectContaining({ locale: 'zh' })]
+      ])
+    } finally {
+      i18n.global.locale.value = previousLocale
+      i18n.global.setLocaleMessage('zh', previousMessages)
     }
   })
 })

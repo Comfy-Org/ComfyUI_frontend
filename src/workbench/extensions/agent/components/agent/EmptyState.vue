@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
+import { FALLBACK_LOCALE } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
@@ -21,7 +22,7 @@ const promptKey = isCloud
   : 'agent.suggestedPrompts.local'
 const prompts = computed(() => tm(promptKey) as string[])
 const promptLocale = computed(() =>
-  te(promptKey, locale.value) ? locale.value : 'en'
+  te(`${promptKey}.0`, locale.value) ? locale.value : FALLBACK_LOCALE
 )
 
 /**
@@ -41,21 +42,13 @@ function onPromptClick(prompt: string, index: number): void {
   )
 }
 
-const promptIcons = isCloud
-  ? [
-      'icon-[lucide--image]',
-      'icon-[lucide--video]',
-      'icon-[lucide--message-circle-question-mark]',
-      'icon-[lucide--scan-search]',
-      'icon-[lucide--message-circle-warning]'
-    ]
-  : [
-      'icon-[lucide--image]',
-      'icon-[lucide--video]',
-      'icon-[lucide--message-circle-question-mark]',
-      'icon-[lucide--puzzle]',
-      'icon-[lucide--message-circle-warning]'
-    ]
+const promptIcons = [
+  'icon-[lucide--image]',
+  'icon-[lucide--video]',
+  'icon-[lucide--message-circle-question-mark]',
+  isCloud ? 'icon-[lucide--scan-search]' : 'icon-[lucide--puzzle]',
+  'icon-[lucide--message-circle-warning]'
+]
 </script>
 
 <template>
@@ -85,7 +78,6 @@ const promptIcons = isCloud
           @click="onPromptClick(prompt, index)"
         >
           <span
-            :data-testid="`starter-prompt-icon-${index}`"
             :class="
               cn(
                 'size-3 shrink-0 text-muted-foreground',

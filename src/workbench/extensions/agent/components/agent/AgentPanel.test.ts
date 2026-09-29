@@ -295,7 +295,7 @@ describe('AgentPanel', () => {
         }
       }
     })
-    const prompt = i18n.global.tm('agent.suggestedPrompts.local')[0] as string
+    const prompt = i18n.global.t('agent.suggestedPrompts.local.0')
     const suggestion = screen.getByRole('button', { name: prompt })
     const textarea = screen.getByRole('textbox')
 

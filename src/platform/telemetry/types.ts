@@ -865,9 +865,8 @@ export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
  * A starter prompt by the slot it occupies in the empty state, not by the text
  * it shows: the copy is owned elsewhere and changes without the funnel
  * changing. `unregistered` means the rendered set is larger than this union —
- * a prompt was added to the locale array and not to `starterPrompts.ts` — so a
- * new chip reads as an unmapped slot instead of being silently filed under a
- * neighbour's id.
+ * a prompt was appended to either English distribution list without a matching
+ * entry in `starterPrompts.ts`, so that extra chip reads as an unmapped slot.
  */
 export type AgentStarterPromptId =
   | 'slot_1'
