@@ -46,6 +46,7 @@ import type {
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import type { ProgressToastKind } from '@/platform/workspace/billing/customerAttention'
 import {
+  isParkedCheckout,
   needsCustomerAttention,
   progressToastKind
 } from '@/platform/workspace/billing/customerAttention'
@@ -188,6 +189,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
         record.status === 'pending' &&
         record.authenticationState !== 'requires_action' &&
         record.authenticationState !== 'failed_retryable' &&
+        !isParkedCheckout(record) &&
         record.workspaceId === workspaceStore.activeWorkspaceId
     )
   )

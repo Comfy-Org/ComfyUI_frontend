@@ -53,6 +53,7 @@ const SUBSCRIPTION_PROCESSING =
 const SUBSCRIPTION_ACTION_REQUIRED =
   'Verify your payment to finish setting up your workspace'
 const TOPUP_PROCESSING = 'Processing payment — adding credits...'
+const ACTIVE_STANDARD_PLAN_NAME = 'Standard'
 
 function annualPlan(
   slug: string,
@@ -335,6 +336,40 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
           0
         )
       })
+
+      for (const { parked, operation } of [
+        { parked: false, operation: PROCESSING_OPERATION },
+        { parked: true, operation: PARKED_OPERATION }
+      ]) {
+        test(`${parked ? 'hides' : 'shows'} the setting-up panel in Settings for a ${parked ? 'parked' : 'processing'} subscribe after a reload`, async ({
+          page
+        }) => {
+          await setupToastParity(page, {
+            rails,
+            operation,
+            status: {
+              ...ACTIVE_STANDARD,
+              pending_billing_op_id: OPERATION_ID,
+              pending_billing_op_type: 'subscription'
+            }
+          })
+
+          const adopted = page.waitForResponse(
+            `**/api/billing/ops/${OPERATION_ID}`
+          )
+          await page.goto(`${APP_URL}/?settings=plan-credits`)
+          await waitForCloudApp(page)
+          await adopted
+
+          const settings = page.getByRole('dialog')
+          await expect(
+            settings.getByText(ACTIVE_STANDARD_PLAN_NAME).first()
+          ).toBeVisible({ visible: parked })
+          await expect(settings.getByText(SUBSCRIPTION_PROCESSING)).toHaveCount(
+            parked ? 0 : 1
+          )
+        })
+      }
 
       test('asks again for verification after a reload finds the subscribe still waiting', async ({
         page
