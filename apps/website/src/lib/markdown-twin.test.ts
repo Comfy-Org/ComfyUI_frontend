@@ -7,6 +7,7 @@ import { renderToString } from 'vue/server-renderer'
 
 import WorkshopLoading from '../components/workshop/WorkshopLoading.vue'
 import { isExcludedFromSitemap } from '../config/indexing'
+import type { ModelPageLaunch } from '../config/model-page-launch'
 import {
   routerModelSlugAliases,
   workshopModels
@@ -16,7 +17,15 @@ import { writeSectionIndexes } from './section-index'
 import { htmlToTwin, renderTwin } from './markdown-twin'
 import { markdownTwinPath } from './markdown-twin-path'
 
-const launch = vi.hoisted(() => ({ MODEL_PAGES_INDEXABLE: false }))
+const launch = vi.hoisted(
+  (): {
+    launchedModelPages: ModelPageLaunch
+    launchedWorkflowPages: boolean
+  } => ({
+    launchedModelPages: new Set(),
+    launchedWorkflowPages: false
+  })
+)
 vi.mock(import('../config/model-page-launch'), () => launch)
 
 const loadingSpinner = await renderToString(
@@ -301,13 +310,13 @@ describe('writeMarkdownTwins', () => {
     const modelTwin = `/models/${modelSlug}.md`
 
     afterEach(() => {
-      launch.MODEL_PAGES_INDEXABLE = false
+      launch.launchedModelPages = new Set()
     })
 
     it.for([false, true])(
-      'twins exactly the Models pages the sitemap lists (indexable: %s)',
-      async (indexable) => {
-        launch.MODEL_PAGES_INDEXABLE = indexable
+      'twins exactly the Models pages the sitemap lists (launched: %s)',
+      async (launched) => {
+        launch.launchedModelPages = launched ? 'all' : new Set()
         const root = await mkdtemp(join(tmpdir(), 'twins-'))
         for (const pathname of modelsPages) {
           await mkdir(join(root, pathname), { recursive: true })
@@ -328,7 +337,7 @@ describe('writeMarkdownTwins', () => {
         const report = await writeMarkdownTwins(root, modelsPages)
 
         expect(report.written).toEqual(listedInSitemap)
-        expect(report.written.includes(modelTwin)).toBe(indexable)
+        expect(report.written.includes(modelTwin)).toBe(launched)
       }
     )
   })
@@ -355,11 +364,11 @@ describe('writeMarkdownTwins', () => {
       readFile(join(root, route, 'index.html'), 'utf8')
 
     beforeEach(() => {
-      launch.MODEL_PAGES_INDEXABLE = true
+      launch.launchedModelPages = 'all'
     })
 
     afterEach(() => {
-      launch.MODEL_PAGES_INDEXABLE = false
+      launch.launchedModelPages = new Set()
     })
 
     it('writes no twin and drops the markdown link for a spinner-only page', async () => {

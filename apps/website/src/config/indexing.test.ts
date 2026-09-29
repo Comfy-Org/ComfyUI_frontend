@@ -1,19 +1,19 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   headIndexing,
   isExcludedFromSitemap,
   isIndexableBuild,
   isIndexableModelPage,
-  isNoindexPathname
+  isNoindexPathname,
+  routerIdsByModelPage
 } from './indexing'
-import { hubModelSlugs } from './hub-models'
+import { hubModelSlugs, hubWorkflowHref } from './hub-models'
+import { modelsUrlPaths } from './models-url-registry'
 import {
   routerModelSlugAliases,
   workshopModels
 } from './workshop-browse-content'
-
-const launch = vi.hoisted(() => ({ MODEL_PAGES_INDEXABLE: false }))
-vi.mock(import('./model-page-launch'), () => launch)
+import { workflowModels } from './workshop-workflow-content'
 
 const [hubModelSlug] = hubModelSlugs.values()
 const [{ slug: modelSlug }] = workshopModels
@@ -33,38 +33,22 @@ const MODELS_PAGES_BY_KIND = [
 ] as const
 
 const inSitemap = (pathname: string) =>
-  !isExcludedFromSitemap(`https://comfy.org${pathname}`)
+  !isExcludedFromSitemap(`https://comfy.org${pathname}`, 'all', false)
 
 describe('indexing policy', () => {
-  it('excludes render pages while keeping the public Models marketing routes', () => {
-    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
+  it('keeps the public Models routes and drops the showcase render page', () => {
     expect(isExcludedFromSitemap('https://comfy.org/hub/models/')).toBe(false)
     expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(true)
-    expect(
-      isExcludedFromSitemap(`https://comfy.org/hub/models/${hubModelSlug}/`)
-    ).toBe(true)
     expect(isExcludedFromSitemap('https://comfy.org/models/local/')).toBe(false)
     expect(isExcludedFromSitemap('https://comfy.org/models/showcase/')).toBe(
       true
     )
     expect(isNoindexPathname('/models/showcase/')).toBe(true)
     expect(isNoindexPathname('/zh-CN/models/showcase')).toBe(true)
-    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
-    expect(isExcludedFromSitemap('https://comfy.org/hub/models/')).toBe(false)
   })
-  it.for(['0', '1'])(
-    'excludes retired Workshop in either build (%s)',
-    (value) => {
-      vi.stubEnv('WORKSHOP_IN_BUILD', value)
-      expect(isExcludedFromSitemap('https://comfy.org/workshop/')).toBe(true)
-      expect(
-        isExcludedFromSitemap('https://comfy.org/workshop/models/example/')
-      ).toBe(true)
-    }
-  )
 
-  it('excludes only the disabled Workshop route tree', () => {
-    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
+  it('excludes only the retired Workshop route tree', () => {
+    expect(isExcludedFromSitemap('https://comfy.org/workshop/')).toBe(true)
     expect(
       isExcludedFromSitemap('https://comfy.org/workshop/models/example/')
     ).toBe(true)
@@ -189,27 +173,83 @@ describe('indexing policy', () => {
   )
 
   it.for(MODELS_PAGES_BY_KIND)(
-    'keeps every Models page but the hub out of the sitemap before launch (%s)',
+    'keeps every Models page but the hub out of the sitemap with nothing launched (%s)',
     ([kind, pathname]) => {
-      expect(isIndexableModelPage(pathname)).toBe(false)
-      expect(inSitemap(pathname)).toBe(kind === 'hub')
+      expect(isIndexableModelPage(pathname, new Set(), false)).toBe(false)
+      expect(
+        !isExcludedFromSitemap(`https://comfy.org${pathname}`, new Set(), false)
+      ).toBe(kind === 'hub')
     }
   )
 })
 
-describe('indexing policy once model pages launch', () => {
-  beforeEach(() => {
-    launch.MODEL_PAGES_INDEXABLE = true
-  })
-  afterEach(() => {
-    launch.MODEL_PAGES_INDEXABLE = false
-  })
-
+describe('model page launch', () => {
   it.for(MODELS_PAGES_BY_KIND)(
     'lists only the hub and canonical model pages (%s)',
     ([kind, pathname]) => {
-      expect(isIndexableModelPage(pathname)).toBe(kind === 'model')
+      expect(isIndexableModelPage(pathname, 'all', false)).toBe(
+        kind === 'model'
+      )
       expect(inSitemap(pathname)).toBe(kind === 'hub' || kind === 'model')
     }
   )
+
+  it('indexes every canonical model page and no alias', () => {
+    expect(
+      workshopModels.every(({ href }) => isIndexableModelPage(href, 'all'))
+    ).toBe(true)
+    expect(
+      [...routerModelSlugAliases.keys()].some((alias) =>
+        isIndexableModelPage(`/models/${alias}/`, 'all', true)
+      )
+    ).toBe(false)
+  })
+
+  it('rolls back to only the model pages of the Router ids it keeps', () => {
+    const kept = new Set(['krea/krea-2-large'])
+    const expected = workshopModels
+      .filter(({ routerId }) => kept.has(routerId))
+      .map(({ slug }) => slug)
+    expect(expected).not.toHaveLength(0)
+    expect(
+      workshopModels
+        .filter(({ href }) => isIndexableModelPage(href, kept))
+        .map(({ slug }) => slug)
+    ).toEqual(expected)
+    expect(
+      workshopModels.some(({ href }) => isIndexableModelPage(href, new Set()))
+    ).toBe(false)
+    expect(
+      workshopModels.some(
+        ({ href }) =>
+          !isExcludedFromSitemap(`https://comfy.org${href}`, new Set(), false)
+      )
+    ).toBe(false)
+  })
+
+  it('keeps workflow pages hidden until their switch launches them', () => {
+    const workflowPaths = workflowModels.map(({ slug }) => hubWorkflowHref(slug))
+    expect(workflowPaths.length).toBeGreaterThan(0)
+    expect(
+      workflowPaths.some((path) => isIndexableModelPage(path, 'all', false))
+    ).toBe(false)
+    expect(
+      workflowPaths.every((path) => isIndexableModelPage(path, 'all', true))
+    ).toBe(true)
+    expect(
+      workshopModels.every(({ href }) =>
+        isIndexableModelPage(href, 'all', false)
+      )
+    ).toBe(true)
+  })
+
+  it('fails loudly when model page URLs drift from the Router id map', () => {
+    const movedModelPaths = workshopModels.map(({ slug }) => `/models/${slug}`)
+    expect(() => routerIdsByModelPage(movedModelPaths, workshopModels)).toThrow(
+      'Model pages with no Router id'
+    )
+    expect(
+      routerIdsByModelPage(modelsUrlPaths('model'), workshopModels).size
+    ).toBe(workshopModels.length)
+  })
 })

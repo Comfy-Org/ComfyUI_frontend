@@ -1,8 +1,10 @@
 import { isProductionBuild } from './build-env'
 import { LOCALE_CODES, LOCALES } from './locales'
-import { MODEL_PAGES_INDEXABLE } from './model-page-launch'
+import type { ModelPageLaunch } from './model-page-launch'
+import { launchedModelPages, launchedWorkflowPages } from './model-page-launch'
 import { models } from './models'
-import { modelsUrlKind } from './models-url-registry'
+import { modelsUrlKind, modelsUrlPaths } from './models-url-registry'
+import { workshopModels } from './workshop-browse-content'
 import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
 
 const PAYMENT_STATUSES = ['success', 'failed'] as const
@@ -80,16 +82,49 @@ export function isNoindexPathname(pathname: string): boolean {
   return NOINDEX_PATHNAMES.has(normalizePathname(pathname))
 }
 
-export function isIndexableModelPage(pathname: string): boolean {
-  return MODEL_PAGES_INDEXABLE && modelsUrlKind(pathname) === 'model'
+export function routerIdsByModelPage(
+  modelPaths: readonly string[],
+  pages: readonly { href: string; routerId: string }[]
+): ReadonlyMap<string, string> {
+  const routerIdByHref = new Map(
+    pages.map(({ href, routerId }) => [normalizePathname(href), routerId])
+  )
+  const unmatched = modelPaths.filter((path) => !routerIdByHref.has(path))
+  if (unmatched.length > 0)
+    throw new Error(`Model pages with no Router id: ${unmatched.join(', ')}`)
+  return routerIdByHref
 }
 
-export function isExcludedFromSitemap(page: string): boolean {
+const routerIdByModelPage = routerIdsByModelPage(
+  modelsUrlPaths('model'),
+  workshopModels
+)
+
+export function isIndexableModelPage(
+  pathname: string,
+  launched: ModelPageLaunch = launchedModelPages,
+  workflowsLaunched: boolean = launchedWorkflowPages
+): boolean {
+  const kind = modelsUrlKind(pathname)
+  if (kind === 'workflow') return workflowsLaunched
+  if (kind !== 'model') return false
+  const routerId = routerIdByModelPage.get(normalizePathname(pathname))
+  return (
+    routerId !== undefined && (launched === 'all' || launched.has(routerId))
+  )
+}
+
+export function isExcludedFromSitemap(
+  page: string,
+  launched: ModelPageLaunch = launchedModelPages,
+  workflowsLaunched: boolean = launchedWorkflowPages
+): boolean {
   const pathname = normalizePathname(new URL(page).pathname)
   return (
     isNoindexPathname(pathname) ||
     isLegacyWorkshopRoute(pathname) ||
     MODEL_REDIRECT_PATHNAMES.has(pathname) ||
-    (isWorkshopRoute(pathname) && !isIndexableModelPage(pathname))
+    (isWorkshopRoute(pathname) &&
+      !isIndexableModelPage(pathname, launched, workflowsLaunched))
   )
 }
