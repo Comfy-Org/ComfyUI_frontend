@@ -12,6 +12,7 @@ import { vi } from 'vitest'
 import type {
   BillingCapabilities,
   BillingDeclineReason,
+  BillingOperationServerPhase,
   BillingOperationState,
   BillingPlansData,
   BillingResult,
@@ -368,6 +369,19 @@ export function pendingOperation(id = 'op_1'): BillingOperationState {
   return {
     ...operationIdentity(id),
     phase: 'pending',
+    customerActionSeen: false
+  }
+}
+
+/** Pending in a phase the server reports while it waits on the customer. */
+export function serverPhasePendingOperation(
+  serverPhase: BillingOperationServerPhase,
+  id = 'op_1'
+): PendingBillingOperation {
+  return {
+    ...operationIdentity(id),
+    phase: 'pending',
+    serverPhase,
     customerActionSeen: false
   }
 }
