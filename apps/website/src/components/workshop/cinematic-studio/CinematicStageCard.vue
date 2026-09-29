@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Reel } from '../../../lib/workshop/cinematic-studio/reel'
@@ -70,10 +72,17 @@ const siblings = computed(() =>
       />
     </header>
     <div
-      class="flex min-h-72 flex-col items-center justify-center gap-4 p-4 sm:p-6 lg:min-h-112"
+      :class="
+        cn(
+          'flex flex-col items-center justify-center gap-4 sm:min-h-72 sm:p-6 lg:min-h-112',
+          !current && 'min-h-72 p-4'
+        )
+      "
+      data-testid="cinematic-output-body"
     >
       <template v-if="current">
         <CinematicTakeFrame
+          class="max-sm:rounded-none"
           :current
           :member-workspace="memberWorkspace"
           :locale
@@ -83,7 +92,7 @@ const siblings = computed(() =>
           :takes="siblings"
           :member-workspace="memberWorkspace"
           :locale
-          class="w-full"
+          class="w-full max-sm:px-4"
           @retry="emit('retry', ...$event)"
         />
       </template>
