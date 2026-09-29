@@ -180,8 +180,10 @@ const fill = computed(() =>
           </Badge>
         </div>
 
+        <!-- Two lines are reserved whether the name needs them or not, so the
+          banner is the same height on every tab. -->
         <h2
-          class="text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
+          class="line-clamp-2 min-h-[2lh] text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
         >
           {{ active.title }}
         </h2>

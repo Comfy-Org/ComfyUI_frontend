@@ -53,7 +53,7 @@ const columns = computed(() =>
   >
     <div :class="cn('pointer-events-none absolute inset-1 grid', columns)">
       <div
-        class="rounded-xl bg-primary-comfy-canvas transition-transform duration-300 ease-out motion-reduce:transition-none"
+        class="rounded-xl bg-transparency-white-t20 transition-transform duration-300 ease-out motion-reduce:transition-none"
         :style="{ transform: marker }"
       />
     </div>
@@ -68,8 +68,8 @@ const columns = computed(() =>
         cn(
           'relative inline-flex h-9 cursor-pointer items-center justify-center rounded-xl px-5 text-sm font-semibold whitespace-nowrap transition-colors duration-300 ease-out outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 motion-reduce:transition-none max-sm:px-3',
           active === tab
-            ? 'text-page'
-            : 'text-content-secondary hover:text-content-bright'
+            ? 'text-primary-warm-white'
+            : 'text-primary-warm-gray hover:text-content-secondary'
         )
       "
       @click="active = tab"
