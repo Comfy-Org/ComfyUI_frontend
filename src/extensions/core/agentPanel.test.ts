@@ -1061,6 +1061,42 @@ describe('AgentPanel extension flag gate', () => {
       })
     })
 
+    it('reports the same exit again when its retry state changes', async () => {
+      agentFlagEnabled.value = true
+      openDialog()
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+
+      await loadEntryAndSetup()
+      await flush()
+
+      vi.mocked(consentStore.load).mockRejectedValueOnce(new Error('offline'))
+      closeDialog()
+      await flush()
+      await flush()
+
+      Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await flush()
+      await flush()
+
+      vi.mocked(consentStore.load).mockRejectedValueOnce(new Error('offline'))
+      Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-c' })
+      Object.assign(consentStore, { identity: 'account-a/workspace-c' })
+      await flush()
+
+      expect(await offerExited()).toHaveBeenCalledTimes(2)
+      expect(await offerExited()).toHaveBeenNthCalledWith(1, {
+        exit: 'consent_read_failed',
+        stage: 'load',
+        retry_armed: true
+      })
+      expect(await offerExited()).toHaveBeenNthCalledWith(2, {
+        exit: 'consent_read_failed',
+        stage: 'load',
+        retry_armed: false
+      })
+    })
+
     it('reports nothing for an unflagged page load', async () => {
       // Not because the reporter is gated on the flag - it is not - but because
       // `loadConsentIfEligible` returns on an off flag before reaching any

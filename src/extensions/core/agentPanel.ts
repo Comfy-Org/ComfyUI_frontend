@@ -211,8 +211,9 @@ export function registerAgentPanelExtension(): void {
        * later page load of every user who has seen the card. And its reason
        * enum means "a surface is holding the offer", which none of these are.
        *
-       * Dedup is per page load and per (stage, exit), so this reports the
-       * *presence* of an ending, never its frequency - `loadConsentIfEligible`
+       * Dedup is per page load and per (stage, exit, retry state), so this
+       * reports the presence of each ending state, never its frequency -
+       * `loadConsentIfEligible`
        * is re-driven by the identity watcher, the flag gate, the release
        * watcher and `withConsent`'s settlement, so an undeduplicated count
        * would measure how long the tab was open.
@@ -230,13 +231,14 @@ export function registerAgentPanelExtension(): void {
         exit: AgentConsentOfferExit,
         stage: AgentConsentOfferStage
       ): void => {
-        const key = `${stage}:${exit}`
+        const retryArmed = offerHeld.value
+        const key = `${stage}:${exit}:${retryArmed}`
         if (reportedExits.has(key)) return
         reportedExits.add(key)
         useTelemetry()?.trackAgentConsentOfferExited({
           exit,
           stage,
-          retry_armed: offerHeld.value
+          retry_armed: retryArmed
         })
       }
 
