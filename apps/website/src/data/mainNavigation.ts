@@ -1,5 +1,5 @@
 import { externalLinks, getRoutes, localizeHref } from '../config/routes'
-import { categoryPath } from './learningTutorials'
+import { categoryPath } from './learningPaths'
 import type { Locale } from '../i18n/translations'
 import { t } from '../i18n/translations'
 
