@@ -10,6 +10,7 @@ import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { TaskId } from '@/platform/tasks/services/taskService'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -91,7 +92,7 @@ function closeDialog() {
   isExpanded.value = false
 }
 
-async function cancelDownload(taskId: string) {
+async function cancelDownload(taskId: TaskId) {
   try {
     await assetDownloadStore.cancelDownload(taskId)
   } catch (error) {

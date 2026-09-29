@@ -200,6 +200,65 @@ describe('useUploadModelWizard', () => {
     expect(wizard.uploadError.value).toBe('Network error')
   })
 
+  it('ends an async upload as cancelled and ignores later task updates', async () => {
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
+    vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
+      type: 'async',
+      task: {
+        task_id: 'task-cancelled',
+        status: 'created',
+        message: 'Download queued'
+      }
+    })
+
+    const wizard = setupUploadModelWizard(modelTypes)
+    wizard.wizardData.value.url = 'https://civitai.com/models/12345'
+    wizard.selectedModelType.value = 'checkpoints'
+    await wizard.uploadModel()
+
+    const handler = vi
+      .mocked(api.addEventListener)
+      .mock.calls.find((call) => call[0] === 'asset_download')?.[1] as
+      | ((event: CustomEvent) => void)
+      | undefined
+    expect(handler).toBeDefined()
+
+    handler!(
+      new CustomEvent('asset_download', {
+        detail: {
+          task_id: 'task-cancelled',
+          asset_name: 'model.safetensors',
+          bytes_total: 1000,
+          bytes_downloaded: 200,
+          progress: 20,
+          status: 'cancelled'
+        }
+      })
+    )
+    await nextTick()
+
+    expect(wizard.uploadStatus.value).toBe('error')
+    expect(wizard.uploadError.value).toBe('Cancelled')
+
+    handler!(
+      new CustomEvent('asset_download', {
+        detail: {
+          task_id: 'task-cancelled',
+          asset_id: 'asset-late',
+          asset_name: 'model.safetensors',
+          bytes_total: 1000,
+          bytes_downloaded: 1000,
+          progress: 100,
+          status: 'completed'
+        }
+      })
+    )
+    await nextTick()
+
+    expect(wizard.uploadStatus.value).toBe('error')
+  })
+
   it('accepts civitai.red model URLs', async () => {
     const { assetService } =
       await import('@/platform/assets/services/assetService')

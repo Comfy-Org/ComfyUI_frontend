@@ -199,6 +199,17 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads[0].status).toBe('cancelled')
     })
 
+    it('cancels a queued backend task', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue(true)
+      dispatch(createDownloadMessage({ status: 'created' }))
+
+      await store.cancelDownload('task-123')
+
+      expect(taskService.cancelTask).toHaveBeenCalledWith('task-123')
+      expect(store.finishedDownloads[0].status).toBe('cancelled')
+    })
+
     it('keeps the download active when backend cancellation fails', async () => {
       const store = useAssetDownloadStore()
       vi.mocked(taskService.cancelTask).mockRejectedValue(new Error('network'))
@@ -321,6 +332,39 @@ describe('useAssetDownloadStore', () => {
       })
       expect(store.sessionDownloadCount).toBe(1)
       expect(store.lastCompletedDownload?.modelType).toBe('checkpoints')
+    })
+
+    it('reconciles a locally cancelled download that completed authoritatively', async () => {
+      const store = useAssetDownloadStore()
+      store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
+      vi.mocked(taskService.cancelTask).mockResolvedValue(true)
+      vi.mocked(taskService.getTask).mockResolvedValue(createTaskResponse())
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(taskService.getTask).toHaveBeenCalledWith('task-123')
+      expect(store.finishedDownloads[0]).toMatchObject({
+        status: 'completed',
+        assetId: 'asset-456'
+      })
+      expect(store.lastCompletedDownload?.modelType).toBe('checkpoints')
+    })
+
+    it('stops reconciling after the backend confirms cancellation', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue(true)
+      vi.mocked(taskService.getTask).mockResolvedValue(
+        createTaskResponse({ status: 'cancelled', result: undefined })
+      )
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(20_000)
+
+      expect(taskService.getTask).toHaveBeenCalledTimes(1)
+      expect(store.finishedDownloads[0].status).toBe('cancelled')
     })
 
     it('does not restore a dismissed failed download when an in-flight poll finishes', async () => {

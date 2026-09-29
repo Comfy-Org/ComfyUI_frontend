@@ -6,6 +6,34 @@ import { taskService } from './taskService'
 
 vi.mock(import('@/scripts/api'))
 
+const taskResponse = {
+  id: '1396cc07-bab2-4f12-9b54-741f83f9224c',
+  idempotency_key: 'task-key',
+  task_name: 'task:download_file',
+  payload: {},
+  status: 'cancelled',
+  create_time: '2026-09-29T00:00:00.000Z',
+  update_time: '2026-09-29T00:00:01.000Z'
+} as const
+
+describe('taskService.getTask', () => {
+  it('parses the generated cancelled task status', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(Response.json(taskResponse))
+
+    await expect(taskService.getTask(taskResponse.id)).resolves.toMatchObject({
+      status: 'cancelled'
+    })
+  })
+
+  it('encodes task ids before placing them in a request path', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(Response.json(taskResponse))
+
+    await taskService.getTask('../task/123')
+
+    expect(api.fetchApi).toHaveBeenCalledWith('/tasks/..%2Ftask%2F123')
+  })
+})
+
 describe('taskService.cancelTask', () => {
   it('requests cancellation through the owned task endpoint', async () => {
     vi.mocked(api.fetchApi).mockResolvedValue(

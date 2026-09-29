@@ -1,5 +1,5 @@
 /**
- * Task Service for polling background task status.
+ * Task Service for reading and cancelling background tasks.
  *
  * CAVEAT: The `payload` and `result` schemas below are specific to
  * `task:download_file` tasks. Other task types may have different
@@ -9,17 +9,11 @@
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
+import { zTaskResponse as zGeneratedTaskResponse } from '@comfyorg/ingest-types/zod'
+
 import { api } from '@/scripts/api'
 
 const TASKS_ENDPOINT = '/tasks'
-
-const zTaskStatus = z.enum([
-  'created',
-  'running',
-  'completed',
-  'failed',
-  'cancelled'
-])
 
 const zDownloadFileResult = z.object({
   success: z.boolean(),
@@ -33,18 +27,8 @@ const zDownloadFileResult = z.object({
   error: z.string().optional()
 })
 
-const zTaskResponse = z.object({
-  id: z.string().uuid(),
-  idempotency_key: z.string(),
-  task_name: z.string(),
-  payload: z.record(z.unknown()),
-  status: zTaskStatus,
-  result: zDownloadFileResult.optional(),
-  error_message: z.string().optional(),
-  create_time: z.string().datetime(),
-  update_time: z.string().datetime(),
-  started_at: z.string().datetime().optional(),
-  completed_at: z.string().datetime().optional()
+const zTaskResponse = zGeneratedTaskResponse.extend({
+  result: zDownloadFileResult.optional()
 })
 
 export type TaskResponse = z.infer<typeof zTaskResponse>

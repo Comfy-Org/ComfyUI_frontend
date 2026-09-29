@@ -1,4 +1,4 @@
-import type { PromptInfo } from '@comfyorg/ingest-types'
+import type { PromptInfo, TaskResponse } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
@@ -117,14 +117,14 @@ export interface LogsRawResponse {
   entries: LogEntry[]
 }
 export type FeatureFlagsWsMessage = Record<string, unknown>
-type AssetTaskStatus = 'created' | 'running' | 'completed' | 'failed'
+type AssetTaskStatus = TaskResponse['status']
 export interface AssetDownloadWsMessage {
   task_id: string
   asset_name: string
   bytes_total: number
   bytes_downloaded: number
   progress: number
-  status: AssetTaskStatus | 'cancelled'
+  status: AssetTaskStatus
   asset_id?: string
   error?: string
 }
@@ -137,7 +137,7 @@ export interface AssetExportWsMessage {
   bytes_total: number
   bytes_processed: number
   progress: number
-  status: AssetTaskStatus
+  status: Exclude<AssetTaskStatus, 'cancelled'>
   error?: string
 }
 

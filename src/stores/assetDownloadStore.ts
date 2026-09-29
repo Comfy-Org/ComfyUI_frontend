@@ -19,6 +19,7 @@ export interface AssetDownload {
   error?: string
   modelType?: string
   acknowledged?: boolean
+  needsCancellationReconciliation?: boolean
 }
 
 interface CompletedDownload {
@@ -84,7 +85,8 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       (d) =>
         d.status === 'created' ||
         d.status === 'running' ||
-        d.status === 'failed'
+        d.status === 'failed' ||
+        (d.status === 'cancelled' && d.needsCancellationReconciliation)
     )
   )
   const hasRecheckableDownloads = computed(
@@ -170,6 +172,13 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
           task.status === 'failed' ||
           task.status === 'cancelled'
         ) {
+          if (task.status === 'cancelled') {
+            const current = downloads.value.get(download.taskId)
+            if (current === download) {
+              current.needsCancellationReconciliation = false
+            }
+            return
+          }
           const result = task.result
           handleAssetDownload(
             new CustomEvent('asset_download', {
@@ -241,6 +250,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       }
       current.status = 'cancelled'
       current.lastUpdate = Date.now()
+      current.needsCancellationReconciliation = true
     } finally {
       cancellingTaskIds.value.delete(taskId)
     }
