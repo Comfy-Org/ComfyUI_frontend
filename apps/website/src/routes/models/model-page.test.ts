@@ -99,6 +99,31 @@ describe('Models route preparation', () => {
     }
   )
 
+  it('shows only capability tags, in their original order', async () => {
+    mocks.lookup.mockReturnValue({
+      ...model,
+      name: 'FLUX 2 Max Text-to-Image',
+      provider: 'Black Forest Labs',
+      capabilities: [
+        'bfl',
+        'flux',
+        'high-detail',
+        'flux-2',
+        'text-to-image',
+        'premium'
+      ]
+    })
+
+    const page = await prepareModelPage(model.slug)
+
+    if (page.kind !== 'page') throw new Error('Expected canonical page')
+    expect(page.tags.map((tag) => tag.label)).toEqual([
+      'high-detail',
+      'text-to-image',
+      'premium'
+    ])
+  })
+
   it('uses a provider heading only when every related card has that provider', async () => {
     mocks.related.mockReturnValue([{ ...model, slug: 'related' }])
     expect(await prepareModelPage(model.slug)).toHaveProperty(

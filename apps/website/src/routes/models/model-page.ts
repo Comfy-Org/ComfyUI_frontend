@@ -8,6 +8,7 @@ import { relatedModels } from '../../config/workshop-related'
 import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { describesCapability } from '../../lib/workshop/model-tags'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 
 const TAGS_SHOWN = 3
@@ -38,10 +39,12 @@ export async function prepareModelPage(
     related.every((other) => other.provider === model.provider)
       ? model.provider
       : undefined
-  const tags = model.capabilities.map((capability) => ({
-    label: capability,
-    search: catalogSearch({ query: capability })
-  }))
+  const tags = model.capabilities
+    .filter((capability) => describesCapability(capability, model))
+    .map((capability) => ({
+      label: capability,
+      search: catalogSearch({ query: capability })
+    }))
   return {
     kind: 'page' as const,
     model,
