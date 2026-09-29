@@ -81,9 +81,13 @@ export class AgentPanel {
     if (await this.root.isVisible()) return this.root
     await onPanelHidden?.()
 
-    if ((await this.openButton.getAttribute('aria-pressed')) !== 'true') {
-      await this.openButton.click()
-    }
+    await this.openButton.evaluate((button) => {
+      // Keep the state check and click in one browser task. Startup activation
+      // can otherwise open after a Playwright attribute read but before its
+      // later click lands, turning that click into an unintended close.
+      if (button.getAttribute('aria-pressed') !== 'true')
+        (button as HTMLElement).click()
+    })
 
     // A click may be waiting on consent while aria-pressed remains false.
     // Waiting on the caller's contract avoids an unsafe second toggle.

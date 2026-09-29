@@ -185,6 +185,35 @@ test.describe(
       )
     })
 
+    test('does not close startup activation that wins before the click', async ({
+      page
+    }) => {
+      await bootAgentApp(page, true)
+      const agentPanel = new AgentPanel(page)
+      await expect(agentPanel.root).toBeVisible({ timeout: 8_000 })
+      await agentPanel.root
+        .getByRole('button', { name: enMessages.g.close })
+        .click()
+      await expect(agentPanel.root).toHaveCount(0)
+
+      await agentPanel.open(undefined, async () => {
+        await agentPanel.openButton.evaluate((button) => {
+          const element = button as HTMLElement
+          element.style.pointerEvents = 'none'
+          window.setTimeout(() => {
+            if (button.getAttribute('aria-pressed') !== 'true') element.click()
+            element.style.removeProperty('pointer-events')
+          }, 100)
+        })
+      })
+
+      await expect(agentPanel.root).toBeVisible()
+      await expect(agentPanel.openButton).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      )
+    })
+
     test('keeps the dock within the viewport and its documented width cap', async ({
       page
     }) => {
