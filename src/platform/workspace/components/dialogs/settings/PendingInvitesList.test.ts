@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -53,6 +53,10 @@ function renderComponent(invites: WorkspacePendingInvite[]) {
 }
 
 describe('PendingInvitesList', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(document, 'execCommand')
+  })
+
   it('shows the empty state without action buttons when there are no invites', () => {
     renderComponent([])
 
@@ -156,7 +160,7 @@ describe('PendingInvitesList', () => {
       value: vi.fn().mockReturnValue(false),
       configurable: true
     })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     renderComponent([createInvite({ token: 'tok-9' })])
 
     await userEvent.click(
@@ -179,7 +183,5 @@ describe('PendingInvitesList', () => {
         name: 'workspacePanel.members.actions.copyInviteLink'
       })
     ).toBeInTheDocument()
-    consoleError.mockRestore()
-    Reflect.deleteProperty(document, 'execCommand')
   })
 })
