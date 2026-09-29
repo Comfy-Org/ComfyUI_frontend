@@ -47,25 +47,6 @@ const {
         </span>
       </BrandButton>
     </div>
-
-    <div
-      class="overflow-hidden rounded-4xl border border-white/10 bg-primary-comfy-ink-light shadow-2xl shadow-black/20"
-    >
-      <video
-        :aria-label="t('platform.serverlessApps.videoLabel', locale)"
-        class="block size-full object-cover"
-        autoplay
-        muted
-        loop
-        playsinline
-        preload="metadata"
-      >
-        <source
-          src="/assets/platform/serverless/app-serverless.mp4"
-          type="video/mp4"
-        />
-      </video>
-    </div>
   </section>
 
   <section
