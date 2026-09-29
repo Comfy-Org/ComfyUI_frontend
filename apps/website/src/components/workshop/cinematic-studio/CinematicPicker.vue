@@ -7,6 +7,7 @@ import type {
   DirectionPart
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
+import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
 import CinematicGradeImageTile from './CinematicGradeImageTile.vue'
 import CinematicOptionGrid from './CinematicOptionGrid.vue'
 import CinematicOptionList from './CinematicOptionList.vue'
@@ -30,7 +31,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const palette = defineModel<File | undefined>('palette')
+const palette = defineModel<StudioImage | undefined>('palette')
 
 const multiple = groups.length > 1
 const activePart = ref(groups[0].part)

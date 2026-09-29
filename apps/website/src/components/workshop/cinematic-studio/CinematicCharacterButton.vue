@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import { UserRound, X } from '@lucide/vue'
-import { useObjectUrl } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
 import CinematicTooltip from './CinematicTooltip.vue'
+import { useImagePreview } from './useImagePreview'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const file = defineModel<File | undefined>()
-const preview = useObjectUrl(file)
+const file = defineModel<StudioImage | undefined>()
+const preview = useImagePreview(() => file.value)
 const input = useTemplateRef<HTMLInputElement>('input')
 const action = computed(() => {
   const label = tc('cinematic.reference.castAction', locale)

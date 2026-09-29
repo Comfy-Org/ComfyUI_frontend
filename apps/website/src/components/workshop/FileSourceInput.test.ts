@@ -310,3 +310,89 @@ describe('file source selection', () => {
     expect(screen.queryByRole('img')).toBeNull()
   })
 })
+
+describe('undoing a removal', () => {
+  const sample: FileValue = {
+    name: 'courtyard.png',
+    size: 2048,
+    type: 'image/png',
+    sourceUrl: 'https://example.test/courtyard.png'
+  }
+
+  it('offers the removed picture back instead of sending the reader to the example', async () => {
+    const values = mountInput(false, { ...field, multiple: false }, sample)
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getByRole('button', { name: /Remove/ }))
+    expect(values.value).toBeUndefined()
+
+    const undo = screen.getByTestId('removed-file-undo')
+    expect(undo).toHaveTextContent('courtyard.png removed')
+    await visitor.click(
+      within(undo).getByRole('button', { name: 'Put it back' })
+    )
+
+    expect(values.value).toEqual(sample)
+    expect(screen.queryByTestId('removed-file-undo')).toBeNull()
+  })
+
+  it('puts a picture back where it was, not at the end of the row', async () => {
+    const second: FileValue = {
+      name: 'rooftop.png',
+      size: 4096,
+      type: 'image/png',
+      sourceUrl: 'https://example.test/rooftop.png'
+    }
+    const values = mountInput(false, field, [sample, second])
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getAllByRole('button', { name: /Remove/ })[0])
+    expect(values.value).toEqual([second])
+
+    await visitor.click(
+      within(screen.getByTestId('removed-file-undo')).getByRole('button', {
+        name: 'Put it back'
+      })
+    )
+
+    expect(values.value).toEqual([sample, second])
+  })
+
+  it('drops the offer once the reader has chosen a file themselves', async () => {
+    mountInput(false, { ...field, multiple: false }, sample)
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getByRole('button', { name: /Remove/ }))
+    expect(screen.getByTestId('removed-file-undo')).toBeTruthy()
+
+    await visitor.upload(
+      screen.getByLabelText('Images', { selector: 'input' }),
+      new File([new Uint8Array(8)], 'mine.png', { type: 'image/png' })
+    )
+
+    expect(screen.queryByTestId('removed-file-undo')).toBeNull()
+  })
+
+  // Choosing an example rewrites the whole form from outside this field. The
+  // offer is about one removal, so it cannot survive the selection changing
+  // underneath it and put the old file back over the new one.
+  it('drops the offer when the form replaces the selection', async () => {
+    const values = mountInput(false, { ...field, multiple: false }, sample)
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getByRole('button', { name: /Remove/ }))
+    expect(screen.getByTestId('removed-file-undo')).toBeTruthy()
+
+    const fromExample: FileValue = {
+      name: 'rooftop.png',
+      size: 4096,
+      type: 'image/png',
+      sourceUrl: 'https://example.test/rooftop.png'
+    }
+    values.value = fromExample
+    await nextTick()
+
+    expect(screen.queryByTestId('removed-file-undo')).toBeNull()
+    expect(values.value).toEqual(fromExample)
+  })
+})

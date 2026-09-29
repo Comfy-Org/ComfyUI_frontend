@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { Pipette } from '@lucide/vue'
-import { useObjectUrl } from '@vueuse/core'
 import { useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
 import CinematicCheckBadge from './CinematicCheckBadge.vue'
+import { useImagePreview } from './useImagePreview'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const file = defineModel<File | undefined>()
+const file = defineModel<StudioImage | undefined>()
 const emit = defineEmits<{ picked: [] }>()
-const preview = useObjectUrl(file)
+const preview = useImagePreview(() => file.value)
 const input = useTemplateRef<HTMLInputElement>('input')
 
 function choose(event: Event) {

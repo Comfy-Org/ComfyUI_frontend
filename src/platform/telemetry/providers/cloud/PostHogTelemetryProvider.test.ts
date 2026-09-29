@@ -440,13 +440,19 @@ describe('PostHogTelemetryProvider', () => {
       await vi.dynamicImportSettled()
 
       provider.trackAgentConsentShown({ trigger: 'first_load' })
-      provider.trackAgentConsentResolved({ decision: 'accepted' })
+      provider.trackAgentConsentResolved({
+        decision: 'dismissed',
+        save_error_shown: true
+      })
       provider.trackAgentOnboardingShown()
       provider.trackAgentOnboardingStep({ step: 4, action: 'finish' })
 
       expect(hoisted.mockCapture.mock.calls).toEqual([
         [TelemetryEvents.AGENT_CONSENT_SHOWN, { trigger: 'first_load' }],
-        [TelemetryEvents.AGENT_CONSENT_RESOLVED, { decision: 'accepted' }],
+        [
+          TelemetryEvents.AGENT_CONSENT_RESOLVED,
+          { decision: 'dismissed', save_error_shown: true }
+        ],
         [TelemetryEvents.AGENT_ONBOARDING_SHOWN, {}],
         [TelemetryEvents.AGENT_ONBOARDING_STEP, { step: 4, action: 'finish' }]
       ])
@@ -792,6 +798,36 @@ describe('PostHogTelemetryProvider', () => {
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentConsentNotOffered({ reason: 'tour_active' }),
         properties: { reason: 'tour_active' }
+      },
+      {
+        event: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentConsentOfferExited({
+            exit: 'consent_unresolved',
+            stage: 'load',
+            retry_armed: false
+          }),
+        properties: {
+          exit: 'consent_unresolved',
+          stage: 'load',
+          retry_armed: false
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentConsentOfferExited({
+            exit: 'card_closed_before_mount',
+            stage: 'request',
+            retry_armed: false,
+            trigger: 'first_load'
+          }),
+        properties: {
+          exit: 'card_closed_before_mount',
+          stage: 'request',
+          retry_armed: false,
+          trigger: 'first_load'
+        }
       },
       {
         event: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,

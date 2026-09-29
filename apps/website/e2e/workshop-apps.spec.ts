@@ -74,6 +74,81 @@ test('sends the old studio address to the app page it named', async ({
   await expect(page).toHaveURL(/\/models\/apps\/reshoot\/\?ux=d&model=flux$/)
 })
 
+test.describe('GitHub link before an app repo is published', () => {
+  for (const path of [
+    '/models/apps/cinematic-studio/',
+    '/models/apps/reshoot/'
+  ])
+    test(`shows a placeholder, not a link, on ${path}`, async ({
+      page,
+      context
+    }) => {
+      await mockFlags(context, { apps: true, workflows: false })
+      await page.goto(path)
+      await expect(page.getByText('GitHub · Coming soon')).toHaveCount(1)
+      await expect(
+        page.getByRole('link', { name: 'View on GitHub' })
+      ).toHaveCount(0)
+    })
+})
+
+test('asks Safari for a first frame on the Re-shoot example video tile', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/reshoot/')
+  await expect(page.getByTestId('example-video')).toHaveAttribute(
+    'src',
+    /#t=0\.1$/
+  )
+})
+
+test('@mobile keeps the Re-shoot aim badges to one line on a phone', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/reshoot/')
+  await page.getByText('Sci-fi pilot').first().click()
+
+  const viewport = page.getByTestId('reshoot-viewport').first()
+  await expect(
+    viewport.getByText('Drag to orbit', { exact: true })
+  ).toBeVisible()
+  await expect(viewport.getByText(/Scroll to move closer/)).toBeHidden()
+
+  for (const badge of [
+    viewport.getByTestId('reshoot-drag-hint'),
+    viewport.getByTestId('reshoot-angle-readout')
+  ]) {
+    const box = await badge.boundingBox()
+    expect(box?.height).toBeLessThan(40)
+  }
+})
+
+test('@mobile pins the Re-shoot preview while the camera controls scroll under it', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/reshoot/')
+  await page.getByText('Sci-fi pilot').first().click()
+
+  const frame = page.getByTestId('reshoot-frame')
+  const distance = page.getByRole('slider', { name: /Distance/ })
+  await page.getByTestId('reshoot-action').scrollIntoViewIfNeeded()
+  const pinned = await frame.boundingBox()
+  expect(pinned?.y).toBeGreaterThanOrEqual(0)
+  expect(pinned?.y).toBeLessThan(120)
+
+  const before = Number(await distance.inputValue())
+  await page.getByRole('button', { name: 'Move the camera closer' }).tap()
+  await expect
+    .poll(async () => Number(await distance.inputValue()))
+    .toBeLessThan(before)
+})
+
 test('shows a preview frame for every Cinematic Studio shot option', async ({
   page,
   context

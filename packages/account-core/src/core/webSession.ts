@@ -7,7 +7,8 @@ import {
   zCreateSessionResponse,
   zDeleteSessionResponse,
   zErrorResponse,
-  zGetSessionResponse
+  zGetSessionResponse,
+  zRevokeAllSessionsResponse
 } from '@comfyorg/ingest-types/zod'
 
 import type {
@@ -166,6 +167,31 @@ export async function deleteWebSession(
 
   const parsed = zDeleteSessionResponse.safeParse(await readJson(sent.response))
   if (!parsed.success || !parsed.data.success) {
+    return failure('SESSION_UNAVAILABLE', sent.response.status)
+  }
+  return { status: 'ok' }
+}
+
+/**
+ * Signs the user out of every device. Only a body the contract recognises is
+ * ok: the caller tells the user every device is signed out on that answer.
+ */
+export async function revokeAllWebSessions(
+  options: WebSessionOptions,
+  csrfToken: string,
+  getIdentityProof: () => Promise<string>
+): Promise<WebSessionCommandResult> {
+  const proof = await getIdentityProof()
+  const sent = await send(options, '/auth/sessions/revoke-all', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${proof}`, 'X-CSRF-Token': csrfToken }
+  })
+  if (!('response' in sent)) return sent
+
+  const parsed = zRevokeAllSessionsResponse.safeParse(
+    await readJson(sent.response)
+  )
+  if (!parsed.success) {
     return failure('SESSION_UNAVAILABLE', sent.response.status)
   }
   return { status: 'ok' }

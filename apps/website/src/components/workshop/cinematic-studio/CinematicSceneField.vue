@@ -3,7 +3,9 @@ import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
 
-const { locale = 'en' } = defineProps<{
+const { video = false, locale = 'en' } = defineProps<{
+  /** A video shot's enhance line describes motion, not a still. */
+  video?: boolean
   locale?: Locale
 }>()
 
@@ -30,7 +32,7 @@ const labelClass = 'text-xs font-medium text-primary-warm-gray'
       />
       <div class="flex items-center justify-between gap-3 pr-4 pb-2.5 pl-2.5">
         <slot />
-        <CinematicEnhanceSwitch v-model="enhance" :locale />
+        <CinematicEnhanceSwitch v-model="enhance" :video :locale />
       </div>
     </div>
   </section>

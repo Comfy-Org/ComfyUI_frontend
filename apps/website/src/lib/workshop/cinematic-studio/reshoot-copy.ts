@@ -98,6 +98,8 @@ const copy = {
   'reshoot.nudge.down': { en: 'Camera lower', 'zh-CN': '机位降低' },
   'reshoot.nudge.left': { en: 'Camera left', 'zh-CN': '机位向左' },
   'reshoot.nudge.right': { en: 'Camera right', 'zh-CN': '机位向右' },
+  'reshoot.dolly.in': { en: 'Move the camera closer', 'zh-CN': '机位靠近' },
+  'reshoot.dolly.out': { en: 'Move the camera away', 'zh-CN': '机位远离' },
   'reshoot.advanced': { en: 'Advanced', 'zh-CN': '高级' },
   'reshoot.advanced.value': {
     en: 'Prompt, dialogue, seed',
@@ -120,8 +122,8 @@ const copy = {
     'zh-CN': '闲置一段时间后的首次运行还需要加载模型。'
   },
   'reshoot.take.exampleHelp': {
-    en: 'Example result: the clip re-shot from a new angle at 768p. Aim a camera of your own on the left.',
-    'zh-CN': '示例结果：该片段以 768p 从新角度重拍。在左侧设置你自己的机位。'
+    en: 'Example result: the clip re-shot from a new angle at 768p. Aim a camera of your own to try it.',
+    'zh-CN': '示例结果：该片段以 768p 从新角度重拍。设置你自己的机位试试。'
   },
   'reshoot.frames': {
     en: '{frames} frames at 24 fps ({seconds} s)',
@@ -131,12 +133,12 @@ const copy = {
   'reshoot.speed.768p': { en: 'Sharper', 'zh-CN': '更清晰' },
   'reshoot.clip.yours': { en: 'Your clip', 'zh-CN': '你的片段' },
   'reshoot.empty.title': {
-    en: 'Your re-shoot will appear here',
-    'zh-CN': '重拍结果将显示在这里'
+    en: 'Your new angle plays here',
+    'zh-CN': '新机位的画面将在这里播放'
   },
   'reshoot.empty.hint': {
-    en: 'Upload a clip on the left or try an example below.',
-    'zh-CN': '在左侧上传片段，或试试下方的示例。'
+    en: 'Start with a 5 to 15 second clip, or pick an example.',
+    'zh-CN': '先选一段 5 到 15 秒的片段，或挑一个示例。'
   },
   'reshoot.section.camera': { en: 'New camera', 'zh-CN': '新机位' },
   'reshoot.section.move': { en: 'Camera move', 'zh-CN': '运镜' },
@@ -191,6 +193,7 @@ const copy = {
     en: 'Drag to orbit · Scroll to move closer',
     'zh-CN': '拖动以环绕 · 滚动以靠近'
   },
+  'reshoot.dragHint.touch': { en: 'Drag to orbit', 'zh-CN': '拖动以环绕' },
   'reshoot.needsDepth': {
     en: 'Analyze depth to aim a new camera.',
     'zh-CN': '分析深度后即可设置新机位。'
@@ -245,8 +248,8 @@ const copy = {
   'reshoot.take.cancelled': { en: 'Cancelled', 'zh-CN': '已取消' },
   'reshoot.download': { en: 'Download', 'zh-CN': '下载' },
   'reshoot.demoNote': {
-    en: 'Design prototype: no jobs run. Takes show the example result.',
-    'zh-CN': '设计原型：不会运行任务，镜头显示示例结果。'
+    en: 'Preview: takes play the example result for now.',
+    'zh-CN': '预览版：目前镜头播放示例结果。'
   }
 } as const satisfies Record<string, LocalizedText>
 

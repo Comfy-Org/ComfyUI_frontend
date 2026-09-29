@@ -12,8 +12,10 @@ import { framedStyle } from './aspect-style'
 import CinematicMenu from './CinematicMenu.vue'
 import { useFormatMenus } from './useFormatMenus'
 
-const { locale = 'en' } = defineProps<{
+const { locale = 'en', aspects } = defineProps<{
   locale?: Locale
+  /** The frames the chosen model can make; every frame when absent. */
+  aspects?: readonly AspectRatio[]
 }>()
 
 const aspect = defineModel<AspectRatio>('aspect', { required: true })
@@ -21,7 +23,13 @@ const resolution = defineModel<Resolution>('resolution', { required: true })
 const takes = defineModel<number>('takes', { required: true })
 
 const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
-  useFormatMenus(aspect, resolution, takes, () => locale)
+  useFormatMenus(
+    aspect,
+    resolution,
+    takes,
+    () => locale,
+    () => aspects
+  )
 
 const triggerClass =
   'h-10 w-full gap-2 border border-transparency-white-t8 px-3 text-sm text-primary-warm-white hover:border-transparency-white-t20'
