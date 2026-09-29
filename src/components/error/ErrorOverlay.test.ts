@@ -54,11 +54,14 @@ function createTestI18n() {
       en: {
         g: {
           close: 'Close',
-          dismiss: 'Dismiss'
+          dismiss: 'Dismiss',
+          error: 'Error',
+          warning: 'Warning'
         },
         errorOverlay: {
-          multipleErrorCount: '{count} error found | {count} errors found',
-          multipleErrorsMessage: 'Resolve them before running the workflow.',
+          multipleIssueCount: '{count} issue found | {count} issues found',
+          multipleIssuesMessage:
+            'Resolve these issues before running the workflow.',
           viewDetails: 'View details'
         },
         linearMode: {
@@ -102,6 +105,46 @@ describe('ErrorOverlay', () => {
     useCanvasStore().linearMode = false
     useCanvasStore().canvas = null
     useCanvasStore().currentGraph = null
+  })
+
+  it.for([
+    {
+      group: { type: 'missing_model', severity: 'missing' } as const,
+      label: 'Warning'
+    },
+    {
+      group: {
+        type: 'execution' as const,
+        severity: 'error' as const,
+        cards: []
+      },
+      label: 'Error'
+    }
+  ])('announces $label with aggregate issue copy', ({ group, label }) => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'missing_media',
+        severity: 'missing',
+        groupKey: 'missing_media',
+        displayTitle: 'Missing media',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false
+      },
+      {
+        ...group,
+        groupKey: group.type,
+        displayTitle: 'Another issue',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false
+      }
+    ]
+    useExecutionErrorStore().showErrorOverlay()
+    renderOverlay()
+
+    expect(screen.getByRole('status')).toHaveTextContent('2 issues found')
+    expect(screen.getByRole('status')).toContainElement(screen.getByText(label))
   })
 
   it('renders a single overlay message without list markup', async () => {

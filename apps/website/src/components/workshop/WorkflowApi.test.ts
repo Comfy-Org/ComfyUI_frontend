@@ -27,6 +27,9 @@ describe('WorkflowApi', () => {
   it('offers the key and the documentation', () => {
     render(WorkflowApi, { props: { model, values } })
 
+    const facts = screen.getByTestId('api-facts')
+    expect(facts).toHaveTextContent('X-API-Key')
+    expect(facts).toHaveTextContent('extra_data.api_key_comfy_org')
     expect(
       screen
         .getByRole('link', { name: 'API documentation' })

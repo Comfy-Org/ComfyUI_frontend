@@ -14,10 +14,9 @@ import {
   provideBillingClient
 } from '@comfyorg/account-ui/billing'
 
-import { createBillingWebClient } from '@/session/billingWebClient'
-import { billingWebSessionClient } from '@/session/billingWebSession'
+import { createModeBillingClient } from '@/session/billingWebAuth'
 
-const client = createBillingWebClient(billingWebSessionClient())
+const client = createModeBillingClient()
 
 provideBillingClient(client)
 onUnmounted(() => disposeBillingClient(client))

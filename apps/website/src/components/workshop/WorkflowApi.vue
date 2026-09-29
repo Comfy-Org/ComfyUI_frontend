@@ -16,6 +16,7 @@ import {
   workflowSnippetRequest
 } from '../../config/workshop-workflow-snippet'
 import { t } from '../../i18n/translations'
+import ApiFacts from './ApiFacts.vue'
 import HighlightedCode from './HighlightedCode.vue'
 
 const { model, values } = defineProps<{
@@ -42,10 +43,30 @@ const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
   urlUploadField(field)
 )
 const endpoint = `${WORKSHOP_CLOUD_BASE_URL}/api/prompt`
+const facts = computed(() => [
+  {
+    label: t('workshop.api.needsEndpoint'),
+    value: `POST ${endpoint}`,
+    mono: true
+  },
+  {
+    label: t('workshop.api.needsKey'),
+    value: 'X-API-Key + extra_data.api_key_comfy_org',
+    mono: true
+  },
+  ...(hasMedia
+    ? [
+        {
+          label: t('workshop.api.needsFiles'),
+          value: t('workshop.api.filesUploaded')
+        }
+      ]
+    : [])
+])
 </script>
 
 <template>
-  <section class="space-y-6" aria-labelledby="workflow-api-heading">
+  <section class="flex flex-col gap-6" aria-labelledby="workflow-api-heading">
     <div class="space-y-2">
       <h2
         id="workflow-api-heading"
@@ -57,72 +78,78 @@ const endpoint = `${WORKSHOP_CLOUD_BASE_URL}/api/prompt`
         {{ t('workshop.workflow.apiHint') }}
       </p>
     </div>
-    <div
-      class="flex flex-col gap-3 rounded-2xl border border-transparency-white-t20 p-5"
-      data-testid="workflow-api-endpoint"
-    >
-      <div class="flex flex-wrap items-center gap-3 text-sm">
-        <span
-          class="rounded-md bg-primary-comfy-yellow px-2 py-1 font-mono text-primary-comfy-ink"
-          >POST</span
-        >
-        <code class="min-w-0 break-all text-primary-warm-white">{{
-          endpoint
-        }}</code>
-      </div>
-      <p class="text-sm/relaxed text-primary-warm-gray">
-        {{ t('workshop.workflow.apiNote') }}
-      </p>
-    </div>
-    <div
-      v-if="code"
-      class="overflow-hidden rounded-2xl border border-transparency-white-t20"
-    >
+    <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
       <div
-        class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-2 text-sm text-primary-warm-gray"
+        class="flex w-full flex-col gap-3 lg:sticky lg:top-24 lg:w-95 lg:shrink-0"
       >
-        <span>cURL</span
-        ><CopyTextButton
-          :value="code"
-          :label="t('workshop.api.copy')"
-          :copied-label="t('workshop.api.copied')"
-        />
+        <Button
+          as="a"
+          :href="keyHref"
+          target="_blank"
+          rel="noopener"
+          class="w-full justify-center"
+          data-testid="api-get-key"
+          >{{ t('workshop.api.getKey') }}</Button
+        >
+        <div data-testid="workflow-api-endpoint">
+          <ApiFacts :where="t('workshop.api.runsOnCloud')" :rows="facts" />
+        </div>
+        <p class="text-sm/relaxed text-primary-warm-gray">
+          {{ t('workshop.workflow.apiNote') }}
+        </p>
       </div>
-      <pre
-        tabindex="0"
-        class="max-h-168 overflow-auto bg-primary-comfy-ink p-6 text-sm/relaxed text-primary-warm-white"
-        data-testid="workflow-api-snippet"
-      ><HighlightedCode :code="code" language="shell" /></pre>
-    </div>
-    <p v-else role="status" class="text-sm text-primary-warm-gray">
-      {{ t('workshop.api.inputInvalid') }}
-    </p>
-    <div
-      v-if="hasMedia"
-      class="max-w-3xl space-y-2 text-sm/relaxed text-primary-warm-gray"
-    >
-      <h3 class="font-medium text-primary-comfy-canvas">
-        {{ t('workshop.workflow.apiUploads') }}
-      </h3>
-      <p>{{ t('workshop.workflow.apiUploadGrant') }}</p>
-      <p>{{ t('workshop.workflow.apiUploadPut') }}</p>
-      <p>{{ t('workshop.workflow.apiUploadFinalize') }}</p>
-    </div>
-    <p class="max-w-3xl text-sm/relaxed text-primary-warm-gray">
-      {{ t('workshop.workflow.apiPoll') }}
-    </p>
-    <div class="flex flex-wrap gap-3">
-      <Button as="a" :href="keyHref" target="_blank" rel="noopener">{{
-        t('workshop.api.getKey')
-      }}</Button>
-      <Button
-        as="a"
-        :href="externalLinks.docsApi"
-        target="_blank"
-        rel="noopener"
-        variant="outline"
-        >{{ t('workshop.workflow.apiDocs') }}</Button
-      >
+
+      <div class="flex min-w-0 flex-1 flex-col gap-4">
+        <div
+          v-if="code"
+          class="overflow-hidden rounded-2xl border border-transparency-white-t20"
+        >
+          <div
+            class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-2 text-sm text-primary-warm-gray"
+          >
+            <span>cURL</span
+            ><CopyTextButton
+              :value="code"
+              :label="t('workshop.api.copy')"
+              :copied-label="t('workshop.api.copied')"
+            />
+          </div>
+          <pre
+            tabindex="0"
+            class="max-h-168 overflow-auto bg-primary-comfy-ink p-6 text-sm/relaxed text-primary-warm-white"
+            data-testid="workflow-api-snippet"
+          ><HighlightedCode :code="code" language="shell" /></pre>
+        </div>
+        <p v-else role="status" class="text-sm text-primary-warm-gray">
+          {{ t('workshop.api.inputInvalid') }}
+        </p>
+
+        <div
+          v-if="hasMedia"
+          class="space-y-2 text-sm/relaxed text-primary-warm-gray"
+        >
+          <h3 class="font-medium text-primary-comfy-canvas">
+            {{ t('workshop.workflow.apiUploads') }}
+          </h3>
+          <p>{{ t('workshop.workflow.apiUploadGrant') }}</p>
+          <p>{{ t('workshop.workflow.apiUploadPut') }}</p>
+          <p>{{ t('workshop.workflow.apiUploadFinalize') }}</p>
+        </div>
+
+        <p class="text-sm/relaxed text-primary-warm-gray">
+          {{ t('workshop.workflow.apiPoll') }}
+        </p>
+        <a
+          :href="externalLinks.docsApi"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex min-h-11 items-center gap-2 self-start text-sm font-medium text-primary-comfy-yellow hover:text-primary-warm-white"
+          data-testid="api-docs"
+        >
+          {{ t('workshop.workflow.apiDocs') }}
+          <span aria-hidden="true">↗</span>
+        </a>
+      </div>
     </div>
   </section>
 </template>

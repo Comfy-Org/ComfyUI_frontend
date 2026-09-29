@@ -187,11 +187,9 @@ describe('billing-web with unified_web_session off', () => {
       )
       vi.stubGlobal('fetch', fetchImpl)
 
-      await signInThenCallBilling(async ({ auth, session, client, signIn }) => {
+      await signInThenCallBilling(async ({ auth, signIn }) => {
         await signIn(auth.billingWebSignInPort())
-        await client
-          .createBillingWebClient(session.billingWebSessionClient())
-          .status.read()
+        await auth.createModeBillingClient().status.read()
       })
 
       expect(new Set(main.map(({ url }) => url))).toEqual(
