@@ -6,6 +6,7 @@ import { h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import WorkshopLoading from '../components/workshop/WorkshopLoading.vue'
+import { hubModelSlugs } from '../config/hub-models'
 import { isExcludedFromSitemap } from '../config/indexing'
 import type { ModelPageLaunch } from '../config/model-page-launch'
 import {
@@ -301,13 +302,14 @@ describe('writeMarkdownTwins', () => {
   describe('Models pages', () => {
     const [{ slug: modelSlug }] = workshopModels
     const [[aliasSlug]] = routerModelSlugAliases
+    const hubSlug = hubModelSlugs.get(modelSlug)
     const modelsPages = [
-      'models/',
+      'hub/models/',
       'models/showcase/',
-      `models/${modelSlug}/`,
+      `hub/models/${hubSlug}/`,
       `models/${aliasSlug}/`
     ]
-    const modelTwin = `/models/${modelSlug}.md`
+    const modelTwin = `/hub/models/${hubSlug}.md`
 
     afterEach(() => {
       launch.launchedModelPages = new Set()
@@ -344,8 +346,9 @@ describe('writeMarkdownTwins', () => {
 
   describe('model pages', () => {
     const [{ slug: modelSlug }] = workshopModels
-    const route = `models/${modelSlug}/`
-    const twinPath = `/models/${modelSlug}.md`
+    const hubSlug = hubModelSlugs.get(modelSlug)
+    const route = `hub/models/${hubSlug}/`
+    const twinPath = `/hub/models/${hubSlug}.md`
 
     async function buildModelPage(
       main: string,
