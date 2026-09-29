@@ -379,6 +379,7 @@
           "creditsKept": "Existing credits are kept",
           "creditsOverlap": "This month's credits stay valid until {date}",
           "keepUntil": "You'll keep {plan} until {date}",
+          "keepCommitmentUntil": "You'll keep {plan} at {rate} until {date}",
           "zeroDue": "You won't be charged today. Your payment method renews the plan at {amount} on {date}."
         }
       }
