@@ -134,6 +134,10 @@ const copy = {
     en: 'Slow now',
     'zh-CN': '当前较慢'
   },
+  'cinematic.stage.loadingTake': {
+    en: 'Loading the take',
+    'zh-CN': '正在加载镜头'
+  },
   'cinematic.stage.again': {
     en: 'Generate again',
     'zh-CN': '再生成一次'

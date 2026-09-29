@@ -5,11 +5,19 @@ import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-const { current, height, locale } = defineProps<{
+const {
+  current,
+  height,
+  pending = false,
+  locale
+} = defineProps<{
   current: Extract<Take, { status: 'done' }>
   height: string
+  /** Hidden until it has loaded, so the frame keeps its size meanwhile. */
+  pending?: boolean
   locale: Locale
 }>()
+const emit = defineEmits<{ loaded: [] }>()
 const revealed = defineModel<boolean>('revealed', { required: true })
 </script>
 
@@ -20,11 +28,14 @@ const revealed = defineModel<boolean>('revealed', { required: true })
     :alt="current.prompt"
     :class="
       cn(
-        'block h-auto w-auto max-w-full',
-        current.output.nsfw && !revealed && 'blur-2xl'
+        'block h-auto w-auto max-w-full transition-opacity duration-300',
+        current.output.nsfw && !revealed && 'blur-2xl',
+        pending && 'absolute opacity-0'
       )
     "
     :style="{ maxHeight: height }"
+    @load="emit('loaded')"
+    @error="emit('loaded')"
   />
   <video
     v-else-if="
@@ -36,8 +47,15 @@ const revealed = defineModel<boolean>('revealed', { required: true })
     controls
     playsinline
     preload="metadata"
-    class="block h-auto w-auto max-w-full"
+    :class="
+      cn(
+        'block h-auto w-auto max-w-full transition-opacity duration-300',
+        pending && 'absolute opacity-0'
+      )
+    "
     :style="{ maxHeight: height }"
+    @loadeddata="emit('loaded')"
+    @error="emit('loaded')"
   />
   <div
     v-if="current.output.nsfw && !revealed"

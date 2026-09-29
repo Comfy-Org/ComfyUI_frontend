@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { LoaderCircle } from '@lucide/vue'
+import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
 import CinematicTakeMedia from './CinematicTakeMedia.vue'
 import CinematicTakeNotice from './CinematicTakeNotice.vue'
@@ -31,12 +33,17 @@ const emit = defineEmits<{
 }>()
 
 const revealed = ref(false)
+// A finished take keeps its frame until the picture has loaded: without it
+// the frame has no size for a moment and the whole stage jumps.
+const loaded = ref(false)
 watch(
   () => current.id,
   () => {
     revealed.value = false
+    loaded.value = false
   }
 )
+const settled = computed(() => current.status === 'done' && loaded.value)
 
 const TONE = {
   neutral:
@@ -63,21 +70,24 @@ function frameTone(take: Take): string | undefined {
     :class="
       cn(
         'group relative flex max-w-full items-center justify-center overflow-hidden rounded-md',
-        frameTone(current)
+        current.status === 'done' && !loaded ? TONE.neutral : frameTone(current)
       )
     "
-    :style="
-      current.status === 'done'
-        ? undefined
-        : framedStyle(current.aspect, height)
-    "
+    :style="settled ? undefined : framedStyle(current.aspect, height)"
   >
     <template v-if="current.status === 'done'">
       <CinematicTakeMedia
         v-model:revealed="revealed"
         :current
         :height
+        :pending="!loaded"
         :locale
+        @loaded="loaded = true"
+      />
+      <LoaderCircle
+        v-if="!loaded"
+        class="size-5 animate-spin text-primary-warm-gray"
+        :aria-label="tc('cinematic.stage.loadingTake', locale)"
       />
     </template>
     <CinematicTakeProgress
