@@ -84,6 +84,18 @@ describe('projectBillingPlans', () => {
     expect(projected?.plans).toHaveLength(1)
   })
 
+  it('leaves the flat credit grant absent when the catalog omitted it', () => {
+    const { credits: _credits, ...withoutCredits } = DECODED.plans[0]
+    const data: BillingPlansData = {
+      ...DECODED,
+      plans: [withoutCredits]
+    }
+
+    const projected = projectBillingPlans(data)
+
+    expect(projected?.plans[0]).not.toHaveProperty('credits')
+  })
+
   it('refuses a catalog with a price a number cannot hold exactly', () => {
     const tooLarge: BillingPlansData = {
       ...DECODED,
