@@ -357,6 +357,30 @@ describe('launchCancellationFlow', () => {
     )
   })
 
+  it('classifies a fallback failure after a workspace switch as aborted', async () => {
+    mocks.prepare.mockResolvedValueOnce(null)
+    const fallbackError = new Error('dialog chunk unavailable')
+
+    await launchCancellationFlow({
+      showFallback: vi.fn(async () => {
+        mocks.activeWorkspaceId = 'workspace-2'
+        throw fallbackError
+      })
+    })
+
+    expect(reportError).toHaveBeenCalledWith(
+      fallbackError,
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          failure_kind: 'degraded',
+          outcome: 'aborted',
+          workspace_still_current: false
+        }),
+        level: 'warning'
+      })
+    )
+  })
+
   it('records an aborted fallback when the workspace changes during preparation', async () => {
     const preparationError = new Error('blocked by browser')
     mocks.prepare.mockImplementationOnce(async () => {

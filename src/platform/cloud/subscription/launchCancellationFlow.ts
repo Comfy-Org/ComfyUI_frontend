@@ -25,6 +25,7 @@ async function showCancellationFallback(
     await showFallback({ ...options, isScopeCurrent })
     return true
   } catch (fallbackError) {
+    const workspaceStillCurrent = isScopeCurrent()
     const reportedError =
       vendorError === undefined
         ? fallbackError
@@ -35,14 +36,14 @@ async function showCancellationFallback(
     reportError(reportedError, {
       errorType: 'cloud_cancellation_vendor_fallback',
       tags: {
-        failure_kind: 'caught_unexpected',
+        failure_kind: workspaceStillCurrent ? 'caught_unexpected' : 'degraded',
         feature_area: 'billing',
         operation: 'load',
-        outcome: 'failed',
+        outcome: workspaceStillCurrent ? 'failed' : 'aborted',
         vendor_preparation_failed: vendorError !== undefined,
-        workspace_still_current: isScopeCurrent()
+        workspace_still_current: workspaceStillCurrent
       },
-      level: 'error'
+      level: workspaceStillCurrent ? 'error' : 'warning'
     })
     return false
   }
