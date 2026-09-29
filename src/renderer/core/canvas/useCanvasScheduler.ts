@@ -12,7 +12,7 @@ export interface CanvasOperation {
 }
 
 export interface CanvasScheduler {
-  /** Queue an op that runs in the next RAF when canvas is visible. */
+  /** Run an op now when its canvas is visible, otherwise queue it. */
   schedule(operation: CanvasOperation): void
   /** Execute all queued ops synchronously (if canvas is ready). */
   flush(): void
@@ -60,7 +60,7 @@ export function createCanvasScheduler(): CanvasScheduler {
     else queue[existingIndex] = operation
 
     if (isElementReady(operation.element ?? canvasStore.canvas?.canvas)) {
-      requestFlush()
+      flushQueued(false)
     }
   }
 
