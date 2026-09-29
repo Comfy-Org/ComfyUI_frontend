@@ -476,9 +476,7 @@ describe('useAgentConversationStore', () => {
     store.ingest(delta('assistant-message-1', 'Running now.'))
 
     expect(
-      store.messages[0].parts.some(
-        (part) => (part as { type: string }).type === 'runApproval'
-      )
+      store.messages[0].parts.some((part) => part.type === 'runApproval')
     ).toBe(false)
     expect(partTexts(store)).toContain('Running now.')
     expect(store.isStreaming).toBe(true)
