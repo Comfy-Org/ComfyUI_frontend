@@ -178,19 +178,19 @@ function dispatchOpsResult(detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent('doc_ops_result', { detail }))
 }
 
-describe('R-73 cross-workflow pending operations', () => {
-  beforeEach(() => {
-    useAgentPanelStore().enabled = true
-    bridgeState.current = null
-    bridgeState.transport.up = true
-    clientState.transportUp = true
-    clientState.attempts = []
-    clientState.sent = []
-    clientState.sendOps.mockClear()
-    devLogState.recordDevEvent.mockClear()
-    vi.useFakeTimers()
-  })
+beforeEach(() => {
+  useAgentPanelStore().enabled = true
+  bridgeState.current = null
+  bridgeState.transport.up = true
+  clientState.transportUp = true
+  clientState.attempts = []
+  clientState.sent = []
+  clientState.sendOps.mockClear()
+  devLogState.recordDevEvent.mockClear()
+  vi.useFakeTimers()
+})
 
+describe('R-73 cross-workflow pending operations', () => {
   it('cancels pending sends and rejects new operations while the product gate is off', async () => {
     const store = useAgentPanelStore()
     const { enqueue, status } = mountFollower('wf-a')
@@ -366,18 +366,6 @@ describe('R-73 cross-workflow pending operations', () => {
 // racing a doc unbind/resubscribe, this is the mechanism that leaves an
 // orphaned node in the CRDT doc while the client believes the add failed.
 describe('abortIfUnbound settles delivered ops as undeliverable', () => {
-  beforeEach(() => {
-    useAgentPanelStore().enabled = true
-    bridgeState.current = null
-    bridgeState.transport.up = true
-    clientState.transportUp = true
-    clientState.attempts = []
-    clientState.sent = []
-    clientState.sendOps.mockClear()
-    devLogState.recordDevEvent.mockClear()
-    vi.useFakeTimers()
-  })
-
   it('a batch the transport already accepted is never later reported undeliverable, even across a workflow retarget', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
@@ -437,18 +425,6 @@ function ackResubscribe(workflowId: string): void {
  * persistence across a full page reload.
  */
 describe('a human edit made while the document connection is down', () => {
-  beforeEach(() => {
-    useAgentPanelStore().enabled = true
-    bridgeState.current = null
-    bridgeState.transport.up = true
-    clientState.transportUp = true
-    clientState.attempts = []
-    clientState.sent = []
-    clientState.sendOps.mockClear()
-    devLogState.recordDevEvent.mockClear()
-    vi.useFakeTimers()
-  })
-
   /**
    * Characterization of today, NOT a desired property: the retry budget is a
    * delivery budget, so the batch is dropped rather than retained. If retention
