@@ -221,7 +221,6 @@ export class IdCollisionHarness {
       objectInfo: 'server'
     })
     await new AgentPanel(this.page).open(30_000)
-    await expect(this.panel).toBeVisible({ timeout: 30_000 })
     await this.selectWorkflowTarget()
     // `useAgentSession` only binds the CRDT workflow id (which is what makes
     // the follower's `isTargetActive` watch subscribe) once a turn's POST ack

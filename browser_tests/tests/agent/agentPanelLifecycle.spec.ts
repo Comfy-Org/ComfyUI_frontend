@@ -130,8 +130,8 @@ test.describe(
       })
 
       await new AgentPanel(page).open(undefined, async () => {
-        await delayedMountStyle.evaluate((style) =>
-          (style as HTMLElement).remove()
+        await delayedMountStyle.evaluate<void, HTMLElement>((style) =>
+          style.remove()
         )
       })
 
@@ -140,7 +140,7 @@ test.describe(
       await expect(openButton).toHaveAttribute('data-test-click-count', '0')
     })
 
-    test('honors the caller timeout without re-clicking while an open is delayed', async ({
+    test('waits for a delayed open without clicking again', async ({
       page
     }) => {
       await bootAgentApp(page, true)
@@ -151,38 +151,60 @@ test.describe(
         .click()
       await expect(agentPanel.root).toHaveCount(0)
 
-      await agentPanel.open(3_000, async () => {
-        await agentPanel.openButton.evaluate((button) => {
-          button.dataset.testClickCount = '0'
-          button.addEventListener(
-            'click',
-            () => {
-              button.dataset.testClickCount = String(
-                Number(button.dataset.testClickCount) + 1
-              )
-            },
-            true
-          )
+      await agentPanel.openButton.evaluate<void, HTMLElement>((button) => {
+        button.dataset.testClickCount = '0'
+        button.addEventListener(
+          'click',
+          () => {
+            button.dataset.testClickCount = String(
+              Number(button.dataset.testClickCount) + 1
+            )
+          },
+          true
+        )
 
-          let delayed = false
-          const delayOpen = (event: Event) => {
-            event.stopImmediatePropagation()
-            if (delayed) return
-            delayed = true
-            window.setTimeout(() => {
-              button.removeEventListener('click', delayOpen, true)
-              ;(button as HTMLElement).click()
-            }, 1_500)
-          }
-          button.addEventListener('click', delayOpen, true)
-        })
+        let delayed = false
+        const delayOpen = (event: Event) => {
+          event.stopImmediatePropagation()
+          if (delayed) return
+          delayed = true
+          window.setTimeout(() => {
+            button.removeEventListener('click', delayOpen, true)
+            button.click()
+          }, 1_500)
+        }
+        button.addEventListener('click', delayOpen, true)
       })
+      await agentPanel.open(3_000)
 
       await expect(agentPanel.root).toBeVisible()
       await expect(agentPanel.openButton).toHaveAttribute(
         'data-test-click-count',
         '2'
       )
+    })
+
+    test('honors the caller timeout while an open stays pending', async ({
+      page
+    }) => {
+      await bootAgentApp(page, true)
+      const agentPanel = new AgentPanel(page)
+      await expect(agentPanel.root).toBeVisible({ timeout: 8_000 })
+      await agentPanel.root
+        .getByRole('button', { name: enMessages.g.close })
+        .click()
+      await expect(agentPanel.root).toHaveCount(0)
+      await agentPanel.openButton.evaluate((button) => {
+        button.addEventListener(
+          'click',
+          (event) => event.stopImmediatePropagation(),
+          true
+        )
+      })
+
+      const startedAt = Date.now()
+      await expect(agentPanel.open(250)).rejects.toThrow()
+      expect(Date.now() - startedAt).toBeLessThan(2_000)
     })
 
     test('does not close startup activation that wins before the click', async ({
@@ -197,20 +219,29 @@ test.describe(
       await expect(agentPanel.root).toHaveCount(0)
 
       await agentPanel.open(undefined, async () => {
-        await agentPanel.openButton.evaluate((button) => {
-          const element = button as HTMLElement
-          element.style.pointerEvents = 'none'
-          window.setTimeout(() => {
-            if (button.getAttribute('aria-pressed') !== 'true') element.click()
-            element.style.removeProperty('pointer-events')
-          }, 100)
+        await agentPanel.openButton.evaluate<void, HTMLElement>((button) => {
+          button.dataset.testClickCount = '0'
+          button.addEventListener('click', () => {
+            button.dataset.testClickCount = String(
+              Number(button.dataset.testClickCount) + 1
+            )
+          })
+          button.click()
         })
+        await expect(agentPanel.openButton).toHaveAttribute(
+          'aria-pressed',
+          'true'
+        )
       })
 
       await expect(agentPanel.root).toBeVisible()
       await expect(agentPanel.openButton).toHaveAttribute(
         'aria-pressed',
         'true'
+      )
+      await expect(agentPanel.openButton).toHaveAttribute(
+        'data-test-click-count',
+        '1'
       )
     })
 

@@ -330,7 +330,6 @@ export class AgentConversationHarness {
 
     await loadSeedIntoActiveTab(this.page, this.conversation.workflow.seed)
     await new AgentPanel(this.page).open(PANEL_MOUNT_TIMEOUT)
-    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
   }
 
