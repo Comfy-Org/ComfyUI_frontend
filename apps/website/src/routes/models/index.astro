@@ -9,9 +9,7 @@ const { title, description } = modelsHubMeta(workshopModels)
 ---
 
 <BaseLayout {title} {description} preloadFonts={['Medium']}>
-  <ModelsPage client:load>
-    <ModelsShowcase slot="fallback" />
-  </ModelsPage>
+  <ModelsPage client:load />
   <noscript>
     <ModelsShowcase />
   </noscript>

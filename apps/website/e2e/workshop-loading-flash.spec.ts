@@ -67,7 +67,7 @@ test.describe('enabled workshop', () => {
   })
 })
 
-test('a disabled visitor still gets the public marketing page', async ({
+test('a disabled visitor gets the model page without a marketing frame', async ({
   context,
   page
 }) => {
@@ -86,6 +86,7 @@ test('a disabled visitor still gets the public marketing page', async ({
   )
   await page.goto(MODEL_PATH)
   await flags
-  await expect(page.getByTestId('model-detail')).toHaveCount(0)
-  await expect(page.getByText(/Grok Imagine/i).first()).toBeVisible()
+  await expect(page.getByTestId('model-detail')).toBeVisible()
+  await expect(page.getByTestId('run-rollout-note')).toBeVisible()
+  await expect(page.getByText(/Try Grok Imagine Now/i)).toHaveCount(0)
 })

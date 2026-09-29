@@ -109,6 +109,11 @@
     {
       "file": "apps/website/src/data/gallery.ts",
       "exports": ["getGalleryItemById"]
+    },
+    // Vitest automock: mirrors the real module's exports by design.
+    {
+      "file": "apps/website/src/config/__mocks__/workshop-session-state.ts",
+      "exports": ["*"]
     }
   ],
 

@@ -11,7 +11,14 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import {
+  computed,
+  defineComponent,
+  h,
+  nextTick,
+  onScopeDispose,
+  ref
+} from 'vue'
 
 import type {
   AccountCredential,
@@ -30,7 +37,11 @@ import { workshopContract } from '../../config/workshop-contract-catalog'
 import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
-import { useWorkshopSession } from '../../config/workshop-session-state'
+import { stopWorkshopAccountSource } from '../../config/workshop-account-source'
+import {
+  stopWorkshopSession,
+  useWorkshopSession
+} from '../../config/workshop-session-state'
 import * as draftStorage from '../../config/workshop-draft-storage'
 import {
   cancelWorkshopRun,
@@ -64,6 +75,7 @@ vi.mock(import('../../config/workshop-credits'))
 vi.mock(import('../../config/workshop-model-balance'), () => ({
   useWorkshopModelBalance: vi.fn()
 }))
+vi.mock(import('../../config/workshop-account-source'))
 
 const auth = {
   session: ref<AccountCredential>(),
@@ -550,11 +562,90 @@ describe('ModelDetail', () => {
   it('prevents generation while the feature is hidden', async () => {
     auth.session.value = credential
     auth.workshopEnabled.value = false
+    vi.mocked(useWorkshopSession).mockClear()
+    vi.mocked(useWorkshopModelBalance).mockClear()
     mountDetail({ model: runnable })
     await nextTick()
-    expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
+    expect(screen.queryByTestId('run-button')).toBeNull()
+    expect(
+      screen.queryByText('This model cannot be run from the browser yet.')
+    ).toBeNull()
+    expect(screen.getByTestId('run-rollout-note')).toHaveTextContent(
+      'Running in the browser is rolling out.'
+    )
+    expect(screen.queryByTestId('playground-output')).toBeNull()
+    expect(useWorkshopSession).not.toHaveBeenCalled()
+    expect(useWorkshopModelBalance).not.toHaveBeenCalled()
     expect(runWorkshopRouter).not.toHaveBeenCalled()
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
+
+    await user().click(screen.getByRole('button', { name: 'See the API' }))
+    expect(screen.getByRole('tab', { name: 'API' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+  })
+
+  it('holds Run neutrally until the flag answers, then shows the note when it is off', async () => {
+    auth.workshopEnabled.value = false
+    auth.workshopEnabledSettled.value = false
+    mountDetail({ model: runnable })
+    await nextTick()
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'resolving'
+    )
+    expect(screen.getByTestId('run-button')).toHaveTextContent('Just a moment…')
+    expect(screen.queryByText('Checking your session…')).toBeNull()
+    expect(screen.queryByTestId('run-rollout-note')).toBeNull()
+
+    auth.workshopEnabledSettled.value = true
+    await nextTick()
+    expect(screen.queryByTestId('run-button')).toBeNull()
+    expect(screen.getByTestId('run-rollout-note')).toBeTruthy()
+  })
+
+  it('shows the example output to a flag-off visitor', async () => {
+    auth.workshopEnabled.value = false
+    mountDetail()
+    await nextTick()
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('example')
+  })
+
+  it('reads the balance from the session it starts when the flag is on', async () => {
+    vi.mocked(useWorkshopModelBalance).mockClear()
+    mountDetail({ model: runnable })
+    await nextTick()
+    expect(useWorkshopModelBalance).toHaveBeenCalledWith(
+      useWorkshopSession().session
+    )
+  })
+
+  it('stops account services when a returning visitor is rolled back', async () => {
+    const balanceDisposed = vi.fn()
+    vi.mocked(useWorkshopModelBalance).mockImplementationOnce(() => {
+      onScopeDispose(balanceDisposed)
+      return computed(() => credits.balance.value)
+    })
+    vi.mocked(useWorkshopSession).mockClear()
+    vi.mocked(stopWorkshopSession).mockClear()
+    vi.mocked(stopWorkshopAccountSource).mockClear()
+    mountDetail({ model: runnable })
+    await nextTick()
+    expect(useWorkshopSession).toHaveBeenCalled()
+
+    auth.workshopEnabled.value = false
+    await nextTick()
+    expect(stopWorkshopSession).toHaveBeenCalledOnce()
+    expect(stopWorkshopAccountSource).toHaveBeenCalledOnce()
+    expect(balanceDisposed).toHaveBeenCalledOnce()
+    expect(screen.getByTestId('run-rollout-note')).toBeTruthy()
+
+    vi.mocked(useWorkshopSession).mockClear()
+    auth.workshopEnabled.value = true
+    await nextTick()
+    expect(useWorkshopSession).toHaveBeenCalled()
   })
 
   it('reports API views only while Models is enabled', async () => {
@@ -1934,42 +2025,62 @@ describe('ModelDetail', () => {
     }
   )
 
-  it('finishes an active render while the gate hides the page on revocation', async () => {
-    auth.session.value = credential
-    const late = Promise.withResolvers<typeof routerResult>()
-    vi.mocked(runWorkshopRouter).mockReturnValue(late.promise)
-    render(WorkshopGate, {
-      props: { keepMounted: true },
-      slots: { default: () => h(ModelDetail, { model: runnable }) }
-    })
-    await nextTick()
-    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
-    await user().click(screen.getByTestId('run-button'))
-    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
-    auth.workshopEnabled.value = false
-    await nextTick()
-    expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
-    expect(
-      screen.getByTestId('playground-output').getAttribute('data-state')
-    ).toBe('running')
-    expect(vi.mocked(runWorkshopRouter).mock.calls[0][0].signal.aborted).toBe(
-      false
-    )
-    late.resolve(routerResult)
-    await vi.waitFor(() =>
-      expect(captureWorkshopEvent).toHaveBeenCalledWith({
-        name: 'run_finished',
-        properties: expect.objectContaining({ status: 'succeeded' })
+  it.for([
+    {
+      outcome: 'succeeded',
+      settle: (late: PromiseWithResolvers<typeof routerResult>) =>
+        late.resolve(routerResult)
+    },
+    {
+      outcome: 'failed',
+      settle: (late: PromiseWithResolvers<typeof routerResult>) =>
+        late.reject(new WorkshopRouterError('unavailable'))
+    }
+  ] as const)(
+    'finishes an active render while the gate hides the page on revocation: $outcome',
+    async ({ outcome, settle }) => {
+      auth.session.value = credential
+      const late = Promise.withResolvers<typeof routerResult>()
+      vi.mocked(runWorkshopRouter).mockReturnValue(late.promise)
+      render(WorkshopGate, {
+        props: { keepMounted: true },
+        slots: { default: () => h(ModelDetail, { model: runnable }) }
       })
-    )
-    expect(captureWorkshopEvent).not.toHaveBeenCalledWith({
-      name: 'run_finished',
-      properties: expect.objectContaining({ status: 'cancelled' })
-    })
-    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
-      'unavailable'
-    )
-  })
+      await nextTick()
+      await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+      await user().click(screen.getByTestId('run-button'))
+      vi.mocked(stopWorkshopSession).mockClear()
+      await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+      auth.workshopEnabled.value = false
+      await nextTick()
+      expect(stopWorkshopSession).not.toHaveBeenCalled()
+      expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('running')
+      expect(vi.mocked(runWorkshopRouter).mock.calls[0][0].signal.aborted).toBe(
+        false
+      )
+      settle(late)
+      await vi.waitFor(() =>
+        expect(captureWorkshopEvent).toHaveBeenCalledWith({
+          name: 'run_finished',
+          properties: expect.objectContaining({ status: outcome })
+        })
+      )
+      expect(captureWorkshopEvent).not.toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({ status: 'cancelled' })
+      })
+      expect(screen.getByTestId('run-rollout-note')).toBeTruthy()
+      await vi.waitFor(() =>
+        expect(
+          screen.getByTestId('playground-output').getAttribute('data-state')
+        ).toBe(outcome)
+      )
+      expect(stopWorkshopSession).toHaveBeenCalledOnce()
+    }
+  )
 
   it.for([
     { name: 'superseded refresh', result: undefined },
@@ -2022,17 +2133,21 @@ describe('ModelDetail', () => {
     }
   )
 
-  it('keeps execution disabled when the run opt-in is absent', () => {
-    vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
-    auth.session.value = credential
-    mountDetail({ model: runnable })
-    expect(
-      screen.getByRole('button', {
-        name: 'This model cannot be run from the browser yet.'
-      })
-    ).toHaveProperty('disabled', true)
-    expect(runWorkshopRouter).not.toHaveBeenCalled()
-  })
+  it.for([true, false])(
+    'keeps execution disabled when the run opt-in is absent (flag on: %s)',
+    (flagOn) => {
+      vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
+      auth.session.value = credential
+      auth.workshopEnabled.value = flagOn
+      mountDetail({ model: runnable })
+      expect(
+        screen.getByRole('button', {
+          name: 'This model cannot be run from the browser yet.'
+        })
+      ).toHaveProperty('disabled', true)
+      expect(runWorkshopRouter).not.toHaveBeenCalled()
+    }
+  )
 
   it('sends a signed-out visitor to sign in and come back', async () => {
     history.replaceState(null, '', '/models/demo/?tab=api')

@@ -3,10 +3,12 @@ import { Clapperboard, Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
 import {
   computed,
+  effectScope,
   onMounted,
   onScopeDispose,
   onUnmounted,
   ref,
+  shallowRef,
   useSlots,
   watch
 } from 'vue'
@@ -43,6 +45,7 @@ import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
 import { IDLE, transition } from '../../config/workshop-run'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
+import { stopWorkshopAccountSource } from '../../config/workshop-account-source'
 import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import type { RouterRenderResult } from '../../config/router-render'
 import { router_render } from '../../config/router-render'
@@ -60,13 +63,17 @@ import { getRoutes } from '../../config/routes'
 import { linkLeavingPage } from '../../lib/workshop/leaving-link'
 import { routerSavesAssets } from '../../lib/workshop/asset-saving'
 import type { WorkshopSession } from '../../config/workshop-session-state'
-import { useWorkshopSession } from '../../config/workshop-session-state'
+import {
+  stopWorkshopSession,
+  useWorkshopSession
+} from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
+  useWorkshopEnabledSettled,
   useWorkshopAuthFlag,
   useWorkshopAppsEnabled
 } from '../../scripts/posthog'
@@ -224,10 +231,41 @@ const attachments = computed(() =>
 )
 const revealed = ref(false)
 
-const { user, session, sessionFailure, settled, ensureFresh } =
-  useWorkshopSession()
-const balance = useWorkshopModelBalance(session)
 const workshopEnabled = useWorkshopEnabled()
+const workshopEnabledSettled = useWorkshopEnabledSettled()
+function startAccountServices() {
+  const scope = effectScope(true)
+  const services = scope.run(() => {
+    const workshopSession = useWorkshopSession()
+    return {
+      ...workshopSession,
+      balance: useWorkshopModelBalance(workshopSession.session)
+    }
+  })
+  return services && { ...services, scope }
+}
+const account = shallowRef<ReturnType<typeof startAccountServices>>()
+function stopAccountServices() {
+  account.value?.scope.stop()
+  stopWorkshopSession()
+  stopWorkshopAccountSource()
+  account.value = undefined
+}
+onScopeDispose(() => account.value?.scope.stop())
+watch(
+  workshopEnabled,
+  (enabled) => {
+    if (enabled) account.value ??= startAccountServices()
+    else if (account.value && runState.value.status !== 'running')
+      stopAccountServices()
+  },
+  { immediate: true }
+)
+const user = computed(() => account.value?.user.value)
+const session = computed(() => account.value?.session.value)
+const sessionFailure = computed(() => account.value?.sessionFailure.value)
+const settled = computed(() => account.value?.settled.value ?? false)
+const balance = computed(() => account.value?.balance.value)
 const authEnabled = useWorkshopAuthFlag()
 const studioEnabled = useWorkshopAppsEnabled()
 const mounted = useMounted()
@@ -260,24 +298,38 @@ const canRunModel = computed(
     !activeExample.value?.fields &&
     !clone
 )
+const flagOffGate = computed(() =>
+  workshopEnabledSettled.value ? 'rollingOut' : 'resolving'
+)
 const gate = computed(() => {
-  if (!workshopEnabled.value || !canRunModel.value) return 'unavailable'
+  if (!canRunModel.value) return 'unavailable'
+  if (!workshopEnabled.value) return flagOffGate.value
   if (!mounted.value || draftPending.value) return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
   if (!settled.value || (user.value && !session.value)) return 'pending'
   if (!session.value) return 'signedOut'
   if (
     runState.value.status !== 'running' &&
-    balance.value.status === 'ok' &&
+    balance.value?.status === 'ok' &&
     balance.value.credits <= 0
   )
     return session.value.role === 'member' ? 'memberNoCredits' : 'noCredits'
   return 'ready'
 })
+const blockedRunLabel = computed<TranslationKey>(() => {
+  if (gate.value === 'resolving') return 'workshop.run.resolvingAvailability'
+  if (gate.value === 'pending') return 'workshop.run.preparingSession'
+  return model.incompleteReason
+    ? 'workshop.model.notSupported'
+    : 'workshop.run.mappingUnavailable'
+})
 const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
 )
 const isRunning = computed(() => runState.value.status === 'running')
+watch(isRunning, (running) => {
+  if (!running && !workshopEnabled.value && account.value) stopAccountServices()
+})
 const protectedHistoryIndex = ref<number>()
 let approvedTraversal = false
 let restoringTraversal = false
@@ -516,7 +568,7 @@ function leaveOwner() {
 // reads another workspace's assets.
 async function historyToken(): Promise<string> {
   const owner = session.value
-  const result = await ensureFresh()
+  const result = await account.value?.ensureFresh()
   if (
     !owner ||
     result?.status !== 'ok' ||
@@ -567,7 +619,7 @@ async function freshCredentialFor(
   startedFor: WorkshopSession,
   attempt: ActiveRun
 ): Promise<WorkshopSession> {
-  const credential = await ensureFresh(undefined, {
+  const credential = await account.value?.ensureFresh(undefined, {
     signal: attempt.controller.signal
   })
   attempt.controller.signal.throwIfAborted()
@@ -1011,6 +1063,20 @@ function useInCode() {
               {{ t('nav.workspaceSwitchError', locale) }}
             </p>
           </template>
+          <p
+            v-else-if="gate === 'rollingOut'"
+            class="flex min-h-14 flex-wrap items-center justify-center gap-x-1.5 px-2 text-center text-xs text-content-secondary sm:text-sm"
+            data-testid="run-rollout-note"
+          >
+            {{ t('workshop.run.rollingOut', locale) }}
+            <button
+              type="button"
+              class="cursor-pointer font-bold text-primary-warm-white underline underline-offset-2 hover:text-primary-comfy-yellow"
+              @click="activeSection = 'api'"
+            >
+              {{ t('workshop.run.rollingOutApi', locale) }}
+            </button>
+          </p>
           <Button
             v-else-if="gate === 'ready'"
             size="lg"
@@ -1034,16 +1100,7 @@ function useInCode() {
             data-testid="run-button"
             :data-gate="gate"
           >
-            {{
-              t(
-                gate === 'pending'
-                  ? 'workshop.run.preparingSession'
-                  : model.incompleteReason
-                    ? 'workshop.model.notSupported'
-                    : 'workshop.run.mappingUnavailable',
-                locale
-              )
-            }}
+            {{ t(blockedRunLabel, locale) }}
           </Button>
         </div>
       </div>
@@ -1052,7 +1109,7 @@ function useInCode() {
         class="flex min-w-0 flex-col gap-4 lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
       >
         <PlaygroundOutput
-          v-if="workshopEnabled || isRunning"
+          v-if="workshopEnabled || runState.status !== 'idle'"
           v-model:revealed="revealed"
           :state="runState"
           :earlier
