@@ -265,7 +265,12 @@ export const crossOriginSessionFixture = base.extend<
       }
       requireEnv(
         sessionEnv,
-        ['SESSION_E2E_CLOUD_URL', 'SESSION_E2E_EMAIL', 'SESSION_E2E_PASSWORD'],
+        [
+          'SESSION_E2E_CLOUD_URL',
+          'SESSION_E2E_CLOUD_UPSTREAM',
+          'SESSION_E2E_EMAIL',
+          'SESSION_E2E_PASSWORD'
+        ],
         testInfo
       )
       await sessionAdmin.revokeAll()

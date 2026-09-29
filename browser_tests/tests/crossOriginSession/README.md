@@ -37,19 +37,19 @@ with `op run`. Never commit credentials. Production hosts are rejected as
 variables, and a request to one is blocked and fails the test, even when listed
 in `SESSION_E2E_EXTRA_ORIGINS`.
 
-| Variable                        | Example                           | Needed by                              |
-| ------------------------------- | --------------------------------- | -------------------------------------- |
-| `SESSION_E2E_CLOUD_URL`         | `https://testcloud.comfy.org`     | Cloud tab                              |
-| `SESSION_E2E_CLOUD_UPSTREAM`    | `http://localhost:4173`           | Serve Cloud's pages from a local build |
-| `SESSION_E2E_WEBSITE_URL`       | `https://testwebsite.comfy.org`   | Website tab; must be on test's list    |
-| `SESSION_E2E_WEBSITE_UPSTREAM`  | `http://localhost:4321`           | Website tab                            |
-| `SESSION_E2E_BILLING_URL`       | `https://testbilling.comfy.org`   | billing-web tab                        |
-| `SESSION_E2E_BILLING_UPSTREAM`  | `http://localhost:5174`           | Optional: serve billing-web locally    |
-| `SESSION_E2E_PLATFORM_URL`      | test platform origin              | Platform tab                           |
-| `SESSION_E2E_EMAIL`             | an email/password test-env user   | Signed-in tests                        |
-| `SESSION_E2E_PASSWORD`          |                                   | Signed-in tests                        |
-| `SESSION_E2E_TEAM_WORKSPACE_ID` | a team workspace the account owns | Workspace tests                        |
-| `SESSION_E2E_EXTRA_ORIGINS`     | `https://testapi.comfy.org`       | Other origins a run must reach         |
+| Variable                        | Example                           | Needed by                           |
+| ------------------------------- | --------------------------------- | ----------------------------------- |
+| `SESSION_E2E_CLOUD_URL`         | `https://testcloud.comfy.org`     | Cloud tab                           |
+| `SESSION_E2E_CLOUD_UPSTREAM`    | `http://localhost:4173`           | Flag-on tests: Cloud's local build  |
+| `SESSION_E2E_WEBSITE_URL`       | `https://testwebsite.comfy.org`   | Website tab; must be on test's list |
+| `SESSION_E2E_WEBSITE_UPSTREAM`  | `http://localhost:4321`           | Website tab                         |
+| `SESSION_E2E_BILLING_URL`       | `https://testbilling.comfy.org`   | billing-web tab                     |
+| `SESSION_E2E_BILLING_UPSTREAM`  | `http://localhost:5174`           | Optional: serve billing-web locally |
+| `SESSION_E2E_PLATFORM_URL`      | test platform origin              | Platform tab                        |
+| `SESSION_E2E_EMAIL`             | an email/password test-env user   | Signed-in tests                     |
+| `SESSION_E2E_PASSWORD`          |                                   | Signed-in tests                     |
+| `SESSION_E2E_TEAM_WORKSPACE_ID` | a team workspace the account owns | Workspace tests                     |
+| `SESSION_E2E_EXTRA_ORIGINS`     | `https://testapi.comfy.org`       | Other origins a run must reach      |
 
 A test whose variables are missing is skipped with the names it needs.
 
