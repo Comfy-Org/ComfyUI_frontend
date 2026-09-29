@@ -22,47 +22,12 @@ export class CanvasHelper {
     private resetViewButton: Locator
   ) {}
 
-  async getBounds() {
-    await expect
-      .poll(async () => (await this.canvas.boundingBox()) !== null)
-      .toBe(true)
-    const bounds = await this.canvas.boundingBox()
-    if (bounds === null) throw new Error('Canvas bounding box not available')
-    return bounds
-  }
-
   async resetView(): Promise<void> {
     if (await this.resetViewButton.isVisible()) {
       await this.resetViewButton.click()
     }
     await this.page.mouse.move(10, 10)
     await nextFrame(this.page)
-  }
-
-  async shiftViewport(dx: number, dy: number): Promise<void> {
-    await this.page.evaluate(
-      ({ dx, dy }) => {
-        const ds = window.app!.canvas.ds
-        ds.offset[0] += dx
-        ds.offset[1] += dy
-        window.app!.canvas.setDirty(true, true)
-      },
-      { dx, dy }
-    )
-    await nextFrame(this.page)
-  }
-
-  async getNodeCenterOnScreen(id: NodeId): Promise<Position> {
-    return this.page.evaluate((id) => {
-      const app = window.app!
-      const node = app.canvas.graph!.getNodeById(id)
-      if (!node) throw new Error(`Node ${id} not found`)
-      const [x, y] = app.canvasPosToClientPos([
-        node.pos[0] + node.size[0] / 2,
-        node.pos[1] + node.size[1] / 2
-      ])
-      return { x, y }
-    }, id)
   }
 
   async getNodesOutsideViewportCount(): Promise<number> {

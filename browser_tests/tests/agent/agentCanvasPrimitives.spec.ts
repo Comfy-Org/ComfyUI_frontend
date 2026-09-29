@@ -4,10 +4,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 test.describe('Agent canvas primitives', { tag: '@agent' }, () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   test('select-only preserves the semantic workflow graph', async ({
     comfyPage
   }) => {
@@ -32,13 +28,16 @@ test.describe('Agent canvas primitives', { tag: '@agent' }, () => {
     const node = await comfyPage.nodeOps.getFirstNodeRef()
     expect(node).not.toBeNull()
     if (!node) return
+    const nodeTitle = await node.getProperty<string>('title')
 
     // Push the node away from the centre first, otherwise the assertions below
     // hold even if centerOnNode() does nothing at all.
-    await comfyPage.canvasOps.shiftViewport(-400, -250)
-    const view = await comfyPage.canvasOps.getBounds()
+    await comfyPage.canvasOps.pan({ x: 400, y: 250 })
+    const view = await comfyPage.canvas.boundingBox()
+    if (!view) throw new Error('Canvas bounding box not available')
     const centre = { x: view.x + view.width / 2, y: view.y + view.height / 2 }
-    const offCentre = await comfyPage.canvasOps.getNodeCenterOnScreen(node.id)
+    const offCentre = await comfyPage.canvasOps.getNodeCenterByTitle(nodeTitle)
+    if (!offCentre) throw new Error(`Node ${node.id} center not found`)
     expect(
       Math.hypot(offCentre.x - centre.x, offCentre.y - centre.y),
       'node starts off-centre'
@@ -47,7 +46,8 @@ test.describe('Agent canvas primitives', { tag: '@agent' }, () => {
     const before = await comfyPage.nodeOps.getSerializedGraphWithoutViewport()
     await node.centerOnNode()
 
-    const centred = await comfyPage.canvasOps.getNodeCenterOnScreen(node.id)
+    const centred = await comfyPage.canvasOps.getNodeCenterByTitle(nodeTitle)
+    if (!centred) throw new Error(`Node ${node.id} center not found`)
     expect(centred.x, 'node centred horizontally').toBeCloseTo(centre.x, -1)
     expect(centred.y, 'node centred vertically').toBeCloseTo(centre.y, -1)
     expect(await comfyPage.nodeOps.getSerializedGraphWithoutViewport()).toEqual(
