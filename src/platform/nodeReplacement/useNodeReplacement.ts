@@ -2,6 +2,7 @@ import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
 } from '@/core/graph/nodeShell/nodeShellState'
+import { decodeWidgetValueLayout } from '@/core/graph/widgets/control/widgetControl'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
@@ -161,7 +162,14 @@ function transferWidgetValue(
   const oldWidgetIdx = oldWidgetIds.indexOf(oldInputName)
   if (oldWidgetIdx === -1) return
 
-  const oldValue = serialized.widgets_values[oldWidgetIdx]
+  const valueLayout = decodeWidgetValueLayout(
+    oldWidgetIds.map(() => ({
+      controlConfig: { mode: 'fixed' as const, hasFilter: true }
+    })),
+    serialized.widgets_values
+  )
+  const oldValue =
+    serialized.widgets_values[valueLayout[oldWidgetIdx]?.valueIndex]
   if (oldValue === undefined) return
 
   const newWidget = newNode.widgets?.find((w) => w.name === newInputName)

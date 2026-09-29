@@ -4,6 +4,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { ValueControlMode } from '@/core/graph/widgets/control/valueControl'
 
 export interface WidgetState<
   TValue = WidgetValue,
@@ -30,4 +31,16 @@ export type WidgetStateInit<
 > = Omit<WidgetState<TValue, TType, TOptions>, 'nodeId' | 'name' | 'y'> & {
   name?: string
   y?: number
+}
+
+export interface WidgetControlState {
+  mode: ValueControlMode
+  filter?: string
+  hasExecuted: boolean
+}
+
+export interface WidgetControlConfig {
+  mode: ValueControlMode
+  hasFilter: boolean
+  filter?: string
 }

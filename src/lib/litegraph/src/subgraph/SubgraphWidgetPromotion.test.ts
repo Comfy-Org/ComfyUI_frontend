@@ -21,7 +21,6 @@ import {
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
-import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
@@ -950,20 +949,6 @@ describe('SubgraphWidgetPromotion', () => {
         if (r.kind === 'byName') reorderSubgraphInputsByName(host, r.order)
       }
 
-      function makeControlWidget(
-        value: 'increment' | 'fixed',
-        marker: boolean
-      ) {
-        const base = {
-          name: 'control_after_generate',
-          value,
-          serialize: false,
-          beforeQueued: () => {},
-          afterQueued: () => {}
-        }
-        return marker ? { ...base, [IS_CONTROL_WIDGET]: true } : base
-      }
-
       type ReorderCase = {
         name: string
         sources: SourceSpec[]
@@ -1066,8 +1051,6 @@ describe('SubgraphWidgetPromotion', () => {
       type ControlCase = {
         name: string
         editVia: 'viewKey' | 'vue'
-        controlMode: 'increment' | 'fixed'
-        controlMarker: boolean
         seedHostValue: number
         mutateSourceSeedAfterReorder?: number
         expect: {
@@ -1078,19 +1061,15 @@ describe('SubgraphWidgetPromotion', () => {
 
       const controlCases: ControlCase[] = [
         {
-          name: 'ViewKey + increment: source seed mutation after reorder is ignored in prompt',
+          name: 'ViewKey: source seed mutation after reorder is ignored in prompt',
           editVia: 'viewKey',
-          controlMode: 'increment',
-          controlMarker: false,
           seedHostValue: 123456,
           mutateSourceSeedAfterReorder: 789,
           expect: { promptSeed: 123456 }
         },
         {
-          name: 'Vue + fixed: host-wins — does not push Vue value into source seed',
+          name: 'Vue: host-wins — does not push Vue value into source seed',
           editVia: 'vue',
-          controlMode: 'fixed',
-          controlMarker: false,
           seedHostValue: 123456,
           expect: { sourceSeed: 0 }
         }
@@ -1114,10 +1093,6 @@ describe('SubgraphWidgetPromotion', () => {
         writePromotedWidgetValue(host, 0, 'positive prompt')
         writePromotedWidgetValue(host, 1, 'negative prompt')
         writePromotedWidgetValue(host, 2, c.seedHostValue)
-        seed.widget.linkedWidgets = [
-          makeControlWidget(c.controlMode, c.controlMarker) as never
-        ]
-
         reorderSubgraphInputsByName(host, ['text_1', 'seed', 'text'])
 
         if (c.mutateSourceSeedAfterReorder !== undefined) {

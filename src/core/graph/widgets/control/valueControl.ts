@@ -1,53 +1,50 @@
-import { isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IComboWidget
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
 
-import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
-
-type ValueControlMode =
+export type ValueControlMode =
   | 'fixed'
   | 'increment'
   | 'increment-wrap'
   | 'decrement'
   | 'randomize'
 
-export function nextValueForLinkedTarget(params: {
-  target: IBaseWidget
-  linkedWidgets: IBaseWidget[] | undefined
-  nodeId: unknown
-}): IBaseWidget['value'] | undefined {
-  const linked = params.linkedWidgets
-  if (!linked) return undefined
+export const COMBO_CONTROL_MODES: readonly ValueControlMode[] = [
+  'fixed',
+  'increment',
+  'increment-wrap',
+  'decrement',
+  'randomize'
+]
 
-  const controlWidget = linked.find(isValueControlWidget)
-  if (!controlWidget) return undefined
+export const NUMBER_CONTROL_MODES: readonly ValueControlMode[] = [
+  'fixed',
+  'increment',
+  'decrement',
+  'randomize'
+]
 
-  const comboFilter = linked.find(
-    (w) => w !== controlWidget && w.type === 'string'
-  )
-  const filterValue =
-    typeof comboFilter?.value === 'string' ? comboFilter.value : undefined
+const VALUE_CONTROL_MODES: ReadonlySet<string> = new Set(COMBO_CONTROL_MODES)
 
-  const mode = controlWidget.value as ValueControlMode
-  return computeNextControlledValue(params.target, mode, {
-    comboFilter: filterValue,
-    nodeId: params.nodeId
-  })
+export function isValueControlMode(value: unknown): value is ValueControlMode {
+  return typeof value === 'string' && VALUE_CONTROL_MODES.has(value)
+}
+
+export function parseValueControlMode(
+  value: unknown
+): ValueControlMode | undefined {
+  if (value === true) return 'randomize'
+  if (value === false) return 'fixed'
+  return isValueControlMode(value) ? value : undefined
+}
+
+interface ValueControlTarget {
+  type: IBaseWidget['type']
+  value?: unknown
+  options: IBaseWidget['options']
 }
 
 const SAFE_INTEGER_MAX = 1125899906842624
 const SAFE_INTEGER_MIN = -1125899906842624
-
-export function isValueControlWidget(widget: IBaseWidget): boolean {
-  return (
-    (widget as Record<symbol, unknown>)[IS_CONTROL_WIDGET] === true &&
-    typeof widget.beforeQueued === 'function' &&
-    typeof widget.afterQueued === 'function'
-  )
-}
 
 function buildComboFilter(
   filter: string | undefined,
@@ -73,21 +70,19 @@ function buildComboFilter(
 }
 
 export function computeNextControlledValue(
-  target: IBaseWidget,
+  target: ValueControlTarget,
   mode: ValueControlMode,
   options: { comboFilter?: string; nodeId?: unknown } = {}
 ): IBaseWidget['value'] | undefined {
   if (mode === 'fixed') return undefined
-
-  if (isComboWidget(target)) {
+  if (target.type === 'combo') {
     return computeNextComboValue(target, mode, options)
   }
-
   return computeNextNumberValue(target, mode)
 }
 
 function computeNextComboValue(
-  target: IComboWidget,
+  target: ValueControlTarget,
   mode: ValueControlMode,
   { comboFilter, nodeId }: { comboFilter?: string; nodeId?: unknown }
 ): IBaseWidget['value'] | undefined {
@@ -113,16 +108,17 @@ function computeNextComboValue(
     return undefined
   }
 
-  let currentIndex = findComboValueIndex(values, target.value)
+  let currentIndex =
+    typeof target.value === 'string' || typeof target.value === 'number'
+      ? findComboValueIndex(values, target.value)
+      : -1
   const length = values.length
-
   switch (mode) {
     case 'increment':
       currentIndex += 1
       break
     case 'increment-wrap':
-      currentIndex += 1
-      if (currentIndex >= length) currentIndex = 0
+      currentIndex = (currentIndex + 1) % length
       break
     case 'decrement':
       currentIndex -= 1
@@ -130,14 +126,15 @@ function computeNextComboValue(
     case 'randomize':
       currentIndex = Math.floor(Math.random() * length)
       break
+    case 'fixed':
+      return undefined
   }
 
-  currentIndex = Math.max(0, Math.min(length - 1, currentIndex))
-  return values[currentIndex]
+  return values[Math.max(0, Math.min(length - 1, currentIndex))]
 }
 
 function computeNextNumberValue(
-  target: IBaseWidget,
+  target: ValueControlTarget,
   mode: ValueControlMode
 ): number | undefined {
   if (typeof target.value !== 'number') return undefined
@@ -146,8 +143,8 @@ function computeNextNumberValue(
   const max = Math.min(SAFE_INTEGER_MAX, rawMax)
   const min = Math.max(SAFE_INTEGER_MIN, rawMin)
   const range = (max - min) / step2
-
   let next = target.value
+
   switch (mode) {
     case 'increment':
     case 'increment-wrap':
@@ -159,6 +156,8 @@ function computeNextNumberValue(
     case 'randomize':
       next = Math.floor(Math.random() * range) * step2 + min
       break
+    case 'fixed':
+      return undefined
   }
 
   return Math.min(Math.max(next, min), max)
