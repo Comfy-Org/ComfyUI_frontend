@@ -87,6 +87,54 @@ const launchModels: WorkshopModel[] = [
 ]
 
 describe('ModelsCatalogue', () => {
+  it.for([
+    {
+      locale: 'en',
+      tab: 'models',
+      subtitle:
+        'Try the latest AI models with your own ideas, right in your browser.'
+    },
+    {
+      locale: 'en',
+      tab: 'workflows',
+      subtitle:
+        'Turn your ideas into finished results with multi-step workflows powered by AI models.'
+    },
+    {
+      locale: 'en',
+      tab: 'apps',
+      subtitle:
+        'Take on bigger ideas with apps that bring multiple workflows together.'
+    },
+    {
+      locale: 'zh-CN',
+      tab: 'models',
+      subtitle: '用你自己的创意试用最新的 AI 模型，就在浏览器中。'
+    },
+    {
+      locale: 'zh-CN',
+      tab: 'workflows',
+      subtitle: '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
+    },
+    {
+      locale: 'zh-CN',
+      tab: 'apps',
+      subtitle: '用整合多个工作流的应用，挑战更大的创意。'
+    }
+  ] as const)(
+    'introduces the $tab tab in its own words ($locale)',
+    async ({ locale, tab, subtitle }) => {
+      const user = userEvent.setup()
+      render(ModelsCatalogue, { props: { models: launchModels, locale } })
+      if (tab !== 'models')
+        await user.click(screen.getByTestId(`catalogue-tab-${tab}`))
+
+      expect(await screen.findByTestId('workshop-hero')).toHaveTextContent(
+        subtitle
+      )
+    }
+  )
+
   it('separates workflow outcomes from Models and searches their supporting model names', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
@@ -112,6 +160,20 @@ describe('ModelsCatalogue', () => {
     expect(
       screen.queryByRole('link', { name: /Remove an image background/ })
     ).toBeNull()
+  })
+
+  // The line under the title belongs to the half that is open, so the eyebrow
+  // is what has to hold still: it names the whole catalogue, not the tab.
+  it('names the Hub in the eyebrow on every tab', async () => {
+    const user = userEvent.setup()
+    render(ModelsCatalogue, { props: { models: launchModels } })
+
+    const hero = () => screen.getByTestId('workshop-hero')
+    expect(hero()).toHaveTextContent('Hub')
+
+    await user.click(screen.getByRole('button', { name: 'Workflows' }))
+    await screen.findByRole('heading', { name: 'Create product photos & ads' })
+    expect(hero()).toHaveTextContent('Hub')
   })
 
   it('opens the workflow tab from its return link and filters by its own categories', async () => {
@@ -189,14 +251,18 @@ describe('ModelsCatalogue', () => {
     render(ModelsCatalogue, { props: { models: launchModels } })
     await user.click(screen.getByRole('button', { name: 'Apps' }))
 
-    const cards = within(screen.getByTestId('apps-list')).getAllByTestId(
-      'workshop-model-card'
-    )
-    expect(cards.map((card) => card.getAttribute('href'))).toEqual([
-      '/models/apps/cinematic-studio/',
-      '/models/apps/reshoot/'
-    ])
-    expect(cards.map((card) => card.dataset.kind)).toEqual(['app', 'app'])
+    const shelf = await screen.findByTestId('app-shelf')
+    expect(
+      within(shelf)
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href'))
+    ).toEqual(['/models/apps/cinematic-studio/', '/models/apps/reshoot/'])
+    expect(
+      within(screen.getByTestId('workshop-toolbar')).getByTestId(
+        'catalogue-tabs'
+      )
+    ).toBeVisible()
+    expect(screen.queryByRole('button', { name: /Browse all apps/ })).toBeNull()
   })
 
   it.for([
@@ -236,7 +302,7 @@ describe('ModelsCatalogue', () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
     await screen.findByRole('heading', { name: 'Create product photos & ads' })
-    await user.click(screen.getByTestId('browse-all'))
+    await user.click(screen.getByTestId('browse-all-end'))
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'All workflows 2'
     )
@@ -252,7 +318,7 @@ describe('ModelsCatalogue', () => {
   it('keeps all models limited to models when workflows are available', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
-    await user.click(screen.getByTestId('browse-all'))
+    await user.click(screen.getByTestId('browse-all-end'))
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'All models 1'
     )
@@ -317,7 +383,7 @@ describe('ModelsCatalogue', () => {
 
     // Inside a section the page is about that section, and the heading over it
     // belongs to the whole catalogue.
-    await user.click(screen.getByTestId('browse-all'))
+    await user.click(screen.getByTestId('browse-all-end'))
 
     expect(screen.queryByTestId('workshop-hero')).toBeNull()
   })

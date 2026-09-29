@@ -14,6 +14,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type {
   BillingAuthenticationState,
   BillingOpStatusResponse
@@ -76,6 +77,7 @@ describe('billingOperationStore', () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
     vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_3ds')
+    remoteConfig.value = {}
     mockHandleNextAction.mockResolvedValue({})
     mockLoadStripe.mockResolvedValue({
       handleNextAction: mockHandleNextAction
@@ -1478,6 +1480,18 @@ describe('billingOperationStore', () => {
         errorMessage: 'card_declined',
         summary: 'billingOperation.topupFailed',
         detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'authentication_failed',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.authenticationFailedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'authentication_required',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.authenticationFailedDetail'
       }
     ])(
       'shows an actionable $errorMessage message for $type failures',
@@ -1671,6 +1685,37 @@ describe('billingOperationStore', () => {
           polledAfterChallenge + 1
         )
       })
+    })
+
+    it.for([
+      {
+        source: 'the server key over the build-time one',
+        server: 'pk_server',
+        expected: 'pk_server'
+      },
+      {
+        source: 'the build-time key when the server has none',
+        server: undefined,
+        expected: 'pk_test_3ds'
+      }
+    ])('loads the challenge with $source', async ({ server, expected }) => {
+      remoteConfig.value = { stripe_publishable_key: server }
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-3ds',
+        status: 'pending',
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: new Date().toISOString()
+      })
+      mockHandleNextAction.mockReturnValue(new Promise(() => {}))
+
+      void useBillingOperationStore().startOperation('op-3ds', 'subscription', {
+        autoHandleRequiresAction: true,
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockLoadStripe).toHaveBeenCalledWith(expected)
     })
 
     it('recovers when Stripe.js fails to load', async () => {

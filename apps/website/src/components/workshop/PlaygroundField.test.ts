@@ -44,6 +44,34 @@ function mountField(
 }
 
 describe('PlaygroundField', () => {
+  it('shows the localized video duration limit in its validation error', () => {
+    mountField(
+      {
+        kind: 'text',
+        name: 'video',
+        label: 'Video',
+        required: false,
+        multiline: false,
+        presentation: {
+          label: 'Video',
+          help: '',
+          hidden: false,
+          advanced: false,
+          control: 'media',
+          urlUpload: 'video',
+          maxVideoDurationSeconds: 15
+        }
+      },
+      {},
+      'zh-CN',
+      { video: 'videoTooLong' }
+    )
+
+    expect(screen.getByTestId('error-video')).toHaveTextContent(
+      '请使用时长不超过 15 秒的视频。'
+    )
+  })
+
   it('shows a multiline default in its editor without repeating it as help text', () => {
     const field: FieldSchema = {
       kind: 'text',

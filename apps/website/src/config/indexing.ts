@@ -11,7 +11,6 @@ const NOINDEX_ROUTES = [
   ...PAYMENT_STATUSES.map((status) => `/payment/${status}`),
   '/individual-submission',
   '/booking-confirmation',
-  '/agent',
   '/login',
   '/signup',
   '/forgot-password',
@@ -26,11 +25,14 @@ const NOINDEX_ROUTES = [
   ...PLACEHOLDER_PATHNAMES
 ]
 
-const NOINDEX_PATHNAMES = new Set(
-  ALL_LOCALE_PREFIXES.flatMap((prefix) =>
+const NOINDEX_PATHNAMES = new Set([
+  ...ALL_LOCALE_PREFIXES.flatMap((prefix) =>
     NOINDEX_ROUTES.map((route) => `${prefix}${route}`)
-  )
-)
+  ),
+  // Both /agent and /zh-CN/agent are real, indexable, localized pages. Only
+  // the older /comfy-agent preview route stays out of the index.
+  '/comfy-agent'
+])
 
 const MODEL_REDIRECT_PATHNAMES = new Set(
   models

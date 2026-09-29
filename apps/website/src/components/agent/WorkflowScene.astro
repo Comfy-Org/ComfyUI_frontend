@@ -1,0 +1,100 @@
+---
+import productWorkflowKeyframes from '../../styles/product-workflow-keyframes.css?raw'
+import WorkflowNode from './WorkflowNode.astro'
+import { productWorkflow as workflow } from './productWorkflow'
+import { createWorkflowMotion } from './workflowMotion'
+
+interface Props {
+  userCursorLabel: string
+}
+
+const { userCursorLabel } = Astro.props
+const { nodes, width, height, agentRest, userRest } = workflow
+const unit = width / 100
+const imageRoot = 'https://media.comfy.org/website/comfy-agent'
+const motion = createWorkflowMotion(workflow)
+const { scene } = motion
+---
+
+<style
+  is:inline
+  set:html={`${motion.css}\n${productWorkflowKeyframes}`}
+></style>
+<div
+  style={`--wf-duration:${motion.duration}s;--wf-aspect:${width} / ${height}`}
+  class="wf-example"
+  data-example={workflow.id}
+>
+  <div class="wf-scroll">
+    <div class="wf-stage">
+      <div
+        class="wf-scene"
+        id={`workflow-${workflow.id}`}
+        style={`--wf-animation:wf-scene-${workflow.id}`}
+      >
+        <svg
+          class="wf-connections"
+          viewBox={`0 0 ${width} ${height}`}
+          aria-hidden="true"
+        >
+          {scene.wires.map((wire) => (
+            <path
+              d={wire.path}
+              pathLength="1"
+              style={`--wf-animation:${wire.name}`}
+            />
+          ))}
+        </svg>
+        {nodes.map((node, index) => (
+          <WorkflowNode
+            node={node}
+            motion={scene.nodes[index]}
+            unit={unit}
+            imageRoot={imageRoot}
+          />
+        ))}
+        <div
+          style={`--wf-animation:${scene.userCursor.name};left:${userRest.x / unit}cqw;top:${userRest.y / unit}cqw`}
+          class="wf-user"
+          role="img"
+          aria-label={userCursorLabel}
+        >
+          <img
+            class="wf-user-pointer"
+            src={`${imageRoot}/user-pointer.svg`}
+            alt=""
+            width="23"
+            height="26"
+          />
+          <span class="wf-user-badge"
+            ><img
+              src={`${imageRoot}/user-left.svg`}
+              alt=""
+              width="14"
+              height="29"
+            /><span><span class="ppformula-text-center">User</span></span
+            ><img
+              src={`${imageRoot}/user-right.svg`}
+              alt=""
+              width="14"
+              height="29"
+          /></span>
+        </div>
+        <div
+          style={`--wf-animation:${scene.agentCursor.name};left:${agentRest.x / unit}cqw;top:${agentRest.y / unit}cqw`}
+          class="wf-agent"
+          role="img"
+          aria-label="Comfy Agent"
+        >
+          <img
+            class="wf-agent-artwork"
+            src={`${imageRoot}/agent-cursor.svg`}
+            alt=""
+            width="459"
+            height="223"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

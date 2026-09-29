@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 
 import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGuard'
+import type { AppWorkshopModel } from '../../../config/models-catalogue'
 import type { WorkshopAppId } from '../../../lib/workshop/apps'
 import { workshopAppHref } from '../../../lib/workshop/apps'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
@@ -18,10 +20,12 @@ import CinematicStudioPanel from './CinematicStudioPanel.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
 
 const {
+  apps,
   models,
   initialApp = 'studio',
   locale = 'en'
 } = defineProps<{
+  apps: readonly AppWorkshopModel[]
   models: readonly CinematicModel[]
   initialApp?: WorkshopAppId
   locale?: Locale
@@ -34,9 +38,10 @@ const LAYOUTS = [
 ] as const
 
 const APPS = ['studio', 'reshoot'] as const
+const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
 const studioEnabled = useWorkshopAppsEnabled()
-const layout = ref('e')
+const layout = ref('d')
 const app = ref<WorkshopAppId>(initialApp)
 const layoutOptions = computed(() =>
   LAYOUTS.map((option) => ({ id: option.id, label: tc(option.label, locale) }))
@@ -49,7 +54,7 @@ const appOptions = computed(() => [
 onMounted(() => {
   const params = new URLSearchParams(window.location.search)
   const requestedLayout = params.get('ux')
-  if (LAYOUTS.some((option) => option.id === requestedLayout))
+  if (reviewing && LAYOUTS.some((option) => option.id === requestedLayout))
     layout.value = requestedLayout ?? layout.value
   const requestedApp = APPS.find((id) => id === params.get('app'))
   if (requestedApp) showApp(requestedApp)
@@ -99,18 +104,24 @@ function pickApp(id: string) {
   if (!picked) return
   guarded(() => {
     showApp(picked)
-    if (layout.value === 'hub') setLayout('e')
+    if (layout.value === 'hub') setLayout('d')
   })
 }
 </script>
 
 <template>
   <WorkshopGate :allowed="studioEnabled">
-    <CinematicAppsHub v-if="layout === 'hub'" :locale />
+    <CinematicAppsHub v-if="layout === 'hub'" :models="apps" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
-    <CinematicStudioPanel v-else-if="layout === 'd'" :models :locale />
-    <CinematicStudio v-else :models :locale />
+    <CinematicStudioPanel
+      v-else-if="layout === 'd'"
+      :models
+      :show-credits="false"
+      :locale
+    />
+    <CinematicStudio v-else :models :show-credits="false" :locale />
     <CinematicScenarioMenu
+      v-if="reviewing"
       :app
       :layout
       :apps="appOptions"

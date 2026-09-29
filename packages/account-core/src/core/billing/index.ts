@@ -76,6 +76,14 @@ export type {
 } from './plans.js'
 export { PLANS_ROUTE, createPlansReader } from './plans.js'
 export type {
+  WorkspaceInvite,
+  WorkspaceInviteCommands
+} from './workspaceInvites.js'
+export {
+  WORKSPACE_INVITES_ROUTE,
+  createWorkspaceInviteCommands
+} from './workspaceInvites.js'
+export type {
   PaymentMethodsReadOptions,
   PaymentMethodsReader,
   PaymentMethodsReaderOptions,
@@ -194,11 +202,16 @@ export type {
   PaymentReasonKey,
   PaymentStep
 } from './paymentProjection.js'
-export { projectPaymentStep } from './paymentProjection.js'
-export type { PaymentCopyKey, PaymentCopyKeys } from './paymentCopy.js'
+export { awaitsHostedAction, projectPaymentStep } from './paymentProjection.js'
+export type {
+  DeclineDetailKey,
+  PaymentCopyKey,
+  PaymentCopyKeys
+} from './paymentCopy.js'
 export {
   DEFAULT_PAYMENT_COPY,
   createPaymentCopy,
+  declineDetailKey,
   paymentCopyKeys
 } from './paymentCopy.js'
 export type {

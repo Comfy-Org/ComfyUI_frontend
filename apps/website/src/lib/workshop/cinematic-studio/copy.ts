@@ -1,3 +1,5 @@
+import type { NamedValues } from '../../../i18n/interpolate'
+import { interpolate } from '../../../i18n/interpolate'
 import type { Locale, LocalizedText } from '../../../i18n/translations'
 
 /**
@@ -33,7 +35,6 @@ const copy = {
   },
   'cinematic.hub.openHub': { en: 'Open the Hub', 'zh-CN': '打开 Hub' },
   'cinematic.hub.beta': { en: 'Beta', 'zh-CN': '测试版' },
-  'cinematic.hub.soon': { en: 'Coming soon', 'zh-CN': '即将推出' },
   'cinematic.hub.studioSummary': {
     en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
     'zh-CN':
@@ -52,21 +53,6 @@ const copy = {
   'cinematic.hub.reshootMeta': {
     en: 'Video · MiniMax H3',
     'zh-CN': '视频 · MiniMax H3'
-  },
-  'cinematic.hub.to3d': { en: 'Image to 3D', 'zh-CN': '图像转 3D' },
-  'cinematic.hub.to3dSummary': {
-    en: 'Turn a product photo into a 3D model you can spin and export.',
-    'zh-CN': '把产品照片变成可旋转、可导出的 3D 模型。'
-  },
-  'cinematic.hub.product': { en: 'Product Shots', 'zh-CN': '产品图' },
-  'cinematic.hub.productSummary': {
-    en: 'Place a product in studio or lifestyle scenes, on a clean background or in context.',
-    'zh-CN': '把产品放进棚拍或生活场景，干净背景或真实环境都可以。'
-  },
-  'cinematic.hub.storyboard': { en: 'Storyboard', 'zh-CN': '分镜' },
-  'cinematic.hub.storyboardSummary': {
-    en: 'Write a sequence and get consistent frames, ready to animate.',
-    'zh-CN': '写下一段情节，生成风格一致、可直接做动画的分镜。'
   },
   'cinematic.stage.renderingTake': {
     en: 'Rendering take {take}',
@@ -148,10 +134,6 @@ const copy = {
     en: 'Slow now',
     'zh-CN': '当前较慢'
   },
-  'cinematic.picker.done': {
-    en: 'Done',
-    'zh-CN': '完成'
-  },
   'cinematic.stage.again': {
     en: 'Generate again',
     'zh-CN': '再生成一次'
@@ -182,17 +164,13 @@ const copy = {
     en: 'Format',
     'zh-CN': '画幅'
   },
+  'cinematic.section.shot': {
+    en: 'Shot',
+    'zh-CN': '镜头'
+  },
   'cinematic.section.direction': {
     en: 'Direction',
     'zh-CN': '导演'
-  },
-  'cinematic.scene.fullPrompt': {
-    en: 'View full prompt',
-    'zh-CN': '查看完整提示词'
-  },
-  'cinematic.scene.edit': {
-    en: 'Edit scene',
-    'zh-CN': '编辑场景'
   },
   'cinematic.reference.optional': {
     en: 'Optional',
@@ -228,8 +206,8 @@ const copy = {
     'zh-CN': '浏览模型'
   },
   'cinematic.model.heading': {
-    en: 'Model · via Comfy Router',
-    'zh-CN': '模型 · 通过 Comfy Router'
+    en: 'Model',
+    'zh-CN': '模型'
   },
   'cinematic.composer.label': {
     en: 'Direct the shot',
@@ -559,6 +537,14 @@ const copy = {
     en: 'Academy',
     'zh-CN': '学院比例'
   },
+  'cinematic.aspect.landscapePhoto': {
+    en: 'Landscape photo',
+    'zh-CN': '横向照片'
+  },
+  'cinematic.aspect.portraitPhoto': {
+    en: 'Portrait photo',
+    'zh-CN': '纵向照片'
+  },
   'cinematic.aspect.square': {
     en: 'Square',
     'zh-CN': '方形'
@@ -571,10 +557,6 @@ const copy = {
     en: 'Character',
     'zh-CN': '角色'
   },
-  'cinematic.reference.castHint': {
-    en: 'Same face across shots',
-    'zh-CN': '在各镜头中保持同一张脸'
-  },
   'cinematic.reference.castAction': {
     en: 'Add a character reference',
     'zh-CN': '添加角色参考'
@@ -583,10 +565,6 @@ const copy = {
     en: 'Palette',
     'zh-CN': '色板'
   },
-  'cinematic.reference.paletteHint': {
-    en: 'Match its colors',
-    'zh-CN': '匹配其色彩'
-  },
   'cinematic.reference.paletteAction': {
     en: 'Add a palette reference',
     'zh-CN': '添加色板参考'
@@ -594,6 +572,46 @@ const copy = {
   'cinematic.reference.remove': {
     en: 'Remove reference',
     'zh-CN': '移除参考'
+  },
+  'cinematic.colors.title': {
+    en: 'Colors',
+    'zh-CN': '颜色'
+  },
+  'cinematic.colors.hint': {
+    en: 'Sent as words, so every model can follow them',
+    'zh-CN': '以文字发送，所有模型都能使用'
+  },
+  'cinematic.colors.color': {
+    en: 'Color',
+    'zh-CN': '颜色'
+  },
+  'cinematic.colors.add': {
+    en: 'Add a color',
+    'zh-CN': '添加颜色'
+  },
+  'cinematic.colors.remove': {
+    en: 'Remove color',
+    'zh-CN': '移除颜色'
+  },
+  'cinematic.colors.makeMain': {
+    en: 'Make main color',
+    'zh-CN': '设为主色'
+  },
+  'cinematic.colors.main': {
+    en: 'Main color',
+    'zh-CN': '主色'
+  },
+  'cinematic.colors.sample': {
+    en: 'From an image',
+    'zh-CN': '从图片取色'
+  },
+  'cinematic.colors.sampleError': {
+    en: "Couldn't read colors from that image.",
+    'zh-CN': '无法从该图片读取颜色。'
+  },
+  'cinematic.colors.clear': {
+    en: 'Clear colors',
+    'zh-CN': '清除颜色'
   },
   'cinematic.picker.close': {
     en: 'Close',
@@ -667,7 +685,11 @@ const copy = {
 
 export type CinematicCopyKey = keyof typeof copy
 
-export function tc(key: CinematicCopyKey, locale: Locale = 'en'): string {
+export function tc(
+  key: CinematicCopyKey,
+  locale: Locale = 'en',
+  named: NamedValues = {}
+): string {
   const entry: LocalizedText = copy[key]
-  return entry[locale] ?? entry.en
+  return interpolate(entry[locale] ?? entry.en, named)
 }

@@ -1,11 +1,12 @@
 # Outputs default to 'true' for non-pull_request events: granular path filtering
 # is a PR-only optimization. This avoids the silent skip footgun where a job
 # gated on e.g. `app-website-changes == 'true'` would never run on push.
-# `evaluate-candidate` is the one exception, and only for the `should-run*`
-# outputs.
+# `evaluate-candidate` is the one exception: with it, every output is also
+# evaluated for merge_group candidates.
 #
-# It compares a merge-group candidate's synthetic head with its parent, so the
-# verdict covers that candidate alone. Opt in only from a workflow whose
+# It compares a merge-group candidate's synthetic head with its parent
+# (dorny/paths-filter defaults `base`/`ref` to the merge_group event SHAs), so
+# the verdict covers that candidate alone. Opt in only from a workflow whose
 # required check is emitted whatever the verdict; a check GitHub never creates
 # leaves the queue waiting.
 #
@@ -37,8 +38,8 @@ description: >
 inputs:
   evaluate-candidate:
     description: >
-      Also evaluate the `should-run*` outputs for merge_group candidates, so
-      they can be false there. Left off, they keep the unconditional 'true'.
+      Also evaluate every output for merge_group candidates, so they can be
+      false there. Left off, they keep the unconditional 'true'.
     required: false
     default: 'false'
 
@@ -49,49 +50,56 @@ outputs:
       With `evaluate-candidate` set to 'true', also evaluated for merge-queue
       candidates, over the range from the merge group's parent commit to this
       candidate's synthetic head.
-    value: ${{ (github.event_name != 'pull_request' && github.event_name != 'merge_group') || (github.event_name == 'merge_group' && inputs.evaluate-candidate != 'true') || steps.relevant.outputs.relevant == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.relevant.outputs.relevant == 'true' }}
   should-run-unit:
     description: >
       `should-run`, minus Playwright specs, snapshots, plans, and configs.
       Gates Vitest.
-    value: ${{ (github.event_name != 'pull_request' && github.event_name != 'merge_group') || (github.event_name == 'merge_group' && inputs.evaluate-candidate != 'true') || steps.relevant.outputs.unit == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.relevant.outputs.unit == 'true' }}
   should-run-e2e:
     description: >
       `should-run`, minus `**/*.test.ts` and `**/__mocks__/**`. Gates
       Playwright suites, including the perf project.
-    value: ${{ (github.event_name != 'pull_request' && github.event_name != 'merge_group') || (github.event_name == 'merge_group' && inputs.evaluate-candidate != 'true') || steps.relevant.outputs.e2e == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.relevant.outputs.e2e == 'true' }}
   should-run-source:
     description: >
       `should-run`, minus both test-file sets. Gates jobs that only consume
       built or imported source: ecosystem matrix, size data, dist scans.
-    value: ${{ (github.event_name != 'pull_request' && github.event_name != 'merge_group') || (github.event_name == 'merge_group' && inputs.evaluate-candidate != 'true') || steps.relevant.outputs.source == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.relevant.outputs.source == 'true' }}
   app-website-changes:
     description: 'Shared deps, `apps/website/**`, or website e2e workflow support changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
   app-billing-web-changes:
     description: 'Shared deps, `apps/billing-web/**`, or a billing-web workflow changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_billing_web == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_billing_web == 'true' }}
   app-frontend-changes:
     description: 'Shared deps or `src/**` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_frontend == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_frontend == 'true' }}
   packages-changes:
     description: 'Shared deps or `packages/**` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.packages == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.packages == 'true' }}
   storybook-changes:
     description: 'Shared deps, `.storybook/**`, `build/**`, or `vite.config.mts` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.storybook == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.storybook == 'true' }}
   docs-changes:
     description: '`docs/**` or any `**/*.md` changed (deps NOT folded in).'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.docs == 'true' }}
   dependency-changes:
     description: 'Root `.nvmrc`, `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' }}
 
 runs:
   using: composite
   steps:
+    - name: Decide whether to evaluate paths
+      id: mode
+      shell: bash
+      env:
+        EVALUATE: ${{ github.event_name == 'pull_request' || (github.event_name == 'merge_group' && inputs.evaluate-candidate == 'true') }}
+      run: echo "evaluate=$EVALUATE" >> "$GITHUB_OUTPUT"
+
     - name: Filter typed changes
-      if: ${{ github.event_name == 'pull_request' }}
+      if: ${{ steps.mode.outputs.evaluate == 'true' }}
       id: filter
       uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
       with:
@@ -123,7 +131,7 @@ runs:
             - 'pnpm-workspace.yaml'
 
     - name: Filter relevant changes
-      if: ${{ github.event_name == 'pull_request' || (github.event_name == 'merge_group' && inputs.evaluate-candidate == 'true') }}
+      if: ${{ steps.mode.outputs.evaluate == 'true' }}
       id: relevant
       uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
       with:
