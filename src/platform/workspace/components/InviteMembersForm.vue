@@ -15,7 +15,11 @@
         :key="email"
         :value="email"
         :class="
-          cn('rounded-full', !isValidEmail(email) && 'bg-danger/20 text-danger')
+          cn(
+            'rounded-full',
+            !isValidEmail(email) &&
+              'bg-destructive-background/20 text-destructive-background'
+          )
         "
       >
         <TagsInputItemText />
@@ -34,7 +38,7 @@
       v-if="invalidEmails.length > 0"
       :id="invalidEmailsHintId"
       role="alert"
-      class="text-danger m-0 text-xs"
+      class="m-0 text-xs text-destructive-background"
     >
       {{
         $t(
@@ -64,7 +68,7 @@
       v-if="seatOverage > 0"
       :id="seatLimitHintId"
       role="alert"
-      class="text-danger m-0 text-xs"
+      class="m-0 text-xs text-destructive-background"
     >
       {{
         $t('workspacePanel.inviteMemberDialog.seatLimitExceeded', {

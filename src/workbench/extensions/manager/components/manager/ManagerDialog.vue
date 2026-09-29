@@ -7,7 +7,7 @@
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--extensions-blocks]" />
-      <h2 class="text-neutral text-base">{{ $t('manager.title') }}</h2>
+      <h2 class="text-base text-base-foreground">{{ $t('manager.title') }}</h2>
     </template>
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavId" :nav-items="navItems" />

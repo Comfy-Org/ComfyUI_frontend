@@ -72,10 +72,10 @@ export interface ToolbarLabels {
   readonly searchPlaceholder: string
   readonly noResults: string
   readonly less: string
-  readonly selected: string
+  readonly selected: (count: number) => string
   readonly typeAll: string
-  readonly showResults: string
-  readonly showModels: string
+  readonly showResults: (count: number) => string
+  readonly showModels: (count: number) => string
   readonly resize: string
 }
 
@@ -220,9 +220,7 @@ const groupLabel = (group: FacetGroupConfig) =>
 
 const selectLabel = (group: FacetGroupConfig) => {
   const chosen = activeCountForType(group.type)
-  return chosen === 0
-    ? group.allLabel
-    : labels.selected.replace('{n}', String(chosen))
+  return chosen === 0 ? group.allLabel : labels.selected(chosen)
 }
 
 const sortLabel = computed(
@@ -332,7 +330,7 @@ function phoneToggle(key: string, value: string) {
             />
             <!-- Below lg the row runs out of width, so the tabs keep the icon
               and drop the word; the trigger's aria-label still names it. -->
-            <span class="ppformula-text-center-sm max-lg:hidden">
+            <span class="max-lg:hidden">
               {{ labels[tab.labelKey] }}
             </span>
           </TabsTrigger>
@@ -357,9 +355,7 @@ function phoneToggle(key: string, value: string) {
           @click="filterOpen = !filterOpen"
         >
           <SlidersHorizontal class="size-3.5 shrink-0" aria-hidden="true" />
-          <span class="ppformula-text-center-sm max-sm:hidden">{{
-            labels.filter
-          }}</span>
+          <span class="max-sm:hidden">{{ labels.filter }}</span>
           <span
             v-if="totalActiveFilters > 0"
             class="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-page/15 px-1 text-2xs font-bold tabular-nums"
@@ -390,9 +386,7 @@ function phoneToggle(key: string, value: string) {
             "
           >
             <ArrowUpDown class="size-3.5 shrink-0" aria-hidden="true" />
-            <span class="ppformula-text-center-sm max-sm:hidden">{{
-              sortLabel
-            }}</span>
+            <span class="max-sm:hidden">{{ sortLabel }}</span>
           </DropdownMenuTrigger>
           <DropdownMenuPortal>
             <DropdownMenuContent
@@ -644,11 +638,7 @@ function phoneToggle(key: string, value: string) {
             data-testid="hub-filter-show"
             @click="resultCount > 0 ? (filterOpen = false) : clearAll()"
           >
-            {{
-              resultCount > 0
-                ? showLabel.replace('{n}', String(resultCount))
-                : labels.clearAll
-            }}
+            {{ resultCount > 0 ? showLabel(resultCount) : labels.clearAll }}
           </button>
         </div>
       </div>

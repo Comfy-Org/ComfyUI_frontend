@@ -16,7 +16,7 @@
     </template>
     <div
       v-if="typeformError || !isValidTypeformId"
-      class="text-danger p-4 text-sm"
+      class="p-4 text-sm text-destructive-background"
     >
       {{ $t('linearMode.feedbackLoadError') }}
     </div>

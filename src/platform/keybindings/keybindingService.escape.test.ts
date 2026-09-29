@@ -9,6 +9,7 @@ import {
 } from '@/platform/keybindings/escapeOverride'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -49,6 +50,7 @@ describe('keybindingService - Escape key handling', () => {
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
 
+    registerCoreKeybindingCommands()
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
   })
@@ -141,6 +143,18 @@ describe('keybindingService - Escape key handling', () => {
     }
   )
 
+  it('does not throw when Escape fires with a non-Element target (e.g. document, in Safari when nothing has focus)', async () => {
+    const event = createKeyboardEvent('Escape', {
+      target: document as unknown as Element
+    })
+
+    await expect(keybindingService.keybindHandler(event)).resolves.not.toThrow()
+
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
+      'Comfy.Graph.ExitSubgraph'
+    )
+  })
+
   describe('registered Escape override', () => {
     it('suppresses ExitSubgraph when a registered override handles the event', async () => {
       const override = vi.fn().mockReturnValue(true)
@@ -178,8 +192,11 @@ describe('keybindingService - Escape key handling', () => {
       const override = vi.fn().mockReturnValue(true)
       registerEscapeOverride(override)
 
-      const keybindingStore = useKeybindingStore()
-      keybindingStore.addDefaultKeybinding(
+      useCommandStore().registerCommand({
+        id: 'Test.BareF9',
+        function: () => {}
+      })
+      useKeybindingStore().addDefaultKeybinding(
         new KeybindingImpl({ commandId: 'Test.BareF9', combo: { key: 'F9' } })
       )
 

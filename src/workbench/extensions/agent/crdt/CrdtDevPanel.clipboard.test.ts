@@ -47,6 +47,7 @@ const status: AgentCrdtStatus = {
   outcomes: {
     received: 1,
     applied: 1,
+    appliedLive: 1,
     skipped: 0,
     errored: 0,
     gap: 0,

@@ -8,45 +8,57 @@ import {
 } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { bannerName } from '../../lib/workshop/banner-name'
-import { modelDocsHref } from '../../lib/workshop/model-docs'
-import { taskLabelFor } from '../../lib/workshop/task-label'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const AUTOPLAY_MS = 7000
-const CAPABILITY_LIMIT = 3
+/**
+ * One thing worth opening, whatever kind of thing the catalogue holds. The
+ * shape lives here rather than beside the projections that build it, so a
+ * catalogue with nothing to do with models can render the banner without
+ * pulling the model catalogue in behind it.
+ */
+export interface FeaturedSlide {
+  readonly key: string
+  readonly href: string
+  readonly title: string
+  /** What it is or what it makes, in the badge that leads the slide. */
+  readonly kind: string
+  readonly tags: readonly string[]
+  readonly summary: string | undefined
+  readonly media: { url: string; kind: 'image' | 'video' } | undefined
+  readonly docsHref: string | undefined
+  readonly cta?: string
+}
 
-const { models, locale = 'en' } = defineProps<{
-  models: readonly WorkshopModel[]
+const AUTOPLAY_MS = 7000
+
+const {
+  slides,
+  locale = 'en',
+  autoplay = true,
+  compact = false
+} = defineProps<{
+  slides: readonly FeaturedSlide[]
   locale?: Locale
+  autoplay?: boolean
+  /** Where outcome rows follow immediately, the banner gives up height so the
+   * first of them is on screen with it. */
+  compact?: boolean
 }>()
 
-const slides = computed(() =>
-  models.map((model) => {
-    const task = taskLabelFor(model, locale)
-    return {
-      model,
-      task,
-      name: bannerName(model.name, taskLabelFor(model, 'en')),
-      docsHref: modelDocsHref(model),
-      capabilities: model.capabilities.slice(0, CAPABILITY_LIMIT)
-    }
-  })
-)
-
 const activeIndex = ref(0)
-const active = computed(
-  () => slides.value[Math.min(activeIndex.value, slides.value.length - 1)]
+const active = computed<FeaturedSlide | undefined>(
+  () => slides[Math.min(activeIndex.value, slides.length - 1)]
 )
 
 function goTo(index: number) {
-  activeIndex.value = (index + slides.value.length) % slides.value.length
+  activeIndex.value = (index + slides.length) % slides.length
 }
 
 const banner = useTemplateRef<HTMLElement>('banner')
@@ -59,11 +71,9 @@ const onScreen = useElementVisibility(banner, { initialValue: true })
 const visibility = useDocumentVisibility()
 const video = useTemplateRef<HTMLVideoElement>('video')
 // The video fills the banner, so the banner's observer is its observer.
-const previewSrc = usePreviewVideo(
-  video,
-  () => active.value.model.thumbnail?.url,
-  { visible: () => onScreen.value }
-)
+const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
+  visible: () => onScreen.value
+})
 
 // Clicking a bar leaves it focused, so pausing on any focus would stop the
 // rotation for good. Only a keyboard visitor, who needs the time, stops it.
@@ -77,7 +87,8 @@ useEventListener(banner, 'focusout', () => (readingByKeyboard.value = false))
 
 const rotating = computed(
   () =>
-    slides.value.length > 1 &&
+    autoplay &&
+    slides.length > 1 &&
     onScreen.value &&
     visibility.value === 'visible' &&
     !hovered.value &&
@@ -100,7 +111,9 @@ watch(rotating, (on) => (on ? resume() : pause()), { immediate: true })
 watch(activeIndex, () => (elapsed.value = 0))
 
 const fill = computed(() =>
-  prefersReducedMotion() ? 1 : Math.min(elapsed.value / AUTOPLAY_MS, 1)
+  !autoplay || prefersReducedMotion()
+    ? 1
+    : Math.min(elapsed.value / AUTOPLAY_MS, 1)
 )
 </script>
 
@@ -113,19 +126,26 @@ const fill = computed(() =>
     data-testid="section-featured"
   >
     <div
-      class="group relative block h-84 short:h-57 sm:short:h-60"
+      :class="
+        cn(
+          'group relative flex',
+          compact
+            ? 'min-h-68 short:min-h-48 sm:short:min-h-50'
+            : 'min-h-84 short:min-h-57 sm:short:min-h-60'
+        )
+      "
       data-testid="featured-slide"
     >
       <a
-        :href="active.model.href"
+        :href="active.href"
         tabindex="-1"
         aria-hidden="true"
         class="absolute inset-0"
         data-testid="featured-slide-link"
       ></a>
       <video
-        v-if="active.model.thumbnail?.kind === 'video'"
-        :key="active.model.slug"
+        v-if="active.media?.kind === 'video'"
+        :key="active.key"
         ref="video"
         :src="previewSrc"
         class="pointer-events-none absolute inset-0 size-full object-cover"
@@ -137,9 +157,9 @@ const fill = computed(() =>
         data-testid="featured-video"
       />
       <img
-        v-else-if="active.model.thumbnailUrl"
-        :key="active.model.slug"
-        :src="active.model.thumbnailUrl"
+        v-else-if="active.media"
+        :key="active.key"
+        :src="active.media.url"
         alt=""
         class="pointer-events-none absolute inset-0 size-full object-cover"
         decoding="async"
@@ -150,7 +170,13 @@ const fill = computed(() =>
       />
 
       <div
-        class="pointer-events-none relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14"
+        :class="
+          cn(
+            'pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14',
+            compact &&
+              'gap-3 p-7 pt-7 pb-12 max-sm:p-5 max-sm:pb-11 lg:p-9 lg:pt-8 lg:pb-12'
+          )
+        "
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge
@@ -158,10 +184,10 @@ const fill = computed(() =>
             size="md"
             class="text-primary-comfy-canvas backdrop-blur-md"
           >
-            {{ active.task }}
+            {{ active.kind }}
           </Badge>
           <Badge
-            v-for="capability in active.capabilities"
+            v-for="capability in active.tags"
             :key="capability"
             variant="subtle"
             size="md"
@@ -174,19 +200,19 @@ const fill = computed(() =>
         <h2
           class="text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
         >
-          {{ active.name }}
+          {{ active.title }}
         </h2>
 
         <p
-          v-if="active.model.summary"
+          v-if="active.summary"
           class="line-clamp-2 max-w-prose shrink-0 text-content-secondary max-sm:line-clamp-1 short:hidden"
         >
-          {{ active.model.summary }}
+          {{ active.summary }}
         </p>
 
         <div class="pointer-events-auto flex w-fit items-center gap-3">
-          <Button as="a" :href="active.model.href" class="w-fit">
-            {{ t('workshop.hub.tryNow', locale) }}
+          <Button as="a" :href="active.href" class="w-fit">
+            {{ active.cta ?? t('workshop.hub.tryNow', locale) }}
           </Button>
           <Button
             v-if="active.docsHref"
@@ -211,9 +237,9 @@ const fill = computed(() =>
     >
       <button
         v-for="(slide, index) in slides"
-        :key="slide.model.slug"
+        :key="slide.key"
         type="button"
-        :aria-label="slide.model.name"
+        :aria-label="slide.title"
         :aria-current="index === activeIndex ? 'true' : undefined"
         class="group pointer-events-auto max-w-12 min-w-0 flex-1 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         @click="goTo(index)"

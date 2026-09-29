@@ -2,7 +2,7 @@ import type { UserEvent } from '@testing-library/user-event'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import {
@@ -10,7 +10,10 @@ import {
   runBeforeSignInLeave,
   stashWorkshopForm
 } from '../../config/workshop-return'
+import { useWorkshopSession } from '../../config/workshop-session-state'
 import WorkshopPlayground from './WorkshopPlayground.vue'
+
+vi.mock(import('../../config/workshop-session-state'))
 
 const model: WorkshopDetailModel = {
   id: 'bfl/flux-3',
@@ -319,5 +322,42 @@ describe('WorkshopPlayground', () => {
 
     await vi.advanceTimersByTimeAsync(900)
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeTruthy()
+  })
+
+  describe('API key link', () => {
+    const credential = {
+      token: 'jwt',
+      expiresAt: Number.MAX_SAFE_INTEGER,
+      uid: 'user-1',
+      workspace: { id: 'ws-team', name: 'Comfy', type: 'team' as const },
+      role: 'owner',
+      permissions: []
+    } satisfies NonNullable<
+      ReturnType<typeof useWorkshopSession>['session']['value']
+    >
+
+    it('sends the get-key link as a models onboarding arrival for this model', () => {
+      render(WorkshopPlayground, { props: { model } })
+      expect(
+        screen
+          .getByRole('link', { name: 'Get your API key' })
+          .getAttribute('href')
+      ).toBe(
+        'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-3'
+      )
+    })
+
+    it('carries the active workspace once signed in', () => {
+      useWorkshopSession().session = computed(() => credential)
+
+      render(WorkshopPlayground, { props: { model } })
+
+      expect(
+        screen.getByRole('link', { name: 'Get your API key' })
+      ).toHaveAttribute(
+        'href',
+        'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-3&workspace=ws-team'
+      )
+    })
   })
 })

@@ -75,7 +75,9 @@
           'w-(--node-width)',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
-          hasAnyError && 'ring-4 ring-destructive-background',
+          hasAnyError && 'ring-4',
+          errorSeverity === 'missing' && 'ring-warning-background',
+          errorSeverity === 'error' && 'ring-destructive-background',
           bypassed && bypassOverlayClass,
           muted && mutedOverlayClass,
           isDraggingOver && 'bg-primary-500/10 ring-4 ring-primary-500'
@@ -157,7 +159,7 @@
           <NodeWidgets
             v-if="hasRenderableWidgets"
             :node-data
-            :widget-ids="renderedWidgetIds"
+            :processed-widget-model
           />
 
           <div
@@ -195,7 +197,7 @@
     <NodeFooter
       v-if="!isRerouteNode"
       :is-subgraph="!!lgraphNode?.isSubgraphNode()"
-      :has-any-error="hasAnyError"
+      :error-severity="errorSeverity"
       :show-errors-tab-enabled="showErrorsTabEnabled"
       :show-advanced-inputs-button="showAdvancedInputsButton"
       :show-advanced-state="!!nodeData.showAdvanced"
@@ -283,9 +285,9 @@ import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
-import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
+import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
@@ -296,7 +298,7 @@ import {
   shouldHideLinkedCoreMediaInputPreview
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
-import { nodeHasError } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
+import { getNodeErrorSeverity } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import {
   applyLightThemeColor,
@@ -368,9 +370,11 @@ const nodeLocatorId = computed(
   () => locatorIdFromState(nodeData, canvasStore.rootGraphId) ?? undefined
 )
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
-const hasAnyError = computed(() =>
-  nodeHasError(nodeData, canvasStore.rootGraphId, lgraphNode.value)
+const errorSeverity = computed(() =>
+  getNodeErrorSeverity(nodeData, canvasStore.rootGraphId, lgraphNode.value)
 )
+
+const hasAnyError = computed(() => errorSeverity.value !== 'none')
 
 const showErrorsTabEnabled = computed(() =>
   settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
@@ -463,7 +467,7 @@ const handleContextMenu = (event: MouseEvent) => {
   handleNodeRightClick(event as PointerEvent, nodeData.id)
 
   // Show the node options menu at the cursor position
-  showNodeOptions(event)
+  showNodeOptions(event, { nodeId: nodeData.id })
 }
 
 const baseResizeHandleClasses =
@@ -678,10 +682,15 @@ const renderedWidgetIds = computed(() => {
 })
 
 const hasRenderableWidgets = computed(() => renderedWidgetIds.value.length > 0)
-const { processedWidgets } = useProcessedWidgets(
+const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
   () => nodeData,
   () => renderedWidgetIds.value
 )
+const processedWidgetModel = computed(() => ({
+  processedWidgets: processedWidgets.value,
+  nodeType: nodeType.value,
+  canSelectInputs: canSelectInputs.value
+}))
 const hasExpandingWidget = computed(() =>
   processedWidgets.value.some(
     (widget) => widget.visible && shouldExpand(widget.simplified.type)

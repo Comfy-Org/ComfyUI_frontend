@@ -14,7 +14,7 @@ const test = mergeTests(agentConversationTest, assetApiFixture)
 // while transport is disconnected. Keeping the first graph cannot pass.
 test.describe(
   'Multiplayer document catch-up',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({
       conversationCase: 'agent-rec-two-turn-dependent-edit',

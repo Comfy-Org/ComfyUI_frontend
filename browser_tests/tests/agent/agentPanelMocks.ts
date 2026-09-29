@@ -142,13 +142,9 @@ export const MESSAGE_DONE_EVENT: AgentWsEvent = {
 
 function agentFeatures(agentFlag: boolean): RemoteConfig {
   return {
+    'agent-in-app-experience': agentFlag,
     posthog_project_token: 'phc_e2e_agent_panel',
-    posthog_config: {
-      advanced_disable_flags: true,
-      bootstrap: {
-        featureFlags: { 'agent-in-app-experience': agentFlag }
-      }
-    }
+    posthog_config: { advanced_disable_flags: true }
   }
 }
 
@@ -156,21 +152,46 @@ async function mockAgentBoot(
   page: Page,
   {
     agentConsentAccepted,
+    agentConsentReads,
     agentConsentSave,
     agentConsentWrites,
+    agentAutoShownReadProbe,
     agentFlagEnabled,
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
     agentRetryAfter,
     crdtDebugEnabled,
+    initialFeatureFlags,
+    initialSettings,
     objectInfo,
-    postedMessages
-  }: Omit<AgentFixtures, 'agentPanel'>
+    postedMessages,
+    vueNodes
+  }: Omit<AgentFixtures, 'agentPanel'> & {
+    initialFeatureFlags: Record<string, unknown>
+    initialSettings: Record<string, unknown>
+    vueNodes: boolean
+  }
 ): Promise<void> {
   let consentAccepted = agentConsentAccepted
 
   await page.addInitScript(
-    ({ initiallyOpen, onboardingCompleted, debugEnabled }) => {
+    ({
+      initiallyOpen,
+      onboardingCompleted,
+      debugEnabled,
+      autoShownReadProbe
+    }) => {
+      if (autoShownReadProbe) {
+        const autoShownKey =
+          'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
+        const originalGetItem = Storage.prototype.getItem
+        window.__autoShownReads = 0
+        Storage.prototype.getItem = function (candidate: string) {
+          if (candidate === autoShownKey)
+            window.__autoShownReads = (window.__autoShownReads ?? 0) + 1
+          return originalGetItem.call(this, candidate)
+        }
+      }
       if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
         localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
       }
@@ -188,7 +209,8 @@ async function mockAgentBoot(
     {
       initiallyOpen: agentPanelInitiallyOpen,
       onboardingCompleted: agentOnboardingCompleted,
-      debugEnabled: crdtDebugEnabled
+      debugEnabled: crdtDebugEnabled,
+      autoShownReadProbe: agentAutoShownReadProbe
     }
   )
 
@@ -213,10 +235,12 @@ async function mockAgentBoot(
   )
 
   await mockCloudBootRoutes(page, {
-    features: agentFeatures(agentFlagEnabled),
+    features: { ...agentFeatures(agentFlagEnabled), ...initialFeatureFlags },
     settings: {
       'Comfy.TutorialCompleted': true,
-      'Comfy.RightSidePanel.ShowErrorsTab': false
+      'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
+      ...initialSettings
     },
     objectInfo
   })
@@ -292,8 +316,9 @@ async function mockAgentBoot(
   }
   await page.route(
     `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
-    (route) =>
-      route.fulfill(
+    (route) => {
+      agentConsentReads.push(consentAccepted)
+      return route.fulfill(
         consentAccepted
           ? jsonRoute(storedConsent)
           : {
@@ -304,6 +329,7 @@ async function mockAgentBoot(
               status: 404
             }
       )
+    }
   )
   await page.route('**/api/global-settings', async (route) => {
     const request = route.request()
@@ -380,7 +406,9 @@ async function mockAgentBoot(
 }
 
 type AgentFixtures = {
+  agentAutoShownReadProbe: boolean
   agentConsentAccepted: boolean
+  agentConsentReads: boolean[]
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWrites: boolean[]
   agentFlagEnabled: boolean
@@ -395,7 +423,11 @@ type AgentFixtures = {
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
+  agentAutoShownReadProbe: [false, { option: true }],
   agentConsentAccepted: [true, { option: true }],
+  agentConsentReads: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use([])
+  },
   agentConsentSave: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use({ status: 200 })
   },
@@ -413,7 +445,9 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   objectInfo: [undefined, { option: true }],
   page: async (
     {
+      agentAutoShownReadProbe,
       agentConsentAccepted,
+      agentConsentReads,
       agentConsentSave,
       agentConsentWrites,
       agentFlagEnabled,
@@ -421,14 +455,19 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentOnboardingCompleted,
       agentRetryAfter,
       crdtDebugEnabled,
+      initialFeatureFlags,
+      initialSettings,
       objectInfo,
       page,
       postedMessages
     },
-    use
+    use,
+    testInfo
   ) => {
     await mockAgentBoot(page, {
+      agentAutoShownReadProbe,
       agentConsentAccepted,
+      agentConsentReads,
       agentConsentSave,
       agentConsentWrites,
       agentFlagEnabled,
@@ -436,8 +475,11 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentOnboardingCompleted,
       agentRetryAfter,
       crdtDebugEnabled,
+      initialFeatureFlags,
+      initialSettings,
       objectInfo,
-      postedMessages
+      postedMessages,
+      vueNodes: testInfo.tags.includes('@vue-nodes')
     })
     await use(page)
   },

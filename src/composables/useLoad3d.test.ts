@@ -53,18 +53,9 @@ vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key) => key)
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: vi.fn(() => false),
@@ -82,6 +73,7 @@ describe('useLoad3d', () => {
   let mockToastStore: ReturnType<typeof useToastStore>
 
   beforeEach(() => {
+    vi.mocked(api.getServerFeature).mockReturnValue(false)
     scope = effectScope()
     nodeToLoad3dMap.clear()
     useSettingStore().settingValues['Comfy.Load3D.BackgroundColor'] = '282828'

@@ -20,6 +20,7 @@ export class AgentPanel {
   public readonly attachmentChips: Locator
   public readonly composer: Locator
   public readonly sendButton: Locator
+  public readonly nodeSelectionBanner: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -49,6 +50,7 @@ export class AgentPanel {
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send
     })
+    this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
   }
 
   /**
@@ -75,7 +77,17 @@ export class AgentPanel {
   }
 
   async open(): Promise<void> {
-    await this.openButton.click()
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (await this.root.isVisible()) return
+      await this.openButton.click()
+      try {
+        await expect(this.root).toBeVisible({ timeout: 1_000 })
+        return
+      } catch {
+        // Startup activation can open between the visibility read and click,
+        // making that click close the panel. Retry from the observed state.
+      }
+    }
     await expect(this.root).toBeVisible()
   }
 
@@ -109,6 +121,25 @@ export class AgentPanel {
   async sendMessage(message: string): Promise<void> {
     await this.composer.fill(message)
     await this.sendButton.click()
+  }
+
+  async enterNodeSelectionMode(): Promise<void> {
+    await this.open()
+    await this.selectWorkflow()
+    await this.root
+      .getByRole('button', { name: enMessages.agent.addToPrompt })
+      .click()
+    await this.page
+      .getByRole('menuitem', { name: enMessages.agent.nodes })
+      .click()
+    await expect(this.nodeSelectionBanner).toBeVisible()
+  }
+
+  async exitNodeSelectionMode(): Promise<void> {
+    await this.nodeSelectionBanner
+      .getByRole('button', { name: enMessages.agent.nodeSelection.exit })
+      .click()
+    await expect(this.nodeSelectionBanner).toHaveCount(0)
   }
 
   async turnOffOptionalReportSources(): Promise<void> {

@@ -57,6 +57,15 @@ const errorKey: Record<FieldErrorCode, TranslationKey> = {
   badOption: 'workshop.form.badOption',
   uploadFailed: 'workshop.form.uploadFailed',
   fileUnreadable: 'workshop.form.fileUnreadable',
+  incompatible: 'workshop.form.incompatible',
+  imageAspectRatioOutOfRange: 'workshop.form.imageAspectRatioOutOfRange',
+  imageLayerDecompositionUnsupported:
+    'workshop.form.imageLayerDecompositionUnsupported',
+  imageUnreadable: 'workshop.form.imageUnreadable',
+  videoTooLong: 'workshop.form.videoTooLong',
+  videoWidthOutOfRange: 'workshop.form.videoWidthOutOfRange',
+  videoHdrUnsupported: 'workshop.form.videoHdrUnsupported',
+  videoUnreadable: 'workshop.form.videoUnreadable',
   rejected: 'workshop.form.rejected'
 }
 
@@ -71,21 +80,46 @@ watch(
   }
 )
 const fieldError = computed(() =>
-  edited.value
+  edited.value ||
+  (field.presentation?.formConstraint &&
+    errors[field.name] === field.presentation.formConstraint.error)
     ? validateForm([field], values.value)[field.name]
     : errors[field.name]
 )
+
+function uploadLimit(): number {
+  if (field.kind === 'file') return field.maxBytes ?? MAX_UPLOAD_BYTES
+  return urlUploadField(field)?.maxBytes ?? MAX_UPLOAD_BYTES
+}
+
+function videoDurationLimit(): string {
+  return String(field.presentation?.maxVideoDurationSeconds ?? '')
+}
+
+function videoWidthMinimum(): string {
+  return String(field.presentation?.videoWidthPixels?.minimum ?? '')
+}
+
+function videoWidthMaximum(): string {
+  return String(field.presentation?.videoWidthPixels?.maximum ?? '')
+}
+
+function messageForError(error: FieldErrorCode): string {
+  if (error === 'incompatible' && field.hint) return field.hint
+  return t(errorKey[error], locale, {
+    limit: formatWorkshopUploadLimit(uploadLimit(), locale),
+    seconds: videoDurationLimit(),
+    minimum: String(
+      field.presentation?.imageAspectRatio?.minimum ?? videoWidthMinimum()
+    ),
+    maximum: String(
+      field.presentation?.imageAspectRatio?.maximum ?? videoWidthMaximum()
+    )
+  })
+}
+
 const errorMessage = computed(() =>
-  fieldError.value
-    ? t(errorKey[fieldError.value], locale).replace(
-        '{limit}',
-        formatWorkshopUploadLimit(
-          (field.kind === 'file' ? field : urlUploadField(field))?.maxBytes ??
-            MAX_UPLOAD_BYTES,
-          locale
-        )
-      )
-    : ''
+  fieldError.value ? messageForError(fieldError.value) : ''
 )
 const invalid = () => fieldError.value !== undefined
 const describedBy = computed(
@@ -120,7 +154,7 @@ function formatValue(value: string | number | boolean): string {
       : label
   return value === -1 || value === '-1'
     ? t('workshop.field.auto', locale)
-    : t('workshop.field.seconds', locale).replace('{value}', seconds)
+    : t('workshop.field.seconds', locale, { value: seconds })
 }
 
 const hasEmptyOption = computed(
@@ -144,6 +178,7 @@ const declaredDefault = computed(() =>
   field.kind === 'file' ||
   field.kind === 'select' ||
   field.kind === 'toggle' ||
+  (field.kind === 'text' && field.multiline) ||
   isSlider.value
     ? undefined
     : field.defaultValue
@@ -319,10 +354,7 @@ function booleanValue(fallback = false): boolean {
           :value="numberValue() ?? ''"
           :disabled
           :aria-label="
-            t('workshop.field.exactValue', locale).replace(
-              '{label}',
-              field.label
-            )
+            t('workshop.field.exactValue', locale, { label: field.label })
           "
           :aria-required="field.required || undefined"
           :aria-invalid="invalid()"
@@ -347,10 +379,9 @@ function booleanValue(fallback = false): boolean {
         class="text-xs text-primary-warm-gray"
       >
         {{
-          t('workshop.field.defaultValue', locale).replace(
-            '{value}',
-            formatValue(declaredDefault)
-          )
+          t('workshop.field.defaultValue', locale, {
+            value: formatValue(declaredDefault)
+          })
         }}
       </p>
     </div>
@@ -429,12 +460,7 @@ function booleanValue(fallback = false): boolean {
           :selected="selectValue() === ''"
           class="bg-primary-comfy-ink"
         >
-          {{
-            t('workshop.field.chooseValue', locale).replace(
-              '{label}',
-              field.label
-            )
-          }}
+          {{ t('workshop.field.chooseValue', locale, { label: field.label }) }}
         </option>
         <option
           v-for="(option, index) in field.options"

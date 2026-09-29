@@ -208,7 +208,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
 
       await test.step('Inject multiple previews', async () => {
         const file = { filename: 'example.png', type: 'input' }
-        const images = new Array(100).fill(file)
+        const images = Array.from({ length: 100 }, () => file)
         execution.executed('', '1', { images })
         await expect(node.imageGrid.locator('img')).toHaveCount(100)
       })

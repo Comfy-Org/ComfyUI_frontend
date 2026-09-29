@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
@@ -11,6 +12,7 @@ import type {
 import { createAssistantMessage } from '../../../services/agent/agentMessageParts'
 
 import AgentMessage from './AgentMessage.vue'
+import { agentBoundWorkflowIdKey } from '../agentBoundWorkflowId'
 
 function thinkingMessage(thinkingText?: string): AssistantMessage {
   return {
@@ -259,7 +261,7 @@ describe('AgentMessage thinking narration', () => {
       screen
         .getAllByRole('listitem')
         .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
-    ).toEqual(['Inspecting the graph1.4s', 'Set widget0.9s'])
+    ).toEqual(['Inspecting the graph', 'Set widget'])
     expect(
       screen.queryByRole('button', { name: /worked/i })
     ).not.toBeInTheDocument()
@@ -270,7 +272,7 @@ describe('AgentMessage thinking narration', () => {
     })
     await rerender({ message })
 
-    const summary = screen.getByRole('button', { name: /^worked for/i })
+    const summary = screen.getByRole('button', { name: /^worked$/i })
     expect(summary).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('Set widget')).not.toBeInTheDocument()
 
@@ -393,7 +395,7 @@ describe('AgentMessage thinking narration', () => {
     ).toEqual(['Set widget', 'Add node'])
   })
 
-  it('sums the whole turn into one accordion labelled with its duration', async () => {
+  it('folds the whole turn into one timing-free accordion', async () => {
     const message = thinkingMessage()
     message.thinking = false
     message.streaming = false
@@ -432,7 +434,7 @@ describe('AgentMessage thinking narration', () => {
     })
 
     const summary = screen.getByRole('button', { name: /^worked/i })
-    expect(summary.textContent).toContain('Worked for 3.3 seconds')
+    expect(summary).toHaveTextContent('Worked')
     expect(summary).toHaveAttribute('aria-expanded', 'false')
     expect(screen.getByText('The workflow is ready.')).toBeInTheDocument()
 
@@ -442,10 +444,10 @@ describe('AgentMessage thinking narration', () => {
         .getAllByRole('listitem')
         .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
     ).toEqual([
-      'Inspecting the graph1.3s',
-      'List slots0.5s',
-      'Set widget0.8s',
-      'Checking the result0.7s'
+      'Inspecting the graph',
+      'List slots',
+      'Set widget',
+      'Checking the result'
     ])
   })
 })
@@ -625,7 +627,10 @@ describe('AgentMessage run approval', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Run' }))
 
     expect(emitted().openWorkflow).toEqual([
-      ['workflow-1', 'Portrait workflow']
+      ['turn-1:call-1', 'workflow-1', 'Portrait workflow']
+    ])
+    expect(emitted().approvalShown).toEqual([
+      ['turn-1:call-1', 'msg-approval', 'workflow-1']
     ])
     expect(emitted().answerAsk).toEqual([
       ['turn-1:call-1', 'cancel'],
@@ -647,6 +652,24 @@ describe('AgentMessage run approval', () => {
       expect(button).toBeDisabled()
       expect(button).toHaveAttribute('aria-busy', 'true')
     }
+  })
+
+  it('omits the redundant workflow name for a 1:1 bound chat', () => {
+    render(AgentMessage, {
+      props: {
+        message: approvalMessage()
+      },
+      global: {
+        plugins: [i18n],
+        provide: { [agentBoundWorkflowIdKey as symbol]: ref('workflow-1') }
+      }
+    })
+
+    expect(
+      screen.getByText('This tool wants to run this workflow.')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Portrait workflow')).not.toBeInTheDocument()
+    expect(screen.getByText('Do you approve?')).toBeInTheDocument()
   })
 
   it.for([

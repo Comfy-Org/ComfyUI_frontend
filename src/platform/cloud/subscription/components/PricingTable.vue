@@ -103,7 +103,7 @@
             {{ t('subscription.soloUseOnly') }}
             <span class="mx-1 text-muted-foreground">–</span>
             <button
-              class="text-primary-foreground cursor-pointer border-none bg-transparent p-0 text-sm font-medium underline hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+              class="cursor-pointer border-none bg-transparent p-0 text-sm font-medium text-muted-foreground underline hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
               @click="emit('chooseTeamWorkspace')"
             >
               {{ t('subscription.needTeamWorkspace') }}
@@ -113,7 +113,7 @@
           <div class="flex flex-1 flex-col gap-3 pb-0">
             <div class="flex flex-row items-center justify-between">
               <span
-                class="text-foreground font-inter text-sm/normal font-normal"
+                class="font-inter text-sm/normal font-normal text-base-foreground"
               >
                 {{
                   currentBillingCycle === 'yearly'
@@ -135,7 +135,7 @@
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
+              <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.maxDurationLabel') }}
               </span>
               <span
@@ -146,34 +146,36 @@
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
+              <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.gpuLabel') }}
               </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
+              <i class="pi pi-check text-xs text-success-background" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
+              <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.addCreditsLabel') }}
               </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
+              <i class="pi pi-check text-xs text-success-background" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
+              <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.customLoRAsLabel') }}
               </span>
               <i
                 v-if="tier.customLoRAs"
-                class="pi pi-check text-success-foreground text-xs"
+                class="pi pi-check text-xs text-success-background"
               />
-              <i v-else class="pi pi-times text-foreground text-xs" />
+              <i v-else class="pi pi-times text-xs text-base-foreground" />
             </div>
 
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-start justify-between">
                 <div class="flex flex-col gap-2">
-                  <span class="text-foreground text-sm/relaxed font-normal">
+                  <span
+                    class="text-sm/relaxed font-normal text-base-foreground"
+                  >
                     {{ t('subscription.videoEstimateLabel') }}
                   </span>
                   <div class="group flex flex-row items-center gap-2 pt-2">
@@ -448,7 +450,7 @@ const getButtonSeverity = (
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
-    : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
+    : 'font-inter text-sm font-bold leading-normal text-base-foreground'
 
 const getPrice = (tier: PricingTierConfig): number =>
   tier.pricing[currentBillingCycle.value]
