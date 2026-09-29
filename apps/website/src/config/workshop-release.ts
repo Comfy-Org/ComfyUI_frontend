@@ -8,7 +8,7 @@ export function isWorkshopInBuild(): boolean {
 /** Every route Workshop owns. Kept here so the gate has one definition. */
 export function isWorkshopRoute(pattern: string): boolean {
   const pathname = pattern.replace(/\/$/, '')
-  // /models itself is the established marketing page when the gate is off.
+  // /models is the public catalogue and stays in the sitemap.
   return (
     isLegacyWorkshopRoute(pathname) ||
     pathname.startsWith('/models/') ||
