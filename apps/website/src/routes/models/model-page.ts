@@ -47,10 +47,9 @@ export async function prepareModelPage(
     model,
     related,
     relatedHeading: relatedProvider
-      ? t('workshop.model.relatedProvider', locale).replace(
-          '{provider}',
-          relatedProvider
-        )
+      ? t('workshop.model.relatedProvider', locale, {
+          provider: relatedProvider
+        })
       : t('workshop.model.related', locale),
     successor: model.successorSlug
       ? getWorkshopModel(model.successorSlug)

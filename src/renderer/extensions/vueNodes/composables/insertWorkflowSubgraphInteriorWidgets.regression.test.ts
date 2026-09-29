@@ -21,12 +21,9 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
-import { inertPlacementPort } from '@/workbench/extensions/agent/crdt/__fixtures__/inertPlacementPort'
 import { AgentCrdtProjection } from '@/workbench/extensions/agent/crdt/agentCrdtProjection'
 import { FollowerDoc } from '@/workbench/extensions/agent/crdt/followerDoc'
-import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 
 import type { WidgetUiCallbacks } from './processedWidgetRenderModel'
 import { computeProcessedWidgets } from './useProcessedWidgets'
@@ -56,15 +53,7 @@ beforeEach(() => {
 
 function bindProjection(workflowId: string, graph: LGraph) {
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(
-    createGraphMutations({
-      getScope: () => graphScopeOf(graph),
-      layout: { createNode: () => {}, deleteNodes: () => {} },
-      placement: inertPlacementPort
-    }),
-    () => graph,
-    () => follower.doc
-  )
+  const projection = new AgentCrdtProjection(() => graph)
   projection.bind(workflowId, follower)
   onTestFinished(() => {
     projection.destroy()
@@ -80,8 +69,7 @@ function bindProjection(workflowId: string, graph: LGraph) {
       update,
       actor: 'agent:test',
       opIds
-    })
-    projection.reconcileLiveGraph(workflowId)
+    }).applied
     return committed
   }
 }

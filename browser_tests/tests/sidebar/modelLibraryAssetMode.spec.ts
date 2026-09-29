@@ -265,6 +265,38 @@ test.describe('Model library sidebar - asset mode', () => {
   })
 })
 
+test.describe('Model library sidebar - asset mode enabled after the tab opens', () => {
+  test.use({
+    modelLibraryOptions: {
+      folders: REGISTERED_FOLDERS,
+      operators: [withModels(WALK_ASSETS)]
+    }
+  })
+
+  test('Eager-loads the asset-backed folders', async ({
+    assetApi: _,
+    comfyPage
+  }) => {
+    await comfyPage.featureFlags.setServerFlagsPersistent({ assets: false })
+    const tab = comfyPage.menu.modelLibraryTab
+    await tab.open()
+    await expect(tab.getFolderRowByLabel('checkpoints')).toBeVisible()
+
+    await comfyPage.featureFlags.setServerFlagsPersistent({
+      supports_model_type_tags: true,
+      assets: true
+    })
+
+    await expect(
+      tab.getFolderRowByLabel('checkpoints').locator('.leaf-count-badge')
+    ).toBeVisible()
+    await expect(
+      tab.getFolderRowByLabel('loras').locator('.leaf-count-badge')
+    ).toBeVisible()
+    await expect(tab.loadAllFoldersButton).toHaveCount(0)
+  })
+})
+
 test.describe('Model library sidebar - asset mode when the walk fails', () => {
   test.use({ modelLibraryOptions: { folders: REGISTERED_FOLDERS } })
 
