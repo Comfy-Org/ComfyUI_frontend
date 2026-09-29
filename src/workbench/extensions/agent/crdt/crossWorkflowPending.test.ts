@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { GraphMutations } from './graphMutations'
 import { render } from '@testing-library/vue'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -55,12 +54,19 @@ const clientState = vi.hoisted(() => ({
   })
 }))
 
-const adapterState = vi.hoisted(() => ({
+const projectionState = vi.hoisted(() => ({
   bind: vi.fn(),
   unbind: vi.fn(),
-  applyFrame: vi.fn(),
-  clearForReset: vi.fn(),
-  discardPending: vi.fn(),
+  applyFrame: vi.fn(() => ({
+    applied: false as const,
+    nodes: { added: [], removed: [] }
+  })),
+  applyCollected: vi.fn(() => []),
+  revertRejected: vi.fn(() => []),
+  replaceOnNextFrame: vi.fn(),
+  discardPending: vi.fn(() => ({ added: [], removed: [] })),
+  noteLocalWrites: vi.fn(),
+  settleLocalWrites: vi.fn(),
   destroy: vi.fn()
 }))
 
@@ -102,14 +108,18 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
-  EcsFollowerAdapter: class {
-    bind = adapterState.bind
-    unbind = adapterState.unbind
-    applyFrame = adapterState.applyFrame
-    clearForReset = adapterState.clearForReset
-    discardPending = adapterState.discardPending
-    destroy = adapterState.destroy
+vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
+  AgentCrdtProjection: class {
+    bind = projectionState.bind
+    unbind = projectionState.unbind
+    applyFrame = projectionState.applyFrame
+    applyCollected = projectionState.applyCollected
+    revertRejected = projectionState.revertRejected
+    replaceOnNextFrame = projectionState.replaceOnNextFrame
+    discardPending = projectionState.discardPending
+    noteLocalWrites = projectionState.noteLocalWrites
+    settleLocalWrites = projectionState.settleLocalWrites
+    destroy = projectionState.destroy
   }
 }))
 
@@ -124,8 +134,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
-
-const graphMutations = {} as GraphMutations
 
 function deleteNode(nodeId: string): GraphOperation {
   return {
@@ -146,10 +154,8 @@ function mountFollower(initial: string): {
   let exposedStatus!: () => AgentCrdtStatus
   const host = defineComponent({
     setup() {
-      const { enqueueHumanOperations, status } = useAgentCrdtFollower(
-        workflowId,
-        graphMutations
-      )
+      const { enqueueHumanOperations, status } =
+        useAgentCrdtFollower(workflowId)
       enqueue = async (operations) => {
         enqueueHumanOperations(operations)
         await Promise.resolve()

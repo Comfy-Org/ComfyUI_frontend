@@ -14,10 +14,6 @@ import type { EffectScope } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
-import {
-  notifyMintPortsAfterGraphConfigure,
-  notifyMintPortsBeforeGraphLoad
-} from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 
 import type { ComfyExtension } from '@/types/comfy'
@@ -35,17 +31,14 @@ import type { useExtensionService } from '@/services/extensionService'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyApp } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
 
 let agentStore: Mocked<ReturnType<typeof useAgentPanelStore>>
 let nodeSelectionStore: Mocked<ReturnType<typeof useAgentNodeSelectionStore>>
@@ -129,11 +122,6 @@ vi.mock(import('@/services/extensionService'), () => ({
         mocks.capturedExtensions.push(ext)
       }
     })
-}))
-
-vi.mock(import('@/workbench/extensions/agent/crdt/mintPortWiring'), () => ({
-  notifyMintPortsAfterGraphConfigure: vi.fn(),
-  notifyMintPortsBeforeGraphLoad: vi.fn()
 }))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
@@ -833,6 +821,41 @@ describe('AgentPanel extension flag gate', () => {
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
+  it('keeps the held offer when the retry cannot be made, and offers on the next clear screen', async () => {
+    agentFlagEnabled.value = true
+    openDialog()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    await flush()
+    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+      reason: 'dialog_open'
+    })
+
+    // The screen clears, but the retry's consent read fails - a cloud session
+    // whose auth is still settling is the ordinary way that happens. The
+    // release used to consume the hold before finding that out, which lost the
+    // offer for the rest of the page load and emitted nothing to say so: the
+    // reason is deduplicated per page load, so there is no second
+    // `agent_consent_not_offered` either.
+    vi.mocked(consentStore.load).mockRejectedValueOnce(new Error('offline'))
+    closeDialog()
+    await flush()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).toHaveBeenCalledOnce()
+
+    // A later dialog comes and goes and the read works this time. The offer is
+    // still owed, so it lands.
+    openDialog()
+    await flush()
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
   it('keeps waiting when a tour ends while a dialog is still open', async () => {
     agentFlagEnabled.value = true
     activeTour.value = 'appMode'
@@ -873,6 +896,38 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.open).not.toHaveBeenCalled()
 
     closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
+  it('re-offers after a withheld in-flight offer settles on a clear screen', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let settleOffer = () => {}
+    const pendingOffer = new Promise<void>((resolve) => {
+      settleOffer = resolve
+    })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_trigger, _onAccept, hooks) => {
+        openDialog()
+        await flush()
+        if (hooks?.canShow?.() === false) await pendingOffer
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    settleOffer()
+
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
     )
@@ -1143,7 +1198,6 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.enabled = true
     agentStore.consentAccepted = false
     await extension!.beforeLoadGraph!({} as never)
-    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
     await extension!.afterConfigureGraph!([], {} as never)
   })
@@ -1291,7 +1345,6 @@ describe('AgentPanel extension flag gate', () => {
 
     await extension!.beforeLoadGraph!({} as never)
 
-    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).toHaveBeenCalledOnce()
 
     nodeSelectionStore.isLoadingWorkflow = true
@@ -1344,114 +1397,6 @@ describe('AgentPanel extension flag gate', () => {
     expect(selectItems).not.toHaveBeenCalled()
   })
 
-  it('closes the mint suppression bracket after graph configuration', async () => {
-    const { registerAgentPanelExtension } = await import('./agentPanel')
-    registerAgentPanelExtension()
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
-
-    await extension!.afterConfigureGraph!([], {} as never)
-
-    expect(notifyMintPortsAfterGraphConfigure).toHaveBeenCalledOnce()
-  })
-
-  it('resumes ordinary local-dirty tracking after a failed load is followed by a successful one', async () => {
-    const { registerAgentPanelExtension } = await import('./agentPanel')
-    registerAgentPanelExtension()
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
-    const widgetStore = useWidgetValueStore()
-    const id = widgetId('graph-a', toNodeId(1), 'value')
-    const registered = widgetStore.registerWidget<number>(id, {
-      type: 'number',
-      value: 1,
-      options: {}
-    })!
-
-    // A load whose configure() throws before `afterConfigureGraph` ever runs.
-    await extension!.beforeLoadGraph!({} as never)
-    await extension!.onGraphLoadError!(
-      new Error('bad workflow json'),
-      {} as never
-    )
-
-    // A second, successful load closes the suppression exactly once more.
-    await extension!.beforeLoadGraph!({} as never)
-    await extension!.afterConfigureGraph!([], {} as never)
-
-    registered.value = 2
-    expect(widgetStore.isLocallyDirty(id)).toBe(true)
-  })
-
-  it('keeps the suppression open across two overlapping loads until both finish', async () => {
-    const { registerAgentPanelExtension } = await import('./agentPanel')
-    registerAgentPanelExtension()
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
-    const widgetStore = useWidgetValueStore()
-    const id = widgetId('graph-a', toNodeId(1), 'value')
-    const registered = widgetStore.registerWidget<number>(id, {
-      type: 'number',
-      value: 1,
-      options: {}
-    })!
-
-    // Load A and load B both open the suppression (e.g. two rapid tab
-    // switches) before either finishes.
-    await extension!.beforeLoadGraph!({} as never)
-    await extension!.beforeLoadGraph!({} as never)
-
-    // Load A finishes first - success or error, same as here - while load B
-    // is still mid-configure. A single boolean would close the shared
-    // suppression right here, wrongly exposing B's still-in-flight
-    // structural writes as dirty.
-    await extension!.afterConfigureGraph!([], {} as never)
-
-    // A structural write made as part of load B's own (still-suppressed)
-    // configure must not be marked dirty just because load A already
-    // closed out.
-    registered.value = 2
-    expect(widgetStore.isLocallyDirty(id)).toBe(false)
-
-    // Only once load B also finishes does the suppression actually close.
-    await extension!.afterConfigureGraph!([], {} as never)
-    registered.value = 3
-    expect(widgetStore.isLocallyDirty(id)).toBe(true)
-  })
-
-  it('closes the suppression exactly once per load regardless of completion order', async () => {
-    const { registerAgentPanelExtension } = await import('./agentPanel')
-    registerAgentPanelExtension()
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
-    const widgetStore = useWidgetValueStore()
-    const id = widgetId('graph-a', toNodeId(1), 'value')
-    const registered = widgetStore.registerWidget<number>(id, {
-      type: 'number',
-      value: 1,
-      options: {}
-    })!
-
-    // Load A opens, then load B opens; load B (the more recent one) is the
-    // one that finishes first this time, and by error rather than success.
-    await extension!.beforeLoadGraph!({} as never)
-    await extension!.beforeLoadGraph!({} as never)
-    await extension!.onGraphLoadError!(new Error('load B failed'), {} as never)
-
-    registered.value = 2
-    expect(widgetStore.isLocallyDirty(id)).toBe(false)
-
-    // Load A's own completion is the one that actually returns the depth to
-    // zero and closes the suppression.
-    await extension!.afterConfigureGraph!([], {} as never)
-    registered.value = 3
-    expect(widgetStore.isLocallyDirty(id)).toBe(true)
-  })
-
   it('restores a subgraph reference by its locator after graph load', async () => {
     const { registerAgentPanelExtension } = await import('./agentPanel')
     const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
@@ -1495,7 +1440,6 @@ describe('AgentPanel extension flag gate', () => {
 
     await extension!.beforeLoadGraph!({} as never)
 
-    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
     await extension!.afterConfigureGraph!([], {} as never)
   })
@@ -1530,21 +1474,6 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
-  })
-
-  it('leaves mint suppression open when graph loading fails', async () => {
-    const { registerAgentPanelExtension } = await import('./agentPanel')
-    registerAgentPanelExtension()
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
-    const app = fromPartial<ComfyApp>({})
-
-    await extension!.beforeLoadGraph!(app)
-    await extension!.onGraphLoadError!(new Error('bad workflow json'), app)
-
-    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
-    expect(notifyMintPortsAfterGraphConfigure).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when selection restoration throws', async () => {
