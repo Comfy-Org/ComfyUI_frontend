@@ -41,6 +41,7 @@ const {
   hideControls = false,
   hideFullscreen = false,
   controlsOnHover = false,
+  persistentControls = false,
   playButtonVariant = 'solid',
   fit = 'cover',
   noCors = false,
@@ -70,6 +71,8 @@ const {
    * paused frame should not carry a bar across it: the controls wait for a
    * pointer. */
   controlsOnHover?: boolean
+  /** Keep the bottom control bar visible during playback. */
+  persistentControls?: boolean
   /** Style of the centered play/pause button in `minimal` mode. */
   playButtonVariant?: 'solid' | 'overlay'
   fit?: 'cover' | 'contain'
@@ -129,6 +132,7 @@ const recentActivity = refAutoReset(false, () => (canHover.value ? 800 : 4000))
 
 const controlsVisible = computed(
   () =>
+    persistentControls ||
     focused.value ||
     (controlsOnHover
       ? hovering.value || recentActivity.value

@@ -9,7 +9,6 @@ import type { UUID } from '@/utils/uuid'
 import type { ContextMenu } from './ContextMenu'
 import type { GroupId } from '@/types/groupId'
 
-import type { LGraphGroup } from './LGraphGroup'
 import type { LGraphNode, NodeProperty } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'

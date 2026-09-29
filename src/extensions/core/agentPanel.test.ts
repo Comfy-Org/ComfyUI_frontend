@@ -11,6 +11,7 @@ import {
   ref
 } from 'vue'
 import type { EffectScope } from 'vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import {
@@ -54,9 +55,28 @@ let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
 const isAuthInitialized = ref(true)
-const firstRunTookScreen = ref(false)
+type FirstRunScreenState = 'released' | 'visible' | 'handoff'
+const firstRunScreenState = ref<FirstRunScreenState>('released')
+const gettingStartedVisible = computed(
+  () => firstRunScreenState.value === 'visible'
+)
+const firstRunHoldsScreen = computed(
+  () => firstRunScreenState.value !== 'released'
+)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
+
+function showFirstRunScreen(): void {
+  firstRunScreenState.value = 'visible'
+}
+
+function releaseFirstRunScreen(): void {
+  firstRunScreenState.value = 'released'
+}
+
+function beginFirstRunScreenHandoff(): void {
+  firstRunScreenState.value = 'handoff'
+}
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -95,7 +115,8 @@ vi.mock(
   () => ({
     useFirstRunEntry: () =>
       fromPartial<ReturnType<typeof useFirstRunEntry>>({
-        firstRunTookScreen,
+        gettingStartedVisible,
+        firstRunHoldsScreen,
         whenStartupDecided: () => startupDecision
       })
   })
@@ -138,6 +159,10 @@ vi.mock(import('@/composables/useFeatureFlags'), () => ({
     })
 }))
 
+const { registerAgentPanelExtension } = await import('./agentPanel')
+const importRegistrationCount = mocks.capturedExtensions.length
+registerAgentPanelExtension()
+
 const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -148,7 +173,6 @@ const notOffered = async () =>
   )
 
 async function loadEntryAndSetup(): Promise<void> {
-  const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
   const ext = mocks.capturedExtensions.find(
     (e) => e.name === 'Comfy.AgentPanel'
@@ -183,9 +207,7 @@ function closeDialog(key = DESKTOP_APPROVAL_KEY): void {
 describe('AgentPanel extension flag gate', () => {
   afterEach(() => setupScope.stop())
 
-  beforeEach(async () => {
-    vi.resetModules()
-    const { useCurrentUser } = await import('@/composables/auth/useCurrentUser')
+  beforeEach(() => {
     const currentUserService = vi.mocked(useCurrentUser())
     currentUserService.resolvedUserInfo = computed(() => currentUser.value)
     currentUserService.isAuthInitialized = computed(
@@ -213,12 +235,11 @@ describe('AgentPanel extension flag gate', () => {
     nodeSelectionStore = vi.mocked(useAgentNodeSelectionStore())
     workflowStore = useWorkflowStore()
     nodeSelectionStore.restoreNodeIds.mockImplementation(() => {})
-    mocks.capturedExtensions.length = 0
     agentStore.close.mockClear()
     agentStore.enabled = false
     agentStore.isOpen = true
     agentFlagEnabled.value = false
-    firstRunTookScreen.value = false
+    releaseFirstRunScreen()
     activeTour.value = null
     startupDecision = Promise.resolve(true)
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
@@ -342,19 +363,12 @@ describe('AgentPanel extension flag gate', () => {
 
   it.for([
     {
-      surface: 'Getting Started took the screen this boot',
-      arrange: () => void (firstRunTookScreen.value = true)
+      surface: 'the Getting Started screen is up',
+      arrange: () => showFirstRunScreen()
     },
     {
       surface: 'a coachmark tour is active',
       arrange: () => void (activeTour.value = 'appMode')
-    },
-    {
-      surface: 'Getting Started took the screen and a tour is active',
-      arrange: () => {
-        firstRunTookScreen.value = true
-        activeTour.value = 'appMode'
-      }
     },
     {
       surface: 'the desktop sign-in approval is open',
@@ -377,6 +391,49 @@ describe('AgentPanel extension flag gate', () => {
       expect(consentStore.load).toHaveBeenCalledOnce()
     }
   )
+
+  it('offers in the same session once the Getting Started screen closes', async () => {
+    agentFlagEnabled.value = true
+    showFirstRunScreen()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+      reason: 'first_run_screen'
+    })
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
+
+    releaseFirstRunScreen()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
+  it('keeps waiting when Getting Started closes straight into the first-run tour', async () => {
+    agentFlagEnabled.value = true
+    showFirstRunScreen()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    await flush()
+
+    beginFirstRunScreenHandoff()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+    activeTour.value = 'firstRun'
+    releaseFirstRunScreen()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+    activeTour.value = null
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+  })
 
   it('offers when neither Getting Started took the screen nor a tour is active', async () => {
     agentFlagEnabled.value = true
@@ -536,7 +593,7 @@ describe('AgentPanel extension flag gate', () => {
       {
         reason: 'first_run_screen',
         arrange: () => {
-          firstRunTookScreen.value = true
+          showFirstRunScreen()
         }
       },
       {
@@ -619,6 +676,22 @@ describe('AgentPanel extension flag gate', () => {
       }
     )
 
+    it('reports the first-run screen over a dialog sitting on top of it', async () => {
+      agentFlagEnabled.value = true
+      showFirstRunScreen()
+      openDialog()
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+
+      await loadEntryAndSetup()
+      await nextTick()
+      await flush()
+
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'first_run_screen'
+      })
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    })
+
     it('reports an in-flight tour against the workspace the offer was made for', async () => {
       agentFlagEnabled.value = true
       Object.assign(consentStore, { accepted: false, isChecking: false })
@@ -688,22 +761,6 @@ describe('AgentPanel extension flag gate', () => {
 
       expect(await notOffered()).not.toHaveBeenCalled()
     })
-  })
-
-  it('keeps withholding after a tour ends when Getting Started took the screen', async () => {
-    agentFlagEnabled.value = true
-    firstRunTookScreen.value = true
-    activeTour.value = 'appMode'
-    Object.assign(consentStore, { accepted: false, isChecking: false })
-
-    await loadEntryAndSetup()
-    await nextTick()
-    await flush()
-    activeTour.value = null
-    await flush()
-
-    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
   })
 
   it('offers in the same session once the dialog that held it closes', async () => {
@@ -805,27 +862,6 @@ describe('AgentPanel extension flag gate', () => {
     await flush()
 
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-  })
-
-  it('withholds a card whose Getting Started screen took over while the offer was in flight', async () => {
-    agentFlagEnabled.value = true
-    Object.assign(consentStore, { accepted: false, isChecking: false })
-    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_trigger, _onAccept, hooks) => {
-        firstRunTookScreen.value = true
-        if (hooks?.canShow?.() === false) return
-        hooks?.onShown?.()
-      }
-    )
-
-    await loadEntryAndSetup()
-    await vi.waitFor(() =>
-      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-    )
-    await flush()
-
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('false')
-    expect(agentStore.open).not.toHaveBeenCalled()
   })
 
   it('remembers a seen card per workspace across a switch away and back', async () => {
@@ -1001,12 +1037,6 @@ describe('AgentPanel extension flag gate', () => {
     expect(await notOffered()).not.toHaveBeenCalled()
   })
 
-  it('does not self-register when its module is imported', async () => {
-    await import('./agentPanel')
-
-    expect(mocks.capturedExtensions).toEqual([])
-  })
-
   it('forces the panel on in development even while the flag is false', async () => {
     vi.stubEnv('MODE', 'development')
     agentFlagEnabled.value = false
@@ -1062,6 +1092,7 @@ describe('AgentPanel extension flag gate', () => {
     await extension!.beforeLoadGraph!({} as never)
     expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
+    await extension!.afterConfigureGraph!([], {} as never)
   })
 
   it('enables the panel when the flag turns true', async () => {
@@ -1228,6 +1259,7 @@ describe('AgentPanel extension flag gate', () => {
     expect(selectItems).toHaveBeenCalledWith([secondNode])
     expect(nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith(['12'])
     expect(nodeSelectionStore.finishWorkflowLoad).not.toHaveBeenCalled()
+    await extension!.afterConfigureGraph!([], {} as never)
   })
 
   it('disarms the restore guard on an empty restore instead of leaving it armed', async () => {
@@ -1412,6 +1444,7 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
+    await extension!.afterConfigureGraph!([], {} as never)
   })
 
   it('finishes restoration when the panel closes during graph load', async () => {
@@ -1493,5 +1526,10 @@ describe('AgentPanel extension flag gate', () => {
     await extension!.beforeLoadGraph!({} as never)
 
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
+    await extension!.afterConfigureGraph!([], {} as never)
+  })
+
+  it('does not self-register when its module is imported', () => {
+    expect(importRegistrationCount).toBe(0)
   })
 })
