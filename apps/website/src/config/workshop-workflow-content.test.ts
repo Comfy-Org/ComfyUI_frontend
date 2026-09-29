@@ -146,7 +146,7 @@ describe('curated workflow pages', () => {
     expect(detail.examples).toHaveLength(1)
     expect(detail.examples[0]).toMatchObject({
       thumbnailUrl:
-        'https://cloud.comfy.org/templates/utility_birefnet_remove_background-1.webp',
+        'https://media.comfy.org/website/workshop/workflows/remove-background/lily-veil-cutout.webp',
       sampleOnly: false
     })
     const state = initialWorkshopPageState(detail)
