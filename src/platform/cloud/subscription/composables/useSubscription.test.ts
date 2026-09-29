@@ -1469,6 +1469,11 @@ describe('useSubscription', () => {
           failure_category: 'network'
         })
       )
+      expect(
+        mockReportTelemetryError.mock.calls.map(
+          ([, options]) => options.errorType
+        )
+      ).toEqual(['cloud_checkout_recovery_unreachable'])
     })
 
     it('lets any reachable billing read clear a past network failure', async () => {
@@ -1533,19 +1538,11 @@ describe('useSubscription', () => {
       // A reload drops all composable state but keeps the stored attempt.
       scope?.stop()
       scope = effectScope()
-      mockLocalStorage.getItem.mockClear()
       useSubscriptionWithScope()
       await vi.advanceTimersByTimeAsync(43_000)
 
       expect(mockReportTelemetryError).toHaveBeenCalledOnce()
       expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledOnce()
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-        'comfy.subscription.missing_completion_reported',
-        'attempt-reload'
-      )
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
-        'comfy.subscription.missing_completion_reported'
-      )
     })
 
     it('separates an unreachable billing API from a missing completion', async () => {
@@ -1572,6 +1569,53 @@ describe('useSubscription', () => {
         expect.objectContaining({
           errorType: 'cloud_checkout_recovery_unreachable'
         })
+      )
+    })
+
+    it('ignores a deadline failure after its attempt is replaced', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-replaced',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+
+      let rejectDeadlineRead: (reason: Error) => void = () => undefined
+      mockGetBillingStatus.mockReturnValueOnce(
+        new Promise((_, reject) => {
+          rejectDeadlineRead = reject
+        })
+      )
+      await vi.advanceTimersByTimeAsync(557_000)
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-current',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      rejectDeadlineRead(new Error('offline'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+      expect(mockTelemetry.trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ checkout_attempt_id: 'attempt-current' })
       )
     })
 

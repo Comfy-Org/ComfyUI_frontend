@@ -47,16 +47,17 @@ export const PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY =
   'comfy.subscription.pending_checkout_attempt'
 export const PENDING_SUBSCRIPTION_CHECKOUT_EVENT =
   'comfy:subscription-checkout-attempt-changed'
-/**
- * Holds the `attempt_id` whose missing completion has already been reported, so
- * a reload or a second tab does not re-report the same abandoned checkout.
- */
-const REPORTED_MISSING_COMPLETION_STORAGE_KEY =
-  'comfy.subscription.missing_completion_reported'
-const REPORTED_RECOVERY_UNREACHABLE_STORAGE_KEY =
-  'comfy.subscription.recovery_unreachable_reported'
-let reportedMissingCompletionAttemptId: string | null = null
-let reportedRecoveryUnreachableAttemptId: string | null = null
+const PENDING_SUBSCRIPTION_CHECKOUT_TERMINAL_STORAGE_KEY =
+  'comfy.subscription.pending_checkout_terminal'
+
+export type PendingCheckoutTerminal =
+  | 'completion_missing'
+  | 'recovery_unreachable'
+
+interface PendingCheckoutTerminalClaim {
+  attempt_id: string
+  terminal: PendingCheckoutTerminal
+}
 
 interface SubscriptionStatusSnapshot {
   is_active?: boolean
@@ -261,8 +262,6 @@ const isPaymentIntentSource = (value: unknown): value is PaymentIntentSource =>
   Object.hasOwn(VALID_PAYMENT_INTENT_SOURCES, value)
 
 export const clearPendingSubscriptionCheckoutAttempt = (): void => {
-  reportedMissingCompletionAttemptId = null
-  reportedRecoveryUnreachableAttemptId = null
   const storage = getStorage()
   if (!storage) {
     return
@@ -270,8 +269,7 @@ export const clearPendingSubscriptionCheckoutAttempt = (): void => {
 
   try {
     storage.removeItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
-    storage.removeItem(REPORTED_MISSING_COMPLETION_STORAGE_KEY)
-    storage.removeItem(REPORTED_RECOVERY_UNREACHABLE_STORAGE_KEY)
+    storage.removeItem(PENDING_SUBSCRIPTION_CHECKOUT_TERMINAL_STORAGE_KEY)
   } catch {
     return
   }
@@ -313,60 +311,66 @@ export const getPendingSubscriptionCheckoutAttempt =
     }
   }
 
-export const hasReportedMissingCheckoutCompletion = (
-  attemptId: string
-): boolean => {
-  const storage = getStorage()
-  if (!storage) {
-    return reportedMissingCompletionAttemptId === attemptId
-  }
+const isPendingCheckoutTerminal = (
+  value: unknown
+): value is PendingCheckoutTerminal =>
+  value === 'completion_missing' || value === 'recovery_unreachable'
 
+const parsePendingCheckoutTerminalClaim = (
+  rawClaim: string
+): PendingCheckoutTerminalClaim | null => {
   try {
-    const isStored =
-      storage.getItem(REPORTED_MISSING_COMPLETION_STORAGE_KEY) === attemptId
-    return isStored || reportedMissingCompletionAttemptId === attemptId
+    const value: unknown = JSON.parse(rawClaim)
+    if (
+      !isUnknownRecord(value) ||
+      typeof value.attempt_id !== 'string' ||
+      !isPendingCheckoutTerminal(value.terminal)
+    ) {
+      return null
+    }
+    return { attempt_id: value.attempt_id, terminal: value.terminal }
   } catch {
-    return reportedMissingCompletionAttemptId === attemptId
+    return null
   }
 }
 
-export const markMissingCheckoutCompletionReported = (
+export const getPendingCheckoutTerminal = (
   attemptId: string
-): void => {
-  reportedMissingCompletionAttemptId = attemptId
-  const storage = getStorage()
-  if (!storage) {
-    return
-  }
-
+): PendingCheckoutTerminal | null => {
   try {
-    storage.setItem(REPORTED_MISSING_COMPLETION_STORAGE_KEY, attemptId)
+    const rawClaim = getStorage()?.getItem(
+      PENDING_SUBSCRIPTION_CHECKOUT_TERMINAL_STORAGE_KEY
+    )
+    if (!rawClaim) return null
+    const claim = parsePendingCheckoutTerminalClaim(rawClaim)
+    return claim?.attempt_id === attemptId ? claim.terminal : null
   } catch {
-    return
+    return null
   }
 }
 
-export const hasReportedRecoveryUnreachable = (attemptId: string): boolean => {
-  const storage = getStorage()
-  if (!storage) return reportedRecoveryUnreachableAttemptId === attemptId
+export const claimPendingCheckoutTerminal = (
+  attemptId: string,
+  terminal: PendingCheckoutTerminal
+): PendingSubscriptionCheckoutAttempt | null => {
+  const attempt = getPendingSubscriptionCheckoutAttempt()
+  if (
+    attempt?.attempt_id !== attemptId ||
+    getPendingCheckoutTerminal(attemptId)
+  ) {
+    return null
+  }
 
   try {
-    return (
-      storage.getItem(REPORTED_RECOVERY_UNREACHABLE_STORAGE_KEY) ===
-        attemptId || reportedRecoveryUnreachableAttemptId === attemptId
+    getStorage()?.setItem(
+      PENDING_SUBSCRIPTION_CHECKOUT_TERMINAL_STORAGE_KEY,
+      JSON.stringify({ attempt_id: attemptId, terminal })
     )
   } catch {
-    return reportedRecoveryUnreachableAttemptId === attemptId
+    return null
   }
-}
 
-export const markRecoveryUnreachableReported = (attemptId: string): void => {
-  reportedRecoveryUnreachableAttemptId = attemptId
-  try {
-    getStorage()?.setItem(REPORTED_RECOVERY_UNREACHABLE_STORAGE_KEY, attemptId)
-  } catch {
-    return
-  }
+  return getPendingCheckoutTerminal(attemptId) === terminal ? attempt : null
 }
 
 export const hasPendingSubscriptionCheckoutAttempt = (): boolean =>
@@ -467,9 +471,7 @@ export const consumePendingSubscriptionCheckoutSuccess = (
     return null
   }
 
-  const wasReportedTerminal =
-    hasReportedMissingCheckoutCompletion(attempt.attempt_id) ||
-    hasReportedRecoveryUnreachable(attempt.attempt_id)
+  const wasReportedTerminal = getPendingCheckoutTerminal(attempt.attempt_id)
   clearPendingSubscriptionCheckoutAttempt()
 
   const value = getCheckoutValue(attempt.tier, attempt.cycle)

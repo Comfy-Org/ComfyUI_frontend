@@ -1,12 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  claimPendingCheckoutTerminal,
   clearPendingSubscriptionCheckoutAttempt,
   consumePendingSubscriptionCheckoutSuccess,
+  getPendingCheckoutTerminal,
   getPendingSubscriptionCheckoutAttempt,
-  hasReportedMissingCheckoutCompletion,
-  markMissingCheckoutCompletionReported,
-  markRecoveryUnreachableReported,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
   recordPendingSubscriptionCheckoutAttempt
 } from './subscriptionCheckoutTracker'
@@ -67,7 +66,7 @@ describe('subscriptionCheckoutTracker', () => {
       cycle: 'monthly',
       checkout_type: 'new'
     })
-    markRecoveryUnreachableReported(attempt.attempt_id)
+    claimPendingCheckoutTerminal(attempt.attempt_id, 'recovery_unreachable')
 
     expect(consumePendingSubscriptionCheckoutSuccess(activeProStatus)).toEqual(
       expect.objectContaining({
@@ -148,28 +147,54 @@ describe('subscriptionCheckoutTracker', () => {
     ).toBeNull()
   })
 
-  it('deduplicates reports in memory when storage writes fail', () => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+  it('claims one terminal for the current attempt', () => {
+    const staleAttempt = recordPendingSubscriptionCheckoutAttempt({
+      tier: 'pro',
+      cycle: 'monthly',
+      checkout_type: 'new'
+    })
+    const currentAttempt = recordPendingSubscriptionCheckoutAttempt({
+      tier: 'pro',
+      cycle: 'monthly',
+      checkout_type: 'new'
+    })
+
+    expect(
+      claimPendingCheckoutTerminal(
+        staleAttempt.attempt_id,
+        'recovery_unreachable'
+      )
+    ).toBeNull()
+    expect(
+      claimPendingCheckoutTerminal(
+        currentAttempt.attempt_id,
+        'recovery_unreachable'
+      )
+    ).toEqual(currentAttempt)
+    expect(
+      claimPendingCheckoutTerminal(
+        currentAttempt.attempt_id,
+        'completion_missing'
+      )
+    ).toBeNull()
+    expect(getPendingCheckoutTerminal(currentAttempt.attempt_id)).toBe(
+      'recovery_unreachable'
+    )
+  })
+
+  it('does not claim a terminal when storage writes fail', () => {
+    const attempt = recordPendingSubscriptionCheckoutAttempt({
+      tier: 'pro',
+      cycle: 'monthly',
+      checkout_type: 'new'
+    })
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new Error('storage unavailable')
     })
 
-    markMissingCheckoutCompletionReported('attempt-without-storage')
-
     expect(
-      hasReportedMissingCheckoutCompletion('attempt-without-storage')
-    ).toBe(true)
-  })
-
-  it('deduplicates missing-completion reports from storage after a reload', async () => {
-    markMissingCheckoutCompletionReported('attempt-across-reload')
-
-    vi.resetModules()
-    const reloadedTracker = await import('./subscriptionCheckoutTracker')
-
-    expect(
-      reloadedTracker.hasReportedMissingCheckoutCompletion(
-        'attempt-across-reload'
-      )
-    ).toBe(true)
+      claimPendingCheckoutTerminal(attempt.attempt_id, 'completion_missing')
+    ).toBeNull()
+    expect(getPendingCheckoutTerminal(attempt.attempt_id)).toBeNull()
   })
 })

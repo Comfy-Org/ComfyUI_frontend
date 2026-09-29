@@ -43,11 +43,9 @@ import {
   clearPendingSubscriptionCheckoutAttempt,
   consumePendingSubscriptionCheckoutSuccess,
   getPendingSubscriptionCheckoutAttempt,
+  claimPendingCheckoutTerminal,
+  getPendingCheckoutTerminal,
   hasPendingSubscriptionCheckoutAttempt,
-  hasReportedMissingCheckoutCompletion,
-  hasReportedRecoveryUnreachable,
-  markMissingCheckoutCompletionReported,
-  markRecoveryUnreachableReported,
   recordPendingSubscriptionCheckoutAttempt
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
@@ -235,9 +233,14 @@ function useSubscriptionInternal() {
     )
   }
 
-  const getReportableMissingCheckout = () => {
+  const getCurrentPendingCheckoutAttempt = (attemptId: string) => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
-    if (!attempt || hasReportedMissingCheckoutCompletion(attempt.attempt_id)) {
+    return attempt?.attempt_id === attemptId ? attempt : null
+  }
+
+  const getReportableMissingCheckout = (attemptId: string) => {
+    const attempt = getCurrentPendingCheckoutAttempt(attemptId)
+    if (!attempt || getPendingCheckoutTerminal(attempt.attempt_id)) {
       return null
     }
 
@@ -257,19 +260,15 @@ function useSubscriptionInternal() {
     return { attempt, attemptAgeMs }
   }
 
-  const reportMissingCheckoutCompletion = (): boolean => {
-    const reportable = getReportableMissingCheckout()
+  const reportMissingCheckoutCompletion = (attemptId: string): boolean => {
+    const reportable = getReportableMissingCheckout(attemptId)
     if (!reportable) return false
-    const { attempt, attemptAgeMs } = reportable
-
-    // Claimed before emitting, not after: a second tab wakes on the same
-    // deadline (both derive it from `started_at_ms`), so a mark that trailed
-    // the two emissions left a window wide enough for it to emit as well.
-    // localStorage offers no compare-and-swap and propagates writes to other
-    // tabs asynchronously, so this narrows that window rather than closing it —
-    // `checkout_attempt_id` on both terminals is what makes the duplicate
-    // collapsible downstream.
-    markMissingCheckoutCompletionReported(attempt.attempt_id)
+    const { attemptAgeMs } = reportable
+    const attempt = claimPendingCheckoutTerminal(
+      attemptId,
+      'completion_missing'
+    )
+    if (!attempt) return false
 
     reportTelemetryError(
       new Error('Pending subscription checkout recovery timed out'),
@@ -343,7 +342,10 @@ function useSubscriptionInternal() {
       const isPastDeadline =
         Date.now() - attempt.started_at_ms >=
         PENDING_CHECKOUT_COMPLETION_DEADLINE_MS
-      if (!reportMissingCheckoutCompletion() && isPastDeadline) {
+      if (
+        !reportMissingCheckoutCompletion(attempt.attempt_id) &&
+        isPastDeadline
+      ) {
         rearmBoundedDeadlineWakeUp()
       }
       return
@@ -602,37 +604,33 @@ function useSubscriptionInternal() {
 
   const handlePendingCheckoutRecoveryError = (
     source: PendingCheckoutRecoverySource,
+    attemptId: string,
     error: unknown
   ) => {
     console.error(
       `[Subscription] Failed to recover pending checkout on ${source}:`,
       error
     )
-    const attempt = getPendingSubscriptionCheckoutAttempt()
+    const attempt = getCurrentPendingCheckoutAttempt(attemptId)
+    if (!attempt) return
     const isPastDeadline =
-      attempt !== null &&
       Date.now() - attempt.started_at_ms >=
-        PENDING_CHECKOUT_COMPLETION_DEADLINE_MS
+      PENDING_CHECKOUT_COMPLETION_DEADLINE_MS
     if (source === 'deadline' || isPastDeadline) {
-      reportRecoveryUnreachable(error)
+      reportRecoveryUnreachable(attemptId, error)
       rearmBoundedDeadlineWakeUp()
     } else {
       schedulePendingCheckoutRecovery()
     }
   }
 
-  const reportRecoveryUnreachable = (error?: unknown) => {
+  const reportRecoveryUnreachable = (attemptId: string, error?: unknown) => {
     if (isDisposed) return
-    const attempt = getPendingSubscriptionCheckoutAttempt()
-    if (
-      !attempt ||
-      hasReportedRecoveryUnreachable(attempt.attempt_id) ||
-      hasReportedMissingCheckoutCompletion(attempt.attempt_id)
-    ) {
-      return
-    }
-
-    markRecoveryUnreachableReported(attempt.attempt_id)
+    const attempt = claimPendingCheckoutTerminal(
+      attemptId,
+      'recovery_unreachable'
+    )
+    if (!attempt) return
     reportTelemetryError(
       new Error(
         'Pending subscription checkout recovery could not reach billing'
@@ -673,7 +671,8 @@ function useSubscriptionInternal() {
   }
 
   const waitForActiveRecoveryAtDeadline = async (
-    source: PendingCheckoutRecoverySource
+    source: PendingCheckoutRecoverySource,
+    attemptId: string
   ): Promise<boolean> => {
     if (!isRecoveringPendingCheckout) return false
     if (source !== 'deadline' || !activePendingCheckoutRecovery) return true
@@ -689,7 +688,7 @@ function useSubscriptionInternal() {
         '[Subscription] Pending checkout recovery was still running at the deadline:',
         error
       )
-      reportRecoveryUnreachable(error)
+      reportRecoveryUnreachable(attemptId, error)
       rearmBoundedDeadlineWakeUp()
       return false
     }
@@ -750,22 +749,29 @@ function useSubscriptionInternal() {
       retryUnavailableDeadline(source)
       return
     }
+    const attempt = getPendingSubscriptionCheckoutAttempt()
+    if (!attempt) return
+    const attemptId = attempt.attempt_id
     if (isRecoveringPendingCheckout) {
-      const didObserveStatus = await waitForActiveRecoveryAtDeadline(source)
+      const didObserveStatus = await waitForActiveRecoveryAtDeadline(
+        source,
+        attemptId
+      )
       if (!isDisposed && source === 'deadline') {
-        if (didObserveStatus) reportMissingCheckoutCompletion()
+        if (didObserveStatus) reportMissingCheckoutCompletion(attemptId)
         else retryUnavailableDeadline(source)
       }
       return
     }
 
-    if (!(await runPendingCheckoutRecovery(source))) return
+    if (!(await runPendingCheckoutRecovery(source, attemptId))) return
 
-    if (source === 'deadline') reportMissingCheckoutCompletion()
+    if (source === 'deadline') reportMissingCheckoutCompletion(attemptId)
   }
 
   const runPendingCheckoutRecovery = async (
-    source: PendingCheckoutRecoverySource
+    source: PendingCheckoutRecoverySource,
+    attemptId: string
   ): Promise<boolean> => {
     isRecoveringPendingCheckout = true
     try {
@@ -777,7 +783,7 @@ function useSubscriptionInternal() {
       }
       return true
     } catch (error) {
-      handlePendingCheckoutRecoveryError(source, error)
+      handlePendingCheckoutRecoveryError(source, attemptId, error)
       return false
     } finally {
       isRecoveringPendingCheckout = false
