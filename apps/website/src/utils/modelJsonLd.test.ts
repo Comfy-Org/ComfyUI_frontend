@@ -64,6 +64,7 @@ describe('modelPageJsonLd', () => {
       author: {
         '@type': 'Organization',
         name: 'Black Forest Labs',
+        url: 'https://bfl.ai/',
         sameAs: ['https://www.wikidata.org/wiki/Q128801641']
       }
     })
