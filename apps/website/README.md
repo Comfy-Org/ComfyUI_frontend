@@ -372,9 +372,9 @@ always removes the retired `/workshop` output, including in enabled builds.
 Only the production build (`VERCEL_ENV=production`) can be indexed. Every
 other build (local, CI, Vercel previews) puts
 `<meta name="robots" content="noindex, nofollow">` on every page, so a copy of
-the site never competes with comfy.org. `WEBSITE_INDEXABLE=1` gives a
-non-production build the production head; the e2e build sets it. Pages that are
-noindex on their own stay noindex either way.
+the site never competes with comfy.org. `WEBSITE_INDEXABLE=1` gives a build
+outside Vercel the production head; the e2e and screenshot builds set it. Pages
+that are noindex on their own stay noindex either way.
 
 ## HubSpot forms
 

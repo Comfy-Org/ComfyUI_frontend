@@ -47,10 +47,9 @@ function normalizePathname(pathname: string): string {
 }
 
 export function isIndexableBuild(): boolean {
-  return (
-    process.env.VERCEL_ENV === 'production' ||
-    process.env.WEBSITE_INDEXABLE === '1'
-  )
+  const vercelEnv = process.env.VERCEL_ENV
+  if (vercelEnv) return vercelEnv === 'production'
+  return process.env.WEBSITE_INDEXABLE === '1'
 }
 
 export function isNoindexPathname(pathname: string): boolean {

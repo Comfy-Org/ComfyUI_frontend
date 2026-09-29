@@ -91,6 +91,7 @@ describe('indexing policy', () => {
     { vercelEnv: 'production', override: undefined, indexable: true },
     { vercelEnv: undefined, override: '1', indexable: true },
     { vercelEnv: 'preview', override: undefined, indexable: false },
+    { vercelEnv: 'preview', override: '1', indexable: false },
     { vercelEnv: 'development', override: undefined, indexable: false },
     { vercelEnv: undefined, override: undefined, indexable: false },
     { vercelEnv: '', override: '', indexable: false },
