@@ -500,16 +500,16 @@ export function normalizeAgentTranscript(
     }
   }
 
-  const messages = turnOrder.map((turnId) => {
-    const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
-    message.streaming = message === pending?.message
-    return message
-  })
   const streamingTurnIds = new Set(
     [...latestAssistantStatus]
       .filter(([, status]) => status === 'streaming')
       .map(([turnId]) => turnId)
   )
+  const messages = turnOrder.map((turnId) => {
+    const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
+    message.streaming = streamingTurnIds.has(turnId)
+    return message
+  })
 
   return {
     messages,

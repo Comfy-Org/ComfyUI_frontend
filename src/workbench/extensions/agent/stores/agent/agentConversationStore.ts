@@ -127,7 +127,6 @@ export const useAgentConversationStore = defineStore(
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedTurnIdsByRowId = new Map<string, TurnId>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
-    let hydratedStreamingTurnIds = new Set<TurnId>()
     const reportedPaywallImpressions = new Set<TurnId>()
     const approvalShownAtByAsk = new Map<string, number>()
     const shownApprovalIds = new Set<string>()
@@ -838,7 +837,7 @@ export const useAgentConversationStore = defineStore(
       )
       if (!located || located.hydrated === entry.message) return undefined
       const { hydrated, index } = located
-      if (!hydratedStreamingTurnIds.has(hydratedTurnId)) {
+      if (!hydrated.streaming) {
         adoptLiveOnlyParts(hydrated, entry.message)
         adoptFresherLiveText(
           hydrated,
@@ -971,7 +970,6 @@ export const useAgentConversationStore = defineStore(
       forgetAllApprovals()
       hydratedTurnIdsByRowId = new Map()
       hydratedAssistantTurnIds = new Set()
-      hydratedStreamingTurnIds = new Set()
       reportedPaywallImpressions.clear()
       undeliverableAskReporter.reset()
       departedTurns.clear()
@@ -991,7 +989,6 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId.value = transcript.latestWorkflowId
       hydratedTurnIdsByRowId = transcript.turnIdsByRowId
       hydratedAssistantTurnIds = transcript.assistantTurnIds
-      hydratedStreamingTurnIds = transcript.streamingTurnIds
       dropAttachmentPreviews()
       const namesByTurn =
         threadId.value === null

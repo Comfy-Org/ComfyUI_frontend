@@ -93,6 +93,15 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.messages[0].streaming).toBe(false)
   })
 
+  it('marks a message streaming from its latest row status', () => {
+    const streaming = row(1, 'assistant', 'turn-a', 'partial', 'row-streaming')
+    streaming.status = 'streaming'
+
+    const transcript = normalizeAgentTranscript([streaming])
+
+    expect(transcript.messages[0].streaming).toBe(true)
+  })
+
   it('keeps message identity stable when persisted row ids change', () => {
     const first = normalizeAgentTranscript([
       row(1, 'user', 'turn-a', 'Prompt', 'user-row-v1'),

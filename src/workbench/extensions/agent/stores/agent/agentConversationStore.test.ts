@@ -1311,6 +1311,45 @@ describe('useAgentConversationStore', () => {
     )
   })
 
+  it('keeps a hydrated copy that settles after its streaming snapshot', () => {
+    const streamingRow = historyRow(
+      2,
+      'assistant',
+      'server-turn',
+      'All done.',
+      't1'
+    )
+    streamingRow.status = 'streaming'
+    streamingRow.content = {
+      text: 'All done.',
+      run_approval: {
+        ask_id: 'server-turn:call-1',
+        workflow_id: 'workflow-1',
+        workflow_name: 'Portrait workflow'
+      }
+    }
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(delta('t1', 'All '))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      streamingRow
+    ])
+    store.ingest(done('t1'))
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store).join('')).toBe('All done.')
+    expect(store.activeTurnId).toBeNull()
+    expect(store.isStreaming).toBe(false)
+  })
+
   it('keeps attachment names scoped to their turn within one thread', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
