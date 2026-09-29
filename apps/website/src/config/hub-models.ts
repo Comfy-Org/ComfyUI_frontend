@@ -29,19 +29,25 @@ export const hubModelAliases: ReadonlyMap<string, string> = new Map(
 
 /** Disabled models have no row; their pages are never built. */
 export const hubModelHref = (oldSlug: string) =>
-  hubModelPath(hubModelSlugs.get(oldSlug) ?? oldSlug)
+  hubModelPath(
+    hubModelSlugs.get(oldSlug) ?? hubModelAliases.get(oldSlug) ?? oldSlug
+  )
 
-const oldModelPaths = new Set(
-  [
+const oldModelPaths = new Set([
+  '/models',
+  ...[
     ...hubModelSlugs.keys(),
     ...hubModelAliases.keys(),
     ...hubWorkflowNames.map((name) => `workflows/${name}`)
   ].map((slug) => `/models/${slug}`)
-)
+])
 
 /** Links in a page that still point at an old, redirecting Models address. */
 export function oldModelLinks(html: string): string[] {
-  return Array.from(html.matchAll(/href="(\/models\/[^"?#]*)/g), ([, path]) =>
-    path.replace(/\/$/, '')
+  return Array.from(
+    html.matchAll(
+      /href="(?:https:\/\/comfy\.org)?(\/models(?:\/[^"?#]*)?)["?#]/g
+    ),
+    ([, path]) => path.replace(/\/$/, '')
   ).filter((path) => oldModelPaths.has(path))
 }

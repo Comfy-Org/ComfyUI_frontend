@@ -73,16 +73,19 @@ async function pagesLinkingOldModels(
   root: string,
   pages: readonly { pathname: string }[]
 ) {
-  const found = await Promise.all(
-    pages.map(async ({ pathname }) => {
-      const file = join(root, pathname, 'index.html')
-      if (!existsSync(file)) return []
-      return oldModelLinks(await readFile(file, 'utf8')).map(
-        (link) => `/${pathname} → ${link}`
-      )
-    })
-  )
-  return found.flat()
+  const found: string[] = []
+  for (const { pathname } of pages) {
+    if (isLegacyWorkshopRoute(`/${pathname}`)) continue
+    const trimmed = pathname.replace(/\/$/, '')
+    const file = [
+      join(root, pathname, 'index.html'),
+      join(root, `${trimmed}.html`)
+    ].find((candidate) => existsSync(candidate))
+    if (!file) continue
+    for (const link of oldModelLinks(await readFile(file, 'utf8')))
+      found.push(`/${pathname} → ${link}`)
+  }
+  return found
 }
 
 export function workshopReleaseGate(): AstroIntegration {
