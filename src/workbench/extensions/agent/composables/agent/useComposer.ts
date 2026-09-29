@@ -55,10 +55,15 @@ export function useComposer(options: UseComposerOptions) {
    */
   function insert(
     text: string,
-    starterPrompt: AgentStarterPromptAttribution
+    starterPrompt?: AgentStarterPromptAttribution
   ): void {
-    const draftWasEmpty = !draft.value.trim()
+    const draftWasEmpty =
+      !draft.value.trim() && prompt.value.references.length === 0
     store.setText(draft.value ? `${draft.value} ${text}` : text)
+    if (!starterPrompt) {
+      store.markSuggestedPrompt()
+      return
+    }
     const clickId = uuidv4()
     store.markSuggestedPrompt({ id: starterPrompt.promptId, clickId })
     useTelemetry()?.trackAgentStarterPromptClicked({

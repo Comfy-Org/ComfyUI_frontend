@@ -318,7 +318,7 @@ onUnmounted(() => {
 
 function insert(
   text: string,
-  starterPrompt: AgentStarterPromptAttribution
+  starterPrompt?: AgentStarterPromptAttribution
 ): void {
   composer.insert(text, starterPrompt)
   editorRef.value?.focus()

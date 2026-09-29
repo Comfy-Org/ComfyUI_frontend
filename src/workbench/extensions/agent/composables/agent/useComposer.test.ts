@@ -150,6 +150,18 @@ describe('useComposer', () => {
     expect(store.promptOrigin).toBe('suggestion')
   })
 
+  it('preserves an unidentified suggestion insert without reporting a click', () => {
+    const { composer } = setup()
+    const store = useAgentComposerStore()
+
+    composer.insert('Try a different workflow')
+
+    expect(composer.draft.value).toBe('Try a different workflow')
+    expect(store.promptOrigin).toBe('suggestion')
+    expect(store.starterPrompt).toBeNull()
+    expect(telemetry.trackAgentStarterPromptClicked).not.toHaveBeenCalled()
+  })
+
   it('reports one starter prompt click per identified insert', () => {
     const { composer } = setup()
     const store = useAgentComposerStore()
@@ -201,6 +213,17 @@ describe('useComposer', () => {
 
     expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledWith(
       expect.objectContaining({ draft_was_empty: true })
+    )
+  })
+
+  it('treats a reference-only draft as non-empty for prompt attribution', () => {
+    const { composer } = setup()
+    composer.addAttachment({ id: 'a1', name: 'cat.png', ref: 'r' })
+
+    composer.insert('List my saved workflows', CHIP)
+
+    expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledWith(
+      expect.objectContaining({ draft_was_empty: false })
     )
   })
 

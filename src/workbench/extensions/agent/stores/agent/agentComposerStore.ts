@@ -133,6 +133,14 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       undoAssets.set(attachment.id, attachment)
       return [{ ...item, attachment }]
     })
+    if (
+      !next.text.trim() &&
+      references.length === 0 &&
+      promptOrigin.value === 'suggestion'
+    ) {
+      promptOrigin.value = 'typed'
+      starterPrompt.value = null
+    }
     updateDraft({ text: next.text, references })
   }
 

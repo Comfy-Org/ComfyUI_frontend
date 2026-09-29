@@ -197,6 +197,34 @@ describe('composer prompt origin (PM-1474 F11)', () => {
     expect(store.starterPrompt).toBeNull()
   })
 
+  it('drops click attribution when an editor update fully removes the prompt', () => {
+    const store = useAgentComposerStore()
+    store.setText('Find an upscaling workflow')
+    store.markSuggestedPrompt({ id: 'find_workflow', clickId: 'click-1' })
+
+    store.applyEditorPrompt({ text: '', references: [] })
+
+    expect(store.promptOrigin).toBe('typed')
+    expect(store.starterPrompt).toBeNull()
+  })
+
+  it('keeps click attribution when an editor update rewords the prompt', () => {
+    const store = useAgentComposerStore()
+    store.setText('Find an upscaling workflow')
+    store.markSuggestedPrompt({ id: 'find_workflow', clickId: 'click-1' })
+
+    store.applyEditorPrompt({
+      text: 'Find an upscaling workflow for portraits',
+      references: []
+    })
+
+    expect(store.promptOrigin).toBe('suggestion')
+    expect(store.starterPrompt).toEqual({
+      id: 'find_workflow',
+      clickId: 'click-1'
+    })
+  })
+
   it('gives the chip back with the origin when a failed send returns the draft', () => {
     const store = useAgentComposerStore()
     store.setText('Find the best workflow for skin upscaling')
