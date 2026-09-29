@@ -821,6 +821,41 @@ describe('AgentPanel extension flag gate', () => {
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
+  it('keeps the held offer when the retry cannot be made, and offers on the next clear screen', async () => {
+    agentFlagEnabled.value = true
+    openDialog()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    await flush()
+    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+      reason: 'dialog_open'
+    })
+
+    // The screen clears, but the retry's consent read fails - a cloud session
+    // whose auth is still settling is the ordinary way that happens. The
+    // release used to consume the hold before finding that out, which lost the
+    // offer for the rest of the page load and emitted nothing to say so: the
+    // reason is deduplicated per page load, so there is no second
+    // `agent_consent_not_offered` either.
+    vi.mocked(consentStore.load).mockRejectedValueOnce(new Error('offline'))
+    closeDialog()
+    await flush()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).toHaveBeenCalledOnce()
+
+    // A later dialog comes and goes and the read works this time. The offer is
+    // still owed, so it lands.
+    openDialog()
+    await flush()
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
   it('keeps waiting when a tour ends while a dialog is still open', async () => {
     agentFlagEnabled.value = true
     activeTour.value = 'appMode'
@@ -861,6 +896,38 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.open).not.toHaveBeenCalled()
 
     closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
+  it('re-offers after a withheld in-flight offer settles on a clear screen', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let settleOffer = () => {}
+    const pendingOffer = new Promise<void>((resolve) => {
+      settleOffer = resolve
+    })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_trigger, _onAccept, hooks) => {
+        openDialog()
+        await flush()
+        if (hooks?.canShow?.() === false) await pendingOffer
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    settleOffer()
+
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
     )
