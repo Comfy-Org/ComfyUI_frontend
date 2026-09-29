@@ -7,3 +7,13 @@ export function clipSecondsOf(url: string): Promise<number> {
     video.src = url
   })
 }
+
+/** A chosen file's length in seconds; NaN if its metadata cannot be read. */
+export async function fileSecondsOf(file: File): Promise<number> {
+  const url = URL.createObjectURL(file)
+  try {
+    return await clipSecondsOf(url)
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
@@ -10,6 +10,8 @@ import type {
   ReshootCamera,
   ReshootSize
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import { clipFits } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import { fileSecondsOf } from '../../../../lib/workshop/cinematic-studio/reshoot-clip'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import ReshootAimRig from './ReshootAimRig.vue'
@@ -84,12 +86,26 @@ const framesText = computed(() =>
       })
 )
 
-function choose(event: Event) {
+// A replacement is checked before it takes the current clip's place, as on
+// the first pick: one outside 5 to 15 seconds is turned away and the clip
+// already in use stays.
+const rejected = ref<string>()
+async function choose(event: Event) {
   const input = event.target
   if (!(input instanceof HTMLInputElement)) return
   const file = input.files?.[0]
   input.value = ''
-  if (file) upload.value = file
+  if (!file) return
+  const seconds = await fileSecondsOf(file)
+  if (Number.isFinite(seconds) && !clipFits(seconds)) {
+    rejected.value = rc('reshoot.clip.rejected', locale, {
+      name: file.name,
+      seconds: seconds.toFixed(1)
+    })
+    return
+  }
+  rejected.value = undefined
+  upload.value = file
 }
 </script>
 
@@ -138,6 +154,14 @@ function choose(event: Event) {
           />
         </label>
       </div>
+      <p
+        v-if="rejected"
+        role="alert"
+        data-testid="reshoot-clip-rejected"
+        class="-mt-2 px-1 text-[11px]/relaxed text-primary-warm-white"
+      >
+        {{ rejected }}
+      </p>
       <ReshootAimRig
         v-model:keep-aim="keepAim"
         :clip

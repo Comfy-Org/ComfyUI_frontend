@@ -7,7 +7,10 @@ import {
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { clipSecondsOf } from '../../../../lib/workshop/cinematic-studio/reshoot-clip'
+import {
+  clipSecondsOf,
+  fileSecondsOf
+} from '../../../../lib/workshop/cinematic-studio/reshoot-clip'
 import { readGeometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import {
   cancel,
@@ -54,6 +57,7 @@ beforeEach(() => {
     vi.fn(async () => new Response(new Blob(['clip'], { type: 'video/mp4' })))
   )
   vi.mocked(clipSecondsOf).mockResolvedValue(8)
+  vi.mocked(fileSecondsOf).mockResolvedValue(8)
   vi.mocked(uploadVideo).mockResolvedValue('clip.mp4')
   vi.mocked(submit).mockImplementation(async (workflow) => {
     const graph = workflow as unknown as (typeof net.submitted)[number]
@@ -123,7 +127,7 @@ describe('Re-shoot, run for real', () => {
     expect(net.submitted).toHaveLength(1)
     expect(net.submitted[0]['2'].inputs).toMatchObject({
       aspect_ratio: 'source',
-      megapixels: 0.4
+      megapixels: 1
     })
 
     screen.getByTestId('reshoot-globe').focus()
@@ -151,17 +155,37 @@ describe('Re-shoot, run for real', () => {
     expect(screen.getByTestId('reshoot-action')).toBeDisabled()
   })
 
+  it('turns away a replacement clip outside 5 to 15 seconds and keeps the current one', async () => {
+    const user = setup()
+    await analyzeExample(user)
+    vi.mocked(fileSecondsOf).mockResolvedValueOnce(28.9)
+
+    await user.upload(
+      screen.getByLabelText('Change'),
+      new File(['clip'], 'too-long.mp4', { type: 'video/mp4' })
+    )
+
+    expect(
+      await screen.findByTestId('reshoot-clip-rejected')
+    ).toHaveTextContent('too-long.mp4 is 28.9 s')
+    expect(screen.getByRole('group', { name: 'Video' }).textContent).toContain(
+      'Sci-fi pilot'
+    )
+    expect(screen.getByTestId('reshoot-action')).toBeEnabled()
+    expect(net.submitted).toHaveLength(1)
+  })
+
   it('reads the scene again when the size changes, keeping the aim', async () => {
     const user = setup()
     await analyzeExample(user)
     screen.getByTestId('reshoot-globe').focus()
     await user.keyboard('{ArrowRight}')
 
-    await user.click(screen.getByRole('button', { name: 'Output size: 480p' }))
-    await user.click(await screen.findByRole('menuitemradio', { name: /768p/ }))
+    await user.click(screen.getByRole('button', { name: 'Output size: 768p' }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /480p/ }))
 
     await waitUntil(() => expect(net.submitted).toHaveLength(2))
-    expect(net.submitted[1]['2'].inputs.megapixels).not.toBe(0.4)
+    expect(net.submitted[1]['2'].inputs.megapixels).toBe(0.4)
     await waitUntil(() =>
       expect(screen.getByTestId('reshoot-action')).toBeEnabled()
     )

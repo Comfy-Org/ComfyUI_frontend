@@ -95,7 +95,7 @@ export function useReshootRun(locale: Locale = 'en') {
   const picked = ref(false)
 
   const aspect = ref<ReshootAspect>('source')
-  const size = ref<ReshootSize>('480p')
+  const size = ref<ReshootSize>('768p')
   const depth = ref<DepthState>('none')
   const step = ref<1 | 2>(1)
   const camera = reactive<ReshootCamera>({ ...DEFAULT_CAMERA })

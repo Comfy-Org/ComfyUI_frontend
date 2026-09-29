@@ -80,6 +80,11 @@ const copy = {
     en: 'This clip is {seconds} s long. Use one between 5 and 15 seconds.',
     'zh-CN': '该片段长 {seconds} 秒，请使用 5 到 15 秒的片段。'
   },
+  'reshoot.clip.rejected': {
+    en: '{name} is {seconds} s, so the current clip stays. Pick one between 5 and 15 seconds.',
+    'zh-CN':
+      '{name} 长 {seconds} 秒，当前片段保持不变。请选择 5 到 15 秒的片段。'
+  },
   'reshoot.reuse': { en: 'Use this angle again', 'zh-CN': '再次使用此机位' },
   'reshoot.clip.change': { en: 'Change', 'zh-CN': '更换' },
   'reshoot.clip.ready': { en: 'Scene read', 'zh-CN': '场景已读取' },
