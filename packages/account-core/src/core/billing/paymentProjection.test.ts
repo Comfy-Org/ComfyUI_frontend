@@ -6,7 +6,7 @@ import type {
   PendingBillingOperation
 } from './operationState.js'
 import type { HostPaymentStep, PaymentProjection } from './paymentProjection.js'
-import { projectPaymentStep } from './paymentProjection.js'
+import { awaitsHostedAction, projectPaymentStep } from './paymentProjection.js'
 
 const IDENTITY = {
   id: 'op-1',
@@ -293,5 +293,35 @@ describe('projectPaymentStep', () => {
     expect(projections.map((p) => p.step)).not.toContain(
       'payment_received_hold'
     )
+  })
+})
+
+describe('awaitsHostedAction', () => {
+  it.for<{
+    state: string
+    overrides: Partial<Pick<PendingBillingOperation, 'challenge' | 'actionUrl'>>
+    prompts: boolean
+  }>([
+    { state: 'nothing asked of the customer', overrides: {}, prompts: false },
+    {
+      state: 'an in-page challenge',
+      overrides: {
+        challenge: { clientSecret: 'pi_secret', status: 'in_progress' }
+      },
+      prompts: false
+    },
+    {
+      state: 'a hosted action page',
+      overrides: { actionUrl: 'https://bank.example' },
+      prompts: true
+    }
+  ])('$state prompts the customer: $prompts', ({ overrides, prompts }) => {
+    const operation: PendingBillingOperation = {
+      ...IDENTITY,
+      phase: 'pending',
+      customerActionSeen: false,
+      ...overrides
+    }
+    expect(awaitsHostedAction(operation)).toBe(prompts)
   })
 })

@@ -199,6 +199,10 @@ export const usePaste = () => {
   const canvasStore = useCanvasStore()
 
   useEventListener(document, 'paste', async (e) => {
+    // An editor claims the paste it handles by cancelling it. Its target is not
+    // always editable: a caret inside an uneditable chip makes the chip the
+    // target, which shouldIgnoreCopyPaste would hand to the canvas.
+    if (e.defaultPrevented) return
     if (shouldIgnoreCopyPaste(e.target)) {
       // Default system copy
       return
@@ -260,12 +264,12 @@ export const usePaste = () => {
     try {
       data = data.slice(data.indexOf('{'))
       workflow = JSON.parse(data)
-    } catch (err) {
+    } catch {
       try {
         data = data.slice(data.indexOf('workflow\n'))
         data = data.slice(data.indexOf('{'))
         workflow = JSON.parse(data)
-      } catch (error) {
+      } catch {
         workflow = null
       }
     }

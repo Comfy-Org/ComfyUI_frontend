@@ -19,6 +19,8 @@ export interface CloudScenario {
   paymentMethods: SavedPaymentMethod[]
   preview: PreviewSubscribeResponse
   operations: Record<string, BillingOpStatusResponse>
+  /** `billing_web_checkout_ui`, answered only to an authenticated `/features` read, as the real Cloud does. */
+  checkoutUi?: string
 }
 
 const HOUR_MS = 60 * 60 * 1000
