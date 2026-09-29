@@ -96,7 +96,8 @@ type Attribution = 'started' | 'followed' | 'settled'
  * reached so the capture it resolves into opens on that card. `waiting` is
  * money in flight that this page did not start: no fresh form until it
  * settles. `unconfirmed` is money whose outcome the page could not learn, so
- * it neither offers a form nor claims a charge. `recheck_failed` is a re-read
+ * it neither offers a form nor claims a charge; `started` marks this page's
+ * own Pay, whose verdict it may still show. `recheck_failed` is a re-read
  * of what the workspace is waiting on that failed before any form showed, so
  * the page cannot say whether money is moving. `terminal` is a payment that
  * went through.
@@ -112,7 +113,11 @@ export type CheckoutPage =
     }
   | Capture
   | { readonly kind: 'waiting'; readonly operation: PendingBillingOperation }
-  | { readonly kind: 'unconfirmed'; readonly operationId: string }
+  | {
+      readonly kind: 'unconfirmed'
+      readonly operationId: string
+      readonly started?: true
+    }
   | {
       readonly kind: 'terminal'
       readonly operation?: TerminalBillingOperation
@@ -542,10 +547,29 @@ export function waitingOn(operation: PendingBillingOperation): WaitingOn {
 const outcomeUnknown = (operation: BillingOperationState) =>
   operation.phase === 'reconciliation_needed'
 
-const unconfirmed = (operation: { readonly id: string }): CheckoutPage => ({
+const unconfirmed = (
+  operation: { readonly id: string },
+  started = false
+): CheckoutPage => ({
   kind: 'unconfirmed',
-  operationId: operation.id
+  operationId: operation.id,
+  ...(started ? { started: true } : {})
 })
+
+/**
+ * A verdict is shown only by the tab that sent the payment (a decline in
+ * another tab sends this one back to a plain form): this page's own Pay, or
+ * a challenge this tab re-opened and saw refused.
+ */
+function ownsVerdict(
+  page: Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>,
+  operation: BillingOperationState
+): boolean {
+  if (page.kind === 'unconfirmed' && page.started === true) return true
+  return (
+    operation.phase === 'pending' && operation.challenge?.status === 'failed'
+  )
+}
 
 /**
  * Where an operation the lifecycle follows puts the page. Money in flight
@@ -599,12 +623,11 @@ function arrivedOn(
 }
 
 /**
- * Money this page is watching but did not send. A watch that lapses while
- * the page was still verifying becomes "we couldn't confirm"; one over a
- * charge it knows is settling or received keeps its screen while the page
- * re-reads. An unconfirmed page holds until a verdict arrives. A verdict on
- * a still-pending operation (a challenge the bank refused) is a card, not
- * money in flight.
+ * Money this page is watching. A watch that lapses while the page was still
+ * verifying becomes "we couldn't confirm"; one over a charge it knows is
+ * settling or received keeps its screen while the page re-reads. An
+ * unconfirmed page holds until a verdict arrives. A verdict resolves a fresh
+ * capture, on its card only when this tab owns it.
  */
 function watched(
   page: Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>,
@@ -613,8 +636,12 @@ function watched(
 ): CheckoutPage {
   if (operation.phase === 'succeeded')
     return { kind: 'terminal', operation, attribution: attributionOf(page) }
-  if (outcomeUnknown(operation)) return unconfirmed(operation)
-  if (outcome !== undefined) return { kind: 'resolving', outcome }
+  if (outcomeUnknown(operation))
+    return unconfirmed(operation, page.kind === 'unconfirmed' && page.started)
+  if (outcome !== undefined)
+    return ownsVerdict(page, operation)
+      ? { kind: 'resolving', outcome }
+      : RESOLVING
   return page.kind === 'unconfirmed'
     ? watchedUnconfirmed(page, operation)
     : watchedWaiting(page, operation)
@@ -658,8 +685,9 @@ function attributionOf(
  * the challenge, until a verdict: the Pay's own once it settles, or the
  * operation's while it is still pending (a challenge the bank refused never
  * settles the Pay). A success is attributed to it. An operation nobody here
- * sent takes the form away while in flight, or lands its verdict above Pay;
- * one parked on a card releases a Pay held for the re-read.
+ * sent takes the form away while in flight; its verdict belongs to the tab
+ * that sent it, so this form stays plain, and one parked on a card releases
+ * a Pay held for the re-read.
  */
 function followedInCapture(
   page: Capture,
@@ -673,11 +701,10 @@ function followedInCapture(
       operation,
       attribution: started ? 'started' : 'settled'
     }
-  if (outcomeUnknown(operation)) return unconfirmed(operation)
+  if (outcomeUnknown(operation)) return unconfirmed(operation, started)
   if (page.attempt.kind === 'sent')
     return followedOwn(page, page.attempt, operation, outcome)
-  if (outcome !== undefined) return { ...page, attempt: IDLE, outcome }
-  return isInFlight(operation)
+  return isInFlight(operation) && outcome === undefined
     ? { kind: 'waiting', operation }
     : nothingPending(page)
 }

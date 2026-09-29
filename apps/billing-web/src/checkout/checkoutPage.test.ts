@@ -684,12 +684,28 @@ describe('reduceCheckoutPage reconciliation', () => {
       expected: { kind: 'terminal', attribution: 'settled' }
     },
     {
-      name: 'waiting that declines resolves a fresh capture on that card',
+      name: 'waiting on money another tab sent that declines resolves a plain capture',
       events: [
         reconciled(pendingOperation()),
         changed(failedOperation('card_declined'), declinedElsewhere)
       ],
-      expected: { kind: 'resolving', outcome: declinedElsewhere }
+      expected: { kind: 'resolving' },
+      without: 'outcome'
+    },
+    {
+      name: 'a form left open while another tab is declined stays a plain form',
+      events: [
+        ...live,
+        changed(failedOperation('card_declined'), declinedElsewhere)
+      ],
+      expected: collect('ready'),
+      without: 'outcome'
+    },
+    {
+      name: 'a re-read that finds another tab parked on a decline leaves the form plain',
+      events: [...live, reconciled(parkedOperation(), declinedElsewhere)],
+      expected: collect('ready'),
+      without: 'outcome'
     },
     {
       name: 'waiting whose operation turns out parked on a card resolves a capture (rule 4)',
@@ -762,8 +778,13 @@ describe('reduceCheckoutPage reconciliation', () => {
       ],
       expected: { kind: 'terminal', attribution: 'settled' }
     }
-  ])('$name', ({ events, expected }) => {
-    expect(replay(events)).toMatchObject(expected)
+  ])('$name', ({ events, expected, without }) => {
+    const page = replay(events)
+
+    expect(page).toMatchObject(expected)
+    expect(
+      without === undefined ? undefined : Reflect.get(page, without)
+    ).toBeUndefined()
   })
 
   it.for<{ name: string; operation: BillingOperationState | undefined }>([
@@ -961,9 +982,19 @@ describe('reduceCheckoutPage endings', () => {
       }
     },
     {
-      name: 'unconfirmed that declines resolves a capture on that card',
+      name: 'unconfirmed money another tab sent that declines resolves a plain capture',
       events: [
         reconciled(parkedForAHuman()),
+        changed(failedOperation('card_declined'), declinedElsewhere)
+      ],
+      expected: RESOLVING
+    },
+    {
+      name: "this page's own Pay, unconfirmed and then declined, resolves on its card",
+      events: [
+        ...live,
+        submitted,
+        changed(parkedForAHuman()),
         changed(failedOperation('card_declined'), declinedElsewhere)
       ],
       expected: { kind: 'resolving', outcome: declinedElsewhere }
@@ -976,7 +1007,7 @@ describe('reduceCheckoutPage endings', () => {
     {
       name: "this page's own Pay parked for a human is unconfirmed, never a card",
       events: [...live, submitted, changed(parkedForAHuman())],
-      expected: UNCONFIRMED
+      expected: { ...UNCONFIRMED, started: true }
     },
     {
       name: 'a collided Pay re-read as parked for a human is unconfirmed',
@@ -1334,12 +1365,26 @@ describe('reduceCheckoutPage through a challenge', () => {
       })
     },
     {
-      name: 'waiting over a challenge the bank refused resolves on its card',
+      name: 'waiting over a challenge this tab re-opened and the bank refused resolves on its card',
+      events: [
+        reconciled(challengedOperation()),
+        changed(
+          {
+            ...refusedChallenge(),
+            challenge: { clientSecret: 'cs', status: 'failed' }
+          },
+          notCompleted
+        )
+      ],
+      expected: { kind: 'resolving', outcome: notCompleted }
+    },
+    {
+      name: 'waiting over a challenge another tab let the bank refuse resolves a plain capture',
       events: [
         reconciled(challengedOperation()),
         changed(refusedChallenge(), notCompleted)
       ],
-      expected: { kind: 'resolving', outcome: notCompleted }
+      expected: RESOLVING
     },
     {
       name: 'a challenge already refused on arrival resolves on its card',

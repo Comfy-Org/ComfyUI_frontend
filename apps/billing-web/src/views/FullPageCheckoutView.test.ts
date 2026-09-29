@@ -1394,7 +1394,7 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     expect(form.mounts).toBe(0)
   })
 
-  it('resolves a fresh capture, on its card, when the awaited operation declines', async () => {
+  it("resolves a plain fresh capture when money another tab sent declines: the card is that tab's", async () => {
     const fake = await renderCheckout({
       recover: { status: 'ok', value: pendingOperation('op_awaited') }
     })
@@ -1402,9 +1402,20 @@ describe('FullPageCheckoutView mount reconciliation', () => {
 
     fake.publishOperation(failedOperation('card_declined', 'op_awaited'))
 
-    const card = await screen.findByRole('alert')
-    expect(card).toHaveTextContent('Payment declined')
+    await waitFor(() => expect(form.mounts).toBe(1))
     expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.queryByText('Payment declined')).not.toBeInTheDocument()
+  })
+
+  it("keeps a form left open plain when another tab's payment declines", async () => {
+    const fake = await payReady()
+
+    fake.publishOperation(failedOperation('card_declined', 'op_sibling'))
+    await nextTick()
+
+    expect(screen.queryByText('Payment declined')).not.toBeInTheDocument()
+    expect(payButton()).toBeEnabled()
     expect(form.mounts).toBe(1)
   })
 
@@ -2216,9 +2227,11 @@ describe('FullPageCheckoutView promo codes', () => {
 
     fake.publishOperation(failedOperation('card_declined', 'op_watched'))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Payment declined'
+    await waitFor(() =>
+      expect(screen.queryByTestId('checkout-waiting')).not.toBeInTheDocument()
     )
+    await screen.findByRole('button', { name: 'Remove LAUNCH20' })
+    expect(screen.queryByText('Payment declined')).not.toBeInTheDocument()
     expect(fake.previewSubscribe).toHaveBeenLastCalledWith(
       expect.objectContaining({ promotionCode: 'LAUNCH20' }),
       expect.anything()
