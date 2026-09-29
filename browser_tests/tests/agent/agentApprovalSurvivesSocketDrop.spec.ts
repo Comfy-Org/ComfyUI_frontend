@@ -138,9 +138,14 @@ test.describe(
         .poll(() => turnLock.answeredAsks(), { timeout: 10_000 })
         .toEqual(['run'])
 
-      // Give a duplicate submission time to reach the fake server after the
-      // persisted ask has resolved, then verify exactly one answer was sent.
-      await page.waitForTimeout(1_000)
+      // Wait for the persisted ask to leave the UI, then verify resolving it
+      // sent exactly one answer to the fake server.
+      await expect(
+        turnLock.panel.getByRole('button', {
+          name: enMessages.agent.runApproval.run,
+          exact: true
+        })
+      ).toBeHidden({ timeout: 10_000 })
       expect(turnLock.answeredAsks()).toEqual(['run'])
     })
   }
