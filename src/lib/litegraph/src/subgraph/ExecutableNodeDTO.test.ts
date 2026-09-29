@@ -363,6 +363,99 @@ describe('Bypass node output resolution', () => {
     expect(resolved).toBeDefined()
     expect(resolved?.node).toBe(upstreamDto)
   })
+
+  it('should preserve matching names for same-type bypass slots', () => {
+    const graph = new LGraph()
+
+    const imageSource = new LGraphNode('Image Source')
+    imageSource.addOutput('image', 'IMAGE')
+    graph.add(imageSource)
+
+    const positiveSource = new LGraphNode('Positive Source')
+    positiveSource.addOutput('positive', 'CONDITIONING')
+    graph.add(positiveSource)
+
+    const negativeSource = new LGraphNode('Negative Source')
+    negativeSource.addOutput('negative', 'CONDITIONING')
+    graph.add(negativeSource)
+
+    const bypassedNode = new LGraphNode('Bypassed')
+    bypassedNode.addInput('image', 'IMAGE')
+    bypassedNode.addInput('width', 'INT')
+    bypassedNode.addInput('height', 'INT')
+    bypassedNode.addInput('positive', 'CONDITIONING')
+    bypassedNode.addInput('negative', 'CONDITIONING')
+    bypassedNode.addInput('vae', 'VAE')
+    bypassedNode.addOutput('image', 'IMAGE')
+    bypassedNode.addOutput('positive', 'CONDITIONING')
+    bypassedNode.addOutput('negative', 'CONDITIONING')
+    bypassedNode.mode = LGraphEventMode.BYPASS
+    graph.add(bypassedNode)
+
+    imageSource.connect(0, bypassedNode, 0)
+    positiveSource.connect(0, bypassedNode, 3)
+    negativeSource.connect(0, bypassedNode, 4)
+
+    const nodeDtoMap = new Map()
+    const imageDto = new ExecutableNodeDTO(imageSource, [], nodeDtoMap)
+    const positiveDto = new ExecutableNodeDTO(positiveSource, [], nodeDtoMap)
+    const negativeDto = new ExecutableNodeDTO(negativeSource, [], nodeDtoMap)
+    const bypassedDto = new ExecutableNodeDTO(bypassedNode, [], nodeDtoMap)
+    for (const dto of [imageDto, positiveDto, negativeDto, bypassedDto]) {
+      nodeDtoMap.set(dto.id, dto)
+    }
+
+    expect(bypassedDto.resolveOutput(0, 'IMAGE', new Set())?.node).toBe(
+      imageDto
+    )
+    expect(bypassedDto.resolveOutput(1, 'CONDITIONING', new Set())?.node).toBe(
+      positiveDto
+    )
+    expect(bypassedDto.resolveOutput(2, 'CONDITIONING', new Set())?.node).toBe(
+      negativeDto
+    )
+  })
+
+  it('should retain compatible-type fallback when bypass slot names do not match', () => {
+    const graph = new LGraph()
+
+    const firstSource = new LGraphNode('First Source')
+    firstSource.addOutput('first', 'CONDITIONING')
+    graph.add(firstSource)
+
+    const secondSource = new LGraphNode('Second Source')
+    secondSource.addOutput('second', 'CONDITIONING')
+    graph.add(secondSource)
+
+    const bypassedNode = new LGraphNode('Bypassed')
+    bypassedNode.addInput('image', 'IMAGE')
+    bypassedNode.addInput('width', 'INT')
+    bypassedNode.addInput('first', 'CONDITIONING')
+    bypassedNode.addInput('second', 'CONDITIONING')
+    bypassedNode.addOutput('image', 'IMAGE')
+    bypassedNode.addOutput('one', 'CONDITIONING')
+    bypassedNode.addOutput('two', 'CONDITIONING')
+    bypassedNode.mode = LGraphEventMode.BYPASS
+    graph.add(bypassedNode)
+
+    firstSource.connect(0, bypassedNode, 2)
+    secondSource.connect(0, bypassedNode, 3)
+
+    const nodeDtoMap = new Map()
+    const firstDto = new ExecutableNodeDTO(firstSource, [], nodeDtoMap)
+    const secondDto = new ExecutableNodeDTO(secondSource, [], nodeDtoMap)
+    const bypassedDto = new ExecutableNodeDTO(bypassedNode, [], nodeDtoMap)
+    for (const dto of [firstDto, secondDto, bypassedDto]) {
+      nodeDtoMap.set(dto.id, dto)
+    }
+
+    expect(bypassedDto.resolveOutput(1, 'CONDITIONING', new Set())?.node).toBe(
+      firstDto
+    )
+    expect(bypassedDto.resolveOutput(2, 'CONDITIONING', new Set())?.node).toBe(
+      firstDto
+    )
+  })
 })
 
 describe('ALWAYS mode node output resolution', () => {
