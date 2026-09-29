@@ -152,7 +152,7 @@ const cardClass =
         :video="!!video"
         :locale
       >
-        <CinematicCharacterButton v-model="cast" :locale />
+        <CinematicCharacterButton v-if="!video" v-model="cast" :locale />
       </CinematicSceneField>
       <section class="flex flex-col gap-2">
         <h2 :class="labelClass">

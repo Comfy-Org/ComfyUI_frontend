@@ -733,6 +733,10 @@ describe('CinematicStudio', () => {
     await screen.findByAltText(/A diner at dawn/)
     const shot = sent(vi.mocked(router_render).mock.calls[0])
     expect(shot.prompt).not.toContain('teal and orange grade')
+    expect(shot.prompt).toContain(
+      'Match the color palette of reference image 1.'
+    )
+    expect(shot.references).toHaveLength(1)
   })
 
   it('keeps the camera picker open across columns until clicked away', async () => {
@@ -1754,6 +1758,20 @@ describe('CinematicStudio', () => {
       return userEvent.setup()
     }
     const gradeRow = () => screen.getByRole('button', { name: /^Grade/ })
+
+    it('offers no character picture in video mode, where a clip drops it', async () => {
+      render(CinematicStudioPanel, {
+        props: { models: [...models, ...videoModels] }
+      })
+      const user = userEvent.setup()
+      const character = () =>
+        screen.queryByRole('button', { name: /character reference/i })
+
+      expect(character()).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Video' }))
+
+      expect(character()).toBeNull()
+    })
 
     it('matches the grade to an uploaded image in place of a palette reference', async () => {
       const user = renderPanel()
