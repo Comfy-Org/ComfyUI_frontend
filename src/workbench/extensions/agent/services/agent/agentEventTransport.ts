@@ -430,7 +430,21 @@ export function createAgentEventTransport(
     closeOpenThinking()
     message.thinking = false
     message.thinkingText = undefined
-    ;(openText ?? openNewText()).text += text
+    const trailingText = message.parts.findLast(
+      (part): part is TextPart => part.type === 'text'
+    )
+    const target = openText ?? trailingText
+    if (target) {
+      target.text += text
+      target.state = 'streaming'
+      openText = target
+      return
+    }
+    const insertAt =
+      message.parts.findLastIndex((part) => part.type !== 'runApproval') + 1
+    const part: TextPart = { type: 'text', text, state: 'streaming' }
+    message.parts.splice(insertAt, 0, part)
+    openText = part
   }
 
   /** Applies one `agent_message_draft` frame: the whole reply so far replaces

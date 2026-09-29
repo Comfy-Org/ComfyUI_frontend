@@ -769,10 +769,16 @@ export const useAgentConversationStore = defineStore(
         transport.appendReplyText(missing)
         return
       }
-      live.parts = [
-        ...live.parts,
+      const text = live.parts.findLast(
+        (part): part is TextPart => part.type === 'text'
+      )
+      if (text) {
+        text.text += missing
+        return
+      }
+      live.parts = spliceBeforeTrailingReply(live.parts, [
         { type: 'text', text: missing, state: 'done' }
-      ]
+      ])
     }
 
     /**
