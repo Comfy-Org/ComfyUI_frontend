@@ -2,6 +2,7 @@
 import { createReusableTemplate, useResizeObserver } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
+import LoopingVideo from '@/components/common/LoopingVideo.vue'
 import Button from '@/components/ui/button/Button.vue'
 
 const {
@@ -35,7 +36,6 @@ const CONTAINER_XL_MIN_WIDTH = 576
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
 const containerRef = ref<HTMLElement>()
 const isWide = ref(false)
-const videoFailed = ref(false)
 const actions = computed(() => {
   if (accepting) return ['accept'] as const
   return isWide.value
@@ -75,35 +75,21 @@ function choose(action: 'accept' | 'reject'): void {
       class="max-h-[85dvh] overflow-y-auto rounded-2xl border border-component-node-border bg-base-background shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25),0_3px_3px_-1.5px_rgba(10,13,18,0.2)]"
     >
       <div class="p-2">
-        <video
-          v-if="videoSrc && !videoFailed"
+        <LoopingVideo
+          :webm-src="videoSrc"
+          :mp4-src="videoSrcMp4"
+          :poster-src="posterSrc"
           data-testid="agent-consent-video"
           class="aspect-video w-full rounded-lg object-cover"
-          :poster="posterSrc || undefined"
-          autoplay
-          muted
-          loop
-          playsinline
-          @error="videoFailed = true"
         >
-          <source
-            :src="videoSrc"
-            type="video/webm"
-            @error="videoFailed = !videoSrcMp4"
-          />
-          <source
-            v-if="videoSrcMp4"
-            :src="videoSrcMp4"
-            type="video/mp4"
-            @error="videoFailed = true"
-          />
-        </video>
-        <div
-          v-else
-          class="grid aspect-video w-full place-items-center rounded-lg bg-secondary-background text-xs text-muted-foreground"
-        >
-          {{ $t('agent.consent.videoPlaceholder') }}
-        </div>
+          <template #fallback>
+            <div
+              class="grid aspect-video w-full place-items-center rounded-lg bg-secondary-background text-xs text-muted-foreground"
+            >
+              {{ $t('agent.consent.videoPlaceholder') }}
+            </div>
+          </template>
+        </LoopingVideo>
       </div>
 
       <section class="flex flex-col gap-9 p-6 @xl:gap-6 @xl:p-9">
