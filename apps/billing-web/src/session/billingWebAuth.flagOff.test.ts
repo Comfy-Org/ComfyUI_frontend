@@ -74,6 +74,7 @@ interface SentRequest {
   readonly url: string
   readonly credentials?: RequestCredentials
   readonly headers: readonly string[]
+  readonly authorization?: string
   readonly body?: unknown
 }
 
@@ -91,6 +92,8 @@ function recordingFetch(
       headers: [...new Headers(init.headers).keys()]
         .map((name) => name.toLowerCase())
         .sort(),
+      authorization:
+        new Headers(init.headers).get('Authorization') ?? undefined,
       body: typeof init.body === 'string' ? JSON.parse(init.body) : undefined
     })
     const body = url.endsWith('/api/features')
@@ -157,18 +160,21 @@ const MAIN_GOLDEN: readonly SentRequest[] = [
     method: 'POST',
     url: `${CLOUD}/api/auth/token`,
     headers: TOKEN_HEADERS,
+    authorization: 'Bearer id-token',
     body: {}
   },
   {
     method: 'POST',
     url: `${CLOUD}/api/auth/token`,
     headers: TOKEN_HEADERS,
+    authorization: 'Bearer id-token',
     body: { workspace_id: 'ws-1' }
   },
   {
     method: 'GET',
     url: `${CLOUD}/api/billing/status`,
-    headers: TOKEN_HEADERS
+    headers: TOKEN_HEADERS,
+    authorization: 'Bearer jwt-1'
   }
 ]
 
@@ -238,6 +244,7 @@ describe('billing-web with unified_web_session off, after sign-in', () => {
   async function signedInRequests(
     run: (modules: {
       readonly auth: typeof AuthModule
+      readonly session: typeof SessionModule
       readonly requestsSinceSignIn: () => SentRequest[]
     }) => Promise<void>
   ) {
@@ -246,25 +253,31 @@ describe('billing-web with unified_web_session off, after sign-in', () => {
       {}
     )
     vi.stubGlobal('fetch', fetchImpl)
-    await signInThenCallBilling(async ({ auth, signIn }) => {
+    await signInThenCallBilling(async ({ auth, session, signIn }) => {
       await signIn(auth.billingWebSignInPort())
       const signedInCount = sent.length
-      await run({ auth, requestsSinceSignIn: () => sent.slice(signedInCount) })
+      await run({
+        auth,
+        session,
+        requestsSinceSignIn: () => sent.slice(signedInCount)
+      })
     })
   }
 
   it('an entry link naming another workspace re-mints once, for that workspace, however often it repeats', async () => {
-    await signedInRequests(async ({ auth, requestsSinceSignIn }) => {
+    await signedInRequests(async ({ auth, session, requestsSinceSignIn }) => {
       auth.onBillingWebEntryWorkspace('ws-2')
       auth.onBillingWebEntryWorkspace('ws-2')
 
-      await vi.waitFor(() => expect(requestsSinceSignIn()).toHaveLength(1))
-      await new Promise((resolve) => setTimeout(resolve))
+      await session
+        .billingWebSessionClient()
+        .ensureFresh(undefined, { workspaceId: 'ws-2' })
       expect(requestsSinceSignIn()).toEqual([
         {
           method: 'POST',
           url: `${CLOUD}/api/auth/token`,
           headers: TOKEN_HEADERS,
+          authorization: 'Bearer id-token',
           body: { workspace_id: 'ws-2' }
         }
       ])
@@ -281,7 +294,6 @@ describe('billing-web with unified_web_session off, after sign-in', () => {
       await vi.waitFor(() =>
         expect(auth.billingWebLivePhase.value).toBe('signed-out')
       )
-      await new Promise((resolve) => setTimeout(resolve))
       expect(requestsSinceSignIn()).toEqual([])
       expect(sessionStorage.getItem('comfy.billing-web.session.v1')).toBeNull()
     })

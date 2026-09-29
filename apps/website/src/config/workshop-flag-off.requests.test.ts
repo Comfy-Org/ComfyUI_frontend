@@ -1,7 +1,7 @@
 /**
  * With `unified_web_session` not on, the website's whole account path sends
- * main's requests and nothing else: boot, both balance readers, a run's
- * freshness check, a refocus and sign-out, over the real account modules with
+ * main's requests and nothing else: boot, both balance readers, a direct
+ * session freshness check, a refocus and sign-out, over the real account modules with
  * only Firebase and the flag mocked.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -150,7 +150,7 @@ describe('website with unified_web_session not on', () => {
       features: [ANONYMOUS_FEATURES_READ, CREDENTIALED_FEATURES_READ]
     }
   ])(
-    '$name: boot, both balances, a run, a refocus and sign-out send main’s requests',
+    '$name: boot, both balances, a session freshness check, a refocus and sign-out send main’s requests',
     async ({ anonymous, perUser, features }) => {
       const sent = stubCloud(anonymous, perUser)
       const posthog = await import('../scripts/posthog')
