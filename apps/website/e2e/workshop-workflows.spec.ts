@@ -96,10 +96,10 @@ test('workflow launch groups lead to the existing shared form', async ({
     '/models?type=workflows&category=product'
   )
   await expect(
-    page.getByRole('group', { name: 'Your original image' })
+    page.getByRole('group', { name: 'Image 1: your object' })
   ).toBeVisible()
   await expect(
-    page.getByRole('group', { name: 'Material reference' })
+    page.getByRole('group', { name: 'Image 2: material' })
   ).toBeVisible()
   const prompt = page.getByRole('textbox', { name: 'What should change?' })
   await expect(prompt).toHaveValue(
