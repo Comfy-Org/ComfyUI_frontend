@@ -897,6 +897,31 @@ describe('useBillingSdkStore operation projections', () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
   })
 
+  it.for([
+    {
+      name: 'an adopted operation',
+      result: { status: 'ok', value: pendingSubscription() },
+      adopted: true
+    },
+    {
+      name: 'nothing pending',
+      result: { status: 'ok', value: undefined },
+      adopted: false
+    },
+    {
+      name: 'a failed recovery read',
+      result: { status: 'error', code: 'REQUEST_FAILED' },
+      adopted: false
+    }
+  ] as const)(
+    'recover reports $name as adopted: $adopted',
+    async ({ result, adopted }) => {
+      vi.mocked(harness.sdk.lifecycle.recover).mockResolvedValue(result)
+
+      await expect(useBillingSdkStore().recover()).resolves.toBe(adopted)
+    }
+  )
+
   describe('recoverPendingOperation', () => {
     it('resolves with the operation once the lifecycle settles it', async () => {
       const store = useBillingSdkStore()
