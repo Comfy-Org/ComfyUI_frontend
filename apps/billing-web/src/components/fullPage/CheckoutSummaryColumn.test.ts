@@ -177,3 +177,38 @@ describe('CheckoutSummaryColumn', () => {
     expect(screen.getByText(/USD/)).toHaveTextContent('USD / mo')
   })
 })
+
+describe('CheckoutSummaryColumn held discounts', () => {
+  const held = (...rows: [string, string][]): SummaryLedger => ({
+    ...UPGRADE,
+    items: [UPGRADE.items[0]],
+    adjustments: rows.map(([label, amount]) => ({ label, amount }))
+  })
+  const heldRows = () =>
+    screen
+      .getAllByRole('listitem')
+      .map((row) => row.textContent.trim())
+      .filter((text) => /discount|Promo code/.test(text))
+
+  it('re-prices two unnamed held discounts as rows of their own', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const { rerender } = renderColumn(
+      held(['Promo code', '−$10.00'], ['Education discount', '−$4.00'])
+    )
+
+    await rerender({
+      ledger: held(
+        ['Education discount', '−$4.00'],
+        ['Promo code', '−$10.00'],
+        ['Promo code', '−$5.00']
+      )
+    })
+
+    expect(heldRows()).toEqual([
+      'Education discount−$4.00',
+      'Promo code−$10.00',
+      'Promo code−$5.00'
+    ])
+    expect(warn).not.toHaveBeenCalled()
+  })
+})

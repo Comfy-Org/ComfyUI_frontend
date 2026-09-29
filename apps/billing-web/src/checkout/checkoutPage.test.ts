@@ -740,6 +740,16 @@ describe('reduceCheckoutPage reconciliation', () => {
     expect(replay(events)).toMatchObject(expected)
   })
 
+  it.for<{ name: string; operation: BillingOperationState | undefined }>([
+    { name: 'nothing', operation: undefined },
+    { name: 'an operation parked on a card', operation: parkedOperation() }
+  ])('a collided Pay re-read as $name frees Pay again', ({ operation }) => {
+    const page = replay([...live, submitted, collided, reconciled(operation)])
+
+    expect(page).toMatchObject({ kind: 'capture', outcome: undefined })
+    expect(railAcceptsPay(page)).toBe(true)
+  })
+
   it.for<{
     name: string
     kind: 'refused' | 'unavailable'
