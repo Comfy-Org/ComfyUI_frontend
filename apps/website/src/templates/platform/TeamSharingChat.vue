@@ -38,24 +38,21 @@ const exchanges = [
 type ChatMessage = {
   id: number
   reply: boolean
-  endpoint: string
   avatar: string
   text: (typeof exchanges)[number]['message' | 'reply']
 }
 const initialMessages: ChatMessage[] = [
-  { id: 5, reply: false, endpoint, avatar: 'B', text: exchanges[1].message },
+  { id: 5, reply: false, avatar: 'B', text: exchanges[1].message },
   {
     id: 7,
     reply: true,
-    endpoint,
     avatar: exchanges[1].responder,
     text: exchanges[1].reply
   },
-  { id: 9, reply: false, endpoint, avatar: 'B', text: exchanges[2].message },
+  { id: 9, reply: false, avatar: 'B', text: exchanges[2].message },
   {
     id: 11,
     reply: true,
-    endpoint,
     avatar: exchanges[2].responder,
     text: exchanges[2].reply
   }
@@ -78,7 +75,6 @@ const { pause, resume } = useIntervalFn(
         {
           id: tick.value,
           reply,
-          endpoint,
           avatar: reply ? exchange.responder : 'B',
           text: reply ? exchange.reply : exchange.message
         }
@@ -133,7 +129,7 @@ watchEffect(() => {
           <div
             :class="
               cn(
-                'max-w-[85%] min-w-0 rounded-2xl border px-3 py-2 text-xs leading-relaxed',
+                'max-w-17/20 min-w-0 rounded-2xl border px-3 py-2 text-xs leading-relaxed',
                 message.reply
                   ? 'border-transparency-white-t20 bg-transparency-white-t4'
                   : 'border-primary-comfy-yellow/30 bg-primary-comfy-ink'
@@ -145,7 +141,7 @@ watchEffect(() => {
               v-if="!message.reply"
               class="mt-1 break-all text-primary-comfy-yellow"
             >
-              {{ message.endpoint }}.run.comfy.app
+              {{ endpoint }}.run.comfy.app
             </div>
           </div>
         </div>

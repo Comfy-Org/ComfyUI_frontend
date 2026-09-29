@@ -15,9 +15,14 @@ describe('ServerlessHero', () => {
     ).toBeTruthy()
     expect(screen.getByText(/into an autoscaling endpoint/)).toBeTruthy()
     expect(
-      screen.getAllByRole('link', { name: t('platform.hero.getStarted', 'en') })
-        .length
-    ).toBeGreaterThan(0)
+      screen.getByRole('link', { name: t('platform.hero.getStarted', 'en') })
+    ).toHaveAttribute('href', 'https://platform.comfy.org/?onboarding=comfyapi')
+    expect(
+      screen.getByRole('link', { name: t('platform.hero.readDocs', 'en') })
+    ).toHaveAttribute(
+      'href',
+      'https://docs.comfy.org/development/serverless/overview'
+    )
     expect(screen.queryByText(t('nav.badgeBeta', 'en'))).toBeNull()
   })
 
