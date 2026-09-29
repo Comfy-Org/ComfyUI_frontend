@@ -1,4 +1,4 @@
-const PROVIDER_NAMES: Readonly<Record<string, string>> = {
+export const PROVIDER_NAMES: Readonly<Record<string, string>> = {
   bfl: 'Black Forest Labs',
   byteplus: 'ByteDance',
   'byteplus-mediakit': 'ByteDance',
