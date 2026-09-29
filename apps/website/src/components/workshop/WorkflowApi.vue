@@ -18,6 +18,7 @@ import {
 import { t } from '../../i18n/translations'
 import ApiFacts from './ApiFacts.vue'
 import HighlightedCode from './HighlightedCode.vue'
+import SectionHeading from './SectionHeading.vue'
 
 const { model, values } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -82,17 +83,11 @@ const facts = computed(() => [
 
 <template>
   <section class="flex flex-col gap-6" aria-labelledby="workflow-api-heading">
-    <div class="space-y-2">
-      <h2
-        id="workflow-api-heading"
-        class="text-2xl font-light text-primary-comfy-canvas"
-      >
-        {{ t('workshop.api.heading') }}
-      </h2>
-      <p class="max-w-3xl text-sm/relaxed text-primary-warm-gray">
-        {{ t('workshop.workflow.apiHint') }}
-      </p>
-    </div>
+    <SectionHeading
+      title-id="workflow-api-heading"
+      :title="t('workshop.api.heading')"
+      :subtitle="t('workshop.workflow.apiHint')"
+    />
     <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
       <div
         class="flex w-full flex-col gap-3 lg:sticky lg:top-24 lg:w-95 lg:shrink-0"
