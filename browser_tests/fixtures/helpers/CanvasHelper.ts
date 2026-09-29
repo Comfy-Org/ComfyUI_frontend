@@ -35,10 +35,11 @@ export class CanvasHelper {
       const app = window.app!
       const view = app.canvas.canvas.getBoundingClientRect()
       return app.graph.nodes.filter((node) => {
-        const [left, top] = app.canvasPosToClientPos([node.pos[0], node.pos[1]])
+        const bounds = node.getBounding()
+        const [left, top] = app.canvasPosToClientPos([bounds[0], bounds[1]])
         const [right, bottom] = app.canvasPosToClientPos([
-          node.pos[0] + node.size[0],
-          node.pos[1] + node.size[1]
+          bounds[0] + bounds[2],
+          bounds[1] + bounds[3]
         ])
         return (
           left < view.left ||

@@ -63,7 +63,14 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
     await load3dAgent.viewer.waitForModelLoaded()
 
     const viewer = new Load3DViewerHelper(page)
-    await page.locator('[data-node-id="1"]').getByTestId('node-title').click()
+    await page.evaluate(() => {
+      const app = window.app!
+      const node = app.graph.nodes.find(
+        (candidate) => String(candidate.id) === '1'
+      )
+      if (!node) throw new Error('Expected Load3D node 1')
+      app.canvas.selectNode(node)
+    })
     await page
       .getByRole('button', {
         name: 'Open 3D Viewer (Beta) for Selected Node',
@@ -97,6 +104,16 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
     await page.setViewportSize({ width: 400, height: 800 })
     const panel = page.getByTestId('docked-agent-panel')
     await expect(panel).toBeVisible()
+    await expect(panel).toHaveCSS('position', 'fixed')
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          document.documentElement.style.getPropertyValue(
+            '--workspace-inset-right'
+          )
+        )
+      )
+      .toBe('0px')
     await expect(async () => {
       const dialogBox = await viewer.dialog.boundingBox()
       const panelBox = await panel.boundingBox()

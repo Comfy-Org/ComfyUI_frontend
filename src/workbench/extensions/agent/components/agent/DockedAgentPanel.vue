@@ -7,9 +7,9 @@
       aria-labelledby="agent-panel-title"
       :class="
         cn(
-          'docked-agent-panel pointer-events-auto shrink-0 overflow-hidden bg-base-background [anchor-name:--docked-agent-panel]',
+          'docked-agent-panel pointer-events-auto shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]',
           isOverlay
-            ? 'fixed top-(--workflow-tabs-height) right-0 bottom-0 z-1100 max-w-full shadow-lg'
+            ? 'fixed inset-y-0 right-0 z-1100 max-w-full bg-base-background shadow-lg'
             : 'relative h-full'
         )
       "
@@ -47,7 +47,14 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useWindowSize } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, defineAsyncComponent, defineComponent, h, ref } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  defineComponent,
+  h,
+  onBeforeUnmount,
+  ref
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
@@ -88,10 +95,23 @@ const { hasOpaqueNeighbor = false } = defineProps<{
 }>()
 
 const agentPanelStore = useAgentPanelStore()
-const { isVisible: docked, width } = storeToRefs(agentPanelStore)
+const {
+  isVisible: docked,
+  width,
+  requestedWidth,
+  reservedWorkspaceWidth
+} = storeToRefs(agentPanelStore)
 const { width: viewportWidth } = useWindowSize()
-const isOverlay = computed(() => viewportWidth.value <= width.value + 16)
-const panelWidth = computed(() => Math.min(width.value, viewportWidth.value))
+const isOverlay = computed(
+  () =>
+    viewportWidth.value <= requestedWidth.value + reservedWorkspaceWidth.value
+)
+const panelWidth = computed(() =>
+  Math.min(
+    isOverlay.value ? requestedWidth.value : width.value,
+    viewportWidth.value
+  )
+)
 useWorkspaceInsetRight(() =>
   docked.value && !isOverlay.value ? width.value : 0
 )
@@ -117,6 +137,14 @@ useEventListener(document, 'pointermove', (e: PointerEvent) => {
   if (!isResizing.value) return
   agentPanelStore.setWidth(resizeStartWidth + (resizeStartX - e.clientX))
 })
+
+function stopResizing(): void {
+  isResizing.value = false
+}
+
+useEventListener(document, 'pointerup', stopResizing)
+useEventListener(document, 'pointercancel', stopResizing)
+onBeforeUnmount(stopResizing)
 </script>
 
 <style scoped>

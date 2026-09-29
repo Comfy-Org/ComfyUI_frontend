@@ -77,4 +77,17 @@ describe('useWorkspaceInsetRight', () => {
 
     expect(readInset()).toBe('960px')
   })
+
+  it('keeps the widest active inset regardless of publisher order', () => {
+    runInScope(() => 960)
+    runInScope(() => 0)
+
+    expect(readInset()).toBe('960px')
+  })
+
+  it('ignores publishers without an owning Vue scope', () => {
+    useWorkspaceInsetRight(() => 420)
+
+    expect(readInset()).toBe('')
+  })
 })
