@@ -12,6 +12,8 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 
+import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
+
 import { compressWidgetInputSlots } from './litegraphUtil'
 
 type ExportedWidgetValueWrapper = {
@@ -129,7 +131,7 @@ export const graphToPrompt = async (
     // widget.serialize controls workflow persistence (checked by LGraphNode).
     if (widgets) {
       for (const [i, widget] of widgets.entries()) {
-        if (!widget.name || widget.options?.serialize === false) continue
+        if (!widget.name || widget.options.serialize === false) continue
 
         const widgetValue = widget.serializeValue
           ? await widget.serializeValue(node, i)
@@ -161,20 +163,33 @@ export const graphToPrompt = async (
       }
 
       inputs[input.name] = [
-        String(resolvedInput.origin_id),
+        resolvedInput.origin_id,
         // @ts-expect-error link.origin_slot is already number.
         parseInt(resolvedInput.origin_slot)
       ]
     }
 
-    output[String(node.id)] = {
+    const cnrId = zNodePackMetadata.shape.cnr_id.safeParse(
+      node.properties.cnr_id
+    ).data
+    const auxId = zNodePackMetadata.shape.aux_id.safeParse(
+      node.properties.aux_id
+    ).data
+    const packVersion = zNodePackMetadata.shape.ver.safeParse(
+      node.properties.ver
+    ).data
+    output[node.id] = {
       inputs,
       // TODO(huchenlei): Filter out all nodes that cannot be mapped to a
       // comfyClass.
       class_type: node.comfyClass!,
-      // Ignored by the backend.
+      // Ignored by the backend. Pack identity rides along so a re-imported
+      // prompt can offer install/locate for missing types.
       _meta: {
-        title: node.title
+        title: node.title,
+        ...(cnrId && { cnr_id: cnrId }),
+        ...(auxId && { aux_id: auxId }),
+        ...(packVersion && { ver: packVersion })
       }
     }
   }
@@ -182,7 +197,11 @@ export const graphToPrompt = async (
   // Remove inputs connected to removed nodes
   for (const { inputs } of Object.values(output)) {
     for (const [i, input] of Object.entries(inputs)) {
-      if (Array.isArray(input) && input.length === 2 && !output[input[0]]) {
+      if (
+        Array.isArray(input) &&
+        input.length === 2 &&
+        !Object.hasOwn(output, input[0])
+      ) {
         delete inputs[i]
       }
     }

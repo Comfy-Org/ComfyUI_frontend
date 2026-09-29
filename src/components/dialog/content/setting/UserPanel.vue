@@ -2,14 +2,13 @@
   <div class="user-settings-container h-full">
     <div class="flex h-full flex-col">
       <h2 class="mb-2 text-2xl font-bold">{{ $t('userSettings.title') }}</h2>
-      <Divider class="mb-3" />
+      <div class="mt-4 mb-3 border-t border-interface-stroke" />
 
       <!-- Normal User Panel -->
       <div v-if="isLoggedIn" class="flex flex-col gap-2">
         <UserAvatar
           v-if="userPhotoUrl"
           :photo-url="userPhotoUrl"
-          shape="circle"
           size="large"
         />
 
@@ -53,11 +52,7 @@
           </div>
         </div>
 
-        <ProgressSpinner
-          v-if="loading"
-          class="mt-4 size-8"
-          style="--pc-spinner-color: #000"
-        />
+        <Spinner v-if="loading" class="mt-4 size-8" />
         <div v-else class="mt-4 flex flex-col gap-2">
           <Button class="w-32" variant="secondary" @click="handleSignOut">
             <i class="pi pi-sign-out" />
@@ -84,12 +79,7 @@
           {{ $t('auth.login.title') }}
         </p>
 
-        <Button
-          class="w-52"
-          variant="primary"
-          :loading="loading"
-          @click="handleSignIn"
-        >
+        <Button class="w-52" variant="primary" :loading @click="handleSignIn">
           <i class="pi pi-user" />
           {{ $t('auth.login.signInOrSignUp') }}
         </Button>
@@ -99,11 +89,9 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
-import ProgressSpinner from 'primevue/progressspinner'
-
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDialogService } from '@/services/dialogService'
 

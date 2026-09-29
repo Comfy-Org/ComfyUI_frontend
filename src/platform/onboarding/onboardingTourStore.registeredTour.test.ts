@@ -1,42 +1,26 @@
-import { createPinia, disposePinia, setActivePinia } from 'pinia'
-import type { Pinia } from 'pinia'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { assert, beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import type { Ref } from 'vue'
 
-import type { AppMode } from '@/utils/appMode'
+import { useTelemetry } from '@/platform/telemetry'
+import type {
+  OnboardingTourStepStage,
+  OnboardingTourStepMetadata
+} from '@/platform/telemetry/types'
 
 import { clearCoachmarks } from './coachmarkRegistry'
 import { TOUR_SEEN_SETTING, registerTour } from './onboardingTours'
 import type { SpotlightStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
-const settings = vi.hoisted(() => ({ store: new Map<string, unknown>() }))
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) =>
-      settings.store.get(key) ?? (key === TOUR_SEEN_SETTING ? [] : undefined),
-    set: (key: string, value: unknown) => {
-      settings.store.set(key, value)
-      return Promise.resolve()
-    }
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
-const telemetry = vi.hoisted(() => ({ track: vi.fn() }))
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackOnboardingTour: telemetry.track })
-}))
-
-const appModeMock = vi.hoisted(() => ({ mode: null as Ref<AppMode> | null }))
-vi.mock('@/composables/useAppMode', async () => {
-  const { ref } = await import('vue')
-  appModeMock.mode = ref<AppMode>('graph')
-  return { useAppMode: () => ({ mode: appModeMock.mode }) }
-})
-vi.mock('@/stores/appModeStore', () => ({
-  useAppModeStore: () => ({ hasOutputs: false })
-}))
+const dispatcher = useTelemetry()
+assert.exists(dispatcher)
+const trackOnboardingTour = vi.mocked<
+  (stage: OnboardingTourStepStage, metadata: OnboardingTourStepMetadata) => void
+>(dispatcher.trackOnboardingTour)
 
 function step(
   name: string,
@@ -46,32 +30,34 @@ function step(
 }
 
 function stages(): string[] {
-  return telemetry.track.mock.calls.map(([stage]) => stage)
+  return trackOnboardingTour.mock.calls.map(([stage]) => stage)
 }
 
-let pinia: Pinia | undefined
-
 function mountStore() {
-  pinia = createPinia()
-  setActivePinia(pinia)
   return useOnboardingTourStore()
 }
 
+beforeEach(() => {
+  useSettingStore().settingValues[TOUR_SEEN_SETTING] = []
+  vi.mocked(useSettingStore().set).mockImplementation(
+    (key: string, value: unknown) => {
+      Object.assign(useSettingStore().settingValues, { [key]: value })
+      return Promise.resolve()
+    }
+  )
+  Object.assign(useAppModeStore(), { hasOutputs: false })
+})
+
 describe('onboardingTourStore — runtime-resolved tours', () => {
   afterEach(() => {
-    if (pinia) disposePinia(pinia)
-    pinia = undefined
     clearCoachmarks()
-    settings.store.clear()
-    telemetry.track.mockClear()
+    trackOnboardingTour.mockClear()
   })
 
   it('reports no start for an entry no one registered', async () => {
     vi.resetModules()
     const { useOnboardingTourStore: freshStore } =
       await import('./onboardingTourStore')
-    pinia = createPinia()
-    setActivePinia(pinia)
     const store = freshStore()
 
     await expect(store.startTour('firstRun')).resolves.toBe(false)
@@ -94,13 +80,13 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
   })
 
   it('tells a repeat user apart from a coverage failure', async () => {
-    settings.store.set(TOUR_SEEN_SETTING, ['firstRun'])
+    useSettingStore().settingValues[TOUR_SEEN_SETTING] = ['firstRun']
     registerTour('firstRun', () => Promise.resolve([]))
     const store = mountStore()
 
     await expect(store.startTour('firstRun')).resolves.toBe(false)
     expect(
-      telemetry.track,
+      trackOnboardingTour,
       'counted as a plain no-start, a repeat user reads as a tour that failed to open'
     ).toHaveBeenCalledWith(
       'not_started',
@@ -142,7 +128,7 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
     await expect(store.startTour('firstRun')).resolves.toBe(false)
 
     expect(
-      telemetry.track,
+      trackOnboardingTour,
       'sharing a reason with an empty pin set reports the tour crash rate as zero'
     ).toHaveBeenCalledWith(
       'not_started',
@@ -151,7 +137,7 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
   })
 
   it('counts a user once however often the trigger re-fires', async () => {
-    settings.store.set(TOUR_SEEN_SETTING, ['firstRun'])
+    useSettingStore().settingValues[TOUR_SEEN_SETTING] = ['firstRun']
     const store = mountStore()
 
     await store.startTour('firstRun')
@@ -159,7 +145,9 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
     await store.startTour('firstRun')
 
     expect(
-      telemetry.track.mock.calls.filter(([stage]) => stage === 'not_started'),
+      trackOnboardingTour.mock.calls.filter(
+        ([stage]) => stage === 'not_started'
+      ),
       'the trigger re-fires on every mode change, so the funnel would count edges not users'
     ).toHaveLength(1)
   })
@@ -189,7 +177,7 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
       store.activeTour,
       'a tour whose targets are no longer laid out points at nothing'
     ).toBeNull()
-    expect(telemetry.track).toHaveBeenCalledWith(
+    expect(trackOnboardingTour).toHaveBeenCalledWith(
       'skipped',
       expect.objectContaining({ skip_reason: 'trigger_lost' })
     )
@@ -310,7 +298,7 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
     store.postpone()
 
     expect(
-      telemetry.track,
+      trackOnboardingTour,
       'a postponement counted as a plain skip reads as a user who refused the tour'
     ).toHaveBeenCalledWith(
       'skipped',

@@ -46,7 +46,7 @@ async function resolveMeshPreview() {
 }
 
 useIntersectionObserver(mediaContainerRef, ([entry]) => {
-  if (!entry?.isIntersecting) return
+  if (!entry.isIntersecting) return
   if (!isMesh.value || meshPreviewAttempted.value) return
   meshPreviewAttempted.value = true
   void resolveMeshPreview()
@@ -198,7 +198,7 @@ function handleVideoLoad(event: Event) {
         {{ label ?? name }}
       </span>
       <!-- Meta Data -->
-      <span v-if="actualDimensions" class="text-secondary block text-xs">
+      <span v-if="actualDimensions" class="block text-xs text-muted-foreground">
         {{ actualDimensions }}
       </span>
     </div>

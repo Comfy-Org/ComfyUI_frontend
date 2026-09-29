@@ -3,12 +3,15 @@ import { describe, expect, it, vi } from 'vitest'
 
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
 
-vi.mock('@/components/templates/thumbnails/BaseThumbnail.vue', () => ({
-  default: {
-    name: 'BaseThumbnail',
-    template: '<div class="base-thumbnail"><slot /></div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/templates/thumbnails/BaseThumbnail.vue'),
+  () => ({
+    default: {
+      name: 'BaseThumbnail',
+      template: '<div class="base-thumbnail"><slot /></div>'
+    }
+  })
+)
 
 describe('AudioThumbnail', () => {
   function renderThumbnail(props = {}) {

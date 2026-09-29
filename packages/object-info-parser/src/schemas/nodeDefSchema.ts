@@ -52,6 +52,9 @@ const zNumericInputOptions = zBaseInputOptions.extend({
 })
 
 export const zIntInputOptions = zNumericInputOptions.extend({
+  display: z
+    .enum(['slider', 'number', 'knob', 'gradientslider', 'color'])
+    .optional(),
   /**
    * If true, a linked widget will be added to the node to select the mode
    * of `control_after_generate`.
@@ -263,7 +266,7 @@ const zPriceBadgeDepends = z.object({
  * Used to calculate and display pricing information for API nodes.
  * The `expr` field contains a JSONata expression that returns a PricingResult.
  */
-const zPriceBadge = z.object({
+export const zPriceBadge = z.object({
   engine: z.literal('jsonata').optional().default('jsonata'),
   depends_on: zPriceBadgeDepends
     .optional()
@@ -338,17 +341,31 @@ export const zAutogrowOptions = z.object({
   })
 })
 
+export const zDynamicComboOption = z.object({
+  inputs: zComfyInputsSpec,
+  key: z.string()
+})
+
+const zDynamicComboBody = zBaseInputOptions.extend({
+  options: z.array(zDynamicComboOption)
+})
+
 export const zDynamicComboInputSpec = z.tuple([
   z.literal('COMFY_DYNAMICCOMBO_V3'),
-  zBaseInputOptions.extend({
-    options: z.array(
-      z.object({
-        inputs: zComfyInputsSpec,
-        key: z.string()
-      })
-    )
-  })
+  zDynamicComboBody
 ])
+
+/**
+ * V2 object form of a DynamicCombo spec.
+ *
+ * `options` is deliberately left unvalidated here so that a single malformed
+ * option does not discard its well-formed siblings. Consumers that need the
+ * option bodies should validate each element with {@link zDynamicComboOption}.
+ */
+export const zDynamicComboSpecV2 = zBaseInputOptions.extend({
+  type: z.literal('COMFY_DYNAMICCOMBO_V3'),
+  options: z.array(z.unknown())
+})
 
 export const zMatchTypeOptions = z.object({
   ...zBaseInputOptions.shape,
@@ -358,6 +375,25 @@ export const zMatchTypeOptions = z.object({
     template_id: z.string()
   })
 })
+
+/**
+ * Input types whose spec is a container or constraint rather than a concrete
+ * slot type. Every surface that resolves, renders or rewrites node inputs has
+ * to special-case these, so they are enumerated once here; keying a registry
+ * on {@link DynamicControlType} makes a missing entry a type error rather than
+ * a silent gap.
+ */
+export const DYNAMIC_CONTROL_TYPES = [
+  'COMFY_AUTOGROW_V3',
+  'COMFY_DYNAMICCOMBO_V3',
+  'COMFY_MATCHTYPE_V3'
+] as const
+
+export type DynamicControlType = (typeof DYNAMIC_CONTROL_TYPES)[number]
+
+export function isDynamicControlType(type: string): type is DynamicControlType {
+  return (DYNAMIC_CONTROL_TYPES as readonly string[]).includes(type)
+}
 
 // `/object_info`
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>

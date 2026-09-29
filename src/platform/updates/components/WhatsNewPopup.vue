@@ -15,10 +15,10 @@
       <!-- Modal Body -->
       <div class="modal-body flex flex-1 flex-col gap-4 px-0 pt-0 pb-2">
         <!-- Release Content -->
-        <div
+        <SanitizedHtml
           class="content-text max-h-96 overflow-y-auto"
-          v-html="formattedContent"
-        ></div>
+          :html="formattedContent"
+        />
       </div>
 
       <!-- Modal Footer -->
@@ -55,6 +55,7 @@ import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { formatVersionAnchor } from '@/utils/formatUtil'

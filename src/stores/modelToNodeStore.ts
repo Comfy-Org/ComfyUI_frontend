@@ -21,7 +21,7 @@ export class ModelNodeProvider {
 
 /** Service for mapping model types (by folder name) to nodes. */
 export const useModelToNodeStore = defineStore('modelToNode', () => {
-  const modelToNodeMap = ref<Record<string, ModelNodeProvider[]>>({})
+  const modelToNodeMap = ref<Partial<Record<string, ModelNodeProvider[]>>>({})
   const nodeDefStore = useNodeDefStore()
   const haveDefaultsLoaded = ref(false)
 
@@ -29,8 +29,8 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   const registeredNodeTypes = computed<Record<string, string>>(() => {
     return Object.fromEntries(
       Object.values(modelToNodeMap.value)
+        .filter((providers) => providers !== undefined)
         .flat()
-        .filter((provider) => !!provider.nodeDef)
         .map((provider) => [provider.nodeDef.name, provider.key])
     )
   })
@@ -39,9 +39,8 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   const nodeTypeToCategory = computed(() => {
     const lookup: Record<string, string> = {}
     for (const [category, providers] of Object.entries(modelToNodeMap.value)) {
+      if (!providers) continue
       for (const provider of providers) {
-        // Extension nodes may not be installed
-        if (!provider.nodeDef) continue
         // Only store the first category for each node type (matches current assetService behavior)
         if (!lookup[provider.nodeDef.name]) {
           lookup[provider.nodeDef.name] = category
@@ -126,14 +125,12 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
    */
   function registerNodeProvider(
     modelType: string,
-    nodeProvider: ModelNodeProvider
+    nodeProvider: ModelNodeProvider | { nodeDef: undefined; key: string }
   ) {
     registerDefaults()
     if (!nodeProvider.nodeDef) return
-    if (!modelToNodeMap.value[modelType]) {
-      modelToNodeMap.value[modelType] = []
-    }
-    modelToNodeMap.value[modelType].push(nodeProvider)
+    const providers = (modelToNodeMap.value[modelType] ??= [])
+    providers.push(nodeProvider)
   }
   /**
    * Register a node provider for the given simple names.

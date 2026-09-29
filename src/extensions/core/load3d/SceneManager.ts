@@ -1,14 +1,14 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import type { RendererView } from '@/renderer/three/RendererView'
 
 import Load3dUtils from './Load3dUtils'
-import {
-  type BackgroundRenderModeType,
-  type EventManagerInterface,
-  type SceneManagerInterface
+import type {
+  BackgroundRenderModeType,
+  EventManagerInterface,
+  SceneManagerInterface
 } from './interfaces'
 
 export class SceneManager implements SceneManagerInterface {
@@ -140,9 +140,7 @@ export class SceneManager implements SceneManagerInterface {
   }
 
   toggleGrid(showGrid: boolean): void {
-    if (this.gridHelper) {
-      this.gridHelper.visible = showGrid
-    }
+    this.gridHelper.visible = showGrid
 
     this.eventManager.emitEvent('showGridChange', showGrid)
   }
@@ -192,8 +190,8 @@ export class SceneManager implements SceneManagerInterface {
 
     let type = 'input'
     let pathParts = Load3dUtils.splitFilePath(uploadPath)
-    let subfolder = pathParts[0]
-    let filename = pathParts[1]
+    const subfolder = pathParts[0]
+    const filename = pathParts[1]
 
     if (subfolder === 'temp') {
       type = 'temp'

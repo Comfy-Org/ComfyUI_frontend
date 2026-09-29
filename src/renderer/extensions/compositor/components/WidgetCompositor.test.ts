@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 
 import {
@@ -12,28 +13,16 @@ import {
 } from '../composables/useCompositorLayers'
 import WidgetCompositor from './WidgetCompositor.vue'
 
-const { getNodeById } = vi.hoisted(() => ({
-  getNodeById: vi.fn<() => unknown>(() => undefined)
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: { getNodeById } } }
-}))
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => ({
-    getNodeImageUrls: () => undefined,
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  })
-}))
 vi.mock(
-  '@/renderer/extensions/compositor/composables/useCompositorEditor',
+  import('@/renderer/extensions/compositor/composables/useCompositorEditor'),
   () => ({
     useCompositorEditor: () => ({ openCompositorEditor: vi.fn() })
   })
 )
 vi.mock(
-  '@/renderer/extensions/compositor/composables/useCompositorPsdDownload',
+  import('@/renderer/extensions/compositor/composables/useCompositorPsdDownload'),
   () => ({
     useCompositorPsdDownload: () => ({
       exporting: ref(false),
@@ -63,18 +52,17 @@ function renderWidget() {
   return render(WidgetCompositor, {
     props: { nodeId },
     global: {
-      plugins: [i18n],
-      stubs: {
-        Button: { template: '<button v-bind="$attrs"><slot /></button>' }
-      }
+      plugins: [i18n]
     }
   })
 }
 
 describe('WidgetCompositor', () => {
   beforeEach(() => {
+    const graph = app.canvas.graph
+    if (!graph) throw new Error('Expected the app mock to provide a graph')
+    vi.spyOn(graph, 'getNodeById').mockReturnValue(null)
     clearCompositorLayers(graphNode)
-    getNodeById.mockReturnValue(undefined)
   })
 
   it('renders the empty state when the node is not in the graph (search preview)', () => {
@@ -89,7 +77,9 @@ describe('WidgetCompositor', () => {
   })
 
   it('enables opening once the graph node exists with cached layers', () => {
-    getNodeById.mockReturnValue(graphNode)
+    const graph = app.canvas.graph
+    if (!graph) throw new Error('Expected the app mock to provide a graph')
+    vi.mocked(graph.getNodeById).mockReturnValue(graphNode)
     setCompositorLayers(graphNode, [
       { filename: 'a.png', subfolder: '', type: 'temp' }
     ])

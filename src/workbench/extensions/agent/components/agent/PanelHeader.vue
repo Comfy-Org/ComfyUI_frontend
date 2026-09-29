@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -14,6 +14,7 @@ const { isMaximized = false } = defineProps<{
 
 const emit = defineEmits<{
   newChat: []
+  startTour: []
   toggleSize: []
   close: []
 }>()
@@ -30,43 +31,55 @@ const sizeToggleLabel = computed(() =>
 
 <template>
   <header
-    class="border-agent-border flex h-12 shrink-0 items-center gap-2 border-b px-4"
+    class="flex h-12 shrink-0 items-center gap-2 border-b border-component-node-border px-4"
   >
-    <h1 class="text-agent-fg my-0 text-sm font-normal whitespace-nowrap">
-      {{ t('agent.title') }}
-    </h1>
+    <div class="flex items-center gap-1">
+      <h1
+        id="agent-panel-title"
+        class="my-0 text-sm font-normal whitespace-nowrap text-base-foreground"
+      >
+        {{ t('agent.title') }}
+      </h1>
+      <Button
+        v-tooltip.bottom="buildTooltipConfig(t('agent.takeTour'))"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="t('agent.takeTour')"
+        class="size-6 shrink-0"
+        @click="emit('startTour')"
+      >
+        <span class="icon-[lucide--info] size-4" />
+      </Button>
+    </div>
     <span
-      class="border-agent-border-strong text-agent-fg-muted shrink-0 rounded-full border px-2 py-0.5 text-xs"
+      class="shrink-0 rounded-full border border-border-default px-2 py-0.5 text-xs text-muted-foreground"
     >
-      {{ t('agent.alpha') }}
+      {{ t('agent.beta') }}
     </span>
 
     <div class="ml-auto flex items-center gap-2">
       <Button
-        v-tooltip.bottom="buildAgentTooltipConfig(t('agent.newChat'))"
+        v-tooltip.bottom="buildTooltipConfig(t('agent.newChat'))"
         variant="muted-textonly"
         size="icon"
-        class="hover:text-agent-fg focus-visible:ring-agent-accent rounded-xl focus-visible:ring-2"
         :aria-label="t('agent.newChat')"
         @click="emit('newChat')"
       >
         <span class="icon-[lucide--message-circle-plus] size-4" />
       </Button>
       <Button
-        v-tooltip.bottom="buildAgentTooltipConfig(sizeToggleLabel)"
+        v-tooltip.bottom="buildTooltipConfig(sizeToggleLabel)"
         variant="muted-textonly"
         size="icon"
-        class="hover:text-agent-fg focus-visible:ring-agent-accent rounded-xl focus-visible:ring-2"
         :aria-label="sizeToggleLabel"
         @click="emit('toggleSize')"
       >
         <span :class="cn(sizeToggleIcon, 'size-4')" />
       </Button>
       <Button
-        v-tooltip.bottom="buildAgentTooltipConfig(t('agent.close'))"
+        v-tooltip.bottom="buildTooltipConfig(t('agent.close'))"
         variant="muted-textonly"
         size="icon"
-        class="hover:text-agent-fg focus-visible:ring-agent-accent rounded-xl focus-visible:ring-2"
         :aria-label="t('agent.close')"
         @click="emit('close')"
       >

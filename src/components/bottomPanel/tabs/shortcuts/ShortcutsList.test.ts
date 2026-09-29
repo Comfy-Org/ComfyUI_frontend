@@ -1,28 +1,34 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
 
 import ShortcutsList from '@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 
-// Mock vue-i18n
-const mockT = vi.fn((key: string) => {
-  const translations: Record<string, string> = {
-    'shortcuts.subcategories.workflow': 'Workflow',
-    'shortcuts.subcategories.node': 'Node',
-    'shortcuts.subcategories.queue': 'Queue',
-    'shortcuts.subcategories.view': 'View',
-    'shortcuts.subcategories.panelControls': 'Panel Controls',
-    'commands.Workflow_New.label': 'New Blank Workflow'
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      shortcuts: {
+        subcategories: {
+          workflow: 'Workflow',
+          node: 'Node',
+          queue: 'Queue',
+          view: 'View',
+          panelControls: 'Panel Controls'
+        }
+      },
+      commands: {
+        Workflow_New: { label: 'New Blank Workflow' },
+        Node_Add: { label: 'Add Node' },
+        Queue_Clear: { label: 'Clear Queue' },
+        Special_Keys: { label: 'Special Keys' }
+      }
+    }
   }
-  return translations[key] || key
 })
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: mockT
-  })
-}))
 
 describe('ShortcutsList', () => {
   const mockCommands: ComfyCommandImpl[] = [
@@ -68,6 +74,9 @@ describe('ShortcutsList', () => {
     render(ShortcutsList, {
       props: {
         subcategories: mockSubcategories
+      },
+      global: {
+        plugins: [i18n]
       }
     })
 
@@ -81,10 +90,13 @@ describe('ShortcutsList', () => {
     const { container } = render(ShortcutsList, {
       props: {
         subcategories: mockSubcategories
+      },
+      global: {
+        plugins: [i18n]
       }
     })
 
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('Ctrl')
     expect(text).toContain('n')
     expect(text).toContain('Shift')
@@ -109,6 +121,9 @@ describe('ShortcutsList', () => {
           ...mockSubcategories,
           other: [commandsWithoutKeybinding[3]]
         }
+      },
+      global: {
+        plugins: [i18n]
       }
     })
 
@@ -132,10 +147,13 @@ describe('ShortcutsList', () => {
         subcategories: {
           special: [specialKeyCommand]
         }
+      },
+      global: {
+        plugins: [i18n]
       }
     })
 
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('Cmd') // Meta -> Cmd
     expect(text).toContain('↑') // ArrowUp -> ↑
     expect(text).toContain('↵') // Enter -> ↵
@@ -149,6 +167,9 @@ describe('ShortcutsList', () => {
         subcategories: {
           unknown: [mockCommands[0]]
         }
+      },
+      global: {
+        plugins: [i18n]
       }
     })
 

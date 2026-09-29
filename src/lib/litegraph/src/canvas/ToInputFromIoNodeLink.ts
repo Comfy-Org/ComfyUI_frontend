@@ -1,3 +1,7 @@
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import type { LinkPresentation } from '@/types/linkPresentation'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
@@ -27,6 +31,7 @@ export class ToInputFromIoNodeLink implements RenderLink {
   disconnectOnDrop: boolean
   readonly disconnectOrigin?: Point
   readonly isIoNodeLink = true
+  private readonly presentation: Readonly<LinkPresentation> | undefined
 
   constructor(
     readonly network: LinkNetwork,
@@ -47,6 +52,12 @@ export class ToInputFromIoNodeLink implements RenderLink {
     this.fromPos = fromReroute ? fromReroute.pos : fromSlot.pos
     this.existingLink = existingLink
     this.disconnectOnDrop = true
+    this.presentation = existingLink
+      ? useLinkPresentationStore().getPresentation(
+          graphScopeOf(node.subgraph),
+          existingLink.id
+        )
+      : undefined
 
     if (!existingLink) return
     const toNode = network.getNodeById(existingLink.target_id)
@@ -74,10 +85,12 @@ export class ToInputFromIoNodeLink implements RenderLink {
     )
       return
 
+    const scope = graphScopeOf(this.node.subgraph)
     const newLink = fromSlot.connect(input, node, fromReroute?.id)
 
     if (existingLink) {
       // Moving an existing link
+      transferLinkPresentation(scope, this.presentation, newLink?.id)
       const { input, inputNode } = existingLink.resolve(this.network)
       if (inputNode && input)
         this.node._disconnectNodeInput(inputNode, input, existingLink)
@@ -105,6 +118,8 @@ export class ToInputFromIoNodeLink implements RenderLink {
   ) {
     const { fromSlot, fromReroute } = this
 
+    const scope = graphScopeOf(this.node.subgraph)
+
     // Check before creating new link overwrites the value
     const floatingTerminus = fromReroute?.floating?.slotType === 'output'
 
@@ -112,6 +127,7 @@ export class ToInputFromIoNodeLink implements RenderLink {
     reroute.parentId = fromReroute?.id
 
     const newLink = fromSlot.connect(input, inputNode, link.parentId)
+    transferLinkPresentation(scope, this.presentation, newLink?.id)
 
     // Connecting from the final reroute of a floating reroute chain
     if (floatingTerminus) fromReroute.removeAllFloatingLinks()

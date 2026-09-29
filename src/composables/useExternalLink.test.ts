@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
     return mockData.isDesktop
   }
 }))
 
 // Mock the environment utilities
-vi.mock('@/utils/envUtil', () => ({
+vi.mock(import('@/utils/envUtil'), () => ({
   electronAPI: vi.fn()
 }))
 
@@ -21,7 +21,7 @@ const i18n = vi.hoisted(() => ({
     }
   }
 }))
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   i18n
 }))
 
