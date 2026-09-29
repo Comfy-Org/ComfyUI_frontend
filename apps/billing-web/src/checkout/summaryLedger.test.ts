@@ -374,6 +374,42 @@ describe('buildSummaryLedger', () => {
       }
     },
     {
+      name: 'lowered team commitment: the kept commitment is named by its rate',
+      quote: {
+        transition_type: 'downgrade',
+        is_immediate: false,
+        effective_at: JULY_28,
+        amount_due_cents: 0,
+        cost_today_cents: 0,
+        renewal_amount_cents: 70_000,
+        credits_today_cents: 0,
+        credits_next_period_cents: 70_000,
+        current_plan: planOf('TEAM', 'MONTHLY', 140_000),
+        new_plan: planOf('TEAM', 'MONTHLY', 70_000)
+      },
+      ledger: {
+        family: 'scheduled',
+        eyebrow: 'Switch to Team Plan · Comfy Studios',
+        headline: { amount: '$700', currency: 'USD', rate: '/ mo' },
+        credits: {
+          count: '147,700',
+          qualifier: 'credits refill monthly after July 28, 2026'
+        },
+        items: [
+          {
+            label: 'Team Plan',
+            amount: '$700.00 /mo',
+            sublines: ['Starts July 28, 2026, billed monthly']
+          }
+        ],
+        adjustments: [],
+        chips: [],
+        acceptsPromo: false,
+        total: '$0.00',
+        trailing: ["You'll keep Team at $1,400.00 /mo until July 28, 2026"]
+      }
+    },
+    {
       name: "team commit change priced at a proration instant: neutral, no proration copy, today's grant dated",
       quote: {
         transition_type: 'upgrade',
