@@ -6,41 +6,46 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 
-const { mockIsCloud, mockGetCheckoutAttribution, mockLocalStorage } =
-  vi.hoisted(() => ({
-    mockIsCloud: { value: true },
-    mockGetCheckoutAttribution: vi.fn(() => ({
-      ga_client_id: 'ga-client-id',
-      ga_session_id: 'ga-session-id',
-      ga_session_number: 'ga-session-number',
-      im_ref: 'impact-click-123',
-      utm_source: 'impact',
-      utm_medium: 'affiliate',
-      utm_campaign: 'spring-launch',
-      gclid: 'gclid-123',
-      gbraid: 'gbraid-456',
-      wbraid: 'wbraid-789'
-    })),
-    mockLocalStorage: (() => {
-      const store = new Map<string, string>()
+const {
+  mockAttributionModuleFails,
+  mockIsCloud,
+  mockGetCheckoutAttribution,
+  mockLocalStorage
+} = vi.hoisted(() => ({
+  mockAttributionModuleFails: { value: false },
+  mockIsCloud: { value: true },
+  mockGetCheckoutAttribution: vi.fn(() => ({
+    ga_client_id: 'ga-client-id',
+    ga_session_id: 'ga-session-id',
+    ga_session_number: 'ga-session-number',
+    im_ref: 'impact-click-123',
+    utm_source: 'impact',
+    utm_medium: 'affiliate',
+    utm_campaign: 'spring-launch',
+    gclid: 'gclid-123',
+    gbraid: 'gbraid-456',
+    wbraid: 'wbraid-789'
+  })),
+  mockLocalStorage: (() => {
+    const store = new Map<string, string>()
 
-      return {
-        getItem: vi.fn((key: string) => store.get(key) ?? null),
-        setItem: vi.fn((key: string, value: string) => {
-          store.set(key, value)
-        }),
-        removeItem: vi.fn((key: string) => {
-          store.delete(key)
-        }),
-        clear: vi.fn(() => {
-          store.clear()
-        }),
-        __reset: () => {
-          store.clear()
-        }
+    return {
+      getItem: vi.fn((key: string) => store.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => {
+        store.set(key, value)
+      }),
+      removeItem: vi.fn((key: string) => {
+        store.delete(key)
+      }),
+      clear: vi.fn(() => {
+        store.clear()
+      }),
+      __reset: () => {
+        store.clear()
       }
-    })()
-  }))
+    }
+  })()
+}))
 
 Object.defineProperty(window, 'localStorage', {
   value: mockLocalStorage,
@@ -64,7 +69,12 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock<unknown>(
   import('@/platform/telemetry/utils/checkoutAttribution'),
   () => ({
-    getCheckoutAttribution: mockGetCheckoutAttribution
+    get getCheckoutAttribution() {
+      if (mockAttributionModuleFails.value) {
+        throw new Error('Failed to fetch dynamically imported module')
+      }
+      return mockGetCheckoutAttribution
+    }
   })
 )
 
@@ -208,6 +218,33 @@ describe('performSubscriptionCheckout', () => {
       checkout_attempt_id: expect.any(String)
     })
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+  })
+
+  it('reports a failed attribution chunk load as the module_load stage', async () => {
+    vi.spyOn(window, 'open').mockImplementation(() => null)
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ checkout_url: 'https://checkout.stripe.com/test' })
+    } as Response)
+
+    mockAttributionModuleFails.value = true
+    try {
+      await performSubscriptionCheckout('pro', 'monthly')
+    } finally {
+      mockAttributionModuleFails.value = false
+    }
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'cloud_checkout_attribution_fallback',
+        context: { attribution_stage: 'module_load' }
+      })
+    )
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/customers/cloud-subscription-checkout/pro'),
+      expect.objectContaining({ body: JSON.stringify({}) })
+    )
   })
 
   it('carries the payment intent source into begin_checkout and the pending attempt', async () => {
