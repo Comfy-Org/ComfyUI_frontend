@@ -164,6 +164,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     string,
     { kind: ProgressToastKind; message: ToastMessageOptions }
   >()
+  const progressToastsAwaitingFirstRead = new Set<string>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const autoHandledPaymentActions = new Set<string>()
@@ -259,6 +260,38 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     toastStore.add(message)
   }
 
+  function announceStart(
+    operation: BillingOperation,
+    metadata: StartOperationMetadata | undefined
+  ) {
+    if (operation.type === 'cancel' || metadata?.suppressProcessingToast) return
+    if (metadata?.resumed && operation.actionUrl === null) {
+      progressToastsAwaitingFirstRead.add(operation.opId)
+      return
+    }
+    syncProgressToast(
+      operation.opId,
+      operation.type,
+      progressToastKind(operation)
+    )
+  }
+
+  // The action URL is the last field a read applies, so an operation awaiting
+  // its first read is announced here by what that read found.
+  function syncProgressToastAfterRead(
+    before: BillingOperation,
+    after: BillingOperation
+  ) {
+    if (
+      after.type !== 'cancel' &&
+      progressToastsAwaitingFirstRead.delete(after.opId)
+    ) {
+      syncProgressToast(after.opId, after.type, progressToastKind(after))
+      return
+    }
+    syncProgressToastOnChange(before, after)
+  }
+
   function syncProgressToastOnChange(
     before: BillingOperation,
     after: BillingOperation
@@ -321,9 +354,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (type !== 'cancel' && !metadata?.suppressProcessingToast) {
-      syncProgressToast(opId, type, progressToastKind(operation))
-    }
+    announceStart(operation, metadata)
 
     const terminal = new Promise<BillingOperation>((resolve) => {
       terminalResolvers.set(opId, resolve)
@@ -759,7 +790,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // exactly while the operation cannot proceed without the customer — so the
     // toast never outlives the verification action it points at. Swapped only
     // when that answer changes, or a dismissed toast would return every poll.
-    syncProgressToastOnChange(operation, updated)
+    syncProgressToastAfterRead(operation, updated)
   }
 
   async function handleSuccess(opId: string) {
@@ -1274,6 +1305,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     waitingWithoutActionSince.delete(opId)
     autoHandledPaymentActions.delete(opId)
     paymentIntentClientSecrets.delete(opId)
+    progressToastsAwaitingFirstRead.delete(opId)
 
     const progressToast = progressToasts.get(opId)
     if (progressToast) {
