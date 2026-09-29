@@ -199,9 +199,7 @@ test.describe(
       // The host-side counter above rises when the catch-up is sent. This
       // browser-side counter rises only after the frame is applied and the
       // live graph is committed, so the emptiness check cannot resolve
-      // against the pre-catch-up canvas. Assert before sending the marker:
-      // applying that later incremental frame can itself remove a stale node
-      // and hide the regression this case exists to catch.
+      // against the pre-catch-up canvas.
       await expect
         .poll(() => appliedFrameCount(page))
         .toBeGreaterThanOrEqual(appliedFrames + 1)
