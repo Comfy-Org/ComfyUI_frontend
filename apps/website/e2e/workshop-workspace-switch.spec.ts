@@ -9,7 +9,6 @@ import { zExchangeTokenRequest } from '@comfyorg/ingest-types/zod'
 
 import { AccountMenu } from './fixtures/accountMenu'
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
-import { openModelPage } from './fixtures/islands'
 
 const WORKSPACES: ListWorkspacesResponse = {
   workspaces: [
@@ -78,7 +77,7 @@ async function signIn(
 }
 
 async function startRun(page: Page) {
-  await openModelPage(page, MODEL_PATH)
+  await page.goto(MODEL_PATH)
   await page.getByTestId('field-prompt').fill('A teapot')
   await page.getByTestId('run-button').click()
   const output = page.getByTestId('playground-output')

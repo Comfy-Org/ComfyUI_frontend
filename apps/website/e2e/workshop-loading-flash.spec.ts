@@ -38,6 +38,30 @@ test('static HTML of a model page paints the model, not a loader', async ({
   expect(html).not.toMatch(/Grok Imagine in/i)
 })
 
+test('the server-rendered prompt takes no input until the island hydrates', async ({
+  page
+}) => {
+  const hydrate = Promise.withResolvers<void>()
+  await page.route('**/_website/ModelPage.*.js', async (route) => {
+    await hydrate.promise
+    await route.fallback()
+  })
+  await page.goto(MODEL_PATH, { waitUntil: 'domcontentloaded' })
+  const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true })
+  const serverValue = await prompt.inputValue()
+
+  await expect(prompt).toBeDisabled()
+  await prompt.click({ force: true })
+  await page.keyboard.type('typed before hydration')
+  await expect(prompt).toHaveValue(serverValue)
+
+  hydrate.resolve()
+  await waitForIsland(page, prompt)
+  await expect(prompt).toBeEnabled()
+  await prompt.fill('typed after hydration')
+  await expect(prompt).toHaveValue('typed after hydration')
+})
+
 test.describe('enabled workshop', () => {
   test.beforeEach(async ({ context }) => {
     await context.route('**/cdn-cgi/trace', (route) =>

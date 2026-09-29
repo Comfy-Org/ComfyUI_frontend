@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/modelsAccount'
-import { openModelPage } from './fixtures/islands'
 
 // Solid colour, tiny, and the only thing that matters about them is the shape:
 // the notice compares ratios, not contents.
@@ -50,8 +49,7 @@ test('Seedance first/last frame warns about the stretch only while the shapes di
     }
   })
 
-  await openModelPage(
-    page,
+  await page.goto(
     '/models/byteplus--seedance-2-5-first-last-frame--animate-images/'
   )
   const group = (name: string) => page.getByRole('group', { name, exact: true })
@@ -94,6 +92,7 @@ test('Seedance first/last frame warns about the stretch only while the shapes di
   // Changing only the last frame raises the notice against the example's own
   // first frame, which is what makes the silence above an answer about two
   // measured frames rather than about one that had not loaded yet.
+  await expect(last).toBeEnabled()
   await last.setInputFiles(frame('last.png', PORTRAIT_9_16))
   await expect(notice).toContainText('The frames are different shapes')
 

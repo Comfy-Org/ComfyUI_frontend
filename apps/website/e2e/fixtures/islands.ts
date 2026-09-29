@@ -11,13 +11,3 @@ export async function waitForIsland(page: Page, target: Locator) {
     page.locator('astro-island').filter({ has: target })
   ).not.toHaveAttribute('ssr')
 }
-
-// The playground is server-rendered, so input before hydration is lost.
-export async function openModelPage(page: Page, path: string) {
-  await page.goto(path)
-  await expect(
-    page
-      .locator('astro-island')
-      .filter({ has: page.getByTestId('model-detail') })
-  ).not.toHaveAttribute('ssr')
-}
