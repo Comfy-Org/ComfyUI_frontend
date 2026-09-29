@@ -1868,6 +1868,53 @@ describe('FullPageCheckoutView promo codes', () => {
     expect(await screen.findByText('−$5.60')).toBeInTheDocument()
   })
 
+  it('a Pay over a typed, unapplied code applies it and waits for a second Pay at the new total', async () => {
+    const fake = await renderCheckout(
+      {},
+      quotesByCode,
+      `${CHECKOUT_PATH}&promo=LAUNCH20`
+    )
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1')
+
+    expect(await screen.findByText('−$5.60')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Remove LAUNCH20' })
+    ).toBeEnabled()
+    expect(fake.subscribe).not.toHaveBeenCalled()
+
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    form.emit('confirm', 'ctoken_2')
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          promotion_code: 'LAUNCH20',
+          quote_id: 'q_promo'
+        })
+      )
+    )
+  })
+
+  it('a Pay over a code Apply already refused pays without it', async () => {
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await enterCode('NOPE')
+    await screen.findByRole('alert')
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1')
+
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledExactlyOnceWith(
+        expect.not.objectContaining({ promotion_code: expect.anything() })
+      )
+    )
+  })
+
   it('lets the URL prefill be removed before it is applied', async () => {
     await renderCheckout({}, quotesByCode, `${CHECKOUT_PATH}&promo=LAUNCH20`)
     await screen.findByText('Subscribe to Creator Plan · Acme Team')
