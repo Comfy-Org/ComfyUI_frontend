@@ -79,9 +79,13 @@ jobs:
           TAG="cloud/v${VERSION}"
 
           if EXISTING=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.sha' 2>/dev/null); then
-            echo "::notice::Tag ${TAG} already exists at ${EXISTING}; skipping"
-            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-            exit 0
+            if [[ "$EXISTING" == "$SHA" ]]; then
+              echo "::notice::Tag ${TAG} already exists at ${EXISTING}; skipping"
+              echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::error::Tag ${TAG} already points at ${EXISTING}, expected ${SHA}"
+            exit 1
           fi
 
           if ! gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
@@ -91,9 +95,13 @@ jobs:
             # Two runs for the same branch can both pass the existence check
             # above; the loser gets 409 Conflict. Treat that as a no-op.
             if EXISTING=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.sha' 2>/dev/null); then
-              echo "::notice::Tag ${TAG} was created concurrently at ${EXISTING}; skipping"
-              echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-              exit 0
+              if [[ "$EXISTING" == "$SHA" ]]; then
+                echo "::notice::Tag ${TAG} was created concurrently at ${EXISTING}; skipping"
+                echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              echo "::error::Tag ${TAG} was created concurrently at ${EXISTING}, expected ${SHA}"
+              exit 1
             fi
             echo "::error::Failed to create tag ${TAG} at ${SHA}"
             exit 1

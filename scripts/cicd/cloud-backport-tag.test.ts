@@ -57,7 +57,15 @@ describe('cloud backport tag workflow', () => {
 
   it('treats existing and concurrently created tags as successful no-ops', () => {
     expect(tagScript?.match(/git\/ref\/tags\/\$\{TAG\}/g)).toHaveLength(2)
+    expect(tagScript?.match(/\[\[ "\$EXISTING" == "\$SHA" \]\]/g)).toHaveLength(
+      2
+    )
     expect(tagScript).toContain('was created concurrently')
-    expect(tagScript).toContain('exit 0')
+    expect(tagScript).toContain(
+      'already points at ${EXISTING}, expected ${SHA}'
+    )
+    expect(tagScript).toContain(
+      'was created concurrently at ${EXISTING}, expected ${SHA}'
+    )
   })
 })
