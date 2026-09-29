@@ -379,7 +379,7 @@ export class LGraphNode
 {
   // Static properties used by dynamic child classes
   static title?: string
-  static MAX_CONSOLE?: number = 100
+  static MAX_CONSOLE?: number
   static type?: string
   static category?: string
   static description?: string
@@ -930,6 +930,8 @@ export class LGraphNode
     param: unknown,
     options: { action_call?: string }
   ): void
+  onTrigger?(this: LGraphNode, value: unknown): void
+  setTrigger?(this: LGraphNode, func?: () => void): void
   onDrawBackground?(this: LGraphNode, ctx: CanvasRenderingContext2D): void
   onNodeCreated?(this: LGraphNode): void
   /**

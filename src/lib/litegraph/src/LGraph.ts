@@ -177,10 +177,12 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
+import type { GraphCanonicalField } from './extensionPersistence'
 import {
   extensionConfigureView,
   GRAPH_CANONICAL_FIELDS,
   hydrateExtensionPayload,
+  isGraphCanonicalField,
   runExtensionSerializeHook
 } from './extensionPersistence'
 import {
@@ -207,14 +209,19 @@ function nodeStatusArray<T>(): T[] & Partial<Record<NodeId, T>> {
 }
 
 function executionPriority(node: LGraphNode): number {
-  const constructorPriority = (
-    node.constructor as unknown as Record<string, unknown>
-  ).priority
-  return (
-    (typeof constructorPriority === 'number' && constructorPriority) ||
-    node.priority ||
-    0
-  )
+  return node.constructor.priority || node.priority || 0
+}
+
+/** Copies serialised fields that {@link LGraph.configure} does not handle explicitly. */
+function copyUnhandledCanonicalFields(
+  target: Partial<Record<GraphCanonicalField, unknown>>,
+  source: Partial<Record<GraphCanonicalField, unknown>>
+): void {
+  for (const key in source) {
+    if (LGraph.ConfigureProperties.has(key) || !isGraphCanonicalField(key))
+      continue
+    target[key] = source[key]
+  }
 }
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
@@ -1829,19 +1836,13 @@ export class LGraph
   /** @todo Clean up - never implemented. */
   triggerInput(name: string, value: unknown): void {
     const nodes = this.findNodesByTitle(name)
-    for (const node of nodes) {
-      const onTrigger = (node as unknown as Record<string, unknown>).onTrigger
-      if (typeof onTrigger === 'function') onTrigger.call(node, value)
-    }
+    for (const node of nodes) node.onTrigger?.(value)
   }
 
   /** @todo Clean up - never implemented. */
   setCallback(name: string, func?: () => void): void {
     const nodes = this.findNodesByTitle(name)
-    for (const node of nodes) {
-      const setTrigger = (node as unknown as Record<string, unknown>).setTrigger
-      if (typeof setTrigger === 'function') setTrigger.call(node, func)
-    }
+    for (const node of nodes) node.setTrigger?.(func)
   }
 
   // used for undo, called before any change is made to the graph
@@ -3178,15 +3179,7 @@ export class LGraph
 
       const nodesData = data.nodes
 
-      // copy all stored fields
-      const target = this as unknown as Record<string, unknown>
-      const source = data as unknown as Record<string, unknown>
-      for (const i in data) {
-        if (LGraph.ConfigureProperties.has(i) || !GRAPH_CANONICAL_FIELDS.has(i))
-          continue
-
-        target[i] = source[i]
-      }
+      copyUnhandledCanonicalFields(this, data)
 
       // Normalize cloned subgraph definitions before configuring them.
       const subgraphs = data.definitions?.subgraphs

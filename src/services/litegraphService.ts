@@ -351,11 +351,10 @@ export const useLitegraphService = () => {
    */
   function addInputs(node: LGraphNode, inputs: Record<string, InputSpec>) {
     // Use input_order if available to ensure consistent widget ordering
-    const nodeData = node.constructor.nodeData
-    const orderedInputSpecs =
-      nodeData instanceof ComfyNodeDefImpl
-        ? getOrderedInputSpecs(nodeData, inputs)
-        : Object.values(inputs)
+    const orderedInputSpecs = getOrderedInputSpecs(
+      node.constructor.nodeData ?? {},
+      inputs
+    )
 
     // Create sockets and widgets in the determined order
     for (const inputSpec of orderedInputSpecs) addInputSocket(node, inputSpec)
