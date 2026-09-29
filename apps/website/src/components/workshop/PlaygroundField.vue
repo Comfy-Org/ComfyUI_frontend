@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown } from '@lucide/vue'
-import { useResizeObserver } from '@vueuse/core'
+import { useEventListener, useResizeObserver } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -250,13 +250,26 @@ function stringValue(): string {
 
 const promptBox = useTemplateRef<HTMLTextAreaElement>('promptBox')
 
+/**
+ * How tall the box may grow. A prompt can run to hundreds of words, and a box
+ * that followed one to the end would bury the rest of the form below the fold,
+ * so it takes at most this share of the window and scrolls whatever is left.
+ */
+const WINDOW_SHARE = 0.6
+
+function promptBoxCeiling() {
+  if (typeof window === 'undefined') return Number.POSITIVE_INFINITY
+  return window.innerHeight * WINDOW_SHARE
+}
+
 function fitPromptBox() {
   const box = promptBox.value
   if (!box) return
   box.style.height = 'auto'
   // `height` is the border box here; `scrollHeight` leaves the borders out.
   const borders = box.offsetHeight - box.clientHeight
-  box.style.height = `${box.scrollHeight + borders}px`
+  const content = box.scrollHeight + borders
+  box.style.height = `${Math.min(content, promptBoxCeiling())}px`
 }
 
 // Width only: a narrower box wraps the same text onto more lines, while the
@@ -265,6 +278,7 @@ const promptBoxWidth = ref(0)
 useResizeObserver(promptBox, ([entry]) => {
   promptBoxWidth.value = entry.contentRect.width
 })
+useEventListener('resize', fitPromptBox)
 
 watch([promptBox, stringValue, promptBoxWidth], fitPromptBox, {
   flush: 'post'
