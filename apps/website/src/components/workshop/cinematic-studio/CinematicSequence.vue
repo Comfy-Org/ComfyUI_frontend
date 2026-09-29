@@ -18,7 +18,6 @@ import type {
 import { takeKind } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import { aspectStyle } from './aspect-style'
 
 const {
   takes,
@@ -79,7 +78,9 @@ const thumbs = computed(() =>
       description:
         kind === 'unpaid' ? tc('cinematic.state.noCredits', locale) : undefined,
       class: cn(
-        'grid h-14 shrink-0 place-items-center overflow-hidden rounded-md bg-transparency-white-t8 transition-opacity',
+        // One shape for every thumbnail, whatever the take's frame: the
+        // strip stays even and the picture is cropped to fit.
+        'grid aspect-3/2 h-14 shrink-0 place-items-center overflow-hidden rounded-md bg-transparency-white-t8 transition-opacity',
         index > 0 && takes[index - 1].shot !== take.shot && 'ml-2',
         look?.frame,
         current
@@ -104,11 +105,23 @@ const thumbs = computed(() =>
       :aria-label="thumb.label"
       :aria-description="thumb.description"
       :class="thumb.class"
-      :style="aspectStyle(thumb.take.aspect)"
       @click="emit('select', thumb.take.id)"
     >
+      <video
+        v-if="
+          thumb.take.status === 'done' && thumb.take.output.kind === 'video'
+        "
+        :src="thumb.take.output.url"
+        muted
+        playsinline
+        preload="metadata"
+        aria-hidden="true"
+        :class="
+          cn('size-full object-cover', thumb.take.output.nsfw && 'blur-md')
+        "
+      />
       <img
-        v-if="thumb.take.status === 'done'"
+        v-else-if="thumb.take.status === 'done'"
         :src="thumb.take.output.url"
         alt=""
         :class="

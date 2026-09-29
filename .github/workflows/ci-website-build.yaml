@@ -62,10 +62,10 @@ jobs:
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
           WORKSHOP_IN_BUILD: '0'
         run: |
-          count_models_pages() { find apps/website/dist/models -name index.html 2>/dev/null | wc -l | tr -d ' '; }
+          models_pages() { find apps/website/dist/models -name index.html 2>/dev/null | sed "s|.*/dist/||" | sort; }
           # dist/ still holds the "Build website" step's Workshop-enabled output.
-          enabled_pages=$(count_models_pages)
-          if [ "$enabled_pages" -eq 0 ]; then
+          models_pages > "$RUNNER_TEMP/models-with-workshop.txt"
+          if [ ! -s "$RUNNER_TEMP/models-with-workshop.txt" ]; then
             echo "::error title=No Workshop-enabled baseline::apps/website/dist/models has no pages before the WORKSHOP_IN_BUILD=0 build. Run this step after \"Build website\"."
             exit 1
           fi
@@ -74,9 +74,9 @@ jobs:
             echo "::error title=Workshop leaked into a release build::apps/website/dist/workshop exists with WORKSHOP_IN_BUILD=0. The retired Workshop routes must not deploy. See apps/website/src/integrations/workshop-release-gate.ts."
             exit 1
           fi
-          disabled_pages=$(count_models_pages)
-          if [ "$disabled_pages" != "$enabled_pages" ]; then
-            echo "::error title=Turning Workshop off removed Models pages::WORKSHOP_IN_BUILD=0 built $disabled_pages Models pages against $enabled_pages with Workshop. Turning Workshop off must only hide Run and the nav."
+          models_pages > "$RUNNER_TEMP/models-without-workshop.txt"
+          if ! diff "$RUNNER_TEMP/models-with-workshop.txt" "$RUNNER_TEMP/models-without-workshop.txt"; then
+            echo "::error title=Turning Workshop off changed the Models pages::WORKSHOP_IN_BUILD=0 built a different set of Models pages than the Workshop build (diff above). Turning Workshop off must only hide Run and the nav."
             exit 1
           fi
-          echo "Release build has no Workshop output and keeps all $disabled_pages Models pages."
+          echo "Release build has no Workshop output and keeps all $(wc -l < "$RUNNER_TEMP/models-without-workshop.txt" | tr -d ' ') Models pages."

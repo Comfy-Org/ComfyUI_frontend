@@ -62,6 +62,10 @@ const siblings = computed(() =>
       <template v-if="current">
         <CinematicTakeFrame
           :current
+          :video="
+            models.find((model) => model.slug === current?.modelSlug)?.mode ===
+            'video'
+          "
           :member-workspace="memberWorkspace"
           :locale
           @retry="emit('retry', current.id)"
