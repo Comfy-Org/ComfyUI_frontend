@@ -257,6 +257,31 @@ function requoteNotice(
   return event.priceUpdated ? { outcome: { kind: 'price_updated' } } : {}
 }
 
+type StopEvent = Extract<
+  CheckoutPageEvent,
+  { type: 'refused' | 'unavailable' | 'recheckFailed' | 'planUnavailable' }
+>
+
+/** The page a read that ends resolving leaves behind. */
+function stoppedOn(event: StopEvent): CheckoutPage {
+  switch (event.type) {
+    case 'refused':
+      return { kind: 'refused', reason: event.reason }
+    case 'unavailable':
+      return { kind: 'unavailable', code: event.code }
+    case 'recheckFailed':
+      return { kind: 'recheck_failed', code: event.code }
+    case 'planUnavailable':
+      return { kind: 'plan_unavailable', reason: event.reason }
+  }
+}
+
+/** Try again re-reads a checkout whose load or re-read failed. */
+const RETRYABLE: ReadonlySet<CheckoutPage['kind']> = new Set([
+  'unavailable',
+  'recheck_failed'
+])
+
 /** An event that means nothing in the current state returns it untouched. */
 export function reduceCheckoutPage(
   page: CheckoutPage,
@@ -266,27 +291,14 @@ export function reduceCheckoutPage(
   if (isAttemptEvent(event)) return reduceAttempt(page, event)
   switch (event.type) {
     case 'refused':
-      return page.kind === 'resolving'
-        ? { kind: 'refused', reason: event.reason }
-        : page
     case 'unavailable':
-      return page.kind === 'resolving'
-        ? { kind: 'unavailable', code: event.code }
-        : page
     case 'recheckFailed':
-      return page.kind === 'resolving'
-        ? { kind: 'recheck_failed', code: event.code }
-        : page
+    case 'planUnavailable':
+      return page.kind === 'resolving' ? stoppedOn(event) : page
     case 'requoteFailed':
       return leavingCapture(page, { kind: 'unavailable', code: event.code })
-    case 'planUnavailable':
-      return page.kind === 'resolving'
-        ? { kind: 'plan_unavailable', reason: event.reason }
-        : page
     case 'retried':
-      return page.kind === 'unavailable' || page.kind === 'recheck_failed'
-        ? RESOLVING
-        : page
+      return RETRYABLE.has(page.kind) ? RESOLVING : page
     case 'quoted':
       return page.kind === 'resolving' ? arrived(page, event) : page
     case 'reconciled':
