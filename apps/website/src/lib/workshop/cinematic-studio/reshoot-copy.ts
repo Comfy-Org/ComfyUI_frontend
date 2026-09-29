@@ -98,6 +98,8 @@ const copy = {
   'reshoot.nudge.down': { en: 'Camera lower', 'zh-CN': '机位降低' },
   'reshoot.nudge.left': { en: 'Camera left', 'zh-CN': '机位向左' },
   'reshoot.nudge.right': { en: 'Camera right', 'zh-CN': '机位向右' },
+  'reshoot.dolly.in': { en: 'Move the camera closer', 'zh-CN': '机位靠近' },
+  'reshoot.dolly.out': { en: 'Move the camera away', 'zh-CN': '机位远离' },
   'reshoot.advanced': { en: 'Advanced', 'zh-CN': '高级' },
   'reshoot.advanced.value': {
     en: 'Prompt, dialogue, seed',
