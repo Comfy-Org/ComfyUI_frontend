@@ -35,8 +35,8 @@ function leafMessages(tree: Catalog, prefix = ''): [string, string][] {
 
 function valuesForPlaceholders(message: string): Record<string, string> {
   const names = message
-    .replace(/\{'(?:[^'\\]|\\.)*'\}/g, '')
-    .matchAll(/\{\s*(\w+)\s*\}/g)
+    .replace(/\{\s*'(?:[^'\\]|\\.)*'\s*\}/g, '')
+    .matchAll(/\{\s*([\w$-]+)\s*\}/g)
   return Object.fromEntries([...names].map(([, name]) => [name, name]))
 }
 
@@ -197,8 +197,12 @@ describe('createTranslator', () => {
     en: {
       title: 'Pricing | Comfy',
       greeting: 'Hi { name }',
+      hyphenated: 'Hi {first-name}',
+      dollar: 'Hi {first$name}',
       item: 'Item {0}',
       contact: 'Write to support@comfy.org',
+      linked: 'See @:title',
+      unclosed: 'Hi {name',
       nodes: '{count} node | {count} nodes',
       unitNodes: '{count} node in {unit} | {count} nodes in {unit}',
       hero: 'Hello'
@@ -222,15 +226,33 @@ describe('createTranslator', () => {
     )
   })
 
+  it.for(['hyphenated', 'dollar'] as const)(
+    'reads every name vue-i18n accepts in %s as a named value',
+    (key) => {
+      expect(() => catalog.t(key)).toThrow(
+        `Translation ${key} in en needs values`
+      )
+    }
+  )
+
   it('refuses a list placeholder', () => {
     expect(() => catalog.t('item')).toThrow(
       'Translation item in en uses the list placeholder {0}; name it instead'
     )
   })
 
+  it.for(['contact', 'linked'] as const)(
+    'refuses an unescaped @ in %s',
+    (key) => {
+      expect(() => catalog.t(key, 'ja')).toThrow(
+        `Translation ${key} in ja has an unescaped "@"`
+      )
+    }
+  )
+
   it('names the key and locale of a message that does not compile', () => {
-    expect(() => catalog.t('contact', 'ja')).toThrow(
-      'Translation contact in ja is not valid message syntax'
+    expect(() => catalog.t('unclosed', 'ja', { name: 'Ada' })).toThrow(
+      'Translation unclosed in ja is not valid message syntax'
     )
   })
 
@@ -248,6 +270,48 @@ describe('createTranslator', () => {
   it('preserves an explicitly empty translation', () => {
     expect(catalog.t('hero', 'zh-CN')).toBe('')
     expect(catalog.t('hero', 'en')).toBe('Hello')
+  })
+})
+
+describe('createTranslator catalog checks', () => {
+  it('renders a key segment that reads like vue-i18n path syntax', () => {
+    const catalog = createTranslator({ en: { "items['first']": { z: 'Hi' } } })
+
+    expect(catalog.t("items['first'].z")).toBe('Hi')
+  })
+
+  it('refuses an English key segment that contains a dot', () => {
+    expect(() => createTranslator({ en: { 'a.b': 'Hi {name}' } })).toThrow(
+      'Translation key a.b has a "." inside one segment'
+    )
+  })
+
+  it('refuses a translated key segment that contains a dot', () => {
+    const zhCN = { title: '标题', 'a.b': '你好 {name}' }
+
+    expect(() =>
+      createTranslator({
+        en: { title: 'Title', a: { b: 'Hi {name}' } },
+        'zh-CN': zhCN
+      })
+    ).toThrow('Translation key a.b has a "." inside one segment')
+  })
+
+  it('refuses a translated key the English catalog lacks', () => {
+    const zhCN = { title: '标题', renamed: '旧的' }
+
+    expect(() =>
+      createTranslator({ en: { title: 'Title' }, 'zh-CN': zhCN })
+    ).toThrow('Translations in zh-CN have no English message: renamed')
+  })
+
+  it('refuses a translated message where English has a group', () => {
+    const zhCN = { nested: '形状不对' }
+
+    expect(() =>
+      // @ts-expect-error a translated catalog must keep the English shape
+      createTranslator({ en: { nested: { title: 'x' } }, 'zh-CN': zhCN })
+    ).toThrow('Translations in zh-CN have no English message: nested')
   })
 })
 

@@ -10,6 +10,10 @@ type NamedValues = Record<string, string | number>
 
 type MessageTree = { [key: string]: string | MessageTree }
 
+type TranslatedTree<T> = {
+  [K in keyof T]?: T[K] extends string ? string : TranslatedTree<T[K]>
+}
+
 export type MessageKey<T> = {
   [K in keyof T & string]: T[K] extends string ? K : `${K}.${MessageKey<T[K]>}`
 }[keyof T & string]
@@ -21,7 +25,7 @@ export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
 >
 
 type Catalogs<T extends MessageTree> = { en: T } & Partial<
-  Record<Locale, MessageTree>
+  Record<Locale, MessageTree & TranslatedTree<NoInfer<T>>>
 >
 
 interface MessageShape {
@@ -29,28 +33,32 @@ interface MessageShape {
   hasPluralForms: boolean
 }
 
-const literalPattern = /\{'(?:[^'\\]|\\.)*'\}/g
-const placeholderPattern = /\{\s*(\w+)\s*\}/g
+const literalPattern = /\{\s*'(?:[^'\\]|\\.)*'\s*\}/g
+const placeholderPattern = /\{\s*([\w$-]+)\s*\}/g
 
-function messageAtPath(
-  tree: MessageTree | undefined,
-  key: string
-): string | undefined {
-  let value: string | MessageTree | undefined = tree
+function isMessageGroup(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function messageAtPath(tree: unknown, key: string): string | undefined {
+  let value = tree
   for (const segment of key.split('.')) {
-    if (value === undefined || typeof value === 'string') return
-    if (!Object.hasOwn(value, segment)) return
+    if (!isMessageGroup(value) || !Object.hasOwn(value, segment)) return
     value = value[segment]
   }
   return typeof value === 'string' ? value : undefined
 }
 
-function leafPaths(tree: MessageTree, prefix = ''): string[] {
-  return Object.entries(tree).flatMap(([key, value]) =>
-    typeof value === 'string'
-      ? [`${prefix}${key}`]
-      : leafPaths(value, `${prefix}${key}.`)
-  )
+function leafPaths(tree: Record<string, unknown>, prefix = ''): string[] {
+  return Object.entries(tree).flatMap(([segment, value]) => {
+    const path = `${prefix}${segment}`
+    if (segment.includes('.')) {
+      throw new Error(
+        `Translation key ${path} has a "." inside one segment; nest it instead`
+      )
+    }
+    return isMessageGroup(value) ? leafPaths(value, `${path}.`) : [path]
+  })
 }
 
 function pluralRule(locale: Locale) {
@@ -76,6 +84,7 @@ export function createTranslator<T extends MessageTree>(catalogs: Catalogs<T>) {
     locale: DEFAULT_LOCALE,
     fallbackLocale: DEFAULT_LOCALE,
     messages: catalogs,
+    messageResolver: (tree, key) => messageAtPath(tree, key) ?? null,
     pluralRules,
     missingWarn: false,
     fallbackWarn: false,
@@ -83,6 +92,16 @@ export function createTranslator<T extends MessageTree>(catalogs: Catalogs<T>) {
   })
   const keys = leafPaths(catalogs.en) as Key[]
   const keySet: ReadonlySet<string> = new Set(keys)
+  for (const locale of LOCALE_CODES) {
+    const orphans = leafPaths(catalogs[locale] ?? {}).filter(
+      (key) => !keySet.has(key)
+    )
+    if (orphans.length > 0) {
+      throw new Error(
+        `Translations in ${locale} have no English message: ${orphans.join(', ')}`
+      )
+    }
+  }
   const shapes = new Map<string, MessageShape>()
 
   function hasKey(key: string): key is Key {
@@ -94,15 +113,18 @@ export function createTranslator<T extends MessageTree>(catalogs: Catalogs<T>) {
     const cached = shapes.get(cacheKey)
     if (cached) return cached
 
-    if (!hasKey(key)) throw new Error(`Unknown translation key ${key}`)
-    const source = (
-      messageAtPath(catalogs[locale], key) ??
-      messageAtPath(catalogs.en, key) ??
-      ''
-    ).replace(literalPattern, '')
+    const message =
+      messageAtPath(catalogs[locale], key) ?? messageAtPath(catalogs.en, key)
+    if (message === undefined) throw new Error(`Unknown translation key ${key}`)
+    const source = message.replace(literalPattern, '')
+    if (source.includes('@')) {
+      throw new Error(
+        `Translation ${key} in ${locale} has an unescaped "@": write {'@'} for a literal at sign`
+      )
+    }
     const placeholders = new Set<string>()
     for (const [text, name] of source.matchAll(placeholderPattern)) {
-      if (/^\d+$/.test(name)) {
+      if (/^-?\d+$/.test(name)) {
         throw new Error(
           `Translation ${key} in ${locale} uses the list placeholder ${text}; name it instead`
         )
