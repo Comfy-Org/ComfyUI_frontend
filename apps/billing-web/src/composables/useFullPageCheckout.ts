@@ -222,7 +222,7 @@ export function useFullPageCheckout() {
     return asked
   }
 
-  /** A capture read again after the page went back to resolving keeps the applied code. */
+  /** A capture read again after the page went back to resolving keeps the applied code, or says it lapsed. */
   async function captureEvent(
     arrival: PlannedEntry
   ): Promise<CheckoutPageEvent> {
@@ -243,15 +243,18 @@ export function useFullPageCheckout() {
         : { type: 'unavailable', code: quoted.code }
     const unquotable = quotedStop(quoted.value, arrival, stripeKey)
     if (unquotable !== undefined) return unquotable
-    const reactivation = consentAsked(asksReactivation(quoted.value))
+    const facts = {
+      reactivation: consentAsked(asksReactivation(quoted.value)),
+      ...(expiredPromo === undefined ? {} : { expiredPromo })
+    }
     return quoted.value.transition_type === 'new_subscription'
       ? {
           type: 'quoted',
           method: 'collect',
           saved: arrivalOf(methods),
-          reactivation
+          ...facts
         }
-      : { type: 'quoted', method: 'on_file', reactivation }
+      : { type: 'quoted', method: 'on_file', ...facts }
   }
 
   /** Capture never renders before reconciliation has answered (rule 3). */

@@ -433,6 +433,22 @@ describe('reduceCheckoutPage after Pay', () => {
       pay: true
     },
     {
+      name: 'a capture read again finds the applied code lapsed: the card names it',
+      events: [
+        {
+          type: 'quoted',
+          method: 'collect',
+          saved: 0,
+          reactivation: false,
+          expiredPromo: 'LAUNCH20'
+        },
+        ready
+      ],
+      outcome: 'promo_expired',
+      reactivation: 'not_required',
+      pay: true
+    },
+    {
       name: 'a quote that asks to keep the subscription leaves Pay live',
       events: [quoted(0, true), ready],
       outcome: undefined,
