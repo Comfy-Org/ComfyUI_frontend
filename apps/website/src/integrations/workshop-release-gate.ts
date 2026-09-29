@@ -4,13 +4,13 @@ import { envField } from 'astro/config'
 // "Vite module runner has been closed" — by `astro:build:done` the runner that
 // resolves module specifiers is gone, so anything not already loaded fails.
 import { existsSync } from 'node:fs'
-import { rm } from 'node:fs/promises'
+import { readFile, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
 import { workshopClientBoundary } from './workshop-client-boundary'
 
-import { HUB_MODELS_PATH } from '../config/hub-models'
+import { HUB_MODELS_PATH, oldModelLinks } from '../config/hub-models'
 import { unregisteredModelsPaths } from '../config/models-url-registry'
 
 import {
@@ -39,7 +39,6 @@ export function modelsBuildRoutes(enabled: boolean) {
   return [
     { pattern: HUB_MODELS_PATH, entrypoint: entry('index.astro') },
     { pattern: `${HUB_MODELS_PATH}/[slug]`, entrypoint: entry('[slug].astro') },
-    { pattern: '/models', entrypoint: entry('index.astro') },
     { pattern: '/models/[...slug]', entrypoint: entry('[slug].astro') },
     { pattern: '/models/showcase', entrypoint: entry('showcase.astro') },
     { pattern: '/models/apps/[app]', entrypoint: entry('app.astro') },
@@ -57,6 +56,22 @@ export function modelsBuildRoutes(enabled: boolean) {
     },
     ...(enabled ? WORKSHOP_ONLY_ROUTES : [])
   ]
+}
+
+async function pagesLinkingOldModels(
+  root: string,
+  pages: readonly { pathname: string }[]
+) {
+  const found = await Promise.all(
+    pages.map(async ({ pathname }) => {
+      const file = join(root, pathname, 'index.html')
+      if (!existsSync(file)) return []
+      return oldModelLinks(await readFile(file, 'utf8')).map(
+        (link) => `/${pathname} → ${link}`
+      )
+    })
+  )
+  return found.flat()
 }
 
 export function workshopReleaseGate(): AstroIntegration {
@@ -109,11 +124,18 @@ export function workshopReleaseGate(): AstroIntegration {
           )
         }
 
+        const root = fileURLToPath(dir)
+        const stale = await pagesLinkingOldModels(root, pages)
+        if (stale.length > 0) {
+          throw new Error(
+            `workshop-release-gate found links to old /models addresses, which now redirect (${stale.join(', ')}); link the /hub/models page instead.`
+          )
+        }
+
         const built = pages.filter((page) =>
           isLegacyWorkshopRoute(`/${page.pathname}`)
         ).length
 
-        const root = fileURLToPath(dir)
         const workshopOutput = join(root, 'workshop')
         await rm(workshopOutput, { recursive: true, force: true })
         if (existsSync(workshopOutput)) {
