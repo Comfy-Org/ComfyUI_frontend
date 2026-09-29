@@ -1,4 +1,5 @@
 import type { ModelDeveloper } from '../config/model-vendors'
+import { getRoutes } from '../config/routes'
 import { t } from '../i18n/translations'
 import type { Crumb, JsonLdNode } from './jsonLd'
 import { jsonLdId, organizationId, softwareApplicationNode } from './jsonLd'
@@ -78,7 +79,7 @@ export function modelPageJsonLd({
     mainEntityId: id,
     breadcrumbs: [
       { name: t('breadcrumb.home'), url: `${siteUrl}/` },
-      { name: t('workshop.title'), url: `${siteUrl}/models/` },
+      { name: t('workshop.title'), url: `${siteUrl}${getRoutes().workshop}` },
       { name: model.name }
     ],
     extraJsonLd: [

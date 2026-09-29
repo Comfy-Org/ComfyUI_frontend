@@ -9,7 +9,7 @@ import type { JsonLdNode } from './jsonLd'
 import { modelPageJsonLd } from './modelJsonLd'
 
 const siteUrl = 'https://comfy.org'
-const url = 'https://comfy.org/models/example/'
+const url = 'https://comfy.org/hub/models/example/'
 
 const imageModel = {
   name: 'FLUX 2 Max Text-to-Image',
@@ -48,7 +48,7 @@ describe('modelPageJsonLd', () => {
     expect(result.mainEntityId).toBe(`${url}#software`)
     expect(result.breadcrumbs).toEqual([
       { name: 'Home', url: 'https://comfy.org/' },
-      { name: 'Models', url: 'https://comfy.org/models/' },
+      { name: 'Models', url: 'https://comfy.org/hub/models/' },
       { name: 'FLUX 2 Max Text-to-Image' }
     ])
     expect(result.extraJsonLd[0]).toMatchObject({
