@@ -6,7 +6,7 @@ const ENTITIES: Record<string, string> = {
   '&#39;': "'"
 }
 
-function textOf(html: string): string {
+export function textOf(html: string): string {
   return html
     .replace(/<[^>]+>/g, ' ')
     .replace(/&(?:amp|lt|gt|quot|#39);/g, (entity) => ENTITIES[entity])
@@ -14,7 +14,7 @@ function textOf(html: string): string {
     .trim()
 }
 
-function withoutHiddenMarkup(html: string): string {
+export function withoutHiddenMarkup(html: string): string {
   return html.replace(/<(template|noscript|script|style)\b[\s\S]*?<\/\1>/g, '')
 }
 
