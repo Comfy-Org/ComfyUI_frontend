@@ -78,7 +78,11 @@
     "src/scripts/changeTracker.ts->src/stores/executionErrorStore.ts->src/stores/executionStore.ts",
     "src/composables/billing/useBillingDialogs.ts->src/platform/cloud/subscription/composables/useSubscriptionDialog.ts->src/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue->src/platform/workspace/composables/useSubscriptionCheckout.ts",
     "src/composables/canvas/useSelectedLiteGraphItems.ts->src/core/graph/subgraph/promotionUtils.ts->src/renderer/core/canvas/canvasStore.ts->src/services/litegraphService.ts",
-    "src/composables/graph/useSubgraphOperations.ts->src/core/graph/subgraph/promotionUtils.ts->src/renderer/core/canvas/canvasStore.ts->src/services/litegraphService.ts"
+    "src/composables/graph/useSubgraphOperations.ts->src/core/graph/subgraph/promotionUtils.ts->src/renderer/core/canvas/canvasStore.ts->src/services/litegraphService.ts",
+    "src/platform/auth/unified/remintRetry.ts->src/platform/workspace/stores/workspaceAuthStore.ts->src/stores/authStore.ts",
+    "src/platform/cloud/subscription/composables/useSubscriptionDialog.ts->src/platform/workspace/components/dialogs/InviteMemberUpsellDialogContent.vue->src/platform/workspace/composables/useWorkspaceDialogs.ts",
+    "src/platform/workflow/management/stores/workflowStore.ts->src/stores/executionStore.ts",
+    "src/renderer/core/canvas/canvasStore.ts->src/renderer/extensions/vueNodes/composables/useNodeZIndex.ts->src/utils/litegraphUtil.ts"
   ],
   "re_export_cycles": [],
   "unused_optional_dependencies": [],
