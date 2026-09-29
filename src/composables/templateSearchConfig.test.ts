@@ -124,11 +124,12 @@ describe('searchTemplates', () => {
 
   it('keeps searching when two templates share a name', () => {
     const index = buildIndex([
-      buildTemplate({ name: 'decimate', title: 'Decimate Mesh' }),
-      buildTemplate({ name: 'decimate', title: 'Decimate Mesh' }),
+      buildTemplate({ name: 'decimate', title: 'Alpha Mesh' }),
+      buildTemplate({ name: 'decimate', title: 'Beta Mesh' }),
       buildTemplate({ name: 'h3', title: 'MiniMax H3 Video' })
     ])
-    expect(searchTemplates(index, 'decimate')).toEqual(['decimate'])
+    expect(searchTemplates(index, 'alpha')).toEqual(['decimate'])
+    expect(searchTemplates(index, 'beta')).toEqual([])
     expect(searchTemplates(index, 'h3')).toEqual(['h3'])
   })
 
