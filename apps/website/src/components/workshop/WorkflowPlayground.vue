@@ -3,6 +3,7 @@ import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
+import type { SnippetLanguage } from '../../config/models-snippets'
 import {
   initialWorkshopPageState,
   workshopExampleState
@@ -109,6 +110,20 @@ watch([section, enabled, workflowsEnabled], ([active, enabled, workflows]) => {
   if (enabled && workflows && active === 'api')
     captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
 })
+function captureApiKeyClick() {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'api_key_clicked',
+      properties: modelAnalytics
+    })
+}
+function captureSnippetCopy(language: SnippetLanguage) {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'api_snippet_copied',
+      properties: { ...modelAnalytics, snippet_language: language }
+    })
+}
 const busy = computed(() =>
   ['preparing', 'active', 'interrupted'].includes(state.value.phase)
 )
@@ -346,7 +361,12 @@ function start() {
     role="tabpanel"
     aria-labelledby="workflow-tab-api"
   >
-    <WorkflowApi :model="model" :values="values" />
+    <WorkflowApi
+      :model="model"
+      :values="values"
+      @get-key="captureApiKeyClick"
+      @copy="captureSnippetCopy"
+    />
   </div>
   <section
     v-if="model.examples.length"

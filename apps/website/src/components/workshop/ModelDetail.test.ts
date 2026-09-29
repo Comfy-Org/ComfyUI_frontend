@@ -577,6 +577,31 @@ describe('ModelDetail', () => {
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
+  it('reports API key clicks and snippet copies with the model and language', async () => {
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'A landscape'
+    )
+    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+    await visitor.click(await screen.findByTestId('snippet-curl'))
+    await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
+    await visitor.click(screen.getByRole('link', { name: 'Get API key' }))
+    const model = { model_slug: runnable.slug, page_type: 'model' }
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'api_snippet_copied',
+      properties: expect.objectContaining({
+        ...model,
+        snippet_language: 'curl'
+      })
+    })
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'api_key_clicked',
+      properties: expect.objectContaining(model)
+    })
+  })
+
   it.for(['load', 'error'] as const)(
     'correlates an HTTP success with the primary image %s outcome',
     async (event) => {

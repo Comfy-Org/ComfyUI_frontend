@@ -52,6 +52,27 @@ describe('WorkflowPlayground analytics', () => {
   })
 })
 
+describe('WorkflowPlayground API tab analytics', () => {
+  it('reports Get API key clicks with workflow attribution', async () => {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+    const visitor = userEvent.setup()
+    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+    await visitor.click(screen.getByRole('link', { name: 'Get API key' }))
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'api_key_clicked',
+      properties: expect.objectContaining({
+        model_slug: model.slug,
+        page_type: 'workflow',
+        workflow_id: model.workflowId
+      })
+    })
+  })
+})
+
 describe('WorkflowPlayground input panel', () => {
   // The way out of the page lives on Details beside the graph, so the panel
   // that asks the questions carries the run control and nothing else.

@@ -29,6 +29,18 @@ describe('WorkflowApi', () => {
     expect(endpoint).toHaveTextContent(`${WORKSHOP_CLOUD_BASE_URL}/api/prompt`)
   })
 
+  it('reports the snippet language it copies and Get API key clicks', async () => {
+    const { emitted } = render(WorkflowApi, { props: { model, values } })
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getByRole('tab', { name: 'TypeScript' }))
+    await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
+    await visitor.click(screen.getByRole('link', { name: 'Get API key' }))
+
+    expect(emitted('copy')).toEqual([['typescript']])
+    expect(emitted('getKey')).toEqual([[]])
+  })
+
   it.for([
     { tab: 'Python', opening: '# Python 3.10+: pip install comfy-sdk' },
     { tab: 'TypeScript', opening: '// Node 22+: npm install @comfyorg/sdk' },

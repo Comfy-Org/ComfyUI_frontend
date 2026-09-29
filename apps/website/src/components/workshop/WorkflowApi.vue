@@ -32,6 +32,7 @@ const { model, values } = defineProps<{
   model: WorkflowWorkshopModelDetail
   values: FormValues
 }>()
+const emit = defineEmits<{ copy: [language: SnippetLanguage]; getKey: [] }>()
 const { session } = useWorkshopSession()
 const keyHref = computed(() =>
   workspaceLinkedHref(
@@ -139,6 +140,7 @@ const facts = computed(() => {
           rel="noopener"
           class="w-full justify-center"
           data-testid="api-get-key"
+          @click="emit('getKey')"
           >{{ t('workshop.api.getKey') }}</Button
         >
         <div data-testid="workflow-api-endpoint">
@@ -189,6 +191,7 @@ const facts = computed(() => {
               :value="code"
               :label="t('workshop.api.copy')"
               :copied-label="t('workshop.api.copied')"
+              @click="emit('copy', language)"
             />
           </div>
           <pre
