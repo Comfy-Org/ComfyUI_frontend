@@ -137,8 +137,11 @@ export function useFullPageCheckout() {
     challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
   })
 
+  /** A link that names no plan has nothing to quote, so it is as unreadable as a malformed one. */
   const page = shallowRef<CheckoutPage>(
-    unreadableLink.value === undefined ? RESOLVING : UNREADABLE_LINK
+    unreadableLink.value === undefined && entry.value?.plan !== undefined
+      ? RESOLVING
+      : UNREADABLE_LINK
   )
 
   /** A page sent back to resolving by the lifecycle reads its capture again. */
@@ -292,7 +295,7 @@ export function useFullPageCheckout() {
       void retrySaved()
   }
 
-  if (entry.value !== undefined) {
+  if (page.value.kind === 'resolving') {
     void reconcile()
     void readCapture()
   }
