@@ -18,6 +18,7 @@ const teamCreditStops = ref<TeamCreditStops | null>(null)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 let fetchPromise: Promise<void> | null = null
+let fetchPromiseScopeKey: string | null = null
 let adoptedScopeKey: string | null = null
 
 function billingScopeKey(): string {
@@ -38,9 +39,8 @@ export function useBillingPlans() {
   }
 
   function fetchPlans(): Promise<void> {
-    if (fetchPromise) return fetchPromise
-
     const scopeKey = billingScopeKey()
+    if (fetchPromise && fetchPromiseScopeKey === scopeKey) return fetchPromise
     if (adoptedScopeKey !== null && adoptedScopeKey !== scopeKey) {
       plans.value = []
       currentPlanSlug.value = null
@@ -56,7 +56,7 @@ export function useBillingPlans() {
     isLoading.value = true
     error.value = null
 
-    fetchPromise = (
+    const request = (
       rail ? readOnRail(rail.readPlans) : workspaceApi.getBillingPlans()
     )
       .then((response) => {
@@ -88,10 +88,14 @@ export function useBillingPlans() {
         })
       })
       .finally(() => {
+        if (fetchPromise !== request) return
         isLoading.value = false
         fetchPromise = null
+        fetchPromiseScopeKey = null
       })
 
+    fetchPromise = request
+    fetchPromiseScopeKey = scopeKey
     return fetchPromise
   }
 
