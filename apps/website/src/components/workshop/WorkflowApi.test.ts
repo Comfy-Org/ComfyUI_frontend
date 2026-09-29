@@ -47,6 +47,45 @@ describe('WorkflowApi', () => {
     ).toBe(true)
   })
 
+  it.for([
+    {
+      tab: 'Python',
+      shows: [
+        'Comfy(api_key=…) + run(workflow, api_key=…)',
+        'client.assets.from_url(url)'
+      ],
+      hides: ['/api/prompt', 'X-API-Key']
+    },
+    {
+      tab: 'TypeScript',
+      shows: [
+        'new Comfy({ apiKey }) + run(workflow, { apiKey })',
+        'client.assets.fromUrl(url)'
+      ],
+      hides: ['/api/prompt', 'X-API-Key']
+    },
+    {
+      tab: 'cURL',
+      shows: [
+        `POST ${WORKSHOP_CLOUD_BASE_URL}/api/prompt`,
+        'X-API-Key + extra_data.api_key_comfy_org',
+        'Uploaded before the call'
+      ],
+      hides: ['assets.from']
+    }
+  ])(
+    'lists what the $tab code needs beside it',
+    async ({ tab, shows, hides }) => {
+      render(WorkflowApi, { props: { model, values } })
+
+      await userEvent.setup().click(screen.getByRole('tab', { name: tab }))
+
+      const facts = screen.getByTestId('api-facts')
+      for (const text of shows) expect(facts).toHaveTextContent(text)
+      for (const text of hides) expect(facts).not.toHaveTextContent(text)
+    }
+  )
+
   it('offers the key and the documentation', () => {
     render(WorkflowApi, { props: { model, values } })
 
