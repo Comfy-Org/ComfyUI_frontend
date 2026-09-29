@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown } from '@lucide/vue'
+import { useResizeObserver } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -258,7 +259,16 @@ function fitPromptBox() {
   box.style.height = `${box.scrollHeight + borders}px`
 }
 
-watch([promptBox, stringValue], fitPromptBox, { flush: 'post' })
+// Width only: a narrower box wraps the same text onto more lines, while the
+// height this sets must not feed back into the observer.
+const promptBoxWidth = ref(0)
+useResizeObserver(promptBox, ([entry]) => {
+  promptBoxWidth.value = entry.contentRect.width
+})
+
+watch([promptBox, stringValue, promptBoxWidth], fitPromptBox, {
+  flush: 'post'
+})
 
 // Painting the filled part ourselves keeps the track identical across browsers,
 // which accent-color does not.
