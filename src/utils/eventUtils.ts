@@ -9,6 +9,13 @@ export interface DroppedAsset {
   previewUrl?: string
 }
 
+class DroppedAssetFetchError extends Error {
+  constructor(status: number) {
+    super(`Dropped asset fetch failed with HTTP ${status}`)
+    this.name = 'DroppedAssetFetchError'
+  }
+}
+
 export function getDroppedAsset(
   dataTransfer: DataTransfer
 ): DroppedAsset | undefined {
@@ -32,19 +39,15 @@ export function getDroppedAsset(
     : undefined
 }
 
-export async function fetchDroppedAsset({
-  name,
-  uri
-}: DroppedAsset): Promise<File | undefined> {
+export async function fetchDroppedAsset(
+  { name, uri }: DroppedAsset,
+  signal?: AbortSignal
+): Promise<File | undefined> {
   if (!uri) return undefined
-  try {
-    const response = await fetch(uri)
-    if (!response.ok) return undefined
-    const blob = await response.blob()
-    return new File([blob], name, { type: blob.type })
-  } catch {
-    return undefined
-  }
+  const response = await fetch(uri, { signal })
+  if (!response.ok) throw new DroppedAssetFetchError(response.status)
+  const blob = await response.blob()
+  return new File([blob], name, { type: blob.type })
 }
 
 export async function extractFilesFromDragEvent(
@@ -62,7 +65,7 @@ export async function extractFilesFromDragEvent(
   const asset = getDroppedAsset(event.dataTransfer)
   if (!asset) return []
 
-  const file = await fetchDroppedAsset(asset)
+  const file = await fetchDroppedAsset(asset).catch(() => undefined)
   return file ? [file] : []
 }
 

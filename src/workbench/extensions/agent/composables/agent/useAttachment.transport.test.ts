@@ -4,7 +4,7 @@ import { createAgentRestClient } from '../../services/agent/agentRestClient'
 import { useAttachment } from './useAttachment'
 import type { ComposerAttachment } from './useComposer'
 
-it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', async () => {
+it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 124 seconds', async () => {
   vi.useFakeTimers()
   onTestFinished(() => {
     vi.useRealTimers()
@@ -26,7 +26,12 @@ it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', asy
   const onError = vi.fn()
   const { addFiles } = useAttachment({
     upload: async (file, uploadSignal) => {
-      const result = await client.uploadImage(file, file.name, uploadSignal)
+      const result = await client.uploadImage(
+        file,
+        file.name,
+        uploadSignal,
+        null
+      )
       return { ref: result.name ?? file.name }
     },
     stage: (chip) => chips.set(chip.id, chip),
@@ -42,7 +47,7 @@ it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', asy
   Object.defineProperty(file, 'size', { value: 4 * 1024 * 1024 })
   const pending = addFiles([file])
 
-  await vi.advanceTimersByTimeAsync(93_999)
+  await vi.advanceTimersByTimeAsync(123_999)
   assert.exists(signal)
   expect(signal.aborted).toBe(false)
   expect([...chips.values()]).toMatchObject([

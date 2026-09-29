@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComposerAttachment } from './useComposer'
-import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
+import {
+  MAX_ATTACHMENT_BATCH_SIZE,
+  MAX_ATTACHMENT_BYTES,
+  useAttachment
+} from './useAttachment'
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -502,7 +506,8 @@ describe('useAttachment', () => {
         tags: expect.objectContaining({
           feature_area: 'agent',
           integration_target: 'assets',
-          outcome: 'failed'
+          outcome: 'failed',
+          failure_reason: 'timeout'
         })
       })
     } finally {
@@ -545,7 +550,32 @@ describe('useAttachment', () => {
     }
   )
 
-  it('signals a settled batch once, not once per file', async () => {
+  it('aborts deferred source resolution when the attachment is cancelled', async () => {
+    let sourceSignal: AbortSignal | undefined
+    const upload = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile, cancelAllUploads } = useAttachment({
+      upload,
+      ...registry
+    })
+    const pending = addDeferredFile('remote.png', (signal) => {
+      sourceSignal = signal
+      return new Promise<File | undefined>((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(signal.reason), {
+          once: true
+        })
+      })
+    })
+
+    cancelAllUploads()
+
+    await expect(pending).resolves.toBe('cancelled')
+    expect(sourceSignal?.aborted).toBe(true)
+    expect(upload).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('signals each settled upload so assets become available immediately', async () => {
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
     const onUploaded = vi.fn()
     const registry = chipRegistry()
@@ -557,6 +587,21 @@ describe('useAttachment', () => {
       fileOfSize('c.png', 1)
     ])
 
-    expect(onUploaded).toHaveBeenCalledOnce()
+    expect(onUploaded).toHaveBeenCalledTimes(3)
+  })
+
+  it('bounds a single selection before staging upload work', async () => {
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    await addFiles(
+      Array.from({ length: MAX_ATTACHMENT_BATCH_SIZE + 5 }, (_, index) =>
+        fileOfSize(`${index}.png`, 1)
+      )
+    )
+
+    expect(upload).toHaveBeenCalledTimes(MAX_ATTACHMENT_BATCH_SIZE)
+    expect(registry.chips).toHaveLength(MAX_ATTACHMENT_BATCH_SIZE)
   })
 })

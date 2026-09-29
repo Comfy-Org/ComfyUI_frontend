@@ -270,6 +270,30 @@ describe('uploadImage multipart', () => {
     expect(contentType(init)).toBeUndefined()
     appendSpy.mockRestore()
   })
+
+  it('rejects a success response without the server-stored filename', async () => {
+    respond(jsonResponse(200, { subfolder: '', type: 'input' }))
+
+    await expect(
+      makeClient().uploadImage(new Blob(['bytes']), 'submitted.png')
+    ).rejects.toThrow('Upload response must include the stored filename')
+  })
+
+  it('uses an explicit caller-owned timeout with an abort signal', async () => {
+    respond(jsonResponse(200, { name: 'x.png' }))
+    const controller = new AbortController()
+
+    await makeClient().uploadImage(
+      new Blob(['bytes']),
+      'x.png',
+      controller.signal,
+      null
+    )
+
+    expect(
+      (lastCall().init as RequestInit & { timeoutMs?: number | null }).timeoutMs
+    ).toBeNull()
+  })
 })
 
 describe('success response parsing', () => {

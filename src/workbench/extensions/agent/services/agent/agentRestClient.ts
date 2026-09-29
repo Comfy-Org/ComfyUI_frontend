@@ -254,7 +254,8 @@ export function createAgentRestClient() {
   async function uploadImage(
     image: Blob,
     filename: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    timeoutMs?: number | null
   ): Promise<UploadImageResponse> {
     const form = new FormData()
     form.append('image', image, filename)
@@ -264,9 +265,12 @@ export function createAgentRestClient() {
         method: 'POST',
         body: form,
         signal,
-        timeoutMs: signal ? null : undefined
+        timeoutMs
       },
-      zUploadImageResponse
+      zUploadImageResponse.refine(
+        (response) => Boolean(response.name),
+        'Upload response must include the stored filename'
+      )
     )
   }
 

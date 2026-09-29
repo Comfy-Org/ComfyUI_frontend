@@ -1317,16 +1317,14 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
   })
 
-  it('uses the submitted filename when the upload response omits a name', async () => {
-    const messageBodies: unknown[] = []
+  it('rejects an upload response that omits the stored filename', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+      vi.fn(async (url: string) => {
         if (url.endsWith('/api/upload/image')) {
           return json(200, { subfolder: '', type: 'input' })
         }
-        messageBodies.push(JSON.parse(String(init?.body)))
-        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+        return json(200, { data: [] })
       })
     )
 
@@ -1343,12 +1341,41 @@ describe('AgentPanelRoot attach flow', () => {
       new File(['x'], 'cat.png', { type: 'image/png' })
     )
 
-    await userEvent.click(screen.getByRole('textbox'))
-    await userEvent.paste('describe it')
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() =>
+      expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
+    )
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({ detail: 'cat.png could not be uploaded' })
+    )
+  })
 
-    expect(messageBodies).toHaveLength(1)
-    expect(messageBodies[0]).toMatchObject({ attachments: ['cat.png'] })
+  it('uses the stored upload location and releases the local preview', async () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.endsWith('/api/upload/image')
+          ? json(200, {
+              name: 'stored.png',
+              subfolder: 'nested folder',
+              type: 'temp'
+            })
+          : json(200, { data: [] })
+      )
+    )
+    renderWithSelectedTarget()
+
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['x'], 'cat.png', { type: 'image/png' })
+    )
+
+    const preview = await screen.findByAltText('cat.png')
+    expect(preview.getAttribute('src')).toContain(
+      '/api/view?filename=stored.png&type=temp&subfolder=nested+folder'
+    )
+    expect(revoke).toHaveBeenCalledWith('blob:mock-url')
+    revoke.mockRestore()
   })
 
   it('uploads a picked video above 20MB when the server permits it', async () => {
@@ -1560,7 +1587,7 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
   })
 
-  it('refreshes the input asset library once for a dropped batch', async () => {
+  it('refreshes the input asset library as each dropped upload settles', async () => {
     // Overlapping refreshes coalesce into the in-flight query without a
     // trailing run, so an asset committing mid-refresh would be dropped.
     const uploaded = stubUploadFetch()
@@ -1580,7 +1607,7 @@ describe('AgentPanelRoot attach flow', () => {
 
     await vi.waitFor(() => expect(uploaded).toHaveLength(3))
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
-    expect(refresh).toHaveBeenCalledOnce()
+    expect(refresh).toHaveBeenCalledTimes(3)
   })
 
   it('chains input asset refreshes across overlapping batches', async () => {

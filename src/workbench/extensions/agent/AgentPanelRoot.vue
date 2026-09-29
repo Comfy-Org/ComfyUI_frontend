@@ -1158,29 +1158,40 @@ let inputAssetRefresh: Promise<unknown> = Promise.resolve()
 
 const attachment = useAttachment({
   upload: async (file, signal) => {
-    const uploaded = await rest.uploadImage(file, file.name, signal)
-    const filename = uploaded.name ?? file.name
+    const uploaded = await rest.uploadImage(file, file.name, signal, null)
+    const filename = uploaded.name!
+    const params = new URLSearchParams({
+      filename,
+      type: uploaded.type || 'input'
+    })
+    if (uploaded.subfolder) params.set('subfolder', uploaded.subfolder)
     return {
       ref: filename,
-      url: api.apiURL(
-        `/view?filename=${encodeURIComponent(filename)}&type=input`
-      )
+      url: api.apiURL(`/view?${params.toString()}`)
     }
   },
   // The library caches input assets; without this refresh a just-uploaded file
-  // is neither listed in the Assets tab nor mentionable this session. One run
-  // per settled batch, chained, because the query queue coalesces an
-  // overlapping refresh into the in-flight one instead of scheduling a
-  // trailing pass.
+  // is neither listed in the Assets tab nor mentionable this session. Chain a
+  // refresh after each settled upload because the query queue otherwise
+  // coalesces an overlapping refresh without scheduling a trailing pass.
   onUploaded: () => {
     inputAssetRefresh = inputAssetRefresh
       .then(() => assetsStore.inputAssets.loadNew())
       .catch(() => undefined)
   },
-  maxBytes: () =>
-    api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
-      'max_upload_size'
-    ) ?? MAX_ATTACHMENT_BYTES,
+  maxBytes: () => {
+    const serverLimit =
+      api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
+        'max_upload_size'
+      )
+    // The server contract uses zero for unlimited. The fixed client cap is an
+    // independent composer safety policy, not a substitute server limit.
+    if (serverLimit === undefined) return MAX_ATTACHMENT_BYTES
+    const absoluteClientCap = 100 * 1024 * 1024
+    return Number.isFinite(serverLimit) && serverLimit > 0
+      ? Math.min(absoluteClientCap, serverLimit)
+      : absoluteClientCap
+  },
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
   onError: (message) =>
@@ -1284,10 +1295,13 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     return
   }
 
-  const result = await attachment.addDeferredFile(asset.name, async () => {
-    const file = await fetchDroppedAsset(asset)
-    return file && isAgentAttachable(file) ? file : undefined
-  })
+  const result = await attachment.addDeferredFile(
+    asset.name,
+    async (signal) => {
+      const file = await fetchDroppedAsset(asset, signal)
+      return file && isAgentAttachable(file) ? file : undefined
+    }
+  )
   if (result === 'unsupported')
     toast.add({
       severity: 'warn',
