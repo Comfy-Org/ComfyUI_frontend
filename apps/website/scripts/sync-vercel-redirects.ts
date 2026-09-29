@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { z } from 'astro/zod'
+import { z } from 'zod'
 
 import { siteRedirects, toVercelRedirects } from '../src/config/redirects'
 
