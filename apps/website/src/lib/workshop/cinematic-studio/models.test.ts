@@ -5,7 +5,7 @@ import { workshopContract } from '../../../config/workshop-contract-catalog'
 import { getAuthoredRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
 import { cinematicStudioHref, runnableCinematicModels } from './models'
 
-const SEEDREAM = 'byteplus--seedream-4-5--generate-images'
+const SEEDREAM = 'byteplus--seedream-5-pro--generate-images'
 const FLUX = 'bfl--flux-2-pro--generate-images'
 const execution = workshopContract('bfl/flux-2-pro')
 
@@ -13,7 +13,12 @@ describe('runnableCinematicModels', () => {
   it('lists only studio models that can run, with their logos', () => {
     const models = runnableCinematicModels((slug) => {
       if (slug === SEEDREAM)
-        return { slug, name: 'Seedream 4.5', provider: 'ByteDance', execution }
+        return {
+          slug,
+          name: 'Seedream 5.0 Pro',
+          provider: 'ByteDance',
+          execution
+        }
       if (slug === FLUX)
         return {
           slug,
@@ -28,9 +33,10 @@ describe('runnableCinematicModels', () => {
     expect(models).toEqual([
       {
         slug: SEEDREAM,
-        name: 'Seedream 4.5',
+        name: 'Seedream 5.0 Pro',
         provider: 'ByteDance',
-        logo: '/icons/ai-models/bytedance.svg'
+        logo: '/icons/ai-models/bytedance.svg',
+        aspects: ['21:9', '16:9', '4:3', '3:2', '2:3', '1:1', '9:16']
       }
     ])
   })
@@ -83,6 +89,13 @@ describe('reference operations', () => {
   it('offers no reference operation for a model that would drop them', () => {
     expect(
       models.filter((model) => !model.referenceSlug).map((model) => model.slug)
-    ).toEqual(['krea--krea-2-large--generate-images'])
+    ).toEqual([
+      'krea--krea-2-large--generate-images',
+      'openai--gpt-image-2--generate-images',
+      'openai--gpt-image-2.5-flare--generate-images',
+      'openai--gpt-image-2.5-sunburst--generate-images',
+      'xai--grok-imagine-image-2.0--generate-images',
+      'recraft--v4.1-text-to-image--generate-images'
+    ])
   })
 })
