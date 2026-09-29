@@ -294,6 +294,7 @@ import type {
   PaymentIntentSource
 } from '@/platform/telemetry/types'
 import { useAuthStore } from '@/stores/authStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
@@ -386,6 +387,7 @@ const isYearlySubscription = computed(
 )
 const telemetry = useTelemetry()
 const { userId } = storeToRefs(useAuthStore())
+const workspaceStore = useTeamWorkspaceStore()
 const { accessBillingPortal, reportError } = useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
@@ -520,6 +522,8 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
             tier: targetPlan.tierKey,
             cycle: targetPlan.billingCycle,
             checkout_type: 'change',
+            owner_id: userId.value ?? undefined,
+            workspace_id: workspaceStore.activeWorkspaceId,
             payment_intent_source: reason,
             ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {}),
             ...(previousPlan

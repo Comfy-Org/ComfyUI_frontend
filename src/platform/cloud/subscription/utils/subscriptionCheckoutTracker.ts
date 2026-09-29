@@ -52,7 +52,10 @@ export const PENDING_SUBSCRIPTION_CHECKOUT_EVENT =
  */
 const REPORTED_MISSING_COMPLETION_STORAGE_KEY =
   'comfy.subscription.missing_completion_reported'
+const REPORTED_RECOVERY_UNREACHABLE_STORAGE_KEY =
+  'comfy.subscription.recovery_unreachable_reported'
 let reportedMissingCompletionAttemptId: string | null = null
+let reportedRecoveryUnreachableAttemptId: string | null = null
 
 interface SubscriptionStatusSnapshot {
   is_active?: boolean
@@ -73,6 +76,9 @@ export interface PendingSubscriptionCheckoutAttempt {
   operation?: 'resubscribe'
   /** Click-time source for a resubscribe attempt; carried through to the terminal event. */
   resubscribe_source?: ResubscribeClickMetadata['source']
+  /** User and workspace that opened checkout, used to reject another session's attempt. */
+  owner_id?: string
+  workspace_id?: string | null
 }
 
 interface PendingSubscriptionCheckoutAttemptInput {
@@ -84,6 +90,8 @@ interface PendingSubscriptionCheckoutAttemptInput {
   payment_intent_source?: PaymentIntentSource
   operation?: 'resubscribe'
   resubscribe_source?: ResubscribeClickMetadata['source']
+  owner_id?: string
+  workspace_id?: string | null
 }
 
 const dispatchPendingCheckoutChangeEvent = () => {
@@ -209,6 +217,13 @@ const optionalCheckoutAttemptFields = (
   ...(candidate.resubscribe_source === 'pricing_dialog' ||
   candidate.resubscribe_source === 'settings_billing_panel'
     ? { resubscribe_source: candidate.resubscribe_source }
+    : {}),
+  ...(typeof candidate.owner_id === 'string'
+    ? { owner_id: candidate.owner_id }
+    : {}),
+  ...(typeof candidate.workspace_id === 'string' ||
+  candidate.workspace_id === null
+    ? { workspace_id: candidate.workspace_id }
     : {})
 })
 
@@ -219,7 +234,7 @@ const normalizeAttempt = (
 
   return {
     attempt_id: value.attempt_id,
-    started_at_ms: Math.min(value.started_at_ms, Date.now()),
+    started_at_ms: value.started_at_ms,
     tier: value.tier,
     cycle: value.cycle,
     checkout_type: value.checkout_type,
@@ -236,6 +251,7 @@ const isPaymentIntentSource = (value: unknown): value is PaymentIntentSource =>
 
 export const clearPendingSubscriptionCheckoutAttempt = (): void => {
   reportedMissingCompletionAttemptId = null
+  reportedRecoveryUnreachableAttemptId = null
   const storage = getStorage()
   if (!storage) {
     return
@@ -244,6 +260,7 @@ export const clearPendingSubscriptionCheckoutAttempt = (): void => {
   try {
     storage.removeItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
     storage.removeItem(REPORTED_MISSING_COMPLETION_STORAGE_KEY)
+    storage.removeItem(REPORTED_RECOVERY_UNREACHABLE_STORAGE_KEY)
   } catch {
     return
   }
@@ -318,6 +335,29 @@ export const markMissingCheckoutCompletionReported = (
   }
 }
 
+export const hasReportedRecoveryUnreachable = (attemptId: string): boolean => {
+  const storage = getStorage()
+  if (!storage) return reportedRecoveryUnreachableAttemptId === attemptId
+
+  try {
+    return (
+      storage.getItem(REPORTED_RECOVERY_UNREACHABLE_STORAGE_KEY) ===
+        attemptId || reportedRecoveryUnreachableAttemptId === attemptId
+    )
+  } catch {
+    return reportedRecoveryUnreachableAttemptId === attemptId
+  }
+}
+
+export const markRecoveryUnreachableReported = (attemptId: string): void => {
+  reportedRecoveryUnreachableAttemptId = attemptId
+  try {
+    getStorage()?.setItem(REPORTED_RECOVERY_UNREACHABLE_STORAGE_KEY, attemptId)
+  } catch {
+    return
+  }
+}
+
 export const hasPendingSubscriptionCheckoutAttempt = (): boolean =>
   getPendingSubscriptionCheckoutAttempt() !== null
 
@@ -338,6 +378,10 @@ export const createPendingSubscriptionCheckoutAttempt = (
     ...(input.operation ? { operation: input.operation } : {}),
     ...(input.resubscribe_source
       ? { resubscribe_source: input.resubscribe_source }
+      : {}),
+    ...(input.owner_id ? { owner_id: input.owner_id } : {}),
+    ...(input.workspace_id !== undefined
+      ? { workspace_id: input.workspace_id }
       : {})
   }
 }

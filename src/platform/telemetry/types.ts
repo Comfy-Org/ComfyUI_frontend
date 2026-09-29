@@ -1119,6 +1119,7 @@ type ResubscribeBillingEvent = {
   source: ResubscribeClickMetadata['source']
   checkout_attempt_id?: string
   payment_intent_source?: PaymentIntentSource
+  recovery_outcome?: 'late_success'
 } & (BillingStarted | BillingSucceeded | BillingFailed)
 
 type TopupBillingEvent = {

@@ -89,13 +89,13 @@ describe('subscriptionCheckoutTracker', () => {
     )
   })
 
-  it('clamps an implausibly future checkout attempt without discarding it', () => {
-    const now = Date.now()
+  it('preserves a future timestamp so its age is not reset on every read', () => {
+    const startedAt = Date.now() + 6 * 60 * 1000
     localStorage.setItem(
       PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
       JSON.stringify({
         attempt_id: 'far-future-attempt',
-        started_at_ms: Date.now() + 6 * 60 * 1000,
+        started_at_ms: startedAt,
         tier: 'pro',
         cycle: 'monthly',
         checkout_type: 'new'
@@ -105,7 +105,7 @@ describe('subscriptionCheckoutTracker', () => {
     expect(getPendingSubscriptionCheckoutAttempt()).toEqual(
       expect.objectContaining({
         attempt_id: 'far-future-attempt',
-        started_at_ms: now
+        started_at_ms: startedAt
       })
     )
     expect(
@@ -122,6 +122,19 @@ describe('subscriptionCheckoutTracker', () => {
 
     expect(
       hasReportedMissingCheckoutCompletion('attempt-without-storage')
+    ).toBe(true)
+  })
+
+  it('deduplicates missing-completion reports from storage after a reload', async () => {
+    markMissingCheckoutCompletionReported('attempt-across-reload')
+
+    vi.resetModules()
+    const reloadedTracker = await import('./subscriptionCheckoutTracker')
+
+    expect(
+      reloadedTracker.hasReportedMissingCheckoutCompletion(
+        'attempt-across-reload'
+      )
     ).toBe(true)
   })
 })
