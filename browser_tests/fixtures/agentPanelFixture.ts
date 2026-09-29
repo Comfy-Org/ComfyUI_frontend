@@ -11,13 +11,24 @@ import type {
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import {
+  AGENT_COMPOSER_THREAD_ID,
+  agentComposerRunMode,
+  createAgentComposerConversation,
+  createAgentComposerThreadList
+} from '@e2e/fixtures/data/agent/agentComposerPerformance'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -183,6 +194,49 @@ export const agentTest = cloudAppFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }]
 })
 
+type AgentComposerPerformanceFixtures = {
+  agentComposerTurnCount: number
+  agentComposerPanel: AgentPanel
+}
+
+export const agentComposerPerformanceTest =
+  agentTest.extend<AgentComposerPerformanceFixtures>({
+    agentComposerTurnCount: [0, { option: true }],
+    agentComposerPanel: async (
+      { page, agentFlagEnabled, agentComposerTurnCount },
+      use
+    ) => {
+      const messages = createAgentComposerConversation(agentComposerTurnCount)
+      const threads = createAgentComposerThreadList(messages)
+
+      await page.route('**/api/experiment/models', (route) =>
+        route.fulfill(jsonRoute([]))
+      )
+      await page.route('**/api/agent/threads', (route) =>
+        route.fulfill(jsonRoute(threads))
+      )
+      await page.route('**/api/agent/run-mode', (route) =>
+        route.fulfill(jsonRoute(agentComposerRunMode))
+      )
+      await page.route('**/api/agent/threads/*/messages', (route) => {
+        if (route.request().method() !== 'GET') return route.fallback()
+        return route.fulfill(jsonRoute(messages))
+      })
+      await page.addInitScript(
+        ({ key, threadId }) => localStorage.setItem(key, threadId),
+        {
+          key: StorageKeys.agentThread('personal'),
+          threadId: AGENT_COMPOSER_THREAD_ID
+        }
+      )
+      await bootAgentApp(page, agentFlagEnabled)
+
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      await use(agentPanel)
+    }
+  })
+
 export async function bootAgentApp(
   page: Page,
   agentFlag: boolean,
@@ -199,4 +253,42 @@ export async function bootAgentApp(
   await bootCloud(page)
   await page.goto(APP_URL)
   await waitForCloudApp(page)
+}
+
+/**
+ * Replaces the boot tab's graph in place, so `AgentPanel.selectWorkflow()`
+ * still finds it as "Unsaved Workflow". Boot's own default-workflow load is
+ * not awaited by {@link bootAgentApp}, so the active workflow is awaited
+ * first. The follower merges a subscribe's catch-up into whatever the canvas
+ * already shows; a fake host doc must therefore start from the same graph
+ * the canvas holds.
+ *
+ * Reloading the active tab restores that tab's saved viewport, which is the
+ * boot graph's, not one framing `json`; the CI boot graph parks it at the
+ * origin, so the view is fitted afterwards to keep node headers clickable.
+ */
+export async function loadIntoBootWorkflow(
+  page: Page,
+  json: ComfyWorkflowJSON
+): Promise<void> {
+  await page.waitForFunction(() => {
+    const workspace = window.app?.extensionManager as WorkspaceStore | undefined
+    return workspace?.workflow.activeWorkflow != null
+  })
+  await page.evaluate(async (json) => {
+    const activeWorkflow = (window.app!.extensionManager as WorkspaceStore)
+      .workflow.activeWorkflow!
+    await window.app!.loadGraphData(json, true, true, activeWorkflow)
+    if (json.nodes.length > 0)
+      await window.app!.extensionManager.command.execute('Comfy.Canvas.FitView')
+  }, json)
+  await nextFrame(page)
+}
+
+export const BLANK_WORKFLOW: ComfyWorkflowJSON = {
+  last_node_id: 0,
+  last_link_id: 0,
+  nodes: [],
+  links: [],
+  version: 0.4
 }
