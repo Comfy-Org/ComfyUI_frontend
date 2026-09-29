@@ -58,7 +58,7 @@ describe('EmptyState', () => {
           promptId: 'build_video_workflow',
           promptIndex: 4,
           promptCount: 5,
-          promptTextHash: '8a7fa4fe',
+          promptTextHash: '2f8b1ba4',
           locale: 'en'
         }
       ]
@@ -135,7 +135,7 @@ describe('EmptyState', () => {
       string,
       { [k: string]: unknown }
     ][]
-    expect(attribution.promptTextHash).toBe('3d98efb0')
+    expect(attribution.promptTextHash).toBe('ebed5d67')
     expect(attribution.promptTextHash).not.toBe('90a652b3')
     expect(Object.values(attribution)).not.toContain(PROMPTS[1].text)
   })
@@ -146,7 +146,7 @@ describe('EmptyState', () => {
     try {
       const user = userEvent.setup()
       const { emitted } = render(EmptyState, { global: { plugins: [i18n] } })
-      const localizedPrompt = i18n.global.t('agent.suggestedPrompts.0')
+      const localizedPrompt = i18n.global.t('agent.suggestedPrompts.local.0')
 
       await user.click(screen.getByRole('button', { name: localizedPrompt }))
 
@@ -154,7 +154,7 @@ describe('EmptyState', () => {
         [
           localizedPrompt,
           expect.objectContaining({
-            promptTextHash: '0b028f00',
+            promptTextHash: '28581603',
             locale: 'zh'
           })
         ]
