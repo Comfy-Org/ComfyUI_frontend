@@ -74,6 +74,9 @@ type PlannedEntry = BillingEntry & { plan: string }
 /** What the quote answers for a plan slug the catalog does not have. */
 const UNKNOWN_PLAN_SERVER_CODE = 'INVALID_PLAN'
 
+/** No Stripe key resolved, so a card form could never mount. */
+const PAYMENT_PROVIDER_UNAVAILABLE = 'PAYMENT_PROVIDER_UNAVAILABLE'
+
 /** A capability read that ends the page before any quote: unreadable, or refused. */
 function capabilityStop(
   allowed: BillingResult<CapabilitiesSnapshot>
@@ -85,6 +88,19 @@ function capabilityStop(
     type: 'refused',
     reason: allowed.value.denials.can_subscribe_self_serve ?? 'unspecified'
   }
+}
+
+/** A quote the page cannot capture: a team plan with no stop, or a card form with no key to mount on. */
+function quotedStop(
+  quoted: SubscriptionPreview,
+  arrival: PlannedEntry,
+  stripeKey: string | undefined
+): CheckoutPageEvent | undefined {
+  if (quoted.new_plan.tier === 'TEAM' && arrival.teamCreditStopId === undefined)
+    return { type: 'planUnavailable', reason: 'team_stop_missing' }
+  if (quoted.transition_type === 'new_subscription' && stripeKey === undefined)
+    return { type: 'unavailable', code: PAYMENT_PROVIDER_UNAVAILABLE }
+  return undefined
 }
 
 /**
@@ -210,7 +226,7 @@ export function useFullPageCheckout() {
   async function captureEvent(
     arrival: PlannedEntry
   ): Promise<CheckoutPageEvent> {
-    const [allowed, { requoted: quoted, expiredPromo }, methods] =
+    const [allowed, { requoted: quoted, expiredPromo }, methods, stripeKey] =
       await Promise.all([
         capabilities.read(),
         requoteWithPromo(arrival),
@@ -225,11 +241,8 @@ export function useFullPageCheckout() {
         matchesServerCode(quoted, UNKNOWN_PLAN_SERVER_CODE)
         ? { type: 'planUnavailable', reason: 'retired' }
         : { type: 'unavailable', code: quoted.code }
-    if (
-      quoted.value.new_plan.tier === 'TEAM' &&
-      arrival.teamCreditStopId === undefined
-    )
-      return { type: 'planUnavailable', reason: 'team_stop_missing' }
+    const unquotable = quotedStop(quoted.value, arrival, stripeKey)
+    if (unquotable !== undefined) return unquotable
     const reactivation = consentAsked(asksReactivation(quoted.value))
     return quoted.value.transition_type === 'new_subscription'
       ? {
