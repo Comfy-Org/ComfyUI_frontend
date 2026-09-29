@@ -173,7 +173,8 @@ export const useAgentConversationStore = defineStore(
         replaceActive,
         () => canvasSyncGate(),
         () => canvasSyncOutcomeCount(),
-        reportUndeliverableAskData
+        reportUndeliverableAskData,
+        undeliverableAskReporter.markDelivered
       )
     }
 
@@ -201,7 +202,7 @@ export const useAgentConversationStore = defineStore(
 
     function reportUndeliverableAsk(
       event: AgentChatEvent,
-      reason: 'no-live-turn' | 'settled-turn'
+      reason: 'no-live-turn' | 'settled-turn' | 'unknown-turn'
     ): void {
       if (event.type !== 'agent_ask') return
       reportUndeliverableAskData(event.data, reason)
@@ -209,11 +210,7 @@ export const useAgentConversationStore = defineStore(
 
     function reportUndeliverableAskData(
       data: Extract<AgentChatEvent, { type: 'agent_ask' }>['data'],
-      reason:
-        | 'no-live-turn'
-        | 'settled-turn'
-        | 'unknown-kind'
-        | 'unrendered-kind'
+      reason: 'no-live-turn' | 'settled-turn' | 'unknown-turn' | 'unknown-kind'
     ): void {
       undeliverableAskReporter.report(data, reason, {
         hasActiveTurn: activeTurnId.value !== null,
@@ -269,6 +266,8 @@ export const useAgentConversationStore = defineStore(
             ? undefined
             : departedTurns.get(departedTurnKey(eventThreadId, eventMessageId))
         if (reason) reportUndeliverableAsk(event, reason)
+        else if (eventThreadId === threadId.value)
+          reportUndeliverableAsk(event, 'unknown-turn')
         return
       }
       if (event.type === 'agent_message_done') {
@@ -522,7 +521,8 @@ export const useAgentConversationStore = defineStore(
           replaceActive,
           () => canvasSyncGate(),
           () => canvasSyncOutcomeCount(),
-          reportUndeliverableAskData
+          reportUndeliverableAskData,
+          undeliverableAskReporter.markDelivered
         )
       }
     }

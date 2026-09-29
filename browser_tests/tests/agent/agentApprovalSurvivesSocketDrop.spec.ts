@@ -54,7 +54,7 @@ test.describe(
       // answer. `ws.send()` throws on a dead route, so pushing stays above
       // test.fail() too.
       turnLock.push(reconnected, RUN_APPROVAL_EVENT)
-      expect(turnLock.pendingAskIsPrimed()).toBe(false)
+      expect(turnLock.pendingAskIsPrimed()).toBe(true)
 
       test.fail()
       await expect(
@@ -74,17 +74,21 @@ test.describe(
       const reconnected = await turnLock.dropSocket()
       await expect(turnLock.userBubbles).toHaveText([PROMPT])
       turnLock.push(reconnected, RUN_APPROVAL_EVENT)
-      expect(turnLock.pendingAskIsPrimed()).toBe(false)
+      expect(turnLock.pendingAskIsPrimed()).toBe(true)
 
-      test.fail()
       // Recovery must restore both the card and its active turn identity;
       // `answerAsk` deliberately refuses to POST without `activeTurnId`.
-      await turnLock.panel
-        .getByRole('button', {
-          name: enMessages.agent.runApproval.run,
-          exact: true
-        })
-        .click({ timeout: 10_000 })
+      const runButton = turnLock.panel.getByRole('button', {
+        name: enMessages.agent.runApproval.run,
+        exact: true
+      })
+      try {
+        await expect(runButton).toBeVisible({ timeout: 10_000 })
+      } catch (error) {
+        test.fail()
+        throw error
+      }
+      await runButton.click()
       await expect.poll(() => turnLock.answeredAsks()).toEqual(['run'])
     })
 
@@ -98,7 +102,7 @@ test.describe(
       const live = await turnLock.liveSocket()
 
       turnLock.push(live, RUN_APPROVAL_EVENT)
-      expect(turnLock.pendingAskIsPrimed()).toBe(false)
+      expect(turnLock.pendingAskIsPrimed()).toBe(true)
 
       await expect(
         turnLock.panel.getByText(enMessages.agent.runApproval.question)

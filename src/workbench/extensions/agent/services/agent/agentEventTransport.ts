@@ -123,7 +123,8 @@ export function createAgentEventTransport(
     data: AgentAskEvent['data'],
     reason: UndeliverableAskReason,
     context?: UndeliverableAskContext
-  ) => void = createUndeliverableAskReporter().report
+  ) => void = createUndeliverableAskReporter().report,
+  markAskDelivered: (data: AgentAskEvent['data']) => void = () => {}
 ): AgentEventTransport {
   let openText: TextPart | null = null
   let openThinking: ThinkingPart | null = null
@@ -312,15 +313,13 @@ export function createAgentEventTransport(
    *
    * That `false` reaches a live turn and still shows the user nothing, while
    * the server parks waiting for an answer — the same dead-panel outcome as an
-   * ask dropped in routing, so it is reported the same way. Generated-contract
-   * kinds without a client renderer are tagged separately from unknown input.
+   * ask dropped in routing, so unknown input is reported. The supported
+   * `ask_user` kind is not an approval-card delivery failure.
    */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
+    if (data.kind === 'ask_user') return false
     if (data.kind !== 'run_approval') {
-      reportUndeliverableAsk(
-        data,
-        data.kind === 'ask_user' ? 'unrendered-kind' : 'unknown-kind'
-      )
+      reportUndeliverableAsk(data, 'unknown-kind')
       return false
     }
     closeOpenText()
@@ -334,6 +333,7 @@ export function createAgentEventTransport(
       workflowName: data.context?.workflow_name || undefined
     }
     message.parts.push(part)
+    markAskDelivered(data)
     return true
   }
 

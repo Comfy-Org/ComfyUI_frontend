@@ -932,6 +932,20 @@ describe('useAgentConversationStore', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('reports an ask for a never-registered turn on the active thread', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+
+      store.ingest(runApproval('never-registered', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'unknown-turn' })
+        })
+      )
+    })
+
     it('reports the same dropped ask only once', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -958,6 +972,19 @@ describe('useAgentConversationStore', () => {
       store.ingest(ask)
 
       expect(reportError).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not report a redelivery after the ask was rendered', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      const ask = runApproval('t1', 'turn-1:call-1')
+
+      store.ingest(ask)
+      store.abortActiveTurn()
+      store.ingest(ask)
+
+      expect(reportError).not.toHaveBeenCalled()
     })
 
     it('reports a late ask after hydrate retires an active turn', () => {
@@ -1122,8 +1149,9 @@ describe('useAgentConversationStore', () => {
           errorType: 'failure_delivering_agent_approval_ask',
           tags: expect.objectContaining({
             reason: 'unknown-kind',
-            ask_kind: 'pick_a_model'
-          })
+            ask_kind: 'unknown'
+          }),
+          context: expect.objectContaining({ rawAskKind: 'pick_a_model' })
         })
       )
     })
