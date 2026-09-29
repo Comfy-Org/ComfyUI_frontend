@@ -24,10 +24,14 @@ test('public HTML excludes catalogue and playground markup', async ({
   }
 })
 
-function recordFirebaseRequests(context: BrowserContext): string[] {
+function recordAccountRequests(context: BrowserContext): string[] {
   const requests: string[] = []
   context.on('request', (request) => {
-    if (/firebase|identitytoolkit|securetoken/.test(request.url()))
+    if (
+      /firebase|identitytoolkit|securetoken|cloud\.comfy\.org\/api\//.test(
+        request.url()
+      )
+    )
       requests.push(request.url())
   })
   return requests
@@ -65,7 +69,7 @@ test('shows model content without Run when PostHog is unavailable', async ({
   context,
   page
 }) => {
-  const firebaseRequests = recordFirebaseRequests(context)
+  const accountRequests = recordAccountRequests(context)
   await page.goto('/')
   await expect(
     page.getByRole('link', { name: 'Models', exact: true })
@@ -82,14 +86,14 @@ test('shows model content without Run when PostHog is unavailable', async ({
   ).toHaveAttribute('href', '/seedance-2.5')
 
   await expectModelContentWithoutRun(page)
-  expect(firebaseRequests).toEqual([])
+  expect(accountRequests).toEqual([])
 })
 
 test('shows model content without Run when the flag is disabled', async ({
   context,
   page
 }) => {
-  const firebaseRequests = recordFirebaseRequests(context)
+  const accountRequests = recordAccountRequests(context)
   await disableWorkshopFlag(context)
   const flags = page.waitForResponse((response) =>
     /t\.comfy\.org\/(flags|decide)\//.test(response.url())
@@ -105,7 +109,7 @@ test('shows model content without Run when the flag is disabled', async ({
   ).toHaveCount(0)
 
   await expectModelContentWithoutRun(page)
-  expect(firebaseRequests).toEqual([])
+  expect(accountRequests).toEqual([])
 })
 
 async function expectHubHeadingAndDirectory(page: Page) {

@@ -11,7 +11,14 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import {
+  computed,
+  defineComponent,
+  h,
+  nextTick,
+  onScopeDispose,
+  ref
+} from 'vue'
 
 import type {
   AccountCredential,
@@ -28,10 +35,9 @@ import {
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopContract } from '../../config/workshop-contract-catalog'
 import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import {
-  refreshWorkshopCredits,
-  useWorkshopCredits
-} from '../../config/workshop-credits'
+import { refreshWorkshopCredits } from '../../config/workshop-credits'
+import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
+import { stopWorkshopAccountSource } from '../../config/workshop-account-source'
 import {
   stopWorkshopSession,
   useWorkshopSession
@@ -66,6 +72,10 @@ vi.mock(import('../../config/workshop-output-download'), () => ({
 }))
 
 vi.mock(import('../../config/workshop-credits'))
+vi.mock(import('../../config/workshop-model-balance'), () => ({
+  useWorkshopModelBalance: vi.fn()
+}))
+vi.mock(import('../../config/workshop-account-source'))
 
 const auth = {
   session: ref<AccountCredential>(),
@@ -75,7 +85,7 @@ const auth = {
   workshopEnabledSettled: ref(true)
 }
 const credits = {
-  balance: ref<ReturnType<typeof useWorkshopCredits>['balance']['value']>({
+  balance: ref<ReturnType<typeof useWorkshopModelBalance>['value']>({
     status: 'unknown'
   })
 }
@@ -225,9 +235,9 @@ describe('ModelDetail', () => {
     const session = useWorkshopSession()
     session.session = computed(() => auth.session.value)
     session.settled = computed(() => auth.settled.value)
-    const balance = useWorkshopCredits()
-    balance.balance = computed(() => credits.balance.value)
-    balance.session = session.session
+    vi.mocked(useWorkshopModelBalance).mockReturnValue(
+      computed(() => credits.balance.value)
+    )
     auth.session.value = undefined
     auth.settled.value = true
     auth.enabled.value = true
@@ -553,7 +563,7 @@ describe('ModelDetail', () => {
     auth.session.value = credential
     auth.workshopEnabled.value = false
     vi.mocked(useWorkshopSession).mockClear()
-    vi.mocked(useWorkshopCredits).mockClear()
+    vi.mocked(useWorkshopModelBalance).mockClear()
     mountDetail({ model: runnable })
     await nextTick()
     expect(screen.queryByTestId('run-button')).toBeNull()
@@ -565,7 +575,7 @@ describe('ModelDetail', () => {
     )
     expect(screen.queryByTestId('playground-output')).toBeNull()
     expect(useWorkshopSession).not.toHaveBeenCalled()
-    expect(useWorkshopCredits).not.toHaveBeenCalled()
+    expect(useWorkshopModelBalance).not.toHaveBeenCalled()
     expect(runWorkshopRouter).not.toHaveBeenCalled()
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
 
@@ -603,9 +613,24 @@ describe('ModelDetail', () => {
     ).toBe('example')
   })
 
+  it('reads the balance from the session it starts when the flag is on', async () => {
+    vi.mocked(useWorkshopModelBalance).mockClear()
+    mountDetail({ model: runnable })
+    await nextTick()
+    expect(useWorkshopModelBalance).toHaveBeenCalledWith(
+      useWorkshopSession().session
+    )
+  })
+
   it('stops account services when a returning visitor is rolled back', async () => {
+    const balanceDisposed = vi.fn()
+    vi.mocked(useWorkshopModelBalance).mockImplementationOnce(() => {
+      onScopeDispose(balanceDisposed)
+      return computed(() => credits.balance.value)
+    })
     vi.mocked(useWorkshopSession).mockClear()
     vi.mocked(stopWorkshopSession).mockClear()
+    vi.mocked(stopWorkshopAccountSource).mockClear()
     mountDetail({ model: runnable })
     await nextTick()
     expect(useWorkshopSession).toHaveBeenCalled()
@@ -613,6 +638,8 @@ describe('ModelDetail', () => {
     auth.workshopEnabled.value = false
     await nextTick()
     expect(stopWorkshopSession).toHaveBeenCalledOnce()
+    expect(stopWorkshopAccountSource).toHaveBeenCalledOnce()
+    expect(balanceDisposed).toHaveBeenCalledOnce()
     expect(screen.getByTestId('run-rollout-note')).toBeTruthy()
 
     vi.mocked(useWorkshopSession).mockClear()
