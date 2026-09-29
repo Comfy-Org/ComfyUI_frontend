@@ -114,7 +114,7 @@ const metricRows: MetricRow[] = [
       </div>
     </div>
 
-    <p class="mt-4 px-2 text-xs text-primary-warm-gray">
+    <p class="mt-4 px-2 text-center text-xs text-primary-warm-gray">
       {{ t('pricing.comfyApi.enterpriseNote', locale) }}
       <a
         :href="contactHref"
