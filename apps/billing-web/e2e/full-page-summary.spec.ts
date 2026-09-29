@@ -88,3 +88,36 @@ test('a tier upgrade reads the prorated charge and a dated credits delta', async
     'Renews at $100.00 on July 28, 2026'
   ])
 })
+
+test('a held discount and an entered code read as rows, with no Subtotal the quote never reported', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    amount_due_cents: 2000,
+    promotion_code: 'COMFY50',
+    discounts: [
+      { kind: 'plan', code: 'annual_plan_discount_20', amount_off_cents: 999 },
+      {
+        kind: 'promotion',
+        code: 'COMFY-EDU',
+        name: 'Education discount',
+        amount_off_cents: 1000
+      },
+      { kind: 'promotion', code: 'COMFY50', amount_off_cents: 2000 }
+    ]
+  }
+  await signIn(CHECKOUT)
+
+  await expectSummary(page, [
+    'Pro Plan$50.00',
+    'Education discount−$10.00',
+    'Promo code−$20.00',
+    'Total due today$20.00'
+  ])
+  const summary = page.getByRole('region', { name: 'Order summary' })
+  await expect(summary).not.toContainText('−$9.99')
+  await expect(summary).not.toContainText('Subtotal')
+})

@@ -216,6 +216,10 @@
           "title": "Payment not completed",
           "body": "Your payment wasn't completed, so you haven't been charged. Pay to try again, or use a different payment method."
         },
+        "promo_expired": {
+          "title": "Your promo code expired",
+          "body": "The {code} code expired, so the total was updated. Review the new total before paying — you have not been charged."
+        },
         "price_updated": {
           "title": "The price has updated",
           "body": "Your quote expired, so the numbers were refreshed. Review the new total before paying — you have not been charged."
@@ -356,6 +360,19 @@
           "startsYearly": "Starts {date}, billed yearly"
         },
         "subtotal": "Subtotal",
+        "discount": {
+          "fallbackLabel": "Promo code",
+          "amount": "−{amount}"
+        },
+        "promo": {
+          "add": "Add promo code",
+          "field": "Promo code",
+          "apply": "Apply",
+          "dismiss": "Close promo code",
+          "remove": "Remove {code}",
+          "invalid": "This code isn't valid.",
+          "unchecked": "We couldn't check this code. Try again."
+        },
         "trailing": {
           "renewsAt": "Renews at {amount} on {date}",
           "renewsAtAmount": "Renews at {amount}",
@@ -399,7 +416,8 @@
       "INVALID_PLAN": "That link names a plan we can't read.",
       "INVALID_CORRELATION_ID": "That link carries a reference we can't read.",
       "INVALID_WORKSPACE_ID": "That link names a workspace we can't read.",
-      "INVALID_TEAM_CREDIT_STOP_ID": "That link names a credit amount we can't read."
+      "INVALID_TEAM_CREDIT_STOP_ID": "That link names a credit amount we can't read.",
+      "INVALID_PROMOTION_CODE": "That link carries a promo code we can't read."
     },
     "failure": {
       "unknown": "Something went wrong. Please try again.",

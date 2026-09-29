@@ -16,6 +16,21 @@ interface LedgerRow {
 }
 
 /**
+ * A discount the quote applied: what it is on the left, what it removed from
+ * today's charge on the right. The code that produced it lives on a chip.
+ */
+interface DiscountRow {
+  readonly label: string
+  readonly amount?: string
+}
+
+/** Which code produced a discount. Only the customer's own code comes off. */
+export interface PromoChip {
+  readonly code: string
+  readonly removable: boolean
+}
+
+/**
  * The customer's commitment, as the column renders it. Money rows sit in the
  * ledger and resolve into `total`; future events are plain lines that only
  * ever render under the total, so a date can never land in the dollar column.
@@ -31,12 +46,29 @@ export interface SummaryLedger {
   readonly credits?: { readonly count: string; readonly qualifier: string }
   /** Money rows the total reconciles with; see `moneyItems`. */
   readonly items: readonly LedgerRow[]
-  /** Promo rows; strikethrough is reserved for these. */
-  readonly adjustments: readonly LedgerRow[]
+  /** Discounts the customer already holds, priced before any entered code. */
+  readonly adjustments: readonly DiscountRow[]
+  /**
+   * The pre-discount base an entered code applied to. The quote carries
+   * no such field today, so no builder populates this; it stays typed for
+   * when the server reports one, and the row renders only then.
+   */
   readonly subtotal?: string
+  /** The row for the code the customer entered. */
+  readonly promo?: DiscountRow
+  readonly chips: readonly PromoChip[]
+  /** Codes apply to a charge made today, so only those families take one. */
+  readonly acceptsPromo: boolean
   readonly total: string
   readonly trailing: readonly string[]
 }
+
+type DiscountSlots = Pick<
+  SummaryLedger,
+  'adjustments' | 'subtotal' | 'promo' | 'chips' | 'acceptsPromo'
+>
+
+type FamilyLedger = Omit<SummaryLedger, keyof DiscountSlots>
 
 type Translate = (key: string, named: Record<string, unknown>) => string
 type Duration = SubscriptionPreview['new_plan']['duration']
@@ -158,9 +190,16 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
     currency: currency.toUpperCase(),
     dueCents,
     recurringCents: quote.renewal_amount_cents ?? quote.cost_next_period_cents,
+    /**
+     * The discounts that get a row. A `plan` discount is a catalog coupon the
+     * price is built from (the annual or team-commitment rate), already
+     * inside the item's amount, so it never does.
+     */
+    promotions: (quote.discounts ?? []).filter(
+      (discount) => discount.kind === 'promotion'
+    ),
     shared: {
       eyebrow: eyebrowOf(action, context),
-      adjustments: [],
       total: money(dueCents)
     }
   } as const
@@ -185,20 +224,23 @@ function refillsToLine(r: QuoteReading): string {
 }
 
 /**
- * A money row renders only when the total reconciles with it. Today's charge
- * can come out under the item (a $0 first period, a credit on file) with
- * nothing in the quote to itemize the difference; the row would then
- * contradict the total, so it comes off and the total stands on its own.
+ * A money row renders only when the total reconciles with it: today's
+ * charge equals the row, or a discount row itemizes the difference. A $0
+ * first period or a credit on file the quote does not itemize would leave
+ * the row contradicting the total, so it comes off and the total stands on
+ * its own.
  */
 function moneyItems(
   r: QuoteReading,
   cents: number,
   row: Omit<LedgerRow, 'amount'>
 ): LedgerRow[] {
-  return cents === r.dueCents ? [{ ...row, amount: r.money(cents) }] : []
+  return cents === r.dueCents || r.promotions.length > 0
+    ? [{ ...row, amount: r.money(cents) }]
+    : []
 }
 
-function scheduledLedger(r: QuoteReading): SummaryLedger {
+function scheduledLedger(r: QuoteReading): FamilyLedger {
   const startsAt = r.date(r.quote.effective_at)
   const current = r.current
   return {
@@ -248,7 +290,7 @@ function grantedToday(r: QuoteReading): SummaryLedger['credits'] {
   }
 }
 
-function proratedLedger(r: QuoteReading): SummaryLedger {
+function proratedLedger(r: QuoteReading): FamilyLedger {
   return {
     ...r.shared,
     family: 'prorated_change',
@@ -318,7 +360,7 @@ function chargeNowTrailing(r: QuoteReading): string[] {
   ]
 }
 
-function chargeNowLedger(r: QuoteReading): SummaryLedger {
+function chargeNowLedger(r: QuoteReading): FamilyLedger {
   const cadenceLine =
     r.next.duration === 'MONTHLY'
       ? r.t(`${S}.item.billedMonthly`, {
@@ -354,12 +396,64 @@ export function buildSummaryLedger(
   context: LedgerContext
 ): SummaryLedger {
   const reading = readQuote(quote, context)
-  if (!quote.is_immediate) return scheduledLedger(reading)
+  const ledger = familyLedger(reading)
+  return { ...ledger, ...discountSlots(reading, ledger) }
+}
+
+function familyLedger(r: QuoteReading): FamilyLedger {
+  if (!r.quote.is_immediate) return scheduledLedger(r)
   if (
-    quote.transition_type === 'upgrade' &&
-    quote.proration_at !== undefined &&
-    !reading.commitChange
+    r.quote.transition_type === 'upgrade' &&
+    r.quote.proration_at !== undefined &&
+    !r.commitChange
   )
-    return proratedLedger(reading)
-  return chargeNowLedger(reading)
+    return proratedLedger(r)
+  return chargeNowLedger(r)
+}
+
+/** The server refuses a code on a change that charges nothing today. */
+const ACCEPTS_PROMO = {
+  charge_now: true,
+  prorated_change: true,
+  scheduled: false,
+  top_up: false
+} as const satisfies Record<SummaryFamily, boolean>
+
+type Discount = NonNullable<SubscriptionPreview['discounts']>[number]
+
+/**
+ * The `promotion` discount matching the quote's `promotion_code` is the
+ * customer's entered code, any other is one the account already holds.
+ * Subtotal would name the base the entered code applied to, but the quote
+ * carries no pre-discount total, so this builder never sets it. Computing
+ * one as today's charge plus what the code took would be a frontend guess
+ * at a number the server is supposed to report.
+ */
+function discountSlots(r: QuoteReading, ledger: FamilyLedger): DiscountSlots {
+  const enteredCode = r.quote.promotion_code
+  const entered = r.promotions.find(
+    (discount) => discount.code.toUpperCase() === enteredCode?.toUpperCase()
+  )
+  const held = r.promotions.filter((discount) => discount !== entered)
+  const rowOf = (discount: Discount) => ({
+    label: discount.name ?? r.t(`${S}.discount.fallbackLabel`, {}),
+    ...(discount.amount_off_cents === undefined
+      ? {}
+      : {
+          amount: r.t(`${S}.discount.amount`, {
+            amount: r.money(discount.amount_off_cents)
+          })
+        })
+  })
+  return {
+    adjustments: held.map(rowOf),
+    ...(entered === undefined ? {} : { promo: rowOf(entered) }),
+    chips: [
+      ...held.map(({ code }) => ({ code, removable: false })),
+      ...(enteredCode === undefined
+        ? []
+        : [{ code: enteredCode, removable: true }])
+    ],
+    acceptsPromo: ACCEPTS_PROMO[ledger.family]
+  }
 }
