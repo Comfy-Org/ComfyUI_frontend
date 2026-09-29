@@ -202,7 +202,10 @@ describe('renderModelUrlsModule', () => {
   it.for([
     'Veo 3\nText-to-Video',
     "Veo's 3 \\ Text\tto\rVideo",
-    'Veo 3\u2028Text-to-Video'
+    'Veo 3\u2028Text-to-Video',
+    'Veo "3" Text-to-Video',
+    'back\\"quote',
+    "''\\\""
   ])('writes %j back as the same string', (name) => {
     const source = renderModelUrlsModule({
       pages: [{ oldSlug: 'veo--veo-3', newSlug: 'veo-3', name }],
