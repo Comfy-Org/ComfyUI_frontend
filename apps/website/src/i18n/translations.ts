@@ -1,5 +1,8 @@
 import type { Locale } from '../config/locales'
 
+import type { NamedValues } from './interpolate'
+import { interpolate } from './interpolate'
+
 const translations = {
   'home.workshop.heading': {
     en: 'Run any model, from one place',
@@ -27,9 +30,13 @@ const translations = {
   'workshop.catalogue.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
   'workshop.catalogue.categories': { en: 'Categories', 'zh-CN': '分类' },
   'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
-  'workshop.catalogue.subtitle': {
-    en: 'Models and the workflows built on them, by what you want to make.',
-    'zh-CN': '按你想创作的内容浏览模型及其工作流。'
+  'workshop.catalogue.workflowsSubtitle': {
+    en: 'Turn your ideas into finished results with multi-step workflows powered by AI models.',
+    'zh-CN': '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
+  },
+  'workshop.catalogue.appsSubtitle': {
+    en: 'Take on bigger ideas with apps that bring multiple workflows together.',
+    'zh-CN': '用整合多个工作流的应用，挑战更大的创意。'
   },
   'workshop.catalogue.noWorkflows': {
     en: 'No workflows match your search and filters.',
@@ -1138,12 +1145,12 @@ Desktop`
   },
   'products.local.cta': {
     en: 'SEE DESKTOP FEATURES',
-    'zh-CN': '查看桌面版属性',
+    'zh-CN': '查看桌面版功能',
     ja: 'デスクトップ機能を見る'
   },
   'products.ctaShort': {
     en: 'SEE FEATURES',
-    'zh-CN': '查看属性'
+    'zh-CN': '查看功能'
   },
   'products.cloud.title': {
     en: 'Comfy\nCloud',
@@ -1158,7 +1165,7 @@ Cloud`
   },
   'products.cloud.cta': {
     en: 'SEE CLOUD FEATURES',
-    'zh-CN': '查看云端属性',
+    'zh-CN': '查看云端功能',
     ja: 'クラウド機能を見る'
   },
   'products.platform.title': {
@@ -1186,7 +1193,7 @@ Enterprise`
   },
   'products.enterprise.cta': {
     en: 'SEE ENTERPRISE FEATURES',
-    'zh-CN': '查看企业版属性',
+    'zh-CN': '查看企业版功能',
     ja: 'エンタープライズ機能を見る'
   },
 
@@ -2739,9 +2746,9 @@ Enterprise`
 
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
-  'gallery.heroTitle.before': {
-    en: 'Built, Tweaked, and Dreamed in',
-    'zh-CN': '在 ComfyUI 中构建、调整与创想'
+  'gallery.heroTitle': {
+    en: 'Built, Tweaked, and Dreamed in {brand}',
+    'zh-CN': '在 {brand} 中构建、调整与创想'
   },
   'gallery.heroSubtitle': {
     en: 'A small glimpse of what\u2019s being created with ComfyUI by the community.',
@@ -6618,13 +6625,9 @@ Enterprise`
     en: 'Explore Workflows',
     'zh-CN': '探索工作流'
   },
-  'models.list.heroTitle.before': {
-    en: '{name} in',
-    'zh-CN': ''
-  },
-  'models.list.heroTitle.after': {
-    en: '',
-    'zh-CN': ' 中的 {name}'
+  'models.list.heroTitle': {
+    en: '{name} in {brand}',
+    'zh-CN': '{brand} 中的 {name}'
   },
   'models.list.heroSubtitle': {
     en: 'From open-source diffusion checkpoints to partner APIs — every major model, with community workflow templates ready to run.',
@@ -9343,8 +9346,9 @@ Enterprise`
     'zh-CN': '按 GPU 秒计费'
   },
   'platform.pricing.storageExample': {
-    en: 'Worked example: 500 GB of models on standard network storage = $45.50/mo + GPU time.',
-    'zh-CN': '示例：500 GB 模型存放在标准网络存储上 = 每月 $45.50 + GPU 时间。'
+    en: 'Worked example: 500 GB of models on standard network storage = {amount}/mo + GPU time.',
+    'zh-CN':
+      '示例：500 GB 模型存放在标准网络存储上 = 每月 {amount} + GPU 时间。'
   },
   'platform.pricing.modelsNote': {
     en: 'Comfy Router usage shows per-output prices on each model card and draws from the same credit pool.',
@@ -10812,6 +10816,11 @@ Enterprise`
     en: 'The run could not be checked. Reconnect to recover its current status.',
     'zh-CN': '无法查看运行状态。请重新连接以获取最新状态。'
   },
+  'workshop.workflow.lostContact': {
+    en: 'This page lost contact with the run. It may still be running on Cloud and using credits. Reconnect to see its current status.',
+    'zh-CN':
+      '此页面与运行失去了联系。它可能仍在 Cloud 上运行并消耗积分。请重新连接以查看最新状态。'
+  },
   'workshop.workflow.browserUnavailable': {
     en: 'Running workflows from this page is not available yet.',
     'zh-CN': '暂不支持从此页面运行工作流。'
@@ -10958,7 +10967,7 @@ Enterprise`
   'workshop.hub.loadMore': { en: 'Load more', 'zh-CN': '加载更多' },
   'workshop.hub.empty': {
     en: 'No workflows match your filters',
-    'zh-CN': '没有符合筛选条件的模板'
+    'zh-CN': '没有符合筛选条件的工作流'
   },
   'workshop.hub.emptyHint': {
     en: 'Try removing some filters',
@@ -10966,7 +10975,7 @@ Enterprise`
   },
   'workshop.hub.showing': {
     en: 'Showing {shown} of {total} workflows',
-    'zh-CN': '显示 {shown} / {total} 个模板'
+    'zh-CN': '显示 {shown} / {total} 个工作流'
   },
   'workshop.proto.featured': {
     en: 'Show the featured row',
@@ -11325,8 +11334,37 @@ function resolve(key: TranslationKey, locale: Locale): [string, Locale] {
   return message === undefined ? [entry.en, 'en'] : [message, locale]
 }
 
-export function t(key: TranslationKey, locale: Locale = 'en'): string {
-  return resolve(key, locale)[0]
+export function t(
+  key: TranslationKey,
+  locale: Locale = 'en',
+  named: NamedValues = {}
+): string {
+  return interpolate(resolve(key, locale)[0], named)
+}
+
+/**
+ * Resolves a message and splits it around one named slot, so a component can
+ * wrap that slot in markup while the locale decides the word order.
+ */
+export function tAround(
+  key: TranslationKey,
+  locale: Locale,
+  slot: string,
+  named: NamedValues = {}
+): [string, string] {
+  const marker = `{${slot}}`
+  const [message] = resolve(key, locale)
+  const markerIndex = message.indexOf(marker)
+  if (markerIndex === -1) {
+    throw new Error(`Translation ${key} is missing slot ${marker}`)
+  }
+  if (message.indexOf(marker, markerIndex + marker.length) !== -1) {
+    throw new Error(`Translation ${key} repeats slot ${marker}`)
+  }
+  return [
+    interpolate(message.slice(0, markerIndex), named),
+    interpolate(message.slice(markerIndex + marker.length), named)
+  ]
 }
 
 export function tPlural(
@@ -11340,7 +11378,7 @@ export function tPlural(
     new Intl.PluralRules(messageLocale).select(count) === 'one'
       ? forms[0]
       : forms[forms.length - 1]
-  return form.trim().replace('{count}', String(count))
+  return interpolate(form.trim(), { count })
 }
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]
