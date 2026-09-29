@@ -83,6 +83,12 @@ export interface StartOperationMetadata {
   checkoutType?: SubscriptionCheckoutType
   paymentIntentSource?: PaymentIntentSource
   suppressProcessingToast?: boolean
+  /**
+   * Adopted from a status read rather than started by the customer here. The
+   * read names the operation but not what it waits on, so without a served
+   * link it is announced by its first status, never before it.
+   */
+  resumed?: boolean
   autoHandleRequiresAction?: boolean
   downgradeToPersonal?: {
     memberRemovalCount: number

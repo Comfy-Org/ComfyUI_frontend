@@ -349,7 +349,7 @@ describe('useWorkspaceBilling', () => {
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-recovered',
         'subscription',
-        undefined,
+        { resumed: true },
         actionUrl
       )
     })
@@ -372,7 +372,7 @@ describe('useWorkspaceBilling', () => {
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-sub',
         'subscription',
-        undefined,
+        { resumed: true },
         actionUrl
       )
       expect(mockReportError).not.toHaveBeenCalled()
@@ -394,7 +394,7 @@ describe('useWorkspaceBilling', () => {
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-topup',
         'topup',
-        undefined,
+        { resumed: true },
         actionUrl
       )
     })
@@ -423,7 +423,7 @@ describe('useWorkspaceBilling', () => {
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-future',
         'subscription',
-        undefined,
+        { resumed: true },
         undefined
       )
     })
@@ -446,7 +446,7 @@ describe('useWorkspaceBilling', () => {
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-recovered',
         'subscription',
-        undefined,
+        { resumed: true },
         undefined
       )
     })

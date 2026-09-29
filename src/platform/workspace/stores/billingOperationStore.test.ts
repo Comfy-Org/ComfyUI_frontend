@@ -361,6 +361,80 @@ describe('billingOperationStore', () => {
         group: 'billing-operation'
       })
     })
+
+    describe('a resumed operation', () => {
+      function serveFirstRead() {
+        let serve: (status: BillingOpStatusResponse) => void = () => {}
+        vi.mocked(workspaceApi.getBillingOpStatus).mockReturnValueOnce(
+          new Promise((resolve) => {
+            serve = resolve
+          })
+        )
+        return (phase?: 'in_progress' | 'awaiting_payment_method') => {
+          const status: BillingOpStatusResponse = {
+            id: 'op-resumed',
+            status: 'pending',
+            started_at: new Date().toISOString(),
+            ...(phase ? { phase } : {})
+          }
+          vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue(status)
+          serve(status)
+        }
+      }
+
+      it('announces nothing for a checkout parked on a payment method', async () => {
+        const serve = serveFirstRead()
+        const store = useBillingOperationStore()
+        void store.startOperation('op-resumed', 'subscription', {
+          resumed: true
+        })
+
+        expect(useToastStore().add).not.toHaveBeenCalled()
+        serve('awaiting_payment_method')
+        await vi.advanceTimersByTimeAsync(31_000)
+
+        expect(useToastStore().add).not.toHaveBeenCalled()
+      })
+
+      it.for([['in_progress'], [undefined]] as const)(
+        'announces processing once its first read (phase %s) shows it in flight',
+        async ([phase]) => {
+          const serve = serveFirstRead()
+          const store = useBillingOperationStore()
+          void store.startOperation('op-resumed', 'subscription', {
+            resumed: true
+          })
+
+          expect(useToastStore().add).not.toHaveBeenCalled()
+          serve(phase)
+          await vi.advanceTimersByTimeAsync(0)
+
+          expect(useToastStore().add).toHaveBeenCalledOnce()
+          expect(useToastStore().add).toHaveBeenCalledWith({
+            severity: 'info',
+            summary: 'billingOperation.subscriptionProcessing',
+            group: 'billing-operation'
+          })
+        }
+      )
+
+      it('announces a served verification link at once', () => {
+        serveFirstRead()
+        const store = useBillingOperationStore()
+        void store.startOperation(
+          'op-resumed',
+          'subscription',
+          { resumed: true },
+          'https://invoice.stripe.com/sensitive-token'
+        )
+
+        expect(useToastStore().add).toHaveBeenCalledWith({
+          severity: 'warn',
+          summary: 'billingOperation.subscriptionActionRequired',
+          group: 'billing-operation'
+        })
+      })
+    })
   })
 
   describe('polling success', () => {
