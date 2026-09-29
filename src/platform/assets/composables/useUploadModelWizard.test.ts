@@ -6,7 +6,11 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AsyncUploadResponse } from '@/platform/assets/schemas/assetSchema'
+import { taskService } from '@/platform/tasks/services/taskService'
 import { api } from '@/scripts/api'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 import { useUploadModelWizard } from './useUploadModelWizard'
 
@@ -200,7 +204,7 @@ describe('useUploadModelWizard', () => {
     expect(wizard.uploadError.value).toBe('Network error')
   })
 
-  it('ends an async upload as cancelled and ignores later task updates', async () => {
+  it('recovers a provisionally cancelled upload when it completes authoritatively', async () => {
     const { assetService } =
       await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
@@ -212,6 +216,16 @@ describe('useUploadModelWizard', () => {
       }
     })
 
+    const assetsStore = useAssetsStore()
+    const modelToNodeStore = useModelToNodeStore()
+    vi.spyOn(modelToNodeStore, 'getAllNodeProviders').mockReturnValue([
+      fromPartial({ nodeDef: { name: 'CheckpointLoaderSimple' } })
+    ])
+    const updateModels = vi
+      .spyOn(assetsStore, 'updateModelsForNodeType')
+      .mockResolvedValue()
+    vi.spyOn(taskService, 'cancelTask').mockResolvedValue(true)
+
     const wizard = setupUploadModelWizard(modelTypes)
     wizard.wizardData.value.url = 'https://civitai.com/models/12345'
     wizard.selectedModelType.value = 'checkpoints'
@@ -219,23 +233,12 @@ describe('useUploadModelWizard', () => {
 
     const handler = vi
       .mocked(api.addEventListener)
-      .mock.calls.find((call) => call[0] === 'asset_download')?.[1] as
+      .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1] as
       | ((event: CustomEvent) => void)
       | undefined
     expect(handler).toBeDefined()
 
-    handler!(
-      new CustomEvent('asset_download', {
-        detail: {
-          task_id: 'task-cancelled',
-          asset_name: 'model.safetensors',
-          bytes_total: 1000,
-          bytes_downloaded: 200,
-          progress: 20,
-          status: 'cancelled'
-        }
-      })
-    )
+    await useAssetDownloadStore().cancelDownload('task-cancelled')
     await nextTick()
 
     expect(wizard.uploadStatus.value).toBe('error')
@@ -254,9 +257,10 @@ describe('useUploadModelWizard', () => {
         }
       })
     )
-    await nextTick()
-
-    expect(wizard.uploadStatus.value).toBe('error')
+    await vi.waitFor(() => {
+      expect(wizard.uploadStatus.value).toBe('success')
+      expect(updateModels).toHaveBeenCalledWith('CheckpointLoaderSimple')
+    })
   })
 
   it('accepts civitai.red model URLs', async () => {

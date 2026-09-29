@@ -435,7 +435,7 @@ export const zTaskEntry = z.object({
   create_time: z.string().datetime(),
   id: z.string().uuid(),
   started_at: z.string().datetime().optional(),
-  status: z.enum(['created', 'running', 'completed', 'failed', 'cancelled']),
+  status: z.enum(['created', 'running', 'completed', 'failed']),
   task_name: z.string()
 })
 
@@ -459,7 +459,7 @@ export const zTaskResponse = z.object({
   payload: z.record(z.unknown()),
   result: z.record(z.unknown()).optional(),
   started_at: z.string().datetime().optional(),
-  status: z.enum(['created', 'running', 'completed', 'failed', 'cancelled']),
+  status: z.enum(['created', 'running', 'completed', 'failed']),
   task_name: z.string(),
   update_time: z.string().datetime()
 })

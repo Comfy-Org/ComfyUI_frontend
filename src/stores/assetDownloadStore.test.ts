@@ -187,7 +187,7 @@ describe('useAssetDownloadStore', () => {
   })
 
   describe('cancelDownload', () => {
-    it('cancels an active backend task and marks it terminal', async () => {
+    it('keeps an accepted cancellation provisional until the backend confirms it', async () => {
       const store = useAssetDownloadStore()
       vi.mocked(taskService.cancelTask).mockResolvedValue(true)
       dispatch(createDownloadMessage({ status: 'running' }))
@@ -196,7 +196,8 @@ describe('useAssetDownloadStore', () => {
 
       expect(taskService.cancelTask).toHaveBeenCalledWith('task-123')
       expect(store.activeDownloads).toHaveLength(0)
-      expect(store.finishedDownloads[0].status).toBe('cancelled')
+      expect(store.downloadList[0].status).toBe('cancellation_pending')
+      expect(store.finishedDownloads).toHaveLength(0)
     })
 
     it('cancels a queued backend task', async () => {
@@ -207,7 +208,8 @@ describe('useAssetDownloadStore', () => {
       await store.cancelDownload('task-123')
 
       expect(taskService.cancelTask).toHaveBeenCalledWith('task-123')
-      expect(store.finishedDownloads[0].status).toBe('cancelled')
+      expect(store.downloadList[0].status).toBe('cancellation_pending')
+      expect(store.finishedDownloads).toHaveLength(0)
     })
 
     it('keeps the download active when backend cancellation fails', async () => {
@@ -350,6 +352,25 @@ describe('useAssetDownloadStore', () => {
         assetId: 'asset-456'
       })
       expect(store.lastCompletedDownload?.modelType).toBe('checkpoints')
+    })
+
+    it('preserves a provisional cancellation when finished downloads are cleared', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue(true)
+      vi.mocked(taskService.getTask).mockResolvedValue(createTaskResponse())
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await store.cancelDownload('task-123')
+      store.clearFinishedDownloads()
+
+      expect(store.downloadList[0].status).toBe('cancellation_pending')
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(store.finishedDownloads[0]).toMatchObject({
+        status: 'completed',
+        assetId: 'asset-456'
+      })
     })
 
     it('stops reconciling after the backend confirms cancellation', async () => {

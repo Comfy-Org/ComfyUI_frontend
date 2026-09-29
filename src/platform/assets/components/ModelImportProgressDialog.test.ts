@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { reportError } from '@/platform/telemetry/reportError'
@@ -71,5 +72,24 @@ describe('ModelImportProgressDialog cancellation', () => {
         detail: 'Cancellation unavailable'
       })
     })
+  })
+
+  it('keeps provisional cancellations open for authoritative reconciliation', async () => {
+    const store = renderDialog()
+
+    store.downloadList[0].status = 'cancellation_pending'
+    await nextTick()
+
+    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull()
+    expect(screen.getAllByText('Cancelled')).not.toHaveLength(0)
+  })
+
+  it('allows failed downloads to be dismissed while reconciliation continues', async () => {
+    const store = renderDialog()
+
+    store.downloadList[0].status = 'failed'
+    await nextTick()
+
+    expect(screen.getByRole('button', { name: 'Close' })).toBeVisible()
   })
 })

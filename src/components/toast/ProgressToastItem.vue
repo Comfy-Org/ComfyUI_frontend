@@ -6,6 +6,7 @@ import Loader from '@/components/loader/Loader.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { AssetDownload } from '@/stores/assetDownloadStore'
+import { isDownloadCancelled } from '@/stores/assetDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { job, isCancelling = false } = defineProps<{
@@ -21,7 +22,7 @@ const isCompleted = computed(() => job.status === 'completed')
 const isFailed = computed(() => job.status === 'failed')
 const isRunning = computed(() => job.status === 'running')
 const isPending = computed(() => job.status === 'created')
-const isCancelled = computed(() => job.status === 'cancelled')
+const isCancelled = computed(() => isDownloadCancelled(job.status))
 </script>
 
 <template>

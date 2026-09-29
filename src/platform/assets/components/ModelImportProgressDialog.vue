@@ -11,7 +11,10 @@ import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TaskId } from '@/platform/tasks/services/taskService'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import {
+  isDownloadCancelled,
+  useAssetDownloadStore
+} from '@/stores/assetDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -52,7 +55,9 @@ const failedJobs = computed(() =>
   assetDownloadStore.finishedDownloads.filter((d) => d.status === 'failed')
 )
 const cancelledJobs = computed(() =>
-  assetDownloadStore.finishedDownloads.filter((d) => d.status === 'cancelled')
+  assetDownloadStore.downloadList.filter((download) =>
+    isDownloadCancelled(download.status)
+  )
 )
 
 const isInProgress = computed(() => assetDownloadStore.hasActiveDownloads)
@@ -274,7 +279,7 @@ async function cancelDownload(taskId: TaskId) {
             </Button>
 
             <Button
-              v-if="!isInProgress"
+              v-if="!isInProgress && !assetDownloadStore.hasPendingCancellation"
               variant="muted-textonly"
               size="icon"
               :aria-label="t('g.close')"

@@ -2,10 +2,36 @@ import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-import type { TaskId } from '@/platform/tasks/services/taskService'
+import type { TaskId, TaskStatus } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
+
+export type AssetDownloadStatus = TaskStatus | 'cancellation_pending'
+
+function isDownloadActive(status: AssetDownloadStatus) {
+  return status === 'created' || status === 'running'
+}
+
+export function isDownloadCancelled(status: AssetDownloadStatus) {
+  return status === 'cancellation_pending' || status === 'cancelled'
+}
+
+function isDownloadCancellationPending(status: AssetDownloadStatus) {
+  return status === 'cancellation_pending'
+}
+
+function isDownloadFinished(status: AssetDownloadStatus) {
+  return status === 'completed' || status === 'failed' || status === 'cancelled'
+}
+
+function isDownloadRecheckable(status: AssetDownloadStatus) {
+  return (
+    isDownloadActive(status) ||
+    status === 'failed' ||
+    status === 'cancellation_pending'
+  )
+}
 
 export interface AssetDownload {
   taskId: TaskId
@@ -13,13 +39,12 @@ export interface AssetDownload {
   bytesTotal: number
   bytesDownloaded: number
   progress: number
-  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
+  status: AssetDownloadStatus
   lastUpdate: number
   assetId?: string
   error?: string
   modelType?: string
   acknowledged?: boolean
-  needsCancellationReconciliation?: boolean
 }
 
 interface CompletedDownload {
@@ -54,17 +79,10 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
   const downloadList = computed(() => Array.from(downloads.value.values()))
   const activeDownloads = computed(() =>
-    downloadList.value.filter(
-      (d) => d.status === 'created' || d.status === 'running'
-    )
+    downloadList.value.filter((download) => isDownloadActive(download.status))
   )
   const finishedDownloads = computed(() =>
-    downloadList.value.filter(
-      (d) =>
-        d.status === 'completed' ||
-        d.status === 'failed' ||
-        d.status === 'cancelled'
-    )
+    downloadList.value.filter((download) => isDownloadFinished(download.status))
   )
   const unacknowledgedDownloads = computed(() =>
     finishedDownloads.value.filter(
@@ -76,17 +94,18 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   )
   const hasActiveDownloads = computed(() => activeDownloads.value.length > 0)
   const hasDownloads = computed(() => downloads.value.size > 0)
+  const hasPendingCancellation = computed(() =>
+    downloadList.value.some((download) =>
+      isDownloadCancellationPending(download.status)
+    )
+  )
   // `failed` downloads are included because the backend can broadcast a
   // premature terminal `failed` message for an error it's still retrying;
   // re-checking them lets the UI recover once the backend actually
   // completes (or truly gives up on) the download.
   const recheckableDownloads = computed(() =>
-    downloadList.value.filter(
-      (d) =>
-        d.status === 'created' ||
-        d.status === 'running' ||
-        d.status === 'failed' ||
-        (d.status === 'cancelled' && d.needsCancellationReconciliation)
+    downloadList.value.filter((download) =>
+      isDownloadRecheckable(download.status)
     )
   )
   const hasRecheckableDownloads = computed(
@@ -125,6 +144,9 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     // a later message for the same task_id updating it again.
     if (
       existing?.status === 'completed' ||
+      (existing?.status === 'cancellation_pending' &&
+        data.status !== 'completed' &&
+        data.status !== 'cancelled') ||
       (existing?.status === 'cancelled' && data.status !== 'completed')
     ) {
       return
@@ -175,7 +197,8 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
           if (task.status === 'cancelled') {
             const current = downloads.value.get(download.taskId)
             if (current === download) {
-              current.needsCancellationReconciliation = false
+              current.status = 'cancelled'
+              current.lastUpdate = Date.now()
             }
             return
           }
@@ -248,9 +271,8 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       ) {
         return
       }
-      current.status = 'cancelled'
+      current.status = 'cancellation_pending'
       current.lastUpdate = Date.now()
-      current.needsCancellationReconciliation = true
     } finally {
       cancellingTaskIds.value.delete(taskId)
     }
@@ -261,8 +283,10 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     finishedDownloads,
     hasActiveDownloads,
     hasDownloads,
+    hasPendingCancellation,
     downloadList,
     lastCompletedDownload,
+    hasRecheckableDownloads,
     sessionDownloadCount,
     trackDownload,
     cancellingTaskIds,

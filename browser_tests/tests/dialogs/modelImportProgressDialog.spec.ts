@@ -1,11 +1,10 @@
-import type { Page } from '@playwright/test'
-
 import type { TaskResponse } from '@/platform/tasks/services/taskService'
 
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { dispatchAssetDownload } from '@e2e/fixtures/helpers/AssetDownloadHelper'
 
 /**
  * REGRESSION COVERAGE PM-1302 / PM-1309 (frontend half):
@@ -23,39 +22,18 @@ import {
  * `asset_download` client event that `assetDownloadStore` listens on in
  * production.
  */
-const TASK_ID = 'pm-1302-repro-task'
-const ASSET_NAME = 'stuck-model.safetensors'
-
-interface AssetDownloadMessage {
-  task_id: string
-  asset_name: string
-  bytes_total: number
-  bytes_downloaded: number
-  progress: number
-  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
-  asset_id?: string
-  error?: string
-}
-
-async function dispatchAssetDownload(
-  page: Page,
-  message: AssetDownloadMessage
-) {
-  await page.evaluate((msg) => {
-    window.app!.api.dispatchCustomEvent('asset_download', msg)
-  }, message)
-}
-
 test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
   test('recovers from a premature failed status once the backend silently retries and completes it (PM-1302)', async ({
     comfyPage
   }) => {
     const { page } = comfyPage
+    const taskId = 'pm-1302-repro-task'
+    const assetName = 'stuck-model.safetensors'
 
     // 1. Download starts.
     await dispatchAssetDownload(page, {
-      task_id: TASK_ID,
-      asset_name: ASSET_NAME,
+      task_id: taskId,
+      asset_name: assetName,
       bytes_total: 1000,
       bytes_downloaded: 200,
       progress: 20,
@@ -69,8 +47,8 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     // download_file.go's HandleDownloadFile) broadcasts a premature
     // terminal `failed` message before it decides to retry.
     await dispatchAssetDownload(page, {
-      task_id: TASK_ID,
-      asset_name: ASSET_NAME,
+      task_id: taskId,
+      asset_name: assetName,
       bytes_total: 1000,
       bytes_downloaded: 200,
       progress: 20,
@@ -87,8 +65,8 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     // to pending) and the retry succeeded - cloud broadcasts the real,
     // later `completed` message for the same task_id.
     await dispatchAssetDownload(page, {
-      task_id: TASK_ID,
-      asset_name: ASSET_NAME,
+      task_id: taskId,
+      asset_name: assetName,
       asset_id: 'asset-pm-1302',
       bytes_total: 1000,
       bytes_downloaded: 1000,
@@ -121,22 +99,24 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     comfyPage
   }) => {
     const { page } = comfyPage
+    const taskId = 'pm-1302-dismiss-task'
+    const assetName = 'stuck-model.safetensors'
 
     // Same premature-failed sequence as above, minus the later `completed`
     // message - the point here is only whether the user can get rid of a
     // failed toast on their own when the backend never does send a
     // recovery message.
     await dispatchAssetDownload(page, {
-      task_id: TASK_ID,
-      asset_name: ASSET_NAME,
+      task_id: taskId,
+      asset_name: assetName,
       bytes_total: 1000,
       bytes_downloaded: 200,
       progress: 20,
       status: 'running'
     })
     await dispatchAssetDownload(page, {
-      task_id: TASK_ID,
-      asset_name: ASSET_NAME,
+      task_id: taskId,
+      asset_name: assetName,
       bytes_total: 1000,
       bytes_downloaded: 200,
       progress: 20,
@@ -174,6 +154,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
   }) => {
     const { page } = comfyPage
     const taskId = '1396cc07-bab2-4f12-9b54-741f83f9224c'
+    const assetName = 'cancelled-model.safetensors'
     const cancellationResponse = page.waitForResponse(
       (response) =>
         response.url().endsWith(`/tasks/${taskId}`) &&
@@ -201,7 +182,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     await test.step('show the running download', async () => {
       await dispatchAssetDownload(page, {
         task_id: taskId,
-        asset_name: ASSET_NAME,
+        asset_name: assetName,
         bytes_total: 1000,
         bytes_downloaded: 200,
         progress: 20,
@@ -209,7 +190,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       })
     })
 
-    const toast = page.getByRole('status').filter({ hasText: ASSET_NAME })
+    const toast = page.getByRole('status').filter({ hasText: assetName })
     await expect(toast).toBeVisible()
 
     await test.step('cancel through user-visible controls', async () => {
@@ -233,7 +214,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     await test.step('keep the terminal backend state rendered', async () => {
       await dispatchAssetDownload(page, {
         task_id: taskId,
-        asset_name: ASSET_NAME,
+        asset_name: assetName,
         bytes_total: 1000,
         bytes_downloaded: 200,
         progress: 20,
@@ -254,6 +235,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
   }) => {
     const { page } = comfyPage
     const taskId = '1396cc07-bab2-4f12-9b54-741f83f9224b'
+    const assetName = 'failed-model.safetensors'
     let releaseResponse!: () => void
     const responseReady = new Promise<void>((resolve) => {
       releaseResponse = resolve
@@ -275,7 +257,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     await page.clock.install()
     await dispatchAssetDownload(page, {
       task_id: taskId,
-      asset_name: ASSET_NAME,
+      asset_name: assetName,
       bytes_total: 1000,
       bytes_downloaded: 200,
       progress: 20,

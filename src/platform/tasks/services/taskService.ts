@@ -15,6 +15,14 @@ import { api } from '@/scripts/api'
 
 const TASKS_ENDPOINT = '/tasks'
 
+const zTaskStatus = z.enum([
+  'created',
+  'running',
+  'completed',
+  'failed',
+  'cancelled'
+])
+
 const zDownloadFileResult = z.object({
   success: z.boolean(),
   file_path: z.string().optional(),
@@ -28,10 +36,13 @@ const zDownloadFileResult = z.object({
 })
 
 const zTaskResponse = zGeneratedTaskResponse.extend({
+  // Cloud commit 13d6f5f9 adds cancellation before generated types can sync.
+  status: zTaskStatus,
   result: zDownloadFileResult.optional()
 })
 
 export type TaskResponse = z.infer<typeof zTaskResponse>
+export type TaskStatus = TaskResponse['status']
 
 /**
  * Identifier for a background task tracked by the `/tasks` API.
