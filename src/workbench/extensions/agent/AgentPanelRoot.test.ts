@@ -5993,7 +5993,10 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await vi.waitFor(() =>
       expect(telemetry.trackAgentError).toHaveBeenCalledWith(
-        expect.objectContaining({ error_class: 'workflow_open_failed' })
+        expect.objectContaining({
+          error_class: 'workflow_open_failed',
+          ui_treatment: 'toast'
+        })
       )
     )
     expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
@@ -6478,7 +6481,10 @@ describe('AgentPanelRoot workflow binding', () => {
       ).toBeNull()
     )
     expect(telemetry.trackAgentError).toHaveBeenCalledWith(
-      expect.objectContaining({ error_class: 'workflow_open_failed' })
+      expect.objectContaining({
+        error_class: 'workflow_open_failed',
+        ui_treatment: 'toast'
+      })
     )
   })
 

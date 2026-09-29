@@ -20,6 +20,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
+  AgentErrorMetadata,
   AgentMessageSentMetadata,
   AgentRunApprovalDecision,
   AgentStopMethod
@@ -574,8 +575,10 @@ function warnWorkflowUnavailable(): void {
   })
 }
 
-function trackWorkflowOpenFailure(): void {
-  trackAgentError('workflow_open_failed', 'post_acceptance', 'error_overlay', {
+function trackWorkflowOpenFailure(
+  uiTreatment: AgentErrorMetadata['ui_treatment']
+): void {
+  trackAgentError('workflow_open_failed', 'post_acceptance', uiTreatment, {
     retryable: false
   })
 }
@@ -955,7 +958,7 @@ async function onAgentActiveTab(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
     )
-    trackWorkflowOpenFailure()
+    trackWorkflowOpenFailure('error_overlay')
     return false
   } finally {
     tabActivity.setCreating(false)
@@ -972,7 +975,7 @@ async function activateExistingAgentTab(
   if (stale()) return false
   if (!opened) {
     warnWorkflowUnavailable()
-    trackWorkflowOpenFailure()
+    trackWorkflowOpenFailure('toast')
     return false
   }
   bindingStore.bind(data.workflow_id, bound.path)
@@ -1014,7 +1017,7 @@ async function createAndActivateAgentTab(
     await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
     if (!stale()) {
       warnWorkflowUnavailable()
-      trackWorkflowOpenFailure()
+      trackWorkflowOpenFailure('toast')
     }
     return false
   }
