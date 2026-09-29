@@ -36,6 +36,8 @@ describe('indexing policy', () => {
   })
 
   it.for([
+    '/gemini-nano-banana-2.5',
+    '/zh-CN/gemini-nano-banana-2.5/',
     '/privacy-policy',
     '/privacy-policy/',
     '/zh-CN/privacy-policy',

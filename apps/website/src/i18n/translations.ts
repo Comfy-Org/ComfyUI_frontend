@@ -7821,6 +7821,72 @@ Enterprise`
     'zh-CN': 'ChatGPT Images 2.5'
   },
   // Qwen-Image 2.1 model page (/qwen-image-2.1)
+  'geminiNanoBanana25.meta.title': {
+    en: 'Gemini Nano Banana 2.5 | Comfy — Draft',
+    'zh-CN': 'Gemini Nano Banana 2.5 | Comfy — 草稿'
+  },
+  'geminiNanoBanana25.meta.description': {
+    en: 'Draft landing page for Gemini Nano Banana 2.5. Model details and assets are pending.',
+    'zh-CN': 'Gemini Nano Banana 2.5 落地页草稿，模型信息与素材待确认。'
+  },
+  'geminiNanoBanana25.breadcrumb.model': {
+    en: 'Gemini Nano Banana 2.5',
+    'zh-CN': 'Gemini Nano Banana 2.5'
+  },
+  'geminiNanoBanana25.breadcrumb.updated': {
+    en: 'Draft · Content pending',
+    'zh-CN': '草稿 · 内容待确认'
+  },
+  'geminiNanoBanana25.hero.title': {
+    en: 'Gemini Nano Banana 2.5',
+    'zh-CN': 'Gemini Nano Banana 2.5'
+  },
+  'geminiNanoBanana25.hero.description': {
+    en: 'Draft preview. Hero footage and gallery images are Qwen-Image 2.1 placeholders. Gemini copy, capabilities, pricing, and workflow links are pending confirmation.',
+    'zh-CN':
+      '草稿预览。主视觉视频与图库图片暂用 Qwen-Image 2.1 素材。Gemini 文案、功能、价格与工作流链接待确认。'
+  },
+  'geminiNanoBanana25.hero.badge': {
+    en: 'Draft preview',
+    'zh-CN': '草稿预览'
+  },
+  'geminiNanoBanana25.hero.primaryCta': {
+    en: 'EXPLORE COMFY',
+    'zh-CN': '探索 COMFY'
+  },
+  'geminiNanoBanana25.hero.secondaryCta': {
+    en: 'COMFY DOCUMENTATION',
+    'zh-CN': 'COMFY 文档'
+  },
+  'geminiNanoBanana25.gallery.heading': {
+    en: 'Gallery preview · Qwen placeholder assets',
+    'zh-CN': '图库预览 · Qwen 占位素材'
+  },
+  'geminiNanoBanana25.pricing.banner.title': {
+    en: 'Comfy Cloud plans',
+    'zh-CN': 'Comfy Cloud 套餐'
+  },
+  'geminiNanoBanana25.pricing.banner.subtitle': {
+    en: 'Gemini Nano Banana 2.5 pricing and availability are pending confirmation.',
+    'zh-CN': 'Gemini Nano Banana 2.5 的价格与可用性待确认。'
+  },
+  'geminiNanoBanana25.pricing.banner.cta': {
+    en: 'VIEW COMFY PLANS',
+    'zh-CN': '查看 COMFY 套餐'
+  },
+  'geminiNanoBanana25.faq.heading': {
+    en: 'Q&A · Draft',
+    'zh-CN': '问答 · 草稿'
+  },
+  'geminiNanoBanana25.runOptions.heading': {
+    en: 'Explore Comfy',
+    'zh-CN': '探索 Comfy'
+  },
+  'geminiNanoBanana25.runOptions.subtitle': {
+    en: 'Explore the Comfy platform below. Gemini Nano Banana 2.5 support across these options is pending confirmation.',
+    'zh-CN':
+      '在下方探索 Comfy 平台。Gemini Nano Banana 2.5 在各平台上的支持情况待确认。'
+  },
   'qwenImage21.meta.title': {
     en: 'Qwen-Image 2.1 on Comfy: Open-Weight Image Generation and Editing',
     'zh-CN': 'Comfy 上的 Qwen-Image 2.1：开源权重图像生成与编辑'
