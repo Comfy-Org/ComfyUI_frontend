@@ -5,8 +5,8 @@ import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
 import { workshopPagePaths } from '../../config/workshop-page-content'
 import { modelDeveloper } from '../../config/model-vendors'
-import { t } from '../../i18n/translations'
 import { modelMetaDescription } from '../../lib/workshop/model-meta-description'
+import { modelTitle } from '../../lib/workshop/model-title'
 import { pageContext } from '../../utils/jsonLd'
 import { modelPageJsonLd } from '../../utils/modelJsonLd'
 import { modelOgImage, prepareModelPage } from './model-page'
@@ -36,7 +36,7 @@ const ogImage = modelOgImage(model)
 ---
 
 <BaseLayout
-  title={`${model.name} · ${t('workshop.title')} - Comfy`}
+  title={modelTitle(model)}
   description={modelMetaDescription(page)}
   ogImage={ogImage}
   ogImageAlt={ogImage && `${model.name} example output`}
