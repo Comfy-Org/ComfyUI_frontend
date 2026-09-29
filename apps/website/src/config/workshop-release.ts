@@ -42,8 +42,6 @@ function allowedFamiliesFor(
 }
 
 export function assertWorkshopCloudEnvForBuild(): void {
-  if (!isWorkshopInBuild()) return
-
   const raw = process.env.PUBLIC_WORKSHOP_CLOUD_ENV
   const family = raw === undefined || raw === '' ? undefined : raw
   if (family !== undefined && !isWorkshopCloudEnv(family)) {
@@ -58,7 +56,7 @@ export function assertWorkshopCloudEnvForBuild(): void {
   const choices = allowed.join(' or ')
   if (family === undefined) {
     throw new Error(
-      `Workshop is in this ${vercelEnv} build but PUBLIC_WORKSHOP_CLOUD_ENV is unset. Set it to ${choices} in the Vercel ${vercelEnv} environment.`
+      `This ${vercelEnv} build signs users in through Firebase but PUBLIC_WORKSHOP_CLOUD_ENV is unset. Set it to ${choices} in the Vercel ${vercelEnv} environment.`
     )
   }
   if (!allowed.includes(family)) {
