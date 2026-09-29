@@ -5,7 +5,10 @@ import {
   authoredWorkshopModels
 } from './workshop-browse-content'
 import { deriveWorkshopFields } from './workshop-fields'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
+import {
+  getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail,
+  promptText
+} from './workshop-router-content'
 import {
   defaultValues,
   groupPlaygroundFields,
@@ -391,5 +394,27 @@ describe('example prompts', () => {
     if (!overlay || !example) throw new Error(`Missing example: ${slug}`)
     expect(example.prompt).toBe(prompt(overlay))
     expect(example.prompt === undefined).toBe(from === 'nowhere')
+  })
+})
+
+describe(promptText, () => {
+  it.for([
+    { name: 'a plain prompt', prompt: 'a red fox', text: 'a red fox' },
+    {
+      name: 'JSON with a text field',
+      prompt: JSON.stringify({
+        high_level_description: 'A train in a cloud',
+        style_description: { aesthetics: 'collage' }
+      }),
+      text: 'A train in a cloud'
+    },
+    {
+      name: 'JSON without a text field',
+      prompt: JSON.stringify({ style_description: { aesthetics: 'collage' } }),
+      text: undefined
+    },
+    { name: 'a blank prompt', prompt: '  ', text: undefined }
+  ])('$name', ({ prompt, text }) => {
+    expect(promptText(prompt)).toBe(text)
   })
 })
