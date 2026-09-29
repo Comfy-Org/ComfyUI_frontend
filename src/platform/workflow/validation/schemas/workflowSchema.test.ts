@@ -1,7 +1,10 @@
 import fs from 'fs'
 import { describe, expect, it } from 'vitest'
 
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  validateComfyWorkflow,
+  zClipboardItems
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'
@@ -389,5 +392,77 @@ describe('parseComfyWorkflow', () => {
       workflow.nodes[0].properties.ver = ver
       await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
     })
+  })
+})
+
+describe('zClipboardItems', () => {
+  it('normalizes array-like widget values and preserves array slot types', () => {
+    const node = {
+      ...structuredClone(defaultGraph.nodes[0]),
+      inputs: [{ name: 'input', type: ['IMAGE', 'MASK'] }],
+      widgets_values: { 0: 'first', 1: 2, length: 2 }
+    }
+
+    const result = zClipboardItems.safeParse({ nodes: [node] })
+
+    expect(result.success).toBe(true)
+    if (!result.success) throw result.error
+    expect(result.data.nodes?.[0].inputs?.[0].type).toEqual(['IMAGE', 'MASK'])
+    expect(result.data.nodes?.[0].widgets_values).toEqual(['first', 2])
+  })
+
+  it('preserves indices when normalizing sparse widget values', () => {
+    const node = {
+      ...structuredClone(defaultGraph.nodes[0]),
+      widgets_values: { 0: 'first', 2: 'third', length: 3 }
+    }
+
+    const result = zClipboardItems.safeParse({ nodes: [node] })
+
+    expect(result.success).toBe(true)
+    if (!result.success) throw result.error
+    const values = result.data.nodes?.[0].widgets_values
+    expect(values).toHaveLength(3)
+    expect(values?.[0]).toBe('first')
+    expect(1 in (values ?? [])).toBe(false)
+    expect(values?.[2]).toBe('third')
+  })
+
+  it('rejects an impractically large sparse widget values length', () => {
+    const node = {
+      ...structuredClone(defaultGraph.nodes[0]),
+      widgets_values: { 0: 'first', length: 10_001 }
+    }
+
+    expect(zClipboardItems.safeParse({ nodes: [node] }).success).toBe(false)
+  })
+
+  it('preserves named-record widget values as named values', () => {
+    const node = {
+      ...structuredClone(defaultGraph.nodes[0]),
+      widgets_values: { seed: 42, steps: 20 }
+    }
+
+    const result = zClipboardItems.safeParse({ nodes: [node] })
+
+    expect(result.success).toBe(true)
+    if (!result.success) throw result.error
+    expect(result.data.nodes?.[0].widgets_values).toBeUndefined()
+    expect(result.data.nodes?.[0].widgets_values_named).toEqual({
+      seed: 42,
+      steps: 20
+    })
+  })
+
+  it('defaults omitted legacy group and reroute fields', () => {
+    const result = zClipboardItems.safeParse({
+      groups: [{ title: 'Legacy group', bounding: [0, 0, 100, 100] }],
+      reroutes: [{ id: 4, pos: [10, 20] }]
+    })
+
+    expect(result.success).toBe(true)
+    if (!result.success) throw result.error
+    expect(result.data.groups?.[0].id).toBe(-1)
+    expect(result.data.reroutes?.[0].linkIds).toEqual([])
   })
 })

@@ -45,7 +45,12 @@ import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import {
+  collectReservedGroupIds,
+  collectReservedLinkIds,
+  collectReservedNodeIds,
+  collectReservedRerouteIds,
   createLGraphState,
+  linkIdReservations,
   mintGroupId,
   mintLinkId,
   mintNodeId,
@@ -53,9 +58,14 @@ import {
   observeGroupId,
   observeLinkId,
   observeNodeId,
-  observeRerouteId
+  observeRerouteId,
+  rerouteIdReservations
 } from './idAllocation'
-import type { LGraphState, NodeIdMintMode } from './idAllocation'
+import type {
+  LGraphState,
+  NodeIdMintMode,
+  ReservedIdIndex
+} from './idAllocation'
 import { isRootGraphDocBound } from './docBoundGraphs'
 import {
   collectingSeveredLinks,
@@ -69,6 +79,7 @@ import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { rekeyGraphId } from '@/stores/rekeyGraphId'
+import { toGroupId } from '@/types/groupId'
 import {
   UNASSIGNED_NODE_ID,
   compareNodeIds,
@@ -188,9 +199,6 @@ import {
   runExtensionSerializeHook
 } from './extensionPersistence'
 import {
-  collectReservedGroupIds,
-  collectReservedLinkIds,
-  collectReservedRerouteIds,
   normalizeSubgraphDefinitions,
   topologicalSortSubgraphs
 } from './subgraph/subgraphDeduplication'
@@ -243,6 +251,8 @@ export interface GraphAddOptions {
 
 /** Options for {@link LGraph.remove} method. */
 export interface GraphRemoveOptions {
+  /** Remove an item even when it normally opts out via `ignore_remove`. */
+  force?: boolean
   /** Keep the subgraph definitions the node references; the caller re-creates the node elsewhere in the same root graph. */
   preserveSubgraphDefinitions?: boolean
 }
@@ -268,6 +278,14 @@ function getRuntimeRootGraph(graph: LGraph): LGraph | undefined {
 
 function runtimeOptional<T>(value: T): T | undefined {
   return value
+}
+
+function groupIdReservations(rootGraph: LGraph): ReservedIdIndex {
+  return {
+    has: (id) =>
+      layoutStore.getGroupLayout(rootGraph.id, toGroupId(id)) != null,
+    collect: () => collectReservedGroupIds(rootGraph)
+  }
 }
 
 function fireNodeRemovalLifecycle(node: LGraphNode): void {
@@ -1379,7 +1397,7 @@ export class LGraph
         groupId === -1 ||
         layoutStore.getGroupLayout(this.rootGraph.id, groupId)
       ) {
-        node.id = mintGroupId(state)
+        node.id = mintGroupId(state, groupIdReservations(this.rootGraph))
       }
       observeGroupId(state, node.id)
 
@@ -1408,10 +1426,23 @@ export class LGraph
       throw 'LiteGraph: max number of nodes in a graph reached'
     }
 
+    const reservedNodeIds: ReservedIdIndex = {
+      has: (candidate) =>
+        [this.rootGraph, ...this.rootGraph.subgraphs.values()].some(
+          (owner) => owner.getNodeById(toNodeId(candidate)) != null
+        ),
+      collect: () =>
+        new Set(
+          [...collectReservedNodeIds(this.rootGraph)]
+            .map(Number)
+            .filter(Number.isSafeInteger)
+        )
+    }
+
     // give him an id
     if (node.id === UNASSIGNED_NODE_ID) {
       const mintMode = nodeIdMintModeFor(this)
-      node.id = mintNodeId(state, mintMode)
+      node.id = mintNodeId(state, mintMode, reservedNodeIds)
     } else {
       observeNodeId(state, node.id)
     }
@@ -1426,7 +1457,7 @@ export class LGraph
     node.graph = this
 
     attachNodeToStores(this, node, () =>
-      mintNodeId(state, nodeIdMintModeFor(this))
+      mintNodeId(state, nodeIdMintModeFor(this), reservedNodeIds)
     )
 
     this._nodes.push(node)
@@ -1504,7 +1535,7 @@ export class LGraph
       return
     }
     // cannot be removed
-    if (node.ignore_remove) {
+    if (node.ignore_remove && !options.force) {
       console.warn('LiteGraph: node cannot be removed', node)
       return
     }
@@ -1554,37 +1585,39 @@ export class LGraph
       this.releaseSubgraphs(findReleasableSubgraphs(this.rootGraph, node))
     }
 
-    // callback
-    node.onRemoved?.()
-    clearNodeOwnedStoreState(node)
+    try {
+      node.onRemoved?.()
+    } finally {
+      const order = node.order
+      try {
+        clearNodeOwnedStoreState(node)
+        useExecutionOrderStore().remove(graphScopeOf(this), node.id)
+        detachNodeFromStores(this, node)
+        detachNodeLayout(node)
 
-    const order = node.order
-    useExecutionOrderStore().remove(graphScopeOf(this), node.id)
-    detachNodeFromStores(this, node)
-    detachNodeLayout(node)
+        const { list_of_graphcanvas } = this
+        if (list_of_graphcanvas) {
+          for (const canvas of list_of_graphcanvas) {
+            delete canvas.selected_nodes[node.id]
+            canvas.deselect(node)
+          }
+        }
+        useSelectionStore().apply(graphScopeOf(this), {
+          type: 'selection.remove',
+          key: toSelectableKey('node', node.id)
+        })
+      } finally {
+        node.graph = null
+        node.order = order
+        this.incrementVersion()
 
-    node.graph = null
-    node.order = order
-    this.incrementVersion()
+        const pos = this._nodes.indexOf(node)
+        if (pos != -1) this._nodes.splice(pos, 1)
 
-    const { list_of_graphcanvas } = this
-    if (list_of_graphcanvas) {
-      for (const canvas of list_of_graphcanvas) {
-        delete canvas.selected_nodes[node.id]
-        canvas.deselect(node)
+        if (this._nodes_by_id[node.id] === node) {
+          delete this._nodes_by_id[node.id]
+        }
       }
-    }
-    useSelectionStore().apply(graphScopeOf(this), {
-      type: 'selection.remove',
-      key: toSelectableKey('node', node.id)
-    })
-
-    // remove from containers
-    const pos = this._nodes.indexOf(node)
-    if (pos != -1) this._nodes.splice(pos, 1)
-
-    if (this._nodes_by_id[node.id] === node) {
-      delete this._nodes_by_id[node.id]
     }
     this.onNodeRemoved?.(node)
     this.events.dispatch('node:removed', { node })
@@ -1871,7 +1904,7 @@ export class LGraph
 
   addFloatingLink(link: LLink): LLink | undefined {
     if (link.id === -1) {
-      link.id = mintLinkId(this.state)
+      link.id = mintLinkId(this.state, linkIdReservations(this.rootGraph))
     }
 
     if (!registerLinkTopology(this, link)) return
@@ -1980,7 +2013,9 @@ export class LGraph
     floating
   }: OptionalProps<SerialisableReroute, 'id'>): Reroute | undefined {
     const rerouteId =
-      id === undefined ? mintRerouteId(this.state) : toRerouteId(id)
+      id === undefined
+        ? mintRerouteId(this.state, rerouteIdReservations(this.rootGraph))
+        : toRerouteId(id)
     observeRerouteId(this.state, rerouteId)
 
     const existingReroute = this.reroutes.get(rerouteId)
@@ -2160,9 +2195,23 @@ export class LGraph
     const subgraphs = data.map((definition) =>
       this.createNormalizedSubgraph(definition)
     )
-    for (const definition of topologicalSortSubgraphs(data))
-      this.subgraphs.get(definition.id)?.configure(definition)
-    return subgraphs
+    try {
+      for (const definition of topologicalSortSubgraphs(data))
+        this.subgraphs.get(definition.id)?.configure(definition)
+      return subgraphs
+    } catch (error) {
+      try {
+        this.releaseSubgraphs(subgraphs)
+      } catch (cleanupError) {
+        const combinedError = new AggregateError(
+          [error, cleanupError],
+          'Subgraph configuration and rollback both failed'
+        )
+        combinedError.cause = error
+        throw combinedError
+      }
+      throw error
+    }
   }
 
   private createNormalizedSubgraph(normalized: ExportedSubgraph): Subgraph {
@@ -2711,7 +2760,10 @@ export class LGraph
     // Shared definitions may survive, so unpacked groups need fresh layout
     // ids, like the reroutes below.
     for (const groupInfo of groups) {
-      const groupId = mintGroupId(this.rootGraph.state)
+      const groupId = mintGroupId(
+        this.rootGraph.state,
+        groupIdReservations(this.rootGraph)
+      )
       groupInfo.id = groupId
       const group = new LGraphGroup(groupInfo.title, groupId)
       this.add(group, true)
@@ -2801,7 +2853,10 @@ export class LGraph
     const rerouteIdMap = new Map<RerouteId, RerouteId>()
     const oldReroutes = subgraphNode.subgraph.reroutes
     for (const reroute of oldReroutes.values()) {
-      const migratedId = mintRerouteId(this.state)
+      const migratedId = mintRerouteId(
+        this.state,
+        rerouteIdReservations(this.rootGraph)
+      )
       const migratedReroute = this.setReroute({
         id: migratedId,
         pos: [reroute.pos[0] + offsetX, reroute.pos[1] + offsetY],
@@ -3148,20 +3203,13 @@ export class LGraph
             const runtimeLastNodeId = runtimeOptional(lastNodeId)
             const runtimeLastRerouteId = runtimeOptional(lastRerouteId)
             if (runtimeLastGroupId != null)
-              state.lastGroupId = Math.max(
-                state.lastGroupId,
-                runtimeLastGroupId
-              )
+              observeGroupId(state, toGroupId(runtimeLastGroupId))
             if (runtimeLastLinkId != null)
-              state.lastLinkId = toLinkId(
-                Math.max(state.lastLinkId, runtimeLastLinkId)
-              )
+              observeLinkId(state, toLinkId(runtimeLastLinkId))
             if (runtimeLastNodeId != null)
-              state.lastNodeId = Math.max(state.lastNodeId, runtimeLastNodeId)
+              observeNodeId(state, toNodeId(runtimeLastNodeId))
             if (runtimeLastRerouteId != null)
-              state.lastRerouteId = toRerouteId(
-                Math.max(state.lastRerouteId, runtimeLastRerouteId)
-              )
+              observeRerouteId(state, toRerouteId(runtimeLastRerouteId))
           }
 
           // Links
