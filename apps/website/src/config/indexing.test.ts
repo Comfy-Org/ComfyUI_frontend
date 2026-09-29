@@ -1,5 +1,26 @@
-import { describe, expect, it, vi } from 'vitest'
-import { isExcludedFromSitemap, isNoindexPathname } from './indexing'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  isExcludedFromSitemap,
+  isIndexableModelPage,
+  isNoindexPathname
+} from './indexing'
+
+const launch = vi.hoisted(() => ({ MODEL_PAGES_INDEXABLE: false }))
+vi.mock(import('./model-page-launch'), () => launch)
+
+const MODELS_PAGES_BY_KIND = [
+  ['hub', '/models/'],
+  ['model', '/models/bfl--flux-2-max--generate-images/'],
+  ['alias', '/models/bfl--flux-2-max/'],
+  ['workflow', '/models/workflows/change-material/'],
+  ['app', '/models/apps/cinematic-studio/'],
+  ['showcase', '/models/showcase/'],
+  ['catalogue', '/models/catalogue.json'],
+  ['page data', '/models/bfl--flux-2-max--generate-images/page.json']
+] as const
+
+const inSitemap = (pathname: string) =>
+  !isExcludedFromSitemap(`https://comfy.org${pathname}`)
 
 describe('indexing policy', () => {
   it('excludes render pages while keeping the public Models marketing routes', () => {
@@ -85,4 +106,29 @@ describe('indexing policy', () => {
       )
     ).toBe(true)
   })
+
+  it.for(MODELS_PAGES_BY_KIND)(
+    'keeps every Models page but the hub out of the sitemap before launch (%s)',
+    ([kind, pathname]) => {
+      expect(isIndexableModelPage(pathname)).toBe(false)
+      expect(inSitemap(pathname)).toBe(kind === 'hub')
+    }
+  )
+})
+
+describe('indexing policy once model pages launch', () => {
+  beforeEach(() => {
+    launch.MODEL_PAGES_INDEXABLE = true
+  })
+  afterEach(() => {
+    launch.MODEL_PAGES_INDEXABLE = false
+  })
+
+  it.for(MODELS_PAGES_BY_KIND)(
+    'lists only the hub and canonical model pages (%s)',
+    ([kind, pathname]) => {
+      expect(isIndexableModelPage(pathname)).toBe(kind === 'model')
+      expect(inSitemap(pathname)).toBe(kind === 'hub' || kind === 'model')
+    }
+  )
 })
