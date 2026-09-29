@@ -22,7 +22,7 @@ describe('useCheckoutPromo', () => {
   it('ignores a second Apply while the first code is still being priced', async () => {
     const { requote, answerLatest } = supersedingRequote()
     const promo = useCheckoutPromo({
-      prefill: 'LAUNCH20',
+      prefill: { promotionCode: 'LAUNCH20' },
       live: () => true,
       requote
     })

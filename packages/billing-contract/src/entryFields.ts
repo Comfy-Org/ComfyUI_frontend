@@ -2,6 +2,8 @@
  * The query shape of an entry URL, in one table so the builder and the parser
  * cannot drift apart: a field is written and read under the same name, and a
  * value that fails the shared charset reports the same code on both sides.
+ * The one exception is `promo`: the parser carries an unreadable one apart
+ * rather than refusing the link, because it only prefills a field.
  */
 
 /** Names are provisional; see `contract.ts`. */

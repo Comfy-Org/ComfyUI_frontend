@@ -204,7 +204,7 @@ export function useFullPageCheckout() {
   )
 
   const promo = useCheckoutPromo({
-    prefill: entry.value?.promotionCode,
+    prefill: entry.value,
     live: () => promoLive.value,
     requote: (promotionCode) => {
       const arrival = entry.value

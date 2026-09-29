@@ -1,5 +1,6 @@
 import type { PreviewSubscribeResult } from '@comfyorg/account-core/billing'
 import { matchesServerCode } from '@comfyorg/account-core/billing'
+import type { BillingEntry } from '@comfyorg/billing-contract'
 
 import type { CheckoutPage } from '@/checkout/checkoutPage'
 import { isLocked } from '@/checkout/checkoutPage'
@@ -43,9 +44,25 @@ export type PromoEntryEvent =
 
 const IDLE: PromoEntry = { kind: 'idle' }
 
-/** A code carried in on the entry URL opens the field with it typed, never applied. */
-export function initialPromoEntry(prefill: string | undefined): PromoEntry {
-  return prefill === undefined ? IDLE : { kind: 'editing', draft: prefill }
+/** What the entry URL carried for the promo field. */
+export type PromoPrefill = Pick<
+  BillingEntry,
+  'promotionCode' | 'unreadablePromotionCode'
+>
+
+/**
+ * A code carried in on the entry URL opens the field with it typed, never
+ * applied. One the link could not carry opens refused, as typed.
+ */
+export function initialPromoEntry(
+  prefill: PromoPrefill | undefined
+): PromoEntry {
+  if (prefill?.promotionCode !== undefined)
+    return { kind: 'editing', draft: prefill.promotionCode }
+  const unreadable = prefill?.unreadablePromotionCode
+  return unreadable === undefined || unreadable.trim() === ''
+    ? IDLE
+    : { kind: 'rejected', draft: unreadable, reason: 'invalid' }
 }
 
 type Kind = PromoEntry['kind']

@@ -2,7 +2,11 @@ import { computed, shallowReadonly, shallowRef } from 'vue'
 
 import type { PreviewSubscribeResult } from '@comfyorg/account-core/billing'
 
-import type { PromoEntry, PromoEntryEvent } from '@/checkout/promoEntry'
+import type {
+  PromoEntry,
+  PromoEntryEvent,
+  PromoPrefill
+} from '@/checkout/promoEntry'
 import {
   hasUnappliedDraft,
   initialPromoEntry,
@@ -11,8 +15,8 @@ import {
 } from '@/checkout/promoEntry'
 
 interface CheckoutPromoOptions {
-  /** A code the entry URL carried; it opens the field and waits for Apply. */
-  readonly prefill: string | undefined
+  /** What the entry URL carried; a code opens the field and waits for Apply. */
+  readonly prefill: PromoPrefill | undefined
   /** Whether the customer may change the code right now. */
   readonly live: () => boolean
   /** Prices the plan again, with the code or, when omitted, without one. */
