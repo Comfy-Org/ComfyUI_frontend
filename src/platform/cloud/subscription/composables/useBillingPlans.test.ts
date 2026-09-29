@@ -11,7 +11,11 @@ vi.mock(import('@/platform/telemetry/reportError'))
 const railState = vi.hoisted(() => ({
   rail: null as { readPlans: ReturnType<typeof vi.fn> } | null
 }))
-const scopeState = vi.hoisted(() => ({ workspaceId: 'workspace-1' }))
+const scopeState = vi.hoisted(() => ({ workspaceId: 'workspace-1' as string | null }))
+const identityState = vi.hoisted(() => ({ userId: 'user-1' }))
+vi.mock(import('@/stores/authStore'), () => ({
+  useAuthStore: () => ({ userId: identityState.userId })
+}))
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingReadRail'),
   () => ({ useBillingReadRail: () => railState.rail })
@@ -46,6 +50,7 @@ describe('useBillingPlans', () => {
     vi.resetModules()
     railState.rail = null
     scopeState.workspaceId = 'workspace-1'
+    identityState.userId = 'user-1'
     vi.spyOn(
       useTeamWorkspaceStore(),
       'activeWorkspaceId',
@@ -273,6 +278,24 @@ describe('useBillingPlans', () => {
           level: 'error'
         })
       )
+    })
+
+    it('does not reuse a personal catalog after the signed-in user changes', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      scopeState.workspaceId = null
+      vi.mocked(workspaceApi.getBillingPlans)
+        .mockResolvedValueOnce({ plans: [buildPlan()] })
+        .mockResolvedValueOnce({
+          plans: [buildPlan({ slug: 'creator-monthly' })]
+        })
+      const { fetchPlans, plans } = useBillingPlans()
+
+      await fetchPlans()
+      identityState.userId = 'user-2'
+      await fetchPlans()
+
+      expect(plans.value).toEqual([buildPlan({ slug: 'creator-monthly' })])
+      expect(workspaceApi.getBillingPlans).toHaveBeenCalledTimes(2)
     })
 
     it('clears previous error state when a new fetch succeeds', async () => {

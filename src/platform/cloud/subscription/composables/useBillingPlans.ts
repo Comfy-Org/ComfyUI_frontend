@@ -10,6 +10,7 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const plans = ref<Plan[]>([])
 const currentPlanSlug = ref<string | null>(null)
@@ -20,7 +21,9 @@ let fetchPromise: Promise<void> | null = null
 let adoptedScopeKey: string | null = null
 
 function billingScopeKey(): string {
-  return useTeamWorkspaceStore().activeWorkspaceId ?? 'personal'
+  const identity = useAuthStore().userId ?? 'anonymous'
+  const workspace = useTeamWorkspaceStore().activeWorkspaceId ?? 'personal'
+  return `${identity}:${workspace}`
 }
 
 export function useBillingPlans() {
