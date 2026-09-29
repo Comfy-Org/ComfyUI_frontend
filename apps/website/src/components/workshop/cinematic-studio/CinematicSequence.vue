@@ -72,7 +72,7 @@ const thumbs = computed(() =>
       take,
       look,
       current,
-      label: tc('cinematic.stage.thumb', locale, {
+      label: tc('cinematic.stage.takeName', locale, {
         shot: take.shot,
         take: take.letter
       }),
