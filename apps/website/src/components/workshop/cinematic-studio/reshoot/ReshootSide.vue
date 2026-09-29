@@ -76,9 +76,10 @@ const analyzing = computed(() => depth === 'analyzing')
 const framesText = computed(() =>
   frames === undefined
     ? ''
-    : rc('reshoot.frames', locale)
-        .replace('{frames}', String(frames))
-        .replace('{seconds}', (frames / 24).toFixed(1))
+    : rc('reshoot.frames', locale, {
+        frames,
+        seconds: (frames / 24).toFixed(1)
+      })
 )
 
 function choose(event: Event) {

@@ -21,6 +21,7 @@ import { sameFormValues } from '../../lib/workshop/form-values'
 import { validateWorkshopMediaInputs } from '../../config/workshop-media-validation'
 import { leaveForSignIn } from '../../config/workshop-return'
 import { useSignInHref } from '../../composables/useSignInHref'
+import { usePersonalWorkspaceSwitch } from '../../composables/usePersonalWorkspaceSwitch'
 import { useTablist } from '../../composables/useTablist'
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import type {
@@ -40,10 +41,8 @@ import {
 } from '../../config/workshop-page-state'
 import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
 import { IDLE, transition } from '../../config/workshop-run'
-import {
-  refreshWorkshopCredits,
-  useWorkshopCredits
-} from '../../config/workshop-credits'
+import { refreshWorkshopCredits } from '../../config/workshop-credits'
+import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
 import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import type { RouterRenderResult } from '../../config/router-render'
 import { router_render } from '../../config/router-render'
@@ -69,7 +68,7 @@ import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopAuthFlag,
-  useWorkshopWorkflowsEnabled
+  useWorkshopAppsEnabled
 } from '../../scripts/posthog'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
 import {
@@ -225,12 +224,12 @@ const attachments = computed(() =>
 )
 const revealed = ref(false)
 
-const { user, session, sessionFailure, settled, ensureFresh, remint } =
+const { user, session, sessionFailure, settled, ensureFresh } =
   useWorkshopSession()
-const { balance } = useWorkshopCredits()
+const balance = useWorkshopModelBalance(session)
 const workshopEnabled = useWorkshopEnabled()
 const authEnabled = useWorkshopAuthFlag()
-const studioEnabled = useWorkshopWorkflowsEnabled()
+const studioEnabled = useWorkshopAppsEnabled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
 const docsHref = modelDocsHref(model)
@@ -530,25 +529,11 @@ async function historyToken(): Promise<string> {
   return result.session.token
 }
 
-const personalSwitchPending = ref(false)
-const personalSwitchError = ref(false)
-
-async function switchToPersonal() {
-  if (personalSwitchPending.value) return
-  personalSwitchPending.value = true
-  personalSwitchError.value = false
-  try {
-    const result = await remint(undefined, {
-      preserveCredentialOnTransientFailure: true
-    })
-    if (result?.status === 'ok') await refreshWorkshopCredits({ force: true })
-    else if (result?.status === 'error') personalSwitchError.value = true
-  } catch {
-    personalSwitchError.value = true
-  } finally {
-    personalSwitchPending.value = false
-  }
-}
+const {
+  pending: personalSwitchPending,
+  failed: personalSwitchError,
+  switchToPersonal
+} = usePersonalWorkspaceSwitch()
 
 onUnmounted(() => {
   cancelRun()
@@ -972,10 +957,9 @@ function useInCode() {
               data-testid="gate-note"
             >
               {{
-                t('workshop.error.noCreditsCloud', locale).replace(
-                  '{workspace}',
-                  () => session?.workspace.name ?? ''
-                )
+                t('workshop.error.noCreditsCloud', locale, {
+                  workspace: session?.workspace.name ?? ''
+                })
               }}
             </p>
             <Button
@@ -995,10 +979,9 @@ function useInCode() {
               </p>
               <p class="text-xs text-content-secondary">
                 {{
-                  t('workshop.error.memberNoCredits', locale).replace(
-                    '{workspace}',
-                    () => session?.workspace.name ?? ''
-                  )
+                  t('workshop.error.memberNoCredits', locale, {
+                    workspace: session?.workspace.name ?? ''
+                  })
                 }}
               </p>
             </div>

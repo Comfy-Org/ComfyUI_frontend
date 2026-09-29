@@ -18,6 +18,7 @@ interface ImportMetaEnv {
   readonly PUBLIC_WORKSHOP_AUTH_FLAG?: string
   readonly PUBLIC_WORKSHOP_ENABLED?: string
   readonly PUBLIC_WORKSHOP_WORKFLOWS_ENABLED?: string
+  readonly PUBLIC_WORKSHOP_APPS_ENABLED?: string
   readonly PUBLIC_WORKSHOP_ROUTER_RUN?: string
   readonly PUBLIC_WORKSHOP_SAVE_ASSETS?: string
   /** Optional Turnstile mode override: off, shadow, or enforce. */
@@ -26,4 +27,15 @@ interface ImportMetaEnv {
   readonly PUBLIC_POSTHOG_API_HOST?: string
   readonly PUBLIC_POSTHOG_UI_HOST?: string
   readonly PUBLIC_CUSTOMERIO_WRITE_KEY?: string
+}
+
+// User-Agent Client Hints are Chromium-only, so TypeScript's DOM lib omits them.
+declare global {
+  interface NavigatorUAData {
+    getHighEntropyValues(hints: string[]): Promise<{ architecture?: string }>
+  }
+
+  interface Navigator {
+    readonly userAgentData?: NavigatorUAData
+  }
 }

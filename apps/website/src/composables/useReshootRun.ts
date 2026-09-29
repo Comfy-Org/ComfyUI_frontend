@@ -141,10 +141,9 @@ export function useReshootRun(locale: Locale = 'en') {
   })
   const clipError = computed(() =>
     clipSeconds.value !== undefined && !clipFits(clipSeconds.value)
-      ? rc('reshoot.clipLength', locale).replace(
-          '{seconds}',
-          clipSeconds.value.toFixed(1)
-        )
+      ? rc('reshoot.clipLength', locale, {
+          seconds: clipSeconds.value.toFixed(1)
+        })
       : undefined
   )
 
@@ -236,10 +235,9 @@ export function useReshootRun(locale: Locale = 'en') {
     const s = job.status
     if (s === 'queued' || s === 'pending' || s === 'submitted')
       return job.queue_position
-        ? rc('reshoot.stage.queuedAt', locale).replace(
-            '{n}',
-            String(job.queue_position)
-          )
+        ? rc('reshoot.stage.queuedAt', locale, {
+            n: job.queue_position
+          })
         : rc('reshoot.stage.queued', locale)
     return label
   }

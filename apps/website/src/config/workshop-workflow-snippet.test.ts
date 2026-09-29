@@ -18,11 +18,17 @@ describe('workflow API snippets', () => {
     'matches browser defaults for $slug',
     async (model) => {
       const initial = initialWorkshopPageState(model)
-      const inputs = Object.fromEntries(
-        initial.schema
+      // A browser run draws a fresh seed for an empty `randomize` input, so
+      // pin one here: the snippet and the run must then send the same body.
+      const seeds = Object.entries(model.workflow.inputs)
+        .filter(([, input]) => input.randomize)
+        .map(([name]) => [name, 7])
+      const inputs = Object.fromEntries([
+        ...initial.schema
           .filter(urlUploadField)
-          .map((field) => [field.name, 'https://media.example/' + field.name])
-      )
+          .map((field) => [field.name, 'https://media.example/' + field.name]),
+        ...seeds
+      ])
       const request = workflowSnippetRequest(model, inputs)
       const prepared = await prepareWorkflowRender(
         model,
@@ -31,7 +37,10 @@ describe('workflow API snippets', () => {
         async (source) =>
           'UPLOADED_' + new URL(String(source)).pathname.slice(1) + '_FILENAME'
       )
-      expect(request).toEqual(workflowCloudRequest(model.workflow, prepared))
+      expect(request).toEqual({
+        ...workflowCloudRequest(model.workflow, prepared),
+        extra_data: { api_key_comfy_org: 'YOUR_API_KEY' }
+      })
     }
   )
 

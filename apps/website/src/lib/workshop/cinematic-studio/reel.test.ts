@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import type { RunOutput } from '../../../config/workshop-run'
+import type { RunFailure, RunOutput } from '../../../config/workshop-run'
 import type { Reel, ReelEvent } from './reel'
 import {
   EMPTY_REEL,
   isRendering,
   reduceReel,
   selectedTake,
+  takeKind,
   takesOfShot
 } from './reel'
 
@@ -102,5 +103,28 @@ describe('reduceReel', () => {
   ] as const)('selecting %s', ([, id, expected]) => {
     const reel = play([started(['a', 'b']), { type: 'selected', id }])
     expect(selectedTake(reel)?.id).toBe(expected)
+  })
+})
+
+describe('takeKind', () => {
+  const failed = (reason: RunFailure) =>
+    play([started(['a']), { type: 'takeFailed', id: 'a', reason }]).takes[0]
+  const [rendering] = play([started(['a'])]).takes
+  const [done] = play([
+    started(['a']),
+    { type: 'takeSucceeded', id: 'a', output }
+  ]).takes
+  const [cancelled] = play([started(['a']), { type: 'rendersCancelled' }]).takes
+
+  it.for([
+    ['rendering', rendering],
+    ['done', done],
+    ['cancelled', cancelled],
+    ['unpaid', failed('noCredits')],
+    ['blocked', failed('policy')],
+    ['blocked', failed('validation')],
+    ['failed', failed('provider')]
+  ] as const)('reads as %s', ([kind, take]) => {
+    expect(takeKind(take)).toBe(kind)
   })
 })

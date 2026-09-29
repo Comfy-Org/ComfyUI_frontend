@@ -1,6 +1,6 @@
 /**
  * The CrossView demo's whole backend conversation: Comfy API v2 against its
- * own deployment, through the local dev proxy (scripts/crossview-dev-proxy.mjs)
+ * own deployment, through a local dev proxy kept outside this repo
  * that holds the key. Nothing here touches the Hub's Cloud session or its run
  * engine; a real integration replaces PROXY with a server route of its own.
  */

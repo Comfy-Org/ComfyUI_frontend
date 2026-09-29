@@ -48,9 +48,10 @@ The two helper nodes are on
 ## What a real backend replaces
 
 `deployment.ts` talks to `PUBLIC_CROSSVIEW_PROXY` (default
-`http://127.0.0.1:4329`), a local proxy (`scripts/crossview-dev-proxy.ts`)
-that adds the deployment's API key. There is no production path: no auth, no
-quotas, no billing, no job ownership. Replace the `PROXY` base and the proxy
+`http://127.0.0.1:4329`): something that forwards `/api/v2/*` to the
+deployment and adds its API key. This repo does not ship one. For local work
+that is a small dev proxy kept outside the repo; there is no production path:
+no auth, no quotas, no billing, no job ownership. Replace the `PROXY` base
 with a server route, and everything else stays.
 
 ## Known limits
@@ -64,11 +65,9 @@ with a server route, and everything else stays.
 
 ## Running it locally
 
-```sh
-# ~/.config/comfy-workshop/crossview.env
-export CROSSVIEW_DEPLOYMENT_URL=https://dep-….run.comfy.app
-# and COMFY_API_KEY in the same file or deployment.env
+Run a proxy on port 4329 (or set `PUBLIC_CROSSVIEW_PROXY`) that forwards
+`/api/v2/*` to a CrossView deployment with its API key, then:
 
-pnpm --filter @comfyorg/website dev:crossview-proxy
+```sh
 pnpm --filter @comfyorg/website dev
 ```

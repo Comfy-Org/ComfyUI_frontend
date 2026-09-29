@@ -1,3 +1,5 @@
+import type { NamedValues } from '../../../i18n/interpolate'
+import { interpolate } from '../../../i18n/interpolate'
 import type { Locale, LocalizedText } from '../../../i18n/translations'
 
 const copy = {
@@ -192,8 +194,8 @@ const copy = {
     'zh-CN': '选择其他片段'
   },
   'reshoot.clip.help': {
-    en: 'A 5 to 15 second clip with a clear subject and no letterbox bars.',
-    'zh-CN': '5 到 15 秒、主体清晰、没有黑边的片段。'
+    en: '5–15 seconds, clear subject, no black bars',
+    'zh-CN': '5–15 秒，主体清晰，无黑边'
   },
   'reshoot.aspect': { en: 'Aspect ratio', 'zh-CN': '画面比例' },
   'reshoot.aspect.source': { en: 'Match source', 'zh-CN': '与原片一致' },
@@ -307,7 +309,11 @@ const copy = {
 
 export type ReshootCopyKey = keyof typeof copy
 
-export function rc(key: ReshootCopyKey, locale: Locale = 'en'): string {
+export function rc(
+  key: ReshootCopyKey,
+  locale: Locale = 'en',
+  named: NamedValues = {}
+): string {
   const entry: LocalizedText = copy[key]
-  return entry[locale] ?? entry.en
+  return interpolate(entry[locale] ?? entry.en, named)
 }

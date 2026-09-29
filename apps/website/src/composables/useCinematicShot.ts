@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, shallowRef } from 'vue'
+import { computed, onMounted, ref, shallowRef, watchEffect } from 'vue'
 
 import type {
   AspectRatio,
@@ -11,21 +11,20 @@ import {
   RESOLUTIONS,
   directionOption
 } from '../lib/workshop/cinematic-studio/catalog'
+import { shotEstimate } from '../lib/workshop/cinematic-studio/estimate'
 import type { CinematicModel } from '../lib/workshop/cinematic-studio/models'
 import {
-  cinematicPrompt,
-  cinematicPromptSegments
-} from '../lib/workshop/cinematic-studio/prompt'
+  shotAspects,
+  takesReferences
+} from '../lib/workshop/cinematic-studio/models'
+import { nearestAspect } from '../lib/workshop/cinematic-studio/frames'
+import { cinematicPrompt } from '../lib/workshop/cinematic-studio/prompt'
 import type { StarterShot } from '../lib/workshop/cinematic-studio/starters'
 import { isCinematicDemo, useCinematicDemoRun } from './useCinematicDemoRun'
 import { useCinematicStudioRun } from './useCinematicStudioRun'
 
 /** The shot being directed, shared by every Cinematic Studio layout. */
 export function useCinematicShot(models: readonly CinematicModel[]) {
-  const studio = isCinematicDemo()
-    ? useCinematicDemoRun()
-    : useCinematicStudioRun(models.length)
-
   const modelSlug = ref(models[0]?.slug ?? '')
   const scene = ref('')
   const enhance = ref(true)
@@ -35,6 +34,8 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const takes = ref(1)
   const cast = shallowRef<File>()
   const palette = shallowRef<File>()
+  const colors = ref<readonly string[]>([])
+  const mainColor = ref<number>()
 
   onMounted(() => {
     const requested = new URLSearchParams(window.location.search).get('model')
@@ -47,14 +48,44 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     direction: direction.value,
     enhance: enhance.value,
     cast: !!cast.value,
-    palette: !!palette.value
+    palette: !!palette.value,
+    colors: colors.value,
+    mainColor: mainColor.value
   }))
-  const promptSegments = computed(() => cinematicPromptSegments(brief.value))
   const references = computed(() =>
     [cast.value, palette.value].filter((file): file is File => !!file)
   )
   const model = computed(() =>
     models.find((option) => option.slug === modelSlug.value)
+  )
+  const aspects = computed(() =>
+    shotAspects(model.value, references.value.length > 0)
+  )
+  // A model that cannot make the chosen frame moves it to its nearest one.
+  // `undefined` leaves every frame available; `[]` means the model offers none,
+  // and there is no nearest frame to fall to.
+  function settleAspect() {
+    if (aspects.value?.length)
+      aspect.value = nearestAspect(aspect.value, aspects.value)
+  }
+  watchEffect(settleAspect)
+  const estimate = computed(() =>
+    shotEstimate(model.value?.prices, {
+      aspect: aspect.value,
+      resolution: resolution.value,
+      references: references.value.length,
+      takes: takes.value
+    })
+  )
+
+  const studio = isCinematicDemo()
+    ? useCinematicDemoRun()
+    : useCinematicStudioRun(models.length, () => estimate.value?.total.min)
+
+  const memberWorkspace = computed(() =>
+    studio.session.value?.role === 'member'
+      ? studio.session.value.workspace.name
+      : undefined
   )
 
   function choose(part: DirectionPart, id: string) {
@@ -71,10 +102,16 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     () =>
       studio.gate.value === 'ready' &&
       scene.value.trim().length > 0 &&
-      !(references.value.length > 0 && !model.value?.referenceSlug)
+      takesReferences(model.value, references.value.length) &&
+      // A model offering no frame at all has nothing honest to send.
+      (aspects.value === undefined || aspects.value.includes(aspect.value))
   )
 
   function generate() {
+    // `switch-model` sets the model and generates in the same handler, so the
+    // watchEffect above has not flushed: settle the frame here rather than
+    // carrying the previous model's over into the request and the price.
+    settleAspect()
     if (!canGenerate.value) return
     void studio.generate({
       modelSlug: modelSlug.value,
@@ -97,12 +134,16 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     enhance,
     direction,
     aspect,
+    aspects,
     resolution,
     takes,
     cast,
     palette,
-    promptSegments,
+    colors,
+    mainColor,
     references,
+    estimate,
+    memberWorkspace,
     choose,
     start,
     generate

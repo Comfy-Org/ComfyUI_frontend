@@ -12,6 +12,7 @@ import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
+import CinematicCreditSummary from './CinematicCreditSummary.vue'
 import CinematicSequence from './CinematicSequence.vue'
 import CinematicTakeBar from './CinematicTakeBar.vue'
 import CinematicTakeFrame from './CinematicTakeFrame.vue'
@@ -20,15 +21,20 @@ const {
   reel,
   aspect,
   models,
+  memberWorkspace,
   locale = 'en'
 } = defineProps<{
   reel: Reel
   aspect: AspectRatio
   models: readonly CinematicModel[]
+  memberWorkspace?: string
   locale?: Locale
 }>()
 
-const emit = defineEmits<{ select: [id: string]; retry: [id: string] }>()
+const emit = defineEmits<{
+  select: [id: string]
+  retry: [...ids: string[]]
+}>()
 
 const current = computed(() => selectedTake(reel))
 const modelName = computed(
@@ -56,6 +62,7 @@ const siblings = computed(() =>
       <template v-if="current">
         <CinematicTakeFrame
           :current
+          :member-workspace="memberWorkspace"
           :locale
           @retry="emit('retry', current.id)"
         />
@@ -66,11 +73,18 @@ const siblings = computed(() =>
           :locale
           @select="emit('select', $event)"
         />
+        <CinematicCreditSummary
+          :takes="siblings"
+          :member-workspace="memberWorkspace"
+          :locale
+          class="w-full"
+          @retry="emit('retry', ...$event)"
+        />
       </template>
 
       <div
         v-else
-        class="flex max-w-3xl flex-col items-center justify-center gap-2 rounded-md bg-transparency-white-t4 p-6 text-center transition-[aspect-ratio] duration-300"
+        class="flex max-w-3xl flex-col items-center justify-center gap-2 rounded-xl p-6 text-center transition-[aspect-ratio] duration-300"
         :style="framedStyle(aspect, '60vh')"
         data-testid="cinematic-frame-preview"
       >

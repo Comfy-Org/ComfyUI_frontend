@@ -95,10 +95,7 @@ const left = (at: number) => `${(at / Math.max(1, frames - 1)) * 100}%`
           :key="key.frame"
           type="button"
           :aria-label="
-            rc('reshoot.move.goTo', locale).replace(
-              '{time}',
-              frameTime(key.frame)
-            )
+            rc('reshoot.move.goTo', locale, { time: frameTime(key.frame) })
           "
           :class="
             cn(

@@ -11,6 +11,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -213,7 +214,8 @@ function useSubscriptionInternal() {
   }
 
   const buildAuthHeaders = async (): Promise<Record<string, string>> => {
-    const authHeader = await getFirebaseAuthHeader()
+    const authHeader =
+      (await webSessionResourceHeader()) ?? (await getFirebaseAuthHeader())
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }

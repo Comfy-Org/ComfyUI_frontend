@@ -54,7 +54,9 @@ const {
   >
     <AppsBackLink :locale />
     <ReshootHeader :locale class="mb-4" />
-    <div class="grid items-start gap-6 lg:grid-cols-[27rem_minmax(0,1fr)]">
+    <div
+      class="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
+    >
       <ReshootUpload v-if="!picked" :locale @pick="demo.pick" />
       <ReshootSide
         v-else
