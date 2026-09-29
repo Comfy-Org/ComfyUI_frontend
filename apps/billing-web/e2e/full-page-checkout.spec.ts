@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 
+import { declinedOperation } from './fixtures/scenario'
 import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
 
@@ -151,4 +152,80 @@ test('368-15401: a failed saved-methods read errors on Saved only, and Add new s
   await expect(page.getByText('visa •••• 4242')).toBeVisible()
   await expect(page.getByText(SAVED_FAILED)).toBeHidden()
   await expect(payButton(page)).toBeEnabled()
+})
+
+test('a declined Pay leaves the card above an unchanged Pay, with support one click away', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.operations.op_subscribe = {
+    ...declinedOperation('op_subscribe'),
+    decline_reason: 'insufficient_funds'
+  }
+  await signIn(CHECKOUT)
+
+  await payButton(page).click()
+
+  const card = page.getByRole('alert')
+  await expect(card).toContainText('Payment declined')
+  await expect(card).toContainText('Reported issue: Insufficient funds')
+  await expect(payButton(page)).toBeEnabled()
+  const support = page.getByRole('link', { name: 'Contact support' })
+  await expect(support).toHaveAttribute('href', /op_subscribe/)
+  await expect(support).toHaveAttribute('href', /insufficient_funds/)
+  await expect(page).toHaveURL(/\/v1\/checkout\?/)
+})
+
+test('553-9297: a plan change on a plan set to end needs the keep-subscription tick: Pay without it sends nothing, with it sends the consent', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    cancel_at: '2026-07-28T00:00:00.000Z'
+  }
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    transition_type: 'upgrade',
+    requires_reactivation_confirmation: true,
+    cost_next_period_cents: 10_000
+  }
+  await signIn(CHECKOUT)
+
+  const notice = page.getByTestId('keep-subscription-notice')
+  await expect(notice).toContainText(
+    'Your plan was set to end on July 28, 2026'
+  )
+  await expect(notice).toContainText(
+    'Upgrading keeps your subscription, and it renews that day at $100.00.'
+  )
+  const box = page.getByRole('checkbox', {
+    name: 'Keep my subscription and renew it'
+  })
+  await expect(payButton(page)).toBeEnabled()
+
+  await payButton(page).click()
+
+  await expect(box).toHaveAttribute('aria-invalid', 'true')
+  await expect(box).toBeFocused()
+  await expect(
+    notice.getByText('Check the box to keep your subscription, then pay.')
+  ).toBeVisible()
+  await expect(payButton(page)).toBeEnabled()
+  expect(
+    cloud.requests.some((request) => request.path === '/billing/subscribe')
+  ).toBe(false)
+
+  await notice.getByText('Keep my subscription and renew it').click()
+  await expect(box).toHaveAttribute('aria-invalid', 'false')
+  await payButton(page).click()
+
+  await expect
+    .poll(() =>
+      cloud.requests.find((request) => request.path === '/billing/subscribe')
+    )
+    .toMatchObject({ body: { confirm_reactivation: true } })
 })
