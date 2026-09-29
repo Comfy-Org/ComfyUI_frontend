@@ -78,14 +78,17 @@ async function readBuiltPage(
   return path === undefined ? undefined : readFile(path, 'utf8')
 }
 
-const TWIN_LINK = /<link rel="alternate" type="text\/markdown"[^>]*>/
+const TWIN_LINK = /<link\b[^>]*\btype="text\/markdown"[^>]*>/
 
 async function unlinkTwin(root: string, pathname: string): Promise<void> {
   const path = await builtPagePath(root, pathname)
   if (path === undefined) return
   const html = await readFile(path, 'utf8')
   const unlinked = html.replace(TWIN_LINK, '')
-  if (unlinked !== html) await writeFile(path, unlinked, 'utf8')
+  if (unlinked === html) {
+    throw new Error(`${path} has no markdown twin link to remove`)
+  }
+  await writeFile(path, unlinked, 'utf8')
 }
 
 async function readBuiltTwinSource(
