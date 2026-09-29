@@ -17,7 +17,7 @@ describe('WidgetInputText Value Binding', () => {
     options: Partial<InputTextProps> & IWidgetOptions = {},
     callback?: (value: string) => void
   ) =>
-    createMockWidget<string>({
+    createMockWidget({
       value,
       name: 'test_input',
       options,

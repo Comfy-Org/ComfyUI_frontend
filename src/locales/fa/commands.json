@@ -278,9 +278,6 @@
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "تنظیم نام‌های جایگزین جستجوی زیرگراف"
   },
-  "Comfy_ToggleAssetAPI": {
-    "label": "آزمایشی: فعال‌سازی AssetAPI"
-  },
   "Comfy_ToggleCanvasInfo": {
     "label": "عملکرد بوم"
   },

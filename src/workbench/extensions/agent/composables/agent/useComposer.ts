@@ -1,6 +1,7 @@
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, getCurrentScope, onScopeDispose } from 'vue'
 
+import { composerPromptForSend } from '../../utils/composerPrompt'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 
 export interface ComposerAttachment {
@@ -13,63 +14,55 @@ export interface ComposerAttachment {
 
 export interface UseComposerOptions {
   onSend: (text: string, attachments: ComposerAttachment[]) => void
-  isStreaming: () => boolean
+  isRunning: () => boolean
   onStop: () => void
 }
 
 export function useComposer(options: UseComposerOptions) {
-  const { draft, attachments } = storeToRefs(useAgentComposerStore())
+  const store = useAgentComposerStore()
+  const { draft, attachments, prompt, workflowReferences, promptEpoch } =
+    storeToRefs(store)
+  if (getCurrentScope()) onScopeDispose(store.releaseUnusedAssets)
 
   const canSend = computed(
     () =>
-      (draft.value.trim().length > 0 || attachments.value.length > 0) &&
+      (draft.value.trim().length > 0 || prompt.value.references.length > 0) &&
       !attachments.value.some((item) => item.uploading)
   )
 
   function submit(): void {
-    if (options.isStreaming()) {
+    if (options.isRunning()) {
       options.onStop()
       return
     }
     if (!canSend.value) return
-    options.onSend(draft.value.trim(), attachments.value)
-    draft.value = ''
-    attachments.value = []
-  }
-
-  function insert(text: string): void {
-    draft.value = draft.value ? `${draft.value} ${text}` : text
-  }
-
-  function addAttachment(attachment: ComposerAttachment): void {
-    if (attachments.value.some((item) => item.id === attachment.id)) return
-    attachments.value = [...attachments.value, attachment]
-  }
-
-  function updateAttachment(
-    id: string,
-    patch: Partial<ComposerAttachment>
-  ): void {
-    attachments.value = attachments.value.map((item) =>
-      item.id === id ? { ...item, ...patch } : item
+    options.onSend(
+      composerPromptForSend(prompt.value).text.trim(),
+      attachments.value
     )
   }
 
-  function removeAttachment(id: string): void {
-    const removed = attachments.value.find((item) => item.id === id)
-    if (removed?.previewUrl?.startsWith('blob:'))
-      URL.revokeObjectURL(removed.previewUrl)
-    attachments.value = attachments.value.filter((item) => item.id !== id)
+  function insert(text: string): void {
+    store.setText(draft.value ? `${draft.value} ${text}` : text)
+    store.markSuggestedPrompt()
   }
 
   return {
     draft,
     attachments,
+    prompt,
+    promptEpoch,
+    applyEditorPrompt: store.applyEditorPrompt,
+    setInsertionPoint: store.setInsertionPoint,
+    removeReference: store.removeReference,
+    workflowReferences,
     canSend,
     submit,
     insert,
-    addAttachment,
-    updateAttachment,
-    removeAttachment
+    setText: store.setText,
+    replacePrompt: store.replacePrompt,
+    addAttachment: store.addAttachment,
+    updateAttachment: store.updateAttachment,
+    removeAttachment: store.removeAttachment
   }
 }

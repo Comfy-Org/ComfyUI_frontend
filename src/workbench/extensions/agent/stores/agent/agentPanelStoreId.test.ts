@@ -1,5 +1,5 @@
+import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
@@ -8,7 +8,7 @@ import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useA
 
 import { useAgentPanelStore } from './agentPanelStore'
 
-vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
+vi.mock(import('@/platform/telemetry'))
 
 /**
  * Regression pin for the duplicate Pinia id `agentPanel`.
@@ -29,8 +29,7 @@ describe('the agentPanel store id', () => {
 
   beforeEach(() => {
     localStorage.clear()
-    pinia = createPinia()
-    setActivePinia(pinia)
+    pinia = getActivePinia()!
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     vi.stubGlobal('devicePixelRatio', 1)
   })
@@ -43,7 +42,9 @@ describe('the agentPanel store id', () => {
     expect(typeof store.width).toBe('number')
     expect(Number.isFinite(store.width)).toBe(true)
     expect(typeof store.toggleMaximize).toBe('function')
-    expect(Object.keys(pinia.state.value.agentPanel)).toContain('width')
+    expect(Object.keys(pinia.state.value.agentPanel)).toContain(
+      'targetTracking'
+    )
   })
 
   it('maximizes the panel through the store the dock mount already registered', () => {
@@ -61,6 +62,7 @@ describe('the agentPanel store id', () => {
     const { docked } = useAgentDockMount()
     const store = useAgentPanelStore()
     store.enabled = true
+    store.consentAccepted = true
     store.isOpen = true
     expect(docked.value).toBe(true)
 

@@ -13,7 +13,7 @@
 @plugin "./lucideStrokePlugin.js";
 
 /* Safelist dynamic comfy icons for node library folders */
-@source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,claude,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
+@source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,claude,comfy-cloud,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
 
 /* Badge icon names are built at runtime, so the scanner cannot find them. */
 @source inline("icon-mask-[comfy--{3d-decomp,ai-model,anthropic,batch-images-node,bfl,bria,brightness-contrast,bytedance,canny,canny-to-image,canny-to-video,channels,chromatic-aberration,claude,comfy-c,comfy-logo,credits,depth-to-image,depth-to-video,dial,elevenlabs,extensions-blocks,file-output,frames-to-video,gemini,get-video-components,glow,grain,grok,hitpaw,ideogram,image-ai-edit,image-batch,image-blur,image-canny,image-captioning,image-collage,image-compare,image-depth,image-edit,image-inpaint,image-invert,image-outpaint,image-outpainting,image-remove-background,image-rotate,image-select-object-segmentation,image-shader,image-sharpen,image-to-3d,image-to-image,image-to-layers,image-to-video,image-upscale,image-vectorize,kling,load-3d,load-audio,load-video,lora-loader,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,open-ai-chat-node,openai,pin,pixverse,play,pose-to-image,pose-to-video,quiver,recraft,reve,rodin,runway,save-3d,save-audio,save-video,send,sora,stability-ai,template,tencent,text-prompt-enhance,text-to-3d,text-to-audio,text-to-image,text-to-video,topaz,tripo,veo,video-captioning,video-edit,video-enhance,video-extract-frame,video-inpaint,video-interpolation,video-select-object-segmentation,video-slice,video-split-screen,video-trim,video-upscale,vidu,voice-clone,wan,wavespeed,workflow}]");
@@ -62,10 +62,6 @@
 
   --color-magenta-300: #ceaac9;
   --color-magenta-700: #6a246a;
-
-  --color-ocean-300: #badde8;
-  --color-ocean-600: #2f687a;
-  --color-ocean-900: #253236;
 
   --color-primary-comfy-ink: #211927;
   --color-primary-comfy-canvas: #c2bfb9;
@@ -273,6 +269,7 @@
 
   --palette-interface-panel-box-shadow: 1px 1px 8px 0 rgb(0 0 0 / 0.4);
   --palette-interface-panel-drop-shadow: 1px 1px 4px rgb(0 0 0 / 0.4);
+  --palette-interface-floating-panel-shadow: 0 2px 16px 0 rgb(0 0 0 / 0.5);
   --palette-interface-panel-hover-surface: color-mix(
     in srgb,
     var(--interface-panel-surface) 92.5%,
@@ -583,6 +580,14 @@
   .dark-theme & {
     @slot;
   }
+}
+
+@utility floating-panel {
+  border-radius: var(--radius-xl);
+  padding: --spacing(1);
+  background-color: var(--color-interface-panel-surface);
+  box-shadow:
+    var(--shadow-inset-highlight), var(--interface-floating-panel-shadow);
 }
 
 @utility highlight {

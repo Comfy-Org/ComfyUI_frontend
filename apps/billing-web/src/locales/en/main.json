@@ -1,0 +1,276 @@
+{
+  "auth": {
+    "signIn": {
+      "heading": "Sign in to your account",
+      "subtitle": "Sign in to manage your Comfy plan and credits.",
+      "google": "Sign in with Google",
+      "github": "Sign in with GitHub",
+      "useEmailInstead": "Use email instead",
+      "backToSocial": "Sign in with Google or GitHub instead",
+      "submit": "Sign in",
+      "forgotPassword": "Forgot password?",
+      "pending": "Finish signing in from the pop-up window.",
+      "signingIn": "Signing you in…",
+      "insecureContextWarning": "This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.",
+      "unavailable": "Sign-in is unavailable right now.",
+      "retryAvailability": "Try again",
+      "sessionError": "You are signed in, but your workspace session could not be started. Retry, or sign in again with another account.",
+      "retry": "Retry session"
+    },
+    "email": {
+      "label": "Email",
+      "placeholder": "Enter your email"
+    },
+    "password": {
+      "label": "Password",
+      "placeholder": "Enter your password",
+      "show": "Show password",
+      "hide": "Hide password"
+    },
+    "errors": {
+      "auth/invalid-email": "Please enter a valid email address.",
+      "auth/user-disabled": "This account has been disabled. Please contact support.",
+      "auth/email-already-in-use": "We couldn't create an account with this email. Try signing in or resetting your password instead.",
+      "auth/weak-password": "Password is too weak. Please use a stronger password with at least 6 characters.",
+      "auth/too-many-requests": "Too many login attempts. Please wait a moment and try again.",
+      "auth/operation-not-allowed": "This sign-in method is not currently supported.",
+      "auth/invalid-credential": "Invalid login credentials. Please check your email and password.",
+      "auth/network-request-failed": "Network error. Please check your connection and try again.",
+      "auth/popup-closed-by-user": "The sign-in window closed before sign-in finished. Please try again.",
+      "auth/cancelled-popup-request": "Another sign-in window was already open, so this one was cancelled. Please try again.",
+      "auth/popup-blocked": "Your browser blocked the sign-in window. Please allow pop-ups for this site and try again.",
+      "auth/account-exists-with-different-credential": "We couldn't sign you in with this method. Try another sign-in option, or reset your password to continue.",
+      "generic": "Something went wrong while signing you in. Please try again.",
+      "signupBlocked": "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org."
+    }
+  },
+  "validation": {
+    "invalidEmail": "Invalid email address",
+    "required": "Required",
+    "minLength": "Must be at least {length} characters",
+    "maxLength": "Must be no more than {length} characters",
+    "length": "Must be {length} characters",
+    "prefix": "Must start with {prefix}",
+    "password": {
+      "uppercase": "Must contain at least one uppercase letter",
+      "lowercase": "Must contain at least one lowercase letter",
+      "number": "Must contain at least one number",
+      "special": "Must contain at least one special character",
+      "match": "Passwords must match"
+    }
+  },
+  "checkout": {
+    "back": "Back",
+    "close": "Close",
+    "singleSelectDropdown": "Single-select dropdown",
+    "genericError": "Error",
+    "usdPerMonth": "USD / mo",
+    "usdPerYear": "USD / year",
+    "perMonth": "/ month",
+    "perYear": "/ year",
+    "billedMonthly": "Billed monthly",
+    "billedYearly": "{total} Billed yearly",
+    "tiers": {
+      "standard": "Standard",
+      "creator": "Creator",
+      "pro": "Pro",
+      "enterprise": "Enterprise"
+    },
+    "teamPlanName": "Team Plan",
+    "preview": {
+      "confirmPayment": "Confirm your payment",
+      "startingToday": "Starts today",
+      "eachMonthCreditsRefill": "Each month credits refill to",
+      "eachYearCreditsRefill": "Each year credits refill to",
+      "totalDueToday": "Total due today",
+      "renewsAt": "Renews at {amount} on {date}. Cancel anytime.",
+      "renewsAtAmount": "Renews at {amount}. Cancel anytime.",
+      "promoCodePlaceholder": "Promo code",
+      "applyPromoCode": "Apply",
+      "pendingVerificationDetail": "A payment you started earlier still needs your attention. Completing it activates the plan you chose then. You can choose a different plan once it finishes.",
+      "completeVerification": "Complete verification",
+      "parkedCheckoutDetail": "Your earlier checkout is still waiting for a payment method. Complete your payment to activate this plan.",
+      "completePayment": "Complete your payment",
+      "payAndSubscribe": "Pay and subscribe",
+      "subscribeToPlan": "Subscribe to {plan}",
+      "confirmUpgradeTitle": "Confirm your upgrade",
+      "confirmChangeTitle": "Review your scheduled change",
+      "switchesToday": "Switches today",
+      "startsOn": "Starts {date}",
+      "creditsYoullGetToday": "Credits you'll get today",
+      "refillReplacesNote": "Replaces your monthly refill. Existing balance is kept.",
+      "afterThat": "After that",
+      "creditsRefillMonthlyTo": "Credits refill monthly to",
+      "billedEachMonth": "{amount} billed each month. Cancel anytime.",
+      "discountComposition": "Discounts",
+      "quoteUnavailable": "Unavailable",
+      "confirmUpgradeCta": "Confirm upgrade",
+      "confirmChange": "Confirm change",
+      "savedPaymentMethod": "Payment method",
+      "changePaymentMethod": "Change",
+      "addNewPaymentMethod": "Add new payment method",
+      "alipay": "Alipay",
+      "termsAgreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method each billing period until you cancel.",
+      "terms": "Terms",
+      "privacyPolicy": "Privacy Policy",
+      "paymentMethod": "Payment method",
+      "stripeMethodChoice": "Your payment details are handled securely by Stripe.",
+      "billingAddress": "Billing address",
+      "alipayRenewalNote": "Alipay authorization will also be used for automatic renewals and future purchases.",
+      "stripeUnavailable": "Payment options are unavailable. Please refresh and try again.",
+      "discount": {
+        "plan": "Plan discount",
+        "promotion": "Promo code"
+      },
+      "reactivation": {
+        "title": "Reactivating your subscription",
+        "titleAnnual": "Reactivating your subscription — full year billed today",
+        "upgradeBody": "Your {plan} was set to end on {date}. Upgrading now reactivates it — you'll be charged {amount} today, and it will renew automatically on {nextDate} instead of ending.",
+        "downgradeBody": "Your {plan} was set to end on {date}. Switching to {newPlan} reactivates it — you won't be charged today, but it will now renew automatically on {nextDate} at the new price instead of ending.",
+        "durationChangeBody": "Your {plan} was set to end on {date}. Switching to annual billing reactivates it and charges the full year, {amount}, today. It will then renew annually on {nextDate} instead of ending.",
+        "durationChangeBodyMonthly": "Your {plan} was set to end on {date}. Switching to monthly billing reactivates it — you'll be charged {amount} today, and it will renew automatically on {nextDate} instead of ending.",
+        "withoutRenewalDate": {
+          "upgradeBody": "Your {plan} was set to end on {date}. Upgrading now reactivates it — you'll be charged {amount} today, and it will renew automatically instead of ending.",
+          "downgradeBody": "Your {plan} was set to end on {date}. Switching to {newPlan} reactivates it — you won't be charged today, but it will now renew automatically at the new price instead of ending.",
+          "durationChangeBody": "Your {plan} was set to end on {date}. Switching to annual billing reactivates it and charges the full year, {amount}, today. It will then renew annually instead of ending.",
+          "durationChangeBodyMonthly": "Your {plan} was set to end on {date}. Switching to monthly billing reactivates it — you'll be charged {amount} today, and it will renew automatically instead of ending."
+        },
+        "confirmButton": "Confirm & reactivate",
+        "confirmButtonWithCharge": "Confirm & reactivate — {amount} today",
+        "checkboxLabel": "I understand I'll be charged {amount} today"
+      }
+    },
+    "operation": {
+      "reconciliationTitle": "Payment received — confirmation pending",
+      "reconciliationDetail": "Your payment was received, but we couldn't finish updating your workspace. Contact support and include this operation ID:",
+      "authenticationFailedDetail": "We couldn't complete payment verification. Please try again.",
+      "paymentDeclinedDetail": "Your bank declined this payment. Try another payment method or contact your bank.",
+      "insufficientFundsDetail": "This payment method has insufficient funds. Try another payment method or contact your bank.",
+      "expiredCardDetail": "This card has expired. Use a different payment method.",
+      "incorrectCvcDetail": "The card security code is incorrect. Check it and try again.",
+      "processingErrorDetail": "Your payment couldn't be processed. Try again or use another payment method.",
+      "subscriptionTimeout": "Subscription verification timed out",
+      "subscriptionProcessing": "Processing payment — setting up your workspace...",
+      "subscriptionSuccess": "Subscription updated successfully",
+      "subscriptionActionRequired": "Verify your payment to finish setting up your workspace"
+    },
+    "success": {
+      "allSet": "You're all set",
+      "planUpdated": "Your plan has been successfully updated.",
+      "receiptEmailed": "A receipt has been emailed to you.",
+      "promoApplied": "{code} applied.",
+      "promoRenews": "Renews at {amount} on {date}"
+    },
+    "error": "Error"
+  },
+  "hosted": {
+    "loading": "Loading…",
+    "returnTo": "Return to {product}",
+    "title": {
+      "unknown": "Billing",
+      "pricing": "Plans",
+      "subscription": "Your subscription",
+      "payment-methods": "Payment methods",
+      "invoices": "Invoices",
+      "result": "Billing result",
+      "checkout": "Checkout"
+    },
+    "product": {
+      "unknown": "Comfy",
+      "comfyui": "ComfyUI",
+      "platform": "Comfy Platform",
+      "workshop": "Comfy Workshop",
+      "models": "Comfy Models"
+    },
+    "workspace": {
+      "current": "Billing for {name}"
+    },
+    "entryError": {
+      "title": "We couldn't open that billing page",
+      "unknown": "That link isn't a billing request we recognise. Go back and try again.",
+      "UNSUPPORTED_VERSION": "That link uses an older billing address. Update the app you came from and try again.",
+      "UNKNOWN_INTENT": "That link asks for a billing page that doesn't exist.",
+      "UNKNOWN_PRODUCT": "That link doesn't say which product sent you here.",
+      "UNKNOWN_RETURN_TARGET": "That link doesn't name a place we can send you back to.",
+      "INVALID_PLAN": "That link names a plan we can't read.",
+      "INVALID_CORRELATION_ID": "That link carries a reference we can't read.",
+      "INVALID_WORKSPACE_ID": "That link names a workspace we can't read.",
+      "INVALID_TEAM_CREDIT_STOP_ID": "That link names a credit amount we can't read."
+    },
+    "failure": {
+      "unknown": "Something went wrong. Please try again.",
+      "NOT_AUTHENTICATED": "Your session expired. Sign in again to continue.",
+      "ACCESS_DENIED": "This account can't manage billing for that workspace.",
+      "WORKSPACE_NOT_FOUND": "This account can't access that workspace. Reopen billing from the app while signed in with the right account.",
+      "NOT_FOUND": "We couldn't find that billing record.",
+      "CONFLICT": "That change conflicts with your current subscription.",
+      "SUPERSEDED": "Your workspace changed while we were loading. Please try again.",
+      "REQUEST_FAILED": "We couldn't reach the billing service. Please try again.",
+      "MALFORMED_RESPONSE": "The billing service sent something we couldn't read.",
+      "INVALID_REQUEST": "That plan change isn't a request we can make.",
+      "NO_ACTIVE_SUBSCRIPTION": "There is no active subscription to change.",
+      "REACTIVATION_CONFIRMATION_REQUIRED": "Confirm the reactivation charge before continuing.",
+      "CONFLICTING_PAYMENT_METHOD": "That request named two payment methods; choose one.",
+      "MISSING_PAYMENT_METHOD_URL": "The billing service asked for a payment step but didn't say where.",
+      "OPERATION_ALREADY_PENDING": "A payment you started earlier is still going through. It has to finish before you can choose a different plan."
+    },
+    "tier": {
+      "unknown": "Plan",
+      "FREE": "Free",
+      "STANDARD": "Standard",
+      "CREATOR": "Creator",
+      "PRO": "Pro",
+      "FOUNDERS_EDITION": "Founders Edition",
+      "TEAM": "Team",
+      "ENTERPRISE": "Enterprise"
+    },
+    "duration": {
+      "unknown": "Per period",
+      "MONTHLY": "Monthly",
+      "ANNUAL": "Yearly"
+    },
+    "plan": {
+      "name": "{tier} · {duration}"
+    },
+    "subscription": {
+      "currentPlanIs": "Current plan: {plan}",
+      "noPlan": "You are not on a paid plan yet.",
+      "endsOn": "Ends on {date}",
+      "cancel": "Cancel subscription",
+      "cancelConfirm": "Cancel your subscription? You can resubscribe at any time.",
+      "cancelConfirmAction": "Confirm cancellation",
+      "keepPlan": "Keep my plan",
+      "cancelled": "Your subscription is cancelled.",
+      "resubscribe": "Resubscribe",
+      "resubscribed": "Your subscription is active again."
+    },
+    "paymentMethods": {
+      "card": "{brand} •••• {last4}",
+      "default": "Default",
+      "empty": "No payment method is saved for this workspace.",
+      "manage": "Manage payment methods"
+    },
+    "paymentMethodType": {
+      "unknown": "Saved payment method",
+      "card": "Card"
+    },
+    "invoices": {
+      "body": "Invoices and receipts are kept by our payment provider. Open the billing portal to view and download them.",
+      "open": "Open invoices"
+    },
+    "result": {
+      "recovering": "Checking on your payment…",
+      "none": "There is no payment in progress for this workspace."
+    },
+    "landing": {
+      "body": "Open billing from your Comfy product to manage your plan, payment methods and invoices."
+    },
+    "outcome": {
+      "unknown": "That didn't complete. Please try again.",
+      "failed": "That change didn't go through. Please try again.",
+      "timed_out": "We stopped waiting for the billing service. Check back in a moment.",
+      "reconciliation_needed": "That change needs a look from support before it completes.",
+      "superseded": "Your workspace changed while we were working. Please try again."
+    }
+  }
+}

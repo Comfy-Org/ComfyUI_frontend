@@ -4,54 +4,56 @@ import { Coins as CreditsIcon } from '@lucide/vue'
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import {
+  formatCreditsPerGbMonth,
+  formatCreditsPerHour,
+  formatStorageExampleAmount,
+  formatUsdPerGbMonth,
+  formatUsdPerHour,
+  getStorageRate,
+  rateCard
+} from '../../data/rateCard'
+import type { StorageLabelKey } from '../../data/rateCardChecks'
+import { STORAGE_TYPE_LABEL_KEYS } from '../../data/rateCardChecks'
 
 const {
   locale = 'en',
   heading,
   subtitle,
-  note
+  note,
+  headingSize = 'compact'
 } = defineProps<{
   locale?: Locale
   heading?: string
   subtitle?: string
   note?: string
+  headingSize?: 'compact' | 'subsection'
 }>()
 
-// Rates from the Limited Beta PRFAQ (USD and Comfy Credits).
-const gpuRates = [
-  {
-    gpu: 'RTX PRO 6000',
-    vram: '96 GB',
-    price: '$3.49/hr',
-    credits: '736.39/hr'
-  },
-  { gpu: 'H100', vram: '80 GB', price: '$4.79/hr', credits: '1010.69/hr' },
-  { gpu: 'H200', vram: '141 GB', price: '$5.93/hr', credits: '1251.23/hr' },
-  { gpu: 'B200', vram: '180 GB', price: '$8.64/hr', credits: '1823.04/hr' }
-]
+const gpuRates = rateCard.gpus.map((rate) => ({
+  gpu: rate.label,
+  vram: `${rate.vramGb} GB`,
+  price: formatUsdPerHour(rate.pricePerHourUsd),
+  credits: formatCreditsPerHour(rate.creditsPerHour)
+}))
 
-const storageRates = [
-  {
-    key: 'standardUnder1tb',
-    price: '$0.091/GB/mo',
-    credits: '19.20/GB/mo'
-  },
-  {
-    key: 'standardOver1tb',
-    price: '$0.065/GB/mo',
-    credits: '13.72/GB/mo'
-  },
-  {
-    key: 'highPerformance',
-    price: '$0.182/GB/mo',
-    credits: '38.40/GB/mo'
-  },
-  {
-    key: 'containerDisk',
-    price: '$0.13/GB/mo',
-    credits: '27.43/GB/mo'
+function storageLabelKey(storageType: string): StorageLabelKey {
+  const key = STORAGE_TYPE_LABEL_KEYS[storageType]
+  if (!key) {
+    throw new Error(`No pricing label mapped for storage type: ${storageType}`)
   }
-] as const
+  return key
+}
+
+const storageRates = rateCard.storage.map((rate) => ({
+  key: storageLabelKey(rate.storageType),
+  price: formatUsdPerGbMonth(rate.pricePerGbMonthUsd),
+  credits: formatCreditsPerGbMonth(rate.creditsPerGbMonth)
+}))
+
+const storageExampleAmount = formatStorageExampleAmount(
+  getStorageRate('network_standard')
+)
 
 const mobileGpuRows = gpuRates.map((rate) => ({
   ...rate,
@@ -68,9 +70,9 @@ const mobileStorageRows = storageRates.map((rate) => ({
 <template>
   <section
     id="pricing"
-    class="max-w-9xl mx-auto scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
+    class="mx-auto max-w-9xl scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
   >
-    <SectionHeader max-width="xl" heading-size="compact">
+    <SectionHeader max-width="xl" :heading-size="headingSize">
       {{ heading ?? t('platform.pricing.heading', locale) }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700">
@@ -83,9 +85,9 @@ const mobileStorageRows = storageRates.map((rate) => ({
     </SectionHeader>
 
     <div class="mx-auto mt-8 flex max-w-6xl flex-col gap-4 lg:hidden">
-      <article class="bg-transparency-white-t4 rounded-4xl px-5 py-6">
+      <article class="rounded-4xl bg-transparency-white-t4 px-5 py-6">
         <p
-          class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
+          class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
         >
           {{ t('platform.pricing.gpuColumn', locale) }}
         </p>
@@ -107,7 +109,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
                 class="mt-0.5 flex items-center justify-end gap-1 text-xs text-primary-warm-gray"
               >
                 <CreditsIcon
-                  class="text-primary-comfy-yellow size-3.5 shrink-0"
+                  class="size-3.5 shrink-0 text-primary-comfy-yellow"
                   aria-hidden="true"
                 />
                 {{ rate.creditsLabel }}
@@ -120,9 +122,9 @@ const mobileStorageRows = storageRates.map((rate) => ({
         </p>
       </article>
 
-      <article class="bg-transparency-white-t4 rounded-4xl px-5 py-6">
+      <article class="rounded-4xl bg-transparency-white-t4 px-5 py-6">
         <p
-          class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
+          class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
         >
           {{ t('platform.pricing.storageColumn', locale) }}
         </p>
@@ -150,7 +152,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
                 class="mt-0.5 flex items-center justify-end gap-1 text-xs text-primary-warm-gray"
               >
                 <CreditsIcon
-                  class="text-primary-comfy-yellow size-3.5 shrink-0"
+                  class="size-3.5 shrink-0 text-primary-comfy-yellow"
                   aria-hidden="true"
                 />
                 {{ rate.creditsLabel }}
@@ -161,11 +163,19 @@ const mobileStorageRows = storageRates.map((rate) => ({
         <p class="mt-6 text-xs/relaxed text-primary-warm-gray">
           {{ t('platform.pricing.storageNote', locale) }}
         </p>
+        <p class="mt-2 text-xs/relaxed text-primary-warm-gray">
+          {{
+            t('platform.pricing.storageExample', locale).replace(
+              '{amount}',
+              storageExampleAmount
+            )
+          }}
+        </p>
       </article>
     </div>
 
     <div
-      class="bg-transparency-white-t4 mx-auto mt-8 hidden max-w-6xl overflow-hidden rounded-4xl px-4 py-6 lg:block lg:px-8"
+      class="mx-auto mt-8 hidden max-w-6xl overflow-hidden rounded-4xl bg-transparency-white-t4 px-4 py-6 lg:block lg:px-8"
     >
       <div class="grid gap-x-12 gap-y-8 lg:grid-cols-2">
         <article class="flex min-w-0 flex-col">
@@ -173,7 +183,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
             <table class="w-full min-w-130 text-left text-sm">
               <thead>
                 <tr
-                  class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
+                  class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
                 >
                   <th class="px-2 py-4" scope="col">
                     {{ t('platform.pricing.gpuColumn', locale) }}
@@ -207,7 +217,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
                   >
                     <span class="flex items-center justify-end gap-1">
                       <CreditsIcon
-                        class="text-primary-comfy-yellow size-3.5 shrink-0"
+                        class="size-3.5 shrink-0 text-primary-comfy-yellow"
                         aria-hidden="true"
                       />
                       {{ rate.credits }}
@@ -227,7 +237,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
             <table class="w-full min-w-130 text-left text-sm">
               <thead>
                 <tr
-                  class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
+                  class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
                 >
                   <th class="px-2 py-4" scope="col">
                     {{ t('platform.pricing.storageColumn', locale) }}
@@ -266,7 +276,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
                   >
                     <span class="flex items-center justify-end gap-1">
                       <CreditsIcon
-                        class="text-primary-comfy-yellow size-3.5 shrink-0"
+                        class="size-3.5 shrink-0 text-primary-comfy-yellow"
                         aria-hidden="true"
                       />
                       {{ rate.credits }}
@@ -278,6 +288,14 @@ const mobileStorageRows = storageRates.map((rate) => ({
           </div>
           <p class="mt-auto px-2 pt-6 text-xs/relaxed text-primary-warm-gray">
             {{ t('platform.pricing.storageNote', locale) }}
+          </p>
+          <p class="mt-2 px-2 text-xs/relaxed text-primary-warm-gray">
+            {{
+              t('platform.pricing.storageExample', locale).replace(
+                '{amount}',
+                storageExampleAmount
+              )
+            }}
           </p>
         </article>
       </div>

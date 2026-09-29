@@ -33,7 +33,7 @@
         </SelectContent>
       </Select>
       <div
-        class="flex h-6 min-w-0 flex-1 items-center gap-1 rounded-sm bg-secondary-background px-1 text-xs text-node-component-slot-text"
+        class="flex h-6 min-w-0 flex-1 items-center gap-1 rounded-sm bg-secondary-background px-1 text-xs text-muted-foreground"
       >
         <template v-if="displayMode === 'hex'">
           <input

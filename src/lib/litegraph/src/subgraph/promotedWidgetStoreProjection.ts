@@ -13,9 +13,10 @@ export function createPromotedWidgetStoreProjection(
       return store.getWidget(id)?.name ?? input.name
     },
     get label() {
-      return store.getWidget(id)?.label ?? input.label ?? input.name
+      return input.label ?? store.getWidget(id)?.label ?? input.name
     },
     set label(next) {
+      input.label = next
       const state = store.getWidget(id)
       if (state) state.label = next
     },
@@ -32,11 +33,21 @@ export function createPromotedWidgetStoreProjection(
     get options() {
       return store.getWidget(id)?.options ?? {}
     },
+    set options(next) {
+      store.setOptions(id, next)
+    },
     get value() {
       return store.getWidget(id)?.value
     },
     set value(next) {
       store.setValue(id, next)
+    },
+    get connectionSuppressed() {
+      return store.getWidgetVisibility(id)?.suppression.byConnection ?? false
+    },
+    set connectionSuppressed(next) {
+      const visibility = store.getWidgetVisibility(id)
+      if (visibility) visibility.suppression.byConnection = next
     },
     callback(next) {
       store.setValue(id, next)

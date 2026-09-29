@@ -45,7 +45,7 @@ describe('link ownership error surface', () => {
     )
     input.widget = { name: widget.name }
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     installErrorClearingHooks(graph)
 
@@ -93,7 +93,7 @@ describe('link ownership while a workflow loads', () => {
     )
     input.widget = { name: widget.name }
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     installErrorClearingHooks(graph)
 
@@ -125,7 +125,7 @@ describe('link ownership while a workflow loads', () => {
     )
     input.widget = { name: widget.name }
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     installErrorClearingHooks(graph)
 
@@ -170,7 +170,7 @@ describe('promotion listener lifecycle', () => {
       rootGraph.add(host)
       return host
     })
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
     return { subgraph, rootGraph, hosts }
   }
 
@@ -265,7 +265,7 @@ describe('promoted widget promotion error surface moves with ownership', () => {
     leafInput.widget = { name: leafWidget.name }
     subgraph.add(leafNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
     return { subgraph, rootGraph, host, leafNode, leafWidget }
   }
 
@@ -350,7 +350,7 @@ describe('promoted widget demotion error clearing', () => {
       promoteValueWidgetViaSubgraphInput(host, leafNode, leafWidget).ok
     ).toBe(true)
     expect(host.widgets).toHaveLength(1)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
     installErrorClearingHooks(subgraph)
 
     const mediaStore = useMissingMediaStore()

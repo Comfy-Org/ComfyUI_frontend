@@ -13,6 +13,7 @@ test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
     await comfyPage.workflow.setupWorkflowsDirectory({
       [`${workflowName}.json`]: `links/${workflowName}.json`
     })
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
 
@@ -38,9 +39,11 @@ test.describe(
   'LiteGraph Native Reroute Node',
   { tag: ['@screenshot', '@node'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.settings.setSetting('LiteGraph.Reroute.SplineOffset', 80)
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'LiteGraph.Reroute.SplineOffset': 80
+      }
     })
 
     test('loads from workflow', async ({ comfyPage }) => {
@@ -123,7 +126,7 @@ test.describe(
         const canvas = window['app']?.canvas
         if (!canvas?.renderedPaths) return null
         for (const segment of canvas.renderedPaths) {
-          if (segment.id === 5 && segment._pos) {
+          if (segment.id === 5) {
             return { x: segment._pos[0], y: segment._pos[1] }
           }
         }

@@ -4,8 +4,15 @@
  */
 
 export const TestIds = {
+  app: {
+    loadingOverlay: 'app-loading-overlay'
+  },
+  agent: {
+    conversationScroll: 'agent-conversation-scroll'
+  },
   sidebar: {
     toolbar: 'side-toolbar',
+    topGroup: 'sidebar-top-group',
     nodeLibrary: 'node-library-tree',
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
@@ -107,6 +114,8 @@ export const TestIds = {
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
+    workflowTab: 'workflow-tab',
+    closeWorkflowButton: 'close-workflow-button',
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
     actionBarCard: 'action-bar-card',
@@ -126,11 +135,16 @@ export const TestIds = {
   propertiesPanel: {
     root: 'properties-panel',
     errorsTab: 'panel-tab-errors',
-    selectionContextStrip: 'selection-context-strip'
+    tabIcon: 'panel-tab-icon',
+    selectionContextStrip: 'selection-context-strip',
+    errorsSummaryHero: 'errors-summary-hero',
+    errorsSummaryFilters: 'errors-summary-filters',
+    blockedLastRunIndicator: 'blocked-last-run-indicator'
   },
   assets: {
     browserModal: 'asset-browser-modal',
-    card: 'asset-card'
+    card: 'asset-card',
+    videoPreview: 'media-asset-video'
   },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
@@ -179,7 +193,6 @@ export const TestIds = {
     decrement: 'decrement',
     increment: 'increment',
     valueControl: 'value-control',
-    domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button',
     selectDefaultSearchInput: 'widget-select-default-search-input',
     selectDefaultViewport: 'widget-select-default-viewport'

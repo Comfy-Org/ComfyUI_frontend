@@ -1,8 +1,8 @@
 import * as THREE from 'three'
 
-import {
-  type EventManagerInterface,
-  type LightingManagerInterface
+import type {
+  EventManagerInterface,
+  LightingManagerInterface
 } from './interfaces'
 
 export class LightingManager implements LightingManagerInterface {

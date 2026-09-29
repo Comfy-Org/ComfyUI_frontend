@@ -5,8 +5,8 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ButtonVariants } from './button.variants'
-import { buttonVariants } from './button.variants'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
+import { buttonVariants } from '@comfyorg/design-system/button.variants'
 
 interface Props extends PrimitiveProps {
   variant?: ButtonVariants['variant']

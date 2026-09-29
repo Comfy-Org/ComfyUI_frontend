@@ -258,11 +258,11 @@ export class Viewport3d {
   }
 
   private runPreRenderCallbacks(): void {
-    for (const cb of [...this.preRenderCallbacks]) cb()
+    for (const cb of Array.from(this.preRenderCallbacks)) cb()
   }
 
   private runPostRenderCallbacks(): void {
-    for (const cb of [...this.postRenderCallbacks]) cb()
+    for (const cb of Array.from(this.postRenderCallbacks)) cb()
   }
 
   protected tickPerFrame(delta: number): void {

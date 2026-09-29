@@ -1,7 +1,7 @@
 <template>
   <Toast
     position="bottom-right"
-    class="graph-toast top-[calc(anchor(--graph-canvas-panel_top,1rem)+0.25rem)] left-[calc(anchor(--graph-canvas-panel_right,anchor(--docked-agent-panel_left,calc(100vw-0.75rem)))-25.5rem)] z-10000 h-fit w-100 [&_.p-toast-close-button]:size-7 [&_.p-toast-close-icon]:size-4 [&_.p-toast-close-icon]:text-base [&_.p-toast-detail]:text-sm [&_.p-toast-message]:mb-4 [&_.p-toast-message]:min-h-[73px] [&_.p-toast-message-content]:gap-2 [&_.p-toast-message-content]:p-3 [&_.p-toast-message-icon]:size-4.5 [&_.p-toast-message-icon]:text-lg [&_.p-toast-message-text]:gap-2 [&_.p-toast-summary]:text-base"
+    class="graph-toast top-[calc(anchor(--graph-canvas-panel_top,1rem)+0.25rem)] left-[calc(anchor(--graph-canvas-panel_right,anchor(--docked-agent-panel_left,calc(100vw-var(--workspace-inset-right,0px)-0.75rem)))-25.5rem)] z-10000 h-fit w-100 [&_.p-toast-close-button]:size-7 [&_.p-toast-close-icon]:size-4 [&_.p-toast-close-icon]:text-base [&_.p-toast-detail]:text-sm [&_.p-toast-message]:mb-4 [&_.p-toast-message]:min-h-[73px] [&_.p-toast-message-content]:gap-2 [&_.p-toast-message-content]:p-3 [&_.p-toast-message-icon]:size-4.5 [&_.p-toast-message-icon]:text-lg [&_.p-toast-message-text]:gap-2 [&_.p-toast-summary]:text-base"
   />
   <Toast group="billing-operation" position="top-right">
     <template #message="slotProps">
@@ -22,14 +22,36 @@
       </div>
     </template>
   </Toast>
+  <!-- A toast whose action needs a real click, e.g. reopening a popup a
+       browser silently blocked when it was first opened after an await. -->
+  <Toast group="payment-recovery" position="top-right">
+    <template #message="slotProps">
+      <div class="flex w-full items-center justify-between gap-2">
+        <div class="flex flex-col justify-start">
+          <div class="text-base">{{ slotProps.message.summary }}</div>
+          <div class="mt-1 text-sm text-base-foreground">
+            {{ slotProps.message.detail.text }}
+          </div>
+        </div>
+        <Button
+          size="md"
+          variant="inverted"
+          @click="slotProps.message.detail.onAction()"
+        >
+          {{ slotProps.message.detail.actionLabel }}
+        </Button>
+      </div>
+    </template>
+  </Toast>
 </template>
 
 <script setup lang="ts">
 import Toast from 'primevue/toast'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { watch } from 'vue'
+import { toRaw, watch } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
@@ -82,6 +104,10 @@ watch(
       return
     }
 
+    deferredMessages = deferredMessages.filter(
+      (message) =>
+        !messagesToRemove.some((removed) => toRaw(removed) === toRaw(message))
+    )
     messagesToRemove.forEach((message) => {
       toast.remove(message)
     })

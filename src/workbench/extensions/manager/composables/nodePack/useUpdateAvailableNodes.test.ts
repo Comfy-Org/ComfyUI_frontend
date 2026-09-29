@@ -1,3 +1,4 @@
+import { render } from '@testing-library/vue'
 import { compare, valid } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -7,40 +8,26 @@ import { useInstalledPacks } from '@/workbench/extensions/manager/composables/no
 import { useUpdateAvailableNodes } from '@/workbench/extensions/manager/composables/nodePack/useUpdateAvailableNodes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
-// Mock Vue's onMounted to execute immediately for testing
-vi.mock('vue', async () => {
-  const actual = await vi.importActual('vue')
-  return {
-    ...actual,
-    onMounted: (cb: () => void) => cb()
-  }
-})
-
 // Mock the dependencies
 vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks',
+  import('@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'),
+
   () => ({
     useInstalledPacks: vi.fn()
   })
 )
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn()
-}))
-
-vi.mock('semver', () => ({
+vi.mock(import('semver'), () => ({
   compare: vi.fn(),
   valid: vi.fn()
 }))
 
 const mockUseInstalledPacks = vi.mocked(useInstalledPacks)
-const mockUseComfyManagerStore = vi.mocked(useComfyManagerStore)
 
 const mockSemverCompare = vi.mocked(compare)
 const mockSemverValid = vi.mocked(valid)
 
 type InstalledPacksReturn = ReturnType<typeof useInstalledPacks>
-type ManagerStoreReturn = ReturnType<typeof useComfyManagerStore>
 
 function createMockInstalledPacksReturn(
   overrides: Partial<InstalledPacksReturn> = {}
@@ -57,12 +44,17 @@ function createMockInstalledPacksReturn(
   } as Partial<InstalledPacksReturn> as InstalledPacksReturn
 }
 
-function createMockManagerStoreReturn(
-  overrides: Partial<ManagerStoreReturn> = {}
-): ManagerStoreReturn {
-  return {
-    ...overrides
-  } as Partial<ManagerStoreReturn> as ManagerStoreReturn
+function mountUpdateAvailableNodes() {
+  let result: ReturnType<typeof useUpdateAvailableNodes> | undefined
+  render({
+    setup() {
+      result = useUpdateAvailableNodes()
+      return () => null
+    }
+  })
+
+  if (!result) throw new Error('Failed to mount update-available nodes')
+  return result
 }
 
 describe('useUpdateAvailableNodes', () => {
@@ -90,15 +82,13 @@ describe('useUpdateAvailableNodes', () => {
   ]
 
   const mockStartFetchInstalled = vi.fn()
-  const mockIsPackInstalled = vi.fn()
-  const mockGetInstalledPackVersion = vi.fn()
-  const mockIsPackEnabled = vi.fn()
 
   beforeEach(() => {
-    // Default setup
-    mockIsPackInstalled.mockReturnValue(true)
-    mockIsPackEnabled.mockReturnValue(true) // Default: all packs are enabled
-    mockGetInstalledPackVersion.mockImplementation((id: string) => {
+    vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true) // Default: all packs are enabled
+    vi.mocked(
+      useComfyManagerStore().getInstalledPackVersion
+    ).mockImplementation((id) => {
       switch (id) {
         case 'pack-1':
           return '1.0.0' // outdated
@@ -127,14 +117,6 @@ describe('useUpdateAvailableNodes', () => {
       return 0
     })
 
-    mockUseComfyManagerStore.mockReturnValue(
-      createMockManagerStoreReturn({
-        isPackInstalled: mockIsPackInstalled,
-        getInstalledPackVersion: mockGetInstalledPackVersion,
-        isPackEnabled: mockIsPackEnabled
-      })
-    )
-
     mockUseInstalledPacks.mockReturnValue(
       createMockInstalledPacksReturn({
         startFetchInstalled: mockStartFetchInstalled
@@ -151,7 +133,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       // Should only include pack-1 (outdated)
       expect(updateAvailableNodePacks.value).toHaveLength(1)
@@ -166,7 +148,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       expect(updateAvailableNodePacks.value).toHaveLength(0)
     })
@@ -179,7 +161,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       expect(updateAvailableNodePacks.value).toHaveLength(0)
     })
@@ -192,13 +174,13 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       expect(updateAvailableNodePacks.value).toHaveLength(0)
     })
 
     it('excludes uninstalled packs', () => {
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
       mockUseInstalledPacks.mockReturnValue(
         createMockInstalledPacksReturn({
           installedPacks: ref(mockInstalledPacks),
@@ -206,13 +188,13 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       expect(updateAvailableNodePacks.value).toHaveLength(0)
     })
 
     it('returns empty array when no installed packs exist', () => {
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       expect(updateAvailableNodePacks.value).toEqual([])
     })
@@ -227,7 +209,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasUpdateAvailable } = useUpdateAvailableNodes()
+      const { hasUpdateAvailable } = mountUpdateAvailableNodes()
 
       expect(hasUpdateAvailable.value).toBe(true)
     })
@@ -240,7 +222,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasUpdateAvailable } = useUpdateAvailableNodes()
+      const { hasUpdateAvailable } = mountUpdateAvailableNodes()
 
       expect(hasUpdateAvailable.value).toBe(false)
     })
@@ -248,7 +230,7 @@ describe('useUpdateAvailableNodes', () => {
 
   describe('automatic data fetching', () => {
     it('fetches installed packs automatically when none exist', () => {
-      useUpdateAvailableNodes()
+      mountUpdateAvailableNodes()
 
       expect(mockStartFetchInstalled).toHaveBeenCalledOnce()
     })
@@ -261,7 +243,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      useUpdateAvailableNodes()
+      mountUpdateAvailableNodes()
 
       expect(mockStartFetchInstalled).not.toHaveBeenCalled()
     })
@@ -274,7 +256,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      useUpdateAvailableNodes()
+      mountUpdateAvailableNodes()
 
       expect(mockStartFetchInstalled).not.toHaveBeenCalled()
     })
@@ -289,7 +271,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { isLoading } = useUpdateAvailableNodes()
+      const { isLoading } = mountUpdateAvailableNodes()
 
       expect(isLoading.value).toBe(true)
     })
@@ -303,7 +285,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { error } = useUpdateAvailableNodes()
+      const { error } = mountUpdateAvailableNodes()
 
       expect(error.value).toBe(testError)
     })
@@ -320,7 +302,7 @@ describe('useUpdateAvailableNodes', () => {
       )
 
       const { updateAvailableNodePacks, hasUpdateAvailable } =
-        useUpdateAvailableNodes()
+        mountUpdateAvailableNodes()
 
       // Initially empty
       expect(updateAvailableNodePacks.value).toEqual([])
@@ -345,7 +327,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       // Access the computed to trigger the logic
       expect(updateAvailableNodePacks.value).toBeDefined()
@@ -361,7 +343,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       // Access the computed to trigger the logic
       expect(updateAvailableNodePacks.value).toBeDefined()
@@ -377,24 +359,34 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       // Access the computed to trigger the logic
       expect(updateAvailableNodePacks.value).toBeDefined()
 
-      expect(mockIsPackInstalled).toHaveBeenCalledWith('pack-1')
-      expect(mockIsPackInstalled).toHaveBeenCalledWith('pack-2')
-      expect(mockIsPackInstalled).toHaveBeenCalledWith('pack-3')
-      expect(mockIsPackInstalled).toHaveBeenCalledWith('pack-4')
+      expect(
+        vi.mocked(useComfyManagerStore().isPackInstalled)
+      ).toHaveBeenCalledWith('pack-1')
+      expect(
+        vi.mocked(useComfyManagerStore().isPackInstalled)
+      ).toHaveBeenCalledWith('pack-2')
+      expect(
+        vi.mocked(useComfyManagerStore().isPackInstalled)
+      ).toHaveBeenCalledWith('pack-3')
+      expect(
+        vi.mocked(useComfyManagerStore().isPackInstalled)
+      ).toHaveBeenCalledWith('pack-4')
     })
   })
 
   describe('enabledUpdateAvailableNodePacks', () => {
     it('returns only enabled packs with updates', () => {
-      mockIsPackEnabled.mockImplementation((id: string) => {
-        // pack-1 is disabled
-        return id !== 'pack-1'
-      })
+      vi.mocked(useComfyManagerStore().isPackEnabled).mockImplementation(
+        (id) => {
+          // pack-1 is disabled
+          return id !== 'pack-1'
+        }
+      )
 
       mockUseInstalledPacks.mockReturnValue(
         createMockInstalledPacksReturn({
@@ -404,7 +396,7 @@ describe('useUpdateAvailableNodes', () => {
       )
 
       const { updateAvailableNodePacks, enabledUpdateAvailableNodePacks } =
-        useUpdateAvailableNodes()
+        mountUpdateAvailableNodes()
 
       // pack-1 has updates but is disabled
       expect(updateAvailableNodePacks.value).toHaveLength(1)
@@ -423,7 +415,7 @@ describe('useUpdateAvailableNodes', () => {
       )
 
       const { updateAvailableNodePacks, enabledUpdateAvailableNodePacks } =
-        useUpdateAvailableNodes()
+        mountUpdateAvailableNodes()
 
       expect(updateAvailableNodePacks.value).toHaveLength(1)
       expect(enabledUpdateAvailableNodePacks.value).toHaveLength(1)
@@ -433,10 +425,12 @@ describe('useUpdateAvailableNodes', () => {
 
   describe('hasDisabledUpdatePacks', () => {
     it('returns true when there are disabled packs with updates', () => {
-      mockIsPackEnabled.mockImplementation((id: string) => {
-        // pack-1 is disabled
-        return id !== 'pack-1'
-      })
+      vi.mocked(useComfyManagerStore().isPackEnabled).mockImplementation(
+        (id) => {
+          // pack-1 is disabled
+          return id !== 'pack-1'
+        }
+      )
 
       mockUseInstalledPacks.mockReturnValue(
         createMockInstalledPacksReturn({
@@ -445,7 +439,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasDisabledUpdatePacks } = useUpdateAvailableNodes()
+      const { hasDisabledUpdatePacks } = mountUpdateAvailableNodes()
 
       expect(hasDisabledUpdatePacks.value).toBe(true)
     })
@@ -458,7 +452,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasDisabledUpdatePacks } = useUpdateAvailableNodes()
+      const { hasDisabledUpdatePacks } = mountUpdateAvailableNodes()
 
       expect(hasDisabledUpdatePacks.value).toBe(false)
     })
@@ -471,7 +465,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasDisabledUpdatePacks } = useUpdateAvailableNodes()
+      const { hasDisabledUpdatePacks } = mountUpdateAvailableNodes()
 
       expect(hasDisabledUpdatePacks.value).toBe(false)
     })
@@ -479,7 +473,7 @@ describe('useUpdateAvailableNodes', () => {
 
   describe('hasUpdateAvailable with disabled packs', () => {
     it('returns false when only disabled packs have updates', () => {
-      mockIsPackEnabled.mockReturnValue(false) // All packs disabled
+      vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(false) // All packs disabled
 
       mockUseInstalledPacks.mockReturnValue(
         createMockInstalledPacksReturn({
@@ -488,16 +482,18 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasUpdateAvailable } = useUpdateAvailableNodes()
+      const { hasUpdateAvailable } = mountUpdateAvailableNodes()
 
       expect(hasUpdateAvailable.value).toBe(false)
     })
 
     it('returns true when at least one enabled pack has updates', () => {
-      mockIsPackEnabled.mockImplementation((id: string) => {
-        // Only pack-1 is enabled
-        return id === 'pack-1'
-      })
+      vi.mocked(useComfyManagerStore().isPackEnabled).mockImplementation(
+        (id) => {
+          // Only pack-1 is enabled
+          return id === 'pack-1'
+        }
+      )
 
       mockUseInstalledPacks.mockReturnValue(
         createMockInstalledPacksReturn({
@@ -506,7 +502,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasUpdateAvailable } = useUpdateAvailableNodes()
+      const { hasUpdateAvailable } = mountUpdateAvailableNodes()
 
       expect(hasUpdateAvailable.value).toBe(true)
     })

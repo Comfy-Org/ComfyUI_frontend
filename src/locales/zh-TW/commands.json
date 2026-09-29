@@ -278,9 +278,6 @@
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "設定子圖搜尋別名"
   },
-  "Comfy_ToggleAssetAPI": {
-    "label": "實驗性：啟用 AssetAPI"
-  },
   "Comfy_ToggleCanvasInfo": {
     "label": "畫布效能"
   },
