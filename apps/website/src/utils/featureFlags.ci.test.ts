@@ -61,11 +61,13 @@ describe('reportFeatureFlagsOutcome', () => {
   it('emits exactly one annotation across repeated calls', () => {
     reportFeatureFlagsOutcome({
       status: 'stale',
+      errorKind: 'http',
       reason: 'HTTP 500 Server Error',
       snapshot: baseSnapshot()
     })
     reportFeatureFlagsOutcome({
       status: 'stale',
+      errorKind: 'http',
       reason: 'HTTP 500 Server Error',
       snapshot: baseSnapshot()
     })
@@ -75,6 +77,7 @@ describe('reportFeatureFlagsOutcome', () => {
   it('emits ::error for schema-mismatch stale outcomes', () => {
     reportFeatureFlagsOutcome({
       status: 'stale',
+      errorKind: 'schema',
       reason:
         'schema validation failed: new_free_tier_subscriptions: Expected boolean',
       snapshot: baseSnapshot()
@@ -86,6 +89,7 @@ describe('reportFeatureFlagsOutcome', () => {
   it('emits ::warning for transient API unavailability', () => {
     reportFeatureFlagsOutcome({
       status: 'stale',
+      errorKind: 'http',
       reason: 'HTTP 503 Service Unavailable',
       snapshot: baseSnapshot()
     })
@@ -98,11 +102,26 @@ describe('reportFeatureFlagsOutcome', () => {
   it('emits ::error for a failed outcome', () => {
     reportFeatureFlagsOutcome({
       status: 'failed',
+      errorKind: 'http',
       reason: 'HTTP 500 Server Error'
     })
     const annotation = writeSpy.mock.calls[0]![0] as string
     expect(annotation).toContain('::error title=Feature flags fetch failed')
     expect(readFileSync(summaryPath, 'utf8')).toContain('Failed')
+  })
+
+  it('escapes untrusted reason text in the step summary table', () => {
+    reportFeatureFlagsOutcome({
+      status: 'stale',
+      errorKind: 'network',
+      reason: 'proxy | <script>alert(1)</script>\nnext row',
+      snapshot: baseSnapshot()
+    })
+    const summary = readFileSync(summaryPath, 'utf8')
+    expect(summary).toContain(
+      'proxy \\| &lt;script&gt;alert(1)&lt;/script&gt;<br>next row'
+    )
+    expect(summary).not.toContain('<script>')
   })
 
   it('does not throw when GITHUB_STEP_SUMMARY is not set', () => {

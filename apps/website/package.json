@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "dev:no-toolbar": "cross-env NO_TOOLBAR=1 astro dev",
-    "build": "pnpm feature-flags:refresh-snapshot && astro build",
+    "build": "astro build",
     "format": "prettier --write \"src/**/*.astro\"",
     "format:check": "prettier --check \"src/**/*.astro\"",
     "preview": "astro preview",

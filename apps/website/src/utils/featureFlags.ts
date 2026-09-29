@@ -2,6 +2,7 @@ import type { FeaturesResponse } from './featureFlags.schema'
 import type { FeatureFlagsSnapshot } from '../data/feature-flags'
 
 import { FeaturesResponseSchema } from './featureFlags.schema'
+import type { FetchErrorKind } from './snapshotFetch'
 
 import bundledSnapshot from '../data/feature-flags.snapshot.json' with { type: 'json' }
 import { fetchWithRetry, readSnapshot, requestJson } from './snapshotFetch'
@@ -12,8 +13,13 @@ const RETRY_DELAYS_MS = [1_000, 2_000, 4_000]
 
 export type FetchOutcome =
   | { status: 'fresh'; snapshot: FeatureFlagsSnapshot }
-  | { status: 'stale'; snapshot: FeatureFlagsSnapshot; reason: string }
-  | { status: 'failed'; reason: string }
+  | {
+      status: 'stale'
+      snapshot: FeatureFlagsSnapshot
+      reason: string
+      errorKind: FetchErr['errorKind']
+    }
+  | { status: 'failed'; reason: string; errorKind: FetchErr['errorKind'] }
 
 interface FetchFeatureFlagsOptions {
   baseUrl?: string
@@ -25,16 +31,38 @@ interface FetchFeatureFlagsOptions {
 }
 
 let inflight: Promise<FetchOutcome> | undefined
+let inflightOptions: FetchFeatureFlagsOptions | undefined
 
 export function resetFeatureFlagsFetcherForTests(): void {
   inflight = undefined
+  inflightOptions = undefined
 }
 
 export function fetchFeatureFlagsForBuild(
   options: FetchFeatureFlagsOptions = {}
 ): Promise<FetchOutcome> {
-  inflight ??= doFetchFeatureFlagsForBuild(options)
+  if (inflight && inflightOptions) {
+    if (optionsDifferMaterially(inflightOptions, options)) {
+      throw new Error(
+        'fetchFeatureFlagsForBuild called twice with different options; call resetFeatureFlagsFetcherForTests() between distinct configurations'
+      )
+    }
+    return inflight
+  }
+  inflightOptions = options
+  inflight = doFetchFeatureFlagsForBuild(options)
   return inflight
+}
+
+function optionsDifferMaterially(
+  a: FetchFeatureFlagsOptions,
+  b: FetchFeatureFlagsOptions
+): boolean {
+  return (
+    a.baseUrl !== b.baseUrl ||
+    a.timeoutMs !== b.timeoutMs ||
+    a.snapshotUrl?.href !== b.snapshotUrl?.href
+  )
 }
 
 async function doFetchFeatureFlagsForBuild(
@@ -51,11 +79,11 @@ async function doFetchFeatureFlagsForBuild(
     }
   }
 
-  return fallback(result.reason, options.snapshotUrl)
+  return fallback(result, options.snapshotUrl)
 }
 
 async function fallback(
-  reason: string,
+  error: FetchErr,
   snapshotUrl: URL | undefined
 ): Promise<FetchOutcome> {
   const snapshot = await readSnapshot(
@@ -63,8 +91,23 @@ async function fallback(
     bundledSnapshot,
     isFeatureFlagsSnapshot
   )
-  if (snapshot) return { status: 'stale', snapshot, reason }
-  return { status: 'failed', reason }
+  if (snapshot && isSnapshotFreshEnough(snapshot)) {
+    return {
+      status: 'stale',
+      snapshot,
+      reason: error.reason,
+      errorKind: error.errorKind
+    }
+  }
+  const reason = snapshot
+    ? `${error.reason}; committed snapshot is older than 30 days`
+    : error.reason
+  return { status: 'failed', reason, errorKind: error.errorKind }
+}
+
+function isSnapshotFreshEnough(snapshot: FeatureFlagsSnapshot): boolean {
+  const fetchedAt = Date.parse(snapshot.fetchedAt)
+  return Number.isFinite(fetchedAt) && Date.now() - fetchedAt <= 30 * 86_400_000
 }
 
 interface FetchOk {
@@ -75,6 +118,7 @@ interface FetchOk {
 interface FetchErr {
   kind: 'err'
   reason: string
+  errorKind: FetchErrorKind
 }
 
 async function tryFetchAndParse(
@@ -101,7 +145,8 @@ async function tryFetchAndParse(
         reason: `schema validation failed: ${parsed.error.issues
           .map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`)
           .join('; ')}`,
-        retryable: false
+        retryable: false,
+        errorKind: 'schema'
       }
     }
   })
@@ -112,7 +157,7 @@ function deriveFlags(
   features: FeaturesResponse
 ): FeatureFlagsSnapshot['flags'] {
   return {
-    cloudFreeTier: features.new_free_tier_subscriptions ?? false
+    cloudFreeTier: features.new_free_tier_subscriptions
   }
 }
 

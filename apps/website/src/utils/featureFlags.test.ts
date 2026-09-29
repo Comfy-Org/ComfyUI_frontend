@@ -25,7 +25,7 @@ function response(body: unknown, init: Partial<ResponseInit> = {}): Response {
 
 function makeSnapshot(cloudFreeTier: boolean): FeatureFlagsSnapshot {
   return {
-    fetchedAt: '2026-04-01T00:00:00.000Z',
+    fetchedAt: new Date().toISOString(),
     flags: { cloudFreeTier }
   }
 }
@@ -66,16 +66,19 @@ describe('fetchFeatureFlagsForBuild', () => {
     )
   })
 
-  it('defaults cloudFreeTier to false when the flag is absent from /features', async () => {
+  it('rejects a response where the required flag is absent', async () => {
+    const snapshotUrl = withSnapshotDir(makeSnapshot(false))
     const fetchImpl = vi.fn(async () =>
       response({ partner_node_conversion_rate: 0.05 })
     )
     const outcome = await fetchFeatureFlagsForBuild({
       baseUrl: BASE_URL,
+      snapshotUrl,
       fetchImpl: fetchImpl as unknown as typeof fetch
     })
-    expect(outcome.status).toBe('fresh')
-    if (outcome.status !== 'fresh') return
+    expect(outcome.status).toBe('stale')
+    if (outcome.status !== 'stale') return
+    expect(outcome.errorKind).toBe('schema')
     expect(outcome.snapshot.flags.cloudFreeTier).toBe(false)
   })
 
@@ -138,6 +141,26 @@ describe('fetchFeatureFlagsForBuild', () => {
     expect(outcome.reason).toMatch(/^schema validation/)
   })
 
+  it('classifies malformed JSON as a non-retryable contract failure', async () => {
+    const snapshotUrl = withSnapshotDir(makeSnapshot(false))
+    const fetchImpl = vi.fn(
+      async () => new Response('<html>bad gateway</html>', { status: 200 })
+    )
+    const sleep = vi.fn(async () => undefined)
+    const outcome = await fetchFeatureFlagsForBuild({
+      baseUrl: BASE_URL,
+      snapshotUrl,
+      retryDelaysMs: [1, 1],
+      sleep,
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    })
+    expect(outcome.status).toBe('stale')
+    if (outcome.status !== 'stale') return
+    expect(outcome.errorKind).toBe('json')
+    expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(sleep).not.toHaveBeenCalled()
+  })
+
   it('falls back to the bundled snapshot when fetch fails and the override is missing', async () => {
     const snapshotUrl = withSnapshotDir(null)
     const fetchImpl = vi.fn(async () => response({}, { status: 500 }))
@@ -149,9 +172,27 @@ describe('fetchFeatureFlagsForBuild', () => {
       sleep,
       fetchImpl: fetchImpl as unknown as typeof fetch
     })
-    expect(outcome.status).toBe('stale')
-    if (outcome.status !== 'stale') return
-    expect(outcome.snapshot.flags.cloudFreeTier).toBe(false)
+    expect(outcome.status).toBe('failed')
+    if (outcome.status !== 'failed') return
+    expect(outcome.reason).toContain('older than 30 days')
+  })
+
+  it('rejects an override snapshot older than 30 days', async () => {
+    const snapshotUrl = withSnapshotDir({
+      fetchedAt: '2026-04-01T00:00:00.000Z',
+      flags: { cloudFreeTier: true }
+    })
+    const outcome = await fetchFeatureFlagsForBuild({
+      baseUrl: BASE_URL,
+      snapshotUrl,
+      retryDelaysMs: [],
+      fetchImpl: vi.fn(async () =>
+        response({}, { status: 503 })
+      ) as unknown as typeof fetch
+    })
+    expect(outcome.status).toBe('failed')
+    if (outcome.status !== 'failed') return
+    expect(outcome.reason).toContain('older than 30 days')
   })
 
   it('memoizes within a single process', async () => {
@@ -168,6 +209,17 @@ describe('fetchFeatureFlagsForBuild', () => {
     ])
     expect(a).toBe(b)
     expect(fetchImpl).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects a second call with materially different options', () => {
+    const fetchImpl = vi.fn(async () =>
+      response({ new_free_tier_subscriptions: true })
+    ) as unknown as typeof fetch
+    void fetchFeatureFlagsForBuild({ baseUrl: BASE_URL, fetchImpl })
+
+    expect(() =>
+      fetchFeatureFlagsForBuild({ baseUrl: 'https://other.test', fetchImpl })
+    ).toThrow('called twice with different options')
   })
 
   it('never writes to the snapshot file on success', async () => {

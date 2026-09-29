@@ -22,8 +22,20 @@ export function formatStepSummary(
   header: string,
   rows: ReadonlyArray<readonly [string, string]>
 ): string {
-  const cells = rows.map(([key, value]) => `| **${key}** | ${value} |`)
+  const cells = rows.map(
+    ([key, value]) =>
+      `| **${escapeTableCell(key)}** | ${escapeTableCell(value)} |`
+  )
   return `${header}| | |\n|---|---|\n${cells.join('\n')}\n\n`
+}
+
+function escapeTableCell(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\|/g, '\\|')
+    .replace(/\r?\n/g, '<br>')
 }
 
 interface ReportOptions {
