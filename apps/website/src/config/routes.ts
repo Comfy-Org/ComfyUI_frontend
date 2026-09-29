@@ -30,7 +30,7 @@ const baseRoutes = {
   affiliateTerms: '/affiliates/terms',
   contact: '/contact',
   models: '/p/supported-models',
-  modelsShowcase: '/models',
+  modelsShowcase: '/hub/models/',
   mcp: '/mcp',
   agent: '/agent',
   platform: '/platform',
@@ -53,9 +53,7 @@ const baseRoutes = {
   chatgptImage25: '/chatgpt-image-2.5',
   qwenImage21: '/qwen-image-2.1',
   brand: '/brand',
-  // The catalogue answers to /models now. The keys keep their old names while
-  // the pull requests stacked on this branch are still open against them.
-  workshop: '/models',
+  workshop: '/hub/models/',
   workshopSignIn: '/login/',
   cinematicStudio: '/models/apps/cinematic-studio',
   reshoot: '/models/apps/reshoot'
@@ -126,7 +124,9 @@ const LOCALE_INVARIANT_EXTRA_PATHS = [
   '/pixal3d-trellis2',
   '/platform/serverless-animation',
   '/signup',
-  '/workshop'
+  '/workshop',
+  '/hub/models',
+  '/models'
 ]
 
 const LOCALE_INVARIANT_PATHS = new Set<string>([

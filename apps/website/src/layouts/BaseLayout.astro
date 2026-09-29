@@ -37,6 +37,8 @@ interface Props {
   keywords?: string[]
   ogImage?: string
   noindex?: boolean
+  /** Set on a page that duplicates another address, e.g. an old model URL. */
+  canonicalPath?: string
   pageType?: WebPageType
   breadcrumbs?: Crumb[]
   mainEntityId?: string
@@ -53,6 +55,7 @@ const {
   keywords,
   ogImage = 'https://media.comfy.org/website/comfy.webp',
   noindex = false,
+  canonicalPath,
   pageType,
   breadcrumbs,
   mainEntityId,
@@ -67,7 +70,7 @@ const keywordsContent =
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  canonicalPath ?? Astro.url.pathname,
   Astro.currentLocale
 )
 const canonicalURL = new URL(url)

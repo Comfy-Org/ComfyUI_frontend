@@ -10,6 +10,7 @@ import { join } from 'node:path'
 
 import { workshopClientBoundary } from './workshop-client-boundary'
 
+import { HUB_MODELS_PATH } from '../config/hub-models'
 import { unregisteredModelsPaths } from '../config/models-url-registry'
 
 import {
@@ -36,6 +37,8 @@ const WORKSHOP_ONLY_ROUTES = [
 
 export function modelsBuildRoutes(enabled: boolean) {
   return [
+    { pattern: HUB_MODELS_PATH, entrypoint: entry('index.astro') },
+    { pattern: `${HUB_MODELS_PATH}/[slug]`, entrypoint: entry('[slug].astro') },
     { pattern: '/models', entrypoint: entry('index.astro') },
     { pattern: '/models/[...slug]', entrypoint: entry('[slug].astro') },
     { pattern: '/models/showcase', entrypoint: entry('showcase.astro') },
