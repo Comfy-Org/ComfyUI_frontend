@@ -1,16 +1,24 @@
+import { mint } from '@comfyorg/comfy-multi-player'
+import type { WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
+import * as Y from 'yjs'
 
 import { i18n } from '@/i18n'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
+import { toRootGraphId } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
+import { encodeBase64 } from './docFrameClient'
+import { attachDocOpMinter } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
@@ -26,12 +34,22 @@ const WORKFLOW_ID = 'wf-rejected-widget-write'
  */
 const GENERIC_REJECTION_TEXT = 'Your edit was rejected and was not saved'
 const WIDGET_REJECTION_TEXT = 'Widget edit was rejected and was not saved'
+const ORIGINAL_WIDGET_VALUE = 111_111
+const EDITED_WIDGET_VALUE = 222_222
+
+class RejectedWidgetNode extends LGraphNode {
+  constructor() {
+    super('Rejected Widget', 'RejectedWidgetNode')
+    this.addWidget('number', 'seed', ORIGINAL_WIDGET_VALUE, () => {})
+    this.serialize_widgets = true
+  }
+}
 
 const WIDGET_EDIT: GraphOperation = {
   op: 'set_widget',
   node_id: 3,
   widget: 'seed',
-  value: 222_222
+  value: EDITED_WIDGET_VALUE
 }
 
 const NODE_ADD: GraphOperation = {
@@ -104,16 +122,56 @@ function mountFollower() {
     store.enabled = false
   })
 
+  LiteGraph.registerNodeType('RejectedWidgetNode', RejectedWidgetNode)
+  const graph = new LGraph()
+  const node = LiteGraph.createNode('RejectedWidgetNode')
+  if (!node) throw new Error('RejectedWidgetNode was not registered')
+  node.id = toNodeId(3)
+  graph.add(node)
+
   let follower!: ReturnType<typeof useAgentCrdtFollower>
   const { unmount } = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID))
+        follower = useAgentCrdtFollower(
+          ref<string | null>(WORKFLOW_ID),
+          () => null,
+          ref(true),
+          () => graph
+        )
         return () => null
       }
     })
   )
   onTestFinished(unmount)
+  const minter = attachDocOpMinter({
+    isEnabled: () => true,
+    isDocBound: () => true,
+    enqueue: (operations) => follower.enqueueHumanOperations(operations),
+    getGraph: () => graph,
+    boundRootGraphId: () => toRootGraphId(graph.id),
+    docInputNames: (nodeId) => follower.docInputNames(nodeId)
+  })
+  onTestFinished(() => minter.detach())
+
+  const host = mint(graph.serialize() as unknown as WorkflowJSON, {
+    types: { RejectedWidgetNode: { widget_order: ['seed'] } }
+  })
+  onTestFinished(() => host.destroy())
+  answerWithServerFrame('doc_subscribed', {
+    v: 1,
+    workflow_id: WORKFLOW_ID,
+    ok: true,
+    seq: 0
+  })
+  answerWithServerFrame('doc_update', {
+    v: 1,
+    workflow_id: WORKFLOW_ID,
+    seq: 1,
+    update_b64: encodeBase64(Y.encodeStateAsUpdate(host)),
+    actor: 'agent:comfy:host',
+    op_ids: []
+  })
 
   async function submitBatch(
     operations: GraphOperation[]
@@ -140,7 +198,18 @@ function mountFollower() {
   const sentDocOpsFrameCount = (): number =>
     docOpsFrames(send.mock.calls.map(([frame]) => frame)).length
 
-  return { submit, submitBatch, sentDocOpsFrameCount }
+  return { node, submit, submitBatch, sentDocOpsFrameCount }
+}
+
+/** The transport listens on `api`; a server frame is a CustomEvent there. */
+function answerWithServerFrame(
+  type: string,
+  detail: Record<string, unknown>
+): void {
+  EventTarget.prototype.dispatchEvent.call(
+    api,
+    new CustomEvent(type, { detail })
+  )
 }
 
 function rejection(opId: string, code: string): Record<string, unknown> {
@@ -196,19 +265,22 @@ describe('a human edit the doc host rejects', () => {
   ])(
     'tells the user their widget edit was not saved when the host answers %s',
     async (code) => {
-      const { submit, sentDocOpsFrameCount } = mountFollower()
+      const { node, submit, sentDocOpsFrameCount } = mountFollower()
 
+      node.widgets![0].value = EDITED_WIDGET_VALUE
       const opId = await submit(WIDGET_EDIT)
       const framesBeforeRejection = sentDocOpsFrameCount()
       answerWithOpsResult(rejection(opId, code))
       // A rejected write is restored through the graph API under remote
-      // provenance. Give the command-site coalescer its microtask, then prove
-      // that restoration did not mint a compensating operation.
+      // provenance. Give both the command-site minter and sender coalescer
+      // their microtasks, then prove restoration minted no compensation.
+      await Promise.resolve()
       await Promise.resolve()
 
       expect(toastDetails()).toEqual([
         expect.stringContaining(WIDGET_REJECTION_TEXT)
       ])
+      expect(node.widgets![0].value).toBe(ORIGINAL_WIDGET_VALUE)
       expect(sentDocOpsFrameCount()).toBe(framesBeforeRejection)
     }
   )
