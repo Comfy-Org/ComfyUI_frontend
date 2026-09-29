@@ -109,10 +109,14 @@ describe('createDeployToComfyApiGate on Cloud', () => {
     user.signIn('alice')
     await posthog.subscribed
 
-    expect(state.value).not.toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({ status: 'awaiting' })
     posthog.identify('alice', true)
 
-    expect(state.value).toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({
+      status: 'answered',
+      generation: 1,
+      enabled: true
+    })
   })
 
   it('does not trust flags PostHog still holds for another account', async () => {
@@ -123,7 +127,7 @@ describe('createDeployToComfyApiGate on Cloud', () => {
     user.signIn('bob')
     await posthog.subscribed
 
-    expect(state.value).not.toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({ status: 'awaiting' })
   })
 
   it('hides the entry the moment another account signs in, until PostHog answers for it', async () => {
@@ -133,14 +137,22 @@ describe('createDeployToComfyApiGate on Cloud', () => {
     })
     user.signIn('alice')
     await vi.waitFor(() =>
-      expect(state.value).toMatchObject({ status: 'answered', enabled: true })
+      expect(state.value).toEqual({
+        status: 'answered',
+        generation: 1,
+        enabled: true
+      })
     )
 
     user.signIn('bob')
-    expect(state.value).not.toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({ status: 'awaiting' })
 
     posthog.identify('bob', false)
-    expect(state.value).not.toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({
+      status: 'answered',
+      generation: 2,
+      enabled: false
+    })
   })
 
   it('stays hidden when PostHog loads only after the account signed out', async () => {
@@ -153,7 +165,11 @@ describe('createDeployToComfyApiGate on Cloud', () => {
     load.resolve(posthog.reader)
     await posthog.subscribed
 
-    expect(state.value).not.toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({
+      status: 'answered',
+      generation: 2,
+      enabled: false
+    })
   })
 
   it('hides the entry when the account signs out', async () => {
@@ -163,12 +179,20 @@ describe('createDeployToComfyApiGate on Cloud', () => {
     })
     user.signIn('alice')
     await vi.waitFor(() =>
-      expect(state.value).toMatchObject({ status: 'answered', enabled: true })
+      expect(state.value).toEqual({
+        status: 'answered',
+        generation: 1,
+        enabled: true
+      })
     )
 
     user.signOut()
 
-    expect(state.value).not.toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({
+      status: 'answered',
+      generation: 2,
+      enabled: false
+    })
   })
 
   it('hides the entry when a flag refresh fails', async () => {
@@ -178,12 +202,20 @@ describe('createDeployToComfyApiGate on Cloud', () => {
     })
     user.signIn('alice')
     await vi.waitFor(() =>
-      expect(state.value).toMatchObject({ status: 'answered', enabled: true })
+      expect(state.value).toEqual({
+        status: 'answered',
+        generation: 1,
+        enabled: true
+      })
     )
 
     posthog.failDelivery()
 
-    expect(state.value).not.toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({
+      status: 'answered',
+      generation: 1,
+      enabled: false
+    })
   })
 
   it('treats the same account resolving again as no change', async () => {
@@ -198,8 +230,11 @@ describe('createDeployToComfyApiGate on Cloud', () => {
     user.signIn('alice')
 
     expect(state.value).toBe(before)
-    expect(state.value).toMatchObject({ status: 'answered', enabled: true })
-    expect(state.value).toMatchObject({ generation: 1 })
+    expect(state.value).toEqual({
+      status: 'answered',
+      generation: 1,
+      enabled: true
+    })
   })
 
   it('never asks the platform', () => {
@@ -223,7 +258,6 @@ describe('createDeployToComfyApiGate on localhost and Desktop', () => {
 
     user.signIn('alice')
 
-    expect(state.value).not.toMatchObject({ status: 'answered', enabled: true })
     expect(state.value).toEqual({ status: 'awaiting' })
     expect(sources.askPlatform).not.toHaveBeenCalled()
     expect(sources.loadFlags).not.toHaveBeenCalled()
@@ -237,12 +271,9 @@ describe('createDeployToComfyApiGate on localhost and Desktop', () => {
     expect(sources.askPlatform).not.toHaveBeenCalled()
   })
 
-  it.for([
-    { answer: true, shown: true },
-    { answer: false, shown: false }
-  ])(
+  it.for([{ answer: true }, { answer: false }])(
     'asks the platform the first time a menu checks, and follows its answer ($answer)',
-    async ({ answer, shown }) => {
+    async ({ answer }) => {
       const reply = deferred<boolean>()
       const { state, sources, user, check } = gate({
         askPlatform: vi.fn(() => reply.promise)
@@ -255,7 +286,11 @@ describe('createDeployToComfyApiGate on localhost and Desktop', () => {
       await reply.promise
 
       expect(sources.askPlatform).toHaveBeenCalledOnce()
-      expect(state.value).toMatchObject({ status: 'answered', enabled: shown })
+      expect(state.value).toEqual({
+        status: 'answered',
+        generation: 1,
+        enabled: answer
+      })
     }
   )
 
@@ -273,8 +308,11 @@ describe('createDeployToComfyApiGate on localhost and Desktop', () => {
     check()
 
     expect(sources.askPlatform).toHaveBeenCalledOnce()
-    expect(state.value).toMatchObject({ status: 'answered', enabled: true })
-    expect(state.value).toMatchObject({ generation: 1 })
+    expect(state.value).toEqual({
+      status: 'answered',
+      generation: 1,
+      enabled: true
+    })
   })
 
   it('asks again for the next account, and hides the entry until it answers', async () => {
@@ -289,16 +327,24 @@ describe('createDeployToComfyApiGate on localhost and Desktop', () => {
     check()
     aliceAnswer.resolve(true)
     await aliceAnswer.promise
-    expect(state.value).toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({
+      status: 'answered',
+      generation: 1,
+      enabled: true
+    })
 
     user.signIn('bob')
-    expect(state.value).not.toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({ status: 'awaiting' })
     check()
     bobAnswer.resolve(true)
     await bobAnswer.promise
 
     expect(askPlatform).toHaveBeenCalledTimes(2)
-    expect(state.value).toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({
+      status: 'answered',
+      generation: 2,
+      enabled: true
+    })
   })
 
   it('ignores an answer that arrives after the account signed out', async () => {
@@ -311,7 +357,11 @@ describe('createDeployToComfyApiGate on localhost and Desktop', () => {
     answer.resolve(true)
     await answer.promise
 
-    expect(state.value).not.toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({
+      status: 'answered',
+      generation: 2,
+      enabled: false
+    })
   })
 
   it('ignores an earlier account’s answer that arrives after the next one signed in', async () => {
@@ -328,7 +378,7 @@ describe('createDeployToComfyApiGate on localhost and Desktop', () => {
     aliceAnswer.resolve(true)
     await aliceAnswer.promise
 
-    expect(state.value).not.toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({ status: 'awaiting' })
   })
 })
 
@@ -338,7 +388,11 @@ describe('createDeployToComfyApiGate in a development build', () => {
 
     const { state, sources } = gate()
 
-    expect(state.value).toMatchObject({ status: 'answered', enabled: true })
+    expect(state.value).toEqual({
+      status: 'answered',
+      generation: 0,
+      enabled: true
+    })
     expect(sources.loadFlags).not.toHaveBeenCalled()
   })
 })
