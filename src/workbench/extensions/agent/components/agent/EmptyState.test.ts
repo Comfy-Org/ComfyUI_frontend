@@ -155,7 +155,7 @@ describe('EmptyState', () => {
     expect(Object.values(attribution)).not.toContain(PROMPTS[1].text)
   })
 
-  it('attributes the displayed localized copy and locale together', async () => {
+  it('attributes fallback English copy to its source locale', async () => {
     const previousLocale = i18n.global.locale.value
     i18n.global.locale.value = 'zh'
     try {
@@ -170,7 +170,7 @@ describe('EmptyState', () => {
           localizedPrompt,
           expect.objectContaining({
             promptTextHash: '28581603',
-            locale: 'zh'
+            locale: 'en'
           })
         ]
       ])

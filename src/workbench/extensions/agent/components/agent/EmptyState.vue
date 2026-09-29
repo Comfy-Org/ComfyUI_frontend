@@ -14,13 +14,14 @@ const emit = defineEmits<{
   insert: [text: string, prompt: AgentStarterPromptAttribution]
 }>()
 
-const { t, tm, locale } = useI18n()
+const { t, te, tm, locale } = useI18n()
 
-const prompts = computed(
-  () =>
-    tm(
-      isCloud ? 'agent.suggestedPrompts.cloud' : 'agent.suggestedPrompts.local'
-    ) as string[]
+const promptKey = isCloud
+  ? 'agent.suggestedPrompts.cloud'
+  : 'agent.suggestedPrompts.local'
+const prompts = computed(() => tm(promptKey) as string[])
+const promptLocale = computed(() =>
+  te(promptKey, locale.value) ? locale.value : 'en'
 )
 
 /**
@@ -31,7 +32,12 @@ function onPromptClick(prompt: string, index: number): void {
   emit(
     'insert',
     prompt,
-    starterPromptAttribution(prompt, index, prompts.value.length, locale.value)
+    starterPromptAttribution(
+      prompt,
+      index,
+      prompts.value.length,
+      promptLocale.value
+    )
   )
 }
 
