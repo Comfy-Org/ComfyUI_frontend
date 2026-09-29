@@ -861,6 +861,38 @@ describe('AgentPanel extension flag gate', () => {
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
+  it('re-offers after a withheld in-flight offer settles on a clear screen', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let settleOffer = () => {}
+    const pendingOffer = new Promise<void>((resolve) => {
+      settleOffer = resolve
+    })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_trigger, _onAccept, hooks) => {
+        openDialog()
+        await flush()
+        if (hooks?.canShow?.() === false) await pendingOffer
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    settleOffer()
+
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
   it('does not re-offer after the user declines a manually opened card', async () => {
     agentFlagEnabled.value = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
