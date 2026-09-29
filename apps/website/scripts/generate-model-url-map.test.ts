@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { modelAliasUrls, modelPageUrls } from '../src/config/model-urls'
 import { redirects } from '../src/config/redirects'
 import {
+  PROVIDER_NAMES,
   routerModelSlugAliases,
   workshopModels
 } from '../src/config/workshop-browse-content'
@@ -17,7 +18,9 @@ import {
   MODEL_URL_TABLE,
   MODEL_URLS_MODULE,
   compileModelUrlMap,
+  modelUrlFlags,
   modelUrlSlug,
+  publishedModelSlugs,
   renderModelUrlTable,
   renderModelUrlsModule
 } from './generate-model-url-map'
@@ -63,13 +66,27 @@ function matchesRoute(pattern: string, path: string): boolean {
 
 describe('model URL map', () => {
   it('matches the generator output (pnpm generate:model-url-map)', () => {
-    const map = compileModelUrlMap(workshopModels, routerModelSlugAliases)
+    const map = compileModelUrlMap(
+      workshopModels,
+      routerModelSlugAliases,
+      publishedModelSlugs
+    )
     expect(readFileSync(MODEL_URLS_MODULE, 'utf8')).toBe(
       renderModelUrlsModule(map)
     )
     expect(readFileSync(MODEL_URL_TABLE, 'utf8')).toBe(
       renderModelUrlTable(workshopModels, map)
     )
+  })
+
+  it('keeps every recorded slug when display names change', () => {
+    const renamed = workshopModels.map((model) => ({
+      ...model,
+      name: `${model.name} Renamed`
+    }))
+    expect(
+      compileModelUrlMap(renamed, routerModelSlugAliases, publishedModelSlugs)
+    ).toEqual({ pages: modelPageUrls, aliases: modelAliasUrls })
   })
 
   it('gives every published model page exactly one new slug', () => {
@@ -98,13 +115,16 @@ describe('model URL map', () => {
     expect(newSlugs.filter((slug) => !MODEL_URL_SLUG.test(slug))).toEqual([])
   })
 
+  const renamedProviderIds = Object.entries(PROVIDER_NAMES)
+    .filter(([id, name]) => modelUrlSlug(id) !== modelUrlSlug(name))
+    .map(([id]) => (id === 'gemini' ? 'gemini(?!-omni-)' : modelUrlSlug(id)))
+
   it.for([
     [
       'a Router provider id',
-      /(^|-)(byteplus|vertexai|wavespeed|mediakit)(-|$)/
+      new RegExp(`(^|-)(${renamedProviderIds.join('|')})(-|$)`)
     ],
     ['a Router model id', /(^|-)(dreamina|interactions|recraftv\d)(-|$)/],
-    ['Gemini as a stand-in for a Google brand', /(^|-)gemini-(?!omni-)/],
     ['a Router date stamp', /\d{6}/]
   ] as const)('never leaks %s', ([, forbidden]) => {
     expect(newSlugs.filter((slug) => forbidden.test(slug))).toEqual([])
@@ -122,6 +142,58 @@ describe('model URL map', () => {
   })
 })
 
+describe('modelUrlFlags', () => {
+  const noTaskWords =
+    'no task words in the name; the product name stands in for the task'
+
+  it.for([
+    [
+      'an edit page whose Router model is overridden to generate-images',
+      'openai--gpt-image-1--edit-images',
+      'openai/gpt-image-1',
+      'gpt-image-1-image-edit',
+      []
+    ],
+    [
+      'a task word that disagrees with the page use case',
+      'openai--gpt-image-1--generate-images',
+      'openai/gpt-image-1',
+      'gpt-image-1-image-edit',
+      ['name says "image-edit", page use case is generate-images']
+    ],
+    [
+      'a digit inside a task word',
+      'kling--avatar--animate-images',
+      'kling/videos-avatar-image2video',
+      'kling-avatar',
+      [noTaskWords]
+    ],
+    [
+      'a v-prefixed version',
+      'bfl--erase-v1--edit-images',
+      'bfl/erase-v1',
+      'flux-tools-erase',
+      [noTaskWords, 'no version in the name, Router id is bfl/erase-v1']
+    ],
+    [
+      'an underscore version',
+      'elevenlabs--eleven_v3--audio',
+      'elevenlabs/eleven_v3',
+      'elevenlabs-text-to-dialogue',
+      ['no version in the name, Router id is elevenlabs/eleven_v3']
+    ],
+    [
+      'a dotted version',
+      'wan--happyhorse-text-to-video--generate-videos',
+      'wan/happyhorse-1.1-t2v',
+      'happyhorse-text-to-video',
+      ['no version in the name, Router id is wan/happyhorse-1.1-t2v']
+    ]
+  ] as const)('flags %s', ([, slug, routerId, newSlug, flags]) => {
+    expect(modelUrlFlags({ slug, routerId }, newSlug)).toEqual(flags)
+  })
+})
+
 describe('compileModelUrlMap', () => {
   it.for([
     ['FLUX.1 Kontext Max Image Edit', 'flux-1-kontext-max-image-edit'],
@@ -131,6 +203,39 @@ describe('compileModelUrlMap', () => {
     [' Bria RMBG 2.0 ', 'bria-rmbg-2-0']
   ] as const)('slugifies %s', ([name, slug]) => {
     expect(modelUrlSlug(name)).toBe(slug)
+  })
+
+  it('keeps a published slug when the display name changes', () => {
+    const models = [
+      { slug: 'google--veo-3--generate-videos', name: 'Veo 3.1 Text-to-Video' },
+      { slug: 'google--veo-4--generate-videos', name: 'Veo 4 Text-to-Video' }
+    ]
+    const frozen = new Map([
+      ['google--veo-3--generate-videos', 'veo-3-text-to-video']
+    ])
+    expect(compileModelUrlMap(models, new Map(), frozen).pages).toEqual([
+      {
+        oldSlug: 'google--veo-3--generate-videos',
+        newSlug: 'veo-3-text-to-video'
+      },
+      {
+        oldSlug: 'google--veo-4--generate-videos',
+        newSlug: 'veo-4-text-to-video'
+      }
+    ])
+  })
+
+  it('rejects a new page that takes a published slug', () => {
+    expect(() =>
+      compileModelUrlMap(
+        [
+          { slug: 'a--veo-3--generate-videos', name: 'Veo 3.1 Text-to-Video' },
+          { slug: 'b--veo-3--generate-videos', name: 'Veo 3 Text-to-Video' }
+        ],
+        new Map(),
+        new Map([['a--veo-3--generate-videos', 'veo-3-text-to-video']])
+      )
+    ).toThrow('both map to veo-3-text-to-video')
   })
 
   it('rejects two pages that would share a URL', () => {
