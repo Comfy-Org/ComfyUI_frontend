@@ -1,4 +1,4 @@
-# 9. Canvas Viewport System
+# ADR-CANVAS-VIEWPORT-0009: Canvas Viewport System
 
 Date: 2026-04-20
 
@@ -49,7 +49,7 @@ The viewport system composes with the existing `CanvasScheduler` — the schedul
 
 ### Design Principles
 
-Following the ECS principles established in [ADR 0008](0008-entity-component-system.md):
+Following the principles established in [ADR-ECS-0008](ECS-0008-entity-component-system.md):
 
 - `CanvasViewport` is a **plain data component** — no methods, no back-references, frozen after creation.
 - `measureViewport` is a **pure system function** — testable without DOM (accepts dimension inputs).
@@ -79,4 +79,4 @@ Following the ECS principles established in [ADR 0008](0008-entity-component-sys
 
 ## Notes
 
-- References [ADR 0008](0008-entity-component-system.md) for the design principles (plain data components, pure system functions, no methods on entities).
+- References [ADR-ECS-0008](ECS-0008-entity-component-system.md) for the design principles (plain data components, pure system functions, no methods on entities).

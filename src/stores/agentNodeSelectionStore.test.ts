@@ -36,7 +36,8 @@ function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
     selectedItems,
     deselectAll,
     animateToBounds,
-    canvas: element
+    canvas: element,
+    dpr: 1
   } as never
   return { animateToBounds, deselectAll, selectedItems }
 }

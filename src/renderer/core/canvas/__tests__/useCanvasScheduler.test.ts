@@ -107,6 +107,20 @@ describe('useCanvasScheduler', () => {
     expect(scheduler.pending()).toBe(0)
   })
 
+  it('flush executes queued operations after a zero-sized canvas is measured', async () => {
+    const scheduler = await createScheduler()
+    const op = vi.fn()
+
+    testState.offsetWidth = 0
+    scheduler.schedule({ run: op })
+
+    testState.offsetWidth = 1920
+    scheduler.flush()
+
+    expect(op).toHaveBeenCalledOnce()
+    expect(scheduler.pending()).toBe(0)
+  })
+
   it('flush is a no-op when canvas is not ready', async () => {
     const scheduler = await createScheduler()
     const op = vi.fn()
