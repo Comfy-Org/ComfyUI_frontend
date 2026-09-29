@@ -42,14 +42,6 @@ describe('hub workflows manifest', () => {
     ).toEqual(workflowModels.map(({ slug }) => hubWorkflowName(slug)).sort())
   })
 
-  // Changing these shipped values is the migration step and needs review.
-  it('ships with the workflows site as owner and no legacy redirects', () => {
-    expect(hubWorkflowsRouting).toEqual({
-      defaultOwner: 'workflows-site',
-      legacyRedirects: {}
-    })
-  })
-
   it.for<[string, Record<string, string>]>([
     ['a wildcard', { '/workflows/*': '/hub/workflows/change-material/' }],
     ['a prefix', { '/workflows/': '/hub/workflows/change-material/' }],

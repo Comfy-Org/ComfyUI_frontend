@@ -190,6 +190,8 @@ with the refreshed snapshot.
 
 The website builds the workflow pages listed in `src/config/hub-workflow-names.json` at `/hub/workflows/<name>/`. It publishes `/hub/workflows/manifest.json` (`{ version, defaultOwner, pages, legacyRedirects }`), which comfy-router reads to decide who answers each `/hub/workflows/*` and `/workflows/*` URL. The build validates the manifest and fails if it is invalid.
 
+The router (comfy-router#46) fetches the manifest from the website origin directly, not through comfy.org, so it never depends on its own routing to reach it. It also passes the public `comfy.org/hub/workflows/manifest.json` path straight through to the website, even though `manifest.json` is not in `pages`.
+
 Moving more workflows onto the website takes data only, no new code:
 
 1. Add the pages; `hub-workflow-names.test.ts` fails until you refresh the list with `vitest -u`.

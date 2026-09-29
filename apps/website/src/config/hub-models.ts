@@ -14,6 +14,11 @@ export const hubWorkflowName = (slug: string) =>
 export const hubWorkflowHref = (slug: string) =>
   `${HUB_WORKFLOWS_PATH}/${hubWorkflowName(slug)}/`
 
+/** Every workflow page the site builds, as `workflows/<name>` page ids. */
+export const hubWorkflowSlugs: readonly string[] = hubWorkflowNames.map(
+  (name) => `${WORKFLOW_SLUG_PREFIX}${name}`
+)
+
 export const hubModelPath = (newSlug: string) =>
   `${HUB_MODELS_PATH}/${newSlug}/`
 
@@ -38,7 +43,7 @@ const oldModelPaths = new Set([
   ...[
     ...hubModelSlugs.keys(),
     ...hubModelAliases.keys(),
-    ...hubWorkflowNames.map((name) => `workflows/${name}`)
+    ...hubWorkflowSlugs
   ].map((slug) => `/models/${slug}`)
 ])
 

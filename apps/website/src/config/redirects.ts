@@ -6,9 +6,9 @@ import {
   hubModelAliases,
   hubModelPath,
   hubModelSlugs,
-  hubWorkflowHref
+  hubWorkflowHref,
+  hubWorkflowSlugs
 } from './hub-models'
-import hubWorkflowNames from './hub-workflow-names.json' with { type: 'json' }
 
 interface SiteRedirect {
   /** A literal path with no trailing slash; both slash forms redirect. */
@@ -53,9 +53,9 @@ const hubModelRedirects: readonly SiteRedirect[] = [
     destination: hubModelPath(hubSlug),
     temporaryBecause: HUB_ROUTER_PENDING
   })),
-  ...hubWorkflowNames.map((name) => ({
-    source: `/models/workflows/${name}` as const,
-    destination: hubWorkflowHref(name),
+  ...hubWorkflowSlugs.map((slug) => ({
+    source: `/models/${slug}` as const,
+    destination: hubWorkflowHref(slug),
     temporaryBecause: HUB_ROUTER_PENDING
   }))
 ]

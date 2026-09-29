@@ -166,7 +166,10 @@ describe('llms.txt', () => {
   it('only links comfy.org paths that this site (or the workflows app) serves', () => {
     const unknown = internalPaths.filter((path) => {
       if (BUILD_ARTIFACTS.has(path)) return false
-      if (path.includes('/workflows')) {
+      if (
+        path.startsWith('/workflows') ||
+        /^\/[a-z]{2}(-[A-Za-z]{2})?\/workflows/.test(path)
+      ) {
         return !WORKFLOW_APP_ROUTES.some((route) => route.test(path))
       }
       if (path.startsWith('/zh-CN')) {

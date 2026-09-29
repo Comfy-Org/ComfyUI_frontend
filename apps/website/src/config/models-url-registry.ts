@@ -6,7 +6,8 @@ import {
   HUB_WORKFLOWS_PATH,
   hubModelAliases,
   hubModelSlugs,
-  hubWorkflowHref
+  hubWorkflowHref,
+  hubWorkflowSlugs
 } from './hub-models'
 
 const MODELS_BASE_PATH = '/models'
@@ -123,7 +124,7 @@ const displaySlugs = (types: readonly WorkshopDisplayEntry['type'][]) =>
 const modelsUrlRegistry = buildModelsUrlRegistry(
   modelsUrlEntries({
     models: hubModelSlugs,
-    workflows: displaySlugs(['CLOUD', 'SERVERLESS']),
+    workflows: hubWorkflowSlugs,
     apps: displaySlugs(['APP']),
     aliases: hubModelAliases
   })
