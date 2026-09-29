@@ -120,12 +120,13 @@ describe('agentConsentStore', () => {
   it('sends on the web session in place of a workspace auth header', async () => {
     const send = vi.fn<WebSessionRequests['send']>()
     onTestFinished(
-      provideWebSessionRequests({
-        scope: async () => fromPartial<WebSessionRequestScope>({}),
-        workspaceId: () => undefined,
-        send,
-        authorizeResource: vi.fn<WebSessionRequests['authorizeResource']>()
-      })
+      provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({
+          scope: async () => fromPartial<WebSessionRequestScope>({}),
+          workspaceId: () => undefined,
+          send
+        })
+      )
     )
     const store = useAgentConsentStore()
 
