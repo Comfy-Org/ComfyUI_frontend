@@ -46,6 +46,16 @@ watch(
   }
 )
 const settled = computed(() => current.status === 'done' && loaded.value)
+// A withheld NSFW clip has no <video> mounted yet, so `loaded` cannot fire and
+// the spinner would sit under the privacy overlay until the reveal. `loaded`
+// stays false on purpose, so the frame keeps its size until real media arrives.
+const withheld = computed(
+  () =>
+    current.status === 'done' &&
+    current.output.kind === 'video' &&
+    !!current.output.nsfw &&
+    !revealed.value
+)
 
 const TONE = {
   neutral:
@@ -87,7 +97,7 @@ function frameTone(take: Take): string | undefined {
         @loaded="loaded = true"
       />
       <LoaderCircle
-        v-if="!loaded"
+        v-if="!loaded && !withheld"
         class="size-5 animate-spin text-primary-warm-gray"
         :aria-label="tc('cinematic.stage.loadingTake', locale)"
       />

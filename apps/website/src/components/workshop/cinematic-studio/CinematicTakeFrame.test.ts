@@ -31,6 +31,24 @@ describe('CinematicTakeFrame', () => {
     expect(figure.getAttribute('style') ?? '').not.toContain('aspect-ratio')
     expect(screen.queryByLabelText('Loading the take')).toBeNull()
   })
+
+  it('spins for nothing while an NSFW clip is withheld', async () => {
+    const clip: Take = {
+      ...done,
+      output: {
+        kind: 'video',
+        url: 'blob:clip',
+        fileName: 'clip.mp4',
+        nsfw: true
+      }
+    }
+    render(CinematicTakeFrame, { props: { current: clip } })
+    const figure = screen.getByRole('figure')
+    // No video mounts before the reveal, so `loaded` can never fire. The frame
+    // still has to hold its size, so the spinner is what goes, not `loaded`.
+    expect(figure.getAttribute('style')).toContain('aspect-ratio: 16 / 9')
+    expect(screen.queryByLabelText('Loading the take')).toBeNull()
+  })
 })
 
 describe('CinematicStage', () => {
