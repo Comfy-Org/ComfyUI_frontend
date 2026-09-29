@@ -2,6 +2,7 @@ import type {
   AddCreditsClickMetadata,
   AgentAttachButtonClickedMetadata,
   AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentPaywallCtaMetadata,
@@ -475,6 +476,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
     this.dispatch((provider) =>
       provider.trackAgentConsentNotOffered?.(metadata)
+    )
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentConsentOfferExited?.(metadata)
     )
   }
 
