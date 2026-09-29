@@ -936,6 +936,72 @@ describe('CheckoutView', () => {
     )
   })
 
+  it('re-quotes a stale quote and pays against the replacement', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: { status: 'ok', value: upgradeQuote() }
+    })
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'QUOTE_STALE'
+    })
+    fake.previewSubscribe.mockResolvedValueOnce({
+      status: 'ok',
+      value: upgradeQuote({
+        quote_id: 'q_2',
+        quote_version: 4,
+        amount_due_cents: 3100
+      })
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Your quote changed. Review the updated amount and try again.'
+    )
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText('$31.00')).toBeInTheDocument()
+    expect(screen.queryByText('$28.00')).not.toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm upgrade' })
+    )
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
+    expect(fake.subscribe).toHaveBeenLastCalledWith(
+      expect.objectContaining({ quote_id: 'q_2', quote_version: 4 })
+    )
+    expect(fake.subscribe).not.toHaveBeenLastCalledWith(
+      expect.objectContaining({ quote_id: 'q_1' })
+    )
+  })
+
+  it('keeps Confirm closed on the stale quote when its refresh fails', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: { status: 'ok', value: upgradeQuote() }
+    })
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'QUOTE_STALE'
+    })
+    fake.previewSubscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Your quote expired and couldn't be refreshed. Choose your plan again."
+    )
+    expect(
+      screen.getByRole('button', { name: 'Confirm upgrade' })
+    ).toBeDisabled()
+  })
+
   it('tells the customer when the subscribe itself was refused and keeps the form', async () => {
     await renderCheckout(CHECKOUT_PATH, {
       subscribe: { status: 'error', code: 'REQUEST_FAILED' }
