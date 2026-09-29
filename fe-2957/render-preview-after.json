@@ -1,0 +1,97 @@
+{
+ "robotsDisallow": [
+  "/_vercel/"
+ ],
+ "results": [
+  {
+   "label": "preview-after",
+   "url": "https://comfy-website-preview-pr-19357.vercel.app/models/",
+   "sameOriginRequests": 92,
+   "blockedSameOrigin": 1,
+   "blockedPosthog": 3,
+   "blockedSample": [
+    "https://comfy-website-preview-pr-19357.vercel.app/_vercel/insights/script.js",
+    "https://t.comfy.org/array/phc_iKfK86id4xVYws9LybMje0h44eGtfwFgRPIBehmy8rO/config.js",
+    "https://t.comfy.org/array/phc_iKfK86id4xVYws9LybMje0h44eGtfwFgRPIBehmy8rO/config?_=1790659523368&ver=1.402.3",
+    "https://t.comfy.org/flags/?v=2&_=1790659523474&ver=1.402.3&compression=base64"
+   ],
+   "snaps": [
+    {
+     "at": "load",
+     "h1": [
+      "What will you make next?"
+     ],
+     "loadingVisible": false,
+     "grokVisible": false,
+     "bodyBackground": "rgb(33, 25, 39)",
+     "bodyFont": "\"PP Formula\""
+    },
+    {
+     "at": "+3.5s",
+     "h1": [
+      "What will you make next?"
+     ],
+     "loadingVisible": false,
+     "grokVisible": false,
+     "bodyBackground": "rgb(33, 25, 39)",
+     "bodyFont": "\"PP Formula\""
+    },
+    {
+     "at": "+6.5s",
+     "h1": [
+      "What will you make next?"
+     ],
+     "loadingVisible": false,
+     "grokVisible": false,
+     "bodyBackground": "rgb(33, 25, 39)",
+     "bodyFont": "\"PP Formula\""
+    }
+   ],
+   "screenshot": "/private/tmp/claude-501/-Users-maanilverma-Documents-ComfyUI-frontend/9203738c-4502-44d8-817a-f35dc8c822de/scratchpad/fe-2957/shots/preview-after-models.png"
+  },
+  {
+   "label": "preview-after",
+   "url": "https://comfy-website-preview-pr-19357.vercel.app/models/bfl--flux-2-max--generate-images/",
+   "sameOriginRequests": 97,
+   "blockedSameOrigin": 1,
+   "blockedPosthog": 3,
+   "blockedSample": [
+    "https://comfy-website-preview-pr-19357.vercel.app/_vercel/insights/script.js",
+    "https://t.comfy.org/array/phc_iKfK86id4xVYws9LybMje0h44eGtfwFgRPIBehmy8rO/config.js",
+    "https://t.comfy.org/array/phc_iKfK86id4xVYws9LybMje0h44eGtfwFgRPIBehmy8rO/config?_=1790659533427&ver=1.402.3",
+    "https://t.comfy.org/flags/?v=2&_=1790659533880&ver=1.402.3&compression=base64"
+   ],
+   "snaps": [
+    {
+     "at": "load",
+     "h1": [],
+     "loadingVisible": true,
+     "grokVisible": false,
+     "bodyBackground": "rgb(33, 25, 39)",
+     "bodyFont": "\"PP Formula\""
+    },
+    {
+     "at": "+3.5s",
+     "h1": [
+      "FLUX 2 Max Text-to-Image"
+     ],
+     "loadingVisible": false,
+     "grokVisible": false,
+     "bodyBackground": "rgb(33, 25, 39)",
+     "bodyFont": "\"PP Formula\""
+    },
+    {
+     "at": "+6.5s",
+     "h1": [
+      "FLUX 2 Max Text-to-Image"
+     ],
+     "loadingVisible": false,
+     "grokVisible": false,
+     "bodyBackground": "rgb(33, 25, 39)",
+     "bodyFont": "\"PP Formula\""
+    }
+   ],
+   "screenshot": "/private/tmp/claude-501/-Users-maanilverma-Documents-ComfyUI-frontend/9203738c-4502-44d8-817a-f35dc8c822de/scratchpad/fe-2957/shots/preview-after-bfl--flux-2-max--generate-images.png"
+  }
+ ]
+}
