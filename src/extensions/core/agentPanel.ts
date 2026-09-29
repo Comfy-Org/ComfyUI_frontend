@@ -14,24 +14,20 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentConsentNotOfferedReason } from '@/platform/telemetry/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
-import {
-  CONSENT_DIALOG_KEY,
-  useAgentConsent
-} from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useExtensionService } from '@/services/extensionService'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 import {
   notifyRestoreMintersAfterGraphConfigure,
   notifyRestoreMintersBeforeGraphLoad,
   notifyRestoreMintersGraphLoadError
 } from '@/workbench/extensions/agent/crdt/restoreOpMinter'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useExtensionService } from '@/services/extensionService'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-import { isLGraphNode } from '@/utils/litegraphUtil'
 
 /** Upper bound on how long readiness consumers wait for a gate decision. */
 export const GATE_SETTLE_TIMEOUT_MS = 5_000
@@ -77,7 +73,7 @@ export function registerAgentPanelExtension(): void {
     beforeLoadGraph() {
       notifyRestoreMintersBeforeGraphLoad()
       const agentPanelStore = useAgentPanelStore()
-      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) return
+      if (!agentPanelStore.isVisible) return
 
       const nodeSelectionStore = useAgentNodeSelectionStore()
       nodeSelectionStore.beginWorkflowLoad()
@@ -86,7 +82,7 @@ export function registerAgentPanelExtension(): void {
       const agentPanelStore = useAgentPanelStore()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (!nodeSelectionStore.isLoadingWorkflow) return
-      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) {
+      if (!agentPanelStore.isVisible) {
         nodeSelectionStore.finishWorkflowLoad()
         return
       }
@@ -132,12 +128,11 @@ export function registerAgentPanelExtension(): void {
       const consentStore = useAgentConsentStore()
       const { enabled } = storeToRefs(agentPanelStore)
       const workspaceStore = useTeamWorkspaceStore()
-      const { isAuthInitialized, resolvedUserInfo, isLoggedIn } =
+      const { resolvedUserInfo, isAuthInitialized, isLoggedIn } =
         useCurrentUser()
       const { withConsent } = useAgentConsent()
       const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
-      const dialogStore = useDialogStore()
       registerWorkflowTabActivityTracker(enabled)
 
       watch(
@@ -148,17 +143,16 @@ export function registerAgentPanelExtension(): void {
         { immediate: true, flush: 'sync' }
       )
 
-      const screenBusyReason = (): 'tour_active' | 'dialog_open' | null =>
-        onboardingTourStore.activeTour !== null
-          ? 'tour_active'
-          : dialogStore.dialogStack.length > 0
-            ? 'dialog_open'
-            : null
       const screenHolder = (): AgentConsentNotOfferedReason | null =>
-        firstRunHoldsScreen.value ? 'first_run_screen' : screenBusyReason()
+        firstRunHoldsScreen.value
+          ? 'first_run_screen'
+          : onboardingTourStore.activeTour !== null
+            ? 'tour_active'
+            : null
       const screenIsClear = computed(() => screenHolder() === null)
 
       const reportedWithheld = new Set<string>()
+      const offerHeld = ref(false)
       const withholdOffer = (
         reason: AgentConsentNotOfferedReason,
         userId = resolvedUserInfo.value?.id,
@@ -175,30 +169,6 @@ export function registerAgentPanelExtension(): void {
         useTelemetry()?.trackAgentConsentNotOffered({ reason })
       }
 
-      const offerHeld = ref(false)
-      const holdOffer = (
-        reason: AgentConsentNotOfferedReason,
-        userId?: string,
-        workspaceId?: string
-      ): void => {
-        withholdOffer(reason, userId, workspaceId)
-        offerHeld.value = true
-      }
-
-      const consentScope = (): string | null => {
-        const userId = resolvedUserInfo.value?.id
-        const workspaceId = workspaceStore.activeWorkspaceId
-        return userId && workspaceId ? `${userId}.${workspaceId}` : null
-      }
-      const consentCardSeenIn = new Set<string>()
-      whenever(
-        () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
-        () => {
-          const scope = consentScope()
-          if (scope) consentCardSeenIn.add(scope)
-        }
-      )
-
       const offerEligible = (): boolean =>
         agentPanelStore.enabled &&
         isLoggedIn.value &&
@@ -209,12 +179,11 @@ export function registerAgentPanelExtension(): void {
       const offerConsentUnprompted = (): void => {
         if (autoShowInFlight) return
         if (!offerEligible()) return
-        const scope = consentScope()
-        if (scope && consentCardSeenIn.has(scope)) return
         // Must precede prepareAutoShow, which burns the one-shot key.
         const held = screenHolder()
         if (held) {
-          holdOffer(held)
+          withholdOffer(held)
+          offerHeld.value = true
           return
         }
 
@@ -230,9 +199,8 @@ export function registerAgentPanelExtension(): void {
         autoShowInFlight = true
         agentPanelStore.suppressRestoredOpen()
         void withConsent(
-          'first_load',
           () => {
-            if (!agentPanelStore.enabled || agentPanelStore.isOpen) return
+            if (!agentPanelStore.enabled) return
             agentPanelStore.open('automatic_consent')
           },
           {
@@ -241,7 +209,10 @@ export function registerAgentPanelExtension(): void {
             },
             canShow: () => {
               const heldAtMount = screenHolder()
-              if (heldAtMount) holdOffer(heldAtMount, userId, workspaceId)
+              if (heldAtMount) {
+                withholdOffer(heldAtMount, userId, workspaceId)
+                offerHeld.value = true
+              }
               return heldAtMount === null
             }
           }
@@ -263,29 +234,6 @@ export function registerAgentPanelExtension(): void {
             reportError(error, {
               errorType: 'agent_consent_auto_offer_failure'
             })
-          })
-      }
-
-      let activationPending = false
-      let activationOffered = false
-      const openWhenStartupDecided = (): void => {
-        if (!agentPanelStore.enabled || activationPending || activationOffered)
-          return
-        activationPending = true
-        whenStartupDecided()
-          .then((decided) => {
-            if (decided && agentPanelStore.enabled) {
-              activationOffered = true
-              if (!agentPanelStore.isOpen) agentPanelStore.open('activation')
-            }
-          })
-          .catch((error: unknown) => {
-            reportError(error, {
-              errorType: 'agent_panel_activation_failure'
-            })
-          })
-          .finally(() => {
-            activationPending = false
           })
       }
 
@@ -314,9 +262,14 @@ export function registerAgentPanelExtension(): void {
           loadConsentIfEligible()
         }
       )
+      watch(
+        () => onboardingTourStore.activeTour,
+        (tour) => {
+          if (tour === null) loadConsentIfEligible()
+        }
+      )
       setupFlagGate(
         loadConsentIfEligible,
-        openWhenStartupDecided,
         () => isAuthInitialized.value && resolvedUserInfo.value === null
       )
     }
@@ -325,7 +278,6 @@ export function registerAgentPanelExtension(): void {
 
 function setupFlagGate(
   loadConsentIfEligible: () => void,
-  openWhenStartupDecided: () => void,
   isSignedOut: () => boolean
 ): void {
   const agentPanelStore = useAgentPanelStore()
@@ -341,7 +293,6 @@ function setupFlagGate(
     ([enabled]) => {
       agentPanelStore.enabled = enabled
       loadConsentIfEligible()
-      openWhenStartupDecided()
       if (!enabled) {
         const nodeSelectionStore = useAgentNodeSelectionStore()
         if (nodeSelectionStore.isLoadingWorkflow)
@@ -380,7 +331,4 @@ function setupFlagGate(
     },
     { immediate: true }
   )
-  // A signed-out session never runs the authenticated /features refresh
-  // (WorkspaceAuthGate returns early with no user), so the watch above never
-  // reaches a decided state for it.
 }

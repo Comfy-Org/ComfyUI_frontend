@@ -29,7 +29,6 @@ import type {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
-import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
@@ -61,7 +60,6 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
-import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import {
   collectSubgraphDefinitions,
@@ -99,6 +97,8 @@ import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
+import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 
@@ -853,9 +853,22 @@ export class ComfyApp {
         return
       }
 
-      if (useKeybindingService().executeCanvasKeybinding(e)) {
-        this.graph.change()
-        return
+      if (e.type == 'keydown' && !e.repeat) {
+        const keyCombo = KeyComboImpl.fromEvent(e)
+        const keybindingStore = useKeybindingStore()
+        const keybinding = keybindingStore.getKeybinding(keyCombo)
+
+        if (
+          keybinding &&
+          keybinding.targetElementId === 'graph-canvas-container'
+        ) {
+          void useCommandStore().execute(keybinding.commandId)
+
+          this.graph.change()
+          e.preventDefault()
+          e.stopImmediatePropagation()
+          return
+        }
       }
 
       // Fall through to Litegraph defaults
@@ -2437,15 +2450,6 @@ export class ComfyApp {
           | Extract<MissingNodeType, { type: string }>
           | undefined
         if (!node) {
-          const cnrId = zNodePackMetadata.shape.cnr_id.safeParse(
-            data._meta?.cnr_id
-          ).data
-          const auxId = zNodePackMetadata.shape.aux_id.safeParse(
-            data._meta?.aux_id
-          ).data
-          const packVersion = zNodePackMetadata.shape.ver.safeParse(
-            data._meta?.ver
-          ).data
           const missingNode = new LGraphNode(
             data._meta?.title ?? data.class_type,
             sanitizeNodeName(data.class_type)
@@ -2466,9 +2470,6 @@ export class ComfyApp {
               widgetValuesNamed[input] = widgetValue
             }
           }
-          if (cnrId) node.properties.cnr_id = cnrId
-          if (auxId) node.properties.aux_id = auxId
-          if (packVersion) node.properties.ver = packVersion
           node.last_serialization = {
             id: nodeId,
             type: data.class_type,
@@ -2481,7 +2482,6 @@ export class ComfyApp {
             inputs: node.inputs.map((input, i) =>
               inputAsSerialisable(input, missingNode, i)
             ),
-            properties: { ...node.properties },
             widgets_values: widgetValues,
             widgets_values_named: widgetValuesNamed
           }
@@ -2490,7 +2490,6 @@ export class ComfyApp {
           )
           placeholderEntry = {
             type: data.class_type,
-            cnrId: getCnrIdFromProperties(node.properties),
             isReplaceable: replacement !== null,
             replacement: replacement ?? undefined
           }

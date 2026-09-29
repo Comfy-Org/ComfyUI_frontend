@@ -29,7 +29,7 @@ import {
   detachRerouteLayout,
   materializeRerouteLayout
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
-import { useSelectionStore } from '@/core/selection/selectionStore'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -622,7 +622,7 @@ export class LGraph
   readonly events = new CustomEventTarget<LGraphEventMap>()
   readonly _subgraphs: Map<SubgraphId, Subgraph> = new Map()
   _nodes: (LGraphNode | SubgraphNode)[] = []
-  _nodes_by_id: Partial<Record<NodeId, LGraphNode>> = {}
+  _nodes_by_id: Partial<Record<NodeId, LGraphNode>> = Object.create(null)
   _nodes_in_order: LGraphNode[] = []
   _nodes_executable: LGraphNode[] | null = null
   _groups: LGraphGroup[] = []
@@ -840,7 +840,7 @@ export class LGraph
 
     this._subgraphs.clear()
     this._nodes = []
-    this._nodes_by_id = {}
+    this._nodes_by_id = Object.create(null)
     this._nodes_in_order = []
     this._nodes_executable = null
     this._groups = []
@@ -1291,7 +1291,7 @@ export class LGraph
         node[eventname]()
       } else if (params.constructor === Array) {
         // @ts-expect-error deprecated
-        // oxlint-disable-next-line prefer-spread
+        // eslint-disable-next-line prefer-spread
         node[eventname].apply(node, params)
       } else {
         // @ts-expect-error deprecated
@@ -1646,7 +1646,7 @@ export class LGraph
    * @param classObject the class itself (not an string)
    * @returns a list with all the nodes of this type
    */
-  // oxlint-disable-next-line typescript/no-unsafe-function-type
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   findNodesByClass(classObject: Function, result?: LGraphNode[]): LGraphNode[] {
     result = result || []
     result.length = 0
