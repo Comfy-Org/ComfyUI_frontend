@@ -197,27 +197,25 @@ function valueWidgetsOnly(
   const filtered: Record<string, unknown> = {}
   for (const [name, value] of Object.entries(named)) {
     const widget = node.widgets?.find((candidate) => candidate.name === name)
-    if (widget && isValueWidget(widget)) filtered[name] = value
+    if (widget && widget.type !== 'button' && widget.serialize !== false)
+      filtered[name] = value
   }
   return filtered
 }
 
 /**
- * Whether a widget carries workflow state the doc can hold: not a control
- * `button` and not `serialize: false` (progress-text previews, image
- * previews, other display-only DOM widgets). The same rule decides which
- * entries an `add_node` snapshot keeps and which live writes mint a
- * `set_widget`: a display widget has no catalog entry, so its writes are
- * refused host-side, and a progress preview is rewritten on every progress
- * message while its node runs.
+ * Whether a widget carries prompt state the doc can hold: not a control
+ * `button` and not `options.serialize: false`. `widget.serialize` only
+ * controls workflow-JSON persistence, so a transient prompt input can still
+ * mint live values even when it is absent from an `add_node` snapshot.
  */
-function isValueWidget(
-  widget: { type?: string; serialize?: boolean } | undefined
+function isPromptValueWidget(
+  widget: { type?: string; options?: { serialize?: boolean } } | undefined
 ): boolean {
   return (
     widget !== undefined &&
     widget.type !== 'button' &&
-    widget.serialize !== false
+    widget.options?.serialize !== false
   )
 }
 
@@ -504,7 +502,8 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
             graphId
           })?.widgets?.find((widget) => widget.name === widgetName)
         : undefined
-      if (!isValueWidget(liveWidget ?? widgetStore.getWidget(widgetId))) return
+      if (!isPromptValueWidget(liveWidget ?? widgetStore.getWidget(widgetId)))
+        return
       for (const listener of setListeners) {
         listener({
           graphId,

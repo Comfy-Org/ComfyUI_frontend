@@ -304,8 +304,9 @@ describe('attachMintPortWiring', () => {
     widgetStore.registerWidget(id, {
       type: 'progressText',
       value: '',
-      serialize: false
-    } as Parameters<typeof widgetStore.registerWidget>[1])
+      serialize: false,
+      options: { serialize: false }
+    })
 
     for (let tick = 1; tick <= 3; tick++)
       widgetStore.setValue(id, `Status: running (${tick}s)`)
@@ -335,6 +336,36 @@ describe('attachMintPortWiring', () => {
     widget.value = 'tick 2'
 
     expect(minted).toEqual([])
+  })
+
+  it('mints a transient prompt widget that is absent from workflow JSON', () => {
+    const liveGraph = new LGraph()
+    liveGraph.id = ROOT_ID
+    const node = new LGraphNode('Test')
+    node.id = toNodeId(7)
+    liveGraph.add(node)
+    const widget = node.addWidget(
+      'imagecompare',
+      'comparison',
+      ['', ''],
+      () => undefined,
+      { serialize: true }
+    )
+    widget.serialize = false
+    graphNodes.set('7', node)
+    minted.length = 0
+
+    widget.value = ['before.png', 'after.png']
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: toNodeId(7),
+        widget: 'comparison',
+        value: ['before.png', 'after.png'],
+        old: ['', '']
+      }
+    ])
   })
 
   it('mints nothing for a button widget', () => {
