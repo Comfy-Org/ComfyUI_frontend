@@ -13,7 +13,7 @@
           @update:model-value="onUpdateSelectedJobTab"
         >
           <Tab v-for="tab in visibleJobTabs" :key="tab" :value="tab">
-            {{ jobTabLabel(tab) }}
+            {{ t(jobTabLabelKeys[tab]) }}
           </Tab>
         </TabList>
       </div>
@@ -82,7 +82,11 @@ import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
-import { jobTabs, useJobList } from '@/composables/queue/useJobList'
+import {
+  getVisibleJobTabs,
+  jobTabLabelKeys,
+  useJobList
+} from '@/composables/queue/useJobList'
 import type { JobListItem, JobTab } from '@/composables/queue/useJobList'
 import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHistoryDialog'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
@@ -131,14 +135,7 @@ const {
   groupedJobItems
 } = useJobList()
 
-const visibleJobTabs = computed(() =>
-  hasFailedJobs.value ? jobTabs : jobTabs.filter((tab) => tab !== 'Failed')
-)
-const jobTabLabel = (tab: JobTab) => {
-  if (tab === 'All') return t('g.all')
-  if (tab === 'Completed') return t('g.completed')
-  return t('g.failed')
-}
+const visibleJobTabs = computed(() => getVisibleJobTabs(hasFailedJobs.value))
 
 const displayedJobGroups = computed(() => groupedJobItems.value)
 const runningCount = computed(() => queueStore.runningTasks.length)
