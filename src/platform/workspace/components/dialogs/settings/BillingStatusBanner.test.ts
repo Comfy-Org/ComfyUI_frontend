@@ -433,18 +433,21 @@ describe('BillingStatusBanner', () => {
       ).toBeInTheDocument()
     })
 
-    it('falls back to the plain copy on an unknown currency code', () => {
-      paymentFailedState()
-      state.renewalInvoice = { ...invoice, currency: 'not-a-code' }
-      renderBanner()
+    it.for(['not-a-code', 'zzz'])(
+      'falls back to the plain copy on unknown currency %s',
+      (currency) => {
+        paymentFailedState()
+        state.renewalInvoice = { ...invoice, currency }
+        renderBanner()
 
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Update payment to avoid a pause'
-      )
-      expect(
-        screen.getByRole('button', { name: 'Pay invoice' })
-      ).toBeInTheDocument()
-    })
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'Update payment to avoid a pause'
+        )
+        expect(
+          screen.getByRole('button', { name: 'Pay invoice' })
+        ).toBeInTheDocument()
+      }
+    )
   })
 
   it('shows immediate payment-failed copy with Update payment for owners', () => {

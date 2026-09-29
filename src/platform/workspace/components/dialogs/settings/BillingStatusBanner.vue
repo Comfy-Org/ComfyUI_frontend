@@ -167,9 +167,13 @@ function stripeDecimals(code: string): number {
   return STRIPE_THREE_DECIMAL.has(code) ? 3 : 2
 }
 
+// Intl formats any well-formed code (e.g. ZZZ); only real ISO codes are shown.
+const KNOWN_CURRENCIES = new Set(Intl.supportedValuesOf('currency'))
+
 function formatAmountDue(amountDue: number, currency: string): string | null {
+  const code = currency.toUpperCase()
+  if (!KNOWN_CURRENCIES.has(code)) return null
   try {
-    const code = currency.toUpperCase()
     const format = new Intl.NumberFormat(locale.value, {
       style: 'currency',
       currency: code
