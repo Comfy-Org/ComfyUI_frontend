@@ -9,7 +9,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { CancellationScopeChangedError } from '@/platform/workspace/composables/useWorkspaceBilling'
 import type { DialogInstance } from '@/stores/dialogStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage, toError } from '@/utils/errorUtil'
 
 interface CancellationFallbackOptions {
   flowAlreadyOpened?: boolean
@@ -21,27 +21,34 @@ type VendorFailure = {
   error: unknown
 }
 
+function fallbackReportedError(
+  fallbackError: unknown,
+  vendorFailure: VendorFailure | undefined
+): Error {
+  const fallback = toError(fallbackError)
+  if (!vendorFailure) return fallback
+
+  const reported = new Error(fallback.message, {
+    cause: toError(vendorFailure.error)
+  })
+  reported.name = fallback.name
+  reported.stack = fallback.stack
+  return reported
+}
+
 function reportFallbackFailure(
   fallbackError: unknown,
   vendorFailure: VendorFailure | undefined,
   workspaceStillCurrent: boolean
 ): void {
-  const reportedError = new Error(
-    getErrorMessage(fallbackError) ?? String(fallbackError),
-    {
-      cause: {
-        fallbackError,
-        vendorError: vendorFailure?.error
-      }
-    }
-  )
-  reportError(reportedError, {
+  reportError(fallbackReportedError(fallbackError, vendorFailure), {
     errorType: 'cloud_cancellation_vendor_fallback',
     tags: {
       failure_kind: workspaceStillCurrent ? 'caught_unexpected' : 'degraded',
       feature_area: 'billing',
       operation: 'load',
       outcome: workspaceStillCurrent ? 'failed' : 'aborted',
+      vendor_stage: vendorFailure?.stage ?? 'none',
       vendor_preparation_failed: vendorFailure?.stage === 'preparation',
       workspace_still_current: workspaceStillCurrent
     },

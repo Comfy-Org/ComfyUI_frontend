@@ -479,12 +479,8 @@ describe('launchCancellationFlow', () => {
     expect(reportError).toHaveBeenLastCalledWith(
       expect.objectContaining({
         message: 'dialog chunk unavailable',
-        cause: expect.objectContaining({
-          fallbackError,
-          vendorError: expect.objectContaining({
-            message: 'blocked by browser'
-          })
-        })
+        stack: fallbackError.stack,
+        cause: expect.objectContaining({ message: 'blocked by browser' })
       }),
       {
         errorType: 'cloud_cancellation_vendor_fallback',
@@ -493,6 +489,7 @@ describe('launchCancellationFlow', () => {
           feature_area: 'billing',
           operation: 'load',
           outcome: 'failed',
+          vendor_stage: 'preparation',
           vendor_preparation_failed: true,
           workspace_still_current: true
         },
@@ -517,7 +514,8 @@ describe('launchCancellationFlow', () => {
     expect(reportError).toHaveBeenLastCalledWith(
       expect.objectContaining({
         message: 'dialog chunk unavailable',
-        cause: { fallbackError, vendorError: providerError }
+        stack: fallbackError.stack,
+        cause: providerError
       }),
       expect.objectContaining({
         tags: expect.objectContaining({ vendor_preparation_failed: false }),
@@ -546,7 +544,8 @@ describe('launchCancellationFlow', () => {
 
     expect(reportError).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        cause: { fallbackError, vendorError: providerError }
+        stack: fallbackError.stack,
+        cause: providerError
       }),
       expect.anything()
     )

@@ -1070,6 +1070,15 @@ export const zPlanAvailability = z.object({
  */
 export const zPlan = z.object({
   availability: zPlanAvailability,
+  credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   credits_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -2392,6 +2401,8 @@ export const zBillingStatusResponse = z.object({
   plan_slug: z.string().optional(),
   renewal_date: z.string().datetime().optional(),
   scheduled_change: zScheduledPlanChange.nullable(),
+  scoped_effective_has_funds: z.record(z.boolean()).optional(),
+  scoped_has_funds: z.record(z.boolean()).optional(),
   subscription_duration: zSubscriptionDuration.optional(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
   subscription_tier: zSubscriptionTier.optional(),
@@ -3551,7 +3562,8 @@ export const zGetFeaturesResponse = z.object({
     .optional(),
   max_upload_size: z.number().int().optional(),
   stripe_publishable_key: z.string().optional(),
-  supports_preview_metadata: z.boolean().optional()
+  supports_preview_metadata: z.boolean().optional(),
+  web_session_probe: z.boolean().optional()
 })
 
 export const zSubmitFeedbackBody = zFeedbackRequest
