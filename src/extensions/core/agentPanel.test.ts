@@ -264,9 +264,9 @@ describe('AgentPanel extension flag gate', () => {
     expect(vi.mocked(useAgentConsent().withConsent).mock.calls[0][0]).toBe(
       'first_load'
     )
-    expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('automatic_consent')
+    expect(agentStore.open).not.toHaveBeenCalled()
     expect(trackAgentPanelOpened).toHaveBeenCalledExactlyOnceWith({
-      source: 'automatic_consent'
+      source: 'restored'
     })
   })
 
@@ -342,7 +342,7 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
 
-    expect(agentStore.open).toHaveBeenCalledOnce()
+    expect(agentStore.open).not.toHaveBeenCalled()
   })
 
   const AUTO_SHOWN_KEY = 'Comfy.AgentConsent.AutoShown.account-a.workspace-a'
@@ -522,7 +522,7 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
     )
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
-    expect(agentStore.open).toHaveBeenCalledOnce()
+    expect(agentStore.open).not.toHaveBeenCalled()
   })
 
   it('stays silent after a tour ends when the saved consent cannot be read', async () => {
