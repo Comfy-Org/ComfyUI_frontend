@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ImageUp } from '@lucide/vue'
+import { Pipette } from '@lucide/vue'
 import { useObjectUrl } from '@vueuse/core'
 import { useTemplateRef } from 'vue'
 
@@ -53,7 +53,24 @@ function choose(event: Event) {
         alt=""
         class="size-full object-cover"
       />
-      <ImageUp v-else class="size-6 self-center" aria-hidden="true" />
+      <span
+        v-else
+        class="flex size-full flex-col items-center justify-center gap-2.5"
+        aria-hidden="true"
+      >
+        <span
+          class="grid size-9 place-items-center rounded-full bg-transparency-white-t8"
+        >
+          <Pipette class="size-4" />
+        </span>
+        <span class="flex gap-1">
+          <span
+            v-for="shade in 5"
+            :key="shade"
+            class="size-2 rounded-full border border-current opacity-60"
+          />
+        </span>
+      </span>
       <CinematicCheckBadge v-if="file" />
     </span>
     <span

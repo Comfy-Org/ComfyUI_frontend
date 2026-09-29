@@ -129,7 +129,9 @@ const cardClass =
         v-model:scene="scene"
         v-model:enhance="enhance"
         :locale
-      />
+      >
+        <CinematicReferenceSlot v-model="cast" :locale />
+      </CinematicSceneField>
       <section class="flex flex-col gap-2">
         <h2 :class="labelClass">
           {{ tc('cinematic.section.shot', locale) }}
@@ -141,17 +143,6 @@ const cardClass =
           :locale
           @open="emit('open', $event)"
         />
-      </section>
-      <section class="flex flex-col gap-2">
-        <div class="flex items-center justify-between">
-          <h2 :class="labelClass">
-            {{ tc('cinematic.section.references', locale) }}
-          </h2>
-          <span class="text-xs text-primary-warm-gray">
-            {{ tc('cinematic.reference.optional', locale) }}
-          </span>
-        </div>
-        <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
       </section>
       <section class="flex flex-col gap-2">
         <h2 :class="labelClass">

@@ -1119,7 +1119,7 @@ describe('CinematicStudio', () => {
       within(panel)
         .getAllByRole('heading', { level: 2 })
         .map((heading) => heading.textContent.trim())
-    ).toEqual(['Model', 'Shot', 'References', 'Format'])
+    ).toEqual(['Model', 'Shot', 'Format'])
   })
 
   it('opens a direction part from its row in the side panel shot list', async () => {
@@ -1342,6 +1342,12 @@ describe('CinematicStudio', () => {
       ).toBeNull()
 
       await user.click(gradeRow())
+      const [firstOption] = within(
+        screen.getByRole('radiogroup', { name: 'Grade' })
+      ).getAllByRole('radio')
+      expect(firstOption).toHaveAccessibleName(
+        tc('cinematic.grade.fromImageAction')
+      )
       await user.upload(
         screen.getByTestId('cinematic-grade-image-input'),
         new File(['ref'], 'colors.png', { type: 'image/png' })
@@ -1372,6 +1378,24 @@ describe('CinematicStudio', () => {
       expect(
         within(screen.getByTestId('camera-specs')).getByText('85mm')
       ).toBeInTheDocument()
+    })
+
+    it('attaches the character reference from the scene box', async () => {
+      const user = renderPanel()
+      const chip = screen.getByTestId('cinematic-character-chip')
+
+      await user.upload(
+        within(chip).getByTestId('cinematic-reference-cast'),
+        new File(['ref'], 'face.png', { type: 'image/png' })
+      )
+      expect(chip).toHaveTextContent('face.png')
+
+      await user.click(
+        within(chip).getByRole('button', {
+          name: tc('cinematic.reference.remove')
+        })
+      )
+      expect(chip).toHaveTextContent(tc('cinematic.reference.cast'))
     })
   })
 })

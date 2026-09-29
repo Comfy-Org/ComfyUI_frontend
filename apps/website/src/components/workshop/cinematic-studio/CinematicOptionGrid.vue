@@ -27,6 +27,7 @@ const emit = defineEmits<{ choose: [id: string] }>()
     :aria-label="tc(group.title, locale)"
     class="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4"
   >
+    <slot />
     <button
       v-for="option in group.options"
       :key="option.id"
@@ -74,6 +75,5 @@ const emit = defineEmits<{ choose: [id: string] }>()
         {{ tc(option.label, locale) }}
       </span>
     </button>
-    <slot />
   </div>
 </template>
