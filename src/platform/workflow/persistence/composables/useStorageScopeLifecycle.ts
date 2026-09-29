@@ -3,6 +3,7 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   completeWorkflowLogoutTransition,
@@ -21,6 +22,7 @@ export function useStorageScopeLifecycle(): void {
   const { resolvedUserInfo } = useCurrentUser()
   const teamWorkspaceStore = useTeamWorkspaceStore()
   let stopWorkspaceReadinessWatcher: (() => void) | undefined
+  let workspaceInitializationPending = false
 
   function stopPendingWorkspaceReadinessWatcher(): void {
     stopWorkspaceReadinessWatcher?.()
@@ -60,6 +62,16 @@ export function useStorageScopeLifecycle(): void {
     )
   }
 
+  function initializeWorkspaceAfterIdentityChange(): void {
+    if (!workspaceInitializationPending) return
+    workspaceInitializationPending = false
+    void teamWorkspaceStore.initialize().catch((error: unknown) => {
+      reportError(error, {
+        errorType: 'workspace_auth_gate_initialization_failure'
+      })
+    })
+  }
+
   watch(
     resolvedUserInfo,
     (user) => {
@@ -68,13 +80,17 @@ export function useStorageScopeLifecycle(): void {
 
       stopPendingWorkspaceReadinessWatcher()
       if (isCloud) prepareWorkflowLogoutTransition()
+      const isIdentityReplacement = isCloud && getStorageIdentity() !== null
+      if (isIdentityReplacement) {
+        teamWorkspaceStore.resetForIdentityChange()
+        workspaceInitializationPending = true
+      }
       setStorageIdentity(nextIdentity)
       setStorageWorkspaceId(null)
 
-      // Logout cleanup completes its fence after deleting only the departing
-      // scope. A resolved identity can open once workspace ownership is known
-      // or initialization has terminally failed.
-      if (isCloud && nextIdentity !== null) releaseIdentityFenceWhenReady()
+      if (!isCloud || nextIdentity === null) return
+      initializeWorkspaceAfterIdentityChange()
+      releaseIdentityFenceWhenReady()
     },
     { immediate: true, flush: 'sync' }
   )

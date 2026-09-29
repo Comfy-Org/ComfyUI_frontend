@@ -175,16 +175,14 @@ export function useWorkflowPersistenceV2() {
   }
 
   let observedStorageIdentity = getStorageIdentity()
+  let hasResolvedStorageIdentity = observedStorageIdentity !== null
   watch(
     getStorageIdentity,
     (identity) => {
       if (identity === observedStorageIdentity) return
-      const previousIdentity = observedStorageIdentity
       observedStorageIdentity = identity
-      // Work produced before the first Cloud identity resolves belongs to that
-      // first resolved owner. Work from a known owner must never cross into a
-      // different identity.
-      resetPersistenceForIdentityChange(previousIdentity !== null)
+      resetPersistenceForIdentityChange(hasResolvedStorageIdentity)
+      if (identity !== null) hasResolvedStorageIdentity = true
     },
     { flush: 'sync' }
   )

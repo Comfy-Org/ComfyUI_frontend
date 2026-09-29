@@ -19,6 +19,7 @@ export class AgentPanel {
   public readonly composer: Locator
   public readonly sendButton: Locator
   public readonly nodeSelectionBanner: Locator
+  public readonly userMessages: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -49,6 +50,7 @@ export class AgentPanel {
       name: enMessages.agent.send
     })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
+    this.userMessages = this.root.getByTestId('user-message-bubble')
   }
 
   /**
@@ -87,6 +89,11 @@ export class AgentPanel {
       }
     }
     await expect(this.root).toBeVisible()
+  }
+
+  async close(): Promise<void> {
+    await this.openButton.click()
+    await expect(this.root).toBeHidden()
   }
 
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {

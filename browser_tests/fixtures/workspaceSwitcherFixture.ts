@@ -14,6 +14,7 @@ import {
   WORKSPACE_SWITCHER_REMOTE_CONFIG,
   WORKSPACE_SWITCHER_WORKSPACES
 } from '@e2e/fixtures/data/workspaceSwitcher'
+import { WorkspaceAuthHelper } from '@e2e/fixtures/helpers/WorkspaceAuthHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 
@@ -28,6 +29,7 @@ interface WorkspaceSwitchTokenGate {
 }
 
 export const workspaceSwitcherTest = comfyPageFixture.extend<{
+  workspaceAuth: WorkspaceAuthHelper
   workspaceSwitchTokenGate: WorkspaceSwitchTokenGate
 }>({
   page: async ({ page }, use) => {
@@ -102,6 +104,9 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
     })
 
     await use(page)
+  },
+  workspaceAuth: async ({ page }, use) => {
+    await use(new WorkspaceAuthHelper(page))
   },
   workspaceSwitchTokenGate: async ({ page }, use) => {
     let markRequestReceived: () => void = () => {}

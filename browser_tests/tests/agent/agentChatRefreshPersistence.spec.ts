@@ -15,7 +15,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 // `hydrateFromServer`, which re-fetches this same history and replays it
 // through `agentConversationStore.hydrate()`.
 const THREAD_KEY = StorageKeys.agentThread(
-  unsafeStorageScope('test-user-e2e:personal')
+  unsafeStorageScope('test-user-e2e:ws-personal')
 )
 
 test.describe.configure({ timeout: 120_000 })

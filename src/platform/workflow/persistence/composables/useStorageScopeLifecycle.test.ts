@@ -2,6 +2,7 @@ import { computed, effectScope, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import {
@@ -16,6 +17,7 @@ import { useStorageScopeLifecycle } from './useStorageScopeLifecycle'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('useStorageScopeLifecycle', () => {
   const resolvedUser = ref<{ id: string } | null>(null)
@@ -113,6 +115,93 @@ describe('useStorageScopeLifecycle', () => {
     ).toBeNull()
     expect(getStorageScope()).toBe('api-key-user:api-key-bound-workspace')
     expect(getStorageWriteGate()).toBe('open')
+    scope.stop()
+  })
+
+  it('resets a ready API-key workspace before opening storage for a replacement key', async () => {
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    const resetSpy = vi.spyOn(teamWorkspaceStore, 'resetForIdentityChange')
+    const initializeSpy = vi
+      .spyOn(teamWorkspaceStore, 'initialize')
+      .mockResolvedValue()
+    const scope = effectScope()
+    scope.run(useStorageScopeLifecycle)
+
+    resolvedUser.value = { id: 'api-key-user-a' }
+    Object.assign(teamWorkspaceStore, {
+      activeWorkspaceId: 'workspace-a',
+      initState: 'ready'
+    })
+    await nextTick()
+    expect(getStorageScope()).toBe('api-key-user-a:workspace-a')
+
+    resolvedUser.value = { id: 'api-key-user-b' }
+
+    expect(resetSpy).toHaveBeenCalledOnce()
+    expect(initializeSpy).toHaveBeenCalledOnce()
+    expect(teamWorkspaceStore.initState).toBe('uninitialized')
+    expect(getStorageScope()).toBeNull()
+    expect(getStorageWriteGate()).toBe('deferred')
+
+    Object.assign(teamWorkspaceStore, {
+      activeWorkspaceId: 'workspace-b',
+      initState: 'ready'
+    })
+    await nextTick()
+
+    expect(getStorageScope()).toBe('api-key-user-b:workspace-b')
+    expect(getStorageWriteGate()).toBe('open')
+    scope.stop()
+  })
+
+  it('restarts workspace initialization after a signed-out identity gap', async () => {
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    const resetSpy = vi.spyOn(teamWorkspaceStore, 'resetForIdentityChange')
+    const initializeSpy = vi
+      .spyOn(teamWorkspaceStore, 'initialize')
+      .mockResolvedValue()
+    const scope = effectScope()
+    scope.run(useStorageScopeLifecycle)
+
+    resolvedUser.value = { id: 'user-a' }
+    Object.assign(teamWorkspaceStore, {
+      activeWorkspaceId: 'workspace-a',
+      initState: 'ready'
+    })
+    await nextTick()
+
+    resolvedUser.value = null
+    resolvedUser.value = { id: 'user-b' }
+
+    expect(resetSpy).toHaveBeenCalledOnce()
+    expect(initializeSpy).toHaveBeenCalledOnce()
+    expect(getStorageIdentity()).toBe('user-b')
+    expect(getStorageWriteGate()).toBe('deferred')
+    scope.stop()
+  })
+
+  it('reports replacement workspace initialization failures', async () => {
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    const initializationError = new Error('workspace unavailable')
+    vi.spyOn(teamWorkspaceStore, 'initialize').mockRejectedValue(
+      initializationError
+    )
+    const scope = effectScope()
+    scope.run(useStorageScopeLifecycle)
+
+    resolvedUser.value = { id: 'user-a' }
+    Object.assign(teamWorkspaceStore, {
+      activeWorkspaceId: 'workspace-a',
+      initState: 'ready'
+    })
+    await nextTick()
+
+    resolvedUser.value = { id: 'user-b' }
+    await nextTick()
+
+    expect(reportError).toHaveBeenCalledWith(initializationError, {
+      errorType: 'workspace_auth_gate_initialization_failure'
+    })
     scope.stop()
   })
 })
