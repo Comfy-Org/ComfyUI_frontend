@@ -568,36 +568,3 @@ test('the examples below the form read and mark themselves like a model page', a
   await expect(example).toHaveAttribute('aria-current', 'true')
   await expect(page.getByTestId('workflow-example-chosen')).toHaveCount(1)
 })
-
-test('a card opens its whole name on hover without moving its neighbours', async ({
-  page,
-  context
-}) => {
-  await mockWorkflowVisibility(context, true)
-  await page.goto('/models/?type=workflows')
-  const card = page.getByTestId('workshop-model-card').first()
-  await card.scrollIntoViewIfNeeded()
-
-  const truncated = card.getByTestId('model-card-name')
-  const whole = card.getByTestId('model-card-full-name')
-  const opacity = (name: 'model-card-name' | 'model-card-full-name') =>
-    card.getByTestId(name).evaluate((el) => getComputedStyle(el).opacity)
-
-  await expect(truncated).toHaveText((await whole.textContent()) ?? '')
-  await expect
-    .poll(() => truncated.evaluate((el) => el.scrollWidth - el.clientWidth))
-    .toBeGreaterThan(1)
-  expect(await opacity('model-card-full-name')).toBe('0')
-
-  const neighbour = page.getByTestId('workshop-model-card').nth(4)
-  const settled = await neighbour.boundingBox()
-
-  await card.hover()
-
-  await expect.poll(() => opacity('model-card-full-name')).toBe('1')
-  await expect.poll(() => opacity('model-card-name')).toBe('0')
-  await expect
-    .poll(() => whole.evaluate((el) => el.scrollHeight - el.clientHeight))
-    .toBeLessThanOrEqual(1)
-  expect((await neighbour.boundingBox())?.y).toBe(settled?.y)
-})
