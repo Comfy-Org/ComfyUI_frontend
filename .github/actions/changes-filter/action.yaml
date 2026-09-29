@@ -87,6 +87,11 @@ outputs:
   dependency-changes:
     description: 'Root `.nvmrc`, `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` changed.'
     value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' }}
+  outside-website-changes:
+    description: >
+      Any file outside `apps/website/**` changed. Gates jobs that never check
+      the website, so a website-only change skips them.
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.relevant.outputs.outside_website == 'true' }}
 
 runs:
   using: composite
@@ -157,3 +162,6 @@ runs:
             - *unit
             - '!**/*.test.ts'
             - '!**/__mocks__/**'
+          outside_website:
+            - '**'
+            - '!apps/website/**'

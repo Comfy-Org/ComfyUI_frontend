@@ -37,6 +37,19 @@ env:
     packages/*/node_modules/.cache/tsbuildinfo
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      outside-website: ${{ steps.changes.outputs.outside-website-changes }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: changes
+        uses: ./.github/actions/changes-filter
+        with:
+          evaluate-candidate: 'true'
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -67,6 +80,8 @@ jobs:
           path: ${{ env.LINT_CACHE_PATHS }}
 
   typecheck:
+    needs: changes
+    if: ${{ needs.changes.outputs.outside-website == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout ref
@@ -93,6 +108,8 @@ jobs:
           path: ${{ env.TYPECHECK_CACHE_PATHS }}
 
   typecheck-aux:
+    needs: changes
+    if: ${{ needs.changes.outputs.outside-website == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout ref
@@ -137,7 +154,7 @@ jobs:
 
   # Single stable branch-protection context over the parallel jobs above.
   lint-and-format:
-    needs: [lint, typecheck, typecheck-aux, repo-checks]
+    needs: [changes, lint, typecheck, typecheck-aux, repo-checks]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
@@ -146,5 +163,5 @@ jobs:
           RESULTS: ${{ toJSON(needs.*.result) }}
         run: |
           echo "$RESULTS"
-          echo "$RESULTS" | jq -e 'all(. == "success")' > /dev/null ||
+          echo "$RESULTS" | jq -e 'all(. == "success" or . == "skipped")' > /dev/null ||
             { echo "::error::At least one lint/format job did not succeed."; exit 1; }
