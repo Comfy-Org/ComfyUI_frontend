@@ -69,7 +69,7 @@ const columns = computed(() =>
           'relative inline-flex h-9 cursor-pointer items-center justify-center rounded-xl px-5 text-sm font-semibold whitespace-nowrap transition-colors duration-300 ease-out outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 motion-reduce:transition-none max-sm:px-3',
           active === tab
             ? 'text-primary-warm-white'
-            : 'text-primary-warm-gray hover:text-content-secondary'
+            : 'text-content-secondary hover:text-content-bright'
         )
       "
       @click="active = tab"
