@@ -3,6 +3,7 @@ import { Clapperboard, Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
 import {
   computed,
+  effectScope,
   onMounted,
   onScopeDispose,
   onUnmounted,
@@ -44,6 +45,7 @@ import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
 import { IDLE, transition } from '../../config/workshop-run'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
+import { stopWorkshopAccountSource } from '../../config/workshop-account-source'
 import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import type { RouterRenderResult } from '../../config/router-render'
 import { router_render } from '../../config/router-render'
@@ -232,14 +234,24 @@ const revealed = ref(false)
 const workshopEnabled = useWorkshopEnabled()
 const workshopEnabledSettled = useWorkshopEnabledSettled()
 function startAccountServices() {
-  const services = useWorkshopSession()
-  return { ...services, balance: useWorkshopModelBalance(services.session) }
+  const scope = effectScope(true)
+  const services = scope.run(() => {
+    const workshopSession = useWorkshopSession()
+    return {
+      ...workshopSession,
+      balance: useWorkshopModelBalance(workshopSession.session)
+    }
+  })
+  return services && { ...services, scope }
 }
 const account = shallowRef<ReturnType<typeof startAccountServices>>()
 function stopAccountServices() {
+  account.value?.scope.stop()
   stopWorkshopSession()
+  stopWorkshopAccountSource()
   account.value = undefined
 }
+onScopeDispose(() => account.value?.scope.stop())
 watch(
   workshopEnabled,
   (enabled) => {

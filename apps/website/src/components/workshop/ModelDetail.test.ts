@@ -11,7 +11,14 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import {
+  computed,
+  defineComponent,
+  h,
+  nextTick,
+  onScopeDispose,
+  ref
+} from 'vue'
 
 import type {
   AccountCredential,
@@ -30,6 +37,7 @@ import { workshopContract } from '../../config/workshop-contract-catalog'
 import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
+import { stopWorkshopAccountSource } from '../../config/workshop-account-source'
 import {
   stopWorkshopSession,
   useWorkshopSession
@@ -67,6 +75,7 @@ vi.mock(import('../../config/workshop-credits'))
 vi.mock(import('../../config/workshop-model-balance'), () => ({
   useWorkshopModelBalance: vi.fn()
 }))
+vi.mock(import('../../config/workshop-account-source'))
 
 const auth = {
   session: ref<AccountCredential>(),
@@ -604,9 +613,24 @@ describe('ModelDetail', () => {
     ).toBe('example')
   })
 
+  it('reads the balance from the session it starts when the flag is on', async () => {
+    vi.mocked(useWorkshopModelBalance).mockClear()
+    mountDetail({ model: runnable })
+    await nextTick()
+    expect(useWorkshopModelBalance).toHaveBeenCalledWith(
+      useWorkshopSession().session
+    )
+  })
+
   it('stops account services when a returning visitor is rolled back', async () => {
+    const balanceDisposed = vi.fn()
+    vi.mocked(useWorkshopModelBalance).mockImplementationOnce(() => {
+      onScopeDispose(balanceDisposed)
+      return computed(() => credits.balance.value)
+    })
     vi.mocked(useWorkshopSession).mockClear()
     vi.mocked(stopWorkshopSession).mockClear()
+    vi.mocked(stopWorkshopAccountSource).mockClear()
     mountDetail({ model: runnable })
     await nextTick()
     expect(useWorkshopSession).toHaveBeenCalled()
@@ -614,6 +638,8 @@ describe('ModelDetail', () => {
     auth.workshopEnabled.value = false
     await nextTick()
     expect(stopWorkshopSession).toHaveBeenCalledOnce()
+    expect(stopWorkshopAccountSource).toHaveBeenCalledOnce()
+    expect(balanceDisposed).toHaveBeenCalledOnce()
     expect(screen.getByTestId('run-rollout-note')).toBeTruthy()
 
     vi.mocked(useWorkshopSession).mockClear()
