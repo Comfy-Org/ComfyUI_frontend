@@ -1,8 +1,11 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { assert, describe, expect, it, vi } from 'vitest'
-import { readonly, ref } from 'vue'
+import { computed, readonly, ref } from 'vue'
 
+import { useWorkshopCredits } from '../../config/workshop-credits'
+import type { WorkshopSession } from '../../config/workshop-session-state'
+import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
 import {
   captureWorkshopEvent,
@@ -12,6 +15,7 @@ import {
 import WorkflowPlayground from './WorkflowPlayground.vue'
 
 vi.mock(import('../../config/workshop-session-state'))
+vi.mock(import('../../config/workshop-credits'))
 vi.mock(import('../../scripts/posthog'))
 
 describe('WorkflowPlayground analytics', () => {
@@ -66,4 +70,44 @@ describe('WorkflowPlayground input panel', () => {
       within(panel).queryByRole('link', { name: 'Try in Cloud' })
     ).toBeNull()
   })
+})
+
+describe('WorkflowPlayground primary action', () => {
+  it.for([
+    { role: 'owner' as const, credits: 40, action: 'Run' },
+    { role: 'owner' as const, credits: 0, action: 'Add credits' },
+    {
+      role: 'member' as const,
+      credits: 0,
+      action: 'Switch to personal workspace'
+    }
+  ])(
+    'offers $action to a signed-in $role with $credits credits',
+    ({ role, credits, action }) => {
+      const model = workflowDetailsBySlug.get('workflows/remove-background')
+      assert(model)
+      vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+        readonly(ref(true))
+      )
+      const owner: WorkshopSession = {
+        uid: 'alice',
+        token: 'token',
+        expiresAt: Date.now() + 60_000,
+        workspace: { id: 'studio', name: 'Studio', type: 'team' },
+        role,
+        permissions: []
+      }
+      useWorkshopSession().session = computed(() => owner)
+      const balance = useWorkshopCredits()
+      balance.balance = computed(() => ({ status: 'ok', credits }))
+      balance.session = computed(() => owner)
+
+      render(WorkflowPlayground, {
+        props: { model, scope: JSON.stringify(['alice', 'studio']) }
+      })
+
+      expect(screen.getByTestId('workflow-run')).toHaveAccessibleName(action)
+    }
+  )
 })

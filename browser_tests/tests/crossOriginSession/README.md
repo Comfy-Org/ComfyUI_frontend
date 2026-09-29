@@ -40,12 +40,12 @@ in `SESSION_E2E_EXTRA_ORIGINS`.
 | Variable                        | Example                           | Needed by                           |
 | ------------------------------- | --------------------------------- | ----------------------------------- |
 | `SESSION_E2E_CLOUD_URL`         | `https://testcloud.comfy.org`     | Cloud tab                           |
-| `SESSION_E2E_WEBSITE_URL`       | `https://www.comfy.org`           | Website tab; must be on test's list |
+| `SESSION_E2E_WEBSITE_URL`       | `https://testwebsite.comfy.org`   | Website tab; must be on test's list |
 | `SESSION_E2E_WEBSITE_UPSTREAM`  | `http://localhost:4321`           | Website tab                         |
 | `SESSION_E2E_BILLING_URL`       | `https://testbilling.comfy.org`   | billing-web tab                     |
 | `SESSION_E2E_BILLING_UPSTREAM`  | `http://localhost:5174`           | Optional: serve billing-web locally |
 | `SESSION_E2E_PLATFORM_URL`      | test platform origin              | Platform tab                        |
-| `SESSION_E2E_EMAIL`             | a dedicated test-env account      | Signed-in tests                     |
+| `SESSION_E2E_EMAIL`             | an email/password test-env user   | Signed-in tests                     |
 | `SESSION_E2E_PASSWORD`          |                                   | Signed-in tests                     |
 | `SESSION_E2E_TEAM_WORKSPACE_ID` | a team workspace the account owns | Workspace tests                     |
 | `SESSION_E2E_EXTRA_ORIGINS`     | `https://testapi.comfy.org`       | Other origins a run must reach      |

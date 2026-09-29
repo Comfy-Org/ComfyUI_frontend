@@ -1,3 +1,5 @@
+import type { NamedValues } from '../../../i18n/interpolate'
+import { interpolate } from '../../../i18n/interpolate'
 import type { Locale, LocalizedText } from '../../../i18n/translations'
 
 /**
@@ -132,10 +134,6 @@ const copy = {
     en: 'Slow now',
     'zh-CN': '当前较慢'
   },
-  'cinematic.picker.done': {
-    en: 'Done',
-    'zh-CN': '完成'
-  },
   'cinematic.stage.again': {
     en: 'Generate again',
     'zh-CN': '再生成一次'
@@ -166,17 +164,13 @@ const copy = {
     en: 'Format',
     'zh-CN': '画幅'
   },
+  'cinematic.section.shot': {
+    en: 'Shot',
+    'zh-CN': '镜头'
+  },
   'cinematic.section.direction': {
     en: 'Direction',
     'zh-CN': '导演'
-  },
-  'cinematic.scene.fullPrompt': {
-    en: 'View full prompt',
-    'zh-CN': '查看完整提示词'
-  },
-  'cinematic.scene.edit': {
-    en: 'Edit scene',
-    'zh-CN': '编辑场景'
   },
   'cinematic.reference.optional': {
     en: 'Optional',
@@ -212,8 +206,8 @@ const copy = {
     'zh-CN': '浏览模型'
   },
   'cinematic.model.heading': {
-    en: 'Model · via Comfy Router',
-    'zh-CN': '模型 · 通过 Comfy Router'
+    en: 'Model',
+    'zh-CN': '模型'
   },
   'cinematic.composer.label': {
     en: 'Direct the shot',
@@ -555,10 +549,6 @@ const copy = {
     en: 'Character',
     'zh-CN': '角色'
   },
-  'cinematic.reference.castHint': {
-    en: 'Same face across shots',
-    'zh-CN': '在各镜头中保持同一张脸'
-  },
   'cinematic.reference.castAction': {
     en: 'Add a character reference',
     'zh-CN': '添加角色参考'
@@ -566,10 +556,6 @@ const copy = {
   'cinematic.reference.palette': {
     en: 'Palette',
     'zh-CN': '色板'
-  },
-  'cinematic.reference.paletteHint': {
-    en: 'Match its colors',
-    'zh-CN': '匹配其色彩'
   },
   'cinematic.reference.paletteAction': {
     en: 'Add a palette reference',
@@ -651,7 +637,11 @@ const copy = {
 
 export type CinematicCopyKey = keyof typeof copy
 
-export function tc(key: CinematicCopyKey, locale: Locale = 'en'): string {
+export function tc(
+  key: CinematicCopyKey,
+  locale: Locale = 'en',
+  named: NamedValues = {}
+): string {
   const entry: LocalizedText = copy[key]
-  return entry[locale] ?? entry.en
+  return interpolate(entry[locale] ?? entry.en, named)
 }

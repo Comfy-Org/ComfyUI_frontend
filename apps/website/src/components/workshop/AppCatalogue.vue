@@ -5,14 +5,14 @@ import { computed, nextTick, watch } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
-import { ac, catalogueApps } from '../../lib/workshop/catalogue-apps'
+import { ac } from '../../lib/workshop/catalogue-apps'
 import CardRow from './CardRow.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
 const ROW_LIMIT = 8
 
-const { apps: given, locale = 'en' } = defineProps<{
-  apps?: readonly CatalogueApp[]
+const { apps, locale = 'en' } = defineProps<{
+  apps: readonly CatalogueApp[]
   locale?: Locale
 }>()
 
@@ -21,9 +21,8 @@ const emit = defineEmits<{ section: [boolean] }>()
 watch(browseAll, (value) => emit('section', value), { immediate: true })
 watch(browseAll, () => void nextTick(() => window.scrollTo({ top: 0 })))
 
-const apps = computed(() => given ?? catalogueApps(locale))
-const shelf = computed(() => apps.value.slice(0, ROW_LIMIT))
-const hasMore = computed(() => apps.value.length > ROW_LIMIT)
+const shelf = computed(() => apps.slice(0, ROW_LIMIT))
+const hasMore = computed(() => apps.length > ROW_LIMIT)
 </script>
 
 <template>

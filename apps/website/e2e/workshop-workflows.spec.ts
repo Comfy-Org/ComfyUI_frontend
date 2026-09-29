@@ -91,7 +91,10 @@ test('workflow launch groups lead to the existing shared form', async ({
   // The eyebrow names the shelf this workflow sits on, and leads back to it.
   const shelf = page.getByTestId('workflow-use-case')
   await expect(shelf).toHaveText('Edit images')
-  await expect(shelf).toHaveAttribute('href', '/models?useCase=edit-images')
+  await expect(shelf).toHaveAttribute(
+    'href',
+    '/models?type=workflows&category=product'
+  )
   await expect(
     page.getByRole('group', { name: 'Your original image' })
   ).toBeVisible()
@@ -133,11 +136,65 @@ test('workflow launch groups lead to the existing shared form', async ({
     expect(response.ok()).toBe(true)
     expect(response.headers()['content-type']).toContain(type)
   }
-  await page.getByRole('link', { name: 'Back to workflows' }).click()
+  await shelf.click()
+  await expect(page).toHaveURL(/\/models\/?\?type=workflows&category=product$/)
   await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
     'aria-pressed',
     'true'
   )
+  await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+  const filtered = page.getByTestId('workflow-search-results')
+  await expect(
+    filtered.getByRole('link', { name: /Change a material/ })
+  ).toBeVisible()
+  await expect(
+    filtered.getByRole('link', { name: /Remove an image background/ })
+  ).toHaveCount(0)
+})
+
+test('the Details graph waits for its tab, names its subgraphs, and zooms from its controls', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  const graphRequests: string[] = []
+  page.on('request', (request) => {
+    if (request.url().endsWith('/workflow-graphs/image-to-video.json'))
+      graphRequests.push(request.url())
+  })
+  await page.goto('/models/workflows/image-to-video/')
+  const details = page.getByRole('tab', { name: 'Details', exact: true })
+  await expect(details).toBeVisible()
+  await page.waitForLoadState('networkidle')
+  expect(graphRequests).toHaveLength(0)
+
+  await details.click()
+  const graph = page.getByTestId('workflow-graph')
+  const drawing = graph.getByRole('img', {
+    name: 'The nodes of this workflow and the links between them'
+  })
+  await expect(drawing).toBeVisible()
+  expect(graphRequests).toHaveLength(1)
+  await expect(drawing).toContainText('Image to Video (LTX-2.3)')
+
+  // The controls sit inside the draggable frame; a press on them has to reach
+  // them rather than the frame.
+  await graph.getByRole('button', { name: 'Zoom in' }).click()
+  await expect(graph).toContainText('120%')
+  const frame = await graph.boundingBox()
+  const drawn = await drawing.locator('g').first().boundingBox()
+  const centre = {
+    x: drawn!.x + drawn!.width / 2,
+    y: drawn!.y + drawn!.height / 2
+  }
+  // Zooming keeps the drawing where it was rather than carrying it off-frame.
+  expect(centre.x).toBeGreaterThan(frame!.x)
+  expect(centre.x).toBeLessThan(frame!.x + frame!.width)
+  expect(centre.y).toBeGreaterThan(frame!.y)
+  expect(centre.y).toBeLessThan(frame!.y + frame!.height)
+
+  await graph.getByRole('button', { name: 'Reset' }).click()
+  await expect(graph).toContainText('100%')
 })
 
 test('withholds workflow discovery and direct pages when the workflow flag is off', async ({
@@ -320,6 +377,38 @@ test('the background example pairs its input and output and restores edited inpu
   await expect(original).toBeVisible()
 })
 
+for (const { path, group, file } of [
+  {
+    path: '/models/workflows/remove-object/',
+    group: 'Edit mask',
+    file: 'remove-object-apple-mask.png'
+  },
+  {
+    path: '/models/workflows/virtual-try-on/',
+    group: 'Your character',
+    file: 'subject-templates_rob_fashion_shoot_vton-4in1.png'
+  }
+])
+  test(`${path} opens with every required input filled`, async ({
+    page,
+    context
+  }) => {
+    await mockWorkflowVisibility(context, true)
+    await context.route('https://comfy.org/workflow-inputs/**', (route) =>
+      route.fulfill({
+        path: `public/workflow-inputs/${new URL(route.request().url()).pathname.split('/').pop()}`
+      })
+    )
+    await page.goto(path)
+    const input = page.getByRole('group', { name: group, exact: true })
+    await expect(
+      input.getByRole('button', { name: `Replace ${file}` })
+    ).toBeVisible()
+    await expect(
+      input.getByRole('button', { name: `Remove ${file}` })
+    ).toBeVisible()
+  })
+
 const tabletToolbars = [640, 700, 768].flatMap((width) => [
   { width, half: 'Models', path: '/models/' },
   {
@@ -348,3 +437,79 @@ for (const { width, half, path } of tabletToolbars) {
       await expect(control).toBeInViewport({ ratio: 1 })
   })
 }
+
+test('keeps Run on screen beside a workflow form taller than the window', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.setViewportSize({ width: 1280, height: 500 })
+  await page.goto('/models/workflows/extend-image-borders/')
+
+  const run = page.getByTestId('workflow-run-footer')
+  await expect(run.getByRole('link', { name: 'Sign in to run' })).toBeVisible()
+  await page
+    .getByRole('heading', { name: 'Input', exact: true })
+    .evaluate((heading) => heading.scrollIntoView({ block: 'start' }))
+
+  await expect(run).toBeInViewport({ ratio: 1 })
+})
+
+const stickyFooterViewports = [
+  { width: 1280, height: 500 },
+  { width: 768, height: 500 },
+  { width: 390, height: 500 },
+  { width: 390, height: 844 }
+]
+
+for (const viewport of stickyFooterViewports) {
+  test(`keeps each keyboard-focused field clear of the Run footer at ${viewport.width}×${viewport.height}`, async ({
+    page,
+    context
+  }) => {
+    await mockWorkflowVisibility(context, true)
+    await page.setViewportSize(viewport)
+    await page.goto('/models/workflows/extend-image-borders/')
+    const footer = page.getByTestId('workflow-run-footer')
+    await expect(footer).toBeVisible()
+    await page
+      .getByRole('textbox', { name: 'Describe the surrounding scene' })
+      .focus()
+
+    const focusedFieldsClearOfFooter = () =>
+      page.evaluate(() => {
+        const focused = document.activeElement
+        const bar = document.querySelector(
+          '[data-testid="workflow-run-footer"]'
+        )
+        if (!(focused instanceof HTMLElement) || !bar || bar.contains(focused))
+          return true
+        return (
+          focused.getBoundingClientRect().bottom <=
+          bar.getBoundingClientRect().top + 1
+        )
+      })
+
+    for (const key of ['Tab', 'Tab', 'Tab', 'Tab', 'Shift+Tab', 'Shift+Tab']) {
+      await page.keyboard.press(key)
+      await expect.poll(focusedFieldsClearOfFooter).toBe(true)
+    }
+  })
+}
+
+test('keeps the workflow form inside a phone screen @mobile', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/models/workflows/extend-image-borders/')
+  const footer = page.getByTestId('workflow-run-footer')
+  await expect(footer).toBeVisible()
+
+  const viewportWidth = page.viewportSize()?.width ?? 0
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth)
+  ).toBeLessThanOrEqual(viewportWidth)
+  const box = await footer.boundingBox()
+  expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewportWidth)
+})

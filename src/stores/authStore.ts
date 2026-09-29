@@ -15,6 +15,8 @@ import {
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
 import { clearOnboardingReplay } from '@/platform/onboarding/onboardingReplay'
@@ -238,6 +240,8 @@ export const useAuthStore = defineStore('auth', () => {
       const token = useWorkspaceAuthStore().getUnifiedToken()
       return token ? { Authorization: `Bearer ${token}` } : null
     }
+
+    if (webSessionRequests()) return getUserAuthHeader()
 
     const workspaceAuth = useWorkspaceAuthStore()
     const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
@@ -593,6 +597,7 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
+    useCloudWebSessionStore().signedInInteractively(result.user)
     useTelemetry()?.trackAuth({
       method: 'email',
       is_new_user: false,
@@ -627,6 +632,7 @@ export const useAuthStore = defineStore('auth', () => {
       })
     )
 
+    useCloudWebSessionStore().signedInInteractively(result.user)
     useTelemetry()?.trackAuth({
       method: 'email',
       is_new_user: true,
@@ -667,6 +673,7 @@ export const useAuthStore = defineStore('auth', () => {
     )
 
     const additionalUserInfo = getAdditionalUserInfo(result)
+    useCloudWebSessionStore().signedInInteractively(result.user)
     useTelemetry()?.trackAuth({
       method: 'google',
       is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
@@ -691,6 +698,7 @@ export const useAuthStore = defineStore('auth', () => {
     )
 
     const additionalUserInfo = getAdditionalUserInfo(result)
+    useCloudWebSessionStore().signedInInteractively(result.user)
     useTelemetry()?.trackAuth({
       method: 'github',
       is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
@@ -703,7 +711,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = async (): Promise<void> =>
-    executeAuthAction(firebaseIdentity.signOut)
+    executeAuthAction(async () => {
+      await useCloudWebSessionStore().signOut()
+      await firebaseIdentity.signOut()
+    })
 
   const sendPasswordReset = async (email: string): Promise<void> =>
     executeAuthAction(() => firebaseIdentity.sendPasswordReset(email))

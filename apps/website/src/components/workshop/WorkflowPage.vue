@@ -3,7 +3,7 @@ import { ChevronLeft } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
+import { useCaseFor } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import { useWorkshopSession } from '../../config/workshop-session-state'
@@ -25,10 +25,14 @@ const routes = getRoutes()
 // on. It was a word before, and a word is not a way back.
 const shelf = computed(() => {
   const useCase = useCaseFor(model)
+  const category = model.category
   return useCase
     ? {
         label: useCaseLabelKey[useCase],
-        href: `${routes.workshop}${catalogSearch({ useCase })}`
+        href: `${routes.workshop}?${new URLSearchParams({
+          type: 'workflows',
+          ...(category ? { category } : {})
+        })}`
       }
     : undefined
 })
@@ -76,7 +80,9 @@ const cloudHref = template
         data-testid="workflow-author"
       >
         {{
-          t('workshop.workflow.templateBy').replace('{author}', template.author)
+          t('workshop.workflow.templateBy', 'en', {
+            author: template.author
+          })
         }}
       </p>
     </header>

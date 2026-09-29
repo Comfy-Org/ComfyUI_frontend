@@ -37,12 +37,16 @@ const CHECKOUT = entryPath('checkout', { plan: 'pro_monthly' })
 // Above the 8 s poll backoff cap, well below the 30 s parked cadence.
 const FAST_BACKOFF_DEADLINE_MS = 15_000
 
-/** The only scenarios in this fixture set with a payment method configured. */
+/**
+ * The only scenarios in this fixture set that collect a card: a payment
+ * method configured, and no saved method standing in for the card form.
+ */
 function withEmbeddedPaymentMethod(cloud: MockCloud): void {
   cloud.scenario.preview = {
     ...cloud.scenario.preview,
     payment_method_configuration_id: 'pmc_e2e'
   }
+  cloud.scenario.paymentMethods = []
 }
 
 async function fakeStripeCalls(
@@ -70,14 +74,14 @@ test('submitting payment carries the idempotency key and plan, and settles as su
   await expect(
     page.getByRole('heading', { name: 'Confirm your payment' })
   ).toBeVisible()
-  await expect(page.getByText('Pro · Monthly')).toBeVisible()
+  await expect(page.getByText('Pro', { exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
   await expect(
     page.getByRole('heading', { name: "You're all set" })
   ).toBeVisible()
-  await expect(page.getByText('Pro · Monthly')).toBeVisible()
+  await expect(page.getByText('Pro', { exact: true })).toBeVisible()
 
   const subscribe = cloud.requests.find(
     (request) => request.path === '/billing/subscribe'
@@ -110,11 +114,11 @@ test('a scheduled plan change confirms against the saved payment method, no card
   await signIn(CHECKOUT)
 
   await expect(
-    page.getByRole('button', { name: 'Pay and subscribe' })
+    page.getByRole('heading', { name: 'Review your scheduled change' })
   ).toBeVisible()
-  await expect(page.getByText('Pro · Monthly')).toBeVisible()
+  await expect(page.getByText('Pro', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+  await page.getByRole('button', { name: 'Confirm change' }).click()
 
   await expect(
     page.getByRole('heading', { name: "You're all set" })
@@ -131,6 +135,30 @@ test('a scheduled plan change confirms against the saved payment method, no card
   expect(await page.evaluate('window.__e2eFakeStripe')).toBeUndefined()
 })
 
+test('a saved default method is charged in place of the card form', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+
+  await expect(page.getByText('visa •••• 4242')).toBeVisible()
+  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+  const subscribe = cloud.requests.find(
+    (request) => request.path === '/billing/subscribe'
+  )
+  expect(subscribe?.body).toMatchObject({
+    plan_slug: 'pro_monthly',
+    saved_payment_method_id: 'pm_e2e'
+  })
+  expect(subscribe?.body).not.toHaveProperty('confirmation_token')
+  expect(await page.evaluate('window.__e2eFakeStripe')).toBeUndefined()
+})
+
 test('a declined payment shows the reason and stays on checkout', async ({
   page,
   cloud,
@@ -142,18 +170,19 @@ test('a declined payment shows the reason and stays on checkout', async ({
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
+  await expect(page.getByRole('alert')).toContainText(
+    'Your bank declined this payment. Try another payment method or contact your bank.'
+  )
   await expect(
-    page.getByRole('heading', { name: 'Payment declined' })
-  ).toBeVisible()
-  await expect(page.getByText('Your bank declined the payment.')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible()
+    page.getByRole('button', { name: 'Pay and subscribe' })
+  ).toBeEnabled()
   await expect(page).toHaveURL(/\/v1\/checkout\?/)
 
   expect(await fakeStripeCalls(page, 'confirmationTokens')).toBe(1)
   expect(await fakeStripeCalls(page, 'nextActions')).toBe(0)
 })
 
-test('a failure the server routes to support offers support, not a retry', async ({
+test('a failure with no coded reason reads as a bank decline, as the app does', async ({
   page,
   cloud,
   signIn
@@ -165,14 +194,12 @@ test('a failure the server routes to support offers support, not a retry', async
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
+  await expect(page.getByRole('alert')).toContainText(
+    'Your bank declined this payment. Try another payment method or contact your bank.'
+  )
   await expect(
-    page.getByRole('heading', { name: 'Payment could not be processed' })
+    page.getByRole('heading', { name: 'Confirm your payment' })
   ).toBeVisible()
-  await expect(page.getByText(/Contact support@comfy\.org/)).toBeVisible()
-  await expect(
-    page.getByRole('link', { name: 'Contact support' })
-  ).toHaveAttribute('href', 'mailto:support@comfy.org')
-  await expect(page.getByRole('button', { name: 'Try again' })).toBeHidden()
 })
 
 test('a 3DS challenge is driven by the fake and settles as success', async ({
@@ -235,10 +262,10 @@ test('a completed 3DS challenge does not ask to verify again while the server se
   await expect.poll(() => polls).toBeGreaterThan(pollsAtChallengeEnd)
 
   await expect(
-    page.getByRole('heading', { name: 'Review payment' })
+    page.getByRole('heading', { name: 'Confirm your payment' })
   ).toBeVisible()
   await expect(
-    page.getByRole('button', { name: 'Continue verification' })
+    page.getByRole('button', { name: 'Complete verification' })
   ).toHaveCount(0)
 
   settled = true
