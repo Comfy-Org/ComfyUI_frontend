@@ -33,6 +33,7 @@ const GITHUB_ATTACHMENT_URLS = new Set([
   'https://github.com/user-attachments/assets/916211b0-5da9-4c91-b817-bc898a36cfca'
 ])
 const MEDIA_PATTERNS = [
+  /^https:\/\/media\.comfy\.org\/website\/comfy-agent\/[^/?]+\.svg(?:\?.*)?$/i,
   /^https:\/\/(?:media|comfy-hub-assets)\.comfy\.org\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
   /^https:\/\/cloud\.comfy\.org\/templates\/[^/]+\.(?:webp|png|jpg|jpeg|gif|avif)(?:\?.*)?$/i,
   /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/main\/templates\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,

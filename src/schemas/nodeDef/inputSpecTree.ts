@@ -1,5 +1,6 @@
 import type { ZodError } from 'zod'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type {
@@ -34,12 +35,21 @@ function warnSpecDrift(
   error: ZodError,
   optionIndex?: number
 ): void {
-  const location =
-    optionIndex === undefined ? '' : ` (option index ${optionIndex})`
-  console.warn(
-    `Unparseable ${spec.type} spec for input "${spec.name}"${location}; its nested input types will be missing.`,
-    error.issues
-  )
+  reportError(new Error('Unable to parse dynamic node input specification'), {
+    errorType: 'error_parsing_node_input_spec',
+    tags: {
+      failure_kind: 'degraded',
+      feature_area: 'node_definition',
+      operation: 'parse_input_spec',
+      outcome: 'recovered'
+    },
+    context: {
+      controlType: spec.type,
+      optionIndex,
+      issueCount: error.issues.length
+    },
+    level: 'warning'
+  })
 }
 
 /**

@@ -332,7 +332,7 @@ test.describe('Workflow Persistence', () => {
         })
         if (vueNodesEnabled) {
           await expect(comfyPage.vueNodes.getNodeInnerWrapper('1')).toHaveClass(
-            /ring-destructive-background/
+            /ring-warning-background/
           )
         }
       }

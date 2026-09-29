@@ -37,6 +37,7 @@ test.describe(
       }) => {
         test.setTimeout(90_000)
         await agentConversation.runTurns()
+        await page.evaluate(() => window.app!.canvas.deselectAll())
 
         await expect(page.locator('#graph-canvas')).toHaveScreenshot(
           'two-turn-dependent-edit-wired.png',
@@ -111,6 +112,17 @@ test.describe(
               }
             }, toNodeId(3))
         })
+
+        await expect(
+          agentConversation.vueNodes
+            .getWidgetByName('KSampler', 'steps')
+            .getByRole('spinbutton')
+        ).toHaveValue('30')
+        await expect(
+          agentConversation.vueNodes
+            .getWidgetByName('KSampler', 'cfg')
+            .getByRole('spinbutton')
+        ).toHaveValue('5.0')
 
         const sampler = agentConversation.vueNodes
           .getNodeLocator('3')

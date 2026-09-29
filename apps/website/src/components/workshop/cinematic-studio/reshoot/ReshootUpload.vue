@@ -64,7 +64,7 @@ function drop(event: DragEvent) {
     <label
       :class="
         cn(
-          'group/drop flex w-full cursor-pointer flex-col items-center gap-3 rounded-2xl border-[1.5px] border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-8 text-center transition-colors focus-within:border-primary-comfy-yellow hover:border-primary-warm-white/40',
+          'group/drop flex w-full cursor-pointer flex-col items-center gap-2.5 rounded-2xl border-[1.5px] border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-6 py-7 text-center transition-colors focus-within:border-primary-comfy-yellow hover:border-primary-warm-white/40',
           over && 'border-primary-comfy-yellow bg-transparency-white-t8'
         )
       "
@@ -76,7 +76,7 @@ function drop(event: DragEvent) {
       <span class="text-base font-semibold text-primary-warm-white">
         {{ rc('reshoot.pick.drop', locale) }}
       </span>
-      <span class="text-sm text-primary-warm-gray">
+      <span class="text-xs/relaxed text-balance text-primary-warm-gray">
         {{ rc('reshoot.clip.help', locale) }}
       </span>
       <span

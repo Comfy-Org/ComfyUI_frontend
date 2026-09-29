@@ -7,7 +7,7 @@ import type {
   WorkflowWorkshopModel,
   WorkshopModel
 } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopHero from './WorkshopHero.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
@@ -71,6 +71,11 @@ const availableTabs = computed<readonly CatalogueTab[]>(() => [
   ...(workflows.value.length ? (['workflows'] as const) : []),
   ...(appsEnabled.value && apps.value.length ? (['apps'] as const) : [])
 ])
+const heroSubtitle = {
+  models: 'workshop.hero.subtitle',
+  workflows: 'workshop.catalogue.workflowsSubtitle',
+  apps: 'workshop.catalogue.appsSubtitle'
+} as const satisfies Record<CatalogueTab, TranslationKey>
 const activeTab = computed(() =>
   availableTabs.value.includes(selectedTab.value) ? selectedTab.value : 'models'
 )
@@ -112,14 +117,7 @@ watch(
     v-if="!inSection"
     :eyebrow="t('workshop.catalogue.eyebrow', locale)"
     :heading="t('workshop.hero.heading', locale)"
-    :subtitle="
-      t(
-        activeTab === 'models'
-          ? 'workshop.hero.subtitle'
-          : 'workshop.catalogue.subtitle',
-        locale
-      )
-    "
+    :subtitle="t(heroSubtitle[activeTab], locale)"
   />
   <WorkshopModelsGrid
     v-if="activeTab === 'models'"

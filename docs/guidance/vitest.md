@@ -234,6 +234,19 @@ Do not use `createTestingPinia()` as a concurrency workaround: it also changes
 active Pinia. Keep shared DOM, timers, module mocks, and registries in the
 sequential project until their consumers no longer depend on shared state.
 
+Audited store suites can use `test` from `@/testing/pinia` and join
+`ISOLATED_STORE_TESTS` in `vite.config.mts`. That list selects the
+`isolated-stores` Node project and excludes the suites from frontend setup.
+The fixture creates a real Pinia per test, with real actions and no automatic
+spies. Pass the context's `pinia` to every store lookup, and use the context's
+`expect` for concurrent assertions. `entityIdStore.test.ts` is a migrated example.
+
+The fixture holds a disposable owner across `await use(pinia)`. Its `using`
+scope disposes that exact Pinia after the test, including on failure. Putting
+`using` inside a `beforeEach` callback would dispose the resource before the
+test starts. Do not add suites that need global mocks, DOM, fake timers, or
+implicit store lookups to this project.
+
 Await or cancel work before disposing its dependencies. Use readiness promises
 or explicit timer advancement instead of sleeps. Pin inputs such as time,
 locale, random seeds, and IDs when assertions depend on them.
