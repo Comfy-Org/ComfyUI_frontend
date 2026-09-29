@@ -5,6 +5,7 @@ import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
 import { workshopPagePaths } from '../../config/workshop-page-content'
 import { t } from '../../i18n/translations'
+import { modelTitle } from '../../lib/workshop/model-title'
 import { prepareModelPage } from './model-page'
 
 export const getStaticPaths: GetStaticPaths = () =>
@@ -19,7 +20,7 @@ const { model } = page
 ---
 
 <BaseLayout
-  title={`${model.name} · ${t('workshop.title')} - Comfy`}
+  title={modelTitle(model)}
   description={t('workshop.model.meta.description', 'en', {
     name: model.name
   })}

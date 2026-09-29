@@ -9755,6 +9755,18 @@ Enterprise`
   'workshop.model.tabs.playground': { en: 'Playground', 'zh-CN': 'Playground' },
   'workshop.model.tabs.api': { en: 'API', 'zh-CN': 'API' },
   'workshop.model.tabs.details': { en: 'Details', 'zh-CN': '详情' },
+  'workshop.model.meta.title': {
+    en: '{name} API & Playground - Comfy',
+    'zh-CN': '{name} API 与 Playground - Comfy'
+  },
+  'workshop.model.meta.titleApi': {
+    en: '{name} API - Comfy',
+    'zh-CN': '{name} API - Comfy'
+  },
+  'workshop.model.meta.titleName': {
+    en: '{name} - Comfy',
+    'zh-CN': '{name} - Comfy'
+  },
   'workshop.model.relatedProvider': {
     en: 'More from {provider}',
     'zh-CN': '{provider} 的更多模型'
