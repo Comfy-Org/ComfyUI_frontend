@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { isSlashlessPageHref, slashlessPageHrefs } from './internalLinkSlashes'
 
 const ORIGIN = 'https://comfy.org'
+const ORIGINS = [ORIGIN, 'https://www.comfy.org']
 
 describe('isSlashlessPageHref', () => {
   it.for([
@@ -13,6 +14,7 @@ describe('isSlashlessPageHref', () => {
     ['/seedance-2.5', true],
     ['/wan-3.0', true],
     [`${ORIGIN}/pricing`, true],
+    ['https://www.comfy.org/cloud', true],
     ['/', false],
     ['/pricing/', false],
     ['/cloud/pricing/#faq', false],
@@ -27,7 +29,7 @@ describe('isSlashlessPageHref', () => {
     ['https://docs.comfy.org/cli', false],
     ['mailto:hello@comfy.org', false]
   ] as const)('%s -> %s', ([href, expected]) => {
-    expect(isSlashlessPageHref(href, ORIGIN)).toBe(expected)
+    expect(isSlashlessPageHref(href, ORIGINS)).toBe(expected)
   })
 })
 
@@ -39,9 +41,11 @@ describe('slashlessPageHrefs', () => {
       <a class="x" href='/pricing'>Pricing again</a>
       <a href="/download/">Download</a>
       <a href="/models?type=apps&amp;q=wan">Apps</a>
+      <a href="/authors/o'reilly/">Author</a>
+      <a data-href="/ignored">Not a link</a>
       <link rel="alternate" type="text/markdown" href="/pricing.md">`
 
-    expect(slashlessPageHrefs(html, ORIGIN)).toEqual([
+    expect(slashlessPageHrefs(html, ORIGINS)).toEqual([
       '/pricing',
       '/models?type=apps&q=wan'
     ])

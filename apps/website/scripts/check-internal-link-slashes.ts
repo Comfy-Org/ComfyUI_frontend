@@ -9,7 +9,7 @@ import { join, relative, sep } from 'node:path'
 import { slashlessPageHrefs } from '../src/utils/internalLinkSlashes'
 
 const DIST = join(process.cwd(), 'dist')
-const ORIGIN = 'https://comfy.org'
+const ORIGINS = ['https://comfy.org', 'https://www.comfy.org']
 
 function htmlFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -25,10 +25,14 @@ if (!existsSync(DIST)) {
 }
 
 const files = htmlFiles(DIST)
+if (files.length === 0) {
+  console.error(`[link-slashes] ${DIST} has no HTML pages to check.`)
+  process.exit(1)
+}
 const pagesByHref = new Map<string, string[]>()
 for (const file of files) {
   const page = `/${relative(DIST, file).split(sep).join('/')}`
-  for (const href of slashlessPageHrefs(readFileSync(file, 'utf-8'), ORIGIN))
+  for (const href of slashlessPageHrefs(readFileSync(file, 'utf-8'), ORIGINS))
     pagesByHref.set(href, [...(pagesByHref.get(href) ?? []), page])
 }
 

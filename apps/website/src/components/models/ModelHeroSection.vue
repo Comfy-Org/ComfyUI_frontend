@@ -22,7 +22,7 @@ const {
 }>()
 
 const workflowsUrl = hubSlug
-  ? `https://www.comfy.org/workflows/model/${hubSlug}`
+  ? `https://www.comfy.org/workflows/model/${hubSlug}/`
   : null
 
 const dirDisplayMap: Record<string, string> = {
@@ -94,7 +94,7 @@ const isPartnerNode = directory === 'partner_nodes'
 
         <BrandButton
           v-if="!workflowsUrl"
-          href="https://www.comfy.org/cloud"
+          href="https://www.comfy.org/cloud/"
           target="_blank"
           rel="noopener noreferrer"
           :variant="huggingFaceUrl && !isPartnerNode ? 'outline' : 'solid'"

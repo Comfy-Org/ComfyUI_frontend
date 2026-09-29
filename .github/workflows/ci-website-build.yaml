@@ -66,6 +66,7 @@ jobs:
           WORKSHOP_IN_BUILD: '0'
         run: |
           pnpm --filter @comfyorg/website build
+          pnpm --filter @comfyorg/website check:link-slashes
           if [ -d apps/website/dist/workshop ]; then
             echo "::error title=Workshop leaked into a release build::apps/website/dist/workshop exists with WORKSHOP_IN_BUILD=0. The retired Workshop routes must not deploy. See apps/website/src/integrations/workshop-release-gate.ts."
             exit 1

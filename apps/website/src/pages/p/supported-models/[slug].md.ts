@@ -25,8 +25,8 @@ export const GET: APIRoute = ({ props, site }) => {
   const base = site ?? 'https://comfy.org'
   const pageUrl = new URL(`/p/supported-models/${model.slug}`, base).href
   const workflowsUrl = model.hubSlug
-    ? `https://www.comfy.org/workflows/model/${model.hubSlug}`
-    : 'https://www.comfy.org/workflows'
+    ? `https://www.comfy.org/workflows/model/${model.hubSlug}/`
+    : 'https://www.comfy.org/workflows/'
 
   const description = buildWhatIsDescription(model)
   const summary = description.split('. ')[0]
@@ -57,11 +57,11 @@ export const GET: APIRoute = ({ props, site }) => {
     '',
     ...(isPartnerModel(model)
       ? [
-          "1. In ComfyUI through partner nodes — inference runs on the provider's API, no local weights or GPU required: https://comfy.org/download",
+          "1. In ComfyUI through partner nodes — inference runs on the provider's API, no local weights or GPU required: https://comfy.org/download/",
           '2. On Comfy Cloud — the same graph, hosted end to end: https://cloud.comfy.org'
         ]
       : [
-          '1. Locally in ComfyUI — open source, free on your own hardware: https://comfy.org/download',
+          '1. Locally in ComfyUI — open source, free on your own hardware: https://comfy.org/download/',
           '2. On Comfy Cloud — hosted GPUs, every parameter still exposed: https://cloud.comfy.org'
         ]),
     `3. Start from a community workflow template and adjust it node by node: ${workflowsUrl}`,

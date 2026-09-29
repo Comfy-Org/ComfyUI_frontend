@@ -2120,9 +2120,9 @@ Enterprise`
     'zh-CN': '常见问题'
   },
   'cloud.faq.footer': {
-    en: 'For pricing, plans, credits, and billing details, see the <a href="/cloud/pricing/#faq" class="text-primary-comfy-yellow underline">Pricing FAQs</a>.',
+    en: 'For pricing, plans, credits, and billing details, see the <a href="/pricing/#faq" class="text-primary-comfy-yellow underline">Pricing FAQs</a>.',
     'zh-CN':
-      '有关定价、计划、积分和账单的详细信息，请查看<a href="/zh-CN/cloud/pricing/#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
+      '有关定价、计划、积分和账单的详细信息，请查看<a href="/zh-CN/pricing/#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
   },
   'cloud.faq.1.q': {
     en: 'What is Comfy Cloud / ComfyUI Cloud?',
@@ -2227,9 +2227,9 @@ Enterprise`
     'zh-CN': 'Comfy Cloud 的费用是多少？'
   },
   'cloud.faq.12.a': {
-    en: 'Plans start at $20/mo with a credit-based model. For full pricing details — credits, plans, Team plan, billing, and refunds — see the <a href="/cloud/pricing/#faq" class="text-primary-comfy-yellow underline">Pricing FAQs</a>.',
+    en: 'Plans start at $20/mo with a credit-based model. For full pricing details — credits, plans, Team plan, billing, and refunds — see the <a href="/pricing/#faq" class="text-primary-comfy-yellow underline">Pricing FAQs</a>.',
     'zh-CN':
-      '计划起价为每月 $20，采用基于积分的模式。如需完整的定价详情——积分、计划、团队计划、账单和退款——请查看 <a href="/zh-CN/cloud/pricing/#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
+      '计划起价为每月 $20，采用基于积分的模式。如需完整的定价详情——积分、计划、团队计划、账单和退款——请查看 <a href="/zh-CN/pricing/#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
   },
 
   'buildWhat.row1': {
