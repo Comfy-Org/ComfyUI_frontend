@@ -16,15 +16,18 @@ import {
 } from './workshop-browse-content'
 import { workflowModels } from './workshop-workflow-content'
 
+const [{ slug: modelSlug }] = workshopModels
+const [aliasSlug] = routerModelSlugAliases.keys()
+
 const MODELS_PAGES_BY_KIND = [
   ['hub', '/models/'],
-  ['model', '/models/krea--krea-2-large--generate-images/'],
-  ['alias', '/models/krea--krea-2-large/'],
+  ['model', `/models/${modelSlug}/`],
+  ['alias', `/models/${aliasSlug}/`],
   ['workflow', '/models/workflows/change-material/'],
   ['app', '/models/apps/cinematic-studio/'],
   ['showcase', '/models/showcase/'],
   ['catalogue', '/models/catalogue.json'],
-  ['page data', '/models/krea--krea-2-large--generate-images/page.json']
+  ['page data', `/models/${modelSlug}/page.json`]
 ] as const
 
 const inSitemap = (pathname: string) =>
@@ -60,6 +63,8 @@ describe('indexing policy', () => {
     '/zh-CN/payment/failed/',
     '/individual-submission',
     '/zh-CN/booking-confirmation/',
+    '/comfy-agent',
+    '/comfy-agent/',
     '/case-studies',
     '/zh-CN/videos/',
     '/demos',
@@ -79,6 +84,10 @@ describe('indexing policy', () => {
   it.for([
     '/privacy',
     '/pricing',
+    '/agent',
+    '/agent/',
+    '/zh-CN/agent',
+    '/zh-CN/agent/',
     '/p/supported-models/grok-imagine',
     '/demos/image-to-video'
   ])('keeps %s indexable', (pathname) => {
@@ -170,7 +179,8 @@ describe('model page launch', () => {
             aliases: new Map()
           },
           '/hub/models'
-        )
+        ),
+        ['/hub/models']
       )
     )
     expect(() => routerIdsByModelPage(movedModelPaths, workshopModels)).toThrow(
