@@ -198,9 +198,9 @@ export function registerAgentPanelExtension(): void {
           : dialogStore.dialogStack.length > 0
             ? 'dialog_open'
             : null
-      const screenIsClear = computed(() => screenBusyReason() === null)
       const screenHolder = (): AgentConsentNotOfferedReason | null =>
         firstRunHoldsScreen.value ? 'first_run_screen' : screenBusyReason()
+      const screenIsClear = computed(() => screenHolder() === null)
 
       const reportedWithheld = new Set<string>()
       const withholdOffer = (
@@ -226,7 +226,7 @@ export function registerAgentPanelExtension(): void {
         workspaceId?: string
       ): void => {
         withholdOffer(reason, userId, workspaceId)
-        if (reason !== 'first_run_screen') offerHeld.value = true
+        offerHeld.value = true
       }
 
       const consentScope = (): string | null => {
