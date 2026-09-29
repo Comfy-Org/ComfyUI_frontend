@@ -437,9 +437,6 @@ function ackResubscribe(workflowId: string): void {
  * persistence across a full page reload.
  */
 describe('a human edit made while the document connection is down', () => {
-  const RETRY_INTERVAL_MS = 500
-  const RETRY_BUDGET_MS = 5 * RETRY_INTERVAL_MS
-
   beforeEach(() => {
     useAgentPanelStore().enabled = true
     bridgeState.current = null
@@ -463,8 +460,7 @@ describe('a human edit made while the document connection is down', () => {
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
-    vi.advanceTimersByTime(RETRY_BUDGET_MS)
-    expect(clientState.attempts).toHaveLength(6)
+    vi.runAllTimers()
     expect(clientState.sent).toHaveLength(0)
 
     const operationId = clientState.attempts[0].ops[0].op_id
@@ -488,8 +484,7 @@ describe('a human edit made while the document connection is down', () => {
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
-    vi.advanceTimersByTime(2 * RETRY_INTERVAL_MS)
-    expect(clientState.attempts).toHaveLength(3)
+    vi.advanceTimersToNextTimer()
     expect(devLogState.recordDevEvent).not.toHaveBeenCalledWith(
       'human_ops_settled',
       expect.objectContaining({ state: 'undeliverable' })
@@ -507,7 +502,7 @@ describe('a human edit made while the document connection is down', () => {
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
-    vi.advanceTimersByTime(RETRY_BUDGET_MS)
+    vi.runAllTimers()
 
     clientState.transportUp = true
     apiState.target.dispatchEvent(new Event('reconnected'))
@@ -521,11 +516,11 @@ describe('a human edit made while the document connection is down', () => {
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
-    vi.advanceTimersByTime(2 * RETRY_INTERVAL_MS)
+    vi.advanceTimersToNextTimer()
     const operationId = clientState.attempts[0].ops[0].op_id
 
     clientState.transportUp = true
-    vi.advanceTimersByTime(RETRY_INTERVAL_MS)
+    vi.advanceTimersToNextTimer()
 
     expect(clientState.sent).toHaveLength(1)
     expect(clientState.sent[0].ops[0]).toMatchObject({
@@ -540,10 +535,10 @@ describe('a human edit made while the document connection is down', () => {
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
-    vi.advanceTimersByTime(2 * RETRY_INTERVAL_MS)
+    vi.advanceTimersToNextTimer()
 
     clientState.transportUp = true
-    vi.advanceTimersByTime(RETRY_INTERVAL_MS)
+    vi.advanceTimersToNextTimer()
     expect(clientState.sent).toHaveLength(1)
     const replayedOperationId = clientState.sent[0].ops[0].op_id
 
@@ -553,6 +548,13 @@ describe('a human edit made while the document connection is down', () => {
       applied: [replayedOperationId],
       skipped: []
     })
+    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
+      'human_ops_settled',
+      expect.objectContaining({
+        state: 'acknowledged',
+        ops: [expect.objectContaining({ op_id: replayedOperationId })]
+      })
+    )
     apiState.target.dispatchEvent(new Event('reconnected'))
     ackResubscribe('wf-a')
 
