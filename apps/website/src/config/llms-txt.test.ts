@@ -47,7 +47,8 @@ const EXCLUDED_PAGES = new Set([
   '/platform/serverless-animation', // noindex temporary motion study, not a real page
   '/workshop', // build-gated; static public/llms.txt cannot vary by build shape
   '/video-sitemap.xml', // machine-readable sitemap output, not a page for agents to read
-  '/models/catalogue.json' // data the /models catalogue island loads, not a page
+  '/models/catalogue.json', // data the /models catalogue island loads, not a page
+  '/hub/workflows/manifest.json' // routing data comfy-router reads, not a page
 ])
 
 const LLMS_TXT_NOINDEX_EXCEPTIONS = new Set([
@@ -168,7 +169,10 @@ describe('llms.txt', () => {
   it('only links comfy.org paths that this site (or the workflows app) serves', () => {
     const unknown = internalPaths.filter((path) => {
       if (BUILD_ARTIFACTS.has(path) || modelsPages.has(path)) return false
-      if (path.includes('/workflows')) {
+      if (
+        path.startsWith('/workflows') ||
+        /^\/[a-z]{2}(-[A-Za-z]{2})?\/workflows/.test(path)
+      ) {
         return !WORKFLOW_APP_ROUTES.some((route) => route.test(path))
       }
       if (path.startsWith('/zh-CN')) {

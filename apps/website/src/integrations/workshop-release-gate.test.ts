@@ -132,7 +132,8 @@ describe('Workshop release output', () => {
     expect(disabled.map((route) => route.pattern)).toEqual([
       '/hub/models',
       '/hub/models/[slug]',
-      '/models/[...slug]',
+      '/hub/workflows/[slug]',
+      '/hub/workflows/manifest.json',
       '/models/showcase',
       '/models/apps/[app]',
       '/cinematic-studio',
@@ -158,9 +159,9 @@ describe('Workshop release output', () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
     await expect(buildDone()).resolves.toBeUndefined()
     const withoutModelPages = builtModelsRoutes()
-    withoutModelPages.delete('/models/[...slug]')
+    withoutModelPages.delete('/hub/workflows/[slug]')
     await expect(buildDone(withoutModelPages)).rejects.toThrow(
-      'Missing: /models/[...slug]. Workshop-only: none.'
+      'Missing: /hub/workflows/[slug]. Workshop-only: none.'
     )
     await expect(
       buildDone(builtModelsRoutes(modelsBuildRoutes(true)))

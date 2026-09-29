@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
 
-const WORKFLOW_PATH = '/models/workflows/remove-background/'
+const WORKFLOW_PATH = '/hub/workflows/remove-background/'
 
 async function frame(locator: Locator) {
   await expect(locator).toBeVisible()

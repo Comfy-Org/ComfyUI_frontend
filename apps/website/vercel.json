@@ -4016,6 +4016,306 @@
       "source": "/models/xai--grok-imagine-video-reference/",
       "destination": "/hub/models/grok-imagine-video-reference-to-video/",
       "permanent": false
+    },
+    {
+      "source": "/models/workflows/animate-reference-sheet",
+      "destination": "/hub/workflows/animate-reference-sheet/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/animate-reference-sheet/",
+      "destination": "/hub/workflows/animate-reference-sheet/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/change-material",
+      "destination": "/hub/workflows/change-material/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/change-material/",
+      "destination": "/hub/workflows/change-material/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/change-video-background",
+      "destination": "/hub/workflows/change-video-background/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/change-video-background/",
+      "destination": "/hub/workflows/change-video-background/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/character-turnaround",
+      "destination": "/hub/workflows/character-turnaround/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/character-turnaround/",
+      "destination": "/hub/workflows/character-turnaround/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/connect-images-with-motion",
+      "destination": "/hub/workflows/connect-images-with-motion/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/connect-images-with-motion/",
+      "destination": "/hub/workflows/connect-images-with-motion/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/edit-selected-region",
+      "destination": "/hub/workflows/edit-selected-region/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/edit-selected-region/",
+      "destination": "/hub/workflows/edit-selected-region/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/editable-layers",
+      "destination": "/hub/workflows/editable-layers/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/editable-layers/",
+      "destination": "/hub/workflows/editable-layers/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/expand-video-frame",
+      "destination": "/hub/workflows/expand-video-frame/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/expand-video-frame/",
+      "destination": "/hub/workflows/expand-video-frame/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/extend-image-borders",
+      "destination": "/hub/workflows/extend-image-borders/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/extend-image-borders/",
+      "destination": "/hub/workflows/extend-image-borders/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/image-to-video",
+      "destination": "/hub/workflows/image-to-video/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/image-to-video/",
+      "destination": "/hub/workflows/image-to-video/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/match-lighting",
+      "destination": "/hub/workflows/match-lighting/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/match-lighting/",
+      "destination": "/hub/workflows/match-lighting/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/motion-transfer",
+      "destination": "/hub/workflows/motion-transfer/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/motion-transfer/",
+      "destination": "/hub/workflows/motion-transfer/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/new-angle",
+      "destination": "/hub/workflows/new-angle/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/new-angle/",
+      "destination": "/hub/workflows/new-angle/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/product-in-scene",
+      "destination": "/hub/workflows/product-in-scene/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/product-in-scene/",
+      "destination": "/hub/workflows/product-in-scene/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/product-mockup",
+      "destination": "/hub/workflows/product-mockup/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/product-mockup/",
+      "destination": "/hub/workflows/product-mockup/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/product-photo-to-video",
+      "destination": "/hub/workflows/product-photo-to-video/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/product-photo-to-video/",
+      "destination": "/hub/workflows/product-photo-to-video/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/remove-background",
+      "destination": "/hub/workflows/remove-background/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/remove-background/",
+      "destination": "/hub/workflows/remove-background/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/remove-object",
+      "destination": "/hub/workflows/remove-object/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/remove-object/",
+      "destination": "/hub/workflows/remove-object/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/remove-object-from-video",
+      "destination": "/hub/workflows/remove-object-from-video/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/remove-object-from-video/",
+      "destination": "/hub/workflows/remove-object-from-video/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/replace-character",
+      "destination": "/hub/workflows/replace-character/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/replace-character/",
+      "destination": "/hub/workflows/replace-character/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/restore-archival-footage",
+      "destination": "/hub/workflows/restore-archival-footage/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/restore-archival-footage/",
+      "destination": "/hub/workflows/restore-archival-footage/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/restore-portrait",
+      "destination": "/hub/workflows/restore-portrait/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/restore-portrait/",
+      "destination": "/hub/workflows/restore-portrait/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/sharpen-product-photo",
+      "destination": "/hub/workflows/sharpen-product-photo/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/sharpen-product-photo/",
+      "destination": "/hub/workflows/sharpen-product-photo/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/singing-character",
+      "destination": "/hub/workflows/singing-character/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/singing-character/",
+      "destination": "/hub/workflows/singing-character/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/talking-character",
+      "destination": "/hub/workflows/talking-character/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/talking-character/",
+      "destination": "/hub/workflows/talking-character/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/upscale-and-restore",
+      "destination": "/hub/workflows/upscale-and-restore/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/upscale-and-restore/",
+      "destination": "/hub/workflows/upscale-and-restore/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/upscale-illustration",
+      "destination": "/hub/workflows/upscale-illustration/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/upscale-illustration/",
+      "destination": "/hub/workflows/upscale-illustration/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/upscale-video",
+      "destination": "/hub/workflows/upscale-video/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/upscale-video/",
+      "destination": "/hub/workflows/upscale-video/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/video-from-references",
+      "destination": "/hub/workflows/video-from-references/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/video-from-references/",
+      "destination": "/hub/workflows/video-from-references/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/virtual-try-on",
+      "destination": "/hub/workflows/virtual-try-on/",
+      "permanent": false
+    },
+    {
+      "source": "/models/workflows/virtual-try-on/",
+      "destination": "/hub/workflows/virtual-try-on/",
+      "permanent": false
     }
   ]
 }

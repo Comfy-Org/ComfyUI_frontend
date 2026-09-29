@@ -186,6 +186,19 @@ can't be accidentally committed. Otherwise the `Release: Website` GitHub
 Actions workflow runs the same step on every manual dispatch and opens a PR
 with the refreshed snapshot.
 
+## Hub workflows routing
+
+The website builds the workflow pages listed in `src/config/hub-workflow-names.json` at `/hub/workflows/<name>/`. It publishes `/hub/workflows/manifest.json` (`{ version, defaultOwner, pages, legacyRedirects }`), which comfy-router reads to decide who answers each `/hub/workflows/*` and `/workflows/*` URL. The build validates the manifest and fails if it is invalid.
+
+The router (comfy-router#46) fetches the manifest from the website origin directly, not through comfy.org, so it never depends on its own routing to reach it. It also passes the public `comfy.org/hub/workflows/manifest.json` path straight through to the website, even though `manifest.json` is not in `pages`.
+
+Moving more workflows onto the website takes data only, no new code:
+
+1. Add the pages; `hub-workflow-names.test.ts` fails until you refresh the list with `vitest -u`.
+2. In `src/config/hub-workflows-routing.ts`, list each moved `/workflows/<slug>/` URL in `legacyRedirects` (exact paths only, each pointing at a page in the list). Once every workflow has moved, flip `defaultOwner` to `website`.
+
+The website itself never redirects `/workflows/*`; the router does.
+
 ## Models rollout
 
 Models is included in production and preview builds by default. The boolean

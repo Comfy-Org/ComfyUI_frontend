@@ -22,7 +22,7 @@ test.describe('Retired prototype routes', () => {
   test('does not serve retired workflow or Workshop pages', async ({
     page
   }) => {
-    const workflow = await page.goto('/models/workflows/video_minimax_h3_i2v/')
+    const workflow = await page.goto('/hub/workflows/video_minimax_h3_i2v/')
     expect(workflow?.status()).toBe(404)
     await expect(page.getByTestId('model-detail')).toHaveCount(0)
     const workshop = await page.goto('/workshop/')

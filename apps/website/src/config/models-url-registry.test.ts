@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { hubModelSlugs } from './hub-models'
+import { hubModelSlugs, hubWorkflowHref, hubWorkflowSlugs } from './hub-models'
 import type { ModelsUrlEntry } from './models-url-registry'
 import {
   buildModelsUrlRegistry,
@@ -11,7 +11,7 @@ import {
 import { workshopDisplayEntries } from './workshop-browse-content'
 
 const hub: ModelsUrlEntry = { path: '/models', kind: 'hub' }
-const roots = ['/models', '/hub/models']
+const roots = ['/models', '/hub/models', '/hub/workflows']
 
 const sources = {
   models: new Map([['acme--image--generate-images', 'acme-image']]),
@@ -27,7 +27,9 @@ describe('models URL registry', () => {
     ['/hub/models/acme-image/', 'model'],
     ['/models/acme--image--generate-images/', 'alias'],
     ['/models/acme--image--generate-images/page.json', 'reserved'],
-    ['/models/workflows/relight', 'workflow'],
+    ['/hub/workflows/relight/', 'workflow'],
+    ['/models/workflows/relight', 'alias'],
+    ['/hub/workflows/manifest.json', 'reserved'],
     ['/models/apps/studio/', 'app'],
     ['/models/acme--image', 'alias'],
     ['/models/showcase/', 'reserved'],
@@ -118,7 +120,7 @@ describe('models URL registry', () => {
     [
       'an address outside every root',
       [hub, { path: '/workflows/new', kind: 'model' }],
-      '/workflows/new is outside /models, /hub/models'
+      '/workflows/new is outside /models, /hub/models, /hub/workflows'
     ]
   ])('rejects a registry with %s', ([, entries, message]) => {
     expect(() => buildModelsUrlRegistry(entries, roots)).toThrow(message)
@@ -192,9 +194,10 @@ describe('models URL registry', () => {
   it('matches built pages when a root ends in a slash', () => {
     const registry = buildModelsUrlRegistry(modelsUrlEntries(sources), [
       '/models/',
-      '/hub/models/'
+      '/hub/models/',
+      '/hub/workflows/'
     ])
-    expect(registry.roots).toEqual(['/models', '/hub/models'])
+    expect(registry.roots).toEqual(['/models', '/hub/models', '/hub/workflows'])
     expect(modelsUrlKind('/hub/models/acme-image/', registry)).toBe('model')
     expect(
       unregisteredModelsPaths(
@@ -206,14 +209,14 @@ describe('models URL registry', () => {
 
   it('builds the real registry from the Models content', () => {
     const [[oldModelId, hubSlug]] = hubModelSlugs
+    const [workflow] = hubWorkflowSlugs
     const slugOf = (...types: string[]) =>
       workshopDisplayEntries.find(({ type }) => type && types.includes(type))
         ?.slug
     expect(modelsUrlKind(`/hub/models/${hubSlug}/`)).toBe('model')
     expect(modelsUrlKind(`/models/${oldModelId}/`)).toBe('alias')
     expect(modelsUrlKind(`/models/${slugOf('APP')}/`)).toBe('app')
-    expect(modelsUrlKind(`/models/${slugOf('CLOUD', 'SERVERLESS')}/`)).toBe(
-      'workflow'
-    )
+    expect(modelsUrlKind(hubWorkflowHref(workflow))).toBe('workflow')
+    expect(modelsUrlKind(`/models/${workflow}/`)).toBe('alias')
   })
 })

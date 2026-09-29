@@ -114,6 +114,12 @@ describe('the redirect list', () => {
     ).toEqual([])
   })
 
+  it('leaves every /workflows/ address to the router', () => {
+    expect(
+      sources.filter((source) => source.startsWith('/workflows/'))
+    ).toEqual([])
+  })
+
   it('reaches every destination in one hop', () => {
     const sourceSet = new Set<string>(sources)
     expect(
@@ -153,6 +159,10 @@ describe('generated Vercel rules', () => {
 
   it.for([
     { source: '/models', destination: '/hub/models/' },
+    {
+      source: '/models/workflows/change-material',
+      destination: '/hub/workflows/change-material/'
+    },
     {
       source: '/models/bfl--flux-2-max--generate-images',
       destination: '/hub/models/flux-2-max-text-to-image/'

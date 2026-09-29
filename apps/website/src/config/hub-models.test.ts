@@ -23,7 +23,8 @@ describe('hub model addresses', () => {
       '<a href="/models">',
       '<a href="/models/">',
       '<a href="/hub/models/flux-2-max-text-to-image/">',
-      '<a href="/models/workflows/relight/">',
+      '<a href="/models/workflows/change-material/">',
+      '<a href="/hub/workflows/change-material/">',
       '<a href="/models/showcase/">',
       '<a href="/modelsfoo/">'
     ].join('')
@@ -32,7 +33,8 @@ describe('hub model addresses', () => {
       '/models/vertexai--gemini-3-pro-image',
       '/models/bfl--flux-2-pro--generate-images',
       '/models',
-      '/models'
+      '/models',
+      '/models/workflows/change-material'
     ])
   })
 

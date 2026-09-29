@@ -1,6 +1,23 @@
+import hubWorkflowNames from './hub-workflow-names.json' with { type: 'json' }
 import { modelAliasUrls, modelPageUrls } from './model-urls'
 
 export const HUB_MODELS_PATH = '/hub/models'
+export const HUB_WORKFLOWS_PATH = '/hub/workflows'
+const WORKFLOW_SLUG_PREFIX = 'workflows/'
+
+/** A workflow page id (`workflows/<name>`) → its name under /hub/workflows. */
+export const hubWorkflowName = (slug: string) =>
+  slug.startsWith(WORKFLOW_SLUG_PREFIX)
+    ? slug.slice(WORKFLOW_SLUG_PREFIX.length)
+    : slug
+
+export const hubWorkflowHref = (slug: string) =>
+  `${HUB_WORKFLOWS_PATH}/${hubWorkflowName(slug)}/`
+
+/** Every workflow page the site builds, as `workflows/<name>` page ids. */
+export const hubWorkflowSlugs: readonly string[] = hubWorkflowNames.map(
+  (name) => `${WORKFLOW_SLUG_PREFIX}${name}`
+)
 
 export const hubModelPath = (newSlug: string) =>
   `${HUB_MODELS_PATH}/${newSlug}/`
@@ -24,9 +41,11 @@ export function hubModelHref(oldSlug: string): string {
 
 const oldModelPaths = new Set([
   '/models',
-  ...[...hubModelSlugs.keys(), ...hubModelAliases.keys()].map(
-    (slug) => `/models/${slug}`
-  )
+  ...[
+    ...hubModelSlugs.keys(),
+    ...hubModelAliases.keys(),
+    ...hubWorkflowSlugs
+  ].map((slug) => `/models/${slug}`)
 ])
 
 /**

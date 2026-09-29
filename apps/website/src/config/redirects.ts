@@ -5,7 +5,9 @@ import {
   HUB_MODELS_PATH,
   hubModelAliases,
   hubModelPath,
-  hubModelSlugs
+  hubModelSlugs,
+  hubWorkflowHref,
+  hubWorkflowSlugs
 } from './hub-models'
 
 interface SiteRedirect {
@@ -52,6 +54,11 @@ const hubModelRedirects: readonly SiteRedirect[] = [
   ...[...hubModelSlugs, ...hubModelAliases].map(([slug, hubSlug]) => ({
     source: `/models/${slug}` as const,
     destination: hubModelPath(hubSlug),
+    temporaryBecause: HUB_ROUTER_PENDING
+  })),
+  ...hubWorkflowSlugs.map((slug) => ({
+    source: `/models/${slug}` as const,
+    destination: hubWorkflowHref(slug),
     temporaryBecause: HUB_ROUTER_PENDING
   }))
 ]
