@@ -198,9 +198,9 @@ describe('performSubscriptionCheckout', () => {
         failure_kind: 'degraded',
         feature_area: 'billing',
         operation: 'load',
-        outcome: 'recovered'
+        outcome: 'degraded',
+        attribution_stage: 'collect'
       },
-      context: { attribution_stage: 'collect' },
       level: 'warning'
     })
     expect(global.fetch).toHaveBeenCalledWith(
@@ -238,7 +238,7 @@ describe('performSubscriptionCheckout', () => {
       expect.any(Error),
       expect.objectContaining({
         errorType: 'cloud_checkout_attribution_fallback',
-        context: { attribution_stage: 'module_load' }
+        tags: expect.objectContaining({ attribution_stage: 'module_load' })
       })
     )
     expect(global.fetch).toHaveBeenCalledWith(

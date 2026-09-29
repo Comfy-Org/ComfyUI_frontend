@@ -258,9 +258,9 @@ describe('launchCancellationFlow', () => {
         failure_kind: 'degraded',
         feature_area: 'billing',
         operation: 'load',
-        outcome: 'recovered'
+        outcome: 'recovered',
+        workspace_still_current: true
       },
-      context: { workspace_still_current: true, vendor_threw: true },
       level: 'warning'
     })
 
@@ -310,10 +310,35 @@ describe('launchCancellationFlow', () => {
     expect(reportError).toHaveBeenCalledWith(
       preparationError,
       expect.objectContaining({
-        tags: expect.objectContaining({ outcome: 'aborted' }),
-        context: { workspace_still_current: false, vendor_threw: true }
+        tags: expect.objectContaining({
+          outcome: 'aborted',
+          workspace_still_current: false
+        })
       })
     )
+  })
+
+  it('reports a failed fallback instead of claiming recovery', async () => {
+    mocks.prepare.mockRejectedValueOnce(new Error('blocked by browser'))
+    const fallbackError = new Error('dialog chunk unavailable')
+
+    await expect(
+      launchCancellationFlow({
+        showFallback: vi.fn().mockRejectedValue(fallbackError)
+      })
+    ).rejects.toBe(fallbackError)
+
+    expect(reportError).toHaveBeenLastCalledWith(fallbackError, {
+      errorType: 'cloud_cancellation_vendor_fallback',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'billing',
+        operation: 'load',
+        outcome: 'failed',
+        workspace_still_current: true
+      },
+      level: 'error'
+    })
   })
 
   it('falls back and records a failed cancel callback', async () => {

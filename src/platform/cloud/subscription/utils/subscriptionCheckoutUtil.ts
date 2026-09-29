@@ -40,16 +40,34 @@ const getCheckoutAttributionForCloud =
       return { ok: true, attribution: {} }
     }
 
-    let getCheckoutAttribution
+    let attributionModule
     try {
-      ;({ getCheckoutAttribution } =
-        await import('@/platform/telemetry/utils/checkoutAttribution'))
+      attributionModule =
+        await import('@/platform/telemetry/utils/checkoutAttribution')
     } catch (error) {
       return { ok: false, error, stage: 'module_load' }
     }
 
+    let getCheckoutAttribution
     try {
-      return { ok: true, attribution: await getCheckoutAttribution() }
+      getCheckoutAttribution = attributionModule.getCheckoutAttribution
+    } catch (error) {
+      return { ok: false, error, stage: 'module_load' }
+    }
+
+    if (typeof getCheckoutAttribution !== 'function') {
+      return {
+        ok: false,
+        error: new TypeError('Checkout attribution module is unavailable'),
+        stage: 'module_load'
+      }
+    }
+
+    try {
+      return {
+        ok: true,
+        attribution: await getCheckoutAttribution()
+      }
     } catch (error) {
       return { ok: false, error, stage: 'collect' }
     }
@@ -65,9 +83,9 @@ async function getCheckoutAttributionPayload(): Promise<CheckoutAttributionMetad
       failure_kind: 'degraded',
       feature_area: 'billing',
       operation: 'load',
-      outcome: 'recovered'
+      outcome: 'degraded',
+      attribution_stage: attribution.stage
     },
-    context: { attribution_stage: attribution.stage },
     level: 'warning'
   })
   return {}

@@ -165,16 +165,16 @@ describe('useBillingPlans', () => {
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         errorType: 'cloud_billing_plan_catalog_fallback',
         tags: {
-          failure_kind: 'degraded',
+          failure_kind: 'caught_unexpected',
           feature_area: 'billing',
+          has_cached_plans: false,
           operation: 'load',
           outcome: 'failed'
         },
         context: {
-          has_cached_plans: false,
           has_team_credit_stops: false
         },
-        level: 'warning'
+        level: 'error'
       })
     })
 
@@ -209,7 +209,6 @@ describe('useBillingPlans', () => {
         expect.objectContaining({
           tags: expect.objectContaining({ outcome: 'recovered' }),
           context: {
-            has_cached_plans: true,
             has_team_credit_stops: true
           }
         })

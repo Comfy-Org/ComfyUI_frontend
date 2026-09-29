@@ -52,17 +52,17 @@ export function useBillingPlans() {
         reportError(err, {
           errorType: 'cloud_billing_plan_catalog_fallback',
           tags: {
-            failure_kind: 'degraded',
+            failure_kind: hasCachedPlans ? 'degraded' : 'caught_unexpected',
             feature_area: 'billing',
+            has_cached_plans: hasCachedPlans,
             operation: 'load',
             outcome: hasCachedPlans ? 'recovered' : 'failed'
           },
           context: {
-            has_cached_plans: hasCachedPlans,
             has_team_credit_stops:
-              (teamCreditStops.value?.stops.length ?? 0) > 0
+              (teamCreditStops.value?.stops?.length ?? 0) > 0
           },
-          level: 'warning'
+          level: hasCachedPlans ? 'warning' : 'error'
         })
       })
       .finally(() => {

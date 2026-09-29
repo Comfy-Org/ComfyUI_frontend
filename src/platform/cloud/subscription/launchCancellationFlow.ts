@@ -32,20 +32,49 @@ async function prepareCancellationSession(
 
   const workspaceStillCurrent = isLaunchWorkspaceCurrent()
   if (preparation.threw) {
-    reportError(preparation.error, {
-      errorType: 'cloud_cancellation_vendor_fallback',
-      tags: {
-        failure_kind: 'degraded',
-        feature_area: 'billing',
-        operation: 'load',
-        outcome: workspaceStillCurrent ? 'recovered' : 'aborted'
-      },
-      context: {
-        workspace_still_current: workspaceStillCurrent,
-        vendor_threw: true
-      },
-      level: 'warning'
-    })
+    if (!workspaceStillCurrent) {
+      reportError(preparation.error, {
+        errorType: 'cloud_cancellation_vendor_fallback',
+        tags: {
+          failure_kind: 'degraded',
+          feature_area: 'billing',
+          operation: 'load',
+          outcome: 'aborted',
+          workspace_still_current: false
+        },
+        level: 'warning'
+      })
+      return null
+    }
+
+    try {
+      await showFallback()
+      reportError(preparation.error, {
+        errorType: 'cloud_cancellation_vendor_fallback',
+        tags: {
+          failure_kind: 'degraded',
+          feature_area: 'billing',
+          operation: 'load',
+          outcome: 'recovered',
+          workspace_still_current: true
+        },
+        level: 'warning'
+      })
+    } catch (fallbackError) {
+      reportError(fallbackError, {
+        errorType: 'cloud_cancellation_vendor_fallback',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'billing',
+          operation: 'load',
+          outcome: 'failed',
+          workspace_still_current: true
+        },
+        level: 'error'
+      })
+      throw fallbackError
+    }
+    return null
   }
   if (workspaceStillCurrent) await showFallback()
   return null
