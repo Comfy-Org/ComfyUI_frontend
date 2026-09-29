@@ -174,10 +174,16 @@ test.describe(
         const agentPanel = new AgentPanel(page)
         await agentPanel.openButton.evaluate<void, HTMLElement>((button) => {
           button.dataset.testClickCount = '0'
-          button.addEventListener('click', () => {
+          button.dataset.testActivationClickCount = '0'
+          button.addEventListener('click', (event) => {
             button.dataset.testClickCount = String(
               Number(button.dataset.testClickCount) + 1
             )
+            if (!event.isTrusted) {
+              button.dataset.testActivationClickCount = String(
+                Number(button.dataset.testActivationClickCount) + 1
+              )
+            }
           })
           button.addEventListener('pointerdown', () => button.click(), {
             capture: true,
@@ -189,6 +195,10 @@ test.describe(
 
         await expect(agentPanel.openButton).toHaveAttribute(
           'data-test-click-count',
+          '1'
+        )
+        await expect(agentPanel.openButton).toHaveAttribute(
+          'data-test-activation-click-count',
           '1'
         )
       })
