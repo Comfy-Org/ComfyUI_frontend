@@ -86,11 +86,7 @@ test.describe('Agent canvas primitives', { tag: '@agent' }, () => {
     if (!node) return
 
     const before = await comfyPage.canvasOps.getNodeGeometry(node.id)
-    const position = await node.getPosition()
-    await comfyPage.canvasOps.dragAndDrop(position, {
-      x: position.x + 40,
-      y: position.y + 20
-    })
+    await node.dragBy({ x: 40, y: 20 })
     const after = await comfyPage.canvasOps.getNodeGeometry(node.id)
 
     comfyPage.canvasOps.expectSlotsTrackedNode(after, before)
