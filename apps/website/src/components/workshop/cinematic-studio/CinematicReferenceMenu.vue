@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Palette, Plus, UserRound, X } from '@lucide/vue'
+import { Palette, Plus, SwatchBook, UserRound, X } from '@lucide/vue'
 import { useObjectUrl } from '@vueuse/core'
 import {
   DropdownMenuContent,
@@ -20,9 +20,12 @@ import CinematicTooltip from './CinematicTooltip.vue'
 
 type ReferenceKind = 'cast' | 'palette'
 
-const { locale = 'en' } = defineProps<{
+const { colorCount = 0, locale = 'en' } = defineProps<{
+  /** Colours set in the Colors panel, which this menu opens. */
+  colorCount?: number
   locale?: Locale
 }>()
+const emit = defineEmits<{ colors: [] }>()
 
 const cast = defineModel<File | undefined>('cast')
 const palette = defineModel<File | undefined>('palette')
@@ -148,6 +151,26 @@ const itemClass =
                 class="size-4 shrink-0 text-primary-warm-gray"
                 aria-hidden="true"
               />
+            </DropdownMenuItem>
+            <DropdownMenuItem :class="itemClass" @select="emit('colors')">
+              <span
+                class="grid size-7 shrink-0 place-items-center rounded-lg bg-transparency-white-t8"
+                aria-hidden="true"
+              >
+                <SwatchBook class="size-3.5" />
+              </span>
+              <span class="flex min-w-0 flex-1 flex-col">
+                <span class="text-content-bright">
+                  {{ tc('cinematic.colors.title', locale) }}
+                </span>
+                <span class="truncate text-xs text-primary-warm-gray">
+                  {{
+                    colorCount
+                      ? `${colorCount} · ${tc('cinematic.colors.hint', locale)}`
+                      : tc('cinematic.colors.hint', locale)
+                  }}
+                </span>
+              </span>
             </DropdownMenuItem>
             <template v-if="attached.length">
               <DropdownMenuSeparator
