@@ -8,7 +8,7 @@ export function isWorkshopInBuild(): boolean {
 /** Every route Workshop owns. Kept here so the gate has one definition. */
 export function isWorkshopRoute(pattern: string): boolean {
   const pathname = pattern.replace(/\/$/, '')
-  // /models itself is the established marketing page when the gate is off.
+  // /models is the public catalogue and stays in the sitemap.
   return (
     isLegacyWorkshopRoute(pathname) ||
     pathname.startsWith('/models/') ||
@@ -42,8 +42,6 @@ function allowedFamiliesFor(
 }
 
 export function assertWorkshopCloudEnvForBuild(): void {
-  if (!isWorkshopInBuild()) return
-
   const raw = process.env.PUBLIC_WORKSHOP_CLOUD_ENV
   const family = raw === undefined || raw === '' ? undefined : raw
   if (family !== undefined && !isWorkshopCloudEnv(family)) {
@@ -58,7 +56,7 @@ export function assertWorkshopCloudEnvForBuild(): void {
   const choices = allowed.join(' or ')
   if (family === undefined) {
     throw new Error(
-      `Workshop is in this ${vercelEnv} build but PUBLIC_WORKSHOP_CLOUD_ENV is unset. Set it to ${choices} in the Vercel ${vercelEnv} environment.`
+      `This ${vercelEnv} build signs users in through Firebase but PUBLIC_WORKSHOP_CLOUD_ENV is unset. Set it to ${choices} in the Vercel ${vercelEnv} environment.`
     )
   }
   if (!allowed.includes(family)) {

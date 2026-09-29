@@ -47,13 +47,21 @@ function pluginNames(option: unknown): unknown[] {
     : []
 }
 
-async function buildDone() {
+const builtModelsRoutes = (patterns = modelsBuildRoutes(false)) =>
+  new Map(
+    patterns.map(({ pattern }) => [
+      pattern,
+      [pathToFileURL(`${root}${pattern}/index.html`)]
+    ])
+  )
+
+async function buildDone(assets = builtModelsRoutes()) {
   const hook = workshopReleaseGate().hooks['astro:build:done']
   if (!hook) throw new Error('Missing build hook')
   await hook({
     dir: pathToFileURL(`${root}/`),
     pages: [{ pathname: '' }, { pathname: 'workshop/' }],
-    assets: new Map(),
+    assets,
     logger
   })
 }
@@ -108,42 +116,45 @@ describe('Workshop release output', () => {
     )
   })
 
-  it('registers the original marketing entry when disabled and only approved Models routes when enabled', () => {
-    expect(modelsBuildRoutes(false)).toEqual([
-      {
-        pattern: '/models',
-        entrypoint: expect.stringContaining('/routes/models/showcase.astro')
-      }
-    ])
-    const enabled = modelsBuildRoutes(true)
-    expect(enabled.map((route) => route.pattern)).toEqual([
+  it('builds every Models page either way and adds checkout only with Workshop', () => {
+    const disabled = modelsBuildRoutes(false)
+    expect(disabled.map((route) => route.pattern)).toEqual([
       '/models',
       '/models/[...slug]',
       '/models/showcase',
       '/models/apps/[app]',
       '/cinematic-studio',
-      '/checkout-opening',
-      '/zh-CN/checkout-opening',
-      '/checkout-return',
-      '/zh-CN/checkout-return',
       '/models/[...slug]/page.json',
       '/models/catalogue.json'
     ])
-    expect(enabled[0].entrypoint).toContain('/routes/models/index.astro')
-    for (const route of enabled) expect(existsSync(route.entrypoint)).toBe(true)
+    const enabled = modelsBuildRoutes(true)
+    expect(enabled.map((route) => route.pattern)).toEqual([
+      ...disabled.map((route) => route.pattern),
+      '/checkout-opening',
+      '/zh-CN/checkout-opening',
+      '/checkout-return',
+      '/zh-CN/checkout-return'
+    ])
+    for (const routes of [disabled, enabled]) {
+      expect(routes[0].entrypoint).toContain('/routes/models/index.astro')
+      for (const route of routes)
+        expect(existsSync(route.entrypoint)).toBe(true)
+    }
   })
 
-  it('preserves the established Models page and rejects ungated detail routes', async () => {
+  it('fails a build without Workshop that drops a Models page or ships a Workshop-only page', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
-    await mkdir(join(root, 'models'), { recursive: true })
-    await writeFile(join(root, 'models/index.html'), 'Models marketing')
-    await buildDone()
-    expect(await readFile(join(root, 'models/index.html'), 'utf8')).toBe(
-      'Models marketing'
+    await expect(buildDone()).resolves.toBeUndefined()
+    const withoutModelPages = builtModelsRoutes()
+    withoutModelPages.delete('/models/[...slug]')
+    await expect(buildDone(withoutModelPages)).rejects.toThrow(
+      'Missing: /models/[...slug]. Workshop-only: none.'
     )
-    await mkdir(join(root, 'models/leaked-detail'))
-    await writeFile(join(root, 'models/leaked-detail/index.html'), 'Run')
-    await expect(buildDone()).rejects.toThrow('ungated Models route')
+    await expect(
+      buildDone(builtModelsRoutes(modelsBuildRoutes(true)))
+    ).rejects.toThrow(
+      'Missing: none. Workshop-only: /checkout-opening, /zh-CN/checkout-opening, /checkout-return, /zh-CN/checkout-return.'
+    )
   })
 
   it('removes only Workshop output when disabled, including repeated builds', async () => {

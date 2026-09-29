@@ -8,6 +8,7 @@ import {
 } from '@comfyorg/account-core/telemetry'
 
 const hoisted = vi.hoisted(() => ({
+  included: true,
   localDev: false,
   deployEnv: '',
   mockInit: vi.fn(),
@@ -22,6 +23,9 @@ const hoisted = vi.hoisted(() => ({
 }))
 
 vi.mock(import('astro:env/client'), () => ({
+  get WORKSHOP_INCLUDED() {
+    return hoisted.included
+  },
   get WORKSHOP_LOCAL_DEV() {
     return hoisted.localDev
   },
@@ -31,6 +35,7 @@ vi.mock(import('astro:env/client'), () => ({
 }))
 
 beforeEach(() => {
+  hoisted.included = true
   hoisted.localDev = false
   hoisted.deployEnv = ''
 })
@@ -149,6 +154,29 @@ describe('Workshop visibility', () => {
     initPostHog()
     emitFeatureFlags()
     expect(useWorkshopEnabled().value).toBe(false)
+  })
+
+  it('keeps a build without Workshop off and settled whatever PostHog or the local override says', async () => {
+    hoisted.included = false
+    hoisted.localDev = true
+    vi.stubEnv('PUBLIC_WORKSHOP_ENABLED', '1')
+    vi.stubEnv('PUBLIC_WORKSHOP_WORKFLOWS_ENABLED', '1')
+    vi.stubEnv('PUBLIC_WORKSHOP_APPS_ENABLED', '1')
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const {
+      initPostHog,
+      useWorkshopAppsEnabled,
+      useWorkshopEnabled,
+      useWorkshopEnabledSettled,
+      useWorkshopWorkflowsEnabled
+    } = await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(false)
+    expect(useWorkshopWorkflowsEnabled().value).toBe(false)
+    expect(useWorkshopAppsEnabled().value).toBe(false)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
   })
 
   it('allows local development to preview the feature without PostHog', async () => {
