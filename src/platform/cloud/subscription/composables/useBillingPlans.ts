@@ -53,14 +53,14 @@ function reportCatalogFallback(err: unknown, hasCachedPlans: boolean): void {
   reportError(err, {
     errorType: 'cloud_billing_plan_catalog_fallback',
     tags: {
-      failure_kind: hasCachedPlans ? 'degraded' : 'caught_unexpected',
+      failure_kind: 'degraded',
       feature_area: 'billing',
       has_cached_plans: hasCachedPlans,
       has_team_credit_stops: hasTeamCreditStops,
       operation: 'load',
       outcome: hasCachedPlans ? 'recovered' : 'failed'
     },
-    level: hasCachedPlans ? 'warning' : 'error'
+    level: 'warning'
   })
 }
 

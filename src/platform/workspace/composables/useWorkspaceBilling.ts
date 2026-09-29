@@ -645,6 +645,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         'cancel',
         { attemptStartedAt }
       )
+      assertCancellationScopeCurrent(isScopeCurrent)
 
       if (operation.status !== 'succeeded') {
         throw new Error(

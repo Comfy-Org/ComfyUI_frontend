@@ -14,7 +14,10 @@ import type {
   BillingStatusResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
+import {
+  CancellationScopeChangedError,
+  useWorkspaceBilling
+} from '@/platform/workspace/composables/useWorkspaceBilling'
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   getBillingStatus: vi.fn(),
@@ -1260,6 +1263,31 @@ describe('useWorkspaceBilling', () => {
         }
       )
       expect(billing.error.value).toBeNull()
+    })
+
+    it('rejects when the cancellation scope changes while the operation settles', async () => {
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-cancel',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      const deferredOperation = createDeferred<ReturnType<typeof operation>>()
+      vi.mocked(useBillingOperationStore().startOperation).mockReturnValue(
+        deferredOperation.promise
+      )
+      let scopeIsCurrent = true
+
+      const pending = setupBilling().cancelSubscription(
+        () => scopeIsCurrent
+      )
+      await vi.waitFor(() =>
+        expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
+      )
+      scopeIsCurrent = false
+      deferredOperation.resolve(operation())
+
+      await expect(pending).rejects.toBeInstanceOf(
+        CancellationScopeChangedError
+      )
     })
 
     it('throws the op error message when the cancel op fails', async () => {
