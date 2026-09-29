@@ -127,11 +127,12 @@ const facts = computed(() => [
           <template #append><span aria-hidden="true">↓</span></template>
         </Button>
         <div data-testid="workflow-api-endpoint">
-          <ApiFacts :where="t('workshop.api.runsOnCloud')" :rows="facts" />
+          <ApiFacts
+            :where="t('workshop.api.runsOnCloud')"
+            :rows="facts"
+            :note="t('workshop.workflow.apiNote')"
+          />
         </div>
-        <p class="text-sm/relaxed text-primary-warm-gray">
-          {{ t('workshop.workflow.apiNote') }}
-        </p>
       </div>
 
       <div class="flex min-w-0 flex-1 flex-col gap-4">
@@ -140,9 +141,11 @@ const facts = computed(() => [
           class="overflow-hidden rounded-2xl border border-transparency-white-t20"
         >
           <div
-            class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-2 text-sm text-primary-warm-gray"
+            class="flex items-center justify-between border-b border-transparency-white-t8 px-3 py-2"
           >
-            <span>cURL</span
+            <span
+              class="rounded-xl bg-primary-comfy-yellow px-3 py-1.5 text-xs font-bold tracking-wider text-primary-comfy-ink uppercase"
+              >cURL</span
             ><CopyTextButton
               :value="code"
               :label="t('workshop.api.copy')"
@@ -159,23 +162,30 @@ const facts = computed(() => [
           {{ t('workshop.api.inputInvalid') }}
         </p>
 
-        <div
-          v-if="hasMedia"
-          class="space-y-2 text-sm/relaxed text-primary-warm-gray"
+        <details
+          class="rounded-2xl border border-transparency-white-t8 px-5"
+          data-testid="workflow-api-steps"
         >
-          <h3 class="font-medium text-primary-comfy-canvas">
-            {{ t('workshop.workflow.apiUploads') }}
-          </h3>
-          <ol class="list-decimal space-y-1 ps-5">
-            <li>{{ t('workshop.workflow.apiUploadGrant') }}</li>
-            <li>{{ t('workshop.workflow.apiUploadPut') }}</li>
-            <li>{{ t('workshop.workflow.apiUploadFinalize') }}</li>
-          </ol>
-        </div>
+          <summary
+            class="cursor-pointer list-none py-4 text-sm font-medium text-primary-comfy-canvas marker:hidden hover:text-primary-warm-white"
+          >
+            {{ t('workshop.workflow.apiSteps') }}
+           </summary>
+           <div class="space-y-2 pb-5 text-sm/relaxed text-primary-warm-gray">
+             <template v-if="hasMedia">
+               <h3 class="font-medium text-primary-comfy-canvas">
+                 {{ t('workshop.workflow.apiUploads') }}
+               </h3>
+               <ol class="list-decimal space-y-1 ps-5">
+                 <li>{{ t('workshop.workflow.apiUploadGrant') }}</li>
+                 <li>{{ t('workshop.workflow.apiUploadPut') }}</li>
+                 <li>{{ t('workshop.workflow.apiUploadFinalize') }}</li>
+               </ol>
+             </template>
+             <p>{{ t('workshop.workflow.apiPoll') }}</p>
+           </div>
+         </details>
 
-        <p class="text-sm/relaxed text-primary-warm-gray">
-          {{ t('workshop.workflow.apiPoll') }}
-        </p>
         <a
           :href="externalLinks.docsApi"
           target="_blank"
