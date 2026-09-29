@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { load3dAgentTest as test } from '@e2e/fixtures/load3dAgentFixture'
 import { Load3DViewerHelper } from '@e2e/tests/load3d/Load3DViewerHelper'
 
@@ -107,6 +108,12 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
 
     await viewer.cancelButton.click()
     await viewer.waitForClosed()
-    await expect(page.locator('#agent-panel-root')).toBeVisible()
+
+    const agentPanel = new AgentPanel(page)
+    await expect(agentPanel.openButton).toHaveAttribute('aria-pressed', 'true')
+    await agentPanel.openButton.click()
+    await expect(agentPanel.root).toBeHidden()
+    await expect(agentPanel.openButton).toHaveAttribute('aria-pressed', 'false')
+    await agentPanel.open()
   })
 })
