@@ -63,13 +63,16 @@ const fileName = computed(
 <template>
   <section
     :aria-label="rc('reshoot.title', locale)"
-    class="flex min-h-0 w-full flex-1 flex-col items-center gap-3"
+    class="flex min-h-0 w-full flex-1 flex-col items-center gap-3 max-lg:contents"
   >
-    <div class="flex w-[min(100%,calc(52svh*16/9))] flex-col gap-3">
+    <div
+      class="flex w-[min(100%,calc(52svh*16/9))] flex-col gap-3 max-lg:contents"
+    >
       <ReshootOutputBar
         v-if="finished?.url"
         v-model:view="view"
         v-model:sound="sound"
+        class="max-lg:order-first"
         :href="finished.url"
         :file-name="fileName"
         :locale
@@ -77,7 +80,8 @@ const fileName = computed(
       />
       <div
         ref="frameEl"
-        class="group/frame relative aspect-video w-full rounded-md bg-primary-comfy-ink ring-1 ring-transparency-white-t8"
+        class="group/frame relative aspect-video w-full rounded-md bg-primary-comfy-ink ring-1 ring-transparency-white-t8 max-lg:sticky max-lg:top-20 max-lg:z-20 max-lg:order-first max-lg:shadow-[0_12px_24px_rgb(0_0_0/0.45)]"
+        data-testid="reshoot-frame"
       >
         <ReshootTakeView
           v-if="current"

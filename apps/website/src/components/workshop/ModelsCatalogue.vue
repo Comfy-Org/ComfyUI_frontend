@@ -118,6 +118,7 @@ watch(
     :eyebrow="t('workshop.catalogue.eyebrow', locale)"
     :heading="t('workshop.hero.heading', locale)"
     :subtitle="t(heroSubtitle[activeTab], locale)"
+    :subtitle-space="availableTabs.map((tab) => t(heroSubtitle[tab], locale))"
   />
   <WorkshopModelsGrid
     v-if="activeTab === 'models'"

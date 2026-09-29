@@ -75,3 +75,43 @@ test('the workflow API tab opens with the key action and what it needs beside th
   expect(action.y).toBeLessThanOrEqual(code.y)
   expect(action.x).toBeGreaterThanOrEqual(code.x + code.width)
 })
+
+test('@mobile the workflow example output is as tall as its 16:9 media', async ({
+  page,
+  context
+}) => {
+  await allowWorkflows(context)
+  await page.goto(WORKFLOW_PATH)
+
+  const output = page.getByTestId('playground-output')
+  await expect(output).toHaveAttribute('data-state', 'example')
+  const media = await frame(output.getByTestId('output-media'))
+  expect(media.height).toBeCloseTo((media.width * 9) / 16, 0)
+})
+
+test('@mobile opens a source picture full screen with its close button clear of it', async ({
+  page,
+  context
+}) => {
+  await allowWorkflows(context)
+  await page.goto(WORKFLOW_PATH)
+  await page
+    .locator('input[type=file]')
+    .first()
+    .setInputFiles('public/images/cinematic-studio/diner.jpg')
+  await page
+    .getByRole('button', { name: /^Expand / })
+    .first()
+    .click()
+
+  const dialog = page.getByTestId('image-source-dialog')
+  const viewportWidth = page.viewportSize()?.width ?? 0
+  await expect
+    .poll(async () => (await frame(dialog)).width)
+    .toBeGreaterThan(viewportWidth - 2)
+  const [close, picture] = await Promise.all([
+    frame(dialog.getByRole('button', { name: 'Close' })),
+    frame(dialog.getByRole('img'))
+  ])
+  expect(close.y + close.height).toBeLessThanOrEqual(picture.y)
+})
