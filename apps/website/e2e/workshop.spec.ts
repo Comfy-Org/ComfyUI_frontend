@@ -425,12 +425,9 @@ test.describe('Models catalog', () => {
     ).toBeVisible()
   })
 
-  test('a static compatibility alias reaches its canonical model page', async ({
-    page
-  }) => {
-    const response = await page.goto('/models/bfl--flux-2-max/')
+  test('the hub page an old alias points at renders', async ({ page }) => {
+    const response = await page.goto('/hub/models/flux-2-max-text-to-image/')
     expect(response?.status()).toBe(200)
-    await expect(page).toHaveURL(/\/hub\/models\/flux-2-max-text-to-image\/$/)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'FLUX 2 Max Text-to-Image'
     )

@@ -41,7 +41,7 @@ export const hubWorkflowsManifestSchema = z
 
 export type HubWorkflowsManifest = z.output<typeof hubWorkflowsManifestSchema>
 
-/** The file comfy-router reads to route `/hub/workflows/*` and old `/workflows/*` URLs. */
+/** The file comfy-router reads live to route `/hub/workflows/*`; it keeps a bundled copy for `/workflows/*`. */
 export function buildHubWorkflowsManifest(
   pages: readonly string[],
   routing: HubWorkflowsRouting
