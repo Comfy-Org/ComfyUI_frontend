@@ -28,8 +28,9 @@ const {
   mockReportTelemetryError,
   mockReportError,
   mockAccessBillingPortal
-} = vi.hoisted(() => {
-  const mockIsLoggedIn = { value: false }
+} = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  const mockIsLoggedIn = ref(false)
   return {
     mockIsLoggedIn,
     mockCurrentUser: { isLoggedIn: mockIsLoggedIn },
@@ -1316,6 +1317,30 @@ describe('useSubscription', () => {
 
       useCurrentUser().isLoggedIn = computed(() => false)
       useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(
+          localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+        ).toBeNull()
+      })
+    })
+
+    it('clears pending checkout attempts after logout', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-reactive-logout',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockIsLoggedIn.value = true
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(0)
+
+      mockIsLoggedIn.value = false
 
       await vi.waitFor(() => {
         expect(
