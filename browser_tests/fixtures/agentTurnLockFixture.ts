@@ -434,28 +434,6 @@ export class AgentTurnLockHarness {
     return this.server.answers.flat()
   }
 
-  /** Posts an answer through the browser so the real route validator sees it. */
-  async postAnswer(
-    threadId: string,
-    askId: string,
-    selected: string[]
-  ): Promise<number> {
-    return await this.page.evaluate(
-      async ({ threadId, askId, selected }) => {
-        const response = await fetch(
-          `/api/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ selected })
-          }
-        )
-        return response.status
-      },
-      { threadId, askId, selected }
-    )
-  }
-
   /** The socket the client is currently on, with no drop. */
   async liveSocket(): Promise<WebSocketRoute> {
     return this.getWebSocket()

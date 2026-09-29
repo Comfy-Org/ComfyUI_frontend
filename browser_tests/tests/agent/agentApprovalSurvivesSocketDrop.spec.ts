@@ -111,5 +111,31 @@ test.describe(
         .click()
       await expect.poll(() => turnLock.answeredAsks()).toEqual(['run'])
     })
+
+    test('a refresh restores the persisted approval ask', async ({
+      page,
+      turnLock
+    }) => {
+      turnLock.primePendingAsk(RUN_APPROVAL_EVENT)
+      expect(turnLock.pendingAskIsPrimed()).toBe(true)
+
+      await page.reload()
+      await expect(
+        page.getByTestId('integrated-tab-bar-actions')
+      ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 30_000 })
+      await expect(turnLock.panel).toBeVisible({ timeout: 30_000 })
+      await expect(
+        turnLock.panel.getByText(enMessages.agent.runApproval.question)
+      ).toBeVisible()
+
+      await turnLock.panel
+        .getByRole('button', {
+          name: enMessages.agent.runApproval.run,
+          exact: true
+        })
+        .click()
+      await expect.poll(() => turnLock.answeredAsks()).toEqual(['run'])
+      expect(turnLock.pendingAskIsPrimed()).toBe(false)
+    })
   }
 )
