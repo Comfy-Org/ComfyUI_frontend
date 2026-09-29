@@ -159,7 +159,7 @@ describe('softwareApplicationNode', () => {
       name: 'Foo Pack',
       url: 'https://comfy.org/cloud/supported-nodes/foo/',
       applicationCategory: 'DeveloperApplication',
-      authorName: 'Jane Dev'
+      author: { type: 'Person', name: 'Jane Dev' }
     })
     expect(node.author).toEqual({ '@type': 'Person', name: 'Jane Dev' })
     expect(node.publisher).toBeUndefined()
