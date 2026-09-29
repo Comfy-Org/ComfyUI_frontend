@@ -1482,6 +1482,38 @@ describe('useAgentConversationStore', () => {
     )
   })
 
+  it('does not restore an ask the live transport already resolved', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'run it')
+    store.ingest(runApproval('t1', 'server-turn:call-1'))
+    store.stashActiveTurn()
+    store.setThreadId('th-other')
+    store.ingest(askResolved('t1', 'server-turn:call-1'))
+
+    const askingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+    askingRow.status = 'streaming'
+    askingRow.pending_ask = {
+      message_id: 't1',
+      ask_id: 'server-turn:call-1',
+      kind: 'run_approval',
+      context: { workflow_id: 'workflow-1' },
+      prompt: 'Run workflow?',
+      options: [{ id: 'run', label: 'Run' }],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+    store.setThreadId('th')
+    store.hydrate([historyRow(1, 'user', 'server-turn', 'run it'), askingRow])
+    store.resumeBackgroundTurn()
+
+    expect(
+      store.messages[0].parts.some((part) => part.type === 'runApproval')
+    ).toBe(false)
+  })
+
   /**
    * A streaming row can carry the same call the transport already watched
    * finish. The row's copy is the stale one -- reading `running` off it puts

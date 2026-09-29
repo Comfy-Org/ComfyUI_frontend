@@ -96,6 +96,8 @@ export interface AgentEventTransport {
    * count it as committed text.
    */
   openDraft: () => TextPart | null
+  /** Whether this transport already observed the matching ask resolution. */
+  hasResolvedAsk: (askId: string) => boolean
   /**
    * PM-1575: called whenever the bound workflow's CRDT follower applies a
    * fresh doc update, so any tool-call parts this transport held back
@@ -166,6 +168,7 @@ export function createAgentEventTransport(
       .filter((part): part is ToolPart => part.type === 'tool')
       .map((part) => [part.callId, part])
   )
+  const resolvedAskIds = new Set<string>()
   let settled = false
   let lastTabTargetKey: string | undefined
   // Tool parts whose frame reported done but whose displayed state is held at
@@ -379,6 +382,7 @@ export function createAgentEventTransport(
   /** Applies one `agent_ask_resolved` frame: drops the matching run-approval
    * part, since its ask is no longer pending. */
   function handleAskResolvedEvent(data: AgentAskResolvedEvent['data']): void {
+    resolvedAskIds.add(data.ask_id)
     message.parts = message.parts.filter(
       (part) => part.type !== 'runApproval' || part.askId !== data.ask_id
     )
@@ -536,6 +540,7 @@ export function createAgentEventTransport(
     adoptToolPart,
     appendReplyText,
     openDraft: () => draft,
+    hasResolvedAsk: (askId) => resolvedAskIds.has(askId),
     notifyCanvasCaughtUp,
     hasPendingCanvasSync,
     dispose

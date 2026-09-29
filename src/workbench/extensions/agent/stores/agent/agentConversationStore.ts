@@ -571,7 +571,8 @@ export const useAgentConversationStore = defineStore(
      */
     function adoptPendingAsks(
       hydrated: AssistantMessage,
-      live: AssistantMessage
+      live: AssistantMessage,
+      transport: AgentEventTransport | undefined
     ): void {
       const presentAskIds = new Set(
         live.parts.flatMap((part) =>
@@ -579,7 +580,10 @@ export const useAgentConversationStore = defineStore(
         )
       )
       const asks = hydrated.parts.filter(
-        (part) => part.type === 'runApproval' && !presentAskIds.has(part.askId)
+        (part) =>
+          part.type === 'runApproval' &&
+          !presentAskIds.has(part.askId) &&
+          !transport?.hasResolvedAsk(part.askId)
       )
       if (asks.length > 0) live.parts = [...live.parts, ...asks]
     }
@@ -672,7 +676,7 @@ export const useAgentConversationStore = defineStore(
     ): void {
       adoptHydratedTools(live, hydrated, transport)
       adoptFresherHydratedText(live, hydrated, transport)
-      adoptPendingAsks(hydrated, live)
+      adoptPendingAsks(hydrated, live, transport)
     }
 
     /**
