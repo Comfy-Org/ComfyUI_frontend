@@ -290,7 +290,12 @@ const earlierClass = (active: boolean) =>
 
 <template>
   <section
-    class="flex min-h-96 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
+    :class="
+      cn(
+        'flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4',
+        !shown && 'min-h-96'
+      )
+    "
     data-testid="playground-output"
     :data-state="state.status"
   >
@@ -451,6 +456,7 @@ const earlierClass = (active: boolean) =>
     <template v-else-if="shown">
       <div
         class="relative aspect-video max-h-[70dvh] w-full flex-1 overflow-hidden bg-black/20"
+        data-testid="output-media"
       >
         <div
           :key="currentUrl"
