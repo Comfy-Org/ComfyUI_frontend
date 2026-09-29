@@ -474,6 +474,8 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
     isLoading.value = true
     loadingTier.value = tierKey
+    const checkoutOwnerId = userId.value ?? undefined
+    const checkoutWorkspaceId = workspaceStore.activeWorkspaceId
 
     try {
       if (hasPaidSubscription.value) {
@@ -483,9 +485,9 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
         } as const
         const previousPlan = currentPlanDescriptor.value
         const checkoutAttribution = await getCheckoutAttributionForCloud()
-        const beginCheckoutMetadata = userId.value
+        const beginCheckoutMetadata = checkoutOwnerId
           ? {
-              user_id: userId.value,
+              user_id: checkoutOwnerId,
               tier: targetPlan.tierKey,
               cycle: targetPlan.billingCycle,
               checkout_type: 'change' as const,
@@ -522,8 +524,8 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
             tier: targetPlan.tierKey,
             cycle: targetPlan.billingCycle,
             checkout_type: 'change',
-            owner_id: userId.value ?? undefined,
-            workspace_id: workspaceStore.activeWorkspaceId,
+            owner_id: checkoutOwnerId,
+            workspace_id: checkoutWorkspaceId,
             payment_intent_source: reason,
             ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {}),
             ...(previousPlan
