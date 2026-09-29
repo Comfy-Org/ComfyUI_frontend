@@ -24,7 +24,7 @@ function promptOf(
   sample: { readonly prompt?: string },
   example: { readonly values: Readonly<Record<string, unknown>> } | undefined
 ): { prompt?: string } {
-  const prompt = sample.prompt ?? example?.values.prompt
+  const prompt = sample.prompt?.trim() ? sample.prompt : example?.values.prompt
   return typeof prompt === 'string' && prompt.trim() ? { prompt } : {}
 }
 

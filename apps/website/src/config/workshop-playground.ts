@@ -631,7 +631,7 @@ export function examplesForModel(
       outputUrl: example.thumbnailUrl,
       ...(example.sampleOnly ? { sampleOnly: true } : {}),
       ...(example.mediaKind ? { mediaKind: example.mediaKind } : {}),
-      ...(example.prompt ? { prompt: example.prompt } : {}),
+      ...(example.prompt?.trim() ? { prompt: example.prompt } : {}),
       ...(example.node ? { nodeDisplayName: example.node.displayName } : {}),
       ...(example.fields ? { fields: example.fields } : {})
     }
@@ -645,9 +645,10 @@ export function exampleAlt(
 ): string {
   const sample = /^Sample (\d+)$/.exec(title)
   return sample
-    ? t('workshop.examples.sampleAlt', locale)
-        .replace('{name}', modelName)
-        .replace('{n}', sample[1])
+    ? t('workshop.examples.sampleAlt', locale).replace(
+        /\{(name|n)\}/g,
+        (_, key: string) => (key === 'name' ? modelName : sample[1])
+      )
     : `${modelName}: ${title}`
 }
 
