@@ -13,7 +13,7 @@ import {
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -275,8 +275,7 @@ async function setUpFixture(page: Page) {
   const panel = page.locator('#agent-panel-root')
 
   await test.step('open the agent panel and target the workflow', async () => {
-    await new AgentPanel(page).open()
-    await expect(panel).toBeVisible()
+    await openAgentPanel(page)
     await panel
       .getByRole('button', { name: enMessages.agent.switchWorkflow })
       .click()

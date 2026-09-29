@@ -15,7 +15,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 // The consent contract this suite pins (fire-2, PM-1494 / PM-1450, slack-18):
@@ -181,8 +181,7 @@ async function startTurn(
     'true',
     { timeout: 8_000 }
   )
-  await new AgentPanel(page).open()
-  await expect(panel).toBeVisible({ timeout: 30_000 })
+  await openAgentPanel(page, 30_000)
 
   await mockWorkflowPersistence(page, WORKFLOW_ID)
 

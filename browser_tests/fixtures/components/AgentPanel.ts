@@ -3,6 +3,38 @@ import type { Locator, Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
+export async function openAgentPanel(
+  page: Page,
+  timeout?: number
+): Promise<Locator> {
+  const panel = page.locator('#agent-panel-root')
+  const openButton = page.getByRole('button', {
+    name: enMessages.agent.entryButton,
+    exact: true
+  })
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (await panel.isVisible()) return panel
+    if ((await openButton.getAttribute('aria-pressed')) === 'true') {
+      await expect(panel).toBeVisible({ timeout })
+      return panel
+    }
+    await openButton.click()
+    try {
+      await expect(panel).toBeVisible({ timeout: 1_000 })
+      return panel
+    } catch (error) {
+      if ((await openButton.getAttribute('aria-pressed')) === 'true') {
+        await expect(panel).toBeVisible({ timeout })
+        return panel
+      }
+      // Startup activation can open between the visibility read and click,
+      // making that click close the panel. Retry from the observed state.
+      if (attempt === 1) throw error
+    }
+  }
+  throw new Error('Agent panel did not become visible')
+}
+
 export class AgentPanel {
   public readonly root: Locator
   public readonly openButton: Locator
@@ -75,18 +107,7 @@ export class AgentPanel {
   }
 
   async open(): Promise<void> {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      if (await this.root.isVisible()) return
-      await this.openButton.click()
-      try {
-        await expect(this.root).toBeVisible({ timeout: 1_000 })
-        return
-      } catch {
-        // Startup activation can open between the visibility read and click,
-        // making that click close the panel. Retry from the observed state.
-      }
-    }
-    await expect(this.root).toBeVisible()
+    await openAgentPanel(this.page)
   }
 
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {

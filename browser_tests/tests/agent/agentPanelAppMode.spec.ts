@@ -3,8 +3,8 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { WorkspaceStore } from '@e2e/types/globals'
 
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
@@ -32,7 +32,7 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
       exact: true
     })
     await expect(openButton).toBeVisible()
-    await new AgentPanel(page).open()
+    await openAgentPanel(page)
 
     await expect(panelRoot).toHaveCount(1)
     await expect(panelRoot).toBeVisible()
@@ -55,7 +55,7 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
     await expect.poll(activeWorkflowPath).toBe(selectedWorkflowPath)
   })
 
-  test('activation reopens a stored-closed panel across app mode changes', async ({
+  test('keeps a stored-closed panel hidden when toggling app mode and back', async ({
     comfyPage
   }) => {
     test.setTimeout(30_000)
@@ -71,15 +71,15 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
     )
     await comfyPage.workflow.reloadAndWaitForApp()
 
-    await expect(dockedPanel).toBeVisible()
-    await expect.poll(storedOpenState).toBe('true')
+    await expect(dockedPanel).toHaveCount(0)
+    await expect.poll(storedOpenState).toBe('false')
 
     await comfyPage.appMode.toggleAppMode()
-    await expect(dockedPanel).toBeVisible()
-    await expect.poll(storedOpenState).toBe('true')
+    await expect(dockedPanel).toHaveCount(0)
+    await expect.poll(storedOpenState).toBe('false')
 
     await comfyPage.appMode.toggleAppMode()
-    await expect(dockedPanel).toBeVisible()
-    await expect.poll(storedOpenState).toBe('true')
+    await expect(dockedPanel).toHaveCount(0)
+    await expect.poll(storedOpenState).toBe('false')
   })
 })
