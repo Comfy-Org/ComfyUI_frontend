@@ -1,5 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import {
   MANUAL_BLOCK_ADMISSION_DENIAL,
   MANUAL_BLOCK_ADMISSION_MESSAGE
@@ -10,9 +12,6 @@ import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
-// This fills the manual_block contrast left by agentRetryAfterNotice.spec.ts.
-// Only generated frontend contract changes break the typed mock, not
-// server-only drift.
 test.describe('In-App Agent admission denials', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
 
@@ -21,6 +20,10 @@ test.describe('In-App Agent admission denials', { tag: '@cloud' }, () => {
   }) => {
     const panel = agentPanel.root
     const prompt = 'Upscale the hero shot'
+    const retryHint = enMessages.agent.retryAfterSeconds.replace(
+      '{seconds}',
+      String(MANUAL_BLOCK_ADMISSION_DENIAL.retryAfterSeconds)
+    )
 
     await test.step('reject the next turn with a manual_block denial', async () => {
       await agentPanel.rejectNextTurn(MANUAL_BLOCK_ADMISSION_DENIAL)
@@ -40,7 +43,7 @@ test.describe('In-App Agent admission denials', { tag: '@cloud' }, () => {
       await expect(notice).toContainText(MANUAL_BLOCK_ADMISSION_MESSAGE)
       // A non-retryable 402 must not tell the user to wait and try again, even
       // though the response carried a `Retry-After` header.
-      await expect(notice).not.toContainText('You can try again in')
+      await expect(notice).not.toContainText(retryHint)
     })
   })
 })
