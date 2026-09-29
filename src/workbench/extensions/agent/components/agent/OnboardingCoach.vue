@@ -15,6 +15,8 @@ import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
 import { clampSpotlight } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
+import { useTelemetry } from '@/platform/telemetry'
+import type { AgentOnboardingAction } from '@/platform/telemetry/types'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
 import {
   reportMissingCoachTarget,
@@ -70,6 +72,30 @@ function resolveTargets(): void {
   bounds.update()
   toolbarBounds.update()
   scheduleTargetRetry()
+}
+
+// Reported off `visible`, the same condition the card renders and the overlay
+// source registers on, so the tour is never counted as seen while it is still
+// waiting for a target to mount.
+let reportedShown = false
+watch(visible, (isVisible) => {
+  if (!isVisible || reportedShown) return
+  reportedShown = true
+  useTelemetry()?.trackAgentOnboardingShown()
+})
+
+function reportStep(action: AgentOnboardingAction): void {
+  useTelemetry()?.trackAgentOnboardingStep({ step: index.value + 1, action })
+}
+
+function onNext(): void {
+  reportStep(isLast.value ? 'finish' : 'next')
+  next()
+}
+
+function onSkip(): void {
+  reportStep('skip')
+  finish()
 }
 
 const targetObserver = new MutationObserver(resolveTargets)
@@ -167,7 +193,7 @@ useEventListener(
     if (!active.value || !target.value || event.key !== 'Escape') return
     event.preventDefault()
     event.stopPropagation()
-    finish()
+    onSkip()
   },
   { capture: true }
 )
@@ -222,10 +248,10 @@ useEventListener(
               </p>
             </div>
             <div class="flex justify-end gap-3">
-              <Button variant="secondary" size="md" @click="finish">{{
+              <Button variant="secondary" size="md" @click="onSkip">{{
                 $t('agent.skip')
               }}</Button>
-              <Button variant="inverted" size="md" @click="next">{{
+              <Button variant="inverted" size="md" @click="onNext">{{
                 $t(isLast ? 'onboardingCoachmarks.done' : 'g.next')
               }}</Button>
             </div>

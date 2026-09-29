@@ -274,6 +274,7 @@ export function registerAgentPanelExtension(): void {
         autoShowInFlight = true
         agentPanelStore.suppressRestoredOpen()
         void withConsent(
+          'first_load',
           () => {
             if (!agentPanelStore.enabled) return
             agentPanelStore.open('automatic_consent')
