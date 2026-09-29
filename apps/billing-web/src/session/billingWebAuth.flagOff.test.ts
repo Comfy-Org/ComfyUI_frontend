@@ -12,7 +12,10 @@ import type * as AuthModule from '@/session/billingWebAuth'
 import type * as ClientModule from '@/session/billingWebClient'
 import type * as SessionModule from '@/session/billingWebSession'
 
-const h = vi.hoisted(() => ({ initializeApp: vi.fn() }))
+const h = vi.hoisted(() => ({
+  initializeApp: vi.fn(),
+  listeners: [] as Array<(user: null) => void>
+}))
 
 vi.mock<unknown>(import('firebase/app'), () => ({
   getApps: () => [],
@@ -26,8 +29,9 @@ vi.mock<unknown>(import('firebase/auth'), () => {
   const user = { uid: 'uid-1', getIdToken: async () => 'id-token' }
   const restore = (
     _auth: unknown,
-    callback: (restored: typeof user) => void
+    callback: (restored: typeof user | null) => void
   ) => {
+    h.listeners.push(callback)
     queueMicrotask(() => callback(user))
     return () => undefined
   }
@@ -145,9 +149,33 @@ const CREDENTIALED_FEATURES_READ: SentRequest = {
   headers: ['x-comfy-client']
 }
 
+const TOKEN_HEADERS = ['authorization', 'content-type']
+
+const MAIN_GOLDEN: readonly SentRequest[] = [
+  { method: 'GET', url: `${CLOUD}/api/features`, headers: [] },
+  {
+    method: 'POST',
+    url: `${CLOUD}/api/auth/token`,
+    headers: TOKEN_HEADERS,
+    body: {}
+  },
+  {
+    method: 'POST',
+    url: `${CLOUD}/api/auth/token`,
+    headers: TOKEN_HEADERS,
+    body: { workspace_id: 'ws-1' }
+  },
+  {
+    method: 'GET',
+    url: `${CLOUD}/api/billing/status`,
+    headers: TOKEN_HEADERS
+  }
+]
+
 beforeEach(() => {
   sessionStorage.clear()
   h.initializeApp.mockClear()
+  h.listeners.length = 0
 })
 
 describe('billing-web with unified_web_session off', () => {
@@ -201,8 +229,63 @@ describe('billing-web with unified_web_session off', () => {
       )
       const [features, ...rest] = main
       expect(sent).toEqual([features, ...extra, ...rest])
+      expect(main).toEqual(MAIN_GOLDEN)
     }
   )
+})
+
+describe('billing-web with unified_web_session off, after sign-in', () => {
+  async function signedInRequests(
+    run: (modules: {
+      readonly auth: typeof AuthModule
+      readonly requestsSinceSignIn: () => SentRequest[]
+    }) => Promise<void>
+  ) {
+    const { sent, fetchImpl } = recordingFetch(
+      { firebase_config: FIREBASE_CONFIG },
+      {}
+    )
+    vi.stubGlobal('fetch', fetchImpl)
+    await signInThenCallBilling(async ({ auth, signIn }) => {
+      await signIn(auth.billingWebSignInPort())
+      const signedInCount = sent.length
+      await run({ auth, requestsSinceSignIn: () => sent.slice(signedInCount) })
+    })
+  }
+
+  it('an entry link naming another workspace re-mints once, for that workspace, however often it repeats', async () => {
+    await signedInRequests(async ({ auth, requestsSinceSignIn }) => {
+      auth.onBillingWebEntryWorkspace('ws-2')
+      auth.onBillingWebEntryWorkspace('ws-2')
+
+      await vi.waitFor(() => expect(requestsSinceSignIn()).toHaveLength(1))
+      await new Promise((resolve) => setTimeout(resolve))
+      expect(requestsSinceSignIn()).toEqual([
+        {
+          method: 'POST',
+          url: `${CLOUD}/api/auth/token`,
+          headers: TOKEN_HEADERS,
+          body: { workspace_id: 'ws-2' }
+        }
+      ])
+    })
+  })
+
+  it('signing out drops the credential and sends nothing', async () => {
+    await signedInRequests(async ({ auth, requestsSinceSignIn }) => {
+      expect(
+        sessionStorage.getItem('comfy.billing-web.session.v1')
+      ).not.toBeNull()
+      h.listeners.forEach((listener) => listener(null))
+
+      await vi.waitFor(() =>
+        expect(auth.billingWebLivePhase.value).toBe('signed-out')
+      )
+      await new Promise((resolve) => setTimeout(resolve))
+      expect(requestsSinceSignIn()).toEqual([])
+      expect(sessionStorage.getItem('comfy.billing-web.session.v1')).toBeNull()
+    })
+  })
 })
 
 const ENTRY = '/v1/subscription?product=comfyui&return_to=comfyui_workspace'
