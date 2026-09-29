@@ -43,7 +43,7 @@ const columns = computed(() =>
   <div
     :class="
       cn(
-        'relative grid w-fit shrink-0 rounded-2xl bg-transparency-white-t8 p-1',
+        'relative grid w-fit shrink-0 rounded-2xl bg-transparency-white-t8 p-1 max-sm:w-full',
         columns
       )
     "
