@@ -397,10 +397,23 @@ describe('writeMarkdownTwins', () => {
       expect(await readPage(root)).not.toContain('text/markdown')
     })
 
-    it('fails the build when a contentless page has no markdown link to drop', async () => {
+    it('leaves a contentless page that never linked a twin untouched', async () => {
       const root = await buildModelPage(
         `<astro-island>${loadingSpinner}</astro-island>`,
         ''
+      )
+      const before = await readPage(root)
+
+      const report = await writeMarkdownTwins(root, [route])
+
+      expect(report.skipped).toEqual([twinPath])
+      expect(await readPage(root)).toBe(before)
+    })
+
+    it('fails the build when a contentless page keeps a markdown link it cannot drop', async () => {
+      const root = await buildModelPage(
+        `<astro-island>${loadingSpinner}</astro-island>`,
+        `<LINK rel="alternate" type="text/markdown" href="${twinPath}">`
       )
 
       await expect(writeMarkdownTwins(root, [route])).rejects.toThrow(
