@@ -324,12 +324,12 @@ describe('attachMintPortWiring', () => {
     })
     widget.serialize = false
     graphNodes.set('7', node)
-    node.addWidget('number', 'seed', 3, () => undefined)
-    // Precondition: the store state the mint seam reads is display-only.
+    // The post-registration assignment is intentionally absent from the store:
+    // mint eligibility must come from the live widget.
     expect(
       useWidgetValueStore().getWidget(widgetId(ROOT_ID, toNodeId(7), 'preview'))
         ?.serialize
-    ).toBe(false)
+    ).toBeUndefined()
 
     widget.value = 'tick 1'
     widget.value = 'tick 2'
