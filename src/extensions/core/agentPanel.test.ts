@@ -45,6 +45,7 @@ vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () =>
     fromPartial<ReturnType<typeof useCurrentUser>>({
       resolvedUserInfo: currentUser,
+      isAuthInitialized: computed(() => true),
       isLoggedIn: computed(() => currentUser.value !== null)
     })
 }))
