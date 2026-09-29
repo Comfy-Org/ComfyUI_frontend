@@ -87,4 +87,12 @@ test('@mobile keeps the Re-shoot aim badges to one line on a phone', async ({
     viewport.getByText('Drag to orbit', { exact: true })
   ).toBeVisible()
   await expect(viewport.getByText(/Scroll to move closer/)).toBeHidden()
+
+  for (const badge of [
+    viewport.getByTestId('reshoot-drag-hint'),
+    viewport.getByTestId('reshoot-angle-readout')
+  ]) {
+    const box = await badge.boundingBox()
+    expect(box?.height).toBeLessThan(40)
+  }
 })

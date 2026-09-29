@@ -127,6 +127,7 @@ function zoom(event: WheelEvent) {
     >
       <span
         class="flex min-w-0 items-center gap-2 rounded-full bg-primary-comfy-ink/80 px-3 py-1.5 whitespace-nowrap"
+        data-testid="reshoot-drag-hint"
       >
         <Move3d class="size-3.5 shrink-0" aria-hidden="true" />
         <span class="truncate pointer-coarse:hidden">
@@ -138,6 +139,7 @@ function zoom(event: WheelEvent) {
       </span>
       <span
         class="flex shrink-0 items-center gap-2 rounded-full bg-primary-comfy-ink/80 px-3 py-1.5 font-mono whitespace-nowrap tabular-nums"
+        data-testid="reshoot-angle-readout"
       >
         <ReshootZone :zone="cameraZone(camera)" dot-only />
         {{ camera.azimuth }}° · {{ camera.elevation }}°
