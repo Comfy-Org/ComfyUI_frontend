@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import { getRoutes } from '../src/config/routes'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 import { MODEL_PATH } from './fixtures/modelsAccount'
@@ -24,12 +25,8 @@ test.describe('server HTML', () => {
   test.use({ javaScriptEnabled: false })
 
   test('links the model catalogue from every locale', async ({ page }) => {
-    for (const [path, href] of [
-      ['/', '/models/'],
-      ['/pricing/', '/models/'],
-      ['/zh-CN/', '/zh-CN/models/'],
-      ['/zh-CN/pricing/', '/zh-CN/models/']
-    ]) {
+    const href = getRoutes().workshop
+    for (const path of ['/', '/pricing/', '/zh-CN/', '/zh-CN/pricing/']) {
       await page.goto(path)
       await expect(page.locator(`footer a[href="${href}"]`)).toHaveCount(1)
       expect((await page.request.get(href)).ok()).toBe(true)

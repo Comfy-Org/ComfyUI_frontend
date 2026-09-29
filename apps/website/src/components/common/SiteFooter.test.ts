@@ -1,21 +1,21 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { externalLinks } from '../../config/routes'
+import { externalLinks, getRoutes } from '../../config/routes'
 import SiteFooter from './SiteFooter.vue'
 
 describe('SiteFooter', () => {
   it.for([
-    ['en', 'ComfyUI Models', '/models/'],
-    ['zh-CN', 'ComfyUI 模型', '/zh-CN/models/'],
-    ['ja', 'ComfyUI Models', '/models/']
+    ['en', 'ComfyUI Models'],
+    ['zh-CN', 'ComfyUI 模型'],
+    ['ja', 'ComfyUI Models']
   ] as const)(
-    'links the model catalogue in the active locale when it has one (%s)',
-    ([locale, name, href]) => {
+    'links the one model catalogue from every locale (%s)',
+    ([locale, name]) => {
       render(SiteFooter, { props: { locale } })
 
       for (const link of screen.getAllByRole('link', { name })) {
-        expect(link.getAttribute('href')).toBe(href)
+        expect(link.getAttribute('href')).toBe(getRoutes().workshop)
       }
     }
   )

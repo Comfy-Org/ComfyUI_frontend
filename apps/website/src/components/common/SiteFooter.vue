@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { LOCALES } from '../../config/locales'
 import { externalLinks, getRoutes } from '../../config/routes'
 import { useFrameScrub } from '../../composables/useFrameScrub'
 import type { Locale } from '../../i18n/translations'
@@ -11,10 +10,6 @@ import type { FooterLink } from './FooterLinkColumn.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const routes = getRoutes(locale)
-const localesWithModelsPage = new Set<Locale>(['en', 'zh-CN'])
-const modelCatalogueHref = localesWithModelsPage.has(locale)
-  ? `${LOCALES[locale].prefix}${routes.workshop}`
-  : routes.workshop
 
 const footerRef = ref<HTMLElement>()
 const canvasRef = ref<HTMLCanvasElement>()
@@ -52,7 +47,7 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
   {
     title: t('footer.models', locale),
     links: [
-      { label: t('footer.modelCatalogue', locale), href: modelCatalogueHref },
+      { label: t('footer.modelCatalogue', locale), href: routes.workshop },
       { label: t('nav.supportedModels', locale), href: routes.models },
       { label: t('footer.minimaxH3', locale), href: routes.minimax },
       {
