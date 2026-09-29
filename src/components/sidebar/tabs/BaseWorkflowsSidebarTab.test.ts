@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   useWorkflowStore,
   useWorkflowBookmarkStore
@@ -193,6 +194,22 @@ describe('BaseWorkflowsSidebarTab', () => {
     await nextTick()
 
     expect(getLeafPaths(getSearchRoot())).toEqual(['workflows/test-alpha.json'])
+  })
+
+  it.fails('propagates failed workflow deletion to the tree', async () => {
+    const workflow = createMockWorkflow('workflows/test.json')
+    Object.assign(useWorkflowStore(), { workflows: [workflow] })
+    vi.mocked(useWorkflowService()).deleteWorkflow.mockResolvedValueOnce(false)
+
+    renderComponent()
+    await userEvent.type(screen.getByRole('combobox'), 'test')
+    await nextTick()
+    const root = getSearchRoot()
+    const leaf = root?.children?.find(({ data }) => data === workflow)
+
+    expect(leaf?.data).toBe(workflow)
+    expect(leaf?.handleDelete).toBeTypeOf('function')
+    expect(await leaf?.handleDelete?.()).toBe(false)
   })
 
   it('refreshes when idle and exposes busy state while workflows are syncing', async () => {
