@@ -48,12 +48,7 @@ const getCheckoutAttributionForCloud =
       return { ok: false, error, stage: 'module_load' }
     }
 
-    let getCheckoutAttribution
-    try {
-      getCheckoutAttribution = attributionModule.getCheckoutAttribution
-    } catch (error) {
-      return { ok: false, error, stage: 'module_load' }
-    }
+    const getCheckoutAttribution = attributionModule.getCheckoutAttribution
 
     if (typeof getCheckoutAttribution !== 'function') {
       return {
