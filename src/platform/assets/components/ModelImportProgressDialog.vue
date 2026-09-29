@@ -98,15 +98,14 @@ function closeDialog() {
 }
 
 async function cancelDownload(taskId: TaskId) {
-  try {
-    await assetDownloadStore.cancelDownload(taskId)
-  } catch (error) {
-    reportError(error, {
-      errorType: 'asset_download_cancellation_failure',
-      logToConsole: false
-    })
-    toastErrorHandler(error)
-  }
+  const result = await assetDownloadStore.cancelDownload(taskId)
+  if (result.ok) return
+
+  reportError(result.error, {
+    errorType: 'asset_download_cancellation_failure',
+    logToConsole: false
+  })
+  toastErrorHandler(result.error)
 }
 </script>
 

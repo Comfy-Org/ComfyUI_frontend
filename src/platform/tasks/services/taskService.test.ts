@@ -20,8 +20,9 @@ describe('taskService.getTask', () => {
   it('parses the generated cancelled task status', async () => {
     vi.mocked(api.fetchApi).mockResolvedValue(Response.json(taskResponse))
 
-    await expect(taskService.getTask(taskResponse.id)).resolves.toMatchObject({
-      status: 'cancelled'
+    await expect(taskService.getTask(taskResponse.id)).resolves.toEqual({
+      ok: true,
+      value: taskResponse
     })
   })
 
@@ -32,6 +33,41 @@ describe('taskService.getTask', () => {
 
     expect(api.fetchApi).toHaveBeenCalledWith('/tasks/..%2Ftask%2F123')
   })
+
+  it('returns malformed responses as failures', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(Response.json({ id: 'invalid' }))
+
+    const result = await taskService.getTask('task-123')
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error.message).toContain('Validation error')
+    }
+  })
+
+  it.for([
+    { status: 404, message: 'Task not found: task-123' },
+    { status: 503, message: 'Failed to get task task-123: 503' }
+  ])('returns a $status response as a failure', async ({ status, message }) => {
+    vi.mocked(api.fetchApi).mockResolvedValue(new Response(null, { status }))
+
+    const result = await taskService.getTask('task-123')
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error.message).toBe(message)
+    }
+  })
+
+  it('returns network failures as data', async () => {
+    const error = new Error('network unavailable')
+    vi.mocked(api.fetchApi).mockRejectedValue(error)
+
+    await expect(taskService.getTask('task-123')).resolves.toEqual({
+      ok: false,
+      error
+    })
+  })
 })
 
 describe('taskService.cancelTask', () => {
@@ -40,7 +76,10 @@ describe('taskService.cancelTask', () => {
       new Response(null, { status: 204 })
     )
 
-    await expect(taskService.cancelTask('task-123')).resolves.toBe(true)
+    await expect(taskService.cancelTask('task-123')).resolves.toEqual({
+      ok: true,
+      value: true
+    })
 
     expect(api.fetchApi).toHaveBeenCalledWith('/tasks/task-123', {
       method: 'DELETE'
@@ -52,7 +91,10 @@ describe('taskService.cancelTask', () => {
     async (status) => {
       vi.mocked(api.fetchApi).mockResolvedValue(new Response(null, { status }))
 
-      await expect(taskService.cancelTask('task-123')).resolves.toBe(false)
+      await expect(taskService.cancelTask('task-123')).resolves.toEqual({
+        ok: true,
+        value: false
+      })
     }
   )
 
@@ -61,9 +103,14 @@ describe('taskService.cancelTask', () => {
       new Response('queue unavailable', { status: 503 })
     )
 
-    await expect(taskService.cancelTask('task-123')).rejects.toThrow(
-      'Failed to cancel task task-123: 503 queue unavailable'
-    )
+    const result = await taskService.cancelTask('task-123')
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error.message).toBe(
+        'Failed to cancel task task-123: 503 queue unavailable'
+      )
+    }
   })
 
   it('encodes task ids before placing them in a request path', async () => {
@@ -75,6 +122,16 @@ describe('taskService.cancelTask', () => {
 
     expect(api.fetchApi).toHaveBeenCalledWith('/tasks/..%2Ftask%2F123', {
       method: 'DELETE'
+    })
+  })
+
+  it('returns network failures as data', async () => {
+    const error = new Error('network unavailable')
+    vi.mocked(api.fetchApi).mockRejectedValue(error)
+
+    await expect(taskService.cancelTask('task-123')).resolves.toEqual({
+      ok: false,
+      error
     })
   })
 })

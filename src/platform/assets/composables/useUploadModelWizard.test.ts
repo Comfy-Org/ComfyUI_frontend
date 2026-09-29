@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, describe, expect, it, vi } from 'vitest'
 import { createApp, nextTick, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -143,11 +143,9 @@ describe('useUploadModelWizard', () => {
     const event = new CustomEvent('asset_download', { detail })
     const handler = vi
       .mocked(api.addEventListener)
-      .mock.calls.find((c) => c[0] === 'asset_download')?.[1] as
-      | ((e: CustomEvent) => void)
-      | undefined
-    expect(handler).toBeDefined()
-    handler!(event)
+      .mock.calls.find((c) => c[0] === 'asset_download')?.[1]
+    assert.exists(handler)
+    handler(event)
 
     await nextTick()
 
@@ -178,9 +176,7 @@ describe('useUploadModelWizard', () => {
     // Simulate WebSocket: download fails
     const handler = vi
       .mocked(api.addEventListener)
-      .mock.calls.find((c) => c[0] === 'asset_download')?.[1] as
-      | ((e: CustomEvent) => void)
-      | undefined
+      .mock.calls.find((c) => c[0] === 'asset_download')?.[1]
 
     const failEvent = new CustomEvent('asset_download', {
       detail: {
@@ -195,8 +191,8 @@ describe('useUploadModelWizard', () => {
       }
     })
 
-    expect(handler).toBeDefined()
-    handler!(failEvent)
+    assert.exists(handler)
+    handler(failEvent)
 
     await nextTick()
 
@@ -224,7 +220,10 @@ describe('useUploadModelWizard', () => {
     const updateModels = vi
       .spyOn(assetsStore, 'updateModelsForNodeType')
       .mockResolvedValue()
-    vi.spyOn(taskService, 'cancelTask').mockResolvedValue(true)
+    vi.spyOn(taskService, 'cancelTask').mockResolvedValue({
+      ok: true,
+      value: true
+    })
 
     const wizard = setupUploadModelWizard(modelTypes)
     wizard.wizardData.value.url = 'https://civitai.com/models/12345'
@@ -233,10 +232,8 @@ describe('useUploadModelWizard', () => {
 
     const handler = vi
       .mocked(api.addEventListener)
-      .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1] as
-      | ((event: CustomEvent) => void)
-      | undefined
-    expect(handler).toBeDefined()
+      .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1]
+    assert.exists(handler)
 
     await useAssetDownloadStore().cancelDownload('task-cancelled')
     await nextTick()
@@ -244,7 +241,7 @@ describe('useUploadModelWizard', () => {
     expect(wizard.uploadStatus.value).toBe('error')
     expect(wizard.uploadError.value).toBe('Cancelled')
 
-    handler!(
+    handler(
       new CustomEvent('asset_download', {
         detail: {
           task_id: 'task-cancelled',

@@ -1,6 +1,4 @@
 /**
- * Task Service for reading and cancelling background tasks.
- *
  * CAVEAT: The `payload` and `result` schemas below are specific to
  * `task:download_file` tasks. Other task types may have different
  * payload/result structures. We are not generalizing this until
@@ -12,6 +10,7 @@ import { fromZodError } from 'zod-validation-error'
 import { zTaskResponse as zGeneratedTaskResponse } from '@comfyorg/ingest-types/zod'
 
 import { api } from '@/scripts/api'
+import { toError } from '@/utils/errorUtil'
 
 const TASKS_ENDPOINT = '/tasks'
 
@@ -40,6 +39,7 @@ const zTaskResponse = zGeneratedTaskResponse.extend({
 
 export type TaskResponse = z.infer<typeof zTaskResponse>
 export type TaskStatus = TaskResponse['status']
+export type TaskResult<T> = { ok: true; value: T } | { ok: false; error: Error }
 
 /**
  * Identifier for a background task tracked by the `/tasks` API.
@@ -49,49 +49,59 @@ export type TaskStatus = TaskResponse['status']
  */
 export type TaskId = string
 
-class TaskServiceError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'TaskServiceError'
-  }
-}
-
 function createTaskService() {
-  async function getTask(taskId: TaskId): Promise<TaskResponse> {
-    const res = await api.fetchApi(
-      `${TASKS_ENDPOINT}/${encodeURIComponent(taskId)}`
-    )
+  async function getTask(taskId: TaskId): Promise<TaskResult<TaskResponse>> {
+    try {
+      const res = await api.fetchApi(
+        `${TASKS_ENDPOINT}/${encodeURIComponent(taskId)}`
+      )
 
-    if (!res.ok) {
-      if (res.status === 404) {
-        throw new TaskServiceError(`Task not found: ${taskId}`)
+      if (!res.ok) {
+        const message =
+          res.status === 404
+            ? `Task not found: ${taskId}`
+            : `Failed to get task ${taskId}: ${res.status}`
+        return { ok: false, error: new Error(message) }
       }
-      throw new TaskServiceError(`Failed to get task ${taskId}: ${res.status}`)
+
+      const data: unknown = await res.json()
+      const result = zTaskResponse.safeParse(data)
+
+      if (!result.success) {
+        return {
+          ok: false,
+          error: new Error(fromZodError(result.error).message)
+        }
+      }
+
+      return { ok: true, value: result.data }
+    } catch (error) {
+      return { ok: false, error: toError(error) }
     }
-
-    const data = await res.json()
-    const result = zTaskResponse.safeParse(data)
-
-    if (!result.success) {
-      throw new TaskServiceError(fromZodError(result.error).message)
-    }
-
-    return result.data
   }
 
-  async function cancelTask(taskId: TaskId): Promise<boolean> {
-    const res = await api.fetchApi(
-      `${TASKS_ENDPOINT}/${encodeURIComponent(taskId)}`,
-      { method: 'DELETE' }
-    )
-    if (res.status === 404 || res.status === 409) return false
-    if (!res.ok) {
-      const detail = await res.text()
-      throw new TaskServiceError(
-        `Failed to cancel task ${taskId}: ${res.status}${detail ? ` ${detail}` : ''}`
+  async function cancelTask(taskId: TaskId): Promise<TaskResult<boolean>> {
+    try {
+      const res = await api.fetchApi(
+        `${TASKS_ENDPOINT}/${encodeURIComponent(taskId)}`,
+        { method: 'DELETE' }
       )
+      if (res.status === 404 || res.status === 409) {
+        return { ok: true, value: false }
+      }
+      if (!res.ok) {
+        const detail = await res.text()
+        return {
+          ok: false,
+          error: new Error(
+            `Failed to cancel task ${taskId}: ${res.status}${detail ? ` ${detail}` : ''}`
+          )
+        }
+      }
+      return { ok: true, value: true }
+    } catch (error) {
+      return { ok: false, error: toError(error) }
     }
-    return true
   }
 
   return { getTask, cancelTask }

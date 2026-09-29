@@ -4,21 +4,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import { dispatchAssetDownload } from '@e2e/fixtures/utils/assetDownload'
 
-/**
- * REGRESSION COVERAGE PM-1302 / PM-1309 (frontend half):
- *
- * On the cloud side, `HandleDownloadFile` (download_file.go) can broadcast a
- * terminal `failed` message for a retryable error before asynq decides
- * whether a retry will happen, then quietly retries. `assetDownloadStore`
- * (src/stores/assetDownloadStore.ts) now treats a `failed` status as
- * recoverable rather than final, so a later `completed` message for the same
- * `task_id` still updates it - keeping the ModelImportProgressDialog toast
- * from getting stuck reporting a download as failed forever when it actually
- * finished successfully.
- *
- */
 test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
   test('recovers from a premature failed status once the backend silently retries and completes it (PM-1302)', async ({
     comfyPage
@@ -28,7 +14,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     const assetName = 'stuck-model.safetensors'
 
     await test.step('show a running model import', async () => {
-      await dispatchAssetDownload(page, {
+      await comfyPage.assets.dispatchDownload({
         task_id: taskId,
         asset_name: assetName,
         bytes_total: 1000,
@@ -47,7 +33,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     })
 
     await test.step('show the retryable failure reported by the backend', async () => {
-      await dispatchAssetDownload(page, {
+      await comfyPage.assets.dispatchDownload({
         task_id: taskId,
         asset_name: assetName,
         bytes_total: 1000,
@@ -61,7 +47,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     })
 
     await test.step('recover after the backend retry succeeds', async () => {
-      await dispatchAssetDownload(page, {
+      await comfyPage.assets.dispatchDownload({
         task_id: taskId,
         asset_name: assetName,
         asset_id: 'asset-pm-1302',
@@ -78,8 +64,6 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       ).toBeVisible()
     })
 
-    // Scoped to the toast: a full-`body` screenshot also captures the
-    // canvas graph background, which isn't pixel-stable across CI runs.
     const toast = page
       .getByRole('status')
       .filter({ hasText: 'All downloads completed' })
@@ -98,7 +82,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     const assetName = 'stuck-model.safetensors'
 
     await test.step('show a failed model import', async () => {
-      await dispatchAssetDownload(page, {
+      await comfyPage.assets.dispatchDownload({
         task_id: taskId,
         asset_name: assetName,
         bytes_total: 1000,
@@ -106,7 +90,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
         progress: 20,
         status: 'running'
       })
-      await dispatchAssetDownload(page, {
+      await comfyPage.assets.dispatchDownload({
         task_id: taskId,
         asset_name: assetName,
         bytes_total: 1000,
@@ -117,9 +101,6 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       })
     })
 
-    // Scoped by footer text: `getByRole('status')` alone also matches the
-    // top-menu action bar's own status region and is a strict-mode
-    // violation with two toasts on screen.
     const toast = page
       .getByRole('status')
       .filter({ hasText: '1 download failed' })
@@ -128,10 +109,6 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       page.getByText('1 download failed', { exact: true })
     ).toBeVisible()
 
-    // Scoped to `toast`: `page.getByRole('button', { name: 'Close' })`
-    // alone also matches the canvas minimap's close button
-    // (`data-testid="close-minimap-button"`) and is a strict-mode
-    // violation with the minimap visible.
     await test.step('dismiss the failed model import', async () => {
       await toast.getByRole('button', { name: 'Close' }).click()
       await expect(toast).toBeHidden()
@@ -169,7 +146,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     })
 
     await test.step('show the running download', async () => {
-      await dispatchAssetDownload(page, {
+      await comfyPage.assets.dispatchDownload({
         task_id: taskId,
         asset_name: assetName,
         bytes_total: 1000,
@@ -202,7 +179,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     })
 
     await test.step('keep the terminal backend state rendered', async () => {
-      await dispatchAssetDownload(page, {
+      await comfyPage.assets.dispatchDownload({
         task_id: taskId,
         asset_name: assetName,
         bytes_total: 1000,
@@ -248,7 +225,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
 
     await test.step('start reconciling a failed model import', async () => {
       await page.clock.install()
-      await dispatchAssetDownload(page, {
+      await comfyPage.assets.dispatchDownload({
         task_id: taskId,
         asset_name: assetName,
         bytes_total: 1000,

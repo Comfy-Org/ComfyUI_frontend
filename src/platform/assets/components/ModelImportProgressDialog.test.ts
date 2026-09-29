@@ -34,9 +34,9 @@ describe('ModelImportProgressDialog cancellation', () => {
   it('forwards the task ID and disables its cancel action while pending', async () => {
     const user = userEvent.setup()
     const store = renderDialog()
-    vi.spyOn(store, 'cancelDownload').mockImplementation(async (taskId) => {
+    vi.spyOn(store, 'cancelDownload').mockImplementation((taskId) => {
       store.cancellingTaskIds.add(taskId)
-      await new Promise<never>(() => {})
+      return new Promise<never>(() => {})
     })
 
     await user.click(screen.getByRole('button', { name: 'Expand' }))
@@ -56,7 +56,7 @@ describe('ModelImportProgressDialog cancellation', () => {
     const addToast = vi.spyOn(toastStore, 'add')
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const error = new Error('Cancellation unavailable')
-    vi.spyOn(store, 'cancelDownload').mockRejectedValue(error)
+    vi.spyOn(store, 'cancelDownload').mockResolvedValue({ ok: false, error })
 
     await user.click(screen.getByRole('button', { name: 'Expand' }))
     await user.click(screen.getByRole('button', { name: 'Cancel Download' }))

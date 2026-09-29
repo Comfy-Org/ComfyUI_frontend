@@ -2,15 +2,38 @@ import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-import type { TaskId, TaskStatus } from '@/platform/tasks/services/taskService'
+import type {
+  TaskId,
+  TaskResponse,
+  TaskResult,
+  TaskStatus
+} from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 
 export type AssetDownloadStatus = TaskStatus | 'cancellation_pending'
 
+const activeStatuses = new Set<AssetDownloadStatus>(['created', 'running'])
+const finishedStatuses = new Set<AssetDownloadStatus>([
+  'completed',
+  'failed',
+  'cancelled'
+])
+const recheckableStatuses = new Set<AssetDownloadStatus>([
+  'created',
+  'running',
+  'failed',
+  'cancellation_pending'
+])
+const reconcilableTaskStatuses = new Set<TaskStatus>([
+  'completed',
+  'failed',
+  'cancelled'
+])
+
 function isDownloadActive(status: AssetDownloadStatus) {
-  return status === 'created' || status === 'running'
+  return activeStatuses.has(status)
 }
 
 export function isDownloadCancelled(status: AssetDownloadStatus) {
@@ -18,15 +41,11 @@ export function isDownloadCancelled(status: AssetDownloadStatus) {
 }
 
 function isDownloadFinished(status: AssetDownloadStatus) {
-  return status === 'completed' || status === 'failed' || status === 'cancelled'
+  return finishedStatuses.has(status)
 }
 
 function isDownloadRecheckable(status: AssetDownloadStatus) {
-  return (
-    isDownloadActive(status) ||
-    status === 'failed' ||
-    status === 'cancellation_pending'
-  )
+  return recheckableStatuses.has(status)
 }
 
 export interface AssetDownload {
@@ -68,6 +87,35 @@ function generateDownloadTrackingPlaceholder(
   }
 }
 
+function shouldIgnoreDownloadUpdate(
+  currentStatus: AssetDownloadStatus | undefined,
+  nextStatus: TaskStatus
+): boolean {
+  if (currentStatus === 'completed') return true
+  if (currentStatus === 'cancelled') return nextStatus !== 'completed'
+  if (currentStatus === 'cancellation_pending') {
+    return nextStatus !== 'completed' && nextStatus !== 'cancelled'
+  }
+  return false
+}
+
+function createReconciledDownloadMessage(
+  download: AssetDownload,
+  task: TaskResponse
+): AssetDownloadWsMessage {
+  const result = task.result
+  return {
+    task_id: download.taskId,
+    asset_id: result?.asset_id ?? download.assetId,
+    asset_name: result?.filename ?? download.assetName,
+    bytes_total: download.bytesTotal,
+    bytes_downloaded: result?.bytes_downloaded ?? download.bytesDownloaded,
+    progress: task.status === 'completed' ? 100 : download.progress,
+    status: task.status,
+    error: task.error_message ?? result?.error
+  }
+}
+
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
   const cancellingTaskIds = ref(new Set<TaskId>())
@@ -95,10 +143,6 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       (download) => download.status === 'cancellation_pending'
     )
   )
-  // `failed` downloads are included because the backend can broadcast a
-  // premature terminal `failed` message for an error it's still retrying;
-  // re-checking them lets the UI recover once the backend actually
-  // completes (or truly gives up on) the download.
   const recheckableDownloads = computed(() =>
     downloadList.value.filter((download) =>
       isDownloadRecheckable(download.status)
@@ -133,20 +177,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     const data = e.detail
     const existing = downloads.value.get(data.task_id)
 
-    // A `completed` status reflects an asset that was actually created, so
-    // it's trustworthy and final. A `failed` status is not: the backend may
-    // broadcast a premature terminal `failed` message for an error it goes
-    // on to retry (and succeed at), so a `failed` download must stay open to
-    // a later message for the same task_id updating it again.
-    if (
-      existing?.status === 'completed' ||
-      (existing?.status === 'cancellation_pending' &&
-        data.status !== 'completed' &&
-        data.status !== 'cancelled') ||
-      (existing?.status === 'cancelled' && data.status !== 'completed')
-    ) {
-      return
-    }
+    if (shouldIgnoreDownloadUpdate(existing?.status, data.status)) return
 
     const download: AssetDownload = {
       taskId: data.task_id,
@@ -181,43 +212,22 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     if (staleDownloads.length === 0) return
 
     async function pollSingleDownload(download: AssetDownload) {
-      try {
-        const task = await taskService.getTask(download.taskId)
-        if (downloads.value.get(download.taskId) !== download) return
+      const result = await taskService.getTask(download.taskId)
+      if (!result.ok) return
+      if (downloads.value.get(download.taskId) !== download) return
 
-        if (
-          task.status === 'completed' ||
-          task.status === 'failed' ||
-          task.status === 'cancelled'
-        ) {
-          if (task.status === 'cancelled') {
-            const current = downloads.value.get(download.taskId)
-            if (current === download) {
-              current.status = 'cancelled'
-              current.lastUpdate = Date.now()
-            }
-            return
-          }
-          const result = task.result
-          handleAssetDownload(
-            new CustomEvent('asset_download', {
-              detail: {
-                task_id: download.taskId,
-                asset_id: result?.asset_id ?? download.assetId,
-                asset_name: result?.filename ?? download.assetName,
-                bytes_total: download.bytesTotal,
-                bytes_downloaded:
-                  result?.bytes_downloaded ?? download.bytesDownloaded,
-                progress: task.status === 'completed' ? 100 : download.progress,
-                status: task.status,
-                error: task.error_message ?? result?.error
-              }
-            })
-          )
-        }
-      } catch {
-        // Task not ready or not found
+      const task = result.value
+      if (!reconcilableTaskStatuses.has(task.status)) return
+      if (task.status === 'cancelled') {
+        download.status = 'cancelled'
+        download.lastUpdate = Date.now()
+        return
       }
+      handleAssetDownload(
+        new CustomEvent('asset_download', {
+          detail: createReconciledDownloadMessage(download, task)
+        })
+      )
     }
 
     await Promise.all(staleDownloads.map(pollSingleDownload))
@@ -246,29 +256,27 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     }
   }
 
-  async function cancelDownload(taskId: TaskId) {
-    if (cancellingTaskIds.value.has(taskId)) return
+  async function cancelDownload(taskId: TaskId): Promise<TaskResult<boolean>> {
     const download = downloads.value.get(taskId)
     if (
+      cancellingTaskIds.value.has(taskId) ||
       !download ||
-      (download.status !== 'created' && download.status !== 'running')
+      !activeStatuses.has(download.status)
     ) {
-      return
+      return { ok: true, value: false }
     }
     cancellingTaskIds.value.add(taskId)
     try {
-      const cancelled = await taskService.cancelTask(taskId)
+      const result = await taskService.cancelTask(taskId)
+      if (!result.ok) return result
+
       const current = downloads.value.get(taskId)
-      if (
-        !cancelled ||
-        !current ||
-        current.status === 'completed' ||
-        current.status === 'cancelled'
-      ) {
-        return
+      if (!result.value || !current || finishedStatuses.has(current.status)) {
+        return result
       }
       current.status = 'cancellation_pending'
       current.lastUpdate = Date.now()
+      return result
     } finally {
       cancellingTaskIds.value.delete(taskId)
     }
