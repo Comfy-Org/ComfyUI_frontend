@@ -16,13 +16,13 @@
     "addFromAssets": "גררו נכס מלוח הנכסים",
     "addNodesFromGraph": "אזכור צמתים מהגרף",
     "addToPrompt": "הוסף לפרומפט",
-    "alpha": "אלפא",
     "assetNotAttachable": "ניתן לצרף תמונות, וידאו, שמע, מודלי 3D וקובצי טקסט",
     "attach": "צרף קובץ",
     "attachFiles": "העלאת תמונות או קבצים",
     "attachmentTooLarge": "{name} גדול מ-{limit}",
     "attachmentUploadFailed": "לא ניתן היה להעלות את {name}",
     "backToPreviousChat": "חזרה לצ'אט הקודם",
+    "beta": "BETA",
     "changeWorkflowForChat": "שנו את תהליך העבודה שהסוכן יכול לערוך",
     "chatOptions": "אפשרויות צ'אט",
     "chooseWorkflow": "בחר תהליך עבודה",
@@ -126,6 +126,7 @@
     "runApproval": {
       "cancel": "ביטול",
       "lead": "כלי זה מבקש להפעיל את תהליך העבודה:",
+      "leadBound": "כלי זה מבקש להפעיל את תהליך העבודה הזה.",
       "question": "האם לאשר?",
       "run": "הפעלה",
       "thisWorkflow": "תהליך עבודה זה"
@@ -193,6 +194,9 @@
     "workedForSeconds": "עבד במשך {seconds} שניות",
     "workflowEditNotice": "הסוכן יכול כעת לערוך את {workflow}. הוא עובד על תהליך עבודה אחד בכל פעם, וניתן להחליף תהליכי עבודה במהלך השיחה.",
     "workflowReferenceUnavailableReason": "תהליך העבודה שאליו בוצעה ההפניה אינו זמין עוד או שאין לך גישה אליו.",
+    "workflowSyncFailedDetail": "תהליך עבודה זה נוצר עם גרסת מסמך שאינה תואמת. הקנבס שלך נותר ללא שינוי.",
+    "workflowSyncFailedDetailCatalogMismatch": "תהליך עבודה זה משתמש בקטלוג צמתים שאינו תואם לסביבת עבודה זו. הקנבס שלך נותר ללא שינוי.",
+    "workflowSyncFailedTitle": "לא ניתן לסנכרן את תהליך העבודה הזה",
     "workflows": "תהליכי עבודה",
     "working": "מעבד..."
   },
@@ -540,6 +544,7 @@
     "expiredCardDetail": "תוקף הכרטיס הזה פג. השתמש באמצעי תשלום אחר.",
     "incorrectCvcDetail": "קוד האבטחה של הכרטיס שגוי. בדוק אותו ונסה שוב.",
     "insufficientFundsDetail": "באמצעי תשלום זה אין יתרה מספקת. נסה אמצעי תשלום אחר או פנה לבנק שלך.",
+    "operationAlreadyPendingDetail": "תשלום שהתחלת מוקדם יותר עדיין נמצא בעיבוד. עליו להסתיים לפני שתוכל לבחור תוכנית אחרת.",
     "paymentDeclinedDetail": "הבנק שלך דחה את התשלום הזה. נסה אמצעי תשלום אחר או פנה לבנק שלך.",
     "processingErrorDetail": "לא ניתן היה לעבד את התשלום שלך. נסה שוב או השתמש באמצעי תשלום אחר.",
     "reconciliationDetail": "התשלום שלך התקבל, אך לא הצלחנו לסיים את עדכון מרחב העבודה שלך. פנה לתמיכה וכלול את מזהה הפעולה הזה:",
@@ -2223,8 +2228,10 @@
     "star": "כוכב"
   },
   "imageCompare": {
+    "afterAlt": "תמונת אחרי",
     "batchLabelA": "א:",
     "batchLabelB": "ב:",
+    "beforeAlt": "תמונת לפני",
     "noImages": "אין תמונות להשוואה"
   },
   "imageCrop": {
@@ -3212,7 +3219,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -3280,6 +3286,7 @@
     "mask": "mask",
     "merging": "merging",
     "mesh": "רשת",
+    "ming image": "תמונת ming",
     "minimax": "minimax",
     "minimax music": "מוזיקת minimax",
     "mochi": "mochi",
@@ -4385,9 +4392,12 @@
       "message": "חיוב צוותי יגיע בקרוב. תוכל להירשם למסלול עבור סביבת העבודה שלך עם תמחור לפי מושב. הישאר מעודכן.",
       "title": "בקרוב"
     },
+    "billingTabBlocked": "לא ניתן היה לפתוח את דף החיוב. אפשר חלונות קופצים עבור אתר זה ונסה שוב.",
     "cancelDialog": {
       "confirmCancel": "ביטול המנוי",
       "description": "הגישה שלך נמשכת עד {date}. לא תחויב שוב, וסביבת העבודה והקרדיטים שלך יישמרו. ניתן להירשם מחדש בכל עת.",
+      "discountApplied": "ההנחה שלך הוחלה, ולכן המינוי הזה לא בוטל. סגור חלון זה כדי לראות את התוכנית המעודכנת שלך.",
+      "discountRefreshFailed": "ההנחה שלך הוחלה. רענן את הדף כדי לראות את התוכנית המעודכנת שלך.",
       "endOfBillingPeriod": "סוף תקופת החיוב",
       "failed": "ביטול המנוי נכשל",
       "keepSubscription": "השאר את המנוי",
@@ -4577,6 +4587,7 @@
       "payAndSubscribe": "שלם והירשם",
       "paymentMethod": "אמצעי תשלום",
       "paymentPopupBlocked": "לא ניתן היה לפתוח את דף התשלום — אפשר חלונות קופצים ונסה שוב.",
+      "pendingVerificationDetail": "תשלום שהתחלת מוקדם יותר עדיין דורש את תשומת לבך. השלמתו תפעיל את התוכנית שבחרת אז. תוכל לבחור תוכנית אחרת לאחר שיסתיים.",
       "perMember": "/ חבר",
       "privacyPolicy": "מדיניות הפרטיות",
       "promoCodePlaceholder": "קוד קידום",
@@ -4809,6 +4820,7 @@
     },
     "clearAllFilters": "נקה את כל המסננים",
     "error": {
+      "loading": "לא ניתן היה לפתוח את התבנית. נסו שוב.",
       "templateNotFound": "התבנית \"{templateName}\" לא נמצאה"
     },
     "filtersApplied": "{count} מסנן הופעל | {count} מסננים הופעלו",
@@ -5089,6 +5101,7 @@
   },
   "workspace": {
     "addedToWorkspace": "נוספת אל:",
+    "deepLinkStayed": "לא ניתן היה לפתוח את סביבת העבודה הזו. אתם עדיין נמצאים ב־{workspaceName}.",
     "inviteAccepted": "ההזמנה התקבלה",
     "inviteFailed": "קבלת ההזמנה נכשלה",
     "switchFailed": "המעבר לסביבת העבודה נכשל. אנא נסה שוב.",
