@@ -1634,6 +1634,65 @@ describe('useSubscription', () => {
       )
     })
 
+    it('does not let a replaced attempt read consume the current attempt', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-replaced-success',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      let resolveReplacedRead: (status: BillingStatusResponse) => void = () =>
+        undefined
+      mockGetBillingStatus.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveReplacedRead = resolve
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(0)
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-current-success',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      window.dispatchEvent(
+        new Event('comfy:subscription-checkout-attempt-changed')
+      )
+      resolveReplacedRead(
+        buildStatus({
+          subscription_tier: 'STANDARD',
+          subscription_duration: 'MONTHLY'
+        })
+      )
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(
+        JSON.parse(
+          localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) ??
+            'null'
+        )
+      ).toMatchObject({ attempt_id: 'attempt-current-success' })
+      expect(
+        mockTelemetry.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
+    })
+
     it('does not report a missing completion after recovery succeeds', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,

@@ -196,8 +196,10 @@ function useSubscriptionInternal() {
   }
 
   let pendingCheckoutSchedule = IDLE_PENDING_CHECKOUT_SCHEDULE
-  let activePendingCheckoutRead: Promise<BillingStatusResponse | null> | null =
-    null
+  let activePendingCheckoutRead: {
+    attemptId: string
+    promise: Promise<BillingStatusResponse | null>
+  } | null = null
   let lastPendingCheckoutStatus: BillingStatusResponse | null = null
   let isDisposed = false
 
@@ -673,12 +675,12 @@ function useSubscriptionInternal() {
     source: PendingCheckoutRecoverySource,
     attemptId: string
   ): Promise<boolean> => {
-    if (!activePendingCheckoutRead) return false
+    if (activePendingCheckoutRead?.attemptId !== attemptId) return false
     if (source !== 'deadline') return true
 
     try {
       const status = await withTimeout(
-        activePendingCheckoutRead,
+        activePendingCheckoutRead.promise,
         PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS
       )
       return status !== null
@@ -693,10 +695,10 @@ function useSubscriptionInternal() {
     }
   }
 
-  const fetchPendingCheckoutStatus = async () => {
+  const fetchPendingCheckoutStatus = async (attemptId: string) => {
     lastPendingCheckoutStatus = null
     const statusFetch = fetchSubscriptionStatus()
-    activePendingCheckoutRead = statusFetch
+    activePendingCheckoutRead = { attemptId, promise: statusFetch }
     try {
       return await withTimeout(
         statusFetch,
@@ -748,7 +750,7 @@ function useSubscriptionInternal() {
     const attempt = getPendingSubscriptionCheckoutAttempt()
     if (!attempt) return
     const attemptId = attempt.attempt_id
-    if (activePendingCheckoutRead) {
+    if (activePendingCheckoutRead?.attemptId === attemptId) {
       const didObserveStatus = await waitForActiveRecoveryAtDeadline(
         source,
         attemptId
@@ -770,7 +772,7 @@ function useSubscriptionInternal() {
     attemptId: string
   ): Promise<boolean> => {
     try {
-      const status = await fetchPendingCheckoutStatus()
+      const status = await fetchPendingCheckoutStatus(attemptId)
       if (isDisposed) return false
       if (status === null) {
         handleEmptyPendingCheckoutStatus(source)
@@ -781,7 +783,9 @@ function useSubscriptionInternal() {
       handlePendingCheckoutRecoveryError(source, attemptId, error)
       return false
     } finally {
-      activePendingCheckoutRead = null
+      if (activePendingCheckoutRead?.attemptId === attemptId) {
+        activePendingCheckoutRead = null
+      }
     }
   }
 
@@ -790,6 +794,7 @@ function useSubscriptionInternal() {
     promise: Promise<BillingStatusResponse | null>
     ownerId: string | null
     workspaceId: string | null
+    pendingAttemptId: string | null
   } | null = null
   let nextStatusFetchSequence = 0
   let statusScopeGeneration = 0
@@ -828,10 +833,13 @@ function useSubscriptionInternal() {
   function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
     const ownerId = authStore.userId ?? null
     const workspaceId = workspaceStore.activeWorkspaceId
+    const pendingAttemptId =
+      getPendingSubscriptionCheckoutAttempt()?.attempt_id ?? null
     observeStatusScope(ownerId, workspaceId)
     if (
       inFlightStatusRead?.ownerId === ownerId &&
-      inFlightStatusRead.workspaceId === workspaceId
+      inFlightStatusRead.workspaceId === workspaceId &&
+      inFlightStatusRead.pendingAttemptId === pendingAttemptId
     ) {
       return inFlightStatusRead.promise
     }
@@ -844,7 +852,12 @@ function useSubscriptionInternal() {
       sequence,
       scopeGeneration
     )
-    inFlightStatusRead = { promise: fetchPromise, ownerId, workspaceId }
+    inFlightStatusRead = {
+      promise: fetchPromise,
+      ownerId,
+      workspaceId,
+      pendingAttemptId
+    }
     void fetchPromise
       .catch(() => undefined)
       .finally(() => {
