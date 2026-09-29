@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect } from '@playwright/test'
 
+import { hubModelAliases, hubModelSlugs } from '../src/config/hub-models'
 import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
 import { test } from './fixtures/modelsAccount'
 
@@ -37,7 +38,9 @@ test('availability manifest withholds disabled models from catalogue and routes'
   expect(disabledModelSlugs.length).toBeGreaterThan(0)
   for (const slug of disabledModelSlugs) {
     expect(publishedSlugs.has(slug), `${slug} is in the catalogue`).toBe(false)
-    const response = await request.get(`/models/${slug}/`)
+    expect(hubModelSlugs.has(slug), `${slug} has a hub page`).toBe(false)
+    expect(hubModelAliases.has(slug), `${slug} has a hub alias`).toBe(false)
+    const response = await request.get(`/hub/models/${slug}/`)
     expect(response.status(), `${slug} has a public route`).toBe(404)
   }
 })
@@ -82,9 +85,8 @@ test('GPT Image generation pages remain discoverable while disabled edit pages a
   await page.goto('/hub/models/?useCase=edit-images')
   await page.getByTestId('workshop-search').fill('gpt image')
   await expect(cards).toHaveCount(0)
-  const disabledPage = await page.goto(
-    '/models/openai--gpt-image-2--edit-images/'
-  )
+  expect(hubModelSlugs.has('openai--gpt-image-2--edit-images')).toBe(false)
+  const disabledPage = await page.goto('/hub/models/gpt-image-2-image-edit/')
   expect(disabledPage?.status()).toBe(404)
   await expect(page.getByTestId('model-detail')).toHaveCount(0)
 })
