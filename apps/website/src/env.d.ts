@@ -28,3 +28,14 @@ interface ImportMetaEnv {
   readonly PUBLIC_POSTHOG_UI_HOST?: string
   readonly PUBLIC_CUSTOMERIO_WRITE_KEY?: string
 }
+
+// User-Agent Client Hints are Chromium-only, so TypeScript's DOM lib omits them.
+declare global {
+  interface NavigatorUAData {
+    getHighEntropyValues(hints: string[]): Promise<{ architecture?: string }>
+  }
+
+  interface Navigator {
+    readonly userAgentData?: NavigatorUAData
+  }
+}

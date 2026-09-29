@@ -12,9 +12,12 @@ import type { WorkflowExecutionFailure } from '../config/workshop-workflow-respo
 import type { WorkshopExceptionAnalytics } from './workshop-exception'
 import { workshopExceptionAnalytics } from './workshop-exception'
 
+export type WorkshopPageType = 'model' | 'workflow' | 'app'
+
 interface WorkshopModelAnalytics {
   model_slug: string
-  page_type?: 'model' | 'workflow'
+  page_type?: WorkshopPageType
+  app_slug?: string
   render_engine?: 'router' | 'cloud' | 'serverless'
   router_id?: string
   workflow_id?: string
@@ -78,7 +81,7 @@ export type WorkshopRouterErrorType =
 export type WorkshopAnalyticsEvent =
   | {
       name: 'catalogue_viewed'
-      properties: { model_count: number; page_type?: 'model' | 'workflow' }
+      properties: { model_count: number; page_type?: WorkshopPageType }
     }
   | {
       name: 'model_viewed' | 'api_viewed'

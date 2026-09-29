@@ -347,6 +347,12 @@ describe('ModelsCatalogue', () => {
       name: 'catalogue_viewed',
       properties: { model_count: 1, page_type: 'model' }
     })
+    await user.click(screen.getByRole('button', { name: 'Apps' }))
+    expect(captureWorkshopEvent).toHaveBeenCalledTimes(3)
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'catalogue_viewed',
+      properties: { model_count: 2, page_type: 'app' }
+    })
   })
 
   it('records a visit once after access is enabled, without counting the hidden catalogue', async () => {
