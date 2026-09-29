@@ -47,15 +47,35 @@ const FAKE_STRIPE_JS = `
   window.Stripe = function fakeStripeFactory() {
     return {
       elements: () => fakeElements(),
+      // A spec sets window.__e2eStripeMethodType before load to mint a
+      // token for a redirect method such as alipay instead of a card.
       createConfirmationToken: () => {
         window.__e2eFakeStripe.confirmationTokens += 1
         return Promise.resolve({
-          confirmationToken: { id: 'ctok_e2e_fake' }
+          confirmationToken: {
+            id: 'ctok_e2e_fake',
+            payment_method_preview: {
+              type: window.__e2eStripeMethodType ?? 'card'
+            }
+          }
         })
       },
+      // A spec sets window.__e2eStripeRedirectTo before load to make the
+      // challenge leave the page the way a redirect method does, or
+      // window.__e2eStripeHoldNextAction to keep it open until the spec
+      // settles it through window.__e2eFakeStripe.releaseNextAction.
       handleNextAction: (args) => {
         window.__e2eFakeStripe.nextActions += 1
         window.__e2eFakeStripe.nextActionCalls.push(args)
+        if (window.__e2eStripeRedirectTo) {
+          window.location.assign(window.__e2eStripeRedirectTo)
+          return new Promise(() => {})
+        }
+        if (window.__e2eStripeHoldNextAction) {
+          return new Promise((resolve) => {
+            window.__e2eFakeStripe.releaseNextAction = resolve
+          })
+        }
         return Promise.resolve({ paymentIntent: { status: 'succeeded' } })
       }
     }

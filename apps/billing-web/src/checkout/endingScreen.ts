@@ -1,5 +1,15 @@
-import type { CheckoutPage } from '@/checkout/checkoutPage'
+import type {
+  CheckoutPage,
+  PlanUnavailableReason
+} from '@/checkout/checkoutPage'
 import { waitingOn } from '@/checkout/checkoutPage'
+
+/** The code Plan not available shows support: the catalog's verdict on a retired slug, or a link that could not be read. */
+const PLAN_UNAVAILABLE_CODE: Readonly<Record<PlanUnavailableReason, string>> = {
+  retired: 'PLAN_NOT_FOUND',
+  team_stop_missing: 'CHECKOUT_LINK_INVALID',
+  unreadable: 'CHECKOUT_LINK_INVALID'
+}
 
 /**
  * The full-page screen a checkout ends on, and the code support can act on.
@@ -14,12 +24,24 @@ export type EndingScreen =
   | { readonly kind: 'in_progress'; readonly code: string }
   | { readonly kind: 'received'; readonly code: string }
   | { readonly kind: 'unconfirmed'; readonly code: string }
+  | { readonly kind: 'refused'; readonly code: string }
+  | { readonly kind: 'plan_unavailable'; readonly code: string }
+  | { readonly kind: 'load_failed'; readonly code: string }
 
 export type EndingKind = EndingScreen['kind']
 
 /** The page's screen when it has ended, or no screen while capture or verifying owns it. */
 export function endingOf(page: CheckoutPage): EndingScreen | undefined {
   switch (page.kind) {
+    case 'refused':
+      return { kind: 'refused', code: page.reason.toUpperCase() }
+    case 'unavailable':
+      return { kind: 'load_failed', code: page.code }
+    case 'plan_unavailable':
+      return {
+        kind: 'plan_unavailable',
+        code: PLAN_UNAVAILABLE_CODE[page.reason]
+      }
     case 'unconfirmed':
       return { kind: 'unconfirmed', code: page.operationId }
     case 'waiting':

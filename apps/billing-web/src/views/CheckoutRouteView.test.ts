@@ -3,6 +3,7 @@ import { nextTick } from 'vue'
 
 import type { CheckoutUiVariant } from '@/config/checkoutUi'
 import { awaitCheckoutUiVariant } from '@/config/checkoutUi'
+import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import CheckoutRouteView from '@/views/CheckoutRouteView.vue'
 
@@ -22,6 +23,13 @@ vi.mock(import('@/views/FullPageCheckoutView.vue'), async () => {
   }
 })
 
+vi.mock(import('@/views/EntryErrorView.vue'), async () => {
+  const { defineComponent, h } = await import('vue')
+  return {
+    default: defineComponent({ render: () => h('h1', 'Entry error') })
+  }
+})
+
 const HEADINGS: Record<CheckoutUiVariant, string> = {
   embedded: 'Embedded checkout',
   full_page: 'Full-page checkout'
@@ -32,6 +40,10 @@ function renderRoute() {
 }
 
 describe('CheckoutRouteView', () => {
+  beforeEach(() => {
+    recordBillingEntry(undefined)
+  })
+
   it('shows only the loading frame until the variant is known', async () => {
     vi.mocked(awaitCheckoutUiVariant).mockReturnValue(
       new Promise(() => undefined)
@@ -59,6 +71,22 @@ describe('CheckoutRouteView', () => {
         screen.queryByRole('heading', { name: HEADINGS[other] })
       ).not.toBeInTheDocument()
       expect(screen.queryByText('Loading…')).not.toBeInTheDocument()
+    }
+  )
+
+  it.for<{ variant: CheckoutUiVariant; heading: string }>([
+    { variant: 'embedded', heading: 'Entry error' },
+    { variant: 'full_page', heading: 'Full-page checkout' }
+  ])(
+    'explains an unreadable checkout link as $heading on the $variant checkout',
+    async ({ variant, heading }) => {
+      recordBillingEntry({ status: 'error', code: 'INVALID_PLAN' })
+      vi.mocked(awaitCheckoutUiVariant).mockResolvedValue(variant)
+      renderRoute()
+
+      expect(
+        await screen.findByRole('heading', { name: heading })
+      ).toBeInTheDocument()
     }
   )
 })

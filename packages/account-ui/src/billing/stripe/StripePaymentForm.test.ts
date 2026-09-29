@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { cleanup, render, screen, waitFor } from '@testing-library/vue'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/vue'
 import {
   afterEach,
   beforeEach,
@@ -80,6 +80,7 @@ function renderForm(
   props: {
     canSubmit?: boolean
     verificationPending?: boolean
+    locked?: boolean
     publishableKey?: string
     themeKey?: string
     onConfirm?: (token: string) => void
@@ -144,7 +145,10 @@ describe('StripePaymentForm', () => {
     stripeMocks.submit.mockResolvedValue({})
     stripeMocks.update.mockResolvedValue(undefined)
     stripeMocks.createConfirmationToken.mockResolvedValue({
-      confirmationToken: { id: 'ctoken_1' }
+      confirmationToken: {
+        id: 'ctoken_1',
+        payment_method_preview: { type: 'alipay' }
+      }
     })
   })
 
@@ -391,7 +395,12 @@ describe('StripePaymentForm', () => {
         screen.getByRole('button', { name: 'Pay and subscribe' })
       )
       unmount()
-      resolveToken({ confirmationToken: { id: 'ctoken_late' } })
+      resolveToken({
+        confirmationToken: {
+          id: 'ctoken_late',
+          payment_method_preview: { type: 'card' }
+        }
+      })
       await new Promise((resolve) => setTimeout(resolve, 0))
 
       expect(confirmed).toStrictEqual([])
@@ -447,7 +456,22 @@ describe('StripePaymentForm', () => {
     expect(stripeMocks.createConfirmationToken).toHaveBeenCalledWith({
       elements: stripeMocks.elements
     })
-    expect(emitted().confirm).toEqual([['ctoken_1']])
+    expect(emitted().confirm).toEqual([['ctoken_1', 'alipay']])
+  })
+
+  it('makes the mounted elements inert while locked, and leaves the pay slot live', async () => {
+    renderForm(66500, 'pmc_test', { locked: true })
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+    const region = screen.getByRole('group', { name: 'Payment method' })
+    expect(region.getAttribute('inert')).not.toBeNull()
+    expect(within(region).getByText('Billing address')).toBeDefined()
+    expect(
+      within(region).queryByRole('button', { name: 'Pay and subscribe' })
+    ).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeDefined()
   })
 
   it('collects a billing address alongside the payment element', async () => {

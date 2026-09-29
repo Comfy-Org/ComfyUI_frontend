@@ -9,9 +9,15 @@ import { CheckoutSavedMethods } from '@comfyorg/account-ui/billing/checkout'
 import PaymentFormError from '@/components/fullPage/PaymentFormError.vue'
 
 /** The Saved tab: the list and its Pay, a row skeleton while it re-reads, or its own error. */
-const { saved, methods } = defineProps<{
+const {
+  saved,
+  methods,
+  locked = false
+} = defineProps<{
   saved: 'loading' | 'ready' | 'failed'
   methods: readonly SavedPaymentMethod[]
+  /** Money is on its way: the list is inert, the pay slot is not. */
+  locked?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -55,13 +61,15 @@ const copy = computed<CheckoutSavedMethodCopy>(() => ({
     class="h-10 rounded-lg bg-secondary-background-hover"
   />
   <form v-else class="flex flex-col gap-6" @submit.prevent="pay">
-    <CheckoutSavedMethods
-      :methods
-      :copy
-      :selected-method-id="chosenMethodId ?? null"
-      @update:selected-method-id="pickedMethodId = $event"
-      @change-payment-method="emit('addNew')"
-    />
+    <div :inert="locked">
+      <CheckoutSavedMethods
+        :methods
+        :copy
+        :selected-method-id="chosenMethodId ?? null"
+        @update:selected-method-id="pickedMethodId = $event"
+        @change-payment-method="emit('addNew')"
+      />
+    </div>
     <slot name="pay" />
   </form>
 </template>

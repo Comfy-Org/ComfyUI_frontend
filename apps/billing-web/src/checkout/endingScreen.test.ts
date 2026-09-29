@@ -1,3 +1,5 @@
+import type { CapabilityDenialReason } from '@comfyorg/account-core/billing'
+
 import type { CheckoutPage } from '@/checkout/checkoutPage'
 import { RESOLVING } from '@/checkout/checkoutPage'
 import type { EndingScreen } from '@/checkout/endingScreen'
@@ -8,7 +10,7 @@ const capture: CheckoutPage = {
   kind: 'capture',
   rail: { method: 'on_file' },
   reactivation: 'not_required',
-  attempt: 'idle'
+  attempt: { kind: 'idle' }
 }
 
 describe('endingOf', () => {
@@ -88,8 +90,49 @@ describe('endingOf', () => {
       name: 'a settled payment with no operation to quote',
       page: { kind: 'terminal', attribution: 'settled' },
       screen: { kind: 'already_completed' }
+    },
+    {
+      name: 'a checkout that could not load',
+      page: { kind: 'unavailable', code: 'REQUEST_FAILED' },
+      screen: { kind: 'load_failed', code: 'REQUEST_FAILED' }
+    },
+    {
+      name: 'a plan the catalog lacks',
+      page: { kind: 'plan_unavailable', reason: 'retired' },
+      screen: { kind: 'plan_unavailable', code: 'PLAN_NOT_FOUND' }
+    },
+    {
+      name: 'a team link without its commit stop',
+      page: { kind: 'plan_unavailable', reason: 'team_stop_missing' },
+      screen: { kind: 'plan_unavailable', code: 'CHECKOUT_LINK_INVALID' }
+    },
+    {
+      name: 'a link the contract cannot read',
+      page: { kind: 'plan_unavailable', reason: 'unreadable' },
+      screen: { kind: 'plan_unavailable', code: 'CHECKOUT_LINK_INVALID' }
     }
   ])('$name', ({ page, screen }) => {
     expect(endingOf(page)).toEqual(screen)
+  })
+
+  it.for<{ reason: CapabilityDenialReason; code: string }>([
+    { reason: 'not_a_member', code: 'NOT_A_MEMBER' },
+    { reason: 'not_workspace_owner', code: 'NOT_WORKSPACE_OWNER' },
+    { reason: 'tier_not_self_serve', code: 'TIER_NOT_SELF_SERVE' },
+    { reason: 'subscription_not_started', code: 'SUBSCRIPTION_NOT_STARTED' },
+    {
+      reason: 'subscription_change_in_progress',
+      code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS'
+    },
+    {
+      reason: 'subscription_status_unrecognized',
+      code: 'SUBSCRIPTION_STATUS_UNRECOGNIZED'
+    },
+    { reason: 'unspecified', code: 'UNSPECIFIED' }
+  ])('a refusal for $reason shows $code', ({ reason, code }) => {
+    expect(endingOf({ kind: 'refused', reason })).toEqual({
+      kind: 'refused',
+      code
+    })
   })
 })

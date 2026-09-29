@@ -14,19 +14,19 @@ export interface EndingPlan {
   readonly period: string
 }
 
-type Tone = 'done' | 'waiting'
+type Tone = 'done' | 'waiting' | 'refused'
 
 /**
  * How each ending reads. The done family closes back to the product; the
  * waiting family ends on support, since closing changes nothing about money
- * still moving.
+ * still moving; the refused family offers the one action that can help.
  */
 const ENDINGS: Readonly<
   Record<
     EndingKind,
     {
       readonly tone: Tone
-      readonly primary?: 'close'
+      readonly primary?: 'close' | 'retry' | 'view_plans'
       readonly support: boolean
     }
   >
@@ -36,12 +36,16 @@ const ENDINGS: Readonly<
   already_completed: { tone: 'done', primary: 'close', support: false },
   in_progress: { tone: 'waiting', support: true },
   received: { tone: 'waiting', support: true },
-  unconfirmed: { tone: 'waiting', support: true }
+  unconfirmed: { tone: 'waiting', support: true },
+  refused: { tone: 'refused', support: true },
+  plan_unavailable: { tone: 'refused', primary: 'view_plans', support: true },
+  load_failed: { tone: 'refused', primary: 'retry', support: true }
 }
 
 const ICON: Readonly<Record<Tone, string>> = {
   done: 'icon-[lucide--circle-check-big] text-success-background',
-  waiting: 'icon-[lucide--clock] text-warning-background'
+  waiting: 'icon-[lucide--clock] text-warning-background',
+  refused: 'icon-[lucide--circle-alert] text-muted-foreground'
 }
 
 const { screen, workspace, plan } = defineProps<{
@@ -50,7 +54,7 @@ const { screen, workspace, plan } = defineProps<{
   plan?: EndingPlan
 }>()
 
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: []; retry: []; viewPlans: [] }>()
 
 const { t } = useI18n()
 const { copy, copied } = useClipboard({ legacy: true })
@@ -63,6 +67,8 @@ const primary = computed(() => ending.value.primary)
 
 function act() {
   if (primary.value === 'close') emit('close')
+  else if (primary.value === 'retry') emit('retry')
+  else if (primary.value === 'view_plans') emit('viewPlans')
 }
 </script>
 
@@ -145,7 +151,14 @@ function act() {
         <button
           v-if="primary !== undefined"
           type="button"
-          class="h-10 w-full cursor-pointer rounded-lg bg-secondary-background px-4 text-sm font-semibold text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-base-background focus-visible:outline-none"
+          :class="
+            cn(
+              'h-10 w-full cursor-pointer rounded-lg px-4 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-base-background focus-visible:outline-none',
+              primary === 'close'
+                ? 'bg-secondary-background text-base-foreground hover:bg-secondary-background-hover'
+                : 'bg-base-foreground text-base-background hover:opacity-90'
+            )
+          "
           @click="act"
         >
           {{ t(`checkout.fullPage.ending.actions.${primary}`) }}
