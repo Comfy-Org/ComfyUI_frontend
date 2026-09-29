@@ -29,7 +29,6 @@ test(`static HTML at ${MODEL_PATH} paints only the loading frame`, async ({
 test('static HTML at /models/ names the catalogue and links every model', async ({
   request
 }) => {
-  expect(publishedModelSlugs.size).toBeGreaterThan(0)
   const live = liveDom(await (await request.get('/models/')).text())
   expect(live.match(/<h1\b[\s\S]*?<\/h1>/g)).toEqual([
     expect.stringContaining('ComfyUI models')

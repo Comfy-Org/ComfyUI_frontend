@@ -1,6 +1,9 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 
 const NON_MODEL_ROUTES = new Set(['showcase', 'workflows'])
+
+if (!existsSync('dist/models'))
+  throw new Error('dist/models is missing: build the website first')
 
 /** Every canonical model page in the build, read from dist rather than the data that renders the directory. */
 export const publishedModelSlugs = new Set(
@@ -10,3 +13,6 @@ export const publishedModelSlugs = new Set(
     return html.includes('http-equiv="refresh"') ? [] : [entry.name]
   })
 )
+
+if (publishedModelSlugs.size === 0)
+  throw new Error('dist/models has no model pages: build the website first')
