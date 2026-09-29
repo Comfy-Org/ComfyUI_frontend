@@ -9,6 +9,7 @@ import type {
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import type {
   AgentTurnAccepted,
   CloudWorkflowEntry
@@ -24,8 +25,9 @@ import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const BINDING_KEY = StorageKeys.agentWorkflowTabBindings('personal')
-const THREAD_KEY = StorageKeys.agentThread('personal')
+const E2E_SCOPE = unsafeStorageScope('test-user-e2e:personal')
+const BINDING_KEY = StorageKeys.agentWorkflowTabBindings(E2E_SCOPE)
+const THREAD_KEY = StorageKeys.agentThread(E2E_SCOPE)
 const DEFAULT_TAB_PATH = 'workflows/Unsaved Workflow.json'
 const DEFAULT_TAB_NAME = 'Unsaved Workflow'
 const THREAD_ID = '6f4b1e2a-7c3d-4e5f-8a9b-0c1d2e3f4a5b'

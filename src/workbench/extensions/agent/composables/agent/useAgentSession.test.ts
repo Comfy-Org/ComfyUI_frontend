@@ -7,7 +7,12 @@ import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import {
+  setStorageIdentity,
+  setStorageWorkspaceId
+} from '@/platform/workflow/persistence/base/storageIO'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -44,6 +49,7 @@ vi.mock(import('@/platform/telemetry'))
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
 const telemetry = vi.mocked(telemetryProvider)
+const scope = unsafeStorageScope
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
@@ -220,6 +226,12 @@ describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     localStorage.clear()
     sessionStorage.clear()
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'personal', id: null })
+    )
+    setStorageIdentity('user-test')
+    setStorageWorkspaceId('personal')
     vi.mocked(reportError).mockClear()
     telemetry.trackAgentStopClicked.mockClear()
   })
@@ -384,7 +396,9 @@ describe('useAgentSession (v1 composition root)', () => {
     resolvePost({ thread_id: 'th-late', message_id: 'msg-late' })
 
     await expect(send).resolves.toBe(false)
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(scope('user-test:personal')))
+    ).toBeNull()
   })
 
   it('(b5) a stop followed by a successor start in the same microtask window skips the abort', async () => {
@@ -446,7 +460,10 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(b8) a stale boot hydrate cannot kill a turn started after a remount', async () => {
     const conversation = useAgentConversationStore()
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-9')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:personal')),
+      'th-9'
+    )
     const resolvers: Array<(rows: []) => void> = []
     const getMessages = vi.fn(
       () =>
@@ -1779,7 +1796,10 @@ describe('useAgentSession (v1 composition root)', () => {
     )
     await nextTick()
     useAgentWorkflowTabBindingStore().$dispose()
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-existing')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:personal')),
+      'th-existing'
+    )
 
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-existing',
@@ -2710,10 +2730,20 @@ describe('thread resume (B17)', () => {
 
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'personal', id: null })
+    )
+    setStorageIdentity('user-test')
+    setStorageWorkspaceId('personal')
   })
 
   it('restores the persisted thread and hydrates its transcript on start', async () => {
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-9')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:personal')),
+      'th-9'
+    )
     const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
     const session = useAgentSession({
       rest: fakeRest({ getMessages }),
@@ -2731,7 +2761,10 @@ describe('thread resume (B17)', () => {
   })
 
   it('forgets a stale persisted thread on 404 without surfacing an error', async () => {
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-gone')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:personal')),
+      'th-gone'
+    )
     const getMessages = vi.fn(async (): Promise<AgentMessages> => {
       throw new AgentApiError('not found', 404, null)
     })
@@ -2742,7 +2775,9 @@ describe('thread resume (B17)', () => {
     session.start()
     await vi.waitFor(() =>
       expect(
-        localStorage.getItem(StorageKeys.agentThread('personal'))
+        localStorage.getItem(
+          StorageKeys.agentThread(scope('user-test:personal'))
+        )
       ).toBeNull()
     )
     expect(session.threadId.value).toBeNull()
@@ -2757,12 +2792,14 @@ describe('thread resume (B17)', () => {
     })
     session.start()
     await session.sendMessage('hello')
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
-      'th-1'
-    )
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(scope('user-test:personal')))
+    ).toBe('th-1')
 
     session.newChat()
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(scope('user-test:personal')))
+    ).toBeNull()
     expect(useAgentConversationStore().threadId).toBeNull()
   })
 
@@ -2810,9 +2847,9 @@ describe('thread resume (B17)', () => {
 
     expect(getMessages).toHaveBeenCalledWith('th-9')
     expect(session.threadId.value).toBe('th-9')
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
-      'th-9'
-    )
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(scope('user-test:personal')))
+    ).toBe('th-9')
     await vi.waitFor(() => expect(session.entries.value).toHaveLength(2))
     expect(session.entries.value[0]).toMatchObject({
       role: 'user',
@@ -2840,8 +2877,15 @@ describe('thread resume (B17)', () => {
       'Comfy.Workspace.Current',
       JSON.stringify({ type: 'team', id: 'workspace-b' })
     )
-    localStorage.setItem(StorageKeys.agentThread('workspace-a'), 'th-a')
-    localStorage.setItem(StorageKeys.agentThread('workspace-b'), 'th-b')
+    setStorageWorkspaceId('workspace-b')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:workspace-a')),
+      'th-a'
+    )
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:workspace-b')),
+      'th-b'
+    )
     const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
     const session = useAgentSession({
       rest: fakeRest({ getMessages }),
@@ -2852,9 +2896,11 @@ describe('thread resume (B17)', () => {
 
     await vi.waitFor(() => expect(getMessages).toHaveBeenCalledWith('th-b'))
     expect(session.threadId.value).toBe('th-b')
-    expect(localStorage.getItem(StorageKeys.agentThread('workspace-a'))).toBe(
-      'th-a'
-    )
+    expect(
+      localStorage.getItem(
+        StorageKeys.agentThread(scope('user-test:workspace-a'))
+      )
+    ).toBe('th-a')
   })
 
   it('invalidates an in-flight workflow restoration when starting a new chat', async () => {
