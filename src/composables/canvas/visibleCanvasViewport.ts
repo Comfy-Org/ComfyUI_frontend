@@ -11,9 +11,20 @@ export function visibleCanvasViewport(canvas: LGraphCanvas): ReadOnlyRect {
   const panelRect = panel.getBoundingClientRect()
   const overlapsHorizontally =
     panelRect.right > canvasRect.left && panelRect.left < canvasRect.right
-  if (!overlapsHorizontally) return [0, 0, width, height]
+  const overlapsVertically =
+    panelRect.bottom > canvasRect.top && panelRect.top < canvasRect.bottom
+  if (!overlapsHorizontally || !overlapsVertically) {
+    return [0, 0, width, height]
+  }
 
   const left = Math.max(0, panelRect.left - canvasRect.left)
   const right = Math.max(0, canvasRect.right - panelRect.right)
-  return [left, 0, Math.max(width - left - right, 0), height]
+  const top = Math.max(0, panelRect.top - canvasRect.top)
+  const bottom = Math.max(0, canvasRect.bottom - panelRect.bottom)
+  return [
+    left,
+    top,
+    Math.max(width - left - right, 0),
+    Math.max(height - top - bottom, 0)
+  ]
 }

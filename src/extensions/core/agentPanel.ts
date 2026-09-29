@@ -118,7 +118,7 @@ export function registerAgentPanelExtension(): void {
       notifyMintPortsBeforeGraphLoad()
       openWidgetDirtySuppression()
       const agentPanelStore = useAgentPanelStore()
-      if (!agentPanelStore.isVisible) return
+      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) return
 
       const nodeSelectionStore = useAgentNodeSelectionStore()
       nodeSelectionStore.beginWorkflowLoad()
@@ -127,7 +127,7 @@ export function registerAgentPanelExtension(): void {
       const agentPanelStore = useAgentPanelStore()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (!nodeSelectionStore.isLoadingWorkflow) return
-      if (!agentPanelStore.isVisible) {
+      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) {
         nodeSelectionStore.finishWorkflowLoad()
         return
       }
@@ -177,7 +177,7 @@ export function registerAgentPanelExtension(): void {
       const { isAuthInitialized, resolvedUserInfo, isLoggedIn } =
         useCurrentUser()
       const { withConsent } = useAgentConsent()
-      const { firstRunTookScreen, whenStartupDecided } = useFirstRunEntry()
+      const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
       registerWorkflowTabActivityTracker(enabled)
@@ -196,9 +196,9 @@ export function registerAgentPanelExtension(): void {
           : dialogStore.dialogStack.length > 0
             ? 'dialog_open'
             : null
-      const screenIsClear = computed(() => screenBusyReason() === null)
       const screenHolder = (): AgentConsentNotOfferedReason | null =>
-        firstRunTookScreen.value ? 'first_run_screen' : screenBusyReason()
+        firstRunHoldsScreen.value ? 'first_run_screen' : screenBusyReason()
+      const screenIsClear = computed(() => screenHolder() === null)
 
       const reportedWithheld = new Set<string>()
       const withholdOffer = (
@@ -224,7 +224,7 @@ export function registerAgentPanelExtension(): void {
         workspaceId?: string
       ): void => {
         withholdOffer(reason, userId, workspaceId)
-        if (reason !== 'first_run_screen') offerHeld.value = true
+        offerHeld.value = true
       }
 
       const consentScope = (): string | null => {
@@ -274,7 +274,7 @@ export function registerAgentPanelExtension(): void {
         void withConsent(
           'first_load',
           () => {
-            if (!agentPanelStore.enabled) return
+            if (!agentPanelStore.enabled || agentPanelStore.isOpen) return
             agentPanelStore.open('automatic_consent')
           },
           {
@@ -308,6 +308,29 @@ export function registerAgentPanelExtension(): void {
           })
       }
 
+      let activationPending = false
+      let activationOffered = false
+      const openWhenStartupDecided = (): void => {
+        if (!agentPanelStore.enabled || activationPending || activationOffered)
+          return
+        activationPending = true
+        whenStartupDecided()
+          .then((decided) => {
+            if (decided && agentPanelStore.enabled) {
+              activationOffered = true
+              if (!agentPanelStore.isOpen) agentPanelStore.open('activation')
+            }
+          })
+          .catch((error: unknown) => {
+            reportError(error, {
+              errorType: 'agent_panel_activation_failure'
+            })
+          })
+          .finally(() => {
+            activationPending = false
+          })
+      }
+
       const loadConsentIfEligible = (): void => {
         if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
         void consentStore
@@ -335,6 +358,7 @@ export function registerAgentPanelExtension(): void {
       )
       setupFlagGate(
         loadConsentIfEligible,
+        openWhenStartupDecided,
         () => isAuthInitialized.value && resolvedUserInfo.value === null
       )
     }
@@ -343,6 +367,7 @@ export function registerAgentPanelExtension(): void {
 
 function setupFlagGate(
   loadConsentIfEligible: () => void,
+  openWhenStartupDecided: () => void,
   isSignedOut: () => boolean
 ): void {
   const agentPanelStore = useAgentPanelStore()
@@ -358,6 +383,7 @@ function setupFlagGate(
     ([enabled]) => {
       agentPanelStore.enabled = enabled
       loadConsentIfEligible()
+      openWhenStartupDecided()
       if (!enabled) {
         const nodeSelectionStore = useAgentNodeSelectionStore()
         if (nodeSelectionStore.isLoadingWorkflow)

@@ -117,10 +117,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('../migration/migrateV1toV2'), () => ({
-  migrateV1toV2: vi.fn()
-}))
-
 type GraphChangedHandler = (() => void) | null
 
 const mocks = vi.hoisted(() => {

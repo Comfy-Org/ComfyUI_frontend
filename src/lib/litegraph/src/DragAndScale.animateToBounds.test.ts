@@ -7,7 +7,10 @@ type Bounds = [number, number, number, number]
 let pendingFrame: FrameRequestCallback | undefined
 
 function createDragAndScale() {
-  return new DragAndScale({ width: 1600, height: 900 } as HTMLCanvasElement)
+  const canvas = document.createElement('canvas')
+  canvas.width = 1600
+  canvas.height = 900
+  return new DragAndScale(canvas)
 }
 
 function settle() {

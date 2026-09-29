@@ -1,6 +1,16 @@
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
 
-export function isValidCameraState(value: unknown): value is DragAndScaleState {
+interface CameraScaleRange {
+  readonly minScale: number
+  readonly maxScale: number
+}
+
+const defaultScaleRange: CameraScaleRange = { minScale: 0.1, maxScale: 10 }
+
+export function isValidCameraState(
+  value: unknown,
+  { minScale, maxScale }: CameraScaleRange = defaultScaleRange
+): value is DragAndScaleState {
   if (
     !value ||
     typeof value !== 'object' ||
@@ -19,6 +29,7 @@ export function isValidCameraState(value: unknown): value is DragAndScaleState {
     Number.isFinite(value.offset[1]) &&
     typeof value.scale === 'number' &&
     Number.isFinite(value.scale) &&
-    value.scale > 0
+    value.scale >= minScale &&
+    value.scale <= maxScale
   )
 }

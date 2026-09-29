@@ -102,7 +102,7 @@ export class DragAndScale {
       copyState(this.state, this.lastState)
     }
 
-    let { width, height } = this.element
+    let [width, height] = this.getViewportSize()
     let startx = -offset[0]
     let starty = -offset[1]
     if (viewport) {
@@ -116,6 +116,16 @@ export class DragAndScale {
     visible_area[0] = startx
     visible_area[1] = starty
     visible_area.resizeBottomRight(endx, endy)
+  }
+
+  private getViewportSize(): [number, number] {
+    const rect = this.element.getBoundingClientRect()
+    if (rect.width > 0 && rect.height > 0) {
+      return [rect.width, rect.height]
+    }
+
+    const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1
+    return [this.element.width / dpr, this.element.height / dpr]
   }
 
   toCanvasContext(ctx: CanvasRenderingContext2D): void {
@@ -190,16 +200,12 @@ export class DragAndScale {
   ): void {
     //If element hasn't initialized (browser tab is in background)
     //it has a size of 300x150 and a more reasonable default is used instead.
-    // DPR is stable between viewport application and fit-to-bounds calls.
-    // DragAndScale intentionally reads window.devicePixelRatio directly
-    // because it doesn't have access to the viewport system.
-    // Moving between displays can briefly desynchronize these values.
     const [width, height] =
       this.element.width === 300 && this.element.height === 150
         ? [1920, 1080]
-        : [this.element.width, this.element.height]
-    const fullCw = width / window.devicePixelRatio
-    const fullCh = height / window.devicePixelRatio
+        : this.getViewportSize()
+    const fullCw = width
+    const fullCh = height
     const [vx, vy, vw, vh] = viewport ?? [0, 0, fullCw, fullCh]
     if (!(vw > 0) || !(vh > 0)) return
     let targetScale = this.scale
@@ -247,8 +253,7 @@ export class DragAndScale {
     const easeFunction = easeFunctions[easing]
 
     const startTimestamp = performance.now()
-    const cw = this.element.width / window.devicePixelRatio
-    const ch = this.element.height / window.devicePixelRatio
+    const [cw, ch] = this.getViewportSize()
     const [vx, vy, vw, vh] = viewport ?? [0, 0, cw, ch]
     if (vw <= 0 || vh <= 0) return
     const startX = this.offset[0]

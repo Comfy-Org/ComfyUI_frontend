@@ -154,6 +154,7 @@ function createCanvasFixture(pinia: Pinia, graph = ROOT_GRAPH) {
     read_only: false,
     subgraph: undefined,
     canvas: canvasElement,
+    dpr: 1,
     animateToBounds: vi.fn()
   })
   canvas.setGraph = vi.fn((nextGraph) => {

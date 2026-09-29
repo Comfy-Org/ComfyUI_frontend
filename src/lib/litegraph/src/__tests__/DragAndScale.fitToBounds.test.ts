@@ -9,6 +9,13 @@ function createCanvas(width: number, height: number): HTMLCanvasElement {
   return canvas
 }
 
+function setCssSize(canvas: HTMLCanvasElement, width: number, height: number) {
+  Object.defineProperty(canvas, 'getBoundingClientRect', {
+    configurable: true,
+    value: () => ({ width, height })
+  })
+}
+
 describe('DragAndScale.fitToBounds', () => {
   beforeEach(() => {
     Object.defineProperty(window, 'devicePixelRatio', {
@@ -57,6 +64,23 @@ describe('DragAndScale.fitToBounds', () => {
     expect(dragAndScale.scale).toBeCloseTo(1.25)
     expect(dragAndScale.offset[0]).toBeCloseTo(150)
     expect(dragAndScale.offset[1]).toBeCloseTo(75)
+  })
+
+  it('uses CSS dimensions when the backing store has sub-1 DPR dimensions', () => {
+    Object.defineProperty(window, 'devicePixelRatio', {
+      configurable: true,
+      value: 0.5
+    })
+    const canvas = createCanvas(400, 250)
+    setCssSize(canvas, 800, 500)
+    const dragAndScale = new DragAndScale(canvas)
+
+    dragAndScale.fitToBounds([0, 0, 500, 250])
+    dragAndScale.computeVisibleArea(undefined)
+
+    expect(dragAndScale.scale).toBeCloseTo(1.2)
+    expect(dragAndScale.visible_area.width).toBeCloseTo(800 / 1.2)
+    expect(dragAndScale.visible_area.height).toBeCloseTo(500 / 1.2)
   })
 
   it('centers and scales bounds inside the supplied viewport', () => {

@@ -2,15 +2,17 @@ import { createSharedComposable } from '@vueuse/core'
 import { watch } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { reportError } from '@/platform/telemetry/reportError'
 
 export interface CanvasOperation {
   key?: string
+  element?: HTMLCanvasElement
   isCurrent?: () => boolean
   run: () => void
 }
 
 export interface CanvasScheduler {
-  /** Queue an op that runs in the next RAF when canvas is visible. */
+  /** Run an op now when its canvas is visible, otherwise queue it. */
   schedule(operation: CanvasOperation): void
   /** Execute all queued ops synchronously (if canvas is ready). */
   flush(): void
@@ -27,21 +29,24 @@ export function createCanvasScheduler(): CanvasScheduler {
   const queue: CanvasOperation[] = []
   let rafId: number | null = null
 
-  function isCanvasReady(): boolean {
+  function isElementReady(element?: HTMLCanvasElement): boolean {
     try {
-      const el = canvasStore.canvas?.canvas
-      if (el == null || el.offsetParent === null) return false
-      return el.offsetWidth > 0 && el.offsetHeight > 0
+      if (element == null || element.offsetParent === null) return false
+      return element.offsetWidth > 0 && element.offsetHeight > 0
     } catch {
       return false
     }
+  }
+
+  function isCanvasReady(): boolean {
+    return isElementReady(canvasStore.canvas?.canvas)
   }
 
   function requestFlush(): void {
     if (rafId != null || queue.length === 0) return
     rafId = requestAnimationFrame(() => {
       rafId = null
-      flush()
+      flushQueued(true)
     })
   }
 
@@ -54,28 +59,48 @@ export function createCanvasScheduler(): CanvasScheduler {
     if (existingIndex === -1) queue.push(operation)
     else queue[existingIndex] = operation
 
-    if (isCanvasReady()) requestFlush()
+    if (isElementReady(operation.element ?? canvasStore.canvas?.canvas)) {
+      flushQueued(false)
+    }
   }
 
   function flush(): void {
-    if (!isCanvasReady()) return
+    flushQueued(false)
+  }
+
+  function executeOperation(
+    operation: CanvasOperation,
+    remainingInBatch: number
+  ): 'complete' | 'pending' {
+    if (operation.isCurrent?.() === false) return 'complete'
+    if (!isElementReady(operation.element ?? canvasStore.canvas?.canvas)) {
+      return 'pending'
+    }
+    try {
+      operation.run()
+    } catch (err) {
+      reportError(err, {
+        errorType: 'canvas_scheduled_operation_failed',
+        context: {
+          remainingInBatch,
+          pendingQueue: queue.length,
+          canvasReady: isCanvasReady()
+        }
+      })
+    }
+    return 'complete'
+  }
+
+  function flushQueued(retryIfNotReady: boolean): void {
     const operations = queue.splice(0)
     for (const [index, operation] of operations.entries()) {
-      if (operation.isCurrent?.() === false) continue
-      try {
-        operation.run()
-      } catch (err) {
-        console.error(
-          '[CanvasScheduler] Scheduled canvas operation failed during flush',
-          {
-            error: err,
-            remainingInBatch: operations.length - index - 1,
-            pendingQueue: queue.length,
-            canvasReady: isCanvasReady()
-          }
-        )
+      if (
+        executeOperation(operation, operations.length - index - 1) === 'pending'
+      ) {
+        queue.push(operation)
       }
     }
+    if (retryIfNotReady && queue.length > 0) requestFlush()
   }
 
   function clear(): void {

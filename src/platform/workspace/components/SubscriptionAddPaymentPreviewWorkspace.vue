@@ -49,6 +49,7 @@ import type {
   PreviewSubscribeResponse,
   SavedPaymentMethod
 } from '@/platform/workspace/api/workspaceApi'
+import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import { useCheckoutCopy } from '@/platform/workspace/composables/useCheckoutCopy'
 import {
   getActiveCheckoutJourney,
@@ -113,7 +114,7 @@ const { copy, checkoutPlan } = useCheckoutCopy()
 const telemetry = useTelemetry()
 const colorPaletteStore = useColorPaletteStore()
 
-const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? ''
+const publishableKey = resolveStripePublishableKey() ?? ''
 
 const plan = computed(() => checkoutPlan(tierKey, teamPlan))
 

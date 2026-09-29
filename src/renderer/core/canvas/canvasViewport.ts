@@ -8,6 +8,7 @@ interface CanvasViewport {
 }
 
 let currentGeneration = 0
+const appliedViewportByCanvas = new WeakMap<HTMLCanvasElement, CanvasViewport>()
 
 function normalizeDpr(rawDpr: number): number {
   return rawDpr > 0 && Number.isFinite(rawDpr) ? rawDpr : 1
@@ -37,11 +38,31 @@ function measureViewportFromElement(
   rawDpr?: number,
   prevGeneration?: number
 ): CanvasViewport {
-  const saved = { w: element.width, h: element.height }
-  element.width = element.height = NaN
-  const { width, height } = element.getBoundingClientRect()
-  element.width = saved.w
-  element.height = saved.h
+  const initialRect = element.getBoundingClientRect()
+  if (initialRect.width === 0 || initialRect.height === 0) {
+    return measureViewport(
+      initialRect.width,
+      initialRect.height,
+      rawDpr ?? window.devicePixelRatio,
+      prevGeneration
+    )
+  }
+
+  const savedWidth = element.width
+  const savedHeight = element.height
+  let cssRect: DOMRect
+  try {
+    element.width = 0
+    element.height = 0
+    cssRect = element.getBoundingClientRect()
+  } finally {
+    element.width = savedWidth
+    element.height = savedHeight
+  }
+  const previousViewport = appliedViewportByCanvas.get(element)
+  const width = cssRect.width || previousViewport?.cssWidth || initialRect.width
+  const height =
+    cssRect.height || previousViewport?.cssHeight || initialRect.height
   return measureViewport(
     width,
     height,
@@ -57,11 +78,15 @@ function applyViewport(
 ): CanvasViewport {
   fg.width = viewport.physicalWidth
   fg.height = viewport.physicalHeight
-  bg.width = viewport.physicalWidth
-  bg.height = viewport.physicalHeight
-
   fg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
-  bg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
+  if (bg !== fg) {
+    bg.width = viewport.physicalWidth
+    bg.height = viewport.physicalHeight
+    bg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
+  }
+
+  appliedViewportByCanvas.set(fg, viewport)
+  appliedViewportByCanvas.set(bg, viewport)
 
   currentGeneration = viewport.generation
   return viewport

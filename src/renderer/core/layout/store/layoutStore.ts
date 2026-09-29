@@ -663,7 +663,10 @@ class LayoutStoreImpl {
       if (!segmentLayout) continue
 
       if (ctx) {
-        const dpi = (dpr ?? window.devicePixelRatio) || 1
+        const dpi =
+          (dpr ??
+            (typeof window === 'undefined' ? 1 : window.devicePixelRatio)) ||
+          1
         const hit = ctx.isPointInStroke(
           segmentLayout.path,
           point.x * dpi,

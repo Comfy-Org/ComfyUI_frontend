@@ -396,6 +396,7 @@ export class ComfyApp {
 
   private configuringGraphLevel: number = 0
   private graphLoadSequence = 0
+  private committedGraphLoadSequence = 0
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -1111,6 +1112,7 @@ export class ComfyApp {
     const viewport = measureViewportFromElement(canvas)
     applyViewport(viewport, canvas, this.canvas.bgcanvas)
     this.canvas.dpr = viewport.dpr
+    useCanvasScheduler().flush()
     this.canvas.draw(true, true)
   }
 
@@ -1312,7 +1314,7 @@ export class ComfyApp {
   ): Promise<LoadedComfyWorkflow | boolean> {
     const canvasScheduler = useCanvasScheduler()
     const loadId = ++this.graphLoadSequence
-    const isCurrentLoad = () => loadId === this.graphLoadSequence
+    const isCurrentLoad = () => loadId === this.committedGraphLoadSequence
 
     const {
       checkForRerouteMigration = false,
@@ -1500,7 +1502,12 @@ export class ComfyApp {
         // Always fit view for templates to ensure they're visible on load
         if (openSource === 'template') {
           useLitegraphService().fitView()
-        } else if (isValidCameraState(graphData.extra?.ds)) {
+        } else if (
+          isValidCameraState(graphData.extra?.ds, {
+            minScale: this.canvas.ds.min_scale,
+            maxScale: this.canvas.ds.max_scale
+          })
+        ) {
           this.canvas.ds.offset = graphData.extra.ds.offset
           this.canvas.ds.scale = graphData.extra.ds.scale
 
@@ -1528,6 +1535,8 @@ export class ComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
+        if (loadId !== this.graphLoadSequence) return false
+
         // @ts-expect-error Discrepancies between zod and litegraph - in progress
         this.rootGraph.configure(graphData)
 
@@ -1547,8 +1556,10 @@ export class ComfyApp {
           )
         }
 
+        this.committedGraphLoadSequence = loadId
         canvasScheduler.schedule({
           key: 'graph-load-camera',
+          element: this.canvasEl,
           isCurrent: isCurrentLoad,
           run: () => {
             const viewport = measureViewportFromElement(this.canvasEl)
