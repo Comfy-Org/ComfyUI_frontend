@@ -114,7 +114,7 @@ watch(
 
 <template>
   <WorkshopHero
-    v-if="!inSection"
+    v-if="!inSection && activeTab === 'apps'"
     :eyebrow="t('workshop.catalogue.eyebrow', locale)"
     :heading="t('workshop.hero.heading', locale)"
     :subtitle="t(heroSubtitle[activeTab], locale)"

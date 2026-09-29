@@ -38,13 +38,26 @@ export interface FeaturedSlide {
 
 const AUTOPLAY_MS = 7000
 
+/**
+ * What the tab is for, in the tab's own words. Given one, the banner keeps the
+ * pitch on its own half and the slide becomes the picture beside it, named in
+ * a strip along the bottom.
+ */
+export interface FeaturedPitch {
+  readonly heading: string
+  readonly body: string
+  readonly action: string
+}
+
 const {
   slides,
+  pitch,
   locale = 'en',
   autoplay = true,
   compact = false
 } = defineProps<{
   slides: readonly FeaturedSlide[]
+  pitch?: FeaturedPitch
   locale?: Locale
   autoplay?: boolean
   /** Where outcome rows follow immediately, the banner gives up height so the
@@ -119,7 +132,7 @@ const fill = computed(() =>
 
 <template>
   <section
-    v-if="active"
+    v-if="active || pitch"
     ref="banner"
     :aria-label="t('workshop.sections.featured', locale)"
     class="relative isolate overflow-hidden rounded-4.5xl border border-transparency-white-t8"
@@ -137,6 +150,7 @@ const fill = computed(() =>
       data-testid="featured-slide"
     >
       <a
+        v-if="active"
         :href="active.href"
         tabindex="-1"
         aria-hidden="true"
@@ -144,8 +158,8 @@ const fill = computed(() =>
         data-testid="featured-slide-link"
       ></a>
       <video
-        v-if="active.media?.kind === 'video'"
-        :key="active.key"
+        v-if="active?.media?.kind === 'video'"
+        :key="active!.key"
         ref="video"
         :src="previewSrc"
         class="pointer-events-none absolute inset-0 size-full object-cover"
@@ -157,15 +171,22 @@ const fill = computed(() =>
         data-testid="featured-video"
       />
       <img
-        v-else-if="active.media"
-        :key="active.key"
-        :src="active.media.url"
+        v-else-if="active?.media"
+        :key="active!.key"
+        :src="active!.media!.url"
         alt=""
         class="pointer-events-none absolute inset-0 size-full object-cover"
         decoding="async"
       />
       <div
-        class="pointer-events-none absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20 sm:bg-linear-to-r sm:via-page/75 sm:to-transparent"
+        :class="
+          cn(
+            'pointer-events-none absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20',
+            pitch
+              ? 'sm:bg-linear-to-r sm:from-page sm:from-45% sm:via-page/60 sm:via-64% sm:to-transparent'
+              : 'sm:bg-linear-to-r sm:via-page/75 sm:to-transparent'
+          )
+        "
         aria-hidden="true"
       />
 
@@ -178,61 +199,106 @@ const fill = computed(() =>
           )
         "
       >
-        <div class="flex flex-wrap items-center gap-2">
-          <Badge
-            variant="subtle"
-            size="md"
-            class="text-primary-comfy-canvas backdrop-blur-md"
+        <template v-if="pitch">
+          <h1
+            class="text-3xl/tight font-light text-balance text-primary-warm-white lg:text-4xl/tight"
+            data-testid="catalogue-pitch"
           >
-            {{ active.kind }}
-          </Badge>
-          <Badge
-            v-for="capability in active.tags"
-            :key="capability"
-            variant="subtle"
-            size="md"
-            class="text-content-secondary backdrop-blur-md max-sm:hidden"
-          >
-            {{ capability }}
-          </Badge>
-        </div>
+            {{ pitch.heading }}
+          </h1>
+          <p class="max-w-prose text-content-secondary short:hidden">
+            {{ pitch.body }}
+          </p>
+          <div class="pointer-events-auto flex w-fit items-center gap-3">
+            <Button as="a" :href="pitch.action" class="w-fit">
+              {{ t('workshop.hub.startPrompt', locale) }}
+            </Button>
+          </div>
+        </template>
 
-        <h2
-          class="text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
+        <template v-else-if="active">
+          <div class="flex flex-wrap items-center gap-2">
+            <Badge
+              variant="subtle"
+              size="md"
+              class="text-primary-comfy-canvas backdrop-blur-md"
+            >
+              {{ active.kind }}
+            </Badge>
+            <Badge
+              v-for="capability in active.tags"
+              :key="capability"
+              variant="subtle"
+              size="md"
+              class="text-content-secondary backdrop-blur-md max-sm:hidden"
+            >
+              {{ capability }}
+            </Badge>
+          </div>
+
+          <h2
+            class="text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
+          >
+            {{ active.title }}
+          </h2>
+
+          <p
+            v-if="active.summary"
+            class="line-clamp-2 max-w-prose shrink-0 text-content-secondary max-sm:line-clamp-1 short:hidden"
+          >
+            {{ active.summary }}
+          </p>
+
+          <div class="pointer-events-auto flex w-fit items-center gap-3">
+            <Button as="a" :href="active.href" class="w-fit">
+              {{ active.cta ?? t('workshop.hub.tryNow', locale) }}
+            </Button>
+            <Button
+              v-if="active.docsHref"
+              as="a"
+              variant="outline"
+              :href="active.docsHref"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="w-fit"
+              data-testid="featured-docs-link"
+            >
+              {{ t('workshop.hub.docs', locale) }}
+            </Button>
+          </div>
+        </template>
+      </div>
+
+      <div
+        v-if="pitch && active"
+        class="pointer-events-none relative z-10 hidden min-w-0 flex-1 flex-col justify-end sm:flex"
+      >
+        <div
+          class="flex min-w-0 items-center gap-4 border-t border-transparency-white-t8 bg-page/70 px-6 py-3 backdrop-blur-md"
+          data-testid="featured-now-showing"
         >
-          {{ active.title }}
-        </h2>
-
-        <p
-          v-if="active.summary"
-          class="line-clamp-2 max-w-prose shrink-0 text-content-secondary max-sm:line-clamp-1 short:hidden"
-        >
-          {{ active.summary }}
-        </p>
-
-        <div class="pointer-events-auto flex w-fit items-center gap-3">
-          <Button as="a" :href="active.href" class="w-fit">
-            {{ active.cta ?? t('workshop.hub.tryNow', locale) }}
-          </Button>
-          <Button
-            v-if="active.docsHref"
-            as="a"
-            variant="outline"
-            :href="active.docsHref"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="w-fit"
-            data-testid="featured-docs-link"
-          >
-            {{ t('workshop.hub.docs', locale) }}
-          </Button>
+          <div class="flex min-w-0 flex-col gap-0.5">
+            <span
+              class="text-3xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
+            >
+              {{ t('workshop.hub.nowShowing', locale) }}
+            </span>
+            <span class="truncate font-semibold text-primary-warm-white">
+              {{ active.title }} · {{ active.kind }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
 
     <div
       v-if="slides.length > 1"
-      class="pointer-events-none absolute inset-x-8 bottom-5 flex gap-2 lg:inset-x-12"
+      :class="
+        cn(
+          'pointer-events-none absolute bottom-5 flex gap-2',
+          pitch ? 'right-6 justify-end' : 'inset-x-8 lg:inset-x-12'
+        )
+      "
       data-testid="featured-pagination"
     >
       <button

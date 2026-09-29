@@ -19,6 +19,7 @@ import {
   sortOrdersFor,
   sortWorkshopModels
 } from '../../config/models-catalogue'
+import { getRoutes } from '../../config/routes'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
@@ -219,6 +220,13 @@ function rememberModel(
 }
 
 watch(browseAll, (on) => on && resetFilters())
+
+const pitch = computed(() => ({
+  heading: t('workshop.pitch.models.heading', locale),
+  body: t('workshop.pitch.models.body', locale),
+  action:
+    sortWorkshopModels(models, 'popular')[0]?.href ?? getRoutes(locale).workshop
+}))
 </script>
 
 <template>
@@ -280,9 +288,10 @@ watch(browseAll, (on) => on && resetFilters())
       </div>
 
       <FeaturedBanner
-        v-if="browsing && featured.length"
+        v-if="browsing"
         :slides="featuredSlides"
         :locale
+        :pitch
         class="mb-10 short:mb-6"
       />
 

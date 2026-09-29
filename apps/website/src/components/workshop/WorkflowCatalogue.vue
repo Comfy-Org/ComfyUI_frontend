@@ -12,6 +12,7 @@ import {
   filterWorkshopModels,
   sortWorkshopModels
 } from '../../config/models-catalogue'
+import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import CardRow from './CardRow.vue'
@@ -157,6 +158,12 @@ function leaveSection() {
   browseAll.value = false
   clear()
 }
+
+const pitch = computed(() => ({
+  heading: t('workshop.pitch.workflows.heading', locale),
+  body: t('workshop.pitch.workflows.body', locale),
+  action: featured.value[0]?.href ?? getRoutes(locale).workshop
+}))
 </script>
 
 <template>
@@ -217,9 +224,10 @@ function leaveSection() {
     </div>
 
     <FeaturedBanner
-      v-if="browsing && featured.length"
+      v-if="browsing"
       :slides="featuredSlides"
       :locale
+      :pitch
       :autoplay="false"
       compact
       class="mb-10 short:mb-6"

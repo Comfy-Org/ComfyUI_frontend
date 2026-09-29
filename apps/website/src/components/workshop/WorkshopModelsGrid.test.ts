@@ -47,7 +47,9 @@ const models: WorkshopModel[] = [
 ]
 
 function cardNames() {
-  return screen.queryAllByRole('link').map((card) => card.textContent)
+  return screen
+    .queryAllByTestId('model-card-name')
+    .map((name) => name.textContent)
 }
 
 async function search() {
