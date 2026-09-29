@@ -33,7 +33,7 @@ export function formatCreditsPerGbMonth(credits: number): string {
   return `${credits.toFixed(2)}/GB/mo`
 }
 
-const STORAGE_EXAMPLE_GB = 500
+const STORAGE_EXAMPLE_GB = 20
 
 export function formatStorageExampleAmount(rate: StorageRate): string {
   return `$${(STORAGE_EXAMPLE_GB * rate.pricePerGbMonthUsd).toFixed(2)}`

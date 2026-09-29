@@ -39,25 +39,14 @@ const gpuRates = rateCard.gpus.map((rate) => ({
   credits: formatCreditsPerHour(rate.creditsPerHour)
 }))
 
-const storageRates = groupStorageRatesForDisplay(rateCard.storage).map(
-  (rate) => {
-    const isContainerDisk = rate.key === 'containerDisk'
-    return {
-      key: rate.key,
-      price: formatUsdPerGbMonth(rate.pricePerGbMonthUsd),
-      credits: formatCreditsPerGbMonth(rate.creditsPerGbMonth),
-      title: t(
-        isContainerDisk
-          ? 'platform.pricing.storage.containerDisk'
-          : 'platform.pricing.storage.title',
-        locale
-      ),
-      subLabel: isContainerDisk
-        ? t('platform.pricing.storage.sub.containerDisk', locale)
-        : ''
-    }
-  }
-)
+const storageRates = groupStorageRatesForDisplay(rateCard.storage)
+  .filter((rate) => rate.key !== 'containerDisk')
+  .map((rate) => ({
+    key: rate.key,
+    price: formatUsdPerGbMonth(rate.pricePerGbMonthUsd),
+    credits: formatCreditsPerGbMonth(rate.creditsPerGbMonth),
+    title: t('platform.pricing.storage.title', locale)
+  }))
 
 const storageExampleAmount = formatStorageExampleAmount(
   getStorageRate('network_standard')
@@ -147,12 +136,6 @@ const mobileStorageRows = storageRates.map((rate) => ({
           >
             <div>
               <p class="text-sm text-primary-warm-white">{{ rate.title }}</p>
-              <p
-                v-if="rate.subLabel"
-                class="mt-0.5 text-xs text-primary-warm-gray"
-              >
-                {{ rate.subLabel }}
-              </p>
             </div>
             <div class="shrink-0 text-right font-mono">
               <p class="text-sm text-primary-warm-white">{{ rate.price }}</p>
@@ -263,12 +246,6 @@ const mobileStorageRows = storageRates.map((rate) => ({
                   <td class="max-w-56 px-2 py-3.5">
                     <p class="text-sm text-primary-warm-white">
                       {{ rate.title }}
-                    </p>
-                    <p
-                      v-if="rate.subLabel"
-                      class="mt-0.5 text-xs text-primary-warm-gray"
-                    >
-                      {{ rate.subLabel }}
                     </p>
                   </td>
                   <td

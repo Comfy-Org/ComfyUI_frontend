@@ -62,7 +62,7 @@ describe('rateCard', () => {
 
   it('computes the storage worked example from the storage rate', () => {
     const rate = getStorageRate('network_standard')
-    expect(formatStorageExampleAmount(rate)).toBe('$100.00')
+    expect(formatStorageExampleAmount(rate)).toBe('$4.00')
   })
 
   it('maps every storageType in the committed snapshot to a label key', () => {
