@@ -15,6 +15,10 @@ type FlexStyle = Pick<
   'flexBasis' | 'flexGrow' | 'flexShrink'
 >
 
+function isUsableWidth(width: unknown): width is number {
+  return typeof width === 'number' && Number.isFinite(width) && width > 0
+}
+
 interface SizerOptions {
   /**
    * Pin a panel that has no stored width at the width it first renders at, so
@@ -77,10 +81,11 @@ export function useStablePrimeVueSplitterSizer(
       if (appliedKey !== undefined && appliedKey !== key) unpin(el)
       appliedKeys.set(panel.ref, key)
       const { width } = panel
-      if (width.value === null && captureInitialWidth && el.offsetWidth > 0) {
-        width.value = el.offsetWidth
+      if (!isUsableWidth(width.value)) {
+        width.value =
+          captureInitialWidth && el.offsetWidth > 0 ? el.offsetWidth : null
       }
-      if (width.value !== null) pin(el, width.value)
+      if (isUsableWidth(width.value)) pin(el, width.value)
     }
   }
 

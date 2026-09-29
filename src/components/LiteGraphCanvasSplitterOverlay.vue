@@ -40,9 +40,13 @@
               sidebarLocation === 'left'
                 ? cn(
                     'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
+                    sidePanelMaxWidth,
                     sidebarPanelVisible && 'min-w-78'
                   )
-                : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
+                : cn(
+                    'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
+                    sidePanelMaxWidth
+                  )
             "
             :min-size="
               sidebarLocation === 'left' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
@@ -117,9 +121,13 @@
               sidebarLocation === 'right'
                 ? cn(
                     'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
+                    sidePanelMaxWidth,
                     sidebarPanelVisible && 'min-w-78'
                   )
-                : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
+                : cn(
+                    'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
+                    sidePanelMaxWidth
+                  )
             "
             :min-size="
               sidebarLocation === 'right' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
@@ -273,6 +281,16 @@ const bothSidePanelsVisible = computed(
     !focusMode.value && sidebarPanelVisible.value && showOffsideSplitter.value
 )
 
+/**
+ * Side panels are pinned in pixels, so cap them against the splitter's width
+ * to keep the center panel, and the gutters beside it, reachable when the
+ * window narrows or the agent panel opens.
+ */
+const sidePanelMaxWidth = computed(() => {
+  if (isSelectMode.value) return undefined
+  return bothSidePanelsVisible.value ? 'max-w-2/5' : 'max-w-3/5'
+})
+
 const centerPanelDefaultSize = computed(() =>
   bothSidePanelsVisible.value ? 100 - 2 * SIDE_PANEL_SIZE : CENTER_PANEL_SIZE
 )
@@ -351,7 +369,7 @@ const lastPanelRef = useTemplateRef<MaybeElement>('lastPanel')
  * The splitter restores its sizes as percentages, but its width changes
  * whenever the agent panel beside it or the right side panel toggles. Pinning
  * the side panels in pixels lets the center panel absorb that change instead.
- * Builder mode keeps its own percentage layout.
+ * Select mode keeps its own percentage layout under the builder state keys.
  */
 const sidebarPanelRef = computed(() => {
   if (isSelectMode.value) return undefined
@@ -390,8 +408,8 @@ const { onResizeEnd: savePanelWidths } = useStablePrimeVueSplitterSizer(
 )
 
 function onSplitterResizeEnd(event: SplitterResizeEndEvent) {
-  normalizeSavedSizes()
   savePanelWidths(event)
+  normalizeSavedSizes()
 }
 
 const firstPanelStyle = computed(() => {

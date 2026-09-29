@@ -190,7 +190,12 @@ agentTest.describe(
       return widthOf(sidebar)
     }
 
-    async function expectWidthKept(panel: Locator, width: number) {
+    async function expectWidthKept(
+      comfyPage: ComfyPage,
+      panel: Locator,
+      width: number
+    ) {
+      await comfyPage.nextFrame()
       await expect
         .poll(async () => Math.abs((await widthOf(panel)) - width))
         .toBeLessThanOrEqual(2)
@@ -208,10 +213,10 @@ agentTest.describe(
 
         await agentPanel.openButton.click()
         await expect(agentPanel.root).toHaveCount(0)
-        await expectWidthKept(sidebar, draggedWidth)
+        await expectWidthKept(comfyPage, sidebar, draggedWidth)
 
         await agentPanel.open()
-        await expectWidthKept(sidebar, draggedWidth)
+        await expectWidthKept(comfyPage, sidebar, draggedWidth)
       }
     )
 
@@ -228,7 +233,7 @@ agentTest.describe(
           comfyPage.page.getByTestId(TestIds.propertiesPanel.root)
         ).toBeVisible()
 
-        await expectWidthKept(sidebar, openedWidth)
+        await expectWidthKept(comfyPage, sidebar, openedWidth)
       }
     )
   }

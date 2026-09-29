@@ -219,4 +219,21 @@ describe('useStablePrimeVueSplitterSizer', () => {
     expect(stored.get('tab-b')).toBe(256)
     expect(el.style.flexBasis).toBe('256px')
   })
+
+  it.for([0, -40, Number.NaN])(
+    'treats a stored width of %s as unset and re-captures the rendered width',
+    async (storedWidth) => {
+      vi.mocked(useStorage).mockImplementation(() => ref(storedWidth))
+      const panelRef = createPanel(280)
+
+      useStablePrimeVueSplitterSizer(
+        [{ ref: panelRef, storageKey: 'test-unusable' }],
+        [ref(0)],
+        { captureInitialWidth: true }
+      )
+      await flushWatcher()
+
+      expect(panelRef.value.style.flexBasis).toBe('280px')
+    }
+  )
 })
