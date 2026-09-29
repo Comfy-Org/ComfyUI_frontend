@@ -55,7 +55,7 @@ describe('cloud backport tag workflow', () => {
     expect(tagScript).not.toMatch(/\bgit push\b/)
   })
 
-  it('treats existing and concurrently created tags as successful no-ops', () => {
+  it('accepts matching existing tags and rejects SHA conflicts', () => {
     expect(tagScript?.match(/git\/ref\/tags\/\$\{TAG\}/g)).toHaveLength(2)
     expect(tagScript?.match(/\[\[ "\$EXISTING" == "\$SHA" \]\]/g)).toHaveLength(
       2
