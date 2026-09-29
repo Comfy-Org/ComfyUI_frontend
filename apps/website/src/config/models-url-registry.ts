@@ -109,6 +109,15 @@ export function modelsUrlKind(
   return registry.get(withoutTrailingSlash(pathname))?.kind
 }
 
+export function modelsUrlPaths(
+  kind: ModelsUrlKind,
+  registry: ModelsUrlRegistry = modelsUrlRegistry
+): string[] {
+  return [...registry.values()]
+    .filter((entry) => entry.kind === kind)
+    .map(({ path }) => path)
+}
+
 /** Built pages under the Models base that no registry entry claims. */
 export function unregisteredModelsPaths(
   pathnames: readonly string[],
