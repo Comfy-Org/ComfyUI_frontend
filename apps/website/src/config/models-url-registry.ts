@@ -137,6 +137,8 @@ const modelsUrlRegistry = buildModelsUrlRegistry(
   [MODELS_BASE_PATH, HUB_MODELS_PATH]
 )
 
+export const modelsUrlRoots = modelsUrlRegistry.roots
+
 export function modelsUrlKind(
   pathname: string,
   registry: ModelsUrlRegistry = modelsUrlRegistry
