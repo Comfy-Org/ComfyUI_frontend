@@ -578,7 +578,7 @@ export type AgentPanelCloseSource =
   | 'workflow_switch'
   | 'topbar_button'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'restored' | 'topbar_button' | 'automatic_consent'
+  source: 'restored' | 'topbar_button' | 'automatic_consent' | 'activation'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'

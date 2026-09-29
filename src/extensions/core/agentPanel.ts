@@ -73,7 +73,7 @@ export function registerAgentPanelExtension(): void {
     beforeLoadGraph() {
       notifyRestoreMintersBeforeGraphLoad()
       const agentPanelStore = useAgentPanelStore()
-      if (!agentPanelStore.isVisible) return
+      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) return
 
       const nodeSelectionStore = useAgentNodeSelectionStore()
       nodeSelectionStore.beginWorkflowLoad()
@@ -82,7 +82,7 @@ export function registerAgentPanelExtension(): void {
       const agentPanelStore = useAgentPanelStore()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (!nodeSelectionStore.isLoadingWorkflow) return
-      if (!agentPanelStore.isVisible) {
+      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) {
         nodeSelectionStore.finishWorkflowLoad()
         return
       }
@@ -200,7 +200,7 @@ export function registerAgentPanelExtension(): void {
         agentPanelStore.suppressRestoredOpen()
         void withConsent(
           () => {
-            if (!agentPanelStore.enabled) return
+            if (!agentPanelStore.enabled || agentPanelStore.isOpen) return
             agentPanelStore.open('automatic_consent')
           },
           {
@@ -237,6 +237,29 @@ export function registerAgentPanelExtension(): void {
           })
       }
 
+      let activationPending = false
+      let activationOffered = false
+      const openWhenStartupDecided = (): void => {
+        if (!agentPanelStore.enabled || activationPending || activationOffered)
+          return
+        activationPending = true
+        whenStartupDecided()
+          .then((decided) => {
+            if (decided && agentPanelStore.enabled) {
+              activationOffered = true
+              if (!agentPanelStore.isOpen) agentPanelStore.open('activation')
+            }
+          })
+          .catch((error: unknown) => {
+            reportError(error, {
+              errorType: 'agent_panel_activation_failure'
+            })
+          })
+          .finally(() => {
+            activationPending = false
+          })
+      }
+
       const loadConsentIfEligible = (): void => {
         if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
         void consentStore
@@ -270,6 +293,7 @@ export function registerAgentPanelExtension(): void {
       )
       setupFlagGate(
         loadConsentIfEligible,
+        openWhenStartupDecided,
         () => isAuthInitialized.value && resolvedUserInfo.value === null
       )
     }
@@ -278,6 +302,7 @@ export function registerAgentPanelExtension(): void {
 
 function setupFlagGate(
   loadConsentIfEligible: () => void,
+  openWhenStartupDecided: () => void,
   isSignedOut: () => boolean
 ): void {
   const agentPanelStore = useAgentPanelStore()
@@ -293,6 +318,7 @@ function setupFlagGate(
     ([enabled]) => {
       agentPanelStore.enabled = enabled
       loadConsentIfEligible()
+      openWhenStartupDecided()
       if (!enabled) {
         const nodeSelectionStore = useAgentNodeSelectionStore()
         if (nodeSelectionStore.isLoadingWorkflow)

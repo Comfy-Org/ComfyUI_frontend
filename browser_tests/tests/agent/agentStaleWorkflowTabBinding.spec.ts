@@ -18,6 +18,7 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -224,8 +225,9 @@ test.describe(
         .allTextContents()
 
       // A brand-new page on the surviving thread: nobody has sent anything.
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
-      const panel = page.locator('#agent-panel-root')
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      const panel = agentPanel.root
       await expect(panel).toBeVisible()
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         EARLIER_REQUEST

@@ -91,6 +91,7 @@ import type {
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
 import type { CoachStep } from './composables/agent/useOnboarding'
+import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
 import { useAgentSession } from './composables/agent/useAgentSession'
@@ -261,6 +262,7 @@ watch(
   { immediate: true }
 )
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
+const { withConsent } = useAgentConsent()
 const workspaceStore = useTeamWorkspaceStore()
 const onboardingKey = computed(() =>
   scopedOnboardingKey(
@@ -875,6 +877,8 @@ onBeforeUnmount(() => {
   ++activeTabGeneration
   docOpMinter.detach()
   restoreOpMinter.detach()
+  if (composerStore.submission?.id === consentHeldSubmissionId)
+    composerStore.invalidateSubmission()
   exitNodeSelectionMode()
   stop()
   tabActivity.setEditing(null)
@@ -993,6 +997,23 @@ const coachSteps = computed<CoachStep[]>(() => [
   }
 ])
 
+let consentHeldSubmissionId: number | undefined
+async function consentAllowsSubmission(
+  submissionId: number | undefined
+): Promise<boolean> {
+  let hasConsent = false
+  consentHeldSubmissionId = submissionId
+  try {
+    await withConsent(() => {
+      hasConsent = true
+    })
+  } finally {
+    if (consentHeldSubmissionId === submissionId)
+      consentHeldSubmissionId = undefined
+  }
+  return composerStore.submission?.id === submissionId && hasConsent
+}
+
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
   target: () => selectedTarget.value,
@@ -1004,7 +1025,14 @@ const { submit: onSend } = useAgentDraftSubmission({
     replace: replaceSelectionTags,
     exit: exitNodeSelectionMode
   },
-  send: (text, attachments, nodes, references, meta) => {
+  send: async (text, attachments, nodes, references, meta) => {
+    const submissionId = composerStore.submission?.id
+    if (
+      !consentAccepted.value &&
+      !(await consentAllowsSubmission(submissionId))
+    )
+      return false
+
     const originContext = targetWorkflowTurnContext()
     useTelemetry()?.trackAgentMessageSent({
       attachment_count: attachments.length,
