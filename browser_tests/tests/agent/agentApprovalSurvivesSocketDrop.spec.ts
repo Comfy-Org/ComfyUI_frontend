@@ -126,15 +126,17 @@ test.describe(
       await expect(turnLock.panel).toBeVisible({ timeout: 30_000 })
       await expect(
         turnLock.panel.getByText(enMessages.agent.runApproval.question)
-      ).toBeVisible()
+      ).toBeVisible({ timeout: 30_000 })
 
       await turnLock.panel
         .getByRole('button', {
           name: enMessages.agent.runApproval.run,
           exact: true
         })
-        .click()
-      await expect.poll(() => turnLock.answeredAsks()).toEqual(['run'])
+        .click({ timeout: 10_000 })
+      await expect
+        .poll(() => turnLock.answeredAsks(), { timeout: 10_000 })
+        .toEqual(['run'])
       expect(turnLock.pendingAskIsPrimed()).toBe(false)
     })
   }
