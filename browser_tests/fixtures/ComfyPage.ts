@@ -98,6 +98,7 @@ class ComfyPropertiesPanel {
 class ComfyMenu {
   private _appsTab: SidebarTab | null = null
   private _assetsTab: AssetsSidebarTab | null = null
+  private _jobHistoryTab: SidebarTab | null = null
   private _modelLibraryTab: ModelLibrarySidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _nodeLibraryTabV2: NodeLibrarySidebarTabV2 | null = null
@@ -139,6 +140,11 @@ class ComfyMenu {
   get assetsTab() {
     this._assetsTab ??= new AssetsSidebarTab(this.page)
     return this._assetsTab
+  }
+
+  get jobHistoryTab() {
+    this._jobHistoryTab ??= new SidebarTab(this.page, 'job-history')
+    return this._jobHistoryTab
   }
 
   get workflowsTab() {

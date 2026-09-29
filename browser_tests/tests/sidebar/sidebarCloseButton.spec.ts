@@ -2,11 +2,12 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { SidebarTab } from '@e2e/fixtures/components/SidebarTab'
+import type { SidebarTab } from '@e2e/fixtures/components/SidebarTab'
+import type { Settings } from '@/platform/settings/types'
 
 const cases: {
   name: string
-  settings?: Record<string, boolean>
+  settings?: Partial<Settings>
   tab: (comfyPage: ComfyPage) => SidebarTab
 }[] = [
   {
@@ -29,7 +30,7 @@ const cases: {
   {
     name: 'job history',
     settings: { 'Comfy.Queue.QPOV2': true },
-    tab: (comfyPage) => new SidebarTab(comfyPage.page, 'job-history')
+    tab: (comfyPage) => comfyPage.menu.jobHistoryTab
   }
 ]
 
