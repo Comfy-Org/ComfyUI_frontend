@@ -103,6 +103,10 @@ describe('generated Vercel rules', () => {
     },
     { source: '/models', destination: '/hub/models/' },
     {
+      source: '/models/workflows/change-material',
+      destination: '/hub/workflows/change-material/'
+    },
+    {
       source: '/models/bfl--flux-2-max--generate-images',
       destination: '/hub/models/flux-2-max-text-to-image/'
     },

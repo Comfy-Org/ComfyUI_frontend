@@ -14,12 +14,14 @@ describe('hub model addresses', () => {
       '<a href="/models/bfl--flux-2-max--generate-images/">',
       '<a href="/models/vertexai--gemini-3-pro-image?x=1">',
       '<a href="/hub/models/flux-2-max-text-to-image/">',
-      '<a href="/models/workflows/relight/">',
+      '<a href="/models/workflows/change-material/">',
+      '<a href="/hub/workflows/change-material/">',
       '<a href="/models/showcase/">'
     ].join('')
     expect(oldModelLinks(html)).toEqual([
       '/models/bfl--flux-2-max--generate-images',
-      '/models/vertexai--gemini-3-pro-image'
+      '/models/vertexai--gemini-3-pro-image',
+      '/models/workflows/change-material'
     ])
   })
 })

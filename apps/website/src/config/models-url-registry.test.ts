@@ -22,7 +22,8 @@ describe('models URL registry', () => {
     ['/hub/models/acme-image/', 'model'],
     ['/models/acme--image--generate-images/', 'alias'],
     ['/models/acme--image--generate-images/page.json', 'reserved'],
-    ['/models/workflows/relight', 'workflow'],
+    ['/hub/workflows/relight/', 'workflow'],
+    ['/models/workflows/relight', 'alias'],
     ['/models/apps/studio/', 'app'],
     ['/models/acme--image', 'alias'],
     ['/models/showcase/', 'reserved'],
@@ -134,6 +135,7 @@ describe('models URL registry', () => {
       'alias'
     )
     expect(modelsUrlKind('/models/apps/cinematic-studio/')).toBe('app')
-    expect(modelsUrlKind('/models/workflows/change-material/')).toBe('workflow')
+    expect(modelsUrlKind('/hub/workflows/change-material/')).toBe('workflow')
+    expect(modelsUrlKind('/models/workflows/change-material/')).toBe('alias')
   })
 })

@@ -117,7 +117,7 @@ describe('Workshop release output', () => {
     expect(disabled.map((route) => route.pattern)).toEqual([
       '/hub/models',
       '/hub/models/[slug]',
-      '/models/[...slug]',
+      '/hub/workflows/[slug]',
       '/models/showcase',
       '/models/apps/[app]',
       '/cinematic-studio',

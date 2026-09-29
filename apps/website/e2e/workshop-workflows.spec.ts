@@ -64,7 +64,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await highlights.getByRole('button', { name: 'Change a material' }).click()
   await expect(catalogue.getByTestId('featured-slide-link')).toHaveAttribute(
     'href',
-    '/models/workflows/change-material/'
+    '/hub/workflows/change-material/'
   )
   await page.getByTestId('browse-all-end').click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
@@ -80,7 +80,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await page.getByTestId('sort-name').click()
   await expect(
     page.getByTestId('workflow-search-results').getByRole('link').first()
-  ).toHaveAttribute('href', '/models/workflows/animate-reference-sheet/')
+  ).toHaveAttribute('href', '/hub/workflows/animate-reference-sheet/')
   await page.getByTestId('section-back').click()
   await expect(page.getByTestId('workshop-hero')).toBeVisible()
   await page.getByTestId('workshop-search').fill('Change a material')
@@ -164,7 +164,7 @@ test('the Details graph waits for its tab, names its subgraphs, and zooms from i
     if (request.url().endsWith('/workflow-graphs/image-to-video.json'))
       graphRequests.push(request.url())
   })
-  await page.goto('/models/workflows/image-to-video/')
+  await page.goto('/hub/workflows/image-to-video/')
   const details = page.getByRole('tab', { name: 'Details', exact: true })
   await expect(details).toBeVisible()
   await page.waitForLoadState('networkidle')
@@ -211,7 +211,7 @@ test('withholds workflow discovery and direct pages when the workflow flag is of
   await expect(
     page.getByRole('link', { name: /Change a material/ })
   ).toHaveCount(0)
-  await page.goto('/models/workflows/change-material/')
+  await page.goto('/hub/workflows/change-material/')
   await expect(
     page.getByRole('heading', { level: 1, name: /Grok Imagine/ })
   ).toBeVisible()
@@ -352,7 +352,7 @@ test('the background example pairs its input and output and restores edited inpu
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/workflows/remove-background/')
+  await page.goto('/hub/workflows/remove-background/')
   const input = page.getByRole('group', { name: 'Your image', exact: true })
   const original = input.getByRole('img', { name: 'the_lily_veil.png' })
   const example = page.getByRole('button', { name: /The lily veil/ })
@@ -381,12 +381,12 @@ test('the background example pairs its input and output and restores edited inpu
 
 for (const { path, group, file } of [
   {
-    path: '/models/workflows/remove-object/',
+    path: '/hub/workflows/remove-object/',
     group: 'Edit mask',
     file: 'remove-object-apple-mask.png'
   },
   {
-    path: '/models/workflows/virtual-try-on/',
+    path: '/hub/workflows/virtual-try-on/',
     group: 'Your character',
     file: 'subject-templates_rob_fashion_shoot_vton-4in1.png'
   }
@@ -446,7 +446,7 @@ test('keeps Run on screen beside a workflow form taller than the window', async 
 }) => {
   await mockWorkflowVisibility(context, true)
   await page.setViewportSize({ width: 1280, height: 500 })
-  await page.goto('/models/workflows/extend-image-borders/')
+  await page.goto('/hub/workflows/extend-image-borders/')
 
   const run = page.getByTestId('workflow-run-footer')
   await expect(run.getByRole('link', { name: 'Sign in to run' })).toBeVisible()
@@ -471,7 +471,7 @@ for (const viewport of stickyFooterViewports) {
   }) => {
     await mockWorkflowVisibility(context, true)
     await page.setViewportSize(viewport)
-    await page.goto('/models/workflows/extend-image-borders/')
+    await page.goto('/hub/workflows/extend-image-borders/')
     const footer = page.getByTestId('workflow-run-footer')
     await expect(footer).toBeVisible()
     await page
@@ -504,7 +504,7 @@ test('keeps the workflow form inside a phone screen @mobile', async ({
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/workflows/extend-image-borders/')
+  await page.goto('/hub/workflows/extend-image-borders/')
   const footer = page.getByTestId('workflow-run-footer')
   await expect(footer).toBeVisible()
 

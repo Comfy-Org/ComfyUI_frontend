@@ -10,6 +10,7 @@ import type {
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { test } from './fixtures/modelsAccount'
+import { hubWorkflowHref } from '../src/config/hub-models'
 
 const workflowId = 'workflows/remove-background'
 const runId = 'd982ea52-a2d8-4212-ad8a-ff3030ce42bf'
@@ -160,7 +161,7 @@ async function signInAndSubmit(
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page).toHaveURL('/')
   await page.clock.install()
-  await page.goto(`/models/${workflowId}/`)
+  await page.goto(hubWorkflowHref(workflowId))
   await expect(page.getByTestId('workflow-run')).toBeEnabled()
   await page.getByTestId('field-image-upload').setInputFiles({
     name: 'photo.webp',
