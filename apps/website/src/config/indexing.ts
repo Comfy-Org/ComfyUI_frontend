@@ -54,6 +54,23 @@ export function isIndexableBuild(): boolean {
   return process.env.WEBSITE_INDEXABLE === '1'
 }
 
+interface HeadIndexingInput {
+  pageNoindex: boolean
+  indexableBuild: boolean
+}
+
+export function headIndexing({
+  pageNoindex,
+  indexableBuild
+}: HeadIndexingInput) {
+  const robotsNoindex = pageNoindex || !indexableBuild
+  return {
+    robotsNoindex,
+    emitCanonical: indexableBuild,
+    emitAlternates: !robotsNoindex
+  }
+}
+
 export function isNoindexPathname(pathname: string): boolean {
   return NOINDEX_PATHNAMES.has(normalizePathname(pathname))
 }

@@ -8,7 +8,11 @@ import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
 import { getRoutes } from '../config/routes'
-import { isIndexableBuild, isNoindexPathname } from '../config/indexing'
+import {
+  headIndexing,
+  isIndexableBuild,
+  isNoindexPathname
+} from '../config/indexing'
 import { isWorkshopInBuild } from '../config/workshop-release'
 import {
   hreflangAlternates,
@@ -72,11 +76,13 @@ const { siteUrl, locale, url } = pageContext(
 )
 const canonicalURL = new URL(url)
 const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
-const indexableBuild = isIndexableBuild()
-const robotsNoindex = shouldNoindex || !indexableBuild
-const alternates = robotsNoindex
-  ? []
-  : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
+const head = headIndexing({
+  pageNoindex: shouldNoindex,
+  indexableBuild: isIndexableBuild()
+})
+const alternates = head.emitAlternates
+  ? hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
+  : []
 const openGraphLocale = ogLocale(locale)
 const openGraphLocaleAlternates = ogLocaleAlternates(locale, alternates)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
@@ -124,7 +130,7 @@ const structuredData = shouldNoindex
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     {keywordsContent && <meta name="keywords" content={keywordsContent} />}
-    {robotsNoindex && <meta name="robots" content="noindex, nofollow" />}
+    {head.robotsNoindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -132,7 +138,7 @@ const structuredData = shouldNoindex
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
-    {indexableBuild && <link rel="canonical" href={canonicalURL.href} />}
+    {head.emitCanonical && <link rel="canonical" href={canonicalURL.href} />}
 
     <!-- Every PP Formula face that renders above the fold. `font-display:
          optional` drops a face that misses its short block period for the

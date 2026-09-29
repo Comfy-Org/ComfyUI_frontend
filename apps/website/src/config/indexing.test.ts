@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  headIndexing,
   isExcludedFromSitemap,
   isIndexableBuild,
   isNoindexPathname
@@ -108,6 +109,42 @@ describe('indexing policy', () => {
       vi.stubEnv('VERCEL_ENV', vercelEnv)
       vi.stubEnv('WEBSITE_INDEXABLE', override)
       expect(isIndexableBuild()).toBe(indexable)
+    }
+  )
+
+  it.for([
+    {
+      pageNoindex: false,
+      indexableBuild: true,
+      robotsNoindex: false,
+      emitCanonical: true,
+      emitAlternates: true
+    },
+    {
+      pageNoindex: true,
+      indexableBuild: true,
+      robotsNoindex: true,
+      emitCanonical: true,
+      emitAlternates: false
+    },
+    {
+      pageNoindex: false,
+      indexableBuild: false,
+      robotsNoindex: true,
+      emitCanonical: false,
+      emitAlternates: false
+    },
+    {
+      pageNoindex: true,
+      indexableBuild: false,
+      robotsNoindex: true,
+      emitCanonical: false,
+      emitAlternates: false
+    }
+  ])(
+    'head for pageNoindex=$pageNoindex indexableBuild=$indexableBuild',
+    ({ pageNoindex, indexableBuild, ...expected }) => {
+      expect(headIndexing({ pageNoindex, indexableBuild })).toEqual(expected)
     }
   )
 })
