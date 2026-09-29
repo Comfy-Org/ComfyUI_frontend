@@ -50,7 +50,7 @@ function offersFrom(
       }
       return [
         {
-          name: `${t(tier.labelKey, locale)} (${cycle})`,
+          name: `${t(tier.labelKey, locale)} (${t(`pricing.cycle.${cycle}`, locale)})`,
           price: match[1],
           cycle,
           url: subscribeUrl(tier.slug, cycle)

@@ -21,17 +21,32 @@ describe('educationOffers', () => {
 })
 
 describe('pricingOffers', () => {
-  it.for(['en', 'zh-CN'] as const)(
-    'offers each %s plan monthly and yearly at the prices the page shows',
-    (locale) => {
+  it.for([
+    {
+      locale: 'en',
+      names: ['STANDARD', 'CREATOR', 'PRO'],
+      monthly: 'monthly',
+      yearly: 'yearly'
+    },
+    {
+      locale: 'zh-CN',
+      names: ['标准版', '创作者版', '专业版'],
+      monthly: '按月',
+      yearly: '按年'
+    }
+  ] as const)(
+    'offers each $locale plan monthly and yearly at the prices the page shows',
+    ({ locale, names, monthly, yearly }) => {
       const offers = pricingOffers(locale)
-      expect(offers.map(({ cycle, price }) => [cycle, price])).toEqual([
-        ['monthly', '20'],
-        ['yearly', '192'],
-        ['monthly', '35'],
-        ['yearly', '336'],
-        ['monthly', '100'],
-        ['yearly', '960']
+      expect(
+        offers.map(({ name, cycle, price }) => [name, cycle, price])
+      ).toEqual([
+        [`${names[0]} (${monthly})`, 'monthly', '20'],
+        [`${names[0]} (${yearly})`, 'yearly', '192'],
+        [`${names[1]} (${monthly})`, 'monthly', '35'],
+        [`${names[1]} (${yearly})`, 'yearly', '336'],
+        [`${names[2]} (${monthly})`, 'monthly', '100'],
+        [`${names[2]} (${yearly})`, 'yearly', '960']
       ])
     }
   )
