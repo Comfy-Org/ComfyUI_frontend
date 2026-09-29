@@ -24,6 +24,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph, createUuidv4 } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type {
   ISerialisedNode,
   SerialisableLLink,
@@ -226,21 +227,45 @@ export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
   // Selectively clone - keep IDs & links
   for (const node of nodes) {
     const newNode = LiteGraph.createNode(node.type)
+    const data = structuredClone(node.serialize())
     if (!newNode) {
       console.warn('Failed to create node', node.type)
-      const serializedData = structuredClone(node.serialize())
-      clonedNodes.push(serializedData)
+      clonedNodes.push(data)
       continue
     }
 
     // Must be cloned; litegraph "serialize" is mostly shallow clone
-    const data = structuredClone(node.serialize())
     newNode.configure(data)
-
     clonedNodes.push(newNode.serialize())
   }
 
   return clonedNodes
+}
+
+export function findUnresolvableSubgraphLink(
+  subgraphNode: SubgraphNode
+): LLink | undefined {
+  const { subgraph } = subgraphNode
+
+  for (const link of subgraph.links.values()) {
+    const originOk =
+      link.origin_id === UNASSIGNED_NODE_ID ||
+      (link.origin_id === SUBGRAPH_INPUT_ID
+        ? Number.isInteger(link.origin_slot) &&
+          link.origin_slot >= 0 &&
+          link.origin_slot < subgraph.inputs.length
+        : subgraph.getNodeById(link.origin_id)?.outputs[link.origin_slot] !==
+          undefined)
+    const targetOk =
+      link.target_id === UNASSIGNED_NODE_ID ||
+      (link.target_id === SUBGRAPH_OUTPUT_ID
+        ? Number.isInteger(link.target_slot) &&
+          link.target_slot >= 0 &&
+          link.target_slot < subgraph.outputs.length
+        : subgraph.getNodeById(link.target_id)?.inputs[link.target_slot] !==
+          undefined)
+    if (!originOk || !targetOk) return link
+  }
 }
 
 /**
@@ -537,6 +562,19 @@ export function findReleasableSubgraphs(
   const removedSubtree: Subgraph[] = []
   collectSubgraphsPostOrder(removedNode.subgraph, new Set(), removedSubtree)
   return removedSubtree.filter((subgraph) => !liveIds.has(subgraph.id))
+}
+
+export function findOrphanedSubgraphs(
+  rootGraph: LGraph,
+  removedNodes: Iterable<LGraphNode>
+): Subgraph[] {
+  const orphaned = new Map<SubgraphId, Subgraph>()
+  for (const node of removedNodes) {
+    if (!node.isSubgraphNode()) continue
+    for (const subgraph of findReleasableSubgraphs(rootGraph, node))
+      orphaned.set(subgraph.id, subgraph)
+  }
+  return [...orphaned.values()]
 }
 
 function reorderInPlace(arr: unknown[], indices: readonly number[]): void {

@@ -1,11 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 
 import { useAgentConversationStore } from './agentConversationStore'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string): AgentChatEvent =>
@@ -33,6 +39,29 @@ const done = (id: string): AgentChatEvent =>
   chat({
     type: 'agent_message_done',
     data: { message_id: id, thread_id: 'th', usage: null }
+  })
+const runApproval = (
+  id: string,
+  askId: string,
+  overrides: Record<string, unknown> = {}
+): AgentChatEvent =>
+  chat({
+    type: 'agent_ask',
+    data: {
+      message_id: id,
+      thread_id: 'th',
+      ask_id: askId,
+      kind: 'run_approval',
+      prompt: 'Run workflow?',
+      options: [
+        { id: 'run', label: 'Run' },
+        { id: 'cancel', label: 'Cancel' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false,
+      ...overrides
+    }
   })
 const askResolved = (id: string, askId: string): AgentChatEvent =>
   chat({
@@ -86,6 +115,22 @@ const partTexts = (store: ReturnType<typeof useAgentConversationStore>) =>
   )
 
 describe('useAgentConversationStore', () => {
+  it('publishes a turn identity before its live status', () => {
+    const store = useAgentConversationStore()
+    const observations: [typeof store.status, TurnId | null][] = []
+    watch(
+      () => [store.status, store.activeTurnId] as const,
+      ([status, turnId]) => observations.push([status, turnId]),
+      { flush: 'sync' }
+    )
+
+    store.startTurn(T1)
+
+    expect(observations.filter(([status]) => status !== 'idle')).toEqual([
+      ['streaming', T1]
+    ])
+  })
+
   it('(M1) fires a deep watch on messages when a MID-turn delta event lands', async () => {
     const store = useAgentConversationStore()
     const spy = vi.fn()
@@ -220,6 +265,199 @@ describe('useAgentConversationStore', () => {
     })
   })
 
+  // PM-1575 regression: a tool call held back pending canvas catch-up must
+  // still receive notifyCanvasCaughtUp() after its turn settles.
+  // agent_message_done drops the active-turn transport out of the `transport`
+  // slot (clearActive()) the instant it lands, which used to leave the held
+  // part with no reachable transport for notifyCanvasCaughtUp() to forward
+  // to -- stranding it until its own STALE_AFTER_MS fallback fired, tens of
+  // seconds later than the canvas actually caught up.
+  it('still settles a canvas-sync-pending tool call after its turn has settled', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(done('t1'))
+
+    // The turn is settled (message.streaming is false), but the tool part
+    // itself is held at 'streaming' -- the spinner -- pending canvas catch-up.
+    expect(store.messages[0].streaming).toBe(false)
+    expect(store.messages[0].parts[0]).toMatchObject({
+      type: 'tool',
+      state: 'streaming'
+    })
+
+    store.notifyCanvasCaughtUp()
+
+    expect(store.messages[0].parts[0]).toMatchObject({
+      type: 'tool',
+      state: 'done'
+    })
+  })
+
+  // PM-1575 regression (finding #1/#9, high): the normal ordering on a
+  // healthy doc host is the matching doc_update applying WHILE the tool is
+  // still running, with the success frame landing after -- so by the time
+  // the terminal frame arrives there is nothing left to wait on. Threads the
+  // outcome-count getter end to end (store -> transport), unlike the
+  // transport-level unit test for the same finding.
+  it('settles a held tool call immediately when the canvas catches up while it is still running', () => {
+    const store = useAgentConversationStore()
+    let outcomeCount = 0
+    store.setCanvasSyncGate(
+      () => true,
+      () => outcomeCount
+    )
+    store.startTurn(T1)
+
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+    outcomeCount += 1
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+
+    expect(store.messages[0].parts[0]).toMatchObject({
+      type: 'tool',
+      state: 'done'
+    })
+  })
+
+  // PM-1575 regression (finding #3, medium): settleActiveTurn used to keep
+  // only a single "settled but still holding" transport reachable. A second
+  // turn settling within the same window while ALSO holding a part
+  // overwrote that slot, stranding the first turn's held part until its own
+  // STALE_AFTER_MS fallback.
+  it('keeps an earlier settled turn reachable after a second turn also settles with a held part', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(done('t1'))
+
+    store.startTurn(T2)
+    store.ingest(toolCall('t2', 'add_node', 'success'))
+    store.ingest(done('t2'))
+
+    store.notifyCanvasCaughtUp()
+
+    expect(store.messages[0].parts[0]).toMatchObject({
+      type: 'tool',
+      state: 'done'
+    })
+    expect(store.messages[1].parts[0]).toMatchObject({
+      type: 'tool',
+      state: 'done'
+    })
+  })
+
+  // PM-1575 regression (finding #4, medium): abortActiveTurn() used to drop
+  // the transport out of every reachable slot without flushing what it was
+  // still holding, stranding the part at 'streaming' until its own 30s
+  // fallback even though nothing will ever call notifyCanvasCaughtUp() for
+  // a turn nobody is tracking anymore.
+  it('flushes a held tool-call part immediately when its turn is aborted', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+
+    store.abortActiveTurn()
+
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+  })
+
+  // PM-1575 regression (finding #4, medium): resumeBackgroundTurn()'s SECOND
+  // early return -- reached when a settled background turn's message is
+  // kept on screen but not reactivated as the live turn -- dropped the
+  // transport the same way as the paths above, leaving a held part
+  // reachable only via its own 30s STALE_AFTER_MS fallback instead of
+  // settling the moment it is clear nothing will ever resume it.
+  it('flushes a held tool-call part immediately when a settled background turn is resumed but not reactivated', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.stashActiveTurn()
+    store.ingest(done('t1'))
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+
+    store.resumeBackgroundTurn()
+
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+  })
+
+  // PM-1575 regression (finding #5, medium): nothing cancelled a held tool
+  // call's 30s timer when hydrate() discarded its transport. The orphaned
+  // timer could fire after hydrate() replaced the transcript with
+  // authoritative server content under the SAME turn id, overwriting it
+  // with the disposed transport's own stale snapshot.
+  it('does not let an orphaned canvas-sync timer overwrite hydrated content under the same turn id', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(done('t1'))
+
+    store.hydrate([
+      historyRow(1, 'user', 't1', 'go'),
+      historyRow(2, 'assistant', 't1', 'authoritative reply')
+    ])
+
+    vi.advanceTimersByTime(30_000)
+
+    expect(partTexts(store)).toEqual(['authoritative reply'])
+  })
+
+  // PM-1575 regression (finding #7, medium): canvasSyncGate used to be
+  // captured BY VALUE at transport-creation time, so a later
+  // setCanvasSyncGate() call (e.g. AgentPanelRoot.vue re-registering after a
+  // remount) never reached a transport created before it.
+  it('routes a later setCanvasSyncGate() call to a transport created before it', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => false)
+    store.startTurn(T1)
+
+    store.setCanvasSyncGate(() => true)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+  })
+
+  // PM-1575 regression (finding #10, medium): the source watcher this
+  // guards -- AgentPanelRoot.vue's `watch(() => crdtStatus.value.outcomes
+  // .applied, ...)` -- treated ANY change to the counter as catch-up,
+  // including a decrease. `useAgentCrdtFollower` resets `outcomes.applied`
+  // to 0 when its follower is torn down (e.g. toggling the panel mid-turn)
+  // and a restarted follower counts from 0 again, so that watcher's own
+  // guard, reproduced here against the real store, is what stops a mere
+  // reset from incorrectly releasing every held tool call.
+  it('does not release a held tool call when the applied counter decreases, only when it increases', () => {
+    const store = useAgentConversationStore()
+    const applied = ref(5)
+    store.setCanvasSyncGate(
+      () => true,
+      () => applied.value
+    )
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+
+    watch(
+      applied,
+      (value, previous) => {
+        if (value > previous) store.notifyCanvasCaughtUp()
+      },
+      { flush: 'sync' }
+    )
+
+    applied.value = 0
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+
+    applied.value = 6
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+  })
+
   it('restores a pending run approval as the live turn and continues after it resolves', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
@@ -267,9 +505,7 @@ describe('useAgentConversationStore', () => {
     store.ingest(delta('assistant-message-1', 'Running now.'))
 
     expect(
-      store.messages[0].parts.some(
-        (part) => (part as { type: string }).type === 'runApproval'
-      )
+      store.messages[0].parts.some((part) => part.type === 'runApproval')
     ).toBe(false)
     expect(partTexts(store)).toContain('Running now.')
     expect(store.isStreaming).toBe(true)
@@ -324,6 +560,53 @@ describe('useAgentConversationStore', () => {
     expect(store.threadId).toBe('th-7')
     store.reset()
     expect(store.threadId).toBeNull()
+  })
+
+  it('scopes approval dedupe and timing to the conversation that owns them', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    expect(store.recordApprovalShown('ask-1', 1_000)).toBe(true)
+    expect(store.recordApprovalShown('ask-1', 2_000)).toBe(false)
+    expect(store.approvalShownAt('ask-1')).toBe(1_000)
+
+    // Remount hydration of the same thread keeps the shown state: a replayed
+    // approval card must not re-emit or restart the decision timer.
+    store.setThreadId('th')
+    store.hydrate([])
+    expect(store.approvalShownAt('ask-1')).toBe(1_000)
+    expect(store.recordApprovalShown('ask-1', 3_000)).toBe(false)
+
+    // Leaving the thread drops its abandoned asks with it.
+    store.setThreadId('th-other')
+    expect(store.approvalShownAt('ask-1')).toBeUndefined()
+    expect(store.recordApprovalShown('ask-1', 4_000)).toBe(true)
+
+    store.reset()
+    expect(store.approvalShownAt('ask-1')).toBeUndefined()
+    expect(store.recordApprovalShown('ask-1', 5_000)).toBe(true)
+  })
+
+  it('snapshots local workflow references on the submitted turn', () => {
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+    Reflect.apply(store.recordUser, store, [
+      T1,
+      'compare these',
+      undefined,
+      undefined,
+      [
+        { id: 'wf-1', name: 'Workflow 1' },
+        { id: 'wf-2', name: 'Workflow 2' }
+      ]
+    ])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: [
+        { id: 'wf-1', name: 'Workflow 1' },
+        { id: 'wf-2', name: 'Workflow 2' }
+      ]
+    })
   })
 
   it('revokes transcript blob previews on reset and on hydrate', () => {
@@ -428,6 +711,92 @@ describe('useAgentConversationStore', () => {
     expect(partTexts(store)).toEqual(['First reply', 'Second reply'])
   })
 
+  it('hydrates persisted workflow reference chips on their original user turn', () => {
+    const user = historyRow(1, 'user', 'turn-a', 'Compare these')
+    user.content = {
+      text: 'Compare these',
+      workflow_references: [
+        { workflow_id: 'wf-reference', name: 'Reference workflow' }
+      ]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([user, historyRow(2, 'assistant', 'turn-a', 'Done')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: [{ id: 'wf-reference', name: 'Reference workflow' }]
+    })
+  })
+
+  it('hydrates a persisted user attachment preview on its original turn', () => {
+    const user = historyRow(1, 'user', 'turn-a', 'check this image')
+    user.content = {
+      text: 'check this image',
+      attachments: ['ComfyUI_00002_.png'],
+      attachment_refs: [
+        { name: 'ComfyUI_00002_.png', id: 'asset-1', kind: 'image' }
+      ]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([user, historyRow(2, 'assistant', 'turn-a', 'Looks good.')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }]
+    })
+  })
+
+  it('hydrates persisted tool calls into the same parts array the live work-summary UI reads', () => {
+    const assistant = historyRow(2, 'assistant', 'turn-a', 'Done')
+    assistant.content = {
+      text: 'Done',
+      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([historyRow(1, 'user', 'turn-a', 'Find a node'), assistant])
+
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'tool',
+      callId: 'call-1',
+      name: 'search_nodes',
+      state: 'done',
+      ok: true
+    })
+  })
+
+  it('does not bleed a tool-call summary onto a different chat, and restores it when switching back', () => {
+    const store = useAgentConversationStore()
+    const threadAAssistant = historyRow(2, 'assistant', 'turn-a', 'Done A')
+    threadAAssistant.content = {
+      text: 'Done A',
+      tool_calls: [{ id: 'call-a', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const threadA = [
+      historyRow(1, 'user', 'turn-a', 'Find a node'),
+      threadAAssistant
+    ]
+    const threadB = [
+      historyRow(1, 'user', 'turn-b', 'Just chat'),
+      historyRow(2, 'assistant', 'turn-b', 'Done B')
+    ]
+    const hasToolPart = () =>
+      store.messages.some((message) =>
+        message.parts.some((part) => part.type === 'tool')
+      )
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
+
+    store.hydrate(threadB)
+    expect(hasToolPart()).toBe(false)
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
+  })
+
   it('keeps hydrated turn identity stable when persisted row ids change', () => {
     const store = useAgentConversationStore()
     const firstRows = [
@@ -484,5 +853,303 @@ describe('useAgentConversationStore', () => {
     expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
     expect(partTexts(store)).toEqual(['persisted reply'])
     expect(store.isStreaming).toBe(false)
+  })
+
+  it('resolves existing paywalls without resurrecting them', () => {
+    const store = useAgentConversationStore()
+    store.recordPaywall(T1, 'subscribe')
+    store.resolvePaywalls()
+
+    expect(store.entries).toMatchObject([{ role: 'user', text: 'subscribe' }])
+    expect(store.messages[0].parts).toEqual([
+      { type: 'paywall', message: undefined }
+    ])
+
+    store.recordPaywall(T2, 'continue')
+    expect(store.entries.map((entry) => entry.role)).toEqual([
+      'user',
+      'user',
+      'assistant'
+    ])
+  })
+  describe('a dropped approval ask is reported', () => {
+    it('reports when the socket-drop teardown left nothing to route the ask to', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(delta('t1', 'building your workflow'))
+
+      // What onStatus(false) does today: settle the active turn locally and
+      // empty the background map, while the server keeps running the turn.
+      store.abortActiveTurn()
+      store.dropBackgroundTurns()
+
+      // The server, still running, now asks the user to approve the run.
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(
+        store.messages.some((message) =>
+          message.parts.some((part) => part.type === 'runApproval')
+        )
+      ).toBe(false)
+      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_delivering_agent_approval_ask',
+          level: 'warning',
+          tags: expect.objectContaining({
+            reason: 'no-live-turn',
+            ask_kind: 'run_approval'
+          })
+        })
+      )
+    })
+
+    it('stays quiet when the ask reaches its turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(delta('t1', 'building your workflow'))
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(store.messages[0].parts).toContainEqual(
+        expect.objectContaining({
+          type: 'runApproval',
+          askId: 'turn-1:call-1'
+        })
+      )
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('stays quiet for every non-ask frame the same routing drops', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.abortActiveTurn()
+      store.dropBackgroundTurns()
+
+      store.ingest(delta('t1', 'more text'))
+      store.ingest(thinking('t1', 'still thinking'))
+      store.ingest(done('t1'))
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('stays quiet for an ask belonging to an untracked thread', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.abortActiveTurn()
+
+      store.ingest(
+        chat({
+          ...runApproval('t1', 'turn-1:call-1'),
+          data: {
+            ...runApproval('t1', 'turn-1:call-1').data,
+            thread_id: 'another-thread'
+          }
+        })
+      )
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('reports the same dropped ask only once', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.abortActiveTurn()
+
+      const ask = runApproval('t1', 'turn-1:call-1')
+      store.ingest(ask)
+      store.ingest(ask)
+
+      expect(reportError).toHaveBeenCalledTimes(1)
+    })
+
+    it('dedupes one ask across the transport and store routing paths', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.ingest(done('t1'))
+
+      const ask = runApproval('t1', 'turn-1:call-1')
+      store.ingest(ask)
+      store.dropBackgroundTurns()
+      store.ingest(ask)
+
+      expect(reportError).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports a late ask after hydrate retires an active turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+
+      store.hydrate([])
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
+    })
+
+    it('reports a late ask after resume discards a settled turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.ingest(done('t1'))
+
+      store.hydrate([])
+      store.resumeBackgroundTurn()
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
+    it('reports after a dropped background turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.dropBackgroundTurns()
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
+    })
+
+    it('preserves the settled reason when dropping background turns', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.ingest(done('t1'))
+      store.dropBackgroundTurns()
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
+    it('records malformed background settlement before deleting the turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.settleBackgroundTurn(T1)
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
+    it('reports after a settled active turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(done('t1'))
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
+    it('keeps an aborted identity after an unrelated turn starts', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.abortActiveTurn()
+      store.startTurn(T2)
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
+    })
+
+    it('records an aborted turn under the thread that owns its transport', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('original-thread')
+      store.startTurn(T1)
+      store.setThreadId('replacement-thread')
+      store.abortActiveTurn()
+
+      store.ingest(
+        chat({
+          ...runApproval('t1', 'turn-1:call-1'),
+          data: {
+            ...runApproval('t1', 'turn-1:call-1').data,
+            thread_id: 'original-thread'
+          }
+        })
+      )
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
+    })
+
+    it('reports an ask kind the panel has no card for', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(delta('t1', 'building your workflow'))
+
+      store.ingest(runApproval('t1', 'turn-1:call-1', { kind: 'pick_a_model' }))
+
+      expect(
+        store.messages[0].parts.some((part) => part.type === 'runApproval')
+      ).toBe(false)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_delivering_agent_approval_ask',
+          tags: expect.objectContaining({
+            reason: 'unknown-kind',
+            ask_kind: 'pick_a_model'
+          })
+        })
+      )
+    })
   })
 })

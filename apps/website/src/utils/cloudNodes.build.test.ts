@@ -8,11 +8,11 @@ const fetchCloudNodesMock = vi.hoisted(() =>
 )
 const reportCloudNodesOutcomeMock = vi.hoisted(() => vi.fn())
 
-vi.mock('./cloudNodes', () => ({
+vi.mock(import('./cloudNodes'), () => ({
   fetchCloudNodesForBuild: fetchCloudNodesMock
 }))
 
-vi.mock('./cloudNodes.ci', () => ({
+vi.mock(import('./cloudNodes.ci'), () => ({
   reportCloudNodesOutcome: reportCloudNodesOutcomeMock
 }))
 

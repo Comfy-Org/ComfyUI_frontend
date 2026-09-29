@@ -32,7 +32,7 @@ describe('fetchRegistryPacks', () => {
     })
 
     const result = await fetchRegistryPacks(ids, {
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     expect(fetchImpl).toHaveBeenCalledTimes(3)
@@ -66,7 +66,7 @@ describe('fetchRegistryPacks', () => {
     })
 
     const result = await fetchRegistryPacks(ids, {
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     const enriched = [...result.values()].filter((pack) => pack !== null)
@@ -97,7 +97,7 @@ describe('fetchRegistryPacks', () => {
     )
 
     const result = await fetchRegistryPacks(['pack-with-nulls'], {
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     const pack = result.get('pack-with-nulls')
@@ -136,7 +136,7 @@ describe('fetchRegistryPacks', () => {
     const fetchImpl = vi.fn(async () => new Response('{}', { status: 500 }))
 
     const result = await fetchRegistryPacks(ids, {
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     expect(fetchImpl).toHaveBeenCalledTimes(2)
@@ -178,7 +178,7 @@ describe('fetchRegistryPacksWithNodes', () => {
     })
 
     const result = await fetchRegistryPacksWithNodes(['comfyui-impact-pack'], {
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     expect(result.size).toBe(1)
@@ -230,7 +230,7 @@ describe('fetchRegistryPacksWithNodes', () => {
     })
 
     const result = await fetchRegistryPacksWithNodes(['big-pack'], {
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     expect(comfyNodesCallCount).toBe(2)
@@ -258,7 +258,7 @@ describe('fetchRegistryPacksWithNodes', () => {
     })
 
     const result = await fetchRegistryPacksWithNodes(['no-version-pack'], {
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     expect(result.get('no-version-pack')).toBeNull()
@@ -288,7 +288,7 @@ describe('fetchRegistryPacksWithNodes', () => {
     })
 
     const result = await fetchRegistryPacksWithNodes(['failing-pack'], {
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     const packData = result.get('failing-pack')
@@ -324,7 +324,7 @@ describe('fetchRegistryPacksWithNodes', () => {
     })
 
     const result = await fetchRegistryPacksWithNodes(['null-nodes-pack'], {
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     const packData = result.get('null-nodes-pack')
@@ -361,7 +361,7 @@ describe('fetchRegistryPacksWithNodes', () => {
     })
 
     const result = await fetchRegistryPacksWithNodes(packIds, {
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     expect(result.size).toBe(3)
@@ -404,7 +404,7 @@ describe('fetchRegistryPacksWithNodes', () => {
     })
 
     const result = await fetchRegistryPacksWithNodes(['retry-pack'], {
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     expect(comfyNodesAttempts).toBe(2)
@@ -447,7 +447,7 @@ describe('fetchRegistryPacksWithNodes', () => {
     })
 
     const result = await fetchRegistryPacksWithNodes(['bool-pack'], {
-      fetchImpl: fetchImpl as typeof fetch
+      fetchImpl: fetchImpl
     })
 
     const packData = result.get('bool-pack')

@@ -424,6 +424,17 @@ describe('WidgetSelectDefault', () => {
       expect(trigger).toHaveTextContent('5')
     })
 
+    it('does not mark a placeholder combo widget invalid before its real options load', () => {
+      // A combo widget whose options have not loaded yet has
+      // `options: {}` (no `values` key at all). A value that will be a
+      // legitimate option once they arrive should not flash the invalid
+      // ring in the meantime.
+      renderComponent(createWidget(undefined), 'sdxl.safetensors')
+
+      const trigger = screen.getByTestId('widget-select-default-trigger')
+      expect(trigger).not.toHaveAttribute('aria-invalid')
+    })
+
     it('disables the trigger when widget options are disabled', () => {
       renderComponent(createWidget(['a'], { disabled: true }), 'a')
 

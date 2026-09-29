@@ -222,7 +222,7 @@ const zProperties = z
 
 const zWidgetValues = z.union([z.array(z.any()), z.record(z.any())])
 
-const zComfyNode = z
+export const zComfyNode = z
   .object({
     id: zNodeId,
     type: z.string(),
@@ -561,13 +561,15 @@ const zNodeInputValue = z.union([
   z.tuple([zNodeId, zSlotIndex])
 ])
 
+export const zNodePackMetadata = zProperties
+  .pick({ cnr_id: true, aux_id: true, ver: true })
+  .strip()
+
 const zNodeData = z.object({
   inputs: z.record(zNodeInputName, zNodeInputValue),
   class_type: z.string(),
-  _meta: z.object({
-    title: z.string()
-  })
+  _meta: zNodePackMetadata.extend({ title: z.string() }).optional()
 })
 
-const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
+export const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
 export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>

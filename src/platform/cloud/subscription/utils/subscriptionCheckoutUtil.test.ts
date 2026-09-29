@@ -1,59 +1,45 @@
-import type * as DistributionModule from '@/platform/distribution/types'
 import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import { useTelemetry } from '@/platform/telemetry'
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 
-const {
-  mockTelemetry,
-  mockGetAuthHeader,
+const { mockIsCloud, mockGetCheckoutAttribution, mockLocalStorage } =
+  vi.hoisted(() => ({
+    mockIsCloud: { value: true },
+    mockGetCheckoutAttribution: vi.fn(() => ({
+      ga_client_id: 'ga-client-id',
+      ga_session_id: 'ga-session-id',
+      ga_session_number: 'ga-session-number',
+      im_ref: 'impact-click-123',
+      utm_source: 'impact',
+      utm_medium: 'affiliate',
+      utm_campaign: 'spring-launch',
+      gclid: 'gclid-123',
+      gbraid: 'gbraid-456',
+      wbraid: 'wbraid-789'
+    })),
+    mockLocalStorage: (() => {
+      const store = new Map<string, string>()
 
-  mockIsCloud,
-  mockGetCheckoutAttribution,
-  mockLocalStorage
-} = vi.hoisted(() => ({
-  mockTelemetry: {
-    trackBeginCheckout: vi.fn(),
-    trackBillingEvent: vi.fn()
-  },
-  mockGetAuthHeader: vi.fn<
-    ReturnType<typeof useAuthStore>['getFirebaseAuthHeader']
-  >(() => Promise.resolve({ Authorization: 'Bearer test-token' as const })),
-
-  mockIsCloud: { value: true },
-  mockGetCheckoutAttribution: vi.fn(() => ({
-    ga_client_id: 'ga-client-id',
-    ga_session_id: 'ga-session-id',
-    ga_session_number: 'ga-session-number',
-    im_ref: 'impact-click-123',
-    utm_source: 'impact',
-    utm_medium: 'affiliate',
-    utm_campaign: 'spring-launch',
-    gclid: 'gclid-123',
-    gbraid: 'gbraid-456',
-    wbraid: 'wbraid-789'
-  })),
-  mockLocalStorage: (() => {
-    const store = new Map<string, string>()
-
-    return {
-      getItem: vi.fn((key: string) => store.get(key) ?? null),
-      setItem: vi.fn((key: string, value: string) => {
-        store.set(key, value)
-      }),
-      removeItem: vi.fn((key: string) => {
-        store.delete(key)
-      }),
-      clear: vi.fn(() => {
-        store.clear()
-      }),
-      __reset: () => {
-        store.clear()
+      return {
+        getItem: vi.fn((key: string) => store.get(key) ?? null),
+        setItem: vi.fn((key: string, value: string) => {
+          store.set(key, value)
+        }),
+        removeItem: vi.fn((key: string) => {
+          store.delete(key)
+        }),
+        clear: vi.fn(() => {
+          store.clear()
+        }),
+        __reset: () => {
+          store.clear()
+        }
       }
-    }
-  })()
-}))
+    })()
+  }))
 
 Object.defineProperty(window, 'localStorage', {
   value: mockLocalStorage,
@@ -65,12 +51,9 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true
 })
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => mockTelemetry)
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -104,9 +87,9 @@ function createDeferred<T>() {
 
 beforeEach(() => {
   Object.assign(useAuthStore(), { userId: 'user-123' })
-  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
-    mockGetAuthHeader
-  )
+  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockResolvedValue({
+    Authorization: 'Bearer test-token' as const
+  })
   vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
     (input, init) => fetch(input, init)
   )
@@ -136,7 +119,7 @@ describe('performSubscriptionCheckout', () => {
 
     await performSubscriptionCheckout('pro', 'yearly')
 
-    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith({
       user_id: 'user-123',
       tier: 'pro',
       cycle: 'yearly',
@@ -153,8 +136,10 @@ describe('performSubscriptionCheckout', () => {
       gbraid: 'gbraid-456',
       wbraid: 'wbraid-789'
     })
-    const beginCheckoutMetadata =
-      mockTelemetry.trackBeginCheckout.mock.calls[0][0]
+    const telemetry = useTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
+    const beginCheckoutMetadata = vi.mocked(telemetry.trackBeginCheckout).mock
+      .calls[0][0]
     const [, storedAttempt] = mockLocalStorage.setItem.mock.calls[0]
     expect(beginCheckoutMetadata.checkout_attempt_id).toBe(
       JSON.parse(storedAttempt).attempt_id
@@ -208,7 +193,7 @@ describe('performSubscriptionCheckout', () => {
         body: JSON.stringify({})
       })
     )
-    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith({
       user_id: 'user-123',
       tier: 'pro',
       cycle: 'monthly',
@@ -231,11 +216,13 @@ describe('performSubscriptionCheckout', () => {
       paymentIntentSource: 'out_of_credits'
     })
 
-    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith(
+    expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
       expect.objectContaining({ payment_intent_source: 'out_of_credits' })
     )
-    const beginCheckoutMetadata =
-      mockTelemetry.trackBeginCheckout.mock.calls[0][0]
+    const telemetry = useTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
+    const beginCheckoutMetadata = vi.mocked(telemetry.trackBeginCheckout).mock
+      .calls[0][0]
     const [, storedAttempt] = mockLocalStorage.setItem.mock.calls[0]
     const pendingAttempt = JSON.parse(storedAttempt)
     expect(pendingAttempt).toMatchObject({
@@ -258,7 +245,9 @@ describe('performSubscriptionCheckout', () => {
       >()
 
     Object.assign(useAuthStore(), { userId: 'user-early' })
-    mockGetAuthHeader.mockImplementationOnce(() => authHeader.promise)
+    vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementationOnce(
+      () => authHeader.promise
+    )
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: async () => ({ checkout_url: checkoutUrl })
@@ -271,8 +260,8 @@ describe('performSubscriptionCheckout', () => {
 
     await checkoutPromise
 
-    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledTimes(1)
-    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith(
+    expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledTimes(1)
+    expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: 'user-late',
         tier: 'pro',
@@ -301,7 +290,7 @@ describe('performSubscriptionCheckout', () => {
     )
     expect(storedAttempt).toBeNull()
     expect(mockLocalStorage.setItem).not.toHaveBeenCalled()
-    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith(
+    expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
       expect.objectContaining({
         checkout_attempt_id: expect.any(String)
       })
@@ -323,7 +312,7 @@ describe('performSubscriptionCheckout', () => {
       })
     ).rejects.toThrow()
 
-    expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'subscription_checkout',
       stage: 'failed',
       outcome: 'failure',
@@ -335,10 +324,4 @@ describe('performSubscriptionCheckout', () => {
     })
   })
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(),
-  onIdTokenChanged: vi.fn()
-}))
+vi.mock(import('firebase/auth'))

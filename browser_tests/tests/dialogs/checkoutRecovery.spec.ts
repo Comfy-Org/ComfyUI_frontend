@@ -5,7 +5,6 @@ import type {
   BillingPlansResponse,
   BillingStatusResponse,
   ErrorResponse,
-  Plan,
   PreviewSubscribeResponse
 } from '@comfyorg/ingest-types'
 
@@ -17,6 +16,7 @@ import {
   cloudAppFixture as test,
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -38,11 +38,7 @@ const RECOVERY_OPERATION_ID = 'op-e2e-recover'
 const BOOT_FEATURES = {
   billing_control_enabled: true
 } satisfies RemoteConfig
-// Disable the experimental Asset API: with it on (cloud default) the unmocked
-// asset endpoints 403 and workflow restore throws uncaught, aborting the
-// GraphCanvas onMounted chain before the recovery loader.
 const BOOT_SETTINGS = {
-  'Comfy.Assets.UseAssetAPI': false,
   'Comfy.TutorialCompleted': true
 }
 
@@ -59,20 +55,14 @@ const PENDING_CREATOR_CHECKOUT = {
   }
 } satisfies Omit<PendingSubscriptionCheckout, 'attemptedAt'>
 
-const CREATOR_ANNUAL_PLAN = {
+const CREATOR_ANNUAL_PLAN = createPlan({
   slug: 'creator-annual',
   tier: 'CREATOR',
   duration: 'ANNUAL',
-  price_cents: 33_600,
-  credits_cents: 7_400,
-  max_seats: 5,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 33_600,
-    total_credits_cents: 7_400
-  }
-} satisfies Plan
+  priceCents: 33_600,
+  monthlyCredits: 7_400,
+  maxSeats: 5
+})
 
 const LEGACY_ACTIVE_STANDARD_STATUS = {
   is_active: true,
@@ -97,8 +87,8 @@ const NEW_CREATOR_SUBSCRIPTION = {
   is_immediate: true,
   cost_today_cents: 33_600,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 7_400,
-  credits_next_period_cents: 7_400,
+  credits_today_cents: CREATOR_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   new_plan: CREATOR_ANNUAL_PLAN
 } satisfies PreviewSubscribeResponse
 
@@ -126,11 +116,18 @@ const PENDING_RECOVERY_OPERATION = {
 
 // The recovery loader runs at the tail of GraphCanvas onMounted, so the boot
 // chain must not throw before it: a missing settings subpath, prompt exec_info,
-// or queue status each abort that chain.
+// queue status, or an unmocked asset endpoint each abort that chain.
 async function mockGraphBootExtras(page: Page) {
   await page.route('**/api/settings/**', (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
     return route.fulfill(jsonRoute({}))
+  })
+  // Cloud always has assets enabled, so the unmocked asset endpoints would 403
+  // and workflow restore would throw uncaught. One glob covers every shape boot
+  // asks for: `/api/assets`, `?query`, `/seed`, `/<id>`.
+  await page.route('**/api/assets**', (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    return route.fulfill(jsonRoute({ assets: [], total: 0, has_more: false }))
   })
   await page.route('**/api/prompt', (route) => {
     if (route.request().method() !== 'GET') return route.fallback()

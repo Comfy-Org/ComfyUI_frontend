@@ -44,6 +44,53 @@ namespace access to factories, Pinia module mocks, and replacements of store
 composables. Non-Pinia modules such as `layoutStore` and spies on real store
 actions remain allowed. Only the global setup owns Pinia creation and disposal.
 
+### Avoid hook-assigned aliases of store actions
+
+Read an action from its store where it is used instead of caching it in a
+suite-level `let` assigned by `beforeEach`:
+
+```typescript
+vi.mocked(useToastStore().addAlert).mockImplementation(() => {})
+expect(useToastStore().addAlert).toHaveBeenCalledWith('Upload failed')
+```
+
+Use a test-local `const store = useToastStore()` when several accesses become
+hard to read. Keep shared variables when they own a per-test resource, a
+reactive fixture, or a value that teardown must restore.
+
+### Capture import-time extension registration
+
+Use `createExtensionCapture` for tests that need registered extension hooks
+without running registration services. Create one capture per test file and
+keep the mock factory in that file:
+
+```typescript
+const extensions = vi.hoisted<{
+  registered: ComfyExtension[]
+  registerExtension: (extension: ComfyExtension) => void
+}>(() => {
+  const registered: ComfyExtension[] = []
+  return {
+    registered,
+    registerExtension: vi.fn((extension) => registered.push(extension))
+  }
+})
+
+vi.mock(import('@/scripts/app'), () => ({
+  app: { registerExtension: extensions.registerExtension }
+}))
+
+await import('@/extensions/core/customWidgets')
+const extension = extensions.registered.find(
+  ({ name }) => name === 'Comfy.CustomWidgets'
+)
+```
+
+Mock only `registerExtension` and the other app members exercised by the module
+under test. Keep one registration array per test file and use the authoritative
+`ComfyExtension` hook signatures. Reset scenario state per test, not the module
+cache.
+
 ## Don't Mock `vue-i18n` — Use a Real Plugin
 
 Mount with a real `createI18n` instance instead of mocking `vue-i18n`. The plugin is cheap, owned by a third party (don't mock what you don't own), and a real instance exercises the same translation key resolution and pluralization logic that production uses.
@@ -138,6 +185,20 @@ it('handles success', () => {
   // ... test code
 })
 ```
+
+### Match mock arguments with `vi.when`
+
+Use [Vitest 5's `vi.when`](https://vitest.dev/guide/recipes/conditional-mocking)
+when a mock returns fixed values for specific arguments. Keep
+`mockImplementation` for calculations and side effects. See
+[`UsageLogsTable.test.ts`](../../src/components/dialog/content/setting/UsageLogsTable.test.ts)
+for a typed paginated event response.
+
+Register behaviors inside the test or `beforeEach`; `mockReset` clears them
+before the next test. Preserve unmatched-call behavior with `onUnmatched`.
+Register exact matches before asymmetric catch-all matchers: Vitest matches
+behaviors in registration order and merges new arguments into an existing
+matching behavior.
 
 ## Testing Event Listeners
 

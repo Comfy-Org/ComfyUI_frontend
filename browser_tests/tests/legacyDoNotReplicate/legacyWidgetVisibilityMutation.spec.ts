@@ -166,12 +166,11 @@ test.describe(
       await expect(nodeWidget).toBeVisible()
       await expect(panelWidget).toBeVisible()
 
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      await comfyPage.menu.topbar.setVueNodesEnabled(false)
       await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
       await expect(panelWidget).toBeHidden()
 
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.vueNodes.waitForNodes()
+      await comfyPage.menu.topbar.setVueNodesEnabled(true)
       await expect(nodeWidget).toBeVisible()
       await expect(panelWidget).toBeVisible()
     })

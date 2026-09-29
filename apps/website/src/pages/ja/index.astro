@@ -29,7 +29,10 @@ const { siteUrl } = pageContext(
   title="Comfy - ビジュアルAIを自在にコントロール"
   description={t('hero.subtitle', 'ja')}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
-  extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
+  extraJsonLd={[
+    comfyUiApplicationNode(siteUrl),
+    comfyUiSourceCodeNode(siteUrl)
+  ]}
   keywords={[
     'ComfyUI',
     'ComfyUI アプリ',

@@ -280,6 +280,45 @@ export type WorkflowApiAssetsRequest = {
 }
 
 /**
+ * The user a web session belongs to
+ */
+export type WebSessionUser = {
+  email: string
+  /**
+   * The identity provider's verified-email claim when the session was created
+   */
+  email_verified: boolean
+  /**
+   * Comfy user id
+   */
+  id: string
+  name?: string
+  /**
+   * Sign-in method, for example `google.com` or `password`
+   */
+  sign_in_provider?: string
+}
+
+/**
+ * The live web session and the user it belongs to
+ */
+export type WebSessionResponse = {
+  /**
+   * The session ends at this time regardless of use
+   */
+  absolute_expires_at: string
+  /**
+   * Send as `X-CSRF-Token` on requests that change data with this session
+   */
+  csrf_token: string
+  /**
+   * Idle expiry. Real use slides it; reading the session does not.
+   */
+  expires_at: string
+  user: WebSessionUser
+}
+
+/**
  * Result of validating a set of asset operations.
  */
 export type ValidationResult = {
@@ -967,6 +1006,7 @@ export type DocOpsResultFrame = {
 
 export type DocResetData = {
   actor?: string
+  lineage_seq: number
   seq: number
   v: number
   workflow_id: string
@@ -982,6 +1022,11 @@ export type DocResetFrame = {
 
 export type DocUpdateData = {
   actor?: string
+  lineage_seq: number
+  /**
+   * Semantic op IDs whose effects are encoded in this live update. Absent on state-vector catch-up updates, which can fold arbitrary history and have no bounded one-frame op set.
+   */
+  op_ids?: Array<string>
   seq: number
   /**
    * Standard-base64 encoded Yjs update. Host-to-follower only.
@@ -1116,6 +1161,16 @@ export type SavedPaymentMethod = {
    */
   last4?: string
   type: string
+}
+
+/**
+ * Response after signing out of all devices
+ */
+export type RevokeAllSessionsResponse = {
+  /**
+   * How many web sessions were ended
+   */
+  revoked: number
 }
 
 /**
@@ -1460,11 +1515,11 @@ export type PreviewSubscribeResponse = {
   new_plan: PreviewPlanInfo
   /**
    * The Stripe payment method configuration governing which payment
-   * methods the embedded checkout offers for this environment. Mount
-   * Stripe Elements with `paymentMethodConfiguration` set to this id
-   * instead of hardcoding payment method types. Present on every
-   * successful preview while embedded checkout is enabled and absent
-   * from legacy previews.
+   * methods a checkout offers for this environment. Mount Stripe
+   * Elements with `paymentMethodConfiguration` set to this id instead
+   * of hardcoding payment method types. Present on every successful
+   * preview whenever the environment has one configured, independent
+   * of embedded_checked_enabled; absent when it is not configured.
    *
    */
   payment_method_configuration_id?: string
@@ -1624,6 +1679,16 @@ export type PlanAvailability = {
  */
 export type Plan = {
   availability: PlanAvailability
+  /**
+   * Raw credit count (not cents) the plan grants for one billing period,
+   * read from the catalog grant the subscription actually receives. An
+   * annual plan carries the whole year's grant. Omitted when the plan
+   * grants no flat credit amount: per-credit Team plans (see
+   * team_credit_stops), team-only seat plans, zero-grant plans and plans
+   * absent from the catalog.
+   *
+   */
+  credits?: number
   /**
    * Per-member credits in cents (base + one seat)
    */
@@ -2624,17 +2689,19 @@ export type JobAssetsResponse = {
 }
 
 /**
- * Request body for minting an input-image or input-audio upload grant.
+ * Request body for minting an input-image, input-audio or input-video upload grant.
  */
 export type InputUploadUrlRequest = {
   /**
    * MIME type of the file to upload. Must be one of the image types
-   * image/jpeg, image/png, image/webp, image/gif, or the audio types
+   * image/jpeg, image/png, image/webp, image/gif, the audio types
    * audio/mpeg, audio/mp3, audio/wav, audio/wave, audio/x-wav,
-   * audio/flac, audio/x-flac, audio/ogg.
+   * audio/flac, audio/x-flac, audio/ogg, or — where the deployment has
+   * enabled video input uploads — the video types video/mp4,
+   * video/webm, video/quicktime.
    * Advisory: the stored asset's format always follows the uploaded
    * bytes as identified server-side (decoded for images, sniffed for
-   * audio containers).
+   * audio and video containers).
    *
    */
   content_type: string
@@ -3247,6 +3314,22 @@ export type ForkWorkflowRequest = {
 }
 
 /**
+ * A 403 body: ErrorResponse, or AuthTypeNotAllowedError for a credential the route does not take.
+ */
+export type ForbiddenError = ErrorResponse | AuthTypeNotAllowedError
+
+/**
+ * 403 for a credential the route does not take. `accepted` names the ones it does, as `WWW-Authenticate` does.
+ */
+export type AuthTypeNotAllowedError = {
+  accepted: Array<string>
+  error: {
+    message: string
+    type: 'auth_type_not_allowed'
+  }
+}
+
+/**
  * Response after submitting feedback
  */
 export type FeedbackResponse = {
@@ -3436,6 +3519,10 @@ export type CurrentWorkspaceResponse = {
   id: string
   name: string
   /**
+   * What the caller may do in this workspace, the same list a workspace token minted for it would carry. Read from the live membership on every request. Omitted, like role, when no role resolves. New values are additive.
+   */
+  permissions?: Array<string>
+  /**
    * The requesting user's role in this workspace. Omitted (absent from the object, never an explicit null) when the credential carries no resolvable user membership.
    */
   role?: 'owner' | 'member'
@@ -3605,6 +3692,53 @@ export type CreateTopupRequest = {
 }
 
 /**
+ * A hosted Stripe Checkout session for a credit top-up.
+ */
+export type CreateTopupCheckoutResponse = {
+  /**
+   * Stripe-hosted Checkout URL to send the customer to.
+   */
+  checkout_url: string
+  /**
+   * Stripe Checkout session id, for support and log correlation. There
+   * is no billing operation to return: the purchase has not happened
+   * yet, and the operation recording it is created once the payment
+   * completes. Nothing needs polling — the credits land on their own.
+   *
+   */
+  session_id?: string
+}
+
+/**
+ * Request body for creating a hosted credit top-up checkout session.
+ */
+export type CreateTopupCheckoutRequest = {
+  /**
+   * Amount to charge in cents, before any promotion code the customer
+   * enters. Whole dollars only, from $5.00 to $16,000.00. The ceiling is
+   * a fixed business limit (not a Stripe technical constraint) on how
+   * much a single unauthenticated-approval session may sell. The
+   * credits granted are derived server-side from this amount and
+   * cannot be set by the caller.
+   *
+   */
+  amount_cents: number
+  /**
+   * Optional client-provided key. Forwarded to Stripe so a double-submit
+   * collapses onto one session instead of minting two payable links.
+   *
+   */
+  idempotency_key?: string
+  /**
+   * Where Stripe returns the customer after a completed or cancelled
+   * payment. Must match an allowlisted origin; an arbitrary URL is
+   * rejected rather than redirected to.
+   *
+   */
+  return_url: string
+}
+
+/**
  * Response after creating a session cookie
  */
 export type CreateSessionResponse = {
@@ -3695,6 +3829,16 @@ export type ChurnkeyAuthResponse = {
    * Churnkey environment matching the configured app
    */
   mode: 'live' | 'test' | 'sandbox'
+  /**
+   * Stripe subscription a native Churnkey retention offer may apply to.
+   * Present only when the caller is in the native-offer rollout and owns
+   * a Personal workspace on an active paid monthly plan with no billing
+   * change in flight; absent otherwise, and the client then keeps offers
+   * disabled. Present in any mode. Not a signed authorization: the HMAC
+   * covers only the customer ID.
+   *
+   */
+  offer_subscription_id?: string
 }
 
 /**
@@ -3845,6 +3989,18 @@ export type BillingStatusResponse = {
    * The authoritative successor scheduled for the current Stripe subscription. Always present; null when no valid scheduled plan transition exists.
    */
   scheduled_change: ScheduledPlanChange | null
+  /**
+   * Per-product funds verdict, keyed by product name (currently only "agent" is populated): shared credits OR that product's own scoped balance. This is what decides whether the product still has funds to spend, so a gratis-only workspace correctly reads true even though has_funds (the shared-only verdict) is false. It is not the complete admission verdict — a funded workspace can still be denied for other reasons, e.g. manual_block — so treat it as necessary but not sufficient for gating funds-exhaustion UI. Defaults to agent: true when billing is disabled; omitted only by older servers.
+   */
+  scoped_effective_has_funds?: {
+    [key: string]: boolean
+  }
+  /**
+   * Per-product scoped balance state, keyed by product name (currently only "agent" is populated). True while that product's own dedicated balance remains; false once it is exhausted, regardless of shared credits, and also false if that product has never held a scoped balance of its own — both read the same way: no exclusive allowance to draw from right now. Use this to detect that, not to gate admission — use scoped_effective_has_funds for that. Defaults to agent: true when billing is disabled; omitted only by older servers.
+   */
+  scoped_has_funds?: {
+    [key: string]: boolean
+  }
   subscription_duration?: SubscriptionDuration
   /**
    * Subscription activity status (scheduled subscriptions are not returned)
@@ -4463,11 +4619,15 @@ export type AgentPostMessageRequest = {
    */
   content: string
   /**
-   * Cloud workflow id of the client's active tab (should appear in open_tabs). When present and authorized it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
+   * Cloud workflow id of the client's active editor tab; no ordering requirement. Modern clients use workflow_id for the editable target and omit this field. When present and authorized it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
    */
   current_tab?: string
   /**
-   * The client's live canvas, sent so the agent operates on what the user currently sees instead of an empty or stale draft. Reuses the {content, version} shape returned by GET /api/agent/draft. Additive — older clients omit it and the agent falls back to the stored draft.
+   * The client's active editor tab has no workflow yet (a fresh, unsaved tab), so it sends neither workflow_id nor current_tab. Without this signal the turn falls back to the thread's remembered workflow and the fresh tab is presented to the model as having no workflow selected. With it, the turn mints a workflow for the tab instead and that workflow is treated as selected. An explicit workflow_id or a resolvable current_tab still wins.
+   */
+  current_tab_unbound?: boolean
+  /**
+   * The client's live canvas, sent so the agent operates on what the user currently sees instead of an empty or stale draft. The canvas is authoritative for this send and carries no version token — the draft version returned by GET /api/agent/draft is a projection-cache snapshot counter, not a concurrency token, so there is no version to reconcile and no 409 on this field. Additive — older clients omit the whole object and the agent falls back to the stored draft.
    */
   draft?: {
     /**
@@ -4476,13 +4636,9 @@ export type AgentPostMessageRequest = {
     content?: {
       [key: string]: unknown
     }
-    /**
-     * The draft version the client last saw; null or 0 on first send. If it does not match the server's current draft version, the server returns 409 with the current version (an agent write landed since the client last saw the draft).
-     */
-    version?: number | null
   }
   /**
-   * Snapshot of the client's open workflow tabs that have cloud workflow ids (local-only/unsaved tabs are omitted), so the agent knows the user's real tab strip and can switch between tabs. Advisory context, not a grant — entries not in the caller's workspace are ignored. Additive — older clients omit it.
+   * Snapshot of the client's open editor tabs in editor order. Advisory context, not a grant — entries outside the caller's workspace are ignored. With workflow_references present, only the editable target and explicit references enter the model's workflow context.
    */
   open_tabs?: Array<{
     /**
@@ -4504,6 +4660,13 @@ export type AgentPostMessageRequest = {
    * When present, the agent edits this workflow's draft. Ownership-checked (403 if not the caller's workflow).
    */
   workflow_id?: string
+  /**
+   * Explicit read-only workflow references for this turn, independent of open_tabs. Omitted preserves legacy open-tab context; an empty array means no additional workflow context. The editable target is selected by workflow_id and excluded from references. Entries are workspace-authorized, deduplicated, capped at 50, and names truncated to 120 characters. References need not be open in the editor. Unknown or inaccessible references, including authorization lookup failures, are retained as unavailable metadata so the agent can acknowledge missing context; no workflow content or access is granted.
+   */
+  workflow_references?: Array<{
+    name?: string
+    workflow_id: string
+  }>
 }
 
 /**
@@ -4542,7 +4705,7 @@ export type AgentPendingAsk = {
  */
 export type AgentMessage = {
   /**
-   * Message payload. User turns carry {text, attachments?} (attachments are the input-image filenames from the request); assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast.
+   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?} objects, and exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast.
    */
   content?: {
     [key: string]: unknown
@@ -4944,17 +5107,17 @@ export type AgentGetDraftData = {
 
 export type AgentGetDraftErrors = {
   /**
-   * Missing workflow_id
+   * Missing workflow_id. An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
    */
-  400: AgentError
+  400: ErrorResponse | AgentError
   /**
    * Unauthorized
    */
   401: ErrorResponse
   /**
-   * Forbidden (workflow not found or cross-workspace)
+   * Forbidden (workflow not found or cross-workspace). An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
    */
-  403: AgentError
+  403: ErrorResponse | AgentError
   /**
    * No draft exists for the workflow
    */
@@ -5010,6 +5173,10 @@ export type AgentLlmAdmitErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * The agent in-app experience is disabled for this caller (FlagAgentInAppExperience off). Kept invisible when off, so 404 rather than 403.
    */
@@ -5068,6 +5235,10 @@ export type AgentLlmMessagesData = {
 
 export type AgentLlmMessagesErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
@@ -5075,6 +5246,10 @@ export type AgentLlmMessagesErrors = {
    * The pre-turn admission gate declined the turn for a payment reason: the workspace is out of credits or has been blocked. Not retryable as-is — resolve the account condition first.
    */
   402: AgentAdmissionError
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * The agent in-app experience is disabled for this caller (FlagAgentInAppExperience off). The feature is kept invisible when off, so ingest returns 404 rather than 403.
    */
@@ -5111,9 +5286,17 @@ export type AgentGetRunModeData = {
 
 export type AgentGetRunModeErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * The run-mode surface is not reachable, from either of two sources, and the two do NOT share a body shape — a client must accept both. Ingest-raised (standard ErrorResponse): the caller is not enrolled in the agent-in-app-experience flag gating the whole /api/agent surface, which defaults off and fails closed, so this is the common answer for a non-enrolled caller. Agent-raised (AgentError): the caller is enrolled but AGENT_RUN_MODE_ENABLED is off in the comfy-agent service. Both answer 404 rather than 403 so the surface is invisible when off. Clients should treat either as "not available" and keep any local state.
    */
@@ -5154,13 +5337,17 @@ export type AgentPutRunModeData = {
 
 export type AgentPutRunModeErrors = {
   /**
-   * The body was rejected: not JSON, a mode outside the three values, a missing, non-positive or above-maximum credit_limit for auto_limited, or a credit_limit on a limitless mode. The message names what to change.
+   * The body was rejected: not JSON, a mode outside the three values, a missing, non-positive or above-maximum credit_limit for auto_limited, or a credit_limit on a limitless mode. The message names what to change. An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
    */
-  400: AgentError
+  400: ErrorResponse | AgentError
   /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * The run-mode surface is not reachable, from either of two sources, and the two do NOT share a body shape — a client must accept both. Ingest-raised (standard ErrorResponse): the caller is not enrolled in the agent-in-app-experience flag gating the whole /api/agent surface, which defaults off and fails closed, so this is the common answer for a non-enrolled caller. Agent-raised (AgentError): the caller is enrolled but AGENT_RUN_MODE_ENABLED is off in the comfy-agent service. Both answer 404 rather than 403 so the surface is invisible when off. Clients should treat either as "not available" and keep any local state.
    */
@@ -5205,9 +5392,17 @@ export type AgentListSkillsData = {
 
 export type AgentListSkillsErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * The caller is not enrolled in the cohort gate fronting these CRUD routes: the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface. Both default off and fail closed (a missing evaluation context resolves to false), and both answer 404 rather than 403 so the surface is invisible when off. Ingest-raised, so the body is the standard ErrorResponse shape.
    */
@@ -5248,13 +5443,17 @@ export type AgentPublishSkillData = {
 
 export type AgentPublishSkillErrors = {
   /**
-   * The pack was rejected by publish-time validation (name shape, empty description or body, control characters in either, body over the per-pack size cap, always:true, a reserved always-on name, or comfy-cli shell syntax in the body). The message names what to change.
+   * The pack was rejected by publish-time validation (name shape, empty description or body, control characters in either, body over the per-pack size cap, always:true, a reserved always-on name, or comfy-cli shell syntax in the body). The message names what to change. An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
    */
-  400: AgentError
+  400: ErrorResponse | AgentError
   /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * The caller is not enrolled in the cohort gate fronting these CRUD routes: the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface. Both default off and fail closed (a missing evaluation context resolves to false), and both answer 404 rather than 403 so the surface is invisible when off. Ingest-raised, so the body is the standard ErrorResponse shape.
    */
@@ -5320,6 +5519,10 @@ export type AgentDeleteSkillErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * The caller holds no pack with that name, or the caller is not enrolled in the cohort gate fronting these CRUD routes (the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface). Both flags default off and fail closed, and both answer 404 rather than 403 so the surface is invisible when off. The schema below is the agent-raised no-such-pack body; the gate-off 404 is ingest-raised and uses the standard ErrorResponse shape instead.
    */
   404: AgentError
@@ -5370,13 +5573,17 @@ export type AgentListThreadsData = {
 
 export type AgentListThreadsErrors = {
   /**
-   * Invalid limit or cursor
+   * Invalid limit or cursor. An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
    */
-  400: AgentError
+  400: ErrorResponse | AgentError
   /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
    */
@@ -5409,9 +5616,17 @@ export type AgentCreateThreadData = {
 
 export type AgentCreateThreadErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
    */
@@ -5457,13 +5672,17 @@ export type AgentAnswerAskData = {
 
 export type AgentAnswerAskErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
   /**
-   * Forbidden (ask not found or not owned by the caller)
+   * Forbidden (ask not found or not owned by the caller). An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
    */
-  403: AgentError
+  403: ErrorResponse | AgentError
   /**
    * Ask not found
    */
@@ -5517,9 +5736,17 @@ export type AgentGetMessagesData = {
 
 export type AgentGetMessagesErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Thread not found or has no messages
    */
@@ -5561,9 +5788,9 @@ export type AgentPostMessageData = {
 
 export type AgentPostMessageErrors = {
   /**
-   * Invalid request body
+   * Invalid request body. An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
    */
-  400: AgentError
+  400: ErrorResponse | AgentError
   /**
    * Unauthorized
    */
@@ -5573,9 +5800,9 @@ export type AgentPostMessageErrors = {
    */
   402: AgentAdmissionError
   /**
-   * Forbidden (workflow or thread not owned by the caller)
+   * Forbidden (workflow or thread not owned by the caller). An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
    */
-  403: AgentError
+  403: ErrorResponse | AgentError
   /**
    * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
    */
@@ -5621,13 +5848,17 @@ export type AgentCancelMessageData = {
 
 export type AgentCancelMessageErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
   /**
-   * Forbidden (message not found or not owned by the caller)
+   * Forbidden (message not found or not owned by the caller). An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
    */
-  403: AgentError
+  403: ErrorResponse | AgentError
   /**
    * The message is not a running assistant turn
    */
@@ -5776,6 +6007,10 @@ export type ListAssetsErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -5842,6 +6077,10 @@ export type CreateAssetErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * File too large
    */
   413: ErrorResponse
@@ -5891,9 +6130,17 @@ export type DeleteAssetData = {
 
 export type DeleteAssetErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Asset not found
    */
@@ -5934,9 +6181,17 @@ export type GetAssetByIdData = {
 
 export type GetAssetByIdErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Asset not found
    */
@@ -6001,6 +6256,10 @@ export type UpdateAssetErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Asset not found — returned both when the asset being updated does
    * not exist and when `preview_id` does not reference an asset
@@ -6096,6 +6355,10 @@ export type RemoveAssetTagsErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Asset not found
    */
   404: ErrorResponse
@@ -6148,6 +6411,10 @@ export type AddAssetTagsErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Asset not found
    */
@@ -6209,6 +6476,10 @@ export type CreateAssetDownloadErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Validation errors
    */
@@ -6288,6 +6559,10 @@ export type CreateAssetExportErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -6327,6 +6602,10 @@ export type DownloadExportErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Export not found or not owned by user
    */
@@ -6390,6 +6669,10 @@ export type CreateAssetFromHashErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Source asset with given hash not found
    */
   404: ErrorResponse
@@ -6439,6 +6722,10 @@ export type PostAssetsFromWorkflowErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Not found
    */
   404: ErrorResponse
@@ -6479,9 +6766,13 @@ export type CheckAssetByHashErrors = {
    */
   400: ErrorResponse
   /**
-   * Unauthorized
+   * No valid credential (see SessionUnauthorized). No body.
    */
-  401: ErrorResponse
+  401: unknown
+  /**
+   * A refused web session request, or the route's own authorization check failing (see SessionForbidden). A HEAD response has no body, so the code is not sent.
+   */
+  403: unknown
   /**
    * Asset not found
    */
@@ -6518,6 +6809,10 @@ export type ImportPublishedAssetsErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error
    */
@@ -6581,6 +6876,10 @@ export type GetRemoteAssetMetadataErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Failed to retrieve metadata from source
    */
@@ -6741,6 +7040,10 @@ export type GetAssetTagHistogramErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -6898,6 +7201,46 @@ export type DeleteSessionResponses = {
 export type DeleteSessionResponse2 =
   DeleteSessionResponses[keyof DeleteSessionResponses]
 
+export type GetSessionData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/auth/session'
+}
+
+export type GetSessionErrors = {
+  /**
+   * No live session. `code` is `session_expired`, `session_revoked`,
+   * or `no_session`: no cookie, a cookie the server never issued, a
+   * session whose user no longer exists, or `web_session_enabled` off
+   * for the session's user.
+   *
+   */
+  401: ErrorResponse
+  /**
+   * Refused. `code` is `origin_not_allowed` (untrusted or missing
+   * Origin), `cross_site_request`, or `FORBIDDEN` when the account is
+   * scheduled for deletion.
+   *
+   */
+  403: ErrorResponse
+  /**
+   * The session store is unreachable; retry with backoff
+   */
+  500: ErrorResponse
+}
+
+export type GetSessionError = GetSessionErrors[keyof GetSessionErrors]
+
+export type GetSessionResponses = {
+  /**
+   * The live session
+   */
+  200: WebSessionResponse
+}
+
+export type GetSessionResponse = GetSessionResponses[keyof GetSessionResponses]
+
 export type CreateSessionData = {
   body?: never
   path?: never
@@ -6914,6 +7257,10 @@ export type CreateSessionErrors = {
    * Unauthorized - Authentication required
    */
   401: ErrorResponse
+  /**
+   * Too many sessions created for this user in the past hour
+   */
+  429: ErrorResponse
   /**
    * Internal server error
    */
@@ -6932,6 +7279,45 @@ export type CreateSessionResponses = {
 export type CreateSessionResponse2 =
   CreateSessionResponses[keyof CreateSessionResponses]
 
+export type RevokeAllSessionsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/auth/sessions/revoke-all'
+}
+
+export type RevokeAllSessionsErrors = {
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
+   * Web sessions are not enabled for this user
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type RevokeAllSessionsError =
+  RevokeAllSessionsErrors[keyof RevokeAllSessionsErrors]
+
+export type RevokeAllSessionsResponses = {
+  /**
+   * Every session ended
+   */
+  200: RevokeAllSessionsResponse
+}
+
+export type RevokeAllSessionsResponse2 =
+  RevokeAllSessionsResponses[keyof RevokeAllSessionsResponses]
+
 export type ExchangeTokenData = {
   body?: ExchangeTokenRequest
   path?: never
@@ -6941,17 +7327,33 @@ export type ExchangeTokenData = {
 
 export type ExchangeTokenErrors = {
   /**
-   * Invalid or expired Firebase JWT
+   * A session request, or with `web_session_enabled` on any request, whose `X-Comfy-Workspace-ID` or `workspace_id` query value is malformed, or names another workspace than the body (the personal workspace when the body names none). `code` is `workspace_id_invalid`.
+   */
+  400: ErrorResponse
+  /**
+   * Invalid or expired Firebase JWT, no live web session, or a revoked, expired, deleted or unknown API key. Refused credentials get `code` `UNAUTHORIZED` and a `message`. A session that ends within seconds gets `code` `session_expired`: a token minted from it would expire on arrival.
    */
   401: ErrorResponse
   /**
-   * Workspace not found or user not a member
+   * A refused web session request. `code` is `origin_not_allowed`, `cross_site_request` or `csrf_invalid` (see the `WebSessionAuth` scheme). While `web_session_enabled` is off for the user, and for a credential this route does not take, the body is instead `{"error": {"message", "type": "auth_type_not_allowed"}, "accepted": [...]}`. An API key whose user is not allowed to use it, whose workspace was deleted, or whose registry account is on the free tier gets `code` `FORBIDDEN`.
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found or user not a member, or an API key's request names another workspace than the key's own.
    */
   404: ErrorResponse
+  /**
+   * The user minted 240 tokens from the session this hour. `code` is `rate_limited`, in lower case like the session codes.
+   */
+  429: ErrorResponse
   /**
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * The comfy-api registry could not verify an API key. `code` is `SERVICE_UNAVAILABLE`; retry, since the key may be good.
+   */
+  503: ErrorResponse
 }
 
 export type ExchangeTokenError = ExchangeTokenErrors[keyof ExchangeTokenErrors]
@@ -6975,13 +7377,25 @@ export type GetBillingBalanceData = {
 
 export type GetBillingBalanceErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
   /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Balance read temporarily unavailable
+   */
+  503: ErrorResponse
 }
 
 export type GetBillingBalanceError =
@@ -7005,6 +7419,10 @@ export type GetBillingCapabilitiesData = {
 }
 
 export type GetBillingCapabilitiesErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Workspace or user context required
    */
@@ -7045,9 +7463,17 @@ export type GetChurnkeyAuthData = {
 
 export type GetChurnkeyAuthErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Workspace has no Stripe customer (never subscribed)
    */
@@ -7083,6 +7509,10 @@ export type GetBillingCompanyDetailsData = {
 }
 
 export type GetBillingCompanyDetailsErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized
    */
@@ -7126,6 +7556,10 @@ export type UpdateBillingCompanyDetailsErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error
    */
@@ -7227,9 +7661,17 @@ export type GetBillingOpStatusData = {
 
 export type GetBillingOpStatusErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Billing operation not found
    */
@@ -7309,6 +7751,10 @@ export type GetPaymentPortalErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -7336,9 +7782,17 @@ export type GetBillingPlansData = {
 
 export type GetBillingPlansErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error
    */
@@ -7406,9 +7860,17 @@ export type GetBillingStatusData = {
 
 export type GetBillingStatusErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Workspace not found
    */
@@ -7449,6 +7911,10 @@ export type SubscribeErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -7481,6 +7947,10 @@ export type CancelSubscriptionErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error
    */
@@ -7521,6 +7991,10 @@ export type ResubscribeErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -7555,6 +8029,10 @@ export type CreateTopupErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -7571,6 +8049,53 @@ export type CreateTopupResponses = {
 
 export type CreateTopupResponse2 =
   CreateTopupResponses[keyof CreateTopupResponses]
+
+export type CreateTopupCheckoutData = {
+  body: CreateTopupCheckoutRequest
+  path?: never
+  query?: never
+  url: '/api/billing/topup/checkout'
+}
+
+export type CreateTopupCheckoutErrors = {
+  /**
+   * Bad request (invalid amount or return URL)
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden. Buying credits is an owner action: the route is
+   * registered on the workspace-owner group, so a workspace member
+   * is rejected by middleware before the handler runs. Email
+   * verification is enforced on the same group.
+   *
+   */
+  403: ErrorResponse
+  /**
+   * Not found (feature flag disabled for this caller)
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type CreateTopupCheckoutError =
+  CreateTopupCheckoutErrors[keyof CreateTopupCheckoutErrors]
+
+export type CreateTopupCheckoutResponses = {
+  /**
+   * Checkout session created
+   */
+  200: CreateTopupCheckoutResponse
+}
+
+export type CreateTopupCheckoutResponse2 =
+  CreateTopupCheckoutResponses[keyof CreateTopupCheckoutResponses]
 
 export type GetBillingUsageTimeSeriesData = {
   body?: never
@@ -7594,6 +8119,10 @@ export type GetBillingUsageTimeSeriesErrors = {
    * Workspace context required
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Upstream or internal error
    */
@@ -7639,6 +8168,14 @@ export type GetModelFoldersData = {
 
 export type GetModelFoldersErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -7670,6 +8207,14 @@ export type GetModelsInFolderData = {
 }
 
 export type GetModelsInFolderErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
   /**
    * Folder not found or no models in folder
    */
@@ -7727,6 +8272,24 @@ export type GetNodeInfoSchemaData = {
   url: '/api/experiment/nodes'
 }
 
+export type GetNodeInfoSchemaErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+}
+
+export type GetNodeInfoSchemaError =
+  GetNodeInfoSchemaErrors[keyof GetNodeInfoSchemaErrors]
+
 export type GetNodeInfoSchemaResponses = {
   /**
    * Full node schema JSON
@@ -7748,10 +8311,24 @@ export type GetNodeByIdData = {
 
 export type GetNodeByIdErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Node not found
    */
   404: unknown
 }
+
+export type GetNodeByIdError = GetNodeByIdErrors[keyof GetNodeByIdErrors]
 
 export type GetNodeByIdResponses = {
   /**
@@ -7784,11 +8361,28 @@ export type GetFeaturesData = {
   url: '/api/features'
 }
 
+export type GetFeaturesErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
+}
+
+export type GetFeaturesError = GetFeaturesErrors[keyof GetFeaturesErrors]
+
 export type GetFeaturesResponses = {
   /**
    * Success
    */
   200: {
+    /**
+     * Origin of the billing-web deployment paired with this Cloud environment (e.g. https://billing.comfy.org). Absent when BILLING_WEB_URL is not configured on the server, so a client can tell "not configured" from "configured as empty".
+     */
+    billing_web_url?: string
     /**
      * Free-tier job allowance for an authenticated non-paid (FREE-tier) user in the rollout. Absent for paid users and unauthenticated requests. Synthesized from config before a grant row exists so a brand-new user still sees their full allowance.
      */
@@ -7811,9 +8405,17 @@ export type GetFeaturesResponses = {
      */
     max_upload_size?: number
     /**
+     * Stripe publishable key (pk_...) for the environment's Stripe account. Public by design (the secret key is never exposed here). Absent when STRIPE_PUBLISHABLE_KEY is not configured on the server, so a client can tell "not configured" from "configured as empty".
+     */
+    stripe_publishable_key?: string
+    /**
      * Whether the server supports preview metadata
      */
     supports_preview_metadata?: boolean
+    /**
+     * Global switch, the same for every caller and readable without credentials. When true, first-party sites send the credentialed /api/features read and take behaviour from its per-user unified_web_session. It grants nothing itself. Defaults to false.
+     */
+    web_session_probe?: boolean
     [key: string]: unknown
   }
 }
@@ -7837,6 +8439,10 @@ export type SubmitFeedbackErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error
    */
@@ -7869,6 +8475,18 @@ export type GetMaskLayersData = {
 }
 
 export type GetMaskLayersErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * File not found or not a mask file
    */
@@ -8170,6 +8788,10 @@ export type ManageHistoryErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -8218,9 +8840,17 @@ export type GetHistoryData = {
 
 export type GetHistoryErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized - Authentication required
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error
    */
@@ -8252,9 +8882,17 @@ export type GetHistoryForPromptData = {
 
 export type GetHistoryForPromptErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized - Authentication required
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Prompt not found
    */
@@ -8294,6 +8932,10 @@ export type CreateHubAssetUploadUrlErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Not found
    */
@@ -8335,6 +8977,14 @@ export type ListHubLabelsErrors = {
    */
   400: ErrorResponse
   /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -8368,6 +9018,10 @@ export type CreateHubProfileErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Not found
    */
@@ -8453,6 +9107,10 @@ export type UpdateHubProfileErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * No hub profile exists with this username
    */
   404: ErrorResponse
@@ -8486,9 +9144,17 @@ export type CheckHubUsernameData = {
 
 export type CheckHubUsernameErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Not found
    */
@@ -8521,9 +9187,17 @@ export type GetMyHubProfileData = {
 
 export type GetMyHubProfileErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * No hub profile exists
    */
@@ -8583,6 +9257,10 @@ export type ListHubWorkflowsErrors = {
    */
   400: ErrorResponse
   /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
+  /**
    * Profile not found (when filtering by username)
    */
   404: ErrorResponse
@@ -8622,6 +9300,10 @@ export type PublishHubWorkflowErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Workflow or profile not found
    */
   404: ErrorResponse
@@ -8658,9 +9340,17 @@ export type DeleteHubWorkflowData = {
 
 export type DeleteHubWorkflowErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Workflow not found
    */
@@ -8697,6 +9387,14 @@ export type GetHubWorkflowData = {
 }
 
 export type GetHubWorkflowErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
   /**
    * Workflow not found
    */
@@ -8737,6 +9435,14 @@ export type ListHubWorkflowIndexData = {
 }
 
 export type ListHubWorkflowIndexErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
   /**
    * Internal server error
    */
@@ -8783,9 +9489,17 @@ export type CreateInputUploadUrlData = {
 
 export type CreateInputUploadUrlErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Validation error (e.g. unsupported content type)
    */
@@ -8822,9 +9536,17 @@ export type InterruptJobData = {
 
 export type InterruptJobErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized - Authentication required
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error
    */
@@ -8934,6 +9656,10 @@ export type GetJobStatusData = {
 
 export type GetJobStatusErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
@@ -9022,6 +9748,10 @@ export type ListJobsErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -9057,6 +9787,10 @@ export type GetJobDetailData = {
 }
 
 export type GetJobDetailErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized - Authentication required
    */
@@ -9118,6 +9852,10 @@ export type GetJobAssetsErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Job not found or does not belong to the user
    */
   404: ErrorResponse
@@ -9161,6 +9899,10 @@ export type CancelJobErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Job not found for this user
    */
   404: ErrorResponse
@@ -9197,6 +9939,10 @@ export type CancelJobsErrors = {
    * Unauthorized - Authentication required
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * One or more job IDs not found for this user (no jobs cancelled)
    */
@@ -9284,6 +10030,23 @@ export type GetNodeInfoData = {
   url: '/api/object_info'
 }
 
+export type GetNodeInfoErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+}
+
+export type GetNodeInfoError = GetNodeInfoErrors[keyof GetNodeInfoErrors]
+
 export type GetNodeInfoResponses = {
   /**
    * Success
@@ -9321,9 +10084,17 @@ export type GetPromptInfoData = {
 
 export type GetPromptInfoErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error
    */
@@ -9351,15 +10122,19 @@ export type ExecutePromptData = {
 
 export type ExecutePromptErrors = {
   /**
-   * Invalid prompt
+   * Invalid prompt, or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
    */
   400: PromptErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
   /**
    * Payment required - Insufficient credits
    */
   402: PromptErrorResponse
   /**
-   * Workspace governance policy blocks one or more partner providers (error.type PARTNER_NODE_DISABLED; error.class_types lists the offending nodes, error.providers the disabled providers)
+   * Workspace governance policy blocks one or more partner providers (error.type PARTNER_NODE_DISABLED; error.class_types lists the offending nodes, error.providers the disabled providers), or a refused request with `code` and `message` (see SessionWriteForbidden).
    */
   403: PromptErrorResponse
   /**
@@ -9417,6 +10192,10 @@ export type GetProvidersData = {
 
 export type GetProvidersErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
@@ -9459,6 +10238,10 @@ export type GetQueueInfoErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Invalid request parameters
    */
   500: ErrorResponse
@@ -9493,6 +10276,10 @@ export type ManageQueueErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -9519,9 +10306,17 @@ export type ListSecretsData = {
 
 export type ListSecretsErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error
    */
@@ -9608,6 +10403,10 @@ export type DeleteSecretData = {
 
 export type DeleteSecretErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
@@ -9654,6 +10453,10 @@ export type GetSecretData = {
 }
 
 export type GetSecretErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized
    */
@@ -9755,9 +10558,17 @@ export type ListSecretProvidersData = {
 
 export type ListSecretProvidersErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Service unavailable - secrets feature disabled
    */
@@ -9786,9 +10597,17 @@ export type GetAllSettingsData = {
 
 export type GetAllSettingsErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
 }
 
 export type GetAllSettingsError =
@@ -9827,6 +10646,10 @@ export type UpdateMultipleSettingsErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
 }
 
 export type UpdateMultipleSettingsError =
@@ -9858,9 +10681,17 @@ export type GetSettingByIdData = {
 
 export type GetSettingByIdErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Setting not found
    */
@@ -9909,6 +10740,10 @@ export type UpdateSettingByIdErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
 }
 
 export type UpdateSettingByIdError =
@@ -9998,6 +10833,10 @@ export type ListTagsErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -10056,9 +10895,17 @@ export type ListTasksData = {
 
 export type ListTasksErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized - Authentication required
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Validation error - Invalid filter values
    */
@@ -10094,9 +10941,17 @@ export type GetTaskData = {
 
 export type GetTaskErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized - Authentication required
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Task not found (also returned for ownership failures to avoid leaking task existence)
    */
@@ -10151,6 +11006,10 @@ export type UploadImageErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error
    */
@@ -10207,6 +11066,10 @@ export type UploadMaskErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error
    */
@@ -10296,9 +11159,17 @@ export type GetUserData = {
 
 export type GetUserErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
 }
 
 export type GetUserError = GetUserErrors[keyof GetUserErrors]
@@ -10340,11 +11211,15 @@ export type GetUserdataErrors = {
   /**
    * Bad request (e.g., invalid filename).
    */
-  400: string
+  400: ErrorResponse
   /**
    * Unauthorized.
    */
-  401: string
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * File not found or invalid path.
    */
@@ -10381,9 +11256,17 @@ export type DeleteUserdataFileData = {
 
 export type DeleteUserdataFileErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized.
    */
-  401: string
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * File not found.
    */
@@ -10423,11 +11306,15 @@ export type GetUserdataFileErrors = {
   /**
    * Bad request (e.g., invalid filename).
    */
-  400: string
+  400: ErrorResponse
   /**
    * Unauthorized.
    */
-  401: string
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * File not found or invalid path.
    */
@@ -10476,15 +11363,15 @@ export type PostUserdataFileErrors = {
   /**
    * Missing or invalid 'file' parameter.
    */
-  400: string
+  400: ErrorResponse
   /**
    * Unauthorized.
    */
-  401: string
+  401: ErrorResponse
   /**
    * The requested path is not allowed.
    */
-  403: string
+  403: ErrorResponse
   /**
    * File already exists and overwrite is set to false.
    */
@@ -10533,11 +11420,15 @@ export type MoveUserdataFileErrors = {
   /**
    * Missing or invalid parameters.
    */
-  400: string
+  400: ErrorResponse
   /**
    * Unauthorized.
    */
-  401: string
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Source file not found.
    */
@@ -10579,9 +11470,17 @@ export type GetUserdataFilePublishData = {
 
 export type GetUserdataFilePublishErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Workflow not found
    */
@@ -10627,6 +11526,10 @@ export type PostUserdataFilePublishErrors = {
    */
   401: ErrorResponse
   /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
+  /**
    * Workflow not found
    */
   404: ErrorResponse
@@ -10658,9 +11561,17 @@ export type GetUsersInfoData = {
 
 export type GetUsersInfoErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
 }
 
 export type GetUsersInfoError = GetUsersInfoErrors[keyof GetUsersInfoErrors]
@@ -10998,9 +11909,17 @@ export type ListWorkflowsData = {
 
 export type ListWorkflowsErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Internal server error
    */
@@ -11028,9 +11947,17 @@ export type CreateWorkflowData = {
 
 export type CreateWorkflowErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Validation error
    */
@@ -11068,9 +11995,17 @@ export type DeleteWorkflowData = {
 
 export type DeleteWorkflowErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Workflow not found
    */
@@ -11107,6 +12042,10 @@ export type GetWorkflowData = {
 }
 
 export type GetWorkflowErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized
    */
@@ -11151,9 +12090,17 @@ export type UpdateWorkflowData = {
 
 export type UpdateWorkflowErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Workflow not found
    */
@@ -11194,6 +12141,10 @@ export type GetWorkflowContentData = {
 }
 
 export type GetWorkflowContentErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized
    */
@@ -11238,6 +12189,10 @@ export type ForkWorkflowData = {
 }
 
 export type ForkWorkflowErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized
    */
@@ -11285,6 +12240,10 @@ export type CreateWorkflowVersionData = {
 }
 
 export type CreateWorkflowVersionErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized
    */
@@ -11338,9 +12297,17 @@ export type GetPublishedWorkflowData = {
 
 export type GetPublishedWorkflowErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Share not found
    */
@@ -11377,9 +12344,17 @@ export type CreateWorkflowUploadUrlData = {
 
 export type CreateWorkflowUploadUrlErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Validation error (metadata field over its maximum length)
    */
@@ -11421,6 +12396,10 @@ export type ListWorkspaceApiKeysData = {
 
 export type ListWorkspaceApiKeysErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
@@ -11455,6 +12434,10 @@ export type CreateWorkspaceApiKeyData = {
 }
 
 export type CreateWorkspaceApiKeyErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized
    */
@@ -11508,6 +12491,10 @@ export type RevokeWorkspaceApiKeyData = {
 
 export type RevokeWorkspaceApiKeyErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
@@ -11547,6 +12534,10 @@ export type ListWorkspaceInvitesData = {
 
 export type ListWorkspaceInvitesErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
@@ -11581,6 +12572,10 @@ export type CreateWorkspaceInviteData = {
 }
 
 export type CreateWorkspaceInviteErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized
    */
@@ -11634,6 +12629,10 @@ export type RevokeWorkspaceInviteData = {
 
 export type RevokeWorkspaceInviteErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
@@ -11678,6 +12677,10 @@ export type ResendWorkspaceInviteData = {
 
 export type ResendWorkspaceInviteErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
@@ -11720,6 +12723,10 @@ export type LeaveWorkspaceData = {
 }
 
 export type LeaveWorkspaceErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized
    */
@@ -11769,6 +12776,10 @@ export type ListWorkspaceMembersData = {
 
 export type ListWorkspaceMembersErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
@@ -11817,6 +12828,10 @@ export type BulkRevokeWorkspaceMemberApiKeysData = {
 
 export type BulkRevokeWorkspaceMemberApiKeysErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
@@ -11860,6 +12875,10 @@ export type RemoveWorkspaceMemberData = {
 }
 
 export type RemoveWorkspaceMemberErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized
    */
@@ -11905,6 +12924,10 @@ export type UpdateWorkspaceMemberRoleData = {
 
 export type UpdateWorkspaceMemberRoleErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
@@ -11947,6 +12970,10 @@ export type GetProviderPolicyData = {
 }
 
 export type GetProviderPolicyErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized
    */
@@ -12034,9 +13061,17 @@ export type ListWorkspacesData = {
 
 export type ListWorkspacesErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Feature not enabled for user
    */
@@ -12069,9 +13104,17 @@ export type CreateWorkspaceData = {
 
 export type CreateWorkspaceErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Feature not enabled for user
    */
@@ -12112,6 +13155,10 @@ export type DeleteWorkspaceData = {
 }
 
 export type DeleteWorkspaceErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized
    */
@@ -12157,9 +13204,17 @@ export type GetWorkspaceData = {
 
 export type GetWorkspaceErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take, or the session while `web_session_enabled` is off for the user, gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
   /**
    * Workspace not found or user not a member
    */
@@ -12195,6 +13250,10 @@ export type UpdateWorkspaceData = {
 }
 
 export type UpdateWorkspaceErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
   /**
    * Unauthorized
    */
@@ -12239,9 +13298,17 @@ export type GetCurrentWorkspaceData = {
 
 export type GetCurrentWorkspaceErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` or `workspace_id` value is malformed, or conflicts with another value or with the workspace the credential resolves to.
+   */
+  400: ErrorResponse
+  /**
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * A refused web session request. `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
   /**
    * No workspace resolves for this credential — it carries no workspace binding, the workspace was deleted, or the credential's user is no longer a member. Deliberately not 401: the credential itself is valid, so clients must not discard it or re-authenticate.
    */
@@ -12701,6 +13768,19 @@ export type GetWebsocketData = {
   path?: never
   query?: {
     /**
+     * The credential, where a browser cannot send a header: a Firebase ID
+     * token, a Cloud JWT or an API key. It wins over the cookie.
+     *
+     */
+    token?: string
+    /**
+     * The workspace a `WebSessionAuth` socket runs in; absent means the
+     * personal workspace. With `web_session_enabled` on, a token or API
+     * key bound to another workspace is refused with 400.
+     *
+     */
+    workspace_id?: string
+    /**
      * Stable client identifier used to associate the WebSocket
      * connection with the frontend session. If omitted, the server
      * generates one.
@@ -12713,7 +13793,17 @@ export type GetWebsocketData = {
 
 export type GetWebsocketErrors = {
   /**
-   * Unauthorized
+   * `code` is `workspace_id_invalid`: the `workspace_id` value is malformed, conflicts with `X-Comfy-Workspace-ID`, or, with the flag on, names another workspace than the token's own.
    */
-  401: unknown
+  400: ErrorResponse
+  /**
+   * No credential, or one that failed. `code` is `UNAUTHORIZED`, with a `message` such as `authentication required`, `invalid auth token` or `invalid session cookie`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused upgrade. A web session refusal has `code` `origin_not_allowed` (no `Origin`, or one that is not trusted), `cross_site_request` or `workspace_access_denied` (see the `WebSessionAuth` scheme). An unverified email or an account scheduled for deletion is `FORBIDDEN`. With the flag off, the cookie gets AuthTypeNotAllowedError instead.
+   */
+  403: ForbiddenError
 }
+
+export type GetWebsocketError = GetWebsocketErrors[keyof GetWebsocketErrors]

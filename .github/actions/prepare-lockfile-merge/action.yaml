@@ -32,12 +32,20 @@ runs:
           "https://github.com/$GITHUB_REPOSITORY.git" "$BASE_SHA"
 
         set +e
-        git merge --no-commit --no-ff "$BASE_SHA"
+        git -c user.name='github-actions[bot]' \
+          -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+          merge --no-commit --no-ff "$BASE_SHA"
         merge_status=$?
         set -e
+        conflicts=$(git diff --name-only --diff-filter=U)
+
+        if [ "$merge_status" -ne 0 ] && [ -z "$conflicts" ]; then
+          echo "::error::Failed to merge $BASE_SHA" >&2
+          exit 1
+        fi
 
         if [ "$merge_status" -ne 0 ] && \
-           [ "$(git diff --name-only --diff-filter=U)" = 'pnpm-lock.yaml' ]; then
+           [ "$conflicts" = 'pnpm-lock.yaml' ]; then
           git checkout --theirs pnpm-lock.yaml
           git add pnpm-lock.yaml
           echo 'mode=merge' >> "$GITHUB_OUTPUT"

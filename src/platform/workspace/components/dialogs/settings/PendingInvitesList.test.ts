@@ -19,7 +19,11 @@ vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} },
+  messages: {
+    en: {
+      workspacePanel: { members: { expiredOn: 'Expired {date}' } }
+    }
+  },
   missingWarn: false,
   fallbackWarn: false
 })
@@ -79,5 +83,86 @@ describe('PendingInvitesList', () => {
     )
 
     expect(emitted('revoke')).toEqual([[invite]])
+  })
+
+  it('copies the invite link from the menu when the invite has a token', async () => {
+    const writeText = vi.fn<(text: string) => Promise<void>>()
+    writeText.mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true
+    })
+    renderComponent([createInvite({ token: 'tok-9' })])
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'workspacePanel.members.actions.copyInviteLink'
+      })
+    )
+
+    expect(writeText).toHaveBeenCalledWith(
+      `${window.location.origin}/?invite=tok-9`
+    )
+    expect(mockMenuClose).toHaveBeenCalled()
+  })
+
+  it('hides the copy item for expired invites without a token', () => {
+    renderComponent([createInvite()])
+
+    expect(
+      screen.queryByRole('button', {
+        name: 'workspacePanel.members.actions.copyInviteLink'
+      })
+    ).not.toBeInTheDocument()
+  })
+
+  it('marks token-less invites as expired and leaves live ones with a plain date', () => {
+    renderComponent([
+      createInvite({
+        id: 'inv-expired',
+        email: 'stale@example.com',
+        expiryDate: new Date('2025-04-01T12:00:00Z')
+      }),
+      createInvite({
+        id: 'inv-live',
+        email: 'fresh@example.com',
+        token: 'tok-live',
+        expiryDate: new Date('2025-06-15T12:00:00Z')
+      })
+    ])
+
+    expect(screen.getByText(/^Expired Apr 1, 2025$/)).toBeInTheDocument()
+    expect(screen.queryByText(/Expired Jun 15, 2025/)).toBeNull()
+    expect(screen.getByText('stale@example.com')).toBeInTheDocument()
+    expect(screen.getByText('fresh@example.com')).toBeInTheDocument()
+  })
+
+  it('swallows a rejected clipboard write and keeps the copy item usable', async () => {
+    const writeText = vi.fn<(text: string) => Promise<void>>()
+    writeText.mockRejectedValue(new Error('denied'))
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true
+    })
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    renderComponent([createInvite({ token: 'tok-9' })])
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'workspacePanel.members.actions.copyInviteLink'
+      })
+    )
+
+    // The failure is silent by design, so the only guarantee is that nothing
+    // escapes as an unhandled rejection and the item stays available to retry.
+    expect(writeText).toHaveBeenCalledWith(
+      `${window.location.origin}/?invite=tok-9`
+    )
+    expect(
+      screen.getByRole('button', {
+        name: 'workspacePanel.members.actions.copyInviteLink'
+      })
+    ).toBeInTheDocument()
+    consoleError.mockRestore()
   })
 })

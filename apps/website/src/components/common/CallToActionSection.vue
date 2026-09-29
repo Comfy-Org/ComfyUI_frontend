@@ -27,7 +27,7 @@ const {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-20 lg:py-32">
+  <section class="mx-auto max-w-9xl px-6 py-20 lg:py-32">
     <div class="flex flex-col items-center text-center">
       <h2
         class="max-w-5xl text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl"

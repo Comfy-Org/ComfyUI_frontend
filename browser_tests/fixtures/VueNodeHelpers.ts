@@ -3,6 +3,7 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
+import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -181,6 +182,23 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Rename a node via its canvas title editor: double-click the title to
+   * start editing, fill in the new text, then press Enter to commit it
+   * (blurring the input, which is what `EditableText` treats as confirm).
+   *
+   * The `delay` matches the canvas double-clicks elsewhere in this suite: a
+   * zero-delay synthetic dblclick on a canvas surface is a documented flake
+   * source, since the two downs can land inside one frame.
+   */
+  async renameNode(nodeId: string, newTitle: string): Promise<void> {
+    const title = this.getNodeLocator(nodeId).getByTestId('node-title')
+    await title.dblclick({ delay: 5 })
+    const input = title.getByTestId('node-title-input')
+    await input.fill(newTitle)
+    await input.press('Enter')
+  }
+
+  /**
    * Delete selected Vue nodes using Backspace key
    */
   async deleteSelectedWithBackspace(): Promise<void> {
@@ -214,17 +232,30 @@ export class VueNodeHelpers {
     return new VueNodeFixture(this.getNodeLocator(nodeId))
   }
 
+  async setEnabled(enabled: boolean): Promise<void> {
+    const settings = new SettingsHelper(this.page)
+    if ((await settings.getSetting('Comfy.VueNodes.Enabled')) !== enabled) {
+      await settings.setSetting('Comfy.VueNodes.Enabled', enabled)
+    }
+    await this.waitForNodes()
+  }
+
   /**
    * Wait for Vue nodes to be rendered
    */
-  async waitForNodes(expectedCount?: number): Promise<void> {
-    if (expectedCount !== undefined) {
-      await this.page.waitForFunction(
-        (count) => document.querySelectorAll('[data-node-id]').length >= count,
-        expectedCount
-      )
+  async waitForNodes(): Promise<void> {
+    await this.page.waitForFunction(
+      () => window.app?.extensionManager && window.app.canvas.graph
+    )
+    const expectsNodes = await this.page.evaluate(
+      () =>
+        window.app!.extensionManager.setting.get('Comfy.VueNodes.Enabled') &&
+        window.app!.canvas.graph!.nodes.length > 0
+    )
+    if (expectsNodes) {
+      await expect(this.nodes.first()).toBeVisible()
     } else {
-      await this.page.locator('[data-node-id]').first().waitFor()
+      await expect(this.nodes).toHaveCount(0)
     }
   }
 
@@ -279,6 +310,13 @@ export class VueNodeHelpers {
       incrementButton: widget.getByTestId(TestIds.widgets.increment),
       valueControl: widget.getByTestId(TestIds.widgets.valueControl)
     }
+  }
+
+  async setInputNumberValue(widget: Locator, value: string): Promise<void> {
+    const { input } = this.getInputNumberControls(widget)
+    await input.fill(value)
+    await input.blur()
+    await expect(input).toHaveValue(value)
   }
 
   /**

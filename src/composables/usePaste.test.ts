@@ -1,6 +1,14 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 import type {
@@ -12,6 +20,7 @@ import type {
 import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createNode } from '@/utils/litegraphUtil'
+import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 import {
   cloneDataTransfer,
   pasteAudioNode,
@@ -60,6 +69,28 @@ function createDataTransfer(files: File[] = []): DataTransfer {
   return dataTransfer
 }
 
+function pastedClipboard(kind: 'workflow JSON' | 'an image'): DataTransfer {
+  if (kind === 'an image') return createDataTransfer([createImageFile()])
+  const dataTransfer = new DataTransfer()
+  dataTransfer.setData(
+    'text/plain',
+    JSON.stringify({ version: '1.0', nodes: [], extra: {} })
+  )
+  return dataTransfer
+}
+
+function mountRichTextEditor() {
+  const editor = document.createElement('div')
+  editor.contentEditable = 'true'
+  const paragraph = editor.appendChild(document.createElement('p'))
+  const chip = paragraph.appendChild(document.createElement('span'))
+  chip.contentEditable = 'false'
+  const chipLabel = chip.appendChild(document.createElement('span'))
+  chipLabel.textContent = 'KSampler #5'
+  document.body.append(editor)
+  return { editor, paragraph, chipLabel }
+}
+
 const mockCanvas = {
   current_node: null as LGraphNode | null,
   graph: {
@@ -89,29 +120,15 @@ beforeEach(() => {
   mockCanvasStore.canvas = mockCanvas
 })
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    nodeOutputs: {},
-    nodePreviewImages: {},
-    loadGraphData: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/litegraphUtil'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  createNode: vi.fn()
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
-vi.mock(
-  import('@/workbench/eventHelpers'),
-
-  () => ({
-    shouldIgnoreCopyPaste: vi.fn()
-  })
-)
+vi.mock(import('@/workbench/eventHelpers'), { spy: true })
 
 describe('pasteImageNode', () => {
   beforeEach(() => {
+    vi.mocked(createNode).mockImplementation(vi.fn())
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
@@ -485,6 +502,52 @@ describe('usePaste', () => {
     })
   })
 
+  it.for([
+    { clipboard: 'workflow JSON', target: 'editor' },
+    { clipboard: 'workflow JSON', target: 'paragraph' },
+    { clipboard: 'an image', target: 'paragraph' }
+  ] as const)(
+    'pasting $clipboard into a contenteditable $target leaves the graph alone',
+    ({ clipboard, target }) => {
+      const editor = mountRichTextEditor()
+      usePaste()
+
+      editor[target].dispatchEvent(
+        new ClipboardEvent('paste', {
+          bubbles: true,
+          clipboardData: pastedClipboard(clipboard)
+        })
+      )
+
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(createNode).not.toHaveBeenCalled()
+    }
+  )
+
+  // A caret can land inside an uneditable reference chip, which then becomes
+  // the paste target even though the editor still handles the paste.
+  it.for(['workflow JSON', 'an image'] as const)(
+    'leaves the graph alone when the editor claims %s pasted inside a chip',
+    (clipboard) => {
+      const editor = mountRichTextEditor()
+      editor.editor.addEventListener('paste', (event) => event.preventDefault())
+      usePaste()
+
+      editor.chipLabel.dispatchEvent(
+        new ClipboardEvent('paste', {
+          bubbles: true,
+          cancelable: true,
+          clipboardData: pastedClipboard(clipboard)
+        })
+      )
+
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(createNode).not.toHaveBeenCalled()
+    }
+  )
+
   it('should handle workflow JSON paste', async () => {
     const workflow = { version: '1.0', nodes: [], extra: {} }
 
@@ -521,6 +584,7 @@ describe('usePaste', () => {
   })
 
   it('preserves text input paste for malformed workflow JSON', async () => {
+    vi.mocked(shouldIgnoreCopyPaste).mockReturnValue(false)
     usePaste()
     const input = document.createElement('input')
     input.type = 'text'
@@ -540,6 +604,35 @@ describe('usePaste', () => {
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
     })
   })
+
+  it.for([
+    { clipboard: 'node JSON', collaborator: 'pasteFromClipboard' },
+    { clipboard: 'an image', collaborator: 'createNode' }
+  ] as const)(
+    'pasting $clipboard while the canvas is select-only never reaches $collaborator',
+    ({ clipboard, collaborator }) => {
+      mockCanvas.selectOnly = true
+      onTestFinished(() => {
+        mockCanvas.selectOnly = false
+      })
+      const collaborators = {
+        pasteFromClipboard: mockCanvas.pasteFromClipboard,
+        createNode
+      }
+      usePaste()
+      const dataTransfer =
+        clipboard === 'an image'
+          ? createDataTransfer([createImageFile()])
+          : new DataTransfer()
+      if (clipboard === 'node JSON') dataTransfer.setData('text/plain', '{}')
+
+      document.dispatchEvent(
+        new ClipboardEvent('paste', { clipboardData: dataTransfer })
+      )
+
+      expect(collaborators[collaborator]).not.toHaveBeenCalled()
+    }
+  )
 
   it('should ignore paste when shift is down', () => {
     Object.assign(mockWorkspaceStore, { shiftDown: true })
@@ -647,15 +740,13 @@ describe('cloneDataTransfer', () => {
     expect(cloned.getData('text/html')).toBe('<p>test html</p>')
   })
 
-  it('should clone files', () => {
+  it('should preserve file identities', () => {
     const file1 = createImageFile('test1.png')
     const file2 = createImageFile('test2.jpg', 'image/jpeg')
     const original = createDataTransfer([file1, file2])
 
     const cloned = cloneDataTransfer(original)
 
-    // Files are added from both .files and .items, causing duplicates
-    expect(cloned.files.length).toBeGreaterThanOrEqual(2)
     expect(Array.from(cloned.files)).toContain(file1)
     expect(Array.from(cloned.files)).toContain(file2)
   })
@@ -688,8 +779,6 @@ describe('cloneDataTransfer', () => {
     const cloned = cloneDataTransfer(original)
 
     expect(cloned.getData('text/plain')).toBe('test')
-    // Files are added from both .files and .items
-    expect(cloned.files.length).toBeGreaterThanOrEqual(1)
     expect(Array.from(cloned.files)).toContain(file)
   })
 })

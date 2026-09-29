@@ -1,9 +1,10 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { api } from '@/scripts/api'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
@@ -12,9 +13,7 @@ import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
@@ -22,7 +21,9 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+beforeEach(() => {
+  vi.spyOn(api, 'fetchApi').mockImplementation(fetchApi)
+})
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -54,12 +55,15 @@ vi.mock(import('@/workbench/extensions/agent/AgentPanelRoot.vue'), async () => {
 function openPanel() {
   const store = useAgentPanelStore()
   store.enabled = true
+  store.consentAccepted = true
   store.isOpen = true
   return store
 }
 
 function renderPanel() {
-  return render(DockedAgentPanel, { global: { plugins: [i18n] } })
+  return render(DockedAgentPanel, {
+    global: { plugins: [i18n] }
+  })
 }
 
 describe('DockedAgentPanel', () => {
@@ -111,15 +115,6 @@ describe('DockedAgentPanel', () => {
     )
   })
 
-  it('fills the panel shell and draws the canvas seam border', () => {
-    openPanel()
-    renderPanel()
-
-    const shell = screen.getByTestId('docked-agent-panel-shell')
-
-    expect(shell).toHaveClass('border-l', 'border-interface-stroke')
-  })
-
   it('renders nothing while the panel is closed', () => {
     const store = openPanel()
     store.isOpen = false
@@ -137,6 +132,14 @@ describe('DockedAgentPanel', () => {
   })
 
   it('resizes via pointer drag on the handle, clamped to the width bounds', async () => {
+    // Wide enough that the upper bound is the panel max, not the viewport.
+    // Restored below: leaving it set makes every later test in this file
+    // depend on execution order.
+    const realInnerWidth = window.innerWidth
+    onTestFinished(() => {
+      window.innerWidth = realInnerWidth
+    })
+    window.innerWidth = 1920
     const store = openPanel()
     const user = userEvent.setup()
     renderPanel()

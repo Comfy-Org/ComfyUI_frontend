@@ -53,6 +53,7 @@ describe('classifyAssetUrl', () => {
   it('rejects non-media and extensionless references', () => {
     expect(classifyAssetUrl(view('notes.txt'))).toBeNull()
     expect(classifyAssetUrl('https://cloud.comfy.org/api/view')).toBeNull()
+    expect(classifyAssetUrl('/view/%ZZ', 'http://localhost')).toBeNull()
   })
 
   it('falls back to the pathname when no filename param exists', () => {

@@ -9,7 +9,7 @@ app.registerExtension({
       label: 'Open Layer Editor for Selected Node',
       function: async () => {
         const selectedNodes = app.canvas.selected_nodes
-        if (!selectedNodes || Object.keys(selectedNodes).length !== 1) return
+        if (Object.keys(selectedNodes).length !== 1) return
 
         const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
         const { useLayerEditor } =

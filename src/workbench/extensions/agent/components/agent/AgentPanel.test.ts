@@ -1,23 +1,46 @@
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { defineComponent, nextTick, ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+// The node preview constructs its observer at import time; jsdom omits this API.
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
 
 import { i18n } from '@/i18n'
-import type { TurnId } from '../../schemas/agentApiSchema'
+import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import { toTurnId } from '../../schemas/agentApiSchema'
+import type { WorkflowReference } from '../../types/workflowReference'
 
 import AgentPanel from './AgentPanel.vue'
+import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
-const historyGroups = {
-  current: [],
-  today: [],
-  yesterday: [],
-  earlier: []
+setupInlinePromptEditorDom()
+
+function createHistoryGroups() {
+  return {
+    current: [],
+    today: [],
+    yesterday: [],
+    earlier: []
+  }
 }
 
 function mount(isMaximized = false) {
   return render(AgentPanel, {
-    props: { entries: [], historyGroups, isMaximized },
+    props: {
+      entries: [],
+      historyGroups: createHistoryGroups(),
+      isMaximized,
+      activeTab: { path: 'workflows/portrait.json', name: 'portrait' }
+    },
     global: {
       plugins: [i18n],
       stubs: {
@@ -29,32 +52,187 @@ function mount(isMaximized = false) {
   })
 }
 
+const chatHistoryStub = defineComponent({
+  emits: ['back', 'select', 'delete', 'copyMarkdown', 'rename'],
+  template: `
+    <div data-testid="chat-history">
+      <button type="button" @click="$emit('back')">Back to chat</button>
+      <button type="button" @click="$emit('select', 'history-1')">Open saved chat</button>
+      <button type="button" @click="$emit('delete', 'history-1')">Delete saved chat</button>
+      <button type="button" @click="$emit('copyMarkdown', 'history-1')">Copy saved chat</button>
+      <button type="button" @click="$emit('rename', 'history-1', 'Renamed saved chat')">Rename saved chat</button>
+    </div>
+  `
+})
+
+type AddAttachmentArgs = [attachment: ComposerAttachment]
+type UpdateAttachmentArgs = [id: string, patch: Partial<ComposerAttachment>]
+type RemoveAttachmentArgs = [id: string]
+type InsertArgs = [text: string]
+type ReplaceDraftArgs = [text: string]
+
+const attachmentCalls: {
+  add: AddAttachmentArgs[]
+  update: UpdateAttachmentArgs[]
+  remove: RemoveAttachmentArgs[]
+} = {
+  add: [],
+  update: [],
+  remove: []
+}
+
+const draftCalls: {
+  insert: InsertArgs[]
+  replaceDraft: ReplaceDraftArgs[]
+} = {
+  insert: [],
+  replaceDraft: []
+}
+
+const suggestedPrompt = 'Generate a yellow duck with a hockey mask'
+const editedPrompt = 'Generate a yellow duck at sunrise'
+
+const attachment: ComposerAttachment = {
+  id: 'attachment-1',
+  name: 'workflow.png',
+  ref: 'input/workflow.png'
+}
+
+const attachmentDelegationHarness = defineComponent({
+  components: { AgentPanel },
+  setup() {
+    const panel = ref<InstanceType<typeof AgentPanel>>()
+
+    function addAttachment(): void {
+      panel.value?.addAttachment(attachment)
+    }
+
+    function updateAttachment(): void {
+      panel.value?.updateAttachment(attachment.id, { uploading: false })
+    }
+
+    function removeAttachment(): void {
+      panel.value?.removeAttachment(attachment.id)
+    }
+
+    return {
+      addAttachment,
+      historyGroups: createHistoryGroups(),
+      panel,
+      removeAttachment,
+      updateAttachment
+    }
+  },
+  template: `
+    <AgentPanel ref="panel" :entries="[]" :history-groups="historyGroups" />
+    <button type="button" @click="addAttachment">Add attachment</button>
+    <button type="button" @click="updateAttachment">Update attachment</button>
+    <button type="button" @click="removeAttachment">Remove attachment</button>
+  `
+})
+
+const eventComposerStub = defineComponent({
+  emits: [
+    'send',
+    'stop',
+    'attach',
+    'openAssets',
+    'selectNodes',
+    'removeTag',
+    'mentionPick'
+  ],
+  setup(_, { expose }) {
+    expose({
+      insert: (...args: InsertArgs) => {
+        draftCalls.insert.push(args)
+      },
+      replaceDraft: (...args: ReplaceDraftArgs) => {
+        draftCalls.replaceDraft.push(args)
+      },
+      addAttachment: (...args: AddAttachmentArgs) => {
+        attachmentCalls.add.push(args)
+      },
+      updateAttachment: (...args: UpdateAttachmentArgs) => {
+        attachmentCalls.update.push(args)
+      },
+      removeAttachment: (...args: RemoveAttachmentArgs) => {
+        attachmentCalls.remove.push(args)
+      }
+    })
+  },
+  template: `
+    <div>
+      <slot name="header" />
+      <button type="button" @click="$emit('send', 'Forwarded prompt', [])">Composer send</button>
+      <button type="button" @click="$emit('stop')">Composer stop</button>
+      <button type="button" @click="$emit('attach')">Composer attach</button>
+      <button type="button" @click="$emit('openAssets')">Composer assets</button>
+      <button type="button" @click="$emit('selectNodes')">Composer select nodes</button>
+      <button type="button" @click="$emit('removeTag', 'tag-1')">Composer remove tag</button>
+      <button type="button" @click="$emit('mentionPick', { id: 'node-1', title: 'KSampler' })">Composer mention</button>
+    </div>
+  `
+})
+
+const eventEmptyStateStub = defineComponent({
+  emits: ['insert'],
+  template: `
+    <div>
+      <button type="button" @click="$emit('insert', '${suggestedPrompt}')">Empty state suggestion</button>
+    </div>
+  `
+})
+
+const eventConversationViewStub = defineComponent({
+  emits: ['editPrompt'],
+  template: `
+    <div>
+      <button type="button" @click="$emit('editPrompt', '${editedPrompt}')">Conversation edit prompt</button>
+    </div>
+  `
+})
+
+const eventPanelHeaderStub = defineComponent({
+  emits: ['newChat', 'toggleSize', 'close'],
+  template: `
+    <header>
+      <button type="button" @click="$emit('newChat')">Header new chat</button>
+      <button type="button" @click="$emit('toggleSize')">Header toggle size</button>
+      <button type="button" @click="$emit('close')">Header close</button>
+    </header>
+  `
+})
+
 describe('AgentPanel', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     localStorage.clear()
+    attachmentCalls.add.length = 0
+    attachmentCalls.update.length = 0
+    attachmentCalls.remove.length = 0
+    draftCalls.insert.length = 0
+    draftCalls.replaceDraft.length = 0
   })
 
-  it('shows the minimized run notice and disclaimer by default', () => {
+  it('passes the editable workflow into the minimized run notice', () => {
     mount()
 
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
+    )
     expect(
-      screen.getByText(i18n.global.t('agent.runNotice'))
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText('The AI agent can make mistakes')
+      screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
   })
 
-  it('shows the expanded run notice and disclaimer when maximized', () => {
+  it('passes the editable workflow into the expanded run notice', () => {
     mount(true)
 
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
+    )
     expect(
-      screen.getByText(i18n.global.t('agent.runNoticeExpanded'))
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        'The AI agent can make mistakes. Double check your response.'
-      )
+      screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
   })
 
@@ -63,7 +241,7 @@ describe('AgentPanel', () => {
     render(AgentPanel, {
       props: {
         entries: [],
-        historyGroups,
+        historyGroups: createHistoryGroups(),
         sessionId: 'thread-1',
         customTitle: title
       },
@@ -97,7 +275,7 @@ describe('AgentPanel', () => {
     const user = userEvent.setup()
     const pinia = getActivePinia()!
     render(AgentPanel, {
-      props: { entries: [], historyGroups },
+      props: { entries: [], historyGroups: createHistoryGroups() },
       global: {
         plugins: [pinia, i18n],
         directives: { tooltip: {} },
@@ -111,43 +289,460 @@ describe('AgentPanel', () => {
     const textarea = screen.getByRole('textbox')
 
     await user.click(suggestion)
+    await nextTick()
 
-    expect(textarea).toHaveValue(prompt)
+    expect(textarea).toHaveTextContent(prompt)
     expect(textarea).toHaveFocus()
 
     await user.click(screen.getByRole('button', { name: 'New chat' }))
+    await nextTick()
 
     expect(textarea).not.toHaveFocus()
   })
 
-  it('replaces and focuses the composer draft when editing the eligible prompt', async () => {
+  it.for([true, false])(
+    'restores the edited prompt and its references (references: %s)',
+    async (hasReferences) => {
+      const user = userEvent.setup()
+      const pinia = getActivePinia()!
+      const prompt = 'Compare  with  please.'
+      const turnId = toTurnId('msg-1')
+      const references: WorkflowReference[] = hasReferences
+        ? [
+            { id: 'wf-b', name: 'Flow B', textOffset: 8 },
+            { id: 'wf-a', name: 'Flow A', textOffset: 14 }
+          ]
+        : []
+      useAgentComposerStore().setWorkflowReferences([
+        { id: 'stale', name: 'Stale draft reference', textOffset: 0 }
+      ])
+      const { emitted } = render(AgentPanel, {
+        props: {
+          editableTurnId: turnId,
+          entries: [
+            {
+              id: turnId,
+              role: 'user',
+              text: prompt,
+              workflowReferences: references
+            }
+          ],
+          historyGroups: createHistoryGroups()
+        },
+        global: {
+          plugins: [pinia, i18n],
+          directives: { tooltip: {} },
+          stubs: { WorkflowSelectorChip: true }
+        }
+      })
+      const textarea = screen.getByRole('textbox')
+      useAgentComposerStore().setText('unfinished draft')
+
+      await user.click(screen.getByRole('button', { name: 'Edit' }))
+
+      expect(textarea).toHaveTextContent(
+        hasReferences
+          ? 'Compare Flow B with Flow A please.'
+          : 'Compare with please.'
+      )
+      expect(
+        within(textarea).queryByText('Stale draft reference')
+      ).not.toBeInTheDocument()
+      expect(textarea).toHaveFocus()
+
+      await user.pointer({ target: textarea, offset: 0, keys: '[MouseLeft]' })
+      await user.paste('Updated. ')
+      expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+        hasReferences
+          ? 'Compare Flow B with Flow A please.'
+          : 'Compare with please.'
+      )
+      await user.click(screen.getByRole('button', { name: 'Send' }))
+
+      expect(emitted().send[0]).toEqual(
+        hasReferences
+          ? [
+              `Updated. ${prompt}`,
+              [],
+              references.map((reference) => ({
+                ...reference,
+                textOffset: reference.textOffset + 9
+              }))
+            ]
+          : [`Updated. ${prompt}`, []]
+      )
+    }
+  )
+
+  it('switches into history mode and routes history actions', async () => {
     const user = userEvent.setup()
-    const pinia = getActivePinia()!
-    const prompt = 'Generate a yellow duck with a hockey mask'
     const { emitted } = render(AgentPanel, {
-      props: {
-        editableTurnId: 'msg-1' as TurnId,
-        entries: [{ id: 'msg-1' as TurnId, role: 'user', text: prompt }],
-        historyGroups
-      },
+      props: { entries: [], historyGroups: createHistoryGroups() },
       global: {
-        plugins: [pinia, i18n],
-        directives: { tooltip: {} },
-        stubs: { WorkflowSelectorChip: true }
+        plugins: [i18n],
+        stubs: {
+          ChatHistoryScreen: chatHistoryStub,
+          Composer: true,
+          EmptyState: true,
+          PanelHeader: true
+        }
       }
     })
-    const textarea = screen.getByRole('textbox')
-    await user.type(textarea, 'unfinished draft')
 
-    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    await user.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await nextTick()
 
-    expect(textarea).toHaveValue(prompt)
-    expect(textarea).toHaveFocus()
+    expect(emitted().openHistory).toHaveLength(1)
+    expect(screen.getByTestId('chat-history')).toBeInTheDocument()
+    expect(
+      screen.queryByText('The AI agent can make mistakes')
+    ).not.toBeInTheDocument()
 
-    await user.clear(textarea)
-    await user.type(textarea, 'Generate a yellow duck at sunrise')
-    await user.click(screen.getByRole('button', { name: 'Send' }))
+    await user.click(screen.getByRole('button', { name: 'Back to chat' }))
+    await nextTick()
 
-    expect(emitted().send[0]).toEqual(['Generate a yellow duck at sunrise', []])
+    expect(screen.queryByTestId('chat-history')).not.toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await nextTick()
+
+    await user.click(screen.getByRole('button', { name: 'Delete saved chat' }))
+    await user.click(screen.getByRole('button', { name: 'Copy saved chat' }))
+    await user.click(screen.getByRole('button', { name: 'Rename saved chat' }))
+    await user.click(screen.getByRole('button', { name: 'Open saved chat' }))
+    await nextTick()
+
+    expect(emitted().deleteHistory).toEqual([['history-1']])
+    expect(emitted().copyHistory).toEqual([['history-1']])
+    expect(emitted().renameHistory).toEqual([
+      ['history-1', 'Renamed saved chat']
+    ])
+    expect(emitted().selectHistory).toEqual([['history-1']])
+    expect(screen.queryByTestId('chat-history')).not.toBeInTheDocument()
+  })
+
+  it('renames the current chat from the title button', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        sessionId: 'thread-1',
+        customTitle: 'Before title'
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: true,
+          EmptyState: true,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Before title' }))
+    await nextTick()
+    const renameInput = screen.getByRole('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    await user.clear(renameInput)
+    await user.type(renameInput, 'After title{Enter}')
+    await nextTick()
+
+    expect(emitted().renameChat).toHaveLength(1)
+    expect(emitted().renameChat[0]).toEqual(['After title'])
+    expect(screen.getByRole('button', { name: 'Before title' })).toHaveFocus()
+  })
+
+  it('cancels chat rename without emitting a rename', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        sessionId: 'thread-1',
+        customTitle: 'Draft title'
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: true,
+          EmptyState: true,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Draft title' }))
+    await nextTick()
+    await user.type(
+      screen.getByRole('textbox', { name: i18n.global.t('g.rename') }),
+      ' ignored{Escape}'
+    )
+    await nextTick()
+
+    expect(emitted().renameChat).toBeUndefined()
+    expect(screen.getByRole('button', { name: 'Draft title' })).toHaveFocus()
+  })
+
+  it('commits the rename and emits when the input loses focus', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        sessionId: 'thread-1',
+        customTitle: 'Original title'
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: true,
+          EmptyState: true,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Original title' }))
+    await nextTick()
+    const renameInput = screen.getByRole('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    await user.clear(renameInput)
+    await user.type(renameInput, 'Blur committed title')
+    await user.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await nextTick()
+
+    expect(emitted().renameChat).toHaveLength(1)
+    expect(emitted().renameChat[0]).toEqual(['Blur committed title'])
+  })
+
+  it('discards empty and unchanged renames without emitting', async () => {
+    const user = userEvent.setup()
+    const { emitted: emittedEmpty } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        sessionId: 'thread-1',
+        customTitle: 'Kept title'
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: true,
+          EmptyState: true,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Kept title' }))
+    await nextTick()
+    const renameInput = screen.getByRole('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    await user.clear(renameInput)
+    await user.keyboard('{Enter}')
+    await nextTick()
+
+    expect(emittedEmpty().renameChat).toBeUndefined()
+
+    await user.click(screen.getByRole('button', { name: 'Kept title' }))
+    await nextTick()
+    await user.keyboard('{Enter}')
+    await nextTick()
+
+    expect(emittedEmpty().renameChat).toBeUndefined()
+  })
+
+  it('deletes only a current chat with a session id', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        sessionId: 'thread-1'
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: true,
+          EmptyState: true,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await user.click(
+      screen.getByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+
+    expect(emitted().deleteHistory).toHaveLength(1)
+    expect(emitted().deleteHistory[0]).toEqual(['thread-1'])
+  })
+
+  it('hides the chat options dropdown when sessionId is null', () => {
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        sessionId: null,
+        customTitle: 'Null session chat'
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { Composer: true, EmptyState: true, PanelHeader: true }
+      }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Null session chat' })
+    ).toBeInTheDocument()
+    expect(emitted().deleteHistory).toBeUndefined()
+  })
+
+  it('forwards header and composer actions', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(AgentPanel, {
+      props: { entries: [], historyGroups: createHistoryGroups() },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          ChatHistoryScreen: chatHistoryStub,
+          Composer: eventComposerStub,
+          EmptyState: true,
+          PanelHeader: eventPanelHeaderStub,
+          WorkflowSelectorChip: true
+        }
+      }
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await nextTick()
+    expect(screen.getByTestId('chat-history')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Header new chat' }))
+    await nextTick()
+    expect(screen.queryByTestId('chat-history')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Header toggle size' }))
+    await user.click(screen.getByRole('button', { name: 'Header close' }))
+    await user.click(screen.getByRole('button', { name: 'Composer send' }))
+    await user.click(screen.getByRole('button', { name: 'Composer stop' }))
+    await user.click(screen.getByRole('button', { name: 'Composer attach' }))
+    await user.click(screen.getByRole('button', { name: 'Composer assets' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Composer select nodes' })
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Composer remove tag' })
+    )
+    await user.click(screen.getByRole('button', { name: 'Composer mention' }))
+
+    expect(emitted().newChat).toHaveLength(1)
+    expect(emitted().toggleSize).toHaveLength(1)
+    expect(emitted().close).toHaveLength(1)
+    expect(emitted().send).toEqual([['Forwarded prompt', []]])
+    expect(emitted().stop).toHaveLength(1)
+    expect(emitted().attach).toHaveLength(1)
+    expect(emitted().openAssets).toHaveLength(1)
+    expect(emitted().selectNodes).toHaveLength(1)
+    expect(emitted().removeTag).toEqual([['tag-1']])
+    expect(emitted().mentionPick).toEqual([
+      [{ id: 'node-1', title: 'KSampler' }]
+    ])
+  })
+
+  it('delegates attachment changes to the composer', async () => {
+    const user = userEvent.setup()
+    render(attachmentDelegationHarness, {
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: eventComposerStub,
+          EmptyState: true,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Add attachment' }))
+    await user.click(screen.getByRole('button', { name: 'Update attachment' }))
+    await user.click(screen.getByRole('button', { name: 'Remove attachment' }))
+
+    expect(attachmentCalls.add).toEqual([[attachment]])
+    expect(attachmentCalls.update).toEqual([
+      [attachment.id, { uploading: false }]
+    ])
+    expect(attachmentCalls.remove).toEqual([[attachment.id]])
+  })
+
+  it('inserts an empty state suggestion into the composer draft', async () => {
+    const user = userEvent.setup()
+    render(AgentPanel, {
+      props: { entries: [], historyGroups: createHistoryGroups() },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: eventComposerStub,
+          EmptyState: eventEmptyStateStub,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Empty state suggestion' })
+    )
+
+    expect(draftCalls.insert).toEqual([[suggestedPrompt]])
+    expect(draftCalls.replaceDraft).toEqual([])
+  })
+
+  it('replaces the composer draft when a conversation prompt is edited', async () => {
+    const user = userEvent.setup()
+    render(AgentPanel, {
+      props: {
+        entries: [{ id: toTurnId('msg-1'), role: 'user', text: editedPrompt }],
+        historyGroups: createHistoryGroups()
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: eventComposerStub,
+          ConversationView: eventConversationViewStub,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Conversation edit prompt' })
+    )
+
+    expect(draftCalls.replaceDraft).toEqual([[editedPrompt]])
+    expect(draftCalls.insert).toEqual([])
   })
 })
