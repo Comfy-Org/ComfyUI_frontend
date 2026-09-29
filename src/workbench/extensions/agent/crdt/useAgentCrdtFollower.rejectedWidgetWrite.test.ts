@@ -6,8 +6,10 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import * as Y from 'yjs'
 
+import { assert } from '@/base/assert'
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
@@ -95,11 +97,21 @@ function docOpsFrames(raw: string[]): string[][] {
 }
 
 /** The transport listens on `api`; a server frame is a CustomEvent there. */
-function answerWithOpsResult(detail: Record<string, unknown>): void {
+function answerWithServerFrame(
+  type: string,
+  detail: Record<string, unknown>
+): void {
   EventTarget.prototype.dispatchEvent.call(
     api,
-    new CustomEvent('doc_ops_result', { detail })
+    new CustomEvent(type, { detail })
   )
+}
+
+function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
+  return {
+    ...rest,
+    nodes: nodes.map(({ flags, ...node }) => ({ ...node, flags: { ...flags } }))
+  }
 }
 
 /**
@@ -128,6 +140,8 @@ function mountFollower() {
   if (!node) throw new Error('RejectedWidgetNode was not registered')
   node.id = toNodeId(3)
   graph.add(node)
+  const widget = node.widgets?.[0]
+  assert(widget, 'RejectedWidgetNode registers its seed widget')
 
   let follower!: ReturnType<typeof useAgentCrdtFollower>
   const { unmount } = render(
@@ -154,7 +168,7 @@ function mountFollower() {
   })
   onTestFinished(() => minter.detach())
 
-  const host = mint(graph.serialize() as unknown as WorkflowJSON, {
+  const host = mint(toWorkflowJson(graph.serialize()), {
     types: { RejectedWidgetNode: { widget_order: ['seed'] } }
   })
   onTestFinished(() => host.destroy())
@@ -198,18 +212,7 @@ function mountFollower() {
   const sentDocOpsFrameCount = (): number =>
     docOpsFrames(send.mock.calls.map(([frame]) => frame)).length
 
-  return { node, submit, submitBatch, sentDocOpsFrameCount }
-}
-
-/** The transport listens on `api`; a server frame is a CustomEvent there. */
-function answerWithServerFrame(
-  type: string,
-  detail: Record<string, unknown>
-): void {
-  EventTarget.prototype.dispatchEvent.call(
-    api,
-    new CustomEvent(type, { detail })
-  )
+  return { widget, submit, submitBatch, sentDocOpsFrameCount }
 }
 
 function rejection(opId: string, code: string): Record<string, unknown> {
@@ -265,12 +268,12 @@ describe('a human edit the doc host rejects', () => {
   ])(
     'tells the user their widget edit was not saved when the host answers %s',
     async (code) => {
-      const { node, submit, sentDocOpsFrameCount } = mountFollower()
+      const { widget, submit, sentDocOpsFrameCount } = mountFollower()
 
-      node.widgets![0].value = EDITED_WIDGET_VALUE
+      widget.value = EDITED_WIDGET_VALUE
       const opId = await submit(WIDGET_EDIT)
       const framesBeforeRejection = sentDocOpsFrameCount()
-      answerWithOpsResult(rejection(opId, code))
+      answerWithServerFrame('doc_ops_result', rejection(opId, code))
       // A rejected write is restored through the graph API under remote
       // provenance. Give both the command-site minter and sender coalescer
       // their microtasks, then prove restoration minted no compensation.
@@ -280,7 +283,7 @@ describe('a human edit the doc host rejects', () => {
       expect(toastDetails()).toEqual([
         expect.stringContaining(WIDGET_REJECTION_TEXT)
       ])
-      expect(node.widgets![0].value).toBe(ORIGINAL_WIDGET_VALUE)
+      expect(widget.value).toBe(ORIGINAL_WIDGET_VALUE)
       expect(sentDocOpsFrameCount()).toBe(framesBeforeRejection)
     }
   )
@@ -294,7 +297,7 @@ describe('a human edit the doc host rejects', () => {
     expect(frames).toHaveLength(1)
     const [[appliedId]] = frames
 
-    answerWithOpsResult({
+    answerWithServerFrame('doc_ops_result', {
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: false,
@@ -325,7 +328,7 @@ describe('a human edit the doc host rejects', () => {
     const [[, widgetOpId]] = frames
     expect(widgetOpId).toBeDefined()
 
-    answerWithOpsResult({
+    answerWithServerFrame('doc_ops_result', {
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: false,
@@ -347,7 +350,10 @@ describe('a human edit the doc host rejects', () => {
   it('raises the notice as a self-dismissing error toast', async () => {
     const { submit } = mountFollower()
 
-    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
+    answerWithServerFrame(
+      'doc_ops_result',
+      rejection(await submit(WIDGET_EDIT), 'opaque_widgets')
+    )
 
     expect(useToastStore().messagesToAdd).toEqual([
       {
@@ -364,7 +370,8 @@ describe('a human edit the doc host rejects', () => {
   it('does not blame a widget when the rejected op added a node', async () => {
     const { submit } = mountFollower()
 
-    answerWithOpsResult(
+    answerWithServerFrame(
+      'doc_ops_result',
       rejection(await submit(NODE_ADD), 'uncatalogued_widget_write')
     )
 
@@ -376,7 +383,8 @@ describe('a human edit the doc host rejects', () => {
   it('falls back to a generic notice for a code that names no widget write', async () => {
     const { submit } = mountFollower()
 
-    answerWithOpsResult(
+    answerWithServerFrame(
+      'doc_ops_result',
       rejection(await submit(WIDGET_EDIT), 'base_version_conflict')
     )
 
@@ -388,8 +396,14 @@ describe('a human edit the doc host rejects', () => {
   it('repeats no notice a rejection already put on screen', async () => {
     const { submit } = mountFollower()
 
-    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
-    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
+    answerWithServerFrame(
+      'doc_ops_result',
+      rejection(await submit(WIDGET_EDIT), 'opaque_widgets')
+    )
+    answerWithServerFrame(
+      'doc_ops_result',
+      rejection(await submit(WIDGET_EDIT), 'opaque_widgets')
+    )
 
     expect(toastDetails()).toEqual([
       expect.stringContaining(WIDGET_REJECTION_TEXT)
@@ -405,9 +419,15 @@ describe('a human edit the doc host rejects', () => {
     })
     const { submit } = mountFollower()
 
-    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
+    answerWithServerFrame(
+      'doc_ops_result',
+      rejection(await submit(WIDGET_EDIT), 'opaque_widgets')
+    )
     await vi.advanceTimersByTimeAsync(10_001)
-    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
+    answerWithServerFrame(
+      'doc_ops_result',
+      rejection(await submit(WIDGET_EDIT), 'opaque_widgets')
+    )
 
     expect(toastDetails()).toEqual([
       expect.stringContaining(WIDGET_REJECTION_TEXT),
@@ -418,8 +438,12 @@ describe('a human edit the doc host rejects', () => {
   it('still speaks for a rejection of another kind inside that window', async () => {
     const { submit } = mountFollower()
 
-    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
-    answerWithOpsResult(
+    answerWithServerFrame(
+      'doc_ops_result',
+      rejection(await submit(WIDGET_EDIT), 'opaque_widgets')
+    )
+    answerWithServerFrame(
+      'doc_ops_result',
       rejection(await submit(WIDGET_EDIT), 'base_version_conflict')
     )
 
@@ -433,7 +457,7 @@ describe('a human edit the doc host rejects', () => {
     const { submit } = mountFollower()
     const opId = await submit(WIDGET_EDIT)
 
-    answerWithOpsResult({
+    answerWithServerFrame('doc_ops_result', {
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true,
@@ -452,7 +476,7 @@ describe('a human edit the doc host rejects', () => {
     const { submit } = mountFollower()
     await submit(WIDGET_EDIT)
 
-    answerWithOpsResult(batchRefusal('catalog_mismatch'))
+    answerWithServerFrame('doc_ops_result', batchRefusal('catalog_mismatch'))
 
     expect(toastDetails()).toEqual([
       expect.stringContaining(GENERIC_REJECTION_TEXT)
@@ -469,11 +493,11 @@ describe('a human edit the doc host rejects', () => {
     // One pending batch per answer: the notifier runs when a batch SETTLES, so
     // a result with nothing outstanding settles nothing and reports nothing.
     await submit(WIDGET_EDIT)
-    answerWithOpsResult(batchRefusal('overloaded'))
+    answerWithServerFrame('doc_ops_result', batchRefusal('overloaded'))
     await submit(WIDGET_EDIT)
-    answerWithOpsResult(batchRefusal('overloaded'))
+    answerWithServerFrame('doc_ops_result', batchRefusal('overloaded'))
     await submit(WIDGET_EDIT)
-    answerWithOpsResult(batchRefusal('catalog_mismatch'))
+    answerWithServerFrame('doc_ops_result', batchRefusal('catalog_mismatch'))
 
     expect(reportedCodes()).toEqual(['overloaded', 'catalog_mismatch'])
   })
@@ -507,7 +531,7 @@ describe('a human edit the doc host rejects', () => {
       const [[appliedId, rejectedId]] = frames
       expect(rejectedId).toBeDefined()
 
-      answerWithOpsResult({
+      answerWithServerFrame('doc_ops_result', {
         v: 1,
         workflow_id: WORKFLOW_ID,
         ok: false,
