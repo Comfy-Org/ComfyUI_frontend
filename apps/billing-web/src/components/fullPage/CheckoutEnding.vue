@@ -3,6 +3,7 @@ import { useClipboard } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { EndingKind, EndingScreen } from '@/checkout/endingScreen'
@@ -184,7 +185,12 @@ function act() {
         <a
           v-if="ending.support"
           :href="supportLink"
-          class="text-sm font-semibold text-base-foreground no-underline hover:underline focus-visible:underline focus-visible:outline-none"
+          :class="
+            cn(
+              buttonVariants({ variant: 'textonly', size: 'lg' }),
+              'w-full font-semibold no-underline'
+            )
+          "
         >
           {{ t('checkout.fullPage.outcome.contactSupport') }}
         </a>

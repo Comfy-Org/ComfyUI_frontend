@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { CheckoutTermsNote } from '@comfyorg/account-ui/billing/checkout'
+import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { InlineOutcome, SubmitPhase } from '@/checkout/checkoutPage'
@@ -147,7 +148,16 @@ const GHOST_BUTTON =
       >
         {{ t('checkout.fullPage.phase.cancel') }}
       </button>
-      <a v-if="supportLink" :href="supportLink" :class="GHOST_BUTTON">
+      <a
+        v-if="supportLink"
+        :href="supportLink"
+        :class="
+          cn(
+            buttonVariants({ variant: 'tertiary', size: 'lg' }),
+            'w-full font-semibold no-underline'
+          )
+        "
+      >
         {{ t('checkout.fullPage.outcome.contactSupport') }}
       </a>
       <CheckoutTermsNote
