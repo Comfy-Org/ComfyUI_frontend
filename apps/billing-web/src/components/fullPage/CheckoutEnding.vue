@@ -109,7 +109,7 @@ function act() {
       <div class="flex flex-col items-center gap-3">
         <i :class="cn(ICON[ending.tone], 'size-10')" aria-hidden="true" />
         <h1
-          class="m-0 text-2xl font-semibold text-base-foreground sm:whitespace-nowrap"
+          class="m-0 text-2xl font-semibold text-balance text-base-foreground sm:whitespace-nowrap"
         >
           {{ t(`${copyKey}.title`) }}
         </h1>

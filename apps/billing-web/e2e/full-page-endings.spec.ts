@@ -3,7 +3,7 @@
  * own Pay, a revisit after the money settled, a bank capture that is still
  * settling, a refusal, a stale plan link and a checkout that could not load.
  */
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import type { MockCloud } from './fixtures/cloud'
 import {
@@ -193,6 +193,77 @@ test('643-14654: a change already scheduled is named from the server, and withou
       'Your plan already has a change scheduled. Cancel it in your billing settings to make a different one.'
     )
   ).toBeVisible()
+})
+
+/** The element's text as the browser laid it out, one entry per rendered line. */
+function renderedLines(locator: Locator): Promise<string[]> {
+  return locator.evaluate((element) => {
+    const lines: { top: number; text: string }[] = []
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.textContent ?? ''
+      for (let index = 0; index < text.length; index += 1) {
+        const range = document.createRange()
+        range.setStart(node, index)
+        range.setEnd(node, index + 1)
+        const rect = range.getClientRects().item(0)
+        if (rect === null || rect.width === 0) continue
+        const last = lines.at(-1)
+        if (last !== undefined && Math.abs(last.top - rect.top) < 4)
+          last.text += text[index]
+        else lines.push({ top: rect.top, text: text[index] })
+      }
+    }
+    return lines.map((line) => line.text.trim()).filter(Boolean)
+  })
+}
+
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test("662-14660: an ending's heading wraps in balanced lines", async ({
+    page,
+    cloud,
+    signIn
+  }) => {
+    markPending(cloud, 'op_lost')
+    cloud.scenario.operations.op_lost = {
+      ...pendingOperation('op_lost'),
+      status: 'reconciliation_needed'
+    }
+    await signIn(CHECKOUT)
+
+    const title = heading(page, "We couldn't confirm your payment")
+    await expect(title).toBeVisible()
+    expect(await renderedLines(title)).toEqual([
+      "We couldn't confirm",
+      'your payment'
+    ])
+  })
+
+  test('a long refusal code wraps only after an underscore', async ({
+    page,
+    cloud,
+    signIn
+  }) => {
+    const refused = capabilitiesWith({ can_subscribe_self_serve: false })
+    cloud.reply('GET', '/billing/capabilities', () => ({
+      body: {
+        ...refused,
+        denied_reasons: {
+          can_subscribe_self_serve: 'subscription_change_in_progress'
+        }
+      },
+      headers: { 'x-capability-revision': String(refused.revision) }
+    }))
+    await signIn(CHECKOUT)
+
+    await expect(code(page)).toHaveText('SUBSCRIPTION_CHANGE_IN_PROGRESS')
+    const lines = await renderedLines(code(page))
+    expect(lines.length).toBeGreaterThan(1)
+    expect(lines.join('')).toBe('SUBSCRIPTION_CHANGE_IN_PROGRESS')
+    for (const line of lines.slice(0, -1)) expect(line).toMatch(/_$/)
+  })
 })
 
 test('433-6840: a link to a plan the catalog lacks renders Plan not available with PLAN_NOT_FOUND, and View plans opens the cloud pricing table', async ({
