@@ -69,6 +69,7 @@ function renderPanel() {
 
 describe('DockedAgentPanel', () => {
   beforeEach(() => {
+    window.innerWidth = 1024
     localStorage.clear()
     fetchApi.mockReset()
     fetchApi.mockResolvedValue(jsonResponse(404, { error: 'not found' }))
@@ -92,12 +93,11 @@ describe('DockedAgentPanel', () => {
   })
 
   it('keeps the panel usable as an overlay when the dock cannot fit', async () => {
-    vi.stubGlobal('innerWidth', 1024)
     const store = openPanel()
     renderPanel()
 
     const root = await screen.findByTestId('agent-panel-root-stub')
-    vi.stubGlobal('innerWidth', 400)
+    window.innerWidth = 400
     window.dispatchEvent(new Event('resize'))
     await nextTick()
 
