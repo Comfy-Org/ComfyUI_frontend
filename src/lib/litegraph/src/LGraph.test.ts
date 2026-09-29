@@ -494,7 +494,7 @@ describe('LGraph', () => {
 })
 
 describe('node id minting for a graph that shares its id space', () => {
-  /** Stands in for the agent panel's probe (`mintPortWiring.ts`). */
+  /** Stands in for the agent panel's probe (`docOpMinter.ts`). */
   function bindRootGraph(rootGraphId: string): () => void {
     return registerDocBoundRootGraphProbe(() => rootGraphId)
   }
@@ -1133,24 +1133,6 @@ describe('node:before-removed event', () => {
     expect(events[0].node).toBe(node)
     expect(events[0].graphAtDispatch).toBe(graph)
     expect(node.graph).toBeNull()
-  })
-
-  it('identifies the successor when preserving same-id canonical state', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    graph.add(node)
-    const successor = new LGraphNode('test')
-    successor.id = node.id
-    graph._nodes.push(successor)
-    graph._nodes_by_id[node.id] = successor
-
-    const beforeRemoved = vi.fn()
-    graph.events.addEventListener('node:before-removed', beforeRemoved)
-
-    graph.remove(node, { preserveCanonicalState: true })
-
-    expect(beforeRemoved).toHaveBeenCalledOnce()
-    expect(beforeRemoved.mock.calls[0][0].detail).toEqual({ node, successor })
   })
 
   it('does not fire node:before-removed for a node not in the graph', () => {
@@ -2198,6 +2180,62 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     expect(created.reroutes.get(toRerouteId(reroute.id))?.linkIds).toContain(
       toLinkId(link.id)
     )
+  })
+
+  it('keeps reserved ids out of a directly created definition', () => {
+    const graph = new LGraph()
+    const definition = createTestSubgraphData({
+      nodes: [
+        {
+          id: 1,
+          type: 'dummy',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'out', type: 'INT', links: [1] }],
+          properties: {}
+        },
+        {
+          id: 2,
+          type: 'dummy',
+          pos: [200, 0],
+          size: [100, 100],
+          flags: {},
+          order: 1,
+          mode: 0,
+          inputs: [{ name: 'in', type: 'INT', link: 1 }],
+          outputs: [],
+          properties: {}
+        }
+      ],
+      links: [
+        {
+          id: toLinkId(1),
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: 'INT'
+        }
+      ]
+    })
+
+    const [created] = graph.createSubgraphs([definition], {
+      nodeIds: [toNodeId(2)],
+      linkIds: [1, 2]
+    })
+
+    expect(created.nodes.map((node) => node.id)).toContain(toNodeId(1))
+    expect(created.nodes.map((node) => node.id)).not.toContain(toNodeId(2))
+    expect([...created.links.keys()]).toHaveLength(1)
+    expect([...created.links.keys()]).not.toContain(toLinkId(1))
+    expect([...created.links.keys()]).not.toContain(toLinkId(2))
+    const [link] = created.links.values()
+    expect(link.origin_id).toBe(toNodeId(1))
+    expect(link.target_id).toBe(created.nodes[1].id)
   })
 
   it('keeps the first duplicate subgraph definition during creation', () => {

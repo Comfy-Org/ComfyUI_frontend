@@ -2,11 +2,14 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { nextTick } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { lastShelf } from '../../lib/workshop/shelf-memory'
+import { useWorkshopAppsEnabled } from '../../scripts/posthog'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
+
+vi.mock(import('../../scripts/posthog'))
 
 const models: WorkshopModel[] = [
   {
@@ -130,8 +133,8 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Filter' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
+    await user.click(screen.getByRole('button', { name: 'Use cases' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
     await user.click(
       within(dialog).getByRole('button', { name: 'Edit images 1' })
     )
@@ -143,13 +146,94 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toHaveLength(3)
   })
 
+  it('clears filter chips without leaving Browse all models', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Browse all models' }))
+    await user.click(screen.getByRole('button', { name: 'Use cases' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Edit images 1' })
+    )
+    await user.click(screen.getByTestId('workshop-filter-chips-clear'))
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'All models 3'
+    )
+    expect(screen.queryByTestId('workshop-hero')).toBeNull()
+    expect(cardNames()).toHaveLength(3)
+  })
+
+  it('names the section it was browsing, and leaves it from that name', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
+    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+      'Edit images'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Remove Edit images' }))
+    expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
+    expect(cardNames()).toHaveLength(3)
+  })
+
+  it('names the use case it was narrowed by, and lets go of it from that name', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Use cases' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Edit images 1' })
+    )
+    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+      'Edit images'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Remove Edit images' }))
+    expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
+    expect(cardNames()).toHaveLength(3)
+  })
+
+  // A cross that cleared everything would pass a test that only ever set one
+  // filter, so this one sets two and keeps the other.
+  it('takes off the chip that was pressed and leaves the rest alone', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Use cases' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Edit images 1' })
+    )
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Generate videos 1' })
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Remove Edit images' }))
+    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+      'Generate videos'
+    )
+    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+    // The pressed cross went with its chip; focus stays in the row.
+    expect(
+      screen.getByRole('button', { name: 'Remove Generate videos' })
+    ).toHaveFocus()
+
+    await user.click(screen.getByTestId('workshop-filter-chips-clear'))
+    expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Use cases' })).toHaveFocus()
+  })
+
   it('replaces a browsed section with a use-case filter', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
     await user.click(screen.getByRole('button', { name: 'Edit images' }))
-    await user.click(screen.getByRole('button', { name: 'Filter' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
+    await user.click(screen.getByRole('button', { name: 'Use cases' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
     await user.click(
       within(dialog).getByRole('button', { name: 'Generate videos 1' })
     )
@@ -161,8 +245,8 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Filter' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
+    await user.click(screen.getByRole('button', { name: 'Use cases' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
     await user.type(
       within(dialog).getByRole('searchbox', { name: 'Search…' }),
       'video'
@@ -189,41 +273,48 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()[0]).toContain('Flux')
   })
 
-  it('keeps Flux 3 out of the featured models', () => {
-    const featured = [
-      {
-        slug: 'byteplus--seedance-2-fast-text-to-video--generate-videos',
-        name: 'Seedance 2 Fast',
-        rank: 32
-      },
-      {
-        slug: 'bfl--flux-3-text-to-video--generate-videos',
-        name: 'FLUX.3 Video',
-        rank: 63
-      },
-      {
-        slug: 'byteplus--seedream-5-pro--generate-images',
-        name: 'Seedream 5 Pro',
-        rank: 0
-      }
-    ].map(({ slug, name, rank }) => ({
-      ...models[0],
-      slug,
-      name,
-      href: `/models/${slug}/`,
-      recommendedRank: rank,
-      thumbnailUrl: `https://example.com/${rank}.webp`
-    }))
+  it.for([
+    { studio: true, lead: ['Cinematic Studio'] },
+    { studio: false, lead: [] }
+  ])(
+    'keeps Flux 3 out of the featured models (studio flag $studio)',
+    ({ studio, lead }) => {
+      vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => studio))
+      const featured = [
+        {
+          slug: 'byteplus--seedance-2-fast-text-to-video--generate-videos',
+          name: 'Seedance 2 Fast',
+          rank: 32
+        },
+        {
+          slug: 'bfl--flux-3-text-to-video--generate-videos',
+          name: 'FLUX.3 Video',
+          rank: 63
+        },
+        {
+          slug: 'byteplus--seedream-5-pro--generate-images',
+          name: 'Seedream 5 Pro',
+          rank: 0
+        }
+      ].map(({ slug, name, rank }) => ({
+        ...models[0],
+        slug,
+        name,
+        href: `/models/${slug}/`,
+        recommendedRank: rank,
+        thumbnailUrl: `https://example.com/${rank}.webp`
+      }))
 
-    render(WorkshopModelsGrid, { props: { models: featured } })
+      render(WorkshopModelsGrid, { props: { models: featured } })
 
-    const pagination = screen.getByTestId('featured-pagination')
-    expect(
-      within(pagination)
-        .getAllByRole('button')
-        .map((button) => button.getAttribute('aria-label'))
-    ).toEqual(['Seedream 5 Pro', 'Seedance 2 Fast'])
-  })
+      const pagination = screen.getByTestId('featured-pagination')
+      expect(
+        within(pagination)
+          .getAllByRole('button')
+          .map((button) => button.getAttribute('aria-label'))
+      ).toEqual([...lead, 'Seedream 5 Pro', 'Seedance 2 Fast'])
+    }
+  )
 
   it('does not manufacture a return shelf before a model is opened', () => {
     sessionStorage.setItem('comfy-models-shelf', 'generate-videos')
