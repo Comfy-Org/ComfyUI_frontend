@@ -91,3 +91,15 @@ test.describe('GitHub link before an app repo is published', () => {
       ).toHaveCount(0)
     })
 })
+
+test('asks Safari for a first frame on the Re-shoot example video tile', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/reshoot/')
+  await expect(page.getByTestId('example-video')).toHaveAttribute(
+    'src',
+    /#t=0\.1$/
+  )
+})
