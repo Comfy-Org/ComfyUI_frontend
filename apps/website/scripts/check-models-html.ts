@@ -2,16 +2,29 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { workshopModels } from '../src/config/workshop-browse-content'
-import { auditModelPage } from './models-html-audit'
+import { getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
+import { auditExampleGallery } from './models-gallery-audit'
+import { auditMediaLabels, auditModelPage } from './models-html-audit'
 
 const DIST = join(process.cwd(), 'dist')
 
-const errors = workshopModels.flatMap((model) =>
-  auditModelPage(
-    readFileSync(join(DIST, 'models', model.slug, 'index.html'), 'utf-8'),
-    model.name
-  ).map((error) => `/models/${model.slug}/: ${error}`)
-)
+function examplesOf(slug: string) {
+  const detail = getRouterWorkshopModelDetail(slug)
+  if (!detail) throw new Error(`Missing model record: ${slug}`)
+  return detail.examples
+}
+
+const errors = workshopModels.flatMap((model) => {
+  const html = readFileSync(
+    join(DIST, 'models', model.slug, 'index.html'),
+    'utf-8'
+  )
+  return [
+    ...auditModelPage(html, model.name),
+    ...auditMediaLabels(html),
+    ...auditExampleGallery(html, examplesOf(model.slug))
+  ].map((error) => `/models/${model.slug}/: ${error}`)
+})
 
 if (errors.length > 0) {
   console.error(`[models-html] ${errors.length} problem(s):`)

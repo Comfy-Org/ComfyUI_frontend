@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   MAX_UPLOAD_BYTES,
   defaultValues,
+  exampleAlt,
   exampleValues,
   examplesForModel,
   groupPlaygroundFields,
@@ -387,6 +388,23 @@ describe('examplesForModel', () => {
     expect(audio.mediaKind).toBe('audio')
   })
 
+  it('carries the prompt that produced the output', () => {
+    const shared = {
+      description: '',
+      tags: [],
+      thumbnailUrl: 'https://example.com/x.webp',
+      values: {}
+    }
+    const [prompted, bare] = examplesForModel({
+      examples: [
+        { ...shared, name: 'a', title: 'A', prompt: 'a red fox' },
+        { ...shared, name: 'b', title: 'B' }
+      ]
+    })
+    expect(prompted.prompt).toBe('a red fox')
+    expect(bare).not.toHaveProperty('prompt')
+  })
+
   it('reads back only the settings that say something', () => {
     const shared = {
       description: '',
@@ -455,6 +473,16 @@ describe('exampleValues', () => {
     expect(values.size).toBe('2K')
     expect(values.image).toBeUndefined()
     expect(validateForm(schema, values)).toEqual({ image: 'required' })
+  })
+})
+
+describe(exampleAlt, () => {
+  it.for([
+    { title: 'Object Swap', alt: 'FLUX 2 Max: Object Swap' },
+    { title: 'Sample 2', alt: 'FLUX 2 Max example output 2' },
+    { title: 'Sample shot', alt: 'FLUX 2 Max: Sample shot' }
+  ])('names the model and the example: $title', ({ title, alt }) => {
+    expect(exampleAlt('FLUX 2 Max', title)).toBe(alt)
   })
 })
 

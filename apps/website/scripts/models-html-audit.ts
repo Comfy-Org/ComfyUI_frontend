@@ -6,7 +6,7 @@ const ENTITIES: Record<string, string> = {
   '&#39;': "'"
 }
 
-function textOf(html: string): string {
+export function textOf(html: string): string {
   return html
     .replace(/<[^>]+>/g, ' ')
     .replace(/&(?:amp|lt|gt|quot|#39);/g, (entity) => ENTITIES[entity])
@@ -14,7 +14,7 @@ function textOf(html: string): string {
     .trim()
 }
 
-function withoutHiddenMarkup(html: string): string {
+export function withoutHiddenMarkup(html: string): string {
   return html.replace(/<(template|noscript|script|style)\b[\s\S]*?<\/\1>/g, '')
 }
 
@@ -37,4 +37,31 @@ export function auditModelPage(html: string, modelName: string): string[] {
   if (live.includes('data-testid="workshop-loading"'))
     errors.push('paints a loader in place of the model')
   return errors
+}
+
+const PLACEHOLDER_LABEL = /^(?:Output|Sample \d+)$/
+
+function attributeOf(tag: string, name: string): string | undefined {
+  const quoted = new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1]
+  if (quoted !== undefined) return quoted
+  return new RegExp(`\\s${name}(?=[\\s/>])`).test(tag) ? '' : undefined
+}
+
+export function auditMediaLabels(html: string): string[] {
+  const live = withoutHiddenMarkup(html)
+  const images = [...live.matchAll(/<img\b[^>]*>/g)].flatMap(([tag]) => {
+    const alt = attributeOf(tag, 'alt')
+    const src = attributeOf(tag, 'src')
+    if (alt === undefined) return [`has an image without alt: ${src}`]
+    return PLACEHOLDER_LABEL.test(alt)
+      ? [`has an image with alt "${alt}": ${src}`]
+      : []
+  })
+  const videos = [...live.matchAll(/<video\b[^>]*>/g)].flatMap(([tag]) => {
+    const label = attributeOf(tag, 'aria-label')
+    return label !== undefined && PLACEHOLDER_LABEL.test(label)
+      ? [`has a video labelled "${label}": ${attributeOf(tag, 'src')}`]
+      : []
+  })
+  return [...images, ...videos]
 }

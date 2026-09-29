@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { auditModelPage } from './models-html-audit'
+import { auditMediaLabels, auditModelPage } from './models-html-audit'
 
 const showcase = '<h1>Grok Imagine in <span>ComfyUI</span></h1>'
 const related = (cards: string) =>
@@ -48,5 +48,39 @@ describe(auditModelPage, () => {
         'Grok Imagine & Video'
       )
     ).toEqual([])
+  })
+})
+
+describe(auditMediaLabels, () => {
+  it.for([
+    {
+      name: 'named images and videos',
+      html: '<img src="a.webp" alt="FLUX: Fox"><img src="b.webp" alt><video src="c.mp4" aria-label="Seedance: Neon"></video><video src="d.mp4" muted></video>',
+      errors: []
+    },
+    {
+      name: 'placeholder and missing alts',
+      html: '<img src="a.webp" alt="Sample 1"><img src="b.webp" alt="Output"><img data-alt="Logo" src="c.webp">',
+      errors: [
+        'has an image with alt "Sample 1": a.webp',
+        'has an image with alt "Output": b.webp',
+        'has an image without alt: c.webp'
+      ]
+    },
+    {
+      name: 'placeholder video labels',
+      html: '<video src="a.mp4" aria-label="Output"></video><video aria-label="Sample 2" src="b.mp4"></video>',
+      errors: [
+        'has a video labelled "Output": a.mp4',
+        'has a video labelled "Sample 2": b.mp4'
+      ]
+    },
+    {
+      name: 'placeholders only in a template',
+      html: '<template><video src="a.mp4" aria-label="Output"></video><img src="b.webp"></template>',
+      errors: []
+    }
+  ])('$name', ({ html, errors }) => {
+    expect(auditMediaLabels(html)).toEqual(errors)
   })
 })

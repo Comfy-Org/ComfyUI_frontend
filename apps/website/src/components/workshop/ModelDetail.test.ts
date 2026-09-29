@@ -2647,7 +2647,7 @@ describe('ModelDetail', () => {
     await nextTick()
 
     expect(
-      screen.getByLabelText('Start and end frame').getAttribute('src')
+      screen.getByLabelText('Demo: Start and end frame').getAttribute('src')
     ).toBe('https://cdn.example/asset-without-extension')
   })
 
