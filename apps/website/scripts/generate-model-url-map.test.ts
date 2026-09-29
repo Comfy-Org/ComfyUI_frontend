@@ -28,6 +28,7 @@ const newSlugs = modelPageUrls.map((page) => page.newSlug)
 function sitePathPatterns(): string[] {
   const pagesDir = join(appDir, 'src/pages')
   const pages = readdirSync(pagesDir, { recursive: true, encoding: 'utf8' })
+    .map((file) => file.replaceAll('\\', '/'))
     .filter((file) => /\.(astro|ts|mdx?)$/.test(file))
     .filter((file) => !file.split('/').some((part) => part.startsWith('_')))
     .filter((file) => !file.endsWith('.test.ts'))
@@ -48,11 +49,11 @@ function sitePathPatterns(): string[] {
 
 function matchesRoute(pattern: string, path: string): boolean {
   const source = pattern
-    .split(/(\[[^\]]+\])/)
+    .split(/(\[[^\]]+\]|:\w+\*?|\(\.\*\))/)
     .map((part) =>
-      part.startsWith('[...')
+      /^(\[\.\.\.|:\w+\*$|\(\.\*\)$)/.test(part)
         ? '.*'
-        : part.startsWith('[')
+        : /^(\[|:\w)/.test(part)
           ? '[^/]+'
           : part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     )
@@ -126,6 +127,7 @@ describe('compileModelUrlMap', () => {
     ['FLUX.1 Kontext Max Image Edit', 'flux-1-kontext-max-image-edit'],
     ['Seedance 2.5 Text-to-Video', 'seedance-2-5-text-to-video'],
     ['Runway Gen-4 Turbo Image-to-Video', 'runway-gen-4-turbo-image-to-video'],
+    ['Café Photo 2.0', 'cafe-photo-2-0'],
     [' Bria RMBG 2.0 ', 'bria-rmbg-2-0']
   ] as const)('slugifies %s', ([name, slug]) => {
     expect(modelUrlSlug(name)).toBe(slug)
@@ -141,6 +143,25 @@ describe('compileModelUrlMap', () => {
         new Map()
       )
     ).toThrow('both map to veo-3-text-to-video')
+  })
+
+  it.for([
+    ['a shared old slug', ['veo--veo-3', 'veo--veo-3'], 'share an old slug'],
+    [
+      'a quote in an old slug',
+      ["veo--veo-3'", 'veo--veo-4'],
+      'Invalid old slug'
+    ]
+  ] as const)('rejects %s', ([, [first, second], message]) => {
+    expect(() =>
+      compileModelUrlMap(
+        [
+          { slug: first, name: 'Veo 3 Text-to-Video' },
+          { slug: second, name: 'Veo 4 Text-to-Video' }
+        ],
+        new Map()
+      )
+    ).toThrow(message)
   })
 
   it('rejects an alias whose target page does not exist', () => {
