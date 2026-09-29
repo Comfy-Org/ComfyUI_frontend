@@ -59,9 +59,7 @@ it('reports the first 10 unique locations and suppresses the 11th', () => {
   }
   expect(reportError).toHaveBeenCalledTimes(10)
 
-  const reportsBeforeCap = vi.mocked(reportError).mock.calls
   locations[10].resolve(locations[10].spec)
 
   expect(reportError).toHaveBeenCalledTimes(10)
-  expect(vi.mocked(reportError).mock.calls).toEqual(reportsBeforeCap)
 })
