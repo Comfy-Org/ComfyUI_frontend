@@ -37,6 +37,8 @@ const {
   takes,
   cast,
   palette,
+  colors,
+  mainColor,
   estimate,
   memberWorkspace,
   choose,
@@ -113,6 +115,8 @@ function generate() {
         v-model:takes="takes"
         v-model:cast="cast"
         v-model:palette="palette"
+        v-model:colors="colors"
+        v-model:main-color="mainColor"
         :models
         :gate="studio.gate.value"
         :workspace-name="studio.session.value?.workspace.name"
