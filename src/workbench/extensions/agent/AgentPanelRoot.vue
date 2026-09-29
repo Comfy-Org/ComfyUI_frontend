@@ -1110,12 +1110,14 @@ onBeforeUnmount(() => {
   mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()
-  // After `stop()`, not before it: the drain it performs replays any frames a
-  // hydrate was holding, and an `agent_active_tab` among them runs
-  // `enqueueActiveTab`, which mints a generation an earlier bump could not
-  // have invalidated. Everything from the start of this hook is synchronous
-  // and `enqueueActiveTab` defers through `activeTabChain`, so nothing queued
-  // can slip past this single invalidation wherever it was queued from.
+  // Moved below `stop()` rather than added: the drain `stop()` performs can
+  // replay an `agent_active_tab`, and `enqueueActiveTab` opens with its own
+  // `++activeTabGeneration`, so a bump above would be the older value by the
+  // time `stale()` compares. Everything in this hook is synchronous and the
+  // activation defers through `activeTabChain`, so one invalidation here
+  // covers whatever was queued, from either side. Whether that replay can
+  // reach a visible tab is unproven -- no test yet distinguishes the two
+  // positions -- so treat this as the cheaper of two equal placements.
   ++activeTabGeneration
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)

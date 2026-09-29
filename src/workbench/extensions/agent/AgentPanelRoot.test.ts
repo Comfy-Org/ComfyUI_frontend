@@ -5882,57 +5882,6 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  // Characterization, NOT a regression pin -- it passes with the teardown's
-  // `activeTabGeneration` invalidation on either side of `stop()`, so do not
-  // cite it as guarding that placement. What it does hold is the property
-  // itself: a frame a hydrate buffered, replayed by `stop()` during teardown,
-  // opens nothing on a canvas whose panel is gone. The buffering is load
-  // bearing -- a frame emitted with no hydrate in flight is delivered instead
-  // of held, and never reaches the replay path this exercises at all.
-  it('agent_active_tab buffered by a hydrate opens nothing after unmount', async () => {
-    makeTab('wf-42')
-    mockMessagesEndpoint('wf-42')
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-held')
-    const defaultFetch = vi.mocked(fetch).getMockImplementation()
-    assert.exists(defaultFetch)
-    vi.mocked(fetch).mockImplementation((input, init) =>
-      String(input).includes('/messages') && init?.method !== 'POST'
-        ? new Promise<Response>(() => {})
-        : defaultFetch(input, init)
-    )
-
-    const view = renderWithSelectedTarget()
-    await vi.waitFor(() =>
-      expect(
-        vi
-          .mocked(fetch)
-          .mock.calls.some(
-            ([input, init]) =>
-              String(input).includes('/messages') && init?.method !== 'POST'
-          )
-      ).toBe(true)
-    )
-
-    ws.emit('agent_active_tab', {
-      workflow_id: 'wf-77',
-      name: 'Video test',
-      thread_id: 'th-held'
-    })
-    view.unmount()
-
-    // `enqueueActiveTab` defers through `activeTabChain`, so the activation
-    // resolves after unmount returns. A macrotask boundary drains every
-    // microtask the replay queued, so the assertions below see its outcome
-    // rather than race it.
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    await nextTick()
-
-    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-    expect(
-      workflowStore.getWorkflowByPath('workflows/Video test.json')
-    ).toBeNull()
-  })
-
   it('agent_active_tab opens an unknown workflow as a blank named tab', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')

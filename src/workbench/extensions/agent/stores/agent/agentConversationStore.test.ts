@@ -487,6 +487,54 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
+  // Only a resolution frame removes an approval ask, and an aborted turn gets
+  // none -- so an abort has to drop it, or the rendered card stays enabled over
+  // a turn `answerAsk` will refuse to post for. It has to come off the message
+  // `messages` actually holds: `transport.settle()` publishes a clone, so a
+  // clean applied after it changes nothing a reader can see.
+  it('drops a pending run approval when the turn is aborted', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'turn-1', 'Run it', 'user-message-1'),
+      zAgentMessages.parse([
+        {
+          id: 'assistant-message-1',
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-1',
+          pending_ask: {
+            message_id: 'assistant-message-1',
+            ask_id: 'turn-1:call-1',
+            kind: 'run_approval',
+            context: { workflow_id: 'workflow-1' },
+            prompt: 'Run it?',
+            options: [{ id: 'run', label: 'Run' }],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ])[0]
+    ])
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'runApproval',
+      askId: 'turn-1:call-1',
+      workflowId: 'workflow-1'
+    })
+
+    store.abortActiveTurn()
+
+    expect(
+      store.messages[0].parts.some(
+        (part) => (part as { type: string }).type === 'runApproval'
+      )
+    ).toBe(false)
+    expect(store.isStreaming).toBe(false)
+  })
+
   it('recordFailedSend renders [user, assistant(notice)] and leaves the turn idle', () => {
     const store = useAgentConversationStore()
     store.recordFailedSend('local-error-1' as TurnId, 'boom', 'send failed')
