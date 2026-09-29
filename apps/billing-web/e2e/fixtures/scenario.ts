@@ -67,6 +67,11 @@ export function pendingOperation(id: string): BillingOpStatusResponse {
   return { id, status: 'pending', started_at: new Date().toISOString() }
 }
 
+/** In flight past the bank's challenge: the charge can no longer be called back. */
+export function processingOperation(id: string): BillingOpStatusResponse {
+  return { ...pendingOperation(id), authentication_state: 'processing' }
+}
+
 export function declinedOperation(id: string): BillingOpStatusResponse {
   const now = new Date().toISOString()
   return {
