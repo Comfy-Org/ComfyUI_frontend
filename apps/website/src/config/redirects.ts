@@ -1,43 +1,132 @@
 import type { RedirectConfig } from 'astro'
 
+import { models } from './models'
+
+interface SiteRedirect {
+  /** A literal path with no trailing slash; both slash forms redirect. */
+  readonly source: `/${string}`
+  /** An internal destination ends in `/`, the form every page canonicalizes to. */
+  readonly destination: string
+  /** Only a temporary (307) redirect sets this; every other row is a 308. */
+  readonly temporaryBecause?: string
+  /** Set when `${source}/` is a live page, so only the bare source redirects. */
+  readonly slashFormIsPageBecause?: string
+}
+
+interface VercelRedirect {
+  readonly source: string
+  readonly destination: string
+  readonly permanent: boolean
+}
+
+const modelAliasRedirects = models.flatMap(({ slug, canonicalSlug }) =>
+  canonicalSlug
+    ? [
+        {
+          source: `/p/supported-models/${slug}`,
+          destination: `/p/supported-models/${canonicalSlug}/`
+        } as const
+      ]
+    : []
+)
+
 /**
- * Astro's redirect map.
- *
- * Trailing slashes on destinations are load-bearing: Astro renders a stub page
- * per redirect whose canonical is the destination string verbatim, and every
- * real page self-canonicalizes with a slash via `absoluteUrl()`. A slash-less
- * destination canonicalizes one hop short of the page it redirects to, which is
- * what #14390 fixed once already.
- *
- * The map lives here rather than inline in `astro.config.ts` so `redirects.test.ts`
- * can assert over the values Astro actually receives. It used to scrape the
- * config's source text, which stopped checking any entry written in a shape the
- * regex did not anticipate.
+ * Every redirect the website serves. `vercel.json` is generated from this
+ * (`pnpm --filter @comfyorg/website sync:redirects`) and a test fails when the
+ * two drift, so edit this list and never `vercel.json` by hand.
  */
-export const redirects = {
-  '/cloud/enterprise': { status: 301, destination: '/enterprise/' },
-  '/zh-CN/cloud/enterprise': {
-    status: 301,
-    destination: '/zh-CN/enterprise/'
+export const siteRedirects: readonly SiteRedirect[] = [
+  { source: '/career', destination: '/careers/' },
+  { source: '/privacy', destination: '/privacy-policy/' },
+  { source: '/press', destination: '/about/' },
+  { source: '/blog', destination: 'https://blog.comfy.org/' },
+  { source: '/discord', destination: 'https://discord.com/invite/comfyorg' },
+  {
+    source: '/trust',
+    destination: 'https://trust.comfy.org',
+    temporaryBecause: 'points at a third-party (Vanta) trust center'
   },
-  '/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping':
-    '/customers/moment-factory/',
-  '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
-    '/customers/series-entertainment/',
-  '/zh-CN/terms-of-service': '/terms-of-service/',
-  // The platform rename, added on main while this branch was open.
-  '/api': '/platform/',
-  '/zh-CN/api': '/zh-CN/platform/',
-  // Models API became Comfy Router and moved back to /platform/router.
-  '/platform/models': '/platform/router/',
-  '/zh-CN/platform/models': '/zh-CN/platform/router/',
-  // Pricing moved out from under /cloud, also from main.
-  '/cloud/pricing': '/pricing/',
-  '/zh-CN/cloud/pricing': '/zh-CN/pricing/',
-  // Affiliates exists in English only. Without these a reader who swaps the
-  // locale prefix by hand gets a 404 instead of the page they asked for.
-  '/zh-CN/affiliates': '/affiliates/',
-  '/zh-CN/affiliates/terms': '/affiliates/terms/',
-  '/minimax': { status: 307, destination: '/minimax-h3/' },
-  '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
-} satisfies Record<string, RedirectConfig>
+  {
+    source: '/login',
+    destination: 'https://cloud.comfy.org/cloud/login',
+    temporaryBecause: 'hands sign-in off to Comfy Cloud',
+    slashFormIsPageBecause: '/login/ is the Workshop sign-in page'
+  },
+  {
+    source: '/share-news',
+    destination: 'https://vibe-code-support-page.vercel.app/',
+    temporaryBecause: 'a campaign link; a 301 stuck in the edge cache (#18611)'
+  },
+  {
+    source: '/share-news-pleaseeee',
+    destination: 'https://vibe-code-support-page.vercel.app/',
+    temporaryBecause: 'a campaign link; a 301 stuck in the edge cache (#18611)'
+  },
+  {
+    source: '/minimax',
+    destination: '/minimax-h3/',
+    temporaryBecause: 'the MiniMax launch may reuse /minimax/'
+  },
+  {
+    source: '/zh-CN/minimax',
+    destination: '/zh-CN/minimax-h3/',
+    temporaryBecause: 'the MiniMax launch may reuse /minimax/'
+  },
+  { source: '/cloud/enterprise', destination: '/enterprise/' },
+  { source: '/zh-CN/cloud/enterprise', destination: '/zh-CN/enterprise/' },
+  {
+    source:
+      '/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping',
+    destination: '/customers/moment-factory/'
+  },
+  {
+    source:
+      '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui',
+    destination: '/customers/series-entertainment/'
+  },
+  { source: '/zh-CN/terms-of-service', destination: '/terms-of-service/' },
+  { source: '/api', destination: '/platform/' },
+  { source: '/zh-CN/api', destination: '/zh-CN/platform/' },
+  { source: '/platform/models', destination: '/platform/router/' },
+  { source: '/zh-CN/platform/models', destination: '/zh-CN/platform/router/' },
+  { source: '/cloud/pricing', destination: '/pricing/' },
+  { source: '/zh-CN/cloud/pricing', destination: '/zh-CN/pricing/' },
+  // Affiliates exists in English only.
+  { source: '/zh-CN/affiliates', destination: '/affiliates/' },
+  { source: '/zh-CN/affiliates/terms', destination: '/affiliates/terms/' },
+  ...modelAliasRedirects
+]
+
+export function isInternalDestination(destination: string): boolean {
+  return destination.startsWith('/')
+}
+
+export function toVercelRedirects(
+  rows: readonly SiteRedirect[]
+): VercelRedirect[] {
+  return rows.flatMap(
+    ({ source, destination, temporaryBecause, slashFormIsPageBecause }) =>
+      (slashFormIsPageBecause ? [source] : [source, `${source}/`]).map(
+        (form) => ({
+          source: form,
+          destination,
+          permanent: temporaryBecause === undefined
+        })
+      )
+  )
+}
+
+/**
+ * Astro renders each entry as a meta-refresh stub so `astro preview` and the
+ * e2e suite see the redirects; on Vercel the `vercel.json` rule answers first.
+ * Astro cannot redirect off-site, so external rows live in `vercel.json` only.
+ */
+export const astroRedirects: Record<string, RedirectConfig> =
+  Object.fromEntries(
+    siteRedirects
+      .filter(({ destination }) => isInternalDestination(destination))
+      .map(({ source, destination, temporaryBecause }) => [
+        source,
+        { status: temporaryBecause ? 307 : 308, destination }
+      ])
+  )

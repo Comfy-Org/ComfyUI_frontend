@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { isNoindexPathname } from '../config/indexing'
 import type { Locale } from '../config/locales'
 import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
-import { redirects } from '../config/redirects'
+import { astroRedirects } from '../config/redirects'
 import { routeOf } from '../utils/hreflangRoutes'
 import type { Alternate } from './hreflang'
 import {
@@ -196,7 +196,7 @@ describe('the emitter agrees with the page tree', () => {
     })
 
   const redirected = new Set(
-    Object.keys(redirects).map((source) => source.replace(/\/$/, ''))
+    Object.keys(astroRedirects).map((source) => source.replace(/\/$/, ''))
   )
 
   const publishedPages = astroFiles(pagesDir)

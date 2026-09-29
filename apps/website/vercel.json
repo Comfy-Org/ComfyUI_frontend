@@ -54,13 +54,88 @@
   "redirects": [
     {
       "source": "/career",
-      "destination": "/careers",
+      "destination": "/careers/",
+      "permanent": true
+    },
+    {
+      "source": "/career/",
+      "destination": "/careers/",
       "permanent": true
     },
     {
       "source": "/privacy",
-      "destination": "/privacy-policy",
+      "destination": "/privacy-policy/",
       "permanent": true
+    },
+    {
+      "source": "/privacy/",
+      "destination": "/privacy-policy/",
+      "permanent": true
+    },
+    {
+      "source": "/press",
+      "destination": "/about/",
+      "permanent": true
+    },
+    {
+      "source": "/press/",
+      "destination": "/about/",
+      "permanent": true
+    },
+    {
+      "source": "/blog",
+      "destination": "https://blog.comfy.org/",
+      "permanent": true
+    },
+    {
+      "source": "/blog/",
+      "destination": "https://blog.comfy.org/",
+      "permanent": true
+    },
+    {
+      "source": "/discord",
+      "destination": "https://discord.com/invite/comfyorg",
+      "permanent": true
+    },
+    {
+      "source": "/discord/",
+      "destination": "https://discord.com/invite/comfyorg",
+      "permanent": true
+    },
+    {
+      "source": "/trust",
+      "destination": "https://trust.comfy.org",
+      "permanent": false
+    },
+    {
+      "source": "/trust/",
+      "destination": "https://trust.comfy.org",
+      "permanent": false
+    },
+    {
+      "source": "/login",
+      "destination": "https://cloud.comfy.org/cloud/login",
+      "permanent": false
+    },
+    {
+      "source": "/share-news",
+      "destination": "https://vibe-code-support-page.vercel.app/",
+      "permanent": false
+    },
+    {
+      "source": "/share-news/",
+      "destination": "https://vibe-code-support-page.vercel.app/",
+      "permanent": false
+    },
+    {
+      "source": "/share-news-pleaseeee",
+      "destination": "https://vibe-code-support-page.vercel.app/",
+      "permanent": false
+    },
+    {
+      "source": "/share-news-pleaseeee/",
+      "destination": "https://vibe-code-support-page.vercel.app/",
+      "permanent": false
     },
     {
       "source": "/minimax",
@@ -103,109 +178,234 @@
       "permanent": true
     },
     {
-      "source": "/blog",
-      "destination": "https://blog.comfy.org/",
+      "source": "/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping",
+      "destination": "/customers/moment-factory/",
       "permanent": true
     },
     {
-      "source": "/discord",
-      "destination": "https://discord.com/invite/comfyorg",
+      "source": "/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping/",
+      "destination": "/customers/moment-factory/",
       "permanent": true
     },
     {
-      "source": "/press",
-      "destination": "/about",
+      "source": "/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui",
+      "destination": "/customers/series-entertainment/",
       "permanent": true
     },
     {
-      "source": "/trust",
-      "destination": "https://trust.comfy.org",
-      "permanent": false
+      "source": "/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui/",
+      "destination": "/customers/series-entertainment/",
+      "permanent": true
     },
     {
-      "source": "/login",
-      "destination": "https://cloud.comfy.org/cloud/login",
-      "permanent": false
+      "source": "/zh-CN/terms-of-service",
+      "destination": "/terms-of-service/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/terms-of-service/",
+      "destination": "/terms-of-service/",
+      "permanent": true
     },
     {
       "source": "/api",
-      "destination": "/platform",
-      "permanent": true
-    },
-    {
-      "source": "/zh-CN/api",
-      "destination": "/zh-CN/platform",
-      "permanent": true
-    },
-    {
-      "source": "/platform/models",
-      "destination": "/platform/router",
-      "permanent": true
-    },
-    {
-      "source": "/zh-CN/platform/models",
-      "destination": "/zh-CN/platform/router",
-      "permanent": true
-    },
-    {
-      "source": "/cloud/pricing",
-      "destination": "/pricing",
-      "permanent": true
-    },
-    {
-      "source": "/zh-CN/cloud/pricing",
-      "destination": "/zh-CN/pricing",
+      "destination": "/platform/",
       "permanent": true
     },
     {
       "source": "/api/",
-      "destination": "/platform",
+      "destination": "/platform/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/api",
+      "destination": "/zh-CN/platform/",
       "permanent": true
     },
     {
       "source": "/zh-CN/api/",
-      "destination": "/zh-CN/platform",
+      "destination": "/zh-CN/platform/",
       "permanent": true
     },
     {
-      "source": "/cloud/pricing/",
-      "destination": "/pricing",
-      "permanent": true
-    },
-    {
-      "source": "/zh-CN/cloud/pricing/",
-      "destination": "/zh-CN/pricing",
+      "source": "/platform/models",
+      "destination": "/platform/router/",
       "permanent": true
     },
     {
       "source": "/platform/models/",
-      "destination": "/platform/router",
+      "destination": "/platform/router/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/platform/models",
+      "destination": "/zh-CN/platform/router/",
       "permanent": true
     },
     {
       "source": "/zh-CN/platform/models/",
-      "destination": "/zh-CN/platform/router",
+      "destination": "/zh-CN/platform/router/",
       "permanent": true
     },
     {
-      "source": "/share-news",
-      "destination": "https://vibe-code-support-page.vercel.app/",
-      "permanent": false
+      "source": "/cloud/pricing",
+      "destination": "/pricing/",
+      "permanent": true
     },
     {
-      "source": "/share-news/",
-      "destination": "https://vibe-code-support-page.vercel.app/",
-      "permanent": false
+      "source": "/cloud/pricing/",
+      "destination": "/pricing/",
+      "permanent": true
     },
     {
-      "source": "/share-news-pleaseeee",
-      "destination": "https://vibe-code-support-page.vercel.app/",
-      "permanent": false
+      "source": "/zh-CN/cloud/pricing",
+      "destination": "/zh-CN/pricing/",
+      "permanent": true
     },
     {
-      "source": "/share-news-pleaseeee/",
-      "destination": "https://vibe-code-support-page.vercel.app/",
-      "permanent": false
+      "source": "/zh-CN/cloud/pricing/",
+      "destination": "/zh-CN/pricing/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/affiliates",
+      "destination": "/affiliates/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/affiliates/",
+      "destination": "/affiliates/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/affiliates/terms",
+      "destination": "/affiliates/terms/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/affiliates/terms/",
+      "destination": "/affiliates/terms/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/t5xxl-fp8-e4m3fn-scaled",
+      "destination": "/p/supported-models/t5xxl-fp16/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/t5xxl-fp8-e4m3fn-scaled/",
+      "destination": "/p/supported-models/t5xxl-fp16/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/gemma-3-12b-it",
+      "destination": "/p/supported-models/gemma-3-12b-it-fp4-mixed/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/gemma-3-12b-it/",
+      "destination": "/p/supported-models/gemma-3-12b-it-fp4-mixed/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/umt5-xxl-fp16",
+      "destination": "/p/supported-models/umt5-xxl-fp8-e4m3fn-scaled/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/umt5-xxl-fp16/",
+      "destination": "/p/supported-models/umt5-xxl-fp8-e4m3fn-scaled/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/qwen-2-5-vl-7b",
+      "destination": "/p/supported-models/qwen-2-5-vl-7b-fp8-scaled/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/qwen-2-5-vl-7b/",
+      "destination": "/p/supported-models/qwen-2-5-vl-7b-fp8-scaled/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/qwen3vl-4b-bf16",
+      "destination": "/p/supported-models/qwen3vl-4b-fp8-scaled/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/qwen3vl-4b-bf16/",
+      "destination": "/p/supported-models/qwen3vl-4b-fp8-scaled/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/mistral-3-small-flux2-fp8",
+      "destination": "/p/supported-models/mistral-3-small-flux2-bf16/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/mistral-3-small-flux2-fp8/",
+      "destination": "/p/supported-models/mistral-3-small-flux2-bf16/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/qwen-image-edit-2511-fp8mixed",
+      "destination": "/p/supported-models/qwen-image-edit-2511-bf16/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/qwen-image-edit-2511-fp8mixed/",
+      "destination": "/p/supported-models/qwen-image-edit-2511-bf16/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/qwen-3-8b",
+      "destination": "/p/supported-models/qwen-3-8b-fp8mixed/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/qwen-3-8b/",
+      "destination": "/p/supported-models/qwen-3-8b-fp8mixed/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/qwen-image-2512-bf16",
+      "destination": "/p/supported-models/qwen-image-2512-fp8-e4m3fn/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/qwen-image-2512-bf16/",
+      "destination": "/p/supported-models/qwen-image-2512-fp8-e4m3fn/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/gemma-2-2b-it-elm-fp8-scaled",
+      "destination": "/p/supported-models/gemma-2-2b-it-elm-bf16/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/gemma-2-2b-it-elm-fp8-scaled/",
+      "destination": "/p/supported-models/gemma-2-2b-it-elm-bf16/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/gemma-3-12b-it-fp8-scaled",
+      "destination": "/p/supported-models/gemma-3-12b-it-fp4-mixed/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/gemma-3-12b-it-fp8-scaled/",
+      "destination": "/p/supported-models/gemma-3-12b-it-fp4-mixed/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/grok-image",
+      "destination": "/p/supported-models/grok-imagine/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/grok-image/",
+      "destination": "/p/supported-models/grok-imagine/",
+      "permanent": true
     }
   ]
 }
