@@ -11,7 +11,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { StorageKeys } from '../base/storageKeys'
 import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import * as storageIO from '../base/storageIO'
-import { migrateV1toV2 } from '../migration/migrateV1toV2'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 import { useStorageScopeLifecycle } from './useStorageScopeLifecycle'
@@ -122,10 +121,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('../migration/migrateV1toV2'), () => ({
-  migrateV1toV2: vi.fn()
-}))
-
 type GraphChangedHandler = (() => void) | null
 
 const mocks = vi.hoisted(() => {
@@ -201,7 +196,6 @@ describe('useWorkflowPersistenceV2', () => {
     storageIO.setStorageWorkspaceId(null)
     storageIO.resetStorageAvailable()
     useCurrentUser().resolvedUserInfo = computed(() => resolvedUser.value)
-    vi.mocked(migrateV1toV2).mockClear()
     Object.assign(useTeamWorkspaceStore(), { initState: 'uninitialized' })
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
   })
@@ -257,23 +251,6 @@ describe('useWorkflowPersistenceV2', () => {
   function logoutUser(): void {
     resolvedUser.value = null
   }
-
-  it('runs legacy migration for non-Cloud personal storage', () => {
-    mountWorkflowPersistence()
-
-    expect(migrateV1toV2).toHaveBeenCalledWith(
-      unsafeStorageScope('personal'),
-      'test-client'
-    )
-  })
-
-  it('does not import ownerless legacy storage into Cloud', () => {
-    distributionMocks.isCloud = true
-
-    mountWorkflowPersistence()
-
-    expect(migrateV1toV2).not.toHaveBeenCalled()
-  })
 
   function writeTabState(paths: string[], activeIndex: number) {
     const pointer = {

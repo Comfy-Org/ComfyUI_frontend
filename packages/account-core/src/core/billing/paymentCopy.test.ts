@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BillingRecoveryAction } from './operationState.js'
+import type {
+  BillingDeclineReason,
+  BillingRecoveryAction
+} from './operationState.js'
+import type { DeclineDetailKey } from './paymentCopy.js'
 import {
   DEFAULT_PAYMENT_COPY,
   createPaymentCopy,
+  declineDetailKey,
   paymentCopyKeys
 } from './paymentCopy.js'
 import type { PaymentProjection } from './paymentProjection.js'
@@ -89,5 +94,20 @@ describe('paymentCopyKeys', () => {
 
     expect(keys.body).toBe('billing.step.declined.body')
     expect(createPaymentCopy()[keys.body]).toBeTruthy()
+  })
+})
+
+describe('declineDetailKey', () => {
+  it.for<[BillingDeclineReason, DeclineDetailKey]>([
+    ['card_declined', 'paymentDeclinedDetail'],
+    ['generic', 'paymentDeclinedDetail'],
+    ['insufficient_funds', 'insufficientFundsDetail'],
+    ['expired_card', 'expiredCardDetail'],
+    ['incorrect_cvc', 'incorrectCvcDetail'],
+    ['authentication_required', 'authenticationFailedDetail'],
+    ['authentication_failed', 'authenticationFailedDetail'],
+    ['processing_error', 'processingErrorDetail']
+  ])('reads a %s decline as %s', ([reason, key]) => {
+    expect(declineDetailKey(reason)).toBe(key)
   })
 })

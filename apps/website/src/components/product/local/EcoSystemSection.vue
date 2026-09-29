@@ -35,7 +35,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           >
             <span class="inline-flex items-center gap-2">
               <i
-                class="size-5 -translate-y-px icon-mask mask-[url('/icons/social/github.svg')]"
+                class="size-5 icon-mask mask-[url('/icons/social/github.svg')]"
                 aria-hidden="true"
               />
               {{ t('download.hero.installGithub', locale) }}

@@ -2657,6 +2657,10 @@
       "signOutAnyway": "Sign out anyway",
       "saveFailed": "Sign-out cancelled because saving \"{workflow}\" failed."
     },
+    "accountChanged": {
+      "title": "Account changed",
+      "detail": "Another tab or Comfy site signed in as {email}, so this page was reset."
+    },
     "passwordUpdate": {
       "success": "Password Updated",
       "successDetail": "Your password has been updated successfully"
@@ -3198,6 +3202,12 @@
         "downgradeBody": "Your {plan} was set to end on {date}. Switching to {newPlan} reactivates it — you won't be charged today, but it will now renew automatically on {nextDate} at the new price instead of ending.",
         "durationChangeBody": "Your {plan} was set to end on {date}. Switching to annual billing reactivates it and charges the full year, {amount}, today. It will then renew annually on {nextDate} instead of ending.",
         "durationChangeBodyMonthly": "Your {plan} was set to end on {date}. Switching to monthly billing reactivates it — you'll be charged {amount} today, and it will renew automatically on {nextDate} instead of ending.",
+        "withoutRenewalDate": {
+          "upgradeBody": "Your {plan} was set to end on {date}. Upgrading now reactivates it — you'll be charged {amount} today, and it will renew automatically instead of ending.",
+          "downgradeBody": "Your {plan} was set to end on {date}. Switching to {newPlan} reactivates it — you won't be charged today, but it will now renew automatically at the new price instead of ending.",
+          "durationChangeBody": "Your {plan} was set to end on {date}. Switching to annual billing reactivates it and charges the full year, {amount}, today. It will then renew annually instead of ending.",
+          "durationChangeBodyMonthly": "Your {plan} was set to end on {date}. Switching to monthly billing reactivates it — you'll be charged {amount} today, and it will renew automatically instead of ending."
+        },
         "confirmButton": "Confirm & reactivate",
         "confirmButtonWithCharge": "Confirm & reactivate — {amount} today",
         "checkboxLabel": "I understand I'll be charged {amount} today",
@@ -3362,7 +3372,8 @@
       "contactUs": "Contact us",
       "noInvites": "No pending invites",
       "noMembers": "No members",
-      "searchPlaceholder": "Search..."
+      "searchPlaceholder": "Search...",
+      "expiredOn": "Expired {date}"
     },
     "partnerNodes": {
       "title": "Partner models",
@@ -4500,8 +4511,8 @@
     }
   },
   "errorOverlay": {
-    "multipleErrorCount": "{count} error found | {count} errors found",
-    "multipleErrorsMessage": "Resolve them before running the workflow.",
+    "multipleIssueCount": "{count} issue found | {count} issues found",
+    "multipleIssuesMessage": "Resolve these issues before running the workflow.",
     "viewDetails": "View details",
     "missingNodes": "Some nodes are missing and need to be installed",
     "missingModels": "{count} required model is missing | {count} required models are missing",
@@ -5404,6 +5415,12 @@
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
     "showLess": "Show less",
+    "editRejected": {
+      "widgetWrite": "Widget edit was rejected and was not saved. Your typed value exists on the canvas only — reload the workflow to see the value that was kept.",
+      "generic": "Your edit was rejected and was not saved. The workflow may no longer match its canvas — reload the workflow to see what was kept.",
+      "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. Your typed value exists on the canvas only — reload the workflow to see the values that were kept.",
+      "genericPartial": "Your edit was rejected and was not saved, though some earlier edits were. The workflow may no longer match its canvas — reload the workflow to see what was kept."
+    },
     "consent": {
       "title": "Meet Comfy Agent",
       "body1": "Comfy Agent helps you plan, build, run, and iterate on workflows. Describe what you want to create, and Comfy Agent will work as your powerful teammate.",

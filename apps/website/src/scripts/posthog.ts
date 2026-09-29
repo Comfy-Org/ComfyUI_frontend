@@ -37,6 +37,8 @@ const ANALYTICS_EVENT = {
   mcpConnectionTabClicked: 'website:mcp_connection_tab_clicked',
   mcpClientTabClicked: 'website:mcp_client_tab_clicked',
   routerRoadmapCardExpanded: 'website:router_roadmap_card_expanded',
+  agentFaqExpanded: 'website:agent_faq_expanded',
+  agentUsecaseVideoPlayed: 'website:agent_usecase_video_played',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
@@ -86,6 +88,14 @@ type AnalyticsEvent =
   | {
       name: typeof ANALYTICS_EVENT.routerRoadmapCardExpanded
       properties: { card: RouterRoadmapCardId }
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.agentFaqExpanded
+      properties: { question: string }
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.agentUsecaseVideoPlayed
+      properties: { video: string }
     }
   | {
       name:
@@ -395,6 +405,20 @@ export function captureRouterRoadmapCardExpanded(
   captureEvent({
     name: ANALYTICS_EVENT.routerRoadmapCardExpanded,
     properties: { card }
+  })
+}
+
+export function captureAgentFaqExpanded(question: string): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.agentFaqExpanded,
+    properties: { question }
+  })
+}
+
+export function captureAgentUsecaseVideoPlayed(video: string): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.agentUsecaseVideoPlayed,
+    properties: { video }
   })
 }
 

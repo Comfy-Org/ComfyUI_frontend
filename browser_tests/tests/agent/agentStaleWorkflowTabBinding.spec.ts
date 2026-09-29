@@ -20,11 +20,11 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const E2E_SCOPE = unsafeStorageScope('test-user-e2e:personal')
 const BINDING_KEY = StorageKeys.agentWorkflowTabBindings(E2E_SCOPE)
 const THREAD_KEY = StorageKeys.agentThread(E2E_SCOPE)
@@ -227,8 +227,9 @@ test.describe(
         .allTextContents()
 
       // A brand-new page on the surviving thread: nobody has sent anything.
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
-      const panel = page.locator('#agent-panel-root')
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      const panel = agentPanel.root
       await expect(panel).toBeVisible()
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         EARLIER_REQUEST

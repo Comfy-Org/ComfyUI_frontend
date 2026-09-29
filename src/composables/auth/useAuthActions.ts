@@ -29,7 +29,10 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
-import type { BillingPortalTargetTier } from '@/stores/authStore'
+import type {
+  BillingPortalTargetTier,
+  SocialSignInOptions
+} from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
 /**
@@ -160,7 +163,7 @@ export const useAuthActions = () => {
     if (isCloud) {
       try {
         window.location.href = '/cloud/login'
-      } catch (error) {
+      } catch {
         // needed for local development until we bring in cloud login pages.
         window.location.reload()
       }
@@ -242,7 +245,7 @@ export const useAuthActions = () => {
     return result
   }, reportError)
 
-  const signInWithGoogle = async (options?: { isNewUser?: boolean }) =>
+  const signInWithGoogle = async (options?: SocialSignInOptions) =>
     await wrapWithErrorHandlingAsync(
       async () => await authStore.loginWithGoogle(options),
       reportAuthFlowError(
@@ -250,7 +253,7 @@ export const useAuthActions = () => {
       )
     )()
 
-  const signInWithGithub = async (options?: { isNewUser?: boolean }) =>
+  const signInWithGithub = async (options?: SocialSignInOptions) =>
     await wrapWithErrorHandlingAsync(
       async () => await authStore.loginWithGithub(options),
       reportAuthFlowError(

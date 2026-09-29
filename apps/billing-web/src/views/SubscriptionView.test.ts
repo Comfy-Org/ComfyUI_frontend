@@ -37,7 +37,10 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
     getKey: () => string | undefined | Promise<string | undefined>
   ) => {
     void Promise.resolve(getKey()).then((key) => challengeMocks.createPort(key))
-    return { handleNextAction: challengeMocks.handleNextAction }
+    return {
+      handleNextAction: challengeMocks.handleNextAction,
+      leavesPage: () => Promise.resolve(true)
+    }
   }
 }))
 
@@ -348,6 +351,26 @@ describe('SubscriptionView', () => {
 
     expect(
       await screen.findByText('There is no active subscription to change.')
+    ).toBeInTheDocument()
+  })
+
+  it('explains a cancel refused while an earlier payment is still open', async () => {
+    await renderSubscription({
+      capabilities: { can_cancel: true },
+      cancel: { status: 'error', code: 'OPERATION_ALREADY_PENDING' }
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel subscription' })
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm cancellation' })
+    )
+
+    expect(
+      await screen.findByText(
+        'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
+      )
     ).toBeInTheDocument()
   })
 

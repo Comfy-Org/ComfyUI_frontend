@@ -5,7 +5,6 @@
  * - Uses V2 draft store with per-draft keys
  * - Uses tab state composable for session pointers
  * - Adds 512ms debounce on graph change persistence
- * - Runs V1→V2 migration on first load
  */
 
 import { debounce } from 'es-toolkit'
@@ -30,29 +29,18 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import type { StartupOutcome } from '../base/draftTypes'
-import { resolveStorageScope } from '../base/storageKeys'
 import {
   getStorageIdentity,
   getStorageScope,
   getStorageWriteGate,
   registerWorkflowPersistenceFlush
 } from '../base/storageIO'
-import { migrateV1toV2 } from '../migration/migrateV1toV2'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
-
-function migratePersonalStorage(): void {
-  if (isCloud) return
-
-  const personalScope = resolveStorageScope(null, 'personal')
-  if (!personalScope) return
-
-  migrateV1toV2(personalScope, api.clientId ?? api.initialClientId ?? undefined)
-}
 
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
@@ -68,11 +56,6 @@ export function useWorkflowPersistenceV2() {
   const tabState = useWorkflowTabState()
   const toast = useToast()
   const teamWorkspaceStore = useTeamWorkspaceStore()
-
-  // Personal/offline storage has no unresolved identity. Cloud migration is a
-  // separate protocol and must not claim a workspace for whichever user wins
-  // startup first.
-  migratePersonalStorage()
 
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)

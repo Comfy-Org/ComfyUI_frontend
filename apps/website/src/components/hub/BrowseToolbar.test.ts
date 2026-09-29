@@ -14,10 +14,10 @@ const labels = {
   searchPlaceholder: 'Search',
   noResults: 'No results',
   less: 'Less',
-  selected: '{n} selected',
+  selected: (n: number) => `${n} selected`,
   typeAll: 'All types',
-  showResults: 'Show results',
-  showModels: 'Show models',
+  showResults: (n: number) => `Show ${n} results`,
+  showModels: (n: number) => `Show ${n} models`,
   resize: 'Resize filters'
 }
 

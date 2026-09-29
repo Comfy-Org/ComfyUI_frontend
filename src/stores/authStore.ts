@@ -1,6 +1,9 @@
+import { useMemoize } from '@vueuse/core'
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes, getAdditionalUserInfo } from 'firebase/auth'
 import type { User, UserCredential } from 'firebase/auth'
+
+import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -13,6 +16,8 @@ import {
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
 import { clearOnboardingReplay } from '@/platform/onboarding/onboardingReplay'
@@ -49,6 +54,14 @@ type AccessBillingPortalResponse =
   operations['AccessBillingPortal']['responses']['200']['content']['application/json']
 type AccessBillingPortalReqBody =
   operations['AccessBillingPortal']['requestBody']
+export interface SocialSignInOptions {
+  readonly isNewUser?: boolean
+  /** How a closed popup's late result is finished or discarded. */
+  readonly popup?: PopupSignInOptions
+  /** A closed popup's late credential to finish instead of opening a popup. */
+  readonly resumed?: Promise<UserCredential>
+}
+
 export type BillingPortalTargetTier = NonNullable<
   NonNullable<
     NonNullable<AccessBillingPortalReqBody>['content']
@@ -82,6 +95,14 @@ export const useAuthStore = defineStore('auth', () => {
   let customerRecovery: Promise<void> | null = null
   let customerRecoveryIdentity: string | null = null
   const isFetchingBalance = ref(false)
+  const mintUnifiedToken = useMemoize((uid: string) =>
+    useWorkspaceAuthStore()
+      .mintAtLogin()
+      .then((success) => {
+        if (!success) mintUnifiedToken.delete(uid)
+        return success
+      })
+  )
 
   // Balance state
   const balance = ref<GetCustomerBalanceResponse | null>(null)
@@ -121,8 +142,11 @@ export const useAuthStore = defineStore('auth', () => {
     const identityChanged =
       previousUserId !== null && previousUserId !== nextUserId
 
-    if (identityChanged) {
+    if ((user === null && nextUserId === null) || identityChanged) {
       useWorkspaceAuthStore().clearWorkspaceContext()
+      mintUnifiedToken.clear()
+    }
+    if (identityChanged) {
       clearOnboardingReplay(previousUserId)
       useTeamWorkspaceStore().resetForIdentityChange()
       invalidateRemoteConfig()
@@ -143,7 +167,7 @@ export const useAuthStore = defineStore('auth', () => {
     } else if (isCloud) {
       // Mint the single Cloud JWT at login (flag-guarded inside the store; a
       // no-op when unified_cloud_auth is off).
-      void useWorkspaceAuthStore().mintAtLogin()
+      void mintUnifiedToken(user.uid)
     }
 
     // Reset balance when auth state changes
@@ -212,10 +236,34 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Awaits any in-flight unified-auth login mint for the current identity.
+   * The wait can outlast an account switch, so callers must treat a `true`
+   * result (identity changed while waiting) as stale and not read the new
+   * identity's unified token or fall back to its Firebase token.
+   */
+  const awaitUnifiedMint = async (): Promise<boolean> => {
+    const uid = currentUser.value?.uid
+    if (uid) await mintUnifiedToken(uid).catch(() => false)
+    return currentUser.value?.uid !== uid
+  }
+
+  /**
+   * Unified Cloud JWT header, falling back to the Firebase token when minting
+   * failed. See getAuthHeader for the full priority order.
+   */
+  const getUnifiedAuthHeader = async (): Promise<AuthHeader | null> => {
+    if (await awaitUnifiedMint()) return null
+    const token = useWorkspaceAuthStore().getUnifiedToken()
+    if (token) return { Authorization: `Bearer ${token}` }
+    return await getFirebaseAuthHeader()
+  }
+
+  /**
    * Retrieves the appropriate authentication header for API requests.
    *
-   * When unified_cloud_auth is enabled, returns the single Cloud JWT for every
-   * cloud request (no Firebase/API-key fallback) so one token is used end to end.
+   * When unified_cloud_auth is enabled, awaits any in-flight login mint and
+   * returns the single Cloud JWT; if minting failed, falls back to the
+   * Firebase token rather than reporting an authenticated user as logged out.
    * Otherwise checks for authentication in the following order:
    * 1. Workspace token on Cloud when the user has active workspace context
    * 2. Firebase authentication token (if user is logged in)
@@ -227,10 +275,9 @@ export const useAuthStore = defineStore('auth', () => {
    *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
-    if (flags.unifiedCloudAuthEnabled) {
-      const token = useWorkspaceAuthStore().getUnifiedToken()
-      return token ? { Authorization: `Bearer ${token}` } : null
-    }
+    if (flags.unifiedCloudAuthEnabled) return getUnifiedAuthHeader()
+
+    if (webSessionRequests()) return getUserAuthHeader()
 
     const workspaceAuth = useWorkspaceAuthStore()
     const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
@@ -310,15 +357,22 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Unified Cloud JWT token. See getAuthToken for the full priority order.
+   */
+  const getUnifiedAuthToken = async (): Promise<string | undefined> => {
+    if (await awaitUnifiedMint()) return undefined
+    return useWorkspaceAuthStore().getUnifiedToken()
+  }
+
+  /**
    * Returns the raw auth token (not wrapped in a header object).
-   * When unified_cloud_auth is enabled, returns the single Cloud JWT; otherwise
-   * Cloud priority is workspace token > Firebase token.
+   * When unified_cloud_auth is enabled, awaits any in-flight login mint and
+   * returns the single Cloud JWT; otherwise Cloud priority is workspace token
+   * > Firebase token.
    * Use this for WebSocket connections and backend node auth.
    */
   const getAuthToken = async (): Promise<string | undefined> => {
-    if (flags.unifiedCloudAuthEnabled) {
-      return useWorkspaceAuthStore().getUnifiedToken()
-    }
+    if (flags.unifiedCloudAuthEnabled) return getUnifiedAuthToken()
 
     const workspaceAuth = useWorkspaceAuthStore()
     const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
@@ -583,6 +637,7 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
+    useCloudWebSessionStore().signedInInteractively(result.user)
     useTelemetry()?.trackAuth({
       method: 'email',
       is_new_user: false,
@@ -617,6 +672,7 @@ export const useAuthStore = defineStore('auth', () => {
       })
     )
 
+    useCloudWebSessionStore().signedInInteractively(result.user)
     useTelemetry()?.trackAuth({
       method: 'email',
       is_new_user: true,
@@ -644,18 +700,20 @@ export const useAuthStore = defineStore('auth', () => {
     await createCustomer(payload, completedCredential)
   }
 
-  const loginWithGoogle = async (options?: {
-    isNewUser?: boolean
-  }): Promise<UserCredential> => {
+  const loginWithGoogle = async (
+    options?: SocialSignInOptions
+  ): Promise<UserCredential> => {
     const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
-        signIn: firebaseIdentity.signInWithGoogle,
+        signIn: () =>
+          options?.resumed ?? firebaseIdentity.signInWithGoogle(options?.popup),
         provisionCustomer: (credential) =>
           provisionCustomerForSignedInUser(undefined, credential)
       })
     )
 
     const additionalUserInfo = getAdditionalUserInfo(result)
+    useCloudWebSessionStore().signedInInteractively(result.user)
     useTelemetry()?.trackAuth({
       method: 'google',
       is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
@@ -667,18 +725,20 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const loginWithGithub = async (options?: {
-    isNewUser?: boolean
-  }): Promise<UserCredential> => {
+  const loginWithGithub = async (
+    options?: SocialSignInOptions
+  ): Promise<UserCredential> => {
     const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
-        signIn: firebaseIdentity.signInWithGitHub,
+        signIn: () =>
+          options?.resumed ?? firebaseIdentity.signInWithGitHub(options?.popup),
         provisionCustomer: (credential) =>
           provisionCustomerForSignedInUser(undefined, credential)
       })
     )
 
     const additionalUserInfo = getAdditionalUserInfo(result)
+    useCloudWebSessionStore().signedInInteractively(result.user)
     useTelemetry()?.trackAuth({
       method: 'github',
       is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
@@ -691,7 +751,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = async (): Promise<void> =>
-    executeAuthAction(firebaseIdentity.signOut)
+    executeAuthAction(async () => {
+      await useCloudWebSessionStore().signOut()
+      await firebaseIdentity.signOut()
+    })
 
   const sendPasswordReset = async (email: string): Promise<void> =>
     executeAuthAction(() => firebaseIdentity.sendPasswordReset(email))

@@ -34,6 +34,7 @@ import {
   legacyOperationActionHold,
   needsCustomerAttention
 } from '@/platform/workspace/billing/customerAttention'
+import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -598,7 +599,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     })
 
     try {
-      const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+      const publishableKey = resolveStripePublishableKey()
       const stripe = publishableKey ? await loadStripe(publishableKey) : null
       if (!stripe) {
         setAuthenticationFailed(
@@ -803,6 +804,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           stage: 'succeeded',
           outcome: 'success',
           billing_op_id: opId,
+          payment_intent_source: operation.paymentIntentSource,
           duration_ms: now - operation.businessAttemptStartedAt
         })
       }
@@ -942,6 +944,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: opId,
+        payment_intent_source: operation.paymentIntentSource,
         failure_category: failureCategory,
         duration_ms: now - operation.businessAttemptStartedAt
       })
@@ -1025,6 +1028,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: opId,
+        payment_intent_source: operation.paymentIntentSource,
         failure_category: 'reconciliation_needed',
         duration_ms: now - operation.businessAttemptStartedAt
       })
@@ -1081,6 +1085,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: opId,
+        payment_intent_source: operation.paymentIntentSource,
         failure_category: 'poll_timeout',
         duration_ms: now - operation.businessAttemptStartedAt
       })
