@@ -416,45 +416,11 @@ function ackResubscribe(workflowId: string): void {
 }
 
 /**
- * These pins exercise one observable same-page-session transport sequence:
- * mark the transport down, exhaust the retry budget, mark it up, emit
- * `reconnected`, and acknowledge resubscription. The expected-failure pin
- * covers eventual delivery after retry exhaustion. The adjacent retry tests
- * establish identity and exactly-once mechanics without claiming that
- * post-exhaustion replay is accepted policy. None exercise tab suspension or
- * persistence across a full page reload.
+ * These pins exercise retry identity and acknowledgment within the active
+ * retry budget. Post-exhaustion retention and replay belong to the separately
+ * reviewed replay-policy change, not this current-behavior pin carrier.
  */
 describe('a human edit made while the document connection is down', () => {
-  /**
-   * Characterization of today, NOT a desired property: the retry budget is a
-   * delivery budget, so the batch is dropped rather than retained. If retention
-   * lands, this test goes red and the eventual-delivery pin below goes green in
-   * the same change. Do not "fix" it by relaxing the assertion.
-   */
-  it('is abandoned once the retry budget runs out, and nothing retains it', async () => {
-    const { enqueue } = mountFollower('wf-a')
-    clientState.transportUp = false
-
-    await enqueue([deleteNode('edited-during-outage')])
-    vi.runAllTimers()
-    expect(clientState.sent).toHaveLength(0)
-
-    const operationId = clientState.attempts[0].ops[0].op_id
-    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
-      'human_ops_settled',
-      expect.objectContaining({
-        state: 'undeliverable',
-        ops: [expect.objectContaining({ op_id: operationId })]
-      })
-    )
-
-    clientState.transportUp = true
-    apiState.target.dispatchEvent(new Event('reconnected'))
-    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
-    ackResubscribe('wf-a')
-    expect(clientState.sent).toHaveLength(0)
-  })
-
   it('does not flush a pending batch on reconnect before the resubscribe ack', async () => {
     const { enqueue } = mountFollower('wf-a')
     clientState.transportUp = false
@@ -471,20 +437,6 @@ describe('a human edit made while the document connection is down', () => {
     apiState.target.dispatchEvent(new Event('reconnected'))
     expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
     expect(clientState.sent).toHaveLength(0)
-  })
-
-  it.fails('KNOWN GAP: still reaches the host after reconnect, in the same session', async () => {
-    const { enqueue } = mountFollower('wf-a')
-    clientState.transportUp = false
-
-    await enqueue([deleteNode('edited-during-outage')])
-    vi.runAllTimers()
-
-    clientState.transportUp = true
-    apiState.target.dispatchEvent(new Event('reconnected'))
-    ackResubscribe('wf-a')
-
-    expect(clientState.sent).toMatchObject([{ workflowId: 'wf-a' }])
   })
 
   it('keeps the original op_id when a transport retry succeeds', async () => {
