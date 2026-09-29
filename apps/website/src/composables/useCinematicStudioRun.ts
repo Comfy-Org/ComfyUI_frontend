@@ -227,6 +227,42 @@ export function useCinematicStudioRun(
     return credential.session.token
   }
 
+  function takeAnalytics(
+    startedFor: WorkshopSession,
+    slug: string,
+    model?: WorkshopModelDetail
+  ): WorkshopRunAnalytics {
+    return {
+      ...(model ? workshopModelAnalytics(model) : { render_engine: 'router' }),
+      ...studioAnalytics(slug),
+      user_id: startedFor.uid,
+      workspace_id: startedFor.workspace.id,
+      attempt_id: workshopIdempotencyKey()
+    }
+  }
+
+  function recordUnloadedTake(analytics: WorkshopRunAnalytics, error: unknown) {
+    captureWorkshopEvent({ name: 'run_started', properties: analytics })
+    captureWorkshopEvent({
+      name: 'run_finished',
+      properties: {
+        ...analytics,
+        duration_ms: 0,
+        status: 'failed',
+        ...workshopFailureAnalytics(
+          new WorkshopRouterError(
+            'unavailable',
+            null,
+            {},
+            undefined,
+            'input_preparation',
+            { cause: error }
+          )
+        )
+      }
+    })
+  }
+
   async function renderTake(
     id: string,
     index: number,
@@ -237,13 +273,7 @@ export function useCinematicStudioRun(
   ) {
     const fingerprint = takeFingerprint(startedFor, model.slug, request, index)
     const { key, prepared } = unsettledTakeFor(fingerprint)
-    const analytics: WorkshopRunAnalytics = {
-      ...workshopModelAnalytics(model),
-      ...studioAnalytics(model.slug),
-      user_id: startedFor.uid,
-      workspace_id: startedFor.workspace.id,
-      attempt_id: workshopIdempotencyKey()
-    }
+    const analytics = takeAnalytics(startedFor, model.slug, model)
     const startedAt = Date.now()
     const finished = () => ({
       ...analytics,
@@ -343,16 +373,20 @@ export function useCinematicStudioRun(
     controller = attempt
     try {
       await Promise.all(
-        takes.map(async ({ id, index, slug, request }) =>
-          renderTake(
+        takes.map(async ({ id, index, slug, request }) => {
+          const model = await loadModel(slug).catch((error: unknown) => {
+            recordUnloadedTake(takeAnalytics(startedFor, slug), error)
+            throw error
+          })
+          return renderTake(
             id,
             index,
-            await loadModel(slug),
+            model,
             request,
             startedFor,
             attempt.signal
           )
-        )
+        })
       )
     } catch {
       if (!attempt.signal.aborted)

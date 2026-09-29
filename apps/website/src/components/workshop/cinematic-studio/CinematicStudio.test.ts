@@ -408,6 +408,65 @@ describe('CinematicStudio', () => {
     }
   )
 
+  it.for([
+    {
+      name: 'a cancelled take',
+      prepare: () =>
+        vi
+          .mocked(router_render)
+          .mockImplementation(
+            (_slug, _parameters, options) =>
+              new Promise((_resolve, reject) =>
+                options.signal?.addEventListener('abort', () =>
+                  reject(options.signal?.reason)
+                )
+              )
+          ),
+      act: async (user: ReturnType<typeof userEvent.setup>) =>
+        user.click(await screen.findByRole('button', { name: 'Cancel' })),
+      outcome: { status: 'cancelled' }
+    },
+    {
+      name: 'a take whose model cannot load',
+      prepare: () =>
+        fetchData.mockImplementation(async (input) =>
+          String(input).startsWith('blob:')
+            ? servePageData(input)
+            : new Response('unavailable', { status: 500 })
+        ),
+      act: async () => {},
+      outcome: {
+        status: 'failed',
+        reason: 'unavailable',
+        failure_stage: 'input_preparation'
+      }
+    }
+  ])('records $name as an app run', async ({ prepare, act, outcome }) => {
+    prepare()
+    const user = renderStudio()
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+    await act(user)
+
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          model_slug: first.slug,
+          page_type: 'app',
+          app_slug: CINEMATIC_STUDIO_APP_SLUG,
+          ...outcome
+        })
+      })
+    )
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.filter(([event]) => event.name === 'run_finished')
+    ).toHaveLength(1)
+  })
+
   it('records a take download as an app download', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
