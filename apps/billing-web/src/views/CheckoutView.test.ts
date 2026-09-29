@@ -936,13 +936,21 @@ describe('CheckoutView', () => {
     )
   })
 
-  it('re-quotes and says the quote changed when the server refuses a stale quote', async () => {
+  it('re-quotes a stale quote and pays against the replacement', async () => {
     const fake = await renderCheckout(CHECKOUT_PATH, {
       preview: { status: 'ok', value: upgradeQuote() }
     })
     fake.subscribe.mockResolvedValueOnce({
       status: 'error',
       code: 'QUOTE_STALE'
+    })
+    fake.previewSubscribe.mockResolvedValueOnce({
+      status: 'ok',
+      value: upgradeQuote({
+        quote_id: 'q_2',
+        quote_version: 4,
+        amount_due_cents: 3100
+      })
     })
 
     await userEvent.click(
@@ -953,9 +961,20 @@ describe('CheckoutView', () => {
       'Your quote changed. Review the updated amount and try again.'
     )
     expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
-    expect(
+    expect(await screen.findByText('$31.00')).toBeInTheDocument()
+    expect(screen.queryByText('$28.00')).not.toBeInTheDocument()
+
+    await userEvent.click(
       screen.getByRole('button', { name: 'Confirm upgrade' })
-    ).toBeEnabled()
+    )
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
+    expect(fake.subscribe).toHaveBeenLastCalledWith(
+      expect.objectContaining({ quote_id: 'q_2', quote_version: 4 })
+    )
+    expect(fake.subscribe).not.toHaveBeenLastCalledWith(
+      expect.objectContaining({ quote_id: 'q_1' })
+    )
   })
 
   it('keeps Confirm closed on the stale quote when its refresh fails', async () => {
