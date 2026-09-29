@@ -65,8 +65,8 @@ const siblings = computed(() =>
         :current
         :siblings
         :model-name="modelName"
+        :take-picker="false"
         :locale
-        @select="emit('select', $event)"
       />
     </header>
     <div

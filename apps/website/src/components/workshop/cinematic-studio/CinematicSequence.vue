@@ -79,7 +79,7 @@ const thumbs = computed(() =>
       description:
         kind === 'unpaid' ? tc('cinematic.state.noCredits', locale) : undefined,
       class: cn(
-        'grid h-12 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border-2 bg-transparency-white-t4 transition-opacity',
+        'grid h-12 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border-2 bg-transparency-white-t4 transition-opacity focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none focus-visible:ring-inset',
         index > 0 && takes[index - 1].shot !== take.shot && 'ml-2',
         look?.frame,
         current

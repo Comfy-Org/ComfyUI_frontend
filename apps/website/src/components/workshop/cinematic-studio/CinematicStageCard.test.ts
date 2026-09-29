@@ -8,7 +8,9 @@ const models = [
   { slug: 'seedream', name: 'Seedream 4.5', provider: 'ByteDance', logo: '' }
 ]
 
-function take(overrides: Partial<Take> = {}): Take {
+function take(
+  overrides: Partial<Extract<Take, { status: 'rendering' }>> = {}
+): Take {
   return {
     id: 'a',
     shot: 1,
@@ -19,7 +21,7 @@ function take(overrides: Partial<Take> = {}): Take {
     startedAt: Date.now(),
     status: 'rendering',
     ...overrides
-  } as Take
+  }
 }
 
 function renderCard(reel: Reel) {
@@ -37,6 +39,19 @@ describe('CinematicStageCard', () => {
     expect(within(header).getByText('Shot 1')).toBeInTheDocument()
     expect(
       within(header).getByText('Seedream 4.5 · 21:9', { exact: false })
+    ).toBeInTheDocument()
+  })
+
+  it('leaves picking a take to the sequence, not the header', () => {
+    renderCard({
+      takes: [take(), take({ id: 'b', letter: 'B' })],
+      selectedId: 'a'
+    })
+
+    const header = screen.getByTestId('cinematic-output-header')
+    expect(within(header).queryByRole('radio')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Shot 1, take B' })
     ).toBeInTheDocument()
   })
 
