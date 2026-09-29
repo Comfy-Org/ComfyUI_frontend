@@ -55,7 +55,6 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
   })
 
   test('keeps the full-screen viewer inside the visible workspace inset', async ({
-    comfyPage,
     load3dAgent,
     page
   }) => {
@@ -64,9 +63,13 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
     await load3dAgent.viewer.waitForModelLoaded()
 
     const viewer = new Load3DViewerHelper(page)
-    const node = await comfyPage.nodeOps.getNodeRefById(1)
-    await node.click('title')
-    await comfyPage.command.executeCommand('Comfy.3DViewer.Open3DViewer')
+    await page.locator('[data-node-id="1"]').getByTestId('node-title').click()
+    await page
+      .getByRole('button', {
+        name: 'Open 3D Viewer (Beta) for Selected Node',
+        exact: true
+      })
+      .click()
     await viewer.waitForOpen()
     await page.setViewportSize({ width: 500, height: 800 })
 
