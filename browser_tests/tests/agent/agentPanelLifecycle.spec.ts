@@ -217,28 +217,20 @@ test.describe(
         .getByRole('button', { name: enMessages.g.close })
         .click()
       await expect(agentPanel.root).toHaveCount(0)
-      const actions = page.getByTestId('integrated-tab-bar-actions')
-      await actions.evaluate((element) =>
-        element.removeAttribute('data-agent-gate-settled')
-      )
 
-      await agentPanel.open(undefined, async () => {
-        await agentPanel.openButton.evaluate<void, HTMLElement>((button) => {
-          button.dataset.testClickCount = '0'
-          button.addEventListener('click', () => {
-            button.dataset.testClickCount = String(
-              Number(button.dataset.testClickCount) + 1
-            )
-          })
-          window.setTimeout(() => button.click(), 100)
-        })
-        await actions.evaluate((element) =>
-          window.setTimeout(
-            () => element.setAttribute('data-agent-gate-settled', 'true'),
-            100
+      await agentPanel.openButton.evaluate<void, HTMLElement>((button) => {
+        button.dataset.testClickCount = '0'
+        button.addEventListener('click', () => {
+          button.dataset.testClickCount = String(
+            Number(button.dataset.testClickCount) + 1
           )
-        )
+        })
+        button.addEventListener('pointerdown', () => button.click(), {
+          capture: true,
+          once: true
+        })
       })
+      await agentPanel.open()
 
       await expect(agentPanel.root).toBeVisible()
       await expect(agentPanel.openButton).toHaveAttribute(

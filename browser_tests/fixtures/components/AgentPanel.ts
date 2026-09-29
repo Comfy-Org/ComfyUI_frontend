@@ -81,15 +81,38 @@ export class AgentPanel {
     if (await this.root.isVisible()) return this.root
     await onPanelHidden?.()
 
-    // Startup activation owns the panel until the feature gate settles. Wait
-    // for that decision before using an actionable click so activation cannot
-    // open between a stale state read and the click and turn it into a close.
-    await expect(
-      this.page.getByTestId('integrated-tab-bar-actions')
-    ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout })
     if (await this.root.isVisible()) return this.root
-    if ((await this.openButton.getAttribute('aria-pressed')) !== 'true')
+
+    // Keep Playwright's actionability checks, but decide whether the click is
+    // still safe when it is dispatched. Startup activation can open after the
+    // visibility read (even after the feature gate settles) and before the
+    // pointer sequence reaches `click`; in that case the guard consumes only
+    // the now-stale click instead of closing the panel again.
+    await this.openButton.evaluate<void, HTMLElement>((button) => {
+      const guardedButton = button as HTMLElement & {
+        __agentPanelOpenGuard?: EventListener
+      }
+      const guard: EventListener = (event) => {
+        if (button.getAttribute('aria-pressed') !== 'true') return
+        event.preventDefault()
+        event.stopImmediatePropagation()
+      }
+      guardedButton.__agentPanelOpenGuard = guard
+      button.addEventListener('click', guard, true)
+    })
+    try {
       await this.openButton.click({ timeout })
+    } finally {
+      await this.openButton.evaluate<void, HTMLElement>((button) => {
+        const guardedButton = button as HTMLElement & {
+          __agentPanelOpenGuard?: EventListener
+        }
+        const guard = guardedButton.__agentPanelOpenGuard
+        if (!guard) return
+        button.removeEventListener('click', guard, true)
+        delete guardedButton.__agentPanelOpenGuard
+      })
+    }
 
     // A click may be waiting on consent while aria-pressed remains false.
     // Waiting on the caller's contract avoids an unsafe second toggle.
