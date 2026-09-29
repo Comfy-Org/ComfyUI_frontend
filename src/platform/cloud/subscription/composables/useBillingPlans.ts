@@ -64,8 +64,19 @@ export function useBillingPlans() {
         // have published belongs to an actor this host has left.
         if (response === undefined) error.value = priorError
         else if (billingScopeKey() === scopeKey) adopt(response, scopeKey)
+        else if (fetchPromise === request) {
+          error.value = priorError
+          void fetchPlans()
+        }
       })
       .catch((err: unknown) => {
+        if (billingScopeKey() !== scopeKey) {
+          if (fetchPromise === request) {
+            error.value = priorError
+            void fetchPlans()
+          }
+          return
+        }
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch plans'
         const hasCachedPlans =

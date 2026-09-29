@@ -188,6 +188,35 @@ describe('useBillingPlans', () => {
       expect(plans.value).toEqual([buildPlan({ slug: 'creator-monthly' })])
     })
 
+    it('reissues a read when its scope changes before the response arrives', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      let resolveFirst: (value: { plans: Plan[] }) => void = () => {}
+      vi.mocked(workspaceApi.getBillingPlans)
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveFirst = resolve
+            })
+        )
+        .mockResolvedValueOnce({
+          plans: [buildPlan({ slug: 'creator-monthly' })]
+        })
+      const { fetchPlans, plans, error } = useBillingPlans()
+
+      const first = fetchPlans()
+      scopeState.workspaceId = 'workspace-2'
+      resolveFirst({ plans: [buildPlan()] })
+      await first
+
+      await vi.waitFor(() =>
+        expect(plans.value).toEqual([
+          buildPlan({ slug: 'creator-monthly' })
+        ])
+      )
+      expect(workspaceApi.getBillingPlans).toHaveBeenCalledTimes(2)
+      expect(error.value).toBeNull()
+    })
+
     it('reports an outright failure when no catalog was cached', async () => {
       const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
       vi.mocked(workspaceApi.getBillingPlans).mockRejectedValue(
