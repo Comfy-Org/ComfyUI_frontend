@@ -9,7 +9,10 @@ import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
-import { webSessionResourceHeader,webSessionSend } from '@/platform/auth/session/webSessionFetch'
+import {
+  webSessionResourceHeader,
+  webSessionSend
+} from '@/platform/auth/session/webSessionFetch'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToastStore } from '@/platform/updates/common/toastStore'
