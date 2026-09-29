@@ -70,8 +70,9 @@ after the last URL segment, which for a content URL is the literal `content`.
    an asset onto the agent prompt did nothing while the panel was in list
    view and worked in grid view.
 5. A non-OK response is not a file, and the user is told. `fetchDroppedAsset`
-   returns `undefined` on `!response.ok` (status-based, never content-type
-   sniffing). The canvas drop handler, when a drop that carried the
+   rejects on `!response.ok` (status-based, never content-type sniffing), and
+   callers choose whether to surface or gracefully ignore that failure. The
+   canvas drop handler, when a drop that carried the
    asset-info flavour yields no file, reports the failure through
    `reportError` and shows a toast instead of a silent no-op. Drops that
    never carried asset-info (plain links from elsewhere) stay silent.

@@ -1154,7 +1154,6 @@ function onSelectNodes(): void {
 }
 
 const assetsStore = useAssetsStore()
-let inputAssetRefresh: Promise<unknown> = Promise.resolve()
 
 const attachment = useAttachment({
   upload: async (file, signal) => {
@@ -1166,18 +1165,14 @@ const attachment = useAttachment({
     })
     if (uploaded.subfolder) params.set('subfolder', uploaded.subfolder)
     return {
-      ref: filename,
+      ref: uploaded.subfolder ? `${uploaded.subfolder}/${filename}` : filename,
       url: api.apiURL(`/view?${params.toString()}`)
     }
   },
-  // The library caches input assets; without this refresh a just-uploaded file
-  // is neither listed in the Assets tab nor mentionable this session. Chain a
-  // refresh after each settled upload because the query queue otherwise
-  // coalesces an overlapping refresh without scheduling a trailing pass.
+  // The store coalesces concurrent completions while retaining one trailing
+  // refresh, including when this panel is closed and reopened mid-request.
   onUploaded: () => {
-    inputAssetRefresh = inputAssetRefresh
-      .then(() => assetsStore.inputAssets.loadNew())
-      .catch(() => undefined)
+    void assetsStore.refreshInputAssets().catch(() => undefined)
   },
   maxBytes: () => {
     const serverLimit =
@@ -1186,11 +1181,13 @@ const attachment = useAttachment({
       )
     // The server contract uses zero for unlimited. The fixed client cap is an
     // independent composer safety policy, not a substitute server limit.
-    if (serverLimit === undefined) return MAX_ATTACHMENT_BYTES
+    if (serverLimit === 0) return 100 * 1024 * 1024
     const absoluteClientCap = 100 * 1024 * 1024
-    return Number.isFinite(serverLimit) && serverLimit > 0
+    return typeof serverLimit === 'number' &&
+      Number.isFinite(serverLimit) &&
+      serverLimit > 0
       ? Math.min(absoluteClientCap, serverLimit)
-      : absoluteClientCap
+      : MAX_ATTACHMENT_BYTES
   },
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
@@ -1200,6 +1197,16 @@ const attachment = useAttachment({
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
 })
+
+watch(
+  () => composerStore.attachments.map(({ id }) => id),
+  (ids, previousIds = []) => {
+    const retained = new Set(ids)
+    for (const id of previousIds)
+      if (!retained.has(id)) attachment.cancelUpload(id)
+  },
+  { flush: 'sync' }
+)
 
 onBeforeUnmount(() => attachment.cancelAllUploads())
 
@@ -1297,8 +1304,8 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
 
   const result = await attachment.addDeferredFile(
     asset.name,
-    async (signal) => {
-      const file = await fetchDroppedAsset(asset, signal)
+    async (signal, maxBytes) => {
+      const file = await fetchDroppedAsset(asset, signal, maxBytes)
       return file && isAgentAttachable(file) ? file : undefined
     }
   )

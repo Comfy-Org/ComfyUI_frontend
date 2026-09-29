@@ -124,7 +124,11 @@ describe('useAttachment', () => {
       let signal: AbortSignal | undefined
       const upload = vi.fn((_file: File, uploadSignal?: AbortSignal) => {
         signal = uploadSignal
-        return new Promise<{ ref: string }>(() => {})
+        return new Promise<{ ref: string }>((_resolve, reject) => {
+          uploadSignal?.addEventListener('abort', () =>
+            reject(uploadSignal.reason)
+          )
+        })
       })
       const onError = vi.fn()
       const registry = chipRegistry()
@@ -142,6 +146,10 @@ describe('useAttachment', () => {
       expect(signal?.aborted).toBe(true)
       expect(registry.chips).toEqual([])
       expect(onError).toHaveBeenCalledWith('stuck.png could not be uploaded')
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_attachment_upload_failed',
+        tags: expect.objectContaining({ failure_reason: 'timeout' })
+      })
     } finally {
       vi.useRealTimers()
     }
@@ -599,8 +607,9 @@ describe('useAttachment', () => {
 
   it('bounds a single selection before staging upload work', async () => {
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onError = vi.fn()
     const registry = chipRegistry()
-    const { addFiles } = useAttachment({ upload, ...registry })
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
 
     await addFiles(
       Array.from({ length: MAX_ATTACHMENT_BATCH_SIZE + 5 }, (_, index) =>
@@ -610,5 +619,28 @@ describe('useAttachment', () => {
 
     expect(upload).toHaveBeenCalledTimes(MAX_ATTACHMENT_BATCH_SIZE)
     expect(registry.chips).toHaveLength(MAX_ATTACHMENT_BATCH_SIZE)
+    expect(onError).toHaveBeenCalledWith(
+      '5 files were not added. You can upload up to 100 files at a time.'
+    )
+  })
+
+  it('filters oversized files before applying the pending-work cap', async () => {
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles([
+      ...Array.from({ length: MAX_ATTACHMENT_BATCH_SIZE }, (_, index) =>
+        fileOfSize(`oversized-${index}.png`, MAX_ATTACHMENT_BYTES + 1)
+      ),
+      fileOfSize('valid.png', 1)
+    ])
+
+    expect(upload).toHaveBeenCalledOnce()
+    expect(upload).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'valid.png' }),
+      expect.any(AbortSignal)
+    )
   })
 })

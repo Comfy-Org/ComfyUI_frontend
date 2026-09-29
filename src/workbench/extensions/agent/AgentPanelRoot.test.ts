@@ -1374,6 +1374,9 @@ describe('AgentPanelRoot attach flow', () => {
     expect(preview.getAttribute('src')).toContain(
       '/api/view?filename=stored.png&type=temp&subfolder=nested+folder'
     )
+    expect(useAgentComposerStore().attachments).toEqual([
+      expect.objectContaining({ ref: 'nested folder/stored.png' })
+    ])
     expect(revoke).toHaveBeenCalledWith('blob:mock-url')
     revoke.mockRestore()
   })
@@ -1498,6 +1501,28 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(uploaded).toEqual(['huge.png']))
   })
 
+  it.for([null, '104857600', Number.NaN, -1])(
+    'uses the conservative limit for malformed server value %s',
+    async (serverLimit) => {
+      getServerFeature.mockReturnValue(serverLimit)
+      stubUploadFetch()
+      renderWithSelectedTarget()
+
+      const image = fileOfSize(
+        'huge.png',
+        MAX_ATTACHMENT_BYTES + 1,
+        'image/png'
+      )
+      dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [image] })
+      await nextTick()
+
+      expect(screen.queryByText('huge.png')).not.toBeInTheDocument()
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({ detail: 'huge.png is larger than 20 MB' })
+      )
+    }
+  )
+
   it('uploads a dropped video above 20MB when the server permits it', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
@@ -1587,14 +1612,19 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
   })
 
-  it('refreshes the input asset library as each dropped upload settles', async () => {
-    // Overlapping refreshes coalesce into the in-flight query without a
-    // trailing run, so an asset committing mid-refresh would be dropped.
+  it('coalesces concurrent upload refreshes with one trailing pass', async () => {
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
+    let releaseFirstRefresh: () => void = () => {}
     const refresh = vi
       .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockImplementationOnce(
+        () =>
+          new Promise<undefined>((resolve) => {
+            releaseFirstRefresh = () => resolve(undefined)
+          })
+      )
       .mockResolvedValue(undefined)
 
     dispatchDrag(screen.getByRole('textbox'), 'drop', {
@@ -1606,8 +1636,9 @@ describe('AgentPanelRoot attach flow', () => {
     })
 
     await vi.waitFor(() => expect(uploaded).toHaveLength(3))
-    await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
-    expect(refresh).toHaveBeenCalledTimes(3)
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+    releaseFirstRefresh()
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
   })
 
   it('chains input asset refreshes across overlapping batches', async () => {
@@ -1668,19 +1699,19 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
   })
 
-  it('lets a removed upload finish without reattaching until Undo', async () => {
+  it('cancels a removed upload without reporting a hidden failure', async () => {
     const signals: AbortSignal[] = []
-    let finishUpload: (response: Response) => void = () => {}
-    const upload = new Promise<Response>((resolve) => {
-      finishUpload = resolve
-    })
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
         if (!String(input).includes('/upload/'))
-          return json(200, agentThreadList())
+          return Promise.resolve(json(200, agentThreadList()))
         if (init?.signal) signals.push(init.signal)
-        return upload
+        return new Promise<Response>((_resolve, reject) =>
+          init?.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason)
+          )
+        )
       })
     )
     renderWithSelectedTarget()
@@ -1694,26 +1725,16 @@ describe('AgentPanelRoot attach flow', () => {
     })
     await vi.waitFor(() => expect(signals).toHaveLength(1))
     const composer = useAgentComposerStore()
-    const prompt = composer.prompt
-
     await userEvent.click(
       await screen.findByRole('button', { name: i18n.global.t('agent.remove') })
     )
 
-    expect(signals[0].aborted).toBe(false)
-    finishUpload(
-      json(200, { name: 'uploaded-cat.png', subfolder: '', type: 'input' })
-    )
-    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+    expect(signals[0].aborted).toBe(true)
     expect(composer.attachments).toEqual([])
-    composer.applyEditorPrompt(prompt)
-    expect(composer.attachments).toEqual([
-      expect.objectContaining({
-        name: 'cat.png',
-        ref: 'uploaded-cat.png',
-        uploading: false
-      })
-    ])
+    expect(refresh).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).not.toContainEqual(
+      expect.objectContaining({ detail: 'cat.png could not be uploaded' })
+    )
   })
 
   it('uses the server limit for audio rejection copy', async () => {
@@ -2223,7 +2244,7 @@ describe('AgentPanelRoot attach flow', () => {
     revoke.mockRestore()
   })
 
-  it('keeps a dismissed preview available for Undo until the editor unmounts', async () => {
+  it('releases a dismissed in-flight preview when its upload is cancelled', async () => {
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     vi.stubGlobal(
       'fetch',
@@ -2254,7 +2275,7 @@ describe('AgentPanelRoot attach flow', () => {
       screen.getByRole('button', { name: i18n.global.t('agent.remove') })
     )
     expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
-    expect(revoke).not.toHaveBeenCalled()
+    expect(revoke).toHaveBeenCalledTimes(1)
     view.unmount()
     expect(revoke).toHaveBeenCalledTimes(1)
     revoke.mockRestore()

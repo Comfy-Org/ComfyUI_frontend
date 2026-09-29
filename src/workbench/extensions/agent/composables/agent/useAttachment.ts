@@ -49,8 +49,8 @@ async function withDeadline<T>(
   let timer: ReturnType<typeof setTimeout> | undefined
   const expiry = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
-      onExpire?.()
       reject(new AttachmentDeadlineError(timeoutMs))
+      onExpire?.()
     }, timeoutMs)
   })
   try {
@@ -179,7 +179,10 @@ export function useAttachment(options: UseAttachmentOptions) {
 
   async function addDeferredFile(
     name: string,
-    resolve: (signal: AbortSignal) => Promise<File | undefined>
+    resolve: (
+      signal: AbortSignal,
+      maxBytes: number
+    ) => Promise<File | undefined>
   ): Promise<'uploaded' | 'unsupported' | 'cancelled' | 'failed'> {
     const id = stage(name)
     try {
@@ -191,7 +194,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       const maxBytes =
         options.maxBytes?.(new File([], name)) ?? MAX_ATTACHMENT_BYTES
       const file = await withDeadline(
-        resolve(controller.signal),
+        resolve(controller.signal, maxBytes),
         transferDeadlineMs(maxBytes),
         () => controller.abort()
       )
@@ -218,10 +221,19 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   async function addFiles(files: Iterable<File>): Promise<void> {
-    const staged = [...files]
-      .slice(0, MAX_ATTACHMENT_BATCH_SIZE)
-      .filter((file) => !isTooLarge(file))
+    const accepted = [...files].filter((file) => !isTooLarge(file))
+    const availableSlots = Math.max(0, MAX_ATTACHMENT_BATCH_SIZE - pending.size)
+    const staged = accepted
+      .slice(0, availableSlots)
       .map((file) => ({ file, id: stage(file.name) }))
+    const omitted = accepted.length - staged.length
+    if (omitted > 0)
+      options.onError?.(
+        i18n.global.t('agent.attachmentBatchLimit', {
+          count: omitted,
+          limit: MAX_ATTACHMENT_BATCH_SIZE
+        })
+      )
     await Promise.all(
       staged.map(async ({ id, file }) => {
         if ((await uploadStagedFile(id, file)) === 'uploaded')

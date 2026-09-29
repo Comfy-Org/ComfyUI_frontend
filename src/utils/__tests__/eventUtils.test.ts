@@ -1,7 +1,32 @@
-import { extractFilesFromDragEvent, getDroppedAsset } from '@/utils/eventUtils'
+import {
+  extractFilesFromDragEvent,
+  fetchDroppedAsset,
+  getDroppedAsset
+} from '@/utils/eventUtils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('eventUtils', () => {
+  it('rejects a declared oversized dropped asset before buffering its body', async () => {
+    const blob = vi.fn()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        headers: new Headers({ 'Content-Length': '101' }),
+        blob
+      }))
+    )
+
+    await expect(
+      fetchDroppedAsset(
+        { name: 'large.png', uri: 'https://example.com' },
+        undefined,
+        100
+      )
+    ).rejects.toThrow('Dropped asset exceeds 100 bytes')
+    expect(blob).not.toHaveBeenCalled()
+  })
+
   describe('extractFilesFromDragEvent', () => {
     let fetchSpy: ReturnType<typeof vi.fn>
 

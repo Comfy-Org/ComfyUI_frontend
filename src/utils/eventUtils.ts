@@ -41,11 +41,19 @@ export function getDroppedAsset(
 
 export async function fetchDroppedAsset(
   { name, uri }: DroppedAsset,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  maxBytes?: number
 ): Promise<File | undefined> {
   if (!uri) return undefined
   const response = await fetch(uri, { signal })
   if (!response.ok) throw new DroppedAssetFetchError(response.status)
+  const contentLength = Number(response.headers.get('Content-Length'))
+  if (
+    maxBytes !== undefined &&
+    Number.isFinite(contentLength) &&
+    contentLength > maxBytes
+  )
+    throw new RangeError(`Dropped asset exceeds ${maxBytes} bytes`)
   const blob = await response.blob()
   return new File([blob], name, { type: blob.type })
 }

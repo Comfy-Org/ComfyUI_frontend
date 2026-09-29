@@ -5244,6 +5244,7 @@
     "addFromAssets": "Drag in asset from asset panel",
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
     "attachmentTooLarge": "{name} is larger than {limit}",
+    "attachmentBatchLimit": "{count} files were not added. You can upload up to {limit} files at a time.",
     "attachmentUploadFailed": "{name} could not be uploaded",
     "mention": "Mention a node",
     "changeWorkflowForChat": "Change the workflow that the agent can edit",

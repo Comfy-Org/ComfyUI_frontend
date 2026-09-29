@@ -283,6 +283,21 @@ export const useAssetsStore = defineStore('assets', () => {
 
   const inputAssets = ref<PagedList<AssetItem>>(undefined!)
   const outputAssets = ref<PagedList<AssetItem>>(undefined!)
+  let inputRefreshDirty = false
+  let inputRefresh: Promise<void> | undefined
+
+  function refreshInputAssets(): Promise<void> {
+    inputRefreshDirty = true
+    inputRefresh ??= (async () => {
+      while (inputRefreshDirty) {
+        inputRefreshDirty = false
+        await inputAssets.value.loadNew()
+      }
+    })().finally(() => {
+      inputRefresh = undefined
+    })
+    return inputRefresh
+  }
   let assetsScope: EffectScope | undefined
   watch(
     () => flags.assetsEnabled,
@@ -913,6 +928,7 @@ export const useAssetsStore = defineStore('assets', () => {
   return {
     // States
     inputAssets,
+    refreshInputAssets,
     outputAssets,
     invalidateAll,
 
