@@ -17,6 +17,14 @@ const TAB = 'tab-1'
 const ACTOR = 'human:test-user:tab-1'
 
 type SettlementListener = (outcome: BatchOutcome) => void
+type SettlementSummary = { state: BatchOutcome['state']; nodeIds: unknown[] }
+
+function summarizeSettlement(outcome: BatchOutcome): SettlementSummary {
+  return {
+    state: outcome.state,
+    nodeIds: outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+  }
+}
 
 const detachListenerFailureCases = [
   [
@@ -25,7 +33,11 @@ const detachListenerFailureCases = [
       listener: Mock<SettlementListener>,
       _record: SettlementListener,
       fail: SettlementListener
-    ) => listener.mockImplementationOnce(fail)
+    ) => listener.mockImplementationOnce(fail),
+    [
+      { state: 'undeliverable', nodeIds: [2] },
+      { state: 'undeliverable', nodeIds: [3] }
+    ]
   ],
   [
     'queued',
@@ -33,7 +45,11 @@ const detachListenerFailureCases = [
       listener: Mock<SettlementListener>,
       record: SettlementListener,
       fail: SettlementListener
-    ) => listener.mockImplementationOnce(record).mockImplementationOnce(fail)
+    ) => listener.mockImplementationOnce(record).mockImplementationOnce(fail),
+    [
+      { state: 'unconfirmed', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [3] }
+    ]
   ],
   [
     'open',
@@ -45,9 +61,23 @@ const detachListenerFailureCases = [
       listener
         .mockImplementationOnce(record)
         .mockImplementationOnce(record)
-        .mockImplementationOnce(fail)
+        .mockImplementationOnce(fail),
+    [
+      { state: 'unconfirmed', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ]
   ]
-] as const
+] as const satisfies ReadonlyArray<
+  readonly [
+    string,
+    (
+      listener: Mock<SettlementListener>,
+      record: SettlementListener,
+      fail: SettlementListener
+    ) => unknown,
+    readonly SettlementSummary[]
+  ]
+>
 
 function addNode(id: number): GraphOperation {
   return {
@@ -585,7 +615,7 @@ describe('createOpSender', () => {
 
   it.for(detachListenerFailureCases)(
     'detach settles every other batch and still unsubscribes when the %s listener throws',
-    ([, configureListener]) => {
+    ([, configureListener, expectedSurvivors]) => {
       const localSettled: BatchOutcome[] = []
       let unsubscribed = false
       const recordSettlement: SettlementListener = (outcome) => {
@@ -620,7 +650,7 @@ describe('createOpSender', () => {
 
       localSender.detach()
 
-      expect(localSettled).toHaveLength(2)
+      expect(localSettled.map(summarizeSettlement)).toEqual(expectedSurvivors)
       expect(reportError).toHaveBeenCalledTimes(1)
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
