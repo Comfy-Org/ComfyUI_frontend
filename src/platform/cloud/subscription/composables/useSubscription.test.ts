@@ -633,6 +633,58 @@ describe('useSubscription', () => {
   })
 
   describe('pending checkout recovery', () => {
+    it('evicts a hung bootstrap read before retrying recovery', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-hung-bootstrap',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockImplementation(
+        () => new Promise(() => undefined)
+      )
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(10_000)
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      await vi.advanceTimersByTimeAsync(3_000)
+
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
+    })
+
+    it('coalesces paired lifecycle recovery events', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-paired-events',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockImplementation(
+        () => new Promise(() => undefined)
+      )
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      window.dispatchEvent(new Event('pageshow'))
+      document.dispatchEvent(new Event('visibilitychange'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockGetBillingStatus).toHaveBeenCalledOnce()
+    })
+
     it('does not report while the checkout could still plausibly complete', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -801,6 +853,36 @@ describe('useSubscription', () => {
       await vi.advanceTimersByTimeAsync(10 * 60 * 1000)
 
       expect(mockReportTelemetryError).not.toHaveBeenCalled()
+    })
+
+    it('re-arms the deadline wake-up across a transient cloud change', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-transient-cloud',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(599_000)
+      mockIsCloud.value = false
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+
+      mockIsCloud.value = true
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
     })
 
     it('rechecks billing at the deadline before reporting', async () => {
