@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent } from 'vue'
@@ -68,6 +69,36 @@ const getGradientSlider = () => screen.getByTestId('gradient-slider')
 const getNumberInput = () => screen.getByRole('spinbutton') as HTMLInputElement
 
 describe('WidgetInputNumberGradientSlider', () => {
+  describe('Value updates', () => {
+    it('emits edits made in the number field', async () => {
+      const user = userEvent.setup()
+      const { emitted } = renderComponent(makeWidget(42), 42)
+
+      const input = getNumberInput()
+      await user.clear(input)
+      await user.type(input, '51{Enter}')
+
+      expect(emitted('update:modelValue').at(-1)).toEqual([51])
+    })
+
+    it('emits edits made in the gradient slider', async () => {
+      const user = userEvent.setup()
+      const { emitted } = render(WidgetInputNumberGradientSlider, {
+        global: {
+          plugins: [i18n],
+          stubs: { WidgetLayoutField: WidgetLayoutFieldStub }
+        },
+        props: { widget: makeWidget(42), modelValue: 42 }
+      })
+
+      const slider = await screen.findByRole('slider', { name: 'grad' })
+      slider.focus()
+      await user.keyboard('{ArrowRight}')
+
+      expect(emitted('update:modelValue')).toEqual([[43]])
+    })
+  })
+
   describe('Value and bounds pass-through', () => {
     it('displays initial value in number input', () => {
       renderComponent(makeWidget(42), 42)

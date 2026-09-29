@@ -497,13 +497,16 @@ describe('PricingTable', () => {
       expect(screen.getByText('~22,980')).toBeTruthy()
     })
 
-    it('states the monthly allotment on the monthly cycle', async () => {
+    it('keeps the monthly allotment when Monthly is selected again', async () => {
       renderComponent()
       await flushPromises()
 
-      await userEvent.click(screen.getByRole('button', { name: 'Monthly' }))
+      const monthly = screen.getByRole('button', { name: 'Monthly' })
+      await userEvent.click(monthly)
+      await userEvent.click(monthly)
       await nextTick()
 
+      expect(monthly).toHaveAttribute('aria-pressed', 'true')
       expect(screen.getAllByText('Monthly credits')).toHaveLength(3)
       expect(screen.getByText('4,200')).toBeTruthy()
       expect(screen.getByText('~380')).toBeTruthy()

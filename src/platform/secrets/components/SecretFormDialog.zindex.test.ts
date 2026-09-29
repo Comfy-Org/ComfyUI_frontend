@@ -1,6 +1,5 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -43,7 +42,7 @@ describe('SecretFormDialog z-index stacking', () => {
 
   it('renders above a modal that is already open', async () => {
     render(SecretFormDialog, {
-      global: { plugins: [PrimeVue, i18n] },
+      global: { plugins: [i18n] },
       props: { visible: true }
     })
 

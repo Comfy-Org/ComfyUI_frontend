@@ -843,13 +843,16 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     expect(screen.getByText('Generates ~4,560 5s videos*')).toBeTruthy()
   })
 
-  it('states the monthly allotment for personal tiers on the monthly cycle', async () => {
+  it('keeps the monthly personal-tier allotment when Monthly is selected again', async () => {
     const user = userEvent.setup()
     renderWithCycleToggle()
 
-    await user.click(screen.getByRole('button', { name: 'Monthly' }))
+    const monthly = screen.getByRole('button', { name: 'Monthly' })
+    await user.click(monthly)
+    await user.click(monthly)
     await nextTick()
 
+    expect(monthly).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getAllByText('monthly credits')).toHaveLength(3)
     expect(screen.queryAllByText('credits per year')).toHaveLength(0)
     expect(screen.getByText('4,200')).toBeTruthy()

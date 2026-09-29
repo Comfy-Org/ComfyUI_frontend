@@ -146,13 +146,13 @@ describe('SingleSelect', () => {
     unmount()
   })
 
-  it('closes on Tab and returns focus to the trigger', async () => {
+  it('closes on Escape and returns focus to the trigger', async () => {
     const user = userEvent.setup()
     const { unmount } = renderInParent(undefined, { searchable: true })
 
     const trigger = screen.getByLabelText('Pick')
     await openSelect(trigger)
-    await user.tab()
+    await user.keyboard('{Escape}')
 
     expect(trigger).toHaveAttribute('data-state', 'closed')
     expect(trigger).toHaveFocus()

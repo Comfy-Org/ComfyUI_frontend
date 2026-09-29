@@ -152,18 +152,13 @@ describe('WidgetInputText Value Binding', () => {
   })
 
   describe('Component Rendering', () => {
-    it('always renders InputText component', () => {
+    it('renders a single-line text input', () => {
       const widget = createInputTextWidget('test value')
-      const { container } = renderComponent(widget, 'test value')
+      renderComponent(widget, 'test value')
 
-      // WidgetInputText always uses InputText, not Textarea
       const input = screen.getByRole('textbox')
       expect(input).toBeInTheDocument()
-
-      // Should not render textarea (that's handled by WidgetTextarea component)
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const textarea = container.querySelector('textarea')
-      expect(textarea).not.toBeInTheDocument()
+      expect(input.tagName).toBe('INPUT')
     })
 
     it('marks the text input as invalid', () => {

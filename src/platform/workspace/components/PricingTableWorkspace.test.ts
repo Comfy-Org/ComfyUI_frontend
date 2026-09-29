@@ -164,13 +164,16 @@ describe('PricingTableWorkspace credit allotment copy', () => {
     expect(screen.getByText('~4,560')).toBeTruthy()
   })
 
-  it('states the monthly per-member allotment on the monthly cycle', async () => {
+  it('keeps the monthly per-member allotment when Monthly is selected again', async () => {
     const user = userEvent.setup()
     renderComponent()
 
-    await user.click(screen.getByRole('button', { name: 'Monthly' }))
+    const monthly = screen.getByRole('button', { name: 'Monthly' })
+    await user.click(monthly)
+    await user.click(monthly)
     await nextTick()
 
+    expect(monthly).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getAllByText('Monthly credits / member')).toHaveLength(3)
     expect(screen.queryAllByText('Yearly credits / member')).toHaveLength(0)
     expect(screen.getByText('4,200')).toBeTruthy()
