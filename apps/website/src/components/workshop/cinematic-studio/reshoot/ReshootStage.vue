@@ -113,16 +113,20 @@ const fileName = computed(
           <Maximize2 v-else class="size-4" aria-hidden="true" />
         </button>
       </div>
+      <p v-if="current" class="text-xs text-primary-warm-gray">
+        {{
+          current.id === 'example'
+            ? rc('reshoot.take.exampleHelp', locale)
+            : takeLabel(current, locale)
+        }}
+      </p>
+      <ReshootTakes
+        :takes
+        :selected
+        :locale
+        class="-ml-1 self-start"
+        @select="emit('select', $event)"
+      />
     </div>
-    <p class="text-xs text-primary-warm-gray">
-      {{
-        current?.id === 'example'
-          ? rc('reshoot.take.exampleHelp', locale)
-          : current
-            ? takeLabel(current, locale)
-            : rc('reshoot.take.aim', locale)
-      }}
-    </p>
-    <ReshootTakes :takes :selected :locale @select="emit('select', $event)" />
   </section>
 </template>

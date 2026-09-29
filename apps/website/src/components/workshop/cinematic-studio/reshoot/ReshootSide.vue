@@ -74,37 +74,50 @@ function choose(event: Event) {
     :aria-label="rc('reshoot.panel', locale)"
     class="flex min-w-0 flex-col rounded-2xl bg-primary-comfy-ink-light lg:sticky lg:top-24 lg:max-h-[calc(100svh-7rem)]"
   >
-    <header
-      class="flex items-center gap-3 border-b border-transparency-white-t8 px-4 py-3.5"
-    >
-      <video
-        :src="clip"
-        muted
-        playsinline
-        preload="metadata"
-        class="aspect-video w-14 shrink-0 rounded-md bg-primary-comfy-ink object-cover"
-      />
-      <span class="flex min-w-0 flex-1 flex-col">
-        <span class="truncate text-sm font-semibold text-primary-warm-white">
-          {{ isExample ? rc('reshoot.pick.exampleTitle', locale) : clipName }}
-        </span>
-        <span class="truncate text-[11px] text-primary-warm-gray">
-          {{
-            ready
-              ? `${rc('reshoot.clip.ready', locale)} · ${frames}`
-              : rc('reshoot.aim.reading', locale)
-          }}
-        </span>
-      </span>
-      <label
-        class="flex h-7 shrink-0 cursor-pointer items-center rounded-full bg-transparency-white-t8 px-3 text-[11px] text-primary-comfy-canvas focus-within:ring-2 focus-within:ring-primary-comfy-yellow/50 hover:text-primary-warm-white"
-      >
-        {{ rc('reshoot.clip.change', locale) }}
-        <input type="file" accept="video/*" class="sr-only" @change="choose" />
-      </label>
-    </header>
-
-    <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
+    <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
+      <section class="flex flex-col gap-2">
+        <h2 class="text-xs font-medium text-primary-warm-gray">
+          {{ rc('reshoot.section.video', locale) }}
+        </h2>
+        <div
+          class="flex items-center gap-3 rounded-2xl border border-transparency-white-t8 p-2.5"
+        >
+          <video
+            :src="clip"
+            muted
+            playsinline
+            preload="metadata"
+            class="aspect-video w-14 shrink-0 rounded-md bg-primary-comfy-ink object-cover"
+          />
+          <span class="flex min-w-0 flex-1 flex-col">
+            <span
+              class="truncate text-sm font-semibold text-primary-warm-white"
+            >
+              {{
+                isExample ? rc('reshoot.pick.exampleTitle', locale) : clipName
+              }}
+            </span>
+            <span class="truncate text-[11px] text-primary-warm-gray">
+              {{
+                ready
+                  ? `${rc('reshoot.clip.ready', locale)} · ${frames}`
+                  : rc('reshoot.aim.reading', locale)
+              }}
+            </span>
+          </span>
+          <label
+            class="flex h-7 shrink-0 cursor-pointer items-center rounded-full bg-transparency-white-t8 px-3 text-[11px] text-primary-comfy-canvas focus-within:ring-2 focus-within:ring-primary-comfy-yellow/50 hover:text-primary-warm-white"
+          >
+            {{ rc('reshoot.clip.change', locale) }}
+            <input
+              type="file"
+              accept="video/*"
+              class="sr-only"
+              @change="choose"
+            />
+          </label>
+        </div>
+      </section>
       <ReshootAimRig
         v-model:keep-aim="keepAim"
         :clip
@@ -113,73 +126,75 @@ function choose(event: Event) {
         :locale
         @aim="emit('aim', $event)"
       />
-      <ReshootDisclosure
-        :label="rc('reshoot.section.move', locale)"
-        :disabled="!ready"
-      >
-        <ReshootMoveControls
-          v-model:frame="frame"
-          v-model:motion="motion"
-          :keys
+      <div class="flex flex-col gap-2">
+        <ReshootDisclosure
+          :label="rc('reshoot.section.move', locale)"
           :disabled="!ready"
-          :locale
-          @key="emit('key')"
-          @remove="emit('removeKey', $event)"
-          @clear="emit('clearKeys')"
-        />
-      </ReshootDisclosure>
-      <ReshootFormat v-model:aspect="aspect" v-model:size="size" :locale />
-      <ReshootDisclosure :label="rc('reshoot.advanced', locale)">
-        <div class="flex flex-col gap-3">
-          <div class="flex flex-col gap-1.5">
-            <div class="flex items-center gap-1.5">
-              <label
-                for="reshoot-prompt"
-                class="text-xs font-semibold text-primary-comfy-canvas"
-              >
-                {{ rc('reshoot.section.prompt', locale) }}
-                <span class="font-normal text-primary-warm-gray">
-                  · {{ rc('reshoot.optional', locale) }}
-                </span>
-              </label>
-              <InfoTooltip
-                :text="rc('reshoot.promptHelp', locale)"
-                :label="rc('reshoot.promptHelp', locale)"
+        >
+          <ReshootMoveControls
+            v-model:frame="frame"
+            v-model:motion="motion"
+            :keys
+            :disabled="!ready"
+            :locale
+            @key="emit('key')"
+            @remove="emit('removeKey', $event)"
+            @clear="emit('clearKeys')"
+          />
+        </ReshootDisclosure>
+        <ReshootDisclosure :label="rc('reshoot.advanced', locale)">
+          <div class="flex flex-col gap-3">
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center gap-1.5">
+                <label
+                  for="reshoot-prompt"
+                  class="text-xs font-semibold text-primary-comfy-canvas"
+                >
+                  {{ rc('reshoot.section.prompt', locale) }}
+                  <span class="font-normal text-primary-warm-gray">
+                    · {{ rc('reshoot.optional', locale) }}
+                  </span>
+                </label>
+                <InfoTooltip
+                  :text="rc('reshoot.promptHelp', locale)"
+                  :label="rc('reshoot.promptHelp', locale)"
+                />
+              </div>
+              <textarea
+                id="reshoot-prompt"
+                v-model="prompt"
+                rows="2"
+                :placeholder="rc('reshoot.prompt.placeholder', locale)"
+                aria-describedby="reshoot-prompt-dialogue"
+                class="field-sizing-content max-h-40 min-h-16 resize-none rounded-xl bg-transparency-white-t4 px-3.5 py-2.5 text-sm/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
               />
+              <p
+                id="reshoot-prompt-dialogue"
+                class="text-[11px]/relaxed text-primary-warm-gray"
+              >
+                {{ rc('reshoot.prompt.dialogue', locale) }}
+              </p>
             </div>
-            <textarea
-              id="reshoot-prompt"
-              v-model="prompt"
-              rows="2"
-              :placeholder="rc('reshoot.prompt.placeholder', locale)"
-              aria-describedby="reshoot-prompt-dialogue"
-              class="field-sizing-content max-h-40 min-h-16 resize-none rounded-xl bg-transparency-white-t4 px-3.5 py-2.5 text-sm/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
-            />
-            <p
-              id="reshoot-prompt-dialogue"
-              class="text-[11px]/relaxed text-primary-warm-gray"
-            >
-              {{ rc('reshoot.prompt.dialogue', locale) }}
-            </p>
+            <label class="flex items-center justify-between gap-3 text-xs">
+              <span class="font-semibold text-primary-comfy-canvas">
+                {{ rc('reshoot.seed', locale) }}
+              </span>
+              <input
+                v-model.number="seed"
+                type="number"
+                min="0"
+                class="h-9 w-28 rounded-xl bg-transparency-white-t4 px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
+              />
+            </label>
           </div>
-          <label class="flex items-center justify-between gap-3 text-xs">
-            <span class="font-semibold text-primary-comfy-canvas">
-              {{ rc('reshoot.seed', locale) }}
-            </span>
-            <input
-              v-model.number="seed"
-              type="number"
-              min="0"
-              class="h-9 w-28 rounded-xl bg-transparency-white-t4 px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
-            />
-          </label>
-        </div>
-      </ReshootDisclosure>
+        </ReshootDisclosure>
+      </div>
     </div>
 
     <footer
-      class="flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 p-4"
+      class="flex flex-col gap-3 rounded-b-2xl border-t border-transparency-white-t8 p-4"
     >
+      <ReshootFormat v-model:aspect="aspect" v-model:size="size" :locale />
       <p class="text-center text-[11px] text-primary-warm-gray">
         {{
           rc(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait', locale)

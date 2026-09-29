@@ -115,5 +115,6 @@ describe('Re-shoot on one screen', () => {
     expect(
       screen.getByRole('button', { name: 'Aim', current: true })
     ).toBeInTheDocument()
+    expect(screen.queryByText('Aim')).toBeNull()
   })
 })
