@@ -5,7 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WebSession } from '@comfyorg/account-core/webSession'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
-import type { WebSessionRequestScope } from '@/platform/auth/session/webSessionFetch'
+import type {
+  WebSessionRequestScope,
+  WebSessionRequests
+} from '@/platform/auth/session/webSessionFetch'
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { api } from '@/scripts/api'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
@@ -599,11 +602,13 @@ describe('useRemoteWidget', () => {
     >
 
     const provideSession = () => {
-      release = provideWebSessionRequests({
-        scope: async () => scope(),
-        workspaceId: () => undefined,
-        send: (url, init) => send(url, init)
-      })
+      release = provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({
+          scope: async () => scope(),
+          workspaceId: () => undefined,
+          send: (url, init) => send(url, init)
+        })
+      )
     }
 
     beforeEach(() => {
