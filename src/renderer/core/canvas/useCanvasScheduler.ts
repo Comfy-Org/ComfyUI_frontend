@@ -68,25 +68,36 @@ export function createCanvasScheduler(): CanvasScheduler {
     flushQueued(false)
   }
 
+  function executeOperation(
+    operation: CanvasOperation,
+    remainingInBatch: number
+  ): 'complete' | 'pending' {
+    if (operation.isCurrent?.() === false) return 'complete'
+    if (!isElementReady(operation.element ?? canvasStore.canvas?.canvas)) {
+      return 'pending'
+    }
+    try {
+      operation.run()
+    } catch (err) {
+      reportError(err, {
+        errorType: 'canvas_scheduled_operation_failed',
+        context: {
+          remainingInBatch,
+          pendingQueue: queue.length,
+          canvasReady: isCanvasReady()
+        }
+      })
+    }
+    return 'complete'
+  }
+
   function flushQueued(retryIfNotReady: boolean): void {
     const operations = queue.splice(0)
     for (const [index, operation] of operations.entries()) {
-      if (operation.isCurrent?.() === false) continue
-      if (!isElementReady(operation.element ?? canvasStore.canvas?.canvas)) {
+      if (
+        executeOperation(operation, operations.length - index - 1) === 'pending'
+      ) {
         queue.push(operation)
-        continue
-      }
-      try {
-        operation.run()
-      } catch (err) {
-        reportError(err, {
-          errorType: 'canvas_scheduled_operation_failed',
-          context: {
-            remainingInBatch: operations.length - index - 1,
-            pendingQueue: queue.length,
-            canvasReady: isCanvasReady()
-          }
-        })
       }
     }
     if (retryIfNotReady && queue.length > 0) requestFlush()
