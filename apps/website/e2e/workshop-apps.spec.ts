@@ -73,3 +73,24 @@ test('sends the old studio address to the app page it named', async ({
   await page.goto('/cinematic-studio/?app=reshoot&ux=d&model=flux')
   await expect(page).toHaveURL(/\/models\/apps\/reshoot\/\?ux=d&model=flux$/)
 })
+
+test('shows a preview frame for every Cinematic Studio shot option', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/cinematic-studio/')
+  await page
+    .getByRole('button', { name: /^Shot\b/ })
+    .first()
+    .click()
+
+  const shots = page.getByRole('radiogroup', { name: 'Shot' })
+  const options = shots.getByRole('radio')
+  const count = await options.count()
+  expect(count).toBeGreaterThan(1)
+  const framed = shots.locator(
+    'img[src^="/images/cinematic-studio/options/shot-"]'
+  )
+  await expect(framed).toHaveCount(count - 1)
+})
