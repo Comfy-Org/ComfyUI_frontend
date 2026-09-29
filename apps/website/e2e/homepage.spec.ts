@@ -44,7 +44,7 @@ test.describe('Homepage @smoke', () => {
     await expect(cta).toBeVisible()
     await expect(cta).toHaveAttribute(
       'href',
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+      '/hub/models/seedance-2-5-text-to-video/'
     )
   })
 
@@ -56,10 +56,10 @@ test.describe('Homepage @smoke', () => {
       section.getByRole('heading', { name: /ready to run/i })
     ).toBeVisible()
     const bytedance = section.getByRole('link', { name: /ByteDance/ }).first()
-    await expect(bytedance).toHaveAttribute('href', '/models?q=ByteDance')
+    await expect(bytedance).toHaveAttribute('href', '/hub/models/?q=ByteDance')
     await expect(
       section.getByRole('link', { name: 'Browse all models' })
-    ).toHaveAttribute('href', '/models')
+    ).toHaveAttribute('href', '/hub/models/')
   })
 
   test('FeaturedWorkflowsSection carousel is visible', async ({ page }) => {

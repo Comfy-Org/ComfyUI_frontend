@@ -34,7 +34,7 @@ test('catalogue browsing stays within its JavaScript budget', async ({
   await page.goto('/')
   const shared = new Set((await requestedScripts(page)).map(([name]) => name))
 
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   await page.getByTestId('workshop-search').fill('kling')
   await page.getByRole('heading', { level: 1 }).click()
   await expect(
@@ -59,7 +59,7 @@ test('catalogue browsing stays within its JavaScript budget', async ({
 test('video cards load on screen and stop playing when scrolled away', async ({
   page
 }) => {
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   await page.getByTestId('workshop-filter').click()
   const videos = page.getByTestId('section-generate-videos').locator('video')
   await expect.poll(() => videos.count()).toBeGreaterThan(0)

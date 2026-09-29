@@ -49,9 +49,7 @@ test('Seedance first/last frame warns about the stretch only while the shapes di
     }
   })
 
-  await page.goto(
-    '/models/byteplus--seedance-2-5-first-last-frame--animate-images/'
-  )
+  await page.goto('/hub/models/seedance-2-5-first-last-frame/')
   const group = (name: string) => page.getByRole('group', { name, exact: true })
   const upload = (name: string) => group(name).getByLabel(name, { exact: true })
   const first = upload('First frame')

@@ -115,6 +115,8 @@ describe('Workshop release output', () => {
   it('builds every Models page either way and adds checkout only with Workshop', () => {
     const disabled = modelsBuildRoutes(false)
     expect(disabled.map((route) => route.pattern)).toEqual([
+      '/hub/models',
+      '/hub/models/[slug]',
       '/models',
       '/models/[...slug]',
       '/models/showcase',

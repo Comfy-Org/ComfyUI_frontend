@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
+import { hubModelSlugs } from '../src/config/hub-models'
 import { modelAliasUrls, modelPageUrls } from '../src/config/model-urls'
 import { redirects } from '../src/config/redirects'
 import {
@@ -63,7 +64,11 @@ function matchesRoute(pattern: string, path: string): boolean {
 
 describe('model URL map', () => {
   it('matches the generator output (pnpm generate:model-url-map)', () => {
-    const map = compileModelUrlMap(workshopModels, routerModelSlugAliases)
+    const map = compileModelUrlMap(
+      workshopModels,
+      routerModelSlugAliases,
+      hubModelSlugs
+    )
     expect(readFileSync(MODEL_URLS_MODULE, 'utf8')).toBe(
       renderModelUrlsModule(map)
     )
@@ -111,7 +116,9 @@ describe('model URL map', () => {
   })
 
   it('claims no path another route already serves', () => {
-    const patterns = sitePathPatterns()
+    const patterns = sitePathPatterns().filter(
+      (pattern) => pattern !== '/hub/models/[slug]'
+    )
     const collisions = newSlugs.flatMap((slug) =>
       patterns.filter((pattern) =>
         matchesRoute(pattern, `/hub/models/${slug}/`)
@@ -131,6 +138,39 @@ describe('compileModelUrlMap', () => {
     [' Bria RMBG 2.0 ', 'bria-rmbg-2-0']
   ] as const)('slugifies %s', ([name, slug]) => {
     expect(modelUrlSlug(name)).toBe(slug)
+  })
+
+  it('keeps a published slug when the display name changes', () => {
+    const models = [
+      { slug: 'google--veo-3--generate-videos', name: 'Veo 3.1 Text-to-Video' },
+      { slug: 'google--veo-4--generate-videos', name: 'Veo 4 Text-to-Video' }
+    ]
+    const frozen = new Map([
+      ['google--veo-3--generate-videos', 'veo-3-text-to-video']
+    ])
+    expect(compileModelUrlMap(models, new Map(), frozen).pages).toEqual([
+      {
+        oldSlug: 'google--veo-3--generate-videos',
+        newSlug: 'veo-3-text-to-video'
+      },
+      {
+        oldSlug: 'google--veo-4--generate-videos',
+        newSlug: 'veo-4-text-to-video'
+      }
+    ])
+  })
+
+  it('rejects a new page that takes a published slug', () => {
+    expect(() =>
+      compileModelUrlMap(
+        [
+          { slug: 'a--veo-3--generate-videos', name: 'Veo 3.1 Text-to-Video' },
+          { slug: 'b--veo-3--generate-videos', name: 'Veo 3 Text-to-Video' }
+        ],
+        new Map(),
+        new Map([['a--veo-3--generate-videos', 'veo-3-text-to-video']])
+      )
+    ).toThrow('both map to veo-3-text-to-video')
   })
 
   it('rejects two pages that would share a URL', () => {

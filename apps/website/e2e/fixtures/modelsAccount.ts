@@ -5,7 +5,7 @@ import type {
 
 import { test as base } from './blockExternalMedia'
 
-export const MODEL_PATH = '/models/bfl--flux-2-max--generate-images/'
+export const MODEL_PATH = '/hub/models/flux-2-max-text-to-image/'
 
 /** The identity this fixture signs in as, and the workspace its token mints. */
 export const MODELS_ACCOUNT_UID = 'e2e-models-user'

@@ -9,16 +9,19 @@ import {
 } from './models-url-registry'
 
 const sources = {
-  models: ['acme--image--generate-images'],
+  models: new Map([['acme--image--generate-images', 'acme-image']]),
   workflows: ['workflows/relight'],
   apps: ['apps/studio'],
-  aliases: new Map([['acme--image', 'acme--image--generate-images']])
+  aliases: new Map([['acme--image', 'acme-image']])
 }
 
 describe('models URL registry', () => {
   it.for<[string, string | undefined]>([
-    ['/models/', 'hub'],
-    ['/models/acme--image--generate-images/', 'model'],
+    ['/hub/models/', 'hub'],
+    ['/models/', 'alias'],
+    ['/hub/models/acme-image/', 'model'],
+    ['/models/acme--image--generate-images/', 'alias'],
+    ['/models/acme--image--generate-images/page.json', 'reserved'],
     ['/models/workflows/relight', 'workflow'],
     ['/models/apps/studio/', 'app'],
     ['/models/acme--image', 'alias'],
@@ -31,31 +34,36 @@ describe('models URL registry', () => {
     expect(modelsUrlKind(path, registry)).toBe(kind)
   })
 
-  it('points each alias at the page it redirects to', () => {
+  it.for([
+    ['/models', '/hub/models'],
+    ['/models/acme--image--generate-images', '/hub/models/acme-image'],
+    ['/models/acme--image', '/hub/models/acme-image']
+  ])('points %s straight at %s', ([path, destination]) => {
     const registry = buildModelsUrlRegistry(modelsUrlEntries(sources))
-    expect(registry.get('/models/acme--image')).toEqual({
-      path: '/models/acme--image',
+    expect(registry.get(path)).toEqual({
+      path,
       kind: 'alias',
-      destination: '/models/acme--image--generate-images'
+      destination
     })
   })
 
   it.for<[string, typeof sources]>([
     [
       'a model named like a reserved address',
-      { ...sources, models: ['showcase'] }
+      { ...sources, models: new Map([['showcase', 'showcase']]) }
     ],
     [
       'a workflow and a model on one address',
-      { ...sources, models: ['workflows/relight'] }
+      {
+        ...sources,
+        models: new Map([['workflows/relight', 'workflows-relight']])
+      }
     ],
     [
       'an alias on a model address',
       {
         ...sources,
-        aliases: new Map([
-          ['acme--image--generate-images', 'acme--image--generate-images']
-        ])
+        aliases: new Map([['acme--image--generate-images', 'acme-image']])
       }
     ]
   ])('rejects %s', ([, collision]) => {
@@ -108,19 +116,22 @@ describe('models URL registry', () => {
         [
           '',
           'models/',
-          'models/acme--image--generate-images/',
+          'hub/models/',
+          'hub/models/acme-image/',
+          'hub/models/stray/',
           'models/catalogue.json',
           'models/local/',
           'pricing/'
         ],
         registry
       )
-    ).toEqual(['/models/local'])
+    ).toEqual(['/hub/models/stray', '/models/local'])
   })
 
   it('builds the real registry from the Models content', () => {
+    expect(modelsUrlKind('/hub/models/flux-2-max-text-to-image/')).toBe('model')
     expect(modelsUrlKind('/models/bfl--flux-2-max--generate-images/')).toBe(
-      'model'
+      'alias'
     )
     expect(modelsUrlKind('/models/apps/cinematic-studio/')).toBe('app')
     expect(modelsUrlKind('/models/workflows/change-material/')).toBe('workflow')

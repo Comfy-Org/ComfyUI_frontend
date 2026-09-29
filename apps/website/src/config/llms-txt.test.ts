@@ -45,6 +45,7 @@ const EXCLUDED_PAGES = new Set([
   '/platform/serverless-animation', // noindex temporary motion study, not a real page
   '/workshop', // build-gated; static public/llms.txt cannot vary by build shape
   '/video-sitemap.xml', // machine-readable sitemap output, not a page for agents to read
+  '/models', // the old catalogue address; canonical is /hub/models/
   '/models/catalogue.json' // data the /models catalogue island loads, not a page
 ])
 

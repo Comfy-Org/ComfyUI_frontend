@@ -4,10 +4,11 @@ import { isExcludedFromSitemap, isNoindexPathname } from './indexing'
 describe('indexing policy', () => {
   it('excludes render pages while keeping the public Models marketing routes', () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '1')
-    expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
+    expect(isExcludedFromSitemap('https://comfy.org/hub/models/')).toBe(false)
+    expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(true)
     expect(
       isExcludedFromSitemap(
-        'https://comfy.org/models/bfl--flux-2-max--generate-images/'
+        'https://comfy.org/hub/models/flux-2-max-text-to-image/'
       )
     ).toBe(true)
     expect(isExcludedFromSitemap('https://comfy.org/models/local/')).toBe(false)
@@ -17,7 +18,7 @@ describe('indexing policy', () => {
     expect(isNoindexPathname('/models/showcase/')).toBe(true)
     expect(isNoindexPathname('/zh-CN/models/showcase')).toBe(true)
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
-    expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
+    expect(isExcludedFromSitemap('https://comfy.org/hub/models/')).toBe(false)
   })
   it.for(['0', '1'])(
     'excludes retired Workshop in either build (%s)',

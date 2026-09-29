@@ -15,8 +15,10 @@ describe('getMainNavigation', () => {
               )
             : [item.href]
         )
-      expect(links(false)).not.toContain('/models')
-      expect(links(true).filter((href) => href === '/models')).toHaveLength(2)
+      expect(links(false)).not.toContain('/hub/models/')
+      expect(
+        links(true).filter((href) => href === '/hub/models/')
+      ).toHaveLength(2)
     }
   )
   it('includes a Products entry linking to Enterprise Managed Builds', () => {
