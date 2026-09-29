@@ -103,3 +103,18 @@ test('asks Safari for a first frame on the Re-shoot example video tile', async (
     /#t=0\.1$/
   )
 })
+
+test('@mobile keeps the Re-shoot aim badges to one line on a phone', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/reshoot/')
+  await page.getByText('Sci-fi pilot').first().click()
+
+  const viewport = page.getByTestId('reshoot-viewport').first()
+  await expect(
+    viewport.getByText('Drag to orbit', { exact: true })
+  ).toBeVisible()
+  await expect(viewport.getByText(/Scroll to move closer/)).toBeHidden()
+})
