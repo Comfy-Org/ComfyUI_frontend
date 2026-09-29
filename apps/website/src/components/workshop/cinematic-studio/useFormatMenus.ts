@@ -18,15 +18,24 @@ export function useFormatMenus(
   aspect: ModelRef<AspectRatio>,
   resolution: ModelRef<Resolution>,
   takes: ModelRef<number>,
-  locale: () => Locale
+  locale: () => Locale,
+  /**
+   * The frames the chosen model can make. `undefined` leaves every frame on
+   * offer; an empty list is a model that can make none, which is not the same
+   * thing and must not fall back to offering all of them.
+   */
+  aspects: () => readonly AspectRatio[] | undefined = () => undefined
 ) {
-  const aspectOptions = computed(() =>
-    ASPECT_RATIOS.map((ratio) => ({
+  const aspectOptions = computed(() => {
+    const supported = aspects()
+    return ASPECT_RATIOS.filter(
+      (ratio) => !supported || supported.includes(ratio.id)
+    ).map((ratio) => ({
       id: ratio.id,
       label: ratio.id,
       meta: tc(ratio.label, locale())
     }))
-  )
+  })
   const resolutionOptions = RESOLUTIONS.map((option) => ({
     id: option.id,
     label: option.id

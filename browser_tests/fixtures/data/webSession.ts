@@ -1,0 +1,54 @@
+import type {
+  CurrentWorkspaceResponse,
+  ErrorResponse,
+  PromptResponse,
+  WebSessionResponse
+} from '@comfyorg/ingest-types'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
+
+import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
+
+export const WEB_SESSION_FEATURES: RemoteConfig = { unified_web_session: true }
+
+export const WEB_SESSION_COOKIE = {
+  name: 'e2e_web_session',
+  value: 'cookie-e2e'
+}
+
+export const WEB_SESSION_CSRF_TOKEN = 'csrf-e2e'
+
+export const WEB_SESSION: WebSessionResponse = {
+  user: {
+    id: 'test-user-e2e',
+    email: CLOUD_SELF_EMAIL,
+    email_verified: true
+  },
+  csrf_token: WEB_SESSION_CSRF_TOKEN,
+  expires_at: '2099-01-01T00:00:00Z',
+  absolute_expires_at: '2099-01-02T00:00:00Z'
+}
+
+export function currentWorkspace(
+  workspace: WorkspaceWithRole
+): CurrentWorkspaceResponse {
+  return {
+    auth_method: 'cookie',
+    id: workspace.id,
+    name: workspace.name,
+    type: workspace.type,
+    role: workspace.role
+  }
+}
+
+export const WORKSPACE_ACCESS_DENIED: ErrorResponse = {
+  code: 'workspace_access_denied',
+  message: 'You no longer have access to this workspace'
+}
+
+export const PROMPT_ACCEPTED: PromptResponse = {
+  prompt_id: 'web-session-job',
+  number: 1,
+  node_errors: {}
+}

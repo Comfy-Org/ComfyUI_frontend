@@ -70,3 +70,18 @@ describe('cinematicPromptSegments', () => {
     ])
   })
 })
+
+describe('colors in the prompt', () => {
+  it('adds the palette as words after the scene, main color last', () => {
+    expect(
+      cinematicPrompt(brief({ colors: ['#c7703a', '#2b3a55'], mainColor: 1 }))
+    ).toBe(
+      `${scene} Color grade: dominant colors #c7703a, #2b3a55. Keep skin tones believable. ` +
+        'Palette priority: #2b3a55 is the main color; use the other palette colors as supporting accents. Preserve believable skin tones and readable contrast.'
+    )
+  })
+
+  it('adds nothing for an empty palette', () => {
+    expect(cinematicPrompt(brief({ colors: [], mainColor: 0 }))).toBe(scene)
+  })
+})

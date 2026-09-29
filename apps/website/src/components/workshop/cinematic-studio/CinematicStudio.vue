@@ -10,10 +10,13 @@ import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
 import type { Locale } from '../../../i18n/translations'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicComposer from './CinematicComposer.vue'
+import CinematicColors from './CinematicColors.vue'
 import CinematicPicker from './CinematicPicker.vue'
+import CinematicPopover from './CinematicPopover.vue'
 import CinematicStage from './CinematicStage.vue'
 import type { PickerKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
@@ -35,10 +38,13 @@ const {
   enhance,
   direction,
   aspect,
+  aspects,
   resolution,
   takes,
   cast,
   palette,
+  colors,
+  mainColor,
   estimate,
   memberWorkspace,
   choose,
@@ -63,6 +69,13 @@ const popoverClass = computed(() =>
 )
 
 const starter = ref<string>()
+
+// The Colors panel opens from the References menu, beside the pickers.
+const colorsOpen = ref(false)
+function openColors() {
+  closePopover()
+  colorsOpen.value = true
+}
 
 const { leavingTo, leave, stay } = useCinematicLeaveGuard(
   () => studio.rendering.value,
@@ -124,10 +137,19 @@ function generateOn(slug: string) {
     >
       <div class="relative mx-auto w-full max-w-7xl">
         <div
-          v-if="popover"
+          v-if="popover || colorsOpen"
           class="fixed inset-0 z-40 bg-black/60 lg:hidden"
           aria-hidden="true"
         />
+        <CinematicPopover
+          v-if="colorsOpen"
+          :title="tc('cinematic.colors.title', locale)"
+          :locale
+          :class="cn(popoverClass, 'lg:w-96')"
+          @close="colorsOpen = false"
+        >
+          <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
+        </CinematicPopover>
         <CinematicPicker
           v-if="popover"
           :key="popover"
@@ -149,6 +171,8 @@ function generateOn(slug: string) {
           v-model:cast="cast"
           v-model:palette="palette"
           :models
+          :aspects
+          :color-count="colors.length"
           :direction
           :gate="studio.gate.value"
           :workspace-name="studio.session.value?.workspace.name"
@@ -158,7 +182,8 @@ function generateOn(slug: string) {
           :show-credits="showCredits"
           :open-popover="popover"
           :locale
-          @open="togglePopover"
+          @open="((colorsOpen = false), togglePopover($event))"
+          @colors="openColors"
           @generate="generate"
           @cancel="studio.cancel"
         />

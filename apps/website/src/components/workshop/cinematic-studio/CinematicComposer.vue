@@ -16,6 +16,7 @@ import {
 import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
 import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
+import { takesReferences } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicDirectionSegments from './CinematicDirectionSegments.vue'
@@ -30,6 +31,8 @@ import type { PickerKey } from './picker-key'
 
 const {
   models,
+  aspects,
+  colorCount = 0,
   direction,
   gate,
   workspaceName,
@@ -41,6 +44,9 @@ const {
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
+  /** The frames the chosen model can make; every frame when absent. */
+  aspects?: readonly AspectRatio[]
+  colorCount?: number
   direction: Direction
   gate: StudioGate
   workspaceName?: string
@@ -54,6 +60,7 @@ const {
 
 const emit = defineEmits<{
   open: [key: PickerKey]
+  colors: []
   generate: []
   cancel: []
 }>()
@@ -97,7 +104,10 @@ const cameraLabel = computed(
     `${tc('cinematic.section.camera', locale)}: ${focalLabel.value ?? bodyLabel.value}`
 )
 const blockedNote = computed(() =>
-  (cast.value || palette.value) && !model.value?.referenceSlug
+  !takesReferences(
+    model.value,
+    [cast.value, palette.value].filter(Boolean).length
+  )
     ? tc('cinematic.references.unsupported', locale, {
         model: model.value?.name ?? ''
       })
@@ -129,7 +139,9 @@ const chipClass = (key: PickerKey) =>
       <CinematicReferenceMenu
         v-model:cast="cast"
         v-model:palette="palette"
+        :color-count="colorCount"
         :locale
+        @colors="emit('colors')"
       />
       <label for="cinematic-scene" class="sr-only">
         {{ tc('cinematic.section.scene', locale) }}
@@ -202,6 +214,7 @@ const chipClass = (key: PickerKey) =>
           v-model:aspect="aspect"
           v-model:resolution="resolution"
           v-model:takes="takes"
+          :aspects
           :locale
         />
       </div>

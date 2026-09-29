@@ -6,6 +6,7 @@ import { estimateWorkshopRunCredits } from '../../../config/workshop-node-pricin
 import { ASPECT_RATIOS, RESOLUTIONS } from './catalog'
 import type { AspectRatio } from './catalog'
 import type { CinematicPrices } from './estimate'
+import { frameParameters } from './frames'
 import { priceKey } from './estimate'
 import type { CinematicModel } from './models'
 
@@ -21,10 +22,10 @@ function requestedSize(
   pixels: number
 ): WorkshopRunSettings | undefined {
   try {
-    const { values } = resolveModelRouterRender(model, {
-      aspect_ratio: aspect,
-      resolution: pixels
-    })
+    const { values } = resolveModelRouterRender(
+      model,
+      frameParameters(model.execution, aspect, pixels)
+    )
     const { width, height, size } = values
     if (typeof width === 'number' && typeof height === 'number')
       return { width, height }
