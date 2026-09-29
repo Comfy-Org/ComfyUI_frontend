@@ -556,6 +556,13 @@ describe('FullPageCheckoutView', () => {
       options: {},
       code: 'CHECKOUT_LINK_INVALID',
       plans: 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+    },
+    {
+      name: 'a link that names no plan',
+      path: '/v1/checkout?product=comfyui&return_to=comfyui_workspace',
+      options: {},
+      code: 'CHECKOUT_LINK_INVALID',
+      plans: 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
     }
   ])(
     '$name is Plan not available, coded for support, and View plans opens the live catalog',
