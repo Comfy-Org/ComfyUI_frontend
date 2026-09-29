@@ -27,7 +27,6 @@ function publishCurrentInset(): void {
 export function useWorkspaceInsetRight(widthPx: () => number): void {
   const publisher = Symbol()
   watchEffect(() => {
-    insetPublishers.delete(publisher)
     insetPublishers.set(publisher, widthPx())
     publishCurrentInset()
   })

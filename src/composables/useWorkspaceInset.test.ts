@@ -64,8 +64,13 @@ describe('useWorkspaceInsetRight', () => {
   })
 
   it('keeps the incoming inset when an overlapping host unmounts', async () => {
-    const outgoing = runInScope(() => 420)
+    const outgoingWidth = ref(420)
+    const outgoing = runInScope(() => outgoingWidth.value)
     runInScope(() => 960)
+
+    outgoingWidth.value = 0
+    await nextTick()
+    expect(readInset()).toBe('960px')
 
     outgoing.stop()
     await nextTick()
