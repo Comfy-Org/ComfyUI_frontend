@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import {
   createSharedComposable,
   defaultDocument,
@@ -177,6 +177,8 @@ function useSubscriptionInternal() {
     pendingCheckoutRecoveryAttempt = 0
     didLastRecoveryAttemptThrow = false
   }
+
+  onScopeDispose(stopPendingCheckoutRecovery)
 
   /**
    * The retry ladder is exhausted by the time the deadline matters, so without

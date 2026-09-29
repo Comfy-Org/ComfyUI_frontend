@@ -776,6 +776,33 @@ describe('useSubscription', () => {
       )
     })
 
+    it('cancels the deadline wake-up when its scope is disposed', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-disposed',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      scope?.stop()
+      scope = undefined
+      await vi.advanceTimersByTimeAsync(10 * 60 * 1000)
+
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+    })
+
     it('rechecks billing at the deadline before reporting', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
