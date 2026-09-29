@@ -479,7 +479,7 @@ describe('useAttachment', () => {
     expect(registry.chips).toEqual([])
   })
 
-  it('removes a deferred chip whose source never resolves', async () => {
+  it('scales a deferred source deadline to the largest accepted file', async () => {
     vi.useFakeTimers()
     try {
       const upload = vi.fn()
@@ -487,6 +487,7 @@ describe('useAttachment', () => {
       const registry = chipRegistry()
       const { addDeferredFile } = useAttachment({
         upload,
+        maxBytes: () => 30 * 1024 * 1024,
         onError,
         ...registry
       })
@@ -495,7 +496,13 @@ describe('useAttachment', () => {
         'stuck.mp4',
         () => new Promise<File | undefined>(() => {})
       )
-      await vi.advanceTimersByTimeAsync(60 * 1000)
+      // The default 20 MB budget would expire after 380 seconds. A 30 MB
+      // accepted file gets 60 seconds of handshake time plus 480 seconds at
+      // the 64 KB/s transfer floor.
+      await vi.advanceTimersByTimeAsync(380 * 1000)
+      expect(registry.chips).toHaveLength(1)
+
+      await vi.advanceTimersByTimeAsync(160 * 1000)
 
       await expect(pending).resolves.toBe('failed')
       expect(registry.chips).toEqual([])

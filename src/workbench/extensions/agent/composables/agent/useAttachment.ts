@@ -7,7 +7,6 @@ import type { ComposerAttachment } from './useComposer'
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 const UPLOAD_HANDSHAKE_TIMEOUT_MS = 60 * 1000
 const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
-const DEFERRED_FETCH_TIMEOUT_MS = 60 * 1000
 const MAX_CONCURRENT_UPLOADS = 3
 export const MAX_ATTACHMENT_BATCH_SIZE = 100
 
@@ -36,10 +35,9 @@ export interface UseAttachmentOptions {
 
 // A fetch upload reports no transfer progress, so the deadline is sized from a
 // floor throughput instead of being keyed off a stall.
-function uploadDeadlineMs(file: File): number {
+function transferDeadlineMs(bytes: number): number {
   return (
-    UPLOAD_HANDSHAKE_TIMEOUT_MS +
-    (file.size / UPLOAD_FLOOR_BYTES_PER_SECOND) * 1000
+    UPLOAD_HANDSHAKE_TIMEOUT_MS + (bytes / UPLOAD_FLOOR_BYTES_PER_SECOND) * 1000
   )
 }
 
@@ -147,7 +145,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       inFlight.set(id, controller)
       const result = await withDeadline(
         options.upload(file, controller.signal),
-        options.uploadTimeoutMs ?? uploadDeadlineMs(file),
+        options.uploadTimeoutMs ?? transferDeadlineMs(file.size),
         () => controller.abort()
       )
       options.update(id, {
@@ -187,9 +185,14 @@ export function useAttachment(options: UseAttachmentOptions) {
     try {
       const controller = new AbortController()
       inFlight.set(id, controller)
+      // The source size is unknown until the fetch finishes. Size this first
+      // transfer from the largest file we would accept so slow, valid assets
+      // get the same throughput floor as the subsequent upload.
+      const maxBytes =
+        options.maxBytes?.(new File([], name)) ?? MAX_ATTACHMENT_BYTES
       const file = await withDeadline(
         resolve(controller.signal),
-        DEFERRED_FETCH_TIMEOUT_MS,
+        transferDeadlineMs(maxBytes),
         () => controller.abort()
       )
       if (cancelled.has(id)) return 'cancelled'
