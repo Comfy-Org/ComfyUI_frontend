@@ -18,6 +18,7 @@
     "src/icons",
     "src/button.variants.ts",
     "src/select.variants.ts",
+    "src/tag.variants.ts",
     "src/workspaceAvatar.ts"
   ],
   "type": "module",
@@ -26,6 +27,7 @@
     "./icons/*": "./src/icons/*",
     "./button.variants": "./src/button.variants.ts",
     "./select.variants": "./src/select.variants.ts",
+    "./tag.variants": "./src/tag.variants.ts",
     "./workspaceAvatar": "./src/workspaceAvatar.ts"
   },
   "publishConfig": {

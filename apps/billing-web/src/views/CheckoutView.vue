@@ -26,7 +26,7 @@ import {
 import type { CheckoutPlan } from '@comfyorg/account-ui/billing/checkout'
 import {
   CheckoutSubscribeConfirm,
-  CheckoutSuccess,
+  CheckoutTeamSuccess,
   CheckoutTransitionConfirm,
   isAnnualDuration
 } from '@comfyorg/account-ui/billing/checkout'
@@ -53,11 +53,14 @@ import {
   useBillingWebStripeKey
 } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
+import { returnToHost } from '@/entry/returnToHost'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
+import { useWorkspaceInvites } from '@/session/workspaceInvites'
 
 const { locale, t } = useI18n()
 const { refusal } = useHostedCopy()
-const { copy, successCopy, tierName } = useCheckoutCopy()
+const { copy, successCopy, inviteCopy, tierName } = useCheckoutCopy()
+const invites = useWorkspaceInvites()
 const { entry } = useBillingEntry()
 const billedWorkspace = useBilledWorkspace()
 
@@ -94,6 +97,7 @@ const quotedTeamCreditStopId = ref<string | undefined>()
 const quoteIsCurrent = ref(false)
 const applyingPromotionCode = ref(false)
 const submitFailure = ref<string | undefined>()
+const inviteFailure = ref<string | undefined>()
 
 async function quotePlan(
   slug: string | undefined,
@@ -349,6 +353,29 @@ watch(
 const succeeded = computed(() => checkout.projection.value.step === 'success')
 
 /**
+ * The seats the success step's team invite counts against, read once the
+ * subscribe settles and again after invites are sent, as the app refreshes
+ * its billing status.
+ */
+const seats = ref<{ max: number | null; occupied: number | null }>({
+  max: null,
+  occupied: null
+})
+
+async function readSeats() {
+  const result = await status.read()
+  if (result.status !== 'ok') return
+  seats.value = {
+    max: result.value.status.max_seats,
+    occupied: result.value.status.occupied_seats
+  }
+}
+
+watch(succeeded, (done) => {
+  if (done) void readSeats()
+})
+
+/**
  * As in the app, a subscribe the server had to take a payment for (or one
  * this tab recovered mid-payment) announces its success for five seconds.
  */
@@ -385,6 +412,12 @@ const toasts = computed(() => {
       summary: t('checkout.error'),
       detail: submitFailure.value
     })
+  if (inviteFailure.value)
+    shown.push({
+      key: 'invite',
+      severity: 'error',
+      summary: inviteFailure.value
+    })
   if (successToastShown.value)
     shown.push({
       key: 'success',
@@ -398,6 +431,7 @@ function closeToast(key: string) {
   if (key === 'operation')
     dismissedOperationToast.value = operationToastKey.value
   if (key === 'failure') submitFailure.value = undefined
+  if (key === 'invite') inviteFailure.value = undefined
   if (key === 'success') dismissSuccessToast()
 }
 
@@ -481,9 +515,9 @@ function payWithoutCard() {
   )
 }
 
-function returnToHost() {
+function leaveForHost() {
   const href = returnLink.value
-  if (href !== undefined) window.location.assign(href)
+  if (href !== undefined) returnToHost(href)
 }
 </script>
 
@@ -508,7 +542,7 @@ function returnToHost() {
           v-if="returnLink"
           type="button"
           class="mt-4 cursor-pointer text-sm text-base-foreground underline underline-offset-4"
-          @click="returnToHost"
+          @click="leaveForHost"
         >
           {{ t('checkout.back') }}
         </button>
@@ -517,17 +551,23 @@ function returnToHost() {
         <CheckoutFrame
           :step="frameStep"
           :close-label="t('checkout.close')"
-          @close="returnToHost"
+          @close="leaveForHost"
         >
-          <CheckoutSuccess
+          <CheckoutTeamSuccess
             v-if="succeeded"
             :plan="checkoutPlan"
             :copy="successCopy"
+            :invite-copy="inviteCopy"
             :locale
             :preview-data="preview"
             :billing-cycle
             :dark-surface="isNewSubscription"
-            @close="returnToHost"
+            :max-seats="seats.max"
+            :occupied-seats="seats.occupied"
+            :invites
+            @invited="readSeats"
+            @invites-failed="inviteFailure = $event"
+            @close="leaveForHost"
           />
           <CheckoutSubscribeConfirm
             v-else-if="isNewSubscription"
@@ -555,7 +595,7 @@ function returnToHost() {
             @confirm-payment="pay({ confirmationToken: $event })"
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
-            @back="returnToHost"
+            @back="leaveForHost"
           />
           <CheckoutTransitionConfirm
             v-else
@@ -578,7 +618,7 @@ function returnToHost() {
             @confirm="pay({ confirmReactivation: $event })"
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
-            @back="returnToHost"
+            @back="leaveForHost"
           />
         </CheckoutFrame>
       </template>
