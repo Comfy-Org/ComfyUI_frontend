@@ -701,7 +701,7 @@ export const useAgentConversationStore = defineStore(
         if (part.type !== 'tool') continue
         const alreadyLive = liveTools.get(part.callId)
         if (alreadyLive === undefined) {
-          const copy = settledCopy(part)
+          const copy = transport === undefined ? settledCopy(part) : { ...part }
           adopted.push(copy)
           transport?.adoptToolPart(copy)
         } else if (part.state === 'done' && !holdsOwnOutcome(alreadyLive)) {

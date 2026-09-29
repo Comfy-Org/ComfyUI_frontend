@@ -1808,6 +1808,17 @@ describe('useAgentConversationStore', () => {
 
     const streamingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
     streamingRow.status = 'streaming'
+    streamingRow.pending_ask = {
+      message_id: 't1',
+      ask_id: 'server-turn:approval',
+      kind: 'run_approval',
+      context: { workflow_id: 'workflow-1' },
+      prompt: 'Run workflow?',
+      options: [{ id: 'run', label: 'Run' }],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
     streamingRow.content = {
       tool_calls: [
         {
@@ -1825,6 +1836,15 @@ describe('useAgentConversationStore', () => {
       streamingRow
     ])
     store.resumeBackgroundTurn()
+
+    expect(
+      store.messages[0].parts.filter((part) => part.type === 'tool')
+    ).toEqual([
+      expect.objectContaining({
+        callId: 'call-search_nodes',
+        state: 'streaming'
+      })
+    ])
 
     store.ingest(toolCall('t1', 'search_nodes', 'success'))
 
