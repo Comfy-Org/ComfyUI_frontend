@@ -1,5 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
 
+import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
+
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
@@ -158,6 +160,24 @@ test.describe(
 
       await test.step('route the promoted seed edit without changing text', async () => {
         const outboundBeforeRemoteEdit = outboundFrames.length
+        await page.evaluate(async () => {
+          const graphIntentsUrl = '/src/lib/litegraph/src/graphIntents.ts'
+          const { onGraphIntent } = await import(
+            /* @vite-ignore */ graphIntentsUrl
+          )
+          onGraphIntent((event: GraphIntentEvent) => {
+            if (
+              event.type === 'set_widget' &&
+              String(event.nodeId) === '11' &&
+              event.name === 'seed'
+            ) {
+              localStorage.setItem(
+                'agent-subgraph-follower-seed-source',
+                event.source
+              )
+            }
+          })
+        })
         socket.send(JSON.stringify(frames.followUp))
 
         await expect
@@ -196,6 +216,13 @@ test.describe(
         expect(outboundFrames.slice(outboundBeforeRemoteEdit)).not.toEqual(
           expect.arrayContaining([expect.stringContaining('doc_ops')])
         )
+        await expect
+          .poll(() =>
+            page.evaluate(() =>
+              localStorage.getItem('agent-subgraph-follower-seed-source')
+            )
+          )
+          .toBe('agent-remote')
         await page.screenshot({
           path: test.info().outputPath('subgraph-edited.png')
         })
