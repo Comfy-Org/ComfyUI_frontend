@@ -3,12 +3,17 @@ import type { MaybeRefOrGetter, WatchSource } from 'vue'
 
 import { unrefElement, useStorage } from '@vueuse/core'
 import type { MaybeComputedElementRef } from '@vueuse/core'
-import { nextTick, watch } from 'vue'
+import { nextTick, toValue, watch } from 'vue'
 
 interface PanelConfig {
   ref: MaybeComputedElementRef
   storageKey: MaybeRefOrGetter<string>
 }
+
+type FlexStyle = Pick<
+  CSSStyleDeclaration,
+  'flexBasis' | 'flexGrow' | 'flexShrink'
+>
 
 interface SizerOptions {
   /**
@@ -33,9 +38,29 @@ export function useStablePrimeVueSplitterSizer(
   { captureInitialWidth = false }: SizerOptions = {}
 ) {
   const storedWidths = panels.map((panel) => ({
-    ref: panel.ref,
+    ...panel,
     width: useStorage<number | null>(panel.storageKey, null)
   }))
+  const appliedKeys = new Map<MaybeComputedElementRef, string>()
+
+  const splitterStyles = new WeakMap<HTMLElement, FlexStyle>()
+
+  function pin(el: HTMLElement, width: number) {
+    if (!splitterStyles.has(el)) {
+      const { flexBasis, flexGrow, flexShrink } = el.style
+      splitterStyles.set(el, { flexBasis, flexGrow, flexShrink })
+    }
+    el.style.flexBasis = `${width}px`
+    el.style.flexGrow = '0'
+    el.style.flexShrink = '0'
+  }
+
+  function unpin(el: HTMLElement) {
+    const style = splitterStyles.get(el)
+    if (!style) return
+    Object.assign(el.style, style)
+    splitterStyles.delete(el)
+  }
 
   function resolveElement(
     ref: MaybeComputedElementRef
@@ -44,16 +69,18 @@ export function useStablePrimeVueSplitterSizer(
   }
 
   function applyStoredWidths() {
-    for (const { ref, width } of storedWidths) {
-      const el = resolveElement(ref)
+    for (const panel of storedWidths) {
+      const el = resolveElement(panel.ref)
       if (!el) continue
+      const key = toValue(panel.storageKey)
+      const appliedKey = appliedKeys.get(panel.ref)
+      if (appliedKey !== undefined && appliedKey !== key) unpin(el)
+      appliedKeys.set(panel.ref, key)
+      const { width } = panel
       if (width.value === null && captureInitialWidth && el.offsetWidth > 0) {
         width.value = el.offsetWidth
       }
-      if (width.value === null) continue
-      el.style.flexBasis = `${width.value}px`
-      el.style.flexGrow = '0'
-      el.style.flexShrink = '0'
+      if (width.value !== null) pin(el, width.value)
     }
   }
 

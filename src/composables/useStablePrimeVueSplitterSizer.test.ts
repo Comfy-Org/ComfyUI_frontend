@@ -1,7 +1,7 @@
 import type { SplitterResizeEndEvent } from 'primevue/splitter'
 import { useStorage } from '@vueuse/core'
 
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, reactive, ref, toValue } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useStablePrimeVueSplitterSizer } from './useStablePrimeVueSplitterSizer'
@@ -188,5 +188,35 @@ describe('useStablePrimeVueSplitterSizer', () => {
     await flushWatcher()
 
     expect(el.style.flexBasis).toBe('280px')
+  })
+
+  it('measures a new storage key at the splitter width, not the previous key width', async () => {
+    const stored = reactive(new Map<string, number | null>([['tab-a', 350]]))
+    vi.mocked(useStorage).mockImplementation((key) =>
+      computed({
+        get: () => stored.get(toValue(key)) ?? null,
+        set: (width) => stored.set(toValue(key), width)
+      })
+    )
+    const el = document.createElement('div')
+    el.style.flexBasis = 'calc(20% - 8px)'
+    Object.defineProperty(el, 'offsetWidth', {
+      get: () => (el.style.flexBasis === '350px' ? 350 : 256)
+    })
+    const storageKey = ref('tab-a')
+
+    useStablePrimeVueSplitterSizer(
+      [{ ref: ref(el), storageKey }],
+      [storageKey],
+      { captureInitialWidth: true }
+    )
+    await flushWatcher()
+    expect(el.style.flexBasis).toBe('350px')
+
+    storageKey.value = 'tab-b'
+    await flushWatcher()
+
+    expect(stored.get('tab-b')).toBe(256)
+    expect(el.style.flexBasis).toBe('256px')
   })
 })
