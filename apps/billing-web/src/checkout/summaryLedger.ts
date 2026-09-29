@@ -219,21 +219,26 @@ function scheduledLedger(r: QuoteReading): SummaryLedger {
   }
 }
 
-function proratedLedger(r: QuoteReading): SummaryLedger {
+/** Today's grant, dated by the server's renewal when it carries one. */
+function grantedToday(r: QuoteReading): SummaryLedger['credits'] {
   const expiresAt = r.quote.renewal_at
+  return {
+    count: r.credits(r.quote.credits_today_cents),
+    qualifier:
+      expiresAt === undefined
+        ? r.t(`${S}.credits.addedToday`, {})
+        : r.t(`${S}.credits.addedTodayExpire`, {
+            date: r.monthDay(expiresAt)
+          })
+  }
+}
+
+function proratedLedger(r: QuoteReading): SummaryLedger {
   return {
     ...r.shared,
     family: 'prorated_change',
     headline: { amount: r.headlineMoney(r.dueCents), currency: r.currency },
-    credits: {
-      count: r.credits(r.quote.credits_today_cents),
-      qualifier:
-        expiresAt === undefined
-          ? r.t(`${S}.credits.addedToday`, {})
-          : r.t(`${S}.credits.addedTodayExpire`, {
-              date: r.monthDay(expiresAt)
-            })
-    },
+    credits: grantedToday(r),
     items: [
       {
         label: r.t(`${S}.item.prorated`, { plan: r.plan }),
@@ -251,20 +256,24 @@ function proratedLedger(r: QuoteReading): SummaryLedger {
   }
 }
 
+/**
+ * The credits line reads today's grant. It doubles as the recurring
+ * allowance only when the quote says the two are equal; a smaller grant
+ * (a legacy upgrade quoted without a proration instant) is dated instead.
+ */
 function chargeNowCredits(r: QuoteReading): SummaryLedger['credits'] {
-  if (!r.cadenceChanges)
-    return {
-      count: r.credits(r.quote.credits_next_period_cents),
-      qualifier: r.t(r.byNew.perPeriod, {})
-    }
-  const grantIsAllowance =
-    r.quote.credits_today_cents === r.quote.credits_next_period_cents
+  if (!grantIsAllowance(r)) return grantedToday(r)
   return {
     count: r.credits(r.quote.credits_today_cents),
-    qualifier: grantIsAllowance
-      ? r.t(`${S}.credits.bare`, {})
-      : r.t(`${S}.credits.addedToday`, {})
+    qualifier: r.t(
+      r.cadenceChanges ? `${S}.credits.bare` : r.byNew.perPeriod,
+      {}
+    )
   }
+}
+
+function grantIsAllowance(r: QuoteReading): boolean {
+  return r.quote.credits_today_cents === r.quote.credits_next_period_cents
 }
 
 function chargeNowTrailing(r: QuoteReading): string[] {
@@ -312,14 +321,11 @@ function chargeNowLedger(r: QuoteReading): SummaryLedger {
     items: [
       {
         label: r.plan,
-        amount: r.money(
-          r.commitChange
-            ? r.quote.cost_today_cents
-            : r.next.seat_summary.total_cost_cents
-        ),
-        sublines: r.cadenceChanges
-          ? [cadenceLine, refillsToLine(r)]
-          : [cadenceLine]
+        amount: r.money(r.quote.cost_today_cents),
+        sublines:
+          r.cadenceChanges || !grantIsAllowance(r)
+            ? [cadenceLine, refillsToLine(r)]
+            : [cadenceLine]
       }
     ],
     trailing: chargeNowTrailing(r)

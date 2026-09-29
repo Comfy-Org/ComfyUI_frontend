@@ -186,7 +186,7 @@ describe('buildSummaryLedger', () => {
       }
     },
     {
-      name: 'tier upgrade without a proration instant: a plain charge, never labelled prorated',
+      name: "tier upgrade without a proration instant: today's charge and grant, never labelled prorated",
       quote: {
         transition_type: 'upgrade',
         amount_due_cents: 3250,
@@ -202,12 +202,18 @@ describe('buildSummaryLedger', () => {
         family: 'charge_now',
         eyebrow: 'Upgrade to Pro Plan · Comfy Studios',
         headline: { amount: '$32.50', currency: 'USD' },
-        credits: { count: '21,100', qualifier: 'credits per month' },
+        credits: {
+          count: '6,858',
+          qualifier: 'credits added today (expire July 28)'
+        },
         items: [
           {
             label: 'Pro Plan',
-            amount: '$100.00',
-            sublines: ['$100 /mo, billed monthly']
+            amount: '$32.50',
+            sublines: [
+              '$100 /mo, billed monthly',
+              'Credits refill to 21,100 each month'
+            ]
           }
         ],
         adjustments: [],
@@ -356,7 +362,7 @@ describe('buildSummaryLedger', () => {
       }
     },
     {
-      name: 'team commit change priced at a proration instant: neutral, no proration copy and no credits delta',
+      name: "team commit change priced at a proration instant: neutral, no proration copy, today's grant dated",
       quote: {
         transition_type: 'upgrade',
         proration_at: PRICED_AT,
@@ -373,12 +379,18 @@ describe('buildSummaryLedger', () => {
         family: 'charge_now',
         eyebrow: 'Change to Team Plan · Comfy Studios',
         headline: { amount: '$123.45', currency: 'USD' },
-        credits: { count: '295,400', qualifier: 'credits per month' },
+        credits: {
+          count: '10,550',
+          qualifier: 'credits added today (expire July 28)'
+        },
         items: [
           {
             label: 'Team Plan',
             amount: '$123.45',
-            sublines: ['$1,400 /mo, billed monthly']
+            sublines: [
+              '$1,400 /mo, billed monthly',
+              'Credits refill to 295,400 each month'
+            ]
           }
         ],
         adjustments: [],
