@@ -77,7 +77,17 @@ export class AgentPanel {
   }
 
   async open(): Promise<void> {
-    await this.openButton.click()
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (await this.root.isVisible()) return
+      await this.openButton.click()
+      try {
+        await expect(this.root).toBeVisible({ timeout: 1_000 })
+        return
+      } catch {
+        // Startup activation can open between the visibility read and click,
+        // making that click close the panel. Retry from the observed state.
+      }
+    }
     await expect(this.root).toBeVisible()
   }
 

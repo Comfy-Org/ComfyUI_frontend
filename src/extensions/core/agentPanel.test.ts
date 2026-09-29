@@ -252,10 +252,63 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() => expect(agentStore.isVisible).toBe(true))
 
     expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-    expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('automatic_consent')
+    expect(agentStore.open).not.toHaveBeenCalled()
     expect(trackAgentPanelOpened).toHaveBeenCalledExactlyOnceWith({
-      source: 'automatic_consent'
+      source: 'restored'
     })
+  })
+
+  it.for([
+    { session: 'cloud logged in without consent', user: { id: 'account-a' } },
+    { session: 'local logged out', user: null }
+  ])('opens after startup for $session', async ({ user }) => {
+    agentFlagEnabled.value = true
+    currentUser.value = user
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    agentStore.isOpen = false
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(agentStore.open).toHaveBeenCalledWith('activation')
+    )
+
+    expect(agentStore.isVisible).toBe(true)
+  })
+
+  it('waits for the general onboarding decision before activation', async () => {
+    agentFlagEnabled.value = true
+    agentStore.isOpen = false
+    let decide = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decide = resolve
+    })
+
+    await loadEntryAndSetup()
+    expect(agentStore.open).not.toHaveBeenCalled()
+
+    decide(true)
+    await vi.waitFor(() =>
+      expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+    )
+  })
+
+  it('does not reopen a dismissed activation panel after flag synchronization', async () => {
+    agentFlagEnabled.value = true
+    agentStore.isOpen = false
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+    )
+
+    agentStore.close('close_button')
+    agentFlagEnabled.value = false
+    await nextTick()
+    agentFlagEnabled.value = true
+    await flush()
+
+    expect(agentStore.isOpen).toBe(false)
+    expect(agentStore.open).toHaveBeenCalledOnce()
   })
 
   it('keeps the panel closed if the feature is disabled before acceptance', async () => {
@@ -330,7 +383,7 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
 
-    expect(agentStore.open).toHaveBeenCalledOnce()
+    expect(agentStore.open).not.toHaveBeenCalled()
   })
 
   const AUTO_SHOWN_KEY = 'Comfy.AgentConsent.AutoShown.account-a.workspace-a'
@@ -538,7 +591,7 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
     )
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
-    expect(agentStore.open).toHaveBeenCalledOnce()
+    expect(agentStore.open).not.toHaveBeenCalled()
   })
 
   it('stays silent after a tour ends when the saved consent cannot be read', async () => {
