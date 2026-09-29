@@ -36,11 +36,20 @@ const modelAliasRedirects = models.flatMap(({ slug, canonicalSlug }) =>
     : []
 )
 
+const HUB_ROUTER_PENDING =
+  'switch to permanent once comfy-router#46 is confirmed live on prod; a 308 is cached by browsers and cannot be retracted'
+
+// Literal rows only: hub pages fetch /models/<slug>/page.json, so a /models/:path* catch-all would break them.
 const hubModelRedirects: readonly SiteRedirect[] = [
-  { source: '/models', destination: `${HUB_MODELS_PATH}/` },
+  {
+    source: '/models',
+    destination: `${HUB_MODELS_PATH}/`,
+    temporaryBecause: HUB_ROUTER_PENDING
+  },
   ...[...hubModelSlugs, ...hubModelAliases].map(([slug, hubSlug]) => ({
     source: `/models/${slug}` as const,
-    destination: hubModelPath(hubSlug)
+    destination: hubModelPath(hubSlug),
+    temporaryBecause: HUB_ROUTER_PENDING
   }))
 ]
 
@@ -110,6 +119,9 @@ export function isInternalDestination(destination: string): boolean {
 
 const isPermanent = (row: SiteRedirect) => row.temporaryBecause === undefined
 
+const isOldModelsAddress = ({ source }: SiteRedirect) =>
+  source === '/models' || source.startsWith('/models/')
+
 const redirectsSlashForm = (row: SiteRedirect) =>
   row.slashFormIsPageBecause === undefined
 
@@ -142,7 +154,7 @@ export const astroRedirects: Record<string, RedirectConfig> =
         (row) =>
           isInternalDestination(row.destination) &&
           redirectsSlashForm(row) &&
-          !hubModelRedirects.includes(row)
+          !isOldModelsAddress(row)
       )
       .map((row) => [
         row.source,

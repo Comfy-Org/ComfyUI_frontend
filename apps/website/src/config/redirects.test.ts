@@ -100,19 +100,6 @@ describe('generated Vercel rules', () => {
     {
       source: '/p/supported-models/t5xxl-fp8-e4m3fn-scaled',
       destination: '/p/supported-models/t5xxl-fp16/'
-    },
-    { source: '/models', destination: '/hub/models/' },
-    {
-      source: '/models/bfl--flux-2-max--generate-images',
-      destination: '/hub/models/flux-2-max-text-to-image/'
-    },
-    {
-      source: '/models/byteplus--seedance-2-5-text-to-video--generate-videos',
-      destination: '/hub/models/seedance-2-5-text-to-video/'
-    },
-    {
-      source: '/models/vertexai--gemini-3-pro-image',
-      destination: `/hub/models/${hubModelAliases.get('vertexai--gemini-3-pro-image')}/`
     }
   ])(
     'send $source and $source/ to $destination permanently',
@@ -127,10 +114,40 @@ describe('generated Vercel rules', () => {
     }
   )
 
-  it('keeps only the listed rows temporary', () => {
+  it.for([
+    { source: '/models', destination: '/hub/models/' },
+    {
+      source: '/models/bfl--flux-2-max--generate-images',
+      destination: '/hub/models/flux-2-max-text-to-image/'
+    },
+    {
+      source: '/models/byteplus--seedance-2-5-text-to-video--generate-videos',
+      destination: '/hub/models/seedance-2-5-text-to-video/'
+    },
+    {
+      source: '/models/vertexai--gemini-3-pro-image',
+      destination: `/hub/models/${hubModelAliases.get('vertexai--gemini-3-pro-image')}/`
+    }
+  ])(
+    'send $source and $source/ to $destination temporarily until comfy-router#46 is live',
+    ({ source, destination }) => {
+      for (const form of [source, `${source}/`]) {
+        expect(find(form)).toEqual({
+          source: form,
+          destination,
+          permanent: false
+        })
+      }
+    }
+  )
+
+  it('keeps only the listed rows and the old Models addresses temporary', () => {
     expect(
       vercelRedirects
-        .filter(({ permanent }) => !permanent)
+        .filter(
+          ({ source, permanent }) =>
+            !permanent && source !== '/models' && !source.startsWith('/models/')
+        )
         .map(({ source }) => source)
     ).toEqual([
       '/trust',
@@ -141,6 +158,13 @@ describe('generated Vercel rules', () => {
       '/share-news-pleaseeee',
       '/share-news-pleaseeee/'
     ])
+  })
+
+  it('never adds a /models catch-all, since hub pages fetch /models/<slug>/page.json', () => {
+    expect(
+      vercelRedirects.filter(({ source }) => /[:*()]/.test(source))
+    ).toEqual([])
+    expect(find('/models/catalogue.json')).toBeUndefined()
   })
 
   it('leaves /login/ to the Workshop sign-in page', () => {
@@ -188,7 +212,7 @@ describe('old Models addresses', () => {
     )
   ].flatMap((path) => [path, `${path}/`])
 
-  it('each redirect once, permanently, to a page the site builds', () => {
+  it('each redirect once, temporarily, to a page the site builds', () => {
     const landsOnPage = (destination: string) =>
       ['model', 'hub'].includes(modelsUrlKind(destination) ?? '')
     expect(
@@ -197,7 +221,7 @@ describe('old Models addresses', () => {
         return (
           modelsUrlKind(path) !== 'alias' ||
           rows.length !== 1 ||
-          !rows[0].permanent ||
+          rows[0].permanent ||
           !landsOnPage(rows[0].destination)
         )
       })
