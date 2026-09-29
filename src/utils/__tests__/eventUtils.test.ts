@@ -1,6 +1,7 @@
 import {
   extractFilesFromDragEvent,
   fetchDroppedAsset,
+  fetchTrustedDroppedAsset,
   getDroppedAsset
 } from '@/utils/eventUtils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -59,7 +60,7 @@ describe('eventUtils', () => {
     vi.stubGlobal('fetch', fetchSpy)
 
     await expect(
-      fetchDroppedAsset({ name: 'asset.png', uri })
+      fetchTrustedDroppedAsset({ name: 'asset.png', uri })
     ).resolves.toBeUndefined()
     expect(fetchSpy).not.toHaveBeenCalled()
   })
@@ -251,7 +252,7 @@ describe('eventUtils', () => {
         status: 200,
         contentType: 'application/json',
         body: '{"nodes":[],"links":[],"version":0.4}',
-        fileTypes: []
+        fileTypes: ['application/json']
       }
     ])(
       'yields files only for an OK response, given $response',

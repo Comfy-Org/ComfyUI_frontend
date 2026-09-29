@@ -26,7 +26,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
+import { fetchTrustedDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
@@ -1351,7 +1351,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
   const result = await attachment.addDeferredFile(
     assetFilename,
     async (signal, maxBytes) => {
-      const file = await fetchDroppedAsset(
+      const file = await fetchTrustedDroppedAsset(
         { ...asset, name: assetFilename },
         signal,
         maxBytes

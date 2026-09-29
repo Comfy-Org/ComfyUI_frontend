@@ -56,18 +56,35 @@ export async function fetchDroppedAsset(
   maxBytes?: number
 ): Promise<File | undefined> {
   if (!uri) return undefined
-  const url = new URL(uri, window.location.href)
+  const response = await fetch(uri, { signal })
+  if (!response.ok) {
+    await cancelResponseBody(response)
+    throw new DroppedAssetFetchError(response.status)
+  }
+  return fileFromResponse(response, name, maxBytes)
+}
+
+export async function fetchTrustedDroppedAsset(
+  asset: DroppedAsset,
+  signal?: AbortSignal,
+  maxBytes?: number
+): Promise<File | undefined> {
+  if (!asset.uri) return undefined
+  const url = new URL(asset.uri, window.location.href)
   if (
     !['http:', 'https:'].includes(url.protocol) ||
     url.origin !== window.location.origin ||
     !url.pathname.endsWith('/api/view')
   )
     return undefined
-  const response = await fetch(url, { signal })
-  if (!response.ok) {
-    await cancelResponseBody(response)
-    throw new DroppedAssetFetchError(response.status)
-  }
+  return fetchDroppedAsset({ ...asset, uri: url.href }, signal, maxBytes)
+}
+
+async function fileFromResponse(
+  response: Response,
+  name: string,
+  maxBytes?: number
+): Promise<File> {
   const contentLengthHeader = response.headers.get('Content-Length')
   const contentLength =
     contentLengthHeader === null ? undefined : Number(contentLengthHeader)
