@@ -759,8 +759,8 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
   /**
    * Which starter prompt supplied this draft, `null` when none did. The last
    * chip clicked before the send wins, because inserting appends and the send
-   * is one message. Invariant worth checking in the data rather than trusting:
-   * this is non-null exactly when `input_method` is `suggestion`.
+   * is one message. For identified suggestions, this is non-null and
+   * `input_method` is `suggestion`; unattributed suggestions may have a null ID.
    */
   starter_prompt_id: AgentStarterPromptId | null
   /** `click_id` of the `app:agent_starter_prompt_clicked` this send came from, `null` when typed. */
