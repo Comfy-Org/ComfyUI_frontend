@@ -1,0 +1,21 @@
+name: 'Typecheck auxiliary projects'
+description: Typechecks browser tests, build, scripts and tools TypeScript projects.
+
+runs:
+  using: composite
+  steps:
+    - name: Typecheck browser tests
+      shell: bash
+      run: pnpm typecheck:browser
+
+    - name: Typecheck build scripts
+      shell: bash
+      run: pnpm typecheck:build
+
+    - name: Typecheck scripts
+      shell: bash
+      run: pnpm typecheck:scripts
+
+    - name: Typecheck tools
+      shell: bash
+      run: pnpm typecheck:tools

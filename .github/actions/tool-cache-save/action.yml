@@ -1,0 +1,19 @@
+name: 'Save tool caches'
+description: Saves tool caches under the key computed by tool-cache-restore.
+
+inputs:
+  cache-key:
+    description: Key returned by tool-cache-restore
+    required: true
+  path:
+    description: Newline-separated cache paths
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Save caches
+      uses: actions/cache/save@v5
+      with:
+        path: ${{ inputs.path }}
+        key: ${{ inputs.cache-key }}

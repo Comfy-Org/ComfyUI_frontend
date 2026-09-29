@@ -1,0 +1,17 @@
+name: 'Repository consistency checks'
+description: Runs knip, locale integrity and ADR index checks.
+
+runs:
+  using: composite
+  steps:
+    - name: Find unused files, exports and dependencies
+      shell: bash
+      run: pnpm knip
+
+    - name: Verify locale integrity
+      shell: bash
+      run: pnpm locale:check
+
+    - name: Verify ADR naming and index
+      shell: bash
+      run: pnpm adr:check
