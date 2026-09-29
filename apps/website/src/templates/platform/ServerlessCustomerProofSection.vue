@@ -5,9 +5,14 @@ import BrandButton from '../../components/common/BrandButton.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en', showCreativeApps = false } = defineProps<{
+const {
+  locale = 'en',
+  showCreativeApps = false,
+  showCustomerProof = false
+} = defineProps<{
   locale?: Locale
   showCreativeApps?: boolean
+  showCustomerProof?: boolean
 }>()
 </script>
 
@@ -63,7 +68,10 @@ const { locale = 'en', showCreativeApps = false } = defineProps<{
     </div>
   </section>
 
-  <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
+  <section
+    v-if="showCustomerProof"
+    class="mx-auto max-w-9xl px-6 py-10 lg:py-14"
+  >
     <a
       href="/customers/svedka-silverside"
       :aria-label="t('platform.serverlessCaseStudy.linkLabel', locale)"

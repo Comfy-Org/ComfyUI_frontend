@@ -5,17 +5,12 @@ import { t } from '../../i18n/translations'
 import ServerlessCustomerProofSection from './ServerlessCustomerProofSection.vue'
 
 describe('ServerlessCustomerProofSection', () => {
-  it('shows the Silverside customer quote while creative apps are hidden', () => {
+  it('hides customer proof and creative apps by default', () => {
     render(ServerlessCustomerProofSection, { props: { locale: 'en' } })
 
     expect(
-      screen.getByText(t('platform.serverlessCaseStudy.quote', 'en'))
-    ).toBeTruthy()
-    expect(
-      screen.getByRole('link', {
-        name: t('platform.serverlessCaseStudy.linkLabel', 'en')
-      })
-    ).toHaveAttribute('href', '/customers/svedka-silverside')
+      screen.queryByText(t('platform.serverlessCaseStudy.quote', 'en'))
+    ).toBeNull()
     expect(
       screen.queryByRole('heading', {
         name: t('platform.serverlessApps.heading', 'en')
@@ -23,9 +18,13 @@ describe('ServerlessCustomerProofSection', () => {
     ).toBeNull()
   })
 
-  it('can reveal the creative apps section without changing the testimonial', () => {
+  it('can reveal the staged sections', () => {
     render(ServerlessCustomerProofSection, {
-      props: { locale: 'en', showCreativeApps: true }
+      props: {
+        locale: 'en',
+        showCreativeApps: true,
+        showCustomerProof: true
+      }
     })
 
     expect(
@@ -36,5 +35,10 @@ describe('ServerlessCustomerProofSection', () => {
     expect(
       screen.getByText(t('platform.serverlessCaseStudy.quote', 'en'))
     ).toBeTruthy()
+    expect(
+      screen.getByRole('link', {
+        name: t('platform.serverlessCaseStudy.linkLabel', 'en')
+      })
+    ).toHaveAttribute('href', '/customers/svedka-silverside')
   })
 })
