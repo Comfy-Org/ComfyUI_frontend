@@ -238,6 +238,9 @@ async function routeTurnLock(
    * *this* ask", so the route has to be the thing that enforces it.
    */
   await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
+    if (route.request().method() !== 'POST')
+      return route.fulfill({ status: 405, body: 'method not allowed' })
+
     const url = new URL(route.request().url())
     const segments = url.pathname.split('/').map(decodeURIComponent)
     const threadId = segments[segments.indexOf('threads') + 1]

@@ -17,6 +17,12 @@ export interface UndeliverableAskContext {
 }
 
 const MAX_REPORTED_ASKS = 32
+const KNOWN_ASK_KINDS = new Set(['run_approval', 'ask_user'])
+
+function askKindTag(kind: string | undefined): string {
+  if (!kind) return 'missing'
+  return KNOWN_ASK_KINDS.has(kind) ? kind : 'other'
+}
 
 /** One bounded, identity-aware telemetry path shared by store and transport. */
 export function createUndeliverableAskReporter() {
@@ -42,13 +48,14 @@ export function createUndeliverableAskReporter() {
           level: 'warning',
           tags: {
             reason,
-            ask_kind: data.kind?.slice(0, 64) || 'missing',
+            ask_kind: askKindTag(data.kind),
             has_active_turn: context.hasActiveTurn,
             background_turn_count: context.backgroundTurnCount
           },
           context: {
             threadId: data.thread_id,
             messageId: data.message_id,
+            askKind: data.kind,
             activeThreadId: context.activeThreadId,
             activeTurnId: context.activeTurnId
           }

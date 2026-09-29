@@ -11,6 +11,7 @@ import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
 import { createUndeliverableAskReporter } from '../../services/agent/undeliverableAskReporter'
+import type { UndeliverableAskReason } from '../../services/agent/undeliverableAskReporter'
 import type { UserAttachment } from '../../services/agent/agentTranscript'
 import type { WorkflowReference } from '../../types/workflowReference'
 
@@ -86,7 +87,10 @@ export const useAgentConversationStore = defineStore(
     let hydratedMessageIds = new Set<string>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
-    const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
+    const departedTurns = new Map<
+      string,
+      Extract<UndeliverableAskReason, 'no-live-turn' | 'settled-turn'>
+    >()
     const activeIndex = ref(-1)
 
     function replaceActive(message: AssistantMessage): void {
@@ -212,7 +216,7 @@ export const useAgentConversationStore = defineStore(
      */
     function reportUndeliverableAsk(
       event: AgentChatEvent,
-      reason: 'no-live-turn' | 'settled-turn'
+      reason: Extract<UndeliverableAskReason, 'no-live-turn' | 'settled-turn'>
     ): void {
       if (event.type !== 'agent_ask') return
       reportUndeliverableAskData(event.data, reason)
@@ -220,11 +224,7 @@ export const useAgentConversationStore = defineStore(
 
     function reportUndeliverableAskData(
       data: Extract<AgentChatEvent, { type: 'agent_ask' }>['data'],
-      reason:
-        | 'no-live-turn'
-        | 'settled-turn'
-        | 'unknown-kind'
-        | 'unrendered-kind'
+      reason: UndeliverableAskReason
     ): void {
       undeliverableAskReporter.report(data, reason, {
         hasActiveTurn: activeTurnId.value !== null,
@@ -443,7 +443,7 @@ export const useAgentConversationStore = defineStore(
     function rememberDepartedTurn(
       departedThreadId: string,
       messageId: TurnId,
-      reason: 'no-live-turn' | 'settled-turn'
+      reason: Extract<UndeliverableAskReason, 'no-live-turn' | 'settled-turn'>
     ): void {
       const key = departedTurnKey(departedThreadId, messageId)
       departedTurns.delete(key)
@@ -454,7 +454,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function rememberDepartedActiveTurn(
-      reason: 'no-live-turn' | 'settled-turn'
+      reason: Extract<UndeliverableAskReason, 'no-live-turn' | 'settled-turn'>
     ): void {
       if (activeTransportThreadId === null || activeTurnId.value === null)
         return
