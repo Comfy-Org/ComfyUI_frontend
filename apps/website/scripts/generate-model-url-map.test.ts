@@ -7,7 +7,7 @@ import { z } from 'zod'
 
 import { hubModelSlugs } from '../src/config/hub-models'
 import { modelAliasUrls, modelPageUrls } from '../src/config/model-urls'
-import { redirects } from '../src/config/redirects'
+import { siteRedirects } from '../src/config/redirects'
 import {
   routerModelSlugAliases,
   workshopModels
@@ -43,7 +43,7 @@ function sitePathPatterns(): string[] {
   return [
     ...pages,
     ...modelsBuildRoutes(true).map((route) => route.pattern),
-    ...Object.keys(redirects),
+    ...siteRedirects.map((redirect) => redirect.source),
     ...vercel.redirects.map((redirect) => redirect.source)
   ]
 }
