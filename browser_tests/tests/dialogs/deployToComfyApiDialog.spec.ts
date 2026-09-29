@@ -21,6 +21,7 @@ test.describe('Deploy to Comfy API', { tag: '@auth' }, () => {
     await expect(
       card.getByRole('heading', { name: 'Deploy to Comfy API' })
     ).toBeVisible()
+    await expect(card.getByTestId('deploy-to-comfy-api-video')).toBeVisible()
     await expect(
       card.getByRole('link', { name: 'Deploy on Platform' })
     ).toHaveAttribute('target', '_blank')
