@@ -6,7 +6,11 @@ import { comfyApiPlanLimits } from '../../data/comfyApiPlanLimits'
 import { t } from '../../i18n/translations'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', bare = false } = defineProps<{
+  locale?: Locale
+  /** Render the table alone, with no section wrapper or heading — for embedding inside another section. */
+  bare?: boolean
+}>()
 
 interface MetricRow {
   key: 'totalBuildsLimit' | 'totalDeploymentsLimit' | 'maxWorkerConcurrency'
@@ -27,8 +31,13 @@ const metricRows: MetricRow[] = [
 </script>
 
 <template>
-  <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
-    <SectionHeader max-width="xl" heading-size="subsection">
+  <component
+    :is="bare ? 'div' : 'section'"
+    :class="
+      bare ? 'mx-auto max-w-9xl' : 'mx-auto max-w-9xl px-6 py-10 lg:py-14'
+    "
+  >
+    <SectionHeader v-if="!bare" max-width="xl" heading-size="subsection">
       {{ t('pricing.comfyApi.heading', locale) }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700">
@@ -100,5 +109,5 @@ const metricRows: MetricRow[] = [
         </table>
       </div>
     </div>
-  </section>
+  </component>
 </template>

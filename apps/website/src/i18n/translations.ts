@@ -9118,22 +9118,14 @@ Enterprise`
     en: 'Contact sales',
     'zh-CN': '联系销售'
   },
-  'pricing.resourceCosts.subtitle': {
-    en: 'Only pay for what you use. Rates below apply to the Comfy API, billed by the GPU second.',
-    'zh-CN': '按实际用量付费。以下费率适用于 Comfy API，按 GPU 秒计费。'
-  },
-  'pricing.resourceCosts.heading': {
-    en: 'Developer Platform pricing',
-    'zh-CN': '开发者平台定价'
-  },
   'pricing.comfyApi.heading': {
-    en: 'Comfy API plan limits',
-    'zh-CN': 'Comfy API 套餐限制'
+    en: 'Comfy API pricing',
+    'zh-CN': 'Comfy API 定价'
   },
   'pricing.comfyApi.subtitle': {
-    en: 'Comfy API is a separate product from your Comfy Cloud plan, for teams building on the Comfy Cloud platform programmatically. These limits apply to each Comfy Cloud plan below.',
+    en: 'Comfy API is a separate product from your Comfy Cloud plan, for teams building on Comfy Cloud programmatically. GPU time and storage are billed by the second; build, deployment, and concurrency limits apply to each plan below.',
     'zh-CN':
-      'Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。以下限制适用于下方各个 Comfy Cloud 套餐。'
+      'Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。GPU 时间与存储按秒计费；下方列出了各套餐的构建、部署与并发限制。'
   },
   'pricing.comfyApi.metricColumn': { en: 'Limit', 'zh-CN': '限制项' },
   'pricing.comfyApi.metric.builds': {
@@ -9193,37 +9185,13 @@ Enterprise`
     en: 'Storage',
     'zh-CN': '存储'
   },
-  'platform.pricing.storage.standardUnder1tb': {
-    en: 'Standard network storage, under 1 TB',
-    'zh-CN': '网络存储——标准，1 TB 以下'
-  },
-  'platform.pricing.storage.standardOver1tb': {
-    en: 'Standard network storage, 1 TB and above',
-    'zh-CN': '网络存储——标准，1 TB 及以上'
-  },
-  'platform.pricing.storage.highPerformance': {
-    en: 'High-performance network storage',
-    'zh-CN': '网络存储——高性能'
-  },
   'platform.pricing.storage.containerDisk': {
     en: 'Container disk',
     'zh-CN': '容器磁盘'
   },
-  'platform.pricing.storage.networkTitle': {
-    en: 'Network storage',
+  'platform.pricing.storage.title': {
+    en: 'Network Storage',
     'zh-CN': '网络存储'
-  },
-  'platform.pricing.storage.sub.standardUnder1tb': {
-    en: 'Standard, under 1 TB',
-    'zh-CN': '标准，1 TB 以下'
-  },
-  'platform.pricing.storage.sub.standardOver1tb': {
-    en: 'Standard, 1 TB and above',
-    'zh-CN': '标准，1 TB 及以上'
-  },
-  'platform.pricing.storage.sub.highPerformance': {
-    en: 'High performance',
-    'zh-CN': '高性能'
   },
   'platform.pricing.storage.sub.containerDisk': {
     en: 'Per-worker local filesystem',
