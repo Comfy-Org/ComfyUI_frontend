@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useClipboard } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -9,6 +8,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { EndingKind, EndingScreen } from '@/checkout/endingScreen'
 import { longDate } from '@/checkout/longDate'
 import { supportLinkWithCode } from '@/checkout/payVerdict'
+import EndingCodeCard from '@/components/fullPage/EndingCodeCard.vue'
 import SuccessCloseFooter from '@/components/fullPage/SuccessCloseFooter.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 
@@ -69,7 +69,6 @@ const emit = defineEmits<{ close: []; retry: []; viewPlans: [] }>()
 
 const { t, locale } = useI18n()
 const { planName } = useHostedCopy()
-const { copy, copied } = useClipboard({ legacy: true })
 
 const ending = computed(() => ENDINGS[screen.kind])
 const copyKey = computed(() => `checkout.fullPage.ending.${screen.kind}`)
@@ -88,8 +87,6 @@ const bodyParams = computed(() =>
     : { workspace }
 )
 const code = computed(() => ('code' in screen ? screen.code : undefined))
-/** A code breaks after its underscores first, and mid-word only when one piece alone overflows. */
-const codeSegments = computed(() => code.value?.split(/(?<=_)/) ?? [])
 const supportLink = computed(() => supportLinkWithCode(code.value))
 const primary = computed(() => ending.value.primary)
 
@@ -146,44 +143,11 @@ function act() {
         </p>
       </div>
 
-      <div
+      <EndingCodeCard
         v-if="code !== undefined"
-        class="flex w-full flex-col gap-2 rounded-lg bg-secondary-background p-6 text-left"
-      >
-        <p class="m-0 text-sm/5 text-muted-foreground">
-          {{ t(`${copyKey}.codeLabel`) }}
-        </p>
-        <div class="flex items-center justify-between gap-4">
-          <code
-            class="min-w-0 font-mono text-base font-normal wrap-anywhere text-base-foreground"
-            data-testid="checkout-ending-code"
-          >
-            <template v-for="(segment, index) in codeSegments" :key="index">
-              <wbr v-if="index > 0" />{{ segment }}
-            </template>
-          </code>
-          <button
-            type="button"
-            :aria-label="
-              copied
-                ? t('checkout.fullPage.ending.copied')
-                : t('checkout.fullPage.ending.copy')
-            "
-            class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none"
-            @click="copy(code)"
-          >
-            <i
-              :class="
-                cn(
-                  'size-4',
-                  copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
-                )
-              "
-              aria-hidden="true"
-            />
-          </button>
-        </div>
-      </div>
+        :label="t(`${copyKey}.codeLabel`)"
+        :code
+      />
 
       <div class="flex w-full flex-col items-center gap-4">
         <p
