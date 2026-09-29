@@ -16,11 +16,19 @@ export interface UndeliverableAskContext {
   activeTurnId?: string | null
 }
 
-const MAX_REPORTED_ASKS = 32
+const MAX_IDENTITY_REPORTS = 32
+const KNOWN_ASK_KINDS = new Set(['run_approval', 'ask_user'])
+
+function askKindTag(kind: string | undefined): string {
+  if (!kind) return 'missing'
+  return KNOWN_ASK_KINDS.has(kind) ? kind : 'other'
+}
 
 /** One bounded, identity-aware telemetry path shared by store and transport. */
 export function createUndeliverableAskReporter() {
-  const reportedAskIds = new Set<string>()
+  const reportedAskKeys = new Set<string>()
+  const reportedOutcomes = new Set<string>()
+  let identityReportCount = 0
 
   return {
     report(
@@ -28,12 +36,18 @@ export function createUndeliverableAskReporter() {
       reason: UndeliverableAskReason,
       context: UndeliverableAskContext = {}
     ): void {
-      if (reportedAskIds.has(data.ask_id)) return
-      reportedAskIds.add(data.ask_id)
-      if (reportedAskIds.size > MAX_REPORTED_ASKS) {
-        const oldest = reportedAskIds.values().next().value
-        if (oldest !== undefined) reportedAskIds.delete(oldest)
-      }
+      const askKey = `${data.thread_id}\u0000${data.ask_id}`
+      if (reportedAskKeys.has(askKey)) return
+
+      const askKind = askKindTag(data.kind)
+      const outcomeKey = `${reason}\u0000${askKind}`
+      const isNewOutcome = !reportedOutcomes.has(outcomeKey)
+      if (identityReportCount >= MAX_IDENTITY_REPORTS && !isNewOutcome) return
+
+      reportedAskKeys.add(askKey)
+      reportedOutcomes.add(outcomeKey)
+      if (!isNewOutcome || identityReportCount < MAX_IDENTITY_REPORTS)
+        identityReportCount++
 
       reportError(
         new Error(`agent approval ask could not be delivered (${reason})`),
@@ -42,13 +56,14 @@ export function createUndeliverableAskReporter() {
           level: 'warning',
           tags: {
             reason,
-            ask_kind: data.kind?.slice(0, 64) || 'missing',
+            ask_kind: askKind,
             has_active_turn: context.hasActiveTurn,
             background_turn_count: context.backgroundTurnCount
           },
           context: {
             threadId: data.thread_id,
             messageId: data.message_id,
+            askKind: data.kind,
             activeThreadId: context.activeThreadId,
             activeTurnId: context.activeTurnId
           }
@@ -56,7 +71,9 @@ export function createUndeliverableAskReporter() {
       )
     },
     reset(): void {
-      reportedAskIds.clear()
+      reportedAskKeys.clear()
+      reportedOutcomes.clear()
+      identityReportCount = 0
     }
   }
 }

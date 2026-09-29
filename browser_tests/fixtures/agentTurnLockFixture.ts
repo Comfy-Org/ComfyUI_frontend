@@ -6,13 +6,9 @@ import type {
   AgentCancelAccepted,
   AgentError,
   AgentMessage,
-  AgentPendingAsk,
   AgentTurnAccepted
 } from '@comfyorg/ingest-types'
-import {
-  zAgentPendingAsk,
-  zAgentPostMessageRequest
-} from '@comfyorg/ingest-types/zod'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -132,7 +128,6 @@ class TurnLockServer {
   private rejected = 0
   private posts = 0
   private readonly answered: string[][] = []
-  private pendingAsk: AgentPendingAsk | undefined
 
   get turnIsStreaming(): boolean {
     return this.streaming
@@ -156,18 +151,8 @@ class TurnLockServer {
     return this.answered
   }
 
-  get askIsPending(): boolean {
-    return this.pendingAsk !== undefined
-  }
-
   recordAnswer(selected: string[]): void {
     this.answered.push(selected)
-    this.pendingAsk = undefined
-  }
-
-  recordAsk(event: AgentWsEvent): void {
-    if (event.type === 'agent_ask')
-      this.pendingAsk = zAgentPendingAsk.parse(event.data)
   }
 
   completeTurn(): void {
@@ -194,7 +179,7 @@ class TurnLockServer {
         role: 'assistant',
         status: this.streaming ? 'streaming' : 'complete',
         workflow_id: WORKFLOW_ID,
-        pending_ask: this.pendingAsk
+        pending_ask: undefined
       }
     ]
   }
@@ -377,16 +362,6 @@ export class AgentTurnLockHarness {
 
   push(ws: WebSocketRoute, event: AgentWsEvent): void {
     ws.send(JSON.stringify(event))
-  }
-
-  /** Makes an ask available through transcript hydration, independently of WS delivery. */
-  primePendingAsk(event: AgentWsEvent): void {
-    this.server.recordAsk(event)
-  }
-
-  /** True only when a test explicitly primed transcript-based recovery. */
-  pendingAskIsPrimed(): boolean {
-    return this.server.askIsPending
   }
 
   /**

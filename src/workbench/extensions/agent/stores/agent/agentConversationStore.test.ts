@@ -934,6 +934,26 @@ describe('useAgentConversationStore', () => {
       expect(reportError).toHaveBeenCalledTimes(1)
     })
 
+    it('reports the same ask id independently in different threads', () => {
+      const store = useAgentConversationStore()
+      for (const thread of ['thread-a', 'thread-b']) {
+        store.setThreadId(thread)
+        store.startTurn(T1)
+        store.abortActiveTurn()
+        store.ingest(
+          chat({
+            ...runApproval('t1', 'shared-ask'),
+            data: {
+              ...runApproval('t1', 'shared-ask').data,
+              thread_id: thread
+            }
+          })
+        )
+      }
+
+      expect(reportError).toHaveBeenCalledTimes(2)
+    })
+
     it('dedupes one ask across the transport and store routing paths', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -1094,6 +1114,43 @@ describe('useAgentConversationStore', () => {
       )
     })
 
+    it('binds a turn to a thread id that arrives after the turn starts', () => {
+      const store = useAgentConversationStore()
+      store.startTurn(T1)
+      store.setThreadId('resolved-thread')
+      store.abortActiveTurn()
+
+      store.ingest(
+        chat({
+          ...runApproval('t1', 'turn-1:call-1'),
+          data: {
+            ...runApproval('t1', 'turn-1:call-1').data,
+            thread_id: 'resolved-thread'
+          }
+        })
+      )
+
+      expect(reportError).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not downgrade a settled turn when it is later aborted', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(done('t1'))
+      store.startTurn(T1)
+      store.abortActiveTurn()
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
     it('reports an ask kind the panel has no card for', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -1111,8 +1168,9 @@ describe('useAgentConversationStore', () => {
           errorType: 'failure_delivering_agent_approval_ask',
           tags: expect.objectContaining({
             reason: 'unknown-kind',
-            ask_kind: 'pick_a_model'
-          })
+            ask_kind: 'other'
+          }),
+          context: expect.objectContaining({ askKind: 'pick_a_model' })
         })
       )
     })

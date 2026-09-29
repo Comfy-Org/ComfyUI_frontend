@@ -118,6 +118,8 @@ export const useAgentConversationStore = defineStore(
 
     function setThreadId(id: string | null): void {
       threadId.value = id
+      if (transport && activeTransportThreadId === null && id !== null)
+        activeTransportThreadId = id
     }
 
     function recordSettledReply(
@@ -437,6 +439,7 @@ export const useAgentConversationStore = defineStore(
       reason: 'no-live-turn' | 'settled-turn'
     ): void {
       const key = departedTurnKey(departedThreadId, messageId)
+      if (departedTurns.get(key) === 'settled-turn') return
       departedTurns.delete(key)
       departedTurns.set(key, reason)
       if (departedTurns.size <= MAX_DEPARTED_TURNS) return

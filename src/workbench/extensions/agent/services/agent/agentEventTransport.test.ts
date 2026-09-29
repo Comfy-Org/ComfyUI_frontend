@@ -509,7 +509,7 @@ describe('agentEventTransport run approval', () => {
     )
   })
 
-  it('reports an unknown ask kind once with a bounded tag', () => {
+  it('reports an unknown ask kind once with a bounded tag vocabulary', () => {
     const unknownKind = 'x'.repeat(100)
     drive([
       runApproval('unknown-1', unknownKind),
@@ -522,19 +522,29 @@ describe('agentEventTransport run approval', () => {
       expect.objectContaining({
         tags: {
           reason: 'unknown-kind',
-          ask_kind: 'x'.repeat(64)
-        }
+          ask_kind: 'other'
+        },
+        context: expect.objectContaining({ askKind: unknownKind })
       })
     )
   })
 
-  it('bounds reported ask identities and evicts the oldest', () => {
+  it('bounds report volume while retaining a distinct supported outcome', () => {
     const asks = Array.from({ length: 33 }, (_, index) =>
       runApproval(`unknown-${index}`, 'unsupported')
     )
-    drive([...asks, asks[0]])
+    drive([...asks, asks[0], runApproval('ask-user', 'ask_user')])
 
-    expect(reportError).toHaveBeenCalledTimes(34)
+    expect(reportError).toHaveBeenCalledTimes(33)
+    expect(reportError).toHaveBeenLastCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          reason: 'unrendered-kind',
+          ask_kind: 'ask_user'
+        })
+      })
+    )
   })
 })
 
