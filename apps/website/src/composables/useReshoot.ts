@@ -51,6 +51,11 @@ import {
 } from '../lib/workshop/cinematic-studio/reshoot-engine/workflow'
 import { useWorkshopAuthFlag } from '../scripts/posthog'
 
+/** Waits before asking for the price again after a failed quote. */
+const QUOTE_RETRY_MS = [5_000, 15_000, 30_000, 60_000]
+/** Quote failures that waiting cannot fix: no such app, or signed out. */
+const QUOTE_FINAL = new Set(['not_found', 'unauthorized'])
+
 /** Read scenes kept for reuse: the 480p and 768p reads of two clips. */
 const MAX_READ_SCENES = 4
 
@@ -181,9 +186,12 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
         ? generateSeconds(scene.value.geometry.frames, scene.value.geometry.fps)
         : undefined
   }))
-  const priceNote = computed(() =>
-    quote.value ? quoteNote(quote.value, locale, run.value) : undefined
-  )
+  /** The last quote request failed, so the price is unknown and Generate waits. */
+  const quoteFailed = ref(false)
+  const priceNote = computed(() => {
+    if (quote.value) return quoteNote(quote.value, locale, run.value)
+    return quoteFailed.value ? rc('reshoot.quote.failed', locale) : undefined
+  })
   /** Why the viewport cannot show a read scene, if it cannot. */
   const notice = computed(() => {
     if (!picked.value) return undefined
@@ -197,25 +205,39 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   )
 
   let quoteRequest = 0
+  let quoteRetry: ReturnType<typeof setTimeout> | undefined
+  let quoteFailures = 0
+  function settleQuote(next: ReshootQuote | undefined, settled: boolean) {
+    quote.value = next
+    quoteSettled.value = settled
+    quoteFailed.value = false
+    quoteFailures = 0
+  }
+  /** A failed quote: the price is unknown, so ask again unless waiting cannot help. */
+  function quoteFailedWith(error: unknown) {
+    const code = error instanceof ReshootError ? error.code : ''
+    const final = QUOTE_FINAL.has(code)
+    quote.value = undefined
+    quoteSettled.value = false
+    quoteFailed.value = !final
+    if (code === 'app_unavailable') unavailable.value = true
+    if (final) return
+    const delay =
+      QUOTE_RETRY_MS[Math.min(quoteFailures, QUOTE_RETRY_MS.length - 1)]
+    quoteFailures += 1
+    quoteRetry = setTimeout(() => void refreshQuote(), delay)
+  }
   async function refreshQuote() {
     const request = ++quoteRequest
-    if (!transport || !session.value) {
-      quote.value = undefined
-      quoteSettled.value = false
-      return
-    }
+    clearTimeout(quoteRetry)
+    if (!transport || !session.value) return settleQuote(undefined, false)
     try {
       const next = await transport.quote()
       if (request !== quoteRequest) return
-      quote.value = next
-      quoteSettled.value = true
+      settleQuote(next, true)
       unavailable.value = false
     } catch (error) {
-      if (request !== quoteRequest) return
-      quote.value = undefined
-      quoteSettled.value = false
-      if (error instanceof ReshootError && error.code === 'app_unavailable')
-        unavailable.value = true
+      if (request === quoteRequest) quoteFailedWith(error)
     }
   }
 
@@ -319,6 +341,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       scene.value = { phase: 'ready', clip, geometry }
       frame.value = Math.min(frame.value, geometry.frames - 1)
       step.value = 2
+      if (!quoteSettled.value) void refreshQuote()
     } catch (error) {
       if (!signal.aborted)
         scene.value = { phase: 'failed', note: noteFor(error) }
@@ -463,6 +486,8 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   }
 
   onScopeDispose(() => {
+    clearTimeout(quoteRetry)
+    quoteRequest += 1
     analysis?.abort()
     runs.forEach((controller) => controller.abort())
     objectUrls.forEach((url) => URL.revokeObjectURL(url))

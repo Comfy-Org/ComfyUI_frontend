@@ -126,8 +126,41 @@ describe('useReshoot', () => {
     await readScene(reshoot)
 
     expect(reshoot.depth.value).toBe('ready')
-    expect(reshoot.priceNote.value).toBeUndefined()
+    expect(reshoot.priceNote.value).toBe(
+      'Couldn’t get the price yet. Trying again…'
+    )
     expect(reshoot.canGenerate.value).toBe(false)
+  })
+
+  it('asks for the price again once the scene is read', async () => {
+    vi.mocked(transport.quote).mockRejectedValueOnce(new Error('network down'))
+    const reshoot = start()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(reshoot.canGenerate.value).toBe(false)
+
+    await readScene(reshoot)
+    expect(reshoot.priceNote.value).toBe('Free · 3 of 5 left this week')
+    expect(reshoot.canGenerate.value).toBe(true)
+  })
+
+  it('retries a failed quote on its own after a short wait', async () => {
+    vi.mocked(transport.quote).mockRejectedValueOnce(new Error('network down'))
+    const reshoot = start()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(transport.quote).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(transport.quote).toHaveBeenCalledTimes(2)
+    expect(reshoot.priceNote.value).toBe('Free · 3 of 5 left this week')
+  })
+
+  it('does not retry a quote for an app that does not exist', async () => {
+    vi.mocked(transport.quote).mockRejectedValue(new ReshootError('not_found'))
+    const reshoot = start()
+    await vi.advanceTimersByTimeAsync(120_000)
+
+    expect(transport.quote).toHaveBeenCalledTimes(1)
+    expect(reshoot.priceNote.value).toBeUndefined()
   })
 
   it('lets the unmetered dev transport generate with no quote', async () => {

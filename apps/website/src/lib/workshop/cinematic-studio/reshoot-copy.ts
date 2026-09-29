@@ -277,6 +277,10 @@ const copy = {
     en: '{rate} credits per second',
     'zh-CN': '每秒 {rate} 积分'
   },
+  'reshoot.quote.failed': {
+    en: 'Couldn’t get the price yet. Trying again…',
+    'zh-CN': '暂时无法获取价格，正在重试…'
+  },
   'reshoot.quote.priceUnknown': {
     en: 'Price not available',
     'zh-CN': '暂无价格'
