@@ -506,6 +506,7 @@ export const useAgentConversationStore = defineStore(
         )
       ) {
         rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
+        messages.value = kept
         transport?.dispose()
         clearActive()
         // The persisted, authoritative copy is already on screen (kept, via
@@ -844,6 +845,7 @@ export const useAgentConversationStore = defineStore(
           entry.message,
           entry.transport.openDraft()
         )
+        if (index < 0) kept.push(hydrated)
         return { keeps: 'hydrated', turnId: hydratedTurnId }
       }
       if (index >= 0) kept.splice(index, 1)

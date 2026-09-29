@@ -2055,6 +2055,28 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
+  it('keeps same-id hydrated reconciliation ahead of transport disposal', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(activeTab('workflow-7', 't1'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 't1', 'go'),
+      historyRow(2, 'assistant', 't1', 'persisted reply', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages).toHaveLength(1)
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'tabLink',
+      workflowId: 'workflow-7'
+    })
+    expect(partTexts(store)).toEqual(['persisted reply'])
+  })
+
   it('resolves existing paywalls without resurrecting them', () => {
     const store = useAgentConversationStore()
     store.recordPaywall(T1, 'subscribe')
