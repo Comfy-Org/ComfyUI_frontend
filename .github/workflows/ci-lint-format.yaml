@@ -33,6 +33,10 @@ jobs:
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
+        with:
+          # The optional pnpm cache currently fails during runner cleanup on this PR.
+          # Lint and format verification do not depend on the cache.
+          node_cache: 'false'
 
       - name: Run ESLint with auto-fix
         run: pnpm lint:fix
