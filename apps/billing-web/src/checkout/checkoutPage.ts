@@ -96,13 +96,16 @@ type Attribution = 'started' | 'followed' | 'settled'
  * reached so the capture it resolves into opens on that card. `waiting` is
  * money in flight that this page did not start: no fresh form until it
  * settles. `unconfirmed` is money whose outcome the page could not learn, so
- * it neither offers a form nor claims a charge. `terminal` is a payment that
+ * it neither offers a form nor claims a charge. `recheck_failed` is a re-read
+ * of what the workspace is waiting on that failed before any form showed, so
+ * the page cannot say whether money is moving. `terminal` is a payment that
  * went through.
  */
 export type CheckoutPage =
   | { readonly kind: 'resolving'; readonly outcome?: InlineOutcome }
   | { readonly kind: 'refused'; readonly reason: CapabilityDenialReason }
   | { readonly kind: 'unavailable'; readonly code: string }
+  | { readonly kind: 'recheck_failed'; readonly code: string }
   | {
       readonly kind: 'plan_unavailable'
       readonly reason: PlanUnavailableReason
@@ -125,6 +128,8 @@ export type OperationOutcome = Exclude<
 export type CheckoutPageEvent =
   | { readonly type: 'refused'; readonly reason: CapabilityDenialReason }
   | { readonly type: 'unavailable'; readonly code: string }
+  /** The lifecycle could not say what the workspace is waiting on. */
+  | { readonly type: 'recheckFailed'; readonly code: string }
   | { readonly type: 'planUnavailable'; readonly reason: PlanUnavailableReason }
   /** Try again on a checkout that could not load. */
   | { readonly type: 'retried' }
@@ -268,6 +273,10 @@ export function reduceCheckoutPage(
       return page.kind === 'resolving'
         ? { kind: 'unavailable', code: event.code }
         : page
+    case 'recheckFailed':
+      return page.kind === 'resolving'
+        ? { kind: 'recheck_failed', code: event.code }
+        : page
     case 'requoteFailed':
       return leavingCapture(page, { kind: 'unavailable', code: event.code })
     case 'planUnavailable':
@@ -275,7 +284,9 @@ export function reduceCheckoutPage(
         ? { kind: 'plan_unavailable', reason: event.reason }
         : page
     case 'retried':
-      return page.kind === 'unavailable' ? RESOLVING : page
+      return page.kind === 'unavailable' || page.kind === 'recheck_failed'
+        ? RESOLVING
+        : page
     case 'quoted':
       return page.kind === 'resolving' ? arrived(page, event) : page
     case 'reconciled':

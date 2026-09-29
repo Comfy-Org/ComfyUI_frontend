@@ -580,15 +580,15 @@ function outcomeFor(operation: BillingOperationState) {
 
 /**
  * A recovery the lifecycle refused is an unknown, not "nothing pending": in
- * resolving it reads as the billing service being unreachable, and anywhere
- * else the page keeps what it has rather than opening a form over money it
- * cannot see.
+ * resolving it ends on a screen that claims nothing about money, and
+ * anywhere else the page keeps what it has rather than opening a form over
+ * money it cannot see.
  */
 function reconciledEvent(
   recovered: BillingResult<BillingOperationState | undefined>
 ): CheckoutPageEvent {
   if (recovered.status === 'error')
-    return { type: 'unavailable', code: recovered.code }
+    return { type: 'recheckFailed', code: recovered.code }
   const operation = recovered.value
   return {
     type: 'reconciled',

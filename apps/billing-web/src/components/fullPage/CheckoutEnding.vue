@@ -39,7 +39,8 @@ const ENDINGS: Readonly<
   unconfirmed: { tone: 'waiting', support: true },
   refused: { tone: 'refused', support: true },
   plan_unavailable: { tone: 'refused', primary: 'view_plans', support: true },
-  load_failed: { tone: 'refused', primary: 'retry', support: true }
+  load_failed: { tone: 'refused', primary: 'retry', support: true },
+  recheck_failed: { tone: 'refused', primary: 'retry', support: true }
 }
 
 const ICON: Readonly<Record<Tone, string>> = {

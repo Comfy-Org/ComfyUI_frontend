@@ -322,6 +322,11 @@
           "title": "Couldn't load your checkout",
           "body": "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
           "codeLabel": "If this keeps happening, contact support with this code:"
+        },
+        "recheck_failed": {
+          "title": "Couldn't load your checkout",
+          "body": "We couldn't check this workspace's payments, so we can't show your checkout yet. Try again, or contact support if this keeps happening.",
+          "codeLabel": "If this keeps happening, contact support with this code:"
         }
       },
       "summary": {

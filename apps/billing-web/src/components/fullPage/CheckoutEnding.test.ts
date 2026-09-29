@@ -161,6 +161,15 @@ describe('CheckoutEnding', () => {
       action: 'Try again',
       support: true,
       closeLine: false
+    },
+    {
+      ending: { kind: 'recheck_failed', code: 'REQUEST_FAILED' },
+      title: "Couldn't load your checkout",
+      body: "We couldn't check this workspace's payments, so we can't show your checkout yet. Try again, or contact support if this keeps happening.",
+      codeLabel: 'If this keeps happening, contact support with this code:',
+      action: 'Try again',
+      support: true,
+      closeLine: false
     }
   ])(
     '$ending.kind reads as designed',
@@ -204,6 +213,11 @@ describe('CheckoutEnding', () => {
     { ending: { kind: 'success' }, action: 'Close', event: 'close' },
     {
       ending: { kind: 'load_failed', code: 'REQUEST_FAILED' },
+      action: 'Try again',
+      event: 'retry'
+    },
+    {
+      ending: { kind: 'recheck_failed', code: 'REQUEST_FAILED' },
       action: 'Try again',
       event: 'retry'
     },

@@ -245,3 +245,30 @@ test("a checkout that couldn't load retries in place on Try again, without leavi
   await expect(page).toHaveURL(CHECKOUT)
   expect(quotes).toBe(2)
 })
+
+test("a re-read of the workspace's payments that fails never claims nothing was charged, and Try again follows the payment once it answers", async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  markPending(cloud, 'op_unread')
+  cloud.scenario.operations.op_unread = succeededOperation('op_unread')
+  let reachable = false
+  cloud.reply('GET', '/billing/status', () =>
+    reachable
+      ? { body: cloud.scenario.status }
+      : { status: 503, body: { code: 'UNAVAILABLE', message: 'down' } }
+  )
+  await signIn(CHECKOUT)
+
+  await expect(heading(page, "Couldn't load your checkout")).toBeVisible()
+  await expect(page.getByText(/Nothing has been charged/)).toBeHidden()
+  await expect(payButton(page)).toBeHidden()
+
+  reachable = true
+  await page.getByRole('button', { name: 'Try again' }).click()
+
+  await expect(heading(page, 'Already completed')).toBeVisible()
+  await expect(code(page)).toHaveText('op_unread')
+  expect(subscribeRequests(cloud)).toHaveLength(0)
+})

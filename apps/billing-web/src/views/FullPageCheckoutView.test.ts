@@ -436,6 +436,7 @@ describe('FullPageCheckoutView', () => {
       expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
         'REQUEST_FAILED'
       )
+      expect(screen.getByText(/Nothing has been charged/)).toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: 'Pay and subscribe' })
       ).not.toBeInTheDocument()
@@ -1374,7 +1375,7 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     expect(form.mounts).toBe(1)
   })
 
-  it('says so instead of a form when the recovery itself fails, and Try again resolves again in place', async () => {
+  it('says so instead of a form when the recovery itself fails, without claiming nothing was charged, and Try again resolves again in place', async () => {
     const fake = await renderCheckout({
       recover: { status: 'error', code: 'REQUEST_FAILED' }
     })
@@ -1384,6 +1385,9 @@ describe('FullPageCheckoutView mount reconciliation', () => {
         name: "Couldn't load your checkout"
       })
     ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/Nothing has been charged/)
+    ).not.toBeInTheDocument()
     expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
       'REQUEST_FAILED'
     )
