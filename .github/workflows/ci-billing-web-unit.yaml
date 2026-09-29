@@ -7,6 +7,7 @@ on:
     branches: [main]
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
+  merge_group:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -25,6 +26,8 @@ jobs:
       - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
+        with:
+          evaluate-candidate: 'true'
 
   billing-web-unit:
     needs: changes
@@ -51,8 +54,9 @@ jobs:
           # Re-root LCOV paths to prevent collisions with root-app coverage.
           network_prefix: apps/billing-web/
           token: ${{ secrets.CODECOV_TOKEN }}
-          # Forks have no token, so upload failures cannot block contributors.
-          fail_ci_if_error: ${{ github.event.pull_request.head.repo.fork != true }}
+          # Forks have no token and a Codecov outage must not stall the merge
+          # queue, so upload failures block only same-repo pull requests.
+          fail_ci_if_error: ${{ github.event_name != 'merge_group' && github.event.pull_request.head.repo.fork != true }}
 
   # Stable branch-protection context when tests are skipped.
   billing-web-unit-gate:
