@@ -788,6 +788,10 @@ test.describe('Model playground', () => {
     const dialog = page.getByTestId('example-replace-dialog')
     await expect(dialog.getByRole('heading')).toHaveText('Load this example?')
     await expect(dialog.getByRole('button')).toHaveCount(2)
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeVisible()
+    await expect(
+      dialog.getByRole('button', { name: 'Load example' })
+    ).toBeVisible()
     await page.getByTestId('example-replace-keep').click()
 
     await expect(page.getByTestId('example-replace-dialog')).toHaveCount(0)
