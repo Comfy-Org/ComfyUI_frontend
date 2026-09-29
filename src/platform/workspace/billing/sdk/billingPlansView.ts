@@ -13,6 +13,12 @@ type DecodedStops = NonNullable<BillingPlansData['team_credit_stops']>
 type DecodedStop = DecodedStops['stops'][number]
 type StopPrice = TeamCreditStops['stops'][number]['monthly']
 
+function hasOnlyDefinedValues<T extends object>(
+  values: T
+): values is { [K in keyof T]: Exclude<T[K], undefined> } {
+  return Object.values(values).every((value) => value !== undefined)
+}
+
 /**
  * The generated zod schema coerces every int64 in the catalog to `bigint` —
  * prices, credits, seat caps, the credit-stop ladder — while the generated
@@ -22,30 +28,28 @@ type StopPrice = TeamCreditStops['stops'][number]['monthly']
  * Nothing is filtered, ranked or priced here.
  */
 function projectPlan(plan: DecodedPlan): Plan | undefined {
-  const credits_cents = asSafeNumber(plan.credits_cents)
-  const max_seats = asSafeNumber(plan.max_seats)
-  const price_cents = asSafeNumber(plan.price_cents)
-  const total_cost_cents = asSafeNumber(plan.seat_summary.total_cost_cents)
-  const total_credits_cents = asSafeNumber(
-    plan.seat_summary.total_credits_cents
-  )
-  if (
-    credits_cents === undefined ||
-    max_seats === undefined ||
-    price_cents === undefined ||
-    total_cost_cents === undefined ||
-    total_credits_cents === undefined
-  )
-    return undefined
+  const { credits: decodedCredits, ...rest } = plan
+  const credits =
+    decodedCredits === undefined ? undefined : asSafeNumber(decodedCredits)
+  const requiredNumbers = {
+    credits_cents: asSafeNumber(plan.credits_cents),
+    max_seats: asSafeNumber(plan.max_seats),
+    price_cents: asSafeNumber(plan.price_cents),
+    total_cost_cents: asSafeNumber(plan.seat_summary.total_cost_cents),
+    total_credits_cents: asSafeNumber(plan.seat_summary.total_credits_cents)
+  }
+  if (decodedCredits !== undefined && credits === undefined) return undefined
+  if (!hasOnlyDefinedValues(requiredNumbers)) return undefined
   return {
-    ...plan,
-    credits_cents,
-    max_seats,
-    price_cents,
+    ...rest,
+    ...(credits === undefined ? {} : { credits }),
+    credits_cents: requiredNumbers.credits_cents,
+    max_seats: requiredNumbers.max_seats,
+    price_cents: requiredNumbers.price_cents,
     seat_summary: {
       seat_count: plan.seat_summary.seat_count,
-      total_cost_cents,
-      total_credits_cents
+      total_cost_cents: requiredNumbers.total_cost_cents,
+      total_credits_cents: requiredNumbers.total_credits_cents
     }
   }
 }

@@ -2,6 +2,8 @@ import fs from 'fs'
 
 import { describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { AgentMessages } from '../../schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import { normalizeAgentTranscript } from './agentTranscript'
@@ -16,6 +18,10 @@ import type {
   ToolPart
 } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const fixtureText = import.meta.glob(
   '../../schemas/__fixtures__/agent/*.jsonl',
@@ -104,14 +110,17 @@ function activeTab(
   }
 }
 
-function runApproval(askId = 'turn-1:call-1'): AgentChatEvent {
+function runApproval(
+  askId = 'turn-1:call-1',
+  kind = 'run_approval'
+): AgentChatEvent {
   return zAgentWsEvent.parse({
     type: 'agent_ask',
     data: {
       thread_id: 't',
       message_id: 'm',
       ask_id: askId,
-      kind: 'run_approval',
+      kind,
       context: {
         workflow_id: 'workflow-1',
         workflow_name: 'Portrait workflow'
@@ -485,6 +494,41 @@ describe('agentEventTransport run approval', () => {
     ).toEqual(['ask-2'])
     expect(message.streaming).toBe(true)
   })
+
+  it('does not report the supported ask_user kind as an error', () => {
+    drive([runApproval('ask-user-1', 'ask_user')])
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports an unknown ask kind once with a bounded tag', () => {
+    const unknownKind = 'x'.repeat(100)
+    drive([
+      runApproval('unknown-1', unknownKind),
+      runApproval('unknown-1', unknownKind)
+    ])
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: {
+          reason: 'unknown-kind',
+          ask_kind: 'unknown'
+        },
+        context: expect.objectContaining({ rawAskKind: 'x'.repeat(100) })
+      })
+    )
+  })
+
+  it('caps report volume for the lifetime of the reporter', () => {
+    const asks = Array.from({ length: 33 }, (_, index) =>
+      runApproval(`unknown-${index}`, 'unsupported')
+    )
+    drive([...asks, asks[0]])
+
+    expect(reportError).toHaveBeenCalledTimes(32)
+  })
 })
 
 describe('agentEventTransport settle lifecycle', () => {
@@ -530,6 +574,23 @@ describe('agentEventTransport settle lifecycle', () => {
       state: 'done'
     })
     expect(toolParts(message)).toHaveLength(0)
+  })
+
+  it('reports a late approval ask once after settle', () => {
+    const message = createAssistantMessage(T)
+    const transport = createAgentEventTransport(message, vi.fn())
+    transport.settle()
+
+    transport.ingest(runApproval('late-ask'))
+    transport.ingest(runApproval('late-ask'))
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({ reason: 'settled-turn' })
+      })
+    )
   })
 
   it('records an explicitly targeted node link when the agent switches workflow tabs', () => {

@@ -16,13 +16,13 @@
     "addFromAssets": "asset را از پنل asset بکشید و رها کنید",
     "addNodesFromGraph": "به nodeهای نمودار اشاره کنید",
     "addToPrompt": "افزودن به پرامپت",
-    "alpha": "آلفا",
     "assetNotAttachable": "می‌توان تصاویر، ویدیو، صدا، مدل‌های سه‌بعدی و فایل‌های متنی را پیوست کرد",
     "attach": "پیوست کردن فایل",
     "attachFiles": "تصاویر یا فایل‌ها را بارگذاری کنید",
     "attachmentTooLarge": "{name} بزرگ‌تر از {limit} است",
     "attachmentUploadFailed": "{name} بارگذاری نشد",
     "backToPreviousChat": "بازگشت به گفتگوی قبلی",
+    "beta": "بتا",
     "changeWorkflowForChat": "workflowی را که agent می‌تواند ویرایش کند تغییر دهید",
     "chatOptions": "گزینه‌های گفتگو",
     "chooseWorkflow": "انتخاب یک workflow",
@@ -126,6 +126,7 @@
     "runApproval": {
       "cancel": "لغو",
       "lead": "این ابزار می‌خواهد workflow را اجرا کند:",
+      "leadBound": "این ابزار می‌خواهد این workflow را اجرا کند.",
       "question": "آیا تأیید می‌کنید؟",
       "run": "اجرا",
       "thisWorkflow": "این workflow"
@@ -193,6 +194,9 @@
     "workedForSeconds": "به‌مدت {seconds} ثانیه انجام شد",
     "workflowEditNotice": "ایجنت اکنون می‌تواند {workflow} را ویرایش کند. هر بار روی ۱ workflow کار می‌کند و می‌توانید هنگام گفت‌وگو workflowها را تغییر دهید.",
     "workflowReferenceUnavailableReason": "این workflow ارجاع‌شده دیگر در دسترس نیست یا به آن دسترسی ندارید.",
+    "workflowSyncFailedDetail": "این workflow با نسخه‌ای ناسازگار از سند ایجاد شده است. بوم شما بدون تغییر باقی مانده است.",
+    "workflowSyncFailedDetailCatalogMismatch": "این workflow از کاتالوگ nodeی استفاده می‌کند که با این فضای کاری ناسازگار است. بوم شما بدون تغییر باقی مانده است.",
+    "workflowSyncFailedTitle": "این workflow نمی‌تواند همگام‌سازی شود",
     "workflows": "workflowها",
     "working": "در حال انجام..."
   },
@@ -540,6 +544,7 @@
     "expiredCardDetail": "این کارت منقضی شده است. از روش پرداخت دیگری استفاده کنید.",
     "incorrectCvcDetail": "کد امنیتی کارت نادرست است. آن را بررسی کرده و دوباره تلاش کنید.",
     "insufficientFundsDetail": "این روش پرداخت موجودی کافی ندارد. روش پرداخت دیگری را امتحان کنید یا با بانک خود تماس بگیرید.",
+    "operationAlreadyPendingDetail": "پرداختی که پیش‌تر آغاز کرده‌اید هنوز در حال انجام است. پیش از اینکه بتوانید طرح دیگری انتخاب کنید، باید تکمیل شود.",
     "paymentDeclinedDetail": "بانک شما این پرداخت را رد کرد. روش پرداخت دیگری را امتحان کنید یا با بانک خود تماس بگیرید.",
     "processingErrorDetail": "پرداخت شما پردازش نشد. دوباره تلاش کنید یا از روش پرداخت دیگری استفاده کنید.",
     "reconciliationDetail": "پرداخت شما دریافت شد، اما نتوانستیم به‌روزرسانی workspace شما را کامل کنیم. با پشتیبانی تماس بگیرید و این شناسهٔ عملیات را ارائه کنید:",
@@ -2223,8 +2228,10 @@
     "star": "ستاره"
   },
   "imageCompare": {
+    "afterAlt": "تصویر پس از",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "تصویر پیش از",
     "noImages": "تصویری برای مقایسه وجود ندارد"
   },
   "imageCrop": {
@@ -3212,7 +3219,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -3280,6 +3286,7 @@
     "mask": "ماسک",
     "merging": "ادغام",
     "mesh": "mesh",
+    "ming image": "تصویر مینگ",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -4385,9 +4392,12 @@
       "message": "صورت‌حساب تیمی به‌زودی ارائه می‌شود. به‌زودی می‌توانید برای فضای کاری خود با قیمت هر نفر اشتراک تهیه کنید. برای به‌روزرسانی‌ها همراه ما باشید.",
       "title": "به‌زودی"
     },
+    "billingTabBlocked": "صفحه صورت‌حساب باز نشد. پنجره‌های بازشو را برای این سایت مجاز کنید و دوباره تلاش کنید.",
     "cancelDialog": {
       "confirmCancel": "لغو اشتراک",
       "description": "دسترسی شما تا تاریخ {date} ادامه دارد. دیگر هزینه‌ای دریافت نمی‌شود و فضای کاری و اعتبار شما حفظ خواهد شد. هر زمان می‌توانید دوباره اشتراک تهیه کنید.",
+      "discountApplied": "تخفیف شما اعمال شده است، بنابراین این اشتراک لغو نشد. این پنجره را ببندید تا طرح به‌روزشده خود را ببینید.",
+      "discountRefreshFailed": "تخفیف شما اعمال شد. برای دیدن طرح به‌روزشده خود، صفحه را تازه‌سازی کنید.",
       "endOfBillingPeriod": "پایان دوره صورتحساب",
       "failed": "لغو اشتراک ناموفق بود",
       "keepSubscription": "حفظ اشتراک",
@@ -4577,6 +4587,7 @@
       "payAndSubscribe": "پرداخت و اشتراک",
       "paymentMethod": "روش پرداخت",
       "paymentPopupBlocked": "امکان باز کردن صفحه پرداخت وجود ندارد — لطفاً پاپ‌آپ‌ها را فعال کنید و دوباره تلاش کنید.",
+      "pendingVerificationDetail": "پرداختی که پیش‌تر آغاز کرده‌اید هنوز به توجه شما نیاز دارد. تکمیل آن، طرحی را که آن زمان انتخاب کرده‌اید فعال می‌کند. پس از تکمیل شدن آن می‌توانید طرح دیگری انتخاب کنید.",
       "perMember": "/ هر عضو",
       "privacyPolicy": "سیاست حفظ حریم خصوصی",
       "promoCodePlaceholder": "کد تخفیف",
@@ -4809,6 +4820,7 @@
     },
     "clearAllFilters": "حذف همه فیلترها",
     "error": {
+      "loading": "باز کردن قالب ممکن نشد. لطفاً دوباره تلاش کنید.",
       "templateNotFound": "قالب \"{templateName}\" یافت نشد"
     },
     "filtersApplied": "{count} فیلتر اعمال شد | {count} فیلتر اعمال شدند",
@@ -5089,6 +5101,7 @@
   },
   "workspace": {
     "addedToWorkspace": "شما به این مورد افزوده شده‌اید:",
+    "deepLinkStayed": "باز کردن آن فضای کاری ممکن نشد. شما همچنان در {workspaceName} هستید.",
     "inviteAccepted": "دعوت پذیرفته شد",
     "inviteFailed": "پذیرش دعوت ناموفق بود",
     "switchFailed": "تغییر ورک‌اسپیس ناموفق بود. لطفاً دوباره تلاش کنید.",

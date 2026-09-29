@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
@@ -9,6 +10,7 @@ export class Topbar {
   private readonly menuTrigger: Locator
   readonly newWorkflowButton: Locator
   readonly workflowTabs: Locator
+  readonly tabs: Locator
   readonly integratedTabBarActions: Locator
   readonly menuRootList: Locator
 
@@ -18,6 +20,7 @@ export class Topbar {
     this.menuRootList = this.menuLocator.getByRole('menubar')
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
+    this.tabs = this.workflowTabs.getByTestId(TestIds.topbar.workflowTab)
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
       TestIds.topbar.integratedTabBarActions
     )
@@ -76,6 +79,22 @@ export class Topbar {
     return this.page.locator('.workflow-tabs .p-togglebutton').nth(index)
   }
 
+  /**
+   * Opens a second, blank workflow tab and returns to the first one — the
+   * lever agent tab-switch specs use to force the agent CRDT follower to
+   * unbind and rebind against the original workflow.
+   */
+  async openBlankTabAndReturn(): Promise<void> {
+    await expect(this.tabs).toHaveCount(1)
+    await this.newWorkflowButton.click()
+    await expect(this.tabs).toHaveCount(2)
+    await expect(this.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+    await expect(this.page.getByTestId('node-title')).toHaveCount(0)
+    await this.getTab(0).click()
+    await expect(this.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    await expect(this.getTab(1)).not.toHaveClass(/p-togglebutton-checked/)
+  }
+
   getActiveTab(): Locator {
     return this.page.locator(
       '.workflow-tabs .p-togglebutton.p-togglebutton-checked'
@@ -112,23 +131,17 @@ export class Topbar {
     await this.getSaveDialog().fill(workflowName)
     await this.page.keyboard.press('Enter')
 
-    // Wait for workflow service to finish saving
     await this.page.waitForFunction(
       () => !(window.app!.extensionManager as WorkspaceStore).workflow.isBusy,
       undefined,
       { timeout: 3000 }
     )
-    // Wait for the dialog to close.
     await this.getSaveDialog().waitFor({ state: 'hidden' })
 
-    // Check if a confirmation dialog appeared (e.g., "Overwrite existing file?")
-    // If so, return early to let the test handle the confirmation
     const confirmationDialog = this.page
       .getByRole('dialog')
       .filter({ hasText: 'Overwrite' })
-    if (await confirmationDialog.isVisible()) {
-      return
-    }
+    if (await confirmationDialog.isVisible()) return
   }
 
   async dismissWorkflowPopover() {

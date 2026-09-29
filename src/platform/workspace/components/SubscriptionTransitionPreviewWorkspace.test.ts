@@ -39,7 +39,7 @@ const i18n = createI18n({
 const globalOptions = {
   plugins: [i18n],
   stubs: {
-    SubscriptionTermsNote: { template: '<div />' }
+    CheckoutTermsNote: { template: '<div />' }
   }
 }
 

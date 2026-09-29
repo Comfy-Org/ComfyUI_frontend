@@ -9,6 +9,11 @@ import type {
   ToolPart
 } from './agentMessageParts'
 import { snapshotMessage } from './agentMessageParts'
+import type {
+  UndeliverableAskContext,
+  UndeliverableAskReason
+} from './undeliverableAskReporter'
+import { createUndeliverableAskReporter } from './undeliverableAskReporter'
 
 export type AgentChatEvent = Extract<
   AgentWsEvent,
@@ -113,7 +118,13 @@ export function createAgentEventTransport(
    * `shouldAwaitCanvasSync` at its default) never spuriously looks "caught
    * up".
    */
-  getCanvasSyncOutcomeCount: () => number = () => 0
+  getCanvasSyncOutcomeCount: () => number = () => 0,
+  reportUndeliverableAsk: (
+    data: AgentAskEvent['data'],
+    reason: UndeliverableAskReason,
+    context?: UndeliverableAskContext
+  ) => void = createUndeliverableAskReporter().report,
+  markAskDelivered: (data: AgentAskEvent['data']) => void = () => {}
 ): AgentEventTransport {
   let openText: TextPart | null = null
   let openThinking: ThinkingPart | null = null
@@ -299,9 +310,18 @@ export function createAgentEventTransport(
    * Applies one `agent_ask` frame. Only the `run_approval` kind renders a
    * part; returns `false` for any other kind, mirroring `ingest`'s early
    * `return` for that case.
+   *
+   * That `false` reaches a live turn and still shows the user nothing, while
+   * the server parks waiting for an answer — the same dead-panel outcome as an
+   * ask dropped in routing, so unknown input is reported. The supported
+   * `ask_user` kind is not an approval-card delivery failure.
    */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
-    if (data.kind !== 'run_approval') return false
+    if (data.kind === 'ask_user') return false
+    if (data.kind !== 'run_approval') {
+      reportUndeliverableAsk(data, 'unknown-kind')
+      return false
+    }
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
@@ -313,6 +333,7 @@ export function createAgentEventTransport(
       workflowName: data.context?.workflow_name || undefined
     }
     message.parts.push(part)
+    markAskDelivered(data)
     return true
   }
 
@@ -414,7 +435,11 @@ export function createAgentEventTransport(
   }
 
   function ingest(event: AgentChatEvent): void {
-    if (settled) return
+    if (settled) {
+      if (event.type === 'agent_ask')
+        reportUndeliverableAsk(event.data, 'settled-turn')
+      return
+    }
     if (applyChatEvent(event)) emit(snapshotMessage(message))
   }
 

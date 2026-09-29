@@ -16,13 +16,13 @@
     "addFromAssets": "Trascina una risorsa dal pannello delle risorse",
     "addNodesFromGraph": "Menziona nodi dal grafo",
     "addToPrompt": "Aggiungi al prompt",
-    "alpha": "ALPHA",
     "assetNotAttachable": "È possibile allegare immagini, video, audio, modelli 3D e file di testo",
     "attach": "Allega un file",
     "attachFiles": "Carica immagini o file",
     "attachmentTooLarge": "{name} è più grande di {limit}",
     "attachmentUploadFailed": "Non è stato possibile caricare {name}",
     "backToPreviousChat": "Torna alla chat precedente",
+    "beta": "BETA",
     "changeWorkflowForChat": "Cambia il flusso di lavoro che l'agente può modificare",
     "chatOptions": "Opzioni chat",
     "chooseWorkflow": "Scegli un flusso di lavoro",
@@ -126,6 +126,7 @@
     "runApproval": {
       "cancel": "Annulla",
       "lead": "Questo strumento vuole eseguire il workflow:",
+      "leadBound": "Questo strumento vuole eseguire questo workflow.",
       "question": "Approvi?",
       "run": "Esegui",
       "thisWorkflow": "questo workflow"
@@ -193,6 +194,9 @@
     "workedForSeconds": "Ha lavorato per {seconds} secondi",
     "workflowEditNotice": "L'agente può ora modificare {workflow}. Funziona su 1 workflow alla volta e puoi cambiare workflow durante la chat.",
     "workflowReferenceUnavailableReason": "Questo workflow di riferimento non è più disponibile oppure non hai accesso a esso.",
+    "workflowSyncFailedDetail": "Questo workflow è stato creato con una versione del documento incompatibile. Il tuo canvas è rimasto invariato.",
+    "workflowSyncFailedDetailCatalogMismatch": "Questo workflow utilizza un catalogo di nodi incompatibile con questo spazio di lavoro. Il tuo canvas è rimasto invariato.",
+    "workflowSyncFailedTitle": "Impossibile sincronizzare questo workflow",
     "workflows": "Workflow",
     "working": "In corso..."
   },
@@ -540,6 +544,7 @@
     "expiredCardDetail": "Questa carta è scaduta. Usa un altro metodo di pagamento.",
     "incorrectCvcDetail": "Il codice di sicurezza della carta non è corretto. Verificalo e riprova.",
     "insufficientFundsDetail": "Questo metodo di pagamento non dispone di fondi sufficienti. Prova un altro metodo di pagamento o contatta la tua banca.",
+    "operationAlreadyPendingDetail": "Un pagamento avviato in precedenza è ancora in fase di elaborazione. Deve essere completato prima di poter scegliere un piano diverso.",
     "paymentDeclinedDetail": "La tua banca ha rifiutato questo pagamento. Prova un altro metodo di pagamento o contatta la tua banca.",
     "processingErrorDetail": "Non è stato possibile elaborare il pagamento. Riprova o usa un altro metodo di pagamento.",
     "reconciliationDetail": "Il pagamento è stato ricevuto, ma non è stato possibile completare l'aggiornamento dello spazio di lavoro. Contatta l'assistenza e includi questo ID operazione:",
@@ -2223,8 +2228,10 @@
     "star": "Stella"
   },
   "imageCompare": {
+    "afterAlt": "Immagine dopo",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Immagine prima",
     "noImages": "Nessuna immagine da confrontare"
   },
   "imageCrop": {
@@ -3212,7 +3219,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -3280,6 +3286,7 @@
     "mask": "maschera",
     "merging": "fusione",
     "mesh": "mesh",
+    "ming image": "immagine ming",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -4385,9 +4392,12 @@
       "message": "La fatturazione team arriverà presto. Potrai abbonarti a un piano per il tuo workspace con prezzi per utente. Resta aggiornato per le novità.",
       "title": "Prossimamente"
     },
+    "billingTabBlocked": "Impossibile aprire la pagina di fatturazione. Consenti i popup per questo sito e riprova.",
     "cancelDialog": {
       "confirmCancel": "Annulla abbonamento",
       "description": "Il tuo accesso continua fino al {date}. Non ti verrà più addebitato nulla e il tuo workspace e i tuoi crediti saranno conservati. Puoi riattivare l'abbonamento in qualsiasi momento.",
+      "discountApplied": "Il tuo sconto è stato applicato, quindi questo abbonamento non è stato annullato. Chiudi questa finestra per visualizzare il piano aggiornato.",
+      "discountRefreshFailed": "Il tuo sconto è stato applicato. Aggiorna la pagina per visualizzare il piano aggiornato.",
       "endOfBillingPeriod": "fine del periodo di fatturazione",
       "failed": "Impossibile annullare l'abbonamento",
       "keepSubscription": "Mantieni abbonamento",
@@ -4577,6 +4587,7 @@
       "payAndSubscribe": "Paga e abbonati",
       "paymentMethod": "Metodo di pagamento",
       "paymentPopupBlocked": "Impossibile aprire la pagina di pagamento — consenti i popup e riprova.",
+      "pendingVerificationDetail": "Un pagamento avviato in precedenza richiede ancora la tua attenzione. Completandolo verrà attivato il piano scelto allora. Potrai scegliere un piano diverso una volta completato.",
       "perMember": "/ membro",
       "privacyPolicy": "Informativa sulla privacy",
       "promoCodePlaceholder": "Codice promozionale",
@@ -4809,6 +4820,7 @@
     },
     "clearAllFilters": "Cancella tutti i filtri",
     "error": {
+      "loading": "Impossibile aprire il modello. Riprova.",
       "templateNotFound": "Modello \"{templateName}\" non trovato"
     },
     "filtersApplied": "{count} filtro applicato | {count} filtri applicati",
@@ -5089,6 +5101,7 @@
   },
   "workspace": {
     "addedToWorkspace": "Sei stato aggiunto a:",
+    "deepLinkStayed": "Impossibile aprire quell'area di lavoro. Sei ancora in {workspaceName}.",
     "inviteAccepted": "Invito accettato",
     "inviteFailed": "Impossibile accettare l'invito",
     "switchFailed": "Cambio workspace non riuscito. Riprova.",

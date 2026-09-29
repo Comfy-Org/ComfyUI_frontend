@@ -16,13 +16,13 @@
     "addFromAssets": "Glissez une ressource depuis le panneau des ressources",
     "addNodesFromGraph": "Mentionner des nœuds du graphe",
     "addToPrompt": "Ajouter au prompt",
-    "alpha": "ALPHA",
     "assetNotAttachable": "Il est possible de joindre des images, vidéos, fichiers audio, modèles 3D et fichiers texte",
     "attach": "Joindre un fichier",
     "attachFiles": "Téléverser des images ou des fichiers",
     "attachmentTooLarge": "{name} dépasse {limit}",
     "attachmentUploadFailed": "Impossible d’importer {name}",
     "backToPreviousChat": "Retour à la discussion précédente",
+    "beta": "BÊTA",
     "changeWorkflowForChat": "Modifier le workflow que l’agent peut modifier",
     "chatOptions": "Options de discussion",
     "chooseWorkflow": "Choisir un workflow",
@@ -126,6 +126,7 @@
     "runApproval": {
       "cancel": "Annuler",
       "lead": "Cet outil souhaite exécuter le workflow :",
+      "leadBound": "Cet outil souhaite exécuter ce flux de travail.",
       "question": "Approuvez-vous ?",
       "run": "Exécuter",
       "thisWorkflow": "ce workflow"
@@ -193,6 +194,9 @@
     "workedForSeconds": "A travaillé pendant {seconds} secondes",
     "workflowEditNotice": "L’agent peut désormais modifier {workflow}. Il fonctionne sur un seul workflow à la fois, et vous pouvez changer de workflow pendant la discussion.",
     "workflowReferenceUnavailableReason": "Ce workflow référencé n’est plus disponible ou vous n’y avez pas accès.",
+    "workflowSyncFailedDetail": "Ce flux de travail a été créé avec une version de document incompatible. Votre canevas n’a pas été modifié.",
+    "workflowSyncFailedDetailCatalogMismatch": "Ce flux de travail utilise un catalogue de nœuds incompatible avec cet espace de travail. Votre canevas n’a pas été modifié.",
+    "workflowSyncFailedTitle": "Impossible de synchroniser ce flux de travail",
     "workflows": "Workflows",
     "working": "En cours..."
   },
@@ -540,6 +544,7 @@
     "expiredCardDetail": "Cette carte a expiré. Utilisez un autre mode de paiement.",
     "incorrectCvcDetail": "Le code de sécurité de la carte est incorrect. Vérifiez-le et réessayez.",
     "insufficientFundsDetail": "Ce mode de paiement ne dispose pas de fonds suffisants. Essayez un autre mode de paiement ou contactez votre banque.",
+    "operationAlreadyPendingDetail": "Un paiement que vous avez commencé plus tôt est toujours en cours de traitement. Il doit être finalisé avant que vous puissiez choisir un autre forfait.",
     "paymentDeclinedDetail": "Votre banque a refusé ce paiement. Essayez un autre mode de paiement ou contactez votre banque.",
     "processingErrorDetail": "Votre paiement n’a pas pu être traité. Réessayez ou utilisez un autre mode de paiement.",
     "reconciliationDetail": "Votre paiement a été reçu, mais nous n’avons pas pu terminer la mise à jour de votre espace de travail. Contactez l’assistance et indiquez cet ID d’opération :",
@@ -2223,8 +2228,10 @@
     "star": "Étoile"
   },
   "imageCompare": {
+    "afterAlt": "Image après",
     "batchLabelA": "A :",
     "batchLabelB": "B :",
+    "beforeAlt": "Image avant",
     "noImages": "Aucune image à comparer"
   },
   "imageCrop": {
@@ -3212,7 +3219,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -3280,6 +3286,7 @@
     "mask": "masque",
     "merging": "fusion",
     "mesh": "maillage",
+    "ming image": "image ming",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -4385,9 +4392,12 @@
       "message": "La facturation d'équipe arrive bientôt. Vous pourrez souscrire à un abonnement pour votre espace de travail avec un tarif par utilisateur. Restez à l'écoute pour les mises à jour.",
       "title": "Bientôt disponible"
     },
+    "billingTabBlocked": "Impossible d’ouvrir la page de facturation. Autorisez les fenêtres contextuelles pour ce site, puis réessayez.",
     "cancelDialog": {
       "confirmCancel": "Annuler l'abonnement",
       "description": "Votre accès continue jusqu'au {date}. Vous ne serez plus facturé, et votre espace de travail ainsi que vos crédits seront conservés. Vous pouvez vous réabonner à tout moment.",
+      "discountApplied": "Votre réduction a été appliquée ; cet abonnement n’a donc pas été annulé. Fermez cette fenêtre pour voir votre forfait mis à jour.",
+      "discountRefreshFailed": "Votre réduction a été appliquée. Actualisez la page pour voir votre forfait mis à jour.",
       "endOfBillingPeriod": "fin de la période de facturation",
       "failed": "Échec de l'annulation de l'abonnement",
       "keepSubscription": "Conserver l'abonnement",
@@ -4577,6 +4587,7 @@
       "payAndSubscribe": "Payer et s’abonner",
       "paymentMethod": "Mode de paiement",
       "paymentPopupBlocked": "Impossible d'ouvrir la page de paiement — veuillez autoriser les pop-ups et réessayer.",
+      "pendingVerificationDetail": "Un paiement que vous avez commencé plus tôt requiert toujours votre attention. Le finaliser active le forfait que vous aviez alors choisi. Vous pourrez choisir un autre forfait une fois qu’il sera finalisé.",
       "perMember": "/ membre",
       "privacyPolicy": "Politique de confidentialité",
       "promoCodePlaceholder": "Code promo",
@@ -4809,6 +4820,7 @@
     },
     "clearAllFilters": "Effacer tous les filtres",
     "error": {
+      "loading": "Impossible d’ouvrir le modèle. Veuillez réessayer.",
       "templateNotFound": "Modèle \"{templateName}\" introuvable"
     },
     "filtersApplied": "{count} filtre appliqué | {count} filtres appliqués",
@@ -5089,6 +5101,7 @@
   },
   "workspace": {
     "addedToWorkspace": "Vous avez été ajouté à :",
+    "deepLinkStayed": "Impossible d’ouvrir cet espace de travail. Vous êtes toujours dans {workspaceName}.",
     "inviteAccepted": "Invitation acceptée",
     "inviteFailed": "Échec de l'acceptation de l'invitation",
     "switchFailed": "Échec du changement d’espace de travail. Veuillez réessayer.",

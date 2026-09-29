@@ -14,6 +14,9 @@ import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionCont
 import type {
   AddCreditsClickMetadata,
   AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
@@ -710,6 +713,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED, {})
   }
 
+  trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_CONSENT_SHOWN, metadata)
+  }
+
+  trackAgentConsentResolved(metadata: AgentConsentResolvedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_CONSENT_RESOLVED, metadata)
+  }
+
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
   }
@@ -728,6 +739,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_CONSENT_OFFER_EXITED, metadata)
   }
 
   trackAgentOnboardingNotShown(

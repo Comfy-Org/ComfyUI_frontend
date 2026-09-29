@@ -1048,7 +1048,7 @@ describe('useFeatureFlags', () => {
 
     it('is false off-cloud even when the authenticated config grants it', () => {
       vi.mocked(distributionTypes).isCloud = false
-      remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = { 'agent-in-app-experience': true }
 
       const { flags } = useFeatureFlags()
@@ -1073,7 +1073,7 @@ describe('useFeatureFlags', () => {
     })
 
     it('is false when the authenticated config omits the key', () => {
-      remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = {}
 
       const { flags } = useFeatureFlags()
@@ -1096,7 +1096,7 @@ describe('useFeatureFlags', () => {
     })
 
     it('drops the grant when the session itself is gone', () => {
-      remoteConfigState.value = 'error'
+      authenticatedRemoteConfigState.value = 'error'
       remoteConfig.value = {}
       sessionAgentGrant.value = undefined
 
@@ -1105,7 +1105,7 @@ describe('useFeatureFlags', () => {
     })
 
     it('treats an explicitly revoked grant as off during a refresh failure', () => {
-      remoteConfigState.value = 'error'
+      authenticatedRemoteConfigState.value = 'error'
       sessionAgentGrant.value = false
 
       const { flags } = useFeatureFlags()

@@ -448,10 +448,12 @@ import type {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import {
-  DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS,
   getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
+} from '@comfyorg/account-ui/billing/catalog'
+import {
+  DEFAULT_TEAM_PLAN_STOP_INDEX,
+  TEAM_PLAN_CREDIT_STOPS
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'

@@ -18,6 +18,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import {
   BILLING_OPERATION_TELEMETRY_EVENT,
+  awaitsHostedAction,
   validateActionUrl
 } from '@comfyorg/account-core/billing'
 import { loadStripe } from '@stripe/stripe-js/pure'
@@ -255,8 +256,9 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     state: PendingBillingOperation,
     kind: keyof typeof PROGRESS_SUMMARY
   ) {
-    const progress: ProgressKind =
-      state.actionUrl === undefined ? 'processing' : 'action'
+    const progress: ProgressKind = awaitsHostedAction(state)
+      ? 'action'
+      : 'processing'
     const current = progressToasts.get(state.id)
     if (current?.kind === progress) return
     clearProgressToast(state.id)
@@ -487,8 +489,10 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     return outcome
   }
 
-  function recover() {
-    void sdk.lifecycle.recover()
+  /** Adopts the operation the server reports pending; true once one is adopted. */
+  async function recover(): Promise<boolean> {
+    const adopted = await sdk.lifecycle.recover()
+    return adopted.status === 'ok' && adopted.value !== undefined
   }
 
   /**
