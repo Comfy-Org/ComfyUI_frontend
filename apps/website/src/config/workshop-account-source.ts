@@ -72,5 +72,5 @@ export function stopWorkshopAccountSource(): void {
 }
 
 export function resetWorkshopAccountSource() {
-  resolution = undefined
+  decision = undefined
 }
