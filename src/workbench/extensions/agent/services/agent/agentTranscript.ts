@@ -52,11 +52,15 @@ function attachmentRefNames(value: unknown): string[] {
 function parseUserAttachments(
   content: Record<string, unknown> | undefined
 ): UserAttachment[] | undefined {
-  const names = Array.isArray(content?.attachments)
+  const attachmentNames = Array.isArray(content?.attachments)
     ? content.attachments.filter(
         (name): name is string => typeof name === 'string'
       )
-    : attachmentRefNames(content?.attachment_refs)
+    : []
+  const names =
+    attachmentNames.length > 0
+      ? attachmentNames
+      : attachmentRefNames(content?.attachment_refs)
   return names.length > 0
     ? names.map((name) => ({ name, ref: name }))
     : undefined

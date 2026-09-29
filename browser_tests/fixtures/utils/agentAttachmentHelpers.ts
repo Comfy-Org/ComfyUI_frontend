@@ -11,10 +11,10 @@ type DraggedAssetInfo = NonNullable<ReturnType<typeof parseAssetInfo>>
 
 export interface ExpectedAssetPreview {
   filename: string
+  ref?: string
   kind: Extract<MediaKind, 'image' | 'video'>
-  width: number
-  height: number
-  visible: boolean
+  width?: number
+  height?: number
 }
 
 export async function dropAssets(
@@ -23,12 +23,13 @@ export async function dropAssets(
   assets: ExpectedAssetPreview[],
   type: DraggedAssetInfo['type'] = 'output'
 ) {
-  for (const { filename, kind } of assets) {
+  for (const { filename, ref = filename, kind } of assets) {
     const payload: DraggedAssetInfo = {
       filename,
       subfolder: '',
       type,
-      attachment_ref: filename,
+      display_name: filename,
+      attachment_ref: ref,
       media_kind: kind
     }
     const dataTransfer = await page.evaluateHandle(
@@ -49,10 +50,33 @@ export async function expectAssets(
   assets: ExpectedAssetPreview[],
   timeout = 10_000
 ) {
-  const previews = panel.getByTestId(/^reply-(image|video)-preview$/)
+  const userMessage = panel
+    .getByTestId('user-message-bubble')
+    .last()
+    .locator('..')
+  const previews = userMessage
+    .getByTestId('reply-asset-group')
+    .locator('img, video')
   await expect(previews).toHaveCount(assets.length, { timeout })
-  for (const [index, { visible }] of assets.entries()) {
-    await expect(previews.nth(index)).toBeVisible({ visible, timeout })
+  for (const [index, asset] of assets.entries()) {
+    const preview = previews.nth(index)
+    await expect(preview).toBeVisible({ timeout })
+    await expect(preview.locator('..')).toHaveAccessibleName(asset.filename, {
+      timeout
+    })
+    await expect
+      .poll(
+        () =>
+          preview.evaluate((element) =>
+            element instanceof HTMLImageElement
+              ? element.naturalWidth > 0 && element.naturalHeight > 0
+              : element instanceof HTMLVideoElement
+                ? element.videoWidth > 0 && element.videoHeight > 0
+                : false
+          ),
+        { timeout }
+      )
+      .toBe(true)
   }
   await expect
     .poll(
@@ -61,15 +85,20 @@ export async function expectAssets(
           elements.map((element) => {
             if (element instanceof HTMLImageElement) {
               return {
-                filename: element.alt,
                 kind: 'image',
+                label: element.alt,
+                ref: new URL(
+                  element.currentSrc,
+                  location.href
+                ).searchParams.get('filename'),
                 width: element.naturalWidth,
                 height: element.naturalHeight
               }
             }
             if (element instanceof HTMLVideoElement) {
               return {
-                filename: element.currentSrc
+                label: element.parentElement?.getAttribute('aria-label'),
+                ref: element.currentSrc
                   ? new URL(element.currentSrc, location.href).searchParams.get(
                       'filename'
                     )
@@ -85,11 +114,12 @@ export async function expectAssets(
       { timeout }
     )
     .toEqual(
-      assets.map(({ filename, kind, width, height }) => ({
-        filename,
+      assets.map(({ filename, ref = filename, kind, width, height }) => ({
         kind,
-        width,
-        height
+        label: filename,
+        ref,
+        width: width ?? expect.any(Number),
+        height: height ?? expect.any(Number)
       }))
     )
 }

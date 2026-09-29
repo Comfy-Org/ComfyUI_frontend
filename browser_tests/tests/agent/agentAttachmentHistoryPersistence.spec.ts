@@ -37,22 +37,18 @@ const firstImage = {
   filename: 'ComfyUI_00002_.png',
   kind: 'image',
   width: 64,
-  height: 64,
-  visible: true
+  height: 64
 } satisfies ExpectedAssetPreview
 const secondImage = {
   filename: 'ComfyUI_00003_.png',
   kind: 'image',
   width: 32,
-  height: 32,
-  visible: true
+  height: 32
 } satisfies ExpectedAssetPreview
 const video = {
   filename: 'ComfyUI_00004_.mp4',
-  kind: 'video',
-  width: 128,
-  height: 128,
-  visible: true
+  ref: 'asset-video.mp4',
+  kind: 'video'
 } satisfies ExpectedAssetPreview
 const references = [
   { name: firstImage.filename, id: 'asset-first', kind: 'image' },
@@ -60,6 +56,11 @@ const references = [
 ]
 
 for (const scenario of [
+  {
+    name: 'references when filenames are present but empty',
+    assets: [firstImage],
+    historyContent: { attachments: [], attachment_refs: [references[0]] }
+  },
   {
     name: 'one image from filenames',
     assets: [firstImage],
@@ -81,6 +82,7 @@ for (const scenario of [
   {
     name: 'an image and video from references only',
     assets: [firstImage, video],
+    historyAssets: [firstImage, { ...video, ref: video.filename }],
     historyContent: {
       attachment_refs: [
         references[0],
@@ -104,6 +106,12 @@ for (const scenario of [
         `**/view?filename=${secondImage.filename}&type=input`,
         (route) => route.fulfill({ path: assetPath('image32x32.webp') })
       )
+      await page.route(`**/view?filename=${video.ref}&type=input`, (route) =>
+        route.fulfill({
+          path: assetPath('workflowInMedia/workflow.mp4'),
+          contentType: 'video/mp4'
+        })
+      )
       await page.route(
         `**/view?filename=${video.filename}&type=input`,
         (route) =>
@@ -125,15 +133,17 @@ for (const scenario of [
           .split('/')
           .at(-2)!
         if (route.request().method() === 'POST') {
-          attachmentThreadId = threadId
-          return route.fallback()
+          return route.fallback().then(() => {
+            attachmentThreadId = threadId
+          })
         }
         if (route.request().method() !== 'GET') return route.fallback()
+        if (!attachmentThreadId) return route.fallback()
         if (threadId !== attachmentThreadId) {
           return route.fulfill(jsonRoute([]))
         }
         const request = promptHistory.requests.at(0)
-        if (!request) return route.fallback()
+        if (!request) throw new Error('Attachment request was not recorded')
         const turnId = 'e2e-attachment-turn'
         const messages: AgentMessage[] = [
           {
@@ -190,16 +200,22 @@ for (const scenario of [
       // this shape on the DataTransfer.
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
       await dropAssets(page, composer, scenario.assets, 'input')
-      await expect(panel.getByTestId('composer-asset-section')).toContainText(
-        filenames[0]
-      )
+      for (const filename of filenames) {
+        await expect(panel.getByTestId('composer-asset-section')).toContainText(
+          filename
+        )
+      }
 
       await composer.pressSequentially('compare these attachments')
       await panel
         .getByRole('button', { name: enMessages.agent.send, exact: true })
         .click()
       await expect.poll(() => promptHistory.requests.length).toBe(1)
-      expect(promptHistory.requests[0].attachments).toEqual(filenames)
+      expect(promptHistory.requests[0].attachments).toEqual(
+        scenario.assets.map((asset) =>
+          'ref' in asset && asset.ref ? asset.ref : asset.filename
+        )
+      )
 
       await expectAssets(panel, scenario.assets)
       await panel.screenshot({ path: testInfo.outputPath('before-reload.png') })
@@ -217,7 +233,11 @@ for (const scenario of [
       const reopenedPanel = page.locator('#agent-panel-root')
       await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
-      await expectAssets(reopenedPanel, scenario.assets)
+      const historyAssets =
+        'historyAssets' in scenario && scenario.historyAssets
+          ? scenario.historyAssets
+          : scenario.assets
+      await expectAssets(reopenedPanel, historyAssets)
       await reopenedPanel.screenshot({
         path: testInfo.outputPath('after-reload.png')
       })
@@ -241,7 +261,7 @@ for (const scenario of [
       await expect(
         reopenedPanel.getByTestId('user-message-bubble')
       ).toContainText('compare these attachments')
-      await expectAssets(reopenedPanel, scenario.assets)
+      await expectAssets(reopenedPanel, historyAssets)
       await reopenedPanel.screenshot({
         path: testInfo.outputPath('after-chat-switch.png')
       })
