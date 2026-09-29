@@ -53,8 +53,6 @@ describe('refreshRemoteConfig', () => {
   }
 
   beforeEach(() => {
-    localStorage.clear()
-    sessionStorage.clear()
     vi.mocked(api.apiURL).mockImplementation(
       (route: string) => `/ComfyUI/api${route}`
     )
