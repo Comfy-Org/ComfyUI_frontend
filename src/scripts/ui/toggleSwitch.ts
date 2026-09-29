@@ -1,47 +1,56 @@
 import { $el } from '../ui'
 
-/**
- * @typedef { { text: string, value?: string, tooltip?: string } } ToggleSwitchItem
- */
+interface ToggleSwitchItem {
+  text: string
+  value?: string
+  tooltip?: string
+  selected?: boolean
+}
+
+type ResolvedToggleSwitchItem = ToggleSwitchItem & { value: string }
+
+interface ToggleSwitchOptions {
+  onChange?: (e: {
+    item: ResolvedToggleSwitchItem
+    prev?: ResolvedToggleSwitchItem
+  }) => void
+}
+
 /**
  * Creates a toggle switch element
- * @param { string } name
- * @param { Array<string> | ToggleSwitchItem } items
- * @param { Object } [opts]
- * @param { (e: { item: ToggleSwitchItem, prev?: ToggleSwitchItem }) => void } [opts.onChange]
  */
-// @ts-expect-error fixme ts strict error
-export function toggleSwitch(name, items, e?) {
+export function toggleSwitch(
+  name: string,
+  items: (string | ToggleSwitchItem)[],
+  e?: ToggleSwitchOptions
+) {
   const onChange = e?.onChange
+  const switchItems: ResolvedToggleSwitchItem[] = items.map((item) =>
+    typeof item === 'string'
+      ? { text: item, value: item }
+      : { ...item, value: item.value ?? item.text }
+  )
+  const initialIndex = Math.max(
+    switchItems.findLastIndex((item) => item.selected),
+    0
+  )
 
-  // @ts-expect-error fixme ts strict error
-  let selectedIndex
-  // @ts-expect-error fixme ts strict error
-  let elements
+  let selectedIndex: number | undefined
 
-  // @ts-expect-error fixme ts strict error
-  function updateSelected(index) {
-    // @ts-expect-error fixme ts strict error
+  function updateSelected(index: number) {
     if (selectedIndex != null) {
-      // @ts-expect-error fixme ts strict error
       elements[selectedIndex].classList.remove('comfy-toggle-selected')
     }
     onChange?.({
-      item: items[index],
-      // @ts-expect-error fixme ts strict error
-      prev: selectedIndex == null ? undefined : items[selectedIndex]
+      item: switchItems[index],
+      prev: selectedIndex == null ? undefined : switchItems[selectedIndex]
     })
     selectedIndex = index
-    // @ts-expect-error fixme ts strict error
     elements[selectedIndex].classList.add('comfy-toggle-selected')
   }
 
-  // @ts-expect-error fixme ts strict error
-  elements = items.map((item, i) => {
-    if (typeof item === 'string') item = { text: item }
-    if (!item.value) item.value = item.text
-
-    const toggle = $el(
+  const elements = switchItems.map((item, i) =>
+    $el(
       'label',
       {
         textContent: item.text,
@@ -50,25 +59,17 @@ export function toggleSwitch(name, items, e?) {
       $el('input', {
         name,
         type: 'radio',
-        value: item.value ?? item.text,
-        checked: item.selected,
+        value: item.value,
+        checked: i === initialIndex,
         onchange: () => {
           updateSelected(i)
         }
       })
     )
-    if (item.selected) {
-      updateSelected(i)
-    }
-    return toggle
-  })
+  )
 
   const container = $el('div.comfy-toggle-switch', elements)
-
-  if (selectedIndex == null) {
-    elements[0].children[0].checked = true
-    updateSelected(0)
-  }
+  updateSelected(initialIndex)
 
   return container
 }

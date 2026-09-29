@@ -8,12 +8,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { cleanupFakeModel } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 test.describe('Error overlay', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-  })
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
   function getOverlay(page: Page) {
     return page.getByTestId(TestIds.dialogs.errorOverlay)
@@ -99,10 +94,6 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
   })
 
   test.describe('View details flow', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setup()
-    })
-
     async function triggerExecutionError(comfyPage: {
       canvasOps: { disconnectEdge: () => Promise<void> }
       page: Page
@@ -196,18 +187,18 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
 
       const overlay = getOverlay(comfyPage.page)
       await expect(overlay).toBeVisible()
-      await expect(overlay).toContainText(/2 errors found/i)
+      await expect(overlay).toContainText(/2 issues found/i)
       await expect(
         overlay.getByTestId(TestIds.dialogs.errorOverlayMessages)
-      ).toHaveText(/Resolve them before running the workflow\./i)
+      ).toHaveText(/Resolve these issues before running the workflow\./i)
 
       const node = await comfyPage.nodeOps.getNodeRefById('1')
       await node.click('title')
 
-      await expect(overlay).toContainText(/2 errors found/i)
+      await expect(overlay).toContainText(/2 issues found/i)
       await expect(
         overlay.getByTestId(TestIds.dialogs.errorOverlayMessages)
-      ).toHaveText(/Resolve them before running the workflow\./i)
+      ).toHaveText(/Resolve these issues before running the workflow\./i)
     })
   })
 })

@@ -1,4 +1,4 @@
-import { readFileAsArrayBuffer } from './readFile'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 
 export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
   const dataView = new DataView(buffer)
@@ -51,10 +51,7 @@ export async function getFromFlacFile(
 function parseVorbisComment(dataView: DataView): Record<string, string> {
   let offset = 0
   const vendorLength = dataView.getUint32(offset, true)
-  offset += 4
-  // @ts-expect-error unused variable
-  const vendorString = getString(dataView, offset, vendorLength)
-  offset += vendorLength
+  offset += 4 + vendorLength
 
   const userCommentListLength = dataView.getUint32(offset, true)
   offset += 4

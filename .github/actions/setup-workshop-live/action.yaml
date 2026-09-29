@@ -1,0 +1,18 @@
+name: Setup Workshop live tests
+description: Install the website test runner, media decoders, and browsers
+inputs:
+  browsers:
+    description: Playwright browsers to install
+    default: chromium
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/setup-frontend
+      with:
+        node_cache: 'false'
+    - shell: bash
+      run: sudo apt-get update && sudo apt-get install -y ffmpeg
+    - shell: bash
+      env:
+        BROWSERS: ${{ inputs.browsers }}
+      run: pnpm --filter @comfyorg/website exec playwright install --with-deps $BROWSERS

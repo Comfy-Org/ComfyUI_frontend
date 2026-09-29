@@ -49,7 +49,7 @@ export class AnimationManager implements AnimationManagerInterface {
     }
 
     let animations: THREE.AnimationClip[] = []
-    if (model.animations?.length > 0) {
+    if (model.animations.length > 0) {
       animations = model.animations
     } else if (
       originalModel &&
@@ -95,11 +95,7 @@ export class AnimationManager implements AnimationManagerInterface {
   }
 
   updateSelectedAnimation(index: number): void {
-    if (
-      !this.currentAnimation ||
-      !this.animationClips ||
-      index >= this.animationClips.length
-    ) {
+    if (!this.currentAnimation || index >= this.animationClips.length) {
       console.warn('Invalid animation update request')
       return
     }

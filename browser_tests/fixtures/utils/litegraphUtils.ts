@@ -34,7 +34,7 @@ export class SubgraphSlotReference {
 
         const slots =
           type === 'input' ? currentGraph.inputs : currentGraph.outputs
-        if (!slots || slots.length === 0) {
+        if (slots.length === 0) {
           throw new Error(`No ${type} slots found in subgraph`)
         }
 
@@ -45,10 +45,6 @@ export class SubgraphSlotReference {
 
         if (!slot) {
           throw new Error(`${type} slot '${slotName}' not found`)
-        }
-
-        if (!slot.pos) {
-          throw new Error(`${type} slot '${slotName}' has no position`)
         }
 
         return window.app!.canvasPosToClientPos([slot.pos[0], slot.pos[1]])
@@ -76,10 +72,6 @@ export class SubgraphSlotReference {
 
         const node =
           type === 'input' ? currentGraph.inputNode : currentGraph.outputNode
-
-        if (!node) {
-          throw new Error(`No ${type} node found in subgraph`)
-        }
 
         return window.app!.canvasPosToClientPos([
           node.emptySlot.pos[0],
@@ -135,6 +127,9 @@ class NodeSlotReference {
       },
       [this.type, this.node.id, this.index] as const
     )
+  }
+  async expectLinkCount(expected: number, message?: string): Promise<void> {
+    await expect.poll(() => this.getLinkCount(), message).toBe(expected)
   }
   async removeLinks() {
     await this.node.comfyPage.page.evaluate(
@@ -192,21 +187,29 @@ class NodeWidgetReference {
    * @returns The position of the widget's center
    */
   async getPosition(): Promise<Position> {
-    const pos: [number, number] = await this.node.comfyPage.page.evaluate(
+    const position = await this.node.comfyPage.page.waitForFunction(
       ([id, index]) => {
         const node = window.app!.canvas.graph!.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
-        const widget = node.widgets![index]
+        const widget = node.widgets?.at(index)
         if (!widget) throw new Error(`Widget ${index} not found.`)
+        if (widget.last_y === undefined) {
+          window.app!.canvas.setDirty(true, true)
+          return null
+        }
 
         const [x, y, w, _h] = node.getBounding()
-        return window.app!.canvasPosToClientPos([
+        const pos = window.app!.canvasPosToClientPos([
           x + w / 2,
-          y + window.LiteGraph!['NODE_TITLE_HEIGHT'] + widget.last_y! + 1
+          y + window.LiteGraph!['NODE_TITLE_HEIGHT'] + widget.last_y + 1
         ])
+        return pos.every(Number.isFinite) ? pos : null
       },
       [this.node.id, this.index] as const
     )
+    const pos = await position.jsonValue()
+    await position.dispose()
+    if (!pos) throw new Error('Widget position is unavailable')
     return {
       x: pos[0],
       y: pos[1]
@@ -219,9 +222,9 @@ class NodeWidgetReference {
   async getSocketPosition(): Promise<Position> {
     const pos: [number, number] = await this.node.comfyPage.page.evaluate(
       ([id, index]) => {
-        const node = window.app!.graph!.getNodeById(id)
+        const node = window.app!.graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
-        const widget = node.widgets![index]
+        const widget = node.widgets?.at(index)
         if (!widget) throw new Error(`Widget ${index} not found.`)
 
         const slot = node.inputs.find(
@@ -260,9 +263,9 @@ class NodeWidgetReference {
   async getValue() {
     return await this.node.comfyPage.page.evaluate(
       ([id, index]) => {
-        const node = window.app!.graph!.getNodeById(id)
+        const node = window.app!.graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
-        const widget = node.widgets![index]
+        const widget = node.widgets?.at(index)
         if (!widget) throw new Error(`Widget ${index} not found.`)
         return widget.value
       },

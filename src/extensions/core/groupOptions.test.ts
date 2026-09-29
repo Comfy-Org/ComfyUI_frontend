@@ -12,24 +12,15 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import type { ComfyExtension } from '@/types/comfy'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-const { registerExtension } = vi.hoisted(() => ({
-  registerExtension: vi.fn()
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: { registerExtension }
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => 10 })
-}))
+vi.mock(import('@/scripts/app'))
 
 import '@/extensions/core/groupOptions'
 
-const ext = registerExtension.mock.calls[0]?.[0] as ComfyExtension
+const ext = vi.mocked(app.registerExtension).mock.calls[0]?.[0]
 
 const graphChange = vi.fn()
 
@@ -83,6 +74,7 @@ const BASE_GROUP_ITEMS: (string | null)[] = [
 
 beforeEach(() => {
   graphChange.mockClear()
+  vi.mocked(useSettingStore().get).mockReturnValue(10)
 })
 
 describe('Comfy.GroupOptions canvas menu', () => {
@@ -158,7 +150,7 @@ describe('Comfy.GroupOptions canvas menu', () => {
     ['Set Group Nodes to Always', LGraphEventMode.ALWAYS],
     ['Set Group Nodes to Never', LGraphEventMode.NEVER],
     ['Bypass Group Nodes', LGraphEventMode.BYPASS]
-  ])('applies %s to every node in the group', ([label, expected]) => {
+  ])('applies %s to every node in the group', async ([label, expected]) => {
     const nodes = [
       makeNode(LGraphEventMode.ON_TRIGGER),
       makeNode(LGraphEventMode.ON_TRIGGER)
@@ -167,7 +159,7 @@ describe('Comfy.GroupOptions canvas menu', () => {
     const item = items.find((entry) => entry?.content === label)
     const menuElement: ContextMenuDivElement = document.createElement('div')
 
-    item?.callback?.call(menuElement)
+    await item?.callback?.call(menuElement)
 
     expect(nodes.map((node) => node.mode)).toEqual([expected, expected])
     expect(graphChange).toHaveBeenCalledTimes(nodes.length)

@@ -491,7 +491,7 @@ describe('resolveInitialLayerState', () => {
     const resolved = resolveInitialLayerState(null, ['hash-a'], bboxes, {
       w: Number.NaN,
       h: 1280
-    } as { w: number; h: number })
+    })
     expect(resolved?.canvas).toBeUndefined()
   })
 

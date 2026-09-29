@@ -17,6 +17,10 @@ function createErrorEvent(
   })
 }
 
+const FIREBASE_ASSERTION =
+  '@firebase/auth: Auth (11.10.0): INTERNAL ASSERTION FAILED: Pending promise was never set'
+const FIREBASE_FINGERPRINT = 'firebase-auth-pending-promise'
+
 describe('rumBeforeSend', () => {
   beforeEach(() => {
     setAssertReporter(vi.fn(), { forwardsToRum: true })
@@ -34,9 +38,27 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it('drops browser-extension messaging noise', () => {
+    const event = createErrorEvent(
+      'Error: Invalid call to runtime.sendMessage(). Tab not found.'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
   it('drops the console echo of an assertion the reporter also reports', () => {
     const event = createErrorEvent(
       '[Assertion failed]: graph is corrupt',
+      undefined,
+      'console'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('drops the console echo of an error reportError already sent', () => {
+    const event = createErrorEvent(
+      '[Reported error]: canvas_layout_listener_failed Error: listener failed',
       undefined,
       'console'
     )
@@ -102,6 +124,31 @@ describe('rumBeforeSend', () => {
     expect(event.context).toEqual({
       error: { origin: 'extension', extension: 'comfyui-foo' }
     })
+  })
+
+  it('groups Firebase pending-promise errors without rewriting them', () => {
+    for (const message of [
+      `[2026-08-27T20:58:34.782Z]  ${FIREBASE_ASSERTION}`,
+      `[2026-08-27T20:58:34.783Z]  ${FIREBASE_ASSERTION}`,
+      'INTERNAL ASSERTION FAILED: Pending promise was never set'
+    ]) {
+      const event = createErrorEvent(message)
+
+      expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+      expect(event.error).toMatchObject({
+        message,
+        fingerprint: FIREBASE_FINGERPRINT
+      })
+    }
+  })
+
+  it('does not fingerprint unrelated timestamped errors', () => {
+    const message = '[2026-08-27T20:58:34.782Z]  some-extension: it broke'
+    const event = createErrorEvent(message)
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    expect(event.error.message).toBe(message)
+    expect(event.error.fingerprint).toBeUndefined()
   })
 })
 

@@ -2,17 +2,23 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
+const NULL = '\0'
+
+/** Extracts the JSON text from an `<key>\0{...}\0` ID3 text frame. */
+function readNullTerminatedJson(header: string, key: string) {
+  const frameStart = header.indexOf(`${key}${NULL}{`)
+  if (frameStart === -1) return undefined
+  const jsonStart = frameStart + key.length + NULL.length
+  const jsonEnd = header.indexOf(`}${NULL}`, jsonStart)
+  if (jsonEnd === -1) return undefined
+  return header.slice(jsonStart, jsonEnd + 1)
+}
+
 export async function getMp3Metadata(file: File) {
-  const reader = new FileReader()
-  const read_process = new Promise<ArrayBuffer | null>((r) => {
-    reader.onload = (event) => r((event?.target?.result as ArrayBuffer) ?? null)
-    reader.onerror = () => r(null)
-    reader.onabort = () => r(null)
-  })
-  reader.readAsArrayBuffer(file)
-  const arrayBuffer = await read_process
+  const arrayBuffer = await readFileAsArrayBuffer(file)
   if (!arrayBuffer) return { prompt: undefined, workflow: undefined }
   //https://stackoverflow.com/questions/7302439/how-can-i-determine-that-a-particular-file-is-in-fact-an-mp3-file#7302482
   const sig_bytes = new Uint8Array(arrayBuffer, 0, 3)
@@ -35,7 +41,7 @@ export async function getMp3Metadata(file: File) {
   }
   let workflow: ComfyWorkflowJSON | undefined
   let prompt: ComfyApiWorkflow | undefined
-  let prompt_s = header.match(/prompt\u0000(\{.*?\})\u0000/s)?.[1]
+  const prompt_s = readNullTerminatedJson(header, 'prompt')
   if (prompt_s) {
     try {
       prompt = parseJsonWithNonFinite<ComfyApiWorkflow>(prompt_s)
@@ -43,7 +49,7 @@ export async function getMp3Metadata(file: File) {
       console.error('Failed to parse MP3 prompt metadata', e)
     }
   }
-  let workflow_s = header.match(/workflow\u0000(\{.*?\})\u0000/s)?.[1]
+  const workflow_s = readNullTerminatedJson(header, 'workflow')
   if (workflow_s) {
     try {
       workflow = parseJsonWithNonFinite<ComfyWorkflowJSON>(workflow_s)
