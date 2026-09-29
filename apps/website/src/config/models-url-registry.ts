@@ -11,7 +11,11 @@ type PageKind = 'hub' | 'model' | 'workflow' | 'app' | 'reserved'
 
 export type ModelsUrlEntry =
   | { readonly path: string; readonly kind: PageKind }
-  | { readonly path: string; readonly kind: 'alias'; readonly target: string }
+  | {
+      readonly path: string
+      readonly kind: 'alias'
+      readonly destination: string
+    }
 
 export type ModelsUrlKind = ModelsUrlEntry['kind']
 
@@ -39,10 +43,10 @@ export function modelsUrlEntries(
     ...[...models, ...workflows].map((slug) =>
       page('reserved')(`${slug}/page.json`)
     ),
-    ...Array.from(aliases, ([slug, target]) => ({
+    ...Array.from(aliases, ([slug, canonical]) => ({
       path: at(slug),
       kind: 'alias' as const,
-      target: at(target)
+      destination: at(canonical)
     }))
   ]
 }
@@ -61,10 +65,10 @@ export function buildModelsUrlRegistry(
   }
   for (const entry of registry.values()) {
     if (entry.kind !== 'alias') continue
-    const target = registry.get(entry.target)
+    const target = registry.get(entry.destination)
     if (!target || target.kind === 'alias')
       throw new Error(
-        `${entry.path} redirects to ${entry.target}, which is not a registered page`
+        `${entry.path} redirects to ${entry.destination}, which is not a registered page`
       )
   }
   return registry

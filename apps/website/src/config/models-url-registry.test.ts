@@ -36,7 +36,7 @@ describe('models URL registry', () => {
     expect(registry.get('/models/acme--image')).toEqual({
       path: '/models/acme--image',
       kind: 'alias',
-      target: '/models/acme--image--generate-images'
+      destination: '/models/acme--image--generate-images'
     })
   })
 
@@ -67,14 +67,14 @@ describe('models URL registry', () => {
   it.for<[string, ModelsUrlEntry[]]>([
     [
       'an unregistered page',
-      [{ path: '/models/old', kind: 'alias', target: '/models/missing' }]
+      [{ path: '/models/old', kind: 'alias', destination: '/models/missing' }]
     ],
     [
       'another alias',
       [
         { path: '/models/new', kind: 'model' },
-        { path: '/models/older', kind: 'alias', target: '/models/old' },
-        { path: '/models/old', kind: 'alias', target: '/models/new' }
+        { path: '/models/older', kind: 'alias', destination: '/models/old' },
+        { path: '/models/old', kind: 'alias', destination: '/models/new' }
       ]
     ]
   ])('rejects an alias that redirects to %s', ([, entries]) => {
