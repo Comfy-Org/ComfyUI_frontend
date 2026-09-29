@@ -16,11 +16,13 @@ const {
   current,
   siblings,
   modelName,
+  takePicker = true,
   locale = 'en'
 } = defineProps<{
   current: Take
   siblings: readonly Take[]
   modelName: string
+  takePicker?: boolean
   locale?: Locale
 }>()
 
@@ -59,11 +61,11 @@ async function onKeydown(event: KeyboardEvent) {
 
 <template>
   <div class="flex max-w-full min-w-0 items-center gap-2.5">
-    <span class="text-[15px] font-semibold text-primary-warm-white">
+    <span class="shrink-0 text-sm font-semibold text-primary-warm-white">
       {{ tc('cinematic.stage.shot', locale, { number: current.shot }) }}
     </span>
     <div
-      v-if="siblings.length > 1"
+      v-if="takePicker && siblings.length > 1"
       role="radiogroup"
       :aria-label="tc('cinematic.stage.takes', locale)"
       class="flex gap-1"
@@ -102,7 +104,7 @@ async function onKeydown(event: KeyboardEvent) {
       v-if="current.status === 'done'"
       :href="current.output.url"
       :download="current.output.fileName"
-      class="grid size-9 place-items-center rounded-lg text-primary-comfy-canvas hover:bg-transparency-white-t8"
+      class="grid size-8 shrink-0 place-items-center rounded-lg text-primary-comfy-canvas hover:bg-transparency-white-t8"
       :aria-label="tc('cinematic.stage.download', locale)"
       :title="t('workshop.output.expires', locale)"
       @click="captureDownload"
