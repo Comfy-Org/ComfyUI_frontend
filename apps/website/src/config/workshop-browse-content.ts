@@ -72,18 +72,19 @@ function taskForUseCases(
   return 'text-to-text'
 }
 
-const display = workshopDisplayEntriesSchema.parse(displayJson)
-const displaySlugs = new Set(display.map((entry) => entry.slug))
+export const workshopDisplayEntries =
+  workshopDisplayEntriesSchema.parse(displayJson)
+const displaySlugs = new Set(workshopDisplayEntries.map((entry) => entry.slug))
 for (const slug of modelOrderRank.keys())
   if (!displaySlugs.has(slug))
     throw new Error(`Recommended model order names an unknown page: ${slug}`)
 
 const catalogById = new Map(legacyCatalog.map((entry) => [entry.id, entry]))
 for (const slug of workshopModelAvailability.keys())
-  if (!display.some((overlay) => overlay.slug === slug))
+  if (!workshopDisplayEntries.some((overlay) => overlay.slug === slug))
     throw new Error(`Model availability names an unknown page: ${slug}`)
 
-function bindingFor(overlay: (typeof display)[number]) {
+function bindingFor(overlay: (typeof workshopDisplayEntries)[number]) {
   const input = workshopContentInputs.get(overlay.id)
   const alias = routerAliasById.get(overlay.modelId)
   if (!input) return alias
@@ -95,7 +96,7 @@ function bindingFor(overlay: (typeof display)[number]) {
   }
 }
 
-const contentSources = display
+const contentSources = workshopDisplayEntries
   .filter((overlay) => overlay.type === undefined || overlay.type === 'MODEL')
   .flatMap((overlay) => {
     const input = workshopContentInputs.get(overlay.id)

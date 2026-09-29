@@ -10,6 +10,8 @@ import { join } from 'node:path'
 
 import { workshopClientBoundary } from './workshop-client-boundary'
 
+import { unregisteredModelsPaths } from '../config/models-url-registry'
+
 import {
   assertWorkshopCloudEnvForBuild,
   isWorkshopInBuild,
@@ -95,6 +97,16 @@ export function workshopReleaseGate(): AstroIntegration {
         assertWorkshopCloudEnvForBuild()
       },
       'astro:build:done': async ({ dir, pages, assets, logger }) => {
+        // The sitemap and .md twins read these same pages; extend if either walks dist/
+        const unregistered = unregisteredModelsPaths(
+          pages.map((page) => page.pathname)
+        )
+        if (unregistered.length > 0) {
+          throw new Error(
+            `workshop-release-gate found Models pages missing from models-url-registry.ts (${unregistered.join(', ')}); register each address with its kind.`
+          )
+        }
+
         const built = pages.filter((page) =>
           isLegacyWorkshopRoute(`/${page.pathname}`)
         ).length

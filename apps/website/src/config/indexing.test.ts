@@ -5,14 +5,18 @@ import {
   isIndexableBuild,
   isNoindexPathname
 } from './indexing'
+import { workshopModels } from './workshop-browse-content'
+
+const [{ slug: modelSlug }] = workshopModels
 
 describe('indexing policy', () => {
   it('excludes render pages while keeping the public Models marketing routes', () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '1')
     expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
-    expect(isExcludedFromSitemap('https://comfy.org/models/example/')).toBe(
-      true
-    )
+    expect(
+      isExcludedFromSitemap(`https://comfy.org/models/${modelSlug}/`)
+    ).toBe(true)
+    expect(isExcludedFromSitemap('https://comfy.org/models/local/')).toBe(false)
     expect(isExcludedFromSitemap('https://comfy.org/models/showcase/')).toBe(
       true
     )

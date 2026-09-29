@@ -10,6 +10,10 @@ import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { modelsBuildRoutes, workshopReleaseGate } from './workshop-release-gate'
 
+import { workshopModels } from '../config/workshop-browse-content'
+
+const [{ slug: modelSlug }] = workshopModels
+
 let root: string
 const logger: AstroIntegrationLogger = {
   label: 'test',
@@ -55,12 +59,19 @@ const builtModelsRoutes = (patterns = modelsBuildRoutes(false)) =>
     ])
   )
 
-async function buildDone(assets = builtModelsRoutes()) {
+async function buildDone(
+  assets = builtModelsRoutes(),
+  modelsPages: string[] = []
+) {
   const hook = workshopReleaseGate().hooks['astro:build:done']
   if (!hook) throw new Error('Missing build hook')
   await hook({
     dir: pathToFileURL(`${root}/`),
-    pages: [{ pathname: '' }, { pathname: 'workshop/' }],
+    pages: [
+      { pathname: '' },
+      { pathname: 'workshop/' },
+      ...modelsPages.map((pathname) => ({ pathname }))
+    ],
     assets,
     logger
   })
@@ -164,6 +175,21 @@ describe('Workshop release output', () => {
     expect(await readFile(join(root, 'index.html'), 'utf8')).toBe('Home')
     await expect(buildDone()).resolves.toBeUndefined()
   })
+
+  it.for(['0', '1'])(
+    'rejects a built Models page the URL registry does not know (WORKSHOP_IN_BUILD=%s)',
+    async (value) => {
+      vi.stubEnv('WORKSHOP_IN_BUILD', value)
+      await expect(
+        buildDone(builtModelsRoutes(), ['models/', `models/${modelSlug}/`])
+      ).resolves.toBeUndefined()
+      await expect(
+        buildDone(builtModelsRoutes(), ['models/unregistered/'])
+      ).rejects.toThrow(
+        'missing from models-url-registry.ts (/models/unregistered)'
+      )
+    }
+  )
 
   it('retires legacy Workshop output even when Models is enabled', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '1')

@@ -1,17 +1,18 @@
 import type { WorkshopCloudEnv } from './workshop-cloud-env'
 import { WORKSHOP_CLOUD_ENVS, isWorkshopCloudEnv } from './workshop-cloud-env'
+import { modelsUrlKind } from './models-url-registry'
 
 export function isWorkshopInBuild(): boolean {
   return process.env.WORKSHOP_IN_BUILD !== '0'
 }
 
-/** Every route Workshop owns. Kept here so the gate has one definition. */
-export function isWorkshopRoute(pattern: string): boolean {
-  const pathname = pattern.replace(/\/$/, '')
-  // /models is the public catalogue and stays in the sitemap.
+/** Whether a built pathname is a Workshop page, which stays out of the sitemap. */
+export function isWorkshopRoute(route: string): boolean {
+  const pathname = route.replace(/\/$/, '')
+  const modelsKind = modelsUrlKind(pathname)
   return (
     isLegacyWorkshopRoute(pathname) ||
-    pathname.startsWith('/models/') ||
+    (modelsKind !== undefined && modelsKind !== 'hub') ||
     pathname === '/cinematic-studio'
   )
 }
