@@ -14,16 +14,17 @@ function examplesOf(slug: string) {
   return detail.examples
 }
 
-const errors = workshopModels.flatMap((model) => {
-  const html = readFileSync(
-    join(DIST, 'models', model.slug, 'index.html'),
-    'utf-8'
-  )
+const pagedModels = workshopModels.flatMap(({ href, name, slug }) =>
+  href === undefined ? [] : [{ href, name, slug }]
+)
+
+const errors = pagedModels.flatMap((model) => {
+  const html = readFileSync(join(DIST, model.href, 'index.html'), 'utf-8')
   return [
     ...auditModelPage(html, model.name),
     ...auditMediaLabels(html),
     ...auditExampleGallery(html, examplesOf(model.slug))
-  ].map((error) => `/models/${model.slug}/: ${error}`)
+  ].map((error) => `${model.href}: ${error}`)
 })
 
 if (errors.length > 0) {
@@ -32,5 +33,5 @@ if (errors.length > 0) {
   process.exit(1)
 }
 console.warn(
-  `[models-html] ${workshopModels.length} model pages carry their model in the HTML.`
+  `[models-html] ${pagedModels.length} model pages carry their model in the HTML.`
 )
