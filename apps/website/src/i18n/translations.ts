@@ -9123,14 +9123,14 @@ Enterprise`
     'zh-CN': 'Comfy API 定价'
   },
   'pricing.comfyApi.subtitle': {
-    en: 'Comfy API is a separate product from your Comfy Cloud plan, for teams building on Comfy Cloud programmatically. GPU time and storage are billed by the second; build, deployment, and concurrency limits apply to each plan below.',
+    en: 'Comfy API is a separate product from your Comfy Cloud plan, for teams building on Comfy Cloud programmatically. GPU time and storage are billed by the second; release, deployment, and concurrency limits apply to each plan below.',
     'zh-CN':
-      'Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。GPU 时间与存储按秒计费；下方列出了各套餐的构建、部署与并发限制。'
+      'Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。GPU 时间与存储按秒计费；下方列出了各套餐的版本、部署与并发限制。'
   },
   'pricing.comfyApi.metricColumn': { en: 'Limit', 'zh-CN': '限制项' },
-  'pricing.comfyApi.metric.builds': {
-    en: 'Total builds limit',
-    'zh-CN': '构建总数上限'
+  'pricing.comfyApi.metric.releases': {
+    en: 'Total releases limit',
+    'zh-CN': '版本总数上限'
   },
   'pricing.comfyApi.metric.deployments': {
     en: 'Total deployments limit',

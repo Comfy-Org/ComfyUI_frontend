@@ -25,7 +25,7 @@ describe('ComfyApiPricingSection', () => {
 
     expect(screen.getAllByText('RTX PRO 6000').length).toBeGreaterThan(0)
     expect(
-      screen.getAllByText(t('pricing.comfyApi.metric.builds', 'en')).length
+      screen.getAllByText(t('pricing.comfyApi.metric.releases', 'en')).length
     ).toBeGreaterThan(0)
   })
 })

@@ -13,12 +13,12 @@ const { locale = 'en', bare = false } = defineProps<{
 }>()
 
 interface MetricRow {
-  key: 'totalBuildsLimit' | 'totalDeploymentsLimit' | 'maxWorkerConcurrency'
+  key: 'totalReleasesLimit' | 'totalDeploymentsLimit' | 'maxWorkerConcurrency'
   labelKey: TranslationKey
 }
 
 const metricRows: MetricRow[] = [
-  { key: 'totalBuildsLimit', labelKey: 'pricing.comfyApi.metric.builds' },
+  { key: 'totalReleasesLimit', labelKey: 'pricing.comfyApi.metric.releases' },
   {
     key: 'totalDeploymentsLimit',
     labelKey: 'pricing.comfyApi.metric.deployments'
