@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { TelemetryRegistry } from './TelemetryRegistry'
 import type {
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
@@ -290,6 +292,13 @@ describe('TelemetryRegistry', () => {
       attachment_count: 1,
       node_tag_count: 2
     } satisfies AgentMessageSentMetadata
+    const consentShownMetadata = {
+      trigger: 'button_click'
+    } satisfies AgentConsentShownMetadata
+    const consentResolvedMetadata = {
+      decision: 'dismissed',
+      save_error_shown: true
+    } satisfies AgentConsentResolvedMetadata
     const nodeTaggedMetadata = {
       source: 'mention_picker'
     } satisfies AgentNodeTaggedMetadata
@@ -339,6 +348,18 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentMessageSent(messageSentMetadata)
       },
       {
+        method: 'trackAgentConsentShown',
+        expected: { ...consentShownMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentShown(consentShownMetadata)
+      },
+      {
+        method: 'trackAgentConsentResolved',
+        expected: { ...consentResolvedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentResolved(consentResolvedMetadata)
+      },
+      {
         method: 'trackAgentNodeTagged',
         expected: { ...nodeTaggedMetadata },
         invoke: (registry) => registry.trackAgentNodeTagged(nodeTaggedMetadata)
@@ -359,6 +380,36 @@ describe('TelemetryRegistry', () => {
         expected: { reason: 'first_run_screen' },
         invoke: (registry) =>
           registry.trackAgentConsentNotOffered({ reason: 'first_run_screen' })
+      },
+      {
+        method: 'trackAgentConsentOfferExited',
+        expected: {
+          exit: 'already_offered',
+          stage: 'offer',
+          retry_armed: false
+        },
+        invoke: (registry) =>
+          registry.trackAgentConsentOfferExited({
+            exit: 'already_offered',
+            stage: 'offer',
+            retry_armed: false
+          })
+      },
+      {
+        method: 'trackAgentConsentOfferExited',
+        expected: {
+          exit: 'scope_changed_after_read',
+          stage: 'request',
+          retry_armed: false,
+          trigger: 'button_click'
+        },
+        invoke: (registry) =>
+          registry.trackAgentConsentOfferExited({
+            exit: 'scope_changed_after_read',
+            stage: 'request',
+            retry_armed: false,
+            trigger: 'button_click'
+          })
       },
       {
         method: 'trackAgentOnboardingNotShown',
