@@ -42,7 +42,7 @@ export interface TwinReport {
   written: string[]
   /** A twin already existed at this path (hand-written by a page endpoint). */
   existing: string[]
-  /** No HTML to twin, or the page is deliberately excluded from the sitemap. */
+  /** No HTML or no content to twin, or the page is excluded from the sitemap. */
   skipped: string[]
 }
 
@@ -55,7 +55,7 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
-async function readBuiltPage(
+async function builtPagePath(
   root: string,
   pathname: string
 ): Promise<string | undefined> {
@@ -65,9 +65,27 @@ async function readBuiltPage(
     join(root, `${trimmed || 'index'}.html`)
   ]
   for (const candidate of candidates) {
-    if (await exists(candidate)) return readFile(candidate, 'utf8')
+    if (await exists(candidate)) return candidate
   }
   return undefined
+}
+
+async function readBuiltPage(
+  root: string,
+  pathname: string
+): Promise<string | undefined> {
+  const path = await builtPagePath(root, pathname)
+  return path === undefined ? undefined : readFile(path, 'utf8')
+}
+
+const TWIN_LINK = /<link rel="alternate" type="text\/markdown"[^>]*>/
+
+async function unlinkTwin(root: string, pathname: string): Promise<void> {
+  const path = await builtPagePath(root, pathname)
+  if (path === undefined) return
+  const html = await readFile(path, 'utf8')
+  const unlinked = html.replace(TWIN_LINK, '')
+  if (unlinked !== html) await writeFile(path, unlinked, 'utf8')
 }
 
 async function readBuiltTwinSource(
@@ -88,8 +106,9 @@ async function readBuiltTwinSource(
 
 /**
  * Write a `.md` twin next to every built HTML page: `/cli/` → `/cli.md`,
- * `/` → `/index.md`. Pages kept out of the sitemap get no twin, and a twin
- * that already exists (hand-written by a page endpoint) is left alone.
+ * `/` → `/index.md`. Pages kept out of the sitemap get no twin, a page with no
+ * content loses its markdown link instead, and a twin that already exists
+ * (hand-written by a page endpoint) is left alone.
  */
 export async function writeMarkdownTwins(
   root: string,
@@ -125,6 +144,11 @@ export async function writeMarkdownTwins(
     const page = htmlToTwin(source.html, canonical, {
       canonical: source.alternate ? canonical : undefined
     })
+    if (page.body === '') {
+      await unlinkTwin(root, pathname)
+      report.skipped.push(twinPath)
+      continue
+    }
     await mkdir(dirname(target), { recursive: true })
     await writeFile(target, renderTwin(page), 'utf8')
     report.written.push(twinPath)
