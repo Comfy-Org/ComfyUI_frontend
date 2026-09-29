@@ -89,6 +89,9 @@ function changeTab(tab: CatalogueTab) {
   selectedTab.value = tab
   inSection.value = false
   browseAll.value = false
+  // A new tab always opens unfiltered. Waiting for it to say so would show
+  // the stacked hero for as long as it takes to arrive.
+  browsing.value = true
   const url = new URL(location.href)
   url.search = ''
   if (tab !== 'models') url.searchParams.set('type', tab)
