@@ -9,6 +9,7 @@ import { hubModelSlugs } from '../src/config/hub-models'
 import { modelAliasUrls, modelPageUrls } from '../src/config/model-urls'
 import { redirects } from '../src/config/redirects'
 import {
+  PROVIDER_NAMES,
   routerModelSlugAliases,
   workshopModels
 } from '../src/config/workshop-browse-content'
@@ -18,6 +19,7 @@ import {
   MODEL_URL_TABLE,
   MODEL_URLS_MODULE,
   compileModelUrlMap,
+  modelUrlFlags,
   modelUrlSlug,
   renderModelUrlTable,
   renderModelUrlsModule
@@ -77,6 +79,16 @@ describe('model URL map', () => {
     )
   })
 
+  it('keeps every recorded slug when display names change', () => {
+    const renamed = workshopModels.map((model) => ({
+      ...model,
+      name: `${model.name} Renamed`
+    }))
+    expect(
+      compileModelUrlMap(renamed, routerModelSlugAliases, hubModelSlugs)
+    ).toEqual({ pages: modelPageUrls, aliases: modelAliasUrls })
+  })
+
   it('gives every published model page exactly one new slug', () => {
     const oldSlugs = modelPageUrls.map((page) => page.oldSlug)
     expect(new Set(oldSlugs).size).toBe(oldSlugs.length)
@@ -103,13 +115,16 @@ describe('model URL map', () => {
     expect(newSlugs.filter((slug) => !MODEL_URL_SLUG.test(slug))).toEqual([])
   })
 
+  const renamedProviderIds = Object.entries(PROVIDER_NAMES)
+    .filter(([id, name]) => modelUrlSlug(id) !== modelUrlSlug(name))
+    .map(([id]) => (id === 'gemini' ? 'gemini(?!-omni-)' : modelUrlSlug(id)))
+
   it.for([
     [
       'a Router provider id',
-      /(^|-)(byteplus|vertexai|wavespeed|mediakit)(-|$)/
+      new RegExp(`(^|-)(${renamedProviderIds.join('|')})(-|$)`)
     ],
     ['a Router model id', /(^|-)(dreamina|interactions|recraftv\d)(-|$)/],
-    ['Gemini as a stand-in for a Google brand', /(^|-)gemini-(?!omni-)/],
     ['a Router date stamp', /\d{6}/]
   ] as const)('never leaks %s', ([, forbidden]) => {
     expect(newSlugs.filter((slug) => forbidden.test(slug))).toEqual([])
@@ -126,6 +141,58 @@ describe('model URL map', () => {
     )
     expect(patterns).toContain('/p/supported-models/[slug]')
     expect(collisions).toEqual([])
+  })
+})
+
+describe('modelUrlFlags', () => {
+  const noTaskWords =
+    'no task words in the name; the product name stands in for the task'
+
+  it.for([
+    [
+      'an edit page whose Router model is overridden to generate-images',
+      'openai--gpt-image-1--edit-images',
+      'openai/gpt-image-1',
+      'gpt-image-1-image-edit',
+      []
+    ],
+    [
+      'a task word that disagrees with the page use case',
+      'openai--gpt-image-1--generate-images',
+      'openai/gpt-image-1',
+      'gpt-image-1-image-edit',
+      ['name says "image-edit", page use case is generate-images']
+    ],
+    [
+      'a digit inside a task word',
+      'kling--avatar--animate-images',
+      'kling/videos-avatar-image2video',
+      'kling-avatar',
+      [noTaskWords]
+    ],
+    [
+      'a v-prefixed version',
+      'bfl--erase-v1--edit-images',
+      'bfl/erase-v1',
+      'flux-tools-erase',
+      [noTaskWords, 'no version in the name, Router id is bfl/erase-v1']
+    ],
+    [
+      'an underscore version',
+      'elevenlabs--eleven_v3--audio',
+      'elevenlabs/eleven_v3',
+      'elevenlabs-text-to-dialogue',
+      ['no version in the name, Router id is elevenlabs/eleven_v3']
+    ],
+    [
+      'a dotted version',
+      'wan--happyhorse-text-to-video--generate-videos',
+      'wan/happyhorse-1.1-t2v',
+      'happyhorse-text-to-video',
+      ['no version in the name, Router id is wan/happyhorse-1.1-t2v']
+    ]
+  ] as const)('flags %s', ([, slug, routerId, newSlug, flags]) => {
+    expect(modelUrlFlags({ slug, routerId }, newSlug)).toEqual(flags)
   })
 })
 
@@ -158,6 +225,26 @@ describe('compileModelUrlMap', () => {
         newSlug: 'veo-4-text-to-video'
       }
     ])
+  })
+
+  it('flags a frozen slug whose display name now suggests another', () => {
+    const model = {
+      slug: 'google--veo-3--generate-videos',
+      name: 'Veo 3.1 Text-to-Video',
+      provider: 'Google',
+      routerId: 'veo/veo-3.1-generate-001'
+    }
+    const map = compileModelUrlMap(
+      [model],
+      new Map(),
+      new Map([[model.slug, 'veo-3-text-to-video']])
+    )
+    expect(map.pages).toEqual([
+      { oldSlug: model.slug, newSlug: 'veo-3-text-to-video' }
+    ])
+    expect(renderModelUrlTable([model], map)).toContain(
+      '| `veo-3-text-to-video` | Veo 3.1 Text-to-Video | frozen at `veo-3-text-to-video`, name now suggests `veo-3-1-text-to-video` |'
+    )
   })
 
   it('rejects a new page that takes a published slug', () => {

@@ -59,7 +59,7 @@ function modalityFor(model: WorkshopModelEntry): Modality {
   return model.modality
 }
 
-const PROVIDER_NAMES: Readonly<Record<string, string>> = {
+export const PROVIDER_NAMES: Readonly<Record<string, string>> = {
   bfl: 'Black Forest Labs',
   byteplus: 'ByteDance',
   'byteplus-mediakit': 'ByteDance',
