@@ -17,6 +17,7 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
@@ -76,6 +77,23 @@ export class AuthStoreError extends Error {
     this.name = 'AuthStoreError'
     this.status = status
   }
+}
+
+async function webSessionRunToken(
+  requests: WebSessionRequests
+): Promise<string | undefined> {
+  const scope = await requests.scope()
+  if (!scope) return undefined
+  const result = await requests.workspaceToken(scope)
+  if (result.status === 'ok') return result.credential.token
+  if (result.httpStatus !== 401) {
+    reportError(new Error(`Run token mint failed: ${result.code}`), {
+      errorType: 'web_session_run_token_failure',
+      level: 'warning',
+      tags: { failure_code: result.code, http_status: result.httpStatus ?? 0 }
+    })
+  }
+  return undefined
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -391,6 +409,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getWorkspaceAuthToken = async (): Promise<string | undefined> => {
+    const requests = webSessionRequests()
+    if (requests) return webSessionRunToken(requests)
+
     if (flags.unifiedCloudAuthEnabled) {
       return useWorkspaceAuthStore().getUnifiedToken()
     }

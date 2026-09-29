@@ -9,8 +9,10 @@ import { framedStyle } from './aspect-style'
 import CinematicMenu from './CinematicMenu.vue'
 import { useFormatMenus } from './useFormatMenus'
 
-const { locale = 'en' } = defineProps<{
+const { locale = 'en', aspects } = defineProps<{
   locale?: Locale
+  /** The frames the chosen model can make; every frame when absent. */
+  aspects?: readonly AspectRatio[]
 }>()
 
 const aspect = defineModel<AspectRatio>('aspect', { required: true })
@@ -24,7 +26,13 @@ const {
   aspectValue,
   resolutionValue,
   takesValue
-} = useFormatMenus(aspect, resolution, takes, () => locale)
+} = useFormatMenus(
+  aspect,
+  resolution,
+  takes,
+  () => locale,
+  () => aspects
+)
 
 const segmentClass =
   'h-full gap-2 rounded-none px-3 text-primary-comfy-canvas hover:bg-transparency-white-t4 hover:text-primary-warm-white data-[state=open]:text-primary-warm-white'

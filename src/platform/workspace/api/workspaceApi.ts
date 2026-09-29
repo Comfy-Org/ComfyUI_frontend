@@ -25,6 +25,7 @@ import type {
   Plan,
   PreviewSubscribeRequest,
   PreviewSubscribeResponse,
+  RenewalInvoice,
   ResubscribeRequest,
   ResubscribeResponse,
   SavedPaymentMethod,
@@ -121,6 +122,7 @@ export type BillingSubscriptionStatus = NonNullable<
 
 export type { BillingStatus }
 export type { BillingStatusResponse }
+export type { RenewalInvoice }
 export type { ScheduledPlanChange }
 
 export type { BillingBalanceResponse }

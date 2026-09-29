@@ -176,6 +176,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       scope: requestScope,
       workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),
+      workspaceToken: ({ workspaceId }) => mint.mint(workspaceId),
       authorizeResource: async ({ session }) =>
         (
           await authorize(
