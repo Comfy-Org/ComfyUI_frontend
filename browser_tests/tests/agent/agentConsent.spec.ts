@@ -528,6 +528,7 @@ test.describe(
   { tag: ['@cloud', '@ui'] },
   () => {
     test.use({
+      agentAutoShownReadProbe: true,
       agentConsentAccepted: false,
       initialSettings: { 'Comfy.TutorialCompleted': false },
       initialFeatureFlags: {
@@ -535,13 +536,16 @@ test.describe(
         subscription_required: true
       }
     })
+    test.describe.configure({ timeout: 90_000 })
 
-    test('stays silent for the session once Getting Started took the screen', async ({
+    test('defers the offer until Getting Started releases the screen', async ({
       comfyPage,
       agentPanel,
-      agentConsentReads
+      agentConsentWrites
     }) => {
       const page = comfyPage.page
+      const autoShownKey =
+        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
       const gettingStarted = page.getByRole('dialog', {
         name: enMessages.gettingStarted.title
       })
@@ -553,23 +557,27 @@ test.describe(
         await expect(gettingStarted).toBeVisible()
       })
 
-      await test.step('The automatic offer runs and stays silent', async () => {
+      await test.step('The automatic offer waits without spending its one-time attempt', async () => {
         await expect
-          .poll(() => agentConsentReads.length, {
+          .poll(() => page.evaluate(() => window.__autoShownReads ?? 0), {
             message:
-              'the automatic offer runs once the consent read and the boot decision are both in; the fixture already waited past the decision (the loading overlay clears after it), so the read is the last input and the silence below is a decision, not a race',
+              'the held-offer decision reads the unspent one-shot marker',
             timeout: 15_000
           })
           .toBeGreaterThan(0)
         await expect(consent).toHaveCount(0)
         await expect(agentPanel.root).toHaveCount(0)
         expect(
-          await page.evaluate(() =>
-            localStorage.getItem(
-              'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
-            )
-          )
+          await page.evaluate((key) => localStorage.getItem(key), autoShownKey)
         ).toBeNull()
+      })
+
+      await test.step('Taking the blank canvas presents the deferred offer', async () => {
+        await page.getByTestId('getting-started-blank').click()
+        await expect(gettingStarted).toHaveCount(0)
+        await expect(consent).toBeVisible()
+        await expect(agentPanel.root).toHaveCount(0)
+        expect(agentConsentWrites).toHaveLength(0)
       })
     })
   }

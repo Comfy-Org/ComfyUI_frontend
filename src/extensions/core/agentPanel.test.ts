@@ -37,15 +37,41 @@ let consentStore: ReturnType<typeof useAgentConsentStore>
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
-const firstRunTookScreen = ref(false)
+const isAuthInitialized = ref(true)
+type FirstRunScreenState = 'released' | 'visible' | 'handoff'
+const firstRunScreenState = ref<FirstRunScreenState>('released')
+const gettingStartedVisible = computed(
+  () => firstRunScreenState.value === 'visible'
+)
+const firstRunHoldsScreen = computed(
+  () => firstRunScreenState.value !== 'released'
+)
+const firstRunTookScreen = computed({
+  get: () => firstRunHoldsScreen.value,
+  set: (value: boolean) => {
+    firstRunScreenState.value = value ? 'visible' : 'released'
+  }
+})
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
+
+function showFirstRunScreen(): void {
+  firstRunScreenState.value = 'visible'
+}
+
+function releaseFirstRunScreen(): void {
+  firstRunScreenState.value = 'released'
+}
+
+function beginFirstRunScreenHandoff(): void {
+  firstRunScreenState.value = 'handoff'
+}
 
 vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () =>
     fromPartial<ReturnType<typeof useCurrentUser>>({
       resolvedUserInfo: currentUser,
-      isAuthInitialized: computed(() => true),
+      isAuthInitialized,
       isLoggedIn: computed(() => currentUser.value !== null)
     })
 }))
@@ -84,7 +110,8 @@ vi.mock(
   () => ({
     useFirstRunEntry: () =>
       fromPartial<ReturnType<typeof useFirstRunEntry>>({
-        firstRunTookScreen,
+        gettingStartedVisible,
+        firstRunHoldsScreen,
         whenStartupDecided: () => startupDecision
       })
   })
@@ -183,7 +210,7 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.isOpen = true
     agentFlagEnabled.value = false
     agentFlagEnabled.value = false
-    firstRunTookScreen.value = false
+    releaseFirstRunScreen()
     activeTour.value = null
     startupDecision = Promise.resolve(true)
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
@@ -344,6 +371,38 @@ describe('AgentPanel extension flag gate', () => {
       expect(consentStore.load).toHaveBeenCalledOnce()
     }
   )
+
+  it('offers in the same session once the Getting Started screen closes', async () => {
+    agentFlagEnabled.value = true
+    showFirstRunScreen()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+    releaseFirstRunScreen()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+  })
+
+  it('keeps waiting across the Getting Started to tour handoff', async () => {
+    agentFlagEnabled.value = true
+    showFirstRunScreen()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    await flush()
+    beginFirstRunScreenHandoff()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+    activeTour.value = 'firstRun'
+    releaseFirstRunScreen()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+  })
 
   it('offers when neither Getting Started took the screen nor a tour is active', async () => {
     agentFlagEnabled.value = true
