@@ -24,6 +24,7 @@ import {
   watermarksOff
 } from '../lib/workshop/cinematic-studio/frames'
 import { studioGate } from '../lib/workshop/cinematic-studio/gate'
+import { studioRouterForm } from '../lib/workshop/cinematic-studio/request'
 import type { Reel, ReelEvent } from '../lib/workshop/cinematic-studio/reel'
 import {
   EMPTY_REEL,
@@ -197,9 +198,10 @@ export function useCinematicStudioRun(
     try {
       const result = await router_render(
         model.slug,
-        shotParameters(request, model),
+        {},
         {
           model,
+          form: studioRouterForm(model, shotParameters(request, model)),
           signal,
           idempotencyKey: key,
           prepared,
