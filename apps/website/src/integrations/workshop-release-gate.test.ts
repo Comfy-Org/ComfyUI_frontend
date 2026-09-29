@@ -10,6 +10,10 @@ import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { modelsBuildRoutes, workshopReleaseGate } from './workshop-release-gate'
 
+import { workshopModels } from '../config/workshop-browse-content'
+
+const [{ slug: modelSlug }] = workshopModels
+
 let root: string
 const logger: AstroIntegrationLogger = {
   label: 'test',
@@ -167,7 +171,7 @@ describe('Workshop release output', () => {
     async (value) => {
       vi.stubEnv('WORKSHOP_IN_BUILD', value)
       await expect(
-        buildDone(['models/', 'models/bfl--flux-2-max--generate-images/'])
+        buildDone(['models/', `models/${modelSlug}/`])
       ).resolves.toBeUndefined()
       await expect(buildDone(['models/unregistered/'])).rejects.toThrow(
         'missing from models-url-registry.ts (/models/unregistered)'

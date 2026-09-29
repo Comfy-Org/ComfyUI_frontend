@@ -5,6 +5,9 @@ import {
   isWorkshopInBuild,
   isWorkshopRoute
 } from './workshop-release'
+import { workshopModels } from './workshop-browse-content'
+
+const [{ slug: modelSlug }] = workshopModels
 
 describe('isWorkshopInBuild', () => {
   it.for([
@@ -55,9 +58,7 @@ describe('isWorkshopRoute', () => {
   it('claims the Workshop tree and nothing else', () => {
     expect(isWorkshopRoute('/workshop')).toBe(true)
     expect(isWorkshopRoute('/workshop/models/[slug]')).toBe(true)
-    expect(isWorkshopRoute('/models/bfl--flux-2-max--generate-images/')).toBe(
-      true
-    )
+    expect(isWorkshopRoute(`/models/${modelSlug}/`)).toBe(true)
     expect(isWorkshopRoute('/models/local/')).toBe(false)
     expect(isWorkshopRoute('/models/showcase/')).toBe(true)
     expect(isWorkshopRoute('/cinematic-studio/')).toBe(true)

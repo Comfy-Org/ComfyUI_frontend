@@ -4,19 +4,26 @@ import {
   isIndexableModelPage,
   isNoindexPathname
 } from './indexing'
+import {
+  routerModelSlugAliases,
+  workshopModels
+} from './workshop-browse-content'
 
 const launch = vi.hoisted(() => ({ MODEL_PAGES_INDEXABLE: false }))
 vi.mock(import('./model-page-launch'), () => launch)
 
+const [{ slug: modelSlug }] = workshopModels
+const [aliasSlug] = routerModelSlugAliases.keys()
+
 const MODELS_PAGES_BY_KIND = [
   ['hub', '/models/'],
-  ['model', '/models/bfl--flux-2-max--generate-images/'],
-  ['alias', '/models/bfl--flux-2-max/'],
+  ['model', `/models/${modelSlug}/`],
+  ['alias', `/models/${aliasSlug}/`],
   ['workflow', '/models/workflows/change-material/'],
   ['app', '/models/apps/cinematic-studio/'],
   ['showcase', '/models/showcase/'],
   ['catalogue', '/models/catalogue.json'],
-  ['page data', '/models/bfl--flux-2-max--generate-images/page.json']
+  ['page data', `/models/${modelSlug}/page.json`]
 ] as const
 
 const inSitemap = (pathname: string) =>
@@ -27,9 +34,7 @@ describe('indexing policy', () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '1')
     expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
     expect(
-      isExcludedFromSitemap(
-        'https://comfy.org/models/bfl--flux-2-max--generate-images/'
-      )
+      isExcludedFromSitemap(`https://comfy.org/models/${modelSlug}/`)
     ).toBe(true)
     expect(isExcludedFromSitemap('https://comfy.org/models/local/')).toBe(false)
     expect(isExcludedFromSitemap('https://comfy.org/models/showcase/')).toBe(
@@ -70,6 +75,8 @@ describe('indexing policy', () => {
     '/zh-CN/payment/failed/',
     '/individual-submission',
     '/zh-CN/booking-confirmation/',
+    '/comfy-agent',
+    '/comfy-agent/',
     '/case-studies',
     '/zh-CN/videos/',
     '/demos',
@@ -89,6 +96,10 @@ describe('indexing policy', () => {
   it.for([
     '/privacy',
     '/pricing',
+    '/agent',
+    '/agent/',
+    '/zh-CN/agent',
+    '/zh-CN/agent/',
     '/p/supported-models/grok-imagine',
     '/demos/image-to-video'
   ])('keeps %s indexable', (pathname) => {
