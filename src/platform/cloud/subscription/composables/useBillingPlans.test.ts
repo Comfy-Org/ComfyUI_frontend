@@ -311,6 +311,26 @@ describe('useBillingPlans', () => {
       )
     })
 
+    it('rejects malformed team credit stops through the guarded fallback', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
+        plans: [buildPlan()],
+        team_credit_stops: { stops: { invalid: true } }
+      } as never)
+
+      const { fetchPlans, teamCreditStops } = useBillingPlans()
+      await expect(fetchPlans()).resolves.toBeUndefined()
+
+      expect(teamCreditStops.value).toBeNull()
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(TypeError),
+        expect.objectContaining({
+          tags: expect.objectContaining({ outcome: 'failed' }),
+          level: 'error'
+        })
+      )
+    })
+
     it('does not treat another workspace catalog as a recovered fallback', async () => {
       const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
       vi.mocked(workspaceApi.getBillingPlans)

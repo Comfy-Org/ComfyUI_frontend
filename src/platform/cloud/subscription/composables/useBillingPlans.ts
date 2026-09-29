@@ -32,6 +32,14 @@ export function useBillingPlans() {
     if (!Array.isArray(response.plans)) {
       throw new TypeError('Billing plans response did not contain a plan list')
     }
+    if (
+      response.team_credit_stops !== undefined &&
+      !Array.isArray(response.team_credit_stops.stops)
+    ) {
+      throw new TypeError(
+        'Billing plans response did not contain a team credit stop list'
+      )
+    }
     plans.value = response.plans
     currentPlanSlug.value = response.current_plan_slug ?? null
     teamCreditStops.value = response.team_credit_stops ?? null
