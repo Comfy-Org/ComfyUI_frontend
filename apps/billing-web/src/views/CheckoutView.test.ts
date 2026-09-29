@@ -699,7 +699,15 @@ describe('CheckoutView', () => {
     ['insufficient_funds', 'This payment method has insufficient funds.'],
     ['expired_card', 'This card has expired.'],
     ['incorrect_cvc', 'The card security code is incorrect.'],
-    ['processing_error', "Your payment couldn't be processed."]
+    ['processing_error', "Your payment couldn't be processed."],
+    [
+      'authentication_failed',
+      "We couldn't complete payment verification. Please try again."
+    ],
+    [
+      'authentication_required',
+      "We couldn't complete payment verification. Please try again."
+    ]
   ] as const)(
     'reports a %s decline as the app does and keeps the confirm usable',
     async ([reason, detail]) => {
@@ -944,6 +952,45 @@ describe('CheckoutView', () => {
     expect(
       screen.getByRole('button', { name: 'Pay and subscribe' })
     ).toBeEnabled()
+  })
+
+  it.for(['Back', 'Close'])(
+    'closes a tab the product opened on %s, leaving the product where it was',
+    async (action) => {
+      const assign = stubNavigation()
+      const close = vi.spyOn(window, 'close').mockImplementation(() => {
+        vi.spyOn(window, 'closed', 'get').mockReturnValue(true)
+      })
+      await renderCheckout()
+      await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+      await userEvent.click(screen.getByRole('button', { name: action }))
+
+      expect(close).toHaveBeenCalledOnce()
+      expect(assign).not.toHaveBeenCalled()
+    }
+  )
+
+  it('closes the tab from the success step instead of opening the product in it', async () => {
+    const assign = stubNavigation()
+    const close = vi.spyOn(window, 'close').mockImplementation(() => {
+      vi.spyOn(window, 'closed', 'get').mockReturnValue(true)
+    })
+    await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    reportConfirm('ctoken_1')
+    await screen.findByRole('heading', { name: "You're all set" })
+
+    const [, closeButton] = screen.getAllByRole('button', { name: 'Close' })
+    await userEvent.click(closeButton)
+
+    expect(close).toHaveBeenCalledOnce()
+    expect(assign).not.toHaveBeenCalled()
   })
 
   it.for(['Back', 'Close'])(
