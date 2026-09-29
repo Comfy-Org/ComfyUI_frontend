@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockHostedBillingRoute = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(
@@ -24,11 +24,17 @@ vi.mock<unknown>(
   () => ({ registerRefreshOnReturn: mockRegisterRefreshOnReturn })
 )
 
-import { onBillingRefresh } from '@/platform/workspace/billing/billingRefresh'
+import {
+  onBillingRefresh,
+  onCheckoutOperationRead
+} from '@/platform/workspace/billing/billingRefresh'
 import type { BillingRefreshScope } from '@/platform/workspace/billing/billingRefresh'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-import { openHostedBillingTab } from './openHostedBillingTab'
+import {
+  disarmHostedBillingReturnRefresh,
+  openHostedBillingTab
+} from './openHostedBillingTab'
 
 const BILLING_WEB_ROUTE = {
   kind: 'billing_web' as const,
@@ -37,6 +43,9 @@ const BILLING_WEB_ROUTE = {
 
 const refreshed = vi.fn<(scope: BillingRefreshScope) => void>()
 onBillingRefresh(refreshed)
+
+const mockReadOperation = vi.fn(async () => false)
+onCheckoutOperationRead(mockReadOperation)
 
 function fakeTab(): Window {
   return { opener: undefined, location: { href: '' } } as unknown as Window
@@ -147,5 +156,110 @@ describe('openHostedBillingTab', () => {
 
     expect(mockStop.mock.calls.length).toBe(stopCallsAfterFirstOpen + 1)
     expect(mockRegisterRefreshOnReturn).toHaveBeenCalledTimes(2)
+  })
+
+  describe('while a hosted payment tab is open', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.spyOn(window, 'open').mockReturnValue(fakeTab())
+      mockReadOperation.mockReset().mockResolvedValue(false)
+    })
+
+    afterEach(() => {
+      disarmHostedBillingReturnRefresh()
+    })
+
+    it.for(['checkout', 'subscription'] as const)(
+      're-reads the checkout status so the app picks up the payment %s starts',
+      async (intent) => {
+        openHostedBillingTab(intent)
+
+        await vi.advanceTimersByTimeAsync(4_000)
+        expect(mockReadOperation).toHaveBeenCalledTimes(1)
+        await vi.advanceTimersByTimeAsync(4_000)
+        expect(mockReadOperation).toHaveBeenCalledTimes(2)
+      }
+    )
+
+    it('hands off once a read finds the pending operation', async () => {
+      mockReadOperation.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+      openHostedBillingTab('checkout')
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(mockReadOperation).toHaveBeenCalledTimes(2)
+    })
+
+    it('stops watching once the workspace the tab was opened for is left', async () => {
+      openHostedBillingTab('checkout')
+      await vi.advanceTimersByTimeAsync(4_000)
+      expect(mockReadOperation).toHaveBeenCalledOnce()
+
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-other' })
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(mockReadOperation).toHaveBeenCalledOnce()
+    })
+
+    it('does not watch for an intent that starts no payment', async () => {
+      openHostedBillingTab('payment-methods')
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(mockReadOperation).not.toHaveBeenCalled()
+    })
+
+    it('reads until fifteen minutes pass, then stops', async () => {
+      openHostedBillingTab('checkout')
+
+      await vi.advanceTimersByTimeAsync(15 * 60_000 - 1)
+      const readsBeforeExpiry = mockReadOperation.mock.calls.length
+      expect(readsBeforeExpiry).toBeGreaterThan(200)
+
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(mockReadOperation).toHaveBeenCalledTimes(readsBeforeExpiry)
+    })
+
+    it('stops watching when disarmed', async () => {
+      openHostedBillingTab('checkout')
+      disarmHostedBillingReturnRefresh()
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(mockReadOperation).not.toHaveBeenCalled()
+    })
+
+    it('skips a tick while the previous read is still in flight', async () => {
+      let settle: (found: boolean) => void = () => {}
+      mockReadOperation.mockImplementationOnce(
+        () => new Promise<boolean>((resolve) => (settle = resolve))
+      )
+      openHostedBillingTab('checkout')
+
+      await vi.advanceTimersByTimeAsync(8_000)
+      expect(mockReadOperation).toHaveBeenCalledOnce()
+
+      settle(false)
+      await vi.advanceTimersByTimeAsync(4_000)
+      expect(mockReadOperation).toHaveBeenCalledTimes(2)
+    })
+
+    it('keeps watching after a read fails', async () => {
+      mockReadOperation.mockRejectedValueOnce(new Error('status read failed'))
+      openHostedBillingTab('checkout')
+
+      await vi.advanceTimersByTimeAsync(8_000)
+
+      expect(mockReadOperation).toHaveBeenCalledTimes(2)
+    })
+
+    it('stops watching when a tab that starts no payment opens next', async () => {
+      openHostedBillingTab('checkout')
+      openHostedBillingTab('payment-methods')
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(mockReadOperation).not.toHaveBeenCalled()
+    })
   })
 })

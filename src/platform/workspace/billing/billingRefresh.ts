@@ -31,3 +31,30 @@ export async function refreshBilling(
 ): Promise<void> {
   await Promise.allSettled(Array.from(listeners, (listener) => listener(scope)))
 }
+
+/**
+ * Reads the checkout rail's status and reports whether a pending operation
+ * was adopted, so a caller watching for a payment taken in another tab can
+ * stop watching.
+ */
+type CheckoutOperationReader = () => Promise<boolean>
+
+const operationReaders = new Set<CheckoutOperationReader>()
+
+/** Registers the reader that owns the checkout rail, same shape as {@link onBillingRefresh}. */
+export function onCheckoutOperationRead(
+  reader: CheckoutOperationReader
+): () => void {
+  operationReaders.add(reader)
+  return () => {
+    operationReaders.delete(reader)
+  }
+}
+
+/** True once any registered reader adopted a pending checkout operation. */
+export async function readCheckoutOperation(): Promise<boolean> {
+  const results = await Promise.allSettled(
+    Array.from(operationReaders, (reader) => reader())
+  )
+  return results.some((result) => result.status === 'fulfilled' && result.value)
+}

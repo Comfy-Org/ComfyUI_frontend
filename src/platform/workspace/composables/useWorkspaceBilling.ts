@@ -167,7 +167,16 @@ function seatCapacityFrom(status: BillingStatusResponse): SeatCapacity | null {
  * Used for team workspaces.
  * @internal - Use useBillingContext() instead of importing directly.
  */
-export function useWorkspaceBilling(): BillingState & BillingActions {
+export type WorkspaceBilling = BillingState &
+  BillingActions & {
+    /**
+     * Reads status and resolves true once the operation it reports pending
+     * has been adopted, so its own polling shows progress and outcome.
+     */
+    readAndAdoptPendingOperation: () => Promise<boolean>
+  }
+
+export function useWorkspaceBilling(): WorkspaceBilling {
   const billingPlans = useBillingPlans()
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -179,6 +188,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const error = ref<string | null>(null)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
+  let adoption: Promise<boolean> = Promise.resolve(false)
   const seatCapacity = shallowRef<SeatCapacity | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
   // Prevent older status and balance responses from overwriting newer state.
@@ -288,16 +298,17 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       : flags.billingSdkSubscriptionRailEnabled
   }
 
-  function resumePendingOperation(status: BillingStatusResponse): void {
-    if (
-      !status.pending_billing_op_id ||
-      billingOperationStore.getOperation(status.pending_billing_op_id)
-    ) {
-      return
+  async function resumePendingOperation(
+    status: BillingStatusResponse
+  ): Promise<boolean> {
+    if (!status.pending_billing_op_id) return false
+    if (billingOperationStore.getOperation(status.pending_billing_op_id)) {
+      return true
     }
     if (railOwnsResume(status.pending_billing_op_type)) {
-      useBillingSdkStore().recover()
-      return
+      return useBillingSdkStore()
+        .recover()
+        .catch(() => false)
     }
     void billingOperationStore.startOperation(
       status.pending_billing_op_id,
@@ -305,6 +316,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       undefined,
       status.action_url
     )
+    return true
   }
 
   function isStaleStatusRead(
@@ -317,7 +329,13 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     )
   }
 
+  async function readAndAdoptPendingOperation(): Promise<boolean> {
+    await fetchStatus()
+    return adoption
+  }
+
   async function fetchStatus(): Promise<void> {
+    adoption = Promise.resolve(false)
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
     const rail: BillingReadRail | null = useBillingReadRail()
@@ -335,7 +353,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       if (workspaceId && status.billing_rail) {
         workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
       }
-      resumePendingOperation(status)
+      adoption = resumePendingOperation(status)
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
         error.value =
@@ -749,6 +767,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     subscriptionStatus,
     tier,
     renewalDate,
+    readAndAdoptPendingOperation,
 
     // Actions
     initialize,

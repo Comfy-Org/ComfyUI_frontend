@@ -461,8 +461,10 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     return outcome
   }
 
-  function recover() {
-    void sdk.lifecycle.recover()
+  /** Adopts the operation the server reports pending; true once one is adopted. */
+  async function recover(): Promise<boolean> {
+    const adopted = await sdk.lifecycle.recover()
+    return adopted.status === 'ok' && adopted.value !== undefined
   }
 
   /**

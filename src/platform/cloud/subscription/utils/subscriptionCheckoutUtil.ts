@@ -7,6 +7,7 @@ import {
   persistPendingSubscriptionCheckoutAttempt,
   withPendingCheckoutAttemptId
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
@@ -40,6 +41,10 @@ const getCheckoutAttributionForCloud =
 
     return getCheckoutAttribution()
   }
+
+const checkoutAuthHeader = async (authStore: ReturnType<typeof useAuthStore>) =>
+  (await webSessionResourceHeader()) ??
+  (await authStore.getFirebaseAuthHeader())
 
 interface PerformSubscriptionCheckoutOptions {
   openInNewTab?: boolean
@@ -94,7 +99,7 @@ async function initiateSubscriptionCheckout(
   const authStore = useAuthStore()
   const { userId } = storeToRefs(authStore)
   const telemetry = useTelemetry()
-  const authHeader = await authStore.getFirebaseAuthHeader()
+  const authHeader = await checkoutAuthHeader(authStore)
 
   if (!authHeader) {
     throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))

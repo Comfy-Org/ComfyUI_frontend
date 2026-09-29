@@ -8,7 +8,10 @@
 import type { BillingIntent } from '@comfyorg/billing-contract'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { refreshBilling } from '@/platform/workspace/billing/billingRefresh'
+import {
+  readCheckoutOperation,
+  refreshBilling
+} from '@/platform/workspace/billing/billingRefresh'
 import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -34,15 +37,71 @@ function openDisownedTab(url: URL): boolean {
 }
 
 let stopReturnRefresh: (() => void) | null = null
+let stopOperationWatch: (() => void) | null = null
 
 export function disarmHostedBillingReturnRefresh(): void {
   stopReturnRefresh?.()
   stopReturnRefresh = null
+  stopOperationWatch?.()
+  stopOperationWatch = null
 }
 
-function armReturnRefresh(): void {
+const OPERATION_INTENTS: ReadonlySet<BillingIntent> = new Set([
+  'checkout',
+  'subscription'
+])
+const OPERATION_POLL_MS = 4_000
+const OPERATION_WATCH_MS = 15 * 60_000
+
+/**
+ * A payment billing-web takes never pushes back to this tab, but a status read
+ * resumes the operation the server reports pending, and that operation then
+ * polls itself and shows the same progress and outcome toasts the embedded
+ * checkout shows. This reads until one is found, for the workspace the tab
+ * was opened for only. A read still in flight skips the tick, and a failed
+ * read waits for the next one.
+ */
+function watchForHostedOperation(
+  readOperation: () => Promise<boolean>,
+  workspaceId: string | undefined
+) {
+  const workspaceStore = useTeamWorkspaceStore()
+  const startedAt = Date.now()
+  let reading = false
+  const timer = setInterval(() => {
+    if (
+      Date.now() - startedAt >= OPERATION_WATCH_MS ||
+      (workspaceStore.activeWorkspaceId ?? undefined) !== workspaceId
+    ) {
+      clearInterval(timer)
+      return
+    }
+    if (reading) return
+    reading = true
+    void readOperation()
+      .then((found) => {
+        if (found) clearInterval(timer)
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        reading = false
+      })
+  }, OPERATION_POLL_MS)
+  return () => clearInterval(timer)
+}
+
+function armReturnRefresh(
+  intent: BillingIntent,
+  workspaceId: string | undefined
+): void {
   disarmHostedBillingReturnRefresh()
   stopReturnRefresh = registerRefreshOnReturn(() => refreshBilling('account'))
+  if (OPERATION_INTENTS.has(intent)) {
+    stopOperationWatch = watchForHostedOperation(
+      readCheckoutOperation,
+      workspaceId
+    )
+  }
 }
 
 export type HostedBillingTabOutcome = 'opened' | 'unavailable' | 'blocked'
@@ -66,7 +125,7 @@ export function openHostedBillingTabOutcome(
   })
   if (route.kind !== 'billing_web') return 'unavailable'
   if (!openDisownedTab(route.url)) return 'blocked'
-  armReturnRefresh()
+  armReturnRefresh(intent, workspaceId)
   return 'opened'
 }
 

@@ -13,7 +13,10 @@ import type {
   PreviewSubscribeOptions,
   SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
-import { onBillingRefresh } from '@/platform/workspace/billing/billingRefresh'
+import {
+  onBillingRefresh,
+  onCheckoutOperationRead
+} from '@/platform/workspace/billing/billingRefresh'
 import type { BillingRefreshScope } from '@/platform/workspace/billing/billingRefresh'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -26,6 +29,7 @@ import type {
 } from './types'
 import { useBillingRouting } from './useBillingRouting'
 import { useLegacyBilling } from './useLegacyBilling'
+import type { WorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
 // Legacy per-member team plans use a hyphenated `team-{tier}-{cycle}` slug; the
@@ -91,9 +95,7 @@ function useBillingContextInternal(): BillingContext {
   const legacyBillingRef = shallowRef<(BillingState & BillingActions) | null>(
     null
   )
-  const workspaceBillingRef = shallowRef<
-    (BillingState & BillingActions) | null
-  >(null)
+  const workspaceBillingRef = shallowRef<WorkspaceBilling | null>(null)
 
   const getLegacyBilling = () => {
     if (!legacyBillingRef.value) {
@@ -303,7 +305,27 @@ function useBillingContextInternal(): BillingContext {
     }
   }
 
-  onScopeDispose(onBillingRefresh(refreshFor))
+  /**
+   * Reads the checkout rail's status, which resumes any operation the server
+   * reports pending. True once that operation was adopted, so a caller
+   * watching for a payment taken elsewhere can hand off to its own polling.
+   */
+  async function readCheckoutOperation(): Promise<boolean> {
+    const checkout = checkoutContext.value
+    const workspace = workspaceBillingRef.value
+    if (workspace === null || checkout !== workspace) {
+      await checkout.fetchStatus()
+      return false
+    }
+    return workspace.readAndAdoptPendingOperation()
+  }
+
+  const stopRefreshListener = onBillingRefresh(refreshFor)
+  const stopOperationReader = onCheckoutOperationRead(readCheckoutOperation)
+  onScopeDispose(() => {
+    stopRefreshListener()
+    stopOperationReader()
+  })
 
   async function subscribe(planSlug: string, options?: SubscribeOptions) {
     return checkoutContext.value.subscribe(planSlug, options)
@@ -376,6 +398,7 @@ function useBillingContextInternal(): BillingContext {
     fetchStatus,
     fetchBalance,
     reconcileSubscriptionSuccess,
+    readCheckoutOperation,
     subscribe,
     previewSubscribe,
     manageSubscription,
