@@ -73,3 +73,15 @@ test('sends the old studio address to the app page it named', async ({
   await page.goto('/cinematic-studio/?app=reshoot&ux=d&model=flux')
   await expect(page).toHaveURL(/\/models\/apps\/reshoot\/\?ux=d&model=flux$/)
 })
+
+test('asks Safari for a first frame on the Re-shoot example video tile', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/reshoot/')
+  await expect(page.getByTestId('example-video')).toHaveAttribute(
+    'src',
+    /#t=0\.1$/
+  )
+})
