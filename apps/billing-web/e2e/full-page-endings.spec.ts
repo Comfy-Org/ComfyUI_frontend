@@ -152,6 +152,49 @@ test('a member the owner manages billing for sees Checkout not available with th
   ).toBeHidden()
 })
 
+test('643-14654: a change already scheduled is named from the server, and without one the refusal still says a change is scheduled', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const refused = capabilitiesWith({ can_subscribe_self_serve: false })
+  cloud.reply('GET', '/billing/capabilities', () => ({
+    body: {
+      ...refused,
+      denied_reasons: {
+        can_subscribe_self_serve: 'subscription_change_in_progress'
+      }
+    },
+    headers: { 'x-capability-revision': String(refused.revision) }
+  }))
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    scheduled_change: {
+      plan_slug: 'pro_monthly',
+      effective_at: '2026-10-28T00:00:00.000Z',
+      team_credit_stop: null
+    }
+  }
+  await signIn(CHECKOUT)
+
+  await expect(heading(page, 'Checkout not available')).toBeVisible()
+  await expect(
+    page.getByText(
+      'Your plan is set to change to Pro · Monthly on October 28, 2026. Cancel that change in your billing settings to make a different one.'
+    )
+  ).toBeVisible()
+  await expect(code(page)).toHaveText('SUBSCRIPTION_CHANGE_IN_PROGRESS')
+
+  cloud.scenario.status = { ...cloud.scenario.status, scheduled_change: null }
+  await page.reload()
+
+  await expect(
+    page.getByText(
+      'Your plan already has a change scheduled. Cancel it in your billing settings to make a different one.'
+    )
+  ).toBeVisible()
+})
+
 test('433-6840: a link to a plan the catalog lacks renders Plan not available with PLAN_NOT_FOUND, and View plans opens the cloud pricing table', async ({
   page,
   cloud,

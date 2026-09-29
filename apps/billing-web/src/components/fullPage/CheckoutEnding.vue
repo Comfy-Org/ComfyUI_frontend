@@ -7,8 +7,10 @@ import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { EndingKind, EndingScreen } from '@/checkout/endingScreen'
+import { longDate } from '@/checkout/longDate'
 import { supportLinkWithCode } from '@/checkout/payVerdict'
 import SuccessCloseFooter from '@/components/fullPage/SuccessCloseFooter.vue'
+import { useHostedCopy } from '@/composables/useHostedCopy'
 
 export interface EndingPlan {
   readonly name: string
@@ -65,7 +67,8 @@ const {
 
 const emit = defineEmits<{ close: []; retry: []; viewPlans: [] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const { planName } = useHostedCopy()
 const { copy, copied } = useClipboard({ legacy: true })
 
 const ending = computed(() => ENDINGS[screen.kind])
@@ -74,6 +77,15 @@ const bodyKey = computed(() =>
   screen.kind === 'refused'
     ? `${copyKey.value}.body.${screen.copy}`
     : `${copyKey.value}.body`
+)
+const bodyParams = computed(() =>
+  screen.kind === 'refused' && screen.copy === 'change_scheduled'
+    ? {
+        workspace,
+        plan: planName(screen.scheduled.plan),
+        date: longDate(screen.scheduled.effectiveAt, locale.value)
+      }
+    : { workspace }
 )
 const code = computed(() => ('code' in screen ? screen.code : undefined))
 const supportLink = computed(() => supportLinkWithCode(code.value))
@@ -102,7 +114,7 @@ function act() {
           {{ t(`${copyKey}.title`) }}
         </h1>
         <p class="m-0 text-sm/5 text-muted-foreground">
-          {{ t(bodyKey, { workspace }) }}
+          {{ t(bodyKey, bodyParams) }}
         </p>
         <i18n-t
           v-if="screen.kind === 'in_progress'"

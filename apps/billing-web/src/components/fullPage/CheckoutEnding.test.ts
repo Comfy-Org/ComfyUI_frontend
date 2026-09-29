@@ -51,7 +51,7 @@ describe('CheckoutEnding', () => {
     {
       reason: 'subscription_change_in_progress',
       code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
-      body: UNKNOWN
+      body: 'Your plan already has a change scheduled. Cancel it in your billing settings to make a different one.'
     },
     { reason: 'not_a_member', code: 'NOT_A_MEMBER', body: UNKNOWN },
     { reason: 'unspecified', code: 'UNSPECIFIED', body: UNKNOWN }
@@ -80,6 +80,28 @@ describe('CheckoutEnding', () => {
       ).toEqual([])
     }
   )
+
+  it('a refusal for a change already scheduled names the plan and the date it takes effect', () => {
+    const ending = endingOf({
+      kind: 'refused',
+      reason: 'subscription_change_in_progress',
+      scheduled: {
+        plan: { tier: 'PRO', duration: 'ANNUAL' },
+        effectiveAt: '2026-10-28T00:00:00.000Z'
+      }
+    })
+    if (ending === undefined) throw new Error('a refusal is an ending')
+    renderEnding(ending)
+
+    expect(
+      screen.getByText(
+        'Your plan is set to change to Pro · Yearly on October 28, 2026. Cancel that change in your billing settings to make a different one.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'SUBSCRIPTION_CHANGE_IN_PROGRESS'
+    )
+  })
 
   it.for<{
     ending: EndingScreen

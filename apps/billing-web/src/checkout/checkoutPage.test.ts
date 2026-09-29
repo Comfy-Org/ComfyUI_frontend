@@ -110,6 +110,28 @@ describe('reduceCheckoutPage', () => {
       pay: false
     },
     {
+      name: 'a refusal for a change already scheduled, with that change',
+      events: [
+        {
+          type: 'refused',
+          reason: 'subscription_change_in_progress',
+          scheduled: {
+            plan: { tier: 'PRO', duration: 'ANNUAL' },
+            effectiveAt: '2026-10-28T00:00:00.000Z'
+          }
+        }
+      ],
+      expected: {
+        kind: 'refused',
+        reason: 'subscription_change_in_progress',
+        scheduled: {
+          plan: { tier: 'PRO', duration: 'ANNUAL' },
+          effectiveAt: '2026-10-28T00:00:00.000Z'
+        }
+      },
+      pay: false
+    },
+    {
       name: 'a failed read',
       events: [unavailable],
       expected: { kind: 'unavailable', code: 'REQUEST_FAILED' },

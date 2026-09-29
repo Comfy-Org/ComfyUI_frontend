@@ -2,7 +2,8 @@ import type { CapabilityDenialReason } from '@comfyorg/account-core/billing'
 
 import type {
   CheckoutPage,
-  PlanUnavailableReason
+  PlanUnavailableReason,
+  ScheduledChange
 } from '@/checkout/checkoutPage'
 import { waitingOn } from '@/checkout/checkoutPage'
 
@@ -15,16 +16,22 @@ const PLAN_UNAVAILABLE_CODE: Readonly<Record<PlanUnavailableReason, string>> = {
 
 /**
  * Which explanation Checkout not available gives. A reason with no copy of
- * its own, a change already scheduled included, reads as `unknown`.
+ * its own reads as `unknown`. A change already scheduled names its plan and
+ * date only when the server's status and catalog both do (`change_scheduled`).
  */
-type RefusalCopy = 'owner' | 'sales_managed' | 'unfinished' | 'unknown'
+type RefusalCopy =
+  | 'owner'
+  | 'sales_managed'
+  | 'unfinished'
+  | 'change_unnamed'
+  | 'unknown'
 
 const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   not_workspace_owner: 'owner',
   tier_not_self_serve: 'sales_managed',
   subscription_not_started: 'unfinished',
   subscription_status_unrecognized: 'unknown',
-  subscription_change_in_progress: 'unknown',
+  subscription_change_in_progress: 'change_unnamed',
   not_a_member: 'unknown',
   unspecified: 'unknown'
 }
@@ -47,6 +54,12 @@ export type EndingScreen =
       readonly code: string
       readonly copy: RefusalCopy
     }
+  | {
+      readonly kind: 'refused'
+      readonly code: string
+      readonly copy: 'change_scheduled'
+      readonly scheduled: ScheduledChange
+    }
   | { readonly kind: 'plan_unavailable'; readonly code: string }
   | { readonly kind: 'load_failed'; readonly code: string }
   | { readonly kind: 'recheck_failed'; readonly code: string }
@@ -57,11 +70,7 @@ export type EndingKind = EndingScreen['kind']
 export function endingOf(page: CheckoutPage): EndingScreen | undefined {
   switch (page.kind) {
     case 'refused':
-      return {
-        kind: 'refused',
-        code: page.reason.toUpperCase(),
-        copy: REFUSAL_COPY[page.reason]
-      }
+      return refusedEnding(page)
     case 'unavailable':
       return { kind: 'load_failed', code: page.code }
     case 'recheck_failed':
@@ -80,6 +89,20 @@ export function endingOf(page: CheckoutPage): EndingScreen | undefined {
     default:
       return undefined
   }
+}
+
+function refusedEnding(
+  page: Extract<CheckoutPage, { kind: 'refused' }>
+): EndingScreen {
+  const code = page.reason.toUpperCase()
+  return page.scheduled === undefined
+    ? { kind: 'refused', code, copy: REFUSAL_COPY[page.reason] }
+    : {
+        kind: 'refused',
+        code,
+        copy: 'change_scheduled',
+        scheduled: page.scheduled
+      }
 }
 
 function waitingEnding(

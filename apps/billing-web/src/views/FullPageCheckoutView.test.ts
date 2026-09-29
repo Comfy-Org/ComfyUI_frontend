@@ -32,6 +32,7 @@ import {
   failedOperation,
   hostedPendingOperation,
   pendingOperation,
+  planOf,
   previewOf,
   succeededOperation
 } from '@/test/fakeBillingClient'
@@ -475,6 +476,74 @@ describe('FullPageCheckoutView', () => {
     ).not.toBeInTheDocument()
     expect(form.mounts).toBe(0)
   })
+
+  const SCHEDULED_CHANGE = {
+    plan_slug: 'pro_yearly',
+    effective_at: '2026-10-28T00:00:00.000Z',
+    team_credit_stop: null
+  }
+  const PRO_YEARLY = planOf({
+    slug: 'pro_yearly',
+    tier: 'PRO',
+    duration: 'ANNUAL'
+  })
+  const CHANGE_NAMED =
+    'Your plan is set to change to Pro · Yearly on October 28, 2026. Cancel that change in your billing settings to make a different one.'
+  const CHANGE_UNNAMED =
+    'Your plan already has a change scheduled. Cancel it in your billing settings to make a different one.'
+
+  it.for<{
+    name: string
+    scheduled: typeof SCHEDULED_CHANGE | null
+    catalog: ReturnType<typeof planOf>[]
+    body: string
+  }>([
+    {
+      name: 'names the scheduled plan from the catalog and the date the server set',
+      scheduled: SCHEDULED_CHANGE,
+      catalog: [PRO_YEARLY],
+      body: CHANGE_NAMED
+    },
+    {
+      name: 'falls back when the catalog does not carry the scheduled plan',
+      scheduled: SCHEDULED_CHANGE,
+      catalog: [planOf()],
+      body: CHANGE_UNNAMED
+    },
+    {
+      name: 'falls back when the status names no scheduled change',
+      scheduled: null,
+      catalog: [PRO_YEARLY],
+      body: CHANGE_UNNAMED
+    }
+  ])(
+    'a refusal for a change already scheduled $name',
+    async ({ scheduled, catalog, body }) => {
+      await renderCheckout({
+        capabilities: {},
+        denials: {
+          can_subscribe_self_serve: 'subscription_change_in_progress'
+        },
+        plans: {
+          status: 'ok',
+          value: { current_plan_slug: 'creator_monthly', plans: catalog }
+        },
+        status: {
+          is_active: true,
+          has_funds: true,
+          max_seats: 1,
+          occupied_seats: 1,
+          scheduled_change: scheduled,
+          team_credit_stop: null
+        }
+      })
+
+      expect(await screen.findByText(body)).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'SUBSCRIPTION_CHANGE_IN_PROGRESS'
+      )
+    }
+  )
 
   it.for<{ name: string; returnTo: string; href: string }>([
     {

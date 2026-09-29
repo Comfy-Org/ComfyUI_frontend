@@ -1,5 +1,6 @@
 import type {
   BillingOperationState,
+  BillingPlansData,
   CapabilityDenialReason,
   PaymentReasonKey,
   PendingBillingOperation,
@@ -7,6 +8,12 @@ import type {
 } from '@comfyorg/account-core/billing'
 
 type ElementStatus = 'loading' | 'ready' | 'failed'
+
+/** A plan change the server already scheduled, its plan as the server's catalog lists it. */
+export interface ScheduledChange {
+  readonly plan: Pick<BillingPlansData['plans'][number], 'tier' | 'duration'>
+  readonly effectiveAt: string
+}
 
 /** `none` means the read succeeded and the workspace has no saved method. */
 type SavedStatus = 'loading' | 'ready' | 'none' | 'failed'
@@ -105,7 +112,11 @@ type Attribution = 'started' | 'followed' | 'settled'
  */
 export type CheckoutPage =
   | { readonly kind: 'resolving'; readonly outcome?: InlineOutcome }
-  | { readonly kind: 'refused'; readonly reason: CapabilityDenialReason }
+  | {
+      readonly kind: 'refused'
+      readonly reason: CapabilityDenialReason
+      readonly scheduled?: ScheduledChange
+    }
   | { readonly kind: 'unavailable'; readonly code: string }
   | { readonly kind: 'recheck_failed'; readonly code: string }
   | {
@@ -136,7 +147,11 @@ export type OperationOutcome = Exclude<
 >
 
 export type CheckoutPageEvent =
-  | { readonly type: 'refused'; readonly reason: CapabilityDenialReason }
+  | {
+      readonly type: 'refused'
+      readonly reason: CapabilityDenialReason
+      readonly scheduled?: ScheduledChange
+    }
   | { readonly type: 'unavailable'; readonly code: string }
   /** The lifecycle could not say what the workspace is waiting on. */
   | { readonly type: 'recheckFailed'; readonly code: string }
@@ -276,7 +291,11 @@ type StopEvent = Extract<
 function stoppedOn(event: StopEvent): CheckoutPage {
   switch (event.type) {
     case 'refused':
-      return { kind: 'refused', reason: event.reason }
+      return {
+        kind: 'refused',
+        reason: event.reason,
+        ...(event.scheduled === undefined ? {} : { scheduled: event.scheduled })
+      }
     case 'unavailable':
       return { kind: 'unavailable', code: event.code }
     case 'recheckFailed':
