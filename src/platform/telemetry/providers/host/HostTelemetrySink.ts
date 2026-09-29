@@ -22,10 +22,11 @@ import type {
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
-  AgentWorkflowAppliedMetadata,
   AgentWorkflowBoundMetadata,
+  AgentWorkflowAppliedMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
@@ -323,6 +324,28 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
   }
 
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.capture(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
+  }
+
+  trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_PANEL_OPENED, metadata)
+  }
+
+  trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_PANEL_CLOSED, metadata)
+  }
+
+  trackAgentEntryButtonClicked(
+    metadata: AgentEntryButtonClickedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_ENTRY_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentCloseButtonClicked(): void {
+    this.capture(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED)
+  }
+
   trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
     this.capture(TelemetryEvents.AGENT_CONSENT_SHOWN, metadata)
   }
@@ -337,6 +360,30 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentOnboardingStep(metadata: AgentOnboardingStepMetadata): void {
     this.capture(TelemetryEvents.AGENT_ONBOARDING_STEP, metadata)
+  }
+
+  trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
+    this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
+  }
+
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
+  }
+
+  trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
+  }
+
+  trackAgentAttachButtonClicked(
+    metadata: AgentAttachButtonClickedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
   }
 
   trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {
@@ -379,46 +426,6 @@ export class HostTelemetrySink implements TelemetryProvider {
     metadata: AgentOnboardingNotShownMetadata
   ): void {
     this.capture(TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN, metadata)
-  }
-
-  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
-    this.capture(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
-  }
-
-  trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
-    this.capture(TelemetryEvents.AGENT_PANEL_OPENED, metadata)
-  }
-
-  trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {
-    this.capture(TelemetryEvents.AGENT_PANEL_CLOSED, metadata)
-  }
-
-  trackAgentEntryButtonClicked(
-    metadata: AgentEntryButtonClickedMetadata
-  ): void {
-    this.capture(TelemetryEvents.AGENT_ENTRY_BUTTON_CLICKED, metadata)
-  }
-
-  trackAgentCloseButtonClicked(): void {
-    this.capture(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED)
-  }
-
-  trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
-    this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
-  }
-
-  trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
-    this.capture(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
-  }
-
-  trackAgentAttachButtonClicked(
-    metadata: AgentAttachButtonClickedMetadata
-  ): void {
-    this.capture(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED, metadata)
-  }
-
-  trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
-    this.capture(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
   }
 
   trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {

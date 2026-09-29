@@ -20,6 +20,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
@@ -1577,7 +1578,18 @@ describe('Composer', () => {
       })
       render(Host, { global: { plugins: [i18n] } })
       return {
-        insert: (text: string) => composer.value?.insert(text)
+        composer,
+        insert: (text: string, attribution?: AgentStarterPromptAttribution) =>
+          composer.value?.insert(
+            text,
+            attribution ?? {
+              promptId: 'generate_image',
+              promptIndex: 0,
+              promptCount: 5,
+              promptTextHash: 'deadbeef',
+              locale: 'en'
+            }
+          )
       }
     }
 
@@ -1592,6 +1604,18 @@ describe('Composer', () => {
       expect(useAgentComposerStore().draft).toBe('foo')
       expect(textarea).toHaveFocus()
       expect(focusSpy).toHaveBeenCalledOnce()
+    })
+
+    it('accepts unidentified suggestion inserts at the exposed boundary', async () => {
+      const { composer } = mountWithInsert()
+
+      composer.value?.insert('foo', undefined)
+      await nextTick()
+
+      const store = useAgentComposerStore()
+      expect(store.draft).toBe('foo')
+      expect(store.promptOrigin).toBe('suggestion')
+      expect(store.starterPrompt).toBeNull()
     })
   })
 })
