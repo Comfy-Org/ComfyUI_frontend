@@ -6,6 +6,8 @@ export interface CinematicBrief {
   readonly scene: string
   readonly direction: Direction
   readonly enhance: boolean
+  /** A video shot asks for motion rather than a still. */
+  readonly video?: boolean
   readonly cast: boolean
   readonly palette: boolean
   /** Colours sent as words; `mainColor` indexes the dominant one. */
@@ -51,7 +53,9 @@ export function cinematicPromptSegments(
     !!shot && { text: sentence(shot), source: 'direction' },
     !!scene && { text: scene, source: 'scene' },
     brief.enhance && {
-      text: 'Cinematic film still, natural texture.',
+      text: brief.video
+        ? 'Cinematic film shot, continuous motion, natural texture.'
+        : 'Cinematic film still, natural texture.',
       source: 'enhance'
     },
     camera.length > 0 && {

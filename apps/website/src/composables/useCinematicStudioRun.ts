@@ -22,6 +22,11 @@ import {
   watermarksOff
 } from '../lib/workshop/cinematic-studio/frames'
 import { studioGate } from '../lib/workshop/cinematic-studio/gate'
+import type { CinematicVideoShot } from '../lib/workshop/cinematic-studio/video'
+import {
+  videoCapabilities,
+  videoParameters
+} from '../lib/workshop/cinematic-studio/video'
 import { studioRouterForm } from '../lib/workshop/cinematic-studio/request'
 import type { Reel, ReelEvent } from '../lib/workshop/cinematic-studio/reel'
 import {
@@ -34,11 +39,16 @@ import { useWorkshopAuthFlag, useWorkshopEnabled } from '../scripts/posthog'
 interface ShotRequest {
   readonly modelSlug: string
   readonly referenceSlug?: string
+  /** The operation that starts from an image, for a video with a first frame. */
+  readonly firstFrameSlug?: string
+  /** Present for a video shot. */
+  readonly video?: Omit<CinematicVideoShot, 'aspect'>
   readonly prompt: string
   readonly aspect: AspectRatio
   readonly resolutionPixels: number
   readonly takes: number
-  readonly references: readonly File[]
+  /** Pictures, or links for a model that fetches them itself. */
+  readonly references: readonly (File | string)[]
   readonly preview?: string
 }
 
@@ -48,7 +58,8 @@ interface UnsettledTake {
 }
 
 const fileIds = new WeakMap<File, string>()
-function fileId(file: File): string {
+function fileId(file: File | string): string {
+  if (typeof file === 'string') return file
   const known = fileIds.get(file)
   if (known) return known
   const id = crypto.randomUUID()
@@ -70,11 +81,32 @@ function takeFingerprint(
     request.aspect,
     request.resolutionPixels,
     request.references.map(fileId),
+    request.video && {
+      ...request.video,
+      firstFrame: request.video.firstFrame && fileId(request.video.firstFrame),
+      lastFrame: request.video.lastFrame && fileId(request.video.lastFrame),
+      sourceVideo:
+        request.video.sourceVideo && fileId(request.video.sourceVideo)
+    },
     index
   ])
 }
 
 function shotParameters(request: ShotRequest, model: WorkshopModelDetail) {
+  if (request.video && model.execution) {
+    const clip = videoParameters(videoCapabilities(model.execution), {
+      ...request.video,
+      aspect: request.aspect
+    })
+    return {
+      prompt: request.prompt,
+      ...clip,
+      model_specific: {
+        ...clip.model_specific,
+        ...watermarksOff(model.execution)
+      }
+    }
+  }
   const frame = frameParameters(
     model.execution,
     request.aspect,
@@ -274,7 +306,9 @@ export function useCinematicStudioRun(
     const startedFor = session.value
     const slug = request.references.length
       ? request.referenceSlug
-      : request.modelSlug
+      : request.video?.firstFrame
+        ? request.firstFrameSlug
+        : request.modelSlug
     if (rendering.value || gate.value !== 'ready' || !startedFor || !slug)
       return
     const takes = Array.from({ length: request.takes }, (_, index) => ({
