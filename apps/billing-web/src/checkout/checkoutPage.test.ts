@@ -16,6 +16,7 @@ import type {
 } from '@/checkout/checkoutPage'
 import {
   RESOLVING,
+  challengeToReopen,
   isChallengeReopenable,
   isLocked,
   isParked,
@@ -1248,6 +1249,57 @@ describe('isChallengeReopenable', () => {
     }
   ])('$name is reopenable: $reopenable', ({ operation, reopenable }) => {
     expect(isChallengeReopenable(operation)).toBe(reopenable)
+  })
+})
+
+describe('challengeToReopen', () => {
+  const embedded = (
+    status: 'required' | 'in_progress' | 'failed'
+  ): PendingBillingOperation => ({
+    ...challengedOperation(),
+    challenge: { clientSecret: 'cs_reload', status }
+  })
+
+  it.for<{ name: string; page: CheckoutPage; secret?: string }>([
+    {
+      name: 'waiting on an in-page challenge nobody has opened',
+      page: { kind: 'waiting', operation: embedded('required') },
+      secret: 'cs_reload'
+    },
+    {
+      name: 'waiting on a challenge already on screen',
+      page: { kind: 'waiting', operation: embedded('in_progress') }
+    },
+    {
+      name: 'waiting on a challenge the bank refused',
+      page: { kind: 'waiting', operation: embedded('failed') }
+    },
+    {
+      name: 'waiting on a hosted page, which would leave the checkout',
+      page: {
+        kind: 'waiting',
+        operation: {
+          ...hostedPendingOperation('https://pay.test/3ds'),
+          authenticationState: 'requires_action'
+        }
+      }
+    },
+    {
+      name: 'waiting on money the bank is processing',
+      page: {
+        kind: 'waiting',
+        operation: {
+          ...embedded('required'),
+          authenticationState: 'processing'
+        }
+      }
+    },
+    {
+      name: "this page's own Pay, which the lifecycle already drives",
+      page: capturing({ kind: 'sent', operation: embedded('required') })
+    }
+  ])('$name: $secret', ({ page, secret }) => {
+    expect(challengeToReopen(page)).toBe(secret)
   })
 })
 

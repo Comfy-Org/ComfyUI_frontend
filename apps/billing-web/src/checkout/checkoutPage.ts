@@ -775,6 +775,21 @@ export function isChallengeReopenable(
 }
 
 /**
+ * The in-page challenge a page that arrived on it re-opens without a click,
+ * by its client secret. A hosted page is never opened unasked: it would
+ * take a customer who just came back from it straight out again.
+ */
+export function challengeToReopen(page: CheckoutPage): string | undefined {
+  if (page.kind !== 'waiting') return undefined
+  const { operation } = page
+  if (!isChallengePending(operation) || operation.presentation !== 'embedded')
+    return undefined
+  return operation.challenge?.status === 'required'
+    ? operation.challenge.clientSecret
+    : undefined
+}
+
+/**
  * No endpoint cancels a pending payment yet (BE gap named on FE-3022), so
  * Cancel payment stays hidden rather than claiming a cancel the server
  * never made. Flip this once the endpoint lands and wire the click to it.

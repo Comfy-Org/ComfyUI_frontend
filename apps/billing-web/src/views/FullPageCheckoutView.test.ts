@@ -30,6 +30,7 @@ import type {
 import {
   createFakeBillingClient,
   failedOperation,
+  hostedPendingOperation,
   pendingOperation,
   previewOf,
   succeededOperation
@@ -60,9 +61,13 @@ vi.mock(import('@/config/stripeKey'), () => ({
   useBillingWebStripeKey: () => ref(stripeKey.value)
 }))
 
+/** Where Stripe says the intent's next step runs; a test flips it to play a redirect method. */
+const nextStep = vi.hoisted(() => ({ leavesPage: false }))
+
 vi.mock(import('@/session/stripeChallengePort'), () => ({
   createDeferredStripeChallengePort: () => ({
-    handleNextAction: async () => ({})
+    handleNextAction: async () => ({}),
+    leavesPage: async () => nextStep.leavesPage
   })
 }))
 
@@ -1663,6 +1668,7 @@ async function payHeld(methodType?: string) {
 describe('FullPageCheckoutView payment authentication', () => {
   beforeEach(() => {
     form.mounts = 0
+    nextStep.leavesPage = false
   })
 
   it('locks its own Pay through a challenge, then processing, then lands on the success', async () => {
@@ -1785,7 +1791,7 @@ describe('FullPageCheckoutView payment authentication', () => {
     await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_B))
   })
 
-  it('offers Continue verification after a reload mid-challenge, and drives the challenge again on click', async () => {
+  it('re-opens an in-page challenge on a reload mid-challenge, and again from Complete verification', async () => {
     const fake = await renderCheckout({
       recover: {
         status: 'ok',
@@ -1794,7 +1800,11 @@ describe('FullPageCheckoutView payment authentication', () => {
     })
 
     await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_A))
-    expect(payButton()).toBeDisabled()
+    await waitFor(() =>
+      expect(fake.reportChallengeStarted).toHaveBeenCalledExactlyOnceWith(
+        'op_reload'
+      )
+    )
     expect(
       screen.queryByRole('button', { name: 'Back' })
     ).not.toBeInTheDocument()
@@ -1806,7 +1816,7 @@ describe('FullPageCheckoutView payment authentication', () => {
     fake.reportChallengeSettled.mockClear()
 
     await userEvent.click(
-      screen.getByRole('button', { name: 'Continue verification' })
+      screen.getByRole('button', { name: 'Complete verification' })
     )
 
     expect(fake.reportChallengeStarted).toHaveBeenCalledExactlyOnceWith(
@@ -1818,7 +1828,57 @@ describe('FullPageCheckoutView payment authentication', () => {
         'completed'
       )
     )
+    expect(fake.subscribe).not.toHaveBeenCalled()
   })
+
+  it.for<{
+    name: string
+    operation: PendingBillingOperation
+    opens: 'challenge' | 'page'
+  }>([
+    {
+      name: 'a challenge Stripe finishes on another site, such as Alipay',
+      operation: challengedOperation('op_away', 'required'),
+      opens: 'challenge'
+    },
+    {
+      name: "a bank's hosted page",
+      operation: {
+        ...hostedPendingOperation('https://pay.test/3ds', 'op_away'),
+        authenticationState: 'requires_action'
+      },
+      opens: 'page'
+    }
+  ])(
+    'never sends a customer back to $name on arrival: Complete verification does, on a click',
+    async ({ operation, opens }) => {
+      nextStep.leavesPage = true
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      const fake = await renderCheckout({
+        recover: { status: 'ok', value: operation }
+      })
+
+      const complete = await screen.findByRole('button', {
+        name: 'Complete verification'
+      })
+      await capturePromisesFlushed()
+      expect(footnote()).toHaveTextContent(PHASE_A)
+      expect(fake.reportChallengeStarted).not.toHaveBeenCalled()
+      expect(assign).not.toHaveBeenCalled()
+
+      await userEvent.click(complete)
+
+      if (opens === 'challenge')
+        expect(fake.reportChallengeStarted).toHaveBeenCalledExactlyOnceWith(
+          'op_away'
+        )
+      else
+        expect(assign).toHaveBeenCalledExactlyOnceWith('https://pay.test/3ds')
+      expect(fake.subscribe).not.toHaveBeenCalled()
+    }
+  )
 
   it('returns a challenge to this checkout, not the result page', async () => {
     const fake = await payHeld()

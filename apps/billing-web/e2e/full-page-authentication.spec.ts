@@ -44,6 +44,8 @@ const payButton = (page: Page) =>
   page.getByRole('button', { name: 'Pay and subscribe' })
 const footnote = (page: Page) => page.getByTestId('checkout-phase-footnote')
 const backArrow = (page: Page) => page.getByRole('button', { name: 'Back' })
+const completeVerification = (page: Page) =>
+  page.getByRole('button', { name: 'Complete verification' })
 const cancelPayment = (page: Page) =>
   page.getByRole('button', { name: 'Cancel payment' })
 
@@ -218,6 +220,36 @@ test('a reload during Phase A renders the verify state and re-opens the challeng
   await expect(
     page.getByRole('heading', { name: 'Already completed' })
   ).toBeVisible()
+})
+
+test('312-9930: coming back from Alipay without paying stays on the checkout and offers Complete verification instead of sending the customer straight back', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    pending_billing_op_id: OPERATION,
+    pending_billing_op_type: 'subscription',
+    payment_intent_client_secret: CLIENT_SECRET
+  }
+  scriptOperation(cloud)
+  await page.addInitScript((redirectTo) => {
+    Object.assign(window, { __e2eStripeRedirectTo: redirectTo })
+  }, PORTAL_URL)
+  await signIn(CHECKOUT)
+
+  await expect(completeVerification(page)).toBeEnabled()
+  await expect(footnote(page)).toHaveText(PHASE_A)
+  await expect(backArrow(page)).toBeHidden()
+  await expect(page).toHaveURL(/\/v1\/checkout\?/)
+  expect(await nextActionCalls(page)).toEqual([])
+
+  await completeVerification(page).click()
+
+  await expect(page).toHaveURL(PORTAL_URL)
+  expect(subscribeRequests(cloud)).toHaveLength(0)
 })
 
 test('447-6886: a redirect method shows the pre-money line, never Phase B, and leaves for the provider with the checkout as its return', async ({

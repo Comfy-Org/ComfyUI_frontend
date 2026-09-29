@@ -60,6 +60,19 @@ const FAKE_STRIPE_JS = `
           }
         })
       },
+      // The intent's next step as Stripe reports it: an in-page challenge,
+      // or the redirect a method such as Alipay finishes on.
+      retrievePaymentIntent: () =>
+        Promise.resolve({
+          paymentIntent: {
+            status: 'requires_action',
+            next_action: {
+              type: window.__e2eStripeRedirectTo
+                ? 'alipay_handle_redirect'
+                : 'use_stripe_sdk'
+            }
+          }
+        }),
       // A spec sets window.__e2eStripeRedirectTo before load to make the
       // challenge leave the page the way a redirect method does, or
       // window.__e2eStripeHoldNextAction to keep it open until the spec

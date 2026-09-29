@@ -28,6 +28,7 @@ import type {
 import {
   RESOLVING,
   UNREADABLE_LINK,
+  challengeToReopen,
   isParked,
   needsConsent,
   railAcceptsPay,
@@ -131,11 +132,6 @@ export function useFullPageCheckout() {
   >(undefined)
   const { preview, quote } = usePreviewSubscribe()
   const saved = usePaymentMethods({ immediate: false })
-  const checkout = useCheckout({
-    openUrl: (url) => window.location.assign(url),
-    navigationMode: 'redirect',
-    challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
-  })
 
   /** A link that names no plan has nothing to quote, so it is as unreadable as a malformed one. */
   const page = shallowRef<CheckoutPage>(
@@ -143,6 +139,26 @@ export function useFullPageCheckout() {
       ? RESOLVING
       : UNREADABLE_LINK
   )
+
+  /** Busy from the Pay click until the attempt resolves, whatever the lifecycle's promise does. */
+  const submitting = computed(
+    () => page.value.kind === 'capture' && page.value.attempt.kind === 'sent'
+  )
+
+  const challengePort = createDeferredStripeChallengePort(
+    awaitBillingWebStripeKey
+  )
+  /**
+   * Only this page's own Pay continues on its own; money it is waiting on
+   * reopens only a challenge that stays on this page (below), and anything
+   * else waits for Complete verification.
+   */
+  const checkout = useCheckout({
+    openUrl: (url) => window.location.assign(url),
+    navigationMode: 'redirect',
+    challengePort,
+    autoContinue: () => submitting.value
+  })
 
   /** A page sent back to resolving by the lifecycle reads its capture again. */
   function dispatch(event: CheckoutPageEvent) {
@@ -302,6 +318,21 @@ export function useFullPageCheckout() {
     void reconcile()
     void readCapture()
   }
+
+  /**
+   * Money this page is waiting on reopens the bank's challenge on its own,
+   * once per challenge, as long as Stripe runs it inside this page: a reload
+   * mid-challenge picks it back up, and a customer back from a provider's
+   * site is never sent straight back to it.
+   */
+  watch(
+    () => challengeToReopen(page.value),
+    async (clientSecret) => {
+      if (clientSecret === undefined) return
+      if (await challengePort.leavesPage(clientSecret)) return
+      checkout.continueVerification()
+    }
+  )
 
   const scope = session.value
   const channel =
@@ -539,11 +570,6 @@ export function useFullPageCheckout() {
     if (mine !== payGeneration) return
     await settle(payVerdictOf(result), planned)
   }
-
-  /** Busy from the Pay click until the attempt resolves, whatever the lifecycle's promise does. */
-  const submitting = computed(
-    () => page.value.kind === 'capture' && page.value.attempt.kind === 'sent'
-  )
 
   return {
     page: shallowReadonly(page),

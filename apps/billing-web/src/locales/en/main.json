@@ -259,7 +259,7 @@
         "methods": {
           "alipay": "Alipay"
         },
-        "continueVerification": "Continue verification",
+        "completeVerification": "Complete verification",
         "cancel": "Cancel payment"
       },
       "ending": {
