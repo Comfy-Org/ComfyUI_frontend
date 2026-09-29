@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { computed, nextTick } from 'vue'
 
@@ -255,14 +255,21 @@ describe('WorkshopModelsGrid', () => {
     await user.click(screen.getByRole('button', { name: 'Edit images' }))
     expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
 
+    // A different shelf in the address, so a handler that only emptied the
+    // selection would fail here rather than pass by coincidence.
+    history.replaceState(null, '', '/models/?useCase=generate-videos')
+    onTestFinished(() => history.replaceState(null, '', '/'))
     const restored = new Event('pageshow')
     Object.defineProperty(restored, 'persisted', { value: true })
     window.dispatchEvent(restored)
 
     await waitFor(() =>
-      expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+        'Generate videos'
+      )
     )
-    expect(cardNames()).toHaveLength(3)
+    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
   // A first load is a pageshow too, and it must not throw away a shelf the
