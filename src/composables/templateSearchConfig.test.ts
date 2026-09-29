@@ -122,6 +122,16 @@ describe('searchTemplates', () => {
   const buildIndex = (templates: TemplateInfo[]) =>
     createTemplateSearchIndex(templates)
 
+  it('keeps searching when two templates share a name', () => {
+    const index = buildIndex([
+      buildTemplate({ name: 'decimate', title: 'Decimate Mesh' }),
+      buildTemplate({ name: 'decimate', title: 'Decimate Mesh' }),
+      buildTemplate({ name: 'h3', title: 'MiniMax H3 Video' })
+    ])
+    expect(searchTemplates(index, 'decimate')).toEqual(['decimate'])
+    expect(searchTemplates(index, 'h3')).toEqual(['h3'])
+  })
+
   it('returns an empty array for a blank query without touching the index', () => {
     const index = buildIndex([buildTemplate({ name: 'a', title: 'Alpha' })])
     expect(searchTemplates(index, '   ')).toEqual([])

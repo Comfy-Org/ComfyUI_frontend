@@ -156,7 +156,11 @@ export function createTemplateSearchIndex(
     tokenize,
     searchOptions: searchOptions('AND')
   })
-  index.addAll(templates)
+  // Custom-node templates are named by filename, so two packs can share a name;
+  // a duplicate ID makes MiniSearch throw and leaves search showing everything.
+  for (const template of templates) {
+    if (!index.has(template.name)) index.add(template)
+  }
   return index
 }
 
