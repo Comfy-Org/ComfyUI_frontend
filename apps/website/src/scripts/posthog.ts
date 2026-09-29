@@ -155,28 +155,31 @@ function awaitFlagAnswer(): void {
   flagResolutionTimer = setTimeout(markFlagResolved, FLAG_RESOLUTION_TIMEOUT_MS)
 }
 
+const EXCLUDED_OFF = readonly(ref(false))
+const EXCLUDED_SETTLED = readonly(ref(true))
+
 /** A build without Workshop answers "off, settled" whatever PostHog says. */
 function unlessExcluded(
   state: Ref<boolean>,
-  excluded: boolean
+  excluded: Readonly<Ref<boolean>>
 ): Readonly<Ref<boolean>> {
-  return readonly(WORKSHOP_INCLUDED ? state : ref(excluded))
+  return WORKSHOP_INCLUDED ? readonly(state) : excluded
 }
 
 export function useWorkshopEnabled(): Readonly<Ref<boolean>> {
-  return unlessExcluded(workshopEnabled, false)
+  return unlessExcluded(workshopEnabled, EXCLUDED_OFF)
 }
 
 export function useWorkshopWorkflowsEnabled(): Readonly<Ref<boolean>> {
-  return unlessExcluded(workshopWorkflowsEnabled, false)
+  return unlessExcluded(workshopWorkflowsEnabled, EXCLUDED_OFF)
 }
 
 export function useWorkshopAppsEnabled(): Readonly<Ref<boolean>> {
-  return unlessExcluded(workshopAppsEnabled, false)
+  return unlessExcluded(workshopAppsEnabled, EXCLUDED_OFF)
 }
 
 export function useWorkshopEnabledSettled(): Readonly<Ref<boolean>> {
-  return unlessExcluded(workshopEnabledSettled, true)
+  return unlessExcluded(workshopEnabledSettled, EXCLUDED_SETTLED)
 }
 
 export interface WorkshopIdentity {
