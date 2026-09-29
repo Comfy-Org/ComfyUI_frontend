@@ -988,6 +988,7 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   operation?: 'resubscribe'
   /** The click-time source, carried through so the terminal event can report it. */
   resubscribe_source?: ResubscribeClickMetadata['source']
+  recovery_outcome?: 'late_success'
 }
 
 export interface WorkspaceInviteMetadata extends Record<string, unknown> {
@@ -1083,6 +1084,7 @@ type SubscriptionCheckoutBillingEvent = {
    * `started` event through to this terminal event.
    */
   duration_ms?: number
+  recovery_outcome?: 'late_success'
 } & (
   | BillingIntent
   | BillingCheckoutReceived<SubscribeResponse['status']>
@@ -1115,6 +1117,7 @@ type BillingOperationBillingEvent = {
 type ResubscribeBillingEvent = {
   operation: 'resubscribe'
   source: ResubscribeClickMetadata['source']
+  checkout_attempt_id?: string
   payment_intent_source?: PaymentIntentSource
 } & (BillingStarted | BillingSucceeded | BillingFailed)
 
@@ -1207,6 +1210,7 @@ const BILLING_PAYLOAD_FIELD_HANDLING = {
   checkout_status: 'required',
   source: 'required',
   failure_category: 'required',
+  recovery_outcome: 'optional',
   member_removal_count: 'required',
   member_removal_failures: 'required'
 } as const satisfies Record<BillingPayloadField, 'optional' | 'required'>

@@ -54,8 +54,7 @@ const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
  * time a real user spends on card entry and 3DS. */
 const PENDING_CHECKOUT_COMPLETION_DEADLINE_MS = 10 * 60 * 1000
 const PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS = 10_000
-const PENDING_CHECKOUT_DEADLINE_RETRY_MS = 1000
-const PENDING_CHECKOUT_DEADLINE_RETRY_LIMIT = 3
+const PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS = [1000, 5000, 30000] as const
 const MAX_TIMER_DELAY_MS = 2_147_483_647
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
@@ -166,9 +165,12 @@ function useSubscriptionInternal() {
   let pendingCheckoutRecoveryTimeout: number | null = null
   let pendingCheckoutRecoveryAttempt = 0
   let isRecoveringPendingCheckout = false
-  let activePendingCheckoutRecovery: Promise<void> | null = null
+  let activePendingCheckoutRecovery: Promise<BillingStatusResponse | null> | null =
+    null
   let didLastRecoveryAttemptThrow = false
   let pendingCheckoutDeadlineRetryCount = 0
+  let lastPendingCheckoutStatus: BillingStatusResponse | null = null
+  const reportedRecoveryUnreachableAttemptIds = new Set<string>()
   let isDisposed = false
 
   const stopPendingCheckoutRecovery = () => {
@@ -224,6 +226,11 @@ function useSubscriptionInternal() {
       return
     }
 
+    // Only an authoritative inactive snapshot can close the funnel as a
+    // missing completion. A superseded, timed-out, or failed read says nothing
+    // about whether checkout eventually completed.
+    if (lastPendingCheckoutStatus?.is_active !== false) return
+
     // Claimed before emitting, not after: a second tab wakes on the same
     // deadline (both derive it from `started_at_ms`), so a mark that trailed
     // the two emissions left a window wide enough for it to emit as well.
@@ -273,6 +280,7 @@ function useSubscriptionInternal() {
         stage: 'failed',
         outcome: 'failure',
         source: attempt.resubscribe_source ?? 'settings_billing_panel',
+        checkout_attempt_id: attempt.attempt_id,
         failure_category: 'poll_timeout',
         ...(attempt.payment_intent_source
           ? { payment_intent_source: attempt.payment_intent_source }
@@ -327,6 +335,19 @@ function useSubscriptionInternal() {
       ...metadata
     })
 
+    if (metadata.recovery_outcome === 'late_success') {
+      telemetry?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'succeeded',
+        outcome: 'success',
+        checkout_attempt_id: metadata.checkout_attempt_id,
+        tier: metadata.tier,
+        cycle: metadata.cycle,
+        checkout_type: metadata.checkout_type,
+        recovery_outcome: 'late_success'
+      })
+    }
+
     // The recovery flow is shared with plain (non-resubscribe) legacy subscribes,
     // which all funnel through the same subscribeDirect(). Only emit the canonical
     // resubscribe terminal when the attempt that just resolved was itself tagged
@@ -340,6 +361,9 @@ function useSubscriptionInternal() {
         stage: 'succeeded',
         outcome: 'success',
         source: metadata.resubscribe_source ?? 'settings_billing_panel',
+        ...(metadata.checkout_attempt_id
+          ? { checkout_attempt_id: metadata.checkout_attempt_id }
+          : {}),
         ...(metadata.payment_intent_source
           ? { payment_intent_source: metadata.payment_intent_source }
           : {})
@@ -486,7 +510,46 @@ function useSubscriptionInternal() {
       error
     )
     didLastRecoveryAttemptThrow = true
-    schedulePendingCheckoutRecovery()
+    const attempt = getPendingSubscriptionCheckoutAttempt()
+    const isPastDeadline =
+      attempt !== null &&
+      Date.now() - attempt.started_at_ms >=
+        PENDING_CHECKOUT_COMPLETION_DEADLINE_MS
+    if (source === 'deadline' || isPastDeadline) {
+      reportRecoveryUnreachable()
+      rearmBoundedDeadlineWakeUp()
+    } else {
+      schedulePendingCheckoutRecovery()
+    }
+  }
+
+  const reportRecoveryUnreachable = () => {
+    if (isDisposed) return
+    const attempt = getPendingSubscriptionCheckoutAttempt()
+    if (
+      !attempt ||
+      reportedRecoveryUnreachableAttemptIds.has(attempt.attempt_id)
+    ) {
+      return
+    }
+
+    reportedRecoveryUnreachableAttemptIds.add(attempt.attempt_id)
+    reportTelemetryError(
+      new Error(
+        'Pending subscription checkout recovery could not reach billing'
+      ),
+      {
+        errorType: 'cloud_checkout_recovery_unreachable',
+        context: {
+          checkout_attempt_id: attempt.attempt_id,
+          checkout_type: attempt.checkout_type,
+          attempt_age_ms: Date.now() - attempt.started_at_ms,
+          tier: attempt.tier,
+          cycle: attempt.cycle
+        },
+        level: 'warning'
+      }
+    )
   }
 
   const waitForActiveRecoveryAtDeadline = async (
@@ -496,27 +559,26 @@ function useSubscriptionInternal() {
     if (source !== 'deadline' || !activePendingCheckoutRecovery) return true
 
     try {
-      await withTimeout(
+      const status = await withTimeout(
         activePendingCheckoutRecovery,
         PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS
       )
+      return status !== null
     } catch (error) {
       console.error(
         '[Subscription] Pending checkout recovery was still running at the deadline:',
         error
       )
-      didLastRecoveryAttemptThrow = true
-      reportMissingCheckoutCompletion()
+      reportRecoveryUnreachable()
+      rearmBoundedDeadlineWakeUp()
+      return false
     }
-    return true
   }
 
   const fetchPendingCheckoutStatus = async () => {
+    lastPendingCheckoutStatus = null
     const statusFetch = fetchSubscriptionStatus()
-    activePendingCheckoutRecovery = statusFetch.then(
-      () => undefined,
-      () => undefined
-    )
+    activePendingCheckoutRecovery = statusFetch
     try {
       return await withTimeout(
         statusFetch,
@@ -529,14 +591,14 @@ function useSubscriptionInternal() {
   }
 
   const rearmBoundedDeadlineWakeUp = () => {
-    if (
-      pendingCheckoutDeadlineRetryCount >= PENDING_CHECKOUT_DEADLINE_RETRY_LIMIT
-    ) {
-      return
-    }
-
+    const delayIndex = Math.min(
+      pendingCheckoutDeadlineRetryCount,
+      PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS.length - 1
+    )
     pendingCheckoutDeadlineRetryCount += 1
-    armMissingCheckoutCompletionWakeUp(PENDING_CHECKOUT_DEADLINE_RETRY_MS)
+    armMissingCheckoutCompletionWakeUp(
+      PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS[delayIndex]
+    )
   }
 
   const retryUnavailableDeadline = (source: PendingCheckoutRecoverySource) => {
@@ -566,8 +628,10 @@ function useSubscriptionInternal() {
       return
     }
     if (isRecoveringPendingCheckout) {
-      await waitForActiveRecoveryAtDeadline(source)
-      if (source === 'deadline') reportMissingCheckoutCompletion()
+      const didObserveStatus = await waitForActiveRecoveryAtDeadline(source)
+      if (!isDisposed && source === 'deadline' && didObserveStatus) {
+        reportMissingCheckoutCompletion()
+      }
       return
     }
 
@@ -575,12 +639,14 @@ function useSubscriptionInternal() {
 
     try {
       const status = await fetchPendingCheckoutStatus()
+      if (isDisposed) return
       if (status === null) {
         handleEmptyPendingCheckoutStatus(source)
         return
       }
     } catch (error) {
       handlePendingCheckoutRecoveryError(source, error)
+      return
     } finally {
       isRecoveringPendingCheckout = false
       activePendingCheckoutRecovery = null
@@ -600,6 +666,7 @@ function useSubscriptionInternal() {
   ) => {
     if (inFlightStatusFetch !== fetchPromise) return
 
+    statusFetchGeneration += 1
     inFlightStatusFetch = null
     inFlightStatusOwnerId = null
     inFlightStatusWorkspaceId = null
@@ -664,6 +731,7 @@ function useSubscriptionInternal() {
     if (!isCloud) return null
 
     const statusData = await readSubscriptionStatus()
+    if (isDisposed) return null
     // A superseded read publishes nothing: the scope moved on under it.
     if (statusData === undefined) return null
     if (
@@ -675,6 +743,7 @@ function useSubscriptionInternal() {
     }
     // Only a current, publishable read proves billing is reachable.
     didLastRecoveryAttemptThrow = false
+    lastPendingCheckoutStatus = statusData
     subscriptionStatus.value = statusData
     if (workspaceId && statusData.billing_rail) {
       workspaceStore.setWorkspaceBillingRail(
