@@ -22,17 +22,19 @@ async function showCancellationFallback(
 ): Promise<boolean> {
   if (!isScopeCurrent()) return false
   try {
-    await showFallback({ ...options, isScopeCurrent })
-    return true
+    const opened = await showFallback({ ...options, isScopeCurrent })
+    return opened !== false
   } catch (fallbackError) {
     const workspaceStillCurrent = isScopeCurrent()
     const reportedError =
-      vendorError === undefined
+      fallbackError instanceof Error
         ? fallbackError
-        : new AggregateError(
-            [fallbackError, vendorError],
-            'Cancellation vendor and fallback failed'
-          )
+        : new Error(String(fallbackError))
+    if (vendorError !== undefined)
+      Object.defineProperty(reportedError, 'cause', {
+        value: vendorError,
+        configurable: true
+      })
     reportError(reportedError, {
       errorType: 'cloud_cancellation_vendor_fallback',
       tags: {
@@ -60,7 +62,7 @@ interface LaunchCancellationFlowOptions {
   cancelAt?: string
   showFallback: (
     options?: CancellationFallbackOptions
-  ) => void | Promise<unknown>
+  ) => boolean | void | Promise<boolean | void>
 }
 
 async function prepareCancellationSession(
@@ -121,6 +123,7 @@ export async function launchCancellationFlow({
   const workspaceStore = useTeamWorkspaceStore()
   const launchWorkspaceId = workspaceStore.activeWorkspaceId
   const isLaunchWorkspaceCurrent = () =>
+    launchWorkspaceId === null ||
     workspaceStore.activeWorkspaceId === launchWorkspaceId
   if (
     billing.type.value !== 'workspace' ||
@@ -197,8 +200,11 @@ export async function launchCancellationFlow({
       ...metadata,
       error_message: getErrorMessage(error) ?? t('g.unknownError')
     })
-    await showCancellationFallback(showFallback, isLaunchWorkspaceCurrent, {
-      flowAlreadyOpened: true
-    })
+    await showCancellationFallback(
+      showFallback,
+      isLaunchWorkspaceCurrent,
+      { flowAlreadyOpened: true },
+      error
+    )
   }
 }

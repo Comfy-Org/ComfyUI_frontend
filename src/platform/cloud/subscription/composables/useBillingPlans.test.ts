@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -189,6 +189,36 @@ describe('useBillingPlans', () => {
       expect(plans.value).toEqual([buildPlan({ slug: 'creator-monthly' })])
     })
 
+    it('does not let an older read overwrite a newer read after returning to its scope', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      const resolvers: Array<(value: { plans: Plan[] }) => void> = []
+      vi.mocked(workspaceApi.getBillingPlans).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolvers.push(resolve)
+          })
+      )
+      const { fetchPlans, plans } = useBillingPlans()
+
+      const firstA = fetchPlans()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      const workspaceB = fetchPlans()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-1'
+      })
+      const secondA = fetchPlans()
+
+      resolvers[2]({ plans: [buildPlan({ slug: 'new-a' })] })
+      await secondA
+      resolvers[0]({ plans: [buildPlan({ slug: 'old-a' })] })
+      resolvers[1]({ plans: [buildPlan({ slug: 'workspace-b' })] })
+      await Promise.all([firstA, workspaceB])
+
+      expect(plans.value).toEqual([buildPlan({ slug: 'new-a' })])
+    })
+
     it('reissues a read when its scope changes before the response arrives', async () => {
       const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
       let resolveFirst: (value: { plans: Plan[] }) => void = () => {}
@@ -330,6 +360,58 @@ describe('useBillingPlans', () => {
           level: 'error'
         })
       )
+    })
+
+    it('accepts an explicit null team credit stop catalog', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
+        plans: [buildPlan()],
+        team_credit_stops: null
+      } as never)
+
+      const { fetchPlans, plans, teamCreditStops } = useBillingPlans()
+      await fetchPlans()
+
+      expect(plans.value).toEqual([buildPlan()])
+      expect(teamCreditStops.value).toBeNull()
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('clears the adopted catalog as soon as its workspace changes', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
+        plans: [buildPlan()],
+        current_plan_slug: 'standard-monthly'
+      })
+      const { fetchPlans, plans, currentPlanSlug } = useBillingPlans()
+      await fetchPlans()
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      await nextTick()
+
+      expect(plans.value).toEqual([])
+      expect(currentPlanSlug.value).toBeNull()
+    })
+
+    it('does not reissue a superseded catalog read after sign-out', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      let resolveRead: (value: { plans: Plan[] }) => void = () => {}
+      vi.mocked(workspaceApi.getBillingPlans).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveRead = resolve
+          })
+      )
+      const { fetchPlans } = useBillingPlans()
+
+      const pending = fetchPlans()
+      identityState.userId = 'anonymous'
+      resolveRead({ plans: [buildPlan()] })
+      await pending
+
+      expect(workspaceApi.getBillingPlans).toHaveBeenCalledOnce()
     })
 
     it('does not treat another workspace catalog as a recovered fallback', async () => {

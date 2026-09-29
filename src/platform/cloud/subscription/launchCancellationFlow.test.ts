@@ -168,6 +168,23 @@ describe('launchCancellationFlow', () => {
     expect(mocks.prepare).not.toHaveBeenCalled()
   })
 
+  it('opens the legacy dialog when a workspace initializes while its chunk loads', async () => {
+    mocks.billingType.value = 'legacy'
+    mocks.activeWorkspaceId = null
+    const openDialog = vi.fn()
+
+    await launchCancellationFlow({
+      showFallback: vi.fn(async ({ isScopeCurrent } = {}) => {
+        await Promise.resolve()
+        mocks.activeWorkspaceId = 'workspace-1'
+        if (isScopeCurrent?.()) openDialog()
+        return true
+      })
+    })
+
+    expect(openDialog).toHaveBeenCalledOnce()
+  })
+
   it('contains a failed native dialog for legacy billing', async () => {
     mocks.billingType.value = 'legacy'
     const fallbackError = new Error('dialog chunk unavailable')
@@ -307,12 +324,7 @@ describe('launchCancellationFlow', () => {
         error_message: 'provider unavailable'
       })
     )
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        summary: 'subscription.cancelDialog.failed'
-      })
-    )
+    expect(useToastStore().add).not.toHaveBeenCalled()
   })
 
   it('keeps an unconfigured Churnkey environment silent', async () => {
@@ -439,11 +451,8 @@ describe('launchCancellationFlow', () => {
 
     expect(reportError).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        message: 'Cancellation vendor and fallback failed',
-        errors: [
-          fallbackError,
-          expect.objectContaining({ message: 'blocked by browser' })
-        ]
+        message: 'dialog chunk unavailable',
+        cause: expect.objectContaining({ message: 'blocked by browser' })
       }),
       {
         errorType: 'cloud_cancellation_vendor_fallback',
@@ -457,6 +466,31 @@ describe('launchCancellationFlow', () => {
         },
         level: 'error'
       }
+    )
+  })
+
+  it('keeps the provider failure as the cause when its fallback also fails', async () => {
+    const providerError = new Error('provider unavailable')
+    const fallbackError = new Error('dialog chunk unavailable')
+    mocks.prepare.mockResolvedValueOnce(
+      session(async () => {
+        throw providerError
+      })
+    )
+
+    await launchCancellationFlow({
+      showFallback: vi.fn().mockRejectedValue(fallbackError)
+    })
+
+    expect(reportError).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        message: 'dialog chunk unavailable',
+        cause: providerError
+      }),
+      expect.objectContaining({
+        tags: expect.objectContaining({ vendor_preparation_failed: true }),
+        level: 'error'
+      })
     )
   })
 

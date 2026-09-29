@@ -60,9 +60,14 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
 
-const { cancelAt, flowAlreadyOpened = false } = defineProps<{
+const {
+  cancelAt,
+  flowAlreadyOpened = false,
+  isScopeCurrent = () => true
+} = defineProps<{
   cancelAt?: string
   flowAlreadyOpened?: boolean
+  isScopeCurrent?: () => boolean
 }>()
 
 const { t } = useI18n()
@@ -120,6 +125,13 @@ function onClose() {
 }
 
 async function onConfirmCancel() {
+  if (!isScopeCurrent()) {
+    toast.add({
+      severity: 'warn',
+      summary: t('subscription.cancelDialog.workspaceChanged')
+    })
+    return
+  }
   if (
     shouldUseWorkspaceBilling.value &&
     !(isCloud

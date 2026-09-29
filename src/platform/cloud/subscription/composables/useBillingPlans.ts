@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type {
   BillingPlansResponse,
@@ -27,6 +27,17 @@ function billingScopeKey(): string {
   return `${identity}:${workspace}`
 }
 
+function clearCatalog(): void {
+  plans.value = []
+  currentPlanSlug.value = null
+  teamCreditStops.value = null
+  adoptedScopeKey = null
+}
+
+function isAnonymousScope(scopeKey: string): boolean {
+  return scopeKey.startsWith('anonymous:')
+}
+
 function hasCatalogForScope(scopeKey: string): boolean {
   return adoptedScopeKey === scopeKey && plans.value.length > 0
 }
@@ -48,12 +59,16 @@ function reportCatalogFallback(err: unknown, hasCachedPlans: boolean): void {
 }
 
 export function useBillingPlans() {
+  watch(billingScopeKey, (scopeKey) => {
+    if (adoptedScopeKey !== null && adoptedScopeKey !== scopeKey) clearCatalog()
+  })
+
   function adopt(response: BillingPlansResponse, scopeKey: string): void {
     if (!Array.isArray(response.plans)) {
       throw new TypeError('Billing plans response did not contain a plan list')
     }
     if (
-      response.team_credit_stops !== undefined &&
+      response.team_credit_stops != null &&
       !Array.isArray(response.team_credit_stops.stops)
     ) {
       throw new TypeError(
@@ -66,14 +81,11 @@ export function useBillingPlans() {
     adoptedScopeKey = scopeKey
   }
 
-  function fetchPlans(): Promise<void> {
+  function fetchPlans(allowScopeReissue = true): Promise<void> {
     const scopeKey = billingScopeKey()
     if (fetchPromise && fetchPromiseScopeKey === scopeKey) return fetchPromise
     if (adoptedScopeKey !== null && adoptedScopeKey !== scopeKey) {
-      plans.value = []
-      currentPlanSlug.value = null
-      teamCreditStops.value = null
-      adoptedScopeKey = null
+      clearCatalog()
     }
     const rail = useBillingReadRail()
     // A superseded read publishes nothing, so whatever the last read left
@@ -88,21 +100,25 @@ export function useBillingPlans() {
       rail ? readOnRail(rail.readPlans) : workspaceApi.getBillingPlans()
     )
       .then((response) => {
+        if (fetchPromise !== request) return
         // Undefined is a read the scope moved on under; the catalog it would
         // have published belongs to an actor this host has left.
         if (response === undefined) error.value = priorError
         else if (billingScopeKey() === scopeKey) adopt(response, scopeKey)
-        else if (fetchPromise === request) {
+        else {
           error.value = priorError
-          void fetchPlans()
+          const currentScope = billingScopeKey()
+          if (allowScopeReissue && !isAnonymousScope(currentScope))
+            return fetchPlans(false)
         }
       })
       .catch((err: unknown) => {
+        if (fetchPromise !== request) return
         if (billingScopeKey() !== scopeKey) {
-          if (fetchPromise === request) {
-            error.value = priorError
-            void fetchPlans()
-          }
+          error.value = priorError
+          const currentScope = billingScopeKey()
+          if (allowScopeReissue && !isAnonymousScope(currentScope))
+            return fetchPlans(false)
           return
         }
         error.value =

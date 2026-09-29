@@ -100,7 +100,11 @@ vi.mock<unknown>(
 )
 
 function renderComponent(
-  props: { cancelAt?: string; flowAlreadyOpened?: boolean } = {}
+  props: {
+    cancelAt?: string
+    flowAlreadyOpened?: boolean
+    isScopeCurrent?: () => boolean
+  } = {}
 ) {
   const i18n = createI18n({
     legacy: false,
@@ -191,6 +195,23 @@ describe('CancelSubscriptionDialogContent', () => {
       expect(
         useTelemetry()?.trackSubscriptionCancellation
       ).not.toHaveBeenCalledWith('abandoned', expect.anything())
+    })
+
+    it('does not cancel when the workspace scope changed after opening', async () => {
+      setSubscription(null)
+      renderComponent({ isScopeCurrent: () => false })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'warn',
+          summary: 'Your active workspace changed. Switch back and try again.'
+        })
+      )
     })
 
     it('tracks confirmed and failed with message-carrying rejection values', async () => {

@@ -845,15 +845,16 @@ export const useDialogService = () => {
   ) {
     const { default: component } =
       await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
-    if (!isScopeCurrent()) return
-    return dialogStore.showDialog({
+    if (!isScopeCurrent()) return false
+    dialogStore.showDialog({
       key: 'cancel-subscription',
       component,
-      props: { cancelAt, flowAlreadyOpened },
+      props: { cancelAt, flowAlreadyOpened, isScopeCurrent },
       dialogComponentProps: {
         ...workspaceDialogProps
       }
     })
+    return true
   }
 
   async function showCancelSubscriptionFlow(cancelAt?: string) {
