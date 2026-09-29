@@ -51,8 +51,12 @@ test.describe('Customer-story internal links @smoke', () => {
   }) => {
     await page.goto('/pricing')
 
+    const section = page.locator('section', {
+      has: page.getByText(t('pricing.enterprise.label', 'en'))
+    })
+
     await expect(
-      page.getByRole('link', {
+      section.getByRole('link', {
         name: t('pricing.enterprise.learnMore', 'en'),
         exact: true
       })
