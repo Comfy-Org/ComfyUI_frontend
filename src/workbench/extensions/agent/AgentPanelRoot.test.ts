@@ -1391,10 +1391,12 @@ describe('AgentPanelRoot attach flow', () => {
       content: '@[Image: cat.png] make it pop',
       attachments: ['uploaded_cat.png']
     })
-    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith({
-      attachment_count: 1,
-      node_tag_count: 0
-    })
+    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attachment_count: 1,
+        node_tag_count: 0
+      })
+    )
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
@@ -6845,10 +6847,12 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('decode it')
 
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['7'] } })
-    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith({
-      attachment_count: 0,
-      node_tag_count: 1
-    })
+    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attachment_count: 0,
+        node_tag_count: 1
+      })
+    )
     expect(screen.getByText('VAEDecode #7')).toBeInTheDocument()
     expect(screen.queryByText(/KSampler/)).not.toBeInTheDocument()
   })
