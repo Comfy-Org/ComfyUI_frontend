@@ -8,4 +8,10 @@ describe('hub model addresses', () => {
       '/hub/models/flux-2-max-text-to-image/'
     )
   })
+
+  it('sends an alias to the page it stands for', () => {
+    expect(hubModelHref('vertexai--gemini-3-pro-image')).toBe(
+      '/hub/models/nano-banana-pro-text-to-image/'
+    )
+  })
 })
