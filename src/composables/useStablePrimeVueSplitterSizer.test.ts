@@ -23,6 +23,19 @@ function resizeEndEvent(): SplitterResizeEndEvent {
   return { originalEvent: new Event('mouseup'), sizes: [] }
 }
 
+function useKeyedStorage(initial: Record<string, number>) {
+  const stored = reactive(
+    new Map<string, number | null>(Object.entries(initial))
+  )
+  vi.mocked(useStorage).mockImplementation((key) =>
+    computed({
+      get: () => stored.get(toValue(key)) ?? null,
+      set: (width) => stored.set(toValue(key), width)
+    })
+  )
+  return stored
+}
+
 async function flushWatcher() {
   await nextTick()
   await nextTick()
@@ -190,34 +203,61 @@ describe('useStablePrimeVueSplitterSizer', () => {
     expect(el.style.flexBasis).toBe('280px')
   })
 
-  it('measures a new storage key at the splitter width, not the previous key width', async () => {
-    const stored = reactive(new Map<string, number | null>([['tab-a', 350]]))
-    vi.mocked(useStorage).mockImplementation((key) =>
-      computed({
-        get: () => stored.get(toValue(key)) ?? null,
-        set: (width) => stored.set(toValue(key), width)
-      })
-    )
-    const el = document.createElement('div')
-    el.style.flexBasis = 'calc(20% - 8px)'
-    Object.defineProperty(el, 'offsetWidth', {
-      get: () => (el.style.flexBasis === '350px' ? 350 : 256)
-    })
+  it('does not capture a width from a panel pinned under another key', async () => {
+    const stored = useKeyedStorage({ 'tab-a': 350 })
+    const panelRef = createPanel(350)
     const storageKey = ref('tab-a')
 
     useStablePrimeVueSplitterSizer(
-      [{ ref: ref(el), storageKey }],
+      [{ ref: panelRef, storageKey }],
       [storageKey],
       { captureInitialWidth: true }
     )
     await flushWatcher()
-    expect(el.style.flexBasis).toBe('350px')
-
     storageKey.value = 'tab-b'
     await flushWatcher()
 
-    expect(stored.get('tab-b')).toBe(256)
-    expect(el.style.flexBasis).toBe('256px')
+    expect(stored.get('tab-b')).toBeUndefined()
+    expect(panelRef.value.style.flexBasis).toBe('350px')
+  })
+
+  it('saves and re-pins only the panels a drag resized', async () => {
+    const stored = useKeyedStorage({ sidebar: 800 })
+    const sidebarRef = createPanel(480)
+    const offsideRef = createPanel(300)
+
+    const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+      [
+        { ref: sidebarRef, storageKey: 'sidebar' },
+        { ref: offsideRef, storageKey: 'offside' }
+      ],
+      [ref(0)]
+    )
+    await flushWatcher()
+    offsideRef.value.style.flexBasis = 'calc(25% - 8px)'
+
+    onResizeEnd(resizeEndEvent())
+
+    expect(stored.get('sidebar')).toBe(800)
+    expect(stored.get('offside')).toBe(300)
+    expect(offsideRef.value.style.flexBasis).toBe('300px')
+    expect(offsideRef.value.style.flexGrow).toBe('0')
+  })
+
+  it('reads a width persisted by a previous session', async () => {
+    vi.mocked(useStorage).mockRestore()
+    localStorage.setItem('test-persisted-width', '350')
+    const panelRef = createPanel(280)
+
+    useStablePrimeVueSplitterSizer(
+      [{ ref: panelRef, storageKey: 'test-persisted-width' }],
+      [ref(0)],
+      { captureInitialWidth: true }
+    )
+    await flushWatcher()
+
+    expect(panelRef.value.style.flexBasis).toBe('350px')
+    expect(localStorage.getItem('test-persisted-width')).toBe('350')
   })
 
   it.for([0, -40, Number.NaN])(

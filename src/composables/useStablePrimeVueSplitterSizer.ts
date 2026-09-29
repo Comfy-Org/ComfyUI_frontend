@@ -1,30 +1,26 @@
 import type { SplitterResizeEndEvent } from 'primevue/splitter'
 import type { MaybeRefOrGetter, WatchSource } from 'vue'
 
-import { unrefElement, useStorage } from '@vueuse/core'
+import { StorageSerializers, unrefElement, useStorage } from '@vueuse/core'
 import type { MaybeComputedElementRef } from '@vueuse/core'
-import { nextTick, toValue, watch } from 'vue'
+import { nextTick, watch } from 'vue'
 
 interface PanelConfig {
   ref: MaybeComputedElementRef
   storageKey: MaybeRefOrGetter<string>
 }
 
-type FlexStyle = Pick<
-  CSSStyleDeclaration,
-  'flexBasis' | 'flexGrow' | 'flexShrink'
->
-
-function isUsableWidth(width: unknown): width is number {
-  return typeof width === 'number' && Number.isFinite(width) && width > 0
-}
-
 interface SizerOptions {
   /**
-   * Pin a panel that has no stored width at the width it first renders at, so
-   * it keeps that width when the splitter's container later changes size.
+   * Pin a panel that has no stored width at the width PrimeVue first lays it
+   * out at, so it keeps that width when the splitter's container later changes
+   * size.
    */
   captureInitialWidth?: boolean
+}
+
+function isUsableWidth(width: number | null): width is number {
+  return width !== null && Number.isFinite(width) && width > 0
 }
 
 /**
@@ -42,29 +38,11 @@ export function useStablePrimeVueSplitterSizer(
   { captureInitialWidth = false }: SizerOptions = {}
 ) {
   const storedWidths = panels.map((panel) => ({
-    ...panel,
-    width: useStorage<number | null>(panel.storageKey, null)
+    ref: panel.ref,
+    width: useStorage<number | null>(panel.storageKey, null, undefined, {
+      serializer: StorageSerializers.number
+    })
   }))
-  const appliedKeys = new Map<MaybeComputedElementRef, string>()
-
-  const splitterStyles = new WeakMap<HTMLElement, FlexStyle>()
-
-  function pin(el: HTMLElement, width: number) {
-    if (!splitterStyles.has(el)) {
-      const { flexBasis, flexGrow, flexShrink } = el.style
-      splitterStyles.set(el, { flexBasis, flexGrow, flexShrink })
-    }
-    el.style.flexBasis = `${width}px`
-    el.style.flexGrow = '0'
-    el.style.flexShrink = '0'
-  }
-
-  function unpin(el: HTMLElement) {
-    const style = splitterStyles.get(el)
-    if (!style) return
-    Object.assign(el.style, style)
-    splitterStyles.delete(el)
-  }
 
   function resolveElement(
     ref: MaybeComputedElementRef
@@ -72,18 +50,27 @@ export function useStablePrimeVueSplitterSizer(
     return unrefElement(ref) as HTMLElement | undefined
   }
 
+  function isPinned(el: HTMLElement) {
+    return el.style.flexGrow === '0' && el.style.flexBasis.endsWith('px')
+  }
+
+  function pin(el: HTMLElement, width: number) {
+    el.style.flexBasis = `${width}px`
+    el.style.flexGrow = '0'
+    el.style.flexShrink = '0'
+  }
+
   function applyStoredWidths() {
-    for (const panel of storedWidths) {
-      const el = resolveElement(panel.ref)
+    for (const { ref, width } of storedWidths) {
+      const el = resolveElement(ref)
       if (!el) continue
-      const key = toValue(panel.storageKey)
-      const appliedKey = appliedKeys.get(panel.ref)
-      if (appliedKey !== undefined && appliedKey !== key) unpin(el)
-      appliedKeys.set(panel.ref, key)
-      const { width } = panel
-      if (!isUsableWidth(width.value)) {
-        width.value =
-          captureInitialWidth && el.offsetWidth > 0 ? el.offsetWidth : null
+      if (
+        !isUsableWidth(width.value) &&
+        captureInitialWidth &&
+        !isPinned(el) &&
+        el.offsetWidth > 0
+      ) {
+        width.value = el.offsetWidth
       }
       if (isUsableWidth(width.value)) pin(el, width.value)
     }
@@ -92,7 +79,9 @@ export function useStablePrimeVueSplitterSizer(
   function onResizeEnd(_event: SplitterResizeEndEvent) {
     for (const { ref, width } of storedWidths) {
       const el = resolveElement(ref)
-      if (el && el.offsetWidth > 0) width.value = el.offsetWidth
+      if (!el || isPinned(el) || el.offsetWidth === 0) continue
+      width.value = el.offsetWidth
+      pin(el, width.value)
     }
   }
 
