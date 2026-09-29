@@ -32,4 +32,3 @@ export function modelSlides(
     docsHref: modelDocsHref(model)
   }))
 }
-
