@@ -176,7 +176,7 @@ describe('curated workflow pages', () => {
     ])
     expect(state.values.seed).toBeUndefined()
     expect(state.values.prompt).toBe(
-      'Change the furniture leather difference in image 1 to the fur material in image 2.'
+      'Give the sofa the fur texture from the material reference instead of its leather.'
     )
     expect(state.values).toMatchObject({
       image1:

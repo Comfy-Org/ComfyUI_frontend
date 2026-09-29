@@ -103,7 +103,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   ).toBeVisible()
   const prompt = page.getByRole('textbox', { name: 'What should change?' })
   await expect(prompt).toHaveValue(
-    'Change the furniture leather difference in image 1 to the fur material in image 2.'
+    'Give the sofa the fur texture from the material reference instead of its leather.'
   )
   await prompt.fill('Use the material from the second image.')
   await page
