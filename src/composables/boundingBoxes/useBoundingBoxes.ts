@@ -18,8 +18,8 @@ import type {
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
 import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
 import { readableTextColor, textOnColor } from '@/utils/colorUtil'
@@ -638,7 +638,20 @@ export function useBoundingBoxes(
     requestDraw()
   })
 
-  const nodeOutputStore = useNodeOutputStore()
+  const { backgroundConnected, backgroundUrl, incomingBoxes } =
+    useBoundingBoxesSources(litegraphNode)
+
+  watch(
+    [litegraphNode, backgroundConnected],
+    ([node, hidden]) => {
+      for (const widget of node?.widgets ?? []) {
+        if (widget.name === 'width' || widget.name === 'height')
+          widget.hidden = hidden
+      }
+    },
+    { immediate: true }
+  )
+
   function applyImageDimensions(naturalWidth: number, naturalHeight: number) {
     const node = litegraphNode.value
     if (!node) return
@@ -658,36 +671,31 @@ export function useBoundingBoxes(
     }
   }
 
-  let lastBgUrl = ''
-  function updateBgImage() {
-    const node = litegraphNode.value
-    if (!node) return
-    const slot = node.findInputSlot('background')
-    const inputNode = slot >= 0 ? node.getInputNode(slot) : null
-    const url = inputNode
-      ? nodeOutputStore.getNodeImageUrls(inputNode)?.[0]
-      : undefined
-    if (!url) {
-      if (bgImage.value) {
+  watch(
+    backgroundUrl,
+    (url, _, onCleanup) => {
+      if (!url) {
         bgImage.value = null
-        lastBgUrl = ''
+        requestDraw()
+        return
+      }
+      let stale = false
+      onCleanup(() => {
+        stale = true
+      })
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        if (stale) return
+        bgImage.value = img
+        applyImageDimensions(img.naturalWidth, img.naturalHeight)
         requestDraw()
       }
-      return
-    }
-    if (url === lastBgUrl) return
-    lastBgUrl = url
-    const currentUrl = url
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
-      if (currentUrl !== lastBgUrl) return
-      bgImage.value = img
-      applyImageDimensions(img.naturalWidth, img.naturalHeight)
-      requestDraw()
-    }
-    img.src = url
-  }
+      img.src = url
+    },
+    { immediate: true }
+  )
+
   function lastIncomingWidget() {
     return litegraphNode.value?.widgets?.find((w) => w.name === 'last_incoming')
   }
@@ -705,20 +713,11 @@ export function useBoundingBoxes(
     widget.callback?.(next)
   }
 
-  function applyIncomingBoxes(apply = true) {
-    if (drawing.value) return
-    const node = litegraphNode.value
-    if (!node) return
-    const slot = node.findInputSlot('bboxes')
-    if (slot < 0 || !node.isInputConnected(slot)) return
-    const outputs = nodeOutputStore.getNodeOutputs(node)
-    const incoming = outputs?.input_bboxes
-    if (
-      !Array.isArray(incoming) ||
-      !incoming.length ||
-      !incoming.every(isBoundingBox)
-    )
-      return
+  function applyIncomingBoxes(
+    incoming: BoundingBoxInput[] | undefined,
+    apply = true
+  ) {
+    if (!incoming || drawing.value) return
     const applied = lastIncomingValue()
     if (isEqual(incoming, applied)) return
     if (!apply) {
@@ -736,18 +735,8 @@ export function useBoundingBoxes(
     syncState()
   }
 
-  watch(
-    () => nodeOutputStore.nodeOutputs,
-    () => {
-      updateBgImage()
-      applyIncomingBoxes()
-    },
-    { deep: true }
-  )
-  watch(() => nodeOutputStore.nodePreviewImages, updateBgImage, { deep: true })
-
-  updateBgImage()
-  applyIncomingBoxes(false)
+  applyIncomingBoxes(incomingBoxes.value, false)
+  watch(incomingBoxes, (incoming) => applyIncomingBoxes(incoming))
   void nextTick(() => requestDraw())
 
   onBeforeUnmount(() => {
