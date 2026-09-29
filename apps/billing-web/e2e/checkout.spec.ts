@@ -8,6 +8,7 @@ import type { BillingOpStatusResponse } from '@comfyorg/ingest-types'
 
 import type { MockCloud } from './fixtures/cloud'
 import { E2E_USER } from './fixtures/env'
+import { expectStraightToHost } from './fixtures/planless'
 import {
   challengeRequiredOperation,
   contactSupportOperation,
@@ -416,26 +417,46 @@ test('a checkout link naming a team credit stop quotes it along with the plan', 
   })
 })
 
-test('a checkout link that names no plan goes back to the host to choose one', async ({
-  page
-}) => {
-  await page.goto(entryPath('checkout', { workspace: 'ws_team_e2e' }))
+test.describe('a checkout link that names no plan goes back to the host to choose one', () => {
+  test('for a signed-out visitor', async ({ page, cloud }) => {
+    await expectStraightToHost(page, cloud, 'ws_team_e2e')
+  })
 
-  await expect(page).toHaveURL(
-    'https://testcloud.comfy.org/?workspace=ws_team_e2e'
-  )
-  await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
-})
+  test('for a signed-in customer, in the tab they signed in on', async ({
+    page,
+    cloud,
+    signIn
+  }) => {
+    await signIn(CHECKOUT)
 
-test('a signed-in customer without the flag also goes back to the host for a checkout link that names no plan', async ({
-  page,
-  signIn
-}) => {
-  await signIn(CHECKOUT)
-  await page.goto(entryPath('checkout', { workspace: 'ws_e2e' }))
+    await expectStraightToHost(page, cloud, 'ws_e2e')
+  })
 
-  await expect(page).toHaveURL('https://testcloud.comfy.org/?workspace=ws_e2e')
-  await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
+  test('for a signed-in customer the host opens a new tab for, before that tab has a session', async ({
+    context,
+    cloud,
+    signIn
+  }) => {
+    await signIn(CHECKOUT)
+
+    await expectStraightToHost(await context.newPage(), cloud, 'ws_e2e')
+  })
+
+  test('for a signed-in customer whose link names a workspace they cannot manage, never the refusal', async ({
+    context,
+    cloud,
+    signIn
+  }) => {
+    await signIn(CHECKOUT)
+    cloud.reply('POST', '/auth/token', () => ({
+      status: 403,
+      body: { error: 'refused' }
+    }))
+    const tab = await context.newPage()
+
+    await expectStraightToHost(tab, cloud, 'ws_not_a_member')
+    await expect(tab.getByRole('alert')).toHaveCount(0)
+  })
 })
 
 test('Close on a checkout tab the product opened closes that tab', async ({

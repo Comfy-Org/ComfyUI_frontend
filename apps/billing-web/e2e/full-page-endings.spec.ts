@@ -11,6 +11,7 @@ import {
   pendingOperation,
   succeededOperation
 } from './fixtures/scenario'
+import { expectStraightToHost } from './fixtures/planless'
 import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
 
@@ -334,14 +335,20 @@ test('433-6840: a checkout link that names no plan is Plan not available for a s
 })
 
 test('a signed-out visitor on the flag still goes back to the host for a checkout link that names no plan', async ({
-  page
+  page,
+  cloud
 }) => {
-  await page.goto(entryPath('checkout', { workspace: 'ws_team_e2e' }))
+  await expectStraightToHost(page, cloud, 'ws_team_e2e')
+})
 
-  await expect(page).toHaveURL(
-    'https://testcloud.comfy.org/?workspace=ws_team_e2e'
-  )
-  await expect(heading(page, 'Host app')).toBeVisible()
+test('a checkout link that names no plan, opened in a tab with no session yet, goes back to the host even on the flag', async ({
+  context,
+  cloud,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+
+  await expectStraightToHost(await context.newPage(), cloud, 'ws_e2e')
 })
 
 test("433-6840: a checkout link the contract cannot read is the checkout's 404 on the full page, and still the entry error on the embedded one", async ({
