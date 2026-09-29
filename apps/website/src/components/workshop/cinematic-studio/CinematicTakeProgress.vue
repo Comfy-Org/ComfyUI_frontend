@@ -41,7 +41,7 @@ const elapsed = computed(() => Math.max(0, now.value - take.startedAt))
       aria-hidden="true"
     />
     {{
-      tc('cinematic.stage.takeName', locale, {
+      tc('cinematic.stage.renderingTakeName', locale, {
         shot: take.shot,
         take: take.letter
       })
