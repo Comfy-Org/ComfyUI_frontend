@@ -310,8 +310,8 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.manageSubscription()
   }
 
-  async function cancelSubscription() {
-    return activeContext.value.cancelSubscription()
+  async function cancelSubscription(isScopeCurrent?: () => boolean) {
+    return activeContext.value.cancelSubscription(isScopeCurrent)
   }
 
   async function resubscribe(

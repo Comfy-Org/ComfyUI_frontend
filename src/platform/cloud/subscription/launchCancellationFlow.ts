@@ -74,13 +74,12 @@ interface LaunchCancellationFlowOptions {
   cancelAt?: string
   showFallback: (
     options?: CancellationFallbackOptions
-  ) => boolean | void | Promise<boolean | void>
+  ) => unknown | Promise<unknown>
 }
 
 async function prepareCancellationSession(
   isLaunchWorkspaceCurrent: () => boolean,
-  showFallback: LaunchCancellationFlowOptions['showFallback'],
-  sealScope: () => void
+  showFallback: LaunchCancellationFlowOptions['showFallback']
 ): Promise<ChurnkeySession | null> {
   const preparation = await prepareChurnkey().then(
     (session) => ({ session, threw: false as const }),
@@ -113,7 +112,6 @@ async function prepareCancellationSession(
       ? { stage: 'preparation', error: preparation.error }
       : undefined
   )
-  sealScope()
   if (preparation.threw && fallbackOutcome !== 'failed') {
     const workspaceStillCurrent = isLaunchWorkspaceCurrent()
     reportError(preparation.error, {
@@ -140,34 +138,21 @@ export async function launchCancellationFlow({
 }: LaunchCancellationFlowOptions): Promise<void> {
   const billing = useBillingContext()
   const workspaceStore = useTeamWorkspaceStore()
-  let guardedWorkspaceId = workspaceStore.activeWorkspaceId
-  const launchWorkspaceId = guardedWorkspaceId
-  let allowInitialWorkspaceResolution = true
-  const isLaunchWorkspaceCurrent = () => {
-    const currentWorkspaceId = workspaceStore.activeWorkspaceId
-    if (guardedWorkspaceId === null && currentWorkspaceId !== null) {
-      if (!allowInitialWorkspaceResolution) return false
-      guardedWorkspaceId = currentWorkspaceId
-      return true
-    }
-    return currentWorkspaceId === guardedWorkspaceId
-  }
+  const launchWorkspaceId = workspaceStore.activeWorkspaceId
+  const isLaunchWorkspaceCurrent = () =>
+    workspaceStore.activeWorkspaceId === launchWorkspaceId
   if (
     billing.type.value !== 'workspace' ||
     !launchWorkspaceId ||
     workspaceStore.activeWorkspaceBillingRail !== 'stripe'
   ) {
     await showCancellationFallback(showFallback, isLaunchWorkspaceCurrent)
-    allowInitialWorkspaceResolution = false
     return
   }
 
   const session = await prepareCancellationSession(
     isLaunchWorkspaceCurrent,
-    showFallback,
-    () => {
-      allowInitialWorkspaceResolution = false
-    }
+    showFallback
   )
   if (!session) return
   if (!isLaunchWorkspaceCurrent()) return
@@ -190,7 +175,7 @@ export async function launchCancellationFlow({
         }
         telemetry?.trackSubscriptionCancellation('confirmed', metadata)
         try {
-          await billing.cancelSubscription()
+          await billing.cancelSubscription(isLaunchWorkspaceCurrent)
           return { message: t('subscription.cancelSuccess') }
         } catch (error) {
           throw new Error(

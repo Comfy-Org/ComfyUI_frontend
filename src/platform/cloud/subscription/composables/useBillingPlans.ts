@@ -20,7 +20,9 @@ const error = ref<string | null>(null)
 let fetchPromise: Promise<void> | null = null
 let fetchPromiseScopeKey: string | null = null
 let adoptedScopeKey: string | null = null
+let errorScopeKey: string | null = null
 let isScopeWatcherInitialized = false
+const MAX_SCOPE_REISSUES = 4
 
 function billingScopeKey(): string {
   const identity = useCurrentUser().resolvedUserInfo.value?.id ?? 'anonymous'
@@ -33,6 +35,8 @@ function clearCatalog(): void {
   currentPlanSlug.value = null
   teamCreditStops.value = null
   adoptedScopeKey = null
+  error.value = null
+  errorScopeKey = null
 }
 
 function isAnonymousScope(scopeKey: string): boolean {
@@ -90,7 +94,7 @@ export function useBillingPlans() {
     adoptedScopeKey = scopeKey
   }
 
-  function fetchPlans(reissuedScopes = new Set<string>()): Promise<void> {
+  function fetchPlans(reissueCount = 0): Promise<void> {
     const scopeKey = billingScopeKey()
     if (fetchPromise && fetchPromiseScopeKey === scopeKey) return fetchPromise
     if (adoptedScopeKey !== null && adoptedScopeKey !== scopeKey) {
@@ -106,16 +110,19 @@ export function useBillingPlans() {
     error.value = null
 
     const reissueForCurrentScope = (): Promise<void> | undefined => {
-      error.value = priorError
       const currentScope = billingScopeKey()
-      if (isAnonymousScope(currentScope) || reissuedScopes.has(currentScope))
+      if (errorScopeKey === currentScope) error.value = priorError
+      if (isAnonymousScope(currentScope)) return
+      if (reissueCount >= MAX_SCOPE_REISSUES) {
+        error.value ??= 'Failed to fetch plans'
+        errorScopeKey = currentScope
         return
-      const nextReissuedScopes = new Set(reissuedScopes).add(currentScope)
+      }
       if (fetchPromise === request) {
         fetchPromise = null
         fetchPromiseScopeKey = null
       }
-      return fetchPlans(nextReissuedScopes)
+      return fetchPlans(reissueCount + 1)
     }
 
     const request: Promise<void> = (
@@ -136,6 +143,7 @@ export function useBillingPlans() {
         }
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch plans'
+        errorScopeKey = scopeKey
         reportCatalogFallback(err, hasCatalogForScope(scopeKey))
       })
       .finally(() => {

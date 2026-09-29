@@ -588,7 +588,7 @@ describe('useBillingPlans', () => {
             status: 'error' as const,
             code: 'SUPERSEDED' as const
           })
-          .mockResolvedValueOnce({
+          .mockResolvedValue({
             status: 'error' as const,
             code: 'SUPERSEDED' as const
           })
@@ -607,6 +607,7 @@ describe('useBillingPlans', () => {
       // explanation for the empty one already on screen.
       expect(plans.value).toEqual([])
       expect(error.value).toBe(reported)
+      expect(railState.rail.readPlans).toHaveBeenCalledTimes(6)
     })
 
     it('surfaces a failed SDK read the way a failed client read is surfaced', async () => {

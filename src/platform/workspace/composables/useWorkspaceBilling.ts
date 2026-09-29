@@ -573,7 +573,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  async function cancelSubscription(): Promise<void> {
+  async function cancelSubscription(
+    isScopeCurrent: () => boolean = () => true
+  ): Promise<void> {
+    if (!isScopeCurrent()) return
     const attemptStartedAt = Date.now()
     const trackCancelSucceeded = () =>
       telemetry?.trackBillingEvent({
@@ -613,6 +616,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         return
       }
     }
+
+    if (!isScopeCurrent()) return
 
     isLoading.value = true
     error.value = null

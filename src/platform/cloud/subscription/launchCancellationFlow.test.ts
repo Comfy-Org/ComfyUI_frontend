@@ -168,7 +168,7 @@ describe('launchCancellationFlow', () => {
     expect(mocks.prepare).not.toHaveBeenCalled()
   })
 
-  it('opens the legacy dialog when a workspace initializes while its chunk loads', async () => {
+  it('does not adopt a workspace that initializes while the legacy dialog loads', async () => {
     mocks.billingType.value = 'legacy'
     mocks.activeWorkspaceId = null
     const openDialog = vi.fn()
@@ -184,7 +184,8 @@ describe('launchCancellationFlow', () => {
       })
     })
 
-    expect(openDialog).toHaveBeenCalledOnce()
+    expect(openDialog).not.toHaveBeenCalled()
+    expect(scopeCurrent?.()).toBe(false)
     mocks.activeWorkspaceId = 'workspace-2'
     expect(scopeCurrent?.()).toBe(false)
   })

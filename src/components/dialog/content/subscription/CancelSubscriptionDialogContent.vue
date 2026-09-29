@@ -147,7 +147,7 @@ async function onConfirmCancel() {
   telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
   isLoading.value = true
   try {
-    await cancelSubscription()
+    await cancelSubscription(isScopeCurrent)
   } catch (error) {
     const errorMessage = getErrorMessage(error)
     if (!shouldUseWorkspaceBilling.value) {
