@@ -73,7 +73,7 @@ const { siteUrl, locale, url } = pageContext(
 const canonicalURL = new URL(url)
 const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
 const robotsNoindex = shouldNoindex || !isIndexableBuild()
-const alternates = shouldNoindex
+const alternates = robotsNoindex
   ? []
   : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
 const openGraphLocale = ogLocale(locale)
@@ -131,7 +131,7 @@ const structuredData = shouldNoindex
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
-    <link rel="canonical" href={canonicalURL.href} />
+    {!robotsNoindex && <link rel="canonical" href={canonicalURL.href} />}
 
     <!-- Every PP Formula face that renders above the fold. `font-display:
          optional` drops a face that misses its short block period for the
