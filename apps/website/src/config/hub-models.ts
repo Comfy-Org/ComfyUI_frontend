@@ -35,7 +35,7 @@ const oldModelPaths = new Set([
 export function oldModelLinks(content: string): string[] {
   return Array.from(
     content.matchAll(
-      /(?:href="|"href":"|\]\()(?:https:\/\/comfy\.org)?(\/models(?:\/[^"?#)\s]*)?)["?#)]/g
+      /(?:href="|"href":\s*"|\]\()(?:https:\/\/comfy\.org)?(\/models(?:\/[^"?#)\s]*)?)["?#)]/g
     ),
     ([, path]) => path.replace(/\/$/, '')
   ).filter((path) => oldModelPaths.has(path))
