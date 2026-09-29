@@ -86,9 +86,12 @@ function tag(element: Element): string {
   return element.tagName.toUpperCase()
 }
 
-/** Only the site banner is chrome; a header inside main introduces the page. */
+/** A header is the site banner unless it sits in sectioning content (HTML-AAM). */
 function isBanner(element: Element): boolean {
-  return tag(element) === 'HEADER' && element.closest('main') === null
+  return (
+    tag(element) === 'HEADER' &&
+    element.closest('main, article, aside, nav, section') === null
+  )
 }
 
 function isDropped(element: Element): boolean {

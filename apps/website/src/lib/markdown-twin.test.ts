@@ -128,6 +128,14 @@ describe('htmlToTwin', () => {
     expect(page.body).toContain('> Method, not magic.')
   })
 
+  it('drops the site banner but keeps page headers when there is no main', () => {
+    const noMain = htmlToTwin(
+      '<html><body><header><a href="/">Comfy home</a></header><article><header><h1>Pack</h1></header><p>Nodes.</p></article></body></html>',
+      'https://comfy.org/x/'
+    )
+    expect(noMain.body).toBe('# Pack\n\nNodes.')
+  })
+
   it('falls back to the route when the page has no canonical link', () => {
     const bare = htmlToTwin(
       '<html><body><main><p>x</p></main></body></html>',
@@ -283,7 +291,7 @@ describe('writeMarkdownTwins', () => {
         await mkdir(join(root, pathname), { recursive: true })
         await writeFile(
           join(root, pathname, 'index.html'),
-          `<html lang="en"><head><title>${pathname}</title><link rel="canonical" href="https://comfy.org/${pathname}"></head><body><main><h1>${pathname}</h1></main></body></html>`
+          `<html lang="en"><head><title>${pathname}</title><link rel="canonical" href="https://comfy.org/${pathname}"></head><body><header><a href="/">Comfy home</a></header><main><astro-island><header data-testid="model-hero"><p>Provider</p><h1>${pathname}</h1><p>Model summary.</p></header><div role="status"><p>Loading</p></div></astro-island></main></body></html>`
         )
       }
       return root
@@ -313,9 +321,18 @@ describe('writeMarkdownTwins', () => {
         `/models/${aliasSlug}.md`,
         '/models/showcase.md'
       ])
-      expect(
-        await readFile(join(root, 'models', `${modelSlug}.md`), 'utf8')
-      ).toContain(`canonical: https://comfy.org/models/${modelSlug}/\n`)
+      const twin = await readFile(
+        join(root, 'models', `${modelSlug}.md`),
+        'utf8'
+      )
+      expect(twin).toContain(
+        `canonical: https://comfy.org/models/${modelSlug}/\n`
+      )
+      expect(twin).toContain(
+        `---\n\nProvider\n\n# models/${modelSlug}/\n\nModel summary.\n`
+      )
+      expect(twin).not.toContain('Loading')
+      expect(twin).not.toContain('Comfy home')
     })
   })
 })
