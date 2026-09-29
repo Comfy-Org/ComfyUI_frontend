@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
 
-import { starterPromptTextHash } from '../../utils/starterPrompts'
 import EmptyState from './EmptyState.vue'
 
 const PROMPTS = [
@@ -38,7 +37,7 @@ describe('EmptyState', () => {
           promptId: 'build_video_workflow',
           promptIndex: 4,
           promptCount: 5,
-          promptTextHash: starterPromptTextHash(prompt),
+          promptTextHash: '8a7fa4fe',
           locale: 'en'
         }
       ]
@@ -96,12 +95,8 @@ describe('EmptyState', () => {
       string,
       { [k: string]: unknown }
     ][]
-    expect(attribution.promptTextHash).toBe(
-      starterPromptTextHash(PROMPTS[1].text)
-    )
-    expect(attribution.promptTextHash).not.toBe(
-      starterPromptTextHash(`${PROMPTS[1].text} (reworded)`)
-    )
+    expect(attribution.promptTextHash).toBe('3d98efb0')
+    expect(attribution.promptTextHash).not.toBe('90a652b3')
     expect(Object.values(attribution)).not.toContain(PROMPTS[1].text)
   })
 
@@ -119,7 +114,7 @@ describe('EmptyState', () => {
         [
           localizedPrompt,
           expect.objectContaining({
-            promptTextHash: starterPromptTextHash(localizedPrompt),
+            promptTextHash: '0b028f00',
             locale: 'zh'
           })
         ]

@@ -5,8 +5,7 @@ import enMain from '@/locales/en/main.json'
 import {
   STARTER_PROMPT_IDS,
   starterPromptAttribution,
-  starterPromptIdAt,
-  starterPromptTextHash
+  starterPromptIdAt
 } from './starterPrompts'
 
 describe('starter prompt identity', () => {
@@ -40,15 +39,23 @@ describe('starter prompt identity', () => {
 
   it('hashes to eight hex characters, deterministically', () => {
     const text = 'Explain the selected node'
+    const first = starterPromptAttribution(text, 3, 5, 'en').promptTextHash
+    const second = starterPromptAttribution(text, 3, 5, 'en').promptTextHash
+    const empty = starterPromptAttribution('', 3, 5, 'en').promptTextHash
 
-    expect(starterPromptTextHash(text)).toMatch(/^[0-9a-f]{8}$/)
-    expect(starterPromptTextHash(text)).toBe(starterPromptTextHash(text))
-    expect(starterPromptTextHash(text)).not.toBe(starterPromptTextHash(''))
+    expect(first).toMatch(/^[0-9a-f]{8}$/)
+    expect(first).toBe(second)
+    expect(first).not.toBe(empty)
   })
 
   it('pins known hash vectors, including a leading-zero result', () => {
-    expect(starterPromptTextHash('List my saved workflows')).toBe('3d98efb0')
-    expect(starterPromptTextHash('prompt-130')).toBe('00657dba')
+    expect(
+      starterPromptAttribution('List my saved workflows', 1, 5, 'en')
+        .promptTextHash
+    ).toBe('3d98efb0')
+    expect(
+      starterPromptAttribution('prompt-130', 1, 5, 'en').promptTextHash
+    ).toBe('00657dba')
   })
 
   it('carries the slot, the set size and the locale that produced the hash', () => {
@@ -58,7 +65,7 @@ describe('starter prompt identity', () => {
       promptId: 'explain_selected_node',
       promptIndex: 3,
       promptCount: 5,
-      promptTextHash: starterPromptTextHash('Explain the selected node'),
+      promptTextHash: '3849a858',
       locale: 'zh'
     })
   })
