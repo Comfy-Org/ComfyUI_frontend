@@ -247,8 +247,57 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_MESSAGE_SENT,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentMessageSent({ attachment_count: 2, node_tag_count: 1 }),
-      properties: { attachment_count: 2, node_tag_count: 1 }
+        sink.trackAgentMessageSent({
+          attachment_count: 2,
+          node_tag_count: 1,
+          thread_id: 'thread-1',
+          workflow_id: 'workflow-1',
+          client_message_id: 'client-message-1',
+          input_method: 'suggestion'
+        }),
+      properties: {
+        attachment_count: 2,
+        node_tag_count: 1,
+        thread_id: 'thread-1',
+        workflow_id: 'workflow-1',
+        client_message_id: 'client-message-1',
+        input_method: 'suggestion'
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_MESSAGE_SENT,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentMessageSent({
+          attachment_count: 0,
+          node_tag_count: 0,
+          thread_id: null,
+          workflow_id: null,
+          client_message_id: 'client-message-2',
+          input_method: 'typed'
+        }),
+      properties: {
+        attachment_count: 0,
+        node_tag_count: 0,
+        thread_id: null,
+        workflow_id: null,
+        client_message_id: 'client-message-2',
+        input_method: 'typed'
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_SHOWN,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentShown({ trigger: 'first_load' }),
+      properties: { trigger: 'first_load' }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_RESOLVED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentResolved({
+          decision: 'dismissed',
+          save_error_shown: true
+        }),
+      properties: { decision: 'dismissed', save_error_shown: true }
     },
     {
       name: TelemetryEvents.AGENT_NODE_TAGGED,
@@ -278,6 +327,36 @@ describe('HostTelemetrySink', () => {
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentNotOffered({ reason: 'tour_active' }),
       properties: { reason: 'tour_active' }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentOfferExited({
+          exit: 'workspace_switching',
+          stage: 'offer',
+          retry_armed: true
+        }),
+      properties: {
+        exit: 'workspace_switching',
+        stage: 'offer',
+        retry_armed: true
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentOfferExited({
+          exit: 'scope_probe_failed',
+          stage: 'request',
+          retry_armed: false,
+          trigger: 'first_load'
+        }),
+      properties: {
+        exit: 'scope_probe_failed',
+        stage: 'request',
+        retry_armed: false,
+        trigger: 'first_load'
+      }
     },
     {
       name: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
