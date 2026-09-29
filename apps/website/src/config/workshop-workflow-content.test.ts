@@ -1,3 +1,6 @@
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { assert, describe, expect, it } from 'vitest'
 
 import displayJson from '../content/workshop-display.json'
@@ -24,11 +27,7 @@ const source = pages.find((page) => page.slug === 'workflows/change-material')
 if (!source) throw new Error('Missing curated workflow page')
 const page = source
 const workflows = workshopPages.filter((model) => model.routerId === undefined)
-
-const partialExamples: Record<string, Record<string, string>> = {
-  'workflows/remove-object': { mask: 'required' },
-  'workflows/virtual-try-on': { image1: 'required' }
-}
+const publicDirectory = join(import.meta.dirname, '../../public')
 
 describe('curated workflow pages', () => {
   it.for(workflows)(
@@ -37,16 +36,37 @@ describe('curated workflow pages', () => {
       const detail = getWorkshopPageDetail(model.slug)
       assert.exists(detail)
       const state = initialWorkshopPageState(detail)
-      expect(validateForm(state.schema, state.values)).toEqual(
-        partialExamples[model.slug] ?? {}
-      )
+      expect(validateForm(state.schema, state.values)).toEqual({})
     }
   )
 
-  it('explains that the Bria example needs a mask', () => {
+  it.for(workflows)(
+    'serves the $slug graph files from a website-owned path',
+    (model) => {
+      const detail = getWorkshopPageDetail(model.slug)
+      assert.exists(detail)
+      assert(detail.workflow)
+      const { previewUrl, downloadUrl } = detail.workflow.template ?? {}
+      for (const url of [previewUrl, downloadUrl]) {
+        assert(url)
+        expect(url).toMatch(/^\/workflow-graphs\//)
+        expect(existsSync(join(publicDirectory, url))).toBe(true)
+      }
+    }
+  )
+
+  it('runs the Bria example with its website-owned apple mask', () => {
     const detail = getWorkshopPageDetail('workflows/remove-object')
     assert.exists(detail)
-    expect(detail.examples[0].description).toContain('mask is not included')
+    const { mask } = initialWorkshopPageState(detail).values
+    expect(mask).toBe(
+      'https://comfy.org/workflow-inputs/remove-object-apple-mask.png'
+    )
+    expect(
+      existsSync(
+        join(publicDirectory, 'workflow-inputs/remove-object-apple-mask.png')
+      )
+    ).toBe(true)
   })
 
   it('opens the inpainting example with the original image and its transparency mask', () => {
