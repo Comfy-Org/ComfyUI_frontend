@@ -27,7 +27,8 @@ import type {
   SavedPaymentMethod,
   SubscriptionCommandResult,
   SubscriptionPreview,
-  TerminalBillingOperation
+  TerminalBillingOperation,
+  WorkspaceInviteCommands
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 
@@ -88,6 +89,12 @@ export interface FakeBillingClient {
   readonly readStatus: Mock<BillingClient['status']['read']>
   /** Publishes an operation as the lifecycle would after a poll. */
   readonly publishOperation: (state: BillingOperationState) => void
+  readonly invites: {
+    readonly listPendingInvites: Mock<
+      WorkspaceInviteCommands['listPendingInvites']
+    >
+    readonly createInvite: Mock<WorkspaceInviteCommands['createInvite']>
+  }
 }
 
 export function createFakeBillingClient(
@@ -284,8 +291,26 @@ export function createFakeBillingClient(
     }
   }
 
+  const invites = {
+    listPendingInvites: vi.fn<WorkspaceInviteCommands['listPendingInvites']>(
+      async () => ({ status: 'ok', value: [] })
+    ),
+    createInvite: vi.fn<WorkspaceInviteCommands['createInvite']>(
+      async (email) => ({
+        status: 'ok',
+        value: {
+          id: `inv_${email}`,
+          email,
+          invited_at: '2026-09-27T00:00:00Z',
+          expires_at: '2026-10-04T00:00:00Z'
+        }
+      })
+    )
+  }
+
   return {
     client,
+    invites,
     readPlans,
     readPaymentMethods,
     invalidatePaymentMethods,

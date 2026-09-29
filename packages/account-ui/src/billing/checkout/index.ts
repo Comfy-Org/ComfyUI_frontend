@@ -7,6 +7,7 @@
  */
 export type {
   CheckoutCopy,
+  CheckoutInviteCopy,
   CheckoutReactivationCopy,
   CheckoutSavedMethodCopy,
   CheckoutSuccessCopy,
@@ -22,9 +23,16 @@ export {
   isYearlyCheckout,
   resolveRenewalDate
 } from './checkoutQuote'
+export {
+  EMAIL_DELIMITER,
+  isValidEmail,
+  normalizeEmail,
+  sanitizeInviteEmails
+} from './inviteEmails'
 export { default as CheckoutPaymentForm } from './CheckoutPaymentForm.vue'
 export { default as CheckoutSavedMethods } from './CheckoutSavedMethods.vue'
 export { default as CheckoutSubscribeConfirm } from './CheckoutSubscribeConfirm.vue'
 export { default as CheckoutSuccess } from './CheckoutSuccess.vue'
+export { default as CheckoutTeamSuccess } from './CheckoutTeamSuccess.vue'
 export { default as CheckoutTermsNote } from './CheckoutTermsNote.vue'
 export { default as CheckoutTransitionConfirm } from './CheckoutTransitionConfirm.vue'
