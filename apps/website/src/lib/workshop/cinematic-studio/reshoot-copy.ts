@@ -88,16 +88,8 @@ const copy = {
     'zh-CN': '生成期间可以继续调整机位。'
   },
   'reshoot.generate.wait': {
-    en: 'MoGe estimates depth for every frame, as a run on the server. The camera unlocks when it is done.',
-    'zh-CN': 'MoGe 会在服务器上运行，估算每一帧的深度。完成后即可调整机位。'
-  },
-  'reshoot.analyzeAgain': {
-    en: 'Analyze depth again',
-    'zh-CN': '重新分析深度'
-  },
-  'reshoot.generate.locked': {
-    en: 'Analyze depth first.',
-    'zh-CN': '请先分析深度。'
+    en: 'Reading the scene · 20 to 40 seconds',
+    'zh-CN': '正在读取场景 · 约 20 到 40 秒'
   },
   'reshoot.clipLength': {
     en: 'This clip is {seconds} s. Use one between 5 and 15 seconds.',
@@ -125,6 +117,7 @@ const copy = {
   },
   'reshoot.take.failed': { en: 'This take failed', 'zh-CN': '此镜头生成失败' },
   'reshoot.failed': { en: 'Something went wrong', 'zh-CN': '出现问题' },
+  'reshoot.tryAgain': { en: 'Try again', 'zh-CN': '重试' },
   'reshoot.noWebgl': {
     en: 'This preview needs WebGL2, which this browser does not offer.',
     'zh-CN': '此预览需要 WebGL2，当前浏览器不支持。'
@@ -280,7 +273,6 @@ const copy = {
     en: 'e.g. a stone wall behind her, more wheat to the left',
     'zh-CN': '例如：她身后是一面石墙，左边有更多麦田'
   },
-  'reshoot.analyze': { en: 'Analyze depth', 'zh-CN': '分析深度' },
   'reshoot.analyzing': { en: 'Estimating depth…', 'zh-CN': '正在估算深度…' },
   'reshoot.generate': { en: 'Generate', 'zh-CN': '生成' },
   'reshoot.cancel': { en: 'Cancel', 'zh-CN': '取消' },
@@ -300,11 +292,7 @@ const copy = {
     'zh-CN': '第 {n} 条 · 运镜，{keys} 个关键帧'
   },
   'reshoot.take.cancelled': { en: 'Cancelled', 'zh-CN': '已取消' },
-  'reshoot.download': { en: 'Download', 'zh-CN': '下载' },
-  'reshoot.demoNote': {
-    en: 'Prototype: runs on a dedicated Comfy API deployment through a local proxy.',
-    'zh-CN': '原型：通过本地代理在专用的 Comfy API 部署上运行。'
-  }
+  'reshoot.download': { en: 'Download', 'zh-CN': '下载' }
 } as const satisfies Record<string, LocalizedText>
 
 export type ReshootCopyKey = keyof typeof copy

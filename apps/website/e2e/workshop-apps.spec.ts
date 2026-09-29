@@ -73,3 +73,17 @@ test('sends the old studio address to the app page it named', async ({
   await page.goto('/cinematic-studio/?app=reshoot&ux=d&model=flux')
   await expect(page).toHaveURL(/\/models\/apps\/reshoot\/\?ux=d&model=flux$/)
 })
+
+test('keeps the Re-shoot camera help behind info buttons', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/reshoot/')
+  await page.getByText('Sci-fi pilot').first().click()
+
+  const help = 'Distance is approximate; angles give the most control.'
+  await expect(page.getByText(help)).toBeHidden()
+  await page.getByRole('button', { name: help }).hover()
+  await expect(page.getByText(help).first()).toBeVisible()
+})

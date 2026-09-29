@@ -139,7 +139,7 @@ const left = (at: number) => `${(at / Math.max(1, frames - 1)) * 100}%`
           v-model="motionValue"
           :options="motionOptions"
           :heading="rc('reshoot.move.motion', locale)"
-          trigger-class="h-9 gap-2 border border-transparency-white-t20 px-3 text-sm text-primary-warm-white"
+          trigger-class="h-9 gap-2 border border-transparency-white-t8 px-3 text-sm text-primary-warm-white hover:border-transparency-white-t20"
         >
           <span class="text-primary-warm-gray">
             {{ rc('reshoot.move.motion', locale) }}

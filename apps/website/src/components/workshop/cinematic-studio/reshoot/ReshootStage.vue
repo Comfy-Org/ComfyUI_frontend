@@ -165,16 +165,25 @@ const fileName = computed(
         @key="emit('key')"
         @clear="emit('clearKeys')"
       />
+      <p
+        class="min-h-4 text-xs text-primary-warm-gray"
+        data-testid="reshoot-take-caption"
+      >
+        <template v-if="current">
+          {{
+            current.id === 'example'
+              ? rc('reshoot.take.exampleHelp', locale)
+              : takeLabel(current, locale)
+          }}
+        </template>
+      </p>
+      <ReshootTakes
+        :takes
+        :selected
+        :locale
+        class="-ml-1 self-start"
+        @select="emit('select', $event)"
+      />
     </div>
-    <p class="text-xs text-primary-warm-gray">
-      {{
-        current?.id === 'example'
-          ? rc('reshoot.take.exampleHelp', locale)
-          : current
-            ? takeLabel(current, locale)
-            : rc('reshoot.take.aim', locale)
-      }}
-    </p>
-    <ReshootTakes :takes :selected :locale @select="emit('select', $event)" />
   </section>
 </template>

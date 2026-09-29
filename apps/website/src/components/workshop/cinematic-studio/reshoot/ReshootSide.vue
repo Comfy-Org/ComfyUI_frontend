@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import type { DepthState } from '../../../../composables/useReshootRun'
 import type {
   CameraKey,
@@ -39,7 +40,7 @@ const {
   frames?: number
   /** Why this clip cannot be used, if it cannot. */
   clipError?: string
-  /** The last failed analysis, said where the button is. */
+  /** The last failed depth read, said above its Try again button. */
   error?: string
   rendering?: boolean
   locale?: Locale
@@ -73,6 +74,7 @@ const prompt = defineModel<string>('prompt', { required: true })
 
 const ready = computed(() => depth === 'ready')
 const analyzing = computed(() => depth === 'analyzing')
+const failed = computed(() => !!error && !ready.value && !analyzing.value)
 const framesText = computed(() =>
   frames === undefined
     ? ''
@@ -96,40 +98,46 @@ function choose(event: Event) {
     :aria-label="rc('reshoot.panel', locale)"
     class="flex min-w-0 flex-col rounded-2xl bg-primary-comfy-ink-light lg:sticky lg:top-24 lg:max-h-[calc(100svh-7rem)]"
   >
-    <header
-      class="flex items-center gap-3 border-b border-transparency-white-t8 px-4 py-3.5"
-    >
-      <video
-        :src="clip"
-        muted
-        playsinline
-        preload="metadata"
-        class="aspect-video w-14 shrink-0 rounded-md bg-primary-comfy-ink object-cover"
-      />
-      <span class="flex min-w-0 flex-1 flex-col">
-        <span class="truncate text-sm font-semibold text-primary-warm-white">
-          {{ isExample ? rc('reshoot.pick.exampleTitle', locale) : clipName }}
-        </span>
-        <span class="truncate text-[11px] text-primary-warm-gray">
-          {{
-            clipError ??
-            (ready
-              ? `${rc('reshoot.clip.ready', locale)} · ${framesText}`
-              : analyzing
-                ? rc('reshoot.aim.reading', locale)
-                : framesText)
-          }}
-        </span>
-      </span>
-      <label
-        class="flex h-7 shrink-0 cursor-pointer items-center rounded-full bg-transparency-white-t8 px-3 text-[11px] text-primary-comfy-canvas focus-within:ring-2 focus-within:ring-primary-comfy-yellow/50 hover:text-primary-warm-white"
+    <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
+      <div
+        :aria-label="rc('reshoot.section.video', locale)"
+        role="group"
+        class="flex items-center gap-3 rounded-2xl border border-transparency-white-t8 p-2.5"
       >
-        {{ rc('reshoot.clip.change', locale) }}
-        <input type="file" accept="video/*" class="sr-only" @change="choose" />
-      </label>
-    </header>
-
-    <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
+        <video
+          :src="clip"
+          muted
+          playsinline
+          preload="metadata"
+          class="aspect-video w-14 shrink-0 rounded-md bg-primary-comfy-ink object-cover"
+        />
+        <span class="flex min-w-0 flex-1 flex-col">
+          <span class="truncate text-sm font-semibold text-primary-warm-white">
+            {{ isExample ? rc('reshoot.pick.exampleTitle', locale) : clipName }}
+          </span>
+          <span class="truncate text-[11px] text-primary-warm-gray">
+            {{
+              clipError ??
+              (ready
+                ? `${rc('reshoot.clip.ready', locale)} · ${framesText}`
+                : analyzing
+                  ? rc('reshoot.aim.reading', locale)
+                  : framesText)
+            }}
+          </span>
+        </span>
+        <label
+          class="flex h-7 shrink-0 cursor-pointer items-center rounded-full bg-transparency-white-t8 px-3 text-[11px] text-primary-comfy-canvas focus-within:ring-2 focus-within:ring-primary-comfy-yellow/50 hover:text-primary-warm-white"
+        >
+          {{ rc('reshoot.clip.change', locale) }}
+          <input
+            type="file"
+            accept="video/*"
+            class="sr-only"
+            @change="choose"
+          />
+        </label>
+      </div>
       <ReshootAimRig
         v-model:keep-aim="keepAim"
         :clip
@@ -138,109 +146,116 @@ function choose(event: Event) {
         :locale
         @aim="emit('aim', $event)"
       />
-      <ReshootDisclosure
-        :label="rc('reshoot.section.move', locale)"
-        :disabled="!ready"
-      >
-        <ReshootMoveControls
-          v-model:frame="frame"
-          :keys
+      <div class="flex flex-col gap-2">
+        <ReshootDisclosure
+          :label="rc('reshoot.section.move', locale)"
           :disabled="!ready"
-          :locale
-          @remove="emit('removeKey', $event)"
-        />
-      </ReshootDisclosure>
-      <ReshootFormat v-model:aspect="aspect" v-model:size="size" :locale />
-      <ReshootDisclosure :label="rc('reshoot.advanced', locale)">
-        <div class="flex flex-col gap-3">
-          <div class="flex flex-col gap-1.5">
-            <label
-              for="reshoot-prompt"
-              class="text-xs font-semibold text-primary-comfy-canvas"
-            >
-              {{ rc('reshoot.section.prompt', locale) }}
-              <span class="font-normal text-primary-warm-gray">
-                · {{ rc('reshoot.optional', locale) }}
-              </span>
-            </label>
-            <p class="text-[11px]/relaxed text-primary-warm-gray">
-              {{ rc('reshoot.promptHelp', locale) }}
-            </p>
-            <textarea
-              id="reshoot-prompt"
-              v-model="prompt"
-              rows="2"
-              :placeholder="rc('reshoot.prompt.placeholder', locale)"
-              aria-describedby="reshoot-prompt-dialogue"
-              class="field-sizing-content max-h-40 min-h-16 resize-none rounded-xl bg-transparency-white-t4 px-3.5 py-2.5 text-sm/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
-            />
-            <p
-              id="reshoot-prompt-dialogue"
-              class="text-[11px]/relaxed text-primary-warm-gray"
-            >
-              {{ rc('reshoot.prompt.dialogue', locale) }}
-            </p>
-          </div>
-          <div class="flex flex-col gap-1.5">
-            <label class="flex items-center justify-between gap-3 text-xs">
-              <span class="font-semibold text-primary-comfy-canvas">
-                {{ rc('reshoot.seed', locale) }}
-              </span>
+        >
+          <ReshootMoveControls
+            v-model:frame="frame"
+            :keys
+            :disabled="!ready"
+            :locale
+            @remove="emit('removeKey', $event)"
+          />
+        </ReshootDisclosure>
+        <ReshootDisclosure :label="rc('reshoot.advanced', locale)">
+          <div class="flex flex-col gap-3">
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center gap-1.5">
+                <label
+                  for="reshoot-prompt"
+                  class="text-xs font-semibold text-primary-comfy-canvas"
+                >
+                  {{ rc('reshoot.section.prompt', locale) }}
+                  <span class="font-normal text-primary-warm-gray">
+                    · {{ rc('reshoot.optional', locale) }}
+                  </span>
+                </label>
+                <InfoTooltip
+                  :text="rc('reshoot.promptHelp', locale)"
+                  :label="rc('reshoot.promptHelp', locale)"
+                />
+              </div>
+              <textarea
+                id="reshoot-prompt"
+                v-model="prompt"
+                rows="2"
+                :placeholder="rc('reshoot.prompt.placeholder', locale)"
+                aria-describedby="reshoot-prompt-dialogue"
+                class="field-sizing-content max-h-40 min-h-16 resize-none rounded-xl bg-transparency-white-t4 px-3.5 py-2.5 text-sm/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
+              />
+              <p
+                id="reshoot-prompt-dialogue"
+                class="text-[11px]/relaxed text-primary-warm-gray"
+              >
+                {{ rc('reshoot.prompt.dialogue', locale) }}
+              </p>
+            </div>
+            <div class="flex items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-1.5">
+                <label
+                  for="reshoot-seed"
+                  class="font-semibold text-primary-comfy-canvas"
+                >
+                  {{ rc('reshoot.seed', locale) }}
+                </label>
+                <InfoTooltip
+                  :text="rc('reshoot.seed.help', locale)"
+                  :label="rc('reshoot.seed.help', locale)"
+                />
+              </div>
               <input
+                id="reshoot-seed"
                 v-model.lazy="seedText"
                 type="number"
                 min="0"
                 step="1"
                 :placeholder="rc('reshoot.seed.random', locale)"
-                aria-describedby="reshoot-seed-help"
                 class="h-9 w-28 rounded-xl bg-transparency-white-t4 px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none placeholder:font-sans placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
               />
-            </label>
-            <p
-              id="reshoot-seed-help"
-              class="text-[11px]/relaxed text-primary-warm-gray"
-            >
-              {{ rc('reshoot.seed.help', locale) }}
-            </p>
+            </div>
           </div>
-        </div>
-      </ReshootDisclosure>
+        </ReshootDisclosure>
+      </div>
+      <ReshootFormat v-model:aspect="aspect" v-model:size="size" :locale />
     </div>
 
     <footer
-      class="flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 p-4"
+      class="flex flex-col gap-3 rounded-b-2xl border-t border-transparency-white-t8 p-4"
     >
-      <p
-        v-if="error"
+      <!-- The scene is read on its own when a clip is picked; a failed
+           read waits here to be tried again. -->
+      <div
+        v-if="failed"
         role="alert"
-        class="rounded-xl bg-transparency-white-t8 px-3 py-2 text-[11px] wrap-break-word text-primary-warm-white"
+        class="flex items-center gap-3 rounded-xl bg-transparency-white-t8 py-2 pr-2 pl-3"
       >
-        {{ rc('reshoot.failed', locale) }}: {{ error }}
-      </p>
-      <p class="text-center text-[11px] text-primary-warm-gray">
+        <p
+          class="min-w-0 flex-1 text-[11px] wrap-break-word text-primary-warm-white"
+        >
+          {{ rc('reshoot.failed', locale) }}: {{ error }}
+        </p>
+        <Button
+          size="sm"
+          variant="outline"
+          class="shrink-0 rounded-full"
+          data-testid="reshoot-analyze"
+          @click="emit('analyze')"
+        >
+          {{ rc('reshoot.tryAgain', locale) }}
+        </Button>
+      </div>
+      <p
+        v-else-if="ready || analyzing"
+        class="text-center text-[11px] text-primary-warm-gray"
+      >
         {{
           rc(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait', locale)
         }}
       </p>
-      <!-- Analysis is a run of its own, so it waits to be asked for. -->
-      <Button
-        v-if="!ready"
-        size="lg"
-        class="rounded-full"
-        :disabled="analyzing || !!clipError"
-        data-testid="reshoot-analyze"
-        @click="emit('analyze')"
-      >
-        {{
-          rc(
-            depth === 'stale' ? 'reshoot.analyzeAgain' : 'reshoot.analyze',
-            locale
-          )
-        }}
-      </Button>
       <Button
         size="lg"
-        :variant="ready ? undefined : 'outline'"
         class="rounded-full"
         :disabled="!ready || rendering"
         data-testid="reshoot-action"
@@ -248,9 +263,6 @@ function choose(event: Event) {
       >
         {{ rc('reshoot.generate', locale) }}
       </Button>
-      <p v-if="!ready" class="text-center text-[11px] text-primary-warm-gray">
-        {{ rc('reshoot.generate.locked', locale) }}
-      </p>
     </footer>
   </aside>
 </template>

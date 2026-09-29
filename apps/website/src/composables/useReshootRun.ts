@@ -15,6 +15,7 @@ import {
   withKey
 } from '../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../lib/workshop/cinematic-studio/reshoot-copy'
+import { clipSecondsOf } from '../lib/workshop/cinematic-studio/reshoot-clip'
 import {
   cameraAt,
   keyIndexAt,
@@ -79,19 +80,10 @@ const EXAMPLE_TAKE: ReshootTake = {
   url: RESHOOT_EXAMPLE.result
 }
 
-function clipSecondsOf(url: string): Promise<number> {
-  return new Promise((resolve) => {
-    const video = document.createElement('video')
-    video.preload = 'metadata'
-    video.onloadedmetadata = video.onerror = () => resolve(video.duration)
-    video.src = url
-  })
-}
-
 /**
  * The Re-shoot app, run for real: the same state as the design mock
  * this page first had, with the depth analysis and every take as jobs on the
- * CrossView deployment. Analysis costs a run, so it waits for its button;
+ * CrossView deployment. The depth read starts as soon as a clip is picked;
  * the camera is then aimed against a live warp of the clip's own geometry.
  */
 export function useReshootRun(locale: Locale = 'en') {
@@ -156,6 +148,8 @@ export function useReshootRun(locale: Locale = 'en') {
     cancelAnalysis()
   }
   watch([aspect, size], () => {
+    // new settings are a new request: an earlier failure no longer holds
+    error.value = undefined
     if (depth.value === 'analyzing') {
       retireReading()
       depth.value = geometry.value ? 'stale' : 'none'
@@ -173,6 +167,20 @@ export function useReshootRun(locale: Locale = 'en') {
     },
     { flush: 'sync' }
   )
+
+  // The scene is read without being asked: once a clip is picked and its
+  // length is known, and again when the format changes its frames. A failed
+  // read waits for Try again instead of looping.
+  watch([picked, clipSeconds, depth, error], () => {
+    const unread = depth.value === 'none' || depth.value === 'stale'
+    if (
+      picked.value &&
+      clipSeconds.value !== undefined &&
+      unread &&
+      !error.value
+    )
+      void analyze()
+  })
 
   const rendering = computed(() =>
     takes.value.some((take) => take.status === 'rendering')
@@ -338,8 +346,10 @@ export function useReshootRun(locale: Locale = 'en') {
       const read = await readDepth(mine)
       if (!read) return
       geometry.value = read
-      keys.value = []
-      frame.value = 0
+      // a re-read for a new format keeps the aim and the keys: the clip's
+      // length, and so its frames, did not change
+      keys.value = keys.value.filter((key) => key.frame < read.frames)
+      frame.value = Math.min(frame.value, read.frames - 1)
       depth.value = 'ready'
       step.value = 2
     } catch (e) {

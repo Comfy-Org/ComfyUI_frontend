@@ -7,6 +7,7 @@ import {
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { clipSecondsOf } from '../../../../lib/workshop/cinematic-studio/reshoot-clip'
 import { readGeometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import {
   cancel,
@@ -17,8 +18,9 @@ import {
 } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/deployment'
 import ReshootStudio from './ReshootStudio.vue'
 
-// The network is the only thing stubbed: the page, the composable and the
-// graph binding run as they do in the browser.
+// The network, and the clip-length probe jsdom cannot play, are the only
+// things stubbed: the page, the composable and the graph binding run as they
+// do in the browser.
 vi.mock(
   import('../../../../lib/workshop/cinematic-studio/reshoot-engine/deployment'),
   { spy: true }
@@ -27,6 +29,9 @@ vi.mock(
   import('../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'),
   { spy: true }
 )
+vi.mock(import('../../../../lib/workshop/cinematic-studio/reshoot-clip'), {
+  spy: true
+})
 
 const net = {
   holdTakes: false,
@@ -48,6 +53,7 @@ beforeEach(() => {
     'fetch',
     vi.fn(async () => new Response(new Blob(['clip'], { type: 'video/mp4' })))
   )
+  vi.mocked(clipSecondsOf).mockResolvedValue(8)
   vi.mocked(uploadVideo).mockResolvedValue('clip.mp4')
   vi.mocked(submit).mockImplementation(async (workflow) => {
     const graph = workflow as unknown as (typeof net.submitted)[number]
@@ -93,24 +99,24 @@ const inputs = (
 describe('Re-shoot, run for real', () => {
   async function analyzeExample(user: ReturnType<typeof setup>) {
     await user.click(screen.getByRole('button', { name: /Sci-fi pilot/ }))
-    await user.click(screen.getByTestId('reshoot-analyze'))
     await waitUntil(() =>
       expect(screen.getByTestId('reshoot-action')).toBeEnabled()
     )
   }
 
-  it('waits for Analyze depth, because the analysis is a run of its own', async () => {
+  it('reads the scene as soon as a clip is picked, with no button to press', async () => {
+    net.holdAnalyze = true
     const user = setup()
     expect(screen.getByTestId('reshoot-empty')).toBeInTheDocument()
+    expect(net.submitted).toHaveLength(0)
 
     await user.click(screen.getByRole('button', { name: /Sci-fi pilot/ }))
 
-    expect(net.submitted).toHaveLength(0)
     expect(screen.getByTestId('reshoot-action')).toBeDisabled()
     expect(screen.getByRole('slider', { name: 'Rotation' })).toBeDisabled()
-    expect(screen.getByText('Analyze depth first.')).toBeInTheDocument()
-
-    await user.click(screen.getByTestId('reshoot-analyze'))
+    expect(screen.queryByTestId('reshoot-analyze')).not.toBeInTheDocument()
+    await waitUntil(() => expect(vi.mocked(waitFor)).toHaveBeenCalled())
+    net.finishAnalyze()
     await waitUntil(() =>
       expect(screen.getByTestId('reshoot-action')).toBeEnabled()
     )
@@ -129,19 +135,54 @@ describe('Re-shoot, run for real', () => {
     net.holdAnalyze = true
     const user = setup()
     await user.click(screen.getByRole('button', { name: /Sci-fi pilot/ }))
-    await user.click(screen.getByTestId('reshoot-analyze'))
-    await waitUntil(() => expect(net.submitted).toHaveLength(1))
+    await waitUntil(() => expect(vi.mocked(waitFor)).toHaveBeenCalled())
+    const finishFirst = net.finishAnalyze
 
     await user.upload(
       screen.getByLabelText('Change'),
       new File(['clip'], 'another.mp4', { type: 'video/mp4' })
     )
-    net.finishAnalyze()
+    finishFirst()
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(vi.mocked(cancel)).toHaveBeenCalledWith('analyze-job')
+    // the new clip is read in turn; the old reading never unlocks it
+    await waitUntil(() => expect(net.submitted).toHaveLength(2))
     expect(screen.getByTestId('reshoot-action')).toBeDisabled()
-    expect(screen.getByTestId('reshoot-analyze')).toBeEnabled()
+  })
+
+  it('reads the scene again when the size changes, keeping the aim', async () => {
+    const user = setup()
+    await analyzeExample(user)
+    screen.getByTestId('reshoot-globe').focus()
+    await user.keyboard('{ArrowRight}')
+
+    await user.click(screen.getByRole('button', { name: 'Output size: 480p' }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /768p/ }))
+
+    await waitUntil(() => expect(net.submitted).toHaveLength(2))
+    expect(net.submitted[1]['2'].inputs.megapixels).not.toBe(0.4)
+    await waitUntil(() =>
+      expect(screen.getByTestId('reshoot-action')).toBeEnabled()
+    )
+    expect(screen.getByRole('slider', { name: 'Rotation' })).toHaveValue('-25')
+  })
+
+  it('offers Try again only after a read fails, and does not retry on its own', async () => {
+    vi.mocked(submit).mockRejectedValueOnce(new Error('No server'))
+    const user = setup()
+    await user.click(screen.getByRole('button', { name: /Sci-fi pilot/ }))
+
+    const retry = await screen.findByTestId('reshoot-analyze')
+    expect(retry).toHaveTextContent('Try again')
+    expect(screen.getByRole('alert')).toHaveTextContent('No server')
+    expect(vi.mocked(submit)).toHaveBeenCalledTimes(1)
+
+    await user.click(retry)
+    await waitUntil(() =>
+      expect(screen.getByTestId('reshoot-action')).toBeEnabled()
+    )
+    expect(screen.queryByTestId('reshoot-analyze')).not.toBeInTheDocument()
   })
 
   it.for([
@@ -375,5 +416,20 @@ describe('Re-shoot, run for real', () => {
         use_keyframes: false
       })
     })
+  })
+
+  it('captions the selected take and clears the caption back on Aim', async () => {
+    const user = setup()
+    await analyzeExample(user)
+    await user.click(screen.getByTestId('reshoot-action'))
+    await screen.findByRole('button', { name: 'Use this angle again' })
+    const take = 'Take 1 · az -30° el 15°'
+
+    await user.click(screen.getByRole('button', { name: take }))
+    const caption = screen.getByTestId('reshoot-take-caption')
+    expect(caption).toHaveTextContent(take)
+
+    await user.click(screen.getByRole('button', { name: 'Aim' }))
+    expect(caption).toHaveTextContent(/^$/)
   })
 })
