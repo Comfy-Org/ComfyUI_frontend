@@ -156,9 +156,23 @@ function dynamicComboWidget(
       }
     }
   }
+  let initializing = true
   const updateWidgets = (value?: string) => {
-    if (!node.widgets) throw new Error('Not Reachable')
+    if (!node.widgets) {
+      console.error(new Error('Dynamic widget node has no widgets'))
+      return false
+    }
     const newSpec = value ? options[value] : undefined
+    const insertionPoint = node.widgets.findIndex((w) => w === widget) + 1
+    if (insertionPoint === 0) {
+      console.error(new Error("Dynamic widget doesn't exist on node"))
+      return false
+    }
+    const hasInput = node.inputs.some((input) => input.name === widget.name)
+    if (newSpec && !hasInput && !initializing) {
+      console.error(new Error('Failed to find input socket for ' + widget.name))
+      return false
+    }
     const removedOption = activeOption
     activeOption = value
 
@@ -178,17 +192,14 @@ function dynamicComboWidget(
 
     if (!newSpec) {
       const result = commitMutatedInputs(node, previous, inputLinks)
-      if (!result.ok) return
+      if (!result.ok) return false
       syncNodeWidgetOrder(node)
-      return
+      return true
     }
 
-    const insertionPoint = node.widgets.findIndex((w) => w === widget) + 1
     const startingLength = node.widgets.length
     const startingInputLength = node.inputs.length
 
-    if (insertionPoint === 0)
-      throw new Error("Dynamic widget doesn't exist on node")
     const inputTypes: (Record<string, InputSpec> | undefined)[] = [
       newSpec.required,
       newSpec.optional
@@ -206,22 +217,16 @@ function dynamicComboWidget(
     })
 
     const inputInsertionPoint =
-      node.inputs.findIndex((i) => i.name === widget.name) + 1
+      node.inputs.findIndex((input) => input.name === widget.name) + 1
     const addedWidgets = node.widgets.splice(startingLength)
     const addedWidgetNames = addedWidgets.map(({ name }) => name)
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     syncNodeWidgetOrder(node)
     if (inputInsertionPoint === 0) {
-      if (
-        addedWidgets.length === 0 &&
-        node.inputs.length !== startingInputLength
-      )
-        //input is inputOnly, but lacks an insertion point
-        throw new Error('Failed to find input socket for ' + widget.name)
       const result = commitMutatedInputs(node, previous, inputLinks)
-      if (!result.ok) return
+      if (!result.ok) return false
       restoreRemovedValues(value, addedWidgetNames)
-      return
+      return true
     }
     const addedInputs = node.inputs
       .splice(startingInputLength)
@@ -242,7 +247,7 @@ function dynamicComboWidget(
       if (replacement && link) inputLinks.set(replacement, link)
     }
     const result = commitMutatedInputs(node, previous, inputLinks)
-    if (!result.ok) return
+    if (!result.ok) return false
     //A callback can grow the group it lands on, shifting every input after
     //it, so the slot captured before the batch is stale for later entries.
     for (const { input, link } of result.replacements) {
@@ -252,10 +257,11 @@ function dynamicComboWidget(
     }
     restoreRemovedValues(value, addedWidgetNames)
 
-    if (!node.graph) return
+    if (!node.graph) return true
     node._setConcreteSlots()
     node.arrange()
     node.graph.setDirtyCanvas(true, true)
+    return true
   }
   //Refit height on the callback channel: interaction fires it after the value
   //setter, while configure (load, clone, paste) only fires the setter and must
@@ -279,13 +285,14 @@ function dynamicComboWidget(
       return getState()?.value ?? widgetValue
     },
     set(value) {
+      if (!updateWidgets(value)) return
       const state = getState()
       if (state) state.value = value
       widgetValue = value
-      updateWidgets(value)
     }
   })
   widget.value = widgetValue
+  initializing = false
   return { widget, minWidth, minHeight }
 }
 
