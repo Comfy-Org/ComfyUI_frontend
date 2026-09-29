@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Play } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 import type { SourcePreviewProps } from '../../composables/useSourceUrl'
@@ -28,7 +27,7 @@ const expanded = ref(false)
       <button
         type="button"
         :aria-label="expandLabel"
-        class="group relative size-12 shrink-0 cursor-zoom-in overflow-hidden rounded-lg bg-transparency-white-t8 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        class="size-12 shrink-0 cursor-zoom-in overflow-hidden rounded-lg bg-transparency-white-t8 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
       >
         <video
           :key="source"
@@ -40,12 +39,6 @@ const expanded = ref(false)
           class="size-full object-cover"
           data-testid="video-source-thumbnail"
         />
-        <span
-          class="absolute inset-0 grid place-items-center bg-black/25 text-white transition-colors group-hover:bg-black/40"
-          aria-hidden="true"
-        >
-          <Play class="size-5 fill-current" />
-        </span>
       </button>
     </DialogTrigger>
 

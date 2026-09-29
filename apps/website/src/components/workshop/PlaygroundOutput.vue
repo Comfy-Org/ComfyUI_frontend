@@ -28,7 +28,6 @@ import { t } from '../../i18n/translations'
 const {
   state,
   now,
-  modelName,
   modality,
   earlier = [],
   attachments = [],
@@ -40,7 +39,6 @@ const {
 } = defineProps<{
   state: RunState
   now: number
-  modelName: string
   modality?: Modality
   earlier?: readonly RunRecord[]
   attachments?: readonly RunOutput[]
@@ -638,15 +636,6 @@ const earlierClass = (active: boolean) =>
         class="px-5 py-2 text-xs text-primary-warm-gray"
       >
         {{ t('workshop.output.truncated', locale) }}
-      </p>
-      <p
-        v-if="state.status === 'example'"
-        class="border-t border-transparency-white-t8 px-5 py-2 text-xs text-primary-warm-gray"
-        data-testid="output-example-hint"
-      >
-        <slot name="example-hint">
-          {{ t('workshop.output.exampleHint', locale, { model: modelName }) }}
-        </slot>
       </p>
       <div
         v-if="state.status === 'succeeded'"

@@ -18,6 +18,7 @@ import {
 import { t } from '../../i18n/translations'
 import ApiFacts from './ApiFacts.vue'
 import HighlightedCode from './HighlightedCode.vue'
+import SectionHeading from './SectionHeading.vue'
 
 const { model, values } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -67,17 +68,11 @@ const facts = computed(() => [
 
 <template>
   <section class="flex flex-col gap-6" aria-labelledby="workflow-api-heading">
-    <div class="space-y-2">
-      <h2
-        id="workflow-api-heading"
-        class="text-2xl font-light text-primary-comfy-canvas"
-      >
-        {{ t('workshop.api.heading') }}
-      </h2>
-      <p class="max-w-3xl text-sm/relaxed text-primary-warm-gray">
-        {{ t('workshop.workflow.apiHint') }}
-      </p>
-    </div>
+    <SectionHeading
+      title-id="workflow-api-heading"
+      :title="t('workshop.api.heading')"
+      :subtitle="t('workshop.workflow.apiHint')"
+    />
     <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
       <div
         class="flex w-full flex-col gap-3 lg:sticky lg:top-24 lg:w-95 lg:shrink-0"
@@ -92,11 +87,12 @@ const facts = computed(() => [
           >{{ t('workshop.api.getKey') }}</Button
         >
         <div data-testid="workflow-api-endpoint">
-          <ApiFacts :where="t('workshop.api.runsOnCloud')" :rows="facts" />
+          <ApiFacts
+            :where="t('workshop.api.runsOnCloud')"
+            :rows="facts"
+            :note="t('workshop.workflow.apiNote')"
+          />
         </div>
-        <p class="text-sm/relaxed text-primary-warm-gray">
-          {{ t('workshop.workflow.apiNote') }}
-        </p>
       </div>
 
       <div class="flex min-w-0 flex-1 flex-col gap-4">
@@ -105,9 +101,11 @@ const facts = computed(() => [
           class="overflow-hidden rounded-2xl border border-transparency-white-t20"
         >
           <div
-            class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-2 text-sm text-primary-warm-gray"
+            class="flex items-center justify-between border-b border-transparency-white-t8 px-3 py-2"
           >
-            <span>cURL</span
+            <span
+              class="rounded-xl bg-primary-comfy-yellow px-3 py-1.5 text-xs font-bold tracking-wider text-primary-comfy-ink uppercase"
+              >cURL</span
             ><CopyTextButton
               :value="code"
               :label="t('workshop.api.copy')"
@@ -124,21 +122,25 @@ const facts = computed(() => [
           {{ t('workshop.api.inputInvalid') }}
         </p>
 
-        <div
-          v-if="hasMedia"
-          class="space-y-2 text-sm/relaxed text-primary-warm-gray"
+        <details
+          class="rounded-2xl border border-transparency-white-t8 px-5"
+          data-testid="workflow-api-steps"
         >
-          <h3 class="font-medium text-primary-comfy-canvas">
-            {{ t('workshop.workflow.apiUploads') }}
-          </h3>
-          <p>{{ t('workshop.workflow.apiUploadGrant') }}</p>
-          <p>{{ t('workshop.workflow.apiUploadPut') }}</p>
-          <p>{{ t('workshop.workflow.apiUploadFinalize') }}</p>
-        </div>
+          <summary
+            class="cursor-pointer list-none py-4 text-sm font-medium text-primary-comfy-canvas marker:hidden hover:text-primary-warm-white"
+          >
+            {{ t('workshop.workflow.apiSteps') }}
+          </summary>
+          <div class="space-y-2 pb-5 text-sm/relaxed text-primary-warm-gray">
+            <template v-if="hasMedia">
+              <p>{{ t('workshop.workflow.apiUploadGrant') }}</p>
+              <p>{{ t('workshop.workflow.apiUploadPut') }}</p>
+              <p>{{ t('workshop.workflow.apiUploadFinalize') }}</p>
+            </template>
+            <p>{{ t('workshop.workflow.apiPoll') }}</p>
+          </div>
+        </details>
 
-        <p class="text-sm/relaxed text-primary-warm-gray">
-          {{ t('workshop.workflow.apiPoll') }}
-        </p>
         <a
           :href="externalLinks.docsApi"
           target="_blank"

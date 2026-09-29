@@ -1,16 +1,20 @@
 <script setup lang="ts">
+import { Maximize2 } from '@lucide/vue'
 import { useMounted } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import type { GraphPicture } from '../../lib/workshop/workflow-graph'
 import { linkPath, readGraphPicture } from '../../lib/workshop/workflow-graph'
+import { openingView } from '../../lib/workshop/workflow-graph-view'
 import { t } from '../../i18n/translations'
+import WorkflowGraphControls from './WorkflowGraphControls.vue'
 import WorkflowGraphNode from './WorkflowGraphNode.vue'
 
 const {
   source,
   samples = [],
   fallback,
+  fullHref,
   active = true
 } = defineProps<{
   /** Where the template JSON is published. */
@@ -19,12 +23,20 @@ const {
   samples?: readonly string[]
   /** The flat export, for when the JSON cannot be read. */
   fallback?: string
+  /** The flat export opened at full size, from the panel's own corner. */
+  fullHref?: string
   /** Whether the graph is on screen; it is not fetched until it first is. */
   active?: boolean
 }>()
 
 const picture = ref<GraphPicture>()
 const failed = ref(false)
+
+const statusText = computed(() =>
+  failed.value
+    ? t('workshop.workflow.graphFailed')
+    : t('workshop.workflow.graphLoading')
+)
 
 const frame = useTemplateRef<HTMLDivElement>('frame')
 const canvas = useTemplateRef<SVGSVGElement>('canvas')
@@ -51,6 +63,7 @@ async function load() {
     // Nothing to draw reads to the reader exactly as a refusal does.
     if (drawn.nodes.length === 0) throw new Error('empty')
     picture.value = drawn
+    applyOpeningView(drawn)
   } catch {
     failed.value = true
   }
@@ -71,9 +84,17 @@ function zoomBy(factor: number) {
 }
 
 function reset() {
+  if (picture.value) return applyOpeningView(picture.value)
   scale.value = 1
   panX.value = 0
   panY.value = 0
+}
+
+function applyOpeningView(drawn: GraphPicture) {
+  const view = openingView(drawn, frame.value?.clientWidth ?? 0)
+  scale.value = view.scale
+  panX.value = view.panX
+  panY.value = view.panY
 }
 
 function onPointerDown(event: PointerEvent) {
@@ -95,9 +116,6 @@ function onPointerUp(event: PointerEvent) {
   dragging.value = false
   frame.value?.releasePointerCapture(event.pointerId)
 }
-
-const control =
-  'inline-flex size-7 cursor-pointer items-center justify-center rounded-lg text-content-secondary transition-colors hover:bg-transparency-white-t8 hover:text-content-bright'
 </script>
 
 <template>
@@ -174,42 +192,26 @@ const control =
       v-else
       class="flex size-full items-center justify-center text-sm text-content-muted"
     >
-      {{
-        failed
-          ? t('workshop.workflow.graphFailed')
-          : t('workshop.workflow.graphLoading')
-      }}
+      {{ statusText }}
     </p>
 
-    <span
-      v-if="picture"
-      class="pointer-events-none absolute top-3 left-3 rounded-full bg-black/50 px-2 py-0.5 text-3xs/4 font-bold tracking-wider text-content-secondary uppercase backdrop-blur-md"
+    <a
+      v-if="fullHref"
+      :href="fullHref"
+      target="_blank"
+      rel="noopener"
+      class="absolute top-3 right-3 inline-flex size-9 items-center justify-center rounded-xl bg-black/50 text-content-secondary backdrop-blur-md transition-colors hover:text-content-bright focus-visible:text-content-bright focus-visible:outline-primary-comfy-yellow"
+      data-testid="workflow-graph-full"
     >
-      {{ t('workshop.workflow.graphHint') }}
-    </span>
+      <Maximize2 class="size-4" aria-hidden="true" />
+      <span class="sr-only">{{ t('workshop.workflow.fullPreview') }}</span>
+    </a>
 
-    <div
+    <WorkflowGraphControls
       v-if="picture"
-      class="absolute right-3 bottom-3 flex items-center gap-1 rounded-xl bg-black/50 p-1 backdrop-blur-md"
-    >
-      <button type="button" :class="control" @click="zoomBy(1 / 1.2)">
-        <span aria-hidden="true">&minus;</span>
-        <span class="sr-only">{{ t('workshop.workflow.zoomOut') }}</span>
-      </button>
-      <span class="px-1 font-mono text-2xs text-content-secondary tabular-nums">
-        {{ Math.round(scale * 100) }}%
-      </span>
-      <button type="button" :class="control" @click="zoomBy(1.2)">
-        <span aria-hidden="true">+</span>
-        <span class="sr-only">{{ t('workshop.workflow.zoomIn') }}</span>
-      </button>
-      <button
-        type="button"
-        class="cursor-pointer rounded-lg px-2 text-2xs text-content-secondary transition-colors hover:text-content-bright"
-        @click="reset"
-      >
-        {{ t('workshop.workflow.zoomReset') }}
-      </button>
-    </div>
+      :scale
+      @zoom="zoomBy"
+      @reset="reset"
+    />
   </div>
 </template>

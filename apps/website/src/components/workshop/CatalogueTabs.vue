@@ -53,7 +53,7 @@ const columns = computed(() =>
   >
     <div :class="cn('pointer-events-none absolute inset-1 grid', columns)">
       <div
-        class="rounded-xl bg-primary-warm-white transition-transform duration-300 ease-out motion-reduce:transition-none"
+        class="rounded-xl bg-primary-comfy-canvas transition-transform duration-300 ease-out motion-reduce:transition-none"
         :style="{ transform: marker }"
       />
     </div>

@@ -546,6 +546,65 @@ test.describe('Models catalog', () => {
 })
 
 test.describe('Model playground', () => {
+  test('keeps a long prompt whole instead of scrolling it out of sight', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByTestId('field-prompt')
+    const hidden = () =>
+      prompt.evaluate((box) => box.scrollHeight - box.clientHeight)
+    const height = () => prompt.evaluate((box) => box.clientHeight)
+
+    await prompt.fill(
+      Array.from({ length: 12 }, (_, line) => `Line ${line + 1}.`).join('\n')
+    )
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+    const tall = await height()
+
+    await prompt.fill('One line.')
+    await expect.poll(height).toBeLessThan(tall)
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+  })
+
+  test('keeps a long prompt whole when the layout narrows under it', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByTestId('field-prompt')
+    const hidden = () =>
+      prompt.evaluate((box) => box.scrollHeight - box.clientHeight)
+
+    await prompt.fill(
+      'A slow push-in on a glass teapot lit from behind by a low winter sun, steam rising and catching the light while the room around it stays in shadow, the reflections on the table kept sharp and the background soft, with no people, no text and no logos anywhere in the frame.'
+    )
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+
+    await page.setViewportSize({ width: 380, height: 900 })
+
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+  })
+
+  test('stops the prompt box short of swallowing the window', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByTestId('field-prompt')
+
+    await prompt.fill(
+      Array.from({ length: 60 }, (_, line) => `Line ${line + 1}.`).join('\n')
+    )
+
+    // A prompt this long would bury the rest of the form, so the box keeps a
+    // share of the window and scrolls what is left.
+    await expect
+      .poll(() => prompt.evaluate((box) => box.clientHeight))
+      .toBeLessThan(800)
+    await expect
+      .poll(() => prompt.evaluate((box) => box.scrollHeight - box.clientHeight))
+      .toBeGreaterThan(1)
+  })
+
   test('puts data-declared parameters in the Advanced disclosure', async ({
     page
   }) => {
