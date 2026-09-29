@@ -11,6 +11,7 @@ import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import type {
   BillingOperationState,
   BillingResult,
+  CapabilitiesSnapshot,
   SubscribeInput,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
@@ -57,6 +58,19 @@ type PlannedEntry = BillingEntry & { plan: string }
 
 /** What the quote answers for a plan slug the catalog does not have. */
 const UNKNOWN_PLAN_SERVER_CODE = 'INVALID_PLAN'
+
+/** A capability read that ends the page before any quote: unreadable, or refused. */
+function capabilityStop(
+  allowed: BillingResult<CapabilitiesSnapshot>
+): CheckoutPageEvent | undefined {
+  if (allowed.status === 'error')
+    return { type: 'unavailable', code: allowed.code }
+  if (allowed.value.capabilities.can_subscribe_self_serve) return undefined
+  return {
+    type: 'refused',
+    reason: allowed.value.denials.can_subscribe_self_serve ?? 'unspecified'
+  }
+}
 
 /**
  * The full-page checkout's effects around one `CheckoutPage` state: the
@@ -164,13 +178,8 @@ export function useFullPageCheckout() {
       saved.refresh(),
       awaitBillingWebStripeKey()
     ])
-    if (allowed.status === 'error')
-      return { type: 'unavailable', code: allowed.code }
-    if (!allowed.value.capabilities.can_subscribe_self_serve)
-      return {
-        type: 'refused',
-        reason: allowed.value.denials.can_subscribe_self_serve ?? 'unspecified'
-      }
+    const stopped = capabilityStop(allowed)
+    if (stopped !== undefined) return stopped
     if (quoted.status === 'error')
       return 'serverCode' in quoted &&
         matchesServerCode(quoted, UNKNOWN_PLAN_SERVER_CODE)
