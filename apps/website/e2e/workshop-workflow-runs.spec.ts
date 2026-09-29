@@ -196,6 +196,16 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   expect(cloud.uploads).toHaveLength(1)
   expect(submissions()).toHaveLength(1)
   await page.getByRole('tab', { name: 'API', exact: true }).click()
+  const sdkSnippet = page.getByTestId('workflow-api-snippet')
+  await expect(sdkSnippet).toContainText('from comfy_sdk import Comfy')
+  await expect(sdkSnippet).toContainText(
+    'job = client.run(workflow, api_key=api_key)'
+  )
+  await page.getByRole('tab', { name: 'TypeScript', exact: true }).click()
+  await expect(sdkSnippet).toContainText(
+    "import { Comfy } from '@comfyorg/sdk'"
+  )
+  await page.getByRole('tab', { name: 'cURL', exact: true }).click()
   // The address a run is posted to, before the snippet that posts to it.
   await expect(page.getByTestId('workflow-api-endpoint')).toContainText(
     '/api/prompt'
