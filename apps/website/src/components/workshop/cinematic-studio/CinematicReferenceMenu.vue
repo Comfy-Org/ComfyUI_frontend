@@ -20,8 +20,7 @@ import CinematicTooltip from './CinematicTooltip.vue'
 
 type ReferenceKind = 'cast' | 'palette'
 
-const { kinds: shownKinds = ['cast', 'palette'], locale = 'en' } = defineProps<{
-  kinds?: readonly ReferenceKind[]
+const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
@@ -33,7 +32,7 @@ const palettePreview = useObjectUrl(palette)
 const castInput = useTemplateRef<HTMLInputElement>('castInput')
 const paletteInput = useTemplateRef<HTMLInputElement>('paletteInput')
 
-const allKinds = computed(() => [
+const kinds = computed(() => [
   {
     kind: 'cast' as const,
     icon: UserRound,
@@ -51,9 +50,6 @@ const allKinds = computed(() => [
     preview: palettePreview.value
   }
 ])
-const kinds = computed(() =>
-  allKinds.value.filter((entry) => shownKinds.includes(entry.kind))
-)
 const attached = computed(() => kinds.value.filter((entry) => entry.file))
 const cover = computed(() => attached.value[0]?.preview)
 const heading = computed(() => tc('cinematic.section.references', locale))
@@ -184,7 +180,6 @@ const itemClass =
     @change="attach('cast', $event)"
   />
   <input
-    v-if="shownKinds.includes('palette')"
     ref="paletteInput"
     type="file"
     accept="image/png,image/jpeg,image/webp"

@@ -28,6 +28,7 @@ import {
   useWorkshopAppsEnabled
 } from '../../../scripts/posthog'
 import { t } from '../../../i18n/translations'
+import { MAX_TAKES } from '../../../lib/workshop/cinematic-studio/catalog'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import { runnableCinematicModels } from '../../../lib/workshop/cinematic-studio/models'
@@ -93,9 +94,9 @@ async function chooseTakes(
   user: ReturnType<typeof userEvent.setup>,
   takes: number
 ) {
-  const segmented = screen.queryByRole('radiogroup', { name: 'Takes' })
-  if (segmented) {
-    await user.click(within(segmented).getByRole('radio', { name: `${takes}` }))
+  const more = screen.queryByRole('button', { name: 'More takes' })
+  if (more) {
+    for (let count = 1; count < takes; count++) await user.click(more)
     return
   }
   await user.click(screen.getByRole('button', { name: /^Takes: / }))
@@ -1385,34 +1386,42 @@ describe('CinematicStudio', () => {
       ).toBeInTheDocument()
     })
 
-    it('picks the number of takes with one click', async () => {
+    it('steps the number of takes between one and the maximum', async () => {
       const user = renderPanel()
-      const takes = screen.getByRole('radiogroup', { name: 'Takes' })
+      const fewer = screen.getByRole('button', { name: 'Fewer takes' })
+      const more = screen.getByRole('button', { name: 'More takes' })
+      const count = screen.getByTestId('cinematic-takes')
 
-      await user.click(within(takes).getByRole('radio', { name: '3' }))
+      expect(fewer).toBeDisabled()
+      for (let step = 1; step < MAX_TAKES; step++) await user.click(more)
+      expect(count).toHaveTextContent(String(MAX_TAKES))
+      expect(more).toBeDisabled()
 
-      expect(within(takes).getByRole('radio', { name: '3' })).toBeChecked()
-      expect(within(takes).getByRole('radio', { name: '1' })).not.toBeChecked()
+      await user.click(fewer)
+      expect(count).toHaveTextContent(String(MAX_TAKES - 1))
     })
 
-    it('offers only the character reference from the scene box', async () => {
+    it('attaches the character reference straight from the scene box', async () => {
       const user = renderPanel()
+      const action = tc('cinematic.reference.castAction')
 
       await user.upload(
         screen.getByTestId('cinematic-reference-cast'),
         new File(['ref'], 'face.png', { type: 'image/png' })
       )
+      expect(
+        screen.getByRole('button', { name: `${action}: face.png` })
+      ).toBeInTheDocument()
+
       await user.click(
-        screen.getByRole('button', {
+        screen.getByRole('button', { name: tc('cinematic.reference.remove') })
+      )
+      expect(screen.getByRole('button', { name: action })).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', {
           name: tc('cinematic.composer.references')
         })
-      )
-
-      expect(
-        await screen.findByRole('menuitem', { name: /^Character.*face\.png/ })
-      ).toBeInTheDocument()
-      expect(screen.queryByRole('menuitem', { name: /^Palette/ })).toBeNull()
-      expect(screen.queryByTestId('cinematic-reference-palette')).toBeNull()
+      ).toBeNull()
     })
   })
 })

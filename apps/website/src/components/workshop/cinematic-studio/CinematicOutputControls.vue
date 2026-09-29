@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, Maximize } from '@lucide/vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
+import { ChevronDown, Maximize, Minus, Plus } from '@lucide/vue'
 
 import type {
   AspectRatio,
@@ -24,7 +22,6 @@ const takes = defineModel<number>('takes', { required: true })
 
 const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
   useFormatMenus(aspect, resolution, takes, () => locale)
-const takeCounts = Array.from({ length: MAX_TAKES }, (_, index) => index + 1)
 
 const triggerClass =
   'h-10 w-full gap-2 border border-transparency-white-t8 px-3 text-sm text-primary-warm-white hover:border-transparency-white-t20'
@@ -66,28 +63,35 @@ const triggerClass =
       <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
     </CinematicMenu>
     <div
-      role="radiogroup"
+      role="group"
       :aria-label="tc('cinematic.output.takes', locale)"
       :title="tc('cinematic.output.takes', locale)"
-      class="grid h-10 grid-cols-4 rounded-xl border border-transparency-white-t8 p-0.5"
+      class="flex h-10 items-center justify-between rounded-xl border border-transparency-white-t8 px-1"
     >
       <button
-        v-for="count in takeCounts"
-        :key="count"
         type="button"
-        role="radio"
-        :aria-checked="takes === count"
-        :class="
-          cn(
-            'rounded-lg text-sm tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50',
-            takes === count
-              ? 'bg-primary-warm-white text-primary-comfy-ink'
-              : 'text-primary-comfy-canvas hover:text-primary-warm-white'
-          )
-        "
-        @click="takes = count"
+        class="grid size-8 place-items-center rounded-lg text-primary-warm-gray outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 disabled:opacity-40"
+        :disabled="takes <= 1"
+        :aria-label="tc('cinematic.output.fewerTakes', locale)"
+        @click="takes = takes - 1"
       >
-        {{ count }}
+        <Minus class="size-3.5" aria-hidden="true" />
+      </button>
+      <span
+        class="text-sm text-primary-warm-white tabular-nums"
+        aria-live="polite"
+        data-testid="cinematic-takes"
+      >
+        {{ takes }}
+      </span>
+      <button
+        type="button"
+        class="grid size-8 place-items-center rounded-lg text-primary-warm-gray outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 disabled:opacity-40"
+        :disabled="takes >= MAX_TAKES"
+        :aria-label="tc('cinematic.output.moreTakes', locale)"
+        @click="takes = takes + 1"
+      >
+        <Plus class="size-3.5" aria-hidden="true" />
       </button>
     </div>
   </div>

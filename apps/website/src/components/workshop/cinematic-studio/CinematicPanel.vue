@@ -16,10 +16,10 @@ import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
+import CinematicCharacterButton from './CinematicCharacterButton.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
-import CinematicReferenceMenu from './CinematicReferenceMenu.vue'
 import CinematicSceneField from './CinematicSceneField.vue'
 import CinematicShotList from './CinematicShotList.vue'
 import type { PickerKey } from './picker-key'
@@ -130,7 +130,7 @@ const cardClass =
         v-model:enhance="enhance"
         :locale
       >
-        <CinematicReferenceMenu v-model:cast="cast" :kinds="['cast']" :locale />
+        <CinematicCharacterButton v-model="cast" :locale />
       </CinematicSceneField>
       <section class="flex flex-col gap-2">
         <h2 :class="labelClass">
