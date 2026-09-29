@@ -1,10 +1,11 @@
 /** Prints every built page under the Models URL registry's roots, sorted. */
 import { existsSync, readdirSync } from 'node:fs'
-import { join, relative, sep } from 'node:path'
+import { dirname, join, relative, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { modelsUrlRoots } from '../src/config/models-url-registry'
 
-const DIST = join(process.cwd(), 'dist')
+const DIST = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 
 function indexPages(dir: string): string[] {
   if (!existsSync(dir)) return []
