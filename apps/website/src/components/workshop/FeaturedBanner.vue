@@ -125,6 +125,16 @@ watch(activeIndex, () => (elapsed.value = 0))
 
 const strip = computed(() => active.value !== undefined && pitch !== undefined)
 
+// A pitch gives the picture only half the width, so the frame takes back the
+// height a short window would otherwise trim, and the crop stays kind to it.
+const frame = computed(() =>
+  pitch
+    ? 'min-h-84 short:min-h-80'
+    : compact
+      ? 'min-h-68 short:min-h-48 sm:short:min-h-50'
+      : 'min-h-84 short:min-h-57 sm:short:min-h-60'
+)
+
 const fill = computed(() =>
   !autoplay || prefersReducedMotion()
     ? 1
@@ -140,17 +150,7 @@ const fill = computed(() =>
     class="relative isolate overflow-hidden rounded-4.5xl border border-transparency-white-t8"
     data-testid="section-featured"
   >
-    <div
-      :class="
-        cn(
-          'group relative flex',
-          compact
-            ? 'min-h-68 short:min-h-48 sm:short:min-h-50'
-            : 'min-h-84 short:min-h-57 sm:short:min-h-60'
-        )
-      "
-      data-testid="featured-slide"
-    >
+    <div :class="cn('group relative flex', frame)" data-testid="featured-slide">
       <template v-if="active">
         <a
           :href="active.href"
@@ -186,7 +186,7 @@ const fill = computed(() =>
           cn(
             'pointer-events-none absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20',
             pitch
-              ? 'sm:bg-linear-to-r sm:from-page sm:from-36% sm:via-page/55 sm:via-54% sm:to-transparent'
+              ? 'sm:bg-linear-to-r sm:from-page sm:from-42% sm:via-page/58 sm:via-60% sm:to-transparent'
               : 'sm:bg-linear-to-r sm:via-page/75 sm:to-transparent'
           )
         "
