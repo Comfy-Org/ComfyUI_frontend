@@ -1,7 +1,10 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 
+import type { CapabilityDenialReason } from '@comfyorg/account-core/billing'
+
 import type { EndingScreen } from '@/checkout/endingScreen'
+import { endingOf } from '@/checkout/endingScreen'
 import type { EndingPlan } from '@/components/fullPage/CheckoutEnding.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import { createBillingI18n } from '@/i18n'
@@ -21,6 +24,63 @@ const CLOSE_LINE =
 type Action = 'Close' | 'Try again' | 'View plans'
 
 describe('CheckoutEnding', () => {
+  const UNKNOWN =
+    'Checkout isn’t available for this workspace right now. Contact support with the code below.'
+
+  it.for<{ reason: CapabilityDenialReason; code: string; body: string }>([
+    {
+      reason: 'not_workspace_owner',
+      code: 'NOT_WORKSPACE_OWNER',
+      body: 'Billing for this workspace is managed by its owner. Ask them to make this change.'
+    },
+    {
+      reason: 'tier_not_self_serve',
+      code: 'TIER_NOT_SELF_SERVE',
+      body: 'Your plan is managed by our team. Contact your account manager to make changes.'
+    },
+    {
+      reason: 'subscription_not_started',
+      code: 'SUBSCRIPTION_NOT_STARTED',
+      body: 'A previous payment didn’t finish. Finish or cancel it in your billing settings.'
+    },
+    {
+      reason: 'subscription_status_unrecognized',
+      code: 'SUBSCRIPTION_STATUS_UNRECOGNIZED',
+      body: UNKNOWN
+    },
+    {
+      reason: 'subscription_change_in_progress',
+      code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
+      body: UNKNOWN
+    },
+    { reason: 'not_a_member', code: 'NOT_A_MEMBER', body: UNKNOWN },
+    { reason: 'unspecified', code: 'UNSPECIFIED', body: UNKNOWN }
+  ])(
+    'a refusal for $reason explains itself and shows $code, with support only',
+    ({ reason, code, body }) => {
+      const ending = endingOf({ kind: 'refused', reason })
+      if (ending === undefined) throw new Error('a refusal is an ending')
+      renderEnding(ending)
+
+      expect(
+        screen.getByRole('heading', { name: 'Checkout not available' })
+      ).toBeInTheDocument()
+      expect(screen.getByText(body)).toBeInTheDocument()
+      expect(
+        screen.getByText('If this is an error, contact support with this code:')
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(code)
+      expect(
+        screen.getByRole('link', { name: 'Contact support' })
+      ).toBeInTheDocument()
+      expect(
+        screen
+          .queryAllByRole('button')
+          .filter((button) => button.textContent.trim() !== '')
+      ).toEqual([])
+    }
+  )
+
   it.for<{
     ending: EndingScreen
     title: string
@@ -82,14 +142,6 @@ describe('CheckoutEnding', () => {
         "If this page still can't confirm it after a few minutes, contact support with this code:",
       support: true,
       closeLine: true
-    },
-    {
-      ending: { kind: 'refused', code: 'NOT_WORKSPACE_OWNER' },
-      title: 'Checkout not available',
-      body: 'Billing for this workspace is managed by its owner. Ask them to make this change.',
-      codeLabel: 'If this is an error, contact support with this code:',
-      support: true,
-      closeLine: false
     },
     {
       ending: { kind: 'plan_unavailable', code: 'PLAN_NOT_FOUND' },
