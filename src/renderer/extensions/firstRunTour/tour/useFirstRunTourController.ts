@@ -211,8 +211,11 @@ function useFirstRunTourControllerInternal() {
     { capture: true }
   )
 
+  // `tourStarted`, not `activeTour` alone: a reservation given back because no
+  // tour ever opened is not an ending. Arming the nudge on it would point the
+  // user at what to do after a tour they never had.
   watch(
-    () => engine.activeTour === 'firstRun',
+    () => engine.activeTour === 'firstRun' && engine.tourStarted,
     (active) => {
       if (active) return
       // Every ending leaves the user somewhere to go next, so every ending arms
@@ -256,21 +259,37 @@ function useFirstRunTourControllerInternal() {
       () => firstRunTourSteps(templateId, runState),
       tourContextHolds
     )
-    await delay(INTRO_PREVIEW_MS)
-    // The preview is long enough for the canvas to go away underneath it, and
-    // the holds watcher cannot catch that: there is no active tour to end yet.
-    const contextStillHolds = (): boolean => canvasContextHolds.value
-    const started =
-      contextStillHolds() &&
-      !shouldCancel() &&
-      (await engine.startTour('firstRun'))
-    if (!started) {
-      releaseFirstRunTargets()
-      tourWorkflow.value = null
-      if (enabledForTour)
-        await settingStore.set('Comfy.VueNodes.Enabled', false)
+    // The tour is committed here, not at `startTour`: its steps are registered
+    // and the preview below is already its, undimmed on purpose. Reserving the
+    // run is what lets anything else see that — `activeTour` reads `null` over
+    // this window otherwise, and the canvas reads as free while it is spoken
+    // for. Given back below on every path that produces no tour.
+    engine.commitTour('firstRun')
+    let started = false
+    try {
+      await delay(INTRO_PREVIEW_MS)
+      // The preview is long enough for the canvas to go away underneath it,
+      // and the holds watcher cannot catch that: the reservation is not a
+      // running tour for it to end.
+      const contextStillHolds = (): boolean => canvasContextHolds.value
+      started =
+        contextStillHolds() &&
+        !shouldCancel() &&
+        (await engine.startTour('firstRun'))
+      if (!started) {
+        releaseFirstRunTargets()
+        tourWorkflow.value = null
+        if (enabledForTour)
+          await settingStore.set('Comfy.VueNodes.Enabled', false)
+      }
+      return started
+    } finally {
+      // A reservation that outlives its `beginTour` is the dead-latch failure
+      // again: `activeTour` would name a tour that never opened for the rest
+      // of the page's life, withholding everything that waits on a free
+      // screen. Released here so a throw cannot leak one.
+      if (!started) engine.releaseTour('firstRun')
     }
-    return started
   }
 
   return {

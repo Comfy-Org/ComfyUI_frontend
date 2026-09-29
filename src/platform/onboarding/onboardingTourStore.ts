@@ -87,8 +87,23 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const steps = computed<CoachStep[]>(() =>
     isRunning(state.value) ? state.value.steps : []
   )
+  /**
+   * Which tour owns the screen — true from the moment one is committed, not
+   * from the moment it has something to show. The gap between those two is the
+   * intro preview, and anything asking whether the screen is free has to be
+   * told about it.
+   */
   const activeTour = computed<EntryPath | null>(() =>
     state.value.phase === 'idle' ? null : state.value.tour
+  )
+  /**
+   * Whether the tour `activeTour` names has begun, as opposed to being
+   * reserved. Anything *tearing a tour down* asks this rather than
+   * `activeTour`: a reservation that is given back never ran, so it has no
+   * ending, nothing to release and nothing to say.
+   */
+  const tourStarted = computed(
+    () => state.value.phase !== 'idle' && state.value.phase !== 'committed'
   )
   const waitingForTarget = computed(() => state.value.phase === 'waiting')
   const stepSettled = computed(() => state.value.phase === 'showing')
@@ -325,6 +340,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   }
 
   // One rule for every tour: lose the context its steps point at, lose the tour.
+  // A tour that is only committed is not one of them — the reducer refuses
+  // `ended` before a run has started, because there is no ending to report for
+  // a tour that never opened. Whoever holds the reservation re-checks the
+  // context before it starts, and gives the reservation back if it is gone.
   for (const entryPath of ENTRY_PATHS) {
     watch(
       () => tourHolds(entryPath),
@@ -345,10 +364,41 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     void settingStore.set(TOUR_SEEN_SETTING, [...seen, entryPath])
   }
 
+  /**
+   * Reserves a run before there is anything of it to see. A tour is decided on
+   * at the point its definition is registered — from there its intro preview
+   * owns the canvas — but `startTour` is what enters the state machine, so
+   * without this the decision is invisible to everything outside the caller
+   * that made it.
+   *
+   * False when a tour is already committed or running. Give the reservation
+   * back with {@link releaseTour} if the run never starts.
+   */
+  function commitTour(entryPath: EntryPath): boolean {
+    return dispatch({ type: 'committed', tour: entryPath, run: nextRun() })
+  }
+
+  /**
+   * Gives back a reservation whose tour never started. A no-op once the run is
+   * under way — a started tour ends through `finish`, which reports how.
+   */
+  function releaseTour(entryPath: EntryPath): boolean {
+    const current = state.value
+    if (current.phase !== 'committed' || current.tour !== entryPath)
+      return false
+    return dispatch({ type: 'released', run: current.run })
+  }
+
   async function begin(entryPath: EntryPath): Promise<boolean> {
     const definition = tourDefinition(entryPath)
     if (!definition || !tourHolds(entryPath)) return false
-    const run = nextRun()
+    const current = state.value
+    // A reservation is this run's own place in the machine, so it asks under
+    // the run it already holds rather than minting one the reducer refuses.
+    const run =
+      current.phase === 'committed' && current.tour === entryPath
+        ? current.run
+        : nextRun()
     if (!dispatch({ type: 'requested', tour: entryPath, run })) return false
     // A new run has no ending yet; the one before it must not speak for it.
     lastEnding.value = null
@@ -395,6 +445,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
 
   return {
     activeTour: readonly(activeTour),
+    tourStarted: readonly(tourStarted),
     lastEnding: readonly(lastEnding),
     step,
     isLast,
@@ -408,6 +459,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     countedStepsTotal,
     waitingForTarget,
     stepSettled,
+    commitTour,
+    releaseTour,
     startTour,
     replayTour,
     next,
