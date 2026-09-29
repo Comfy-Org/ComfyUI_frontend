@@ -10515,7 +10515,6 @@ Enterprise`
     'zh-CN': '打开此页面时会自动应用上面的控制项。'
   },
   'workshop.hub.title': { en: 'Browse models', 'zh-CN': '浏览模型' },
-  'workshop.hub.nowShowing': { en: 'Now showing', 'zh-CN': '正在展示' },
   'workshop.hub.heading': { en: 'Hub', 'zh-CN': 'Hub' },
   'workshop.hub.subtitle': {
     en: 'Try models, workflows and apps, right in your browser.',
