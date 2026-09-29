@@ -880,6 +880,32 @@ describe('CinematicStudio', () => {
     expect(sent(call).prompt).toContain('continuous motion')
   })
 
+  it('shoots a clip on a video model that picks its own frame', async () => {
+    // Wan 3.0 and Gemini Omni Flash 1.1 list no frames because the operation
+    // chooses one, so an empty list here has to read as unrestricted -- the
+    // opposite of an empty list on the image path, where it means the model can
+    // make none. Seedance 2.5 Edit also lists none but wants a source video, so
+    // pick the one that is otherwise ready to run.
+    const ownFrame = videoModels.find(
+      (option) =>
+        option.video &&
+        !option.video.aspects.length &&
+        !option.video.sourceVideo
+    )!
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio([...models, ownFrame])
+
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+    await user.type(
+      screen.getByLabelText('Scene'),
+      'A lighthouse keeper climbs'
+    )
+    await user.click(generateButton())
+
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+    expect(vi.mocked(router_render).mock.calls[0][0]).toBe(ownFrame.slug)
+  })
+
   it('animates a finished still on the image-to-video operation', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio([...models, ...videoModels])

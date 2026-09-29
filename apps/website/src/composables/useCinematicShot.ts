@@ -117,11 +117,15 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
       ? model.value.firstFrameVideo
       : model.value?.video
   })
-  const aspects = computed(() =>
-    mode.value === 'video'
-      ? video.value?.aspects
-      : shotAspects(model.value, references.value.length > 0)
-  )
+  const aspects = computed(() => {
+    if (mode.value !== 'video')
+      return shotAspects(model.value, references.value.length > 0)
+    // A video operation listing no frames picks its own, so it is unrestricted
+    // rather than incapable -- the opposite of what an empty list means on the
+    // image path. Wan 3.0, Gemini Omni Flash 1.1 and Seedance 2.5 Edit all
+    // report none, including for animating a still.
+    return video.value?.aspects.length ? video.value.aspects : undefined
+  })
   // A model that cannot make the chosen frame moves it to its nearest one.
   // `undefined` leaves every frame available; `[]` means the model offers none,
   // and there is no nearest frame to fall to.
