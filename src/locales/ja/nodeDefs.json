@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Seedance 2.5 ドラフトの1080p最終ビデオをレンダリングします。最終版ではドラフトのシーンと動きを維持し、プロンプト、参照、長さ、アスペクト比、オーディオ設定を再利用します。",
+    "display_name": "ByteDance Seedance 2.5 ドラフトから最終ビデオ",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draftモデルで実行したSeedance 2.5ノードのdraft_task_id出力、または貼り付けたドラフトタスクIDです。そのノードのシード制御を固定に設定してください。そうしないと、次回の実行ではレビューしたドラフトを再利用せず、新しいドラフトが生成されます。ドラフトは作成後7日間レンダリングできます。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "ビデオに透かしを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0 を使用して、最初のフレーム画像とオプションの最後のフレーム画像から動画を生成します。",
     "display_name": "ByteDance Seedance 2.0 ファースト・ラストフレームから動画生成",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最大30秒の動画、mp4/mov出力にはSeedance 2.5を使用します。最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ低コストの生成にはMiniを使用します。"
+        "tooltip": "Seedance 2.5は最新モデル、最大30秒のビデオ、mp4/mov出力用です。Seedance 2.5 Draftは高速な480pプレビュー用で、そのdraft_task_idによりSeedance 2.5 Draft to Final Videoノードで1080pの最終版をレンダリングできます。Seedance 2.0は最高品質と4k用です。Fastは速度最適化用、Miniは最速・最低コストの生成用です。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft実行のタスクIDです。Seedance 2.5 Draft to Final Videoノードに接続して、1080pの最終版をレンダリングします。"
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最大30秒の動画、mp4/mov出力にはSeedance 2.5を使用します。最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ低コストの生成にはMiniを使用します。"
+        "tooltip": "Seedance 2.5は最新モデル、最大30秒のビデオ、mp4/mov出力用です。Seedance 2.5 Draftは高速な480pプレビュー用で、そのdraft_task_idによりSeedance 2.5 Draft to Final Videoノードで1080pの最終版をレンダリングできます。Seedance 2.0は最高品質と4k用です。Fastは速度最適化用、Miniは最速・最低コストの生成用です。"
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最大30秒の動画、mp4/mov出力にはSeedance 2.5を使用します。最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ低コストの生成にはMiniを使用します。"
+        "tooltip": "Seedance 2.5は最新モデル、最大30秒のビデオ、mp4/mov出力用です。Seedance 2.5 Draftは高速な480pプレビュー用で、そのdraft_task_idによりSeedance 2.5 Draft to Final Videoノードで1080pの最終版をレンダリングできます。Seedance 2.0は最高品質と4k用です。Fastは速度最適化用、Miniは最速・最低コストの生成用です。"
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft実行のタスクIDです。Seedance 2.5 Draft to Final Videoノードに接続して、1080pの最終版をレンダリングします。"
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "Seedance 2.5 は最新モデル、最大30秒の動画、mp4/mov出力に対応。Seedance 2.0 は最高品質と4K向け。Fast は速度最適化向け。Mini は最速・最小コストの生成向け。"
+        "tooltip": "Seedance 2.5は最新モデル、最大30秒のビデオ、mp4/mov出力用です。Seedance 2.5 Draftは高速な480pプレビュー用で、そのdraft_task_idによりSeedance 2.5 Draft to Final Videoノードで1080pの最終版をレンダリングできます。Seedance 2.0は最高品質と4k用です。Fastは速度最適化用、Miniは最速・最低コストの生成用です。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft実行のタスクIDです。Seedance 2.5 Draft to Final Videoノードに接続して、1080pの最終版をレンダリングします。"
       }
     }
   },
@@ -8547,12 +8578,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB、線形Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）を変換します。線形1.0はsRGBと同じ203ニトの基準白色を使用します。HLGは1000ニトの基準ディスプレイを使用します。線形出力および線形からHDRへの変換では、トーンマッピングを行わずに拡張値を保持します。SDR出力およびPQからHLGへの変換では、バッチ全体で過剰な輝度をトーンマッピングし、色域外の色を圧縮します。変換はfloat32で計算され、中間デバイスとdtypeを返します。ストレートアルファには色変換を適用しません。",
+    "description": "sRGB、線形Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3、HDR ACEScctを変換します。LogC3はRec.709原色のEI 800カーブを使用し、コード値は[0, 1]にクランプされます。ACEScctはAP1原色とD60ホワイトを使用し、D65へのBradford適応を行います。EXRとして保存する場合は、LogC3またはACEScctを線形に変換してください。線形1.0はsRGBと同じ203ニトの基準白を使用します。HLGは1000ニトの基準ディスプレイを使用します。線形およびACEScct出力では拡張値が保持されます。線形からHDRへの変換では、トーンマッピングなしでハイライトを保持します。HLGおよびPQ出力では負のチャンネル値をクリップします。SDR出力およびPQからHLGへの変換では、バッチ全体で過剰な輝度をトーンマッピングし、色域外の色を圧縮します。変換はfloat32で計算され、中間デバイスとdtypeを返します。ストレートアルファは色変換されません。",
     "display_name": "画像カラースペースを変換",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "出力ピクセルのカラースペース。保存ノードも同じカラースペースに設定してください。"
+        "tooltip": "出力ピクセルの色空間です。保存ノードをこの同じ色空間に設定してください。EXRを保存する前にLogC3またはACEScctを線形に変換するか、ビデオを保存する前にsRGB/HDR/HDR PQに変換してください。"
       },
       "image": {
         "name": "image"
@@ -17117,40 +17148,6 @@
       }
     }
   },
-  "OpenAIVideoSora2": {
-    "description": "OpenAIのビデオおよびオーディオ生成。",
-    "display_name": "OpenAI Sora - ビデオ",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "duration": {
-        "name": "長さ"
-      },
-      "image": {
-        "name": "画像"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "ガイドとなるテキスト。入力画像が存在する場合は空でも可。"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
-      },
-      "size": {
-        "name": "サイズ"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "OpenRouterImageNode": {
     "description": "MicrosoftのMAI-Image-2.6モデルを使用してOpenRouter経由で画像を生成または編集します。テキストから画像を生成するか、最大5枚の参照画像を使用した画像ガイド編集を、1Kまたは1.5Kの7種類のアスペクト比で行えます。",
     "display_name": "OpenRouter Image",
@@ -18590,6 +18587,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "画像"
       },
@@ -18601,6 +18601,9 @@
       },
       "model_patch": {
         "name": "モデルパッチ"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "強度"
@@ -28813,6 +28816,10 @@
       "positive": {
         "name": "ポジティブ"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "画像コンディショニングのパディングフレームをグレーではなくこの画像で埋めます。フレームを固定せずに同一性を維持します（SVIスタイルのドリフト防止パディング。ID-V2Vなどのモデルで使用されます）。"
+      },
       "start_image": {
         "name": "開始画像"
       },
@@ -29793,8 +29800,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "Load Model Patchで読み込んだZ-ImageまたはQwen Image 2.1 Fun ControlNetを適用します。",
+    "display_name": "Fun ControlNetを適用",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "画像"
       },
@@ -29809,6 +29820,9 @@
       },
       "model_patch": {
         "name": "モデルパッチ"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "強度"

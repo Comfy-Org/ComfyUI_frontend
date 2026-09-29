@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "עיבוד הווידאו הסופי ב־1080p של טיוטת Seedance 2.5. הגרסה הסופית שומרת על הסצנה והתנועה של הטיוטה, ומשתמשת מחדש בפרומפט, בהפניות, במשך, ביחס הגובה־רוחב ובהגדרת השמע שלה.",
+    "display_name": "ByteDance Seedance 2.5 מטיוטה לווידאו סופי",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "פלט ה־draft_task_id של צומת Seedance 2.5 שהורץ עם המודל Seedance 2.5 Draft, או מזהה משימת טיוטה שהודבק. הגדירו את בקרת ה־seed של צומת זה לקבועה, אחרת ההרצה הבאה תיצור טיוטה חדשה במקום להשתמש מחדש בזו שבדקתם. ניתן לעבד טיוטה במשך 7 ימים לאחר יצירתה."
+      },
+      "watermark": {
+        "name": "סימן מים",
+        "tooltip": "האם להוסיף סימן מים לווידאו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "יצירת וידאו באמצעות Seedance 2.0 מתמונה של הפריים הראשון ואופציונלית גם מהפריים האחרון.",
     "display_name": "ByteDance Seedance 2.0 מהפריים הראשון-לאחרון לווידאו",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול-4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft עבור תצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הגרסה הסופית ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 עבור איכות מרבית ו־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "duration"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חברו אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הגרסה הסופית ב־1080p."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול-4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft עבור תצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הגרסה הסופית ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 עבור איכות מרבית ו־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול-4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft עבור תצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הגרסה הסופית ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 עבור איכות מרבית ו־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "הקטנה אוטומטית"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חברו אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הגרסה הסופית ב־1080p."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול-4K; Fast למיטוב מהירות; Mini ליצירה המהירה והזולה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft עבור תצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הגרסה הסופית ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 עבור איכות מרבית ו־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "משך"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חברו אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הגרסה הסופית ב־1080p."
       }
     }
   },
@@ -8547,12 +8578,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "ממיר בין sRGB, ‏Rec.709 ליניארי, HDR ‏(Rec.2020 HLG) ו-HDR PQ ‏(Rec.2020 PQ). Linear 1.0 משתמש באותה נקודת לבן ייחוס של 203 ניט כמו sRGB; ‏HLG משתמש בתצוגת ייחוס של 1000 ניט. פלט ליניארי והמרות מליניארי ל-HDR משמרים ערכים מורחבים ללא מיפוי גוונים. פלט SDR והמרה מ-PQ ל-HLG ממפים גוונים של בהירות עודפת לאורך האצווה ומכווצים צבעים שמחוץ לטווח הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת dtype של שלב הביניים. אלפא ישרה אינה עוברת המרת צבע.",
+    "description": "המרה בין sRGB, ‏Rec.709 ליניארי, HDR ‏(Rec.2020 HLG), ‏HDR PQ ‏(Rec.2020 PQ), ‏HDR LogC3 ו־HDR ACEScct. ‏LogC3 משתמש בעקומת EI 800 עם צבעי יסוד Rec.709 וערכים מקודדים המוגבלים לטווח [0, 1]. ‏ACEScct משתמש בצבעי יסוד AP1 ובלבן D60, עם התאמת Bradford ל־D65. המירו LogC3 או ACEScct לליניארי לשמירת EXR. ‏Linear 1.0 משתמש באותו לבן ייחוס של 203 ניט כמו sRGB; ‏HLG משתמש בתצוגת ייחוס של 1000 ניט. פלטים ליניאריים ו־ACEScct משמרים ערכים מורחבים. המרות מליניארי ל־HDR משמרות הבהקים ללא מיפוי גוונים; פלטי HLG ו־PQ חותכים ערוצים שליליים. פלט SDR והמרה מ־PQ ל־HLG ממפים גוונים של בהיקות עודפת על פני האצווה ומכווצים צבעים שמחוץ לסולם. ההמרות מחושבות ב־float32 ומחזירות את ההתקן ואת סוג הנתונים של שלב הביניים. אלפא ישרה אינה עוברת המרת צבע.",
     "display_name": "המרת מרחב הצבע של תמונה",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "מרחב הצבע של פיקסלי הפלט. הגדר את צומת השמירה לאותו מרחב צבע."
+        "tooltip": "מרחב הצבע של פיקסלי הפלט. הגדירו את צומת השמירה לאותו מרחב צבע. המירו LogC3 או ACEScct לליניארי לפני שמירת EXR, או ל־sRGB/HDR/HDR PQ לפני שמירת וידאו."
       },
       "image": {
         "name": "image"
@@ -17117,40 +17148,6 @@
       }
     }
   },
-  "OpenAIVideoSora2": {
-    "description": "יצירת וידאו ואודיו ב-OpenAI.\n\nהודעת הפסקה: OpenAI תפסיק להפעיל את Sora v2 API בספטמבר 2026. צומת זה יוסר מ-ComfyUI באותו מועד.",
-    "display_name": "OpenAI Sora - וידאו (מופסק)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image": {
-        "name": "image"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "טקסט מנחה; ניתן להשאיר ריק אם יש תמונת קלט."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "זרע לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר לזרע."
-      },
-      "size": {
-        "name": "size"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "OpenRouterImageNode": {
     "description": "יצירה או עריכה של תמונות באמצעות OpenRouter עם מודלי MAI-Image-2.6 של Microsoft: טקסט לתמונה, או עריכה מונחית תמונה עם עד חמש תמונות ייחוס, בשבעה יחסי ממדים ברזולוציית 1K או 1.5K.",
     "display_name": "תמונת OpenRouter",
@@ -18590,6 +18587,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "הפעל Qwen Image DiffSynth ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "image"
       },
@@ -18601,6 +18601,9 @@
       },
       "model_patch": {
         "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "strength"
@@ -28813,6 +28816,10 @@
       "positive": {
         "name": "positive"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "ממלא את פריימי הריפוד של התניה המבוססת על תמונה בתמונה זו במקום באפור, ובכך מעגן את הזהות בלי לקבע פריימים (ריפוד למניעת סחיפה בסגנון SVI, המשמש במודלים כגון ID-V2V)."
+      },
       "start_image": {
         "name": "תמונת התחלה"
       },
@@ -29793,8 +29800,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "הפעלת Z-Image Fun ControlNet",
+    "description": "מחיל Fun ControlNet של Z-Image או Qwen Image 2.1 שנטען באמצעות Load Model Patch.",
+    "display_name": "החלת Fun ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "תמונה"
       },
@@ -29809,6 +29820,9 @@
       },
       "model_patch": {
         "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "עוצמה"
