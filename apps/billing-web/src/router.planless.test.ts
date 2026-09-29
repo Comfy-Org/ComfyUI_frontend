@@ -155,3 +155,46 @@ describe('a checkout link that names no plan', () => {
     expect(error.value).toBeUndefined()
   })
 })
+
+describe('a planless checkout link the customer navigates away from', () => {
+  const LATER =
+    '/v1/subscription?product=comfyui&return_to=comfyui_workspace&workspace=ws-other'
+
+  it.for(['full_page', 'embedded'])(
+    'leaves the later page alone when the flag answers %s afterwards',
+    async (variant) => {
+      h.livePhase = 'authenticated'
+      let answerFlag: (response: Response) => void = () => undefined
+      fetchMock.mockReturnValue(
+        new Promise((resolve) => {
+          answerFlag = resolve
+        })
+      )
+      const { createBillingRouter } = await import('@/router')
+      const { useBillingEntry } = await import('@/entry/billingEntry')
+      const leave = vi.fn()
+      const router = createBillingRouter(
+        createMemoryHistory(),
+        undefined,
+        undefined,
+        leave
+      )
+
+      const planless = router.push(PLANLESS)
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
+      await router.push(LATER)
+      answerFlag(
+        new Response(JSON.stringify({ billing_web_checkout_ui: variant }))
+      )
+      await planless
+
+      expect(leave).not.toHaveBeenCalled()
+      expect(h.bind).toHaveBeenCalledExactlyOnceWith('ws-other')
+      expect(router.currentRoute.value.path).toBe('/v1/subscription')
+      expect(useBillingEntry().entry.value).toMatchObject({
+        intent: 'subscription',
+        workspaceId: 'ws-other'
+      })
+    }
+  )
+})
