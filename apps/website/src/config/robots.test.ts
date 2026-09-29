@@ -21,23 +21,25 @@ interface Group {
   rules: Rule[]
 }
 
+function directives(text: string) {
+  return text.split('\n').flatMap((line) => {
+    const match = /^\s*([a-z-]+)\s*:\s*(\S*)/i.exec(line)
+    return match ? [{ key: match[1].toLowerCase(), value: match[2] }] : []
+  })
+}
+
+function addAgent(groups: Group[], agent: string) {
+  const current = groups.at(-1)
+  if (current?.rules.length === 0) current.agents.push(agent)
+  else groups.push({ agents: [agent], rules: [] })
+}
+
 function parseGroups(text: string): Group[] {
   const groups: Group[] = []
-  for (const line of text.split('\n')) {
-    const match = /^\s*([a-z-]+)\s*:\s*(\S*)/i.exec(line)
-    if (!match) continue
-    const [, field, value] = match
-    const key = field.toLowerCase()
-    const current = groups.at(-1)
-    if (key === 'user-agent') {
-      if (current && current.rules.length === 0) {
-        current.agents.push(value.toLowerCase())
-      } else {
-        groups.push({ agents: [value.toLowerCase()], rules: [] })
-      }
-    } else if ((key === 'allow' || key === 'disallow') && current && value) {
-      current.rules.push({ allow: key === 'allow', pattern: value })
-    }
+  for (const { key, value } of directives(text)) {
+    if (key === 'user-agent') addAgent(groups, value.toLowerCase())
+    else if ((key === 'allow' || key === 'disallow') && value)
+      groups.at(-1)?.rules.push({ allow: key === 'allow', pattern: value })
   }
   return groups
 }
