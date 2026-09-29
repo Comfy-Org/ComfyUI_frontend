@@ -505,6 +505,7 @@ async function pay(choice: PaymentChoice) {
     return
   }
   if (result.code === 'QUOTE_STALE') {
+    quoteIsCurrent.value = false
     const requoted = await quotePlan(planSlug.value, teamCreditStopId.value)
     submitFailure.value = coded(
       'failure',
