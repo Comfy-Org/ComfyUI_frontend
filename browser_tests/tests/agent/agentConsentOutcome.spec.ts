@@ -75,7 +75,9 @@ test.describe(
           ])
         // Consent semantics are unchanged: a dismissal is still not a decision.
         expect(agentConsentWrites).toHaveLength(0)
-        await expect(agentPanel.root).toHaveCount(0)
+        // Activation now opens the panel independently of consent. Dismissing
+        // the automatic card leaves that already-open panel in place.
+        await expect(agentPanel.root).toBeVisible()
       })
 
       await test.step('One outcome per impression, not one per close path', async () => {
@@ -162,7 +164,20 @@ test.describe(
       )
       await comfyPage.workflow.reloadAndWaitForApp()
 
+      await expect
+        .poll(() =>
+          consentTelemetry
+            .filter((e) => e.event === 'app:agent_consent_offer_exited')
+            .map((e) => [e.properties.stage, e.properties.exit])
+        )
+        .toContainEqual(['load', 'consent_read_failed'])
+
+      // Activation opens the panel before consent. Close that activated panel,
+      // then reopen it to exercise the user-initiated consent request.
+      await expect(agentPanel.root).toBeVisible()
       await expect(agentPanel.openButton).toBeEnabled()
+      await agentPanel.openButton.click()
+      await expect(agentPanel.root).toHaveCount(0)
       await agentPanel.openButton.click()
 
       await expect

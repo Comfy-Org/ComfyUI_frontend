@@ -14,6 +14,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDialogStore } from '@/stores/dialogStore'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
 import { useAgentConsent } from './useAgentConsent'
 
@@ -738,6 +739,47 @@ describe('useAgentConsent', () => {
     // abandoned sign-in is now readable.
     expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
       [{ decision: 'accepted_pending_sign_in', save_error_shown: false }]
+    ])
+  })
+
+  it('reports when signed-out acceptance cannot resolve a persistence scope', async () => {
+    useCurrentUser().isLoggedIn = computed(() => false)
+    useCurrentUser().resolvedUserInfo = computed(() => null)
+    vi.mocked(useDialogService().showSignInDialog).mockResolvedValueOnce(true)
+    vi.spyOn(useAgentConsentStore(), 'ensureScope').mockResolvedValueOnce(null)
+    const onOpen = vi.fn()
+
+    const request = useAgentConsent().withConsent('button_click', onOpen)
+    const dialog = await waitForConsentDialog()
+    ;(dialog.contentProps.onAccept as () => void)()
+    await request
+
+    expect(onOpen).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
+      [{ decision: 'accepted_pending_sign_in', save_error_shown: false }],
+      [{ decision: 'accept_not_persisted', save_error_shown: false }]
+    ])
+  })
+
+  it('reports when signed-out acceptance resolves but does not persist', async () => {
+    useCurrentUser().isLoggedIn = computed(() => false)
+    useCurrentUser().resolvedUserInfo = computed(() => null)
+    vi.mocked(useDialogService().showSignInDialog).mockResolvedValueOnce(true)
+    vi.spyOn(useAgentConsentStore(), 'ensureScope').mockResolvedValueOnce(
+      'account-a/workspace-a'
+    )
+    vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(false)
+    const onOpen = vi.fn()
+
+    const request = useAgentConsent().withConsent('button_click', onOpen)
+    const dialog = await waitForConsentDialog()
+    ;(dialog.contentProps.onAccept as () => void)()
+    await request
+
+    expect(onOpen).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
+      [{ decision: 'accepted_pending_sign_in', save_error_shown: false }],
+      [{ decision: 'accept_not_persisted', save_error_shown: false }]
     ])
   })
 

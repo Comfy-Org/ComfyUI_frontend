@@ -249,8 +249,13 @@ export function useAgentConsent() {
 
     try {
       const decisionIdentity = await consentStore.ensureScope()
-      if (!decisionIdentity || !(await consentStore.accept(decisionIdentity)))
+      if (!decisionIdentity || !(await consentStore.accept(decisionIdentity))) {
+        useTelemetry()?.trackAgentConsentResolved({
+          decision: 'accept_not_persisted',
+          save_error_shown: false
+        })
         return null
+      }
       // The second half of the signed-out flow, so this is the moment consent
       // becomes stored rather than the card's own ending - the card already
       // reported `accepted_pending_sign_in`. No save error can have been shown
