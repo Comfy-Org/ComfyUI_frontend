@@ -239,7 +239,12 @@ async function routeTurnLock(
    */
   await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
     const url = new URL(route.request().url())
-    const segments = url.pathname.split('/').map(decodeURIComponent)
+    let segments: string[]
+    try {
+      segments = url.pathname.split('/').map(decodeURIComponent)
+    } catch {
+      return route.fulfill({ status: 404, body: 'malformed thread or ask' })
+    }
     const threadId = segments[segments.indexOf('threads') + 1]
     const askId = segments[segments.indexOf('asks') + 1]
     if (threadId !== THREAD_ID || askId !== RUN_APPROVAL_ASK_ID)
@@ -376,6 +381,7 @@ export class AgentTurnLockHarness {
   }
 
   push(ws: WebSocketRoute, event: AgentWsEvent): void {
+    this.server.recordAsk(event)
     ws.send(JSON.stringify(event))
   }
 
@@ -384,7 +390,7 @@ export class AgentTurnLockHarness {
     this.server.recordAsk(event)
   }
 
-  /** True only when a test explicitly primed transcript-based recovery. */
+  /** True when the fake server has parked the turn on an ask. */
   pendingAskIsPrimed(): boolean {
     return this.server.askIsPending
   }

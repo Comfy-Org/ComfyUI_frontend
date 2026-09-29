@@ -6,8 +6,8 @@ type AgentAskData = Extract<AgentWsEvent, { type: 'agent_ask' }>['data']
 export type UndeliverableAskReason =
   | 'no-live-turn'
   | 'settled-turn'
+  | 'unknown-turn'
   | 'unknown-kind'
-  | 'unrendered-kind'
 
 export interface UndeliverableAskContext {
   hasActiveTurn?: boolean
@@ -16,11 +16,39 @@ export interface UndeliverableAskContext {
   activeTurnId?: string | null
 }
 
-const MAX_REPORTED_ASKS = 32
+const MAX_REPORTS_PER_SESSION = 32
+const MAX_IDENTIFIER_LENGTH = 128
+
+function bounded(value: string | null | undefined): string | null | undefined {
+  return value?.slice(0, MAX_IDENTIFIER_LENGTH)
+}
+
+function identityHash(value: string): string {
+  let hash = 0x811c9dc5
+  for (let index = 0; index < value.length; index++) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0')
+}
+
+function askIdentity(data: AgentAskData): string {
+  return identityHash(`${data.thread_id}\u0000${data.ask_id}`)
+}
 
 /** One bounded, identity-aware telemetry path shared by store and transport. */
 export function createUndeliverableAskReporter() {
-  const reportedAskIds = new Set<string>()
+  const reported = new Set<string>()
+  const delivered = new Set<string>()
+  let reportCount = 0
+
+  function retain(set: Set<string>, key: string): void {
+    if (set.has(key)) set.delete(key)
+    set.add(key)
+    if (set.size <= MAX_REPORTS_PER_SESSION) return
+    const oldest = set.values().next().value
+    if (oldest !== undefined) set.delete(oldest)
+  }
 
   return {
     report(
@@ -28,12 +56,20 @@ export function createUndeliverableAskReporter() {
       reason: UndeliverableAskReason,
       context: UndeliverableAskContext = {}
     ): void {
-      if (reportedAskIds.has(data.ask_id)) return
-      reportedAskIds.add(data.ask_id)
-      if (reportedAskIds.size > MAX_REPORTED_ASKS) {
-        const oldest = reportedAskIds.values().next().value
-        if (oldest !== undefined) reportedAskIds.delete(oldest)
-      }
+      const identity = askIdentity(data)
+      if (delivered.has(identity) || reportCount >= MAX_REPORTS_PER_SESSION)
+        return
+      const reportKey = `${identity}\u0000${reason}`
+      if (reported.has(reportKey)) return
+      retain(reported, reportKey)
+      reportCount++
+
+      const knownKind =
+        data.kind === 'run_approval' || data.kind === 'ask_user'
+          ? data.kind
+          : data.kind
+            ? 'unknown'
+            : 'missing'
 
       reportError(
         new Error(`agent approval ask could not be delivered (${reason})`),
@@ -42,21 +78,27 @@ export function createUndeliverableAskReporter() {
           level: 'warning',
           tags: {
             reason,
-            ask_kind: data.kind?.slice(0, 64) || 'missing',
+            ask_kind: knownKind,
             has_active_turn: context.hasActiveTurn,
             background_turn_count: context.backgroundTurnCount
           },
           context: {
-            threadId: data.thread_id,
-            messageId: data.message_id,
-            activeThreadId: context.activeThreadId,
-            activeTurnId: context.activeTurnId
+            threadId: bounded(data.thread_id),
+            messageId: bounded(data.message_id),
+            rawAskKind: bounded(data.kind),
+            activeThreadId: bounded(context.activeThreadId),
+            activeTurnId: bounded(context.activeTurnId)
           }
         }
       )
     },
+    markDelivered(data: AgentAskData): void {
+      retain(delivered, askIdentity(data))
+    },
     reset(): void {
-      reportedAskIds.clear()
+      reported.clear()
+      delivered.clear()
+      reportCount = 0
     }
   }
 }
