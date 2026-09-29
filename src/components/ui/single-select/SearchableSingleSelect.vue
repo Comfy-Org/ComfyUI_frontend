@@ -8,6 +8,7 @@
   >
     <ComboboxAnchor as-child>
       <ComboboxTrigger
+        ref="trigger"
         v-bind="attrsWithoutClass"
         tabindex="0"
         :aria-label="label || t('g.singleSelectDropdown')"
@@ -97,6 +98,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { unrefElement } from '@vueuse/core'
 import {
   ComboboxAnchor,
   ComboboxContent,
@@ -109,7 +111,7 @@ import {
   ComboboxTrigger,
   ComboboxViewport
 } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -160,6 +162,7 @@ const selectedItem = defineModel<string | number | undefined>({
   required: true
 })
 const { t } = useI18n()
+const triggerRef = useTemplateRef('trigger')
 const isOpen = ref(false)
 const searchQuery = ref('')
 const liftedContentStyle = useModalLiftedZIndex(isOpen)
@@ -177,6 +180,7 @@ watch(isOpen, (open) => {
 
 function onContentKeydown(event: KeyboardEvent) {
   if (event.key === 'Tab') {
+    unrefElement(triggerRef)?.focus()
     isOpen.value = false
     return
   }

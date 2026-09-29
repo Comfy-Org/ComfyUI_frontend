@@ -1,7 +1,7 @@
 <!-- A generalized form item for rendering in a form. -->
 <template>
   <div class="flex min-h-8 flex-row items-center gap-2">
-    <div class="form-label flex grow items-center">
+    <div class="flex grow items-center">
       <span
         :id="`${props.id}-label`"
         class="text-sm text-muted"
@@ -17,7 +17,7 @@
         <slot name="name-suffix" />
       </span>
     </div>
-    <div class="form-input flex justify-end">
+    <div class="flex justify-end">
       <component
         :is="markRaw(getFormComponent(props.item))"
         :id="props.id"
