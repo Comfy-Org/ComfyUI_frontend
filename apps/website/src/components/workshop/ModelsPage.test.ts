@@ -141,7 +141,7 @@ describe('Models page entry', () => {
           })
         ).toBeTruthy()
         expect(screen.getByTestId('model-detail')).toBeTruthy()
-        expect(screen.getByTestId('model-tags-rest')).toBeTruthy()
+        expect(screen.getByTestId('model-tags')).toBeTruthy()
         expect(screen.getByTestId('related-models').textContent).toContain(
           'Browse all'
         )

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { workshopPagePaths } from '../../config/workshop-page-content'
+import { hubModelSlugs } from '../../config/hub-models'
 import { prepareModelPage } from '../../routes/models/model-page'
 import { modelMetaDescription } from './model-meta-description'
 
@@ -13,7 +13,7 @@ const SINGLE_FIGURE_PRICE = /^~?\d+(?:\.\d+)? credits(?:\/|$)/i
 
 async function canonicalPages() {
   const pages = await Promise.all(
-    workshopPagePaths.map((slug) => prepareModelPage(slug))
+    Array.from(hubModelSlugs.keys(), (id) => prepareModelPage(id))
   )
   return pages.filter((page) => page.kind === 'page')
 }
