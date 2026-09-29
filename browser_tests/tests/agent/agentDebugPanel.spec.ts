@@ -4,7 +4,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
-import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 test.describe('Agent debug log', { tag: ['@cloud', '@agent', '@ui'] }, () => {
   test.beforeEach(async ({ page }) => {
@@ -24,7 +24,7 @@ test.describe('Agent debug log', { tag: ['@cloud', '@agent', '@ui'] }, () => {
       }
     },
     async ({ page }) => {
-      await openAgentPanel(page)
+      await new AgentPanel(page).open()
       await page.getByTestId('crdt-dev-panel-tab-log').click()
 
       const filter = page.getByTestId('crdt-dev-panel-filter')

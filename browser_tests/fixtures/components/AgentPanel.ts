@@ -3,40 +3,6 @@ import type { Locator, Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-export async function openAgentPanel(
-  page: Page,
-  timeout?: number,
-  onPanelHidden?: () => void | Promise<void>
-): Promise<Locator> {
-  const panel = page.locator('#agent-panel-root')
-  const openButton = page.getByRole('button', {
-    name: enMessages.agent.entryButton,
-    exact: true
-  })
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (await panel.isVisible()) return panel
-    await onPanelHidden?.()
-    if ((await openButton.getAttribute('aria-pressed')) === 'true') {
-      await expect(panel).toBeVisible({ timeout })
-      return panel
-    }
-    await openButton.click()
-    try {
-      await expect(panel).toBeVisible({ timeout: 1_000 })
-      return panel
-    } catch (error) {
-      if ((await openButton.getAttribute('aria-pressed')) === 'true') {
-        await expect(panel).toBeVisible({ timeout })
-        return panel
-      }
-      // Startup activation can open between the visibility read and click,
-      // making that click close the panel. Retry from the observed state.
-      if (attempt === 1) throw error
-    }
-  }
-  throw new Error('Agent panel did not become visible')
-}
-
 export class AgentPanel {
   public readonly root: Locator
   public readonly openButton: Locator
@@ -108,8 +74,21 @@ export class AgentPanel {
     )
   }
 
-  async open(): Promise<void> {
-    await openAgentPanel(this.page)
+  async open(
+    timeout?: number,
+    onPanelHidden?: () => void | Promise<void>
+  ): Promise<Locator> {
+    if (await this.root.isVisible()) return this.root
+    await onPanelHidden?.()
+
+    if ((await this.openButton.getAttribute('aria-pressed')) !== 'true') {
+      await this.openButton.click()
+    }
+
+    // A click may be waiting on consent while aria-pressed remains false.
+    // Waiting on the caller's contract avoids an unsafe second toggle.
+    await expect(this.root).toBeVisible({ timeout })
+    return this.root
   }
 
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {

@@ -4,7 +4,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
-import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.use({ connectWebSocketToServer: false })
@@ -39,7 +39,7 @@ test(
       (route) => route.fulfill({ path: assetPath('image64x64.webp') })
     )
 
-    const panel = await openAgentPanel(page)
+    const panel = await new AgentPanel(page).open()
     await page
       .getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,

@@ -16,7 +16,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
-import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const WORKFLOW_ID = 'b4d7e1f2-8a3c-4d5e-9f60-7a1b2c3d4e5f'
@@ -119,7 +119,7 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
     'true',
     { timeout: 8_000 }
   )
-  await openAgentPanel(page, 30_000)
+  await new AgentPanel(page).open(30_000)
 
   let savedName: string | undefined
   await page.route('**/api/userdata/*', (route) => {

@@ -7,7 +7,7 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
@@ -51,7 +51,7 @@ test.describe(
       const panel = page.getByTestId('docked-agent-panel')
 
       await expect(openButton).toBeVisible()
-      await openAgentPanel(page)
+      await new AgentPanel(page).open()
       await expect(panel).toBeVisible()
       await expect(
         page.getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
@@ -84,7 +84,7 @@ test.describe(
         exact: true
       })
       const panel = page.getByTestId('docked-agent-panel')
-      await openAgentPanel(page)
+      await new AgentPanel(page).open()
       await panel.getByRole('button', { name: enMessages.g.close }).click()
       await openButton.focus()
       await openButton.press('Enter')
@@ -105,7 +105,7 @@ test.describe(
       await expect(openButton).toBeVisible()
     })
 
-    test('does not toggle closed while a pressed panel is still mounting', async ({
+    test('does not click a pressed entry button while the panel is hidden', async ({
       page
     }) => {
       await bootAgentApp(page, true)
@@ -115,7 +115,7 @@ test.describe(
       })
       const panel = page.locator('#agent-panel-root')
       const delayedMountStyle = await page.addStyleTag({
-        content: '#agent-panel-root { display: none !important; }'
+        content: '#agent-panel-root { display: none; }'
       })
       await expect(openButton).toHaveAttribute('aria-pressed', 'true', {
         timeout: 8_000
@@ -129,16 +129,60 @@ test.describe(
         })
       })
 
-      const opening = openAgentPanel(page, undefined, async () => {
+      await new AgentPanel(page).open(undefined, async () => {
         await delayedMountStyle.evaluate((style) =>
-          style.parentNode?.removeChild(style)
+          (style as HTMLElement).remove()
         )
       })
-      await opening
 
       await expect(panel).toBeVisible()
       await expect(openButton).toHaveAttribute('aria-pressed', 'true')
       await expect(openButton).toHaveAttribute('data-test-click-count', '0')
+    })
+
+    test('honors the caller timeout without re-clicking while an open is delayed', async ({
+      page
+    }) => {
+      await bootAgentApp(page, true)
+      const agentPanel = new AgentPanel(page)
+      await expect(agentPanel.root).toBeVisible({ timeout: 8_000 })
+      await agentPanel.root
+        .getByRole('button', { name: enMessages.g.close })
+        .click()
+      await expect(agentPanel.root).toHaveCount(0)
+
+      await agentPanel.open(3_000, async () => {
+        await agentPanel.openButton.evaluate((button) => {
+          button.dataset.testClickCount = '0'
+          button.addEventListener(
+            'click',
+            () => {
+              button.dataset.testClickCount = String(
+                Number(button.dataset.testClickCount) + 1
+              )
+            },
+            true
+          )
+
+          let delayed = false
+          const delayOpen = (event: Event) => {
+            event.stopImmediatePropagation()
+            if (delayed) return
+            delayed = true
+            window.setTimeout(() => {
+              button.removeEventListener('click', delayOpen, true)
+              ;(button as HTMLElement).click()
+            }, 1_500)
+          }
+          button.addEventListener('click', delayOpen, true)
+        })
+      })
+
+      await expect(agentPanel.root).toBeVisible()
+      await expect(agentPanel.openButton).toHaveAttribute(
+        'data-test-click-count',
+        '2'
+      )
     })
 
     test('keeps the dock within the viewport and its documented width cap', async ({
@@ -146,7 +190,7 @@ test.describe(
     }) => {
       await bootAgentApp(page, true)
 
-      await openAgentPanel(page)
+      await new AgentPanel(page).open()
       const panel = page.getByTestId('docked-agent-panel')
       await expect(panel).toBeVisible()
 
@@ -171,7 +215,7 @@ test.describe(
       await page.setViewportSize({ width: 1600, height: 900 })
       await bootAgentApp(page, true)
 
-      await openAgentPanel(page)
+      await new AgentPanel(page).open()
       const panel = page.getByTestId('docked-agent-panel')
       await expect(panel).toBeVisible()
 
@@ -217,7 +261,7 @@ test.describe(
       await page.setViewportSize({ width: 1300, height: 900 })
       await bootAgentApp(page, true)
 
-      await openAgentPanel(page)
+      await new AgentPanel(page).open()
       const panel = page.getByTestId('docked-agent-panel')
       await expect(panel).toBeVisible()
       await panel
@@ -255,7 +299,7 @@ test.describe(
     test('restores an open panel after a browser reload', async ({ page }) => {
       await bootAgentApp(page, true)
 
-      await openAgentPanel(page)
+      await new AgentPanel(page).open()
       await expect(page.getByTestId('docked-agent-panel')).toBeVisible()
       await expect
         .poll(() =>
@@ -279,7 +323,7 @@ test.describe(
     }) => {
       await bootAgentApp(page, agentFlagEnabled)
 
-      await openAgentPanel(page)
+      await new AgentPanel(page).open()
 
       const panel = page.getByTestId('docked-agent-panel')
       const tabs = new Topbar(page).tabs

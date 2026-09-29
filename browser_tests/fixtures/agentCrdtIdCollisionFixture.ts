@@ -57,7 +57,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
-import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -220,7 +220,7 @@ export class IdCollisionHarness {
       },
       objectInfo: 'server'
     })
-    await openAgentPanel(this.page, 30_000)
+    await new AgentPanel(this.page).open(30_000)
     await expect(this.panel).toBeVisible({ timeout: 30_000 })
     await this.selectWorkflowTarget()
     // `useAgentSession` only binds the CRDT workflow id (which is what makes

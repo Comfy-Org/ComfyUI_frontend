@@ -11,7 +11,7 @@ import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 // Story 33 of qa/user-story-test-matrix.md (in-app-agent-program):
@@ -86,7 +86,7 @@ test.describe(
       const topbar = new Topbar(page)
 
       await test.step('user opens the Agent and pins it to the tab they started on', async () => {
-        await openAgentPanel(page)
+        await new AgentPanel(page).open()
         await targetPicker.click()
         await page
           .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })

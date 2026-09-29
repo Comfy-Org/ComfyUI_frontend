@@ -15,7 +15,7 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
@@ -179,7 +179,7 @@ test(
       )
     ).toBe(PORTRAIT_PATH)
 
-    const panel = await openAgentPanel(page)
+    const panel = await new AgentPanel(page).open()
     await expect(panel.getByTestId('user-message-bubble')).toHaveText([
       'Earlier request'
     ])

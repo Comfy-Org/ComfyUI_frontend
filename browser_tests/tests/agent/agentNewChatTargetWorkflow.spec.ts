@@ -4,7 +4,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
@@ -26,7 +26,7 @@ test.describe(
       page,
       workflowSelection
     }, testInfo) => {
-      await openAgentPanel(page)
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const targetPicker = panel.getByRole('button', {
         name: enMessages.agent.switchWorkflow
@@ -96,7 +96,7 @@ test.describe(
       page,
       workflowSelection
     }) => {
-      await openAgentPanel(page)
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const targetPicker = panel.getByRole('button', {
         name: enMessages.agent.switchWorkflow

@@ -34,7 +34,7 @@ import type {
   HumanOpsHost
 } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type {
@@ -329,7 +329,7 @@ export class AgentConversationHarness {
       )
 
     await loadSeedIntoActiveTab(this.page, this.conversation.workflow.seed)
-    await openAgentPanel(this.page, PANEL_MOUNT_TIMEOUT)
+    await new AgentPanel(this.page).open(PANEL_MOUNT_TIMEOUT)
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
   }

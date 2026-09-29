@@ -21,7 +21,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
-import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
@@ -240,7 +240,7 @@ async function driveThroughDocReset(
   await loadSeedIntoActiveTab(page, SEED)
 
   const panel = page.locator('#agent-panel-root')
-  await openAgentPanel(page, 30_000)
+  await new AgentPanel(page).open(30_000)
 
   let savedName: string | undefined
   await page.route('**/api/userdata/*', (route) => {
