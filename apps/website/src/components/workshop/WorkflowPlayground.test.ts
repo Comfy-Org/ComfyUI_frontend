@@ -61,7 +61,11 @@ describe('WorkflowPlayground API tab analytics', () => {
     render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
     const visitor = userEvent.setup()
     await visitor.click(screen.getByRole('tab', { name: 'API' }))
-    await visitor.click(screen.getByRole('link', { name: 'Get API key' }))
+    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    getKey.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await visitor.click(getKey)
     expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
       name: 'api_key_clicked',
       properties: expect.objectContaining({
@@ -94,6 +98,27 @@ describe('WorkflowPlayground API tab analytics', () => {
         snippet_language: 'python'
       })
     })
+  })
+
+  it('reports no API key clicks or snippet copies while Workflows is off', async () => {
+    const fixture = workflowDetailsBySlug.get(
+      'workflows/animate-reference-sheet'
+    )
+    assert(fixture)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(false)))
+    render(WorkflowPlayground, {
+      props: { model: markRaw(fixture), scope: 'anonymous' }
+    })
+    const visitor = userEvent.setup()
+    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+    await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
+    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    getKey.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await visitor.click(getKey)
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 })
 

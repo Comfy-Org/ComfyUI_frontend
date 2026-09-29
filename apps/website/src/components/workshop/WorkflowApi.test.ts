@@ -37,7 +37,11 @@ describe('WorkflowApi', () => {
 
     await visitor.click(screen.getByRole('tab', { name: 'TypeScript' }))
     await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
-    await visitor.click(screen.getByRole('link', { name: 'Get API key' }))
+    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    getKey.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await visitor.click(getKey)
 
     expect(emitted('copy')).toEqual([['typescript']])
     expect(emitted('getKey')).toEqual([[]])

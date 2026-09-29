@@ -587,7 +587,11 @@ describe('ModelDetail', () => {
     await visitor.click(screen.getByRole('tab', { name: 'API' }))
     await visitor.click(await screen.findByTestId('snippet-curl'))
     await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
-    await visitor.click(screen.getByRole('link', { name: 'Get API key' }))
+    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    getKey.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await visitor.click(getKey)
     const model = { model_slug: runnable.slug, page_type: 'model' }
     expect(captureWorkshopEvent).toHaveBeenCalledWith({
       name: 'api_snippet_copied',
@@ -600,6 +604,30 @@ describe('ModelDetail', () => {
       name: 'api_key_clicked',
       properties: expect.objectContaining(model)
     })
+  })
+
+  it('reports no API key clicks or snippet copies while Models is hidden', async () => {
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'A landscape'
+    )
+    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+    await screen.findByRole('button', { name: 'Copy snippet' })
+    auth.workshopEnabled.value = false
+    await nextTick()
+    await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
+    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    getKey.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await visitor.click(getKey)
+    const names = vi
+      .mocked(captureWorkshopEvent)
+      .mock.calls.map(([event]) => event.name)
+    expect(names).not.toContain('api_snippet_copied')
+    expect(names).not.toContain('api_key_clicked')
   })
 
   it.for(['load', 'error'] as const)(
