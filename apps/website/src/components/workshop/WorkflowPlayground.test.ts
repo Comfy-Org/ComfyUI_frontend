@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { assert, describe, expect, it, vi } from 'vitest'
-import { computed, readonly, ref } from 'vue'
+import { computed, markRaw, readonly, ref } from 'vue'
 
 import { useWorkshopCredits } from '../../config/workshop-credits'
 import type { WorkshopSession } from '../../config/workshop-session-state'
@@ -68,6 +68,30 @@ describe('WorkflowPlayground API tab analytics', () => {
         model_slug: model.slug,
         page_type: 'workflow',
         workflow_id: model.workflowId
+      })
+    })
+  })
+
+  it('reports snippet copies with the language and workflow attribution', async () => {
+    const fixture = workflowDetailsBySlug.get(
+      'workflows/animate-reference-sheet'
+    )
+    assert(fixture)
+    const model = markRaw(fixture)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+    const visitor = userEvent.setup()
+    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+    await visitor.click(screen.getByRole('tab', { name: 'Python' }))
+    await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'api_snippet_copied',
+      properties: expect.objectContaining({
+        model_slug: model.slug,
+        page_type: 'workflow',
+        workflow_id: model.workflowId,
+        snippet_language: 'python'
       })
     })
   })
