@@ -31,11 +31,6 @@ env:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    env:
-      # Do not invoke the repository runner's optional local tool-cache hooks.
-      # They are unavailable on this job's runner and are not needed for validation.
-      LINT_CACHE_PATHS: ''
-      TYPECHECK_CACHE_PATHS: ''
     steps:
       - name: Checkout PR
         uses: actions/checkout@v7
