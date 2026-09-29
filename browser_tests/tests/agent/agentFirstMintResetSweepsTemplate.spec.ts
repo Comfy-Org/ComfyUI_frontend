@@ -12,42 +12,21 @@ import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import {
   agentTest as test,
   bootAgentApp,
+  loadIntoBootWorkflow,
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-import type { WorkspaceStore } from '@e2e/types/globals'
 
 /**
- * Regression coverage: opening a template workflow that has never had an
- * agent session bound to it, then sending ANY agent turn (even a read-only
- * one), used to make the whole canvas visually disappear and reappear
- * ~0.3-0.5s later.
- *
- * Backend (`Comfy-Org/cloud`): a turn's turn-start focus step
- * (`focusWorkflow`, `services/agent/internal/loop/tabs.go:380-444`) runs
- * `ensureDoc` (`crdt.go:2191-2228`), which lazily creates a workflow's CRDT
- * doc the FIRST TIME any agent turn touches it, attributed to actor
- * `system:mint` (`crdt.go:2094-2096`). This broadcasts a `doc_reset` at seq 1
- * to any follower that had already subscribed, with NO accompanying
- * `doc_update` -- pinned by the backend's own
- * `TestLazyMintBroadcastsDocResetToEarlyFollowers`
- * (`services/agent/internal/loop/crdt_premint_follower_test.go:15-55`). This
- * part is expected/correct backend behavior, not the bug.
- *
- * Frontend (this repo): `AgentCrdtProjection.clearForReset`
- * (`src/workbench/extensions/agent/crdt/agentCrdtProjection.ts:55-59`) used to
- * sweep the whole canvas on ANY `doc_reset` frame, unconditionally, with no
- * carve-out for actor `system:mint` -- fired from `useAgentCrdtFollower.ts`'s
- * `onDocReset` (~473-503). A benign first-mint reset (there is no prior
- * CRDT-tracked content to lose -- the template's nodes below are pure local
- * content, never touched by CRDT before this turn) was treated identically
- * to a real, content-losing reset, wiping the already-rendered template
- * nodes until a resubscribe's catch-up repopulated them.
- *
- * `onDocReset` now skips `clearForReset` when the reset frame's actor is
- * `system:mint`, so the two template nodes stay put across the reset below.
+ * The backend mints a workflow's CRDT doc lazily on the first agent turn that
+ * touches it (`ensureDoc`, actor `system:mint`) and broadcasts a `doc_reset`
+ * to an already-subscribed follower with no `doc_update`; the follower's
+ * resubscribe catch-up carries the new lineage. The follower used to sweep the
+ * canvas on every reset, blanking a freshly opened template until that
+ * catch-up landed. A reset now only arms the next frame to replace the graph,
+ * so the template nodes stay put.
  */
 
 const WORKFLOW_ID = 'c9a1e5c2-4f3b-4a8e-9d2f-6b7a8c9d0e1f'
@@ -57,9 +36,6 @@ const MESSAGE_ID = 'f3c4d5e6-7a8b-4c9d-0e1f-2a3b4c5d6e7f'
 const TEMPLATE_NODE_A_ID = 501
 const TEMPLATE_NODE_B_ID = 502
 
-// A minimal two-node "template": pure local graph content the user would
-// see the instant a template opens, well before the agent (or its CRDT
-// doc) ever gets involved.
 const TEMPLATE_GRAPH: ComfyWorkflowJSON = {
   last_node_id: TEMPLATE_NODE_B_ID,
   last_link_id: 0,
@@ -98,19 +74,10 @@ const TEMPLATE_GRAPH: ComfyWorkflowJSON = {
   version: 0.4
 }
 
-// The CRDT doc host never received any content for this workflow -- exactly
-// the "never had an agent session bound to it" precondition.
 const EMPTY_HOST_SEED: WorkflowJSON = { nodes: [], links: [] }
 const EMPTY_CATALOG: WidgetCatalog = { types: {} }
 
-/**
- * Parses a raw `/ws` message down to its `doc_subscribe` payload for
- * `WORKFLOW_ID`, or `null` for any other frame. Extracted to keep the mock's
- * `onMessage` handler to the post-parse decision. A parse failure here must
- * not throw inside the mock's message handler -- that would silently kill
- * the subscribe ack and degrade the test into a vacuous pass instead of a
- * clear failure.
- */
+/** `true` for a `doc_subscribe` frame addressed to `WORKFLOW_ID`; never throws inside the socket mock. */
 function parseDocSubscribeForWorkflow(raw: Buffer | string): boolean {
   let frame: unknown
   try {
@@ -126,15 +93,7 @@ function parseDocSubscribeForWorkflow(raw: Buffer | string): boolean {
   return workflow_id === WORKFLOW_ID
 }
 
-/**
- * Counts `doc_subscribe` frames the mock has seen for `WORKFLOW_ID` and lets
- * callers await a specific count instead of a timing proxy (socket open,
- * a screenshot). The first subscribe is the turn's own follower binding; the
- * second is `LayoutFollowerBridge`'s unconditional resubscribe after the
- * mint reset below replaces the doc -- a deterministic signal that the reset
- * has actually been processed (skip decision made, doc dropped, resubscribe
- * sent) before assertions run.
- */
+/** Awaits the Nth `doc_subscribe` for `WORKFLOW_ID`: 1 is the turn's binding, 2 the post-reset resubscribe. */
 function createSubscribeTracker(): {
   recordSubscribe: () => void
   waitForCount: (target: number) => Promise<void>
@@ -167,8 +126,6 @@ test.describe(
     test('does not sweep already-rendered template nodes off the canvas on the first-mint doc_reset', async ({
       page
     }) => {
-      // No prior CRDT content anywhere for this workflow -- the follower's
-      // subscribe below gets an ack and nothing else to catch up on.
       const host = new HostDoc(WORKFLOW_ID, EMPTY_HOST_SEED, EMPTY_CATALOG)
       const vueNodes = new VueNodeHelpers(page)
 
@@ -208,38 +165,7 @@ test.describe(
         }
       })
 
-      // Opening the template: the two nodes render from local graph data,
-      // with no CRDT doc ever having existed for this workflow. Passing the
-      // boot-time active workflow as the 4th arg makes this load reuse that
-      // SAME tab -- omitting it (as app.loadGraphData(json, true, true)
-      // does) makes activateLoadedWorkflow's null-workflow branch mint a
-      // brand new "Unsaved Workflow (2)" tab instead, leaving two tabs open.
-      // agentPanel.selectWorkflow() below then targets the first, ORIGINAL,
-      // still-empty "Unsaved Workflow" tab by its exact name, switching the
-      // canvas away from the just-rendered template nodes before the CRDT
-      // follower is ever bound.
-      //
-      // Boot's own default-workflow mint (GraphCanvas.vue's onMounted ->
-      // useWorkflowPersistenceV2().initializeWorkflow() -> resolveStartupOutcome
-      // -> app.loadGraphData()) runs asynchronously after Vue mounts and is
-      // NOT awaited by bootAgentApp/waitForCloudApp above (that only waits
-      // for `window.app.extensionManager` to exist). Reading
-      // `workflow.activeWorkflow` immediately after boot can therefore race
-      // ahead of that mint and observe `null`, which makes `activeWorkflow ??
-      // undefined` collapse to `undefined` -- functionally identical to
-      // omitting the 4th arg entirely. Waiting for the store to actually
-      // populate it first closes that race.
-      await page.waitForFunction(() => {
-        const workspace = window.app?.extensionManager as
-          | WorkspaceStore
-          | undefined
-        return workspace?.workflow.activeWorkflow != null
-      })
-      await page.evaluate(async (json) => {
-        const activeWorkflow = (window.app!.extensionManager as WorkspaceStore)
-          .workflow.activeWorkflow!
-        await window.app!.loadGraphData(json, true, true, activeWorkflow)
-      }, TEMPLATE_GRAPH)
+      await loadIntoBootWorkflow(page, TEMPLATE_GRAPH)
       await expect(
         vueNodes.getNodeLocator(String(TEMPLATE_NODE_A_ID))
       ).toBeVisible()
@@ -252,20 +178,10 @@ test.describe(
       await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('Check the workflow.')
 
-      // The turn's acceptance ack binds this workflow and subscribes the
-      // CRDT follower -- an "early follower" relative to the mint below.
-      // Waiting for the subscribe frame itself (rather than just the socket
-      // opening) is what guarantees the reset sent further down actually
-      // lands on a follower that is subscribed to WORKFLOW_ID: sending it
-      // any earlier would be dropped by
-      // `LayoutFollowerBridge.onDocReset`'s `sentWorkflowId` check and the
-      // test would pass whether or not the fix under test works.
+      // A reset sent before the follower subscribed to WORKFLOW_ID is dropped
+      // by the bridge, which would make the assertions below vacuous.
       await subscribeTracker.waitForCount(1)
 
-      // Baseline: subscribing to a workflow whose CRDT doc has never been
-      // minted delivers nothing to catch up on, and correctly leaves the
-      // locally-rendered template nodes alone. This is current, correct
-      // behavior -- not the bug under test.
       await expect(
         vueNodes.getNodeLocator(String(TEMPLATE_NODE_A_ID))
       ).toBeVisible()
@@ -273,8 +189,6 @@ test.describe(
         vueNodes.getNodeLocator(String(TEMPLATE_NODE_B_ID))
       ).toBeVisible()
 
-      // The first agent turn touching this workflow -- a read-only tool
-      // call is enough, matching the real report.
       send({
         type: 'agent_tool_call',
         data: {
@@ -287,28 +201,15 @@ test.describe(
         }
       })
 
-      // The backend's lazy `ensureDoc` mints the doc for the very first
-      // time and broadcasts this reset to the already-subscribed follower,
-      // with no accompanying `doc_update` -- see the file-level comment.
-      // Nothing tracked by the CRDT doc existed before this moment, so
-      // there is nothing here to lose.
       send({
         type: 'doc_reset',
         data: { v: 1, workflow_id: WORKFLOW_ID, seq: 1, actor: 'system:mint' }
       })
 
-      // Deterministic post-reset signal: `LayoutFollowerBridge.onDocReset`
-      // unconditionally drops the old doc and resubscribes once it has
-      // dispatched `doc_reset` (which is where the skip decision under test
-      // is made) -- regardless of whether that decision skipped the sweep.
-      // Waiting for this second subscribe therefore proves the reset has
-      // been fully processed before the assertions below run, instead of
-      // relying on `page.screenshot()`'s incidental timing or the
-      // already-visible pre-reset DOM state.
+      // The bridge resubscribes once it has dispatched the reset, so the
+      // second subscribe proves the reset was processed.
       await subscribeTracker.waitForCount(2)
 
-      // Visual proof of the (non-)flicker: the canvas should look identical
-      // before and after the mint reset.
       await page.screenshot({
         path: test.info().outputPath('template-after-mint-reset.png')
       })

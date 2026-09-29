@@ -6,7 +6,6 @@ import type {
   BillingOpStatusResponse,
   BillingStatusResponse,
   CreateTopupResponse,
-  Plan,
   PreviewSubscribeResponse,
   SavedPaymentMethod
 } from '@comfyorg/ingest-types'
@@ -20,6 +19,7 @@ import {
   createBillingCapabilities,
   createWorkspaceBillingCapabilities
 } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
@@ -251,20 +251,13 @@ function operationIdsPolled(requests: Request[]): Set<string> {
   )
 }
 
-const CREATOR_ANNUAL_PLAN = {
+const CREATOR_ANNUAL_PLAN = createPlan({
   slug: 'creator-annual',
   tier: 'CREATOR',
   duration: 'ANNUAL',
-  price_cents: 33_600,
-  credits_cents: 7_400,
-  max_seats: 1,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 33_600,
-    total_credits_cents: 7_400
-  }
-} satisfies Plan
+  priceCents: 33_600,
+  monthlyCredits: 7_400
+})
 
 const UPGRADE_TO_CREATOR = {
   allowed: true,
@@ -273,8 +266,8 @@ const UPGRADE_TO_CREATOR = {
   is_immediate: true,
   cost_today_cents: 33_600,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 7_400,
-  credits_next_period_cents: 7_400,
+  credits_today_cents: CREATOR_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   new_plan: CREATOR_ANNUAL_PLAN
 } satisfies PreviewSubscribeResponse
 

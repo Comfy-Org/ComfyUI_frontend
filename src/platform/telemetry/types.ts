@@ -626,7 +626,7 @@ export type AgentPanelCloseSource =
   | 'topbar_button'
   | 'pagehide'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'restored' | 'topbar_button' | 'automatic_consent'
+  source: 'restored' | 'topbar_button' | 'automatic_consent' | 'activation'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
@@ -653,7 +653,10 @@ export interface AgentEntryButtonClickedMetadata extends Record<
 > {
   resulting_state: 'opened' | 'closed'
 }
-export type AgentConsentTrigger = 'first_load' | 'button_click'
+export type AgentConsentTrigger =
+  | 'first_load'
+  | 'button_click'
+  | 'first_message'
 export interface AgentConsentShownMetadata extends Record<string, unknown> {
   trigger: AgentConsentTrigger
 }
@@ -715,7 +718,7 @@ export interface AgentAttachButtonClickedMetadata extends Record<
   string,
   unknown
 > {
-  method: 'menu' | 'drag_drop'
+  method: 'menu' | 'drag_drop' | 'paste'
 }
 export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
@@ -1114,6 +1117,13 @@ type ResubscribeBillingEvent = {
 type TopupBillingEvent = {
   operation: 'topup'
   billing_op_id?: string
+  /**
+   * Surface the top-up was opened from. Absent when the caller named none,
+   * exactly as on the subscription rail's events — absent is no claim, never
+   * an implied default. Named `payment_intent_source` to match its siblings
+   * above; the journey's own `entry_source` is a separate, smaller enum.
+   */
+  payment_intent_source?: PaymentIntentSource
   /**
    * Client-observed end-to-end wall time from this attempt's canonical
    * `started` event through to this terminal event.

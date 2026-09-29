@@ -4,9 +4,8 @@
  * prior CRDT-tracked content to lose.
  *
  * Kept in its own module, separate from `docFrameClient.ts`, so a consumer
- * that only needs this constant (the reset-sweep skip check in
- * `useAgentCrdtFollower.ts`) can import the real value even from a test that
- * module-mocks `docFrameClient.ts` wholesale. `docFrameClient.ts` imports it
- * too, for its own actor-grammar check.
+ * that only needs this constant can import the real value even from a test
+ * that module-mocks `docFrameClient.ts` wholesale. `docFrameClient.ts`
+ * imports it for its own actor-grammar check.
  */
 export const SYSTEM_MINT_ACTOR = 'system:mint'

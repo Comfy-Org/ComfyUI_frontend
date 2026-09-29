@@ -1,0 +1,58 @@
+{
+  "gpus": [
+    {
+      "gpuClass": "rtx-pro-6000-server",
+      "label": "RTX PRO 6000",
+      "vramGb": 96,
+      "pricePerHourUsd": 4.54,
+      "creditsPerHour": 957.94
+    },
+    {
+      "gpuClass": "h100-sxm",
+      "label": "H100 SXM",
+      "vramGb": 80,
+      "pricePerHourUsd": 6.23,
+      "creditsPerHour": 1314.53
+    },
+    {
+      "gpuClass": "h200-sxm",
+      "label": "H200 SXM",
+      "vramGb": 141,
+      "pricePerHourUsd": 7.71,
+      "creditsPerHour": 1626.81
+    },
+    {
+      "gpuClass": "b200",
+      "label": "B200",
+      "vramGb": 180,
+      "pricePerHourUsd": 11.23,
+      "creditsPerHour": 2369.53
+    }
+  ],
+  "storage": [
+    {
+      "storageType": "network_standard",
+      "label": "Network storage — standard, under 1 TB",
+      "pricePerGbMonthUsd": 0.2,
+      "creditsPerGbMonth": 42.2
+    },
+    {
+      "storageType": "network_standard_1tb_plus",
+      "label": "Network storage — standard, 1 TB and above",
+      "pricePerGbMonthUsd": 0.2,
+      "creditsPerGbMonth": 42.2
+    },
+    {
+      "storageType": "network_high_performance",
+      "label": "Network storage — high performance",
+      "pricePerGbMonthUsd": 0.2,
+      "creditsPerGbMonth": 42.2
+    },
+    {
+      "storageType": "container_disk",
+      "label": "Container disk",
+      "pricePerGbMonthUsd": 0.15,
+      "creditsPerGbMonth": 31.65
+    }
+  ]
+}
