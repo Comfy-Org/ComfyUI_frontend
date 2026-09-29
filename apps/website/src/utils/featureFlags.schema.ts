@@ -1,11 +1,6 @@
 import { z } from 'zod'
+import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 
-export const FeaturesResponseSchema = z
-  .object({
-    new_free_tier_subscriptions: z.boolean().optional(),
-    free_tier_credits: z.number().optional(),
-    partner_node_conversion_rate: z.number().optional()
-  })
-  .passthrough()
+export const FeaturesResponseSchema = zGetFeaturesResponse
 
 export type FeaturesResponse = z.infer<typeof FeaturesResponseSchema>
