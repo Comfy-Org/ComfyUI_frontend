@@ -945,6 +945,13 @@ describe('useSubscription', () => {
           workspace_id: 'workspace-123'
         })
       )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        renewal_date: '',
+        subscription_tier: 'STANDARD',
+        subscription_duration: 'MONTHLY'
+      })
       mockIsLoggedIn.value = true
 
       useSubscriptionWithScope()
@@ -1135,13 +1142,10 @@ describe('useSubscription', () => {
       await vi.advanceTimersByTimeAsync(43_000)
       expect(mockReportTelemetryError).not.toHaveBeenCalled()
 
-      // Still short of the deadline measured from the attempt's start, which
-      // an implementation counting 10 minutes from ladder exhaustion would
-      // already have passed.
-      await vi.advanceTimersByTimeAsync(547_000)
+      await vi.advanceTimersByTimeAsync(556_999)
       expect(mockReportTelemetryError).not.toHaveBeenCalled()
 
-      await vi.advanceTimersByTimeAsync(20_000)
+      await vi.advanceTimersByTimeAsync(1)
 
       expect(mockReportTelemetryError).toHaveBeenCalledOnce()
       expect(mockReportTelemetryError).toHaveBeenCalledWith(
@@ -1233,7 +1237,7 @@ describe('useSubscription', () => {
       ).not.toHaveBeenCalled()
     })
 
-    it('continues bounded polling after unavailable deadline reads', async () => {
+    it('stops polling after the unavailable deadline retry ladder', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
@@ -1248,10 +1252,11 @@ describe('useSubscription', () => {
       mockIsLoggedIn.value = true
 
       useSubscriptionWithScope()
-      await vi.advanceTimersByTimeAsync(100_000)
+      await vi.advanceTimersByTimeAsync(43_000 + 1_056_000)
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(10)
 
-      expect(mockGetBillingStatus.mock.calls.length).toBeGreaterThanOrEqual(7)
-      expect(vi.getTimerCount()).toBeGreaterThan(0)
+      await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(10)
       expect(mockTelemetry.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'timeout' })
       )
