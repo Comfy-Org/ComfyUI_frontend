@@ -50,12 +50,7 @@ const config: KnipConfig = {
     },
     'apps/website': {
       // Models pages are registered by the release-gate integration.
-      // Typecheck fixtures are read only by astro check, never imported.
-      entry: [
-        'src/scripts/**/*.ts',
-        'src/routes/models/*.{astro,ts}',
-        'src/test/typecheck/*.{astro,ts}'
-      ],
+      entry: ['src/scripts/**/*.ts', 'src/routes/models/*.{astro,ts}'],
       // Executed by models-snippets.test.ts inside the generated Node examples.
       ignoreDependencies: ['mime-types']
     },
