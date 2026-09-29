@@ -25,6 +25,8 @@ export interface Crumb {
   url?: string
 }
 
+export const DEFAULT_OG_IMAGE = 'https://media.comfy.org/website/comfy.webp'
+
 const sameAs = [
   externalLinks.github,
   externalLinks.x,
@@ -358,7 +360,7 @@ export function productNode(input: ProductInput): JsonLdNode {
     url: input.url,
     image: input.image,
     description: input.description,
-    brand: { '@type': 'Brand', name: 'Comfy' },
+    brand: { '@id': organizationId(input.siteUrl) },
     offers: input.offers.map((offer) => ({
       '@type': 'Offer',
       name: offer.name,
@@ -422,8 +424,8 @@ export interface VideoObjectInput {
   thumbnailUrl: string
   /** Self-hosted media URL; omit for embed-only videos (set embedUrl instead). */
   contentUrl?: string
-  /** ISO 8601 date or datetime; without one no VideoObject is emitted. */
-  uploadDate?: string
+  /** ISO 8601 date or datetime. */
+  uploadDate: string
   locale: Locale
   embedUrl?: string
   /** ISO 8601 duration (e.g. "PT4M32S"); omit when unverified rather than
@@ -433,14 +435,11 @@ export interface VideoObjectInput {
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 
-function isoDateTime(value: string): string {
+export function isoDateTime(value: string): string {
   return DATE_ONLY.test(value) ? `${value}T00:00:00+00:00` : value
 }
 
-export function videoObjectNode(
-  input: VideoObjectInput
-): JsonLdNode | undefined {
-  if (!input.uploadDate) return undefined
+export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
   return {
     '@type': 'VideoObject',
     '@id': input.id,

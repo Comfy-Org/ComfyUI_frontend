@@ -9,6 +9,7 @@ import MinimaxLicenseHeroSection from '../../components/common/MinimaxLicenseHer
 import { pricingOffers } from '../../config/pricing'
 import { t } from '../../i18n/translations'
 import {
+  DEFAULT_OG_IMAGE,
   absoluteUrl,
   jsonLdId,
   pageContext,
@@ -23,13 +24,11 @@ const { siteUrl, locale, url } = pageContext(
 const productId = jsonLdId(url, 'product')
 const description =
   'Comfy Cloud 套餐与积分：免费开始（5 次 GPU 运行），再选择 Standard、Creator、Pro 或 Team，获得每月积分、托管模型与更长的工作流运行时长。'
-const ogImage = 'https://media.comfy.org/website/comfy.webp'
 ---
 
 <BaseLayout
   title="定价 - Comfy Cloud"
   description={description}
-  ogImage={ogImage}
   mainEntityId={productId}
   breadcrumbs={[
     {
@@ -45,7 +44,7 @@ const ogImage = 'https://media.comfy.org/website/comfy.webp'
       id: productId,
       name: 'Comfy Cloud',
       url,
-      image: ogImage,
+      image: DEFAULT_OG_IMAGE,
       description,
       offers: pricingOffers(locale)
     })

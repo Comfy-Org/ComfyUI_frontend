@@ -24,7 +24,7 @@ import {
   evaluateBannerVisibility
 } from '../utils/banner'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
-import { buildPageGraph, pageContext } from '../utils/jsonLd'
+import { DEFAULT_OG_IMAGE, buildPageGraph, pageContext } from '../utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
 import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
@@ -45,7 +45,7 @@ const {
   title,
   description = 'Comfy is the AI creation engine for visual professionals who demand control.',
   keywords,
-  ogImage = 'https://media.comfy.org/website/comfy.webp',
+  ogImage = DEFAULT_OG_IMAGE,
   noindex = false,
   pageType,
   breadcrumbs,

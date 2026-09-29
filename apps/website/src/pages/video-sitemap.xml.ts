@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro'
 
 import type { CustomerVideoStory } from '../data/customerVideos'
 import { customerVideoPath, customerVideoStories } from '../data/customerVideos'
+import { isoDateTime } from '../utils/jsonLd'
 
 function escapeXml(value: string): string {
   return value
@@ -14,8 +15,8 @@ function escapeXml(value: string): string {
 
 /**
  * Builds the Google video sitemap body from a list of stories. Exported (and
- * parameterized on `stories`) so a test can exercise the duration/publication
- * date branches without depending on whether the live data has them set yet.
+ * parameterized on `stories`) so a test can exercise the duration branch
+ * without depending on whether the live data has it set yet.
  */
 export function buildVideoSitemap(
   stories: readonly CustomerVideoStory[],
@@ -41,9 +42,7 @@ export function buildVideoSitemap(
         durationSeconds
           ? `      <video:duration>${durationSeconds}</video:duration>`
           : undefined,
-        story.uploadDate
-          ? `      <video:publication_date>${escapeXml(story.uploadDate)}</video:publication_date>`
-          : undefined,
+        `      <video:publication_date>${escapeXml(isoDateTime(story.uploadDate))}</video:publication_date>`,
         `      <video:family_friendly>yes</video:family_friendly>`,
         `      <video:live>no</video:live>`,
         `    </video:video>`,

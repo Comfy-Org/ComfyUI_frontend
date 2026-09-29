@@ -213,9 +213,9 @@ describe('productNode', () => {
   it('gives every offer a currency and price', () => {
     const node = productNode({
       siteUrl,
-      id: 'https://comfy.org/cloud/pricing/#product',
+      id: 'https://comfy.org/pricing/#product',
       name: 'Comfy Cloud',
-      url: 'https://comfy.org/cloud/pricing/',
+      url: 'https://comfy.org/pricing/',
       image: 'https://media.comfy.org/website/comfy.webp',
       description: 'Comfy Cloud plans and credits.',
       offers: [{ name: 'Standard', price: '20' }]
@@ -238,7 +238,7 @@ describe('productNode', () => {
     })
     expect(node.image).toBe('https://media.comfy.org/website/comfy.webp')
     expect(node.description).toBe('Comfy Cloud plans and credits.')
-    expect(node.brand).toEqual({ '@type': 'Brand', name: 'Comfy' })
+    expect(node.brand).toEqual({ '@id': organizationId(siteUrl) })
     const offers = node.offers as Record<string, unknown>[]
     expect(offers[0].availability).toBe('https://schema.org/InStock')
   })
@@ -312,22 +312,18 @@ describe('videoObjectNode', () => {
     name: 'A video',
     description: 'A description',
     thumbnailUrl: `${siteUrl}/poster.webp`,
+    uploadDate: '2026-07-16',
     locale: 'en' as const
   }
 
   it('includes duration when given an ISO 8601 value', () => {
-    const node = videoObjectNode({
-      ...base,
-      uploadDate: '2026-07-16',
-      duration: 'PT4M32S'
-    })
-    expect(node?.duration).toBe('PT4M32S')
+    const node = videoObjectNode({ ...base, duration: 'PT4M32S' })
+    expect(node.duration).toBe('PT4M32S')
   })
 
   it('omits duration rather than defaulting it', () => {
-    const node = videoObjectNode({ ...base, uploadDate: '2026-07-16' })
-    expect(node).toBeDefined()
-    expect(node?.duration).toBeUndefined()
+    const node = videoObjectNode(base)
+    expect(node.duration).toBeUndefined()
   })
 
   it.for([
@@ -335,11 +331,7 @@ describe('videoObjectNode', () => {
     ['2026-07-16T18:00:00-07:00', '2026-07-16T18:00:00-07:00'],
     ['2026-07-16T18:00:00Z', '2026-07-16T18:00:00Z']
   ])('writes uploadDate %s as %s', ([uploadDate, expected]) => {
-    expect(videoObjectNode({ ...base, uploadDate })?.uploadDate).toBe(expected)
-  })
-
-  it('emits no node when there is no upload date to report', () => {
-    expect(videoObjectNode(base)).toBeUndefined()
+    expect(videoObjectNode({ ...base, uploadDate }).uploadDate).toBe(expected)
   })
 })
 

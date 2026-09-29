@@ -24,6 +24,9 @@ describe('video-sitemap.xml', () => {
       expect(xml).toContain(
         `<video:content_loc>${story.videoSrc}</video:content_loc>`
       )
+      expect(xml).toContain(
+        `<video:publication_date>${story.uploadDate}</video:publication_date>`
+      )
     }
   })
 
@@ -37,7 +40,7 @@ describe('video-sitemap.xml', () => {
     expect(xml).not.toMatch(/<video:description>[^<]*'/)
   })
 
-  it('includes video:duration and video:publication_date once a story has them', () => {
+  it('includes video:duration and a full-datetime video:publication_date', () => {
     const story = {
       ...getCustomerVideoStory('black-math'),
       durationSeconds: 272.4,
@@ -48,7 +51,7 @@ describe('video-sitemap.xml', () => {
 
     expect(xml).toContain('<video:duration>272</video:duration>')
     expect(xml).toContain(
-      '<video:publication_date>2026-08-01</video:publication_date>'
+      '<video:publication_date>2026-08-01T00:00:00+00:00</video:publication_date>'
     )
   })
 
