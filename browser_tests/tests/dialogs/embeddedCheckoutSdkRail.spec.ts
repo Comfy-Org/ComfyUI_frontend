@@ -168,7 +168,12 @@ const FAKE_STRIPE_JS = `(() => {
       },
       async createConfirmationToken() {
         await report({ method: 'createConfirmationToken' })
-        return { confirmationToken: { id: 'ctoken_e2e' } }
+        return {
+          confirmationToken: {
+            id: 'ctoken_e2e',
+            payment_method_preview: { type: 'card' }
+          }
+        }
       },
       async handleNextAction({ clientSecret }) {
         const outcome = await report({ method: 'handleNextAction', clientSecret })
