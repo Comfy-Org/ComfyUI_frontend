@@ -1,6 +1,10 @@
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 const hoisted = vi.hoisted(() => {
   const customerIoTrack = vi.fn(
@@ -42,14 +46,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: hoisted.reportError
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    userEmail: hoisted.userEmail,
-    resolvedUserInfo: hoisted.resolvedUserInfo,
-    onUserResolved: hoisted.onUserResolved,
-    onUserLogout: hoisted.onUserLogout
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock<unknown>(import('posthog-js'), () => ({
   default: {
@@ -77,13 +74,9 @@ vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   InAppPlugin: vi.fn(() => ({ name: 'Customer.io In-App Plugin' }))
 }))
 
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfig: ref({})
-}))
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({ tier: ref(null) })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 import {
   markStoresPending,
@@ -108,6 +101,17 @@ async function flushMicrotasks(): Promise<void> {
  */
 describe('telemetry providers wait for Pinia before touching stores', () => {
   beforeEach(() => {
+    const currentUser = vi.mocked(useCurrentUser())
+    currentUser.userEmail = computed(() => hoisted.userEmail.value)
+    currentUser.resolvedUserInfo = computed(
+      () => hoisted.resolvedUserInfo.value
+    )
+    currentUser.onUserResolved.mockImplementation(hoisted.onUserResolved)
+    currentUser.onUserLogout.mockImplementation(hoisted.onUserLogout)
+    const billing = useBillingContext()
+    billing.tier = computed(() => null)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
+    remoteConfig.value = {}
     setActivePinia(undefined)
     markStoresPending()
   })

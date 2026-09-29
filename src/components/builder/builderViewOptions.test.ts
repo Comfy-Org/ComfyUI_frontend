@@ -7,14 +7,11 @@ import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import { setWorkflowDefaultView } from './builderViewOptions'
 
-vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => {
-  const rootGraph = { extra: {} }
-  return { app: { rootGraph, rootGraphOrUndefined: rootGraph } }
-})
+vi.mock(import('@/scripts/app'))
 
 describe('setWorkflowDefaultView', () => {
   beforeEach(() => {

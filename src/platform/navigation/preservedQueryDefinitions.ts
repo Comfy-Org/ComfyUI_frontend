@@ -50,5 +50,10 @@ export const PRESERVED_QUERY_DEFINITIONS: PreservedQueryDefinition[] = [
     namespace: PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
     keys: ['desktop_login_code'],
     stripAfterCapture: true
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.WORKSPACE,
+    keys: ['workspace'],
+    rejectRepeated: true
   }
 ]

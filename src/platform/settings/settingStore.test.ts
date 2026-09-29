@@ -24,16 +24,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-// Mock the app
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    ui: {
-      settings: {
-        dispatchChange: vi.fn()
-      }
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 describe('useSettingStore', () => {
   let store: ReturnType<typeof useSettingStore>

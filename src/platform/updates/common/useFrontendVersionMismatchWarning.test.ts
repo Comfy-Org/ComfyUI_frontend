@@ -15,15 +15,7 @@ vi.mock(import('@/config'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    ui: {
-      settings: {
-        dispatchChange: vi.fn()
-      }
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -159,7 +151,7 @@ describe('useFrontendVersionMismatchWarning', () => {
     expect(result.shouldShowWarning.value).toBe(true)
     expect(result.hasVersionMismatch.value).toBe(true)
 
-    void result.dismissWarning()
+    result.dismissWarning()
     expect(mockDismissWarning).toHaveBeenCalled()
   })
 

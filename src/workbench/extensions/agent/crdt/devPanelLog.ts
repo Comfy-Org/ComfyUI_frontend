@@ -35,6 +35,7 @@ export const DEV_EVENT_KINDS = [
   'reconnected',
   'subscribe_retry',
   'subscribe_ack_timeout',
+  'subscribe_refused_permanent',
   'stale_probe',
   'catchup_probe',
   'rebind',
@@ -237,7 +238,7 @@ function sanitizeDetail(
   value: unknown,
   depth = 0,
   ancestors: readonly object[] = [],
-  key: string | undefined = undefined
+  key?: string
 ): unknown {
   if (depth > MAX_SANITIZE_DEPTH) return REDACTED
   if (ArrayBuffer.isView(value)) {

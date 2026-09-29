@@ -131,7 +131,6 @@ function onCustomComboCreated(this: LGraphNode) {
     })
   }
   const widgets = this.widgets!
-  const node = this
   widgets.push({
     name: 'index',
     type: 'hidden',
@@ -147,7 +146,7 @@ function onCustomComboCreated(this: LGraphNode) {
       widgets
         .slice(2)
         .findIndex(
-          (w) => w.value === resolveChoiceValue(node, comboWidget, resolverNode)
+          (w) => w.value === resolveChoiceValue(this, comboWidget, resolverNode)
         )
   })
   addOption(this)

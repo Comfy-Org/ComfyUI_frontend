@@ -186,6 +186,27 @@ export const zWorkflowApiAssetsRequest = z.object({
 })
 
 /**
+ * The user a web session belongs to
+ */
+export const zWebSessionUser = z.object({
+  email: z.string(),
+  email_verified: z.boolean(),
+  id: z.string(),
+  name: z.string().optional(),
+  sign_in_provider: z.string().optional()
+})
+
+/**
+ * The live web session and the user it belongs to
+ */
+export const zWebSessionResponse = z.object({
+  absolute_expires_at: z.string().datetime(),
+  csrf_token: z.string(),
+  expires_at: z.string().datetime(),
+  user: zWebSessionUser
+})
+
+/**
  * Details of a single validation error encountered during asset operations.
  */
 export const zValidationError = z.object({
@@ -588,6 +609,14 @@ export const zDocOpsResultFrame = z.object({
 
 export const zDocResetData = z.object({
   actor: z.string().max(256).optional(),
+  lineage_seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
   seq: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -610,6 +639,15 @@ export const zDocResetFrame = z.object({
 
 export const zDocUpdateData = z.object({
   actor: z.string().max(256).optional(),
+  lineage_seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  op_ids: z.array(z.string().min(1).max(128)).max(256).optional(),
   seq: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -703,6 +741,13 @@ export const zSavedPaymentMethod = z.object({
     .regex(/^[0-9]{4}$/)
     .optional(),
   type: z.string()
+})
+
+/**
+ * Response after signing out of all devices
+ */
+export const zRevokeAllSessionsResponse = z.object({
+  revoked: z.number().int()
 })
 
 /**
@@ -1990,6 +2035,25 @@ export const zForkWorkflowRequest = z.object({
 })
 
 /**
+ * 403 for a credential the route does not take. `accepted` names the ones it does, as `WWW-Authenticate` does.
+ */
+export const zAuthTypeNotAllowedError = z.object({
+  accepted: z.array(z.string()),
+  error: z.object({
+    message: z.string(),
+    type: z.enum(['auth_type_not_allowed'])
+  })
+})
+
+/**
+ * A 403 body: ErrorResponse, or AuthTypeNotAllowedError for a credential the route does not take.
+ */
+export const zForbiddenError = z.union([
+  zErrorResponse,
+  zAuthTypeNotAllowedError
+])
+
+/**
  * Response after submitting feedback
  */
 export const zFeedbackResponse = z.record(z.unknown())
@@ -2101,6 +2165,7 @@ export const zCurrentWorkspaceResponse = z.object({
   auth_method: z.string(),
   id: z.string(),
   name: z.string(),
+  permissions: z.array(z.string()).optional(),
   role: z.enum(['owner', 'member']).optional(),
   type: z.enum(['personal', 'team'])
 })
@@ -2197,7 +2262,7 @@ export const zCreateTopupCheckoutResponse = z.object({
  * Request body for creating a hosted credit top-up checkout session.
  */
 export const zCreateTopupCheckoutRequest = z.object({
-  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(473900)),
+  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(1600000)),
   idempotency_key: z.string().optional(),
   return_url: z.string().url()
 })
@@ -2252,7 +2317,8 @@ export const zCreateHubProfileRequest = z.object({
 export const zChurnkeyAuthResponse = z.object({
   auth_hash: z.string(),
   customer_id: z.string(),
-  mode: z.enum(['live', 'test', 'sandbox'])
+  mode: z.enum(['live', 'test', 'sandbox']),
+  offer_subscription_id: z.string().min(1).optional()
 })
 
 /**
@@ -2677,10 +2743,10 @@ export const zAgentPostMessageRequest = z.object({
   attachments: z.array(z.string()).optional(),
   content: z.string(),
   current_tab: z.string().optional(),
+  current_tab_unbound: z.boolean().optional(),
   draft: z
     .object({
-      content: z.record(z.unknown()).optional(),
-      version: z.number().int().nullish()
+      content: z.record(z.unknown()).optional()
     })
     .optional(),
   open_tabs: z
@@ -3283,9 +3349,19 @@ export const zRedeemDesktopLoginCodeResponse = zDesktopLoginCodeRedeemResponse
 export const zDeleteSessionResponse2 = zDeleteSessionResponse
 
 /**
+ * The live session
+ */
+export const zGetSessionResponse = zWebSessionResponse
+
+/**
  * Session created successfully
  */
 export const zCreateSessionResponse2 = zCreateSessionResponse
+
+/**
+ * Every session ended
+ */
+export const zRevokeAllSessionsResponse2 = zRevokeAllSessionsResponse
 
 export const zExchangeTokenBody = zExchangeTokenRequest
 
@@ -3465,6 +3541,7 @@ export const zGetExtensionsResponse = z.array(z.string())
  * Success
  */
 export const zGetFeaturesResponse = z.object({
+  billing_web_url: z.string().optional(),
   free_tier_balance: z
     .object({
       allowance: z.number().int(),
@@ -3473,6 +3550,7 @@ export const zGetFeaturesResponse = z.object({
     })
     .optional(),
   max_upload_size: z.number().int().optional(),
+  stripe_publishable_key: z.string().optional(),
   supports_preview_metadata: z.boolean().optional()
 })
 
@@ -4522,5 +4600,7 @@ export const zGetViewCompatAliasQuery = z.object({
 })
 
 export const zGetWebsocketQuery = z.object({
+  token: z.string().optional(),
+  workspace_id: z.string().optional(),
   clientId: z.string().optional()
 })

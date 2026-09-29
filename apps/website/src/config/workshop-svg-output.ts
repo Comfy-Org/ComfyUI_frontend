@@ -1,3 +1,4 @@
+import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
 import type { RunOutput } from './workshop-run'
 import { rasterizeSvgImage } from './workshop-svg-rasterizer'
 
@@ -59,9 +60,9 @@ export async function svgOutputs(
     )
       throw new Error('Unsafe SVG URL')
   }
-  const requestSignal = AbortSignal.any([
+  const requestSignal = combineAbortSignals([
     ...(signal ? [signal] : []),
-    AbortSignal.timeout(10_000)
+    createTimeoutSignal(10_000)
   ])
   requestSignal.throwIfAborted()
   let svg: Blob

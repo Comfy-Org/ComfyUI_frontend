@@ -17,6 +17,7 @@
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import type { DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { chunkWireOps, mintWireOps } from './opEnvelope'
 
@@ -24,14 +25,17 @@ const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
 const RESULT_TIMEOUT_MS = 10_000
 
-export interface OpsResultView {
-  workflowId?: string
-  ok: boolean
-  applied: string[]
-  skipped: string[]
-  /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. */
-  failure?: { op_id?: string }
-}
+/**
+ * The sender's view of a parsed `doc_ops_result`. Derived from the
+ * authoritative {@link DocOpsResult} rather than restated, so the fields the
+ * sender consumes retain their canonical names and types. `workflowId` is
+ * optional only because a sender may be driven without one.
+ */
+export type OpsResultView = Pick<
+  DocOpsResult,
+  'ok' | 'applied' | 'skipped' | 'code' | 'failed'
+> &
+  Partial<Pick<DocOpsResult, 'workflowId'>>
 
 export interface OpSenderDeps {
   /** `DocFrameClient.sendOps` shape: false = the transport cannot carry it now. */
@@ -138,6 +142,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
   let open: { workflowId: string; ops: Op[] } | null = null
   let inFlight: InFlight | null = null
+  let lastMintedVersion = -1
+  let lastMintedWorkflowId: string | null = null
   let detached = false
   let suspended = false
   // Late-result credits: a batch retired after transmission (settled
@@ -229,11 +235,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function admit(operations: GraphOperation[]): void {
     if (detached || operations.length === 0) return
-    const minted = mintWireOps(operations, {
-      actor: deps.actor(),
-      baseVersion: deps.baseVersion()
-    })
     const workflowId = deps.workflowId()
+    if (workflowId !== lastMintedWorkflowId) {
+      lastMintedVersion = -1
+      lastMintedWorkflowId = workflowId
+    }
+    const baseVersion = Math.max(deps.baseVersion(), lastMintedVersion + 1)
+    const actor = deps.actor()
+    const minted = operations.flatMap((operation, index) =>
+      mintWireOps([operation], { actor, baseVersion: baseVersion + index })
+    )
+    lastMintedVersion = baseVersion + minted.length - 1
     if (workflowId === null) {
       deps.onBatchSettled({ state: 'undeliverable', ops: minted })
       return
@@ -268,7 +280,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return
     }
     const identified = [...result.applied, ...result.skipped]
-    if (result.failure?.op_id) identified.push(result.failure.op_id)
+    if (result.failed?.op_id) identified.push(result.failed.op_id)
     if (identified.length > 0) {
       if (!identified.some((opId) => inFlight!.opIds.has(opId))) {
         // Names ops that are not in flight: a retired batch's own result, if
@@ -279,7 +291,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       settle({ state: 'acknowledged', ops: inFlight.ops, result })
       return
     }
-    // Anonymous failure (empty lists, no failure op_id): only attribute it
+    // Anonymous failure (empty lists, no failed op_id): only attribute it
     // to the in-flight batch once no stale credit could explain it.
     if (staleAnonymousBudget > 0) {
       staleAnonymousBudget--
@@ -324,6 +336,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       const queued = queue.splice(0)
       const admitted = open
       open = null
+      lastMintedVersion = -1
+      lastMintedWorkflowId = null
       if (inFlight) settleUnbound(inFlight)
       for (const batch of queued)
         deps.onBatchSettled({ state: 'undeliverable', ops: batch.ops })

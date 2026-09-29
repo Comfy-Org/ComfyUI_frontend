@@ -104,10 +104,9 @@ export function createMcpConnections(locale: Locale) {
       copyValue: externalLinks.mcpEndpoint,
       manualTitle: t('mcp.setup.manual.title', locale),
       manualDescription: t('mcp.setup.manual.description', locale),
-      agentCommand: t('mcp.setup.agent.command', locale).replace(
-        '{url}',
-        externalLinks.docsMcpMd
-      ),
+      agentCommand: t('mcp.setup.agent.command', locale, {
+        url: externalLinks.docsMcpMd
+      }),
       agentRecommended: false,
       showSkillsNote: true,
       clients: createCloudClients(locale)
@@ -118,10 +117,9 @@ export function createMcpConnections(locale: Locale) {
       copyValue: 'pip install comfy-mcp',
       manualTitle: t('mcp.setup.local.manual.title', locale),
       manualDescription: t('mcp.setup.local.manual.description', locale),
-      agentCommand: t('mcp.setup.local.agent.command', locale).replace(
-        '{url}',
-        externalLinks.docsMcpLocalMd
-      ),
+      agentCommand: t('mcp.setup.local.agent.command', locale, {
+        url: externalLinks.docsMcpLocalMd
+      }),
       agentRecommended: true,
       showSkillsNote: false,
       clients: createLocalClients(locale)

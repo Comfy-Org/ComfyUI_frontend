@@ -18,6 +18,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import {
   BILLING_OPERATION_TELEMETRY_EVENT,
+  awaitsHostedAction,
   validateActionUrl
 } from '@comfyorg/account-core/billing'
 import { loadStripe } from '@stripe/stripe-js/pure'
@@ -45,6 +46,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
+import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -71,10 +73,21 @@ import {
 } from './topupOperationView'
 
 type ProgressKind = 'processing' | 'action'
+
+const PROGRESS_SUMMARY = {
+  topup: {
+    processing: 'billingOperation.topupProcessing',
+    action: 'billingOperation.topupActionRequired'
+  },
+  subscription: {
+    processing: 'billingOperation.subscriptionProcessing',
+    action: 'billingOperation.subscriptionActionRequired'
+  }
+} as const satisfies Record<string, Record<ProgressKind, string>>
 type ToastMessage = Parameters<ReturnType<typeof useToastStore>['add']>[0]
 
 async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
-  const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  const publishableKey = resolveStripePublishableKey()
   const stripe = publishableKey
     ? await loadStripe(publishableKey).catch(() => null)
     : null
@@ -107,8 +120,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     workspaceId: () => workspaceAuthStore.getUnifiedMintWorkspaceId(),
     pointerStorage: sessionStorage,
     embeddedCheckoutAvailable: () =>
-      flags.embeddedCheckoutEnabled &&
-      Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY),
+      flags.embeddedCheckoutEnabled && Boolean(resolveStripePublishableKey()),
     hostedDestination: () => flags.hostedBillingDestination,
     onTelemetry: reportTelemetry,
     challengePort: loadChallengePort
@@ -210,7 +222,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   function onTopupChanged(state: BillingOperationState) {
     if (state.phase === 'pending') {
-      syncProgressToast(state)
+      syncProgressToast(state, 'topup')
       void driveRequiredChallenge(state)
       return
     }
@@ -227,22 +239,22 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     if (resumedOperations.delete(state.id)) void settleResumed(state)
   }
 
-  function syncProgressToast(state: PendingBillingOperation) {
-    const kind: ProgressKind =
-      state.actionUrl === undefined ? 'processing' : 'action'
+  function syncProgressToast(
+    state: PendingBillingOperation,
+    kind: keyof typeof PROGRESS_SUMMARY
+  ) {
+    const progress: ProgressKind = awaitsHostedAction(state)
+      ? 'action'
+      : 'processing'
     const current = progressToasts.get(state.id)
-    if (current?.kind === kind) return
-    if (current) toastStore.remove(current.message)
+    if (current?.kind === progress) return
+    clearProgressToast(state.id)
     const message: ToastMessage = {
-      severity: kind === 'action' ? 'warn' : 'info',
-      summary: t(
-        kind === 'action'
-          ? 'billingOperation.topupActionRequired'
-          : 'billingOperation.topupProcessing'
-      ),
+      severity: progress === 'action' ? 'warn' : 'info',
+      summary: t(PROGRESS_SUMMARY[kind][progress]),
       group: 'billing-operation'
     }
-    progressToasts.set(state.id, { kind, message })
+    progressToasts.set(state.id, { kind: progress, message })
     toastStore.add(message)
   }
 
@@ -259,22 +271,33 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // operation waits on a customer who was never shown anything.
   function onSubscriptionChanged(state: BillingOperationState) {
     if (state.phase !== 'pending') {
+      clearProgressToast(state.id)
       offeredActions.delete(state.id)
       if (resumedOperations.delete(state.id)) {
         void settleResumedSubscription(state)
       }
       return
     }
+    if (state.kind === 'subscription') syncProgressToast(state, 'subscription')
     void driveRequiredChallenge(state)
-    openHostedAction(state)
+    if (!drivesInPageChallenge(state) && !resumedOperations.has(state.id)) {
+      openHostedAction(state)
+    }
+  }
+
+  // The server offers its hosted page beside the client secret, so an
+  // embedded operation carries both; the in-page challenge is its route.
+  function drivesInPageChallenge(state: PendingBillingOperation): boolean {
+    return state.presentation === 'embedded' && state.challenge !== undefined
   }
 
   // One offer per hosted step, not per poll, and not again for a step this
   // operation already offered: the open runs off the lifecycle rather than a
   // click, so a browser that blocked the first one blocks every retry and each
-  // retry would repeat the warning. A step the customer still owes stays on
-  // `subscriptionActionUrl` for the checkout to put behind a button of their
-  // own.
+  // retry would repeat the warning. An operation reattached on load is never
+  // offered at all, since no click of this page started it. A step the
+  // customer still owes stays on `subscriptionActionUrl` for the checkout to
+  // put behind a button of their own.
   function openHostedAction(state: PendingBillingOperation) {
     const actionUrl = hostedActionUrl(state)
     if (actionUrl === undefined) return

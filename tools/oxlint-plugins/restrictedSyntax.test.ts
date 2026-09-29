@@ -8,12 +8,16 @@ interface Diagnostic {
   readonly filename: string
   readonly message: string
   readonly severity: string
+  readonly labels: readonly { readonly span: { readonly line: number } }[]
 }
+
+const privateSigil = '#'
 
 const probeDirs = {
   source: path.resolve('src/__restricted_syntax_probes__'),
   app: path.resolve('apps/__restricted_syntax_probes__/src'),
   remote: path.resolve('src/platform/remote/__restricted_syntax_probes__'),
+  selection: path.resolve('src/composables/graph/__restricted_syntax_probes__'),
   schemas: path.resolve('src/schemas/__restricted_syntax_probes__'),
   fixtureData: path.resolve(
     'browser_tests/fixtures/data/__restricted_syntax_probes__'
@@ -31,6 +35,17 @@ const removedModuleFiles = [
   path.join(probeDirs.fixtureData, 'deprecated.ts'),
   path.join(probeDirs.browserTests, 'deprecated.spec.ts')
 ]
+
+const selectionWriteProbes = [
+  ['selected-assignment.ts', 'group.selected = true'],
+  ['selected-items-add.ts', 'canvas.selectedItems.add(group)'],
+  ['selected-items-delete.ts', 'canvas.selectedItems.delete(group)'],
+  ['selected-items-clear.ts', 'canvas.selectedItems.clear()'],
+  ['selected-nodes-assignment.ts', 'canvas.selected_nodes[group.id] = group'],
+  ['selected-nodes-delete.ts', 'delete canvas.selected_nodes[group.id]'],
+  ['selection-store-apply.ts', 'useSelectionStore().apply(scope, command)'],
+  ['computed-selected-assignment.ts', "canvas['selected'] = true"]
+] as const
 
 const probes = [
   {
@@ -73,10 +88,31 @@ void unrelated
 `
   },
   {
+    file: path.join(probeDirs.source, 'privateMembers.ts'),
+    source: `class Example {
+  ${privateSigil}value = 0
+  ${privateSigil}read() { return this.${privateSigil}value }
+}
+void Example
+`
+  },
+  {
     file: path.join(probeDirs.source, 'computed.vue'),
     source: `<script setup lang="ts">
 computed(() => element.getBoundingClientRect())
 </script>
+`
+  },
+  ...selectionWriteProbes.map(([file, source]) => ({
+    file: path.join(probeDirs.selection, file),
+    source: `${source}\n`
+  })),
+  {
+    file: path.join(probeDirs.selection, 'allowed-selection-access.ts'),
+    source: `void group.selected
+void canvas.selectedItems.has(group)
+void canvas.selected_nodes[group.id]
+canvas[selected] = value
 `
   },
   ...removedModuleFiles.map((file) => {
@@ -102,6 +138,60 @@ void (0 as unknown as GetI18nResponse)
   {
     file: path.join(probeDirs.source, 'misplaced.spec.ts'),
     source: "test('misplaced', () => {})\n"
+  },
+  {
+    file: path.join(probeDirs.source, 'primevue.ts'),
+    source: `import Button from 'primevue/button'
+import { useToast } from 'primevue'
+import { definePreset } from '@primevue/themes'
+import prime from 'primevue-lookalike'
+export { default as Select } from 'primevue/select'
+export * from '@primevue/forms'
+const lazy = () => import('primevue/skeleton')
+const templated = () => import(\`primevue/dialog\`)
+void [Button, useToast, definePreset, prime, lazy, templated]
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'primevue.vue'),
+    source: `<script setup lang="ts">
+import Skeleton from 'primevue/skeleton'
+void Skeleton
+</script>
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'arrayCopy.ts'),
+    source: `const items = [1, 2]
+items.toReversed()
+items.toSorted()
+items.toSpliced(0, 1)
+items.with(0, 1)
+items['toSorted']()
+items[\`toSorted\`]()
+items?.with(0, 1)
+new Uint8Array(1).toSorted()
+const fn = items.toSorted
+const method = 'map' as const
+items[method]()
+items.sort()
+void fn
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'arrayCopy.vue'),
+    source: `<script setup lang="ts">
+const items = [1, 2].toSorted()
+void items
+</script>
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'arrayCopy.test.ts'),
+    source: `const items = [1, 2]
+items.toReversed()
+items['toSorted']()
+`
   },
   {
     file: path.join(probeDirs.remote, 'remote.ts'),
@@ -148,9 +238,21 @@ function hasStringProperty(value: object, property: keyof Diagnostic): boolean {
 
 function isDiagnostic(value: unknown): value is Diagnostic {
   if (typeof value !== 'object' || value === null) return false
+  if (!('labels' in value) || !Array.isArray(value.labels)) return false
   return (['code', 'filename', 'message', 'severity'] as const).every(
     (property) => hasStringProperty(value, property)
   )
+}
+
+function locations(diagnostics: readonly Diagnostic[]) {
+  return diagnostics
+    .map(({ filename, labels }) => [
+      path.basename(filename),
+      labels[0]?.span.line
+    ])
+    .toSorted(([fileA, lineA], [fileB, lineB]) =>
+      fileA === fileB ? Number(lineA) - Number(lineB) : fileA < fileB ? -1 : 1
+    )
 }
 
 function parseDiagnostics(output: string): Diagnostic[] {
@@ -248,6 +350,36 @@ describe('restricted syntax rules', () => {
     )
   })
 
+  it('rejects JavaScript hard-private class members', () => {
+    const privateMemberFindings = findingsFor('no-js-private-class-members')
+    expect(privateMemberFindings).toHaveLength(2)
+    expect(
+      privateMemberFindings.every(({ severity }) => severity === 'error')
+    ).toBe(true)
+    expect(
+      new Set(privateMemberFindings.map(({ message }) => message))
+    ).toEqual(
+      new Set([
+        'Do not use JavaScript hard-private class members. Use TypeScript private members instead.'
+      ])
+    )
+  })
+
+  it('rejects direct canvas selection writes', () => {
+    const selectionFindings = findingsFor('no-direct-selection-write')
+    expect(
+      selectionFindings.map(({ filename }) => path.basename(filename)).sort()
+    ).toEqual(selectionWriteProbes.map(([file]) => file).sort())
+    expect(
+      selectionFindings.every(({ severity }) => severity === 'error')
+    ).toBe(true)
+    expect(new Set(selectionFindings.map(({ message }) => message))).toEqual(
+      new Set([
+        'Route canvas selection changes through LGraphCanvas selection APIs.'
+      ])
+    )
+  })
+
   it('preserves the remote Zod and browser test restrictions', () => {
     expect(findingsFor('no-new-zod-for-remote-api-types')).toEqual([
       expect.objectContaining({
@@ -292,6 +424,41 @@ describe('restricted syntax rules', () => {
       ])
     }
   )
+
+  it('rejects static PrimeVue imports, re-exports, and dynamic imports', () => {
+    const primeVueFindings = findingsFor('no-primevue-imports')
+    expect(locations(primeVueFindings)).toEqual([
+      ['primevue.ts', 1],
+      ['primevue.ts', 2],
+      ['primevue.ts', 3],
+      ['primevue.ts', 5],
+      ['primevue.ts', 6],
+      ['primevue.ts', 7],
+      ['primevue.ts', 8],
+      ['primevue.vue', 2]
+    ])
+    expect(primeVueFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
+    )
+  })
+
+  it('rejects statically named ES2023 array copy calls outside unit tests', () => {
+    const copyFindings = findingsFor('no-es2023-array-copy-method')
+    expect(locations(copyFindings)).toEqual([
+      ['arrayCopy.ts', 2],
+      ['arrayCopy.ts', 3],
+      ['arrayCopy.ts', 4],
+      ['arrayCopy.ts', 5],
+      ['arrayCopy.ts', 6],
+      ['arrayCopy.ts', 7],
+      ['arrayCopy.ts', 8],
+      ['arrayCopy.ts', 9],
+      ['arrayCopy.vue', 2]
+    ])
+    expect(copyFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
+    )
+  })
 
   it('allows generated contracts', () => {
     expect(

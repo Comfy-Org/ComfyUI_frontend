@@ -4,9 +4,13 @@
  * gap (e.g. `Idempotency-Key` missing from `Access-Control-Allow-Headers`)
  * — that is covered by the live test plan, not here.
  */
+import type { BillingOpStatusResponse } from '@comfyorg/ingest-types'
+
 import type { MockCloud } from './fixtures/cloud'
+import { E2E_USER } from './fixtures/env'
 import {
   challengeRequiredOperation,
+  contactSupportOperation,
   declinedOperation,
   pendingOperation,
   succeededOperation
@@ -30,12 +34,19 @@ const test = base.extend<{ stripeFake: void }>({
 
 const CHECKOUT = entryPath('checkout', { plan: 'pro_monthly' })
 
-/** The only scenarios in this fixture set with a payment method configured. */
+// Above the 8 s poll backoff cap, well below the 30 s parked cadence.
+const FAST_BACKOFF_DEADLINE_MS = 15_000
+
+/**
+ * The only scenarios in this fixture set that collect a card: a payment
+ * method configured, and no saved method standing in for the card form.
+ */
 function withEmbeddedPaymentMethod(cloud: MockCloud): void {
   cloud.scenario.preview = {
     ...cloud.scenario.preview,
     payment_method_configuration_id: 'pmc_e2e'
   }
+  cloud.scenario.paymentMethods = []
 }
 
 async function fakeStripeCalls(
@@ -63,14 +74,14 @@ test('submitting payment carries the idempotency key and plan, and settles as su
   await expect(
     page.getByRole('heading', { name: 'Confirm your payment' })
   ).toBeVisible()
-  await expect(page.getByText('Pro · Monthly')).toBeVisible()
+  await expect(page.getByText('Pro', { exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
   await expect(
     page.getByRole('heading', { name: "You're all set" })
   ).toBeVisible()
-  await expect(page.getByText('Pro · Monthly')).toBeVisible()
+  await expect(page.getByText('Pro', { exact: true })).toBeVisible()
 
   const subscribe = cloud.requests.find(
     (request) => request.path === '/billing/subscribe'
@@ -88,6 +99,66 @@ test('submitting payment carries the idempotency key and plan, and settles as su
   expect(await fakeStripeCalls(page, 'nextActions')).toBe(0)
 })
 
+test('a scheduled plan change confirms against the saved payment method, no card form', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    transition_type: 'duration_change',
+    is_immediate: false,
+    cost_today_cents: 0,
+    amount_due_cents: 0
+  }
+  await signIn(CHECKOUT)
+
+  await expect(
+    page.getByRole('heading', { name: 'Review your scheduled change' })
+  ).toBeVisible()
+  await expect(page.getByText('Pro', { exact: true })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Confirm change' }).click()
+
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+
+  const subscribe = cloud.requests.find(
+    (request) => request.path === '/billing/subscribe'
+  )
+  expect(subscribe?.body).toMatchObject({ plan_slug: 'pro_monthly' })
+  expect(subscribe?.body).not.toHaveProperty('confirmation_token')
+
+  // The fake only installs itself once the app requests js.stripe.com, so
+  // its absence proves Stripe.js was never loaded for this path.
+  expect(await page.evaluate('window.__e2eFakeStripe')).toBeUndefined()
+})
+
+test('a saved default method is charged in place of the card form', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+
+  await expect(page.getByText('visa •••• 4242')).toBeVisible()
+  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+  const subscribe = cloud.requests.find(
+    (request) => request.path === '/billing/subscribe'
+  )
+  expect(subscribe?.body).toMatchObject({
+    plan_slug: 'pro_monthly',
+    saved_payment_method_id: 'pm_e2e'
+  })
+  expect(subscribe?.body).not.toHaveProperty('confirmation_token')
+  expect(await page.evaluate('window.__e2eFakeStripe')).toBeUndefined()
+})
+
 test('a declined payment shows the reason and stays on checkout', async ({
   page,
   cloud,
@@ -99,15 +170,36 @@ test('a declined payment shows the reason and stays on checkout', async ({
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
+  await expect(page.getByRole('alert')).toContainText(
+    'Your bank declined this payment. Try another payment method or contact your bank.'
+  )
   await expect(
-    page.getByRole('heading', { name: 'Payment declined' })
-  ).toBeVisible()
-  await expect(page.getByText('Your bank declined the payment.')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible()
+    page.getByRole('button', { name: 'Pay and subscribe' })
+  ).toBeEnabled()
   await expect(page).toHaveURL(/\/v1\/checkout\?/)
 
   expect(await fakeStripeCalls(page, 'confirmationTokens')).toBe(1)
   expect(await fakeStripeCalls(page, 'nextActions')).toBe(0)
+})
+
+test('a failure with no coded reason reads as a bank decline, as the app does', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  withEmbeddedPaymentMethod(cloud)
+  cloud.scenario.operations.op_subscribe =
+    contactSupportOperation('op_subscribe')
+  await signIn(CHECKOUT)
+
+  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+
+  await expect(page.getByRole('alert')).toContainText(
+    'Your bank declined this payment. Try another payment method or contact your bank.'
+  )
+  await expect(
+    page.getByRole('heading', { name: 'Confirm your payment' })
+  ).toBeVisible()
 })
 
 test('a 3DS challenge is driven by the fake and settles as success', async ({
@@ -143,6 +235,79 @@ test('a 3DS challenge is driven by the fake and settles as success', async ({
     { clientSecret: 'seti_e2e_secret' }
   ])
   expect(polls).toBeGreaterThanOrEqual(2)
+})
+
+test('a completed 3DS challenge does not ask to verify again while the server settles', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  withEmbeddedPaymentMethod(cloud)
+  let polls = 0
+  let settled = false
+  cloud.reply('GET', '/billing/ops/op_subscribe', () => {
+    polls += 1
+    return {
+      body: settled
+        ? succeededOperation('op_subscribe')
+        : challengeRequiredOperation('op_subscribe', 'seti_e2e_secret')
+    }
+  })
+  await signIn(CHECKOUT)
+
+  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+
+  await expect.poll(() => fakeStripeCalls(page, 'nextActions')).toBe(1)
+  const pollsAtChallengeEnd = polls
+  await expect.poll(() => polls).toBeGreaterThan(pollsAtChallengeEnd)
+
+  await expect(
+    page.getByRole('heading', { name: 'Confirm your payment' })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Complete verification' })
+  ).toHaveCount(0)
+
+  settled = true
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+  expect(await fakeStripeCalls(page, 'nextActions')).toBe(1)
+})
+
+test('a challenge whose authentication state lags the client secret is still driven in-session', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  withEmbeddedPaymentMethod(cloud)
+  const challenge = challengeRequiredOperation(
+    'op_subscribe',
+    'seti_e2e_secret'
+  )
+  const blocked: BillingOpStatusResponse = {
+    ...challenge,
+    phase: 'awaiting_invoice_payment'
+  }
+  const actionless: BillingOpStatusResponse = {
+    ...blocked,
+    authentication_state: 'processing'
+  }
+  const replies = [actionless, actionless, blocked]
+  let polls = 0
+  cloud.reply('GET', '/billing/ops/op_subscribe', () => ({
+    body: replies[polls++] ?? succeededOperation('op_subscribe')
+  }))
+  await signIn(CHECKOUT)
+
+  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible({ timeout: FAST_BACKOFF_DEADLINE_MS })
+  expect(await fakeStripeNextActionCalls(page)).toEqual([
+    { clientSecret: 'seti_e2e_secret' }
+  ])
 })
 
 test('reloading on the result page while pending recovers it and shows the settled outcome', async ({
@@ -185,9 +350,44 @@ test('reloading on the result page while pending recovers it and shows the settl
     page.getByRole('link', { name: 'Return to ComfyUI' })
   ).toHaveAttribute(
     'href',
-    'https://testcloud.comfy.org/?billing_result=success&billing_ref=op_pending'
+    `https://testcloud.comfy.org/?workspace=${E2E_USER.workspaceId}&billing_result=success&billing_ref=op_pending`
   )
   expect(
     cloud.requests.some((request) => request.path === '/billing/ops/op_pending')
   ).toBe(true)
+})
+
+test('a checkout link naming a team credit stop quotes it along with the plan', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await signIn(
+    entryPath('checkout', {
+      plan: 'pro_monthly',
+      team_credit_stop_id: 'stop_700'
+    })
+  )
+
+  await expect(
+    page.getByRole('heading', { name: 'Confirm your payment' })
+  ).toBeVisible()
+  const preview = cloud.requests.find(
+    (request) => request.path === '/billing/preview-subscribe'
+  )
+  expect(preview?.body).toStrictEqual({
+    plan_slug: 'pro_monthly',
+    team_credit_stop_id: 'stop_700'
+  })
+})
+
+test('a checkout link that names no plan goes back to the host to choose one', async ({
+  page
+}) => {
+  await page.goto(entryPath('checkout', { workspace: 'ws_team_e2e' }))
+
+  await expect(page).toHaveURL(
+    'https://testcloud.comfy.org/?workspace=ws_team_e2e'
+  )
+  await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
 })

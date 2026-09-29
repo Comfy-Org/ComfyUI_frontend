@@ -291,7 +291,10 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       {
         op: 'delete_node',
         node_id: operation.nodeId,
-        removed_links: deps.severedLinks.take(String(operation.nodeId))
+        removed_links: deps.severedLinks.take(
+          operation.graphId ?? deps.boundRootGraphId() ?? '',
+          String(operation.nodeId)
+        )
       }
     ])
   }

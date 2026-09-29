@@ -4,7 +4,11 @@ import {
   mint,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
-import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import type {
+  Op,
+  WidgetCatalog,
+  WorkflowNode
+} from '@comfyorg/comfy-multi-player'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -18,6 +22,7 @@ import {
   LLink,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import {
   createTestSubgraph,
   createTestSubgraphData,
@@ -45,7 +50,11 @@ import type { NodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
-import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import { AgentCrdtProjection } from './agentCrdtProjection'
+import {
+  reconcileAgentAdapters,
+  subgraphDefinitionReadState
+} from './agentNodeMaterializer'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
@@ -191,12 +200,18 @@ function remoteMutations(scope: GraphScope) {
   })
 }
 
-function nodePayload(id: number, type = 'dummy') {
+function nodePayload(
+  id: number,
+  type = 'dummy'
+): WorkflowNode & ISerialisedNode {
   return {
     id,
     type,
     pos: [0, 0],
     size: [100, 80],
+    flags: {},
+    order: 0,
+    mode: 0,
     inputs: [],
     outputs: []
   }
@@ -224,6 +239,119 @@ beforeEach(() => {
 })
 
 describe('reconcileAgentAdapters', () => {
+  // Materializing a store-only record into a live node is a rendering-layer
+  // step, not a content change: `materialize()` deletes and re-registers the
+  // record's `NodeState` so a real `LGraphNode` can own it, but that record
+  // is the same logical node the doc already described. Dropping its
+  // `titleReconcileBaseline` here means the very next reconcile sees a node
+  // with no baseline at all and cannot tell an unrelated local edit from a
+  // stale doc replay (graphMutations.ts's `resolveNodeTitle`).
+  it('keeps the record titleReconcileBaseline across materialization', () => {
+    const graph = new LGraph()
+    const scope = seedAgentAddedNode(graph, 1)
+    const beforeBaseline = useNodeDataStore().getNode(
+      scope.rootGraphId,
+      toNodeId(1)
+    )?.titleReconcileBaseline
+    expect(beforeBaseline).toBeDefined()
+
+    reconcileAgentAdapters(graph)
+
+    expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(DummyNode)
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+        ?.titleReconcileBaseline
+    ).toEqual(beforeBaseline)
+  })
+
+  // Proves the behavior the carried-over baseline above exists for, not just
+  // that the field was copied: after materialization, a local rename must
+  // survive an unrelated reconcile, and a genuine remote rename must still
+  // win, exactly as it would without ever having gone through materialize().
+  it('preserves a local rename after materialization through an unchanged reconcile, but not a changed one', () => {
+    const graph = new LGraph()
+    const scope = seedAgentAddedNode(graph, 1)
+    reconcileAgentAdapters(graph)
+    const live = graph.getNodeById(toNodeId(1))
+    assert.exists(live)
+    live.title = 'My Custom Title'
+
+    remoteMutations(scope).batch(
+      { ...REMOTE, opId: 'op-unchanged' },
+      (batch) => {
+        batch.reconcileNode(nodePayload(1))
+      }
+    )
+    reconcileAgentAdapters(graph)
+    expect(graph.getNodeById(toNodeId(1))?.title).toBe('My Custom Title')
+
+    remoteMutations(scope).batch({ ...REMOTE, opId: 'op-changed' }, (batch) => {
+      batch.reconcileNode({ ...nodePayload(1), title: 'Renamed By Agent' })
+    })
+    reconcileAgentAdapters(graph)
+    expect(graph.getNodeById(toNodeId(1))?.title).toBe('Renamed By Agent')
+  })
+
+  // Known, intentionally unfixed gap: returning to a workflow tab reloads
+  // it, and `LGraph.clear()` (called by `configure()`) tears its nodes down
+  // individually via `teardownOwnedGraphs` *before* it resets the
+  // nodeDataStore bucket, so each node's reconcile baseline
+  // (`lastSerialization`, graphMutations.ts's `resolveNodeTitle`) is gone by
+  // the time any bucket-level hook could try to preserve it. A live rename
+  // does survive the reload itself (`serialize()` captured it), but the very
+  // next reconcile has no baseline to compare the doc's title against and
+  // replays it over the reload's rename regardless. A real fix needs the
+  // same kind of dedicated cross-layer plumbing as the widget-overwrite
+  // case below - threading a "preserve this node's reconcile baseline"
+  // signal through `LGraph.clear()`'s per-node teardown - not a change
+  // local to this module.
+  // The missing-node fallback (`missingNode`) constructs a bare `LGraphNode`,
+  // which is exactly the type `serializeFromStoreState` special-cases to
+  // replay a frozen doc snapshot instead of serializing live state (see its
+  // `this.constructor === LGraphNode` branch). Carrying the record's CRDT
+  // reconcile baseline into that node's `lastSerialization` would trip that
+  // branch and silently drop every change made after materialization.
+  it('serializes current state, not a stale doc snapshot, for a node materialized via the missing-node fallback', () => {
+    const graph = new LGraph()
+    seedAgentAddedNode(graph, 1, 'unregistered-type')
+
+    reconcileAgentAdapters(graph)
+
+    const live = graph.getNodeById(toNodeId(1))
+    assert.exists(live)
+    expect(live.constructor).toBe(LGraphNode)
+
+    live.title = 'Renamed Locally'
+    expect(live.serialize().title).toBe('Renamed Locally')
+  })
+
+  it.fails('keeps a live rename after the workflow tab reloads and an unrelated reconcile runs', () => {
+    const graph = new LGraph()
+    const scope = graphScopeOf(graph)
+    const docPayload = {
+      id: 1,
+      type: 'dummy',
+      title: 'Positive prompt',
+      pos: [0, 0],
+      size: [100, 80],
+      inputs: [],
+      outputs: []
+    }
+    remoteMutations(scope).addNode(docPayload, { ...REMOTE, opId: 'op-1' })
+    reconcileAgentAdapters(graph)
+
+    const live = graph.getNodeById(toNodeId(1))
+    assert.exists(live)
+    live.title = 'My Custom Prompt'
+    graph.configure(graph.serialize())
+
+    remoteMutations(scope).batch({ ...REMOTE, opId: 'op-2' }, (batch) => {
+      batch.reconcileNode(docPayload)
+    })
+
+    expect(graph.getNodeById(toNodeId(1))?.title).toBe('My Custom Prompt')
+  })
+
   it('converges create, connect, save/reload, readback, and delete across every graph surface', () => {
     const graph = new LGraph()
     const scope = graphScopeOf(graph)
@@ -1510,6 +1638,7 @@ describe('reconcileAgentAdapters', () => {
       const definitions = readSubgraphDefinitions(follower.doc)
 
       expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+      expect(subgraphDefinitionReadState(graph, definition.id)).toBe('failed')
       expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
       // Same definition, same failure: one report, not one per frame.
       expect(reportError).toHaveBeenCalledOnce()
@@ -1524,6 +1653,49 @@ describe('reconcileAgentAdapters', () => {
       expect((instance as SubgraphNode).subgraph).toBe(
         graph.subgraphs.get(definition.id)
       )
+    })
+
+    it('keeps failed nodes pending while registering a missing sibling definition', () => {
+      configureShouldThrow = true
+      const failed = createTestSubgraphData({
+        nodes: [nodePayload(7, 'throws-on-configure')]
+      })
+      const missing = createTestSubgraphData({ nodes: [nodePayload(8)] })
+      expect(reconcileAgentAdapters(graph, [failed])).toEqual([])
+      expect(subgraphDefinitionReadState(graph, failed.id)).toBe('failed')
+      const creationsAfterFailure = created.mock.calls.length
+
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, failed.id), nodePayload(2, missing.id)],
+        links: [],
+        definitions: { subgraphs: [failed, missing] }
+      })
+      const storedFailed = follower.doc
+        .getMap<unknown>('definitions')
+        .get(failed.id)
+      assert.instanceOf(storedFailed, Y.Map)
+      const failedBody = new Y.Text('expensive body')
+      storedFailed.set('name', failedBody)
+      const failedBodyRead = vi.spyOn(failedBody, 'toJSON')
+      const projection = new AgentCrdtProjection(
+        remoteMutations(graphScopeOf(graph)),
+        () => graph,
+        () => follower.doc
+      )
+
+      expect(projection.reconcileLiveGraph('workflow')).toEqual([toNodeId(2)])
+      expect(failedBodyRead).not.toHaveBeenCalled()
+      expect(created).toHaveBeenCalledTimes(creationsAfterFailure + 1)
+      expect(reportError).toHaveBeenCalledOnce()
+      expect(graph.getNodeById(toNodeId(1))).toBeNull()
+      expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(SubgraphNode)
+
+      configureShouldThrow = false
+      expect(
+        reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      ).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(SubgraphNode)
+      projection.destroy()
     })
 
     it('registers a valid sibling when another definition in the same frame fails', () => {
@@ -1613,6 +1785,7 @@ describe('reconcileAgentAdapters', () => {
       // createSubgraphs would silently mint a UUID for it, leaving the root
       // node's `type` pointing at an id the doc never registered.
       expect(graph.subgraphs.size).toBe(0)
+      expect(subgraphDefinitionReadState(graph, definition.id)).toBe('failed')
       expect(created).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
         errorType: 'agent_subgraph_definitions_failed',

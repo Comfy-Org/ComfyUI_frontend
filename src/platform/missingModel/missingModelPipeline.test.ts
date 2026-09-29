@@ -1,5 +1,4 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { ComfyApp } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from './missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -1106,8 +1105,5 @@ describe('missingModelPipeline', () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))
 vi.mock(import('firebase/auth'))

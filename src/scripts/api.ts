@@ -17,6 +17,7 @@ import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
@@ -85,6 +86,8 @@ import {
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
 
+const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
+
 interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
@@ -143,6 +146,7 @@ const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
 
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
+  onAuthHeader?: (attached: boolean) => void
 }
 
 const FETCH_ROUTE_GROUPS = new Set([
@@ -340,6 +344,8 @@ export type GlobalSubgraphData = {
   essentials_category?: string
 }
 
+type WebSessionSend = (url: string, init: RequestInit) => Promise<Response>
+
 function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
   if (Array.isArray(headers)) {
     headers.push([key, value])
@@ -483,6 +489,17 @@ export class ComfyApi extends EventTarget {
   serverFeatureFlags = ref<Record<string, unknown>>({})
 
   /**
+   * Whether feature-flag negotiation for the current socket has settled: the
+   * server delivered a map, or delivery was abandoned (5s timeout, or the
+   * socket closed first). Not monotonic: each replacement socket resets it to
+   * false, so it can flip repeatedly while a connection is reconnecting. True
+   * does not imply the map is non-empty, and after {@link resetSocket}
+   * {@link serverFeatureFlags} still holds the previous identity's map until
+   * the next `feature_flags` message replaces it.
+   */
+  serverFeatureFlagsSettled = ref(false)
+
+  /**
    * The auth token for the comfy org account if the user is logged in.
    * This is only used for {@link queuePrompt} now. It is not directly
    * passed as parameter to the function because some custom nodes are hijacking
@@ -540,6 +557,39 @@ export class ComfyApi extends EventTarget {
     }
   }
 
+  private async getWebSessionSend(): Promise<WebSessionSend | undefined> {
+    const requests = webSessionRequests()
+    if (!requests) return undefined
+    const scope = await requests.scope()
+    return scope && ((url, init) => requests.send(url, init, scope))
+  }
+
+  /** Adds today's token header; true when a 401 may be re-minted. */
+  private async addCloudAuthHeader(
+    headers: HeadersInit,
+    onAuthHeader: FetchApiOptions['onAuthHeader']
+  ): Promise<boolean> {
+    // Get Firebase JWT token if user is logged in
+    const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
+      try {
+        const authStore = await this.getAuthStore()
+        return authStore ? await authStore.getAuthHeader() : null
+      } catch (error) {
+        console.warn('Failed to get auth header:', error)
+        return null
+      }
+    }
+
+    const authHeader = await getAuthHeaderIfAvailable()
+    onAuthHeader?.(authHeader !== null)
+    if (!authHeader) return false
+
+    for (const [key, value] of Object.entries(authHeader)) {
+      addHeaderEntry(headers, key, value)
+    }
+    return shouldRemintCloudRequest()
+  }
+
   /**
    * Waits for Firebase auth to be initialized before proceeding.
    * Includes 10-second timeout to prevent infinite hanging.
@@ -564,33 +614,25 @@ export class ComfyApi extends EventTarget {
   }
 
   async fetchApi(route: string, options?: FetchApiOptions) {
-    const { timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS, ...requestOptions } =
-      options ?? {}
+    const {
+      timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS,
+      onAuthHeader,
+      ...requestOptions
+    } = options ?? {}
     const headers: HeadersInit = requestOptions.headers ?? {}
     let unifiedRetryOn401 = false
+    let sendOnWebSession: WebSessionSend | undefined
 
     if (isCloud) {
       await this.waitForAuthInitialization()
-
-      // Get Firebase JWT token if user is logged in
-      const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
-        try {
-          const authStore = await this.getAuthStore()
-          return authStore ? await authStore.getAuthHeader() : null
-        } catch (error) {
-          console.warn('Failed to get auth header:', error)
-          return null
-        }
+      sendOnWebSession = await this.getWebSessionSend()
+      if (sendOnWebSession) {
+        onAuthHeader?.(true)
+      } else {
+        unifiedRetryOn401 = await this.addCloudAuthHeader(headers, onAuthHeader)
       }
-
-      const authHeader = await getAuthHeaderIfAvailable()
-
-      if (authHeader) {
-        for (const [key, value] of Object.entries(authHeader)) {
-          addHeaderEntry(headers, key, value)
-        }
-        unifiedRetryOn401 = await shouldRemintCloudRequest()
-      }
+    } else {
+      onAuthHeader?.(false)
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
@@ -627,17 +669,60 @@ export class ComfyApi extends EventTarget {
         ? AbortSignal.any([requestOptions.signal, timeout.controller.signal])
         : (requestOptions.signal ?? timeout?.controller.signal)
 
-    return fetchWithUnifiedRemint(
-      this.apiURL(route),
-      {
-        cache: 'no-cache',
-        ...requestOptions,
-        headers,
-        signal
-      },
-      unifiedRetryOn401
-    ).finally(() => {
+    let retryTimeoutId: ReturnType<typeof setTimeout> | undefined
+    const retrySignalLifecycle = timeout
+      ? {
+          clearInitialTimeout: () => {
+            if (timeoutId !== undefined) clearTimeout(timeoutId)
+          },
+          createSignal: () => {
+            const retryController = new AbortController()
+            retryTimeoutId = setTimeout(() => {
+              const method = (requestOptions.method ?? 'GET').toUpperCase()
+              const routeTemplate = getFetchRouteTemplate(route)
+
+              addBreadcrumb({
+                category: 'fetch',
+                message: `Timeout on ${method} ${routeTemplate}`,
+                level: 'warning',
+                data: { timeout_ms: timeout.duration }
+              })
+
+              useTelemetry()?.trackFetchTimeout({
+                route: routeTemplate,
+                method,
+                timeout_ms: timeout.duration
+              })
+
+              retryController.abort(
+                new DOMException('Fetch timeout', 'TimeoutError')
+              )
+            }, timeout.duration)
+
+            return requestOptions.signal
+              ? AbortSignal.any([requestOptions.signal, retryController.signal])
+              : retryController.signal
+          }
+        }
+      : undefined
+
+    const init: RequestInit = {
+      cache: 'no-cache',
+      ...requestOptions,
+      headers,
+      signal
+    }
+    const response = sendOnWebSession
+      ? sendOnWebSession(this.apiURL(route), init)
+      : fetchWithUnifiedRemint(
+          this.apiURL(route),
+          init,
+          unifiedRetryOn401,
+          retrySignalLifecycle
+        )
+    return response.finally(() => {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
+      if (retryTimeoutId !== undefined) clearTimeout(retryTimeoutId)
     })
   }
 
@@ -790,7 +875,7 @@ export class ComfyApi extends EventTarget {
         const resp = await this.fetchApi('/prompt')
         const status = (await resp.json()) as StatusWsMessageStatus
         this.dispatchCustomEvent('status', status)
-      } catch (error) {
+      } catch {
         this.dispatchCustomEvent('status', null)
       }
     }, 1000)
@@ -847,7 +932,15 @@ export class ComfyApi extends EventTarget {
 
     const socket = new WebSocket(wsUrl)
     this.socket = socket
+    this.serverFeatureFlagsSettled.value = false
     socket.binaryType = 'arraybuffer'
+
+    // Armed before `open` so a socket that never opens still settles.
+    const settleTimer = setTimeout(() => {
+      if (this.socket === socket && !this.serverFeatureFlagsSettled.value) {
+        this.serverFeatureFlagsSettled.value = true
+      }
+    }, SERVER_FEATURE_FLAGS_TIMEOUT_MS)
 
     socket.addEventListener('open', () => {
       opened = true
@@ -880,6 +973,8 @@ export class ComfyApi extends EventTarget {
       // A replaced socket (e.g. after resetSocket on an account switch) must
       // not reconnect; only the active socket owns the reconnect lifecycle.
       if (this.socket !== socket) return
+      this.serverFeatureFlagsSettled.value = true
+      clearTimeout(settleTimer)
       setTimeout(async () => {
         if (this.socket !== socket) return
         this.socket = null
@@ -1024,6 +1119,7 @@ export class ComfyApi extends EventTarget {
               break
             case 'feature_flags':
               this.serverFeatureFlags.value = msg.data
+              this.serverFeatureFlagsSettled.value = true
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
@@ -1059,6 +1155,9 @@ export class ComfyApi extends EventTarget {
    */
   async resetSocket(): Promise<void> {
     const previous = this.socket
+    // serverFeatureFlags deliberately keeps the previous map: clearing it would
+    // downgrade every serverSupportsFeature() caller until the next delivery.
+    this.serverFeatureFlagsSettled.value = false
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
     this.socket = null
@@ -1495,7 +1594,16 @@ export class ComfyApi extends EventTarget {
     const resp = await this.fetchApi('/settings')
 
     if (resp.status == 401) {
-      throw new UnauthorizedError(resp.statusText)
+      // `statusText` is ALWAYS empty over HTTP/2 — the protocol carries no
+      // reason phrase — and cloud.comfy.org is HTTP/2. Passing it straight
+      // through produced `new UnauthorizedError('')`, which the global
+      // onerror handler reported to Sentry as the untitled group
+      // "Error: No error message": 165,890 events in 14 days across 25,417
+      // users, all of them unactionable because nothing in the event said
+      // which request had failed.
+      throw new UnauthorizedError(
+        `Failed to load settings: 401 ${resp.statusText || 'Unauthorized'}`
+      )
     }
     return await resp.json()
   }
@@ -1722,7 +1830,7 @@ export class ComfyApi extends EventTarget {
             'Unloading of models failed. Installed ComfyUI may be an outdated version.'
         })
       }
-    } catch (error) {
+    } catch {
       useToastStore().add({
         severity: 'error',
         summary: 'An error occurred while trying to unload models.'

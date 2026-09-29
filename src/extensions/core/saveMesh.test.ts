@@ -4,23 +4,21 @@ import { defineComponent } from 'vue'
 
 import type { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ComfyApp } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import type { useLoad3dService } from '@/services/load3dService'
 import type { ComfyExtension } from '@/types/comfy'
+import type * as GraphTraversalModule from '@/utils/graphTraversalUtil'
 
 const {
   registerExtensionMock,
   waitForLoad3dMock,
   onLoad3dReadyMock,
-  configureForSaveMeshMock,
-  getNodeByLocatorIdMock
+  configureForSaveMeshMock
 } = vi.hoisted(() => ({
   registerExtensionMock: vi.fn(),
   waitForLoad3dMock: vi.fn(),
   onLoad3dReadyMock: vi.fn(),
-  configureForSaveMeshMock: vi.fn(),
-  getNodeByLocatorIdMock: vi.fn()
+  configureForSaveMeshMock: vi.fn()
 }))
 
 vi.mock(import('@/services/extensionService'), () => ({
@@ -69,13 +67,9 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   persistThumbnail: vi.fn()
 }))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({ rootGraph: {} })
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
-  getNodeByLocatorId: getNodeByLocatorIdMock
-}))
+vi.mock(import('@/utils/graphTraversalUtil'))
 
 type SaveMeshExtension = ComfyExtension & {
   nodeCreated: (node: LGraphNode) => Promise<void>
@@ -84,11 +78,19 @@ type SaveMeshExtension = ComfyExtension & {
   ) => void
 }
 
-async function loadSaveMeshExtensionFresh(): Promise<SaveMeshExtension> {
+interface LoadedSaveMeshExtension {
+  extension: SaveMeshExtension
+  graphTraversal: typeof GraphTraversalModule
+}
+
+async function loadSaveMeshExtensionFresh(): Promise<LoadedSaveMeshExtension> {
   vi.resetModules()
-  registerExtensionMock.mockClear()
+  const graphTraversal = await import('@/utils/graphTraversalUtil')
   await import('@/extensions/core/saveMesh')
-  return registerExtensionMock.mock.calls[0][0] as SaveMeshExtension
+  return {
+    extension: registerExtensionMock.mock.calls[0][0] as SaveMeshExtension,
+    graphTraversal
+  }
 }
 
 function makeNode(
@@ -122,34 +124,34 @@ describe('saveMesh', () => {
   })
 
   it('registers a single Comfy.SaveGLB extension on import', async () => {
-    const ext = await loadSaveMeshExtensionFresh()
+    const { extension } = await loadSaveMeshExtensionFresh()
 
     expect(registerExtensionMock).toHaveBeenCalledOnce()
-    expect(ext.name).toBe('Comfy.SaveGLB')
-    expect(typeof ext.nodeCreated).toBe('function')
+    expect(extension.name).toBe('Comfy.SaveGLB')
+    expect(typeof extension.nodeCreated).toBe('function')
   })
 
   it('skips nodes whose comfyClass is not SaveGLB', async () => {
-    const ext = await loadSaveMeshExtensionFresh()
+    const { extension } = await loadSaveMeshExtensionFresh()
     const node = makeNode({ comfyClass: 'OtherNode' })
 
-    await ext.nodeCreated(node)
+    await extension.nodeCreated(node)
 
     expect(waitForLoad3dMock).not.toHaveBeenCalled()
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 
   it('does not load a model on creation when no Last Time Model File is persisted', async () => {
-    const ext = await loadSaveMeshExtensionFresh()
+    const { extension } = await loadSaveMeshExtensionFresh()
     const node = makeNode()
 
-    await ext.nodeCreated(node)
+    await extension.nodeCreated(node)
 
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 
   it('restores the persisted model on creation using the persisted folder', async () => {
-    const ext = await loadSaveMeshExtensionFresh()
+    const { extension } = await loadSaveMeshExtensionFresh()
     const node = makeNode({
       properties: {
         'Last Time Model File': 'sub/model.glb',
@@ -157,7 +159,7 @@ describe('saveMesh', () => {
       }
     })
 
-    await ext.nodeCreated(node)
+    await extension.nodeCreated(node)
 
     expect(configureForSaveMeshMock).toHaveBeenCalledWith(
       'output',
@@ -175,7 +177,7 @@ describe('saveMesh', () => {
       onReadyCallbacks.push(cb)
     })
 
-    const ext = await loadSaveMeshExtensionFresh()
+    const { extension } = await loadSaveMeshExtensionFresh()
     const node = makeNode({
       properties: {
         'Last Time Model File': 'sub/model.glb',
@@ -183,7 +185,7 @@ describe('saveMesh', () => {
       }
     })
 
-    await ext.nodeCreated(node)
+    await extension.nodeCreated(node)
     expect(onReadyCallbacks).toHaveLength(1)
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
 
@@ -197,12 +199,12 @@ describe('saveMesh', () => {
   })
 
   it('defaults the load folder to output when only the file path is persisted', async () => {
-    const ext = await loadSaveMeshExtensionFresh()
+    const { extension } = await loadSaveMeshExtensionFresh()
     const node = makeNode({
       properties: { 'Last Time Model File': 'model.glb' }
     })
 
-    await ext.nodeCreated(node)
+    await extension.nodeCreated(node)
 
     expect(configureForSaveMeshMock).toHaveBeenCalledWith(
       'output',
@@ -212,10 +214,10 @@ describe('saveMesh', () => {
   })
 
   it('persists Last Time Model File and Folder after onExecuted', async () => {
-    const ext = await loadSaveMeshExtensionFresh()
+    const { extension } = await loadSaveMeshExtensionFresh()
     const node = makeNode()
 
-    await ext.nodeCreated(node)
+    await extension.nodeCreated(node)
     node.onExecuted!({
       '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
     })
@@ -230,10 +232,10 @@ describe('saveMesh', () => {
   })
 
   it('does not persist anything when onExecuted has no 3d output', async () => {
-    const ext = await loadSaveMeshExtensionFresh()
+    const { extension } = await loadSaveMeshExtensionFresh()
     const node = makeNode()
 
-    await ext.nodeCreated(node)
+    await extension.nodeCreated(node)
     node.onExecuted!({})
 
     expect(node.properties['Last Time Model File']).toBeUndefined()
@@ -242,17 +244,17 @@ describe('saveMesh', () => {
   })
 
   it('uses the persisted state from a prior run when the node is recreated', async () => {
-    const ext = await loadSaveMeshExtensionFresh()
+    const { extension } = await loadSaveMeshExtensionFresh()
 
     const firstNode = makeNode()
-    await ext.nodeCreated(firstNode)
+    await extension.nodeCreated(firstNode)
     firstNode.onExecuted!({
       '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
     })
 
     configureForSaveMeshMock.mockClear()
     const recreated = makeNode({ properties: { ...firstNode.properties } })
-    await ext.nodeCreated(recreated)
+    await extension.nodeCreated(recreated)
 
     expect(configureForSaveMeshMock).toHaveBeenCalledWith(
       'output',
@@ -273,11 +275,11 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
   })
 
   it('rehydrates a SaveGLB node from restored outputs', async () => {
-    const ext = await loadSaveMeshExtensionFresh()
+    const { extension, graphTraversal } = await loadSaveMeshExtensionFresh()
     const node = makeNode()
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
-    ext.onNodeOutputsUpdated({
+    extension.onNodeOutputsUpdated({
       '7': {
         '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
       }
@@ -295,21 +297,21 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
   })
 
   it('skips entries with no 3d output', async () => {
-    const ext = await loadSaveMeshExtensionFresh()
+    const { extension, graphTraversal } = await loadSaveMeshExtensionFresh()
     const node = makeNode()
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
-    ext.onNodeOutputsUpdated({ '7': {} } as never)
+    extension.onNodeOutputsUpdated({ '7': {} } as never)
 
-    expect(getNodeByLocatorIdMock).not.toHaveBeenCalled()
+    expect(graphTraversal.getNodeByLocatorId).not.toHaveBeenCalled()
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 
   it('skips entries whose node is not in the active rootGraph', async () => {
-    const ext = await loadSaveMeshExtensionFresh()
-    getNodeByLocatorIdMock.mockReturnValue(null)
+    const { extension, graphTraversal } = await loadSaveMeshExtensionFresh()
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(null)
 
-    ext.onNodeOutputsUpdated({
+    extension.onNodeOutputsUpdated({
       '7': {
         '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
       }
@@ -319,11 +321,11 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
   })
 
   it('skips nodes whose comfyClass is not SaveGLB', async () => {
-    const ext = await loadSaveMeshExtensionFresh()
+    const { extension, graphTraversal } = await loadSaveMeshExtensionFresh()
     const node = makeNode({ comfyClass: 'Preview3D' })
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
-    ext.onNodeOutputsUpdated({
+    extension.onNodeOutputsUpdated({
       '7': {
         '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
       }
@@ -333,7 +335,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
   })
 
   it('does not re-apply when the same result is already loaded', async () => {
-    const ext = await loadSaveMeshExtensionFresh()
+    const { extension, graphTraversal } = await loadSaveMeshExtensionFresh()
     const node = makeNode({
       properties: {
         'Last Time Model File': 'sub/mesh.glb',
@@ -343,9 +345,9 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
     ;(
       node.widgets!.find((w) => w.name === 'image') as { value: string }
     ).value = 'sub/mesh.glb'
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
-    ext.onNodeOutputsUpdated({
+    extension.onNodeOutputsUpdated({
       '7': {
         '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
       }

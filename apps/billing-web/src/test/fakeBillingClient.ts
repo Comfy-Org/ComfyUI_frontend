@@ -12,9 +12,12 @@ import { vi } from 'vitest'
 import type {
   BillingCapabilities,
   BillingDeclineReason,
+  BillingOperationServerPhase,
   BillingOperationState,
   BillingPlansData,
   BillingResult,
+  BillingStatusData,
+  BillingStatusSnapshot,
   CapabilitiesSnapshot,
   PaymentMethodsSnapshot,
   PaymentPortalResult,
@@ -55,6 +58,7 @@ export interface FakeBillingClientOptions {
   readonly recover?: BillingResult<BillingOperationState | undefined>
   /** Every capability is denied unless named here. */
   readonly capabilities?: Partial<BillingCapabilities>
+  readonly status?: BillingStatusData
 }
 
 export interface FakeBillingClient {
@@ -81,6 +85,7 @@ export interface FakeBillingClient {
   readonly recover: BillingClient['lifecycle']['recover']
   readonly readCapabilities: Mock<BillingClient['capabilities']['read']>
   readonly invalidateCapabilities: BillingClient['capabilities']['invalidate']
+  readonly readStatus: Mock<BillingClient['status']['read']>
   /** Publishes an operation as the lifecycle would after a poll. */
   readonly publishOperation: (state: BillingOperationState) => void
 }
@@ -104,7 +109,15 @@ export function createFakeBillingClient(
       code: 'REQUEST_FAILED'
     },
     recover: recoverOutcome = { status: 'ok', value: undefined },
-    capabilities: granted = {}
+    capabilities: granted = {},
+    status = {
+      is_active: true,
+      has_funds: true,
+      max_seats: 1,
+      occupied_seats: 1,
+      scheduled_change: null,
+      team_credit_stop: null
+    }
   } = options
 
   const operations = new Map<string, BillingOperationState>()
@@ -186,6 +199,14 @@ export function createFakeBillingClient(
     value: capabilitiesSnapshot
   }))
   const invalidateCapabilities = vi.fn(() => {})
+  const readStatus: Mock<BillingClient['status']['read']> = vi.fn(async () => ({
+    status: 'ok' as const,
+    value: {
+      status,
+      scope: SCOPE,
+      readAt: READ_AT
+    } satisfies BillingStatusSnapshot
+  }))
   const recover = vi.fn(async () => {
     if (recoverOutcome.status === 'ok' && recoverOutcome.value) {
       publishOperation(recoverOutcome.value)
@@ -224,7 +245,7 @@ export function createFakeBillingClient(
       dispose: () => {}
     },
     status: {
-      read: unusedByHostedSurfaces('status.read'),
+      read: readStatus,
       getSnapshot: () => undefined,
       dispose: () => {}
     },
@@ -274,6 +295,7 @@ export function createFakeBillingClient(
     recover,
     readCapabilities,
     invalidateCapabilities,
+    readStatus,
     publishOperation
   }
 }
@@ -289,7 +311,7 @@ export function previewOf(
     credits_next_period_cents: 6900,
     effective_at: '2026-10-01T00:00:00.000Z',
     is_immediate: true,
-    transition_type: 'upgrade',
+    transition_type: 'new_subscription',
     new_plan: {
       credits_cents: 6900,
       duration: 'MONTHLY',
@@ -347,6 +369,19 @@ export function pendingOperation(id = 'op_1'): BillingOperationState {
   return {
     ...operationIdentity(id),
     phase: 'pending',
+    customerActionSeen: false
+  }
+}
+
+/** Pending in a phase the server reports while it waits on the customer. */
+export function serverPhasePendingOperation(
+  serverPhase: BillingOperationServerPhase,
+  id = 'op_1'
+): PendingBillingOperation {
+  return {
+    ...operationIdentity(id),
+    phase: 'pending',
+    serverPhase,
     customerActionSeen: false
   }
 }
