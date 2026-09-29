@@ -7,7 +7,7 @@ import {
   validationError
 } from '@/utils/__tests__/nodeErrorHelpers'
 
-import { createUnnormalisableModelErrorFixture } from './__tests__/absorptionFixtures'
+import { createUnnormalisableModelErrorFixture } from '@/components/rightSidePanel/errors/__tests__/absorptionFixtures'
 import { classifyPanelErrors } from './errorSeverityClassification'
 import type { ErrorSeverityInput } from './errorSeverityClassification'
 

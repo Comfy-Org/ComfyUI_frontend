@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import {
@@ -106,6 +107,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace payment binding', () => {
     sessionStorage.clear()
     clearCheckoutJourney()
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
+    remoteConfig.value = {}
   })
 
   afterEach(cleanup)
@@ -122,6 +124,25 @@ describe('SubscriptionAddPaymentPreviewWorkspace payment binding', () => {
       unavailable: 'Stripe is unavailable',
       genericError: 'Error'
     })
+  })
+
+  it.for([
+    {
+      source: 'the server key over the build-time one',
+      server: 'pk_server',
+      expected: 'pk_server'
+    },
+    {
+      source: 'the build-time key when the server has none',
+      server: undefined,
+      expected: 'pk_test_example'
+    }
+  ])('mounts the form with $source', ({ server, expected }) => {
+    remoteConfig.value = { stripe_publishable_key: server }
+
+    renderConfirm()
+
+    expect(formProps.value.publishableKey).toBe(expected)
   })
 
   it('re-keys the form theme when the active colour palette changes', async () => {
