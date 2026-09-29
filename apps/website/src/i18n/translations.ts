@@ -10181,20 +10181,20 @@ Enterprise`
     'zh-CN': '切换并取消'
   },
   'workshop.examples.replaceTitle': {
-    en: 'Replace your inputs?',
-    'zh-CN': '要替换你的输入吗？'
+    en: 'Load this example?',
+    'zh-CN': '要载入这个示例吗？'
   },
   'workshop.examples.replaceBody': {
-    en: 'This example comes with its own inputs. What you wrote will be replaced.',
-    'zh-CN': '该示例自带输入内容，你填写的内容将被替换。'
+    en: 'It comes with its own inputs, so what you filled in will be replaced.',
+    'zh-CN': '它自带输入内容，你填写的内容会被替换。'
   },
   'workshop.examples.replaceKeep': {
-    en: 'Keep mine',
-    'zh-CN': '保留我的内容'
+    en: 'Cancel',
+    'zh-CN': '取消'
   },
   'workshop.examples.replaceConfirm': {
-    en: 'Use the example',
-    'zh-CN': '使用该示例'
+    en: 'Load example',
+    'zh-CN': '载入示例'
   },
   'workshop.run.policy': {
     en: 'Disabled by your workspace policy',
@@ -10856,13 +10856,6 @@ Enterprise`
     'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
-  'workshop.cinematic.badge': { en: 'New · Beta', 'zh-CN': '新 · 测试版' },
-  'workshop.cinematic.summary': {
-    en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
-    'zh-CN':
-      '用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。'
-  },
-  'workshop.cinematic.cta': { en: 'Open studio', 'zh-CN': '打开工作室' },
   'workshop.cinematic.openInStudio': {
     en: 'Open in Cinematic Studio',
     'zh-CN': '在 Cinematic Studio 中打开'

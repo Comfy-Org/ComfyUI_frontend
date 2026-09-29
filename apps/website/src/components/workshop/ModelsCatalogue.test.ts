@@ -162,8 +162,6 @@ describe('ModelsCatalogue', () => {
     ).toBeNull()
   })
 
-  // The line under the title belongs to the half that is open, so the eyebrow
-  // is what has to hold still: it names the whole catalogue, not the tab.
   it('names the Hub in the eyebrow on every tab', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
