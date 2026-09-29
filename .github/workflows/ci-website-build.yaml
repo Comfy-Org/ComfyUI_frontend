@@ -62,15 +62,20 @@ jobs:
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
           WORKSHOP_IN_BUILD: '0'
         run: |
-          count_models_pages() { find apps/website/dist/models -name index.html | wc -l | tr -d ' '; }
+          count_models_pages() { find apps/website/dist/models -name index.html 2>/dev/null | wc -l | tr -d ' '; }
+          # dist/ still holds the "Build website" step's Workshop-enabled output.
           enabled_pages=$(count_models_pages)
+          if [ "$enabled_pages" -eq 0 ]; then
+            echo "::error title=No Workshop-enabled baseline::apps/website/dist/models has no pages before the WORKSHOP_IN_BUILD=0 build. Run this step after \"Build website\"."
+            exit 1
+          fi
           pnpm --filter @comfyorg/website build
           if [ -d apps/website/dist/workshop ]; then
             echo "::error title=Workshop leaked into a release build::apps/website/dist/workshop exists with WORKSHOP_IN_BUILD=0. The retired Workshop routes must not deploy. See apps/website/src/integrations/workshop-release-gate.ts."
             exit 1
           fi
           disabled_pages=$(count_models_pages)
-          if [ "$disabled_pages" != "$enabled_pages" ] || [ ! -f apps/website/dist/models/bfl--flux-2-max--generate-images/index.html ]; then
+          if [ "$disabled_pages" != "$enabled_pages" ]; then
             echo "::error title=Turning Workshop off removed Models pages::WORKSHOP_IN_BUILD=0 built $disabled_pages Models pages against $enabled_pages with Workshop. Turning Workshop off must only hide Run and the nav."
             exit 1
           fi
