@@ -93,13 +93,21 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.messages[0].streaming).toBe(false)
   })
 
-  it('marks a message streaming from its latest row status', () => {
+  /**
+   * A row still generating but not parked on an ask gets no transport from
+   * `hydrate()`, so nothing would ever stop a spinner raised for it. The
+   * unfinished-ness still has to survive the read for the resume path to
+   * reconcile against, which is what `streamingTurnIds` carries.
+   */
+  it('reports an unfinished row through streamingTurnIds, not the render flag', () => {
     const streaming = row(1, 'assistant', 'turn-a', 'partial', 'row-streaming')
     streaming.status = 'streaming'
 
     const transcript = normalizeAgentTranscript([streaming])
 
-    expect(transcript.messages[0].streaming).toBe(true)
+    expect(transcript.streamingTurnIds).toContain(toTurnId('turn-a'))
+    expect(transcript.pending).toBeUndefined()
+    expect(transcript.messages[0].streaming).toBe(false)
   })
 
   it('keeps message identity stable when persisted row ids change', () => {
@@ -568,6 +576,57 @@ describe('normalizeAgentTranscript', () => {
       state: 'streaming'
     })
     expect(transcript.pending?.messageId).toBe('row-1')
+  })
+
+  /**
+   * Only a further row of the asking turn answers its ask. A later turn's row
+   * arriving must not take `pending` with it: without it `hydrate()` builds no
+   * transport, and the card it still draws has nothing left to answer it.
+   */
+  it('keeps a turn parked on an ask pending once a later turn is read', () => {
+    const asking = row(1, 'assistant', 'turn-a', '', 'row-1')
+    asking.status = 'streaming'
+    asking.pending_ask = {
+      message_id: 'row-1',
+      ask_id: 'ask-1',
+      kind: 'run_approval',
+      prompt: 'Run it?',
+      options: [],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+    const laterTurn = row(2, 'assistant', 'turn-b', 'Unrelated', 'row-2')
+
+    const transcript = normalizeAgentTranscript([asking, laterTurn])
+
+    expect(transcript.pending?.messageId).toBe('row-1')
+    expect(transcript.messages[0].parts).toContainEqual(
+      expect.objectContaining({ type: 'runApproval', askId: 'ask-1' })
+    )
+  })
+
+  it('drops the approval card once a later row of the asking turn lands', () => {
+    const asking = row(1, 'assistant', 'turn-a', '', 'row-1')
+    asking.status = 'streaming'
+    asking.pending_ask = {
+      message_id: 'row-1',
+      ask_id: 'ask-1',
+      kind: 'run_approval',
+      prompt: 'Run it?',
+      options: [],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+    const answered = row(2, 'assistant', 'turn-a', 'Ran it.', 'row-2')
+
+    const transcript = normalizeAgentTranscript([asking, answered])
+
+    expect(transcript.pending).toBeUndefined()
+    expect(transcript.messages[0].parts).not.toContainEqual(
+      expect.objectContaining({ type: 'runApproval' })
+    )
   })
 
   it.for(['success', 'failed', 'cancelled', 'timeout', 'unrecognized'])(

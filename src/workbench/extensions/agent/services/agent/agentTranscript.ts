@@ -368,6 +368,10 @@ function pendingRunApproval(
  * attaches a `runApproval` part and marks the message still-streaming.
  * Returns the `pending` entry to record when the row is mid-ask, or
  * `undefined` otherwise.
+ *
+ * Rows of one turn share a `message`, so an ask drawn by an earlier row is
+ * dropped once a later row of that same turn comes back without one: the
+ * service answered it, and a card left behind has nothing left to answer it.
  */
 function applyAssistantRow(
   row: AgentMessages[number],
@@ -379,7 +383,10 @@ function applyAssistantRow(
     row.status === 'streaming' ? pendingRunApproval(row) : undefined
   appendAssistantContent(message, row, text, runApproval !== undefined)
 
-  if (!runApproval) return undefined
+  if (!runApproval) {
+    message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+    return undefined
+  }
 
   message.parts.push({ type: 'runApproval', ...runApproval })
   message.streaming = true
@@ -475,7 +482,7 @@ export function normalizeAgentTranscript(
     TurnId,
     AgentMessages[number]['status']
   >()
-  let pending: NormalizedAgentTranscript['pending']
+  const pendingByTurn = new Map<TurnId, NormalizedAgentTranscript['pending']>()
   let latestWorkflowId: string | undefined
 
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
@@ -496,18 +503,28 @@ export function normalizeAgentTranscript(
     }
     if (row.role === 'assistant') {
       latestAssistantStatus.set(turnId, row.status)
-      pending = recordAssistantRow(row, turnId, text, assistants)
+      const rowPending = recordAssistantRow(row, turnId, text, assistants)
+      if (rowPending) pendingByTurn.set(turnId, rowPending)
+      else pendingByTurn.delete(turnId)
     }
   }
 
+  // A turn parked on an ask keeps its entry even once a later turn is read:
+  // only a further row of its OWN turn supersedes it, which is the delete
+  // above.
+  const pending = turnOrder
+    .flatMap((turnId) => pendingByTurn.get(turnId) ?? [])
+    .at(-1)
   const streamingTurnIds = new Set(
     [...latestAssistantStatus]
       .filter(([, status]) => status === 'streaming')
       .map(([turnId]) => turnId)
   )
+  // The panel spins off this flag, and only the mid-ask turn is handed a
+  // transport that can ever stop it. Row status travels as `streamingTurnIds`.
   const messages = turnOrder.map((turnId) => {
     const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
-    message.streaming = streamingTurnIds.has(turnId)
+    message.streaming = message === pending?.message
     return message
   })
 

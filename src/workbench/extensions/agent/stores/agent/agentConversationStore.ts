@@ -127,6 +127,7 @@ export const useAgentConversationStore = defineStore(
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedTurnIdsByRowId = new Map<string, TurnId>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
+    let hydratedStreamingTurnIds = new Set<TurnId>()
     const reportedPaywallImpressions = new Set<TurnId>()
     const approvalShownAtByAsk = new Map<string, number>()
     const shownApprovalIds = new Set<string>()
@@ -507,8 +508,16 @@ export const useAgentConversationStore = defineStore(
       ) {
         rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
         messages.value = kept
-        transport?.dispose()
-        clearActive()
+        // Only this entry's turn leaves the screen here. An active slot bound
+        // to some other mid-ask turn is still driving a message in `kept`, and
+        // dropping it would strand that turn's approval card.
+        if (
+          activeTurnId.value === null ||
+          activeTurnId.value === entry.messageId
+        ) {
+          transport?.dispose()
+          clearActive()
+        }
         // The persisted, authoritative copy is already on screen (kept, via
         // the filter above) -- this entry's transport is now discarded for
         // good, so flush anything it is still holding rather than leaving it
@@ -686,10 +695,11 @@ export const useAgentConversationStore = defineStore(
      * place rather than replaced, so the transport's own handle on it stays
      * good.
      *
-     * A call adopted off the row is settled unconditionally: history returns
-     * terminal rows only, and nothing would finish one that did arrive
-     * unresolved, since `settle()` closes text and thinking and leaves tool
-     * parts alone.
+     * A call adopted off the row is settled only when no transport survives to
+     * finish it -- `settle()` closes text and thinking and leaves tool parts
+     * alone, so an unresolved one would otherwise spin forever. A surviving
+     * transport takes the row's state as-is, since it is handed the part and
+     * can still settle it from a later frame.
      */
     function adoptHydratedTools(
       live: AssistantMessage,
@@ -834,6 +844,13 @@ export const useAgentConversationStore = defineStore(
       return undefined
     }
 
+    /**
+     * Which copy of a turn wins turns on whether the SERVER considered the row
+     * finished when history was read -- `streamingTurnIds`, not the hydrated
+     * message's `streaming` flag. That flag only marks the one turn handed a
+     * live transport, so reading it here would hand every unfinished turn to
+     * the row that cut it off.
+     */
     function adoptHydratedTurn(
       entry: BackgroundTurn,
       kept: AssistantMessage[],
@@ -848,7 +865,7 @@ export const useAgentConversationStore = defineStore(
       )
       if (!located || located.hydrated === entry.message) return undefined
       const { hydrated, index } = located
-      if (!hydrated.streaming) {
+      if (!hydratedStreamingTurnIds.has(hydratedTurnId)) {
         adoptLiveOnlyParts(hydrated, entry.message)
         adoptFresherLiveText(
           hydrated,
@@ -981,6 +998,7 @@ export const useAgentConversationStore = defineStore(
       forgetAllApprovals()
       hydratedTurnIdsByRowId = new Map()
       hydratedAssistantTurnIds = new Set()
+      hydratedStreamingTurnIds = new Set()
       reportedPaywallImpressions.clear()
       undeliverableAskReporter.reset()
       departedTurns.clear()
@@ -1000,6 +1018,7 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId.value = transcript.latestWorkflowId
       hydratedTurnIdsByRowId = transcript.turnIdsByRowId
       hydratedAssistantTurnIds = transcript.assistantTurnIds
+      hydratedStreamingTurnIds = transcript.streamingTurnIds
       dropAttachmentPreviews()
       const namesByTurn =
         threadId.value === null

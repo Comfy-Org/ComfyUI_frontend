@@ -892,6 +892,30 @@ describe('useAgentConversationStore', () => {
   )
 
   /**
+   * Reloading while the agent is generating reads back a row the service still
+   * calls `streaming`, and `hydrate()` builds a transport only for a row parked
+   * on an ask. Presenting this one as live would spin a reply nothing can ever
+   * settle, while the composer — which reads the active slot — stayed enabled
+   * beside it.
+   */
+  it('does not present a reloaded unfinished turn as live', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    const generating = historyRow(2, 'assistant', 'server-turn', 'Working on')
+    generating.status = 'streaming'
+
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      generating
+    ])
+
+    expect(store.activeTurnId).toBeNull()
+    expect(store.isStreaming).toBe(false)
+    expect(store.status).toBe('idle')
+    expect(store.messages.some((message) => message.streaming)).toBe(false)
+  })
+
+  /**
    * A stash is only the fuller copy while its transport was delivering. One
    * stashed across a socket drop holds nothing, while the row behind it holds
    * the reply the agent finished without it — so here the hydrated copy is the
