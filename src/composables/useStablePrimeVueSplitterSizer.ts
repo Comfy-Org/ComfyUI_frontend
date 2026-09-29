@@ -50,8 +50,21 @@ export function useStablePrimeVueSplitterSizer(
     return unrefElement(ref) as HTMLElement | undefined
   }
 
-  function isPinned(el: HTMLElement) {
-    return el.style.flexGrow === '0' && el.style.flexBasis.endsWith('px')
+  function hasSplitterLayout(el: HTMLElement) {
+    return el.style.flexBasis.startsWith('calc(')
+  }
+
+  function isClamped(el: HTMLElement) {
+    const { minWidth, maxWidth } = getComputedStyle(el)
+    const containerWidth = el.parentElement?.clientWidth ?? 0
+    const max = maxWidth.endsWith('%')
+      ? (parseFloat(maxWidth) / 100) * containerWidth
+      : parseFloat(maxWidth)
+    return el.offsetWidth <= parseFloat(minWidth) || el.offsetWidth >= max - 1
+  }
+
+  function measurableWidth(el: HTMLElement) {
+    return hasSplitterLayout(el) && el.offsetWidth > 0 ? el.offsetWidth : null
   }
 
   function pin(el: HTMLElement, width: number) {
@@ -61,27 +74,29 @@ export function useStablePrimeVueSplitterSizer(
   }
 
   function applyStoredWidths() {
-    for (const { ref, width } of storedWidths) {
+    const panels = storedWidths.flatMap(({ ref, width }) => {
       const el = resolveElement(ref)
-      if (!el) continue
-      if (
-        !isUsableWidth(width.value) &&
-        captureInitialWidth &&
-        !isPinned(el) &&
-        el.offsetWidth > 0
-      ) {
-        width.value = el.offsetWidth
-      }
+      return el ? [{ el, width }] : []
+    })
+    const initialWidths = panels.map(({ el, width }) =>
+      captureInitialWidth && !isUsableWidth(width.value) && !isClamped(el)
+        ? measurableWidth(el)
+        : null
+    )
+    panels.forEach(({ el, width }, i) => {
+      const initialWidth = initialWidths[i]
+      if (initialWidth !== null) width.value = initialWidth
       if (isUsableWidth(width.value)) pin(el, width.value)
-    }
+    })
   }
 
   function onResizeEnd(_event: SplitterResizeEndEvent) {
     for (const { ref, width } of storedWidths) {
       const el = resolveElement(ref)
-      if (!el || isPinned(el) || el.offsetWidth === 0) continue
-      width.value = el.offsetWidth
-      pin(el, width.value)
+      const resizedWidth = el ? measurableWidth(el) : null
+      if (!el || resizedWidth === null) continue
+      width.value = resizedWidth
+      pin(el, resizedWidth)
     }
   }
 
