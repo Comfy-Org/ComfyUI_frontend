@@ -25,7 +25,7 @@ type Catalogs<T extends MessageTree> = { en: T } & Partial<
 >
 
 interface MessageShape {
-  placeholderDefaults: NamedValues
+  placeholders: ReadonlySet<string>
   hasPluralForms: boolean
 }
 
@@ -100,18 +100,34 @@ export function createTranslator<T extends MessageTree>(catalogs: Catalogs<T>) {
       messageAtPath(catalogs.en, key) ??
       ''
     ).replace(literalPattern, '')
-    const placeholderDefaults: NamedValues = {}
+    const placeholders = new Set<string>()
     for (const [text, name] of source.matchAll(placeholderPattern)) {
       if (/^\d+$/.test(name)) {
         throw new Error(
           `Translation ${key} in ${locale} uses the list placeholder ${text}; name it instead`
         )
       }
-      placeholderDefaults[name] = text
+      placeholders.add(name)
     }
-    const shape = { placeholderDefaults, hasPluralForms: source.includes('|') }
+    const shape = { placeholders, hasPluralForms: source.includes('|') }
     shapes.set(cacheKey, shape)
     return shape
+  }
+
+  function requireValues(
+    key: Key,
+    locale: Locale,
+    placeholders: ReadonlySet<string>,
+    named: NamedValues
+  ) {
+    const missing = [...placeholders].filter(
+      (name) => !Object.hasOwn(named, name)
+    )
+    if (missing.length > 0) {
+      throw new Error(
+        `Translation ${key} in ${locale} needs values for ${missing.map((name) => `{${name}}`).join(', ')}`
+      )
+    }
   }
 
   function render(key: Key, locale: Locale, translate: () => string): string {
@@ -130,15 +146,14 @@ export function createTranslator<T extends MessageTree>(catalogs: Catalogs<T>) {
     locale: Locale = DEFAULT_LOCALE,
     named: NamedValues = {}
   ): string {
-    const { placeholderDefaults, hasPluralForms } = shapeOf(key, locale)
+    const { placeholders, hasPluralForms } = shapeOf(key, locale)
     if (hasPluralForms) {
       throw new Error(
         `Translation ${key} in ${locale} has an unescaped "|": write {'|'} for a literal pipe, or read plural forms with tPlural`
       )
     }
-    return render(key, locale, () =>
-      i18n.global.t(key, { ...placeholderDefaults, ...named }, { locale })
-    )
+    requireValues(key, locale, placeholders, named)
+    return render(key, locale, () => i18n.global.t(key, named, { locale }))
   }
 
   /**
@@ -175,7 +190,7 @@ export function createTranslator<T extends MessageTree>(catalogs: Catalogs<T>) {
     count: number,
     locale: Locale = DEFAULT_LOCALE
   ): string {
-    shapeOf(key, locale)
+    requireValues(key, locale, shapeOf(key, locale).placeholders, { count })
     return render(key, locale, () => i18n.global.t(key, count, { locale }))
   }
 
