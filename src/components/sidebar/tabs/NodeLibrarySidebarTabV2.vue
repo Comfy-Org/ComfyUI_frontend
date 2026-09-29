@@ -1,7 +1,7 @@
 <template>
   <SidebarTabTemplate :title="$t('sideToolbar.nodes')">
     <template #header>
-      <div class="px-4 pt-2">
+      <div class="overflow-x-auto px-4 pt-2">
         <TabList v-model="selectedTab">
           <Tab v-for="{ value, label } in tabs" :key="value" :value>
             {{ label }}

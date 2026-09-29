@@ -9,6 +9,7 @@
     <template #header>
       <div class="overflow-x-auto px-4 pt-2">
         <TabList
+          :aria-label="$t('queue.jobHistory')"
           :model-value="selectedJobTab"
           @update:model-value="onUpdateSelectedJobTab"
         >
@@ -51,8 +52,10 @@
     <template #body>
       <div class="flex h-full min-h-0 flex-col">
         <TabPanel
+          v-for="tab in visibleJobTabs"
+          :key="tab"
           :model-value="selectedJobTab"
-          :value="selectedJobTab"
+          :value="tab"
           class="flex min-h-0 flex-1 flex-col"
         >
           <JobAssetsList

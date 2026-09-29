@@ -49,7 +49,7 @@
       </div>
     </template>
     <template #header>
-      <div v-if="!isInFolderView" class="px-4 pt-2">
+      <div v-if="!isInFolderView" class="overflow-x-auto px-4 pt-2">
         <TabList v-model="activeTab">
           <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
           <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>

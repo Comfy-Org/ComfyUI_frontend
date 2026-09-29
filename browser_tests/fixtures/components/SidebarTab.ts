@@ -92,8 +92,8 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
-    this.searchInput = page.getByPlaceholder('Search Nodes...')
     this.sidebarContent = page.locator('.sidebar-content-container')
+    this.searchInput = this.sidebarContent.getByPlaceholder('Search Nodes...')
     this.allTab = this.getTab('All nodes')
     this.essentialsTab = this.getTab('Essentials')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
