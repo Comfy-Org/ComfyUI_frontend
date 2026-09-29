@@ -413,7 +413,7 @@ describe('createOpSender', () => {
     expect(settled[1].state).toBe('acknowledged')
   })
 
-  it('an identified empty-list failure settles the batch it names via failure.op_id', () => {
+  it('an identified empty-list failure settles the batch it names via failed.op_id', () => {
     sender.enqueue([addNode(1)])
     const opId = sent[0].ops[0].op_id
 
@@ -421,7 +421,12 @@ describe('createOpSender', () => {
       ok: false,
       applied: [],
       skipped: [],
-      failure: { op_id: opId }
+      failed: {
+        index: 0,
+        op_id: opId,
+        code: 'opaque_widgets',
+        message: 'rejected'
+      }
     })
 
     expect(settled).toHaveLength(1)
@@ -435,7 +440,12 @@ describe('createOpSender', () => {
       ok: false,
       applied: [],
       skipped: [],
-      failure: { op_id: 'ffff'.repeat(8) }
+      failed: {
+        index: 0,
+        op_id: 'ffff'.repeat(8),
+        code: 'opaque_widgets',
+        message: 'rejected'
+      }
     })
 
     expect(settled).toHaveLength(0)

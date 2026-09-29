@@ -194,6 +194,7 @@ async function sendInvites() {
   sending.value = true
   try {
     await pendingInvitesRequest
+    if (!canSubmit.value) return
     const batch = [...newInviteEmails.value]
     const results = await Promise.all(
       batch.map((email) => invites.createInvite(email))

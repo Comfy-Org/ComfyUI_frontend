@@ -26,6 +26,7 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
+import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -200,6 +201,10 @@ function onPaywallAction(action: AgentPaywallAction): void {
     openAccountPrecondition('credits', { source: 'agent_paywall' })
     return
   }
+  useTelemetry()?.trackSubscription('subscribe_clicked', {
+    current_tier: subscriptionTier.value?.toLowerCase(),
+    reason: 'agent_paywall'
+  })
   openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
 
@@ -802,7 +807,15 @@ const {
         if (status.value === 'idle') graphActivity.finishTurn()
       }
     },
-    onReset: graphActivity.resetWorkflow
+    onReset: graphActivity.resetWorkflow,
+    onSyncError: (message, code) =>
+      toast.add({
+        severity: 'error',
+        summary: t('agent.workflowSyncFailedTitle'),
+        detail: formatWorkflowSyncErrorDetail(t, message, code),
+        // A permanent desync remains visible until the person dismisses it.
+        life: 0
+      })
   },
   () => workflowStore.activeWorkflow?.changeTracker ?? null
 )
@@ -1467,6 +1480,11 @@ function onAttach(): void {
   fileInput.value?.click()
 }
 
+async function onAttachFiles(files: File[]): Promise<void> {
+  if (await attachment.addFiles(files))
+    useTelemetry()?.trackAgentAttachButtonClicked({ method: 'paste' })
+}
+
 function onOpenAssets(): void {
   exitNodeSelectionMode()
   sidebarTabStore.activeSidebarTabId = 'assets'
@@ -1646,6 +1664,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
+      @attach-files="onAttachFiles"
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"

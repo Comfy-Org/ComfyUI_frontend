@@ -10,7 +10,7 @@ import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { returnToHost } from '@/entry/returnToHost'
-import { useBillingWebSession } from '@/session/billingWebSession'
+import { useBilledScope } from '@/session/billingWebAuth'
 
 /** What the trip back should say, when the surface has a result to report. */
 const { returnResult } = defineProps<{ returnResult?: BillingReturn }>()
@@ -18,7 +18,7 @@ const { returnResult } = defineProps<{ returnResult?: BillingReturn }>()
 const { t } = useI18n()
 const { coded } = useHostedCopy()
 const { entry, error } = useBillingEntry()
-const { session } = useBillingWebSession()
+const session = useBilledScope()
 const billedWorkspace = useBilledWorkspace()
 
 const title = computed(() => coded('title', entry.value?.intent))

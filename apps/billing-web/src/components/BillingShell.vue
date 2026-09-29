@@ -14,11 +14,10 @@ import {
   provideBillingClient
 } from '@comfyorg/account-ui/billing'
 
-import { createBillingWebClient } from '@/session/billingWebClient'
-import { billingWebSessionClient } from '@/session/billingWebSession'
+import { createModeBillingClient } from '@/session/billingWebAuth'
 import { provideWorkspaceInvites } from '@/session/workspaceInvites'
 
-const client = createBillingWebClient(billingWebSessionClient())
+const client = createModeBillingClient()
 
 provideBillingClient(client)
 provideWorkspaceInvites(client.invites)

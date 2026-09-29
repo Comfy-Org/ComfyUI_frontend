@@ -108,7 +108,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
     useLoad3d(node).waitForLoad3d(async (load3d) => {
       try {
         await load3d.loadModel(modelUrl)
-      } catch (error) {
+      } catch {
         useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
       }
     })
