@@ -1772,42 +1772,62 @@ describe('ModelDetail', () => {
     }
   )
 
-  it('finishes an active render while the gate hides the page on revocation', async () => {
-    auth.session.value = credential
-    const late = Promise.withResolvers<typeof routerResult>()
-    vi.mocked(runWorkshopRouter).mockReturnValue(late.promise)
-    render(WorkshopGate, {
-      props: { keepMounted: true },
-      slots: { default: () => h(ModelDetail, { model: runnable }) }
-    })
-    await nextTick()
-    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
-    await user().click(screen.getByTestId('run-button'))
-    vi.mocked(stopWorkshopSession).mockClear()
-    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
-    auth.workshopEnabled.value = false
-    await nextTick()
-    expect(stopWorkshopSession).not.toHaveBeenCalled()
-    expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
-    expect(
-      screen.getByTestId('playground-output').getAttribute('data-state')
-    ).toBe('running')
-    expect(vi.mocked(runWorkshopRouter).mock.calls[0][0].signal.aborted).toBe(
-      false
-    )
-    late.resolve(routerResult)
-    await vi.waitFor(() =>
-      expect(captureWorkshopEvent).toHaveBeenCalledWith({
-        name: 'run_finished',
-        properties: expect.objectContaining({ status: 'succeeded' })
+  it.for([
+    {
+      outcome: 'succeeded',
+      settle: (late: PromiseWithResolvers<typeof routerResult>) =>
+        late.resolve(routerResult)
+    },
+    {
+      outcome: 'failed',
+      settle: (late: PromiseWithResolvers<typeof routerResult>) =>
+        late.reject(new WorkshopRouterError('unavailable'))
+    }
+  ] as const)(
+    'finishes an active render while the gate hides the page on revocation: $outcome',
+    async ({ outcome, settle }) => {
+      auth.session.value = credential
+      const late = Promise.withResolvers<typeof routerResult>()
+      vi.mocked(runWorkshopRouter).mockReturnValue(late.promise)
+      render(WorkshopGate, {
+        props: { keepMounted: true },
+        slots: { default: () => h(ModelDetail, { model: runnable }) }
       })
-    )
-    expect(captureWorkshopEvent).not.toHaveBeenCalledWith({
-      name: 'run_finished',
-      properties: expect.objectContaining({ status: 'cancelled' })
-    })
-    expect(screen.getByTestId('run-rollout-note')).toBeTruthy()
-  })
+      await nextTick()
+      await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+      await user().click(screen.getByTestId('run-button'))
+      vi.mocked(stopWorkshopSession).mockClear()
+      await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+      auth.workshopEnabled.value = false
+      await nextTick()
+      expect(stopWorkshopSession).not.toHaveBeenCalled()
+      expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('running')
+      expect(vi.mocked(runWorkshopRouter).mock.calls[0][0].signal.aborted).toBe(
+        false
+      )
+      settle(late)
+      await vi.waitFor(() =>
+        expect(captureWorkshopEvent).toHaveBeenCalledWith({
+          name: 'run_finished',
+          properties: expect.objectContaining({ status: outcome })
+        })
+      )
+      expect(captureWorkshopEvent).not.toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({ status: 'cancelled' })
+      })
+      expect(screen.getByTestId('run-rollout-note')).toBeTruthy()
+      await vi.waitFor(() =>
+        expect(
+          screen.getByTestId('playground-output').getAttribute('data-state')
+        ).toBe(outcome)
+      )
+      expect(stopWorkshopSession).toHaveBeenCalledOnce()
+    }
+  )
 
   it.for([
     { name: 'superseded refresh', result: undefined },
