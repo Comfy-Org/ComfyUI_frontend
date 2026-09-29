@@ -24,6 +24,7 @@ describe('models URL registry', () => {
     ['/models/acme--image--generate-images/page.json', 'reserved'],
     ['/hub/workflows/relight/', 'workflow'],
     ['/models/workflows/relight', 'alias'],
+    ['/hub/workflows/manifest.json', 'reserved'],
     ['/models/apps/studio/', 'app'],
     ['/models/acme--image', 'alias'],
     ['/models/showcase/', 'reserved'],

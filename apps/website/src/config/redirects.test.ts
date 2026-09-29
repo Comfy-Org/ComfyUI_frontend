@@ -75,6 +75,12 @@ describe('the redirect list', () => {
     ).toEqual([])
   })
 
+  it('leaves every /workflows/ address to the router', () => {
+    expect(
+      sources.filter((source) => source.startsWith('/workflows/'))
+    ).toEqual([])
+  })
+
   it('reaches every destination in one hop', () => {
     const sourceSet = new Set<string>(sources)
     expect(
