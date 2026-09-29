@@ -120,7 +120,6 @@ interface WorkshopPresentation {
   readonly name: string
   readonly workflowCount: number
   readonly recommendedRank?: number
-  readonly href: string
   readonly incompleteReason?: 'missing-input-schema'
   readonly provider?: string
   readonly modality?: Modality
@@ -143,11 +142,14 @@ interface WorkshopPresentation {
 
 export type RouterWorkshopModel = WorkshopPresentation & {
   readonly type?: 'MODEL'
+  /** Absent for a disabled model: it has no built page to link to. */
+  readonly href?: string
   readonly routerId: string
   readonly workflowId?: never
 }
 
 export type WorkflowWorkshopModel = WorkshopPresentation & {
+  readonly href: string
   readonly categoryLabel?: { readonly en: string; readonly 'zh-CN': string }
   readonly categoryOrder?: number
   readonly categoryHighlight?: boolean
@@ -161,6 +163,7 @@ export type WorkflowWorkshopModel = WorkshopPresentation & {
 
 export type AppWorkshopModel = WorkshopPresentation & {
   readonly type: 'APP'
+  readonly href: string
   /** Which app page runs it: see `WorkshopAppEntry.app`. */
   readonly appId: 'studio' | 'reshoot'
   readonly routerId?: never

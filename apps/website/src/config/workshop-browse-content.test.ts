@@ -36,7 +36,11 @@ describe('canonical model display names', () => {
       expect(getAuthoredRouterWorkshopModelDetail(model.slug)?.name).toBe(
         model.name
       )
-      expect(model.href).toBe(hubModelHref(model.slug))
+      expect(model.href).toBe(
+        isWorkshopModelDisabled(model.slug)
+          ? undefined
+          : hubModelHref(model.slug)
+      )
     }
   })
 

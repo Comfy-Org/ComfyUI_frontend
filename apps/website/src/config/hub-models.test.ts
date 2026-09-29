@@ -14,4 +14,10 @@ describe('hub model addresses', () => {
       '/hub/models/nano-banana-pro-text-to-image/'
     )
   })
+
+  it('refuses a slug that has no built page', () => {
+    expect(() =>
+      hubModelHref('byteplus--seedance-1-0-lite-text-to-video--generate-videos')
+    ).toThrow(/No \/hub\/models page/)
+  })
 })
