@@ -8,6 +8,16 @@ import type {
 import { asSafeNumber } from './safeInt64'
 
 type DecodedCreditStop = NonNullable<BillingStatusData['team_credit_stop']>
+type DecodedRenewalInvoice = NonNullable<BillingStatusData['renewal_invoice']>
+type RenewalInvoice = NonNullable<BillingStatusResponse['renewal_invoice']>
+
+function projectRenewalInvoice(
+  invoice: DecodedRenewalInvoice
+): RenewalInvoice | undefined {
+  const amount_due = asSafeNumber(invoice.amount_due)
+  if (amount_due === undefined) return undefined
+  return { ...invoice, amount_due }
+}
 
 /**
  * The credit stop's two int64 fields — a monthly credit count and a monthly
@@ -31,7 +41,14 @@ function projectCreditStop(
 export function projectBillingStatus(
   status: BillingStatusData
 ): BillingStatusResponse | undefined {
-  const { team_credit_stop, scheduled_change, ...rest } = status
+  const { renewal_invoice, team_credit_stop, scheduled_change, ...rest } =
+    status
+  const renewalInvoice =
+    renewal_invoice === undefined
+      ? undefined
+      : projectRenewalInvoice(renewal_invoice)
+  if (renewal_invoice !== undefined && renewalInvoice === undefined)
+    return undefined
   const stop =
     team_credit_stop === null ? null : projectCreditStop(team_credit_stop)
   if (stop === undefined) return undefined
@@ -42,6 +59,9 @@ export function projectBillingStatus(
   if (scheduledStop === undefined) return undefined
   return {
     ...rest,
+    ...(renewalInvoice === undefined
+      ? {}
+      : { renewal_invoice: renewalInvoice }),
     team_credit_stop: stop,
     scheduled_change:
       scheduled_change === null

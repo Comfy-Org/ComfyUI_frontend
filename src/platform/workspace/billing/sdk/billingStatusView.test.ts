@@ -33,7 +33,14 @@ const DECODED: BillingStatusData = {
 
 describe('projectBillingStatus', () => {
   it('reads the credit stop int64s back as the numbers the host holds', () => {
-    const projected = projectBillingStatus(DECODED)
+    const projected = projectBillingStatus({
+      ...DECODED,
+      renewal_invoice: {
+        amount_due: 2800n,
+        currency: 'usd',
+        hosted_invoice_url: 'https://example.com/invoice'
+      }
+    })
 
     expect(projected?.team_credit_stop).toStrictEqual({
       id: 'team_200',
@@ -46,6 +53,24 @@ describe('projectBillingStatus', () => {
       stop_usd: 500
     })
     expect(projected?.scheduled_change?.plan_slug).toBe('team_monthly')
+    expect(projected?.renewal_invoice).toStrictEqual({
+      amount_due: 2800,
+      currency: 'usd',
+      hosted_invoice_url: 'https://example.com/invoice'
+    })
+  })
+
+  it('refuses a renewal amount a number cannot hold exactly', () => {
+    const status: BillingStatusData = {
+      ...DECODED,
+      renewal_invoice: {
+        amount_due: TOO_LARGE,
+        currency: 'usd',
+        hosted_invoice_url: 'https://example.com/invoice'
+      }
+    }
+
+    expect(projectBillingStatus(status)).toBeUndefined()
   })
 
   it.for([
