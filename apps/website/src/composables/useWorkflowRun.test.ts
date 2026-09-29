@@ -296,6 +296,43 @@ describe('workflow page caller lifecycle', () => {
     }
   )
 
+  it('records where a failed Cloud job broke without its message', async () => {
+    const f = fixture()
+    f.fetch
+      .mockResolvedValueOnce(Response.json({ prompt_id: runId }))
+      .mockResolvedValueOnce(
+        Response.json({
+          ...finished(),
+          status: 'failed',
+          outputs: {},
+          execution_error: {
+            node_id: '7',
+            node_type: 'GeminiImage2Node',
+            exception_type: 'Exception',
+            exception_message: 'Unauthorized: private detail',
+            traceback: [],
+            current_inputs: {},
+            current_outputs: {}
+          }
+        })
+      )
+
+    await f.workflow.start(input)
+
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'run_finished',
+      properties: expect.objectContaining({
+        status: 'failed',
+        failed_node_id: '7',
+        failed_node_type: 'GeminiImage2Node',
+        cloud_exception_type: 'Exception'
+      })
+    })
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('private')
+  })
+
   type Fixture = ReturnType<typeof fixture>
   type CredentialResult = Awaited<ReturnType<Fixture['session']['ensureFresh']>>
   type PendingCredential = ReturnType<

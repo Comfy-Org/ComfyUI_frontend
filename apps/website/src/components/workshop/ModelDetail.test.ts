@@ -474,7 +474,7 @@ describe('ModelDetail', () => {
       if (offered)
         expect(link).toHaveAttribute(
           'href',
-          '/cinematic-studio?model=bfl--flux-2-pro--generate-images'
+          '/models/apps/cinematic-studio?model=bfl--flux-2-pro--generate-images'
         )
     }
   )
