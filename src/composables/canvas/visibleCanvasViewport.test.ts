@@ -3,16 +3,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
-function rect(left: number, right: number, height = 450): DOMRect {
+function rect(left: number, right: number, height = 450, top = 0): DOMRect {
   return {
     left,
     right,
-    top: 0,
-    bottom: height,
+    top,
+    bottom: top + height,
     width: right - left,
     height,
     x: left,
-    y: 0,
+    y: top,
     toJSON: () => ({})
   }
 }
@@ -50,6 +50,19 @@ describe('visibleCanvasViewport', () => {
 
     expect(visibleCanvasViewport(createCanvas(rect(100, 900)))).toEqual([
       100, 0, 500, 450
+    ])
+  })
+
+  it('accounts for top and bottom panels in the usable viewport', () => {
+    const panel = document.createElement('div')
+    panel.className = 'graph-canvas-panel'
+    vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue(
+      rect(200, 700, 350, 50)
+    )
+    document.body.appendChild(panel)
+
+    expect(visibleCanvasViewport(createCanvas(rect(100, 900)))).toEqual([
+      100, 50, 500, 350
     ])
   })
 
