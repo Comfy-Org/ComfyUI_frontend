@@ -212,10 +212,10 @@ function useSubscriptionInternal() {
     )
   }
 
-  const reportMissingCheckoutCompletion = () => {
+  const getReportableMissingCheckout = () => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
     if (!attempt || hasReportedMissingCheckoutCompletion(attempt.attempt_id)) {
-      return
+      return null
     }
 
     const attemptAgeMs = Date.now() - attempt.started_at_ms
@@ -223,13 +223,21 @@ function useSubscriptionInternal() {
       armMissingCheckoutCompletionWakeUp(
         PENDING_CHECKOUT_COMPLETION_DEADLINE_MS - attemptAgeMs
       )
-      return
+      return null
     }
 
     // Only an authoritative inactive snapshot can close the funnel as a
     // missing completion. A superseded, timed-out, or failed read says nothing
     // about whether checkout eventually completed.
-    if (lastPendingCheckoutStatus?.is_active !== false) return
+    if (lastPendingCheckoutStatus?.is_active !== false) return null
+
+    return { attempt, attemptAgeMs }
+  }
+
+  const reportMissingCheckoutCompletion = () => {
+    const reportable = getReportableMissingCheckout()
+    if (!reportable) return
+    const { attempt, attemptAgeMs } = reportable
 
     // Claimed before emitting, not after: a second tab wakes on the same
     // deadline (both derive it from `started_at_ms`), so a mark that trailed
@@ -635,24 +643,30 @@ function useSubscriptionInternal() {
       return
     }
 
-    isRecoveringPendingCheckout = true
+    if (!(await runPendingCheckoutRecovery(source))) return
 
+    if (source === 'deadline') reportMissingCheckoutCompletion()
+  }
+
+  const runPendingCheckoutRecovery = async (
+    source: PendingCheckoutRecoverySource
+  ): Promise<boolean> => {
+    isRecoveringPendingCheckout = true
     try {
       const status = await fetchPendingCheckoutStatus()
-      if (isDisposed) return
+      if (isDisposed) return false
       if (status === null) {
         handleEmptyPendingCheckoutStatus(source)
-        return
+        return false
       }
+      return true
     } catch (error) {
       handlePendingCheckoutRecoveryError(source, error)
-      return
+      return false
     } finally {
       isRecoveringPendingCheckout = false
       activePendingCheckoutRecovery = null
     }
-
-    if (source === 'deadline') reportMissingCheckoutCompletion()
   }
 
   // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
@@ -731,16 +745,32 @@ function useSubscriptionInternal() {
     if (!isCloud) return null
 
     const statusData = await readSubscriptionStatus()
-    if (isDisposed) return null
-    // A superseded read publishes nothing: the scope moved on under it.
-    if (statusData === undefined) return null
-    if (
-      generation !== statusFetchGeneration ||
-      (authStore.userId ?? null) !== ownerId ||
-      workspaceStore.activeWorkspaceId !== workspaceId
-    ) {
+    if (!isPublishableStatusRead(statusData, ownerId, workspaceId, generation))
       return null
-    }
+    publishSubscriptionStatus(statusData, workspaceId)
+
+    return statusData
+  }
+
+  function isPublishableStatusRead(
+    statusData: BillingStatusResponse | undefined,
+    ownerId: string | null,
+    workspaceId: string | null,
+    generation: number
+  ): statusData is BillingStatusResponse {
+    return (
+      !isDisposed &&
+      statusData !== undefined &&
+      generation === statusFetchGeneration &&
+      (authStore.userId ?? null) === ownerId &&
+      workspaceStore.activeWorkspaceId === workspaceId
+    )
+  }
+
+  function publishSubscriptionStatus(
+    statusData: BillingStatusResponse,
+    workspaceId: string | null
+  ): void {
     // Only a current, publishable read proves billing is reachable.
     didLastRecoveryAttemptThrow = false
     lastPendingCheckoutStatus = statusData
@@ -752,8 +782,6 @@ function useSubscriptionInternal() {
       )
     }
     syncPendingSubscriptionSuccess(statusData)
-
-    return statusData
   }
 
   const handlePendingSubscriptionCheckoutChange = () => {
