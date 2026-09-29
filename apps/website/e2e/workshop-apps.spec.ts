@@ -161,11 +161,23 @@ test('shows a preview frame for every Cinematic Studio shot option', async ({
     .click()
 
   const shots = page.getByRole('radiogroup', { name: 'Shot' })
-  const options = shots.getByRole('radio')
-  const count = await options.count()
-  expect(count).toBeGreaterThan(1)
-  const framed = shots.locator(
-    'img[src^="/images/cinematic-studio/options/shot-"]'
-  )
-  await expect(framed).toHaveCount(count - 1)
+  await expect(shots.getByRole('radio')).toHaveCount(8)
+  await expect(
+    shots.locator('img[src^="/images/cinematic-studio/options/shot-"]')
+  ).toHaveCount(7)
+  for (const id of [
+    'xwide',
+    'wide',
+    'medium',
+    'close',
+    'xclose',
+    'ots',
+    'low'
+  ]) {
+    await expect(
+      shots.locator(
+        `img[src="/images/cinematic-studio/options/shot-${id}.jpg"]`
+      )
+    ).toHaveCount(1)
+  }
 })
