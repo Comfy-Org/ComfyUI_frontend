@@ -323,13 +323,15 @@ export function useFullPageCheckout() {
    * Money this page is waiting on reopens the bank's challenge on its own,
    * once per challenge, as long as Stripe runs it inside this page: a reload
    * mid-challenge picks it back up, and a customer back from a provider's
-   * site is never sent straight back to it.
+   * site is never sent straight back to it. A challenge replaced while Stripe
+   * answers opens nothing: the page no longer shows it.
    */
   watch(
     () => challengeToReopen(page.value),
     async (clientSecret) => {
       if (clientSecret === undefined) return
       if (await challengePort.leavesPage(clientSecret)) return
+      if (challengeToReopen(page.value) !== clientSecret) return
       checkout.continueVerification()
     }
   )
