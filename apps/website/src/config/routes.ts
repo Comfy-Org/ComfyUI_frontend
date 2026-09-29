@@ -87,8 +87,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
-// workshop, workshopSignIn, cinematicStudio, reshoot: prototype pages, English
-// only for now.
+// workshop, workshopSignIn, cinematicStudio, reshoot: English only, except the
+// zh-CN /models/ twin that SiteFooter links directly.
 //
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
 // built from a single English-language caption track — a "translated" watch

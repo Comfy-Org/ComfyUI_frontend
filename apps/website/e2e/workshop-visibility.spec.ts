@@ -32,6 +32,7 @@ test.describe('server HTML', () => {
     ]) {
       await page.goto(path)
       await expect(page.locator(`footer a[href="${href}"]`)).toHaveCount(1)
+      expect((await page.request.get(href)).ok()).toBe(true)
     }
   })
 })
