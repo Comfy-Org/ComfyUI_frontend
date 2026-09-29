@@ -1,124 +1,374 @@
 import type { DirectionPart } from './catalog'
 
-export interface CameraIcon {
-  readonly paths: readonly string[]
-  readonly badge?: string
+export type IconTone =
+  | 'shadow'
+  | 'front'
+  | 'top'
+  | 'side'
+  | 'ring'
+  | 'brass'
+  | 'lensRing'
+  | 'glass'
+  | 'screen'
+  | 'highlight'
+  | 'highlightSoft'
+  | 'highlightFaint'
+  | 'knurl'
+  | 'vent'
+  | 'tick'
+  | 'coating'
+  | 'coatingGlow'
+  | 'spark'
+  | 'glint'
+  | 'record'
+  | 'flare'
+  | 'flareGlow'
+  | 'fov'
+  | 'fovEdge'
+  | 'fovAuto'
+
+export interface IconShape {
+  readonly d: string
+  readonly tone: IconTone
+  readonly transform?: string
+  /** Painted without the soft rounded edge the clay faces get. */
+  readonly flat?: boolean
 }
 
-const circle = (cx: number, cy: number, r: number) =>
-  `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`
+export type CameraIcon = readonly IconShape[]
+
+type Point = readonly [number, number]
+
+/** Depth offset of the oblique projection, per unit of depth. */
+const DEPTH_X = 0.55
+const DEPTH_Y = -0.4
+
+const num = (value: number) => Number(value.toFixed(2))
+
+const polygon = (points: readonly Point[]) =>
+  `M${points.map(([x, y]) => `${num(x)} ${num(y)}`).join('L')}Z`
 
 const ellipse = (cx: number, cy: number, rx: number, ry: number) =>
-  `M${cx} ${cy - ry}a${rx} ${ry} 0 1 0 0 ${2 * ry}a${rx} ${ry} 0 1 0 0 ${-2 * ry}`
+  `M${num(cx - rx)} ${num(cy)}a${num(rx)} ${num(ry)} 0 1 0 ${num(2 * rx)} 0a${num(rx)} ${num(ry)} 0 1 0 ${num(-2 * rx)} 0`
 
-/** A lens barrel seen from the side: round front glass, body, rear mount. */
-function barrel(
-  front: number,
-  length: number,
-  radius: number,
-  cy = 12
-): string[] {
-  const back = front + length
+const circle = (cx: number, cy: number, r: number) => ellipse(cx, cy, r, r)
+
+const roundedRect = (x: number, y: number, w: number, h: number, r: number) =>
+  `M${num(x + r)} ${num(y)}H${num(x + w - r)}a${r} ${r} 0 0 1 ${r} ${r}V${num(y + h - r)}a${r} ${r} 0 0 1 ${-r} ${r}H${num(x + r)}a${r} ${r} 0 0 1 ${-r} ${-r}V${num(y + r)}a${r} ${r} 0 0 1 ${r} ${-r}Z`
+
+const shape = (d: string, tone: IconTone): IconShape => ({ d, tone })
+
+const flat = (d: string, tone: IconTone): IconShape => ({ d, tone, flat: true })
+
+const shadow = (cx: number, cy: number, rx: number) =>
+  shape(ellipse(cx, cy, rx, 2.2), 'shadow')
+
+/** A box in oblique view: top, right side and front, with a lit top edge. */
+function box(x: number, y: number, w: number, h: number, depth: number) {
+  const dx = DEPTH_X * depth
+  const dy = DEPTH_Y * depth
+  const vents =
+    w > 14 && h > 10
+      ? [0, 1, 2].map((row) =>
+          shape(
+            `M${num(x + w + dx * 0.3)} ${num(y + h * 0.35 + row * 2.2 + dy * 0.3)}l${num(dx * 0.45)} ${num(dy * 0.45)}`,
+            'vent'
+          )
+        )
+      : []
   return [
-    ellipse(front, cy, radius / 3, radius),
-    `M${front} ${cy - radius}H${back}V${cy + radius}H${front}`,
-    `M${back} ${cy - radius / 2}h2.5v${radius}h-2.5`
+    shape(
+      polygon([
+        [x, y],
+        [x + dx, y + dy],
+        [x + w + dx, y + dy],
+        [x + w, y]
+      ]),
+      'top'
+    ),
+    shape(
+      polygon([
+        [x + w, y],
+        [x + w + dx, y + dy],
+        [x + w + dx, y + h + dy],
+        [x + w, y + h]
+      ]),
+      'side'
+    ),
+    shape(
+      polygon([
+        [x, y],
+        [x + w, y],
+        [x + w, y + h],
+        [x, y + h]
+      ]),
+      'front'
+    ),
+    shape(`M${num(x + 0.4)} ${num(y + 0.5)}H${num(x + w - 0.4)}`, 'highlight'),
+    shape(
+      `M${num(x + w + 0.5)} ${num(y + 0.3)}L${num(x + w + dx - 0.2)} ${num(y + dy + 0.4)}`,
+      'highlightFaint'
+    ),
+    ...vents
   ]
 }
 
-const cameraBody = (x: number, y: number, w: number, h: number) =>
-  `M${x} ${y}h${w}v${h}h-${w}z`
+/**
+ * A cylinder lying along x with its front at `front`, facing left. Both ends
+ * are elliptical, so bands stacked on a barrel read as turned metal rather
+ * than blocks. A focus ring (tone `ring`) is knurled; a barrel carries a lit
+ * edge and a white index mark.
+ */
+function cylinder(
+  front: number,
+  back: number,
+  cy: number,
+  r: number,
+  tone: 'front' | 'ring' | 'brass' = 'front'
+) {
+  const curve = r * 0.38
+  const width = back - front
+  const outline = flat(
+    `M${num(front)} ${num(cy - r)}H${num(back)}a${num(curve)} ${num(r)} 0 0 1 0 ${num(2 * r)}H${num(front)}a${num(curve)} ${num(r)} 0 0 1 0 ${num(-2 * r)}Z`,
+    tone
+  )
+  const edge = shape(
+    `M${num(front)} ${num(cy - r)}a${num(curve)} ${num(r)} 0 0 0 0 ${num(2 * r)}`,
+    'highlightFaint'
+  )
+  if (tone === 'ring') {
+    const grip = Math.max(3, Math.floor((width - 1.6) / 1.1))
+    const knurls = Array.from({ length: grip }, (_, index) => {
+      const x = front + 0.8 + ((index + 0.5) * (width - 1.6)) / grip
+      return shape(
+        `M${num(x)} ${num(cy - r + 1.8)}V${num(cy + r - 1.8)}`,
+        'knurl'
+      )
+    })
+    return [outline, edge, ...knurls]
+  }
+  return [
+    outline,
+    edge,
+    shape(
+      `M${num(front + curve)} ${num(cy - r * 0.5)}H${num(back + curve * 0.5)}`,
+      'highlightSoft'
+    ),
+    shape(
+      `M${num(back - Math.min(4, width * 0.25))} ${num(cy - r + 0.9)}v${num(r * 0.22)}`,
+      'tick'
+    )
+  ]
+}
 
-const BODIES: Record<string, readonly string[]> = {
-  auto: [...barrel(2, 8, 4), cameraBody(13, 5, 24, 14)],
+/** Front glass: rim, coated glass, a yellow reflection and a highlight. */
+function glass(x: number, cy: number, r: number, rx = r * 0.38) {
+  return [
+    shape(ellipse(x, cy, rx, r), 'lensRing'),
+    shape(ellipse(x, cy, rx * 0.72, r * 0.72), 'glass'),
+    shape(ellipse(x, cy, rx * 0.5, r * 0.5), 'coating'),
+    shape(
+      `M${num(x + rx * 0.1)} ${num(cy + r * 0.5)}a${num(rx * 0.4)} ${num(r * 0.35)} 0 0 0 ${num(rx * 0.3)} ${num(-r * 0.3)}`,
+      'coatingGlow'
+    ),
+    shape(
+      `M${num(x - rx * 0.35)} ${num(cy - r * 0.45)}a${num(rx * 0.5)} ${num(r * 0.5)} 0 0 1 ${num(rx * 0.5)} ${num(-r * 0.12)}`,
+      'spark'
+    ),
+    shape(circle(x - rx * 0.2, cy - r * 0.28, 0.8), 'glint')
+  ]
+}
+
+function lensOnBody(front: number, back: number, cy: number, r: number) {
+  return [...cylinder(front, back, cy, r), ...glass(front, cy, r)]
+}
+
+/** A film magazine reel standing on top of the body. */
+function reel(cx: number, cy: number, r: number) {
+  return [
+    flat(circle(cx + DEPTH_X * 3, cy + DEPTH_Y * 3, r), 'side'),
+    flat(circle(cx, cy, r), 'front'),
+    flat(circle(cx, cy, r * 0.3), 'top')
+  ]
+}
+
+const recordLight = (cx: number, cy: number, r = 0.9) =>
+  shape(circle(cx, cy, r), 'record')
+
+const BODIES: Record<string, CameraIcon> = {
+  auto: [
+    shadow(36, 33, 18),
+    ...box(24, 13, 22, 16, 10),
+    ...lensOnBody(12, 24, 21, 6)
+  ],
   digital: [
-    ...barrel(2, 8, 4),
-    cameraBody(13, 6, 23, 13),
-    'M18 6V3h11v3',
-    'M36 9h2v6h-2'
+    shadow(36, 34, 20),
+    ...box(28, 6, 8, 3, 6),
+    ...box(22, 11, 24, 18, 12),
+    ...box(49, 13, 3, 8, 4),
+    ...lensOnBody(9, 22, 20, 6.5),
+    shape(roundedRect(49.4, 13.4, 2, 6, 0.6), 'screen'),
+    recordLight(43, 14.8, 1)
   ],
   large: [
-    ...barrel(1, 9, 5),
-    cameraBody(13, 4, 25, 16),
-    'M18 4V2h10v2',
-    'M32 9h3M32 12h3'
+    shadow(36, 35, 22),
+    ...box(27, 3, 12, 3, 8),
+    ...box(20, 8, 28, 22, 13),
+    ...cylinder(5, 20, 19, 8),
+    ...cylinder(9, 15, 19, 8.4, 'ring'),
+    ...glass(5, 19, 8),
+    recordLight(44, 12.5, 1)
   ],
-  super35: [...barrel(3, 7, 3.5), cameraBody(13, 7, 20, 11), 'M18 7V5h8v2'],
+  super35: [
+    shadow(37, 32, 15),
+    ...box(29, 10, 7, 2.5, 5),
+    ...box(26, 14, 18, 14, 9),
+    ...lensOnBody(15, 26, 21, 5),
+    recordLight(41, 17)
+  ],
   film35: [
-    ...barrel(2, 8, 3.5, 16),
-    cameraBody(13, 11, 24, 10),
-    circle(19, 6, 4.2),
-    circle(31, 6, 4.2)
+    shadow(36, 35, 20),
+    ...reel(27, 11, 6.5),
+    ...reel(41, 11, 6.5),
+    ...box(22, 17, 24, 13, 10),
+    ...lensOnBody(10, 22, 24, 5.5),
+    recordLight(43, 20)
   ],
   film16: [
-    ...barrel(3, 7, 3, 16),
-    cameraBody(13, 11, 19, 9),
-    circle(22.5, 6, 4.2)
+    shadow(36, 34, 16),
+    ...reel(34, 12, 6.5),
+    ...box(25, 18, 19, 12, 8),
+    ...lensOnBody(14, 25, 24, 5),
+    recordLight(41, 21)
   ],
   handheld: [
-    ...barrel(2, 7, 3.5, 10),
-    cameraBody(12, 5, 20, 11),
-    'M17 16v5h8v-5',
-    'M32 8h6v5h-6'
+    shadow(34, 36, 16),
+    ...box(30, 25, 7, 9, 4),
+    ...box(24, 10, 20, 15, 9),
+    ...box(46, 13, 6, 5, 3),
+    ...lensOnBody(13, 24, 17.5, 5.5),
+    recordLight(41, 13.5),
+    shape(roundedRect(47, 14, 3.4, 2.8, 1), 'glass')
   ]
 }
 
-/** A lens in three-quarter view: front glass, barrel, rear flange. */
-const LENS_BODY = [
-  ellipse(8, 12, 4.5, 9),
-  ellipse(8, 12, 2.6, 6),
-  'M8 3L23 4.5',
-  'M8 21L23 19.5',
-  'M23 4.5a2.2 7.5 0 0 1 0 15'
-]
-
-const LENS = (extra: readonly string[] = [], badge?: string): CameraIcon => ({
-  paths: [...LENS_BODY, ...extra],
-  badge
-})
+const lensShadow = shadow(34, 35, 20)
 
 const LENSES: Record<string, CameraIcon> = {
-  auto: LENS(),
-  prime: LENS(['M16 3.8a2 8.2 0 0 1 0 16.4'], 'PR'),
-  anamorphic: LENS([ellipse(8, 12, 1.2, 4)], 'AM'),
-  vintage: LENS(['M13.5 3.6a2 8.4 0 0 1 0 16.8', 'M18 4a2 8 0 0 1 0 16'], 'VT'),
-  macro: LENS([ellipse(8, 12, 0.9, 2)], 'MC'),
-  tilt: LENS(['M14 3.7l4 16.4'], 'TS')
+  auto: [
+    lensShadow,
+    ...cylinder(18, 48, 19, 11),
+    ...cylinder(22, 30, 19, 11.4, 'ring'),
+    ...glass(18, 19, 11, 6)
+  ],
+  prime: [
+    lensShadow,
+    ...cylinder(18, 48, 19, 11),
+    ...cylinder(26, 34, 19, 11.4, 'ring'),
+    ...glass(18, 19, 11, 6)
+  ],
+  anamorphic: [
+    lensShadow,
+    ...cylinder(18, 48, 19, 11),
+    ...cylinder(24, 30, 19, 11.4, 'ring'),
+    ...glass(18, 19, 11, 6),
+    shape(ellipse(18, 19, 2, 6), 'flareGlow'),
+    shape('M2 19H40', 'flare')
+  ],
+  vintage: [
+    lensShadow,
+    ...cylinder(18, 46, 19, 10.5, 'brass'),
+    ...cylinder(22, 27, 19, 11, 'ring'),
+    ...cylinder(32, 37, 19, 11, 'ring'),
+    ...glass(18, 19, 10.5, 5.6)
+  ],
+  macro: [
+    lensShadow,
+    ...cylinder(14, 52, 19, 9),
+    ...cylinder(20, 26, 19, 9.4, 'ring'),
+    ...cylinder(32, 38, 19, 9.4, 'ring'),
+    ...glass(14, 19, 9, 4.2)
+  ],
+  tilt: [
+    lensShadow,
+    ...cylinder(30, 50, 19, 10),
+    ...[...cylinder(16, 30, 19, 10.4, 'ring'), ...glass(16, 19, 10.4, 5.4)].map(
+      (part) => ({ ...part, transform: 'rotate(-14 30 19)' })
+    )
+  ]
+}
+
+/** Horizontal field of view in degrees for each focal length on full frame. */
+const FIELD_OF_VIEW: Readonly<Record<string, number>> = {
+  '14': 104,
+  '24': 84,
+  '35': 63,
+  '50': 47,
+  '85': 28,
+  '135': 18
 }
 
 function focalIcon(id: string): CameraIcon {
   const length =
-    id === 'auto' ? 16 : Math.round(4 + Math.sqrt(Number(id)) * 2.2)
-  const front = 20 - (length + 3) / 2
-  return {
-    paths: [...barrel(front, length, 7), `M${front + length / 2} 5v14`]
-  }
+    id === 'auto' ? 12 : Math.round(8 + Math.sqrt(Number(id)) * 2.4)
+  const front = Math.min(30, 60 - length)
+  const field = FIELD_OF_VIEW[id]
+  const spread = field
+    ? Math.min(Math.tan((field * Math.PI) / 360) * (front - 2), 19)
+    : 12
+  const edges = `M${front} 20L2 ${num(20 - spread)}M${front} 20L2 ${num(20 + spread)}`
+  const view = field
+    ? [
+        shape(`M${front} 20L2 ${num(20 - spread)}V${num(20 + spread)}Z`, 'fov'),
+        shape(edges, 'fovEdge')
+      ]
+    : [shape(edges, 'fovAuto')]
+  return [
+    ...view,
+    shadow(front + length / 2 + 2, 33, length / 2 + 4),
+    ...cylinder(front, front + length, 20, 8),
+    ...cylinder(front + 2, front + 5, 20, 8.4, 'ring'),
+    ...glass(front, 20, 8, 3.4)
+  ]
 }
 
-function irisPoint(radius: number, angle: number) {
-  return [20 + radius * Math.cos(angle), 12 + radius * Math.sin(angle)]
-    .map((value) => value.toFixed(1))
-    .join(' ')
-}
+const irisPoint = (radius: number, angle: number): Point => [
+  32 + radius * Math.cos(angle),
+  20 + radius * Math.sin(angle)
+]
 
 function apertureIcon(id: string): CameraIcon {
-  const stop = id === 'auto' ? 2.8 : Number(id)
+  const stop = id === 'auto' ? 3.2 : Number(id)
   const opening = Math.max(2.5, 8.5 - stop * 0.75)
-  if (stop <= 1.4)
-    return { paths: [circle(20, 12, 10), circle(20, 12, opening)] }
+  const housing = [
+    flat(circle(32, 20, 11), 'ring'),
+    flat(circle(32, 20, 9), 'side')
+  ]
+  if (stop <= 1.4) return [...housing, shape(circle(32, 20, opening), 'glass')]
   const angles = Array.from({ length: 6 }, (_, index) => (index * Math.PI) / 3)
-  const iris = `M${angles.map((angle) => irisPoint(opening, angle)).join('L')}Z`
-  const blades = angles.map(
-    (angle) => `M${irisPoint(opening, angle)}L${irisPoint(10, angle + 1)}`
+  const blades = angles.map((angle) =>
+    flat(
+      polygon([
+        irisPoint(opening, angle),
+        irisPoint(9, angle + 1),
+        irisPoint(9, angle + 1.9),
+        irisPoint(opening, angle + Math.PI / 3)
+      ]),
+      'top'
+    )
   )
-  return { paths: [circle(20, 12, 10), iris, ...blades] }
+  const iris = shape(
+    polygon(angles.map((angle) => irisPoint(opening, angle))),
+    'glass'
+  )
+  return [...housing, ...blades, iris]
 }
 
 export function cameraIcon(
   part: DirectionPart,
   id: string
 ): CameraIcon | undefined {
-  if (part === 'body') return { paths: BODIES[id] ?? BODIES.auto }
+  if (part === 'body') return BODIES[id] ?? BODIES.auto
   if (part === 'lens') return LENSES[id] ?? LENSES.auto
   if (part === 'focal') return focalIcon(id)
   if (part === 'aperture') return apertureIcon(id)

@@ -13,10 +13,7 @@ import {
 } from '../lib/workshop/cinematic-studio/catalog'
 import { shotEstimate } from '../lib/workshop/cinematic-studio/estimate'
 import type { CinematicModel } from '../lib/workshop/cinematic-studio/models'
-import {
-  cinematicPrompt,
-  cinematicPromptSegments
-} from '../lib/workshop/cinematic-studio/prompt'
+import { cinematicPrompt } from '../lib/workshop/cinematic-studio/prompt'
 import type { StarterShot } from '../lib/workshop/cinematic-studio/starters'
 import { isCinematicDemo, useCinematicDemoRun } from './useCinematicDemoRun'
 import { useCinematicStudioRun } from './useCinematicStudioRun'
@@ -46,7 +43,6 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     cast: !!cast.value,
     palette: !!palette.value
   }))
-  const promptSegments = computed(() => cinematicPromptSegments(brief.value))
   const references = computed(() =>
     [cast.value, palette.value].filter((file): file is File => !!file)
   )
@@ -116,7 +112,6 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     takes,
     cast,
     palette,
-    promptSegments,
     references,
     estimate,
     memberWorkspace,
