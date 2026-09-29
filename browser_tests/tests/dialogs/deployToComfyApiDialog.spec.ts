@@ -3,6 +3,8 @@ import { expect } from '@playwright/test'
 import { WorkflowActionsDropdown } from '@e2e/fixtures/components/WorkflowActionsDropdown'
 import { deployToComfyApiTest as test } from '@e2e/fixtures/deployToComfyApiFixture'
 
+const MEDIA = 'https://media.comfy.org/website/comfy-api'
+
 test.describe('Deploy to Comfy API', { tag: '@auth' }, () => {
   test('opens the deploy card from the workflow actions menu for a flagged account', async ({
     comfyPage
@@ -21,7 +23,24 @@ test.describe('Deploy to Comfy API', { tag: '@auth' }, () => {
     await expect(
       card.getByRole('heading', { name: 'Deploy to Comfy API' })
     ).toBeVisible()
-    await expect(card.getByTestId('deploy-to-comfy-api-video')).toBeVisible()
+    const video = card.getByTestId('deploy-to-comfy-api-video')
+    await expect(video).toHaveAttribute(
+      'poster',
+      `${MEDIA}/comfy-api-poster.jpg`
+    )
+    await expect(video.locator('source[type="video/mp4"]')).toHaveAttribute(
+      'src',
+      `${MEDIA}/comfy-api-1280.mp4`
+    )
+    await expect(video).toHaveJSProperty(
+      'currentSrc',
+      `${MEDIA}/comfy-api-1280.webm`
+    )
+    await expect
+      .poll(() =>
+        video.evaluate((element: HTMLVideoElement) => element.currentTime)
+      )
+      .toBeGreaterThan(0)
     await expect(
       card.getByRole('button', { name: 'Deploy on Platform' })
     ).toBeEnabled()

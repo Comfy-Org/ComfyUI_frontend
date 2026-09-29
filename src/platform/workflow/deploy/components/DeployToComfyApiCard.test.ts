@@ -1,7 +1,8 @@
 import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { useErrorHandling } from '@/composables/useErrorHandling'
@@ -40,7 +41,7 @@ const i18n = createI18n({
 })
 
 function renderCard(
-  media: { videoSrc?: string; videoSrcMp4?: string; posterSrc?: string } = {}
+  media: Partial<ComponentProps<typeof DeployToComfyApiCard>> = {}
 ) {
   const onDone = vi.fn()
   const onDismiss = vi.fn()
@@ -127,7 +128,7 @@ describe('DeployToComfyApiCard', () => {
     expect(onDone).not.toHaveBeenCalled()
   })
 
-  it('plays the video over its poster', () => {
+  it('shows its media over the poster', () => {
     renderCard({
       videoSrc: 'https://example.test/a.webm',
       videoSrcMp4: 'https://example.test/a.mp4',
@@ -143,10 +144,8 @@ describe('DeployToComfyApiCard', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('falls back to the placeholder when the video fails to load', async () => {
-    renderCard({ videoSrc: 'https://example.test/a.webm' })
-
-    await fireEvent.error(screen.getByTestId('deploy-to-comfy-api-video'))
+  it('shows the placeholder when there is no video', () => {
+    renderCard()
 
     expect(
       screen.getByTestId('deploy-to-comfy-api-video-placeholder')

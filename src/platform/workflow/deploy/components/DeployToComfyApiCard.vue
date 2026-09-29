@@ -30,41 +30,27 @@
       </Button>
 
       <div class="p-2">
-        <video
-          v-if="videoSrc && !videoFailed"
+        <LoopingVideo
+          :webm-src="videoSrc"
+          :mp4-src="videoSrcMp4"
+          :poster-src="posterSrc"
           data-testid="deploy-to-comfy-api-video"
           class="aspect-video w-full rounded-lg object-cover"
-          :poster="posterSrc || undefined"
-          autoplay
-          muted
-          loop
-          playsinline
-          @error="videoFailed = true"
         >
-          <source
-            :src="videoSrc"
-            type="video/webm"
-            @error="videoFailed = !videoSrcMp4"
-          />
-          <source
-            v-if="videoSrcMp4"
-            :src="videoSrcMp4"
-            type="video/mp4"
-            @error="videoFailed = true"
-          />
-        </video>
-        <div
-          v-else
-          data-testid="deploy-to-comfy-api-video-placeholder"
-          class="grid aspect-video w-full place-items-center rounded-lg bg-secondary-background"
-        >
-          <span
-            class="grid size-16 place-items-center rounded-full border border-base-foreground/30 bg-base-foreground/10 text-base-foreground"
-            aria-hidden="true"
-          >
-            <i class="icon-[lucide--play] size-6" />
-          </span>
-        </div>
+          <template #fallback>
+            <div
+              data-testid="deploy-to-comfy-api-video-placeholder"
+              class="grid aspect-video w-full place-items-center rounded-lg bg-secondary-background"
+            >
+              <span
+                class="grid size-16 place-items-center rounded-full border border-base-foreground/30 bg-base-foreground/10 text-base-foreground"
+                aria-hidden="true"
+              >
+                <i class="icon-[lucide--play] size-6" />
+              </span>
+            </div>
+          </template>
+        </LoopingVideo>
       </div>
 
       <section class="flex flex-col gap-9 p-6 @xl:gap-6 @xl:p-9">
@@ -105,6 +91,7 @@
 import { createReusableTemplate } from '@vueuse/core'
 import { ref } from 'vue'
 
+import LoopingVideo from '@/components/common/LoopingVideo.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -132,7 +119,6 @@ const { buildDocsUrl } = useExternalLink()
 const { open: openPlatformBuild } = usePlatformBuildHandoff()
 const { toastErrorHandler } = useErrorHandling()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
-const videoFailed = ref(false)
 const pending = ref(false)
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
