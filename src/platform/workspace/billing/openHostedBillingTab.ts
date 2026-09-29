@@ -36,8 +36,13 @@ function openDisownedTab(url: URL): boolean {
 
 let stopReturnRefresh: (() => void) | null = null
 
-function armReturnRefresh(): void {
+export function disarmHostedBillingReturnRefresh(): void {
   stopReturnRefresh?.()
+  stopReturnRefresh = null
+}
+
+function armReturnRefresh(): void {
+  disarmHostedBillingReturnRefresh()
   // Resolved inside the call, not at module scope: useBillingContext ->
   // useWorkspaceBilling -> this module would otherwise dereference the
   // shared context before its state is constructed.

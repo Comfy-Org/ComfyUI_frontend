@@ -13,7 +13,11 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
-import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
+import {
+  resultItemPreviewUrl,
+  resultItemUrl,
+  resultItemVhsAdvancedPreviewUrl
+} from '@/utils/resultItemUrl'
 import type { useExtensionService } from '@/services/extensionService'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
@@ -279,7 +283,10 @@ const MEDIA_ITEM = {
 
 const MEDIA_URLS = [
   '/api/view?filename=output.png&type=output&subfolder=',
-  '/api/view?filename=output.png&type=output&subfolder=&res=512'
+  '/api/view?filename=output.png&type=output&subfolder=&res=512',
+  '/api/viewvideo?filename=output.png&type=output&subfolder=',
+  '/api/vhs/viewaudio?filename=a.wav',
+  '/api/assets/asset-1/content?disposition=inline'
 ]
 
 const SIGN_OUT: RecordedRequest[] = [
@@ -450,7 +457,10 @@ describe('cloud auth requests with unified_web_session off', () => {
 
       expect([
         resultItemUrl(MEDIA_ITEM),
-        resultItemPreviewUrl(MEDIA_ITEM)
+        resultItemPreviewUrl(MEDIA_ITEM),
+        resultItemVhsAdvancedPreviewUrl(MEDIA_ITEM),
+        api.apiURL('/vhs/viewaudio?filename=a.wav'),
+        api.apiURL('/assets/asset-1/content?disposition=inline')
       ]).toEqual(MEDIA_URLS)
 
       expect(recorder.socketCloses).toBe(0)
