@@ -1,5 +1,6 @@
 import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
+import { nextTick } from 'vue'
 
 import { assert } from '@/base/assert'
 import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
@@ -7,6 +8,7 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -479,7 +481,24 @@ export class ChangeTracker {
           checkForRerouteMigration: false,
           silentAssetErrors: true
         })
-        this.activeState = prevState
+        // Widget/node hydration can still mutate the graph for a tick after
+        // loadGraphData() resolves, so activeState must wait for that
+        // settling before it is set — otherwise the next captureCanvasState()
+        // call sees a false diff against the raw JSON and clears the queue
+        // it just populated.
+        await nextTick()
+        if (isActiveTracker(this)) {
+          const settledState = await validateComfyWorkflow(
+            clone(app.rootGraph.serialize())
+          )
+          assert(
+            settledState,
+            'Undo/redo produced an invalid workflow snapshot'
+          )
+          this.activeState = settledState
+        } else {
+          this.activeState = prevState
+        }
         this.updateModified(previousState)
       } finally {
         this._restoringState = false
