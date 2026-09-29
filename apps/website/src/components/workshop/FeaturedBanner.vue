@@ -43,7 +43,7 @@ const AUTOPLAY_MS = 7000
  * pitch on its own half and the slide becomes the picture beside it, named in
  * a strip along the bottom.
  */
-export interface FeaturedPitch {
+interface FeaturedPitch {
   readonly heading: string
   readonly body: string
   readonly action: string
