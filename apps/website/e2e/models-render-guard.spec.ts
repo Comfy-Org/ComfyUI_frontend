@@ -2,6 +2,7 @@ import type { APIRequestContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 
+import { getRoutes } from '../src/config/routes'
 import { test } from './fixtures/blockExternalMedia'
 import { expectIslandHydrated } from './fixtures/islands'
 import { stubWorkshopFlags } from './fixtures/workshopFlags'
@@ -22,6 +23,8 @@ const catalogueSchema = z.array(
   z.object({ slug: z.string(), name: z.string(), href: z.string() })
 )
 
+const CATALOGUE_PATH = getRoutes().workshop
+
 const MODEL_SLUGS = [
   'bfl--flux-2-max--generate-images',
   'byteplus--seedance-2-5-text-to-video--generate-videos',
@@ -34,7 +37,7 @@ type GuardedPage =
 
 const PAGES: readonly GuardedPage[] = [
   ...MODEL_SLUGS.map((slug) => ({ kind: 'model' as const, slug })),
-  { kind: 'catalogue', path: '/models/' }
+  { kind: 'catalogue', path: CATALOGUE_PATH }
 ]
 
 const pageTitle = (page: GuardedPage) =>
@@ -140,18 +143,19 @@ test.describe('without JavaScript', () => {
     })
   }
 
-  test('/models/ shows the catalogue, not the showcase', async ({ page }) => {
-    test.fail(
-      true,
-      'Until #18898 the noscript ModelsShowcase renders here, so the h1 reads "Grok Imagine in ComfyUI" and the no-Grok check fails too'
-    )
-    await page.goto('/models/')
+  test('the catalogue shows its heading, not the showcase', async ({
+    page
+  }) => {
+    await page.goto(CATALOGUE_PATH)
     const h1 = page.getByRole('heading', { level: 1 })
     await expect(h1).toHaveCount(1)
     await expect(h1).toHaveText('ComfyUI models')
     await expect(page.getByText(/Grok Imagine in ComfyUI/)).toHaveCount(0)
     await expect(
-      page.locator('main a[href^="/models/"][href*="--"]').first()
+      page
+        .getByTestId('models-directory')
+        .locator(`a[href^="${CATALOGUE_PATH}"]`)
+        .first()
     ).toBeVisible()
   })
 })
