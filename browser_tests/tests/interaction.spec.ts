@@ -1178,58 +1178,60 @@ test.describe('Viewport settings', () => {
       offset: await comfyPage.canvasOps.getOffset()
     })
 
-    const changeTab = async (tab: Locator) => {
+    const changeTab = async (tab: Locator, workflowName: string) => {
       await tab.click()
-      await comfyPage.nextFrame()
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toContain(workflowName)
       await comfyMouse.move(DefaultGraphPositions.emptySpace)
 
-      // If tooltip is visible, wait for it to hide
       await expect(
         comfyPage.page.locator('.workflow-popover-fade')
       ).toHaveCount(0)
+      await comfyPage.idleFrames(2)
     }
 
-    // Screenshot the canvas element
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
-
-    const toggleButton = comfyPage.page.getByTestId(
-      TestIds.canvas.toggleMinimapButton
-    )
-    await toggleButton.click()
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
-
-    await comfyPage.menu.topbar.saveWorkflow('Workflow A')
-    await comfyPage.nextFrame()
-
-    // Save workflow as a new file, then zoom out before screen shot
-    await comfyPage.menu.topbar.saveWorkflowAs('Workflow B')
-
-    await comfyPage.nextFrame()
+    let viewportA: Awaited<ReturnType<typeof getViewport>>
+    let viewportB: Awaited<ReturnType<typeof getViewport>>
     const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
-    await changeTab(tabA)
-
-    const viewportA = await getViewport()
-
     const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
-    await changeTab(tabB)
 
-    await comfyMouse.move(DefaultGraphPositions.emptySpace)
-    for (let i = 0; i < 4; i++) {
-      await comfyMouse.wheel(0, 60)
-    }
+    await test.step('Save two workflow tabs', async () => {
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+      await comfyPage.page
+        .getByTestId(TestIds.canvas.toggleMinimapButton)
+        .click()
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
 
-    await comfyPage.nextFrame()
-    const viewportB = await getViewport()
+      await comfyPage.menu.topbar.saveWorkflow('Workflow A')
+      await comfyPage.nextFrame()
+      await comfyPage.menu.topbar.saveWorkflowAs('Workflow B')
+      await comfyPage.nextFrame()
+    })
 
-    expect(viewportB).not.toEqual(viewportA)
+    await test.step('Give each workflow a distinct viewport', async () => {
+      await changeTab(tabA, 'Workflow A')
+      viewportA = await getViewport()
 
-    // Go back to Workflow A
-    await changeTab(tabA)
-    await expect.poll(getViewport).toEqual(viewportA)
+      await changeTab(tabB, 'Workflow B')
+      for (let i = 0; i < 4; i++) {
+        await comfyMouse.wheel(0, 60)
+      }
 
-    // And back to Workflow B
-    await changeTab(tabB)
-    await expect.poll(getViewport).toEqual(viewportB)
+      await comfyPage.nextFrame()
+      viewportB = await getViewport()
+      expect(viewportB).not.toEqual(viewportA)
+    })
+
+    await test.step('Restore Workflow A viewport', async () => {
+      await changeTab(tabA, 'Workflow A')
+      await expect.poll(getViewport).toEqual(viewportA)
+    })
+
+    await test.step('Restore Workflow B viewport', async () => {
+      await changeTab(tabB, 'Workflow B')
+      await expect.poll(getViewport).toEqual(viewportB)
+    })
   })
 })
 
