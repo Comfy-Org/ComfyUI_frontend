@@ -509,7 +509,7 @@ describe('agentEventTransport run approval', () => {
     )
   })
 
-  it('reports an unknown ask kind once with a bounded tag', () => {
+  it('reports an unknown ask kind once with a bounded-cardinality tag', () => {
     const unknownKind = 'x'.repeat(100)
     drive([
       runApproval('unknown-1', unknownKind),
@@ -522,19 +522,34 @@ describe('agentEventTransport run approval', () => {
       expect.objectContaining({
         tags: {
           reason: 'unknown-kind',
-          ask_kind: 'x'.repeat(64)
-        }
+          ask_kind: 'unknown'
+        },
+        context: expect.objectContaining({ askKind: unknownKind })
       })
     )
   })
 
-  it('bounds reported ask identities and evicts the oldest', () => {
+  it('bounds report volume for the session', () => {
     const asks = Array.from({ length: 33 }, (_, index) =>
       runApproval(`unknown-${index}`, 'unsupported')
     )
     drive([...asks, asks[0]])
 
-    expect(reportError).toHaveBeenCalledTimes(34)
+    expect(reportError).toHaveBeenCalledTimes(32)
+  })
+
+  it('does not duplicate an approval restored by hydration', () => {
+    const message = createAssistantMessage(T)
+    message.parts.push({ type: 'runApproval', askId: 'restored-ask' })
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(runApproval('restored-ask'))
+
+    expect(
+      message.parts.filter((part) => part.type === 'runApproval')
+    ).toHaveLength(1)
+    expect(emit).not.toHaveBeenCalled()
   })
 })
 
@@ -598,6 +613,17 @@ describe('agentEventTransport settle lifecycle', () => {
         tags: expect.objectContaining({ reason: 'settled-turn' })
       })
     )
+  })
+
+  it('does not report redelivery of an approval rendered before settle', () => {
+    const message = createAssistantMessage(T)
+    const transport = createAgentEventTransport(message, vi.fn())
+    transport.ingest(runApproval('visible-ask'))
+    transport.settle()
+
+    transport.ingest(runApproval('visible-ask'))
+
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('records an explicitly targeted node link when the agent switches workflow tabs', () => {

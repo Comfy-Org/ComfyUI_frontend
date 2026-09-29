@@ -1001,6 +1001,24 @@ describe('useAgentConversationStore', () => {
       )
     })
 
+    it('records a background turn replaced by a newer turn in the same thread', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.startTurn(T2)
+      store.stashActiveTurn()
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
+    })
+
     it('preserves the settled reason when dropping background turns', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -1111,8 +1129,9 @@ describe('useAgentConversationStore', () => {
           errorType: 'failure_delivering_agent_approval_ask',
           tags: expect.objectContaining({
             reason: 'unknown-kind',
-            ask_kind: 'pick_a_model'
-          })
+            ask_kind: 'unknown'
+          }),
+          context: expect.objectContaining({ askKind: 'pick_a_model' })
         })
       )
     })

@@ -330,6 +330,15 @@ export const useAgentConversationStore = defineStore(
         abortActiveTurn()
         return
       }
+      const replaced = backgroundTurns.get(threadId.value)
+      if (replaced) {
+        rememberDepartedTurn(
+          threadId.value,
+          replaced.messageId,
+          replaced.settled ? 'settled-turn' : 'no-live-turn'
+        )
+        replaced.transport.dispose()
+      }
       backgroundTurns.set(threadId.value, {
         messageId: activeTurnId.value,
         message: liveMessage,

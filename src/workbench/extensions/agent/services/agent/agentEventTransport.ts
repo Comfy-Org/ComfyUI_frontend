@@ -137,6 +137,15 @@ export function createAgentEventTransport(
       .filter((part): part is ToolPart => part.type === 'tool')
       .map((part) => [part.callId, part])
   )
+  // Hydration can restore a pending approval before its websocket frame is
+  // replayed. Keep the rendered identities beside the tool-call identity map
+  // so replay neither duplicates a card nor misreports a visible card after
+  // the turn settles.
+  const renderedAskIds = new Set(
+    message.parts.flatMap((part) =>
+      part.type === 'runApproval' ? [part.askId] : []
+    )
+  )
   let settled = false
   let lastTabTargetKey: string | undefined
   // Tool parts whose frame reported done but whose displayed state is held at
@@ -323,6 +332,7 @@ export function createAgentEventTransport(
       )
       return false
     }
+    if (renderedAskIds.has(data.ask_id)) return false
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
@@ -334,6 +344,7 @@ export function createAgentEventTransport(
       workflowName: data.context?.workflow_name || undefined
     }
     message.parts.push(part)
+    renderedAskIds.add(data.ask_id)
     return true
   }
 
@@ -436,7 +447,7 @@ export function createAgentEventTransport(
 
   function ingest(event: AgentChatEvent): void {
     if (settled) {
-      if (event.type === 'agent_ask')
+      if (event.type === 'agent_ask' && !renderedAskIds.has(event.data.ask_id))
         reportUndeliverableAsk(event.data, 'settled-turn')
       return
     }
