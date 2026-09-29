@@ -25,7 +25,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { coded } = useHostedCopy()
+const { coded, refusal } = useHostedCopy()
 const { capabilities, commands } = useBillingClient<
   'capabilities' | 'commands'
 >(undefined)
@@ -64,7 +64,7 @@ async function settle(
   try {
     const result = await run()
     if (result.status === 'error') {
-      failure.value = coded('failure', result.code)
+      failure.value = refusal(result)
       return
     }
     if (result.value.phase !== 'succeeded') {
