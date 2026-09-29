@@ -261,8 +261,8 @@ describe('WorkshopModelsGrid', () => {
     window.dispatchEvent(restored)
 
     expect(
-        await screen.findByRole('heading', { level: 2, name: /Generate videos/ })
-      ).toBeTruthy()
+      await screen.findByRole('heading', { level: 2, name: /Generate videos/ })
+    ).toBeTruthy()
     expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
