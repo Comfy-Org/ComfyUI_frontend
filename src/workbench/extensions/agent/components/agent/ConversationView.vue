@@ -4,7 +4,7 @@ import {
   useIntersectionObserver,
   useResizeObserver
 } from '@vueuse/core'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -26,11 +26,13 @@ import UserMessage from './message/UserMessage.vue'
 
 const {
   entries,
+  conversationId,
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   editableTurnId = null,
   answeringAskIds = new Set<string>()
 } = defineProps<{
   entries: ConversationEntry[]
+  conversationId?: string | null
   paywallPresentation?: AgentPaywallPresentation
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
@@ -49,13 +51,12 @@ const { t } = useI18n()
 
 const scrollContainer = ref<HTMLElement>()
 const content = ref<HTMLElement>()
-const bottom = ref<HTMLElement>()
-const atBottom = ref(true)
 const shouldFollowLatest = ref(true)
-
-useIntersectionObserver(bottom, ([entry]) => {
-  atBottom.value = entry?.isIntersecting ?? true
-})
+const atBottom = ref(true)
+const bottomGracePx = 16
+const followIntentTolerancePx = 1
+let pendingProgrammaticScroll: { target: number; frame: number } | undefined
+let pendingConversationId: string | undefined
 
 const top = ref<HTMLElement>()
 const atTop = ref(true)
@@ -64,18 +65,77 @@ useIntersectionObserver(top, ([entry]) => {
   atTop.value = entry?.isIntersecting ?? true
 })
 
+function clearPendingProgrammaticScroll(): void {
+  if (pendingProgrammaticScroll)
+    cancelAnimationFrame(pendingProgrammaticScroll.frame)
+  pendingProgrammaticScroll = undefined
+}
+
+useEventListener(scrollContainer, 'pointerdown', clearPendingProgrammaticScroll)
+useEventListener(scrollContainer, 'keydown', clearPendingProgrammaticScroll)
+useEventListener(scrollContainer, 'wheel', clearPendingProgrammaticScroll, {
+  passive: true
+})
+useEventListener(
+  scrollContainer,
+  'touchstart',
+  clearPendingProgrammaticScroll,
+  {
+    passive: true
+  }
+)
+
+onBeforeUnmount(clearPendingProgrammaticScroll)
+
 function scrollToLatest(): void {
-  scrollContainer.value?.scrollTo({ top: scrollContainer.value.scrollHeight })
+  const element = scrollContainer.value
+  if (!element) return
+  shouldFollowLatest.value = true
+  atBottom.value = true
+  const target = Math.max(0, element.scrollHeight - element.clientHeight)
+  clearPendingProgrammaticScroll()
+  const willMove =
+    element.scrollHeight > element.clientHeight &&
+    Math.abs(element.scrollTop - target) > bottomGracePx
+  if (willMove) {
+    pendingProgrammaticScroll = {
+      target,
+      frame: requestAnimationFrame(clearPendingProgrammaticScroll)
+    }
+  }
+  if (typeof element.scrollTo === 'function') {
+    element.scrollTo({ top: target, behavior: 'instant' })
+  } else {
+    element.scrollTop = target
+  }
 }
 
 useEventListener(scrollContainer, 'scroll', () => {
   const element = scrollContainer.value
   if (!element) return
+  atBottom.value =
+    element.scrollHeight - element.scrollTop - element.clientHeight <=
+    bottomGracePx
+  if (
+    pendingProgrammaticScroll &&
+    Math.abs(element.scrollTop - pendingProgrammaticScroll.target) <=
+      bottomGracePx
+  ) {
+    clearPendingProgrammaticScroll()
+    return
+  }
   shouldFollowLatest.value =
-    element.scrollHeight - element.scrollTop - element.clientHeight <= 1
+    element.scrollHeight - element.scrollTop - element.clientHeight <=
+    followIntentTolerancePx
+  clearPendingProgrammaticScroll()
 })
 
 function followLatestAfterResize(): void {
+  const element = scrollContainer.value
+  if (!element || element.clientHeight === 0) return
+  atBottom.value =
+    element.scrollHeight - element.scrollTop - element.clientHeight <=
+    bottomGracePx
   if (shouldFollowLatest.value) scrollToLatest()
 }
 
@@ -94,10 +154,40 @@ const latestContentSignal = computed(() => {
 })
 
 watch(
+  () => conversationId,
+  (current, previous) => {
+    if (current == null || previous == null) return
+    pendingConversationId = current
+    shouldFollowLatest.value = true
+  }
+)
+
+watch(
+  () => entries,
+  async () => {
+    if (entries.length === 0) {
+      pendingConversationId = undefined
+      shouldFollowLatest.value = true
+      return
+    }
+    if (
+      pendingConversationId === undefined ||
+      pendingConversationId !== conversationId
+    )
+      return
+    pendingConversationId = undefined
+    shouldFollowLatest.value = true
+    await nextTick()
+    scrollToLatest()
+  }
+)
+
+watch(
   latestContentSignal,
   async () => {
     if (!shouldFollowLatest.value) return
     await nextTick()
+    if (!shouldFollowLatest.value) return
     scrollToLatest()
   },
   { flush: 'post', immediate: true }
@@ -155,13 +245,12 @@ watch(
               @paywall-action="emit('paywallAction', $event)"
             />
           </template>
-          <div ref="bottom" />
         </div>
       </div>
     </div>
 
     <Button
-      v-if="!atBottom"
+      v-if="!shouldFollowLatest"
       v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
       type="button"
       variant="secondary"

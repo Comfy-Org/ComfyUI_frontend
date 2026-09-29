@@ -335,6 +335,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         await expect(
           agentPanel.root.getByRole('button', { name: 'Stop' })
         ).toBeVisible()
+        await expect(
+          agentPanel.root.getByTestId('user-message-bubble')
+        ).toHaveText('private diagnostic prompt')
         const ws = await getWebSocket()
         pushEvent(ws, THINKING_EVENT)
         await expect(

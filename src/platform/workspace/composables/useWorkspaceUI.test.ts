@@ -1,8 +1,13 @@
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { computed, ref } from 'vue'
+import { computed, effectScope, ref } from 'vue'
+import type { EffectScope } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockShouldUseWorkspaceBilling = ref(true)
@@ -10,6 +15,7 @@ const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
 const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockBillingControlEnabled = vi.hoisted(() => ({ value: false }))
+const mockCanReactivate = ref(false)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -24,6 +30,10 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+
+const { useWorkspaceUI } =
+  await import('@/platform/workspace/composables/useWorkspaceUI')
+let composableScope: EffectScope
 
 const personalWorkspace: WorkspaceWithRole = {
   id: 'ws-personal',
@@ -58,12 +68,12 @@ const teamMemberWorkspace: WorkspaceWithRole = {
   joined_at: '2026-03-01T00:00:00Z'
 }
 
-async function loadComposable() {
-  const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
+function loadComposable() {
   vi.mocked(useFeatureFlags().flags).billingControlEnabled =
     mockBillingControlEnabled.value
-  const module = await import('@/platform/workspace/composables/useWorkspaceUI')
-  return module.useWorkspaceUI()
+  const ui = composableScope.run(useWorkspaceUI)
+  if (!ui) throw new Error('Composable scope is inactive')
+  return ui
 }
 
 function resetStore() {
@@ -74,6 +84,7 @@ function resetStore() {
   mockIsCancelled.value = false
   mockIsTeamPlan.value = false
   mockBillingControlEnabled.value = false
+  mockCanReactivate.value = false
   mockIsCloud.value = true
   mockShouldUseWorkspaceBilling.value = true
 }
@@ -84,20 +95,10 @@ beforeEach(() => {
   )
 })
 
-describe('useWorkspaceUI', () => {
-  beforeEach(async () => {
-    vi.resetModules()
+describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
+  beforeEach(() => {
     resetStore()
-    const [
-      { useBillingContext },
-      { useBillingRouting },
-      { useBillingCapabilities }
-    ] = await Promise.all([
-      import('@/composables/billing/useBillingContext'),
-      import('@/composables/billing/useBillingRouting'),
-      import('@/platform/workspace/composables/useBillingCapabilities')
-    ])
-
+    composableScope = effectScope()
     const billingContext = useBillingContext()
     billingContext.canAccessSubscriptionFeatures = computed(
       () => mockIsActiveSubscription.value
@@ -119,10 +120,15 @@ describe('useWorkspaceUI', () => {
     useBillingRouting().shouldUseWorkspaceBilling = computed(
       () => mockShouldUseWorkspaceBilling.value
     )
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    Object.assign(useBillingCapabilities(), {
+      canReactivate: computed(() => mockCanReactivate.value),
+      canSubscribeSelfServe: computed(() => true),
+      snapshotAuthoritative: computed(() => true)
+    })
   })
 
   afterEach(() => {
+    composableScope.stop()
     resetStore()
   })
 
@@ -531,12 +537,7 @@ describe('useWorkspaceUI', () => {
       const denied = await loadComposable()
       expect(denied.canReactivatePlan.value).toBe(false)
 
-      vi.resetModules()
-      const { useBillingCapabilities } =
-        await import('@/platform/workspace/composables/useBillingCapabilities')
-
-      useBillingCapabilities().canReactivate = computed(() => true)
-      useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+      mockCanReactivate.value = true
       const allowed = await loadComposable()
       expect(allowed.canReactivatePlan.value).toBe(true)
     })
@@ -566,9 +567,6 @@ describe('useWorkspaceUI', () => {
     })
 
     it('closes the catalog when the server resolves a sales-managed plan', async () => {
-      const { useBillingCapabilities } =
-        await import('@/platform/workspace/composables/useBillingCapabilities')
-
       mockShouldUseWorkspaceBilling.value = true
       useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
@@ -584,9 +582,6 @@ describe('useWorkspaceUI', () => {
     })
 
     it('falls back to membership on the legacy rail, where no capability row exists', async () => {
-      const { useBillingCapabilities } =
-        await import('@/platform/workspace/composables/useBillingCapabilities')
-
       mockShouldUseWorkspaceBilling.value = false
       useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
@@ -596,9 +591,6 @@ describe('useWorkspaceUI', () => {
     })
 
     it('falls back to membership off Cloud, where the endpoint is never called', async () => {
-      const { useBillingCapabilities } =
-        await import('@/platform/workspace/composables/useBillingCapabilities')
-
       mockIsCloud.value = false
       mockShouldUseWorkspaceBilling.value = true
       useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
@@ -608,9 +600,6 @@ describe('useWorkspaceUI', () => {
     })
 
     it('falls back to membership when the snapshot is not authoritative', async () => {
-      const { useBillingCapabilities } =
-        await import('@/platform/workspace/composables/useBillingCapabilities')
-
       useBillingCapabilities().snapshotAuthoritative = computed(() => false)
       useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
@@ -619,9 +608,6 @@ describe('useWorkspaceUI', () => {
     })
 
     it('keeps the catalog closed for a non-owner with no readable snapshot', async () => {
-      const { useBillingCapabilities } =
-        await import('@/platform/workspace/composables/useBillingCapabilities')
-
       Object.assign(useTeamWorkspaceStore(), {
         activeWorkspace: teamMemberWorkspace
       })

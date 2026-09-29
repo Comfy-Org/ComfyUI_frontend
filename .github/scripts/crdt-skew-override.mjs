@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global process */
 /**
  * Point this workspace at a specific comfy-multi-player commit instead of the pinned
  * release, for the `CI: CRDT Skew Alarm` workflow. Run from the repo root.
@@ -21,6 +22,10 @@ import { readFileSync, writeFileSync } from 'node:fs'
 const PACKAGE = '@comfyorg/comfy-multi-player'
 const WORKSPACE_FILE = 'pnpm-workspace.yaml'
 
+/**
+ * @param {string[]} argv
+ * @returns {{ spec: string | null | undefined, file: string | undefined }}
+ */
 function parseArgs(argv) {
   /** @type {{ spec: string | null, file: string }} */
   const args = { spec: null, file: WORKSPACE_FILE }

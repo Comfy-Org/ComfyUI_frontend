@@ -18,7 +18,7 @@ export interface GridLabels {
   readonly loadMore: string
   readonly empty: string
   readonly emptyHint: string
-  readonly showing: string
+  readonly showing: (shown: number, total: number) => string
 }
 
 const {
@@ -100,9 +100,7 @@ const hasMore = computed(
   () => displayCount.value < sortedTemplates.value.length
 )
 const showingText = computed(() =>
-  labels.showing
-    .replace('{shown}', String(displayedTemplates.value.length))
-    .replace('{total}', String(sortedTemplates.value.length))
+  labels.showing(displayedTemplates.value.length, sortedTemplates.value.length)
 )
 </script>
 
@@ -163,7 +161,7 @@ const showingText = computed(() =>
         class="inline-flex h-10 cursor-pointer items-center justify-center rounded-2xl border border-brand px-12 text-sm font-semibold tracking-wider text-brand uppercase transition-colors hover:bg-brand hover:text-page"
         @click="displayCount += PAGE"
       >
-        <span class="ppformula-text-center-sm">{{ labels.loadMore }}</span>
+        <span>{{ labels.loadMore }}</span>
       </button>
     </div>
 

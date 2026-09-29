@@ -271,9 +271,10 @@ switching detaches its controller and hides its results. Backend authorization a
 admission controls remain authoritative. Local development also accepts
 `PUBLIC_WORKSHOP_WORKFLOWS_ENABLED=1`.
 
-Workshop apps (Cinematic Studio and its Re-shoot app) are gated separately by
-the `workshop-apps-enabled` PostHog flag: the `/cinematic-studio` page, the
-featured slide on `/models` and a model page's Open in Studio link. Local
+Workshop apps (Cinematic Studio and Re-shoot) are gated separately by the
+`workshop-apps-enabled` PostHog flag: their pages at `/models/apps/<slug>/`, the
+catalogue's Apps tab, the featured slide on `/models` and a model page's Open in
+Studio link. `/cinematic-studio` redirects to the app pages. Local
 development also accepts `PUBLIC_WORKSHOP_APPS_ENABLED=1`.
 
 `src/config/workflow-render.ts` implements the shared workflow request and polling

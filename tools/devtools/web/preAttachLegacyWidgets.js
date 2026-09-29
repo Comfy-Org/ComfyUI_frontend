@@ -17,7 +17,7 @@ function foreignLegacyWidget(name, value, fillStyle) {
     value,
     options: {},
     y: 0,
-    draw: function (ctx, node, widgetWidth, y, height) {
+    draw: function (ctx, _node, widgetWidth, y, height) {
       ctx.save()
       ctx.fillStyle = fillStyle
       ctx.fillRect(15, y, widgetWidth - 15 * 2, height)

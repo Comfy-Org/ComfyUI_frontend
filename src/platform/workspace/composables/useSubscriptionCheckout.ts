@@ -1,13 +1,12 @@
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
-import { useEventListener } from '@vueuse/core'
+import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { paymentReturnUrl } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
-import { amountDueTodayChanged } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
+import { amountDueTodayChanged } from '@comfyorg/account-ui/billing/checkout'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -33,6 +32,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
+import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -113,6 +113,15 @@ function parseBillingPortalUrl(url: unknown): URL | null {
   }
 }
 
+// Module-scoped so closing checkout while Stripe is open doesn't drop the return refresh.
+let stopPaymentRecoveryReturnRefresh: (() => void) | null = null
+
+function armPaymentRecoveryReturnRefresh(): void {
+  stopPaymentRecoveryReturnRefresh?.()
+  const { fetchStatus } = useBillingContext()
+  stopPaymentRecoveryReturnRefresh = registerRefreshOnReturn(fetchStatus)
+}
+
 /** Thrown by `assertReactivationAmountUnchanged` when a fresh preview no
  *  longer matches the billing state the reactivation banner showed and the
  *  user consented to. Caught by the surrounding try/catch and surfaced
@@ -179,14 +188,11 @@ export function useSubscriptionCheckout(
   let promotionPreviewRequestId = 0
   let checkoutMutationOwner = 0
   let checkoutMutationSeq = 0
-  let refreshStatusOnFocus = false
   let activeCheckoutAttemptStartedAt: number | undefined
   let lastEmittedPreviewRevision: string | undefined
-  useEventListener(window, 'focus', () => {
-    if (!refreshStatusOnFocus) return
-    refreshStatusOnFocus = false
-    void fetchStatus()
-  })
+  // The payment-recovery toast is sticky and can outlive this checkout;
+  // drop it with the checkout rather than leave a button for a dead context.
+  onScopeDispose(() => toast.removeGroup('payment-recovery'))
   // Some legacy-rail status reads cannot expose a scheduled cancellation even
   // though the subscribe authority can see it in Stripe. Once that authority
   // rejects an unconfirmed change, keep the consent screen in reactivation
@@ -608,14 +614,28 @@ export function useSubscriptionCheckout(
       }
       const paymentWindow = window.open(portalUrl.href, '_blank')
       if (!paymentWindow) {
+        // The open above ran after an await, so it had no user gesture behind
+        // it and got blocked. The toast's own button click is a gesture, so
+        // retrying from there isn't blocked.
         toast.add({
+          group: 'payment-recovery',
           severity: 'warn',
           summary: t('g.warning'),
-          detail: t('subscription.preview.paymentPopupBlocked')
+          detail: {
+            text: t('subscription.preview.paymentPopupBlocked'),
+            actionLabel: t('subscription.planLoadErrorRetry'),
+            // The toast can outlive this attempt (a newer one started, or the
+            // checkout reset); a stale click must not reopen its captured URL.
+            onAction: () => {
+              if (!isCurrent()) return
+              window.open(portalUrl.href, '_blank')
+              armPaymentRecoveryReturnRefresh()
+            }
+          }
         })
         return 'blocked'
       }
-      refreshStatusOnFocus = true
+      armPaymentRecoveryReturnRefresh()
       return 'opened'
     } catch (portalError) {
       if (!isCurrent()) return null
@@ -1087,6 +1107,7 @@ export function useSubscriptionCheckout(
     selectedTeamCheckout.value = null
     activeCheckoutOperationId.value = null
     activeCheckoutAttemptStartedAt = undefined
+    toast.removeGroup('payment-recovery')
   }
 
   function handleBackToPricing() {
@@ -1543,13 +1564,25 @@ export function useSubscriptionCheckout(
       }
       initialActionUrl = response.payment_method_url
       // The open runs after `await subscribe(...)`, so it's not a direct user
-      // gesture and can be popup-blocked; warn instead of failing silently.
+      // gesture and can be popup-blocked; offer a button click as a retry
+      // gesture instead of failing silently.
       const paymentWindow = window.open(initialActionUrl, '_blank')
       if (!paymentWindow) {
+        const paymentMethodUrl = initialActionUrl
+        const opId = response.billing_op_id
         toast.add({
+          group: 'payment-recovery',
           severity: 'warn',
           summary: t('g.warning'),
-          detail: t('subscription.preview.paymentPopupBlocked')
+          detail: {
+            text: t('subscription.preview.paymentPopupBlocked'),
+            actionLabel: t('subscription.planLoadErrorRetry'),
+            // Not the mutation lock, which is released once the op is adopted.
+            onAction: () => {
+              if (activeCheckoutOperationId.value !== opId) return
+              window.open(paymentMethodUrl, '_blank')
+            }
+          }
         })
       }
     }

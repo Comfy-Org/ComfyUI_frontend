@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 // PM-679: the transcript must survive a browser refresh with its content and
@@ -24,12 +25,7 @@ test(
     await expect(
       page.getByTestId('integrated-tab-bar-actions')
     ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 8_000 })
-    await page
-      .getByRole('button', {
-        name: enMessages.agent.entryButton,
-        exact: true
-      })
-      .click()
+    await new AgentPanel(page).open()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
     await page
@@ -127,13 +123,19 @@ test(
     )
     await expect
       .poll(() =>
-        scrollContainer.evaluate((element) => ({
-          overflows: element.scrollHeight > element.clientHeight,
-          distanceFromBottom: Math.round(
+        scrollContainer.evaluate(
+          (element) => element.scrollHeight > element.clientHeight
+        )
+      )
+      .toBe(true)
+    await expect
+      .poll(() =>
+        scrollContainer.evaluate((element) =>
+          Math.abs(
             element.scrollHeight - element.scrollTop - element.clientHeight
           )
-        }))
+        )
       )
-      .toEqual({ overflows: true, distanceFromBottom: 0 })
+      .toBeLessThanOrEqual(1)
   }
 )

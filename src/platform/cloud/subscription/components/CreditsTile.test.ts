@@ -14,6 +14,7 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import type { TeamCreditStopSummary } from '@/platform/workspace/api/workspaceApi'
+import { useCustomerEventsService } from '@/services/customerEventsService'
 
 type Balance = Pick<
   BalanceInfo,
@@ -23,7 +24,6 @@ type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
 }
 type TeamStop = TeamCreditStopSummary
-type CustomerEventsResult = { events: { event_type: string }[] } | null
 
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
@@ -36,11 +36,7 @@ const state = vi.hoisted(() => ({
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
   type: 'workspace' as 'workspace' | 'legacy',
-  telemetryUnavailable: false,
-  getMyEvents: vi.fn(
-    async (): Promise<CustomerEventsResult> => ({ events: [] })
-  ),
-  customerEventsError: null as string | null
+  telemetryUnavailable: false
 }))
 
 vi.mock(import('@/composables/useErrorHandling'))
@@ -59,12 +55,7 @@ vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/services/customerEventsService'), () => ({
-  useCustomerEventsService: () => ({
-    getMyEvents: state.getMyEvents,
-    error: computed(() => state.customerEventsError)
-  })
-}))
+vi.mock(import('@/services/customerEventsService'))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -211,7 +202,6 @@ describe('CreditsTile', () => {
     state.isLoading = false
 
     state.type = 'workspace'
-    state.customerEventsError = null
     state.telemetryUnavailable = false
     mockIsCloud.value = true
   })
@@ -733,7 +723,7 @@ describe('CreditsTile', () => {
       expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
     )
     expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(2)
-    expect(state.getMyEvents).toHaveBeenCalledTimes(2)
+    expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledTimes(2)
   })
 
   it('waits for a failed refresh to settle before its trailing refresh', async () => {
@@ -769,7 +759,7 @@ describe('CreditsTile', () => {
       expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
     )
     expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(2)
-    expect(state.getMyEvents).toHaveBeenCalledOnce()
+    expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledOnce()
   })
 
   it('clears a confirmed legacy top-up before the next focus', async () => {
@@ -782,7 +772,9 @@ describe('CreditsTile', () => {
         createdAt: new Date(Date.now() + 1000).toISOString()
       }
     ]
-    state.getMyEvents.mockResolvedValueOnce({ events })
+    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
+      events
+    })
 
     renderTile()
 
@@ -797,7 +789,7 @@ describe('CreditsTile', () => {
     await waitFor(() =>
       expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
     )
-    expect(state.getMyEvents).not.toHaveBeenCalled()
+    expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
   })
 
   it('refreshes and reconciles a pending legacy top-up when telemetry is unavailable', async () => {
@@ -813,7 +805,9 @@ describe('CreditsTile', () => {
         createdAt: new Date(Date.now() + 1000).toISOString()
       }
     ]
-    state.getMyEvents.mockResolvedValueOnce({ events })
+    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
+      events
+    })
 
     renderTile()
 
@@ -828,14 +822,14 @@ describe('CreditsTile', () => {
     activeProSubscription()
     state.type = 'legacy'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
-    state.customerEventsError = 'events unavailable'
+    useCustomerEventsService().error.value = 'events unavailable'
     const retryEvents = [
       {
         event_type: 'credit_added',
         createdAt: new Date(Date.now() + 1000).toISOString()
       }
     ]
-    state.getMyEvents
+    vi.mocked(useCustomerEventsService().getMyEvents)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ events: retryEvents })
 
@@ -852,7 +846,7 @@ describe('CreditsTile', () => {
     await waitFor(() =>
       expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
     )
-    expect(state.getMyEvents).toHaveBeenCalledTimes(2)
+    expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledTimes(2)
   })
 
   it('surfaces a failure toast when a refresh rejects', async () => {
