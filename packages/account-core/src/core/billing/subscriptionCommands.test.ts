@@ -316,6 +316,48 @@ describe('createBillingCommands', () => {
       expect(h.lifecycle.getSnapshot()).toEqual([])
     })
 
+    it.for(
+      [
+        {
+          name: 'cancel',
+          route: POST_CANCEL,
+          run: (h: ReturnType<typeof harness>) =>
+            h.commands.cancelSubscription()
+        },
+        {
+          name: 'resubscribe',
+          route: POST_RESUBSCRIBE,
+          run: (h: ReturnType<typeof harness>) => h.commands.resubscribe()
+        },
+        {
+          name: 'subscribe',
+          route: POST_SUBSCRIBE,
+          run: (h: ReturnType<typeof harness>) => h.commands.subscribe(PLAN)
+        }
+      ].flatMap((command) => [
+        { ...command, httpStatus: 400, expected: 'OPERATION_ALREADY_PENDING' },
+        { ...command, httpStatus: 503, expected: 'REQUEST_FAILED' }
+      ])
+    )(
+      'PRO active: $name answered $httpStatus SUBSCRIPTION_CHANGE_IN_PROGRESS is $expected',
+      async ({ route, run, httpStatus, expected }) => {
+        const h = harness({
+          status: PRO_ACTIVE,
+          script: {
+            [route]: [
+              serverError(httpStatus, 'SUBSCRIPTION_CHANGE_IN_PROGRESS')
+            ]
+          }
+        })
+
+        await expect(run(h)).resolves.toMatchObject({
+          status: 'error',
+          code: expected
+        })
+        expect(h.invalidate).not.toHaveBeenCalled()
+      }
+    )
+
     it('PRO active: subscribe issues the plan change the server has to price', async () => {
       const h = harness({
         status: PRO_ACTIVE,
@@ -1127,6 +1169,28 @@ describe('createBillingCommands', () => {
       expect(h.invalidate).not.toHaveBeenCalled()
       expect(h.readCredits).not.toHaveBeenCalled()
     })
+
+    it.for([
+      { httpStatus: 400, expected: 'QUOTE_STALE' },
+      { httpStatus: 503, expected: 'REQUEST_FAILED' }
+    ])(
+      'a subscribe answered $httpStatus SUBSCRIPTION_QUOTE_STALE is $expected',
+      async ({ httpStatus, expected }) => {
+        const h = harness({
+          status: FREE,
+          script: {
+            [POST_SUBSCRIBE]: [
+              serverError(httpStatus, 'SUBSCRIPTION_QUOTE_STALE')
+            ]
+          }
+        })
+
+        await expect(h.commands.subscribe(PLAN)).resolves.toMatchObject({
+          status: 'error',
+          code: expected
+        })
+      }
+    )
 
     it('surfaces REACTIVATION_CONFIRMATION_REQUIRED for the host to re-preview', async () => {
       const h = harness({

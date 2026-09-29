@@ -29,7 +29,8 @@ test.describe(
       await agentPanel.enterNodeSelectionMode()
       await comfyPage.canvasOps.waitForViewToSettle()
       const unselectedCanvas = await comfyPage.canvas.screenshot({
-        mask: [panel]
+        mask: [panel],
+        animations: 'disabled'
       })
 
       await test.step('Select the node into the composer', async () => {
@@ -57,8 +58,14 @@ test.describe(
         await removeButton.click()
         await expect(removeButton).toHaveCount(0)
         await expect
-          .poll(() => comfyPage.canvas.screenshot({ mask: [panel] }))
-          .toEqual(unselectedCanvas)
+          .poll(async () => {
+            const canvas = await comfyPage.canvas.screenshot({
+              mask: [panel],
+              animations: 'disabled'
+            })
+            return canvas.equals(unselectedCanvas)
+          })
+          .toBe(true)
       })
     })
   }

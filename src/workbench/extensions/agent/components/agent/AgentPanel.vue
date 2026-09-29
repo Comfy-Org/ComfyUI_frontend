@@ -117,6 +117,7 @@ const emit = defineEmits<{
   ]
   stop: [method: AgentStopMethod]
   attach: []
+  attachFiles: [files: File[]]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -431,7 +432,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <EmptyState
           v-if="!entries.length"
           :user-name
-          @insert="composerRef?.insert($event)"
+          @insert="
+            (text, prompt) => {
+              composerRef?.insert(text, prompt)
+            }
+          "
         />
         <ConversationView
           v-else
@@ -489,6 +494,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @send="onComposerSend"
             @stop="emit('stop', $event)"
             @attach="emit('attach')"
+            @attach-files="emit('attachFiles', $event)"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"

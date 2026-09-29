@@ -1664,7 +1664,8 @@ describe('useWorkflowService', () => {
       await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(2))
       const staleOpen = service.openWorkflow(closing)
       resolveReplacement?.()
-      await Promise.all([secondClose, staleOpen])
+      await expect(staleOpen).resolves.toBe(false)
+      await secondClose
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(2)
       expect(workflowStore.openWorkflows).not.toContain(closing)
