@@ -9,6 +9,7 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -94,7 +95,7 @@ const consentChecking = await vi.hoisted(async () =>
 )
 
 const withConsent = vi.hoisted(() =>
-  vi.fn<(onAccept: () => void) => Promise<void>>()
+  vi.fn<(trigger: AgentConsentTrigger, onAccept: () => void) => Promise<void>>()
 )
 const telemetry = {
   trackAgentEntryButtonClicked: vi.fn(),
@@ -184,7 +185,7 @@ beforeEach(() => {
   })
   useAgentPanelStore().isOpen = false
   useAgentPanelStore().consentAccepted = false
-  withConsent.mockImplementation(async (onAccept) => {
+  withConsent.mockImplementation(async (_trigger, onAccept) => {
     useAgentPanelStore().consentAccepted = true
     onAccept()
   })
@@ -285,6 +286,7 @@ describe('WorkflowTabs agent entry button', () => {
     await user.click(button)
 
     expect(withConsent).toHaveBeenCalledOnce()
+    expect(withConsent.mock.calls[0][0]).toBe('button_click')
     expect(useAgentPanelStore().isVisible).toBe(true)
     expect(button).toHaveAttribute('aria-pressed', 'true')
   })
@@ -308,7 +310,7 @@ describe('WorkflowTabs agent entry button', () => {
     const store = useAgentPanelStore()
     let finishConsent!: () => void
     withConsent.mockImplementationOnce(
-      (onAccept) =>
+      (_trigger, onAccept) =>
         new Promise<void>((resolve) => {
           finishConsent = () => {
             store.consentAccepted = true
@@ -400,7 +402,7 @@ describe('WorkflowTabs agent entry button', () => {
 
   it('keeps a hidden restored intent reachable and clears it before requesting consent', async () => {
     useAgentPanelStore().open()
-    withConsent.mockImplementationOnce(async (onAccept) => {
+    withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
       expect(useAgentPanelStore().isOpen).toBe(false)
       useAgentPanelStore().consentAccepted = true
       onAccept()

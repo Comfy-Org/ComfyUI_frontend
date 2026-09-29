@@ -335,11 +335,10 @@ export function useAgentConsent() {
   }
 
   async function withConsent(
+    trigger: AgentConsentTrigger,
     onAccept: () => void,
     hooks: ConsentOfferHooks = {}
   ): Promise<void> {
-    const trigger: AgentConsentTrigger =
-      hooks.onShown || hooks.canShow ? 'first_load' : 'button_click'
     const decisionIdentity = isLoggedIn.value
       ? await requestConsentForCurrentUser(trigger, hooks)
       : await acceptAfterSignIn(trigger, hooks)

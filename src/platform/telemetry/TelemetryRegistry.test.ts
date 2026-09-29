@@ -2,12 +2,16 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { TelemetryRegistry } from './TelemetryRegistry'
 import type {
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
+  AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent,
@@ -288,8 +292,34 @@ describe('TelemetryRegistry', () => {
     } satisfies AgentEntryButtonClickedMetadata
     const messageSentMetadata = {
       attachment_count: 1,
-      node_tag_count: 2
+      node_tag_count: 2,
+      thread_id: 'th-1',
+      workflow_id: 'w1',
+      client_message_id: 'cm-1',
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
     } satisfies AgentMessageSentMetadata
+    const starterPromptClickedMetadata = {
+      prompt_id: 'generate_image',
+      prompt_index: 0,
+      prompt_count: 5,
+      prompt_text_hash: 'deadbeef',
+      locale: 'en',
+      click_id: 'click-1',
+      draft_was_empty: true
+    } satisfies AgentStarterPromptClickedMetadata
+    const consentShownMetadata = {
+      trigger: 'button_click'
+    } satisfies AgentConsentShownMetadata
+    const consentResolvedMetadata = {
+      decision: 'accepted',
+      save_error_shown: false
+    } satisfies AgentConsentResolvedMetadata
+    const onboardingStepMetadata = {
+      step: 2,
+      action: 'next'
+    } satisfies AgentOnboardingStepMetadata
     const nodeTaggedMetadata = {
       source: 'mention_picker'
     } satisfies AgentNodeTaggedMetadata
@@ -337,6 +367,35 @@ describe('TelemetryRegistry', () => {
         expected: { ...messageSentMetadata },
         invoke: (registry) =>
           registry.trackAgentMessageSent(messageSentMetadata)
+      },
+      {
+        method: 'trackAgentStarterPromptClicked',
+        expected: { ...starterPromptClickedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentStarterPromptClicked(starterPromptClickedMetadata)
+      },
+      {
+        method: 'trackAgentConsentShown',
+        expected: { ...consentShownMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentShown(consentShownMetadata)
+      },
+      {
+        method: 'trackAgentConsentResolved',
+        expected: { ...consentResolvedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentResolved(consentResolvedMetadata)
+      },
+      {
+        method: 'trackAgentOnboardingShown',
+        expected: undefined,
+        invoke: (registry) => registry.trackAgentOnboardingShown()
+      },
+      {
+        method: 'trackAgentOnboardingStep',
+        expected: { ...onboardingStepMetadata },
+        invoke: (registry) =>
+          registry.trackAgentOnboardingStep(onboardingStepMetadata)
       },
       {
         method: 'trackAgentNodeTagged',
