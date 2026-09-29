@@ -680,9 +680,9 @@ describe('AgentPanelRoot onboarding', () => {
           'Describe your ideas, ask it to build and run workflows. It sees your canvas and files.'
       },
       {
-        title: 'Select a workflow for your agent to edit',
+        title: "Your agent edits the workflow you're viewing",
         description:
-          'The agent edits only the workflow you choose. You can also upload reference files or mention other workflows.'
+          'It switches with your tabs until you send a message, choose a workflow, or add a node reference.'
       },
       {
         title: 'Let the agent run while you edit',
