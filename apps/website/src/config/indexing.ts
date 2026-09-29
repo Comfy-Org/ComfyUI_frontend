@@ -22,6 +22,7 @@ const NOINDEX_ROUTES = [
   '/checkout-return',
   '/privacy-policy',
   '/terms-of-service',
+  '/platform/serverless-animation',
   ...PLACEHOLDER_PATHNAMES
 ]
 

@@ -58,7 +58,8 @@ describe('indexing policy', () => {
     '/zh-CN/checkout-opening/',
     '/checkout-return',
     '/zh-CN/checkout-return/',
-    '/zh-CN/login'
+    '/zh-CN/login',
+    '/platform/serverless-animation/'
   ])('marks %s as noindex', (pathname) => {
     expect(isNoindexPathname(pathname)).toBe(true)
     expect(isExcludedFromSitemap(`https://comfy.org${pathname}`)).toBe(true)
