@@ -2,7 +2,9 @@
   <SidebarTabTemplate
     ref="panelRef"
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
+    :closable="sidebarTabStore.activeSidebarTabId === 'assets'"
     v-bind="$attrs"
+    @close="sidebarTabStore.toggleSidebarTab('assets')"
   >
     <template #alt-title>
       <div
@@ -198,6 +200,7 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -239,6 +242,7 @@ import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import {
   formatDuration,
   getMediaTypeFromFilename,
@@ -305,6 +309,7 @@ const formattedExecutionTime = computed(() => {
 
 const toast = useToast()
 const assetsStore = useAssetsStore()
+const sidebarTabStore = useSidebarTabStore()
 
 // Asset selection
 const {
@@ -324,7 +329,7 @@ const {
   deactivate: deactivateSelection
 } = useAssetSelection()
 
-const panelRef = useTemplateRef('panelRef')
+const panelRef = useTemplateRef<ComponentPublicInstance>('panelRef')
 const marqueePanelRef = computed(() => {
   const el = unrefElement(panelRef)
   return el instanceof HTMLElement ? el : undefined

@@ -339,6 +339,7 @@ export class AssetsSidebarTab extends SidebarTab {
 
   // --- Panel chrome ---
   public readonly panelHeader: Locator
+  public readonly closeButton: Locator
 
   // --- Loading ---
   public readonly skeletonLoaders: Locator
@@ -399,6 +400,7 @@ export class AssetsSidebarTab extends SidebarTab {
       name: 'Back to all assets'
     })
     this.panelHeader = page.locator('.comfy-vue-side-bar-header')
+    this.closeButton = this.panelHeader.getByRole('button', { name: 'Close' })
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'
     )

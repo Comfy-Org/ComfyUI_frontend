@@ -18,12 +18,23 @@
           </span>
           <slot name="alt-title" />
         </div>
-        <div>
+        <div class="flex items-center gap-2">
           <div
             class="flex flex-row overflow-hidden transition-all duration-200 motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100 touch:w-auto touch:opacity-100 [&_.p-button]:py-1 2xl:[&_.p-button]:py-2"
           >
             <slot name="tool-buttons" />
           </div>
+          <Button
+            v-if="closable"
+            v-tooltip.bottom="{ value: $t('g.close'), showDelay: 300 }"
+            variant="muted-textonly"
+            size="icon"
+            class="shrink-0"
+            :aria-label="$t('g.close')"
+            @click="emit('close')"
+          >
+            <i class="icon-[lucide--x] size-4" />
+          </Button>
         </div>
       </div>
       <slot name="header" />
@@ -40,9 +51,16 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Button from '@/components/ui/button/Button.vue'
+
 const props = defineProps<{
   title: string
   class?: string
   hideToolbar?: boolean
+  closable?: boolean
+}>()
+
+const emit = defineEmits<{
+  close: []
 }>()
 </script>
