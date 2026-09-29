@@ -234,9 +234,9 @@ function useSubscriptionInternal() {
     return { attempt, attemptAgeMs }
   }
 
-  const reportMissingCheckoutCompletion = () => {
+  const reportMissingCheckoutCompletion = (): boolean => {
     const reportable = getReportableMissingCheckout()
-    if (!reportable) return
+    if (!reportable) return false
     const { attempt, attemptAgeMs } = reportable
 
     // Claimed before emitting, not after: a second tab wakes on the same
@@ -289,6 +289,7 @@ function useSubscriptionInternal() {
           : {})
       })
     }
+    return true
   }
 
   const schedulePendingCheckoutRecovery = () => {
@@ -310,7 +311,12 @@ function useSubscriptionInternal() {
     )
 
     if (nextDelay === undefined) {
-      reportMissingCheckoutCompletion()
+      const isPastDeadline =
+        Date.now() - attempt.started_at_ms >=
+        PENDING_CHECKOUT_COMPLETION_DEADLINE_MS
+      if (!reportMissingCheckoutCompletion() && isPastDeadline) {
+        rearmBoundedDeadlineWakeUp()
+      }
       return
     }
 
@@ -324,7 +330,7 @@ function useSubscriptionInternal() {
   const isPendingAttemptOwnedByCurrentScope = () => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
     if (
-      attempt?.owner_id &&
+      attempt &&
       (attempt.owner_id !== authStore.userId ||
         attempt.workspace_id !== workspaceStore.activeWorkspaceId)
     ) {
@@ -443,6 +449,9 @@ function useSubscriptionInternal() {
       previous_cycle: previousCycle,
       operation: options?.operation,
       resubscribe_source: options?.source,
+      ...(options?.operation === 'resubscribe'
+        ? { previous_cancel_at: subscriptionStatus.value?.cancel_at ?? null }
+        : {}),
       owner_id: authStore.userId ?? undefined,
       workspace_id: workspaceStore.activeWorkspaceId
     })
@@ -534,9 +543,8 @@ function useSubscriptionInternal() {
     const attempt = getPendingSubscriptionCheckoutAttempt()
     if (!attempt) return false
     if (
-      attempt.owner_id &&
-      (attempt.owner_id !== authStore.userId ||
-        attempt.workspace_id !== workspaceStore.activeWorkspaceId)
+      attempt.owner_id !== authStore.userId ||
+      attempt.workspace_id !== workspaceStore.activeWorkspaceId
     ) {
       clearPendingSubscriptionCheckoutAttempt()
       return false

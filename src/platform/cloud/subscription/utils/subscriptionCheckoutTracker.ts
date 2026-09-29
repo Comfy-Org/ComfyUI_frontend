@@ -61,6 +61,7 @@ interface SubscriptionStatusSnapshot {
   is_active?: boolean
   subscription_tier?: IngestSubscriptionTier | null
   subscription_duration?: SubscriptionDuration | null
+  cancel_at?: string | null
 }
 
 export interface PendingSubscriptionCheckoutAttempt {
@@ -71,6 +72,8 @@ export interface PendingSubscriptionCheckoutAttempt {
   checkout_type: SubscriptionCheckoutType
   previous_tier?: TierKey
   previous_cycle?: BillingCycle
+  /** Cancellation marker observed before a resubscribe checkout opened. */
+  previous_cancel_at?: string | null
   payment_intent_source?: PaymentIntentSource
   /** Set when this attempt was initiated from the resubscribe flow, not a plain subscribe. */
   operation?: 'resubscribe'
@@ -87,6 +90,7 @@ interface PendingSubscriptionCheckoutAttemptInput {
   checkout_type: SubscriptionCheckoutType
   previous_tier?: TierKey
   previous_cycle?: BillingCycle
+  previous_cancel_at?: string | null
   payment_intent_source?: PaymentIntentSource
   operation?: 'resubscribe'
   resubscribe_source?: ResubscribeClickMetadata['source']
@@ -207,6 +211,10 @@ const optionalCheckoutAttemptFields = (
   ...(candidate.previous_cycle === 'monthly' ||
   candidate.previous_cycle === 'yearly'
     ? { previous_cycle: candidate.previous_cycle }
+    : {}),
+  ...(typeof candidate.previous_cancel_at === 'string' ||
+  candidate.previous_cancel_at === null
+    ? { previous_cancel_at: candidate.previous_cancel_at }
     : {}),
   ...(isPaymentIntentSource(candidate.payment_intent_source)
     ? { payment_intent_source: candidate.payment_intent_source }
@@ -372,6 +380,9 @@ export const createPendingSubscriptionCheckoutAttempt = (
     checkout_type: input.checkout_type,
     ...(input.previous_tier ? { previous_tier: input.previous_tier } : {}),
     ...(input.previous_cycle ? { previous_cycle: input.previous_cycle } : {}),
+    ...(input.previous_cancel_at !== undefined
+      ? { previous_cancel_at: input.previous_cancel_at }
+      : {}),
     ...(input.payment_intent_source
       ? { payment_intent_source: input.payment_intent_source }
       : {}),
@@ -428,6 +439,13 @@ const didAttemptSucceed = (
 ): boolean => {
   if (!status.is_active) {
     return false
+  }
+
+  if (attempt.operation === 'resubscribe') {
+    return (
+      attempt.previous_cancel_at !== undefined &&
+      status.cancel_at !== attempt.previous_cancel_at
+    )
   }
 
   return (

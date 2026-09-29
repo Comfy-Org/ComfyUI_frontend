@@ -57,6 +57,14 @@ const {
       return {
         getItem: vi.fn((key: string) => store.get(key) ?? null),
         setItem: vi.fn((key: string, value: string) => {
+          if (key === PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) {
+            const attempt = JSON.parse(value) as Record<string, unknown>
+            if (!('owner_id' in attempt)) attempt.owner_id = 'user-123'
+            if (!('workspace_id' in attempt)) {
+              attempt.workspace_id = 'workspace-123'
+            }
+            value = JSON.stringify(attempt)
+          }
           store.set(key, value)
         }),
         removeItem: vi.fn((key: string) => {
@@ -738,6 +746,9 @@ describe('useSubscription', () => {
       )
       expect(stored.operation).toBe('resubscribe')
       expect(stored.resubscribe_source).toBe('settings_billing_panel')
+      expect(stored.previous_cancel_at).toBeNull()
+      expect(stored.owner_id).toBe('user-123')
+      expect(stored.workspace_id).toBe('workspace-123')
 
       windowOpenSpy.mockRestore()
     })
@@ -967,7 +978,8 @@ describe('useSubscription', () => {
           cycle: 'monthly',
           checkout_type: 'new',
           operation: 'resubscribe',
-          resubscribe_source: 'pricing_dialog'
+          resubscribe_source: 'pricing_dialog',
+          previous_cancel_at: '2025-11-16'
         })
       )
       mockGetBillingStatus.mockResolvedValue({
@@ -1161,7 +1173,7 @@ describe('useSubscription', () => {
       ).not.toHaveBeenCalled()
     })
 
-    it('bounds deadline retries whose status reads stay unavailable', async () => {
+    it('retries unavailable reads after the bootstrap ladder and then stops', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
@@ -1178,7 +1190,8 @@ describe('useSubscription', () => {
       useSubscriptionWithScope()
       await vi.advanceTimersByTimeAsync(100_000)
 
-      expect(mockGetBillingStatus.mock.calls.length).toBeLessThanOrEqual(4)
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(7)
+      expect(vi.getTimerCount()).toBe(0)
       expect(mockTelemetry.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'timeout' })
       )
@@ -1469,6 +1482,9 @@ describe('useSubscription', () => {
         'comfy.subscription.missing_completion_reported',
         'attempt-reload'
       )
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
+        'comfy.subscription.missing_completion_reported'
+      )
     })
 
     it('separates an unreachable billing API from a missing completion', async () => {
@@ -1627,7 +1643,8 @@ describe('useSubscription', () => {
           cycle: 'monthly',
           checkout_type: 'new',
           operation: 'resubscribe',
-          resubscribe_source: 'pricing_dialog'
+          resubscribe_source: 'pricing_dialog',
+          previous_cancel_at: '2025-11-16'
         })
       )
 
@@ -1651,6 +1668,48 @@ describe('useSubscription', () => {
           checkout_attempt_id: 'attempt-789'
         })
       })
+    })
+
+    it('does not complete resubscribe while the cancellation marker is unchanged', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-resubscribe-unchanged',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          operation: 'resubscribe',
+          resubscribe_source: 'pricing_dialog',
+          previous_cancel_at: '2025-11-16'
+        })
+      )
+
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'STANDARD',
+        subscription_duration: 'MONTHLY',
+        cancel_at: '2025-11-16',
+        renewal_date: '2025-11-16'
+      })
+
+      useCurrentUser().isLoggedIn = computed(() => true)
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(
+        mockTelemetry.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
+      expect(mockTelemetry.trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'resubscribe',
+          stage: 'succeeded'
+        })
+      )
+      expect(
+        localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+      ).not.toBeNull()
     })
 
     it('does not emit a resubscribe terminal for a plain (non-resubscribe) pending attempt', async () => {
