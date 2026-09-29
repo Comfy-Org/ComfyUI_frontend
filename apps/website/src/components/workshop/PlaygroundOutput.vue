@@ -101,10 +101,9 @@ const statusMessage = computed(() => {
 
 function failureMessage(failure: Extract<RunState, { status: 'failed' }>) {
   if (failure.reason === 'noCredits' && memberWorkspace !== undefined)
-    return t('workshop.error.memberNoCredits', locale).replace(
-      '{workspace}',
-      memberWorkspace
-    )
+    return t('workshop.error.memberNoCredits', locale, {
+      workspace: memberWorkspace
+    })
   return t(failureTranslationKey(failure), locale)
 }
 
@@ -267,10 +266,7 @@ const runStops = computed<RunStop[]>(() =>
           record,
           output: record.output,
           nsfw: record.output.nsfw === true,
-          name: t('workshop.output.earlierRun', locale).replace(
-            '{number}',
-            String(index + 1)
-          ),
+          name: t('workshop.output.earlierRun', locale, { number: index + 1 }),
           testId: `earlier-run-${index}`
         })),
         {
@@ -566,12 +562,7 @@ const earlierClass = (active: boolean) =>
           v-for="(url, index) in outputs"
           :key="index"
           type="button"
-          :aria-label="
-            t('workshop.output.select', locale).replace(
-              '{n}',
-              String(index + 1)
-            )
-          "
+          :aria-label="t('workshop.output.select', locale, { n: index + 1 })"
           :aria-pressed="index === selected"
           :data-testid="`output-thumb-${index}`"
           :class="
@@ -654,12 +645,7 @@ const earlierClass = (active: boolean) =>
         data-testid="output-example-hint"
       >
         <slot name="example-hint">
-          {{
-            t('workshop.output.exampleHint', locale).replace(
-              '{model}',
-              modelName
-            )
-          }}
+          {{ t('workshop.output.exampleHint', locale, { model: modelName }) }}
         </slot>
       </p>
       <div

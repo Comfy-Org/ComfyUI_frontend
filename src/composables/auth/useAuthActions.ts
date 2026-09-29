@@ -151,7 +151,7 @@ export const useAuthActions = () => {
     if (isCloud) {
       try {
         window.location.href = '/cloud/login'
-      } catch (error) {
+      } catch {
         // needed for local development until we bring in cloud login pages.
         window.location.reload()
       }

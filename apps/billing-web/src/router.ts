@@ -18,7 +18,7 @@ import {
   onBillingWebEntryWorkspace
 } from '@/session/billingWebAuth'
 import BillingHomeView from '@/views/BillingHomeView.vue'
-import CheckoutView from '@/views/CheckoutView.vue'
+import CheckoutRouteView from '@/views/CheckoutRouteView.vue'
 import EntryErrorView from '@/views/EntryErrorView.vue'
 import InvoicesView from '@/views/InvoicesView.vue'
 import PaymentMethodsView from '@/views/PaymentMethodsView.vue'
@@ -34,7 +34,7 @@ export const SIGN_IN_PATH = '/sign-in'
 const INTENT_VIEWS: Record<BillingIntent, Component> = {
   pricing: EntryErrorView,
   subscription: SubscriptionView,
-  checkout: CheckoutView,
+  checkout: CheckoutRouteView,
   'payment-methods': PaymentMethodsView,
   invoices: InvoicesView,
   result: ResultView
