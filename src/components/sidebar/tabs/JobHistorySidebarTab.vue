@@ -7,7 +7,7 @@
       <JobHistoryActionsMenu @clear-history="onClearHistory" />
     </template>
     <template #header>
-      <div class="px-4 pt-2">
+      <div class="overflow-x-auto px-4 pt-2">
         <TabList
           :model-value="selectedJobTab"
           @update:model-value="onUpdateSelectedJobTab"
@@ -50,14 +50,20 @@
     </template>
     <template #body>
       <div class="flex h-full min-h-0 flex-col">
-        <JobAssetsList
-          class="scrollbar-custom min-h-0 flex-1"
-          :displayed-job-groups="displayedJobGroups"
-          @cancel-item="onCancelItem"
-          @delete-item="onDeleteItem"
-          @view-item="onViewItem"
-          @menu="onMenuItem"
-        />
+        <TabPanel
+          :model-value="selectedJobTab"
+          :value="selectedJobTab"
+          class="flex min-h-0 flex-1 flex-col"
+        >
+          <JobAssetsList
+            class="scrollbar-custom min-h-0 flex-1"
+            :displayed-job-groups="displayedJobGroups"
+            @cancel-item="onCancelItem"
+            @delete-item="onDeleteItem"
+            @view-item="onViewItem"
+            @menu="onMenuItem"
+          />
+        </TabPanel>
         <JobContextMenu
           ref="jobContextMenuRef"
           :entries="jobMenuEntries"
@@ -95,6 +101,7 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
+import TabPanel from '@/components/tab/TabPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useCommandStore } from '@/stores/commandStore'
