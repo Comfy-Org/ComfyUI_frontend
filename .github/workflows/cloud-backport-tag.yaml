@@ -14,8 +14,8 @@ name: Cloud Backport Tag
 # Creating the ref via the API points at a commit that already exists on the
 # branch and does not go through that check.
 #
-# `workflow_dispatch` re-creates a missing tag at the current head of a
-# cloud/x.y branch when the PR-triggered run was lost or failed.
+# `workflow_dispatch` re-creates a missing tag at an explicit historical
+# commit, or at the current branch head when no commit is supplied.
 
 on:
   pull_request:
@@ -24,8 +24,12 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'cloud/x.y branch to tag at its current head'
+        description: 'cloud/x.y branch whose release version should be tagged'
         required: true
+        type: string
+      commit:
+        description: 'Optional 40-character commit SHA (defaults to branch head)'
+        required: false
         type: string
 
 # Give each merged commit and manual recovery its own group. Branch-level
@@ -52,7 +56,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.event.pull_request.base.ref }}
-          SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.commit || github.event.pull_request.merge_commit_sha }}
         run: |
           set -euo pipefail
 
@@ -64,9 +68,13 @@ jobs:
           MAJOR="${BASH_REMATCH[1]}"
           MINOR="${BASH_REMATCH[2]}"
 
-          # Manual runs tag the branch head; PR runs tag the merge commit.
+          # Manual recovery can target the historical merge commit whose
+          # original run failed. Without an explicit commit it tags the head.
           if [[ -z "$SHA" ]]; then
             SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${BRANCH}" --jq '.object.sha')
+          elif [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Commit must be a full 40-character lowercase SHA"
+            exit 1
           fi
 
           VERSION=$(gh api "repos/${GITHUB_REPOSITORY}/contents/package.json?ref=${SHA}" \
