@@ -5,7 +5,7 @@ import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap, isIndexableBuild } from './src/config/indexing'
 import { DEFAULT_LOCALE, LOCALE_CODES } from './src/config/locales'
-import { redirects } from './src/config/redirects'
+import { astroRedirects } from './src/config/redirects'
 import { markdownTwins } from './src/integrations/markdown-twins'
 import { workshopReleaseGate } from './src/integrations/workshop-release-gate'
 import { sitemapAlternates } from './src/lib/hreflang'
@@ -20,7 +20,7 @@ export default defineConfig({
   // Keep MDX punctuation verbatim; SmartyPants would turn the source's straight
   // quotes into curly ones and drift from the rest of the site's copy.
   markdown: { smartypants: false },
-  redirects,
+  redirects: astroRedirects,
   build: {
     assets: '_website'
   },
