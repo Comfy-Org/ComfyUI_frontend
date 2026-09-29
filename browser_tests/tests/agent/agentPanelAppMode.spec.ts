@@ -65,11 +65,12 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
     const storedOpenState = () =>
       page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
 
-    await page.evaluate(
-      ([key, value]) => localStorage.setItem(key, value),
-      [OPEN_STORAGE_KEY, 'false']
-    )
-    await comfyPage.workflow.reloadAndWaitForApp()
+    // Startup activation intentionally opens the panel. Close it through the
+    // user-facing control so this case starts from a settled, persisted close.
+    await expect(dockedPanel).toBeVisible()
+    await dockedPanel
+      .getByRole('button', { name: enMessages.g.close, exact: true })
+      .click()
 
     await expect(dockedPanel).toHaveCount(0)
     await expect.poll(storedOpenState).toBe('false')
