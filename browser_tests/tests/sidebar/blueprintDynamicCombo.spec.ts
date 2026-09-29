@@ -28,6 +28,17 @@ test.describe('Blueprint dynamic combo preview', { tag: '@ui' }, () => {
     await expect(
       tab.nodePreview.getByText('COMFY_DYNAMICCOMBO_V3', { exact: true })
     ).toBeVisible()
+    const previewBody = tab.nodePreview.locator('[data-testid^="node-body-"]')
+    await expect(previewBody).toBeVisible()
+    await expect(
+      previewBody.getByText('boundary_model', { exact: true })
+    ).toBeVisible()
+    await expect(
+      previewBody.getByRole('combobox', {
+        name: 'boundary_model',
+        exact: true
+      })
+    ).toBeVisible()
     expect(await comfyPage.page.pageErrors()).toEqual([])
   })
 })
