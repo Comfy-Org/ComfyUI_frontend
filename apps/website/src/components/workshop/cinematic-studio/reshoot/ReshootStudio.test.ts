@@ -2,7 +2,26 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { readGeometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import {
+  fakeGeometry,
+  fakeTransport,
+  signIn
+} from '../../../../lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
+import { reshootTransport } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/transport-config'
 import ReshootStudio from './ReshootStudio.vue'
+
+vi.mock(import('../../../../config/workshop-session-state'))
+vi.mock(import('../../../../config/workshop-credits'))
+vi.mock(import('../../../../scripts/posthog'))
+vi.mock(
+  import('../../../../lib/workshop/cinematic-studio/reshoot-engine/transport-config'),
+  () => ({ reshootTransport: vi.fn() })
+)
+vi.mock(
+  import('../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'),
+  () => ({ readGeometry: vi.fn() })
+)
 
 function setup() {
   render(ReshootStudio)
@@ -11,6 +30,13 @@ function setup() {
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
+  vi.mocked(reshootTransport).mockReturnValue(fakeTransport())
+  vi.mocked(readGeometry).mockResolvedValue(fakeGeometry())
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response(new Blob(['clip'], { type: 'video/mp4' })))
+  )
+  signIn()
 })
 
 describe('Re-shoot on one screen', () => {
@@ -36,6 +62,15 @@ describe('Re-shoot on one screen', () => {
 
     expect(screen.getByRole('slider', { name: 'Rotation' })).toHaveValue('-25')
     expect(screen.getByTestId('reshoot-action')).toBeEnabled()
+  })
+
+  it('shows what the next take costs above Generate', async () => {
+    const user = setup()
+    await pickExample(user)
+
+    expect(screen.getByTestId('reshoot-price')).toHaveTextContent(
+      'Free · 3 of 5 left this week'
+    )
   })
 
   it('lets only the latest scene reading finish', async () => {
@@ -94,6 +129,23 @@ describe('Re-shoot on one screen', () => {
     ).toHaveAttribute('aria-current', 'true')
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.getByRole('status')).toHaveTextContent('Cancelled')
+  })
+
+  it('asks before the page is left while a take renders', async () => {
+    const user = setup()
+    await pickExample(user)
+    const leave = () => {
+      const event = new Event('beforeunload', { cancelable: true })
+      window.dispatchEvent(event)
+      return event.defaultPrevented
+    }
+    expect(leave()).toBe(false)
+
+    await user.click(screen.getByTestId('reshoot-action'))
+
+    expect(leave()).toBe(true)
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(leave()).toBe(false)
   })
 
   it("aims again from a finished take's angle", async () => {
