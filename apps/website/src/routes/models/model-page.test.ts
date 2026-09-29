@@ -104,7 +104,14 @@ describe('Models route preparation', () => {
       ...model,
       name: 'FLUX 2 Max Text-to-Image',
       provider: 'Black Forest Labs',
-      capabilities: ['bfl', 'flux', 'high-detail', 'flux-2', 'premium']
+      capabilities: [
+        'bfl',
+        'flux',
+        'high-detail',
+        'flux-2',
+        'text-to-image',
+        'premium'
+      ]
     })
 
     const page = await prepareModelPage(model.slug)
@@ -112,6 +119,7 @@ describe('Models route preparation', () => {
     if (page.kind !== 'page') throw new Error('Expected canonical page')
     expect(page.tags.map((tag) => tag.label)).toEqual([
       'high-detail',
+      'text-to-image',
       'premium'
     ])
   })

@@ -7,6 +7,8 @@ describe('describesCapability', () => {
     ['FLUX 2 Max Text-to-Image', 'Black Forest Labs', 'bfl', false],
     ['FLUX 2 Max Text-to-Image', 'Black Forest Labs', 'flux-2', false],
     ['FLUX 2 Max Text-to-Image', 'Black Forest Labs', 'premium', true],
+    ['FLUX 2 Max Text-to-Image', 'Black Forest Labs', 'text-to-image', true],
+    ['Veo 3 Image-to-Video', 'Google', 'image-to-video', true],
     ['Nano Banana Pro Image Edit', 'Google', 'gemini', false],
     ['Nano Banana Pro Image Edit', 'Google', 'google', false],
     ['Recraft V4.1 Text-to-Vector', 'Recraft', 'V4.1', false],

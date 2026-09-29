@@ -1,3 +1,4 @@
+import { splitTask } from '../../config/models-catalogue'
 import { words } from './model-summary'
 import { providerName } from './provider-name'
 
@@ -13,6 +14,7 @@ export function describesCapability(
     providerName(tag.toLowerCase()) === model.provider
   )
     return false
+  if (splitTask(tag.toLowerCase())) return true
   const tagWords = words(tag)
   return tagWords.length === 0 || !echoesName(tagWords, words(model.name))
 }
