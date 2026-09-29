@@ -15,6 +15,7 @@ import SignInEmailForm from '@/components/auth/SignInEmailForm.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
+import { billingWebSignInPort } from '@/session/billingWebAuth'
 
 const { t } = useI18n()
 const { coded } = useHostedCopy()
@@ -35,7 +36,7 @@ const {
   retryAvailability
 } = useSignInController(() => {
   void router.replace(safeReturnTo(route.query.returnTo))
-})
+}, billingWebSignInPort())
 
 const showEmailForm = ref(false)
 const emailForm = ref<InstanceType<typeof SignInEmailForm>>()
@@ -55,7 +56,19 @@ async function showEmail(show: boolean): Promise<void> {
 // `isSecureContext` is absent in some runtimes; only an explicit false is insecure.
 const secureContext = window.isSecureContext ?? true
 
+const sessionFailed = computed(
+  () => state.value.step === 'signedIn' && state.value.mintFailed === true
+)
+/** Signed in on the shared session, but refused this workspace: no sign-in to offer. */
+const sessionOnly = computed(() => sessionFailed.value && !available.value)
+
+const form = computed(() => {
+  if (sessionOnly.value) return undefined
+  return showEmailForm.value ? 'email' : 'social'
+})
+
 const noticeKey = computed(() => {
+  if (sessionOnly.value) return undefined
   if (!available.value) return 'auth.signIn.unavailable'
   return secureContext ? undefined : 'auth.signIn.insecureContextWarning'
 })
@@ -65,9 +78,6 @@ const progressKey = computed(() =>
     : 'auth.signIn.signingIn'
 )
 const blocked = computed(() => busy.value || !available.value)
-const sessionFailed = computed(
-  () => state.value.step === 'signedIn' && state.value.mintFailed === true
-)
 /**
  * Only a workspace the server named as inaccessible gets its own copy: a
  * malformed or expired Firebase token is not about the workspace at all, and
@@ -139,7 +149,7 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
         {{ t(noticeKey) }}
       </div>
       <button
-        v-if="!available"
+        v-if="noticeKey === 'auth.signIn.unavailable'"
         type="button"
         :class="linkButtonClass"
         @click="retryAvailability"
@@ -148,7 +158,7 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
       </button>
 
       <div class="mt-8 flex flex-col gap-4">
-        <template v-if="!showEmailForm">
+        <template v-if="form === 'social'">
           <!-- `contents` keeps both provider buttons as items of this flex column. -->
           <div ref="providerGroup" class="contents">
             <SocialAuthButtons
@@ -170,7 +180,7 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
           </button>
         </template>
 
-        <template v-else>
+        <template v-else-if="form === 'email'">
           <SignInEmailForm
             ref="emailForm"
             :loading="busy"

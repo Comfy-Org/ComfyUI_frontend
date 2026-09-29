@@ -35,13 +35,15 @@ export const DEV_EVENT_KINDS = [
   'reconnected',
   'subscribe_retry',
   'subscribe_ack_timeout',
+  'subscribe_refused_permanent',
   'stale_probe',
   'catchup_probe',
   'rebind',
   'doc_gap',
   'doc_stale',
   'frame_send_failed',
-  'agent_node_adapters_materialized'
+  'agent_node_adapters_materialized',
+  'local_widget_write_held'
 ] as const
 
 export type DevEventKind = (typeof DEV_EVENT_KINDS)[number]

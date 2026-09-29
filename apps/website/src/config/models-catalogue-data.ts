@@ -54,7 +54,18 @@ export const workflowModelSchema = presentationSchema.extend({
   author: z.string().optional()
 })
 
-export const modelSchema = z.union([routerModelSchema, workflowModelSchema])
+const appModelSchema = presentationSchema.extend({
+  type: z.literal('APP'),
+  appId: z.enum(['studio', 'reshoot']),
+  routerId: z.never().optional(),
+  workflowId: z.never().optional()
+})
+
+export const modelSchema = z.union([
+  routerModelSchema,
+  workflowModelSchema,
+  appModelSchema
+])
 
 export async function readModelsData(path: string): Promise<unknown> {
   const response = await fetch(path)

@@ -115,6 +115,40 @@ describe('SignInContent', () => {
     expect(await screen.findByText('Tip')).toBeVisible()
   })
 
+  it('finishes a closed popup’s late result as a sign-in, then reports success', async () => {
+    const onSuccess = vi.fn()
+    const actions = useAuthActions()
+    render(SignInContent, {
+      props: { onSuccess },
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: MESSAGES }
+          })
+        ],
+        stubs: {
+          SignUpForm: true,
+          SignInForm: true,
+          ApiKeyForm: true,
+          Divider: true
+        }
+      }
+    })
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /sign in with google/i }))
+    const popup = vi.mocked(actions.signInWithGoogle).mock.calls[0]?.[0]?.popup
+    vi.mocked(actions.signInWithGoogle).mockResolvedValueOnce({
+      user: { uid: 'u1' }
+    } as never)
+
+    popup?.onResumed?.(Promise.resolve({ user: { uid: 'u1' } } as never))
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce())
+  })
+
   it('links legal terms directly to canonical Comfy pages', () => {
     renderSignInContent()
 

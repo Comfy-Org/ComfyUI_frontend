@@ -14,6 +14,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { WorkspaceStore } from '@e2e/types/globals'
@@ -178,9 +179,7 @@ test(
       )
     ).toBe(PORTRAIT_PATH)
 
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
+    await new AgentPanel(page).open()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
     await expect(panel.getByTestId('user-message-bubble')).toHaveText([

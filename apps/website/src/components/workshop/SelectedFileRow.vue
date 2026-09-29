@@ -123,10 +123,7 @@ const seekTabIndex = computed(() => (seekable.value ? 0 : -1))
         type="button"
         :disabled
         :aria-label="
-          t('workshop.field.replaceFile', locale).replace(
-            '{name}',
-            () => file.name
-          )
+          t('workshop.field.replaceFile', locale, { name: file.name })
         "
         class="min-w-0 cursor-pointer truncate text-left text-sm text-primary-warm-white underline-offset-4 hover:underline focus-visible:outline-primary-comfy-yellow"
         @click="$emit('replace')"
@@ -184,10 +181,7 @@ const seekTabIndex = computed(() => (seekable.value ? 0 : -1))
       type="button"
       :disabled
       :aria-label="
-        t('workshop.field.removeNamedFile', locale).replace(
-          '{name}',
-          () => file.name
-        )
+        t('workshop.field.removeNamedFile', locale, { name: file.name })
       "
       class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:outline-primary-comfy-yellow"
       @click="$emit('remove')"

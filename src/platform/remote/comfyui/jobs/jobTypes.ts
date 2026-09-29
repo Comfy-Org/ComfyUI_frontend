@@ -27,6 +27,7 @@ const zPreviewOutput = z
     type: resultItemType.optional(),
     nodeId: z.string(),
     mediaType: z.string(),
+    content: z.string().optional(),
     display_name: z.string().optional()
   })
   .passthrough()

@@ -5,7 +5,10 @@ import { initialWorkshopPageState } from './workshop-page-state'
 import type { FormValues } from './workshop-playground'
 import { urlUploadField } from './workshop-playground'
 import { workflowRequest } from './workflow-render'
-import { workflowCloudRequest } from './workshop-workflow-api'
+import {
+  withPartnerNodeCredential,
+  workflowCloudRequest
+} from './workshop-workflow-api'
 
 export function workflowSnippetRequest(
   model: WorkflowWorkshopModelDetail,
@@ -20,12 +23,17 @@ export function workflowSnippetRequest(
     )
       inputs[field.name] = `UPLOADED_${field.name}_FILENAME`
   }
-  return workflowCloudRequest(model.workflow, workflowRequest(model, inputs))
+  return withPartnerNodeCredential(
+    workflowCloudRequest(model.workflow, workflowRequest(model, inputs)),
+    'api-key',
+    'YOUR_API_KEY'
+  )
 }
 
 export function workflowCurl(request: PromptRequest): string {
   const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`
   return [
+    '# Replace YOUR_API_KEY in the X-API-Key header and in extra_data.api_key_comfy_org.',
     `curl --fail-with-body --max-time 60 --request POST ${quote(`${WORKSHOP_CLOUD_BASE_URL}/api/prompt`)} \\`,
     `  --header 'X-API-Key: YOUR_API_KEY' \\`,
     `  --header 'Content-Type: application/json' \\`,
