@@ -8,6 +8,7 @@ import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
+import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -358,6 +359,8 @@ function installIngest() {
     userId: 'user-a',
     csrfToken: 'csrf-1',
     refusals: [] as string[],
+    mintRefusal: undefined as (() => Response) | undefined,
+    mints: 0,
     requests: [] as ApiRequest[],
     currentWorkspaceDown: undefined as (() => Response) | undefined
   }
@@ -367,6 +370,17 @@ function installIngest() {
       return jsonResponse({
         ...sessionBody(ingest.userId),
         csrf_token: ingest.csrfToken
+      })
+    }
+    if (path === '/api/auth/token') {
+      if (ingest.mintRefusal) return ingest.mintRefusal()
+      ingest.mints += 1
+      return jsonResponse({
+        token: `session-jwt-${ingest.mints}`,
+        expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+        workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
+        role: 'owner',
+        permissions: []
       })
     }
     if (path === '/api/workspaces/current') {
@@ -747,5 +761,89 @@ describe('live updates and media on the shared web session', () => {
 
     expect(FakeSocket.created).toEqual([sessionSocket])
     expect(api.socket).toBeNull()
+  })
+})
+
+describe('comfy-api calls on the shared web session', () => {
+  const mintRequests = (ingest: ReturnType<typeof installIngest>) =>
+    ingest.requests.filter(({ path }) => path === '/api/auth/token')
+
+  beforeEach(() => {
+    identity.reset()
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+    localStorage.clear()
+  })
+
+  it('a tab that arrived by session mints the personal token once and reuses it', async () => {
+    const ingest = installIngest()
+    await refreshRemoteConfig({ useAuth: false })
+    useAuthStore()
+    await useSessionCookie().ensureSessionCookie()
+
+    const first = await webSessionResourceHeader()
+    const second = await webSessionResourceHeader()
+
+    expect([first, second]).toEqual([
+      { Authorization: 'Bearer session-jwt-1' },
+      { Authorization: 'Bearer session-jwt-1' }
+    ])
+    expect(mintRequests(ingest)).toEqual([
+      {
+        method: 'POST',
+        path: '/api/auth/token',
+        headers: {
+          'content-type': 'application/json',
+          'x-comfy-client': COMFY_CLIENT,
+          'x-csrf-token': 'csrf-1'
+        },
+        credentials: 'include'
+      }
+    ])
+  })
+
+  it('mints the personal token even while a team workspace is selected', async () => {
+    const ingest = await bootOnSession()
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
+
+    await webSessionResourceHeader()
+
+    const [mint] = mintRequests(ingest)
+    expect(mint.headers).not.toHaveProperty('x-comfy-workspace-id')
+  })
+
+  it('mints nothing for pages that only call ingest', async () => {
+    const ingest = await bootOnSession()
+
+    await api.fetchApi('/queue')
+    await postPrompt()
+
+    expect(mintRequests(ingest)).toEqual([])
+  })
+
+  it('a revoked session rejects with SESSION_REVOKED', async () => {
+    const ingest = await bootOnSession()
+    ingest.mintRefusal = () =>
+      jsonResponse({ code: 'session_revoked', message: 'revoked' }, 401)
+
+    await expect(webSessionResourceHeader()).rejects.toMatchObject({
+      failure: { code: 'SESSION_REVOKED' }
+    })
+  })
+
+  it('mints again once the cached token is within a minute of expiry', async () => {
+    const ingest = await bootOnSession()
+
+    await webSessionResourceHeader()
+    await vi.advanceTimersByTimeAsync(13 * 60_000)
+    await webSessionResourceHeader()
+    await vi.advanceTimersByTimeAsync(60_000)
+    const reminted = await webSessionResourceHeader()
+
+    expect(reminted).toEqual({ Authorization: 'Bearer session-jwt-2' })
+    expect(mintRequests(ingest)).toHaveLength(2)
   })
 })
