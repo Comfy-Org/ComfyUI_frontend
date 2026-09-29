@@ -18,6 +18,9 @@ import { workflowModels } from './workshop-workflow-content'
 const [hubModelSlug] = hubModelSlugs.values()
 const [{ slug: modelSlug }] = workshopModels
 const [aliasSlug] = routerModelSlugAliases.keys()
+const modelPages = workshopModels.flatMap(({ href, routerId, slug }) =>
+  href === undefined ? [] : [{ href, routerId, slug }]
+)
 
 const MODELS_PAGES_BY_KIND = [
   ['hub', '/hub/models/'],
@@ -196,7 +199,7 @@ describe('model page launch', () => {
 
   it('indexes every canonical model page and no alias', () => {
     expect(
-      workshopModels.every(({ href }) => isIndexableModelPage(href, 'all'))
+      modelPages.every(({ href }) => isIndexableModelPage(href, 'all'))
     ).toBe(true)
     expect(
       [...routerModelSlugAliases.keys()].some((alias) =>
@@ -207,20 +210,20 @@ describe('model page launch', () => {
 
   it('rolls back to only the model pages of the Router ids it keeps', () => {
     const kept = new Set(['krea/krea-2-large'])
-    const expected = workshopModels
+    const expected = modelPages
       .filter(({ routerId }) => kept.has(routerId))
       .map(({ slug }) => slug)
     expect(expected).not.toHaveLength(0)
     expect(
-      workshopModels
+      modelPages
         .filter(({ href }) => isIndexableModelPage(href, kept))
         .map(({ slug }) => slug)
     ).toEqual(expected)
     expect(
-      workshopModels.some(({ href }) => isIndexableModelPage(href, new Set()))
+      modelPages.some(({ href }) => isIndexableModelPage(href, new Set()))
     ).toBe(false)
     expect(
-      workshopModels.some(
+      modelPages.some(
         ({ href }) =>
           !isExcludedFromSitemap(`https://comfy.org${href}`, new Set(), false)
       )
@@ -228,7 +231,9 @@ describe('model page launch', () => {
   })
 
   it('keeps workflow pages hidden until their switch launches them', () => {
-    const workflowPaths = workflowModels.map(({ slug }) => hubWorkflowHref(slug))
+    const workflowPaths = workflowModels.map(({ slug }) =>
+      hubWorkflowHref(slug)
+    )
     expect(workflowPaths.length).toBeGreaterThan(0)
     expect(
       workflowPaths.some((path) => isIndexableModelPage(path, 'all', false))
@@ -237,19 +242,17 @@ describe('model page launch', () => {
       workflowPaths.every((path) => isIndexableModelPage(path, 'all', true))
     ).toBe(true)
     expect(
-      workshopModels.every(({ href }) =>
-        isIndexableModelPage(href, 'all', false)
-      )
+      modelPages.every(({ href }) => isIndexableModelPage(href, 'all', false))
     ).toBe(true)
   })
 
   it('fails loudly when model page URLs drift from the Router id map', () => {
-    const movedModelPaths = workshopModels.map(({ slug }) => `/models/${slug}`)
-    expect(() => routerIdsByModelPage(movedModelPaths, workshopModels)).toThrow(
+    const movedModelPaths = modelPages.map(({ slug }) => `/models/${slug}`)
+    expect(() => routerIdsByModelPage(movedModelPaths, modelPages)).toThrow(
       'Model pages with no Router id'
     )
-    expect(
-      routerIdsByModelPage(modelsUrlPaths('model'), workshopModels).size
-    ).toBe(workshopModels.length)
+    expect(routerIdsByModelPage(modelsUrlPaths('model'), modelPages).size).toBe(
+      modelPages.length
+    )
   })
 })

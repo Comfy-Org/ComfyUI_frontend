@@ -84,10 +84,12 @@ export function isNoindexPathname(pathname: string): boolean {
 
 export function routerIdsByModelPage(
   modelPaths: readonly string[],
-  pages: readonly { href: string; routerId: string }[]
+  pages: readonly { href?: string; routerId: string }[]
 ): ReadonlyMap<string, string> {
   const routerIdByHref = new Map(
-    pages.map(({ href, routerId }) => [normalizePathname(href), routerId])
+    pages.flatMap(({ href, routerId }) =>
+      href === undefined ? [] : [[normalizePathname(href), routerId] as const]
+    )
   )
   const unmatched = modelPaths.filter((path) => !routerIdByHref.has(path))
   if (unmatched.length > 0)
