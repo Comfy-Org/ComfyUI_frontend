@@ -85,10 +85,10 @@ async function unlinkTwin(root: string, pathname: string): Promise<void> {
   if (path === undefined) return
   const html = await readFile(path, 'utf8')
   const unlinked = html.replace(TWIN_LINK, '')
-  if (unlinked === html) {
-    throw new Error(`${path} has no markdown twin link to remove`)
+  if (unlinked.includes('type="text/markdown"')) {
+    throw new Error(`${path} kept a markdown twin link TWIN_LINK did not match`)
   }
-  await writeFile(path, unlinked, 'utf8')
+  if (unlinked !== html) await writeFile(path, unlinked, 'utf8')
 }
 
 async function readBuiltTwinSource(
