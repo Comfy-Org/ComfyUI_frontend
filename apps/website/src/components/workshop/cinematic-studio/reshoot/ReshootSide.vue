@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import type { DepthState } from '../../../../composables/useReshootDemo'
 import { RESHOOT_FRAMES } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import type {
@@ -131,18 +132,21 @@ function choose(event: Event) {
       <ReshootDisclosure :label="rc('reshoot.advanced', locale)">
         <div class="flex flex-col gap-3">
           <div class="flex flex-col gap-1.5">
-            <label
-              for="reshoot-prompt"
-              class="text-xs font-semibold text-primary-comfy-canvas"
-            >
-              {{ rc('reshoot.section.prompt', locale) }}
-              <span class="font-normal text-primary-warm-gray">
-                · {{ rc('reshoot.optional', locale) }}
-              </span>
-            </label>
-            <p class="text-[11px]/relaxed text-primary-warm-gray">
-              {{ rc('reshoot.promptHelp', locale) }}
-            </p>
+            <div class="flex items-center gap-1.5">
+              <label
+                for="reshoot-prompt"
+                class="text-xs font-semibold text-primary-comfy-canvas"
+              >
+                {{ rc('reshoot.section.prompt', locale) }}
+                <span class="font-normal text-primary-warm-gray">
+                  · {{ rc('reshoot.optional', locale) }}
+                </span>
+              </label>
+              <InfoTooltip
+                :text="rc('reshoot.promptHelp', locale)"
+                :label="rc('reshoot.promptHelp', locale)"
+              />
+            </div>
             <textarea
               id="reshoot-prompt"
               v-model="prompt"

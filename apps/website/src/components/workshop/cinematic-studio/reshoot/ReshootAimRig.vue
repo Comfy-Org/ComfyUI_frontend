@@ -10,6 +10,7 @@ import {
   cameraZone
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import type { ReshootCopyKey } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import ReshootBarField from './ReshootBarField.vue'
@@ -90,20 +91,23 @@ const zone = computed(() => cameraZone(camera))
         :disabled
         @update:model-value="emit('aim', { [axis]: $event })"
       />
-      <label
-        class="flex cursor-pointer items-center gap-2.5 py-1 text-xs text-primary-warm-white"
-      >
-        <input
-          v-model="keepAim"
-          type="checkbox"
-          :disabled
-          class="accent-primary-comfy-yellow"
+      <div class="flex items-center gap-1.5">
+        <label
+          class="flex cursor-pointer items-center gap-2.5 py-1 text-xs text-primary-warm-white"
+        >
+          <input
+            v-model="keepAim"
+            type="checkbox"
+            :disabled
+            class="accent-primary-comfy-yellow"
+          />
+          {{ rc('reshoot.keepAim', locale) }}
+        </label>
+        <InfoTooltip
+          :text="rc('reshoot.keepAimHelp', locale)"
+          :label="rc('reshoot.keepAimHelp', locale)"
         />
-        {{ rc('reshoot.keepAim', locale) }}
-      </label>
-      <p class="text-[11px]/relaxed text-primary-warm-gray">
-        {{ rc('reshoot.keepAimHelp', locale) }}
-      </p>
+      </div>
     </div>
   </div>
 </template>
