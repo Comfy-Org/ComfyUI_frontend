@@ -145,6 +145,23 @@ describe('createSessionTokenMint', () => {
     expect(sent).toHaveLength(2)
   })
 
+  it('re-mints once the session would have expired, even if the token outlives it', async () => {
+    const { mint, sent, state } = setup()
+    state.session = {
+      ...sessionFor('user-1'),
+      expiresAt: T0 + 10 * MINUTE
+    }
+
+    const first = await mint.getWorkspaceToken()
+    clock.now = T0 + 8 * MINUTE
+    const reused = await mint.getWorkspaceToken()
+    clock.now = T0 + 9 * MINUTE
+    const reminted = await mint.getWorkspaceToken()
+
+    expect([first, reused, reminted]).toEqual(['jwt-1', 'jwt-1', 'jwt-2'])
+    expect(sent).toHaveLength(2)
+  })
+
   it('shares one request among concurrent callers for the same workspace', async () => {
     const { mint, sent } = setup()
 

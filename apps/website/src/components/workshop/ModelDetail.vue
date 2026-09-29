@@ -42,10 +42,8 @@ import {
 } from '../../config/workshop-page-state'
 import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
 import { IDLE, transition } from '../../config/workshop-run'
-import {
-  refreshWorkshopCredits,
-  useWorkshopCredits
-} from '../../config/workshop-credits'
+import { refreshWorkshopCredits } from '../../config/workshop-credits'
+import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
 import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import type { RouterRenderResult } from '../../config/router-render'
 import { router_render } from '../../config/router-render'
@@ -234,7 +232,8 @@ const revealed = ref(false)
 const workshopEnabled = useWorkshopEnabled()
 const workshopEnabledSettled = useWorkshopEnabledSettled()
 function startAccountServices() {
-  return { ...useWorkshopSession(), balance: useWorkshopCredits().balance }
+  const services = useWorkshopSession()
+  return { ...services, balance: useWorkshopModelBalance(services.session) }
 }
 const account = shallowRef<ReturnType<typeof startAccountServices>>()
 function stopAccountServices() {

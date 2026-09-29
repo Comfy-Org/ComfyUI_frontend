@@ -28,10 +28,8 @@ import {
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopContract } from '../../config/workshop-contract-catalog'
 import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import {
-  refreshWorkshopCredits,
-  useWorkshopCredits
-} from '../../config/workshop-credits'
+import { refreshWorkshopCredits } from '../../config/workshop-credits'
+import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
 import {
   stopWorkshopSession,
   useWorkshopSession
@@ -66,6 +64,9 @@ vi.mock(import('../../config/workshop-output-download'), () => ({
 }))
 
 vi.mock(import('../../config/workshop-credits'))
+vi.mock(import('../../config/workshop-model-balance'), () => ({
+  useWorkshopModelBalance: vi.fn()
+}))
 
 const auth = {
   session: ref<AccountCredential>(),
@@ -75,7 +76,7 @@ const auth = {
   workshopEnabledSettled: ref(true)
 }
 const credits = {
-  balance: ref<ReturnType<typeof useWorkshopCredits>['balance']['value']>({
+  balance: ref<ReturnType<typeof useWorkshopModelBalance>['value']>({
     status: 'unknown'
   })
 }
@@ -225,9 +226,9 @@ describe('ModelDetail', () => {
     const session = useWorkshopSession()
     session.session = computed(() => auth.session.value)
     session.settled = computed(() => auth.settled.value)
-    const balance = useWorkshopCredits()
-    balance.balance = computed(() => credits.balance.value)
-    balance.session = session.session
+    vi.mocked(useWorkshopModelBalance).mockReturnValue(
+      computed(() => credits.balance.value)
+    )
     auth.session.value = undefined
     auth.settled.value = true
     auth.enabled.value = true
@@ -553,7 +554,7 @@ describe('ModelDetail', () => {
     auth.session.value = credential
     auth.workshopEnabled.value = false
     vi.mocked(useWorkshopSession).mockClear()
-    vi.mocked(useWorkshopCredits).mockClear()
+    vi.mocked(useWorkshopModelBalance).mockClear()
     mountDetail({ model: runnable })
     await nextTick()
     expect(screen.queryByTestId('run-button')).toBeNull()
@@ -565,7 +566,7 @@ describe('ModelDetail', () => {
     )
     expect(screen.queryByTestId('playground-output')).toBeNull()
     expect(useWorkshopSession).not.toHaveBeenCalled()
-    expect(useWorkshopCredits).not.toHaveBeenCalled()
+    expect(useWorkshopModelBalance).not.toHaveBeenCalled()
     expect(runWorkshopRouter).not.toHaveBeenCalled()
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
 
