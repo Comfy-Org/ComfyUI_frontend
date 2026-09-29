@@ -28,23 +28,25 @@ type Change =
 
 const K = 'checkout.fullPage.keepSubscription'
 
+const CHANGE_OF_TRANSITION = {
+  upgrade: 'upgrade',
+  downgrade: 'downgrade',
+  new_subscription: 'other'
+} as const satisfies Record<
+  Exclude<SubscriptionPreview['transition_type'], 'duration_change'>,
+  Change
+>
+
 /** The renewal after a switch to yearly starts a new year, so its date is spelled out. */
 function changeOf(quote: SubscriptionPreview): Change {
   const next = quote.new_plan
   if (next.tier === 'TEAM' && quote.current_plan?.tier === 'TEAM')
     return 'commitment'
-  switch (quote.transition_type) {
-    case 'upgrade':
-      return 'upgrade'
-    case 'downgrade':
-      return 'downgrade'
-    case 'duration_change':
-      return next.duration === 'ANNUAL' && quote.renewal_at !== undefined
-        ? 'to_yearly'
-        : 'to_monthly'
-    case 'new_subscription':
-      return 'other'
-  }
+  if (quote.transition_type !== 'duration_change')
+    return CHANGE_OF_TRANSITION[quote.transition_type]
+  return next.duration === 'ANNUAL' && quote.renewal_at !== undefined
+    ? 'to_yearly'
+    : 'to_monthly'
 }
 
 function longDate(iso: string, locale: string): string {

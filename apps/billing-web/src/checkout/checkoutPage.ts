@@ -145,6 +145,8 @@ export function reduceCheckoutPage(
   page: CheckoutPage,
   event: CheckoutPageEvent
 ): CheckoutPage {
+  if (isRailEvent(event)) return reduceRail(page, event)
+  if (isAttemptEvent(event)) return reduceAttempt(page, event)
   switch (event.type) {
     case 'refused':
       return page.kind === 'resolving'
@@ -164,6 +166,40 @@ export function reduceCheckoutPage(
             : { method: 'on_file' },
         reactivation: reactivationOf(event.reactivation)
       }
+  }
+}
+
+type RailEvent = Extract<
+  CheckoutPageEvent,
+  {
+    type:
+      | 'elementReady'
+      | 'elementFailed'
+      | 'elementRetried'
+      | 'savedLoaded'
+      | 'savedFailed'
+      | 'savedRetried'
+      | 'tabSelected'
+  }
+>
+
+const RAIL_EVENT: Readonly<Record<RailEvent['type'], true>> = {
+  elementReady: true,
+  elementFailed: true,
+  elementRetried: true,
+  savedLoaded: true,
+  savedFailed: true,
+  savedRetried: true,
+  tabSelected: true
+}
+
+function isRailEvent(event: CheckoutPageEvent): event is RailEvent {
+  return Object.hasOwn(RAIL_EVENT, event.type)
+}
+
+/** The two collection rails and the tab the customer is on. */
+function reduceRail(page: CheckoutPage, event: RailEvent): CheckoutPage {
+  switch (event.type) {
     case 'elementReady':
       return withCollect(page, (rail) =>
         rail.element === 'loading' ? { ...rail, element: 'ready' } : undefined
@@ -194,6 +230,38 @@ export function reduceCheckoutPage(
           ? undefined
           : { ...rail, tab: event.tab }
       )
+  }
+}
+
+type AttemptEvent = Extract<
+  CheckoutPageEvent,
+  {
+    type:
+      | 'reactivationConfirmed'
+      | 'consentMissing'
+      | 'paySubmitted'
+      | 'payFailed'
+      | 'payRejectedAsPending'
+      | 'requoted'
+  }
+>
+
+const ATTEMPT_EVENT: Readonly<Record<AttemptEvent['type'], true>> = {
+  reactivationConfirmed: true,
+  consentMissing: true,
+  paySubmitted: true,
+  payFailed: true,
+  payRejectedAsPending: true,
+  requoted: true
+}
+
+function isAttemptEvent(event: CheckoutPageEvent): event is AttemptEvent {
+  return Object.hasOwn(ATTEMPT_EVENT, event.type)
+}
+
+/** The Pay attempt and what it leaves above the button. */
+function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
+  switch (event.type) {
     case 'reactivationConfirmed':
       return withCapture(page, (capture) =>
         capture.reactivation === 'not_required'
