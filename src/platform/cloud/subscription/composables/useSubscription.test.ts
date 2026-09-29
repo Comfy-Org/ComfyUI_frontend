@@ -872,7 +872,7 @@ describe('useSubscription', () => {
       )
     })
 
-    it('discards a pending checkout owned by another account', async () => {
+    it('preserves but does not consume a pending checkout owned by another account', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
@@ -892,7 +892,7 @@ describe('useSubscription', () => {
 
       expect(
         localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
-      ).toBeNull()
+      ).not.toBeNull()
       expect(
         mockTelemetry.trackMonthlySubscriptionSucceeded
       ).not.toHaveBeenCalled()
@@ -1173,7 +1173,7 @@ describe('useSubscription', () => {
       ).not.toHaveBeenCalled()
     })
 
-    it('retries unavailable reads after the bootstrap ladder and then stops', async () => {
+    it('continues bounded polling after unavailable deadline reads', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
@@ -1190,8 +1190,8 @@ describe('useSubscription', () => {
       useSubscriptionWithScope()
       await vi.advanceTimersByTimeAsync(100_000)
 
-      expect(mockGetBillingStatus).toHaveBeenCalledTimes(7)
-      expect(vi.getTimerCount()).toBe(0)
+      expect(mockGetBillingStatus.mock.calls.length).toBeGreaterThanOrEqual(7)
+      expect(vi.getTimerCount()).toBeGreaterThan(0)
       expect(mockTelemetry.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'timeout' })
       )
@@ -1404,8 +1404,9 @@ describe('useSubscription', () => {
       expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'subscription_checkout',
-          stage: 'timeout',
-          checkout_attempt_id: 'attempt-recovered-reachable'
+          stage: 'failed',
+          checkout_attempt_id: 'attempt-recovered-reachable',
+          failure_category: 'network'
         })
       )
     })

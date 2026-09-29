@@ -462,9 +462,9 @@ export const consumePendingSubscriptionCheckoutSuccess = (
     return null
   }
 
-  const wasReportedMissingCompletion = hasReportedMissingCheckoutCompletion(
-    attempt.attempt_id
-  )
+  const wasReportedTerminal =
+    hasReportedMissingCheckoutCompletion(attempt.attempt_id) ||
+    hasReportedRecoveryUnreachable(attempt.attempt_id)
   clearPendingSubscriptionCheckoutAttempt()
 
   const value = getCheckoutValue(attempt.tier, attempt.cycle)
@@ -482,7 +482,7 @@ export const consumePendingSubscriptionCheckoutSuccess = (
     ...(attempt.resubscribe_source
       ? { resubscribe_source: attempt.resubscribe_source }
       : {}),
-    ...(wasReportedMissingCompletion
+    ...(wasReportedTerminal
       ? { recovery_outcome: 'late_success' as const }
       : {}),
     value,

@@ -141,6 +141,10 @@ describe('performSubscriptionCheckout', () => {
     const beginCheckoutMetadata = vi.mocked(telemetry.trackBeginCheckout).mock
       .calls[0][0]
     const [, storedAttempt] = mockLocalStorage.setItem.mock.calls[0]
+    expect(JSON.parse(storedAttempt)).toMatchObject({
+      owner_id: 'user-123',
+      workspace_id: null
+    })
     expect(beginCheckoutMetadata.checkout_attempt_id).toBe(
       JSON.parse(storedAttempt).attempt_id
     )

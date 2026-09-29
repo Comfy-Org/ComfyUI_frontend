@@ -214,7 +214,11 @@ function useSubscriptionInternal() {
 
   const getReportableMissingCheckout = () => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
-    if (!attempt || hasReportedMissingCheckoutCompletion(attempt.attempt_id)) {
+    if (
+      !attempt ||
+      hasReportedMissingCheckoutCompletion(attempt.attempt_id) ||
+      hasReportedRecoveryUnreachable(attempt.attempt_id)
+    ) {
       return null
     }
 
@@ -300,14 +304,17 @@ function useSubscriptionInternal() {
       !defaultWindow ||
       pendingCheckoutRecoveryTimeout !== null ||
       !isLoggedIn.value ||
-      !attempt ||
-      hasReportedMissingCheckoutCompletion(attempt.attempt_id) ||
-      hasReportedRecoveryUnreachable(attempt.attempt_id)
+      !attempt
     )
 
   const schedulePendingCheckoutRecovery = () => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
-    if (!canSchedulePendingCheckoutRecovery(attempt) || !attempt) return
+    if (
+      !canSchedulePendingCheckoutRecovery(attempt) ||
+      !attempt ||
+      !defaultWindow
+    )
+      return
 
     const nextDelay = getPendingCheckoutRetryDelay(
       pendingCheckoutRecoveryAttempt
@@ -330,17 +337,19 @@ function useSubscriptionInternal() {
     }, nextDelay)
   }
 
-  const isPendingAttemptOwnedByCurrentScope = () => {
+  const getPendingAttemptOwnership = ():
+    | 'unresolved'
+    | 'matched'
+    | 'mismatched' => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
-    if (
-      attempt &&
-      (attempt.owner_id !== authStore.userId ||
-        attempt.workspace_id !== workspaceStore.activeWorkspaceId)
-    ) {
-      clearPendingSubscriptionCheckoutAttempt()
-      return false
-    }
-    return true
+    if (!attempt) return 'matched'
+    if (attempt.owner_id && !authStore.userId) return 'unresolved'
+    if (attempt.workspace_id && !workspaceStore.activeWorkspaceId)
+      return 'unresolved'
+    if (attempt.owner_id !== authStore.userId) return 'mismatched'
+    if (attempt.workspace_id !== workspaceStore.activeWorkspaceId)
+      return 'mismatched'
+    return 'matched'
   }
 
   const trackLateSubscriptionSuccess = (
@@ -375,7 +384,7 @@ function useSubscriptionInternal() {
   const syncPendingSubscriptionSuccess = (
     statusData: BillingStatusResponse
   ) => {
-    if (!isPendingAttemptOwnedByCurrentScope()) {
+    if (getPendingAttemptOwnership() !== 'matched') {
       stopPendingCheckoutRecovery()
       return
     }
@@ -550,14 +559,7 @@ function useSubscriptionInternal() {
   const hasOwnedPendingCheckoutAttempt = () => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
     if (!attempt) return false
-    if (
-      attempt.owner_id !== authStore.userId ||
-      attempt.workspace_id !== workspaceStore.activeWorkspaceId
-    ) {
-      clearPendingSubscriptionCheckoutAttempt()
-      return false
-    }
-    return true
+    return getPendingAttemptOwnership() === 'matched'
   }
 
   const handlePendingCheckoutRecoveryError = (
@@ -584,7 +586,11 @@ function useSubscriptionInternal() {
   const reportRecoveryUnreachable = () => {
     if (isDisposed) return
     const attempt = getPendingSubscriptionCheckoutAttempt()
-    if (!attempt || hasReportedRecoveryUnreachable(attempt.attempt_id)) {
+    if (
+      !attempt ||
+      hasReportedRecoveryUnreachable(attempt.attempt_id) ||
+      hasReportedMissingCheckoutCompletion(attempt.attempt_id)
+    ) {
       return
     }
 
@@ -607,10 +613,10 @@ function useSubscriptionInternal() {
     )
     telemetry?.trackBillingEvent({
       operation: 'subscription_checkout',
-      stage: 'timeout',
+      stage: 'failed',
       outcome: 'failure',
       checkout_attempt_id: attempt.attempt_id,
-      failure_category: 'poll_timeout',
+      failure_category: 'network',
       tier: attempt.tier,
       cycle: attempt.cycle,
       checkout_type: attempt.checkout_type,
@@ -668,21 +674,16 @@ function useSubscriptionInternal() {
 
   const rearmBoundedDeadlineWakeUp = () => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
-    if (
-      !attempt ||
-      hasReportedMissingCheckoutCompletion(attempt.attempt_id) ||
-      hasReportedRecoveryUnreachable(attempt.attempt_id)
+    if (!attempt) return
+    const delayIndex = Math.min(
+      pendingCheckoutDeadlineRetryCount,
+      PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS.length - 1
     )
-      return
-    if (
-      pendingCheckoutDeadlineRetryCount >=
+    const delay = PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS[delayIndex]
+    pendingCheckoutDeadlineRetryCount = Math.min(
+      pendingCheckoutDeadlineRetryCount + 1,
       PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS.length
     )
-      return
-    const delay = PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS[
-      pendingCheckoutDeadlineRetryCount
-    ] as number
-    pendingCheckoutDeadlineRetryCount += 1
     armMissingCheckoutCompletionWakeUp(delay)
   }
 
@@ -690,9 +691,7 @@ function useSubscriptionInternal() {
     if (source !== 'deadline') return
 
     const attempt = getPendingSubscriptionCheckoutAttempt()
-    if (attempt && !hasReportedMissingCheckoutCompletion(attempt.attempt_id)) {
-      rearmBoundedDeadlineWakeUp()
-    }
+    if (attempt) rearmBoundedDeadlineWakeUp()
   }
 
   const handleEmptyPendingCheckoutStatus = (
@@ -751,7 +750,27 @@ function useSubscriptionInternal() {
   let inFlightStatusFetch: Promise<BillingStatusResponse | null> | null = null
   let inFlightStatusOwnerId: string | null = null
   let inFlightStatusWorkspaceId: string | null = null
-  let statusFetchGeneration = 0
+  let nextStatusFetchSequence = 0
+  let publishedStatusFetchSequence = 0
+  let statusScopeGeneration = 0
+  let observedStatusScope = `${authStore.userId ?? ''}\0${workspaceStore.activeWorkspaceId ?? ''}`
+
+  const observeStatusScope = (
+    ownerId: string | null,
+    workspaceId: string | null
+  ) => {
+    const scope = `${ownerId ?? ''}\0${workspaceId ?? ''}`
+    if (scope === observedStatusScope) return
+    observedStatusScope = scope
+    statusScopeGeneration += 1
+  }
+
+  watch(
+    () => [authStore.userId, workspaceStore.activeWorkspaceId] as const,
+    ([ownerId, workspaceId]) => {
+      observeStatusScope(ownerId ?? null, workspaceId)
+    }
+  )
 
   const clearInFlightStatusFetch = (
     fetchPromise: Promise<BillingStatusResponse | null>
@@ -766,6 +785,7 @@ function useSubscriptionInternal() {
   function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
     const ownerId = authStore.userId ?? null
     const workspaceId = workspaceStore.activeWorkspaceId
+    observeStatusScope(ownerId, workspaceId)
     if (
       inFlightStatusFetch &&
       inFlightStatusOwnerId === ownerId &&
@@ -774,11 +794,13 @@ function useSubscriptionInternal() {
       return inFlightStatusFetch
     }
 
-    const generation = ++statusFetchGeneration
+    const sequence = ++nextStatusFetchSequence
+    const scopeGeneration = statusScopeGeneration
     const fetchPromise = performFetchSubscriptionStatus(
       ownerId,
       workspaceId,
-      generation
+      sequence,
+      scopeGeneration
     )
     inFlightStatusFetch = fetchPromise
     inFlightStatusOwnerId = ownerId
@@ -817,14 +839,23 @@ function useSubscriptionInternal() {
   async function performFetchSubscriptionStatus(
     ownerId: string | null,
     workspaceId: string | null,
-    generation: number
+    sequence: number,
+    scopeGeneration: number
   ): Promise<BillingStatusResponse | null> {
     if (!isCloud) return null
 
     const statusData = await readSubscriptionStatus()
-    if (!isPublishableStatusRead(statusData, ownerId, workspaceId, generation))
+    if (
+      !isPublishableStatusRead(
+        statusData,
+        ownerId,
+        workspaceId,
+        sequence,
+        scopeGeneration
+      )
+    )
       return null
-    publishSubscriptionStatus(statusData, workspaceId)
+    publishSubscriptionStatus(statusData, workspaceId, sequence)
 
     return statusData
   }
@@ -833,12 +864,14 @@ function useSubscriptionInternal() {
     statusData: BillingStatusResponse | undefined,
     ownerId: string | null,
     workspaceId: string | null,
-    generation: number
+    sequence: number,
+    scopeGeneration: number
   ): statusData is BillingStatusResponse {
     return (
       !isDisposed &&
       statusData !== undefined &&
-      generation === statusFetchGeneration &&
+      scopeGeneration === statusScopeGeneration &&
+      sequence > publishedStatusFetchSequence &&
       (authStore.userId ?? null) === ownerId &&
       workspaceStore.activeWorkspaceId === workspaceId
     )
@@ -846,8 +879,10 @@ function useSubscriptionInternal() {
 
   function publishSubscriptionStatus(
     statusData: BillingStatusResponse,
-    workspaceId: string | null
+    workspaceId: string | null,
+    sequence: number
   ): void {
+    publishedStatusFetchSequence = sequence
     // Only a current, publishable read proves billing is reachable.
     lastPendingCheckoutStatus = statusData
     subscriptionStatus.value = statusData

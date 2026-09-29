@@ -6,6 +6,7 @@ import {
   getPendingSubscriptionCheckoutAttempt,
   hasReportedMissingCheckoutCompletion,
   markMissingCheckoutCompletionReported,
+  markRecoveryUnreachableReported,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
   recordPendingSubscriptionCheckoutAttempt
 } from './subscriptionCheckoutTracker'
@@ -58,6 +59,45 @@ describe('subscriptionCheckoutTracker', () => {
 
     expect(metadata).not.toBeNull()
     expect(metadata).not.toHaveProperty('payment_intent_source')
+  })
+
+  it('classifies success after unreachable recovery as late success', () => {
+    const attempt = recordPendingSubscriptionCheckoutAttempt({
+      tier: 'pro',
+      cycle: 'monthly',
+      checkout_type: 'new'
+    })
+    markRecoveryUnreachableReported(attempt.attempt_id)
+
+    expect(consumePendingSubscriptionCheckoutSuccess(activeProStatus)).toEqual(
+      expect.objectContaining({
+        checkout_attempt_id: attempt.attempt_id,
+        recovery_outcome: 'late_success'
+      })
+    )
+  })
+
+  it('requires the cancellation marker to change before consuming a resubscribe', () => {
+    recordPendingSubscriptionCheckoutAttempt({
+      tier: 'pro',
+      cycle: 'monthly',
+      checkout_type: 'change',
+      operation: 'resubscribe',
+      previous_cancel_at: '2026-10-01'
+    })
+
+    expect(
+      consumePendingSubscriptionCheckoutSuccess({
+        ...activeProStatus,
+        cancel_at: '2026-10-01'
+      })
+    ).toBeNull()
+    expect(
+      consumePendingSubscriptionCheckoutSuccess({
+        ...activeProStatus,
+        cancel_at: null
+      })
+    ).toEqual(expect.objectContaining({ operation: 'resubscribe' }))
   })
 
   it.for(['1e400', '-1e400'])(

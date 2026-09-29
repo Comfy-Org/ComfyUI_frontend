@@ -16,6 +16,7 @@ import type {
 } from '@/platform/telemetry/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
 import type { BillingCycle } from './subscriptionTierRank'
@@ -137,7 +138,9 @@ async function initiateSubscriptionCheckout(
       tier: tierKey,
       cycle: currentBillingCycle,
       checkout_type: 'new',
-      payment_intent_source: paymentIntentSource
+      payment_intent_source: paymentIntentSource,
+      owner_id: userId.value ?? undefined,
+      workspace_id: useTeamWorkspaceStore().activeWorkspaceId
     })
 
     if (userId.value) {
