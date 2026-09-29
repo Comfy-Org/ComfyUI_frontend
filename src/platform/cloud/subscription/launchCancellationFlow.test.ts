@@ -291,7 +291,12 @@ describe('launchCancellationFlow', () => {
 
     await launchCancellationFlow({ showFallback: runtimeFallback })
 
-    expect(runtimeFallback).toHaveBeenCalledWith({ flowAlreadyOpened: true })
+    expect(runtimeFallback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        flowAlreadyOpened: true,
+        isScopeCurrent: expect.any(Function)
+      })
+    )
     expect(
       useTelemetry()?.trackSubscriptionCancellation
     ).toHaveBeenLastCalledWith(
@@ -477,7 +482,12 @@ describe('launchCancellationFlow', () => {
       'failed',
       expect.objectContaining({ error_message: 'API down' })
     )
-    expect(showFallback).toHaveBeenCalledWith({ flowAlreadyOpened: true })
+    expect(showFallback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        flowAlreadyOpened: true,
+        isScopeCurrent: expect.any(Function)
+      })
+    )
   })
 
   it('stops when the active workspace changes during preparation', async () => {
