@@ -1306,7 +1306,8 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('reverts only the ops the host rejected from a human batch', async () => {
-    const { unmount, enqueue } = mountFollower('wf-1')
+    const readyGraph = fromPartial<LGraph>({})
+    const { unmount, enqueue } = mountFollower('wf-1', true, () => readyGraph)
     enqueue([
       { op: 'set_widget', node_id: '2', widget: 'steps', value: 3 },
       { op: 'delete_node', node_id: '1', removed_links: [] }
@@ -1341,7 +1342,12 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('defers rejected-op reverts until the bound workflow is active again', async () => {
-    const { unmount, enqueue, isTargetActive } = mountFollower('wf-1')
+    const readyGraph = fromPartial<LGraph>({})
+    const { unmount, enqueue, isTargetActive } = mountFollower(
+      'wf-1',
+      true,
+      () => readyGraph
+    )
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
     const [, , ops] = clientState.sendOps.mock.calls[0]
@@ -1359,6 +1365,41 @@ describe('useAgentCrdtFollower', () => {
     expect(projectionState.revertRejected).not.toHaveBeenCalled()
 
     isTargetActive.value = true
+    await nextTick()
+
+    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
+      'wf-1',
+      [ops[0]]
+    )
+    unmount()
+  })
+
+  it('retains a rejected revert until the active graph becomes ready', async () => {
+    const graph = shallowRef<LGraph | null>(null)
+    const readyGraph = fromPartial<LGraph>({})
+    const { unmount, enqueue, isTargetActive } = mountFollower(
+      'wf-1',
+      false,
+      () => graph.value
+    )
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: { index: 0, op_id: ops[0].op_id, code: 'unknown_node' }
+    })
+    expect(projectionState.revertRejected).not.toHaveBeenCalled()
+
+    isTargetActive.value = true
+    await nextTick()
+    expect(projectionState.revertRejected).not.toHaveBeenCalled()
+
+    graph.value = readyGraph
     await nextTick()
 
     expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(

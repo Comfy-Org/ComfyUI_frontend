@@ -288,21 +288,15 @@ describe('LiveGraphApplier', () => {
     const host = createTestSubgraphNode(subgraph, { id: 1 })
     graph.add(host)
     const hostWidget = host.widgets[0]
-    let hostValue = hostWidget.value
-    Object.defineProperty(hostWidget, 'value', {
-      configurable: true,
-      get: () => hostValue,
-      set: (value: WidgetValue) => {
-        hostValue = value
-        hostWidget.callback?.(value)
-      }
-    })
     const originalCallback = hostWidget.callback
     const callback = vi.fn((value: WidgetValue) => {
       originalCallback?.(value, undefined, host)
-      hostValue = 30
+      hostWidget.value = 30
       queueMicrotask(() => {
-        hostValue = value
+        // Exercise the registered widget-value setter after the synchronous
+        // provenance scope has closed. The corrective write already restored
+        // the canonical value, so this real seam must remain a no-op.
+        hostWidget.value = value
       })
     })
     const onWidgetChanged = vi.fn()
@@ -357,6 +351,60 @@ describe('LiveGraphApplier', () => {
       type: 'set_widget'
     })
     expect(intents).not.toContainEqual({ source: 'local', type: 'set_widget' })
+  })
+
+  it('restores a promoted callback when its value setter throws', () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'steps', type: 'number' }]
+    })
+    const interior = new LGraphNode('Interior')
+    const interiorInput = interior.addInput('steps', 'number')
+    interiorInput.widget = { name: 'steps' }
+    interior.addWidget('number', 'steps', 20, () => {})
+    subgraph.add(interior)
+    subgraph.inputNode.slots[0].connect(interiorInput, interior)
+    const host = createTestSubgraphNode(subgraph, { id: 101 })
+    graph.add(host)
+    const widget = host.widgets[0]
+    const callback = vi.fn()
+    widget.callback = callback
+    Object.defineProperty(widget, 'value', {
+      configurable: true,
+      get: () => 20,
+      set: () => {
+        throw new Error('extension setter exploded')
+      }
+    })
+
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [{ id: 101, type: host.type, widgets_values: [20] }],
+        links: []
+      },
+      CATALOG
+    )
+    collector.take()
+    const docNode = nodesMap(doc).get('101')
+    if (!docNode) throw new Error('host was not seeded')
+    doc.transact(() => docNode.set('widgets', new Y.Map([['steps', 35]])))
+
+    new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
+      doc,
+      collector.take(),
+      CONTEXT
+    )
+
+    expect(widget.callback).toBe(callback)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'extension setter exploded' }),
+      expect.objectContaining({
+        errorType: 'agent_graph_apply_failed',
+        tags: expect.objectContaining({ outcome: 'degraded' }),
+        context: { nodeId: '101', widget: 'steps' }
+      })
+    )
   })
 
   it('isolates a throwing promoted-widget callback from later widgets in the frame', () => {

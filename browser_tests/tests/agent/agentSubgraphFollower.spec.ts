@@ -218,13 +218,15 @@ test.describe(
             )
           )
           .toBe(String(AGENT_SUBGRAPH_EDITED_SEED))
-        await expect
-          .poll(() =>
+        const quietWindowStartedAt = Date.now()
+        await expect(async () => {
+          expect(
             outboundFrames
               .slice(outboundBeforeRemoteEdit)
               .some((frame) => frame.includes('doc_ops'))
-          )
-          .toBe(false)
+          ).toBe(false)
+          expect(Date.now() - quietWindowStartedAt).toBeGreaterThanOrEqual(500)
+        }).toPass({ timeout: 1_000, intervals: [50, 100, 150, 200] })
         await page.screenshot({
           path: test.info().outputPath('subgraph-edited.png')
         })

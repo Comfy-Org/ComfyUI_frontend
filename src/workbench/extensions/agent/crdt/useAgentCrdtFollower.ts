@@ -376,18 +376,23 @@ function startAgentCrdtFollower(
   const projection = new AgentCrdtProjection(getGraph, applierDeps)
   const pendingRejected = new Map<string, Op[]>()
 
-  const applyRejectedOps = (workflowId: string, rejected: readonly Op[]) => {
+  const applyRejectedOps = (
+    workflowId: string,
+    rejected: readonly Op[]
+  ): boolean => {
+    if (getGraph() === null) return false
     reportMaterialized(
       workflowId,
       projection.revertRejected(workflowId, rejected)
     )
+    return true
   }
 
   const drainRejectedOps = (workflowId: string): void => {
     const rejected = pendingRejected.get(workflowId)
     if (!rejected) return
-    pendingRejected.delete(workflowId)
-    applyRejectedOps(workflowId, rejected)
+    if (applyRejectedOps(workflowId, rejected))
+      pendingRejected.delete(workflowId)
   }
 
   const trackAcknowledgedDeletes = (
@@ -418,7 +423,11 @@ function startAgentCrdtFollower(
       ])
       return
     }
-    applyRejectedOps(workflowId, rejected)
+    if (!applyRejectedOps(workflowId, rejected))
+      pendingRejected.set(workflowId, [
+        ...(pendingRejected.get(workflowId) ?? []),
+        ...rejected
+      ])
   }
 
   const settleHumanOps = (outcome: BatchOutcome) => {
@@ -697,7 +706,10 @@ function startAgentCrdtFollower(
   // collected at the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
     const bound = subscribedWorkflowId.value
-    if (graph && bound !== null && isTargetActive.value) applyCollected(bound)
+    if (graph && bound !== null && isTargetActive.value) {
+      applyCollected(bound)
+      drainRejectedOps(bound)
+    }
   })
   const rebindProjection = (next: string | null): void => {
     const current = subscribedWorkflowId.value

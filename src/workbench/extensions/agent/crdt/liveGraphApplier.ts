@@ -701,8 +701,8 @@ export class LiveGraphApplier {
       } catch (error) {
         reportError(error, {
           errorType: 'agent_graph_apply_failed',
+          tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
           context: {
-            ...AGENT_APPLY_TAGS,
             nodeId: String(node.id),
             widget: name
           }
@@ -747,21 +747,26 @@ export class LiveGraphApplier {
     if (widget.type === 'button' || Object.is(widget.value, value)) return
     const previous = widget.value
     const callback = widget.callback
-    widget.callback = undefined
-    const rollback = writeWidgetValue(node, widget, value, false)
-    widget.callback = callback
+    const writeWithoutCallback = (write: () => void): void => {
+      widget.callback = undefined
+      try {
+        write()
+      } finally {
+        widget.callback = callback
+      }
+    }
+    let rollback: (() => void) | undefined
+    writeWithoutCallback(() => {
+      rollback = writeWidgetValue(node, widget, value, false)
+    })
     try {
       callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
       node.onWidgetChanged?.(widget.name, value, previous, widget)
       if (!Object.is(widget.value, value)) {
-        widget.callback = undefined
-        writeWidgetValue(node, widget, value, false)
-        widget.callback = callback
+        writeWithoutCallback(() => writeWidgetValue(node, widget, value, false))
       }
     } catch (error) {
-      widget.callback = undefined
-      rollback()
-      widget.callback = callback
+      writeWithoutCallback(() => rollback?.())
       throw error
     }
     node.graph?.incrementVersion()
