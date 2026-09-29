@@ -347,12 +347,15 @@ describe('writeMarkdownTwins', () => {
     const route = `models/${modelSlug}/`
     const twinPath = `/models/${modelSlug}.md`
 
-    async function buildModelPage(main: string) {
+    async function buildModelPage(
+      main: string,
+      twinLink = `<link rel="alternate" type="text/markdown" href="${twinPath}">`
+    ) {
       const root = await mkdtemp(join(tmpdir(), 'twins-'))
       await mkdir(join(root, route), { recursive: true })
       await writeFile(
         join(root, route, 'index.html'),
-        `<html lang="en"><head><title>${modelSlug}</title><link rel="canonical" href="https://comfy.org/${route}"><link rel="alternate" type="text/markdown" href="${twinPath}"></head><body><header><a href="/">Comfy home</a></header><main>${main}</main></body></html>`
+        `<html lang="en"><head><title>${modelSlug}</title><link rel="canonical" href="https://comfy.org/${route}">${twinLink}</head><body><header><a href="/">Comfy home</a></header><main>${main}</main></body></html>`
       )
       return root
     }
@@ -383,7 +386,29 @@ describe('writeMarkdownTwins', () => {
       expect(html).toContain('rel="canonical"')
     })
 
-    it('twins the server-rendered hero and drops the spinner (post-FE-2942 shape)', async () => {
+    it('drops the markdown link whatever its attribute order', async () => {
+      const root = await buildModelPage(
+        `<astro-island>${loadingSpinner}</astro-island>`,
+        `<link href="${twinPath}"\n  type="text/markdown" rel="alternate">`
+      )
+
+      await writeMarkdownTwins(root, [route])
+
+      expect(await readPage(root)).not.toContain('text/markdown')
+    })
+
+    it('fails the build when a contentless page has no markdown link to drop', async () => {
+      const root = await buildModelPage(
+        `<astro-island>${loadingSpinner}</astro-island>`,
+        ''
+      )
+
+      await expect(writeMarkdownTwins(root, [route])).rejects.toThrow(
+        join(root, route, 'index.html')
+      )
+    })
+
+    it('twins the server-rendered hero and drops the spinner (post-FE-2942 (#18899) shape)', async () => {
       const root = await buildModelPage(
         `<header data-testid="model-hero"><p>Provider</p><h1>Model name</h1><p>Model summary.</p></header><astro-island>${loadingSpinner}</astro-island>`
       )
