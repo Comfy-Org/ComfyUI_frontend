@@ -60,7 +60,8 @@ export function useBillingPlans() {
           },
           context: {
             has_team_credit_stops:
-              (teamCreditStops.value?.stops?.length ?? 0) > 0
+              Array.isArray(teamCreditStops.value?.stops) &&
+              teamCreditStops.value.stops.length > 0
           },
           level: hasCachedPlans ? 'warning' : 'error'
         })
