@@ -1,4 +1,3 @@
-import { interpolate } from '../../config/auth-schemas'
 import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
 import { getWorkshopModel } from '../../config/workshop-browse-content'
 import {
@@ -56,10 +55,9 @@ export async function prepareModelPage(
     model,
     related,
     relatedHeading: relatedProvider
-      ? t('workshop.model.relatedProvider', locale).replace(
-          '{provider}',
-          relatedProvider
-        )
+      ? t('workshop.model.relatedProvider', locale, {
+          provider: relatedProvider
+        })
       : t('workshop.model.related', locale),
     relatedHeadingShort: t('workshop.model.relatedShort', locale),
     successor: model.successorSlug
@@ -103,14 +101,14 @@ function metaPriceClause(priceEstimate: string | undefined, locale: Locale) {
   const { amount, per } = splitPriceLabel(priceEstimate)
   const unit = per?.slice(1).toLowerCase()
   return unit
-    ? interpolate(t('workshop.model.meta.price', locale), { amount, unit })
-    : interpolate(t('workshop.model.meta.priceNoUnit', locale), { amount })
+    ? t('workshop.model.meta.price', locale, { amount, unit })
+    : t('workshop.model.meta.priceNoUnit', locale, { amount })
 }
 
 function metaLead(who: string, summary: string | undefined, locale: Locale) {
   return summary
-    ? interpolate(t('workshop.model.meta.lead', locale), { who, summary })
-    : interpolate(t('workshop.model.meta.leadNoSummary', locale), { who })
+    ? t('workshop.model.meta.lead', locale, { who, summary })
+    : t('workshop.model.meta.leadNoSummary', locale, { who })
 }
 
 function fitSummary(
@@ -147,7 +145,7 @@ export function modelMetaDescription(
     page.model.summary && page.model.summary.replace(/(?<![.!?。！？])$/u, '.')
   const who =
     provider && !nameCarriesProvider(name, provider)
-      ? interpolate(t('workshop.model.meta.byProvider', locale), {
+      ? t('workshop.model.meta.byProvider', locale, {
           name,
           provider
         })

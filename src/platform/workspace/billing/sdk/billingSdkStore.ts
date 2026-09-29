@@ -18,6 +18,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import {
   BILLING_OPERATION_TELEMETRY_EVENT,
+  awaitsHostedAction,
   validateActionUrl
 } from '@comfyorg/account-core/billing'
 import { loadStripe } from '@stripe/stripe-js/pure'
@@ -255,8 +256,9 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     state: PendingBillingOperation,
     kind: keyof typeof PROGRESS_SUMMARY
   ) {
-    const progress: ProgressKind =
-      state.actionUrl === undefined ? 'processing' : 'action'
+    const progress: ProgressKind = awaitsHostedAction(state)
+      ? 'action'
+      : 'processing'
     const current = progressToasts.get(state.id)
     if (current?.kind === progress) return
     clearProgressToast(state.id)
@@ -291,15 +293,24 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     }
     if (state.kind === 'subscription') syncProgressToast(state, 'subscription')
     void driveRequiredChallenge(state)
-    openHostedAction(state)
+    if (!drivesInPageChallenge(state) && !resumedOperations.has(state.id)) {
+      openHostedAction(state)
+    }
+  }
+
+  // The server offers its hosted page beside the client secret, so an
+  // embedded operation carries both; the in-page challenge is its route.
+  function drivesInPageChallenge(state: PendingBillingOperation): boolean {
+    return state.presentation === 'embedded' && state.challenge !== undefined
   }
 
   // One offer per hosted step, not per poll, and not again for a step this
   // operation already offered: the open runs off the lifecycle rather than a
   // click, so a browser that blocked the first one blocks every retry and each
-  // retry would repeat the warning. A step the customer still owes stays on
-  // `subscriptionActionUrl` for the checkout to put behind a button of their
-  // own.
+  // retry would repeat the warning. An operation reattached on load is never
+  // offered at all, since no click of this page started it. A step the
+  // customer still owes stays on `subscriptionActionUrl` for the checkout to
+  // put behind a button of their own.
   function openHostedAction(state: PendingBillingOperation) {
     const actionUrl = hostedActionUrl(state)
     if (actionUrl === undefined) return

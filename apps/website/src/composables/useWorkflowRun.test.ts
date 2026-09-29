@@ -4,7 +4,7 @@ import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, h, ref, shallowRef } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../config/models-catalogue'
-import { refreshWorkshopCredits } from '../config/workshop-credits'
+import { markWorkshopCreditsDirty } from '../config/workshop-credits'
 import { initialWorkshopPageState } from '../config/workshop-page-state'
 import type { FormValues } from '../config/workshop-playground'
 import { restoreFormValues } from '../config/workshop-playground'
@@ -158,6 +158,56 @@ describe('workflow page caller lifecycle', () => {
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
+  it('marks the credits dirty once for a run submitted here', async () => {
+    const f = fixture()
+    f.fetch
+      .mockResolvedValueOnce(Response.json({ prompt_id: runId }))
+      .mockResolvedValue(Response.json(finished()))
+
+    await f.workflow.start(input)
+    await f.workflow.retryDelivery()
+
+    expect(f.workflow.state.value.phase).toBe('settled')
+    expect(markWorkshopCreditsDirty).toHaveBeenCalledOnce()
+  })
+
+  it.for([
+    { name: 'still running', status: 'in_progress', marks: 1 },
+    { name: 'already finished', status: 'completed', marks: 0 }
+  ] as const)(
+    'marks the credits dirty for a restored run $name only if it finishes here',
+    async ({ status, marks }) => {
+      const owner = credential()
+      const scope = callerScope(owner)
+      const model = authoredWorkflow()
+      workflowStorage(sessionStorage, scope, model.workflowId).write({
+        version: 2,
+        stage: 'run',
+        runId,
+        workflowId: model.workflowId,
+        definitionVersion: model.workflow.definitionVersion,
+        cancelRequested: false
+      })
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const f = fixture(model)
+      f.fetch
+        .mockResolvedValueOnce(Response.json({ ...finished(), status }))
+        .mockResolvedValue(Response.json(finished()))
+
+      await vi.waitFor(() => expect(f.fetch).toHaveBeenCalled(), {
+        interval: 1
+      })
+      await vi.advanceTimersByTimeAsync(2_000)
+
+      expect(f.workflow.state.value.phase).toBe('settled')
+
+      expect(markWorkshopCreditsDirty).toHaveBeenCalledTimes(marks)
+    }
+  )
+
   it('reports form validation separately from generation attempts', async () => {
     const f = fixture()
     await f.workflow.start({ image: '' })
@@ -245,6 +295,43 @@ describe('workflow page caller lifecycle', () => {
       })
     }
   )
+
+  it('records where a failed Cloud job broke without its message', async () => {
+    const f = fixture()
+    f.fetch
+      .mockResolvedValueOnce(Response.json({ prompt_id: runId }))
+      .mockResolvedValueOnce(
+        Response.json({
+          ...finished(),
+          status: 'failed',
+          outputs: {},
+          execution_error: {
+            node_id: '7',
+            node_type: 'GeminiImage2Node',
+            exception_type: 'Exception',
+            exception_message: 'Unauthorized: private detail',
+            traceback: [],
+            current_inputs: {},
+            current_outputs: {}
+          }
+        })
+      )
+
+    await f.workflow.start(input)
+
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'run_finished',
+      properties: expect.objectContaining({
+        status: 'failed',
+        failed_node_id: '7',
+        failed_node_type: 'GeminiImage2Node',
+        cloud_exception_type: 'Exception'
+      })
+    })
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('private')
+  })
 
   type Fixture = ReturnType<typeof fixture>
   type CredentialResult = Awaited<ReturnType<Fixture['session']['ensureFresh']>>
@@ -386,7 +473,7 @@ describe('workflow page caller lifecycle', () => {
       await pending
       expect(f.workflow.state.value).toEqual(presentationBeforeSwitch)
       expect(f.workflow.observation.value).toBeUndefined()
-      expect(refreshWorkshopCredits).not.toHaveBeenCalled()
+      expect(markWorkshopCreditsDirty).not.toHaveBeenCalled()
       expect(captureWorkshopEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ name: 'run_finished' })
       )
@@ -433,7 +520,7 @@ describe('workflow page caller lifecycle', () => {
     await pending
     expect(replacement.workflow.state.value).toEqual({ phase: 'idle' })
     expect(replacement.workflow.observation.value).toBeUndefined()
-    expect(refreshWorkshopCredits).not.toHaveBeenCalled()
+    expect(markWorkshopCreditsDirty).not.toHaveBeenCalled()
     expect(f.fetch).toHaveBeenCalledTimes(2)
   })
 
@@ -458,7 +545,7 @@ describe('workflow page caller lifecycle', () => {
     expect(f.fetch).toHaveBeenCalledOnce()
   })
 
-  it('resumes a known job on reconnect without resubmission and refreshes the owner’s credits', async () => {
+  it('resumes a known job on reconnect without resubmission and marks the owner’s credits dirty', async () => {
     const f = fixture()
     f.fetch
       .mockResolvedValueOnce(
@@ -472,7 +559,7 @@ describe('workflow page caller lifecycle', () => {
     )
     f.fetch.mockResolvedValueOnce(Response.json(finished()))
     window.dispatchEvent(new Event('online'))
-    await waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalledOnce())
+    await waitFor(() => expect(markWorkshopCreditsDirty).toHaveBeenCalledOnce())
     expect(f.workflow.state.value.phase).toBe('settled')
     expect(
       vi.mocked(captureWorkshopEvent).mock.calls.map(([event]) => event.name)
