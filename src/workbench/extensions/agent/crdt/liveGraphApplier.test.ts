@@ -9,6 +9,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type {
   ISerialisedNode,
   LGraphCanvas
@@ -264,6 +269,79 @@ describe('LiveGraphApplier', () => {
       expect.objectContaining({ message: 'extension hook exploded' }),
       expect.objectContaining({ errorType: 'agent_graph_apply_failed' })
     )
+  })
+
+  it('routes a promoted host widget through callbacks under remote provenance', () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'steps', type: 'number' }]
+    })
+    const interior = new LGraphNode('Interior')
+    const interiorInput = interior.addInput('steps', 'number')
+    interiorInput.widget = { name: 'steps' }
+    interior.addWidget('number', 'steps', 20, () => {})
+    subgraph.add(interior)
+    subgraph.inputNode.slots[0].connect(interiorInput, interior)
+    const host = createTestSubgraphNode(subgraph, { id: 1 })
+    graph.add(host)
+    const hostWidget = host.widgets[0]
+    const callback = vi.fn(hostWidget.callback)
+    const onWidgetChanged = vi.fn()
+    hostWidget.callback = callback
+    host.onWidgetChanged = onWidgetChanged
+
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [
+          {
+            id: Number(host.id),
+            type: host.type,
+            widgets_values: [20]
+          }
+        ],
+        links: []
+      },
+      CATALOG
+    )
+    collector.take()
+    const docNode = nodesMap(doc).get(String(host.id))
+    if (!docNode) throw new Error('host was not seeded')
+    if (!docNode.has('widgets')) {
+      doc.transact(() => docNode.set('widgets', new Y.Map([['steps', 20]])))
+      collector.take()
+    }
+    doc.transact(() => {
+      const widgets = docNode.get('widgets')
+      if (widgets instanceof Y.Array) {
+        widgets.delete(0, widgets.length)
+        widgets.push([35])
+      } else if (widgets instanceof Y.Map) {
+        widgets.set('steps', 35)
+      } else {
+        throw new Error('widget storage was not created')
+      }
+    })
+    const intents: Array<{ source: string; type: string }> = []
+    const detach = onGraphIntent(({ source, type }) => {
+      intents.push({ source, type })
+    })
+
+    new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
+      doc,
+      collector.take(),
+      CONTEXT
+    )
+    detach()
+
+    expect(hostWidget.value).toBe(35)
+    expect(callback).toHaveBeenCalledWith(35, undefined, host)
+    expect(onWidgetChanged).toHaveBeenCalledWith('steps', 35, 20, hostWidget)
+    expect(intents).toContainEqual({
+      source: 'agent-remote',
+      type: 'set_widget'
+    })
+    expect(intents).not.toContainEqual({ source: 'local', type: 'set_widget' })
   })
 
   it('mints a later local link above every document link id', () => {

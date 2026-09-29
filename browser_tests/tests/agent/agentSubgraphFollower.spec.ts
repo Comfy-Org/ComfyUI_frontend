@@ -157,6 +157,7 @@ test.describe(
       })
 
       await test.step('route the promoted seed edit without changing text', async () => {
+        const outboundBeforeRemoteEdit = outboundFrames.length
         socket.send(JSON.stringify(frames.followUp))
 
         await expect
@@ -184,6 +185,17 @@ test.describe(
         await expect(
           node.getByLabel('seed', { exact: true }).getByRole('spinbutton')
         ).toHaveValue(String(AGENT_SUBGRAPH_EDITED_SEED))
+        await page.evaluate(
+          () =>
+            new Promise<void>((resolve) =>
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => resolve())
+              )
+            )
+        )
+        expect(outboundFrames.slice(outboundBeforeRemoteEdit)).not.toEqual(
+          expect.arrayContaining([expect.stringContaining('doc_ops')])
+        )
         await page.screenshot({
           path: test.info().outputPath('subgraph-edited.png')
         })

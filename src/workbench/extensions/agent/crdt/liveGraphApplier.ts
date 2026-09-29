@@ -24,7 +24,6 @@ import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LinkId } from '@/types/linkId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
@@ -674,12 +673,12 @@ export class LiveGraphApplier {
       )
       return
     }
-    const store = useWidgetValueStore()
     for (const [name, value] of hostWidgetEntries(promoted, widgets)) {
       if (!isWidgetValue(value)) continue
       if (this.holdsLocalWrite(node, name, value)) continue
-      const widgetId = promoted.find((input) => input.name === name)?.widgetId
-      if (!widgetId) {
+      const input = promoted.find((candidate) => candidate.name === name)
+      const widget = input && node.getWidgetFromSlot(input)
+      if (!widget) {
         this.reportOnce(
           `widget:${String(node.id)}:${name}`,
           `Subgraph host ${String(node.id)} (${node.type}) promotes no widget '${name}'`,
@@ -688,9 +687,8 @@ export class LiveGraphApplier {
         )
         continue
       }
-      store.setValue(widgetId, value)
+      this.setWidgetValue(node, widget, value)
     }
-    node.graph?.incrementVersion()
   }
 
   private holdsLocalWrite(
