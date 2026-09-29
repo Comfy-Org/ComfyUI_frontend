@@ -15,12 +15,14 @@ export type OptionalEntryKey =
   | 'correlationId'
   | 'workspaceId'
   | 'teamCreditStopId'
+  | 'promotionCode'
 
 export type InvalidIdentifierCode =
   | 'INVALID_PLAN'
   | 'INVALID_CORRELATION_ID'
   | 'INVALID_WORKSPACE_ID'
   | 'INVALID_TEAM_CREDIT_STOP_ID'
+  | 'INVALID_PROMOTION_CODE'
 
 interface OptionalEntryField {
   readonly key: OptionalEntryKey
@@ -44,7 +46,9 @@ export const OPTIONAL_ENTRY_FIELDS: readonly OptionalEntryField[] = [
     key: 'teamCreditStopId',
     param: 'team_credit_stop_id',
     code: 'INVALID_TEAM_CREDIT_STOP_ID'
-  }
+  },
+  /** Prefills checkout's promo field; billing applies it only on the customer's Apply. */
+  { key: 'promotionCode', param: 'promo', code: 'INVALID_PROMOTION_CODE' }
 ]
 
 export type OptionalEntryValues = {

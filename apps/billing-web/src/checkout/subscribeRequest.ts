@@ -60,6 +60,9 @@ export function buildSubscribeRequest({
     ...(arrival.teamCreditStopId === undefined
       ? {}
       : { team_credit_stop_id: arrival.teamCreditStopId }),
+    ...(quoted.promotion_code === undefined
+      ? {}
+      : { promotion_code: quoted.promotion_code }),
     ...(quoted.quote_id === undefined ? {} : { quote_id: quoted.quote_id }),
     ...(quoted.quote_version === undefined
       ? {}
