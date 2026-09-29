@@ -160,6 +160,19 @@ export function useTemplateWorkflows() {
     useToastStore().add({ severity: 'error', summary: t('g.error'), detail })
   }
 
+  function resolveLoadSource(id: string, sourceModule: string) {
+    const resolution = resolveTemplateSource(id, sourceModule)
+    if (resolution.status === 'found') return resolution.source
+    showTemplateError(
+      resolution.status === 'missing'
+        ? t('templateWorkflows.error.templateNotFound', { templateName: id })
+        : t('templateWorkflows.error.templateAmbiguous', {
+            templateName: id,
+            sources: resolution.sources.join(', ')
+          })
+    )
+  }
+
   function reportTemplateError(error: unknown) {
     reportError(error, { errorType: 'error_loading_template' })
     showTemplateError(t('templateWorkflows.error.loading'))
@@ -263,23 +276,8 @@ export function useTemplateWorkflows() {
       showTemplateError(t('templateWorkflows.error.loading'))
       return 'not-started'
     }
-    const resolution = resolveTemplateSource(id, sourceModule)
-    if (resolution.status === 'missing') {
-      showTemplateError(
-        t('templateWorkflows.error.templateNotFound', { templateName: id })
-      )
-      return 'not-started'
-    }
-    if (resolution.status === 'ambiguous') {
-      showTemplateError(
-        t('templateWorkflows.error.templateAmbiguous', {
-          templateName: id,
-          sources: resolution.sources.join(', ')
-        })
-      )
-      return 'not-started'
-    }
-    const { source } = resolution
+    const source = resolveLoadSource(id, sourceModule)
+    if (!source) return 'not-started'
     const controller = workflowTemplatesStore.startTemplateLoad(
       templateKeyFor(id, source)
     )
