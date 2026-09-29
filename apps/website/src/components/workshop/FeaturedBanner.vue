@@ -14,8 +14,10 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import FeaturedBannerPagination from './FeaturedBannerPagination.vue'
+import FeaturedNowShowing from './FeaturedNowShowing.vue'
+import FeaturedSlideCopy from './FeaturedSlideCopy.vue'
 
 /**
  * One thing worth opening, whatever kind of thing the catalogue holds. The
@@ -216,111 +218,24 @@ const fill = computed(() =>
           </div>
         </template>
 
-        <template v-else-if="active">
-          <div class="flex flex-wrap items-center gap-2">
-            <Badge
-              variant="subtle"
-              size="md"
-              class="text-primary-comfy-canvas backdrop-blur-md"
-            >
-              {{ active.kind }}
-            </Badge>
-            <Badge
-              v-for="capability in active.tags"
-              :key="capability"
-              variant="subtle"
-              size="md"
-              class="text-content-secondary backdrop-blur-md max-sm:hidden"
-            >
-              {{ capability }}
-            </Badge>
-          </div>
-
-          <h2
-            class="text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
-          >
-            {{ active.title }}
-          </h2>
-
-          <p
-            v-if="active.summary"
-            class="line-clamp-2 max-w-prose shrink-0 text-content-secondary max-sm:line-clamp-1 short:hidden"
-          >
-            {{ active.summary }}
-          </p>
-
-          <div class="pointer-events-auto flex w-fit items-center gap-3">
-            <Button as="a" :href="active.href" class="w-fit">
-              {{ active.cta ?? t('workshop.hub.tryNow', locale) }}
-            </Button>
-            <Button
-              v-if="active.docsHref"
-              as="a"
-              variant="outline"
-              :href="active.docsHref"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="w-fit"
-              data-testid="featured-docs-link"
-            >
-              {{ t('workshop.hub.docs', locale) }}
-            </Button>
-          </div>
-        </template>
+        <FeaturedSlideCopy v-else-if="active" :slide="active" :locale />
       </div>
 
-      <div
+      <FeaturedNowShowing
         v-if="pitch && active"
-        class="pointer-events-none relative z-10 hidden min-w-0 flex-1 flex-col justify-end sm:flex"
-      >
-        <div
-          class="flex min-w-0 items-center gap-4 border-t border-transparency-white-t8 bg-page/70 px-6 py-3 backdrop-blur-md"
-          data-testid="featured-now-showing"
-        >
-          <div class="flex min-w-0 flex-col gap-0.5">
-            <span
-              class="text-3xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
-            >
-              {{ t('workshop.hub.nowShowing', locale) }}
-            </span>
-            <span class="truncate font-semibold text-primary-warm-white">
-              {{ active.title }} · {{ active.kind }}
-            </span>
-          </div>
-        </div>
-      </div>
+        :title="active.title"
+        :kind="active.kind"
+        :locale
+      />
     </div>
 
-    <div
+    <FeaturedBannerPagination
       v-if="slides.length > 1"
-      :class="
-        cn(
-          'pointer-events-none absolute bottom-5 flex gap-2',
-          pitch ? 'right-6 justify-end' : 'inset-x-8 lg:inset-x-12'
-        )
-      "
-      data-testid="featured-pagination"
-    >
-      <button
-        v-for="(slide, index) in slides"
-        :key="slide.key"
-        type="button"
-        :aria-label="slide.title"
-        :aria-current="index === activeIndex ? 'true' : undefined"
-        class="group pointer-events-auto max-w-12 min-w-0 flex-1 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-        @click="goTo(index)"
-      >
-        <span
-          class="block h-1 overflow-hidden rounded-full bg-transparency-white-t20 group-hover:bg-primary-warm-gray"
-        >
-          <span
-            class="block h-full rounded-full bg-primary-warm-white"
-            :style="{
-              width: index === activeIndex ? `${fill * 100}%` : '0%'
-            }"
-          />
-        </span>
-      </button>
-    </div>
+      :slides
+      :active-index="activeIndex"
+      :fill
+      :aside="pitch !== undefined"
+      @go="goTo"
+    />
   </section>
 </template>
