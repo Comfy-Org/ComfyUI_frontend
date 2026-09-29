@@ -182,6 +182,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
@@ -211,8 +212,7 @@ const emit = defineEmits<{
 }>()
 
 const stripePaymentElementEnabled =
-  embeddedCheckoutEnabled &&
-  Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+  embeddedCheckoutEnabled && Boolean(resolveStripePublishableKey())
 
 // The embedded-payment confirm step keeps the pricing table's dialog
 // dimensions so stepping between them reads as one dialog changing content,
