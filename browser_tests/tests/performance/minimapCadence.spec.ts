@@ -77,6 +77,17 @@ async function waitForNextMinimapRepaint(
     .toBeGreaterThan(previousCount)
 }
 
+async function getMinimapRepaintCount(comfyPage: ComfyPage) {
+  return await comfyPage.page.evaluate(() => {
+    const instrumentation = (window as MinimapInstrumentationScope)
+      .__minimapCadencePerf
+    if (!instrumentation) {
+      throw new Error('Minimap instrumentation is not installed')
+    }
+    return instrumentation.repaintCount
+  })
+}
+
 async function cleanupMinimapInstrumentation(comfyPage: ComfyPage) {
   return await comfyPage.page.evaluate(() => {
     const instrumentation = (window as MinimapInstrumentationScope)
@@ -130,6 +141,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
 
     await comfyPage.perf.startMeasuring()
     for (let update = 0; update < UPDATE_COUNT; update++) {
+      const previousRepaintCount = await getMinimapRepaintCount(comfyPage)
       await comfyPage.page.evaluate(
         ({ nodeId, update, updateCount }) => {
           const app = window.app
@@ -150,7 +162,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
         },
         { nodeId, update, updateCount: UPDATE_COUNT }
       )
-      await waitForNextMinimapRepaint(comfyPage, update)
+      await waitForNextMinimapRepaint(comfyPage, previousRepaintCount)
     }
     const measurement = await comfyPage.perf.stopMeasuring(
       'minimap-progress-execution-cadence'
@@ -183,6 +195,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
 
     await comfyPage.perf.startMeasuring()
     for (let update = 0; update < UPDATE_COUNT; update++) {
+      const previousRepaintCount = await getMinimapRepaintCount(comfyPage)
       await comfyPage.page.evaluate(() => {
         const app = window.app
         if (!app?.graph) throw new Error('window.app.graph is not available')
@@ -191,7 +204,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
         node.pos[0] += 1
         app.graph.setDirtyCanvas(true, true)
       })
-      await waitForNextMinimapRepaint(comfyPage, update)
+      await waitForNextMinimapRepaint(comfyPage, previousRepaintCount)
     }
     const measurement = await comfyPage.perf.stopMeasuring(
       'minimap-geometry-cadence'
@@ -219,6 +232,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
 
     await comfyPage.perf.startMeasuring()
     for (let update = 0; update < UPDATE_COUNT; update++) {
+      const previousRepaintCount = await getMinimapRepaintCount(comfyPage)
       const actualCount = await comfyPage.page.evaluate(
         ({ addNode }) => {
           const app = window.app
@@ -248,7 +262,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
       )
       const expectedCount = initialCount + (update % 2 === 0 ? 1 : 0)
       expect(actualCount).toBe(expectedCount)
-      await waitForNextMinimapRepaint(comfyPage, update)
+      await waitForNextMinimapRepaint(comfyPage, previousRepaintCount)
     }
     const measurement = await comfyPage.perf.stopMeasuring(
       'minimap-topology-cadence'
