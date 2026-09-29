@@ -36,8 +36,6 @@ const SECTIONS: SectionSpec[] = [
   }
 ]
 
-const ALTERNATE_TWIN_SOURCES = new Map([['models', 'models/showcase']])
-
 export interface TwinReport {
   written: string[]
   /** A twin already existed at this path (hand-written by a page endpoint). */
@@ -70,22 +68,6 @@ async function readBuiltPage(
   return undefined
 }
 
-async function readBuiltTwinSource(
-  root: string,
-  pathname: string
-): Promise<{ html: string; alternate: boolean } | undefined> {
-  const alternatePathname = ALTERNATE_TWIN_SOURCES.get(
-    pathname.replace(/^\/+|\/+$/g, '')
-  )
-  if (alternatePathname) {
-    const html = await readBuiltPage(root, alternatePathname)
-    if (html !== undefined) return { html, alternate: true }
-  }
-
-  const html = await readBuiltPage(root, pathname)
-  return html === undefined ? undefined : { html, alternate: false }
-}
-
 /**
  * Write a `.md` twin next to every built HTML page: `/cli/` → `/cli.md`,
  * `/` → `/index.md`. Pages kept out of the sitemap get no twin, and a twin
@@ -116,15 +98,12 @@ export async function writeMarkdownTwins(
       continue
     }
 
-    const source = await readBuiltTwinSource(root, pathname)
-    if (!source) {
+    const html = await readBuiltPage(root, pathname)
+    if (html === undefined) {
       report.skipped.push(twinPath)
       continue
     }
-    const canonical = new URL(route, site).href
-    const page = htmlToTwin(source.html, canonical, {
-      canonical: source.alternate ? canonical : undefined
-    })
+    const page = htmlToTwin(html, new URL(route, site).href)
     await mkdir(dirname(target), { recursive: true })
     await writeFile(target, renderTwin(page), 'utf8')
     report.written.push(twinPath)

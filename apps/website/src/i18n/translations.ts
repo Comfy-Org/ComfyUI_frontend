@@ -26,6 +26,14 @@ const translations = {
     'zh-CN': '在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。'
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.catalogue.heading': {
+    en: 'ComfyUI models',
+    'zh-CN': 'ComfyUI 模型'
+  },
+  'workshop.catalogue.directory': {
+    en: 'All models A to Z',
+    'zh-CN': '全部模型（A 到 Z）'
+  },
   'workshop.catalogue.apps': { en: 'Apps', 'zh-CN': '应用' },
   'workshop.catalogue.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
   'workshop.catalogue.categories': { en: 'Categories', 'zh-CN': '分类' },

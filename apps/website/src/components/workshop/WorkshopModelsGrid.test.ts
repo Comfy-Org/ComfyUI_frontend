@@ -100,7 +100,7 @@ describe('WorkshopModelsGrid', () => {
 
     await user.click(screen.getByRole('button', { name: 'Edit images' }))
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Edit images 1' })
+      screen.getByRole('heading', { level: 2, name: 'Edit images 1' })
     ).toBeTruthy()
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
 
@@ -158,9 +158,9 @@ describe('WorkshopModelsGrid', () => {
     )
     await user.click(screen.getByTestId('workshop-filter-chips-clear'))
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'All models 3'
-    )
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'All models 3' })
+    ).toBeTruthy()
     expect(screen.queryByTestId('workshop-hero')).toBeNull()
     expect(cardNames()).toHaveLength(3)
   })
@@ -343,9 +343,10 @@ describe('WorkshopModelsGrid', () => {
 
       expect(screen.queryByTestId('workshop-sections')).toBeNull()
       expect(cardNames()).toHaveLength(models.length)
-      expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(
-        'All models'
-      )
+      expect(
+        screen.getByRole('heading', { level: 2, name: /^All models/ })
+      ).toBeTruthy()
+      expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
 
       await user.click(screen.getByTestId('section-back'))
       expect(screen.getByTestId('workshop-sections')).toBeTruthy()
@@ -373,7 +374,10 @@ describe('WorkshopModelsGrid', () => {
       await user.click(screen.getByTestId('browse-all-end'))
 
       const toolbar = screen.getByTestId('workshop-toolbar')
-      const heading = screen.getByRole('heading', { level: 1 })
+      const heading = screen.getByRole('heading', {
+        level: 2,
+        name: /^All models/
+      })
 
       expect(toolbar).not.toContainElement(heading)
       expect(

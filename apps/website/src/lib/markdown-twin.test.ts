@@ -199,16 +199,16 @@ describe('writeMarkdownTwins', () => {
     expect(report.skipped).toEqual([])
   })
 
-  it('writes the Models twin from the public showcase when its page is gated', async () => {
+  it('writes the Models twin from the catalogue page itself', async () => {
     const root = await mkdtemp(join(tmpdir(), 'twins-'))
     await mkdir(join(root, 'models', 'showcase'), { recursive: true })
     await writeFile(
       join(root, 'models', 'index.html'),
-      '<html><head><title>Models - Comfy</title><link rel="canonical" href="https://comfy.org/models/"></head><body><main><h1>Loading</h1></main></body></html>'
+      '<html><head><title>Models - Comfy</title><link rel="canonical" href="https://comfy.org/models/"></head><body><main><h1>ComfyUI models</h1><a href="/models/bfl--flux-2-max--generate-images/">FLUX 2 Max Text-to-Image</a></main></body></html>'
     )
     await writeFile(
       join(root, 'models', 'showcase', 'index.html'),
-      '<html><head><title>Models - Comfy</title><link rel="canonical" href="https://comfy.org/models/showcase/"></head><body><main><h1>Grok Imagine in ComfyUI</h1><a href="/p/supported-models/grok-imagine">Try Grok Imagine Now</a></main></body></html>'
+      '<html><head><title>Models - Comfy</title><link rel="canonical" href="https://comfy.org/models/showcase/"></head><body><main><h1>Grok Imagine in ComfyUI</h1></main></body></html>'
     )
 
     const report = await writeMarkdownTwins(root, [
@@ -220,12 +220,11 @@ describe('writeMarkdownTwins', () => {
     expect(report.written).toEqual(['/models.md'])
     expect(report.skipped).toEqual(['/models/showcase.md'])
     expect(twin).toContain('canonical: https://comfy.org/models/')
-    expect(twin).toContain('# Grok Imagine in ComfyUI')
+    expect(twin).toContain('# ComfyUI models')
     expect(twin).toContain(
-      '[Try Grok Imagine Now](https://comfy.org/p/supported-models/grok-imagine)'
+      '[FLUX 2 Max Text-to-Image](https://comfy.org/models/bfl--flux-2-max--generate-images/)'
     )
-    expect(twin).not.toContain('https://comfy.org/models/showcase/')
-    expect(twin).not.toContain('Loading')
+    expect(twin).not.toContain('Grok Imagine')
   })
 
   it('feeds section indexes and llms-full.txt from written and existing twins alike', async () => {

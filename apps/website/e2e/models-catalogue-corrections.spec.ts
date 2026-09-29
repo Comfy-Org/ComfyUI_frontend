@@ -72,7 +72,10 @@ test('GPT Image generation pages remain discoverable while disabled edit pages a
   const card = cards.first()
   await expect(card).toHaveAccessibleName(/GPT Image/)
   await expect(card.getByRole('img', { name: /GPT Image/ })).toHaveCount(0)
-  await page.getByRole('link', { name: /GPT Image 1\.5/ }).click()
+  await page
+    .getByTestId('workshop-models-grid')
+    .getByRole('link', { name: /GPT Image 1\.5/ })
+    .click()
   await expect(page).toHaveURL(
     /\/models\/openai--gpt-image-1\.5--edit-images\/$/
   )

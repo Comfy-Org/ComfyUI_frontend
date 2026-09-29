@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
+import { publishedModelSlugs } from './fixtures/modelsCatalogue'
 import { MODEL_PATH } from './fixtures/modelsAccount'
 
 const MODEL_NAME = 'FLUX 2 Max Text-to-Image'
@@ -128,8 +129,43 @@ test('shows model content without Run when the flag is disabled', async ({
   expect(accountRequests).toEqual([])
 })
 
+async function expectHubHeadingAndDirectory(page: Page) {
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'ComfyUI models'
+  )
+  await expect(
+    page.getByTestId('models-directory').getByRole('link')
+  ).toHaveCount(publishedModelSlugs.size)
+}
+
+test('/models/ keeps its heading and model links when the catalogue fails', async ({
+  page
+}) => {
+  await page.route('**/models/catalogue.json', (route) =>
+    route.fulfill({ status: 500 })
+  )
+  await page.goto('/models/')
+  await expect(page.getByTestId('models-load-error')).toBeVisible()
+  await expectHubHeadingAndDirectory(page)
+})
+
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false })
+
+  test('/models/ shows its heading and every model link', async ({ page }) => {
+    await page.goto('/models/')
+    await expectHubHeadingAndDirectory(page)
+  })
+
+  test('a /models/ directory link opens its model page', async ({ page }) => {
+    await page.goto('/models/')
+    const link = page
+      .getByTestId('models-directory')
+      .getByRole('link', { name: MODEL_NAME, exact: true })
+    await link.click()
+    await expect(page).toHaveURL(MODEL_PATH)
+    await expect(page).toHaveTitle(new RegExp(`^${MODEL_NAME} API & Playground - Comfy$`))
+  })
 
   for (const path of ['/models/']) {
     test(`${path} shows no loader or error panel`, async ({ page }) => {

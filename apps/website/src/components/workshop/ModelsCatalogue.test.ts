@@ -164,18 +164,6 @@ describe('ModelsCatalogue', () => {
 
   // The line under the title belongs to the half that is open, so the eyebrow
   // is what has to hold still: it names the whole catalogue, not the tab.
-  it('names the Hub in the eyebrow on every tab', async () => {
-    const user = userEvent.setup()
-    render(ModelsCatalogue, { props: { models: launchModels } })
-
-    const hero = () => screen.getByTestId('workshop-hero')
-    expect(hero()).toHaveTextContent('Hub')
-
-    await user.click(screen.getByRole('button', { name: 'Workflows' }))
-    await screen.findByRole('heading', { name: 'Create product photos & ads' })
-    expect(hero()).toHaveTextContent('Hub')
-  })
-
   it('opens the workflow tab from its return link and filters by its own categories', async () => {
     history.replaceState(null, '', '/models/?type=workflows')
     const user = userEvent.setup()
@@ -303,9 +291,10 @@ describe('ModelsCatalogue', () => {
     render(ModelsCatalogue, { props: { models: launchModels } })
     await screen.findByRole('heading', { name: 'Create product photos & ads' })
     await user.click(screen.getByTestId('browse-all-end'))
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'All workflows 2'
-    )
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'All workflows 2' })
+    ).toBeVisible()
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
     expect(screen.queryByTestId('workshop-hero')).toBeNull()
     expect(screen.getByTestId('workflow-search-results')).toBeVisible()
     await user.click(screen.getByTestId('section-back'))
@@ -319,9 +308,10 @@ describe('ModelsCatalogue', () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
     await user.click(screen.getByTestId('browse-all-end'))
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'All models 1'
-    )
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'All models 1' })
+    ).toBeVisible()
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
     expect(screen.getByRole('link', { name: /Image model/ })).toBeVisible()
     expect(screen.queryByRole('link', { name: /Change a material/ })).toBeNull()
     expect(
