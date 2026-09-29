@@ -75,11 +75,9 @@ test.describe(
           await expect(agentConversation.panel).toHaveScreenshot(
             'asset-grid-fragmentation.png',
             {
-              // The CRDT diagnostics chip is mounted asynchronously and may
-              // appear after the reply is complete. Keep this visual check
-              // strict enough to catch content drift while ignoring that
-              // 388-pixel connection-status difference.
-              maxDiffPixels: 400
+              // The CRDT diagnostics chip is mounted asynchronously. Mask
+              // only that optional instrument so the reply stays pixel-exact.
+              mask: [page.getByTestId('crdt-dev-panel-chip')]
             }
           )
         }
