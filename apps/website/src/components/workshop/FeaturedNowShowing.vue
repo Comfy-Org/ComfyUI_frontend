@@ -5,17 +5,19 @@ import { t } from '../../i18n/translations'
 const {
   title,
   kind,
+  href,
   locale = 'en'
 } = defineProps<{
   title: string
   kind: string
+  href: string
   locale?: Locale
 }>()
 </script>
 
 <template>
   <div
-    class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex min-w-0 flex-col justify-end sm:relative sm:inset-auto sm:flex-1"
+    class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex min-w-0 flex-col justify-end lg:relative lg:inset-auto lg:w-1/2 lg:flex-auto"
   >
     <div
       class="flex min-w-0 items-center gap-4 border-t border-transparency-white-t8 bg-page/70 px-6 py-3 backdrop-blur-md"
@@ -27,9 +29,12 @@ const {
         >
           {{ t('workshop.hub.nowShowing', locale) }}
         </span>
-        <span class="truncate font-semibold text-primary-warm-white">
+        <a
+          :href
+          class="pointer-events-auto truncate font-semibold text-primary-warm-white outline-none hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        >
           {{ title }} · {{ kind }}
-        </span>
+        </a>
       </div>
       <slot />
     </div>

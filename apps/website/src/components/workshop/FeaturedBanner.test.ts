@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -333,9 +333,13 @@ describe('FeaturedBanner', () => {
     })
 
     const showing = screen.getByTestId('featured-now-showing')
-    expect(showing.textContent).toContain('Flux · Text to Image')
     expect(showing.contains(screen.getByTestId('featured-pagination'))).toBe(
       true
     )
+    // Without the slide's own copy beside it, this name is the only way into
+    // the slide that a keyboard reaches.
+    expect(
+      within(showing).getByRole('link', { name: 'Flux · Text to Image' })
+    ).toHaveAttribute('href', '/models/flux/')
   })
 })

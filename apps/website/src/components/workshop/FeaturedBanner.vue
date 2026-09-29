@@ -186,7 +186,7 @@ const fill = computed(() =>
           cn(
             'pointer-events-none absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20',
             pitch
-              ? 'sm:bg-linear-to-r sm:from-page sm:from-42% sm:via-page/58 sm:via-60% sm:to-transparent'
+              ? 'lg:bg-linear-to-r lg:from-page lg:from-42% lg:via-page/58 lg:via-60% lg:to-transparent'
               : 'sm:bg-linear-to-r sm:via-page/75 sm:to-transparent'
           )
         "
@@ -197,6 +197,7 @@ const fill = computed(() =>
         :class="
           cn(
             'pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14',
+            pitch && 'lg:w-1/2',
             compact &&
               'gap-3 p-7 pt-7 pb-12 max-sm:p-5 max-sm:pb-11 lg:p-9 lg:pt-8 lg:pb-12'
           )
@@ -221,6 +222,7 @@ const fill = computed(() =>
         v-if="active && pitch"
         :title="active.title"
         :kind="active.kind"
+        :href="active.href"
         :locale
       >
         <FeaturedBannerPagination
