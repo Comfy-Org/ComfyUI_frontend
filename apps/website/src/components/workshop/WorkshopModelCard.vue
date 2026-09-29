@@ -6,7 +6,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import HubTypeBadge from '../hub/HubTypeBadge.vue'
 import { getLogoPath } from '../../lib/hub/model-logos'
-import { taskLabelFor } from '../../lib/workshop/task-label'
+import { nameWithoutTask, taskLabelFor } from '../../lib/workshop/task-label'
 import TagRow from '../hub/TagRow.vue'
 import ModelSupport from './ModelSupport.vue'
 import WorkshopCardMark from './WorkshopCardMark.vue'
@@ -45,6 +45,7 @@ const logo = computed(
 )
 
 const taskLabel = computed(() => taskLabelFor(model, locale))
+const cardName = computed(() => nameWithoutTask(model.name, taskLabel.value))
 const thumbnailLabel = computed(() =>
   model.thumbnail ? model.thumbnailLabel : undefined
 )
@@ -97,7 +98,7 @@ const pillClass =
         :title="model.name"
         data-testid="model-card-name"
       >
-        {{ model.name }}
+        {{ cardName }}
       </h3>
       <div class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden">
         <span :class="pillClass" data-testid="model-card-task">
