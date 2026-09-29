@@ -49,6 +49,7 @@ declare global {
     __commandExecutionCounts?: Record<string, number>
 
     // Feature flags test globals
+    __autoShownReads?: number
     __capturedMessages?: CapturedMessages
     __appReadiness?: AppReadiness
 
