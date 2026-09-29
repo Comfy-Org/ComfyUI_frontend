@@ -531,6 +531,26 @@ test.describe('Models catalog', () => {
 })
 
 test.describe('Model playground', () => {
+  test('keeps a long prompt whole instead of scrolling it out of sight', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByTestId('field-prompt')
+    const hidden = () =>
+      prompt.evaluate((box) => box.scrollHeight - box.clientHeight)
+    const height = () => prompt.evaluate((box) => box.clientHeight)
+
+    await prompt.fill(
+      Array.from({ length: 12 }, (_, line) => `Line ${line + 1}.`).join('\n')
+    )
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+    const tall = await height()
+
+    await prompt.fill('One line.')
+    await expect.poll(height).toBeLessThan(tall)
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+  })
+
   test('puts data-declared parameters in the Advanced disclosure', async ({
     page
   }) => {
