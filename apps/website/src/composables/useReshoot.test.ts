@@ -120,6 +120,31 @@ describe('useReshoot', () => {
     expect(reshoot.depth.value).toBe('ready')
   })
 
+  it('keeps only the most recent scenes it read', async () => {
+    const reshoot = start()
+    await readScene(reshoot)
+    for (const aspect of [
+      '16:9',
+      '9:16',
+      '1:1',
+      '4:3',
+      'source',
+      '4:3'
+    ] as const) {
+      reshoot.aspect.value = aspect
+      await vi.advanceTimersByTimeAsync(2_500)
+    }
+
+    const analyses = vi
+      .mocked(transport.submit)
+      .mock.calls.filter(([workflow]) =>
+        JSON.stringify(workflow).includes('CrossViewGeometryExport')
+      )
+    // The fifth read pushed out 'source', so it is read again; '4:3' is reused.
+    expect(analyses).toHaveLength(6)
+    expect(reshoot.depth.value).toBe('ready')
+  })
+
   it('keeps the newest workspace quote when an older one answers last', async () => {
     const credential = ref(RESHOOT_CREDENTIAL)
     useWorkshopSession().session = computed(() => credential.value)

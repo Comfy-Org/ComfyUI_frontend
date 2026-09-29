@@ -77,8 +77,10 @@ export function runPrice(
 function priceText(quote: ReshootQuote, run: ReshootRun, locale: Locale) {
   const price = runPrice(quote, run)
   if (price !== undefined) return credits(price, locale)
+  const rate = perSecondRate(quote, run.size)
+  if (rate === undefined) return rc('reshoot.quote.priceUnknown', locale)
   return fill(rc('reshoot.quote.perSecond', locale), {
-    rate: (perSecondRate(quote, run.size) ?? 0).toLocaleString(locale)
+    rate: rate.toLocaleString(locale)
   })
 }
 

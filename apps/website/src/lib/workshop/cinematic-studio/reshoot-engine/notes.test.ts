@@ -141,6 +141,17 @@ describe('per-second price', () => {
     expect(quoteNote(PER_SECOND, 'en', run, NOW)).toBe(note)
   })
 
+  it('says the price is not available when the quote has no rate for the size', () => {
+    const q = quote({
+      ...PER_SECOND,
+      price_per_second: { tier_input: 'megapixels', credits: { '0.4': 18 } }
+    })
+    expect(runPrice(q, { size: '768p', seconds: 4 })).toBeUndefined()
+    expect(quoteNote(q, 'en', { size: '768p' }, NOW)).toBe(
+      'Price not available'
+    )
+  })
+
   it('keeps a flat price whatever the clip', () => {
     expect(
       runPrice(quote({ next_run: 'paid' }), { size: '768p', seconds: 9 })

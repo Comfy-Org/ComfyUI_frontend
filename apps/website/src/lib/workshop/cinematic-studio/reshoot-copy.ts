@@ -277,6 +277,10 @@ const copy = {
     en: '{rate} credits per second',
     'zh-CN': '每秒 {rate} 积分'
   },
+  'reshoot.quote.priceUnknown': {
+    en: 'Price not available',
+    'zh-CN': '暂无价格'
+  },
   'reshoot.quote.exhausted': {
     en: 'No free runs left; next one {when}',
     'zh-CN': '免费次数已用完，下一次{when}可用'

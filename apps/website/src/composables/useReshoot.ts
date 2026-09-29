@@ -51,6 +51,9 @@ import {
 } from '../lib/workshop/cinematic-studio/reshoot-engine/workflow'
 import { useWorkshopAuthFlag } from '../scripts/posthog'
 
+/** Read scenes kept for reuse: the 480p and 768p reads of two clips. */
+const MAX_READ_SCENES = 4
+
 export type DepthState = 'none' | 'analyzing' | 'ready' | 'failed'
 
 export interface ReshootTake {
@@ -246,8 +249,19 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     return example
   }
 
-  /** Scenes already read, by clip and settings: analyses are rate limited. */
+  /**
+   * Scenes already read, by clip and settings: analyses are rate limited.
+   * Each holds depth and frame images, so only the most recent few are kept.
+   */
   const reads = new Map<string, Geometry>()
+  function remember(key: string, geometry: Geometry) {
+    reads.delete(key)
+    reads.set(key, geometry)
+    for (const oldest of reads.keys()) {
+      if (reads.size <= MAX_READ_SCENES) break
+      reads.delete(oldest)
+    }
+  }
   async function readScene(
     via: ReshootTransport,
     clip: ReshootClip,
@@ -273,7 +287,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     const clip = { video, aspect: aspect.value, size: size.value }
     const key = `${video}|${clip.aspect}|${clip.size}`
     const geometry = reads.get(key) ?? (await readScene(via, clip, signal))
-    reads.set(key, geometry)
+    remember(key, geometry)
     return { clip, geometry }
   }
 
