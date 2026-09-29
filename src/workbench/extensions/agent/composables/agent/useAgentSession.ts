@@ -12,6 +12,7 @@ import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
   AgentTurnAccepted,
+  AgentWsEvent,
   TurnId
 } from '../../schemas/agentApiSchema'
 import {
@@ -283,26 +284,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
     } catch (error) {
-      if (!isCurrent()) return false
-      if (error instanceof AgentApiError && error.status === 404) {
-        if (conversationStore.threadId === threadId)
-          conversationStore.setThreadId(null)
-        localStorage.removeItem(THREAD_STORAGE_KEY)
-        return false
-      }
-      reportError(error, { errorType: 'agent_history_load_failed' })
-      pushError(error instanceof Error ? error.message : String(error))
-      trackAgentError(
-        'history_load_failed',
-        'pre_acceptance',
-        'error_overlay',
-        {
-          retryable: isRetryableRequestFailure(error, false),
-          turnAccepted: stashedTurn
-        }
-      )
+      return handleHistoryLoadError(error, threadId, isCurrent, stashedTurn)
+    }
+  }
+
+  function handleHistoryLoadError(
+    error: unknown,
+    threadId: string,
+    isCurrent: () => boolean,
+    stashedTurn: boolean
+  ): false {
+    if (!isCurrent()) return false
+    if (error instanceof AgentApiError && error.status === 404) {
+      if (conversationStore.threadId === threadId)
+        conversationStore.setThreadId(null)
+      localStorage.removeItem(THREAD_STORAGE_KEY)
       return false
     }
+    reportError(error, { errorType: 'agent_history_load_failed' })
+    pushError(error instanceof Error ? error.message : String(error))
+    trackAgentError('history_load_failed', 'pre_acceptance', 'error_overlay', {
+      retryable: isRetryableRequestFailure(error, false),
+      turnAccepted: stashedTurn
+    })
+    return false
   }
 
   function stop(): void {
@@ -767,63 +772,79 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
   }
 
+  function malformedEventTurnId(raw: object): TurnId | undefined {
+    if (!('data' in raw) || typeof raw.data !== 'object' || raw.data === null)
+      return undefined
+    if (!('message_id' in raw.data)) return undefined
+    const messageId = raw.data.message_id
+    return typeof messageId === 'string' ? (messageId as TurnId) : undefined
+  }
+
+  function handleMalformedEvent(
+    type: string,
+    raw: object,
+    error: ZodError
+  ): void {
+    const turnId = malformedEventTurnId(raw)
+    let reportedTurnId = turnId ?? conversationStore.activeTurnId
+    let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
+    if (type === 'agent_message_done') {
+      if (turnId === undefined || turnId === conversationStore.activeTurnId) {
+        conversationStore.abortActiveTurn()
+        pushError(i18n.global.t('agent.malformedEvent'))
+        uiTreatment = 'error_overlay'
+      } else {
+        reportedTurnId =
+          conversationStore.settleBackgroundTurn(turnId) ?? reportedTurnId
+      }
+    }
+    trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment)
+    console.warn('[agent] dropping malformed agent event', error)
+  }
+
+  function handleActiveTab(event: AgentActiveTabData): void {
+    // Every thread records the link in its own transcript; only the thread on
+    // screen is allowed to move the user's tabs.
+    if (
+      event.thread_id === undefined ||
+      event.thread_id === conversationStore.threadId
+    )
+      workflow?.activeTab?.(event)
+  }
+
+  function handleMessageDone(event: {
+    thread_id: string
+    message_id: string
+  }): void {
+    if (
+      promptEditState.value.phase === 'stopping' &&
+      event.message_id === promptEditState.value.turnId &&
+      event.thread_id === conversationStore.threadId
+    )
+      promptEditState.value = {
+        phase: 'ready',
+        turnId: promptEditState.value.turnId
+      }
+  }
+
+  function handleAgentEvent(event: AgentWsEvent): void {
+    if (event.type === 'agent_ask_resolved')
+      setAskAnswering(event.data.ask_id, false)
+    conversationStore.ingest(event)
+    if (event.type === 'agent_active_tab') handleActiveTab(event.data)
+    if (event.type === 'agent_message_done') handleMessageDone(event.data)
+  }
+
   function onRaw(raw: unknown): void {
     if (typeof raw !== 'object' || raw === null) return
     const type = (raw as { type?: unknown }).type
     if (typeof type !== 'string' || !isAgentEvent(type)) return
     const parsed = parseAgentWsEvent(raw)
     if (!parsed.success) {
-      const messageId = (raw as { data?: { message_id?: unknown } }).data
-        ?.message_id
-      let reportedTurnId =
-        typeof messageId === 'string'
-          ? (messageId as TurnId)
-          : conversationStore.activeTurnId
-      let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
-      if (type === 'agent_message_done') {
-        if (
-          typeof messageId !== 'string' ||
-          messageId === conversationStore.activeTurnId
-        ) {
-          conversationStore.abortActiveTurn()
-          pushError(i18n.global.t('agent.malformedEvent'))
-          uiTreatment = 'error_overlay'
-        } else {
-          reportedTurnId =
-            conversationStore.settleBackgroundTurn(messageId) ?? reportedTurnId
-        }
-      }
-      trackMalformedStreamEvent(parsed.error, type, reportedTurnId, uiTreatment)
-      console.warn('[agent] dropping malformed agent event', parsed.error)
+      handleMalformedEvent(type, raw, parsed.error)
       return
     }
-    const event = parsed.data
-    if (event.type === 'agent_ask_resolved')
-      setAskAnswering(event.data.ask_id, false)
-    switch (event.type) {
-      case 'agent_active_tab':
-        // Every thread records the link in its own transcript; only the thread
-        // on screen is allowed to move the user's tabs.
-        conversationStore.ingest(event)
-        if (
-          event.data.thread_id === undefined ||
-          event.data.thread_id === conversationStore.threadId
-        )
-          workflow?.activeTab?.(event.data)
-        return
-      default:
-        conversationStore.ingest(event)
-        if (
-          event.type === 'agent_message_done' &&
-          promptEditState.value.phase === 'stopping' &&
-          event.data.message_id === promptEditState.value.turnId &&
-          event.data.thread_id === conversationStore.threadId
-        )
-          promptEditState.value = {
-            phase: 'ready',
-            turnId: promptEditState.value.turnId
-          }
-    }
+    handleAgentEvent(parsed.data)
   }
 
   function onStatus(live: boolean): void {
