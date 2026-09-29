@@ -2169,14 +2169,7 @@ describe('FullPageCheckoutView promo codes', () => {
   it('a code that lapsed before Pay: back to capture, chip gone, the expired card instead of a decline', async () => {
     const fake = await renderCheckout(
       {
-        subscribe: {
-          status: 'error',
-          code: 'REQUEST_FAILED',
-          serverCode: readBillingErrorCode({
-            code: 'SUBSCRIPTION_QUOTE_STALE',
-            message: 'stale'
-          })
-        }
+        subscribe: { status: 'error', code: 'QUOTE_STALE' }
       },
       quotesByCode
     )
