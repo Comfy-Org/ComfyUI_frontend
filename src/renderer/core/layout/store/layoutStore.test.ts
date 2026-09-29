@@ -1132,6 +1132,26 @@ describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
     expect(isPointInStroke).toHaveBeenCalledWith(stubPath, 100, 100)
   })
 
+  it('falls back to DPR 1 when rendered without a window', () => {
+    seedSegment()
+    const { ctx, isPointInStroke } = makeCtx()
+    const windowDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'window'
+    )
+
+    Reflect.deleteProperty(globalThis, 'window')
+    try {
+      layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx)
+    } finally {
+      if (windowDescriptor) {
+        Object.defineProperty(globalThis, 'window', windowDescriptor)
+      }
+    }
+
+    expect(isPointInStroke).toHaveBeenCalledWith(stubPath, 50, 50)
+  })
+
   it('threads dpr through queryLinkAtPoint to the segment hit-test', () => {
     const { linkId } = seedSegment(toLinkId(7))
     const { ctx, isPointInStroke } = makeCtx()
