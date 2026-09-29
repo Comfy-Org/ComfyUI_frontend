@@ -6,6 +6,7 @@ import { join } from 'node:path'
 
 import { assert, describe, expect, it } from 'vitest'
 
+import type { WorkflowWorkshopModelDetail } from './models-catalogue'
 import { prepareWorkflowRender } from './workflow-render'
 import { workflowCloudRequest } from './workshop-workflow-api'
 import { initialWorkshopPageState } from './workshop-page-state'
@@ -19,22 +20,25 @@ import {
   workflowTypeScript
 } from './workshop-workflow-snippet'
 
+function browserInputs(model: WorkflowWorkshopModelDetail) {
+  // A browser run draws a fresh seed for an empty `randomize` input, so
+  // pin one here: the snippet and the run must then send the same body.
+  const seeds = Object.entries(model.workflow.inputs)
+    .filter(([, input]) => input.randomize)
+    .map(([name]) => [name, 7])
+  return Object.fromEntries([
+    ...initialWorkshopPageState(model)
+      .schema.filter(urlUploadField)
+      .map((field) => [field.name, 'https://media.example/' + field.name]),
+    ...seeds
+  ])
+}
+
 describe('workflow API snippets', () => {
   it.for([...workflowDetailsBySlug.values()])(
     'matches browser defaults for $slug',
     async (model) => {
-      const initial = initialWorkshopPageState(model)
-      // A browser run draws a fresh seed for an empty `randomize` input, so
-      // pin one here: the snippet and the run must then send the same body.
-      const seeds = Object.entries(model.workflow.inputs)
-        .filter(([, input]) => input.randomize)
-        .map(([name]) => [name, 7])
-      const inputs = Object.fromEntries([
-        ...initial.schema
-          .filter(urlUploadField)
-          .map((field) => [field.name, 'https://media.example/' + field.name]),
-        ...seeds
-      ])
+      const inputs = browserInputs(model)
       const request = workflowSnippetRequest(model, inputs)
       const prepared = await prepareWorkflowRender(
         model,
@@ -53,12 +57,7 @@ describe('workflow API snippets', () => {
   it.for([...workflowDetailsBySlug.values()])(
     'sets the inputs the browser uploads and saves every output for $slug',
     async (model) => {
-      const initial = initialWorkshopPageState(model)
-      const inputs = Object.fromEntries(
-        initial.schema
-          .filter(urlUploadField)
-          .map((field) => [field.name, 'https://media.example/' + field.name])
-      )
+      const inputs = browserInputs(model)
       const uploaded = (url: string) => 'uploaded:' + url
       const plan = workflowSdkPlan(
         model,
