@@ -16,7 +16,7 @@ describe('CatalogueBackLink', () => {
 
     const link = screen.getByTestId('model-back')
     expect(link.textContent.trim()).toBe('Back to all models')
-    expect(link.getAttribute('href')).toBe('/models')
+    expect(link.getAttribute('href')).toBe('/models/')
   })
 
   // A second catalogue answers for its own pages, under its own name.
@@ -63,7 +63,7 @@ describe('CatalogueBackLink', () => {
     await waitFor(() => {
       const link = screen.getByTestId('model-back')
       expect(link.textContent.trim()).toBe('Back to Generate videos')
-      expect(link.getAttribute('href')).toBe('/models?useCase=generate-videos')
+      expect(link.getAttribute('href')).toBe('/models/?useCase=generate-videos')
     })
   })
 })

@@ -30,7 +30,6 @@ const baseRoutes = {
   affiliateTerms: '/affiliates/terms',
   contact: '/contact',
   models: '/p/supported-models',
-  modelsShowcase: '/models',
   mcp: '/mcp',
   agent: '/agent',
   platform: '/platform',
@@ -55,7 +54,7 @@ const baseRoutes = {
   brand: '/brand',
   // The catalogue answers to /models now. The keys keep their old names while
   // the pull requests stacked on this branch are still open against them.
-  workshop: '/models',
+  workshop: '/models/',
   workshopSignIn: '/login/',
   cinematicStudio: '/models/apps/cinematic-studio',
   reshoot: '/models/apps/reshoot'
@@ -130,7 +129,9 @@ const LOCALE_INVARIANT_EXTRA_PATHS = [
 ]
 
 const LOCALE_INVARIANT_PATHS = new Set<string>([
-  ...[...LOCALE_INVARIANT_ROUTE_KEYS].map((key) => baseRoutes[key]),
+  ...[...LOCALE_INVARIANT_ROUTE_KEYS].map((key) =>
+    normalizeRoute(baseRoutes[key])
+  ),
   ...LOCALE_INVARIANT_EXTRA_PATHS
 ])
 
