@@ -1,4 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createPinia, disposePinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -182,10 +182,16 @@ describe('agentPanelStore engagement telemetry', () => {
 })
 
 describe('agentPanelStore pagehide teardown', () => {
+  let pinia: ReturnType<typeof createPinia>
+
   beforeEach(() => {
     localStorage.clear()
+    pinia = createPinia()
+    setActivePinia(pinia)
     vi.useFakeTimers()
   })
+
+  afterEach(() => disposePinia(pinia))
 
   it('reports a pagehide close once while the panel is open, without touching persisted state', async () => {
     const store = useConsentedAgentPanelStore()
