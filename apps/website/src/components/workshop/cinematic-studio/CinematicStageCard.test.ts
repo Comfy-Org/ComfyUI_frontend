@@ -66,6 +66,8 @@ describe('CinematicStageCard', () => {
   it('says which take is rendering while it runs', () => {
     renderCard({ takes: [take({ letter: 'B' })], selectedId: 'a' })
 
-    expect(screen.getByRole('status')).toHaveTextContent('Rendering take B')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Rendering Shot 1, take B'
+    )
   })
 })
