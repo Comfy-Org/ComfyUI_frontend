@@ -958,6 +958,31 @@ describe('CheckoutView', () => {
     ).toBeEnabled()
   })
 
+  it('keeps Confirm closed on the stale quote when its refresh fails', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: { status: 'ok', value: upgradeQuote() }
+    })
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'QUOTE_STALE'
+    })
+    fake.previewSubscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Your quote expired and couldn't be refreshed. Choose your plan again."
+    )
+    expect(
+      screen.getByRole('button', { name: 'Confirm upgrade' })
+    ).toBeDisabled()
+  })
+
   it('tells the customer when the subscribe itself was refused and keeps the form', async () => {
     await renderCheckout(CHECKOUT_PATH, {
       subscribe: { status: 'error', code: 'REQUEST_FAILED' }
