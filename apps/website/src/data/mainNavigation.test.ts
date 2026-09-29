@@ -36,18 +36,21 @@ describe('getMainNavigation', () => {
   })
 
   it.for(['en', 'zh-CN', 'ja'] as const)(
-    'lists the generally available developer products without a badge for %s',
+    'marks the developer products as new, never beta, for %s',
     (locale) => {
       const routes = getRoutes(locale)
       const products = getMainNavigation(locale).find(
         (item) => item.label === t('nav.products', locale)
       )?.columns?.[0].items
-
-      for (const href of [routes.platform, routes.managedBuilds]) {
+      const badgeOf = (href: string) => {
         const entry = products?.find((item) => item.href === href)
         expect(entry).toBeDefined()
-        expect(entry?.badge).toBeUndefined()
+        return entry?.badge
       }
+
+      expect(badgeOf(routes.platform)).toBe('new')
+      expect(badgeOf(routes.platformRouter)).toBe('new')
+      expect(badgeOf(routes.managedBuilds)).toBeUndefined()
     }
   )
 

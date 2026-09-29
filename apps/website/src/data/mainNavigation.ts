@@ -90,7 +90,13 @@ export function getMainNavigation(
             { label: t('nav.comfyCloud', locale), href: routes.cloud },
             {
               label: t('nav.developerPlatform', locale),
-              href: routes.platform
+              href: routes.platform,
+              badge: 'new'
+            },
+            {
+              label: t('nav.comfyRouter', locale),
+              href: routes.platformRouter,
+              badge: 'new'
             },
             {
               label: t('nav.comfyEnterprise', locale),
