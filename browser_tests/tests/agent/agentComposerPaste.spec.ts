@@ -7,7 +7,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 // Minimal node used only to prove the clipboard leak; the bug is not
@@ -77,9 +77,7 @@ test(
     await canvas.click()
     await canvas.press('Control+c')
 
-    await new AgentPanel(page).open()
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel).toBeVisible()
+    const panel = await openAgentPanel(page)
 
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     await composer.click()

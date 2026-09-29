@@ -16,9 +16,9 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -171,8 +171,7 @@ test.describe(
       })
 
       const panel = page.locator('#agent-panel-root')
-      await new AgentPanel(page).open()
-      await expect(panel).toBeVisible({ timeout: 30_000 })
+      await openAgentPanel(page, 30_000)
 
       let savedName: string | undefined
       await page.route('**/api/userdata/*', (route) => {

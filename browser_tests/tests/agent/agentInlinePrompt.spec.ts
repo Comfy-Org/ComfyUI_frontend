@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { openAgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 test.use({ connectWebSocketToServer: false })
 
@@ -10,7 +10,7 @@ test(
   'preserves inline workflow references through Send, history and Edit',
   { tag: ['@cloud', '@ui'] },
   async ({ page, workflowSelection, promptHistory }) => {
-    await new AgentPanel(page).open()
+    await openAgentPanel(page)
     await page
       .getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,
