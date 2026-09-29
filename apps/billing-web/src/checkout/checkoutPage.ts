@@ -96,11 +96,12 @@ type Attribution = 'started' | 'followed' | 'settled'
  * reached so the capture it resolves into opens on that card. `waiting` is
  * money in flight that this page did not start: no fresh form until it
  * settles. `unconfirmed` is money whose outcome the page could not learn, so
- * it neither offers a form nor claims a charge; `started` marks this page's
- * own Pay, whose verdict it may still show. `recheck_failed` is a re-read
- * of what the workspace is waiting on that failed before any form showed, so
- * the page cannot say whether money is moving. `terminal` is a payment that
- * went through.
+ * it neither offers a form nor claims a charge. `sibling` on either marks
+ * money another tab sent while this one had its form open, whose verdict and
+ * challenge belong to that tab. `recheck_failed` is a re-read of what the
+ * workspace is waiting on that failed before any form showed, so the page
+ * cannot say whether money is moving. `terminal` is a payment that went
+ * through.
  */
 export type CheckoutPage =
   | { readonly kind: 'resolving'; readonly outcome?: InlineOutcome }
@@ -112,11 +113,15 @@ export type CheckoutPage =
       readonly reason: PlanUnavailableReason
     }
   | Capture
-  | { readonly kind: 'waiting'; readonly operation: PendingBillingOperation }
+  | {
+      readonly kind: 'waiting'
+      readonly operation: PendingBillingOperation
+      readonly sibling?: true
+    }
   | {
       readonly kind: 'unconfirmed'
       readonly operationId: string
-      readonly started?: true
+      readonly sibling?: true
     }
   | {
       readonly kind: 'terminal'
@@ -547,25 +552,30 @@ export function waitingOn(operation: PendingBillingOperation): WaitingOn {
 const outcomeUnknown = (operation: BillingOperationState) =>
   operation.phase === 'reconciliation_needed'
 
+type Watching = Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>
+
+/** Whether money another tab sent is what a watching page is looking at. */
+const siblingOf = (page: { readonly sibling?: true }) =>
+  page.sibling === true ? { sibling: true as const } : {}
+
 const unconfirmed = (
   operation: { readonly id: string },
-  started = false
+  from: { readonly sibling?: true } = {}
 ): CheckoutPage => ({
   kind: 'unconfirmed',
   operationId: operation.id,
-  ...(started ? { started: true } : {})
+  ...siblingOf(from)
 })
 
 /**
- * A verdict is shown only by the tab that sent the payment (a decline in
- * another tab sends this one back to a plain form): this page's own Pay, or
- * a challenge this tab re-opened and saw refused.
+ * A verdict is shown only by the tab that sent the payment, so a decline in
+ * another tab sends this one back to a plain form. A tab that arrived on the
+ * money (a reload, or the return from a provider's page) counts as the one
+ * that sent it, and so does one that re-opened the challenge and saw it
+ * refused.
  */
-function ownsVerdict(
-  page: Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>,
-  operation: BillingOperationState
-): boolean {
-  if (page.kind === 'unconfirmed' && page.started === true) return true
+function ownsVerdict(page: Watching, operation: BillingOperationState) {
+  if (page.sibling !== true) return true
   return (
     operation.phase === 'pending' && operation.challenge?.status === 'failed'
   )
@@ -636,8 +646,7 @@ function watched(
 ): CheckoutPage {
   if (operation.phase === 'succeeded')
     return { kind: 'terminal', operation, attribution: attributionOf(page) }
-  if (outcomeUnknown(operation))
-    return unconfirmed(operation, page.kind === 'unconfirmed' && page.started)
+  if (outcomeUnknown(operation)) return unconfirmed(operation, page)
   if (outcome !== undefined)
     return ownsVerdict(page, operation)
       ? { kind: 'resolving', outcome }
@@ -662,9 +671,11 @@ function watchedWaiting(
 ): CheckoutPage {
   if (operation.phase === 'timed_out')
     return waitingOn(page.operation) === 'verifying'
-      ? unconfirmed(operation)
+      ? unconfirmed(operation, page)
       : page
-  return isInFlight(operation) ? { kind: 'waiting', operation } : RESOLVING
+  return isInFlight(operation)
+    ? { kind: 'waiting', operation, ...siblingOf(page) }
+    : RESOLVING
 }
 
 /**
@@ -701,11 +712,12 @@ function followedInCapture(
       operation,
       attribution: started ? 'started' : 'settled'
     }
-  if (outcomeUnknown(operation)) return unconfirmed(operation, started)
+  if (outcomeUnknown(operation))
+    return unconfirmed(operation, started ? {} : { sibling: true })
   if (page.attempt.kind === 'sent')
     return followedOwn(page, page.attempt, operation, outcome)
   return isInFlight(operation) && outcome === undefined
-    ? { kind: 'waiting', operation }
+    ? { kind: 'waiting', operation, sibling: true }
     : nothingPending(page)
 }
 
@@ -807,7 +819,7 @@ export function isChallengeReopenable(
  * take a customer who just came back from it straight out again.
  */
 export function challengeToReopen(page: CheckoutPage): string | undefined {
-  if (page.kind !== 'waiting') return undefined
+  if (page.kind !== 'waiting' || page.sibling === true) return undefined
   const { operation } = page
   if (!isChallengePending(operation) || operation.presentation !== 'embedded')
     return undefined

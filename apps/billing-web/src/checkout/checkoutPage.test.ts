@@ -684,8 +684,22 @@ describe('reduceCheckoutPage reconciliation', () => {
       expected: { kind: 'terminal', attribution: 'settled' }
     },
     {
+      name: 'waiting it arrived on (a reload, or the return from a provider) declines onto its card',
+      events: [
+        reconciled(pendingOperation()),
+        changed(failedOperation('card_declined'), declinedElsewhere)
+      ],
+      expected: { kind: 'resolving', outcome: declinedElsewhere }
+    },
+    {
+      name: 'a form that watched another tab start paying is waiting on a sibling',
+      events: [...live, reconciled(pendingOperation())],
+      expected: { kind: 'waiting', sibling: true }
+    },
+    {
       name: 'waiting on money another tab sent that declines resolves a plain capture',
       events: [
+        ...live,
         reconciled(pendingOperation()),
         changed(failedOperation('card_declined'), declinedElsewhere)
       ],
@@ -982,8 +996,17 @@ describe('reduceCheckoutPage endings', () => {
       }
     },
     {
+      name: 'unconfirmed that declines resolves a capture on that card',
+      events: [
+        reconciled(parkedForAHuman()),
+        changed(failedOperation('card_declined'), declinedElsewhere)
+      ],
+      expected: { kind: 'resolving', outcome: declinedElsewhere }
+    },
+    {
       name: 'unconfirmed money another tab sent that declines resolves a plain capture',
       events: [
+        ...live,
         reconciled(parkedForAHuman()),
         changed(failedOperation('card_declined'), declinedElsewhere)
       ],
@@ -1007,12 +1030,12 @@ describe('reduceCheckoutPage endings', () => {
     {
       name: "this page's own Pay parked for a human is unconfirmed, never a card",
       events: [...live, submitted, changed(parkedForAHuman())],
-      expected: { ...UNCONFIRMED, started: true }
+      expected: UNCONFIRMED
     },
     {
       name: 'a collided Pay re-read as parked for a human is unconfirmed',
       events: [...live, submitted, collided, reconciled(parkedForAHuman())],
-      expected: UNCONFIRMED
+      expected: { ...UNCONFIRMED, sibling: true }
     }
   ])('$name', ({ events, expected }) => {
     expect(replay(events)).toEqual(expected)
@@ -1326,6 +1349,10 @@ describe('challengeToReopen', () => {
       }
     },
     {
+      name: "another tab's challenge, which that tab re-opens",
+      page: { kind: 'waiting', operation: embedded('required'), sibling: true }
+    },
+    {
       name: "this page's own Pay, which the lifecycle already drives",
       page: capturing({ kind: 'sent', operation: embedded('required') })
     }
@@ -1365,8 +1392,17 @@ describe('reduceCheckoutPage through a challenge', () => {
       })
     },
     {
-      name: 'waiting over a challenge this tab re-opened and the bank refused resolves on its card',
+      name: 'waiting over a challenge the bank refused resolves on its card',
       events: [
+        reconciled(challengedOperation()),
+        changed(refusedChallenge(), notCompleted)
+      ],
+      expected: { kind: 'resolving', outcome: notCompleted }
+    },
+    {
+      name: "a sibling's challenge this tab re-opened and the bank refused resolves on its card",
+      events: [
+        ...live,
         reconciled(challengedOperation()),
         changed(
           {
@@ -1381,6 +1417,7 @@ describe('reduceCheckoutPage through a challenge', () => {
     {
       name: 'waiting over a challenge another tab let the bank refuse resolves a plain capture',
       events: [
+        ...live,
         reconciled(challengedOperation()),
         changed(refusedChallenge(), notCompleted)
       ],

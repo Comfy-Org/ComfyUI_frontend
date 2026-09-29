@@ -1394,7 +1394,7 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     expect(form.mounts).toBe(0)
   })
 
-  it("resolves a plain fresh capture when money another tab sent declines: the card is that tab's", async () => {
+  it('resolves a fresh capture, on its card, when the money it arrived on declines', async () => {
     const fake = await renderCheckout({
       recover: { status: 'ok', value: pendingOperation('op_awaited') }
     })
@@ -1402,10 +1402,10 @@ describe('FullPageCheckoutView mount reconciliation', () => {
 
     fake.publishOperation(failedOperation('card_declined', 'op_awaited'))
 
-    await waitFor(() => expect(form.mounts).toBe(1))
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent('Payment declined')
     expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    expect(screen.queryByText('Payment declined')).not.toBeInTheDocument()
+    expect(form.mounts).toBe(1)
   })
 
   it("keeps a form left open plain when another tab's payment declines", async () => {
