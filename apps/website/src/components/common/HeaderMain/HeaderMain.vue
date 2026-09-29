@@ -10,6 +10,10 @@ import {
 import type { Component } from 'vue'
 import { useMounted } from '@vueuse/core'
 
+import {
+  isHrefActive,
+  useCurrentPath
+} from '../../../composables/useCurrentPath.ts'
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
@@ -80,22 +84,25 @@ watch(
   { immediate: true }
 )
 
-const ctaButtons = [
-  {
-    full: t('nav.downloadLocal', locale),
-    short: t('nav.ctaDesktopCore', locale),
-    ariaLabel: t('nav.downloadLocal', locale),
-    href: routes.download,
-    primary: false
-  },
-  {
-    full: t('nav.launchCloud', locale),
-    short: t('nav.ctaCloudCore', locale),
-    ariaLabel: t('nav.launchCloud', locale),
-    href: externalLinks.cloudCta('nav_try_cloud'),
-    primary: true
-  }
-]
+const currentPath = useCurrentPath()
+const ctaButtons = computed(() =>
+  [
+    {
+      full: t('nav.downloadLocal', locale),
+      short: t('nav.ctaDesktopCore', locale),
+      ariaLabel: t('nav.downloadLocal', locale),
+      href: routes.download,
+      primary: false
+    },
+    {
+      full: t('nav.launchCloud', locale),
+      short: t('nav.ctaCloudCore', locale),
+      ariaLabel: t('nav.launchCloud', locale),
+      href: externalLinks.cloudCta('nav_try_cloud'),
+      primary: true
+    }
+  ].filter((cta) => !isHrefActive(cta.href, currentPath.value))
+)
 </script>
 
 <template>
