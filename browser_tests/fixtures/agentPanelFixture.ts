@@ -12,7 +12,10 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { AgentTurnAccepted,AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AgentTurnAccepted,
+  AgentMessages
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
