@@ -26,7 +26,7 @@ const desktop = useMediaQuery('(min-width: 1024px)', { ssrWidth: 1024 })
     }"
     :secondary-cta="{
       ...ctas.docs,
-      href: 'https://docs.comfy.org/development/serverless/overview'
+      href: 'https://docs.comfy.org/development/serverless/quickstart'
     }"
     media-wrapper-class="hidden lg:block"
   >

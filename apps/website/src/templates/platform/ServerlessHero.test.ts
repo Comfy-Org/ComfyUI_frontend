@@ -21,7 +21,7 @@ describe('ServerlessHero', () => {
       screen.getByRole('link', { name: t('platform.hero.readDocs', 'en') })
     ).toHaveAttribute(
       'href',
-      'https://docs.comfy.org/development/serverless/overview'
+      'https://docs.comfy.org/development/serverless/quickstart'
     )
     expect(screen.queryByText(t('nav.badgeBeta', 'en'))).toBeNull()
   })
