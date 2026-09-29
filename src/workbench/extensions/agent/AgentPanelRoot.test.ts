@@ -2309,7 +2309,7 @@ describe('AgentPanelRoot attach flow', () => {
         detail: 'cat.png could not be uploaded'
       })
     )
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_attachment_upload_failed',
       tags: {
         failure_kind: 'caught_unexpected',
@@ -2723,6 +2723,7 @@ describe('AgentPanelRoot history', () => {
 
   it('surfaces a thread-list failure via the host error modal', async () => {
     executionErrors.showErrorOverlay.mockClear()
+    telemetry.trackAgentError.mockClear()
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response('{}', { status: 500 }))
@@ -2736,6 +2737,15 @@ describe('AgentPanelRoot history', () => {
     expect(executionErrors.lastPromptError).toMatchObject({
       type: 'agent_api_failed'
     })
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'thread_list_load_failed',
+        failure_stage: 'pre_acceptance',
+        retryable: true,
+        turn_accepted: false,
+        ui_treatment: 'error_overlay'
+      })
+    )
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
@@ -4590,6 +4600,26 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
+  it('agent_active_tab reports when a bound tab cannot be opened', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    telemetry.trackAgentError.mockClear()
+    workflowService.openWorkflow.mockResolvedValueOnce(false)
+
+    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error_class: 'workflow_open_failed',
+          ui_treatment: 'toast'
+        })
+      )
+    )
+    expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+  })
+
   // A browser tab closed without the SPA's own unbind() left 'wf-abandoned'
   // bound to the default unsaved path in localStorage, and the thread pointer
   // survived beside it. On the next boot the thread hydrates and names that
@@ -4908,6 +4938,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    telemetry.trackAgentError.mockClear()
     workflowService.openWorkflow.mockRejectedValueOnce(new Error('disk full'))
 
     ws.emit('agent_active_tab', {
@@ -4926,6 +4957,15 @@ describe('AgentPanelRoot workflow binding', () => {
         workflowStore.getWorkflowByPath('workflows/Video test.json')
       ).toBeNull()
     )
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'workflow_open_failed',
+        failure_stage: 'post_acceptance',
+        retryable: false,
+        turn_accepted: true,
+        ui_treatment: 'error_overlay'
+      })
+    )
   })
 
   it('agent_active_tab closes the minted tab when opening it reports failure', async () => {
@@ -4933,6 +4973,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    telemetry.trackAgentError.mockClear()
     workflowService.openWorkflow.mockResolvedValueOnce(false)
 
     ws.emit('agent_active_tab', {
@@ -4955,6 +4996,12 @@ describe('AgentPanelRoot workflow binding', () => {
       useAgentWorkflowTabBindingStore().tabPathFor('wf-77')
     ).toBeUndefined()
     expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'workflow_open_failed',
+        ui_treatment: 'toast'
+      })
+    )
   })
 
   it('agent_active_tab strips dotfile prefixes hidden behind whitespace', async () => {

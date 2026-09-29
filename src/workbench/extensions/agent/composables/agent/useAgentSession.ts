@@ -107,7 +107,10 @@ const NON_RETRYABLE_REQUEST_STATUSES = new Set([
   400, 401, 403, 404, 405, 409, 410, 422
 ])
 
-function isRetryableRequestFailure(error: unknown, accepted: boolean): boolean {
+export function isRetryableRequestFailure(
+  error: unknown,
+  accepted: boolean
+): boolean {
   if (accepted) return false
   if (error instanceof AgentApiError)
     return !NON_RETRYABLE_REQUEST_STATUSES.has(error.status)
@@ -120,7 +123,7 @@ function isUnreadableAckFailure(error: unknown): boolean {
   )
 }
 
-function trackAgentError(
+export function trackAgentError(
   errorClass: AgentErrorClass,
   stage: AgentErrorMetadata['failure_stage'],
   uiTreatment: AgentErrorMetadata['ui_treatment'],
