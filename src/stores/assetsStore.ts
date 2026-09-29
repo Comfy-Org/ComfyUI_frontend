@@ -283,6 +283,30 @@ export const useAssetsStore = defineStore('assets', () => {
 
   const inputAssets = ref<PagedList<AssetItem>>(undefined!)
   const outputAssets = ref<PagedList<AssetItem>>(undefined!)
+  let inputRefreshDirty = false
+  let inputRefresh: Promise<void> | undefined
+
+  function refreshInputAssets(): Promise<void> {
+    inputRefreshDirty = true
+    inputRefresh ??= (async () => {
+      for (;;) {
+        inputRefreshDirty = false
+        try {
+          await inputAssets.value.loadNew()
+        } catch {
+          // A coalesced request still owns a trailing pass even when the
+          // current refresh fails.
+        }
+        // The flag can change while the awaited refresh is in flight.
+        // oxlint-disable-next-line typescript/no-unnecessary-condition
+        if (inputRefreshDirty) continue
+
+        inputRefresh = undefined
+        return
+      }
+    })()
+    return inputRefresh
+  }
   let assetsScope: EffectScope | undefined
   watch(
     () => flags.assetsEnabled,
@@ -913,6 +937,7 @@ export const useAssetsStore = defineStore('assets', () => {
   return {
     // States
     inputAssets,
+    refreshInputAssets,
     outputAssets,
     invalidateAll,
 

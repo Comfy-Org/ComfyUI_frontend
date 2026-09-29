@@ -47,6 +47,7 @@ let consentStore: ReturnType<typeof useAgentConsentStore>
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
+const isAuthInitialized = ref(true)
 const firstRunTookScreen = ref(false)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
@@ -54,6 +55,7 @@ let startupDecision: Promise<boolean> = Promise.resolve(true)
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     resolvedUserInfo: currentUser,
+    isAuthInitialized,
     isLoggedIn: computed(() => currentUser.value !== null)
   })
 }))
@@ -93,7 +95,7 @@ vi.mock(
   () => ({
     useFirstRunEntry: () =>
       fromPartial<ReturnType<typeof useFirstRunEntry>>({
-        firstRunTookScreen,
+        firstRunHoldsScreen: firstRunTookScreen,
         whenStartupDecided: () => startupDecision
       })
   })
@@ -681,20 +683,22 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
-  it('keeps withholding after a tour ends when Getting Started took the screen', async () => {
+  it('re-offers after Getting Started releases the screen', async () => {
     agentFlagEnabled.value = true
     firstRunTookScreen.value = true
-    activeTour.value = 'appMode'
     Object.assign(consentStore, { accepted: false, isChecking: false })
 
     await loadEntryAndSetup()
     await nextTick()
     await flush()
-    activeTour.value = null
-    await flush()
-
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
+
+    firstRunTookScreen.value = false
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
   it('offers in the same session once the dialog that held it closes', async () => {
