@@ -567,7 +567,9 @@ describe('CinematicStudio', () => {
       await user.type(await screen.findByLabelText('Scene'), 'A diner at dawn')
       await chooseTakes(user, 2)
       await user.click(generateButton())
-      await user.click(await screen.findByRole('radio', { name: 'B' }))
+      await user.click(
+        await screen.findByRole('button', { name: 'Shot 1, take B' })
+      )
       await user.click(
         within(await screen.findByRole('status')).getByRole('button', {
           name: t('workshop.error.retry')
