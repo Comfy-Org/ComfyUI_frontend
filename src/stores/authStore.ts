@@ -371,12 +371,12 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getWorkspaceAuthToken = async (): Promise<string | undefined> => {
+    const requests = webSessionRequests()
+    if (requests) return webSessionRunToken(requests)
+
     if (flags.unifiedCloudAuthEnabled) {
       return useWorkspaceAuthStore().getUnifiedToken()
     }
-
-    const requests = webSessionRequests()
-    if (requests) return webSessionRunToken(requests)
 
     if (currentUser.value === null && useApiKeyAuthStore().isAuthenticated) {
       return undefined
