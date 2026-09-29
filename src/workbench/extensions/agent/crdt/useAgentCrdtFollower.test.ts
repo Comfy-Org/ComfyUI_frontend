@@ -86,6 +86,10 @@ const telemetryState = vi.hoisted(() => ({
   reportError: vi.fn<typeof reportErrorFn>()
 }))
 
+const appState = vi.hoisted(() => ({
+  refreshMissingModels: vi.fn(() => Promise.resolve())
+}))
+
 const apiState = vi.hoisted(() => {
   const target = new EventTarget()
   return {
@@ -158,7 +162,13 @@ vi.mock('@/platform/telemetry/reportError', () => ({
 }))
 
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
-vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
+vi.mock('@/scripts/app', () => ({
+  app: {
+    graph: null,
+    canvas: null,
+    refreshMissingModels: appState.refreshMissingModels
+  }
+}))
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ userId: 'user-1' })
 }))
@@ -255,6 +265,7 @@ describe('useAgentCrdtFollower', () => {
     sessionStorage.clear()
     bridgeState.current = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
+    appState.refreshMissingModels.mockClear()
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
   })
@@ -961,6 +972,10 @@ describe('useAgentCrdtFollower', () => {
         fakeGraph,
         fakeDefinitions
       )
+      expect(appState.refreshMissingModels).toHaveBeenCalledExactlyOnceWith({
+        silent: true,
+        reloadDefs: false
+      })
       unmount()
     })
 

@@ -37,7 +37,7 @@ import './widgetInputs'
 
 // Cloud-only extensions - tree-shaken in OSS builds
 // The literal __DISTRIBUTION__ comparison (not the isCloud const) is what
-// dead-code-eliminates this block and its posthog-js import from OSS builds.
+// dead-code-eliminates this block from OSS builds.
 if (__DISTRIBUTION__ === 'cloud') {
   await import('./cloudRemoteConfig')
   const { registerAgentPanelExtension } = await import('./agentPanel')

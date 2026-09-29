@@ -11,6 +11,7 @@ import type { Ref } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -823,6 +824,17 @@ function startAgentCrdtFollower(
       })
     }
   }
+  function reconcileAfterActivation(docId: string): void {
+    reconcileLiveGraph(docId)
+    void app
+      .refreshMissingModels({ silent: true, reloadDefs: false })
+      .catch((error: unknown) =>
+        reportError(error, {
+          errorType:
+            'error_refreshing_missing_models_after_agent_tab_activation'
+        })
+      )
+  }
   // Readiness only. The other ordering -- graph ready first, target activated
   // second -- cannot be caught here: `getGraph` does not change when activity
   // flips, and even if this watcher also took `isTargetActive` as a source it
@@ -916,7 +928,7 @@ function startAgentCrdtFollower(
           }
           subscribedWorkflowId.value = persisted
           retarget(persisted)
-          if (justActivated) reconcileLiveGraph(persisted)
+          if (justActivated) reconcileAfterActivation(persisted)
           return
         }
         clearPersistedDocId()
@@ -936,7 +948,7 @@ function startAgentCrdtFollower(
       }
       subscribedWorkflowId.value = next
       retarget(next)
-      if (justActivated) reconcileLiveGraph(next)
+      if (justActivated) reconcileAfterActivation(next)
     },
     { immediate: true }
   )

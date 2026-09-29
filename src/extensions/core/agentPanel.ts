@@ -3,7 +3,12 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import {
+  authenticatedRemoteConfigState,
+  remoteConfigRevision
+} from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentConsentNotOfferedReason } from '@/platform/telemetry/types'
@@ -28,6 +33,9 @@ import {
   notifyMintPortsAfterGraphConfigure,
   notifyMintPortsBeforeGraphLoad
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
+
+/** Upper bound on how long readiness consumers wait for a gate decision. */
+export const GATE_SETTLE_TIMEOUT_MS = 5_000
 
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
 
@@ -168,7 +176,8 @@ export function registerAgentPanelExtension(): void {
       const consentStore = useAgentConsentStore()
       const { enabled } = storeToRefs(agentPanelStore)
       const workspaceStore = useTeamWorkspaceStore()
-      const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
+      const { resolvedUserInfo, isAuthInitialized, isLoggedIn } =
+        useCurrentUser()
       const { withConsent } = useAgentConsent()
       const { firstRunTookScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
@@ -325,44 +334,67 @@ export function registerAgentPanelExtension(): void {
           loadConsentIfEligible()
         }
       )
-      return setupFlagGate(loadConsentIfEligible)
+      setupFlagGate(
+        loadConsentIfEligible,
+        () => isAuthInitialized.value && resolvedUserInfo.value === null
+      )
     }
   })
 }
 
-async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
+function setupFlagGate(
+  loadConsentIfEligible: () => void,
+  isSignedOut: () => boolean
+): void {
   const agentPanelStore = useAgentPanelStore()
-  const settle = (): void => {
-    agentPanelStore.gateSettled = true
-  }
-  try {
-    const [
-      { createPostHogFlagSource, FLAG_SETTLE_TIMEOUT_MS },
-      { default: posthog }
-    ] = await Promise.all([
-      import('@/workbench/extensions/agent/utils/postHogFlagSource'),
-      import('posthog-js')
-    ])
-    const source = createPostHogFlagSource(posthog)
-    const sync = (): void => {
-      const forceInDev = import.meta.env.MODE === 'development'
-      agentPanelStore.enabled = forceInDev || source.isEnabled()
+  const { flags } = useFeatureFlags()
+
+  watch(
+    () =>
+      [
+        import.meta.env.MODE === 'development' ||
+          flags.agentInAppExperienceEnabled,
+        remoteConfigRevision.value
+      ] as const,
+    ([enabled]) => {
+      agentPanelStore.enabled = enabled
       loadConsentIfEligible()
-      if (!agentPanelStore.enabled) {
+      if (!enabled) {
         const nodeSelectionStore = useAgentNodeSelectionStore()
         if (nodeSelectionStore.isLoadingWorkflow)
           nodeSelectionStore.finishWorkflowLoad()
       }
-    }
-    source.onChange?.(() => {
-      sync()
-      settle()
-    })
-    sync()
-    if (import.meta.env.MODE === 'development') settle()
-    else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
-  } catch (error) {
-    settle()
-    reportError(error, { errorType: 'agent_flag_gate_load_failure' })
+    },
+    { immediate: true }
+  )
+
+  const settle = (): void => {
+    agentPanelStore.gateSettled = true
   }
+  let settleTimer: ReturnType<typeof setTimeout> | undefined
+  const clearSettleTimer = (): void => {
+    clearTimeout(settleTimer)
+    settleTimer = undefined
+  }
+  const scheduleSignedOutFallback = (): void => {
+    clearSettleTimer()
+    settleTimer = setTimeout(() => {
+      if (isSignedOut()) settle()
+    }, GATE_SETTLE_TIMEOUT_MS)
+  }
+  watch(
+    () =>
+      [
+        import.meta.env.MODE === 'development' ||
+          authenticatedRemoteConfigState.value === 'authenticated' ||
+          authenticatedRemoteConfigState.value === 'error',
+        isSignedOut()
+      ] as const,
+    ([decided, signedOut]) => {
+      agentPanelStore.gateSettled = decided
+      clearSettleTimer()
+      if (!decided && signedOut) scheduleSignedOutFallback()
+    },
+    { immediate: true }
+  )
 }
