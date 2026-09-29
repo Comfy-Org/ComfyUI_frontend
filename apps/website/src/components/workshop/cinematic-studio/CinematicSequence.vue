@@ -72,18 +72,19 @@ const thumbs = computed(() =>
       take,
       look,
       current,
-      label: tc('cinematic.stage.thumb', locale)
-        .replace('{shot}', String(take.shot))
-        .replace('{take}', take.letter),
+      label: tc('cinematic.stage.takeName', locale, {
+        shot: take.shot,
+        take: take.letter
+      }),
       description:
         kind === 'unpaid' ? tc('cinematic.state.noCredits', locale) : undefined,
       class: cn(
-        'grid h-14 shrink-0 place-items-center overflow-hidden rounded-md bg-transparency-white-t8 transition-opacity',
+        'grid h-12 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border-2 bg-transparency-white-t4 transition-opacity focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none focus-visible:ring-inset',
         index > 0 && takes[index - 1].shot !== take.shot && 'ml-2',
         look?.frame,
         current
-          ? 'opacity-100 outline-2 outline-offset-2 outline-primary-warm-white'
-          : 'opacity-50 hover:opacity-100'
+          ? 'border-primary-comfy-yellow'
+          : 'border-transparent opacity-60 hover:opacity-100'
       )
     }
   })
@@ -93,7 +94,7 @@ const thumbs = computed(() =>
 <template>
   <nav
     :aria-label="tc('cinematic.stage.sequence', locale)"
-    class="flex max-w-full items-center gap-2 overflow-x-auto p-1"
+    class="flex max-w-full items-center gap-2 overflow-x-auto"
   >
     <button
       v-for="thumb in thumbs"
@@ -106,8 +107,21 @@ const thumbs = computed(() =>
       :style="aspectStyle(thumb.take.aspect)"
       @click="emit('select', thumb.take.id)"
     >
+      <video
+        v-if="
+          thumb.take.status === 'done' && thumb.take.output.kind === 'video'
+        "
+        :src="thumb.take.output.url"
+        muted
+        playsinline
+        preload="metadata"
+        aria-hidden="true"
+        :class="
+          cn('size-full object-cover', thumb.take.output.nsfw && 'blur-md')
+        "
+      />
       <img
-        v-if="thumb.take.status === 'done'"
+        v-else-if="thumb.take.status === 'done'"
         :src="thumb.take.output.url"
         alt=""
         :class="

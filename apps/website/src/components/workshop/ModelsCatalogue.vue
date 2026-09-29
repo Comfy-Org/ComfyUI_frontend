@@ -7,12 +7,13 @@ import type {
   WorkflowWorkshopModel,
   WorkshopModel
 } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopHero from './WorkshopHero.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
+import type { WorkshopPageType } from '../../scripts/workshop-analytics'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
@@ -75,6 +76,14 @@ const activeTab = computed(() =>
   availableTabs.value.includes(selectedTab.value) ? selectedTab.value : 'models'
 )
 
+// Each tab says what its own listing is for, in Eric's words.
+const SUBTITLE_KEY = {
+  models: 'workshop.hero.subtitle',
+  workflows: 'workshop.catalogue.workflowsSubtitle',
+  apps: 'workshop.catalogue.appsSubtitle'
+} as const satisfies Record<CatalogueTab, TranslationKey>
+const subtitleKey = computed(() => SUBTITLE_KEY[activeTab.value])
+
 const focusTabs = ref(false)
 function changeTab(tab: CatalogueTab) {
   focusTabs.value = Boolean(
@@ -93,15 +102,19 @@ const viewedTabs = new Set<CatalogueTab>()
 watch(
   () => (mounted.value && enabled.value ? activeTab.value : undefined),
   (tab) => {
-    if (!tab || tab === 'apps' || viewedTabs.has(tab)) return
+    if (!tab || viewedTabs.has(tab)) return
     viewedTabs.add(tab)
+    const catalogues = {
+      models: { model_count: routerModels.value.length, page_type: 'model' },
+      workflows: { model_count: workflows.value.length, page_type: 'workflow' },
+      apps: { model_count: apps.value.length, page_type: 'app' }
+    } as const satisfies Record<
+      CatalogueTab,
+      { model_count: number; page_type: WorkshopPageType }
+    >
     captureWorkshopEvent({
       name: 'catalogue_viewed',
-      properties: {
-        model_count:
-          tab === 'models' ? routerModels.value.length : workflows.value.length,
-        page_type: tab === 'models' ? 'model' : 'workflow'
-      }
+      properties: catalogues[tab]
     })
   }
 )
@@ -112,14 +125,8 @@ watch(
     v-if="!inSection"
     :eyebrow="t('workshop.catalogue.eyebrow', locale)"
     :heading="t('workshop.hero.heading', locale)"
-    :subtitle="
-      t(
-        activeTab === 'models'
-          ? 'workshop.hero.subtitle'
-          : 'workshop.catalogue.subtitle',
-        locale
-      )
-    "
+    :subtitle="t(subtitleKey, locale)"
+    :subtitle-space="availableTabs.map((tab) => t(SUBTITLE_KEY[tab], locale))"
   />
   <WorkshopModelsGrid
     v-if="activeTab === 'models'"

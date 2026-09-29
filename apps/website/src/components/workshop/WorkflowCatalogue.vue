@@ -136,7 +136,7 @@ const chips = computed<FilterChip[]>(() => [
   })),
   ...runsOn.value.map((name) => ({
     key: `model:${name}`,
-    label: t('workshop.filter.runsOn', locale).replace('{model}', name)
+    label: t('workshop.filter.runsOn', locale, { model: name })
   }))
 ])
 
@@ -221,7 +221,6 @@ function leaveSection() {
       :slides="featuredSlides"
       :locale
       :autoplay="false"
-      compact
       class="mb-10 short:mb-6"
     />
 

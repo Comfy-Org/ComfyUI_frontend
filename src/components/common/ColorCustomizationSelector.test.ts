@@ -83,6 +83,17 @@ describe('ColorCustomizationSelector', () => {
     expect(screen.getByRole('button', { name: /#0d6efd/i })).toBeInTheDocument()
   })
 
+  it('keeps the custom color picker when custom is selected again', async () => {
+    const { user } = renderComponent({ modelValue: '#0d6efd' })
+    const customButton = screen.getByRole('button', { name: 'Custom' })
+
+    await user.click(customButton)
+    await user.click(customButton)
+
+    expect(customButton).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /#0d6efd/i })).toBeVisible()
+  })
+
   it('emits update when predefined color is selected', async () => {
     const onUpdate = vi.fn()
     const { user } = renderComponent({}, { 'onUpdate:modelValue': onUpdate })

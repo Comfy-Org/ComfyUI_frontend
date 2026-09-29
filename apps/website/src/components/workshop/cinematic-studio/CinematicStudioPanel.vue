@@ -1,28 +1,47 @@
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
+import { nextTick, ref, useTemplateRef } from 'vue'
 
 import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGuard'
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
+import { workshopAppRepo } from '../../../lib/workshop/apps'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
+import AppRepoLink from './AppRepoLink.vue'
 import AppsBackLink from './AppsBackLink.vue'
+import CinematicModeSwitch from './CinematicModeSwitch.vue'
 import CinematicPanel from './CinematicPanel.vue'
 import CinematicPicker from './CinematicPicker.vue'
 import CinematicStageCard from './CinematicStageCard.vue'
 import type { PickerKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  showCredits = true,
+  locale = 'en'
+} = defineProps<{
   models: readonly CinematicModel[]
+  showCredits?: boolean
   locale?: Locale
 }>()
 
 const {
   studio,
+  mode,
+  modeModels,
+  hasVideo,
+  video,
+  blocked,
+  duration,
+  videoResolution,
+  audio,
+  firstFrame,
+  lastFrame,
+  sourceVideo,
   modelSlug,
   scene,
   enhance,
@@ -32,7 +51,8 @@ const {
   takes,
   cast,
   palette,
-  promptSegments,
+  colors,
+  mainColor,
   estimate,
   memberWorkspace,
   choose,
@@ -50,6 +70,27 @@ const {
 } = useCinematicPopover<PickerKey>()
 
 const output = useTemplateRef<HTMLElement>('output')
+const layout = useTemplateRef<HTMLElement>('layout')
+const anchorTop = ref(0)
+
+async function openPicker(key: PickerKey) {
+  togglePicker(key)
+  await nextTick()
+  const trigger = layout.value
+    ?.querySelector('[aria-haspopup="dialog"][aria-expanded="true"]')
+    ?.getBoundingClientRect()
+  const sheet = layout.value
+    ?.querySelector('[data-testid="cinematic-picker"]')
+    ?.getBoundingClientRect()
+  const bounds = layout.value?.getBoundingClientRect()
+  if (!trigger || !sheet || !bounds) return
+  const centered =
+    trigger.top + trigger.height / 2 - sheet.height / 2 - bounds.top
+  anchorTop.value = Math.max(
+    0,
+    Math.min(centered, bounds.height - sheet.height)
+  )
+}
 
 function generate() {
   closePicker()
@@ -64,7 +105,7 @@ function generate() {
     data-testid="cinematic"
   >
     <AppsBackLink :locale class="mb-3" />
-    <div class="mb-6 flex items-center gap-3">
+    <div class="mb-6 flex flex-wrap items-center gap-3">
       <h1 class="text-2xl font-semibold text-primary-warm-white lg:text-3xl">
         {{ tc('cinematic.title', locale) }}
       </h1>
@@ -73,8 +114,23 @@ function generate() {
       >
         {{ tc('cinematic.beta', locale) }}
       </span>
+      <AppRepoLink
+        :repo="workshopAppRepo('studio')"
+        :locale
+        class="sm:ml-auto"
+      />
     </div>
-    <div class="grid gap-6 lg:grid-cols-12 lg:gap-8">
+    <CinematicModeSwitch
+      v-if="hasVideo"
+      v-model="mode"
+      :disabled="studio.rendering.value"
+      :locale
+      class="mb-4 w-fit"
+    />
+    <div
+      ref="layout"
+      class="relative grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
+    >
       <CinematicPanel
         v-model:model="modelSlug"
         v-model:scene="scene"
@@ -85,23 +141,32 @@ function generate() {
         v-model:takes="takes"
         v-model:cast="cast"
         v-model:palette="palette"
-        :models
-        :prompt-segments="promptSegments"
+        v-model:colors="colors"
+        v-model:main-color="mainColor"
+        v-model:duration="duration"
+        v-model:video-resolution="videoResolution"
+        v-model:audio="audio"
+        v-model:first-frame="firstFrame"
+        v-model:last-frame="lastFrame"
+        v-model:source-video="sourceVideo"
+        :models="modeModels"
+        :blocked
+        :video
         :gate="studio.gate.value"
         :workspace-name="studio.session.value?.workspace.name"
         :rendering="studio.rendering.value"
         :estimate
         :credits="studio.credits.value"
+        :show-credits="showCredits"
         :open-picker="picker"
         :locale
-        class="lg:col-span-5"
-        @open="togglePicker"
+        @open="openPicker"
         @generate="generate"
         @cancel="studio.cancel"
       />
       <div
         ref="output"
-        class="relative flex min-w-0 flex-col lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
+        class="relative flex min-w-0 flex-col lg:sticky lg:top-26 lg:self-start"
       >
         <CinematicStageCard
           :reel="studio.reel.value"
@@ -112,23 +177,24 @@ function generate() {
           @select="studio.select"
           @retry="studio.retry"
         />
-        <div
-          v-if="picker"
-          class="fixed inset-0 z-50 bg-black/60 lg:hidden"
-          aria-hidden="true"
-        />
-        <CinematicPicker
-          v-if="picker"
-          :key="picker"
-          :groups="pickerGroups(picker)"
-          :direction
-          :title="popoverTitle(picker, locale)"
-          :locale
-          class="fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:inset-x-0 lg:top-0 lg:bottom-auto lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl"
-          @choose="choose"
-          @close="closePicker"
-        />
       </div>
+      <div
+        v-if="picker"
+        class="fixed inset-0 z-50 bg-black/60 lg:hidden"
+        aria-hidden="true"
+      />
+      <CinematicPicker
+        v-if="picker"
+        :key="picker"
+        :groups="pickerGroups(picker)"
+        :direction
+        :title="popoverTitle(picker, locale)"
+        :locale
+        class="fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:right-0 lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl"
+        :style="{ '--anchor-top': `${anchorTop}px` }"
+        @choose="choose"
+        @close="closePicker"
+      />
     </div>
     <RunLeaveDialog
       :open="leavingTo !== undefined"

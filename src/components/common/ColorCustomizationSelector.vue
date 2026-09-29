@@ -1,6 +1,6 @@
 <template>
   <div class="color-customization-selector-container flex items-center gap-2">
-    <ToggleGroup v-model="selectedColorName" type="single">
+    <ToggleGroup v-model="selectedColorName" type="single" :allow-empty="false">
       <ToggleGroupItem
         v-for="option in colorOptionsWithCustom"
         :key="option.name"

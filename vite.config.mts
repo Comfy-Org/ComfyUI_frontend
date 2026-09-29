@@ -32,6 +32,15 @@ const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 const TEST_SYSTEM_TIME = Date.parse('2024-06-15T12:00:00Z')
 const BROWSER_TESTS_DIR = resolve('browser_tests')
+const FRONTEND_SCRIPT_TESTS = [
+  'scripts/agentConversationFromLangfuse.test.ts',
+  'scripts/registry-census/matrix_runner.test.ts',
+  'scripts/testingPinia.test.ts'
+]
+const ISOLATED_STORE_TESTS = [
+  'src/stores/entityIdStore.test.ts',
+  'src/testing/pinia.test.ts'
+]
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -855,6 +864,20 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
+    strictTags: true,
+    tags: [
+      {
+        name: 'concurrent-safe',
+        description:
+          'Independent async tests with test-owned state and cleanup.',
+        concurrent: true
+      },
+      {
+        name: 'shared-state',
+        description: 'Sequential siblings; not a cross-file resource lock.',
+        concurrent: false
+      }
+    ],
     fakeTimers: { now: TEST_SYSTEM_TIME, shouldAdvanceTime: true },
     globals: true,
     environment: 'happy-dom',
@@ -875,17 +898,28 @@ export default defineConfig({
     // Pin the timezone so date-formatting assertions are deterministic
     // regardless of the contributor's local timezone (CI runs in UTC).
     env: { TZ: 'UTC' },
-    setupFiles: ['./vitest.timer.setup.ts', './vitest.setup.ts'],
     retry: process.env.CI ? 2 : 0,
     projects: [
       {
         extends: true,
         test: {
           name: 'frontend',
+          setupFiles: ['./vitest.timer.setup.ts', './vitest.setup.ts'],
+          exclude: ISOLATED_STORE_TESTS,
           include: [
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-            'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+            'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            ...FRONTEND_SCRIPT_TESTS
           ]
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'isolated-stores',
+          environment: 'node',
+          setupFiles: ['./vitest.network.setup.ts'],
+          include: ISOLATED_STORE_TESTS
         }
       },
       {
@@ -893,6 +927,8 @@ export default defineConfig({
         test: {
           name: 'tooling',
           environment: 'node',
+          setupFiles: ['./vitest.network.setup.ts'],
+          exclude: FRONTEND_SCRIPT_TESTS,
           include: [
             'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',

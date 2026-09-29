@@ -1,6 +1,10 @@
 <template>
   <div class="flex flex-col gap-2">
-    <ToggleGroup v-model="selectedFilterName" type="single">
+    <ToggleGroup
+      v-model="selectedFilterName"
+      type="single"
+      :allow-empty="false"
+    >
       <ToggleGroupItem
         v-for="filter in filters"
         :key="filter.name"

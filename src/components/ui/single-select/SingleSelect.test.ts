@@ -160,6 +160,17 @@ describe('SingleSelect', () => {
     unmount()
   })
 
+  it('keeps the searchable trigger in the keyboard tab order', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderInParent(undefined, { searchable: true })
+
+    await user.tab()
+
+    expect(screen.getByRole('button', { name: 'Pick' })).toHaveFocus()
+
+    unmount()
+  })
+
   it('clears the search and restores focus when reopened', async () => {
     const user = userEvent.setup()
     const { unmount } = renderInParent(undefined, { searchable: true })

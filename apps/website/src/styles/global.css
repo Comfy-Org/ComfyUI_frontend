@@ -84,6 +84,8 @@
   --color-secondary-deep-plum: #2b2040;
   --color-secondary-cool-gray: #3c3c3c;
   --color-illustration-forest: #20464c;
+  --color-workflow-foreground: #eee;
+  --color-workflow-selection: #a894ef;
   --color-transparency-white-t4: rgb(255 255 255 / 0.04);
   --color-transparency-white-t8: rgb(255 255 255 / 0.08);
   --color-transparency-white-t20: rgb(255 255 255 / 0.2);

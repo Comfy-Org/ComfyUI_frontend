@@ -95,7 +95,7 @@ beforeEach(() => {
   )
 })
 
-describe('useWorkspaceUI', () => {
+describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
   beforeEach(() => {
     resetStore()
     composableScope = effectScope()

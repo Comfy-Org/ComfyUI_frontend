@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMounted } from '@vueuse/core'
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
 import {
@@ -13,10 +13,20 @@ import {
 } from '../../config/workshop-playground'
 import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
 import {
-  workflowErrorKey,
+  workflowNoticeKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
+import {
+  refreshWorkshopCredits,
+  useWorkshopCredits
+} from '../../config/workshop-credits'
+import type { WorkflowCreditsRefusal } from '../../lib/workshop/workflow-credits-gate'
+import {
+  withRefusalBaseline,
+  workflowCreditsGate
+} from '../../lib/workshop/workflow-credits-gate'
 import { panelSaysRefusal } from '../../lib/workshop/workflow-refusal'
+import { useStickyFooterScrollPadding } from '../../composables/useStickyFooterScrollPadding'
 import { useTablist } from '../../composables/useTablist'
 import { useWorkflowFormDraft } from '../../composables/useWorkflowFormDraft'
 import { useWorkflowRun } from '../../composables/useWorkflowRun'
@@ -31,10 +41,11 @@ import { sameFormValues } from '../../lib/workshop/form-values'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import WorkflowResults from './WorkflowResults.vue'
+import WorkflowCreditsGuard from './WorkflowCreditsGuard.vue'
 import WorkflowRunControls from './WorkflowRunControls.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
-import WorkflowExamplePreview from './WorkflowExamplePreview.vue'
+import WorkflowExampleCard from './WorkflowExampleCard.vue'
 
 const { model, scope, cloudHref } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -45,6 +56,8 @@ const emit = defineEmits<{ recovery: [active: boolean] }>()
 const sections = ['playground', 'workflow', 'api'] as const
 const section = ref<(typeof sections)[number]>('playground')
 const { onKeydown } = useTablist(() => sections, section)
+const footer = useTemplateRef<HTMLElement>('footer')
+useStickyFooterScrollPadding(footer, () => section.value === 'playground')
 const sectionLabels = {
   playground: 'workshop.model.tabs.playground',
   workflow: 'workshop.model.tabs.details',
@@ -128,8 +141,35 @@ const fieldErrors = computed(() => error.value?.fieldErrors ?? {})
 // What is left for this page to say is what the panel does not carry.
 const refusalSaidHere = computed(() =>
   error.value && !panelSaysRefusal(state.value)
-    ? t(workflowErrorKey(error.value))
+    ? t(workflowNoticeKey(state.value, error.value))
     : undefined
+)
+const { balance, session } = useWorkshopCredits()
+const credits = computed(() =>
+  balance.value.status === 'ok' ? balance.value.credits : undefined
+)
+const refusal = ref<WorkflowCreditsRefusal>()
+watch(
+  () =>
+    state.value.phase === 'failed' &&
+    state.value.error.code === 'insufficient_credits',
+  (refused) => {
+    refusal.value = refused ? { credits: credits.value } : undefined
+    if (refused) void refreshWorkshopCredits({ force: true })
+  }
+)
+watch(credits, (known) => {
+  refusal.value = withRefusalBaseline(refusal.value, known)
+})
+const creditsGate = computed(() =>
+  signedIn.value
+    ? workflowCreditsGate({
+        busy: busy.value,
+        member: session.value?.role === 'member',
+        credits: credits.value,
+        refusal: refusal.value
+      })
+    : 'run'
 )
 const statusLabel = computed(() => {
   if (cancelRequested.value && busy.value)
@@ -216,7 +256,7 @@ function start() {
     class="grid gap-8 lg:grid-cols-12"
   >
     <section
-      class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
+      class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
       aria-labelledby="workflow-inputs-heading"
     >
       <form class="flex min-h-full flex-col" @submit.prevent="start">
@@ -242,7 +282,9 @@ function start() {
           </p>
         </div>
         <div
-          class="mt-auto space-y-3 border-t border-transparency-white-t8 p-3"
+          ref="footer"
+          class="sticky bottom-0 z-10 mt-auto space-y-3 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
+          data-testid="workflow-run-footer"
         >
           <p
             v-if="admissionPaused"
@@ -258,15 +300,20 @@ function start() {
           >
             {{ refusalSaidHere }}
           </p>
-          <WorkflowRunControls
-            :state="state"
-            :signed-in="signedIn"
-            :can-start="canStart"
-            :status-label="statusLabel"
-            @resume="workflow.resume()"
-            @cancel="workflow.cancel()"
-            @dismiss="workflow.dismiss()"
-          />
+          <WorkflowCreditsGuard
+            :gate="creditsGate"
+            :workspace-name="session?.workspace.name"
+          >
+            <WorkflowRunControls
+              :state="state"
+              :signed-in="signedIn"
+              :can-start="canStart"
+              :status-label="statusLabel"
+              @resume="workflow.resume()"
+              @cancel="workflow.cancel()"
+              @dismiss="workflow.dismiss()"
+            />
+          </WorkflowCreditsGuard>
         </div>
       </form>
     </section>
@@ -308,25 +355,20 @@ function start() {
   >
     <h2
       id="workflow-examples-heading"
-      class="mb-5 text-2xl font-light text-primary-comfy-canvas"
+      class="mb-5 text-sm font-bold text-primary-warm-white"
     >
-      {{ t('workshop.workflow.explore') }}
+      {{ t('workshop.examples.start') }}
     </h2>
     <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      <button
+      <WorkflowExampleCard
         v-for="(example, index) in model.examples"
         :key="example.name"
-        type="button"
-        :aria-pressed="selectedExample === index"
-        class="cursor-pointer overflow-hidden rounded-2xl border border-transparency-white-t8 text-left hover:border-primary-comfy-yellow focus-visible:outline-primary-comfy-yellow disabled:cursor-not-allowed disabled:opacity-50"
+        :example
+        :chosen="selectedExample === index"
+        :poster="model.thumbnailUrl"
         :disabled="formDisabled"
-        @click="selectExample(index)"
-      >
-        <WorkflowExamplePreview :example :poster="model.thumbnailUrl" />
-        <span class="block p-4 text-sm text-primary-warm-gray">
-          {{ example.title }}
-        </span>
-      </button>
+        @open="selectExample(index)"
+      />
     </div>
   </section>
   <ExampleReplaceDialog

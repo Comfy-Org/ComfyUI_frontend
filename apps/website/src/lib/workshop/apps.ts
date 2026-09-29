@@ -1,5 +1,5 @@
 import type { AppWorkshopModel } from '../../config/models-catalogue'
-import { getRoutes } from '../../config/routes'
+import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import type { CinematicCopyKey } from './cinematic-studio/copy'
 
@@ -8,6 +8,11 @@ export type WorkshopAppId = AppWorkshopModel['appId']
 export function workshopAppHref(app: WorkshopAppId, locale: Locale): string {
   const routes = getRoutes(locale)
   return app === 'reshoot' ? routes.reshoot : routes.cinematicStudio
+}
+
+/** The app's open-source repository, once it is published. */
+export function workshopAppRepo(app: WorkshopAppId): string | undefined {
+  return externalLinks.workshopAppRepos[app]
 }
 
 export interface WorkshopAppCard {

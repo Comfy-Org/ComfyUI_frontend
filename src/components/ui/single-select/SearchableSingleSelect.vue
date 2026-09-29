@@ -9,6 +9,7 @@
     <ComboboxAnchor as-child>
       <ComboboxTrigger
         v-bind="attrsWithoutClass"
+        tabindex="0"
         :aria-label="label || t('g.singleSelectDropdown')"
         :aria-busy="loading || undefined"
         :aria-invalid="invalid || undefined"
