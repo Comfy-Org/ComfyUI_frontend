@@ -118,14 +118,30 @@ function routesFor(
               401,
               state.kind === 'dead' ? state.code : 'no_session'
             )
+    ],
+    [
+      'POST /api/auth/sessions/revoke-all',
+      (endpoint, headers) => {
+        if (!headers.get('authorization')?.startsWith('Bearer ')) {
+          return errorResponse(401, 'no_session')
+        }
+        if (endpoint.state.kind === 'dead') {
+          return errorResponse(401, endpoint.state.code)
+        }
+        if (headers.get('x-csrf-token') !== FAKE_CSRF_TOKEN) {
+          return errorResponse(403, 'csrf_invalid')
+        }
+        revoke(endpoint)
+        return jsonResponse(200, { revoked: 1 })
+      }
     ]
   ])
 }
 
 /**
  * A `fetch` serving ingest's session routes under `/api/auth`. POST with a
- * bearer proof signs `signInUser` in; DELETE leaves the cookie revoked, as
- * the real endpoint does.
+ * bearer proof signs `signInUser` in; DELETE and revoke-all leave the cookie
+ * revoked, as the real endpoint does.
  */
 export function createFakeWebSessionEndpoint({
   state,

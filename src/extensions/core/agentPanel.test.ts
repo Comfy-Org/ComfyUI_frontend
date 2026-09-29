@@ -14,10 +14,6 @@ import type { EffectScope } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
-import {
-  notifyMintPortsAfterGraphConfigure,
-  notifyMintPortsBeforeGraphLoad
-} from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 
 import type { ComfyExtension } from '@/types/comfy'
@@ -35,17 +31,14 @@ import type { useExtensionService } from '@/services/extensionService'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyApp } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
 
 let agentStore: Mocked<ReturnType<typeof useAgentPanelStore>>
 let nodeSelectionStore: Mocked<ReturnType<typeof useAgentNodeSelectionStore>>
@@ -131,11 +124,6 @@ vi.mock(import('@/services/extensionService'), () => ({
     })
 }))
 
-vi.mock(import('@/workbench/extensions/agent/crdt/mintPortWiring'), () => ({
-  notifyMintPortsAfterGraphConfigure: vi.fn(),
-  notifyMintPortsBeforeGraphLoad: vi.fn()
-}))
-
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
@@ -170,6 +158,12 @@ const notOffered = async () =>
   vi.mocked(
     (await import('@/platform/telemetry')).useTelemetry()!
       .trackAgentConsentNotOffered
+  )
+
+const offerExited = async () =>
+  vi.mocked(
+    (await import('@/platform/telemetry')).useTelemetry()!
+      .trackAgentConsentOfferExited
   )
 
 async function loadEntryAndSetup(): Promise<void> {
@@ -279,10 +273,63 @@ describe('AgentPanel extension flag gate', () => {
     expect(vi.mocked(useAgentConsent().withConsent).mock.calls[0][0]).toBe(
       'first_load'
     )
-    expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('automatic_consent')
+    expect(agentStore.open).not.toHaveBeenCalled()
     expect(
       useTelemetry()?.trackAgentPanelOpened
-    ).toHaveBeenCalledExactlyOnceWith({ source: 'automatic_consent' })
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'restored' })
+  })
+
+  it.for([
+    { session: 'cloud logged in without consent', user: { id: 'account-a' } },
+    { session: 'local logged out', user: null }
+  ])('opens after startup for $session', async ({ user }) => {
+    agentFlagEnabled.value = true
+    currentUser.value = user
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    agentStore.isOpen = false
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(agentStore.open).toHaveBeenCalledWith('activation')
+    )
+
+    expect(agentStore.isVisible).toBe(true)
+  })
+
+  it('waits for the general onboarding decision before activation', async () => {
+    agentFlagEnabled.value = true
+    agentStore.isOpen = false
+    let decide = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decide = resolve
+    })
+
+    await loadEntryAndSetup()
+    expect(agentStore.open).not.toHaveBeenCalled()
+
+    decide(true)
+    await vi.waitFor(() =>
+      expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+    )
+  })
+
+  it('does not reopen a dismissed activation panel after flag synchronization', async () => {
+    agentFlagEnabled.value = true
+    agentStore.isOpen = false
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+    )
+
+    agentStore.close('close_button')
+    agentFlagEnabled.value = false
+    await nextTick()
+    agentFlagEnabled.value = true
+    await flush()
+
+    expect(agentStore.isOpen).toBe(false)
+    expect(agentStore.open).toHaveBeenCalledOnce()
   })
 
   it('keeps the panel closed if the feature is disabled before acceptance', async () => {
@@ -356,7 +403,7 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
-    expect(agentStore.open).toHaveBeenCalledOnce()
+    expect(agentStore.open).not.toHaveBeenCalled()
   })
 
   const AUTO_SHOWN_KEY = 'Comfy.AgentConsent.AutoShown.account-a.workspace-a'
@@ -572,7 +619,7 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
     )
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
-    expect(agentStore.open).toHaveBeenCalledOnce()
+    expect(agentStore.open).not.toHaveBeenCalled()
   })
 
   it('stays silent after a tour ends when the saved consent cannot be read', async () => {
@@ -763,6 +810,339 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
+  describe('names the exit when the offer ends without naming a surface', () => {
+    const rerunFlagGate = async (): Promise<void> => {
+      agentFlagEnabled.value = false
+      await nextTick()
+      agentFlagEnabled.value = true
+      await nextTick()
+    }
+
+    it.for([
+      {
+        exit: 'consent_unresolved',
+        arrange: () => {
+          Object.assign(consentStore, { isChecking: true })
+        }
+      },
+      {
+        exit: 'consent_already_accepted',
+        arrange: () => {
+          Object.assign(consentStore, { accepted: true })
+        }
+      },
+      {
+        exit: 'workspace_unresolved',
+        arrange: () => {
+          Object.assign(workspaceStore, { activeWorkspaceId: null })
+        }
+      },
+      {
+        exit: 'workspace_switching',
+        arrange: () => {
+          Object.assign(workspaceStore, { isSwitching: true })
+        }
+      },
+      {
+        // The one-shot key silences `agent_consent_not_offered` outright, so
+        // this is the case that most needs its own event rather than a reason.
+        exit: 'already_offered',
+        arrange: () => {
+          localStorage.setItem(AUTO_SHOWN_KEY, 'true')
+        }
+      }
+    ] as const)(
+      'reports $exit once however often the offer re-runs',
+      async ({ exit, arrange }) => {
+        agentFlagEnabled.value = true
+        Object.assign(consentStore, { accepted: false, isChecking: false })
+        arrange()
+
+        await loadEntryAndSetup()
+        await rerunFlagGate()
+        await flush()
+
+        expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+          exit,
+          stage: 'offer',
+          retry_armed: false
+        })
+        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+        expect(await notOffered()).not.toHaveBeenCalled()
+      }
+    )
+
+    it('reports a signed-out offer separately from an unresolved account', async () => {
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      const { useCurrentUser } =
+        await import('@/composables/auth/useCurrentUser')
+      vi.mocked(useCurrentUser()).isLoggedIn = computed(() => false)
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+        exit: 'signed_out',
+        stage: 'offer',
+        retry_armed: false
+      })
+    })
+
+    it('reports an account that went missing after the consent read succeeded', async () => {
+      // `isLoggedIn` true with no resolved id is the API-key rail before its
+      // user is known - the only way these two conditions come apart, and the
+      // reason they are separate values rather than one.
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      const { useCurrentUser } =
+        await import('@/composables/auth/useCurrentUser')
+      vi.mocked(useCurrentUser()).isLoggedIn = computed(() => true)
+      let decide = (_: boolean) => {}
+      startupDecision = new Promise<boolean>((resolve) => {
+        decide = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      currentUser.value = null
+      decide(true)
+      await flush()
+
+      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+        exit: 'account_unresolved',
+        stage: 'offer',
+        retry_armed: false
+      })
+    })
+
+    it('reports an offer refused because another attempt is still in flight', async () => {
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      let finish = () => {}
+      const pending = new Promise<void>((resolve) => {
+        finish = resolve
+      })
+      vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+        async () => {
+          await pending
+        }
+      )
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      )
+      await rerunFlagGate()
+      await flush()
+
+      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+        exit: 'offer_in_flight',
+        stage: 'offer',
+        retry_armed: false
+      })
+      finish()
+      await pending
+    })
+
+    it('reports an offer skipped because the card has already been on screen', async () => {
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+
+      await loadEntryAndSetup()
+      openDialog(CONSENT_DIALOG_KEY)
+      await flush()
+      closeDialog(CONSENT_DIALOG_KEY)
+      await rerunFlagGate()
+      await flush()
+
+      expect(await offerExited()).toHaveBeenCalledWith({
+        exit: 'card_already_seen',
+        stage: 'offer',
+        retry_armed: false
+      })
+    })
+
+    it.for([
+      {
+        exit: 'consent_already_accepted',
+        stage: 'load',
+        arrange: () => {
+          vi.mocked(consentStore.load).mockResolvedValue(true)
+        }
+      },
+      {
+        exit: 'consent_read_failed',
+        stage: 'load',
+        arrange: () => {
+          vi.mocked(consentStore.load).mockRejectedValue(new Error('offline'))
+        }
+      },
+      {
+        exit: 'startup_probe_failed',
+        stage: 'startup',
+        arrange: () => {
+          const rejected = Promise.reject<boolean>(new Error('startup blew up'))
+          // Marked handled here so the rejection is not unhandled during the
+          // window before the extension attaches its own catch.
+          rejected.catch(() => {})
+          startupDecision = rejected
+        }
+      }
+    ] as const)(
+      'reports $exit at the $stage stage',
+      async ({ exit, stage, arrange }) => {
+        agentFlagEnabled.value = true
+        Object.assign(consentStore, { accepted: false, isChecking: false })
+        arrange()
+
+        await loadEntryAndSetup()
+        await flush()
+
+        expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+          exit,
+          stage,
+          retry_armed: false
+        })
+      }
+    )
+
+    it('reports why an undecided boot was also ineligible', async () => {
+      // `boot_undecided` is gated on eligibility, so this combination used to
+      // forfeit the offer and report nothing at all.
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      let decide = (_: boolean) => {}
+      startupDecision = new Promise<boolean>((resolve) => {
+        decide = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      Object.assign(consentStore, { isChecking: true })
+      decide(false)
+      await flush()
+
+      expect(await notOffered()).not.toHaveBeenCalled()
+      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+        exit: 'consent_unresolved',
+        stage: 'startup',
+        retry_armed: false
+      })
+    })
+
+    it('marks the exit that loses a held offer as still having a retry armed', async () => {
+      // This is gc-17's silent loss, made visible: a dialog holds the offer,
+      // the screen clears, and the retry's consent read fails. Before #18975
+      // the offer was gone for the page load; after it the hold survives - and
+      // either way the only telemetry was a first `dialog_open`, because the
+      // reason is deduplicated per page load.
+      agentFlagEnabled.value = true
+      openDialog()
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'dialog_open'
+      })
+      expect(await offerExited()).not.toHaveBeenCalled()
+
+      vi.mocked(consentStore.load).mockRejectedValueOnce(new Error('offline'))
+      closeDialog()
+      await flush()
+      await flush()
+
+      expect(await notOffered()).toHaveBeenCalledOnce()
+      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+        exit: 'consent_read_failed',
+        stage: 'load',
+        retry_armed: true
+      })
+    })
+
+    it('reports the same exit again when its retry state changes', async () => {
+      agentFlagEnabled.value = true
+      openDialog()
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+
+      await loadEntryAndSetup()
+      await flush()
+
+      vi.mocked(consentStore.load).mockRejectedValueOnce(new Error('offline'))
+      closeDialog()
+      await flush()
+      await flush()
+
+      Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await flush()
+      await flush()
+
+      vi.mocked(consentStore.load).mockRejectedValueOnce(new Error('offline'))
+      Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-c' })
+      Object.assign(consentStore, { identity: 'account-a/workspace-c' })
+      await flush()
+
+      expect(await offerExited()).toHaveBeenCalledTimes(2)
+      expect(await offerExited()).toHaveBeenNthCalledWith(1, {
+        exit: 'consent_read_failed',
+        stage: 'load',
+        retry_armed: true
+      })
+      expect(await offerExited()).toHaveBeenNthCalledWith(2, {
+        exit: 'consent_read_failed',
+        stage: 'load',
+        retry_armed: false
+      })
+    })
+
+    it('reports nothing for an unflagged page load', async () => {
+      // Not because the reporter is gated on the flag - it is not - but because
+      // `loadConsentIfEligible` returns on an off flag before reaching any
+      // reported exit. That is the whole mechanism keeping this event off the
+      // population outside the rollout, so it is asserted rather than assumed.
+      agentFlagEnabled.value = false
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      vi.mocked(consentStore.load).mockRejectedValue(new Error('offline'))
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(await offerExited()).not.toHaveBeenCalled()
+      expect(consentStore.load).not.toHaveBeenCalled()
+    })
+
+    it('still reports why the offer ended when the flag goes off mid-flight', async () => {
+      // The flag was on when the offer started, so this attempt is already
+      // under way and its ending is real. A reporter gated on the current flag
+      // value would hide exactly this case, which is why it is not.
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      let fail = (_: Error) => {}
+      vi.mocked(consentStore.load).mockReturnValueOnce(
+        new Promise<boolean>((_, reject) => {
+          fail = reject
+        })
+      )
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalled())
+      agentFlagEnabled.value = false
+      await nextTick()
+      await flush()
+      fail(new Error('offline'))
+      await flush()
+
+      expect(agentStore.enabled).toBe(false)
+      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+        exit: 'consent_read_failed',
+        stage: 'load',
+        retry_armed: false
+      })
+    })
+  })
+
   it('offers in the same session once the dialog that held it closes', async () => {
     agentFlagEnabled.value = true
     openDialog()
@@ -773,6 +1153,41 @@ describe('AgentPanel extension flag gate', () => {
     await flush()
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
 
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
+  it('keeps the held offer when the retry cannot be made, and offers on the next clear screen', async () => {
+    agentFlagEnabled.value = true
+    openDialog()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    await flush()
+    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+      reason: 'dialog_open'
+    })
+
+    // The screen clears, but the retry's consent read fails - a cloud session
+    // whose auth is still settling is the ordinary way that happens. The
+    // release used to consume the hold before finding that out, which lost the
+    // offer for the rest of the page load and emitted nothing to say so: the
+    // reason is deduplicated per page load, so there is no second
+    // `agent_consent_not_offered` either.
+    vi.mocked(consentStore.load).mockRejectedValueOnce(new Error('offline'))
+    closeDialog()
+    await flush()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).toHaveBeenCalledOnce()
+
+    // A later dialog comes and goes and the read works this time. The offer is
+    // still owed, so it lands.
+    openDialog()
+    await flush()
     closeDialog()
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
@@ -820,6 +1235,38 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.open).not.toHaveBeenCalled()
 
     closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
+  it('re-offers after a withheld in-flight offer settles on a clear screen', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let settleOffer = () => {}
+    const pendingOffer = new Promise<void>((resolve) => {
+      settleOffer = resolve
+    })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_trigger, _onAccept, hooks) => {
+        openDialog()
+        await flush()
+        if (hooks?.canShow?.() === false) await pendingOffer
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    settleOffer()
+
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
     )
@@ -1090,7 +1537,6 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.enabled = true
     agentStore.consentAccepted = false
     await extension!.beforeLoadGraph!({} as never)
-    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
     await extension!.afterConfigureGraph!([], {} as never)
   })
@@ -1238,7 +1684,6 @@ describe('AgentPanel extension flag gate', () => {
 
     await extension!.beforeLoadGraph!({} as never)
 
-    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).toHaveBeenCalledOnce()
 
     nodeSelectionStore.isLoadingWorkflow = true
@@ -1291,114 +1736,6 @@ describe('AgentPanel extension flag gate', () => {
     expect(selectItems).not.toHaveBeenCalled()
   })
 
-  it('closes the mint suppression bracket after graph configuration', async () => {
-    const { registerAgentPanelExtension } = await import('./agentPanel')
-    registerAgentPanelExtension()
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
-
-    await extension!.afterConfigureGraph!([], {} as never)
-
-    expect(notifyMintPortsAfterGraphConfigure).toHaveBeenCalledOnce()
-  })
-
-  it('resumes ordinary local-dirty tracking after a failed load is followed by a successful one', async () => {
-    const { registerAgentPanelExtension } = await import('./agentPanel')
-    registerAgentPanelExtension()
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
-    const widgetStore = useWidgetValueStore()
-    const id = widgetId('graph-a', toNodeId(1), 'value')
-    const registered = widgetStore.registerWidget<number>(id, {
-      type: 'number',
-      value: 1,
-      options: {}
-    })!
-
-    // A load whose configure() throws before `afterConfigureGraph` ever runs.
-    await extension!.beforeLoadGraph!({} as never)
-    await extension!.onGraphLoadError!(
-      new Error('bad workflow json'),
-      {} as never
-    )
-
-    // A second, successful load closes the suppression exactly once more.
-    await extension!.beforeLoadGraph!({} as never)
-    await extension!.afterConfigureGraph!([], {} as never)
-
-    registered.value = 2
-    expect(widgetStore.isLocallyDirty(id)).toBe(true)
-  })
-
-  it('keeps the suppression open across two overlapping loads until both finish', async () => {
-    const { registerAgentPanelExtension } = await import('./agentPanel')
-    registerAgentPanelExtension()
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
-    const widgetStore = useWidgetValueStore()
-    const id = widgetId('graph-a', toNodeId(1), 'value')
-    const registered = widgetStore.registerWidget<number>(id, {
-      type: 'number',
-      value: 1,
-      options: {}
-    })!
-
-    // Load A and load B both open the suppression (e.g. two rapid tab
-    // switches) before either finishes.
-    await extension!.beforeLoadGraph!({} as never)
-    await extension!.beforeLoadGraph!({} as never)
-
-    // Load A finishes first - success or error, same as here - while load B
-    // is still mid-configure. A single boolean would close the shared
-    // suppression right here, wrongly exposing B's still-in-flight
-    // structural writes as dirty.
-    await extension!.afterConfigureGraph!([], {} as never)
-
-    // A structural write made as part of load B's own (still-suppressed)
-    // configure must not be marked dirty just because load A already
-    // closed out.
-    registered.value = 2
-    expect(widgetStore.isLocallyDirty(id)).toBe(false)
-
-    // Only once load B also finishes does the suppression actually close.
-    await extension!.afterConfigureGraph!([], {} as never)
-    registered.value = 3
-    expect(widgetStore.isLocallyDirty(id)).toBe(true)
-  })
-
-  it('closes the suppression exactly once per load regardless of completion order', async () => {
-    const { registerAgentPanelExtension } = await import('./agentPanel')
-    registerAgentPanelExtension()
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
-    const widgetStore = useWidgetValueStore()
-    const id = widgetId('graph-a', toNodeId(1), 'value')
-    const registered = widgetStore.registerWidget<number>(id, {
-      type: 'number',
-      value: 1,
-      options: {}
-    })!
-
-    // Load A opens, then load B opens; load B (the more recent one) is the
-    // one that finishes first this time, and by error rather than success.
-    await extension!.beforeLoadGraph!({} as never)
-    await extension!.beforeLoadGraph!({} as never)
-    await extension!.onGraphLoadError!(new Error('load B failed'), {} as never)
-
-    registered.value = 2
-    expect(widgetStore.isLocallyDirty(id)).toBe(false)
-
-    // Load A's own completion is the one that actually returns the depth to
-    // zero and closes the suppression.
-    await extension!.afterConfigureGraph!([], {} as never)
-    registered.value = 3
-    expect(widgetStore.isLocallyDirty(id)).toBe(true)
-  })
-
   it('restores a subgraph reference by its locator after graph load', async () => {
     const { registerAgentPanelExtension } = await import('./agentPanel')
     const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
@@ -1442,7 +1779,6 @@ describe('AgentPanel extension flag gate', () => {
 
     await extension!.beforeLoadGraph!({} as never)
 
-    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
     await extension!.afterConfigureGraph!([], {} as never)
   })
@@ -1477,21 +1813,6 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
-  })
-
-  it('leaves mint suppression open when graph loading fails', async () => {
-    const { registerAgentPanelExtension } = await import('./agentPanel')
-    registerAgentPanelExtension()
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
-    const app = fromPartial<ComfyApp>({})
-
-    await extension!.beforeLoadGraph!(app)
-    await extension!.onGraphLoadError!(new Error('bad workflow json'), app)
-
-    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
-    expect(notifyMintPortsAfterGraphConfigure).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when selection restoration throws', async () => {

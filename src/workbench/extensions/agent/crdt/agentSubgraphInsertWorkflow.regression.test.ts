@@ -1,26 +1,11 @@
 /**
- * RED — expected to fail against `@comfyorg/comfy-multi-player@0.3.0`.
- *
  * Pasting a subgraph blueprint arrives as an `insert_workflow` op. cmp's
- * `remapInsertedWorkflowIds` (`src/remap.ts`) mints fresh ids for everything
- * the op carries, including a definition's interior `nodes`, `links` and each
- * interior node's `inputs[].link`. It does not rewrite the definition's OWN
- * top-level `inputs[].linkIds` — the promoted-widget declarations naming which
- * interior links feed each declared input — and it drops a definition-interior
- * link whose origin is the subgraph IO node (-10) as dangling.
- *
- * `promotedWidgetNames()` (`agentSubgraphHostSlots.ts`) resolves those
- * `linkIds` against the definition's own remapped `links`, so every declared
- * input reads back as unpromoted. The host still carries its blueprint
- * `widgets_values` positionally, so `readSemanticNode` sees N opaque values
- * against 0 promoted names, reports
- * `error_reconciling_agent_subgraph_host_widgets`, and drops the values rather
- * than risk landing them on the wrong widget.
- *
- * Nothing in this repo is wrong: the reader is behaving exactly as designed
- * for a definition whose declarations do not match its links. The fix belongs
- * upstream (comfy-multi-player PR #230) and this test goes green when the
- * dependency is bumped past the release that carries it.
+ * `remapInsertedWorkflowIds` mints fresh ids for everything the op carries,
+ * including a definition's interior `nodes`, `links` and each interior node's
+ * `inputs[].link`. An earlier release did not rewrite the definition's OWN
+ * top-level `inputs[].linkIds` (comfy-multi-player PR #230 fixed it), which
+ * left the host's promoted widgets unresolvable. The live graph must resolve
+ * the host's promoted widgets and carry the blueprint value onto them.
  */
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type {
@@ -31,8 +16,6 @@ import type {
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { createGraphMutations } from './graphMutations'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import {
   LGraph,
   LGraphNode,
@@ -45,12 +28,9 @@ import {
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
-import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
-import { reconcileAgentAdapters } from './agentNodeMaterializer'
-import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
-import { EcsFollowerAdapter } from './ecsFollowerAdapter'
+import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -153,16 +133,10 @@ describe('pasting a subgraph blueprint through insert_workflow', () => {
       CATALOG
     )
     const follower = new FollowerDoc()
-    const adapter = new EcsFollowerAdapter(
-      createGraphMutations({
-        placement: inertPlacementPort,
-        getScope: () => graphScopeOf(graph),
-        layout: { createNode: () => {}, deleteNodes: () => {} }
-      })
-    )
-    adapter.bind('workflow', follower)
+    const projection = new AgentCrdtProjection(() => graph)
+    projection.bind('workflow', follower)
     onTestFinished(() => {
-      adapter.destroy()
+      projection.destroy()
       follower.destroy()
       hostDoc.destroy()
     })
@@ -170,8 +144,8 @@ describe('pasting a subgraph blueprint through insert_workflow', () => {
     const seed = Y.encodeStateAsUpdate(hostDoc)
     follower.applyRemoteUpdate(seed)
     expect(
-      adapter.applyFrame({ workflowId: 'workflow', seq: 1, update: seed })
-    ).toBe(true)
+      projection.applyFrame({ workflowId: 'workflow', seq: 1, update: seed })
+    ).toMatchObject({ applied: true })
 
     const op = insertOp(blueprint())
     const vector = Y.encodeStateVector(hostDoc)
@@ -181,29 +155,21 @@ describe('pasting a subgraph blueprint through insert_workflow', () => {
     const update = Y.encodeStateAsUpdate(hostDoc, vector)
     follower.applyRemoteUpdate(update)
     expect(
-      adapter.applyFrame({
+      projection.applyFrame({
         workflowId: 'workflow',
         seq: 2,
         update,
         actor: 'agent:test',
         opIds: [op.op_id]
       })
-    ).toBe(true)
-    reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+    ).toMatchObject({ applied: true })
 
     const instance = graph.nodes.find(
       (node): node is SubgraphNode => node instanceof SubgraphNode
     )
     expect(instance).toBeDefined()
 
-    // Today the reader sees no promoted surface, so it drops the host's
-    // opaque values and reports the drift instead of re-keying them.
-    expect(vi.mocked(reportError)).not.toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        errorType: 'error_reconciling_agent_subgraph_host_widgets'
-      })
-    )
+    expect(vi.mocked(reportError)).not.toHaveBeenCalled()
     expect(instance!.widgets.map((widget) => widget.name)).toEqual(['value'])
     expect(instance!.widgets[0]?.value).toBe(BLUEPRINT_VALUE)
   })

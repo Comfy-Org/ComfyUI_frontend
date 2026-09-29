@@ -3,6 +3,8 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { billingOperation } from './billingOperationTestUtils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
@@ -14,7 +16,10 @@ import type {
   BillingStatusResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
+import {
+  CancellationScopeChangedError,
+  useWorkspaceBilling
+} from '@/platform/workspace/composables/useWorkspaceBilling'
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   getBillingStatus: vi.fn(),
@@ -92,7 +97,8 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 const mockRail = vi.hoisted(() => ({
   enabled: false,
-  openPaymentPortal: vi.fn()
+  openPaymentPortal: vi.fn(),
+  cancelSubscription: vi.fn()
 }))
 
 vi.mock<unknown>(
@@ -103,6 +109,9 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/platform/telemetry'))
+
+vi.mock(import('firebase/auth'))
+vi.mock(import('@/composables/useFeatureFlags'), { spy: true })
 
 // Pins the billing family the hosted route derives; an unmapped one fails closed to the provider.
 vi.mock(import('@/config/comfyApi'), () => ({
@@ -215,6 +224,7 @@ describe('useWorkspaceBilling', () => {
   afterEach(() => {
     scope?.stop()
     scope = undefined
+    mockRail.enabled = false
   })
 
   describe('initialize', () => {
@@ -332,6 +342,64 @@ describe('useWorkspaceBilling', () => {
       expect(billing.subscription.value?.scheduledChange).toEqual(
         scheduledChange
       )
+    })
+
+    describe('reading for a payment taken in a hosted tab', () => {
+      const pendingStatus = {
+        ...activeStatus,
+        billing_status: 'pending_payment',
+        pending_billing_op_id: 'op-hosted',
+        pending_billing_op_type: 'subscription'
+      } satisfies BillingStatusResponse
+
+      it('reports nothing adopted while no operation is pending', async () => {
+        mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+
+        await expect(
+          setupBilling().readAndAdoptPendingOperation()
+        ).resolves.toBe(false)
+      })
+
+      it('reports the operation adopted once the operation store holds it', async () => {
+        mockWorkspaceApi.getBillingStatus.mockResolvedValue(pendingStatus)
+
+        await expect(
+          setupBilling().readAndAdoptPendingOperation()
+        ).resolves.toBe(true)
+        expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+          'op-hosted',
+          'subscription',
+          undefined,
+          undefined
+        )
+      })
+
+      it('reports a failed SDK adoption as not adopted, so the next read retries', async () => {
+        const real = useFeatureFlags()
+        vi.mocked(useFeatureFlags).mockReturnValue({
+          ...real,
+          flags: new Proxy(real.flags, {
+            get: (target, key) =>
+              key === 'billingSdkSubscriptionRailEnabled' ||
+              Reflect.get(target, key)
+          })
+        })
+        const sdk = useBillingSdkStore()
+        vi.mocked(sdk.readStatus).mockResolvedValue({
+          status: 'ok',
+          value: pendingStatus
+        })
+        vi.mocked(sdk.recover)
+          .mockResolvedValueOnce(false)
+          .mockResolvedValueOnce(true)
+        const billing = setupBilling()
+
+        await expect(billing.readAndAdoptPendingOperation()).resolves.toBe(
+          false
+        )
+        await expect(billing.readAndAdoptPendingOperation()).resolves.toBe(true)
+        expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
+      })
     })
 
     it('recovers a pending subscription operation from billing status', async () => {
@@ -1260,6 +1328,25 @@ describe('useWorkspaceBilling', () => {
         }
       )
       expect(billing.error.value).toBeNull()
+    })
+
+    it('rejects before the legacy request when scope changes while the rail declines', async () => {
+      const deferredRail = createDeferred<{ status: 'unavailable' }>()
+      mockRail.enabled = true
+      mockRail.cancelSubscription.mockReturnValue(deferredRail.promise)
+      let scopeIsCurrent = true
+
+      const pending = setupBilling().cancelSubscription(() => scopeIsCurrent)
+      await vi.waitFor(() =>
+        expect(mockRail.cancelSubscription).toHaveBeenCalledOnce()
+      )
+      scopeIsCurrent = false
+      deferredRail.resolve({ status: 'unavailable' })
+
+      await expect(pending).rejects.toBeInstanceOf(
+        CancellationScopeChangedError
+      )
+      expect(mockWorkspaceApi.cancelSubscription).not.toHaveBeenCalled()
     })
 
     it('throws the op error message when the cancel op fails', async () => {

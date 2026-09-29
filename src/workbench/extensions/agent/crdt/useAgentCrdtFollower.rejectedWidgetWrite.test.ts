@@ -11,7 +11,6 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
-import type { GraphMutations } from './graphMutations'
 import type { GraphOperation } from './graphOperations'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
@@ -109,10 +108,7 @@ function mountFollower() {
   const { unmount } = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(
-          ref<string | null>(WORKFLOW_ID),
-          fromPartial<GraphMutations>({})
-        )
+        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID))
         return () => null
       }
     })
