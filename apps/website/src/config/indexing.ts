@@ -1,3 +1,4 @@
+import { isProductionBuild } from './build-env'
 import { LOCALE_CODES, LOCALES } from './locales'
 import { models } from './models'
 import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
@@ -46,6 +47,30 @@ const MODEL_REDIRECT_PATHNAMES = new Set(
 
 function normalizePathname(pathname: string): string {
   return pathname.replace(/\/$/, '')
+}
+
+export function isIndexableBuild(): boolean {
+  if (process.env.VERCEL_ENV) return isProductionBuild()
+  return process.env.WEBSITE_INDEXABLE === '1'
+}
+
+interface HeadIndexingInput {
+  pageNoindex: boolean
+  indexableBuild: boolean
+}
+
+export function headIndexing({
+  pageNoindex,
+  indexableBuild
+}: HeadIndexingInput) {
+  const robotsNoindex = pageNoindex || !indexableBuild
+  return {
+    robotsNoindex,
+    emitCanonical: indexableBuild,
+    emitAlternates: !robotsNoindex,
+    emitStructuredData: !pageNoindex,
+    emitMarkdownTwinLink: !pageNoindex
+  }
 }
 
 export function isNoindexPathname(pathname: string): boolean {

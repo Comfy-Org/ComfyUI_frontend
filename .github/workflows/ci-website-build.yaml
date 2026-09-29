@@ -42,7 +42,7 @@ jobs:
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
-        run: pnpm --filter @comfyorg/website build
+        run: pnpm --filter @comfyorg/website build:e2e
 
       - name: Validate JSON-LD structured data
         run: pnpm --filter @comfyorg/website validate:jsonld
@@ -56,7 +56,7 @@ jobs:
       - name: Check hreflang clusters
         run: pnpm --filter @comfyorg/website check:hreflang
 
-      - name: Verify the optional Workshop build exclusion
+      - name: Verify the release build excludes Workshop and is noindex
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
@@ -68,3 +68,8 @@ jobs:
             exit 1
           fi
           echo "Release build has no Workshop output."
+          if ! grep -q 'name="robots"' apps/website/dist/index.html; then
+            echo "::error title=Non-production build is indexable::apps/website/dist/index.html has no robots meta. Every build outside production must be noindex. See apps/website/src/config/indexing.ts."
+            exit 1
+          fi
+          echo "Non-production build is noindex."

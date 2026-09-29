@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { isExcludedFromSitemap, isNoindexPathname } from './indexing'
+import {
+  headIndexing,
+  isExcludedFromSitemap,
+  isIndexableBuild,
+  isNoindexPathname
+} from './indexing'
 
 describe('indexing policy', () => {
   it('excludes render pages while keeping the public Models marketing routes', () => {
@@ -88,4 +93,66 @@ describe('indexing policy', () => {
       )
     ).toBe(true)
   })
+
+  it.for([
+    { vercelEnv: 'production', override: undefined, indexable: true },
+    { vercelEnv: undefined, override: '1', indexable: true },
+    { vercelEnv: 'preview', override: undefined, indexable: false },
+    { vercelEnv: 'preview', override: '1', indexable: false },
+    { vercelEnv: 'development', override: undefined, indexable: false },
+    { vercelEnv: undefined, override: undefined, indexable: false },
+    { vercelEnv: '', override: '', indexable: false },
+    { vercelEnv: 'Production', override: 'true', indexable: false }
+  ])(
+    'VERCEL_ENV=$vercelEnv WEBSITE_INDEXABLE=$override is indexable: $indexable',
+    ({ vercelEnv, override, indexable }) => {
+      vi.stubEnv('VERCEL_ENV', vercelEnv)
+      vi.stubEnv('WEBSITE_INDEXABLE', override)
+      expect(isIndexableBuild()).toBe(indexable)
+    }
+  )
+
+  it.for([
+    {
+      pageNoindex: false,
+      indexableBuild: true,
+      robotsNoindex: false,
+      emitCanonical: true,
+      emitAlternates: true,
+      emitStructuredData: true,
+      emitMarkdownTwinLink: true
+    },
+    {
+      pageNoindex: true,
+      indexableBuild: true,
+      robotsNoindex: true,
+      emitCanonical: true,
+      emitAlternates: false,
+      emitStructuredData: false,
+      emitMarkdownTwinLink: false
+    },
+    {
+      pageNoindex: false,
+      indexableBuild: false,
+      robotsNoindex: true,
+      emitCanonical: false,
+      emitAlternates: false,
+      emitStructuredData: true,
+      emitMarkdownTwinLink: true
+    },
+    {
+      pageNoindex: true,
+      indexableBuild: false,
+      robotsNoindex: true,
+      emitCanonical: false,
+      emitAlternates: false,
+      emitStructuredData: false,
+      emitMarkdownTwinLink: false
+    }
+  ])(
+    'head for pageNoindex=$pageNoindex indexableBuild=$indexableBuild',
+    ({ pageNoindex, indexableBuild, ...expected }) => {
+      expect(headIndexing({ pageNoindex, indexableBuild })).toEqual(expected)
+    }
+  )
 })

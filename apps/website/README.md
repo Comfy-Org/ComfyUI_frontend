@@ -367,6 +367,23 @@ sitekey in this mapping, so the client widget stays off there.
 The `workshop-release-gate` Astro integration registers the Models routes and
 always removes the retired `/workshop` output, including in enabled builds.
 
+## Search indexing
+
+Only the production build (`VERCEL_ENV=production`) can be indexed. Every
+other build (local, CI, Vercel previews) puts
+`<meta name="robots" content="noindex, nofollow">` on every page, so a copy of
+the site never competes with comfy.org. Those builds also drop the canonical
+link and hreflang alternates, so a preview never points its noindex at
+comfy.org. `WEBSITE_INDEXABLE=1` gives a build outside Vercel the production
+head; `pnpm build:e2e` sets it for the e2e and screenshot builds. Pages that are
+noindex on their own stay noindex either way.
+
+The decision is baked into the HTML at build time, so never use Vercel's
+Promote to Production on a preview deployment: it would serve
+`noindex, nofollow` on comfy.org. The `deploy-production` job fails if its
+build has a robots meta on `/`, and `CI: Website Build` fails if a
+non-production build doesn't.
+
 ## HubSpot forms
 
 Pages that collect leads use HubSpot's hosted form embed:
@@ -402,8 +419,9 @@ the hosted script once, and renders the documented embed container.
 
 - `pnpm dev` — Astro dev server
 - `pnpm build` — production build to `dist/`
+- `pnpm build:e2e` — indexable build to `dist/`, the one e2e and screenshots run against
 - `pnpm typecheck` — `astro check`
 - `pnpm test:unit` — Vitest unit tests
-- `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build` first)
+- `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build:e2e` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot
