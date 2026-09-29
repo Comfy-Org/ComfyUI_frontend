@@ -252,6 +252,36 @@ test('312-9930: coming back from Alipay without paying stays on the checkout and
   expect(subscribeRequests(cloud)).toHaveLength(0)
 })
 
+test('340-13834: coming back from an Alipay payment the server ended unpaid opens capture on Payment not completed, never a decline', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    pending_billing_op_id: OPERATION,
+    pending_billing_op_type: 'subscription'
+  }
+  const moveOperation = scriptOperation(cloud)
+  const now = new Date().toISOString()
+  moveOperation({
+    id: OPERATION,
+    status: 'failed',
+    retryable: true,
+    recovery_action: 'retry',
+    started_at: now,
+    completed_at: now
+  })
+  await signIn(CHECKOUT)
+
+  const card = page.getByRole('alert')
+  await expect(card).toContainText('Payment not completed')
+  await expect(card).not.toContainText('Payment declined')
+  await expect(payButton(page)).toBeEnabled()
+  expect(subscribeRequests(cloud)).toHaveLength(0)
+})
+
 test('447-6886: a redirect method shows the pre-money line, never Phase B, and leaves for the provider with the checkout as its return', async ({
   page,
   cloud,

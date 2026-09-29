@@ -1,5 +1,7 @@
 import type {
   BillingOperationState,
+  PaymentProjection,
+  PaymentReasonKey,
   SubscriptionCommandResult
 } from '@comfyorg/account-core/billing'
 import {
@@ -76,11 +78,10 @@ export function operationOutcomeOf(
     return undefined
   const projection = projectPaymentStep(operation, 'preview')
   const operationId = operation.id
+  if (isNotCompleted(projection)) return { kind: 'not_completed', operationId }
   if (projection.step === 'processing_error')
     return { kind: 'processing_error', operationId }
   if (projection.step !== 'declined') return undefined
-  if (projection.reasonKey === 'authentication_failed')
-    return { kind: 'not_completed', operationId }
   return {
     kind: 'declined',
     operationId,
@@ -88,6 +89,24 @@ export function operationOutcomeOf(
       ? {}
       : { reason: projection.reasonKey })
   }
+}
+
+/** Declines that mean the customer never finished authenticating, not a refused card. */
+const UNAUTHENTICATED_REASONS: ReadonlySet<PaymentReasonKey> = new Set([
+  'authentication_failed',
+  'authentication_required'
+])
+
+/**
+ * Payment not completed, on the server's word: a 3DS challenge or an
+ * Alipay authorization left unfinished, or an attempt it ended unpaid with
+ * no reason beyond a plain retry (an abandoned challenge or checkout).
+ */
+function isNotCompleted(projection: PaymentProjection): boolean {
+  const { reasonKey } = projection
+  if (reasonKey !== undefined && UNAUTHENTICATED_REASONS.has(reasonKey))
+    return true
+  return reasonKey === 'generic' && projection.recoveryAction === 'retry'
 }
 
 const SUPPORT_ADDRESS = 'support@comfy.org'
