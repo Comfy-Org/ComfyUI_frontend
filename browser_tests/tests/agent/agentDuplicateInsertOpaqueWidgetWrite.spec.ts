@@ -1,18 +1,24 @@
 import { expect, mergeTests } from '@playwright/test'
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import type {
+  AgentRunMode,
+  AgentThreadListResponse
+} from '@comfyorg/ingest-types'
+import * as Y from 'yjs'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   agentTest,
   bootAgentApp,
-  mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -221,6 +227,35 @@ interface DuplicateInsertHandles {
   copyBNodeId: string
 }
 
+/**
+ * This branch's `agentPanelFixture` does not export `mockAgentTurnApi` (nor
+ * does `bootAgentApp` take a `beforeNavigate` hook) -- both are `main`-only
+ * additions this cherry-pick predates, so the turn-api mocks it wires
+ * through `beforeNavigate` are reproduced locally instead.
+ */
+async function mockAgentTurnApi(
+  page: Page,
+  turnAccepted: AgentTurnAccepted
+): Promise<void> {
+  const threads: AgentThreadListResponse = {
+    threads: [],
+    pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
+  }
+  const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
+  await page.route('**/api/experiment/models', (route) =>
+    route.fulfill(jsonRoute([]))
+  )
+  await page.route('**/api/agent/threads', (route) =>
+    route.fulfill(jsonRoute(threads))
+  )
+  await page.route('**/api/agent/run-mode', (route) =>
+    route.fulfill(jsonRoute(runMode))
+  )
+  await page.route('**/api/agent/threads/*/messages', (route) =>
+    route.fulfill(jsonRoute(turnAccepted))
+  )
+}
+
 async function ksamplerNodeIds(page: Page): Promise<string[]> {
   return page.evaluate(() =>
     window
@@ -245,16 +280,18 @@ async function driveThroughDuplicateInsert(
   })
   await bootAgentApp(page, true, {
     settings: { 'Comfy.VueNodes.Enabled': true },
-    objectInfo: nodeDefs,
-    beforeNavigate: async (page) => {
-      await mockAgentTurnApi(page, {
-        message_id: MESSAGE_ID,
-        thread_id: THREAD_ID,
-        workflow_id: WORKFLOW_ID
-      })
-      await mockWorkflowPersistence(page, WORKFLOW_ID)
-    }
+    objectInfo: nodeDefs
   })
+  // No `beforeNavigate` hook on this branch's `bootAgentApp`: registered
+  // after boot instead, matching `agentConversationFixture.ts`'s
+  // `selectWorkflowTarget` (same two mocks, same post-boot, pre-UI-drive
+  // placement).
+  await mockAgentTurnApi(page, {
+    message_id: MESSAGE_ID,
+    thread_id: THREAD_ID,
+    workflow_id: WORKFLOW_ID
+  })
+  await mockWorkflowPersistence(page, WORKFLOW_ID)
   const socket = await getWebSocket()
   const outboundFrames: string[] = []
   socket.onMessage((message) => outboundFrames.push(String(message)))
@@ -275,7 +312,15 @@ async function driveThroughDuplicateInsert(
     )
 
   const host = new HostDoc(WORKFLOW_ID, { nodes: [], links: [] }, catalog)
-  for (const frame of host.initialSync()) socket.send(JSON.stringify(frame))
+  // `HostDoc.initialSync()` is a `main`-only convenience over `subscribed()`
+  // + `catchUp()`, both of which this branch's `HostDoc` already has; the
+  // empty-doc state vector is what `initialSync()` itself passes to
+  // `catchUp()` for a follower with no prior CRDT history.
+  const emptyDocStateVector = Buffer.from(
+    Y.encodeStateVector(new Y.Doc())
+  ).toString('base64')
+  for (const frame of [host.subscribed(), host.catchUp(emptyDocStateVector)])
+    socket.send(JSON.stringify(frame))
 
   await expect
     .poll(() => page.evaluate(() => window.app!.graph.nodes.length))
