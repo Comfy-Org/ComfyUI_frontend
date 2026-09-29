@@ -6,6 +6,7 @@ import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGu
 import type { AppWorkshopModel } from '../../../config/models-catalogue'
 import type { WorkshopAppId } from '../../../lib/workshop/apps'
 import { workshopAppHref } from '../../../lib/workshop/apps'
+import { getRoutes } from '../../../config/routes'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -145,7 +146,7 @@ function pickApp(id: string) {
           {{ tc('cinematic.unavailable.title', locale) }}
         </p>
         <a
-          href="/models/"
+          :href="getRoutes().workshop"
           class="text-sm text-primary-comfy-yellow underline underline-offset-4"
         >
           {{ tc('cinematic.unavailable.link', locale) }}

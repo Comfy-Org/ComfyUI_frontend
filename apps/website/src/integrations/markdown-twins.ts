@@ -36,7 +36,7 @@ const SECTIONS: SectionSpec[] = [
   }
 ]
 
-const ALTERNATE_TWIN_SOURCES = new Map([['models', 'models/showcase']])
+const ALTERNATE_TWIN_SOURCES = new Map([['hub/models', 'models/showcase']])
 
 export interface TwinReport {
   written: string[]

@@ -6,6 +6,7 @@ import type {
   RouterWorkshopModel,
   UseCase
 } from '../src/config/models-catalogue'
+import { hubModelSlugs } from '../src/config/hub-models'
 import {
   routerModelSlugAliases,
   workshopModels
@@ -55,12 +56,20 @@ export function modelUrlSlug(name: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+/**
+ * `frozen` holds the slugs already published: a page keeps its URL when its
+ * display name changes, and only pages new to the map get a slug from theirs.
+ */
 export function compileModelUrlMap(
   models: readonly Pick<MapModel, 'slug' | 'name'>[],
-  aliases: ReadonlyMap<string, string>
+  aliases: ReadonlyMap<string, string>,
+  frozen: ReadonlyMap<string, string> = new Map()
 ): ModelUrlMap {
   const newSlugByOld = new Map(
-    models.map((model) => [model.slug, modelUrlSlug(model.name)])
+    models.map((model) => [
+      model.slug,
+      frozen.get(model.slug) ?? modelUrlSlug(model.name)
+    ])
   )
   if (newSlugByOld.size !== models.length)
     throw new Error('Two model pages share an old slug')
@@ -193,7 +202,11 @@ export const MODEL_URLS_MODULE = join(appDir, 'src/config/model-urls.ts')
 export const MODEL_URL_TABLE = join(appDir, 'MODEL_URL_MAP.md')
 
 if (isDirectExecution(process.argv[1], import.meta.filename)) {
-  const map = compileModelUrlMap(workshopModels, routerModelSlugAliases)
+  const map = compileModelUrlMap(
+    workshopModels,
+    routerModelSlugAliases,
+    hubModelSlugs
+  )
   await writeFile(MODEL_URLS_MODULE, renderModelUrlsModule(map))
   await writeFile(MODEL_URL_TABLE, renderModelUrlTable(workshopModels, map))
   console.warn(`${map.pages.length} pages, ${map.aliases.length} aliases`)

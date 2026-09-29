@@ -1,6 +1,12 @@
 import type { RedirectConfig } from 'astro'
 
 import { models } from './models'
+import {
+  HUB_MODELS_PATH,
+  hubModelAliases,
+  hubModelPath,
+  hubModelSlugs
+} from './hub-models'
 
 interface SiteRedirect {
   /** A literal path with no trailing slash; both slash forms redirect. */
@@ -29,6 +35,14 @@ const modelAliasRedirects = models.flatMap(({ slug, canonicalSlug }) =>
       ]
     : []
 )
+
+const hubModelRedirects: readonly SiteRedirect[] = [
+  { source: '/models', destination: `${HUB_MODELS_PATH}/` },
+  ...[...hubModelSlugs, ...hubModelAliases].map(([slug, hubSlug]) => ({
+    source: `/models/${slug}` as const,
+    destination: hubModelPath(hubSlug)
+  }))
+]
 
 /**
  * Every redirect the website serves. `vercel.json` is generated from this
@@ -86,7 +100,8 @@ export const siteRedirects: readonly SiteRedirect[] = [
   // Affiliates exists in English only.
   { source: '/zh-CN/affiliates', destination: '/affiliates/' },
   { source: '/zh-CN/affiliates/terms', destination: '/affiliates/terms/' },
-  ...modelAliasRedirects
+  ...modelAliasRedirects,
+  ...hubModelRedirects
 ]
 
 export function isInternalDestination(destination: string): boolean {
@@ -117,14 +132,17 @@ export function toVercelRedirects(
  * Astro renders each entry as a meta-refresh stub so `astro preview` and the
  * e2e suite see the redirects; on Vercel the `vercel.json` rule answers first.
  * Astro cannot redirect off-site, and a stub for `/x` is the same file as a
- * page at `/x/`, so those rows live in `vercel.json` only.
+ * page at `/x/`, so those rows live in `vercel.json` only. The old Models
+ * addresses are left out too, so the build ships no stub pages under /models.
  */
 export const astroRedirects: Record<string, RedirectConfig> =
   Object.fromEntries(
     siteRedirects
       .filter(
         (row) =>
-          isInternalDestination(row.destination) && redirectsSlashForm(row)
+          isInternalDestination(row.destination) &&
+          redirectsSlashForm(row) &&
+          !hubModelRedirects.includes(row)
       )
       .map((row) => [
         row.source,
