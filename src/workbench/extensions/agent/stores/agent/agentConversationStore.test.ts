@@ -487,11 +487,6 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
-  // Only a resolution frame removes an approval ask, and an aborted turn gets
-  // none -- so an abort has to drop it, or the rendered card stays enabled over
-  // a turn `answerAsk` will refuse to post for. It has to come off the message
-  // `messages` actually holds: `transport.settle()` publishes a clone, so a
-  // clean applied after it changes nothing a reader can see.
   it('drops a pending run approval when the turn is aborted', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
@@ -528,9 +523,7 @@ describe('useAgentConversationStore', () => {
     store.abortActiveTurn()
 
     expect(
-      store.messages[0].parts.some(
-        (part) => (part as { type: string }).type === 'runApproval'
-      )
+      store.messages[0].parts.some((part) => part.type === 'runApproval')
     ).toBe(false)
     expect(store.isStreaming).toBe(false)
   })

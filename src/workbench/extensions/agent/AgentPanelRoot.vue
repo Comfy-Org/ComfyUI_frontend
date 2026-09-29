@@ -1110,14 +1110,6 @@ onBeforeUnmount(() => {
   mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()
-  // Moved below `stop()` rather than added: the drain `stop()` performs can
-  // replay an `agent_active_tab`, and `enqueueActiveTab` opens with its own
-  // `++activeTabGeneration`, so a bump above would be the older value by the
-  // time `stale()` compares. Everything in this hook is synchronous and the
-  // activation defers through `activeTabChain`, so one invalidation here
-  // covers whatever was queued, from either side. Whether that replay can
-  // reach a visible tab is unproven -- no test yet distinguishes the two
-  // positions -- so treat this as the cheaper of two equal placements.
   ++activeTabGeneration
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
