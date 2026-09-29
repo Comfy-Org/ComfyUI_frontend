@@ -367,6 +367,15 @@ sitekey in this mapping, so the client widget stays off there.
 The `workshop-release-gate` Astro integration registers the Models routes and
 always removes the retired `/workshop` output, including in enabled builds.
 
+## Search indexing
+
+Only the production build (`VERCEL_ENV=production`) can be indexed. Every
+other build (local, CI, Vercel previews) puts
+`<meta name="robots" content="noindex, nofollow">` on every page, so a copy of
+the site never competes with comfy.org. `WEBSITE_INDEXABLE=1` gives a
+non-production build the production head; the e2e build sets it. Pages that are
+noindex on their own stay noindex either way.
+
 ## HubSpot forms
 
 Pages that collect leads use HubSpot's hosted form embed:
@@ -404,6 +413,6 @@ the hosted script once, and renders the documented embed container.
 - `pnpm build` — production build to `dist/`
 - `pnpm typecheck` — `astro check`
 - `pnpm test:unit` — Vitest unit tests
-- `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build` first)
+- `pnpm test:e2e` — Playwright E2E tests (requires `WEBSITE_INDEXABLE=1 pnpm build` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot

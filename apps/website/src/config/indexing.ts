@@ -46,6 +46,13 @@ function normalizePathname(pathname: string): string {
   return pathname.replace(/\/$/, '')
 }
 
+export function isIndexableBuild(): boolean {
+  return (
+    process.env.VERCEL_ENV === 'production' ||
+    process.env.WEBSITE_INDEXABLE === '1'
+  )
+}
+
 export function isNoindexPathname(pathname: string): boolean {
   return NOINDEX_PATHNAMES.has(normalizePathname(pathname))
 }

@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { isExcludedFromSitemap, isNoindexPathname } from './indexing'
+import {
+  isExcludedFromSitemap,
+  isIndexableBuild,
+  isNoindexPathname
+} from './indexing'
 
 describe('indexing policy', () => {
   it('excludes render pages while keeping the public Models marketing routes', () => {
@@ -82,4 +86,21 @@ describe('indexing policy', () => {
       )
     ).toBe(true)
   })
+
+  it.for([
+    { vercelEnv: 'production', override: undefined, indexable: true },
+    { vercelEnv: undefined, override: '1', indexable: true },
+    { vercelEnv: 'preview', override: undefined, indexable: false },
+    { vercelEnv: 'development', override: undefined, indexable: false },
+    { vercelEnv: undefined, override: undefined, indexable: false },
+    { vercelEnv: '', override: '', indexable: false },
+    { vercelEnv: 'Production', override: 'true', indexable: false }
+  ])(
+    'VERCEL_ENV=$vercelEnv WEBSITE_INDEXABLE=$override is indexable: $indexable',
+    ({ vercelEnv, override, indexable }) => {
+      vi.stubEnv('VERCEL_ENV', vercelEnv)
+      vi.stubEnv('WEBSITE_INDEXABLE', override)
+      expect(isIndexableBuild()).toBe(indexable)
+    }
+  )
 })

@@ -8,7 +8,7 @@ import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
 import { getRoutes } from '../config/routes'
-import { isNoindexPathname } from '../config/indexing'
+import { isIndexableBuild, isNoindexPathname } from '../config/indexing'
 import { isWorkshopInBuild } from '../config/workshop-release'
 import {
   hreflangAlternates,
@@ -70,6 +70,7 @@ const { siteUrl, locale, url } = pageContext(
 )
 const canonicalURL = new URL(url)
 const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
+const robotsNoindex = shouldNoindex || !isIndexableBuild()
 const alternates = shouldNoindex
   ? []
   : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
@@ -118,7 +119,7 @@ const structuredData = shouldNoindex
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     {keywordsContent && <meta name="keywords" content={keywordsContent} />}
-    {shouldNoindex && <meta name="robots" content="noindex, nofollow" />}
+    {robotsNoindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
