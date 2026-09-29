@@ -224,6 +224,7 @@ Before submitting a PR, ensure all tests pass:
 pnpm test:unit
 pnpm typecheck
 pnpm lint
+pnpm lint:cycles
 pnpm format
 ```
 

@@ -6,7 +6,7 @@ const config: IConfiguration = {
     tsPreCompilationDeps: 'specify',
     doNotFollow: { path: 'node_modules' },
     exclude: {
-      path: ['\\.(test|spec|stories)\\.ts$', '/__tests__/', '/test/']
+      path: ['\\.(test|spec|stories)\\.ts$', '/__tests?__/', '/test/']
     },
     enhancedResolveOptions: {
       extensions: ['.ts', '.mts', '.js', '.vue', '.json'],

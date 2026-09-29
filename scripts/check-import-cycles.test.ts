@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import type { Baseline } from './check-import-cycles'
 import {
+  baselineViolations,
   cyclicEdges,
   diffBaseline,
+  formatBaseline,
   graphFromCruise,
   shortestCyclePath,
   stronglyConnectedComponents
@@ -38,6 +40,25 @@ describe('cyclicEdges', () => {
       name: 'longer cycle keeps every edge on it and drops the exit edge',
       edges: { a: ['b'], b: ['c'], c: ['a', 'd'], d: [] },
       expected: { a: ['b'], b: ['c'], c: ['a'] }
+    },
+    {
+      name: 'cross-edges into completed components stay outside later cycles',
+      edges: {
+        a: ['b'],
+        b: ['a'],
+        c: ['a', 'd'],
+        d: ['c'],
+        e: ['c', 'f'],
+        f: ['e']
+      },
+      expected: {
+        a: ['b'],
+        b: ['a'],
+        c: ['d'],
+        d: ['c'],
+        e: ['f'],
+        f: ['e']
+      }
     }
   ])('$name', ({ edges, expected }) => {
     expect(cyclicEdges(graph(edges))).toEqual(expected)
@@ -98,6 +119,46 @@ describe('diffBaseline', () => {
     }
   ])('$name', ({ current, baseline, expected }) => {
     expect(diffBaseline(current, baseline)).toEqual(expected)
+  })
+})
+
+describe('baselineViolations', () => {
+  it.for<{
+    name: string
+    edges: Edges
+    baseline: Baseline
+    expected: string[]
+  }>([
+    {
+      name: 'unchanged baseline passes',
+      edges: { a: ['b'], b: ['a'] },
+      baseline: { a: ['b'], b: ['a'] },
+      expected: []
+    },
+    {
+      name: 'new cycle reports the cycle it closes',
+      edges: { a: ['b'], b: ['a'] },
+      baseline: {},
+      expected: [expect.stringContaining('a\n    -> b\n    -> a')]
+    },
+    {
+      name: 'stale entry fails',
+      edges: { a: ['b'], b: [] },
+      baseline: { a: ['b'], b: ['a'] },
+      expected: [expect.stringContaining('no longer cyclic')]
+    }
+  ])('$name', ({ edges, baseline, expected }) => {
+    expect(baselineViolations(graph(edges), baseline)).toEqual(expected)
+  })
+})
+
+describe('formatBaseline', () => {
+  it('writes JSON that parses back to the same baseline', () => {
+    const baseline = {
+      'src/a"quoted.ts': ['src/b.ts'],
+      'src/b.ts': ['src/a"quoted.ts']
+    }
+    expect(JSON.parse(formatBaseline(baseline))).toEqual(baseline)
   })
 })
 

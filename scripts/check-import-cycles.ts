@@ -2,14 +2,22 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { z } from 'zod'
 
-export type Graph = ReadonlyMap<string, ReadonlySet<string>>
+type Graph = ReadonlyMap<string, ReadonlySet<string>>
 export type Baseline = Readonly<Record<string, readonly string[]>>
 
-type CruiseModule = {
-  source: string
-  dependencies: { resolved: string }[]
-}
+const cruiseOutputSchema = z.object({
+  modules: z.array(
+    z.object({
+      source: z.string(),
+      dependencies: z.array(z.object({ resolved: z.string() }))
+    })
+  )
+})
+type CruiseModule = z.infer<typeof cruiseOutputSchema>['modules'][number]
+
+const baselineSchema = z.record(z.string(), z.array(z.string()))
 
 const BASELINE_PATH = '.import-cycles-baseline.json'
 const SOURCE_PREFIX = 'src/'
@@ -32,77 +40,67 @@ export function graphFromCruise(modules: CruiseModule[]): Graph {
   return graph
 }
 
-type TarjanState = {
-  graph: Graph
-  index: Map<string, number>
-  lowLink: Map<string, number>
-  onStack: Set<string>
-  stack: string[]
-  work: { node: string; successors: Iterator<string> }[]
-  components: string[][]
-}
-
-function enter(state: TarjanState, node: string) {
-  const order = state.index.size
-  state.index.set(node, order)
-  state.lowLink.set(node, order)
-  state.stack.push(node)
-  state.onStack.add(node)
-  state.work.push({
-    node,
-    successors: (state.graph.get(node) ?? []).values()
-  })
-}
-
-function lowerLowLink(state: TarjanState, node: string, candidate: number) {
-  state.lowLink.set(node, Math.min(state.lowLink.get(node)!, candidate))
-}
-
-function leave(state: TarjanState, node: string) {
-  const parent = state.work.at(-1)
-  if (parent) lowerLowLink(state, parent.node, state.lowLink.get(node)!)
-  if (state.lowLink.get(node) !== state.index.get(node)) return
-
-  const component: string[] = []
-  let member: string
-  do {
-    member = state.stack.pop()!
-    state.onStack.delete(member)
-    component.push(member)
-  } while (member !== node)
-  state.components.push(component.sort())
-}
-
-function exploreFrom(state: TarjanState, root: string) {
-  enter(state, root)
-  while (state.work.length > 0) {
-    const frame = state.work.at(-1)!
-    const next = frame.successors.next()
-    if (next.done) {
-      state.work.pop()
-      leave(state, frame.node)
-    } else if (!state.index.has(next.value)) {
-      enter(state, next.value)
-    } else if (state.onStack.has(next.value)) {
-      lowerLowLink(state, frame.node, state.index.get(next.value)!)
-    }
-  }
+type Frame = {
+  node: string
+  index: number
+  lowLink: number
+  successors: Iterator<string>
 }
 
 export function stronglyConnectedComponents(graph: Graph): string[][] {
-  const state: TarjanState = {
-    graph,
-    index: new Map(),
-    lowLink: new Map(),
-    onStack: new Set(),
-    stack: [],
-    work: [],
-    components: []
+  const visited = new Set<string>()
+  const stackIndex = new Map<string, number>()
+  const stack: string[] = []
+  const work: Frame[] = []
+  const components: string[][] = []
+
+  const enter = (node: string) => {
+    const index = visited.size
+    visited.add(node)
+    stackIndex.set(node, index)
+    stack.push(node)
+    work.push({
+      node,
+      index,
+      lowLink: index,
+      successors: (graph.get(node) ?? []).values()
+    })
   }
+
+  const visit = (frame: Frame, node: string) => {
+    if (!visited.has(node)) {
+      enter(node)
+      return
+    }
+    const onStackIndex = stackIndex.get(node)
+    if (onStackIndex !== undefined)
+      frame.lowLink = Math.min(frame.lowLink, onStackIndex)
+  }
+
+  const leave = (frame: Frame) => {
+    const parent = work.at(-1)
+    if (parent) parent.lowLink = Math.min(parent.lowLink, frame.lowLink)
+    if (frame.lowLink !== frame.index) return
+
+    const component = stack.splice(stack.lastIndexOf(frame.node))
+    for (const member of component) stackIndex.delete(member)
+    components.push(component.sort())
+  }
+
   for (const root of graph.keys()) {
-    if (!state.index.has(root)) exploreFrom(state, root)
+    if (visited.has(root)) continue
+    enter(root)
+    for (let frame = work.at(-1); frame; frame = work.at(-1)) {
+      const next = frame.successors.next()
+      if (next.done) {
+        work.pop()
+        leave(frame)
+      } else {
+        visit(frame, next.value)
+      }
+    }
   }
-  return state.components
+  return components
 }
 
 export function cyclicEdges(graph: Graph): Baseline {
@@ -142,8 +140,8 @@ export function shortestCyclePath(
 ): string[] {
   const previous = new Map<string, string | undefined>([[to, undefined]])
   const queue = [to]
-  while (queue.length > 0 && !previous.has(from)) {
-    const node = queue.shift()!
+  for (const node of queue) {
+    if (previous.has(from)) break
     for (const next of graph.get(node) ?? []) {
       if (previous.has(next)) continue
       previous.set(next, node)
@@ -160,7 +158,7 @@ export function shortestCyclePath(
   return [from, ...backToStart.reverse()]
 }
 
-export function componentStats(graph: Graph) {
+function componentStats(graph: Graph) {
   const cyclic = stronglyConnectedComponents(graph).filter(
     (component) => component.length > 1
   )
@@ -177,13 +175,13 @@ function cruiseSource(): Graph {
     ['exec', 'depcruise', 'src', '--output-type', 'json'],
     { encoding: 'utf8', maxBuffer: 512 * 1024 * 1024, stdio: 'pipe' }
   )
-  const { modules } = JSON.parse(output) as { modules: CruiseModule[] }
+  const { modules } = cruiseOutputSchema.parse(JSON.parse(output))
   return graphFromCruise(modules)
 }
 
 function readBaseline(path: string): Baseline {
   if (!existsSync(path)) return {}
-  return JSON.parse(readFileSync(path, 'utf8')) as Baseline
+  return baselineSchema.parse(JSON.parse(readFileSync(path, 'utf8')))
 }
 
 export function formatBaseline(baseline: Baseline): string {
@@ -198,23 +196,11 @@ function formatEdge(graph: Graph, [from, to]: [string, string]): string {
   return path.length > 0 ? path.join('\n    -> ') : `${from}\n    -> ${to}`
 }
 
-function main() {
-  const update = process.argv.includes('--update')
-  const baselinePath = resolve(process.cwd(), BASELINE_PATH)
-  const graph = cruiseSource()
-  const current = cyclicEdges(graph)
-  const stats = componentStats(graph)
-  const summary = `${stats.modulesInCycles} modules in ${stats.componentCount} import cycles (largest: ${stats.largestComponent})`
-
-  if (update) {
-    writeFileSync(baselinePath, formatBaseline(current))
-    process.stdout.write(`Wrote ${BASELINE_PATH}: ${summary}\n`)
-    return
-  }
-
-  const { added, stale } = diffBaseline(current, readBaseline(baselinePath))
+export function baselineViolations(graph: Graph, baseline: Baseline): string[] {
+  const { added, stale } = diffBaseline(cyclicEdges(graph), baseline)
+  const violations: string[] = []
   if (added.length > 0) {
-    process.stderr.write(
+    violations.push(
       `${added.length} new import cycle edge(s) in src:\n\n${added
         .map((edge) => `  ${formatEdge(graph, edge)}`)
         .join(
@@ -223,13 +209,34 @@ function main() {
     )
   }
   if (stale.length > 0) {
-    process.stderr.write(
+    violations.push(
       `${stale.length} baseline entry(ies) no longer cyclic:\n${stale
         .map(([from, to]) => `  ${from} -> ${to}`)
         .join('\n')}\n\nRun: pnpm lint:cycles:update\n`
     )
   }
-  if (added.length > 0 || stale.length > 0) process.exit(1)
+  return violations
+}
+
+function main() {
+  const update = process.argv.includes('--update')
+  const baselinePath = resolve(process.cwd(), BASELINE_PATH)
+  const graph = cruiseSource()
+  const stats = componentStats(graph)
+  const summary = `${stats.modulesInCycles} modules in ${stats.componentCount} import cycles (largest: ${stats.largestComponent})`
+
+  if (update) {
+    writeFileSync(baselinePath, formatBaseline(cyclicEdges(graph)))
+    process.stdout.write(`Wrote ${BASELINE_PATH}: ${summary}\n`)
+    return
+  }
+
+  const violations = baselineViolations(graph, readBaseline(baselinePath))
+  if (violations.length > 0) {
+    process.stderr.write(violations.join('\n'))
+    process.exitCode = 1
+    return
+  }
   process.stdout.write(`Import cycles unchanged: ${summary}\n`)
 }
 
