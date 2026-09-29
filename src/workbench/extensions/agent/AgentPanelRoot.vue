@@ -26,6 +26,7 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
+import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -71,11 +72,13 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
+  resetCoach,
   scopedOnboardingKey,
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
+import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
@@ -100,6 +103,7 @@ import type {
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
 import type { CoachStep } from './composables/agent/useOnboarding'
+import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
 import { useAgentSession } from './composables/agent/useAgentSession'
@@ -198,6 +202,10 @@ function onPaywallAction(action: AgentPaywallAction): void {
     openAccountPrecondition('credits', { source: 'agent_paywall' })
     return
   }
+  useTelemetry()?.trackSubscription('subscribe_clicked', {
+    current_tier: subscriptionTier.value?.toLowerCase(),
+    reason: 'agent_paywall'
+  })
   openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
 
@@ -329,6 +337,7 @@ watch(
   { immediate: true }
 )
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
+const { withConsent } = useAgentConsent()
 const workspaceStore = useTeamWorkspaceStore()
 const onboardingKey = computed(() =>
   scopedOnboardingKey(
@@ -339,7 +348,10 @@ const onboardingKey = computed(() =>
 watch(
   onboardingKey,
   (key) => {
-    if (key) adoptSharedOnboardingFlag(key)
+    // Only carry the pre-consent, device-wide flag into a scope that had
+    // already accepted consent when it loaded. A newly consenting scope has
+    // not seen this scoped tour yet and should receive it once.
+    if (key && consentAccepted.value) adoptSharedOnboardingFlag(key)
   },
   { immediate: true }
 )
@@ -358,6 +370,14 @@ watch(
   },
   { immediate: true }
 )
+const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
+function restartCoach(): void {
+  // Take-the-tour stays clickable while the coach is deferred by App Mode, and
+  // there is no instance to hand the transition to. Clearing the persisted flag
+  // makes the replay wait for the mount instead of being dropped.
+  if (coachRef.value) coachRef.value.restart()
+  else if (onboardingKey.value) resetCoach(onboardingKey.value)
+}
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -743,6 +763,11 @@ const {
   }
 })
 
+provide(
+  agentBoundWorkflowIdKey,
+  computed(() => boundWorkflowId.value ?? undefined)
+)
+
 const isSending = computed(
   () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
 )
@@ -784,8 +809,17 @@ const {
         if (status.value === 'idle') graphActivity.finishTurn()
       }
     },
-    onReset: graphActivity.resetWorkflow
-  }
+    onReset: graphActivity.resetWorkflow,
+    onSyncError: (message, code) =>
+      toast.add({
+        severity: 'error',
+        summary: t('agent.workflowSyncFailedTitle'),
+        detail: formatWorkflowSyncErrorDetail(t, message, code),
+        // A permanent desync remains visible until the person dismisses it.
+        life: 0
+      })
+  },
+  () => workflowStore.activeWorkflow?.changeTracker ?? null
 )
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
@@ -805,6 +839,8 @@ const mintPortWiring = attachMintPortWiring({
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  isRestoringState: () =>
+    workflowStore.activeWorkflow?.changeTracker?._restoringState === true,
   boundRootGraphId
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
@@ -1108,6 +1144,8 @@ async function onAnswerAsk(
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
+  if (composerStore.submission?.id === consentHeldSubmissionId)
+    composerStore.invalidateSubmission()
   mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()
@@ -1224,10 +1262,28 @@ const coachSteps = computed<CoachStep[]>(() => [
   {
     target: '#agent-chat-history',
     placement: 'left-start',
+    tooltip: t('agent.showChatHistory'),
     title: t('agent.coachHistoryTitle'),
     body: t('agent.coachHistoryBody')
   }
 ])
+
+let consentHeldSubmissionId: number | undefined
+async function consentAllowsSubmission(
+  submissionId: number | undefined
+): Promise<boolean> {
+  let hasConsent = false
+  consentHeldSubmissionId = submissionId
+  try {
+    await withConsent('first_message', () => {
+      hasConsent = true
+    })
+  } finally {
+    if (consentHeldSubmissionId === submissionId)
+      consentHeldSubmissionId = undefined
+  }
+  return composerStore.submission?.id === submissionId && hasConsent
+}
 
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
@@ -1242,6 +1298,13 @@ const { submit: onSend } = useAgentDraftSubmission({
     exit: exitNodeSelectionMode
   },
   send: async (text, attachments, nodes, references, meta) => {
+    const submissionId = composerStore.submission?.id
+    if (
+      !consentAccepted.value &&
+      !(await consentAllowsSubmission(submissionId))
+    )
+      return false
+
     // The same origin `performSend` pins the turn to, taken in the same tick,
     // so the report follows the tab the turn is posted against. Everything but
     // the workflow id is captured now, like the thread; the id here is only
@@ -1445,6 +1508,11 @@ function onAttach(): void {
   fileInput.value?.click()
 }
 
+async function onAttachFiles(files: File[]): Promise<void> {
+  if (await attachment.addFiles(files))
+    useTelemetry()?.trackAgentAttachButtonClicked({ method: 'paste' })
+}
+
 function onOpenAssets(): void {
   exitNodeSelectionMode()
   sidebarTabStore.activeSidebarTabId = 'assets'
@@ -1459,7 +1527,13 @@ function onMentionPick(node: SelectedNode): void {
 }
 
 function onRemoveSelectionTag(id: string): void {
+  const node = canvasStore.selectedItems
+    .filter(isLGraphNode)
+    .find((item) => selectedNodeKey(toSelectedNode(item)) === id)
   removeSelectionTag(id)
+  if (node) {
+    canvasStore.canvas?.deselect(node)
+  }
 }
 
 function onClosePanel(): void {
@@ -1618,6 +1692,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
+      @attach-files="onAttachFiles"
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
@@ -1632,6 +1707,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
       @new-chat="onNewChat('new_chat_button')"
+      @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
       @open-history="refreshHistory()"
@@ -1647,6 +1723,8 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     </AgentPanel>
     <OnboardingCoach
       v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
+      :key="onboardingKey"
+      ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"
     />

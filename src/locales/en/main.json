@@ -2657,6 +2657,10 @@
       "signOutAnyway": "Sign out anyway",
       "saveFailed": "Sign-out cancelled because saving \"{workflow}\" failed."
     },
+    "accountChanged": {
+      "title": "Account changed",
+      "detail": "Another tab or Comfy site signed in as {email}, so this page was reset."
+    },
     "passwordUpdate": {
       "success": "Password Updated",
       "successDetail": "Your password has been updated successfully"
@@ -2955,6 +2959,9 @@
     "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
     "inactiveTeamPlanIncludes": "An active plan features everything in {plan}, plus:",
     "reactivateToUseCredits": "Reactivate your plan to use these credits",
+    "salesManagedInactiveCreditsNote": "Spendable once your plan is restored.",
+    "salesManagedCreditsEndedNote": "Plan credits ended with your subscription.",
+    "inactiveEnterpriseDescription": "You can't run workflows or add new members. Contact sales to restore access.",
     "teamPerks": {
       "inviteMembers": "Invite members",
       "concurrentRuns": "Members can run workflows concurrently",
@@ -3042,7 +3049,7 @@
     "subscribeForMore": "Upgrade",
     "upgradeToAddCredits": "Upgrade to add credits",
     "subscribe": "Subscribe",
-    "subscribeNow": "Subscribe Now",
+    "subscribeNow": "Subscribe",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "workspaceNotSubscribed": "This workspace is not on a subscription",
     "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud and invite members",
@@ -3195,6 +3202,12 @@
         "downgradeBody": "Your {plan} was set to end on {date}. Switching to {newPlan} reactivates it — you won't be charged today, but it will now renew automatically on {nextDate} at the new price instead of ending.",
         "durationChangeBody": "Your {plan} was set to end on {date}. Switching to annual billing reactivates it and charges the full year, {amount}, today. It will then renew annually on {nextDate} instead of ending.",
         "durationChangeBodyMonthly": "Your {plan} was set to end on {date}. Switching to monthly billing reactivates it — you'll be charged {amount} today, and it will renew automatically on {nextDate} instead of ending.",
+        "withoutRenewalDate": {
+          "upgradeBody": "Your {plan} was set to end on {date}. Upgrading now reactivates it — you'll be charged {amount} today, and it will renew automatically instead of ending.",
+          "downgradeBody": "Your {plan} was set to end on {date}. Switching to {newPlan} reactivates it — you won't be charged today, but it will now renew automatically at the new price instead of ending.",
+          "durationChangeBody": "Your {plan} was set to end on {date}. Switching to annual billing reactivates it and charges the full year, {amount}, today. It will then renew annually instead of ending.",
+          "durationChangeBodyMonthly": "Your {plan} was set to end on {date}. Switching to monthly billing reactivates it — you'll be charged {amount} today, and it will renew automatically instead of ending."
+        },
         "confirmButton": "Confirm & reactivate",
         "confirmButtonWithCharge": "Confirm & reactivate — {amount} today",
         "checkboxLabel": "I understand I'll be charged {amount} today",
@@ -3280,6 +3293,8 @@
       "ending": {
         "title": "Your team plan ends on {date}",
         "body": "Members keep full access until then. Resume your subscription to keep your shared credits and seats.",
+        "enterpriseTitle": "Your Enterprise plan ends on {date}",
+        "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
         "reactivate": "Resume subscription"
       },
       "planChange": {
@@ -3344,13 +3359,21 @@
       },
       "upsellBanner": "To add teammates, upgrade your plan.",
       "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
+      "resubscribe": "Resubscribe",
+        "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
+        "endedTeamTitle": "Your team plan has ended",
+        "endedEnterpriseTitle": "Your Enterprise plan has ended",
+        "endedPlanTitle": "Your plan has ended",
+        "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
+        "contactSales": "Contact sales",
       "upgradeToTeam": "Upgrade to Team",
       "reactivateTeam": "Reactivate Team",
       "needMoreMembers": "Need more members?",
       "contactUs": "Contact us",
       "noInvites": "No pending invites",
       "noMembers": "No members",
-      "searchPlaceholder": "Search..."
+      "searchPlaceholder": "Search...",
+      "expiredOn": "Expired {date}"
     },
     "partnerNodes": {
       "title": "Partner models",
@@ -4488,8 +4511,8 @@
     }
   },
   "errorOverlay": {
-    "multipleErrorCount": "{count} error found | {count} errors found",
-    "multipleErrorsMessage": "Resolve them before running the workflow.",
+    "multipleIssueCount": "{count} issue found | {count} issues found",
+    "multipleIssuesMessage": "Resolve these issues before running the workflow.",
     "viewDetails": "View details",
     "missingNodes": "Some nodes are missing and need to be installed",
     "missingModels": "{count} required model is missing | {count} required models are missing",
@@ -5246,6 +5269,7 @@
     "showTargetWorkflow": "Show target workflow: {workflowName}",
     "runApproval": {
       "lead": "This tool wants to run the workflow:",
+      "leadBound": "This tool wants to run this workflow.",
       "question": "Do you approve?",
       "thisWorkflow": "this workflow",
       "cancel": "Cancel",
@@ -5254,7 +5278,8 @@
     "dismiss": "Dismiss",
     "latest": "Latest",
     "copyUnavailable": "Only the current conversation can be copied in this version",
-    "alpha": "ALPHA",
+    "beta": "BETA",
+    "takeTour": "Take the tour",
     "targetForThisChat": "Agent target for this chat",
     "newChat": "New chat",
     "newChatTitle": "Untitled",
@@ -5363,8 +5388,8 @@
     "coachProgress": "{current} of {total}",
     "coachTitle": "Meet your Comfy Agent",
     "coachBody": "Describe your ideas, ask it to build and run workflows. It sees your canvas and files.",
-    "coachWorkflowTitle": "Select a workflow for your agent to edit",
-    "coachWorkflowBody": "The agent edits only the workflow you choose. You can also upload reference files or mention other workflows.",
+    "coachWorkflowTitle": "Your agent edits the workflow you're viewing",
+    "coachWorkflowBody": "It switches with your tabs until you send a message, choose a workflow, or add a node reference.",
     "coachGraphTitle": "Let the agent run while you edit",
     "coachGraphBody": "You can still edit the graph or switch tabs while the agent is working.",
     "coachHistoryTitle": "Pick up where you left off",
@@ -5383,10 +5408,19 @@
     "workflowReferenceUnavailableReason": "This referenced workflow is no longer available or you do not have access to it.",
     "removeWorkflowReference": "Remove {name} reference",
     "targetNavigationUnavailable": "This workflow target is no longer available.",
+    "workflowSyncFailedTitle": "This workflow can't sync",
+    "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",
+    "workflowSyncFailedDetailCatalogMismatch": "This workflow uses a node catalog that is incompatible with this workspace. Your canvas has been left unchanged.",
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
     "showLess": "Show less",
+    "editRejected": {
+      "widgetWrite": "Widget edit was rejected and was not saved. Your typed value exists on the canvas only — reload the workflow to see the value that was kept.",
+      "generic": "Your edit was rejected and was not saved. The workflow may no longer match its canvas — reload the workflow to see what was kept.",
+      "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. Your typed value exists on the canvas only — reload the workflow to see the values that were kept.",
+      "genericPartial": "Your edit was rejected and was not saved, though some earlier edits were. The workflow may no longer match its canvas — reload the workflow to see what was kept."
+    },
     "consent": {
       "title": "Meet Comfy Agent",
       "body1": "Comfy Agent helps you plan, build, run, and iterate on workflows. Describe what you want to create, and Comfy Agent will work as your powerful teammate.",

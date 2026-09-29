@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import type { UUID } from '@/utils/uuid'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
@@ -529,6 +529,27 @@ describe('useWidgetValueStore', () => {
       ).toBe(false)
     })
 
+    it('setOptions replaces options and resets omitted visibility tiers', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 100, {
+          options: { min: 0, hideInPanel: true, advanced: true }
+        })
+      )
+
+      expect(store.setOptions(seedA, { max: 10 })).toBe(true)
+      expect(store.getWidget(seedA)?.options).toEqual({ max: 10 })
+      expect(store.getWidgetVisibility(seedA)?.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'shown'
+      })
+      expect(
+        store.setOptions(widgetId(graphA, toNodeId('missing'), 'seed'), {})
+      ).toBe(false)
+    })
+
     it('maps legacy option updates to the visibility component', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 100))
@@ -755,6 +776,69 @@ describe('useWidgetValueStore', () => {
       store.endLocalDirtyTrackingSuppression()
       registered.value = 3
       expect(store.isLocallyDirty(seedA)).toBe(true)
+    })
+  })
+
+  describe('a remote write racing a local edit on the same widget', () => {
+    const remote: RemoteMutationContext = {
+      source: 'agent-remote',
+      actor: 'agent:test',
+      opId: 'op-1'
+    }
+
+    it('shows the agent value and drops the local-dirty mark', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(seedA, state('number', 1))
+      assert.exists(registered)
+
+      registered.value = 2
+      expect(store.isLocallyDirty(seedA)).toBe(true)
+
+      expect(store.setValue(seedA, 42, remote)).toBe(true)
+
+      expect(store.getWidget(seedA)?.value).toBe(42)
+      expect(store.isLocallyDirty(seedA)).toBe(false)
+    })
+
+    it('a local edit after the remote write is the fresher value and is dirty again', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(seedA, state('number', 1))
+      assert.exists(registered)
+
+      store.setValue(seedA, 42, remote)
+      registered.value = 7
+
+      expect(store.getWidget(seedA)?.value).toBe(7)
+      expect(store.isLocallyDirty(seedA)).toBe(true)
+    })
+
+    it('a remote write landing on the value already shown still clears the mark', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(seedA, state('number', 1))
+      assert.exists(registered)
+
+      registered.value = 42
+      expect(store.isLocallyDirty(seedA)).toBe(true)
+
+      store.setValue(seedA, 42, remote)
+
+      expect(store.getWidget(seedA)?.value).toBe(42)
+      expect(store.isLocallyDirty(seedA)).toBe(false)
+    })
+
+    it('does not touch the same widget name on another graph', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 1))
+      const other = store.registerWidget(seedB, state('number', 1))
+      assert.exists(other)
+      other.value = 5
+
+      store.setValue(seedA, 42, remote)
+
+      expect(store.getWidget(seedA)?.value).toBe(42)
+
+      expect(store.getWidget(seedB)?.value).toBe(5)
+      expect(store.isLocallyDirty(seedB)).toBe(true)
     })
   })
 })

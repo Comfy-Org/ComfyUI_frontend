@@ -86,8 +86,8 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
         ...globalOptions,
         stubs: {
           ...globalOptions.stubs,
-          UnifiedStripePaymentSelector: {
-            name: 'UnifiedStripePaymentSelector',
+          CheckoutPaymentForm: {
+            name: 'CheckoutPaymentForm',
             props: ['amountCents', 'currency'],
             template:
               '<div data-testid="payment-selector">{{ amountCents }}/{{ currency }}</div>',
@@ -135,7 +135,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
         ...globalOptions,
         stubs: {
           ...globalOptions.stubs,
-          UnifiedStripePaymentSelector: {
+          CheckoutPaymentForm: {
             template: '<div data-testid="payment-selector" />'
           }
         }
@@ -164,7 +164,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
         ...globalOptions,
         stubs: {
           ...globalOptions.stubs,
-          UnifiedStripePaymentSelector: {
+          CheckoutPaymentForm: {
             template: '<div data-testid="payment-selector" />'
           }
         }
@@ -322,7 +322,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
         ...globalOptions,
         stubs: {
           ...globalOptions.stubs,
-          SingleSelect: {
+          CheckoutSavedMethodSelect: {
             props: ['options'],
             emits: ['update:modelValue'],
             template:

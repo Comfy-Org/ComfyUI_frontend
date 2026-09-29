@@ -52,8 +52,13 @@ const keep = process.argv.includes('--keep')
  * ESM refuses it with ERR_UNSUPPORTED_DIR_IMPORT. Every host that renders this
  * entry builds through a bundler, and the typed consumer still covers it, so
  * the exclusion is about the provider's packaging rather than ours.
+ * `@comfyorg/account-ui/billing/checkout` renders that same form, so it
+ * inherits the exclusion.
  */
-const BUNDLER_ONLY_ENTRIES = ['@comfyorg/account-ui/billing/stripe']
+const BUNDLER_ONLY_ENTRIES = [
+  '@comfyorg/account-ui/billing/stripe',
+  '@comfyorg/account-ui/billing/checkout'
+]
 
 const PUBLISHED_PACKAGES = [
   'account-core',
@@ -203,6 +208,12 @@ import type { AccountUser, SessionSnapshot } from '@comfyorg/account-core/sessio
 import { createSessionClient } from '@comfyorg/account-core/session'
 import type { WebSessionResult } from '@comfyorg/account-core/webSession'
 import { readWebSession } from '@comfyorg/account-core/webSession'
+import type { FeaturesReadOptions } from '@comfyorg/account-core/webSessionFlag'
+import { readWebSessionProbe } from '@comfyorg/account-core/webSessionFlag'
+import type { RequestAuthorization } from '@comfyorg/account-core/requestAuth'
+import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import type { SessionTokenResult } from '@comfyorg/account-core/sessionTokenMint'
+import { createSessionTokenMint } from '@comfyorg/account-core/sessionTokenMint'
 import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import type { BillingErrorCode } from '@comfyorg/account-core/billing'
@@ -245,6 +256,10 @@ import type { Credits } from '@comfyorg/account-ui/billing'
 import { useCredits } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
+import type { CheckoutCopy } from '@comfyorg/account-ui/billing/checkout'
+import { CheckoutSubscribeConfirm } from '@comfyorg/account-ui/billing/checkout'
+import type { CatalogTierKey } from '@comfyorg/account-ui/billing/catalog'
+import { TIER_CATALOG } from '@comfyorg/account-ui/billing/catalog'
 import type { PasswordRulesCopy } from '@comfyorg/account-ui/auth/PasswordRules'
 import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
 import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
@@ -261,10 +276,11 @@ export const values = {
   createBoundedOperation,
   createSessionClient,
   readWebSession,
+  readWebSessionProbe,
+  createRequestAuthorizer,
+  createSessionTokenMint,
   createWebSessionIdentity,
   createSessionBillingTransport,
-  createFirebaseIdentity,
-  resolveFirebaseIdentity,
   resolveStripePublishableKey,
   createWebCrossTabRefreshPort,
   createTestIdentity,
@@ -283,6 +299,8 @@ export const values = {
   zExchangeTokenResponse,
   useCredits,
   StripePaymentForm,
+  CheckoutSubscribeConfirm,
+  TIER_CATALOG,
   PasswordRules,
   SocialAuthButtons,
   TurnstileWidget,
@@ -297,6 +315,9 @@ export interface Types {
   boundedOperation: OperationHandle
   session: SessionSnapshot
   webSession: WebSessionResult
+  featuresRead: FeaturesReadOptions
+  requestAuth: RequestAuthorization
+  sessionTokenMint: SessionTokenResult
   webSessionIdentity: WebSessionIdentityState
   billing: BillingErrorCode
   firebase: FirebaseIdentityAppConfig
@@ -319,6 +340,8 @@ export interface Types {
   ingestTypes: ExchangeTokenResponse
   accountUiBilling: Credits
   accountUiStripe: StripePaymentPhase
+  accountUiCheckout: CheckoutCopy
+  accountUiCatalog: CatalogTierKey
   passwordRules: PasswordRulesCopy
   socialAuthButtons: typeof SocialAuthButtons
   turnstileWidget: typeof TurnstileWidget

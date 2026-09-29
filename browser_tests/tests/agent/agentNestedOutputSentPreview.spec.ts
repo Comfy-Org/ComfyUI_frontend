@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   MULTI_OUTPUT_FIRST,
   MULTI_OUTPUT_JOB_ID,
@@ -100,9 +101,7 @@ test.fail(
       })
     })
 
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton })
-      .click()
+    await new AgentPanel(page).open()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
     await panel

@@ -1,6 +1,5 @@
 import { expect } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
@@ -8,6 +7,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 // Minimal node used only to prove the clipboard leak; the bug is not
@@ -77,9 +77,7 @@ test(
     await canvas.click()
     await canvas.press('Control+c')
 
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton })
-      .click()
+    await new AgentPanel(page).open()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
 
