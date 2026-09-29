@@ -81,6 +81,7 @@ describe('refreshRemoteConfig', () => {
     }
     window.__CONFIG__ = remoteConfig.value
     sessionAgentGrant.value = true
+    sessionAgentGrantValidUntil.value = Date.now() + 60_000
 
     invalidateRemoteConfig()
 
