@@ -51,12 +51,14 @@ read_tag_object() {
   error_file=$(mktemp)
   if output=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" \
     --jq '[.object.type, .object.sha] | @tsv' \
-    2> >(tee "$error_file" >&2)); then
+    2>"$error_file"); then
+    cat "$error_file" >&2
     rm -f "$error_file"
     printf '%s\n' "$output"
     return 0
   fi
-  if grep -Eq 'HTTP 404|Not Found' "$error_file"; then
+  cat "$error_file" >&2
+  if grep -Eq 'HTTP 404' "$error_file"; then
     rm -f "$error_file"
     return 1
   fi
