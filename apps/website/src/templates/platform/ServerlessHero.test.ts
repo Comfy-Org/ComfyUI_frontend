@@ -20,4 +20,16 @@ describe('ServerlessHero', () => {
     ).toBeGreaterThan(0)
     expect(screen.queryByText(t('nav.badgeBeta', 'en'))).toBeNull()
   })
+
+  it('loads the JSON API GPU animation', () => {
+    render(ServerlessHero, { props: { locale: 'en' } })
+
+    const animation = screen.getByTitle(
+      t('platform.serverlessHero.animationTitle', 'en')
+    )
+    expect(animation).toHaveAttribute(
+      'src',
+      '/assets/platform/serverless/json-api-gpu-animation.html'
+    )
+  })
 })

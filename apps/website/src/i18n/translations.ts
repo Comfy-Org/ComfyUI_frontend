@@ -8994,6 +8994,44 @@ Enterprise`
     en: 'Start with your workflow',
     'zh-CN': '从你的工作流开始'
   },
+  'platform.serverlessApps.eyebrow': {
+    en: 'CREATIVE APPS',
+    'zh-CN': '创意应用'
+  },
+  'platform.serverlessApps.heading': {
+    en: 'Build the app, not just the workflow.',
+    'zh-CN': '构建应用，而不只是工作流。'
+  },
+  'platform.serverlessApps.body': {
+    en: 'Deploy your ComfyUI workflows as APIs behind customer-facing products, internal tools, and automated creative pipelines. Build the experience your users need without exposing the graph.',
+    'zh-CN':
+      '将 ComfyUI 工作流作为 API 部署在面向客户的产品、内部工具和自动化创意流程之后。在不暴露工作流图的情况下，构建用户所需的体验。'
+  },
+  'platform.serverlessApps.browseApps': {
+    en: 'Browse apps',
+    'zh-CN': '浏览应用'
+  },
+  'platform.serverlessApps.videoLabel': {
+    en: 'Creative app powered by Comfy API',
+    'zh-CN': '由 Comfy API 驱动的创意应用'
+  },
+  'platform.serverlessCaseStudy.quote': {
+    en: 'We build creative systems that have to hold up at brand scale. Comfy API lets us package a ComfyUI workflow once and deploy it as an endpoint our team and tools can call, so our time goes into the creative, not the infrastructure.',
+    'zh-CN':
+      '我们构建的创意系统必须能够支撑品牌级规模。Comfy API 让我们一次打包 ComfyUI 工作流，并将其部署为团队和工具都能调用的端点，让我们把时间投入创意，而不是基础设施。'
+  },
+  'platform.serverlessCaseStudy.name': {
+    en: 'PJ Pereira',
+    'zh-CN': 'PJ Pereira'
+  },
+  'platform.serverlessCaseStudy.role': {
+    en: 'Co-founder of Silverside AI',
+    'zh-CN': 'Silverside AI 联合创始人'
+  },
+  'platform.serverlessCaseStudy.linkLabel': {
+    en: 'Read the Silverside AI customer story',
+    'zh-CN': '阅读 Silverside AI 客户案例'
+  },
   'platform.serverlessScale.heading': {
     en: 'Built for teams',
     'zh-CN': '为团队打造'
@@ -9105,6 +9143,10 @@ Enterprise`
     en: 'Package all your custom nodes, LoRAs, models, and Python dependencies into an autoscaling endpoint.',
     'zh-CN':
       '将你的所有自定义节点、LoRA、模型和 Python 依赖打包成一个自动扩缩的端点。'
+  },
+  'platform.serverlessHero.animationTitle': {
+    en: 'Comfy image pipeline and GPU orchestration animation',
+    'zh-CN': 'Comfy 图像管线与 GPU 编排动画'
   },
   'platform.modelsGallery.ariaLabel': {
     en: 'Sample outputs from partner models',
