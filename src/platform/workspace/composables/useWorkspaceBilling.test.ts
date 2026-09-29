@@ -1276,9 +1276,7 @@ describe('useWorkspaceBilling', () => {
       )
       let scopeIsCurrent = true
 
-      const pending = setupBilling().cancelSubscription(
-        () => scopeIsCurrent
-      )
+      const pending = setupBilling().cancelSubscription(() => scopeIsCurrent)
       await vi.waitFor(() =>
         expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
       )
