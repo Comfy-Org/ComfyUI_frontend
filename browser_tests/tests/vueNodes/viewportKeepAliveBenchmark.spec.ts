@@ -18,7 +18,7 @@ import {
  */
 
 const KEEP_ALIVE_SETTING = 'Comfy.VueNodes.ViewportKeepAlive'
-const MAX_ATTACHED_RATIO_WITH_KEEP_ALIVE = 0.8
+const MAX_ATTACHED_RATIO_WITH_KEEP_ALIVE = 0.4
 // Kept intentionally small: the "off" baseline re-renders every attached
 // node on every frame-synced step, so cost scales with step count far
 // faster than with retention on. dx/dy (not steps) control sweep distance —
@@ -100,6 +100,10 @@ async function benchmarkViewportKeepAlive(
     await expect
       .poll(() => comfyPage.vueNodes.nodes.count())
       .toBeLessThan(totalNodeCount)
+    // A total-retention failure (e.g. useViewportKeepAlive bailing out before
+    // the viewport is measured) would also read as "less than total" — guard
+    // against that by requiring a genuinely non-empty attached set too.
+    await expect.poll(() => comfyPage.vueNodes.nodes.count()).toBeGreaterThan(0)
   } else {
     // Confirm the baseline really does mount and hold every node attached
     // before the timed measurement starts — keep-alive never engages here,
@@ -191,6 +195,9 @@ test.describe('Viewport KeepAlive benchmark', { tag: ['@perf'] }, () => {
     expect(on.attachedNodeCount).toBeLessThan(
       on.totalNodeCount * MAX_ATTACHED_RATIO_WITH_KEEP_ALIVE
     )
+    // Catches total-retention failure (zero nodes attached), which the
+    // upper-bound check above can't distinguish from healthy retention.
+    expect(on.attachedNodeCount).toBeGreaterThan(0)
   })
 
   test('viewport KeepAlive off keeps every node attached', async ({
