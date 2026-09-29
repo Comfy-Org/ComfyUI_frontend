@@ -22,6 +22,7 @@ interface ModelUrlMap {
 }
 
 export const MODEL_URL_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/
+const OLD_URL_SLUG = /^[\w.-]+$/
 
 const TASK_WORDS_BY_USE_CASE: Readonly<Record<UseCase, readonly string[]>> = {
   'generate-images': ['text-to-image', 'text-to-vector'],
@@ -47,6 +48,8 @@ const hasWords = (slug: string, words: string) =>
 
 export function modelUrlSlug(name: string): string {
   return name
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
@@ -59,6 +62,10 @@ export function compileModelUrlMap(
   const newSlugByOld = new Map(
     models.map((model) => [model.slug, modelUrlSlug(model.name)])
   )
+  if (newSlugByOld.size !== models.length)
+    throw new Error('Two model pages share an old slug')
+  for (const slug of [...newSlugByOld.keys(), ...aliases.keys()])
+    if (!OLD_URL_SLUG.test(slug)) throw new Error(`Invalid old slug: ${slug}`)
   const owners = new Map<string, string>()
   for (const [oldSlug, newSlug] of newSlugByOld) {
     if (!MODEL_URL_SLUG.test(newSlug))
@@ -124,6 +131,8 @@ ${map.aliases.map(entryLines).join(',\n')}
 `
 }
 
+const cell = (text: string) => text.replace(/\s+/g, ' ').replace(/\|/g, '\\|')
+
 export function renderModelUrlTable(
   models: readonly MapModel[],
   map: ModelUrlMap
@@ -132,7 +141,11 @@ export function renderModelUrlTable(
     map.pages.map((page) => [page.oldSlug, page.newSlug])
   )
   const rows = models
-    .map((model) => ({ model, newSlug: newSlugByOld.get(model.slug) ?? '' }))
+    .map((model) => {
+      const newSlug = newSlugByOld.get(model.slug)
+      if (!newSlug) throw new Error(`No new slug for ${model.slug}`)
+      return { model, newSlug }
+    })
     .sort(
       (a, b) =>
         compareText(a.model.provider ?? '', b.model.provider ?? '') ||
@@ -141,7 +154,7 @@ export function renderModelUrlTable(
   const flagged = rows.flatMap(({ model, newSlug }) => {
     const flags = modelUrlFlags(model, newSlug)
     return flags.length
-      ? [`| \`${newSlug}\` | ${model.name} | ${flags.join('; ')} |`]
+      ? [`| \`${newSlug}\` | ${cell(model.name)} | ${cell(flags.join('; '))} |`]
       : []
   })
   return [
@@ -161,7 +174,7 @@ export function renderModelUrlTable(
     '| --- | --- | --- | --- |',
     ...rows.map(
       ({ model, newSlug }) =>
-        `| ${model.provider ?? ''} | ${model.name} | \`${model.slug}\` | \`${newSlug}\` |`
+        `| ${cell(model.provider ?? '')} | ${cell(model.name)} | \`${model.slug}\` | \`${newSlug}\` |`
     ),
     '',
     `## Aliases (${map.aliases.length})`,
