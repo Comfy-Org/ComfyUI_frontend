@@ -67,7 +67,18 @@ describe('ModelDetail on the server', () => {
 
     const flagOff = await render(false)
 
-    expect(flagOff).toContain('data-gate="pending"')
+    expect(flagOff).toContain('data-gate="resolving"')
     expect(await render(true)).toBe(flagOff)
+  })
+
+  it('arrives with its inputs disabled, since hydration would discard anything typed first', async () => {
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+
+    const html = await renderToString(
+      createSSRApp({ render: () => h(ModelDetail, { model }) })
+    )
+
+    const prompt = /<textarea[^>]*data-testid="field-prompt"[^>]*>/.exec(html)
+    expect(prompt?.[0]).toMatch(/\sdisabled(?=[\s=>])/)
   })
 })

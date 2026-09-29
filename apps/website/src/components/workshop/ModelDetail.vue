@@ -272,7 +272,7 @@ const flagOffGate = computed(() =>
 )
 const gate = computed(() => {
   if (!canRunModel.value) return 'unavailable'
-  if (!mounted.value) return 'pending'
+  if (!mounted.value) return 'resolving'
   if (!workshopEnabled.value) return flagOffGate.value
   if (draftPending.value) return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
@@ -286,6 +286,9 @@ const gate = computed(() => {
     return session.value.role === 'member' ? 'memberNoCredits' : 'noCredits'
   return 'ready'
 })
+const inputsLocked = computed(
+  () => !mounted.value || isRunning.value || draftPending.value
+)
 const blockedRunLabel = computed<TranslationKey>(() => {
   if (gate.value === 'resolving') return 'workshop.run.resolvingAvailability'
   if (gate.value === 'pending') return 'workshop.run.preparingSession'
@@ -805,7 +808,7 @@ function useInCode() {
             "
             type="button"
             :aria-pressed="nativeJson"
-            :disabled="isRunning || draftPending"
+            :disabled="inputsLocked"
             class="cursor-pointer rounded-sm px-2 py-1 hover:bg-transparency-white-t8 disabled:cursor-not-allowed"
             @click="nativeJson = !nativeJson"
           >
@@ -831,7 +834,7 @@ function useInCode() {
             :errors
             :frame-ratio
             :locale
-            :disabled="isRunning || draftPending"
+            :disabled="inputsLocked"
             :file-uploads-disabled="!mounted"
           />
           <p
@@ -972,7 +975,11 @@ function useInCode() {
         class="flex min-w-0 flex-col gap-4 lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
       >
         <PlaygroundOutput
-          v-if="workshopEnabled || isRunning || runState.status === 'example'"
+          v-if="
+            (mounted && workshopEnabled) ||
+            isRunning ||
+            runState.status === 'example'
+          "
           v-model:revealed="revealed"
           :state="runState"
           :earlier
