@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { fakeWebSessionUser } from '../testing.js'
 import type {
@@ -226,6 +226,33 @@ describe('createRequestAuthorizer', () => {
       await expect(
         authorize(SESSION, { target, method: 'POST' })
       ).resolves.toEqual(expected)
+    }
+  )
+
+  it.for<{ target: RequestTarget; method: string }>([
+    { target: 'ingest', method: 'GET' },
+    { target: 'ingest', method: 'POST' },
+    { target: 'ingest', method: 'DELETE' },
+    { target: 'resource', method: 'GET' },
+    { target: 'resource', method: 'POST' },
+    { target: 'resource', method: 'DELETE' }
+  ])(
+    'authorizes an API key on $target $method with its header alone',
+    async ({ target, method }) => {
+      const getWorkspaceToken = vi.fn(async () => 'jwt')
+      const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      const authorizeWithSpies = createRequestAuthorizer({ getWorkspaceToken })
+
+      const result = await authorizeWithSpies(API_KEY, {
+        target,
+        method,
+        workspaceId: 'ws-1'
+      })
+
+      expect(result).toStrictEqual({ headers: { 'X-API-KEY': 'comfyui-key' } })
+      expect(getWorkspaceToken).not.toHaveBeenCalled()
+      expect(fetchSpy).not.toHaveBeenCalled()
+      fetchSpy.mockRestore()
     }
   )
 

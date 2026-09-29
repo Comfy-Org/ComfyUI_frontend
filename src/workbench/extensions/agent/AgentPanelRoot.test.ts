@@ -248,27 +248,27 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { attachMintPortWiring } from './crdt/mintPortWiring'
-import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
+import { attachDocOpMinter } from './crdt/docOpMinter'
+import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
 
-const mintPortWiringDeps = vi.hoisted(() => ({
-  current: null as MintPortWiringDeps | null
+const docOpMinterDeps = vi.hoisted(() => ({
+  current: null as DocOpMinterDeps | null
 }))
-vi.mock(import('./crdt/mintPortWiring'), { spy: true })
+vi.mock(import('./crdt/docOpMinter'), { spy: true })
 
-// The mock replaces the real `attachMintPortWiring` body entirely. It only
+// The mock replaces the real `attachDocOpMinter` body entirely. It only
 // captures `deps` for assertions below — it must NOT reproduce any of that
 // body's own behaviour (e.g. the doc-bound probe registration), or a test
 // against the reimplementation could stay green while the real one breaks.
 // The doc-bound probe's registration/disposal is covered directly against
-// the real `attachMintPortWiring` in `mintPortWiring.test.ts`.
-function stubAttachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
-  mintPortWiringDeps.current = deps
-  return fromPartial<MintPortWiring>({
+// the real `attachDocOpMinter` in `docOpMinter.test.ts`.
+function stubAttachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
+  docOpMinterDeps.current = deps
+  return fromPartial<DocOpMinter>({
     detach: vi.fn()
   })
 }
-vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
+vi.mocked(attachDocOpMinter).mockImplementation(stubAttachDocOpMinter)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
@@ -398,8 +398,8 @@ beforeEach(() => {
   Object.assign(appMock.rootGraph, { subgraphs: new Map(), id: undefined })
   appMock.isGraphReady = false
   appMock.canvas = undefined
-  mintPortWiringDeps.current = null
-  vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
+  docOpMinterDeps.current = null
+  vi.mocked(attachDocOpMinter).mockImplementation(stubAttachDocOpMinter)
   vi.mocked(useWorkflowService()).saveWorkflow.mockClear()
   vi.mocked(useWorkflowService()).saveWorkflowAs.mockClear()
   vi.mocked(useWorkflowService()).openWorkflow.mockClear()
@@ -1498,6 +1498,15 @@ describe('AgentPanelRoot session notices', () => {
       type: 'agent_api_failed',
       details: i18n.global.t('agent.malformedEvent')
     })
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'malformed_stream_event',
+        failure_stage: 'pre_acceptance',
+        retryable: false,
+        turn_accepted: false,
+        ui_treatment: 'error_overlay'
+      })
+    )
   })
 })
 
@@ -1828,7 +1837,9 @@ describe('AgentPanelRoot attach flow', () => {
       thread_id: null,
       workflow_id: 'wf-42',
       client_message_id: 'client-message-1',
-      input_method: 'typed'
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
     })
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
@@ -2980,7 +2991,7 @@ describe('AgentPanelRoot attach flow', () => {
         detail: 'cat.png could not be uploaded'
       })
     )
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_attachment_upload_failed',
       tags: {
         failure_kind: 'caught_unexpected',
@@ -3394,6 +3405,7 @@ describe('AgentPanelRoot history', () => {
 
   it('surfaces a thread-list failure via the host error modal', async () => {
     executionErrors.showErrorOverlay.mockClear()
+    telemetry.trackAgentError.mockClear()
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response('{}', { status: 500 }))
@@ -3407,6 +3419,15 @@ describe('AgentPanelRoot history', () => {
     expect(executionErrors.lastPromptError).toMatchObject({
       type: 'agent_api_failed'
     })
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'thread_list_load_failed',
+        failure_stage: 'pre_acceptance',
+        retryable: true,
+        turn_accepted: false,
+        ui_treatment: 'error_overlay'
+      })
+    )
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
@@ -3946,7 +3967,9 @@ describe('AgentPanelRoot workflow binding', () => {
             thread_id,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-1',
-            input_method: 'typed'
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
           }
         ]
       ])
@@ -4022,6 +4045,7 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     vi.mocked(useTelemetry())!.trackAgentMessageSent.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mockClear()
     renderWithSelectedTarget()
 
     await userEvent.click(
@@ -4030,6 +4054,23 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
+    // The click is reported when it happens, so it holds the first minted id and
+    // the send that follows holds the second.
+    expect(
+      vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mock.calls
+    ).toEqual([
+      [
+        {
+          prompt_id: 'list_workflows',
+          prompt_index: 1,
+          prompt_count: 5,
+          prompt_text_hash: expect.stringMatching(/^[0-9a-f]{8}$/),
+          locale: 'en',
+          click_id: 'client-message-1',
+          draft_was_empty: true
+        }
+      ]
+    ])
     expect(vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls).toEqual(
       [
         [
@@ -4038,8 +4079,10 @@ describe('AgentPanelRoot workflow binding', () => {
             node_tag_count: 0,
             thread_id: null,
             workflow_id: 'wf-42',
-            client_message_id: 'client-message-1',
-            input_method: 'suggestion'
+            client_message_id: 'client-message-2',
+            input_method: 'suggestion',
+            starter_prompt_id: 'list_workflows',
+            starter_prompt_click_id: 'client-message-1'
           }
         ]
       ]
@@ -4083,7 +4126,9 @@ describe('AgentPanelRoot workflow binding', () => {
             thread_id: null,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-1',
-            input_method: 'typed'
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
           }
         ]
       ]
@@ -4116,7 +4161,9 @@ describe('AgentPanelRoot workflow binding', () => {
             thread_id: null,
             workflow_id: 'wf-77',
             client_message_id: 'client-message-1',
-            input_method: 'typed'
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
           }
         ]
       ]
@@ -5963,6 +6010,26 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
+  it('agent_active_tab reports when a bound tab cannot be opened', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
+
+    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error_class: 'workflow_open_failed',
+          ui_treatment: 'toast'
+        })
+      )
+    )
+    expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+  })
+
   // A browser tab closed without the SPA's own unbind() left 'wf-abandoned'
   // bound to the default unsaved path in localStorage, and the thread pointer
   // survived beside it. On the next boot the thread hydrates and names that
@@ -6415,14 +6482,13 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('agent_active_tab closes the minted tab when opening it fails', async () => {
+  it('agent_active_tab reports when a minted tab cannot be opened', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
-    vi.mocked(useWorkflowService()).openWorkflow.mockRejectedValueOnce(
-      new Error('disk full')
-    )
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
     vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
@@ -6442,14 +6508,23 @@ describe('AgentPanelRoot workflow binding', () => {
         workflowStore.getWorkflowByPath('workflows/Video test.json')
       ).toBeNull()
     )
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'workflow_open_failed',
+        ui_treatment: 'toast'
+      })
+    )
   })
 
-  it('agent_active_tab closes the minted tab when opening it reports failure', async () => {
+  it('agent_active_tab closes the minted tab when opening it throws', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
-    vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(useWorkflowService()).openWorkflow.mockRejectedValueOnce(
+      new Error('open boom')
+    )
     vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
@@ -6473,6 +6548,15 @@ describe('AgentPanelRoot workflow binding', () => {
       useAgentWorkflowTabBindingStore().tabPathFor('wf-77')
     ).toBeUndefined()
     expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'workflow_open_failed',
+        failure_stage: 'post_acceptance',
+        retryable: false,
+        turn_accepted: true,
+        ui_treatment: 'error_overlay'
+      })
+    )
   })
 
   it('agent_active_tab strips dotfile prefixes hidden behind whitespace', async () => {
@@ -8408,7 +8492,9 @@ describe('AgentPanelRoot workflow binding', () => {
       thread_id: null,
       workflow_id: null,
       client_message_id: 'client-message-1',
-      input_method: 'typed'
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
     })
     expect(screen.getByText('VAEDecode #7')).toBeInTheDocument()
     expect(screen.queryByText(/KSampler/)).not.toBeInTheDocument()
@@ -9269,16 +9355,16 @@ describe('AgentPanelRoot workflow binding', () => {
 
     appMock.isGraphReady = true
     Object.assign(appMock.rootGraph, { id: 'graph-a' })
-    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-a')
+    expect(docOpMinterDeps.current?.getGraph()?.id).toBe('graph-a')
 
     // A workflow switch rebuilds the canvas against a new root graph without
-    // touching agentPanelStore.enabled or isBoundWorkflowActive, so the mint
-    // port wiring's own doc-bound predicate (covered directly against the
-    // real `attachMintPortWiring` in `mintPortWiring.test.ts`) has to read
-    // this live graph at mint time to follow the swap.
+    // touching agentPanelStore.enabled or isBoundWorkflowActive, so the
+    // minter's own doc-bound predicate (covered directly against the real
+    // `attachDocOpMinter` in `docOpMinter.test.ts`) has to read this live
+    // graph at mint time to follow the swap.
     Object.assign(appMock.rootGraph, { id: 'graph-b' })
 
-    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-b')
+    expect(docOpMinterDeps.current?.getGraph()?.id).toBe('graph-b')
   })
 
   it('wires getGraph() to null before the graph is ready', async () => {
@@ -9289,7 +9375,7 @@ describe('AgentPanelRoot workflow binding', () => {
     Object.assign(appMock.rootGraph, { id: 'graph-a' })
     appMock.isGraphReady = false
 
-    expect(mintPortWiringDeps.current?.getGraph()).toBeNull()
+    expect(docOpMinterDeps.current?.getGraph()).toBeNull()
   })
 
   it("reports the bound workflow's own stored root graph id once bound", async () => {
@@ -9299,7 +9385,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     await vi.waitFor(() =>
-      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
         toRootGraphId('wf-42')
       )
     )
@@ -9308,7 +9394,7 @@ describe('AgentPanelRoot workflow binding', () => {
   it('leaves the bound root graph id null while no workflow is bound and active', () => {
     renderWithSelectedTarget()
 
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBeNull()
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
   })
 
   it("reports the newly bound workflow's root graph id after an active-tab switch, even though the previously bound workflow stayed correct while its tab was inactive", async () => {
@@ -9322,7 +9408,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('start on A')
 
     await vi.waitFor(() =>
-      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
         toRootGraphId('wf-a')
       )
     )
@@ -9331,7 +9417,7 @@ describe('AgentPanelRoot workflow binding', () => {
     // still report wf-a here, so this alone would not catch a regression.
     workflowStore.activeWorkflow = addTab('workflows/elsewhere.json')
     await nextTick()
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-a')
     )
 
@@ -9341,7 +9427,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(workflowStore.activeWorkflow?.path).toBe(tabB.path)
     )
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-b')
     )
   })
@@ -9353,7 +9439,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     await vi.waitFor(() =>
-      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
         toRootGraphId('wf-42')
       )
     )
@@ -9362,7 +9448,7 @@ describe('AgentPanelRoot workflow binding', () => {
     // mints a fresh uuid) without boundWorkflowId itself ever changing.
     tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42-rotated' })
 
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-42-rotated')
     )
   })

@@ -51,3 +51,7 @@ export function resolveWorkshopAccountSource(): Promise<WorkshopAccountSource> {
   resolution ??= decideAccountSource()
   return resolution
 }
+
+export function resetWorkshopAccountSource() {
+  resolution = undefined
+}
