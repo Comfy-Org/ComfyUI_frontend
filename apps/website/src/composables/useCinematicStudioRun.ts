@@ -5,10 +5,8 @@ import type { WorkshopModelDetail } from '../config/models-catalogue'
 import { fetchModelsPage } from '../config/models-page-data'
 import type { PreparedRouterRender } from '../config/router-render'
 import { router_render } from '../config/router-render'
-import {
-  refreshWorkshopCredits,
-  useWorkshopCredits
-} from '../config/workshop-credits'
+import { refreshWorkshopCredits } from '../config/workshop-credits'
+import { useWorkshopModelBalance } from '../config/workshop-model-balance'
 import { releaseRouterOutputs } from '../config/workshop-response'
 import {
   WorkshopRouterError,
@@ -122,7 +120,7 @@ export function useCinematicStudioRun(
 ) {
   const { user, session, sessionFailure, settled, ensureFresh } =
     useWorkshopSession()
-  const { balance } = useWorkshopCredits()
+  const balance = useWorkshopModelBalance(session)
   const workshopEnabled = useWorkshopEnabled()
   const authEnabled = useWorkshopAuthFlag()
   const mounted = useMounted()
