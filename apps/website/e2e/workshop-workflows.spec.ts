@@ -80,7 +80,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await page.getByTestId('sort-name').click()
   await expect(
     page.getByTestId('workflow-search-results').getByRole('link').first()
-  ).toHaveAttribute('href', '/models/workflows/animate-reference-sheet/')
+  ).toHaveAttribute('href', '/models/workflows/connect-images-with-motion/')
   await page.getByTestId('section-back').click()
   await expect(page.getByTestId('workshop-hero')).toBeVisible()
   await page.getByTestId('workshop-search').fill('Change a material')
@@ -549,4 +549,22 @@ test('@mobile stretches the catalogue tabs across the toolbar on a phone', async
     tabs.boundingBox()
   ])
   expect(Math.abs((bar?.width ?? 0) - (group?.width ?? 0))).toBeLessThan(12)
+})
+
+test('the examples below the form read and mark themselves like a model page', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/models/workflows/change-material/')
+
+  await expect(
+    page.getByRole('heading', { name: 'Try an example' })
+  ).toBeVisible()
+
+  const example = page.getByRole('button', {
+    name: /A softer finish for a leather sofa/
+  })
+  await expect(example).toHaveAttribute('aria-current', 'true')
+  await expect(page.getByTestId('workflow-example-chosen')).toHaveCount(1)
 })
