@@ -57,6 +57,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -219,9 +220,7 @@ export class IdCollisionHarness {
       },
       objectInfo: 'server'
     })
-    await this.page
-      .getByRole('button', { name: enMessages.agent.entryButton })
-      .click()
+    await new AgentPanel(this.page).open()
     await expect(this.panel).toBeVisible({ timeout: 30_000 })
     await this.selectWorkflowTarget()
     // `useAgentSession` only binds the CRDT workflow id (which is what makes
@@ -243,21 +242,14 @@ export class IdCollisionHarness {
   }
 
   /**
-   * Forces a full catch-up reconcile of the doc's CURRENT state — a real
-   * tab switch away and back, exactly `agentTabSwitchCatchUp.spec.ts`'s
-   * mechanism — rather than relying on the incremental live-update path.
-   * PR #17963 (merged 2026-09-18) fixed the incremental path to patch a
-   * still-live node in place instead of rebuilding it from the doc on
-   * every update, so this repro's wipe/phantom symptom needs the same
-   * whole-document reconcile a tab switch (or reconnect) drives, against a
-   * doc that now disagrees with the still-live orphan at the collided id.
+   * Drives a real tab switch away and back, exactly
+   * `agentTabSwitchCatchUp.spec.ts`'s mechanism, so the host resends the
+   * document and the follower applies whatever it collected for the tab.
    *
    * `waitForSubscribe` only proves the host sent `doc_subscribed` plus
-   * catch-up, not that the client finished reconciling from it, but that is
-   * still safe here: rebinding on tab activation (`ecsFollowerAdapter.ts`'s
-   * `bind()`) always arms `reconcileNextFrame` for the fresh session, so the
-   * very next `doc_update` — this catch-up frame, even an empty one — forces
-   * a full reconcile regardless of the delta's size. Callers still assert
+   * catch-up, not that the client finished applying it. Returning to the tab
+   * runs `AgentCrdtProjection.applyCollected`, which applies exactly the
+   * document changes collected while the tab was away. Callers still assert
    * on the resulting DOM through Playwright's own auto-retrying `expect`,
    * which is what actually waits out any remaining latency.
    */

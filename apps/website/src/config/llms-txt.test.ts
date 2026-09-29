@@ -32,7 +32,6 @@ const vercelRedirectSources = new Set<string>(
  */
 const EXCLUDED_PAGES = new Set([
   '/404',
-  '/agent', // unlisted agent beta waitlist page, noindex
   '/booking-confirmation', // post-form confirmation, no standalone content
   '/forgot-password', // auth surface, noindex
   '/individual-submission', // gallery submission form
