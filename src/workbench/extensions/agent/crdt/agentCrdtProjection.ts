@@ -1,107 +1,226 @@
-import type * as Y from 'yjs'
+import type { Op } from '@comfyorg/comfy-multi-player'
 
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 
-import type { MaterializableGraph } from './agentNodeMaterializer'
-import {
-  reconcileAgentAdapters,
-  subgraphDefinitionReadState
-} from './agentNodeMaterializer'
-import {
-  readSubgraphDefinitionIds,
-  readSubgraphDefinitions
-} from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
+import { DocChangeCollector } from './docChangeCollector'
 import type { DocUpdate } from './docFrameClient'
-import type { LocalIntent, MutationsForTarget } from './ecsFollowerAdapter'
-import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { FollowerDoc } from './followerDoc'
+import type { GraphOperation } from './graphOperations'
+import { LiveGraphApplier, readDocWidgetValue } from './liveGraphApplier'
+import type {
+  ApplyMode,
+  FrameChanges,
+  LiveGraphApplierDeps,
+  RemoteApplyContext
+} from './liveGraphApplier'
+import { LocalWidgetWrites } from './localWidgetWrites'
+import { changesForRejectedOps } from './rejectedOpChanges'
 
+interface BoundTarget {
+  follower: FollowerDoc
+  collector: DocChangeCollector
+}
+
+/** Document node entries one frame added and removed. */
+export interface DocNodeDelta {
+  added: readonly string[]
+  removed: readonly string[]
+}
+
+export type FrameOutcome =
+  | { applied: false; nodes: DocNodeDelta }
+  | { applied: true; nodes: DocNodeDelta; createdNodeIds: NodeId[] }
+
+const EMPTY_DELTA: DocNodeDelta = { added: [], removed: [] }
+
+function docNodeDelta(changes: FrameChanges): DocNodeDelta {
+  const added: string[] = []
+  const removed: string[] = []
+  for (const [id, change] of changes.nodes) {
+    if (change === 'add') added.push(id)
+    else if (change === 'delete') removed.push(id)
+  }
+  return { added, removed }
+}
+
+/**
+ * Projects a follower document onto the live graph through the graph API.
+ * One collector per bound workflow records what each delivered frame changed;
+ * the applier replays those changes as ordinary graph operations.
+ */
 export class AgentCrdtProjection {
-  private readonly adapter: EcsFollowerAdapter
+  private readonly targets = new Map<string, BoundTarget>()
+  private readonly replacedLineages = new Set<string>()
+  private readonly localWrites = new LocalWidgetWrites()
+  private readonly applier: LiveGraphApplier
 
   constructor(
-    mutations: MutationsForTarget,
-    private readonly getGraph: () => MaterializableGraph | null,
-    private readonly getFollowerDoc: () => Y.Doc,
-    intent?: LocalIntent
+    private readonly getGraph: () => LGraph | null,
+    deps: Omit<LiveGraphApplierDeps, 'getGraph' | 'holdsLocalWrite'> = {}
   ) {
-    this.adapter = new EcsFollowerAdapter(mutations, intent)
+    this.applier = new LiveGraphApplier({
+      ...deps,
+      getGraph,
+      holdsLocalWrite: (nodeId, widget, docValue) => {
+        const held = this.localWrites.holds(nodeId, widget, docValue)
+        if (held) {
+          recordDevEvent('local_widget_write_held', {
+            node_id: nodeId,
+            name: widget
+          })
+        }
+        return held
+      }
+    })
   }
 
+  /**
+   * Local edits on their way to the host. A frame's value for one of these
+   * registers is held back until the document holds the local value; see
+   * `LocalWidgetWrites`.
+   */
+  noteLocalWrites(operations: readonly GraphOperation[]): void {
+    this.localWrites.note(operations)
+  }
+
+  /** The host has answered for these ops, or they will never reach it. */
+  settleLocalWrites(operations: readonly GraphOperation[]): void {
+    this.localWrites.settle(operations)
+  }
+
+  /** Binding the same follower again keeps its collected, unapplied changes. */
   bind(workflowId: string, follower: FollowerDoc): void {
-    this.adapter.bind(workflowId, follower)
+    if (this.targets.get(workflowId)?.follower === follower) return
+    this.unbind(workflowId)
+    this.targets.set(workflowId, {
+      follower,
+      collector: new DocChangeCollector(follower.doc)
+    })
   }
 
   unbind(workflowId: string): void {
-    this.adapter.unbind(workflowId)
+    const target = this.targets.get(workflowId)
+    if (!target) return
+    target.collector.destroy()
+    this.targets.delete(workflowId)
   }
 
   /**
-   * Store-only, and deliberately so: `reconcileLiveGraph` can throw (its
-   * orphan sweep reaches extension `onRemoved` hooks), and the caller counts
-   * this frame's outcome from the return value. Folding the sweep in here
-   * would let a third-party hook leave a frame counted in `received` and in
-   * neither `applied` nor `skipped`.
+   * Applies one delivered frame's changes to the live graph. Without a graph
+   * the changes stay collected for `applyCollected` once one appears.
    */
-  applyFrame(update: DocUpdate): boolean {
-    return this.adapter.applyFrame(update)
+  applyFrame(update: DocUpdate): FrameOutcome {
+    const target = this.targets.get(update.workflowId)
+    if (!target) return { applied: false, nodes: EMPTY_DELTA }
+    if (!this.getGraph())
+      return { applied: false, nodes: docNodeDelta(target.collector.peek()) }
+    const changes = target.collector.take()
+    const createdNodeIds = this.apply(
+      update.workflowId,
+      target,
+      changes,
+      {
+        actor: update.actor ?? 'agent-remote',
+        opIds: update.opIds?.filter((id) => id.length > 0) ?? []
+      },
+      this.takeApplyMode(update.workflowId)
+    )
+    return { applied: true, nodes: docNodeDelta(changes), createdNodeIds }
   }
 
   /**
-   * Empties the stores for a lineage break and sweeps the live graph in the
-   * same step. The adapter's clear is store-only, but the live adapters are
-   * what a save serialises: without the sweep the pre-reset nodes survive,
-   * and can be written back, until some later frame happens to arrive.
+   * Applies the changes collected while no graph could take them: frames
+   * delivered before the graph loaded, or while its tab was inactive.
+   * @returns ids of nodes created live on this pass.
    */
-  clearForReset(workflowId: string, context: RemoteMutationContext): boolean {
-    const cleared = this.adapter.clearForReset(workflowId, context)
-    this.reconcileLiveGraph(workflowId)
-    return cleared
+  applyCollected(workflowId: string): NodeId[] {
+    const target = this.targets.get(workflowId)
+    if (!target || !this.getGraph()) return []
+    return this.apply(
+      workflowId,
+      target,
+      target.collector.take(),
+      { actor: 'agent-collected', opIds: [] },
+      this.takeApplyMode(workflowId)
+    )
   }
 
-  discardPending(workflowId: string): void {
-    this.adapter.discardPending(workflowId)
+  /**
+   * Puts the registers a rejected human batch claimed back the way the
+   * document has them. Only those registers are touched: the rejection says
+   * nothing about the rest of the live graph.
+   * @returns ids of nodes created live on this pass.
+   */
+  revertRejected(workflowId: string, ops: readonly Op[]): NodeId[] {
+    const target = this.targets.get(workflowId)
+    if (!target || ops.length === 0 || !this.getGraph()) return []
+    const changes = changesForRejectedOps(target.follower.doc, ops)
+    return this.apply(workflowId, target, changes, {
+      actor: 'agent-revert',
+      opIds: ops.map((op) => op.op_id)
+    })
   }
 
-  /** @returns ids that received a new live node on this pass. */
-  reconcileLiveGraph(workflowId: string): NodeId[] {
-    const graph = this.getGraph()
-    if (!graph) return []
-    const followerDoc = this.getFollowerDoc()
-    const definitionIds = readSubgraphDefinitionIds(followerDoc)
-    const definitionStates = definitionIds.map((id) => ({
-      id,
-      state: subgraphDefinitionReadState(graph.rootGraph, id)
-    }))
-    const needsDefinitionBody = definitionStates.some(
-      ({ state }) => state === 'missing'
+  /**
+   * Explicit lineage reset (`doc_reset`): the old lineage's undelivered
+   * changes are dropped and the new lineage's first frame, which carries its
+   * whole state, replaces the graph. Nothing is cleared before that frame
+   * arrives, so a first mint of the canvas the user already sees changes
+   * nothing visible.
+   */
+  replaceOnNextFrame(workflowId: string): void {
+    this.targets.get(workflowId)?.collector.discard()
+    this.replacedLineages.add(workflowId)
+    this.localWrites.clear()
+  }
+
+  private takeApplyMode(workflowId: string): ApplyMode {
+    return this.replacedLineages.delete(workflowId) ? 'replace' : 'merge'
+  }
+
+  /**
+   * Drops a frame the graph already holds, reporting what it changed in the
+   * document. Such a frame is where the document catches up on local writes,
+   * so their holds are settled against it.
+   */
+  discardPending(workflowId: string): DocNodeDelta {
+    const target = this.targets.get(workflowId)
+    if (!target) return EMPTY_DELTA
+    const changes = target.collector.take()
+    this.localWrites.settleAgainst((nodeId, widget) =>
+      readDocWidgetValue(target.follower.doc, nodeId, widget)
     )
-    const failedDefinitionIds = new Set(
-      definitionStates
-        .filter(({ state }) => state === 'failed')
-        .map(({ id }) => id)
-    )
-    const definitions = needsDefinitionBody
-      ? readSubgraphDefinitions(followerDoc, failedDefinitionIds)
-      : []
-    const nodeIds = failedDefinitionIds.size
-      ? reconcileAgentAdapters(graph, definitions, failedDefinitionIds)
-      : reconcileAgentAdapters(graph, definitions)
-    // A frame that only wires or rewires nodes moves no layout, so nothing
-    // else asks the canvas to paint the new links.
-    graph.setDirtyCanvas(true, true)
-    if (nodeIds.length > 0) {
-      recordDevEvent('agent_node_adapters_materialized', {
-        workflowId,
-        nodeIds
-      })
-    }
-    return nodeIds
+    return docNodeDelta(changes)
   }
 
   destroy(): void {
-    this.adapter.destroy()
+    for (const workflowId of Array.from(this.targets.keys()))
+      this.unbind(workflowId)
+    this.replacedLineages.clear()
+    this.localWrites.clear()
+  }
+
+  private apply(
+    workflowId: string,
+    target: BoundTarget,
+    changes: FrameChanges,
+    context: RemoteApplyContext,
+    mode: ApplyMode = 'merge'
+  ): NodeId[] {
+    const { createdNodeIds } = this.applier.applyChanges(
+      target.follower.doc,
+      changes,
+      context,
+      mode
+    )
+    if (createdNodeIds.length > 0) {
+      recordDevEvent('agent_node_adapters_materialized', {
+        workflowId,
+        nodeIds: createdNodeIds
+      })
+    }
+    return createdNodeIds
   }
 }
