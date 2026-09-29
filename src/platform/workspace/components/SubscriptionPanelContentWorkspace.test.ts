@@ -743,7 +743,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Subscribe Now' })
+      screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('heading', { name: 'Standard' })
@@ -981,7 +981,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByText('This workspace is not on a subscription')
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Subscribe Now' })
+      screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',

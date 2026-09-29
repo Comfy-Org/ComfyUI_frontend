@@ -222,7 +222,7 @@ const zProperties = z
 
 const zWidgetValues = z.union([z.array(z.any()), z.record(z.any())])
 
-const zComfyNode = z
+export const zComfyNode = z
   .object({
     id: zNodeId,
     type: z.string(),
