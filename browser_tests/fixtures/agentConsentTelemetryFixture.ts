@@ -63,9 +63,11 @@ export const agentConsentTelemetryTest = agentConsentTest.extend<{
       })
     })
     // Layered over the fixture's own `/api/features`, which the later route
-    // wins. `enable_telemetry` is what gates the host sink; the PostHog values
-    // repeat the fixture's because the agent flag is bootstrapped through them.
+    // wins. Keep the authenticated allowlist grant from the base fixture: that
+    // grant is read directly from remote config once auth has loaded, not from
+    // PostHog's bootstrap flags. `enable_telemetry` gates the host sink.
     const features: RemoteConfig = {
+      'agent-in-app-experience': true,
       enable_telemetry: true,
       posthog_project_token: 'phc_e2e_agent_consent_outcome',
       posthog_config: {
