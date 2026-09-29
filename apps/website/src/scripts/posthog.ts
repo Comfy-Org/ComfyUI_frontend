@@ -1,4 +1,8 @@
-import { WORKSHOP_LOCAL_DEV, WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
+import {
+  WORKSHOP_DEPLOY_ENV,
+  WORKSHOP_INCLUDED,
+  WORKSHOP_LOCAL_DEV
+} from 'astro:env/client'
 import { posthog } from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -151,20 +155,28 @@ function awaitFlagAnswer(): void {
   flagResolutionTimer = setTimeout(markFlagResolved, FLAG_RESOLUTION_TIMEOUT_MS)
 }
 
+/** A build without Workshop answers "off, settled" whatever PostHog says. */
+function unlessExcluded(
+  state: Ref<boolean>,
+  excluded: boolean
+): Readonly<Ref<boolean>> {
+  return readonly(WORKSHOP_INCLUDED ? state : ref(excluded))
+}
+
 export function useWorkshopEnabled(): Readonly<Ref<boolean>> {
-  return readonly(workshopEnabled)
+  return unlessExcluded(workshopEnabled, false)
 }
 
 export function useWorkshopWorkflowsEnabled(): Readonly<Ref<boolean>> {
-  return readonly(workshopWorkflowsEnabled)
+  return unlessExcluded(workshopWorkflowsEnabled, false)
 }
 
 export function useWorkshopAppsEnabled(): Readonly<Ref<boolean>> {
-  return readonly(workshopAppsEnabled)
+  return unlessExcluded(workshopAppsEnabled, false)
 }
 
 export function useWorkshopEnabledSettled(): Readonly<Ref<boolean>> {
-  return readonly(workshopEnabledSettled)
+  return unlessExcluded(workshopEnabledSettled, true)
 }
 
 export interface WorkshopIdentity {

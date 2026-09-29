@@ -108,42 +108,46 @@ describe('Workshop release output', () => {
     )
   })
 
-  it('registers the original marketing entry when disabled and only approved Models routes when enabled', () => {
-    expect(modelsBuildRoutes(false)).toEqual([
-      {
-        pattern: '/models',
-        entrypoint: expect.stringContaining('/routes/models/showcase.astro')
-      }
-    ])
-    const enabled = modelsBuildRoutes(true)
-    expect(enabled.map((route) => route.pattern)).toEqual([
+  it('builds every Models page either way and adds checkout only with Workshop', () => {
+    const disabled = modelsBuildRoutes(false)
+    expect(disabled.map((route) => route.pattern)).toEqual([
       '/models',
       '/models/[...slug]',
       '/models/showcase',
       '/models/apps/[app]',
       '/cinematic-studio',
-      '/checkout-opening',
-      '/zh-CN/checkout-opening',
-      '/checkout-return',
-      '/zh-CN/checkout-return',
       '/models/[...slug]/page.json',
       '/models/catalogue.json'
     ])
-    expect(enabled[0].entrypoint).toContain('/routes/models/index.astro')
-    for (const route of enabled) expect(existsSync(route.entrypoint)).toBe(true)
+    const enabled = modelsBuildRoutes(true)
+    expect(enabled.map((route) => route.pattern)).toEqual([
+      ...disabled.map((route) => route.pattern),
+      '/checkout-opening',
+      '/zh-CN/checkout-opening',
+      '/checkout-return',
+      '/zh-CN/checkout-return'
+    ])
+    for (const routes of [disabled, enabled]) {
+      expect(routes[0].entrypoint).toContain('/routes/models/index.astro')
+      for (const route of routes)
+        expect(existsSync(route.entrypoint)).toBe(true)
+    }
   })
 
-  it('preserves the established Models page and rejects ungated detail routes', async () => {
+  it('ships model pages without Workshop and rejects Workshop-only pages', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
-    await mkdir(join(root, 'models'), { recursive: true })
-    await writeFile(join(root, 'models/index.html'), 'Models marketing')
+    await mkdir(join(root, 'models/example'), { recursive: true })
+    await writeFile(join(root, 'models/index.html'), 'Models catalogue')
+    await writeFile(join(root, 'models/example/index.html'), 'Example model')
     await buildDone()
-    expect(await readFile(join(root, 'models/index.html'), 'utf8')).toBe(
-      'Models marketing'
+    expect(
+      await readFile(join(root, 'models/example/index.html'), 'utf8')
+    ).toBe('Example model')
+    await mkdir(join(root, 'zh-CN/checkout-return'), { recursive: true })
+    await writeFile(join(root, 'zh-CN/checkout-return/index.html'), 'Paid')
+    await expect(buildDone()).rejects.toThrow(
+      'Workshop-only pages (/zh-CN/checkout-return)'
     )
-    await mkdir(join(root, 'models/leaked-detail'))
-    await writeFile(join(root, 'models/leaked-detail/index.html'), 'Run')
-    await expect(buildDone()).rejects.toThrow('ungated Models route')
   })
 
   it('removes only Workshop output when disabled, including repeated builds', async () => {
