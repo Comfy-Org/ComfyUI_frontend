@@ -21,7 +21,7 @@ const PROMPTS = [
   },
   {
     id: 'list_workflows',
-    text: 'Find an image-to-video workflow that works on my GPU'
+    text: 'An image-to-video workflow that fits my GPU'
   },
   { id: 'find_workflow', text: 'Explain the selected nodes' },
   {
