@@ -87,7 +87,10 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
     getKey: () => string | undefined | Promise<string | undefined>
   ) => {
     void Promise.resolve(getKey()).then((key) => challengeMocks.createPort(key))
-    return { handleNextAction: challengeMocks.handleNextAction }
+    return {
+      handleNextAction: challengeMocks.handleNextAction,
+      leavesPage: () => Promise.resolve(true)
+    }
   }
 }))
 
@@ -936,6 +939,72 @@ describe('CheckoutView', () => {
     )
   })
 
+  it('re-quotes a stale quote and pays against the replacement', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: { status: 'ok', value: upgradeQuote() }
+    })
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'QUOTE_STALE'
+    })
+    fake.previewSubscribe.mockResolvedValueOnce({
+      status: 'ok',
+      value: upgradeQuote({
+        quote_id: 'q_2',
+        quote_version: 4,
+        amount_due_cents: 3100
+      })
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Your quote changed. Review the updated amount and try again.'
+    )
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText('$31.00')).toBeInTheDocument()
+    expect(screen.queryByText('$28.00')).not.toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm upgrade' })
+    )
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
+    expect(fake.subscribe).toHaveBeenLastCalledWith(
+      expect.objectContaining({ quote_id: 'q_2', quote_version: 4 })
+    )
+    expect(fake.subscribe).not.toHaveBeenLastCalledWith(
+      expect.objectContaining({ quote_id: 'q_1' })
+    )
+  })
+
+  it('keeps Confirm closed on the stale quote when its refresh fails', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: { status: 'ok', value: upgradeQuote() }
+    })
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'QUOTE_STALE'
+    })
+    fake.previewSubscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Your quote expired and couldn't be refreshed. Choose your plan again."
+    )
+    expect(
+      screen.getByRole('button', { name: 'Confirm upgrade' })
+    ).toBeDisabled()
+  })
+
   it('tells the customer when the subscribe itself was refused and keeps the form', async () => {
     await renderCheckout(CHECKOUT_PATH, {
       subscribe: { status: 'error', code: 'REQUEST_FAILED' }
@@ -1057,5 +1126,54 @@ describe('CheckoutView', () => {
     expect(assign).toHaveBeenCalledExactlyOnceWith(
       'https://testcloud.comfy.org/'
     )
+  })
+
+  it('shows the reason the server gave for a refused quote, as the app does', async () => {
+    await renderCheckout(CHECKOUT_PATH, {
+      preview: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverMessage:
+          'team_credit_stop_id is required for the per-credit Team plan'
+      }
+    })
+
+    expect(
+      await screen.findByText(
+        'team_credit_stop_id is required for the per-credit Team plan'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'a status-mapped refusal shows the server reason',
+      failure: {
+        code: 'CONFLICT',
+        httpStatus: 409,
+        serverMessage: 'That plan cannot be changed right now'
+      },
+      shown: 'That plan cannot be changed right now'
+    },
+    {
+      name: 'a code billing-web words itself keeps its own copy',
+      failure: {
+        code: 'OPERATION_ALREADY_PENDING',
+        httpStatus: 409,
+        serverMessage: 'a subscription change is already in progress'
+      },
+      shown:
+        'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
+    }
+  ] as const)('refused subscribe: $name', async ({ failure, shown }) => {
+    await renderCheckout(CHECKOUT_PATH, {
+      subscribe: { status: 'error', ...failure }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(shown)
   })
 })

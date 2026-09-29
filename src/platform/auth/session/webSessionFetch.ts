@@ -104,6 +104,19 @@ export function webSessionRequests(): WebSessionRequests | undefined {
   return provided
 }
 
+export type WebSessionSend = (
+  url: string,
+  init: RequestInit
+) => Promise<Response>
+
+/** Sends on the signed-in session, or undefined when this tab is not on it. */
+export async function webSessionSend(): Promise<WebSessionSend | undefined> {
+  const requests = webSessionRequests()
+  if (!requests) return undefined
+  const scope = await requests.scope()
+  return scope && ((url, init) => requests.send(url, init, scope))
+}
+
 /** Undefined unless the session is on and this tab is signed in on it. */
 export async function webSessionResourceHeader(): Promise<
   Readonly<Record<string, string>> | undefined
