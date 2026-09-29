@@ -179,22 +179,12 @@ class StubWidget<T extends WidgetValue> extends BaseWidget {
   }
   override set value(_) {}
 }
-
-function onBranchSelectorCreated(this: LGraphNode) {
-  this.applyToGraph = applyToGraph
-  this.widgets?.pop()
-
-  const valuesComputed = computed(() =>
-    this.inputs
-      .filter((input) => input.name.startsWith('autogrow.') && input.link)
+function connectedInputsFor(node: LGraphNode, prefix: string = 'autogrow.') {
+  return computed(() =>
+    node.inputs
+      .filter((input) => input.name.startsWith(prefix) && input.link)
       .map((input) => input.label ?? input.localized_name ?? input.name)
   )
-  const values = () => valuesComputed.value
-  this.addWidget('combo', 'branch', 'branch0', () => {}, { values })
-
-  const namesIndex = this.inputs.findIndex((inp) => inp.name === 'branch_names')
-  if (namesIndex !== -1) this.removeInput(namesIndex)
-  this.addCustomWidget(new StubWidget<string[]>(this, 'branch_names', values))
 }
 
 function onCustomIntCreated(this: LGraphNode) {
@@ -300,11 +290,6 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated,
         onCustomComboCreated
       )
-    else if (nodeData.name === 'BranchNode')
-      nodeType.prototype.onNodeCreated = useChainCallback(
-        nodeType.prototype.onNodeCreated,
-        onBranchSelectorCreated
-      )
     else if (nodeData.name === 'PrimitiveInt')
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,
@@ -315,5 +300,20 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated,
         onCustomFloatCreated
       )
+  },
+  getCustomWidgets() {
+    return {
+      COMFY_BRANCH_INPUT_NAMES: function (node, inputName) {
+        const connectedInputs = connectedInputsFor(node)
+        const values = () => connectedInputs.value
+        node.addCustomWidget(new StubWidget<string[]>(node, inputName, values))
+      },
+      COMFY_BRANCH_SELECTOR: function (node, inputName) {
+        const connectedInputs = connectedInputsFor(node)
+        const values = () => connectedInputs.value
+        const startValue = connectedInputs.value[0] ?? ''
+        node.addWidget('combo', inputName, startValue, () => {}, { values })
+      }
+    }
   }
 })
