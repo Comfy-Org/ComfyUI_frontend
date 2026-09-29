@@ -592,10 +592,11 @@ describe('useSubscription', () => {
       'authorizes the checkout: $name',
       async ({ session, authorization, firebaseCalls }) => {
         vi.mocked(webSessionResourceHeader).mockResolvedValue(session)
-        vi.mocked(global.fetch).mockResolvedValue({
-          ok: true,
-          json: async () => ({ checkout_url: 'https://checkout.stripe.com/x' })
-        } as Response)
+        vi.mocked(global.fetch).mockResolvedValue(
+          new Response(
+            JSON.stringify({ checkout_url: 'https://checkout.stripe.com/x' })
+          )
+        )
         const windowOpenSpy = vi
           .spyOn(window, 'open')
           .mockImplementation(() => window)

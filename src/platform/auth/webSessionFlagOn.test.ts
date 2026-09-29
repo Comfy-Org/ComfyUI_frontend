@@ -821,7 +821,7 @@ describe('comfy-api calls on the shared web session', () => {
     await api.fetchApi('/queue')
     await postPrompt()
 
-    expect(mintRequests(ingest)).toEqual([])
+    expect(ingest.mints).toBe(0)
   })
 
   it('a revoked session rejects with SESSION_REVOKED', async () => {
