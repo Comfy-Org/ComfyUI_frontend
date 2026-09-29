@@ -36,7 +36,7 @@ for (const viewport of viewports) {
     if (viewport.desktopNavigation) {
       await expect(desktopLinks).toBeVisible()
       await expect(
-        desktopLinks.getByRole('link', { name: 'Models', exact: true })
+        desktopLinks.getByRole('link', { name: 'Hub', exact: true })
       ).toHaveAttribute('href', '/models')
       await expect(menuButton).toBeHidden()
     } else {
