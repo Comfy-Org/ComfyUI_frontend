@@ -1,22 +1,49 @@
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { readdirSync, readFileSync } from 'node:fs'
+import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
+import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
+import { routeOf } from '../utils/hreflangRoutes'
+import { hubModelAliases, hubModelSlugs } from './hub-models'
+import { modelPageUrls } from './model-urls'
+import { models } from './models'
+import { modelsUrlKind } from './models-url-registry'
 import {
   astroRedirects,
   isInternalDestination,
   siteRedirects,
   toVercelRedirects
 } from './redirects'
-import { hubModelAliases, hubModelSlugs } from './hub-models'
-import { modelPageUrls } from './model-urls'
-import { modelsUrlKind } from './models-url-registry'
 import { getRoutes } from './routes'
 
 const appDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
+const pagesDir = join(appDir, 'src', 'pages')
+
+const astroFiles = (dir: string): string[] =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name)
+    if (entry.isDirectory()) return astroFiles(full)
+    return entry.name.endsWith('.astro') ? [full] : []
+  })
+
+const builtPages = new Set([
+  ...astroFiles(pagesDir)
+    .map((file) => relative(pagesDir, file).split(sep).join('/'))
+    .filter((file) => !file.includes('['))
+    .map((file) => routeOf(`/src/pages/${file}`)),
+  ...modelsBuildRoutes(true)
+    .map(({ pattern }) => pattern)
+    .filter((pattern) => !pattern.includes('['))
+    .map((pattern) => `${pattern}/`),
+  ...models
+    .filter((model) => !model.canonicalSlug)
+    .map((model) => `/p/supported-models/${model.slug}/`)
+])
+
+const pageExistsAt = (pathname: string) => builtPages.has(pathname)
 
 const VercelConfigSchema = z.object({
   redirects: z.array(z.unknown()),
@@ -57,6 +84,17 @@ describe('the redirect list', () => {
       (source, index) => sources.indexOf(source) !== index
     )
     expect(duplicates).toEqual([])
+  })
+
+  it('never shadows a built page with a slash form', () => {
+    expect(
+      siteRedirects
+        .filter(
+          ({ source, slashFormIsPageBecause }) =>
+            slashFormIsPageBecause === undefined && pageExistsAt(`${source}/`)
+        )
+        .map(({ source }) => source)
+    ).toEqual([])
   })
 
   it('writes sources as literal paths without a trailing slash', () => {
@@ -100,8 +138,6 @@ describe('generated Vercel rules', () => {
     vercelRedirects.find((redirect) => redirect.source === source)
 
   it.for([
-    { source: '/minimax', destination: `${en.minimax}/` },
-    { source: '/zh-CN/minimax', destination: `${zh.minimax}/` },
     { source: '/cloud/enterprise', destination: `${en.enterprise}/` },
     { source: '/zh-CN/affiliates', destination: '/affiliates/' },
     {
@@ -167,7 +203,11 @@ describe('generated Vercel rules', () => {
       '/share-news',
       '/share-news/',
       '/share-news-pleaseeee',
-      '/share-news-pleaseeee/'
+      '/share-news-pleaseeee/',
+      '/minimax',
+      '/minimax/',
+      '/zh-CN/minimax',
+      '/zh-CN/minimax/'
     ])
   })
 
@@ -199,6 +239,20 @@ describe('Astro redirects', () => {
         )
         .map(({ source }) => source)
     )
+    const aliasCount = models.filter((model) => model.canonicalSlug).length
+    expect(Object.keys(astroRedirects)).toHaveLength(18 + aliasCount)
+    expect(astroRedirects['/minimax']).toEqual({
+      status: 307,
+      destination: '/minimax-h3/'
+    })
+    expect(astroRedirects['/zh-CN/minimax']).toEqual({
+      status: 307,
+      destination: '/zh-CN/minimax-h3/'
+    })
+    expect(astroRedirects['/career']).toEqual({
+      status: 308,
+      destination: '/careers/'
+    })
   })
 
   it('leave off-site rows to Vercel', () => {

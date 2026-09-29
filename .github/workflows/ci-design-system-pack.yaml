@@ -40,6 +40,7 @@ jobs:
                     and . != "src/workspaceAvatar.ts"
                     and . != "src/button.variants.ts"
                     and . != "src/select.variants.ts"
+                    and . != "src/tag.variants.ts"
                     and (startswith("src/css/") | not)
                     and (startswith("src/icons/") | not)
                   )

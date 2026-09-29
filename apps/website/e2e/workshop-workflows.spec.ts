@@ -365,7 +365,7 @@ test('the background example pairs its input and output and restores edited inpu
     page.getByRole('img', { name: 'Output', exact: true })
   ).toHaveAttribute(
     'src',
-    'https://cloud.comfy.org/templates/utility_birefnet_remove_background-1.webp'
+    'https://media.comfy.org/website/workshop/workflows/remove-background/lily-veil-cutout.webp'
   )
   await input.getByRole('button', { name: 'Remove the_lily_veil.png' }).click()
   await example.click()
@@ -388,7 +388,7 @@ for (const { path, group, file } of [
   {
     path: '/hub/workflows/virtual-try-on/',
     group: 'Your character',
-    file: 'subject-templates_rob_fashion_shoot_vton-4in1.png'
+    file: 'subject-2048.jpg'
   }
 ])
   test(`${path} opens with every required input filled`, async ({

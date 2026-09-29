@@ -256,9 +256,9 @@ applies only outside production. The `workshop` PR label is no longer needed.
 visibility flag.
 
 `WORKSHOP_IN_BUILD=0` turns Workshop off: Run, the Models nav tab and the account
-menu stay hidden whatever the PostHog flag says, and the checkout pages are not
-built. It never removes or replaces a page; every Models page keeps its URL and
-content.
+menu stay hidden whatever the PostHog flag says. Except the four noindex
+checkout pages, it never removes or replaces a page; every Models page keeps its
+URL and content.
 `PUBLIC_WORKSHOP_AUTH_FLAG=1` overrides a remote auth disable outside production.
 `PUBLIC_WORKSHOP_ROUTER_RUN=1` enables execution; neither grants Models visibility.
 For local development without PostHog:

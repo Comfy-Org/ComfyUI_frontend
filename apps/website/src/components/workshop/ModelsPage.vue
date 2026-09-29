@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { WORKSHOP_INCLUDED } from 'astro:env/client'
 import { defineAsyncComponent, h, shallowRef, watch } from 'vue'
 import type { FunctionalComponent } from 'vue'
 
@@ -19,7 +20,8 @@ const loadingLabel = t('workshop.load.pending', 'en')
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const recoveringWorkflow = shallowRef(false)
 const savedWorkflow = shallowRef(false)
-const session = workflowId ? useWorkshopSession().session : undefined
+const session =
+  WORKSHOP_INCLUDED && workflowId ? useWorkshopSession().session : undefined
 watch(
   [
     () => workflowId,

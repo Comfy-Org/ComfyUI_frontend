@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { isExcludedFromSitemap, isNoindexPathname } from './indexing'
+import { hubModelSlugs } from './hub-models'
+
+const [hubModelSlug] = hubModelSlugs.values()
 
 describe('indexing policy', () => {
   it('excludes render pages while keeping the public Models marketing routes', () => {
@@ -7,9 +10,7 @@ describe('indexing policy', () => {
     expect(isExcludedFromSitemap('https://comfy.org/hub/models/')).toBe(false)
     expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(true)
     expect(
-      isExcludedFromSitemap(
-        'https://comfy.org/hub/models/flux-2-max-text-to-image/'
-      )
+      isExcludedFromSitemap(`https://comfy.org/hub/models/${hubModelSlug}/`)
     ).toBe(true)
     expect(isExcludedFromSitemap('https://comfy.org/models/local/')).toBe(false)
     expect(isExcludedFromSitemap('https://comfy.org/models/showcase/')).toBe(

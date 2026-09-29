@@ -1,6 +1,4 @@
-import displayJson from '../content/workshop-display.json'
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
-import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
 import {
   HUB_MODELS_PATH,
   HUB_WORKFLOWS_PATH,
@@ -9,10 +7,18 @@ import {
   hubWorkflowHref,
   hubWorkflowSlugs
 } from './hub-models'
+import { workshopDisplayEntries } from './workshop-browse-content'
 
 const MODELS_BASE_PATH = '/models'
 
 type PageKind = 'hub' | 'model' | 'workflow' | 'app' | 'reserved'
+
+const navigableKinds: ReadonlySet<string> = new Set<PageKind>([
+  'hub',
+  'model',
+  'workflow',
+  'app'
+])
 
 export type ModelsUrlEntry =
   | { readonly path: string; readonly kind: PageKind }
@@ -24,7 +30,10 @@ export type ModelsUrlEntry =
 
 export type ModelsUrlKind = ModelsUrlEntry['kind']
 
-export type ModelsUrlRegistry = ReadonlyMap<string, ModelsUrlEntry>
+export interface ModelsUrlRegistry {
+  readonly roots: readonly string[]
+  readonly entries: ReadonlyMap<string, ModelsUrlEntry>
+}
 
 interface ModelsUrlSources {
   /** Old page id under `/models` → its slug under `/hub/models`. */
@@ -34,6 +43,8 @@ interface ModelsUrlSources {
   /** Old alias under `/models` → the slug under `/hub/models` it serves. */
   readonly aliases: ReadonlyMap<string, string>
 }
+
+const withoutTrailingSlash = (pathname: string) => pathname.replace(/\/$/, '')
 
 export function modelsUrlEntries({
   models,
@@ -80,14 +91,26 @@ export function modelsUrlEntries({
   ]
 }
 
-const withoutTrailingSlash = (pathname: string) => pathname.replace(/\/$/, '')
+function assertOneHub(entries: readonly ModelsUrlEntry[]) {
+  const hubs = entries.filter(({ kind }) => kind === 'hub').length
+  if (hubs !== 1)
+    throw new Error(`The registry needs exactly one hub, found ${hubs}`)
+}
+
+const isUnderRoots = (pathname: string, roots: readonly string[]) =>
+  roots.some((root) => pathname === root || pathname.startsWith(`${root}/`))
 
 export function buildModelsUrlRegistry(
-  entries: readonly ModelsUrlEntry[]
+  entries: readonly ModelsUrlEntry[],
+  roots: readonly string[]
 ): ModelsUrlRegistry {
+  assertOneHub(entries)
+  const normalizedRoots = roots.map(withoutTrailingSlash)
   const registry = new Map<string, ModelsUrlEntry>()
   for (const entry of entries) {
     const path = withoutTrailingSlash(entry.path)
+    if (!isUnderRoots(path, normalizedRoots))
+      throw new Error(`${path} is outside ${normalizedRoots.join(', ')}`)
     const claimed = registry.get(path)
     if (claimed)
       throw new Error(
@@ -107,17 +130,16 @@ export function buildModelsUrlRegistry(
   for (const entry of registry.values()) {
     if (entry.kind !== 'alias') continue
     const target = registry.get(entry.destination)
-    if (!target || target.kind === 'alias')
+    if (!target || !navigableKinds.has(target.kind))
       throw new Error(
         `${entry.path} redirects to ${entry.destination}, which is not a registered page`
       )
   }
-  return registry
+  return { roots: normalizedRoots, entries: registry }
 }
 
-const displayEntries = workshopDisplayEntriesSchema.parse(displayJson)
-const displaySlugs = (types: readonly WorkshopDisplayEntry['type'][]) =>
-  displayEntries
+const slugsOfType = (types: readonly WorkshopDisplayEntry['type'][]) =>
+  workshopDisplayEntries
     .filter((entry) => types.includes(entry.type))
     .map(({ slug }) => slug)
 
@@ -125,24 +147,20 @@ const modelsUrlRegistry = buildModelsUrlRegistry(
   modelsUrlEntries({
     models: hubModelSlugs,
     workflows: hubWorkflowSlugs,
-    apps: displaySlugs(['APP']),
+    apps: slugsOfType(['APP']),
     aliases: hubModelAliases
-  })
+  }),
+  [MODELS_BASE_PATH, HUB_MODELS_PATH, HUB_WORKFLOWS_PATH]
 )
 
 export function modelsUrlKind(
   pathname: string,
   registry: ModelsUrlRegistry = modelsUrlRegistry
 ): ModelsUrlKind | undefined {
-  return registry.get(withoutTrailingSlash(pathname))?.kind
+  return registry.entries.get(withoutTrailingSlash(pathname))?.kind
 }
 
-const isUnderModels = (pathname: string) =>
-  [MODELS_BASE_PATH, HUB_MODELS_PATH, HUB_WORKFLOWS_PATH].some(
-    (base) => pathname === base || pathname.startsWith(`${base}/`)
-  )
-
-/** Built pages under a Models base that no registry entry claims. */
+/** Built pages under the registry's roots that no entry claims. */
 export function unregisteredModelsPaths(
   pathnames: readonly string[],
   registry: ModelsUrlRegistry = modelsUrlRegistry
@@ -153,7 +171,7 @@ export function unregisteredModelsPaths(
     )
     .filter(
       (pathname) =>
-        isUnderModels(pathname) &&
+        isUnderRoots(pathname, registry.roots) &&
         modelsUrlKind(pathname, registry) === undefined
     )
 }

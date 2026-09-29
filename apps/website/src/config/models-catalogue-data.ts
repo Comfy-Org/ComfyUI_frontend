@@ -7,6 +7,7 @@ const presentationSchema = z.object({
   name: z.string(),
   workflowCount: z.number(),
   recommendedRank: z.number().optional(),
+  // Required: catalogue.json only ships published pages (pinned by its test)
   href: z.string(),
   incompleteReason: z.literal('missing-input-schema').optional(),
   provider: z.string().optional(),
