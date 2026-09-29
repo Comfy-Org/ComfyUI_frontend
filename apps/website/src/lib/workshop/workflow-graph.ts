@@ -27,6 +27,8 @@ function colorForType(type: string | undefined): string {
 }
 
 interface GraphSlot {
+  /** Position in the saved node, which is what a link's slot number counts. */
+  readonly index: number
   readonly name: string
   readonly color: string
   /** Distance from the node's top edge. */
@@ -144,21 +146,30 @@ function readPair(value: unknown): readonly [number, number] | undefined {
   return undefined
 }
 
-function readSlots(value: unknown): readonly { name: string; type: string }[] {
-  if (!Array.isArray(value)) return []
-  return value.flatMap((slot) => {
-    if (!slot || typeof slot !== 'object') return []
-    const record = slot as Record<string, unknown>
-    const name = typeof record.name === 'string' ? record.name : ''
-    const type = typeof record.type === 'string' ? record.type : ''
-    return name || type ? [{ name: name || type, type }] : []
-  })
+interface SavedSlot {
+  readonly index: number
+  readonly name: string
+  readonly type: string
 }
 
 /**
- * The title a reader recognises: whoever saved the graph may have renamed the
- * node, and the class name is the fallback rather than the other way round.
+ * A widget input only becomes a socket on the canvas once something is linked
+ * to it; until then the editor draws it as the widget it is.
  */
+function readSlot(slot: unknown, index: number): SavedSlot | undefined {
+  if (!slot || typeof slot !== 'object') return undefined
+  const record = slot as Record<string, unknown>
+  if (record.widget && record.link == null) return undefined
+  const type = text(record.type)
+  const name = text(record.name) || type
+  return name ? { index, name, type } : undefined
+}
+
+function readSlots(value: unknown): readonly SavedSlot[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((slot, index) => readSlot(slot, index) ?? [])
+}
+
 /** The least room a sample is worth drawing in. */
 const MIN_PICTURE = 120
 const PICTURE_INSET = 8
@@ -171,21 +182,46 @@ function roleOf(type: unknown): NodeRole | undefined {
   return undefined
 }
 
-function readTitle(record: Record<string, unknown>): string {
+/**
+ * The title a reader recognises: whoever saved the graph may have renamed the
+ * node, and the class name is the fallback rather than the other way round. A
+ * subgraph node's type is the subgraph's id, so it reads as the subgraph's name.
+ */
+function readTitle(
+  record: Record<string, unknown>,
+  subgraphNames: ReadonlyMap<string, string>
+): string {
   if (typeof record.title === 'string' && record.title.trim())
     return record.title.trim()
-  if (typeof record.type === 'string' && record.type) return record.type
+  if (typeof record.type === 'string' && record.type)
+    return subgraphNames.get(record.type) ?? record.type
   return 'Node'
+}
+
+function readSubgraphNames(definitions: unknown): Map<string, string> {
+  const subgraphs =
+    definitions && typeof definitions === 'object'
+      ? (definitions as Record<string, unknown>).subgraphs
+      : undefined
+  if (!Array.isArray(subgraphs)) return new Map()
+  return new Map(
+    subgraphs.flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') return []
+      const { id, name } = entry as Record<string, unknown>
+      return typeof id === 'string' && typeof name === 'string' && name.trim()
+        ? [[id, name.trim()] as const]
+        : []
+    })
+  )
 }
 
 function slotY(index: number): number {
   return SLOT_TOP + index * SLOT_HEIGHT
 }
 
-function drawnSlots(
-  slots: readonly { name: string; type: string }[]
-): GraphSlot[] {
+function drawnSlots(slots: readonly SavedSlot[]): GraphSlot[] {
   return slots.map((slot, index) => ({
+    index: slot.index,
     name: slot.name,
     color: colorForType(slot.type),
     y: slotY(index)
@@ -298,7 +334,10 @@ function identity(record: Record<string, unknown>): string | undefined {
     : undefined
 }
 
-function nodeFrom(value: unknown): GraphNode | undefined {
+function nodeFrom(
+  value: unknown,
+  subgraphNames: ReadonlyMap<string, string>
+): GraphNode | undefined {
   if (!value || typeof value !== 'object') return undefined
   const record = value as Record<string, unknown>
   const id = identity(record)
@@ -313,7 +352,7 @@ function nodeFrom(value: unknown): GraphNode | undefined {
 
   return {
     id,
-    title: readTitle(record),
+    title: readTitle(record, subgraphNames),
     x: position[0],
     y: position[1],
     ...box,
@@ -411,8 +450,8 @@ function linkBetween(
   to: GraphNode,
   index: number
 ): GraphLink {
-  const output = from.outputs.at(ends.fromSlot)
-  const input = to.inputs.at(ends.toSlot)
+  const output = from.outputs.find((slot) => slot.index === ends.fromSlot)
+  const input = to.inputs.find((slot) => slot.index === ends.toSlot)
   return {
     id: `${ends.from}-${ends.fromSlot}-${ends.to}-${ends.toSlot}-${index}`,
     color: output?.color ?? colorForType(ends.type),
@@ -489,9 +528,10 @@ export function readGraphPicture(
     source && typeof source === 'object'
       ? (source as Record<string, unknown>)
       : {}
+  const subgraphNames = readSubgraphNames(record.definitions)
   const nodes = withSamples(
     Array.isArray(record.nodes)
-      ? record.nodes.flatMap((entry) => nodeFrom(entry) ?? [])
+      ? record.nodes.flatMap((entry) => nodeFrom(entry, subgraphNames) ?? [])
       : [],
     samples
   )

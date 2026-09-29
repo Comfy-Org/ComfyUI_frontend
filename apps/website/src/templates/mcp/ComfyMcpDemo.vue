@@ -95,10 +95,8 @@ function runTool() {
 
   submitting.value = true
   status.value = via
-    ? t('mcp.hero.demoStatusBridging', locale)
-        .replace('{app}', via)
-        .replace('{tool}', tool)
-    : t('mcp.hero.demoStatusRunning', locale).replace('{tool}', tool)
+    ? t('mcp.hero.demoStatusBridging', locale, { app: via, tool })
+    : t('mcp.hero.demoStatusRunning', locale, { tool })
 
   schedule(commitCard, runToolMs.value)
 }

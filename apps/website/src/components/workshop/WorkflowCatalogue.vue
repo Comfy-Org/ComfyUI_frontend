@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import Button from '@/components/ui/button/Button.vue'
 import type {
@@ -32,6 +33,8 @@ const query = ref('')
 const selected = ref<string[]>([])
 const runsOn = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
+const filterMenu =
+  useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
 const browseAll = defineModel<boolean>('browseAll', { default: false })
 const emit = defineEmits<{ section: [boolean] }>()
 watch(browseAll, (value) => emit('section', value), { immediate: true })
@@ -133,7 +136,7 @@ const chips = computed<FilterChip[]>(() => [
   })),
   ...runsOn.value.map((name) => ({
     key: `model:${name}`,
-    label: t('workshop.filter.runsOn', locale).replace('{model}', name)
+    label: t('workshop.filter.runsOn', locale, { model: name })
   }))
 ])
 
@@ -195,6 +198,7 @@ function leaveSection() {
           class="min-w-0 flex-1 sm:max-w-120"
         />
         <WorkshopFilterMenu
+          ref="filterMenu"
           v-model:use-cases="selected"
           v-model:models="runsOn"
           kind="workflows"
@@ -221,7 +225,13 @@ function leaveSection() {
       class="mb-10 short:mb-6"
     />
 
-    <WorkshopFilterChips :chips :locale @remove="removeChip" @clear="clear" />
+    <WorkshopFilterChips
+      :chips
+      :locale
+      @remove="removeChip"
+      @clear="clear"
+      @emptied="filterMenu?.focus()"
+    />
 
     <div v-if="browsing" class="flex flex-col gap-12">
       <section

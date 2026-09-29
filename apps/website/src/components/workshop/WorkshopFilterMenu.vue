@@ -133,18 +133,22 @@ function clearAll() {
   models.value = []
 }
 
+defineExpose({ focus: () => trigger.value?.focus() })
+
 const sheetLabels = computed(() => ({
   title: label.value,
   search: t('workshop.filter.search', locale),
   noMatches: t('workshop.filter.noMatches', locale),
-  applied: t('workshop.filter.applied', locale),
+  applied: (n: number) => t('workshop.filter.applied', locale, { n }),
   clearAll: t('workshop.filter.clearAll', locale),
-  show: t(
-    kind === 'models'
-      ? 'workshop.search.show'
-      : 'workshop.catalogue.showWorkflows',
-    locale
-  ),
+  show: (n: number) =>
+    t(
+      kind === 'models'
+        ? 'workshop.search.show'
+        : 'workshop.catalogue.showWorkflows',
+      locale,
+      { n }
+    ),
   close: t('workshop.search.close', locale),
   resize: t('workshop.filter.resize', locale)
 }))

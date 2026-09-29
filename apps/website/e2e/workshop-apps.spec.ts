@@ -36,7 +36,7 @@ test('opens Cinematic Studio on the apps flag alone', async ({
   )
 })
 
-test('opens Cinematic Studio on the workflows flag alone', async ({
+test('keeps Cinematic Studio closed on the workflows flag alone', async ({
   page,
   context
 }) => {
