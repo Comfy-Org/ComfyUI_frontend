@@ -12,8 +12,10 @@ import { FORMAT_TRIGGER_CLASS } from './cinematic-menu-trigger'
 import CinematicMenu from './CinematicMenu.vue'
 import { useFormatMenus } from './useFormatMenus'
 
-const { locale = 'en' } = defineProps<{
+const { locale = 'en', aspects } = defineProps<{
   locale?: Locale
+  /** The frames the chosen model can make; every frame when absent. */
+  aspects?: readonly AspectRatio[]
 }>()
 
 const aspect = defineModel<AspectRatio>('aspect', { required: true })
@@ -27,7 +29,13 @@ const {
   aspectValue,
   resolutionValue,
   takesValue
-} = useFormatMenus(aspect, resolution, takes, () => locale)
+} = useFormatMenus(
+  aspect,
+  resolution,
+  takes,
+  () => locale,
+  () => aspects
+)
 </script>
 
 <template>
