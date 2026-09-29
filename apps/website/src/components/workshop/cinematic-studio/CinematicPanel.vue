@@ -107,6 +107,7 @@ const cardClass =
           v-model="modelSlug"
           :options="modelOptions"
           :heading="tc('cinematic.model.heading', locale)"
+          :show-heading="false"
           side="bottom"
           :trigger-class="cn(cardClass, 'h-11 gap-3 px-3')"
         >

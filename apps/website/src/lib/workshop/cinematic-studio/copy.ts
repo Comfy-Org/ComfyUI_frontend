@@ -278,7 +278,7 @@ const copy = {
     'zh-CN': '光圈'
   },
   'cinematic.part.shot': {
-    en: 'Shot',
+    en: 'Framing',
     'zh-CN': '景别'
   },
   'cinematic.part.light': {

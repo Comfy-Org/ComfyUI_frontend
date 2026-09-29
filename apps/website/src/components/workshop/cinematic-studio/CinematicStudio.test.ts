@@ -323,7 +323,7 @@ describe('CinematicStudio', () => {
       screen.getByRole('button', { name: tc('cinematic.firstRun.desert') })
     ).toHaveAttribute('aria-pressed', 'true')
     expect(
-      screen.getByRole('button', { name: 'Shot: Extreme wide' })
+      screen.getByRole('button', { name: 'Framing: Extreme wide' })
     ).toBeInTheDocument()
   })
 
@@ -351,7 +351,7 @@ describe('CinematicStudio', () => {
         .getAllByRole('button')
         .map((segment) => segment.getAttribute('aria-label'))
     ).toEqual([
-      'Shot: Medium',
+      'Framing: Medium',
       'Light: Neon',
       expect.stringMatching(/^Film: /),
       'Look: Western',
@@ -695,7 +695,7 @@ describe('CinematicStudio', () => {
 
   it('moves focus into a picker and back to its chip on Escape', async () => {
     const user = renderStudio()
-    const chip = screen.getByRole('button', { name: /^Shot:/ })
+    const chip = screen.getByRole('button', { name: /^Framing:/ })
 
     await user.click(chip)
     expect(screen.getByRole('radio', { name: 'Medium' })).toHaveFocus()
@@ -1320,8 +1320,10 @@ describe('CinematicStudio', () => {
       const user = userEvent.setup()
 
       await user.click(await screen.findByRole('button', { name: /^Model:/ }))
+      const menu = await screen.findByRole('menu')
+      expect(within(menu).queryByText('Model')).toBeNull()
       await user.click(
-        await screen.findByRole('menuitemradio', {
+        within(menu).getByRole('menuitemradio', {
           name: new RegExp(second.name)
         })
       )

@@ -81,11 +81,11 @@ test('shows a preview frame for every Cinematic Studio shot option', async ({
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/models/apps/cinematic-studio/')
   await page
-    .getByRole('button', { name: /^Shot\b/ })
+    .getByRole('button', { name: /^Framing\b/ })
     .first()
     .click()
 
-  const shots = page.getByRole('radiogroup', { name: 'Shot' })
+  const shots = page.getByRole('radiogroup', { name: 'Framing' })
   await expect(shots.getByRole('radio')).toHaveCount(8)
   await expect(
     shots.locator('img[src^="/images/cinematic-studio/options/shot-"]')
