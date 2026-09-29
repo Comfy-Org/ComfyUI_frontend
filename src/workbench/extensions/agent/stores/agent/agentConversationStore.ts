@@ -517,8 +517,8 @@ export const useAgentConversationStore = defineStore(
       if (transcript.pending) {
         liveMessage = transcript.pending.message
         activeIndex.value = messages.value.indexOf(transcript.pending.message)
-      activeTurnId.value = transcript.pending.messageId
-      activeTransportThreadId = threadId.value
+        activeTurnId.value = transcript.pending.messageId
+        activeTransportThreadId = threadId.value
         transport = createAgentEventTransport(
           transcript.pending.message,
           replaceActive,
