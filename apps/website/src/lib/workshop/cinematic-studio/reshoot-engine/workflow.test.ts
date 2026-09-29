@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import { DEFAULT_CAMERA } from '../reshoot'
 import type { ReshootShot } from './workflow'
-import { analyzeWorkflow, generateWorkflow } from './workflow'
+import { analyzeWorkflow, generateSeconds, generateWorkflow } from './workflow'
 
 const clip = { video: 'clip.mp4', aspect: '9:16', size: '768p' } as const
 
 const shot: ReshootShot = {
   clip,
+  seconds: 4.0625,
   camera: { ...DEFAULT_CAMERA, azimuth: 20, fov: 60 },
   keepAim: false,
   pivot: [0.1, 0.2, 1.5],
@@ -23,10 +24,20 @@ describe('Re-shoot graphs', () => {
       expect(graph['1'].inputs.file).toBe('clip.mp4')
       expect(graph['2'].inputs).toMatchObject({
         aspect_ratio: '9:16',
-        megapixels: 1,
-        duration: 15
+        megapixels: 1
       })
     }
+  })
+
+  it('reads the whole clip, then generates only the analyzed length', () => {
+    expect(analyzeWorkflow(clip)['2'].inputs.duration).toBe(15)
+    expect(generateWorkflow(shot)['2'].inputs.duration).toBe(4.0625)
+  })
+
+  it('asks for every analyzed frame whether the node rounds or floors', () => {
+    const seconds = generateSeconds(97, 24)
+    expect(Math.floor(seconds * 24)).toBe(97)
+    expect(Math.round(seconds * 24)).toBe(97)
   })
 
   it('analyzes with only the nodes the app proxy runs unmetered', () => {

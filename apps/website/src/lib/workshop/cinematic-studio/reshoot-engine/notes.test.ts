@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Locale } from '../../../../i18n/translations'
-import { failureNote, quoteNote } from './notes'
+import type { ReshootRun } from './notes'
+import { failureNote, quoteNote, runPrice } from './notes'
 import type { ReshootQuote } from './transport'
 import { ReshootError } from './transport'
 
@@ -95,7 +96,55 @@ describe('quoteNote', () => {
       note: 'One take at a time: wait for this one to finish.'
     }
   ])('$name', ({ quote: q, locale = 'en', note }) => {
-    expect(quoteNote(q, locale, NOW)).toBe(note)
+    expect(quoteNote(q, locale, { size: '480p' }, NOW)).toBe(note)
+  })
+})
+
+const PER_SECOND = quote({
+  free_runs_allowance: undefined,
+  free_runs_remaining: 0,
+  price_credits: 0,
+  next_run: 'paid',
+  price_per_second: {
+    tier_input: 'megapixels',
+    credits: { '0.4': 18, '1': 45 }
+  }
+})
+
+describe('per-second price', () => {
+  it.for<{ name: string; run: ReshootRun; price?: number; note: string }>([
+    {
+      name: 'before the clip is read, the rate for its size',
+      run: { size: '768p' },
+      note: '45 credits per second'
+    },
+    {
+      name: 'a read clip at 480p, rounded up',
+      run: { size: '480p', seconds: 4.04 },
+      price: 73,
+      note: '73 credits'
+    },
+    {
+      name: 'a whole number of seconds is not rounded up',
+      run: { size: '480p', seconds: 5 },
+      price: 90,
+      note: '90 credits'
+    },
+    {
+      name: 'a read clip at 768p',
+      run: { size: '768p', seconds: 4.0625 },
+      price: 183,
+      note: '183 credits'
+    }
+  ])('$name', ({ run, price, note }) => {
+    expect(runPrice(PER_SECOND, run)).toBe(price)
+    expect(quoteNote(PER_SECOND, 'en', run, NOW)).toBe(note)
+  })
+
+  it('keeps a flat price whatever the clip', () => {
+    expect(
+      runPrice(quote({ next_run: 'paid' }), { size: '768p', seconds: 9 })
+    ).toBe(40)
   })
 })
 

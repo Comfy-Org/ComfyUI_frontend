@@ -103,6 +103,23 @@ describe('useReshoot', () => {
     expect(refreshWorkshopCredits).toHaveBeenCalledWith({ force: true })
   })
 
+  it('reuses a scene it already read instead of analyzing again', async () => {
+    const reshoot = start()
+    await readScene(reshoot)
+    reshoot.size.value = '768p'
+    await vi.advanceTimersByTimeAsync(2_500)
+    reshoot.size.value = '480p'
+    await vi.advanceTimersByTimeAsync(2_500)
+
+    const analyses = vi
+      .mocked(transport.submit)
+      .mock.calls.filter(([workflow]) =>
+        JSON.stringify(workflow).includes('CrossViewGeometryExport')
+      )
+    expect(analyses).toHaveLength(2)
+    expect(reshoot.depth.value).toBe('ready')
+  })
+
   it('keeps the newest workspace quote when an older one answers last', async () => {
     const credential = ref(RESHOOT_CREDENTIAL)
     useWorkshopSession().session = computed(() => credential.value)

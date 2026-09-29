@@ -1,7 +1,9 @@
 import type { Locale } from '../../../../i18n/translations'
+import type { ReshootSize } from '../reshoot'
 import { rc } from '../reshoot-copy'
 import type { ReshootQuote } from './transport'
 import { ReshootError } from './transport'
+import { sizeTier } from './workflow'
 
 const HOUR = 3600
 const DAY = 24 * HOUR
@@ -49,10 +51,42 @@ function exhausted(
   return price > 0 ? `${note} · ${credits(price, locale)}` : note
 }
 
+/** The next Generate at this size, and its length once the clip is read. */
+export interface ReshootRun {
+  readonly size: ReshootSize
+  readonly seconds?: number
+}
+
+const perSecondRate = (quote: ReshootQuote, size: ReshootSize) =>
+  quote.price_per_second?.credits[sizeTier(size)]
+
+/**
+ * What one Generate costs in credits, rounded up as the proxy charges it.
+ * Undefined while a per-second price still waits on the clip's length.
+ */
+export function runPrice(
+  quote: ReshootQuote,
+  run: ReshootRun
+): number | undefined {
+  if (!quote.price_per_second) return quote.price_credits
+  const rate = perSecondRate(quote, run.size)
+  if (rate === undefined || run.seconds === undefined) return undefined
+  return Math.ceil(run.seconds * rate - 1e-9)
+}
+
+function priceText(quote: ReshootQuote, run: ReshootRun, locale: Locale) {
+  const price = runPrice(quote, run)
+  if (price !== undefined) return credits(price, locale)
+  return fill(rc('reshoot.quote.perSecond', locale), {
+    rate: (perSecondRate(quote, run.size) ?? 0).toLocaleString(locale)
+  })
+}
+
 /** What the next Generate costs, shown before it is pressed. */
 export function quoteNote(
   quote: ReshootQuote,
   locale: Locale,
+  run: ReshootRun,
   now = Date.now()
 ): string {
   const { free_runs_allowance: allowance } = quote
@@ -68,13 +102,13 @@ export function quoteNote(
     quote.next_run === 'paid' ||
     quote.blocked_reason === 'insufficient_credits'
   )
-    return credits(quote.price_credits, locale)
+    return priceText(quote, run, locale)
   if (quote.blocked_reason === 'concurrent_run_limit')
     return rc('reshoot.error.busy', locale)
   const resets = quote.resets_at ? Date.parse(quote.resets_at) : NaN
   return exhausted(
     Number.isFinite(resets) ? Math.max(0, (resets - now) / 1000) : undefined,
-    quote.price_credits,
+    runPrice(quote, run) ?? 0,
     locale
   )
 }

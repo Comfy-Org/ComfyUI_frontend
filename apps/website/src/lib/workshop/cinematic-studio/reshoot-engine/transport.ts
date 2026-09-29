@@ -23,6 +23,11 @@ export interface ReshootQuote {
   readonly free_runs_remaining: number
   readonly resets_at?: string | null
   readonly price_credits: number
+  /** Credits per second of output, by the priced input's value; replaces a flat price. */
+  readonly price_per_second?: {
+    readonly tier_input: string
+    readonly credits: Readonly<Record<string, number>>
+  }
   readonly next_run: 'free' | 'paid' | 'blocked'
   readonly blocked_reason?: string
 }

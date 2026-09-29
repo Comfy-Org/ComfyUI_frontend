@@ -273,6 +273,10 @@ const copy = {
   },
   'reshoot.quote.freeOnly': { en: 'Free', 'zh-CN': '免费' },
   'reshoot.quote.paid': { en: '{price} credits', 'zh-CN': '{price} 积分' },
+  'reshoot.quote.perSecond': {
+    en: '{rate} credits per second',
+    'zh-CN': '每秒 {rate} 积分'
+  },
   'reshoot.quote.exhausted': {
     en: 'No free runs left; next one {when}',
     'zh-CN': '免费次数已用完，下一次{when}可用'

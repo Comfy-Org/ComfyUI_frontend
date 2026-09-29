@@ -19,6 +19,16 @@ const MAX_SECONDS = 15
 
 const MEGAPIXELS: Record<ReshootSize, number> = { '480p': 0.4, '768p': 1 }
 
+/** The `megapixels` value a size sends, as the proxy's price tiers spell it. */
+export const sizeTier = (size: ReshootSize) => String(MEGAPIXELS[size])
+
+/**
+ * The length a generate asks for: the analyzed frames plus a quarter frame, so
+ * the clip node keeps every frame whether it rounds or floors the product.
+ */
+export const generateSeconds = (frames: number, fps: number) =>
+  (frames + 0.25) / fps
+
 export interface ReshootClip {
   /** The uploaded video's asset name, as the upload returned it. */
   readonly video: string
@@ -28,6 +38,8 @@ export interface ReshootClip {
 
 export interface ReshootShot {
   readonly clip: ReshootClip
+  /** Seconds to generate, which the proxy prices; see `generateSeconds`. */
+  readonly seconds: number
   readonly camera: Readonly<ReshootCamera>
   readonly keepAim: boolean
   readonly pivot: Vec3
@@ -70,6 +82,7 @@ function keyframe(key: CameraKey, pivot: Vec3): Keyframe {
 
 export function generateWorkflow(shot: ReshootShot): Graph {
   const graph = bindClip(generateGraph, shot.clip)
+  graph['2'].inputs.duration = shot.seconds
   const { camera, pivot } = shot
   const moving = shot.keys.length >= 2
   // The pivot the page found is sent as given, so the generation orbits the

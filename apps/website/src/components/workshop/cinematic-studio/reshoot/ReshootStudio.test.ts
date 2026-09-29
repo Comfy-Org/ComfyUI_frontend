@@ -78,12 +78,12 @@ describe('Re-shoot on one screen', () => {
     const example = () => screen.getByRole('button', { name: /Sci-fi pilot/ })
 
     await user.click(example())
-    await vi.advanceTimersByTimeAsync(2000)
-    await user.click(example())
     await vi.advanceTimersByTimeAsync(1000)
+    await user.click(example())
+    await vi.advanceTimersByTimeAsync(1500)
     expect(screen.getByTestId('reshoot-action')).toBeDisabled()
 
-    await vi.advanceTimersByTimeAsync(1500)
+    await vi.advanceTimersByTimeAsync(1000)
     expect(screen.getByTestId('reshoot-action')).toBeEnabled()
   })
 

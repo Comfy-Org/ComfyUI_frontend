@@ -26,21 +26,27 @@ import {
 } from '../lib/workshop/cinematic-studio/reshoot-engine/camera'
 import type { Geometry } from '../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import { readGeometry } from '../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import type { ReshootRun } from '../lib/workshop/cinematic-studio/reshoot-engine/notes'
 import {
   failureNote,
-  quoteNote
+  quoteNote,
+  runPrice
 } from '../lib/workshop/cinematic-studio/reshoot-engine/notes'
 import type { ReshootRunPhase } from '../lib/workshop/cinematic-studio/reshoot-engine/run'
 import {
   downloadOutput,
   runJob
 } from '../lib/workshop/cinematic-studio/reshoot-engine/run'
-import type { ReshootQuote } from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
+import type {
+  ReshootQuote,
+  ReshootTransport
+} from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { ReshootError } from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { reshootTransport } from '../lib/workshop/cinematic-studio/reshoot-engine/transport-config'
 import type { ReshootClip } from '../lib/workshop/cinematic-studio/reshoot-engine/workflow'
 import {
   analyzeWorkflow,
+  generateSeconds,
   generateWorkflow
 } from '../lib/workshop/cinematic-studio/reshoot-engine/workflow'
 import { useWorkshopAuthFlag } from '../scripts/posthog'
@@ -158,8 +164,15 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       !rendering.value &&
       quote.value?.next_run !== 'blocked'
   )
+  const run = computed<ReshootRun>(() => ({
+    size: size.value,
+    seconds:
+      scene.value.phase === 'ready'
+        ? generateSeconds(scene.value.geometry.frames, scene.value.geometry.fps)
+        : undefined
+  }))
   const priceNote = computed(() =>
-    quote.value ? quoteNote(quote.value, locale) : undefined
+    quote.value ? quoteNote(quote.value, locale, run.value) : undefined
   )
   /** Why the viewport cannot show a read scene, if it cannot. */
   const notice = computed(() => {
@@ -207,7 +220,11 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   function noteFor(error: unknown): string {
     if (error instanceof ReshootError && error.code === 'insufficient_credits')
       return noCreditsNote()
-    return failureNote(error, locale, quote.value?.price_credits)
+    return failureNote(
+      error,
+      locale,
+      quote.value ? runPrice(quote.value, run.value) : undefined
+    )
   }
 
   const uploads = new WeakMap<File, string>()
@@ -229,6 +246,25 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     return example
   }
 
+  /** Scenes already read, by clip and settings: analyses are rate limited. */
+  const reads = new Map<string, Geometry>()
+  async function readScene(
+    via: ReshootTransport,
+    clip: ReshootClip,
+    signal: AbortSignal
+  ) {
+    const job = await runJob(
+      via,
+      analyzeWorkflow(clip),
+      (stage) => {
+        if (!signal.aborted) scene.value = { phase: 'analyzing', stage }
+      },
+      signal
+    )
+    const bytes = await downloadOutput(via, job, '.cvgeo', signal)
+    return readGeometry(await bytes.arrayBuffer())
+  }
+
   let analysis: AbortController | undefined
   async function analyze() {
     analysis?.abort()
@@ -246,16 +282,10 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       const video = uploads.get(file) ?? (await transport.upload(file, signal))
       uploads.set(file, video)
       const settings = { video, aspect: aspect.value, size: size.value }
-      const job = await runJob(
-        transport,
-        analyzeWorkflow(settings),
-        (stage) => {
-          if (!signal.aborted) scene.value = { phase: 'analyzing', stage }
-        },
-        signal
-      )
-      const bytes = await downloadOutput(transport, job, '.cvgeo', signal)
-      const geometry = await readGeometry(await bytes.arrayBuffer())
+      const readKey = `${video}|${settings.aspect}|${settings.size}`
+      const geometry =
+        reads.get(readKey) ?? (await readScene(transport, settings, signal))
+      reads.set(readKey, geometry)
       if (signal.aborted) return
       scene.value = { phase: 'ready', clip: settings, geometry }
       frame.value = Math.min(frame.value, geometry.frames - 1)
@@ -334,6 +364,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
         transport,
         generateWorkflow({
           clip: read.clip,
+          seconds: generateSeconds(geometry.frames, geometry.fps),
           camera,
           keepAim: keepAim.value,
           pivot: estimatePivot(
