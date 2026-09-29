@@ -9,6 +9,8 @@ export interface ComposerAttachment {
   name: string
   ref: string
   previewUrl?: string
+  subfolder?: string
+  uploadType?: string
   uploading?: boolean
 }
 

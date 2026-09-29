@@ -164,7 +164,12 @@ describe('UserMessage', () => {
       text: 'use these',
       attachments: [
         { name: 'a.png', previewUrl: 'blob:a' },
-        { name: 'clip.mp4', ref: 'upload_clip.mp4' }
+        {
+          name: 'clip.mp4',
+          ref: 'upload_clip.mp4',
+          subfolder: 'nested folder',
+          uploadType: 'temp'
+        }
       ]
     })
 
@@ -172,7 +177,7 @@ describe('UserMessage', () => {
       { url: 'blob:a', filename: 'a.png', kind: 'image' },
       {
         url: expect.stringContaining(
-          '/view?filename=upload_clip.mp4&type=input'
+          '/view?filename=upload_clip.mp4&type=temp&subfolder=nested+folder'
         ),
         filename: 'clip.mp4',
         kind: 'video'

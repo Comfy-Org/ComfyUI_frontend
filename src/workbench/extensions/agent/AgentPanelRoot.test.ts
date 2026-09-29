@@ -1317,6 +1317,74 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
   })
 
+  it('rejects an upload response that omits the stored filename', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/api/upload/image')) {
+          return json(200, { subfolder: '', type: 'input' })
+        }
+        return json(200, { data: [] })
+      })
+    )
+
+    renderWithSelectedTarget()
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.attachFiles')
+      })
+    )
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['x'], 'cat.png', { type: 'image/png' })
+    )
+
+    await vi.waitFor(() =>
+      expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
+    )
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({ detail: 'cat.png could not be uploaded' })
+    )
+  })
+
+  it('uses the stored upload location and releases the local preview', async () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.endsWith('/api/upload/image')
+          ? json(200, {
+              name: 'stored.png',
+              subfolder: 'nested folder',
+              type: 'input'
+            })
+          : json(200, { data: [] })
+      )
+    )
+    renderWithSelectedTarget()
+
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['x'], 'cat.png', { type: 'image/png' })
+    )
+
+    const preview = await screen.findByAltText('cat.png')
+    expect(preview.getAttribute('src')).toContain(
+      '/api/view?filename=stored.png&type=input&subfolder=nested+folder'
+    )
+    expect(useAgentComposerStore().attachments).toEqual([
+      expect.objectContaining({
+        ref: 'stored.png',
+        subfolder: 'nested folder',
+        uploadType: 'input'
+      })
+    ])
+    expect(revoke).toHaveBeenCalledWith('blob:mock-url')
+    revoke.mockRestore()
+  })
+
   it('uploads a picked video above 20MB when the server permits it', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
@@ -1414,13 +1482,13 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({
         severity: 'warn',
-        detail: 'movie.mp4 is larger than 24MB'
+        detail: 'movie.mp4 is larger than 24 MB'
       })
     )
     expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
   })
 
-  it('keeps the image limit at 20MB when the server permits more', async () => {
+  it('uses a larger server limit for non-video attachments', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
@@ -1428,16 +1496,36 @@ describe('AgentPanelRoot attach flow', () => {
 
     const image = fileOfSize('huge.png', MAX_ATTACHMENT_BYTES + 1, 'image/png')
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [image] })
-    await nextTick()
 
-    expect(uploaded).toEqual([])
-    expect(useToastStore().messagesToAdd).toContainEqual(
-      expect.objectContaining({
-        severity: 'warn',
-        detail: 'huge.png is larger than 20MB'
-      })
-    )
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'huge.png'
+      )
+    ).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual(['huge.png']))
   })
+
+  it.for([null, '104857600', Number.NaN, -1, 0])(
+    'uses the conservative limit for malformed server value %s',
+    async (serverLimit) => {
+      getServerFeature.mockReturnValue(serverLimit)
+      stubUploadFetch()
+      renderWithSelectedTarget()
+
+      const image = fileOfSize(
+        'huge.png',
+        MAX_ATTACHMENT_BYTES + 1,
+        'image/png'
+      )
+      dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [image] })
+      await nextTick()
+
+      expect(screen.queryByText('huge.png')).not.toBeInTheDocument()
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({ detail: 'huge.png is larger than 20 MB' })
+      )
+    }
+  )
 
   it('uploads a dropped video above 20MB when the server permits it', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
@@ -1528,13 +1616,156 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
   })
 
-  it('keeps the 20MB limit for an oversize audio file', async () => {
-    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+  it('coalesces concurrent upload refreshes with one trailing pass', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    let releaseFirstRefresh: () => void = () => {}
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockImplementationOnce(
+        () =>
+          new Promise<undefined>((resolve) => {
+            releaseFirstRefresh = () => resolve(undefined)
+          })
+      )
+      .mockResolvedValue(undefined)
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      files: [
+        new File(['x'], 'a.png', { type: 'image/png' }),
+        new File(['x'], 'b.png', { type: 'image/png' }),
+        new File(['x'], 'c.png', { type: 'image/png' })
+      ]
+    })
+
+    await vi.waitFor(() => expect(uploaded).toHaveLength(3))
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+    releaseFirstRefresh()
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+  })
+
+  it('chains input asset refreshes across overlapping batches', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    let releaseFirstRefresh: () => void = () => {}
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockImplementationOnce(
+        () =>
+          new Promise<undefined>((resolve) => {
+            releaseFirstRefresh = () => resolve(undefined)
+          })
+      )
+      .mockResolvedValue(undefined)
+
+    const textbox = screen.getByRole('textbox')
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'a.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'b.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(uploaded).toEqual(['a.png', 'b.png']))
+    await expect(
+      vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2), {
+        timeout: 250,
+        interval: 10
+      })
+    ).rejects.toThrow()
+
+    releaseFirstRefresh()
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+  })
+
+  it('keeps refreshing later batches after a refresh fails', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    let rejectFirstRefresh!: (error: Error) => void
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockImplementationOnce(
+        () =>
+          new Promise<undefined>((_resolve, reject) => {
+            rejectFirstRefresh = reject
+          })
+      )
+      .mockResolvedValue(undefined)
+
+    const textbox = screen.getByRole('textbox')
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'a.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'b.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(uploaded).toEqual(['a.png', 'b.png']))
+    expect(refresh).toHaveBeenCalledOnce()
+
+    rejectFirstRefresh(new Error('asset fetch failed'))
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+  })
+
+  it('gives Undo a grace period before cancelling a removed upload', async () => {
+    const signals: AbortSignal[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+        if (!String(input).includes('/upload/'))
+          return Promise.resolve(json(200, agentThreadList()))
+        if (init?.signal) signals.push(init.signal)
+        return new Promise<Response>((_resolve, reject) =>
+          init?.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason)
+          )
+        )
+      })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      files: [new File(['x'], 'cat.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(signals).toHaveLength(1))
+    const composer = useAgentComposerStore()
+    const removeButton = await screen.findByRole('button', {
+      name: i18n.global.t('agent.remove')
+    })
+    vi.useFakeTimers()
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      await user.click(removeButton)
+
+      expect(signals[0].aborted).toBe(false)
+      expect(composer.attachments).toEqual([])
+      await vi.advanceTimersByTimeAsync(5_000)
+      expect(signals[0].aborted).toBe(true)
+      expect(refresh).not.toHaveBeenCalled()
+      expect(useToastStore().messagesToAdd).not.toContainEqual(
+        expect.objectContaining({ detail: 'cat.png could not be uploaded' })
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('uses the server limit for audio rejection copy', async () => {
+    getServerFeature.mockReturnValue(24 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
 
-    const song = fileOfSize('big.mp3', MAX_ATTACHMENT_BYTES + 1, 'audio/mpeg')
+    const song = fileOfSize('big.mp3', 25 * 1024 * 1024, 'audio/mpeg')
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [song] })
     await nextTick()
 
@@ -1542,7 +1773,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({
         severity: 'warn',
-        detail: 'big.mp3 is larger than 20MB'
+        detail: 'big.mp3 is larger than 24 MB'
       })
     )
   })
@@ -1644,7 +1875,7 @@ describe('AgentPanelRoot attach flow', () => {
         getData: (type: string) =>
           type === 'application/x-comfy-asset-info'
             ? JSON.stringify({ filename, type: 'input' })
-            : `http://localhost/api/view?filename=${filename}`
+            : `/api/view?filename=${filename}`
       }
 
       dispatchDrag(target, 'dragenter', dragData)
@@ -1744,6 +1975,40 @@ describe('AgentPanelRoot attach flow', () => {
     }
   )
 
+  it('stages a renamed non-media asset reference without downloading it', async () => {
+    const fetchSpy = vi.fn(async (_input?: RequestInfo | URL) =>
+      json(200, agentThreadList())
+    )
+    vi.stubGlobal('fetch', fetchSpy)
+    renderWithSelectedTarget()
+    await nextTick()
+    const dragData = {
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: 'model.obj',
+          display_name: 'Renamed model',
+          attachment_ref: 'stored-model.obj',
+          media_kind: '3D'
+        })
+    }
+
+    expect(dispatchDrag(screen.getByRole('textbox'), 'drop', dragData)).toBe(
+      true
+    )
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'model.obj'
+      )
+    ).toBeInTheDocument()
+    expect(
+      fetchSpy.mock.calls.some(([url]) =>
+        /\/api\/(view|upload\/image)/.test(String(url))
+      )
+    ).toBe(false)
+  })
+
   it('shows an uploading chip while a Media-card URI is still loading', async () => {
     let resolveAsset: (response: Response) => void = () => {}
     vi.stubGlobal(
@@ -1796,6 +2061,49 @@ describe('AgentPanelRoot attach flow', () => {
         screen.queryByLabelText(i18n.global.t('agent.uploading'))
       ).not.toBeInTheDocument()
     )
+  })
+
+  it('does not warn after closing the panel during a deferred asset fetch', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((input) => {
+        const url = String(input)
+        if (url.includes('/api/view')) return new Promise(() => {})
+        if (url.includes('/assets'))
+          return Promise.resolve(
+            json(200, { assets: [], total: 0, has_more: false })
+          )
+        if (url.includes('/workflows'))
+          return Promise.resolve(
+            json(200, { data: [], total: 0, has_more: false })
+          )
+        return Promise.resolve(json(200, agentThreadList()))
+      })
+    )
+    const { unmount } = renderWithSelectedTarget()
+    await nextTick()
+    const toast = useToastStore()
+    vi.useFakeTimers()
+    try {
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'gen.png', type: 'input' })
+            : 'http://localhost/api/view?filename=gen.png'
+      })
+      await nextTick()
+      expect(
+        screen.getByLabelText(i18n.global.t('agent.uploading'))
+      ).toBeInTheDocument()
+
+      unmount()
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(toast.messagesToAdd).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('attaches dropped assets and leaves other files to the graph loader', async () => {
@@ -1992,21 +2300,14 @@ describe('AgentPanelRoot attach flow', () => {
     revoke.mockRestore()
   })
 
-  it('keeps a dismissed preview available for Undo until the editor unmounts', async () => {
+  it('releases a dismissed in-flight preview when its upload is cancelled', async () => {
+    vi.useFakeTimers()
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) => {
-        if (url.endsWith('/api/upload/image')) {
-          return new Response(
-            JSON.stringify({
-              name: 'uploaded_cat.png',
-              subfolder: '',
-              type: 'input'
-            }),
-            { status: 200, headers: { 'Content-Type': 'application/json' } }
-          )
-        }
+        if (url.endsWith('/api/upload/image'))
+          return new Promise<Response>(() => {})
         return new Response('{"threads":[]}', {
           status: 200,
           headers: { 'Content-Type': 'application/json' }
@@ -2027,14 +2328,18 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toBeInTheDocument()
 
-    await userEvent.click(
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    await user.click(
       screen.getByRole('button', { name: i18n.global.t('agent.remove') })
     )
     expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
     expect(revoke).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(revoke).toHaveBeenCalledTimes(1)
     view.unmount()
     expect(revoke).toHaveBeenCalledTimes(1)
     revoke.mockRestore()
+    vi.useRealTimers()
   })
 })
 
