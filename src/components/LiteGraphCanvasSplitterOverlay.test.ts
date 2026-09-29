@@ -164,7 +164,7 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
   it('refreshes the splitter only when the Agent panel becomes visible', async () => {
     const agentPanelStore = useAgentPanelStore()
     agentPanelStore.enabled = true
-    agentPanelStore.isOpen = true
+    agentPanelStore.isOpen = false
     agentPanelStore.consentAccepted = false
 
     const splitterMounts = vi.fn()
@@ -186,13 +186,13 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
         }
       }
     })
-    const mountsBeforeConsent = splitterMounts.mock.calls.length
+    const mountsBeforePanelOpen = splitterMounts.mock.calls.length
 
-    agentPanelStore.consentAccepted = true
+    agentPanelStore.isOpen = true
     await nextTick()
 
     expect(splitterMounts.mock.calls.length).toBeGreaterThan(
-      mountsBeforeConsent
+      mountsBeforePanelOpen
     )
   })
 })

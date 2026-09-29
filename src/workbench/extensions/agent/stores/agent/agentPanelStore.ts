@@ -106,9 +106,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
   let teardownReported = false
 
-  const isVisible = computed(
-    () => enabled.value && isOpen.value && consentAccepted.value
-  )
+  const isVisible = computed(() => enabled.value && isOpen.value)
 
   watch(isVisible, (visible) => {
     if (!visible) {
