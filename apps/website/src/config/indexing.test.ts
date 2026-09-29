@@ -8,6 +8,7 @@ import {
   routerModelSlugAliases,
   workshopModels
 } from './workshop-browse-content'
+import { workflowModels } from './workshop-workflow-content'
 
 const MODELS_PAGES_BY_KIND = [
   ['hub', '/models/'],
@@ -106,10 +107,11 @@ describe('indexing policy', () => {
 
 describe('model page launch', () => {
   it.for(MODELS_PAGES_BY_KIND)(
-    'lists only the hub and canonical model pages (%s)',
+    'lists only the hub, canonical model pages and workflow pages (%s)',
     ([kind, pathname]) => {
-      expect(isIndexableModelPage(pathname)).toBe(kind === 'model')
-      expect(inSitemap(pathname)).toBe(kind === 'hub' || kind === 'model')
+      const launched = kind === 'model' || kind === 'workflow'
+      expect(isIndexableModelPage(pathname)).toBe(launched)
+      expect(inSitemap(pathname)).toBe(kind === 'hub' || launched)
     }
   )
 
@@ -134,5 +136,18 @@ describe('model page launch', () => {
     expect(
       workshopModels.some(({ href }) => isIndexableModelPage(href, new Set()))
     ).toBe(false)
+  })
+
+  it('indexes every workflow page until its switch rolls them back', () => {
+    const workflowPaths = workflowModels.map(({ slug }) => `/models/${slug}/`)
+    expect(workflowPaths.every((path) => isIndexableModelPage(path))).toBe(true)
+    expect(
+      workflowPaths.some((path) => isIndexableModelPage(path, 'all', false))
+    ).toBe(false)
+    expect(
+      workshopModels.every(({ href }) =>
+        isIndexableModelPage(href, 'all', false)
+      )
+    ).toBe(true)
   })
 })

@@ -1,6 +1,6 @@
 import { LOCALE_CODES, LOCALES } from './locales'
 import type { ModelPageLaunch } from './model-page-launch'
-import { launchedModelPages } from './model-page-launch'
+import { launchedModelPages, launchedWorkflowPages } from './model-page-launch'
 import { models } from './models'
 import { modelsUrlKind } from './models-url-registry'
 import { workshopModels } from './workshop-browse-content'
@@ -63,9 +63,12 @@ const routerIdByModelPage = new Map(
 
 export function isIndexableModelPage(
   pathname: string,
-  launched: ModelPageLaunch = launchedModelPages
+  launched: ModelPageLaunch = launchedModelPages,
+  workflowsLaunched: boolean = launchedWorkflowPages
 ): boolean {
-  if (modelsUrlKind(pathname) !== 'model') return false
+  const kind = modelsUrlKind(pathname)
+  if (kind === 'workflow') return workflowsLaunched
+  if (kind !== 'model') return false
   const routerId = routerIdByModelPage.get(normalizePathname(pathname))
   return (
     routerId !== undefined && (launched === 'all' || launched.has(routerId))
