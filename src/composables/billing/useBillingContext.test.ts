@@ -228,7 +228,7 @@ describe('useBillingContext', () => {
     expect(type.value).toBe('workspace')
   })
 
-  it('re-arms a closed Agent dock from workspace-scoped funds', async () => {
+  it('re-arms the exhaustion impression after workspace-scoped Agent funds recover while the dock is closed', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     mockBillingRail.value = 'stripe'
     mockBillingStatus.value = {
