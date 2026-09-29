@@ -1,7 +1,10 @@
+import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
+
 import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 
@@ -68,6 +71,8 @@ vi.mock<unknown>(
 
 global.fetch = vi.fn()
 
+vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
+
 type Distribution = 'desktop' | 'localhost' | 'cloud'
 
 const setDistribution = (distribution: Distribution) => {
@@ -86,6 +91,8 @@ function createDeferred<T>() {
 }
 
 beforeEach(() => {
+  vi.mocked(webSessionResourceHeader).mockReset()
+  vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
   Object.assign(useAuthStore(), { userId: 'user-123' })
   vi.mocked(useAuthStore().getFirebaseAuthHeader).mockResolvedValue({
     Authorization: 'Bearer test-token' as const
@@ -106,6 +113,59 @@ describe('performSubscriptionCheckout', () => {
   afterEach(() => {
     setDistribution('localhost')
     mockLocalStorage.__reset()
+  })
+
+  it.for([
+    {
+      name: 'no web session sends the Firebase header',
+      session: undefined,
+      authorization: 'Bearer test-token',
+      firebaseCalls: 1
+    },
+    {
+      name: 'a web session sends its own header instead',
+      session: { Authorization: 'Bearer session-jwt' },
+      authorization: 'Bearer session-jwt',
+      firebaseCalls: 0
+    }
+  ])(
+    'authorizes the tier checkout: $name',
+    async ({ session, authorization, firebaseCalls }) => {
+      vi.mocked(webSessionResourceHeader).mockResolvedValue(session)
+      vi.spyOn(window, 'open').mockImplementation(() => window)
+      vi.mocked(global.fetch).mockResolvedValue(
+        new Response(
+          JSON.stringify({ checkout_url: 'https://checkout.stripe.com/x' })
+        )
+      )
+
+      await performSubscriptionCheckout('pro', 'monthly')
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers/cloud-subscription-checkout/pro'),
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: authorization })
+        })
+      )
+      expect(useAuthStore().getFirebaseAuthHeader).toHaveBeenCalledTimes(
+        firebaseCalls
+      )
+    }
+  )
+
+  it('rejects with the mint failure and sends no tier checkout request', async () => {
+    vi.mocked(webSessionResourceHeader).mockRejectedValue(
+      new SessionTokenError({
+        status: 'error',
+        code: 'SESSION_REVOKED',
+        retryable: false
+      })
+    )
+
+    await expect(
+      performSubscriptionCheckout('pro', 'monthly')
+    ).rejects.toMatchObject({ failure: { code: 'SESSION_REVOKED' } })
+    expect(global.fetch).not.toHaveBeenCalled()
   })
 
   it('tracks begin_checkout with user id and tier metadata', async () => {

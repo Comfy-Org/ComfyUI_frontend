@@ -6,6 +6,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
@@ -50,7 +51,7 @@ test.describe(
       const panel = page.getByTestId('docked-agent-panel')
 
       await expect(openButton).toBeVisible()
-      await openButton.click()
+      await new AgentPanel(page).open()
       await expect(panel).toBeVisible()
       await expect(
         page.getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
@@ -82,10 +83,12 @@ test.describe(
         name: OPEN_AGENT_LABEL,
         exact: true
       })
+      const panel = page.getByTestId('docked-agent-panel')
+      await new AgentPanel(page).open()
+      await panel.getByRole('button', { name: enMessages.g.close }).click()
       await openButton.focus()
       await openButton.press('Enter')
 
-      const panel = page.getByTestId('docked-agent-panel')
       await expect(panel).toBeVisible()
       await expect(panel).toHaveAttribute('role', 'complementary')
       await expect(panel).toHaveAttribute(
@@ -107,9 +110,7 @@ test.describe(
     }) => {
       await bootAgentApp(page, true)
 
-      await page
-        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.getByTestId('docked-agent-panel')
       await expect(panel).toBeVisible()
 
@@ -134,9 +135,7 @@ test.describe(
       await page.setViewportSize({ width: 1600, height: 900 })
       await bootAgentApp(page, true)
 
-      await page
-        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.getByTestId('docked-agent-panel')
       await expect(panel).toBeVisible()
 
@@ -182,9 +181,7 @@ test.describe(
       await page.setViewportSize({ width: 1300, height: 900 })
       await bootAgentApp(page, true)
 
-      await page
-        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.getByTestId('docked-agent-panel')
       await expect(panel).toBeVisible()
       await panel
@@ -222,9 +219,7 @@ test.describe(
     test('restores an open panel after a browser reload', async ({ page }) => {
       await bootAgentApp(page, true)
 
-      await page
-        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-        .click()
+      await new AgentPanel(page).open()
       await expect(page.getByTestId('docked-agent-panel')).toBeVisible()
       await expect
         .poll(() =>
@@ -248,11 +243,7 @@ test.describe(
     }) => {
       await bootAgentApp(page, agentFlagEnabled)
 
-      const openButton = page.getByRole('button', {
-        name: OPEN_AGENT_LABEL,
-        exact: true
-      })
-      await openButton.click()
+      await new AgentPanel(page).open()
 
       const panel = page.getByTestId('docked-agent-panel')
       const tabs = new Topbar(page).tabs

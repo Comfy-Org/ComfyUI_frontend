@@ -4,9 +4,12 @@ import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope } from 'vue'
 
+import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
+
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
@@ -152,6 +155,8 @@ vi.mock<unknown>(
 
 vi.mock(import('@/services/dialogService'))
 
+vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
+
 const mockReadStatus = vi.fn<BillingReadRail['readStatus']>()
 
 const buildStatus = (
@@ -211,6 +216,8 @@ const statusReadPaths = [
 global.fetch = vi.fn()
 
 beforeEach(() => {
+  vi.mocked(webSessionResourceHeader).mockReset()
+  vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
   useErrorHandling().wrapWithErrorHandlingAsync =
     (action, errorHandler) =>
     async (...args) => {
@@ -714,6 +721,67 @@ describe('useSubscription', () => {
 
       await expect(subscribeDirect()).rejects.toThrow()
       expect(useAuthActions().reportError).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      {
+        name: 'no web session sends the Firebase header',
+        session: undefined,
+        authorization: 'Bearer test-token',
+        firebaseCalls: 1
+      },
+      {
+        name: 'a web session sends its own header instead',
+        session: { Authorization: 'Bearer session-jwt' },
+        authorization: 'Bearer session-jwt',
+        firebaseCalls: 0
+      }
+    ])(
+      'authorizes the checkout: $name',
+      async ({ session, authorization, firebaseCalls }) => {
+        vi.mocked(webSessionResourceHeader).mockResolvedValue(session)
+        vi.mocked(global.fetch).mockResolvedValue(
+          new Response(
+            JSON.stringify({ checkout_url: 'https://checkout.stripe.com/x' })
+          )
+        )
+        const windowOpenSpy = vi
+          .spyOn(window, 'open')
+          .mockImplementation(() => window)
+
+        await useSubscriptionWithScope().subscribeDirect()
+
+        expect(global.fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/customers/cloud-subscription-checkout'),
+          expect.objectContaining({
+            headers: {
+              Authorization: authorization,
+              'Content-Type': 'application/json'
+            }
+          })
+        )
+        expect(useAuthStore().getFirebaseAuthHeader).toHaveBeenCalledTimes(
+          firebaseCalls
+        )
+        windowOpenSpy.mockRestore()
+      }
+    )
+
+    it('rejects with the mint failure and sends no checkout request', async () => {
+      vi.mocked(webSessionResourceHeader).mockRejectedValue(
+        new SessionTokenError({
+          status: 'error',
+          code: 'SESSION_REVOKED',
+          retryable: false
+        })
+      )
+
+      await expect(
+        useSubscriptionWithScope().subscribeDirect()
+      ).rejects.toMatchObject({
+        failure: { code: 'SESSION_REVOKED' }
+      })
+      expect(global.fetch).not.toHaveBeenCalled()
     })
 
     it('tags the pending attempt as a resubscribe when called with operation/source', async () => {
