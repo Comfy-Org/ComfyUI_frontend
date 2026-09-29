@@ -146,7 +146,7 @@ describe('curated workflow pages', () => {
     expect(detail.examples).toHaveLength(1)
     expect(detail.examples[0]).toMatchObject({
       thumbnailUrl:
-        'https://cloud.comfy.org/templates/utility_birefnet_remove_background-1.webp',
+        'https://media.comfy.org/website/workshop/workflows/remove-background/lily-veil-cutout.webp',
       sampleOnly: false
     })
     const state = initialWorkshopPageState(detail)
@@ -169,8 +169,12 @@ describe('curated workflow pages', () => {
     ).toEqual([
       { name: 'image1', label: 'Your original image', kind: 'file' },
       { name: 'image2', label: 'Material reference', kind: 'file' },
-      { name: 'prompt', label: 'What should change?', kind: 'text' }
+      { name: 'prompt', label: 'What should change?', kind: 'text' },
+      { name: 'negative_prompt', label: 'Avoid', kind: 'text' },
+      { name: 'fast_mode', label: 'Fast mode', kind: 'toggle' },
+      { name: 'seed', label: 'Seed', kind: 'number' }
     ])
+    expect(state.values.seed).toBeUndefined()
     expect(state.values.prompt).toBe(
       'Change the furniture leather difference in image 1 to the fur material in image 2.'
     )

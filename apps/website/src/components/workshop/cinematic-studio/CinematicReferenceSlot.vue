@@ -1,36 +1,28 @@
 <script setup lang="ts">
 import { Plus, X } from '@lucide/vue'
-import { useObjectUrl } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
+import type { ReferenceKind } from './reference-kind'
+import { REFERENCE_SLOTS } from './reference-kind'
+import { useImagePreview } from './useImagePreview'
 
 const { kind, locale = 'en' } = defineProps<{
-  kind: 'cast' | 'palette'
+  kind: ReferenceKind
   locale?: Locale
 }>()
 
-const file = defineModel<File | undefined>()
-const preview = useObjectUrl(file)
+const file = defineModel<StudioImage | undefined>()
+const preview = useImagePreview(() => file.value)
 const input = useTemplateRef<HTMLInputElement>('input')
-const label = computed(() =>
-  tc(
-    kind === 'cast'
-      ? 'cinematic.reference.cast'
-      : 'cinematic.reference.palette',
-    locale
-  )
-)
+
+const label = computed(() => tc(REFERENCE_SLOTS[kind].label, locale))
 const accessibleName = computed(() => {
-  const action = tc(
-    kind === 'cast'
-      ? 'cinematic.reference.castAction'
-      : 'cinematic.reference.paletteAction',
-    locale
-  )
+  const action = tc(REFERENCE_SLOTS[kind].action, locale)
   return file.value ? `${action}: ${file.value.name}` : action
 })
 
@@ -59,7 +51,15 @@ function choose(event: Event) {
       @click="input?.click()"
     >
       <template v-if="preview">
+        <video
+          v-if="kind === 'video'"
+          :src="preview"
+          muted
+          playsinline
+          class="absolute inset-0 size-full object-cover"
+        />
         <img
+          v-else
           :src="preview"
           alt=""
           class="absolute inset-0 size-full object-cover"
@@ -94,7 +94,7 @@ function choose(event: Event) {
     <input
       ref="input"
       type="file"
-      accept="image/png,image/jpeg,image/webp"
+      :accept="REFERENCE_SLOTS[kind].accept"
       :data-testid="`cinematic-reference-${kind}`"
       class="sr-only"
       tabindex="-1"
