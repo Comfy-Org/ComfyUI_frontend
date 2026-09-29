@@ -2,8 +2,6 @@
 import { useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import type { PromoRejection } from '@/checkout/promoEntry'
 
 const { draft, error, locked } = defineProps<{
@@ -40,18 +38,13 @@ function edit(event: Event) {
         :disabled="locked"
         autocomplete="off"
         spellcheck="false"
-        :class="
-          cn(
-            'h-8 min-w-0 flex-1 rounded-md border border-border-default bg-transparent px-3 text-sm text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:opacity-40',
-            error && 'border-destructive-background'
-          )
-        "
+        class="h-8 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-input-surface px-3 text-sm text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:opacity-40"
         @input="edit"
       />
       <button
         type="submit"
         :disabled="locked"
-        class="flex h-8 cursor-pointer items-center rounded-md bg-secondary-background px-2 text-xs text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+        class="flex h-8 cursor-pointer items-center rounded-lg bg-secondary-background px-2 text-xs text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
       >
         {{ t(`${P}.apply`) }}
       </button>
@@ -59,7 +52,7 @@ function edit(event: Event) {
         type="button"
         :disabled="locked"
         :aria-label="t(`${P}.dismiss`)"
-        class="flex size-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-secondary-background-hover hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+        class="flex size-8 cursor-pointer items-center justify-center rounded-lg text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
         @click="emit('dismiss')"
       >
         <i class="icon-[lucide--x] size-4" aria-hidden="true" />

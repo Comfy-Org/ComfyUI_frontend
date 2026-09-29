@@ -33,13 +33,25 @@ describe('reducePromoEntry', () => {
   }>([
     {
       name: 'a URL code opens the field typed but unapplied',
-      start: initialPromoEntry('LAUNCH20'),
+      start: initialPromoEntry({ promotionCode: 'LAUNCH20' }),
       events: [],
       expected: editing('LAUNCH20')
     },
     {
       name: 'no URL code starts collapsed',
       start: initialPromoEntry(undefined),
+      events: [],
+      expected: idle
+    },
+    {
+      name: 'a URL code the link could not carry opens refused, as typed',
+      start: initialPromoEntry({ unreadablePromotionCode: 'SAVE 20' }),
+      events: [],
+      expected: rejected('SAVE 20')
+    },
+    {
+      name: 'a blank URL code starts collapsed',
+      start: initialPromoEntry({ unreadablePromotionCode: '' }),
       events: [],
       expected: idle
     },
@@ -89,7 +101,7 @@ describe('reducePromoEntry', () => {
     },
     {
       name: 'the URL prefill is removable before it is applied',
-      start: initialPromoEntry('LAUNCH20'),
+      start: initialPromoEntry({ promotionCode: 'LAUNCH20' }),
       events: [{ type: 'dismissed' }],
       expected: idle
     },

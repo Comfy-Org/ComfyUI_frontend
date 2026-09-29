@@ -1915,6 +1915,74 @@ describe('FullPageCheckoutView promo codes', () => {
     expect(await screen.findByText('−$5.60')).toBeInTheDocument()
   })
 
+  it('a Pay over a typed, unapplied code applies it and waits for a second Pay at the new total', async () => {
+    const fake = await renderCheckout(
+      {},
+      quotesByCode,
+      `${CHECKOUT_PATH}&promo=LAUNCH20`
+    )
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1')
+
+    expect(await screen.findByText('−$5.60')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Remove LAUNCH20' })
+    ).toBeEnabled()
+    expect(fake.subscribe).not.toHaveBeenCalled()
+
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    form.emit('confirm', 'ctoken_2')
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          promotion_code: 'LAUNCH20',
+          quote_id: 'q_promo'
+        })
+      )
+    )
+  })
+
+  it('a Pay over a code Apply already refused pays without it', async () => {
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await enterCode('NOPE')
+    await screen.findByRole('alert')
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1')
+
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledExactlyOnceWith(
+        expect.not.objectContaining({ promotion_code: expect.anything() })
+      )
+    )
+  })
+
+  it('opens a URL code it cannot read as refused under the field, and still loads the checkout', async () => {
+    const fake = await renderCheckout(
+      {},
+      quotesByCode,
+      `${CHECKOUT_PATH}&promo=SAVE%2020`
+    )
+
+    expect(
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    ).toBeInTheDocument()
+    expect(promoField()).toHaveValue('SAVE 20')
+    expect(promoField()).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "This code isn't valid."
+    )
+    expect(fake.previewSubscribe).toHaveBeenCalledExactlyOnceWith(
+      expect.not.objectContaining({ promotionCode: expect.anything() }),
+      expect.anything()
+    )
+  })
+
   it('lets the URL prefill be removed before it is applied', async () => {
     await renderCheckout({}, quotesByCode, `${CHECKOUT_PATH}&promo=LAUNCH20`)
     await screen.findByText('Subscribe to Creator Plan · Acme Team')
@@ -2052,6 +2120,33 @@ describe('FullPageCheckoutView promo codes', () => {
     expect(
       screen.getByRole('button', { name: 'Remove LAUNCH20' })
     ).toBeEnabled()
+  })
+
+  it('a code that lapsed while the page re-read on its own: the expired card, not a silent price change', async () => {
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await enterCode('LAUNCH20')
+    await screen.findByText('−$5.60')
+    fake.recover.mockImplementationOnce(async () => ({
+      status: 'ok',
+      value: pendingOperation('op_watched')
+    }))
+    window.dispatchEvent(pageShow(true))
+    await screen.findByTestId('checkout-waiting')
+    quotesByCode(fake, refusedWith('PROMOTION_CODE_INVALID'))
+
+    fake.recover.mockResolvedValueOnce({ status: 'ok', value: undefined })
+    window.dispatchEvent(pageShow(true))
+
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent('Your promo code expired')
+    expect(card).toHaveTextContent(
+      'The LAUNCH20 code expired, so the total was updated.'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Remove LAUNCH20' })
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByText('$28.00')).toHaveLength(2)
   })
 
   it('offers no promo entry on a change that charges nothing today', async () => {

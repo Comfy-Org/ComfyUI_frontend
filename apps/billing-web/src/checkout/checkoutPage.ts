@@ -128,7 +128,12 @@ export type CheckoutPageEvent =
   | { readonly type: 'planUnavailable'; readonly reason: PlanUnavailableReason }
   /** Try again on a checkout that could not load. */
   | { readonly type: 'retried' }
-  | ({ readonly type: 'quoted'; readonly reactivation: boolean } & (
+  | ({
+      readonly type: 'quoted'
+      readonly reactivation: boolean
+      /** The applied code a re-read found lapsed; the quote is priced without it. */
+      readonly expiredPromo?: string
+    } & (
       | { readonly method: 'collect'; readonly saved: SavedArrival }
       | { readonly method: 'on_file' }
     ))
@@ -282,10 +287,21 @@ export function reduceCheckoutPage(
   }
 }
 
+/** A lapsed code changed the price, so its card outranks a carried verdict. */
+function arrivedOutcome(
+  page: Extract<CheckoutPage, { kind: 'resolving' }>,
+  event: Extract<CheckoutPageEvent, { type: 'quoted' }>
+): InlineOutcome | undefined {
+  return event.expiredPromo === undefined
+    ? page.outcome
+    : { kind: 'promo_expired', code: event.expiredPromo }
+}
+
 function arrived(
   page: Extract<CheckoutPage, { kind: 'resolving' }>,
   event: Extract<CheckoutPageEvent, { type: 'quoted' }>
 ): Capture {
+  const outcome = arrivedOutcome(page, event)
   return {
     kind: 'capture',
     rail:
@@ -294,7 +310,7 @@ function arrived(
         : { method: 'on_file' },
     reactivation: reactivationOf(event.reactivation),
     attempt: IDLE,
-    ...(page.outcome === undefined ? {} : { outcome: page.outcome })
+    ...(outcome === undefined ? {} : { outcome })
   }
 }
 

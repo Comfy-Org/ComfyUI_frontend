@@ -207,7 +207,7 @@ export function useFullPageCheckout() {
   )
 
   const promo = useCheckoutPromo({
-    prefill: entry.value?.promotionCode,
+    prefill: entry.value,
     live: () => promoLive.value,
     requote: (promotionCode) => {
       const arrival = entry.value
@@ -225,7 +225,7 @@ export function useFullPageCheckout() {
     return asked
   }
 
-  /** A capture read again after the page went back to resolving keeps the applied code. */
+  /** A capture read again after the page went back to resolving keeps the applied code, or says it lapsed. */
   async function captureEvent(
     arrival: PlannedEntry
   ): Promise<CheckoutPageEvent> {
@@ -246,15 +246,18 @@ export function useFullPageCheckout() {
         : { type: 'unavailable', code: quoted.code }
     const unquotable = quotedStop(quoted.value, arrival, stripeKey)
     if (unquotable !== undefined) return unquotable
-    const reactivation = consentAsked(asksReactivation(quoted.value))
+    const facts = {
+      reactivation: consentAsked(asksReactivation(quoted.value)),
+      ...(expiredPromo === undefined ? {} : { expiredPromo })
+    }
     return quoted.value.transition_type === 'new_subscription'
       ? {
           type: 'quoted',
           method: 'collect',
           saved: arrivalOf(methods),
-          reactivation
+          ...facts
         }
-      : { type: 'quoted', method: 'on_file', reactivation }
+      : { type: 'quoted', method: 'on_file', ...facts }
   }
 
   /** Capture never renders before reconciliation has answered (rule 3). */
@@ -511,6 +514,9 @@ export function useFullPageCheckout() {
   let payGeneration = 0
 
   /**
+   * A code still typed in the field is priced first, and this click ends
+   * there: the customer sees the new total before a second Pay charges it.
+   *
    * A challenge the bank refused leaves the operation pending, so the
    * subscribe never resolves for that attempt; the page has already moved on
    * from the operation's own verdict, and a later Pay owns the form. Only
@@ -520,6 +526,7 @@ export function useFullPageCheckout() {
     const arrival = entry.value
     const quoted = preview.value
     if (arrival?.plan === undefined || !quoted || !canPay.value) return
+    if (promo.unapplied.value) return promo.apply()
     if (needsConsent(page.value)) return payWithoutConsent()
     const planned = { ...arrival, plan: arrival.plan }
     const mine = ++payGeneration
