@@ -16,6 +16,7 @@ import {
 } from '../config/workshop-router-errors'
 import type { WorkshopSession } from '../config/workshop-session-state'
 import { useWorkshopSession } from '../config/workshop-session-state'
+import { runWorkshopRouter } from '../config/workshop-router-queue'
 import { workshopIdempotencyKey } from '../config/workshop-snippets'
 import { createWorkshopUrlUploader } from '../config/workshop-url-upload'
 import type { AspectRatio } from '../lib/workshop/cinematic-studio/catalog'
@@ -23,7 +24,14 @@ import {
   frameParameters,
   watermarksOff
 } from '../lib/workshop/cinematic-studio/frames'
+import {
+  enhanceContract,
+  enhancedScene,
+  enhanceRequest
+} from '../lib/workshop/cinematic-studio/enhance'
 import { studioGate } from '../lib/workshop/cinematic-studio/gate'
+import type { CinematicBrief } from '../lib/workshop/cinematic-studio/prompt'
+import { cinematicPrompt } from '../lib/workshop/cinematic-studio/prompt'
 import type { CinematicVideoShot } from '../lib/workshop/cinematic-studio/video'
 import {
   videoCapabilities,
@@ -56,6 +64,9 @@ interface ShotRequest {
   /** Present for a video shot. */
   readonly video?: Omit<CinematicVideoShot, 'aspect'>
   readonly prompt: string
+  /** What the prompt was built from; with `enhance` on, its scene is
+   * rewritten by the Router's text model before the takes run. */
+  readonly brief?: CinematicBrief
   readonly aspect: AspectRatio
   readonly resolutionPixels: number
   readonly takes: number
@@ -401,6 +412,42 @@ export function useCinematicStudioRun(
     }
   }
 
+  /**
+   * The shot's prompt with its scene rewritten by GPT 5.6 Luna, or the prompt
+   * it came with (and its fixed Enhance phrase) when there is nothing to
+   * rewrite or the rewrite fails. A cancel stops it like any take.
+   */
+  async function enhancedPrompt(
+    request: ShotRequest,
+    startedFor: WorkshopSession,
+    signal: AbortSignal
+  ): Promise<string> {
+    const brief = request.brief
+    const contract = enhanceContract()
+    if (!brief?.enhance || !brief.scene.trim() || !contract)
+      return request.prompt
+    try {
+      const result = await runWorkshopRouter({
+        contract,
+        body: enhanceRequest(brief.scene, !!brief.video),
+        token: await tokenFor(startedFor, signal),
+        freshToken: () => tokenFor(startedFor, signal),
+        idempotencyKey: workshopIdempotencyKey(),
+        signal
+      })
+      const reply = result.outputs.find((output) => output.kind === 'text')
+      const scene =
+        reply?.text && !reply.truncated ? enhancedScene(reply.text) : undefined
+      releaseRouterOutputs(result.outputs)
+      return scene
+        ? cinematicPrompt({ ...brief, scene, enhance: false })
+        : request.prompt
+    } catch {
+      signal.throwIfAborted()
+      return request.prompt
+    }
+  }
+
   async function generate(request: ShotRequest) {
     const startedFor = session.value
     const slug = request.references.length
@@ -426,7 +473,24 @@ export function useCinematicStudioRun(
       startedAt: Date.now(),
       preview: request.preview
     })
-    await runTakes(takes, startedFor)
+    const enhancing = new AbortController()
+    controller = enhancing
+    let prompt: string
+    try {
+      prompt = await enhancedPrompt(request, startedFor, enhancing.signal)
+    } catch {
+      // cancelled while rewriting: cancel() has already settled the takes
+      return
+    } finally {
+      if (controller === enhancing) controller = undefined
+    }
+    // retries reuse the rewritten prompt rather than asking for another
+    const enhanced = takes.map((take) => ({
+      ...take,
+      request: { ...request, prompt }
+    }))
+    enhanced.forEach((take) => plans.set(take.id, take))
+    await runTakes(enhanced, startedFor)
   }
 
   /** Retries settled takes; the shot being directed does not price them. */

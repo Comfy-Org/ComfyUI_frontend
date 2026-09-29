@@ -264,6 +264,7 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
         modelSlug: modelSlug.value,
         firstFrameSlug: model.value?.firstFrameSlug,
         prompt: cinematicPrompt(brief.value),
+        brief: brief.value,
         aspect: aspect.value,
         resolutionPixels: 0,
         // One clip per shot: video has no estimate to warn about a batch.
@@ -285,6 +286,7 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
       modelSlug: modelSlug.value,
       referenceSlug: model.value?.referenceSlug,
       prompt: cinematicPrompt(brief.value),
+      brief: brief.value,
       aspect: aspect.value,
       resolutionPixels:
         RESOLUTIONS.find((option) => option.id === resolution.value)?.pixels ??

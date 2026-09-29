@@ -20,6 +20,7 @@ import {
 } from '../../../config/workshop-credits'
 import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
 import { WorkshopRouterError } from '../../../config/workshop-router-errors'
+import { runWorkshopRouter } from '../../../config/workshop-router-queue'
 import { useWorkshopSession } from '../../../config/workshop-session-state'
 import { appModels } from '../../../config/workshop-app-content'
 import { prepareModelPage } from '../../../routes/models/model-page'
@@ -45,6 +46,9 @@ vi.mock(import('../../../config/workshop-session-state'))
 vi.mock(import('../../../config/workshop-credits'))
 vi.mock(import('../../../scripts/posthog'))
 vi.mock(import('../../../config/router-render'), { spy: true })
+// the Enhance prompt rewrite; unanswered by default, so shots fall back to
+// the fixed phrase unless a test gives it a reply
+vi.mock(import('../../../config/workshop-router-queue'), { spy: true })
 
 const deploy = vi.hoisted(() => ({ env: '' }))
 vi.mock(import('astro:env/client'), () => ({
@@ -155,6 +159,9 @@ describe('CinematicStudio', () => {
     vi.mocked(router_render)
       .mockReset()
       .mockRejectedValue(new WorkshopRouterError('client'))
+    vi.mocked(runWorkshopRouter)
+      .mockReset()
+      .mockRejectedValue(new WorkshopRouterError('client'))
     vi.stubGlobal('fetch', fetchData)
     fetchData.mockImplementation(servePageData)
     window.history.replaceState(null, '', '/models/apps/cinematic-studio/')
@@ -220,6 +227,137 @@ describe('CinematicStudio', () => {
     const shot = sent(vi.mocked(router_render).mock.calls[0])
     expect(shot.values).toMatchObject({ size: '2048x2048' })
     expect(shot.prompt).not.toContain('Cinematic film still')
+  })
+
+  describe('Enhance prompt', () => {
+    const lunaReply = (text: string) => ({
+      requestId: 'luna-1',
+      deadlineCollections: 0,
+      outputs: [
+        {
+          kind: 'text' as const,
+          url: 'blob:luna',
+          fileName: 'luna.json',
+          text: JSON.stringify({
+            output: [
+              { type: 'reasoning', summary: [] },
+              {
+                type: 'message',
+                content: [{ type: 'output_text', text }]
+              }
+            ]
+          })
+        }
+      ]
+    })
+    const lunaBody = (call = 0) =>
+      vi.mocked(runWorkshopRouter).mock.calls[call][0].body as {
+        instructions: string
+        input: string
+      }
+
+    it('rewrites the scene once with GPT 5.6 Luna and sends it to every take', async () => {
+      vi.mocked(runWorkshopRouter).mockResolvedValue(
+        lunaReply('A waitress wipes the counter as the first sun hits it.')
+      )
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderStudio()
+      await chooseTakes(user, 2)
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+      expect(runWorkshopRouter).toHaveBeenCalledOnce()
+      const call = vi.mocked(runWorkshopRouter).mock.calls[0][0]
+      expect(call.contract.id).toBe('openai/gpt-5.6-luna')
+      expect(lunaBody().input).toBe('A diner at dawn')
+      expect(lunaBody().instructions).toContain('film still')
+      for (const take of vi.mocked(router_render).mock.calls) {
+        const prompt = sent(take).prompt
+        expect(prompt).toContain('A waitress wipes the counter')
+        expect(prompt).not.toContain('A diner at dawn')
+        expect(prompt).not.toContain('Cinematic film still')
+      }
+    })
+
+    it('asks for motion over time for a clip', async () => {
+      vi.mocked(runWorkshopRouter).mockResolvedValue(
+        lunaReply('The keeper climbs the stairs, then pauses at the lamp.')
+      )
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderStudio([...models, ...videoModels])
+      await user.click(screen.getByRole('button', { name: 'Video' }))
+      await user.type(
+        screen.getByLabelText('Scene'),
+        'A lighthouse keeper climbs'
+      )
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+      expect(lunaBody().instructions).toContain('continuous cinematic shot')
+      expect(lunaBody().instructions).not.toContain('film still')
+      expect(sent(vi.mocked(router_render).mock.calls[0]).prompt).toContain(
+        'then pauses at the lamp'
+      )
+    })
+
+    it('falls back to the fixed phrase when the rewrite fails', async () => {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderStudio()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+      expect(runWorkshopRouter).toHaveBeenCalledOnce()
+      const prompt = sent(vi.mocked(router_render).mock.calls[0]).prompt
+      expect(prompt).toContain('A diner at dawn')
+      expect(prompt).toContain('Cinematic film still')
+    })
+
+    it('stops before any take when cancelled during the rewrite', async () => {
+      vi.mocked(runWorkshopRouter).mockImplementation(
+        ({ signal }) =>
+          new Promise((_resolve, reject) =>
+            signal.addEventListener('abort', () =>
+              reject(new DOMException('Stopped', 'AbortError'))
+            )
+          )
+      )
+      const user = renderStudio()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+      await user.click(
+        screen.getByRole('button', { name: tc('cinematic.output.cancel') })
+      )
+
+      await vi.waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          t('workshop.output.cancelled')
+        )
+      )
+      expect(router_render).not.toHaveBeenCalled()
+    })
+
+    it('makes no text call when it is switched off', async () => {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderStudio()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(screen.getByRole('switch', { name: 'Enhance prompt' }))
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+      expect(runWorkshopRouter).not.toHaveBeenCalled()
+    })
   })
 
   it('runs the shot on the model picked in the composer', async () => {

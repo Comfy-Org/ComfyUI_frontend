@@ -274,8 +274,8 @@ const copy = {
     'zh-CN': '增强提示词'
   },
   'cinematic.scene.enhanceHint': {
-    en: 'Adds “cinematic film still” to the prompt',
-    'zh-CN': '在提示词中加入“电影静帧”描述'
+    en: 'GPT 5.6 Luna rewrites your scene as a cinematic film still. Uses a small amount of credits.',
+    'zh-CN': 'GPT 5.6 Luna 会把场景改写为电影静帧描述，会消耗少量积分。'
   },
   'cinematic.camera.body': {
     en: 'Body',
@@ -592,8 +592,8 @@ const copy = {
   'cinematic.video.audioOn': { en: 'On', 'zh-CN': '开启' },
   'cinematic.video.audioOff': { en: 'Off', 'zh-CN': '关闭' },
   'cinematic.video.enhanceHint': {
-    en: 'Adds cinematic motion and continuous action to the prompt',
-    'zh-CN': '在提示词中添加电影运镜和连续动作'
+    en: 'GPT 5.6 Luna rewrites your scene as one continuous cinematic shot. Uses a small amount of credits.',
+    'zh-CN': 'GPT 5.6 Luna 会把场景改写为一个连续的电影镜头，会消耗少量积分。'
   },
   'cinematic.video.mode': { en: 'Creation type', 'zh-CN': '创作类型' },
   'cinematic.video.image': { en: 'Image', 'zh-CN': '图像' },
