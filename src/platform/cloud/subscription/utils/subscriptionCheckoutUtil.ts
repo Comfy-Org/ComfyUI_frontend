@@ -11,6 +11,7 @@ import {
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
@@ -20,6 +21,7 @@ import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFai
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
 import type { BillingCycle } from './subscriptionTierRank'
+import { loadCheckoutAttributionModule } from './checkoutAttributionLoader'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
 
@@ -28,17 +30,62 @@ const getCheckoutTier = (
   billingCycle: BillingCycle
 ): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
 
+type CheckoutAttributionStage = 'module_load' | 'collect'
+
+type CheckoutAttributionOutcome =
+  | { ok: true; attribution: CheckoutAttributionMetadata }
+  | { ok: false; error: unknown; stage: CheckoutAttributionStage }
+
 const getCheckoutAttributionForCloud =
-  async (): Promise<CheckoutAttributionMetadata> => {
+  async (): Promise<CheckoutAttributionOutcome> => {
     if (__DISTRIBUTION__ !== 'cloud') {
-      return {}
+      return { ok: true, attribution: {} }
     }
 
-    const { getCheckoutAttribution } =
-      await import('@/platform/telemetry/utils/checkoutAttribution')
+    let attributionModule
+    try {
+      attributionModule = await loadCheckoutAttributionModule()
+    } catch (error) {
+      return { ok: false, error, stage: 'module_load' }
+    }
 
-    return getCheckoutAttribution()
+    const getCheckoutAttribution = attributionModule.getCheckoutAttribution
+
+    if (typeof getCheckoutAttribution !== 'function') {
+      return {
+        ok: false,
+        error: new TypeError('Checkout attribution module is unavailable'),
+        stage: 'module_load'
+      }
+    }
+
+    try {
+      return {
+        ok: true,
+        attribution: await getCheckoutAttribution()
+      }
+    } catch (error) {
+      return { ok: false, error, stage: 'collect' }
+    }
   }
+
+async function getCheckoutAttributionPayload(): Promise<CheckoutAttributionMetadata> {
+  const attribution = await getCheckoutAttributionForCloud()
+  if (attribution.ok) return attribution.attribution
+
+  reportError(attribution.error, {
+    errorType: 'cloud_checkout_attribution_fallback',
+    tags: {
+      failure_kind: 'degraded',
+      feature_area: 'billing',
+      operation: 'load',
+      outcome: 'degraded',
+      attribution_stage: attribution.stage
+    },
+    level: 'warning'
+  })
+  return {}
+}
 
 const checkoutAuthHeader = async (authStore: ReturnType<typeof useAuthStore>) =>
   (await webSessionResourceHeader()) ??
@@ -104,15 +151,7 @@ async function initiateSubscriptionCheckout(
   }
 
   const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle)
-  let checkoutAttribution: CheckoutAttributionMetadata = {}
-  try {
-    checkoutAttribution = await getCheckoutAttributionForCloud()
-  } catch (error) {
-    console.warn(
-      '[SubscriptionCheckout] Failed to collect checkout attribution',
-      error
-    )
-  }
+  const checkoutAttribution = await getCheckoutAttributionPayload()
   const checkoutPayload = { ...checkoutAttribution }
 
   const response = await authStore.fetchWithCustomerRecovery(

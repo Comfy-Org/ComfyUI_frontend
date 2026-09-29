@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { Play } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 import type { SourcePreviewProps } from '../../composables/useSourceUrl'
 import { useSourceUrl } from '../../composables/useSourceUrl'
 import { t } from '../../i18n/translations'
 import Dialog from '../ui/dialog/Dialog.vue'
-import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogTitle from '../ui/dialog/DialogTitle.vue'
 import DialogTrigger from '../ui/dialog/DialogTrigger.vue'
+import SourceLightbox from './SourceLightbox.vue'
 
 const { file, src, name, locale = 'en' } = defineProps<SourcePreviewProps>()
 
@@ -28,7 +27,7 @@ const expanded = ref(false)
       <button
         type="button"
         :aria-label="expandLabel"
-        class="group relative size-12 shrink-0 cursor-zoom-in overflow-hidden rounded-lg bg-transparency-white-t8 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        class="size-12 shrink-0 cursor-zoom-in overflow-hidden rounded-lg bg-transparency-white-t8 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
       >
         <video
           :key="source"
@@ -40,20 +39,13 @@ const expanded = ref(false)
           class="size-full object-cover"
           data-testid="video-source-thumbnail"
         />
-        <span
-          class="absolute inset-0 grid place-items-center bg-black/25 text-white transition-colors group-hover:bg-black/40"
-          aria-hidden="true"
-        >
-          <Play class="size-5 fill-current" />
-        </span>
       </button>
     </DialogTrigger>
 
-    <DialogContent
+    <SourceLightbox
       :close-label="t('workshop.output.collapse', locale)"
-      :aria-describedby="undefined"
-      class="sm:max-w-5xl"
       data-testid="video-source-dialog"
+      @dismiss="expanded = false"
     >
       <DialogTitle class="sr-only">{{ name }}</DialogTitle>
       <video
@@ -63,8 +55,8 @@ const expanded = ref(false)
         controls
         playsinline
         preload="metadata"
-        class="max-h-dvh w-full rounded-2xl bg-black object-contain"
+        class="max-h-full max-w-full rounded-2xl bg-black object-contain"
       />
-    </DialogContent>
+    </SourceLightbox>
   </Dialog>
 </template>
