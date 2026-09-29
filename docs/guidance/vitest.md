@@ -44,10 +44,11 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
   `vi.fn<typeof realFn>` instead of setting it in `beforeEach`; `mockReset`
   restores that implementation before every test.
 - A composable mock returns one stable object, so a test can configure it
-  and then create the consumer that reads it. Never replace a field that
-  holds a `ref`, `computed`, or object: a consumer that already destructured
-  it keeps the old one. Because that object is shared by every test in the
-  file, tests that configure it must not run with `test.concurrent`.
+  and then create the consumer that reads it. Configure replacement fields
+  before creating consumers. Once a consumer captures a ref or object, keep
+  that identity and update its backing state for the rest of the test. Because
+  the result object is shared, tests that configure it must not run with
+  `test.concurrent`.
 - Until an older mock that builds a fresh object per call (`useBillingContext`)
   is converted, pin it in the test with
   `vi.mocked(useX).mockReturnValue(useX())` before configuring the result.
@@ -87,11 +88,18 @@ export const useFeatureFlags = vi.fn(() => {
 })
 ```
 
-Restore in place (`Object.assign(reactiveObject, defaults)`,
-`someRef.value = default`) so consumer `computed`s are notified. Do not call
-`beforeEach` inside a mock module: it binds to the file being collected, so a
-cached module (`isolate: false`) registers no hook for later files, and a
-re-import after `vi.resetModules()` registers a duplicate.
+Restore writable values in place (`Object.assign(reactiveObject, defaults)`,
+`someRef.value = default`). For replaceable fields containing readonly refs,
+the mock can use `Object.assign(state, defaults())` in `onTestFinished` to
+install fresh refs without changing the result object's identity. Finish async
+work and dispose consumers before this cleanup. No consumer may retain these
+fields across tests.
+The next test configures the result before creating its consumers. Build fresh
+mutable defaults on each reset, and keep action spies outside that factory.
+
+Do not call `beforeEach` inside a mock module: it binds to the file being
+collected, so a cached module (`isolate: false`) registers no hook for later
+files, and a re-import after `vi.resetModules()` registers a duplicate.
 
 `onTestFinished` throws `Hook onTestFinished() can only be called inside a
 test` when the mock is called at `describe` scope or in `beforeAll`. That is
@@ -125,25 +133,24 @@ cleanup can be attached to the test that dirtied it.
   })
   ```
 
-- Derived with no mutator (`isLoggedIn`, `canTopUp`): spy on the getter in
-  the test; `restoreMocks` removes it. Use `mockReturnValue` for a fixed
-  value. When the value changes mid-test, read a `ref` inside
-  `mockImplementation`, because Vue does not track a spy's fixed return and
-  a consumer `computed` caches the first read:
+- Derived with no mutator (`isLoggedIn`, `canTopUp`): configure a computed
+  field before creating the consumer. Keep the writable scenario ref local
+  to the test and update it to drive changes through the captured computed:
 
   ```ts
   const loggedIn = ref(false)
-  vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockImplementation(
-    () => loggedIn.value
-  )
+  useCurrentUser().isLoggedIn = computed(() => loggedIn.value)
   ```
 
-Never assign `useCurrentUser().isLoggedIn = computed(() => true)`: it leaks,
-and a consumer created earlier keeps the old computed.
+  The mock owns restoring the field after the test. Do not add getter spies
+  or mock-only setters when this setup suffices. If the field itself is
+  non-replaceable, use a getter spy that reads the local ref; `restoreMocks`
+  restores the getter. A fixed getter return does not provide a reactive
+  dependency for consumer computeds.
 
 ## No Real Network
 
-`vitest.setup.ts` blocks every `http(s)` `fetch`, and happy-dom is configured not
+`vitest.network.setup.ts` blocks every `http(s)` `fetch`, and happy-dom is configured not
 to load iframes, stylesheets or scripts from remote hosts. A blocked request
 rejects with `Blocked a real network request to <url>`.
 
@@ -177,6 +184,86 @@ pnpm test:unit foo.test.ts -t "name" # Filter by test name (regex; it()/test() o
 ```
 
 Do not use the `--` separator before vitest args; pnpm forwards extra args automatically, and `--` mangles quoted args (e.g. `-t "two words"`) on Windows PowerShell.
+
+## Selective Concurrency
+
+Tests within a file run sequentially by default. `vite.config.mts` defines two
+mutually exclusive tags for suites and individual tests:
+
+- `{ tags: ['concurrent-safe'] }` enables concurrent execution. Use it for async
+  tests whose state and cleanup belong to each test, including inherited hooks.
+- `{ tags: ['shared-state'] }` keeps tests sequential. Use it for known conflicts
+  involving active Pinia, shared mocks, fake timers, the DOM, or singleton state.
+
+`shared-state` is a scheduling boundary among siblings, not a global lock.
+Keep conflicting groups under a sequential ancestor. Do not put them beneath
+separate concurrent branches or use explicit `.concurrent` modifiers to override
+the tag. Separate files still run in parallel.
+
+The `tooling` project loads only the network guard. Script tests that need
+frontend setup belong in `FRONTEND_SCRIPT_TESTS` in `vite.config.mts`.
+The `frontend` project still installs global Pinia, timer, and DOM cleanup hooks;
+its tests are not safe to mark concurrent until those dependencies are isolated.
+Frontend setup rejects concurrent tests and concurrent ancestor suites before
+the test body runs. A `shared-state` tag on a child cannot protect it from a
+separate concurrent ancestor branch.
+Automatic mock resets and global unstubbing also affect concurrent tests in the
+same worker, so concurrent tests must not mutate shared mocks or globals.
+
+Use the test context's `expect` for concurrent assertions. Allocate and dispose
+resources inside each test, as in `scripts/cicd/check-binary-size.test.ts`.
+Verify both filtered and mixed runs without retries:
+
+```bash
+pnpm test:unit --tags-filter=concurrent-safe --retry=0
+pnpm test:unit --tags-filter=shared-state --retry=0
+pnpm test:unit --retry=0
+```
+
+### Own setup resources and test teardown
+
+Capture each resource in the setup that creates it. Return a cleanup callback
+from `beforeEach`, or use a test-scoped `test.extend` fixture with `try/finally`.
+Dispose that exact resource rather than looking up a mutable global during
+teardown. Global Pinia setup follows this rule, but implicit `useStore()` calls
+still depend on shared active Pinia and are not concurrency-local.
+
+For a concurrent store fixture, pass its Pinia explicitly through the full
+dependency path. Audit nested store lookups and asynchronous callbacks too.
+Do not use `createTestingPinia()` as a concurrency workaround: it also changes
+active Pinia. Keep shared DOM, timers, module mocks, and registries in the
+sequential project until their consumers no longer depend on shared state.
+
+Audited store suites can use `test` from `@/testing/pinia` and join
+`ISOLATED_STORE_TESTS` in `vite.config.mts`. That list selects the
+`isolated-stores` Node project and excludes the suites from frontend setup.
+The fixture creates a real Pinia per test, with real actions and no automatic
+spies. Pass the context's `pinia` to every store lookup, and use the context's
+`expect` for concurrent assertions. `entityIdStore.test.ts` is a migrated example.
+
+The fixture holds a disposable owner across `await use(pinia)`. Its `using`
+scope disposes that exact Pinia after the test, including on failure. Putting
+`using` inside a `beforeEach` callback would dispose the resource before the
+test starts. Do not add suites that need global mocks, DOM, fake timers, or
+implicit store lookups to this project.
+
+Await or cancel work before disposing its dependencies. Use readiness promises
+or explicit timer advancement instead of sleeps. Pin inputs such as time,
+locale, random seeds, and IDs when assertions depend on them.
+
+Assert teardown effects from the test context's `onTestFinished` callback,
+after `afterEach` and returned setup cleanup. Do not split setup and verification
+between two tests: the second test must work when run alone or first.
+
+Run changed suites alone and together, with retries disabled and multiple
+recorded shuffle seeds. To test cross-file reuse with `isolate: false`, use one
+worker so files actually share a worker. Shuffled passes are evidence, not proof
+that every interleaving is safe. Use controlled overlapping lifetimes to verify
+that one test's cleanup leaves another test's resources usable.
+
+Vitest 4.1.11 does not propagate CLI `--maxConcurrency` into projects. Set
+`test.maxConcurrency` in configuration when comparing limits, and verify actual
+overlap rather than relying on the command-line value.
 
 ## Expensive Imports Belong at Module Scope
 

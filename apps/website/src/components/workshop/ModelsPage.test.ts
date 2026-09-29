@@ -1,39 +1,78 @@
 import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createSSRApp, h, nextTick } from 'vue'
+import { readonly, ref, createSSRApp, h, nextTick } from 'vue'
+import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
+import { workshopModels } from '../../config/workshop-browse-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
-import ModelsPage from './ModelsPage.vue'
 import { prepareModelPage } from '../../routes/models/model-page'
-import { workshopModels } from '../../config/workshop-browse-content'
+import {
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled,
+  useWorkshopWorkflowsEnabled,
+  useWorkshopAuthFlag
+} from '../../scripts/posthog'
+import ModelsPage from './ModelsPage.vue'
 
-const { enabled, settled } = await vi.hoisted(async () => {
-  const { ref } = await import('vue')
-  return { enabled: ref(false), settled: ref(true) }
-})
+vi.mock(import('../../scripts/posthog'))
 
-vi.mock(import('../../scripts/posthog'), async () => {
-  const { ref } = await import('vue')
-  return {
-    useWorkshopEnabled: () => enabled,
-    useWorkshopEnabledSettled: () => settled,
-    useWorkshopAuthFlag: () => ref(false),
-    captureWorkshopEvent: vi.fn(),
-    identifyWorkshopUser: vi.fn()
-  }
+let enabled: Ref<boolean>
+let settled: Ref<boolean>
+let workflowsEnabled: Ref<boolean>
+
+beforeEach(() => {
+  enabled = ref(false)
+  vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
+  settled = ref(true)
+  vi.mocked(useWorkshopEnabledSettled).mockReturnValue(readonly(settled))
+  vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(ref(false)))
+  workflowsEnabled = ref(false)
+  vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+    readonly(workflowsEnabled)
+  )
 })
 
 const modelSlug = 'bfl--flux-2-max--generate-images'
 const modelPage = await prepareModelPage(modelSlug)
 
-beforeEach(() => {
-  enabled.value = false
-  settled.value = true
-})
-
 describe('Models page entry', () => {
+  it('gates workflow data and mounts the shared controls when enabled', async () => {
+    const slug = 'workflows/change-material'
+    const fetchData = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(Response.json(await prepareModelPage(slug)))
+    vi.stubGlobal('fetch', fetchData)
+    enabled.value = true
+    render(ModelsPage, {
+      props: { slug },
+      slots: { fallback: '<h1>Public Models</h1>' }
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Public Models' })
+    ).toBeVisible()
+    expect(fetchData).not.toHaveBeenCalled()
+    workflowsEnabled.value = true
+    expect(
+      await screen.findByRole('heading', { name: 'Change a material' })
+    ).toBeVisible()
+    expect(fetchData).toHaveBeenCalledWith(
+      '/models/workflows/change-material/page.json'
+    )
+    expect(
+      screen.getByRole('textbox', { name: 'What should change?' })
+    ).toBeVisible()
+    expect(
+      screen.getByRole('group', { name: 'Your original image' })
+    ).toBeVisible()
+    expect(screen.getByText('An example from this template.')).toBeVisible()
+    workflowsEnabled.value = false
+    await nextTick()
+    expect(screen.getByRole('heading', { name: 'Public Models' })).toBeVisible()
+    expect(screen.getByTestId('workflow-hero')).not.toBeVisible()
+  })
+
   it.for([undefined, modelSlug])(
     'server-renders only public content for %s',
     async (slug) => {

@@ -8,9 +8,7 @@ const mockReportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 // Rules out one hypothesis for the tab-switch node loss: that graph.serialize()
 // silently drops a node whose nodeDataStore record is already gone. It does

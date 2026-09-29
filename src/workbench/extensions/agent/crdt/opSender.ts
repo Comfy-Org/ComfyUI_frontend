@@ -17,6 +17,7 @@
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import type { DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { chunkWireOps, mintWireOps } from './opEnvelope'
 
@@ -24,14 +25,17 @@ const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
 const RESULT_TIMEOUT_MS = 10_000
 
-export interface OpsResultView {
-  workflowId?: string
-  ok: boolean
-  applied: string[]
-  skipped: string[]
-  /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. */
-  failure?: { op_id?: string }
-}
+/**
+ * The sender's view of a parsed `doc_ops_result`. Derived from the
+ * authoritative {@link DocOpsResult} rather than restated, so the fields the
+ * sender consumes retain their canonical names and types. `workflowId` is
+ * optional only because a sender may be driven without one.
+ */
+export type OpsResultView = Pick<
+  DocOpsResult,
+  'ok' | 'applied' | 'skipped' | 'code' | 'failed'
+> &
+  Partial<Pick<DocOpsResult, 'workflowId'>>
 
 export interface OpSenderDeps {
   /** `DocFrameClient.sendOps` shape: false = the transport cannot carry it now. */
@@ -70,6 +74,14 @@ export type BatchOutcome =
 
 export interface OpSender {
   enqueue(operations: GraphOperation[]): void
+  /**
+   * Mint and target-pin operations into the open admission group without
+   * starting transport delivery. Consecutive admissions for one workflow
+   * share the group until `flush()` seals it.
+   */
+  admit(operations: GraphOperation[]): void
+  /** Seal the open admission group into wire batches and start delivery. */
+  flush(): void
   /** In-flight + queued batch count (observability; 0 = drained). */
   pending(): number
   /** Every unsettled batch, in-flight first, each addressed to its mint-time workflow. */
@@ -104,6 +116,15 @@ export interface OpSender {
    * (the ops may well have landed), not `undeliverable`.
    */
   abortIfUnbound(): void
+  /**
+   * Lineage-break seam: settle the in-flight batch ('unconfirmed' once
+   * transmitted, 'undeliverable' otherwise) and every queued batch
+   * `undeliverable` NOW, in mint order, although the doc is still bound. A
+   * `doc_reset` replaced the document these ops were minted against; the
+   * human-authored draft that caused it already carries their effect, so
+   * re-addressing them to the new lineage would apply them twice.
+   */
+  abortAll(): void
   detach(): void
 }
 
@@ -119,16 +140,19 @@ interface InFlight {
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
+  let open: { workflowId: string; ops: Op[] } | null = null
   let inFlight: InFlight | null = null
+  let lastMintedVersion = -1
+  let lastMintedWorkflowId: string | null = null
   let detached = false
   let suspended = false
-  // Late-result credits: a batch that settled 'unacknowledged' was
-  // transmitted twice, so up to two of its results may still arrive - as
-  // ANONYMOUS failures (empty id lists, no failure op_id) they are
-  // indistinguishable from the current batch's. Swallowing up to the credit
-  // beats mis-attribution: a swallowed own-result only costs the idempotent
-  // resend cycle, while a mis-attributed settle poisons everything
-  // downstream of this seam.
+  // Late-result credits: a batch retired after transmission (settled
+  // 'unacknowledged' after two sends, or 'unconfirmed' by an abort after one
+  // or two) may still draw one result per send - as ANONYMOUS failures
+  // (empty id lists, no failure op_id) they are indistinguishable from the
+  // current batch's. Swallowing up to the credit beats mis-attribution: a
+  // swallowed own-result only costs the idempotent resend cycle, while a
+  // mis-attributed settle poisons everything downstream of this seam.
   let staleAnonymousBudget = 0
 
   function settle(outcome: BatchOutcome): void {
@@ -170,6 +194,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function settleUnbound(batch: InFlight): void {
     if (inFlight !== batch) return
+    if (batch.transmitted) staleAnonymousBudget += batch.resent ? 2 : 1
     settle({
       state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
       ops: batch.ops
@@ -208,6 +233,40 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     transmit(inFlight, 0)
   }
 
+  function admit(operations: GraphOperation[]): void {
+    if (detached || operations.length === 0) return
+    const workflowId = deps.workflowId()
+    if (workflowId !== lastMintedWorkflowId) {
+      lastMintedVersion = -1
+      lastMintedWorkflowId = workflowId
+    }
+    const baseVersion = Math.max(deps.baseVersion(), lastMintedVersion + 1)
+    const actor = deps.actor()
+    const minted = operations.flatMap((operation, index) =>
+      mintWireOps([operation], { actor, baseVersion: baseVersion + index })
+    )
+    lastMintedVersion = baseVersion + minted.length - 1
+    if (workflowId === null) {
+      deps.onBatchSettled({ state: 'undeliverable', ops: minted })
+      return
+    }
+    if (open?.workflowId !== workflowId) seal()
+    if (open) open.ops.push(...minted)
+    else open = { workflowId, ops: minted }
+  }
+
+  function seal(): void {
+    if (!open) return
+    const { workflowId, ops } = open
+    open = null
+    queue.push(...chunkWireOps(ops).map((ops) => ({ workflowId, ops })))
+  }
+
+  function flush(): void {
+    seal()
+    pump()
+  }
+
   const unsubscribe = deps.onOpsResult((result) => {
     if (
       !inFlight ||
@@ -221,13 +280,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return
     }
     const identified = [...result.applied, ...result.skipped]
-    if (result.failure?.op_id) identified.push(result.failure.op_id)
+    if (result.failed?.op_id) identified.push(result.failed.op_id)
     if (identified.length > 0) {
-      if (!identified.some((opId) => inFlight!.opIds.has(opId))) return
+      if (!identified.some((opId) => inFlight!.opIds.has(opId))) {
+        // Names ops that are not in flight: a retired batch's own result, if
+        // a credit is outstanding for one.
+        if (staleAnonymousBudget > 0) staleAnonymousBudget--
+        return
+      }
       settle({ state: 'acknowledged', ops: inFlight.ops, result })
       return
     }
-    // Anonymous failure (empty lists, no failure op_id): only attribute it
+    // Anonymous failure (empty lists, no failed op_id): only attribute it
     // to the in-flight batch once no stale credit could explain it.
     if (staleAnonymousBudget > 0) {
       staleAnonymousBudget--
@@ -238,27 +302,20 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   return {
     enqueue(operations) {
-      if (detached || operations.length === 0) return
-      const minted = mintWireOps(operations, {
-        actor: deps.actor(),
-        baseVersion: deps.baseVersion()
-      })
-      const workflowId = deps.workflowId()
-      if (workflowId === null) {
-        deps.onBatchSettled({ state: 'undeliverable', ops: minted })
-        return
-      }
-      queue.push(...chunkWireOps(minted).map((ops) => ({ workflowId, ops })))
-      pump()
+      seal()
+      admit(operations)
+      flush()
     },
+    admit,
+    flush,
     pending() {
-      return queue.length + (inFlight ? 1 : 0)
+      return queue.length + (inFlight ? 1 : 0) + (open ? 1 : 0)
     },
     pendingOps() {
       const batches = inFlight
         ? [{ workflowId: inFlight.workflowId, ops: inFlight.ops }]
         : []
-      return [...batches, ...queue]
+      return [...batches, ...queue, ...(open ? [open] : [])]
     },
     suspend() {
       suspended = true
@@ -275,11 +332,24 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         settleUnbound(inFlight)
       }
     },
+    abortAll() {
+      const queued = queue.splice(0)
+      const admitted = open
+      open = null
+      lastMintedVersion = -1
+      lastMintedWorkflowId = null
+      if (inFlight) settleUnbound(inFlight)
+      for (const batch of queued)
+        deps.onBatchSettled({ state: 'undeliverable', ops: batch.ops })
+      if (admitted)
+        deps.onBatchSettled({ state: 'undeliverable', ops: admitted.ops })
+    },
     detach() {
       detached = true
       if (inFlight?.timer) clearTimeout(inFlight.timer)
       inFlight = null
       queue.length = 0
+      open = null
       unsubscribe()
     }
   }

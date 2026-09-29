@@ -17,6 +17,11 @@ import {
   SESSION_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
 import type {
+  AgentRunMode,
+  CreateTopupResponse,
+  SubscribeResponse
+} from '@comfyorg/ingest-types'
+import type {
   AuthErrorMetadata,
   AuthFlowAction,
   AuthMethod
@@ -44,6 +49,7 @@ export type PaymentIntentSource =
   | 'upload_model_upgrade'
   | 'team_upgrade_resume'
   | 'free_tier_quota'
+  | 'agent_paywall'
 
 export type SubscriptionCheckoutType = 'new' | 'change'
 export type SubscriptionCheckoutTier = TierKey | 'team'
@@ -92,8 +98,46 @@ export interface UnifiedAuthRefreshMetadata {
   retry_count?: number
 }
 
+/**
+ * One failed image preview. An `<img>` error event reports no status, so
+ * everything past `source` is reconstructed by `describeImageLoadFailure()`:
+ * `status` comes from re-requesting the URL once, the rest from the URL and the
+ * page. Fields are optional because a probe that was capped, blocked or never
+ * applicable must still produce a report — a missing field is a real outcome,
+ * recorded in `probe_outcome` rather than guessed at.
+ */
 export interface ImageLoadFailureMetadata {
-  source: 'node_image_preview'
+  /**
+   * Which surface failed. `node_image_preview` is the Vue node renderer;
+   * `canvas_node_image` / `canvas_node_video` are the litegraph canvas previews
+   * that every user gets by default, since `Comfy.VueNodes.Enabled` is off
+   * unless App Builder turns it on. Splitting on this is what keeps a rate
+   * measured on one renderer from being read as the rate for everyone.
+   */
+  source: 'node_image_preview' | 'canvas_node_image' | 'canvas_node_video'
+  /** Load attempts made before giving up, including the first. */
+  attempts?: number
+  /** True when the load timed out rather than erroring — a stall, not a rejection. */
+  timed_out?: boolean
+  /** HTTP status of the follow-up probe. Absent unless `probe_outcome` is `probed`. */
+  status?: number
+  probe_outcome?:
+    | 'probed'
+    | 'probe_failed'
+    | 'probe_timeout'
+    | 'probe_capped'
+    | 'probe_blocked'
+    | 'probe_redirected'
+    | 'probe_abandoned'
+    | 'invalid_src'
+  /** `/api/view?type=` — separates an expired output from a missing upload. */
+  resource_kind?: 'output' | 'input' | 'temp' | 'unspecified' | 'not_api_view'
+  /** Filename shape only; never the filename, which is user-authored. */
+  filename_kind?: 'content_hash' | 'template' | 'named' | 'none'
+  /** Time since this page loaded. Auth-expiry failures skew old; 404s do not. */
+  page_age_ms?: number
+  online?: boolean
+  same_origin?: boolean
 }
 
 /**
@@ -233,6 +277,8 @@ export interface RunButtonProperties {
   view_mode: AppMode
   is_app_mode: boolean
   dock_state: ActionbarDockState
+  /** Whether the agent panel was open when the run was submitted. */
+  agent_panel_open: boolean
 }
 
 /**
@@ -449,6 +495,7 @@ export interface TemplateLibraryClosedMetadata {
  */
 export interface PageVisibilityMetadata {
   visibility_state: 'visible' | 'hidden'
+  agent_panel_open: boolean
 }
 
 /**
@@ -568,16 +615,34 @@ export interface UiButtonClickMetadata {
  */
 export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
   message_id: string
+  turn_id: string
   vote: 'up' | 'down' | null
+  workflow_id: string | null
 }
 
 export type AgentPanelCloseSource =
   | 'close_button'
   | 'workflow_switch'
   | 'topbar_button'
+  | 'pagehide'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'restored' | 'topbar_button' | 'automatic_consent'
+  source: 'restored' | 'topbar_button' | 'automatic_consent' | 'activation'
 }
+export type AgentConsentNotOfferedReason =
+  | 'first_run_screen'
+  | 'tour_active'
+  | 'dialog_open'
+  | 'boot_undecided'
+  | 'storage_unavailable'
+export interface AgentConsentNotOfferedMetadata extends Record<
+  string,
+  unknown
+> {
+  reason: AgentConsentNotOfferedReason
+}
+export type AgentOnboardingNotShownMetadata =
+  | { reason: 'app_mode' | 'tour_active' }
+  | { reason: 'target_missing'; step: number }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null
@@ -588,16 +653,117 @@ export interface AgentEntryButtonClickedMetadata extends Record<
 > {
   resulting_state: 'opened' | 'closed'
 }
+export type AgentConsentTrigger =
+  | 'first_load'
+  | 'button_click'
+  | 'first_message'
+export interface AgentConsentShownMetadata extends Record<string, unknown> {
+  trigger: AgentConsentTrigger
+}
+/**
+ * Only consent the user actually gave or refused resolves the card, so this
+ * never reports a decision that did not stick. An `agent_consent_shown` with
+ * no matching resolution is an *unresolved* offer, not a dismissal: it covers
+ * dismissing the card (Escape, overlay click), an acceptance whose save
+ * failed, and — signed out — accepting the card but abandoning the sign-in
+ * that has to follow. Splitting those three apart needs a signal this event
+ * does not carry.
+ */
+export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
+  decision: 'accepted' | 'rejected'
+}
+export type AgentOnboardingAction = 'next' | 'finish' | 'skip'
+/**
+ * `step` is 1-based and matches the "Step N of M" indicator on the card.
+ * `finish` marks completion, so the gap from `agent_onboarding_shown` is the
+ * onboarding time.
+ */
+export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
+  step: number
+  action: AgentOnboardingAction
+}
+/**
+ * Where the composer's text came from, by the affordance that put it there:
+ * `suggestion` is an empty-state suggestion chip, `edited` is an earlier prompt
+ * reopened through the conversation's edit action, and `typed` is everything
+ * the user wrote themselves. Each send falls into exactly one — a chip the user
+ * then reworded stays `suggestion`, because the chip is still what it came from.
+ */
+export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
+  /**
+   * The thread the message was posted into, `null` when it starts a new one —
+   * the backend mints that id in its acknowledgement, after this event fires.
+   */
+  thread_id: string | null
+  /** The targeted workflow's cloud id, `null` when the tab has none yet. */
+  workflow_id: string | null
+  /**
+   * Minted client-side, one per send attempt, so duplicate deliveries of this
+   * event collapse onto one message. A retry after a failed send is a new
+   * attempt and gets a new id. The backend does not receive it yet — the turn
+   * POST contract carries no client id — so it dedups within the frontend
+   * stream rather than joining to the backend turn; `thread_id` is the join
+   * today.
+   */
+  client_message_id: string
+  input_method: AgentInputMethod
 }
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
 }
+export interface AgentAttachButtonClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  method: 'menu' | 'drag_drop' | 'paste'
+}
 export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
   target: 'active_tab_switch' | 'active_tab_open'
+}
+export type AgentStopMethod = 'button' | 'escape'
+export interface AgentStopClickedMetadata extends Record<string, unknown> {
+  method: AgentStopMethod
+  turn_id: string
+  turn_elapsed_ms: number | null
+}
+export type AgentWorkflowBindSource =
+  | 'active_tab'
+  | 'selector_chip'
+  | 'minted'
+  | 'restored'
+export interface AgentWorkflowBoundMetadata extends Record<string, unknown> {
+  thread_id: string
+  workflow_id: string
+  prev_workflow_id: string | null
+  bind_source: AgentWorkflowBindSource
+}
+export interface AgentRunApprovalShownMetadata extends Record<string, unknown> {
+  turn_id: string
+  workflow_id: string | null
+}
+export type AgentRunApprovalDecision = 'run' | 'cancel' | 'open_workflow'
+export interface AgentRunApprovalResolvedMetadata extends Record<
+  string,
+  unknown
+> {
+  decision: AgentRunApprovalDecision
+  time_to_decide_ms: number
+}
+export interface AgentRunModeChangedMetadata extends Record<string, unknown> {
+  from: AgentRunMode['mode']
+  to: AgentRunMode['mode']
+}
+export type AgentThreadStartSource =
+  | 'new_chat_button'
+  | 'first_open'
+  | 'history_select'
+  | 'history_delete'
+export interface AgentThreadStartedMetadata extends Record<string, unknown> {
+  source: AgentThreadStartSource
 }
 
 /**
@@ -736,6 +902,24 @@ export interface AddCreditsClickMetadata {
     | 'avatar_menu'
     | 'settings_billing_panel'
     | 'deep_link'
+    | 'agent_paywall'
+}
+
+export type AgentPaywallReason =
+  | 'no_funds'
+  | 'subscription_inactive'
+  | 'member_cannot_pay'
+  | 'sales_managed'
+  | 'unknown'
+
+export interface AgentPaywallShownMetadata {
+  reason: AgentPaywallReason
+}
+
+export type AgentPaywallCta = 'subscribe' | 'add_credits' | 'upgrade'
+
+export interface AgentPaywallCtaMetadata {
+  cta: AgentPaywallCta
 }
 
 export interface SubscriptionCancellationMetadata {
@@ -846,6 +1030,23 @@ export interface BillingFailure {
   error_code?: BillingErrorCode
 }
 
+type BillingIntent = {
+  stage: 'intent'
+  outcome: 'pending'
+}
+
+type BillingRequestSent = {
+  stage: 'request_sent'
+  outcome: 'pending'
+}
+
+type BillingCheckoutReceived<Status extends string> = {
+  stage: 'checkout_received'
+  outcome: 'pending'
+  billing_op_id: string
+  checkout_status: Status
+}
+
 type BillingStarted = {
   stage: 'started'
   outcome: 'pending'
@@ -879,7 +1080,14 @@ type SubscriptionCheckoutBillingEvent = {
    * `started` event through to this terminal event.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (
+  | BillingIntent
+  | BillingCheckoutReceived<SubscribeResponse['status']>
+  | BillingRequestSent
+  | BillingStarted
+  | BillingSucceeded
+  | BillingFailed
+)
 
 type BillingOperationBillingEvent = {
   operation: 'operation'
@@ -910,11 +1118,25 @@ type TopupBillingEvent = {
   operation: 'topup'
   billing_op_id?: string
   /**
+   * Surface the top-up was opened from. Absent when the caller named none,
+   * exactly as on the subscription rail's events — absent is no claim, never
+   * an implied default. Named `payment_intent_source` to match its siblings
+   * above; the journey's own `entry_source` is a separate, smaller enum.
+   */
+  payment_intent_source?: PaymentIntentSource
+  /**
    * Client-observed end-to-end wall time from this attempt's canonical
    * `started` event through to this terminal event.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (
+  | BillingIntent
+  | BillingCheckoutReceived<CreateTopupResponse['status']>
+  | BillingRequestSent
+  | BillingStarted
+  | BillingSucceeded
+  | BillingFailed
+)
 
 type DowngradeToPersonalBillingEvent = {
   operation: 'downgrade_to_personal'
@@ -928,7 +1150,12 @@ type DowngradeToPersonalBillingEvent = {
   duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)
 
+type CapabilityReadBillingEvent = {
+  operation: 'capability_read'
+} & (BillingSucceeded | Pick<BillingFailed, 'stage' | 'outcome'>)
+
 export type BillingTelemetryEvent =
+  | CapabilityReadBillingEvent
   | SubscriptionCheckoutBillingEvent
   | BillingOperationBillingEvent
   | ResubscribeBillingEvent
@@ -958,6 +1185,9 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
       event.billing_op_id !== undefined && {
         billing_op_id: event.billing_op_id
       }),
+    ...('checkout_status' in event && {
+      checkout_status: event.checkout_status
+    }),
     ...('operation_type' in event && {
       operation_type: event.operation_type
     }),
@@ -1016,6 +1246,7 @@ export type CheckoutEntrySource =
   | 'settings_billing'
   | 'other'
   | 'unknown'
+  | 'agent_paywall'
 type CheckoutElementPhase = 'init' | 'mount' | 'update'
 /** Which Stripe element in the shared group the observation came from. */
 type CheckoutElementKind = 'payment' | 'address'
@@ -1212,6 +1443,9 @@ export interface TelemetryProvider {
   /** Emit a checkout-journey lifecycle event to this provider. */
   trackCheckoutJourneyEvent?(event: CheckoutJourneyTelemetryEvent): void
 
+  trackAgentPaywallShown?(metadata: AgentPaywallShownMetadata): void
+  trackAgentPaywallCtaClicked?(metadata: AgentPaywallCtaMetadata): void
+
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
 
@@ -1291,10 +1525,26 @@ export interface TelemetryProvider {
   trackAgentPanelClosed?(metadata: AgentPanelClosedMetadata): void
   trackAgentEntryButtonClicked?(metadata: AgentEntryButtonClickedMetadata): void
   trackAgentCloseButtonClicked?(): void
+  trackAgentConsentShown?(metadata: AgentConsentShownMetadata): void
+  trackAgentConsentResolved?(metadata: AgentConsentResolvedMetadata): void
+  trackAgentOnboardingShown?(): void
+  trackAgentOnboardingStep?(metadata: AgentOnboardingStepMetadata): void
   trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
-  trackAgentAttachButtonClicked?(): void
+  trackAgentAttachButtonClicked?(
+    metadata: AgentAttachButtonClickedMetadata
+  ): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
+  trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
+  trackAgentRunApprovalShown?(metadata: AgentRunApprovalShownMetadata): void
+  trackAgentRunApprovalResolved?(
+    metadata: AgentRunApprovalResolvedMetadata
+  ): void
+  trackAgentRunModeChanged?(metadata: AgentRunModeChangedMetadata): void
+  trackAgentThreadStarted?(metadata: AgentThreadStartedMetadata): void
+  trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void
+  trackAgentOnboardingNotShown?(metadata: AgentOnboardingNotShownMetadata): void
 
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
@@ -1363,13 +1613,26 @@ export const TelemetryEvents = {
   WORKSPACE_INVITE_FAILED: 'app:workspace_invite_failed',
   BEGIN_CHECKOUT: 'begin_checkout',
 
+  AGENT_PAYWALL_SHOWN: 'app:agent_paywall_shown',
+  AGENT_PAYWALL_CTA_CLICKED: 'app:agent_paywall_cta_clicked',
+
   // Canonical Billing Lifecycle
+  BILLING_SUBSCRIPTION_CHECKOUT_RECEIVED:
+    'billing.subscription_checkout.checkout_received',
+  BILLING_TOPUP_CHECKOUT_RECEIVED: 'billing.topup.checkout_received',
+  BILLING_SUBSCRIPTION_CHECKOUT_REQUEST_SENT:
+    'billing.subscription_checkout.request_sent',
+  BILLING_TOPUP_REQUEST_SENT: 'billing.topup.request_sent',
+  BILLING_SUBSCRIPTION_CHECKOUT_INTENT: 'billing.subscription_checkout.intent',
+  BILLING_TOPUP_INTENT: 'billing.topup.intent',
   BILLING_SUBSCRIPTION_CHECKOUT_STARTED:
     'billing.subscription_checkout.started',
   BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
     'billing.subscription_checkout.succeeded',
   BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
   BILLING_OPERATION_STARTED: 'billing.operation.started',
+  BILLING_CAPABILITY_READ_SUCCEEDED: 'billing.capability_read.succeeded',
+  BILLING_CAPABILITY_READ_FAILED: 'billing.capability_read.failed',
   BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
   BILLING_OPERATION_FAILED: 'billing.operation.failed',
   BILLING_OPERATION_TIMEOUT: 'billing.operation.timeout',
@@ -1461,10 +1724,22 @@ export const TelemetryEvents = {
   AGENT_PANEL_CLOSED: 'app:agent_panel_closed',
   AGENT_ENTRY_BUTTON_CLICKED: 'app:agent_entry_button_clicked',
   AGENT_CLOSE_BUTTON_CLICKED: 'app:agent_close_button_clicked',
+  AGENT_CONSENT_SHOWN: 'app:agent_consent_shown',
+  AGENT_CONSENT_RESOLVED: 'app:agent_consent_resolved',
+  AGENT_ONBOARDING_SHOWN: 'app:agent_onboarding_shown',
+  AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
+  AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
+  AGENT_RUN_APPROVAL_SHOWN: 'app:agent_run_approval_shown',
+  AGENT_RUN_APPROVAL_RESOLVED: 'app:agent_run_approval_resolved',
+  AGENT_RUN_MODE_CHANGED: 'app:agent_run_mode_changed',
+  AGENT_THREAD_STARTED: 'app:agent_thread_started',
+  AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',
+  AGENT_ONBOARDING_NOT_SHOWN: 'app:agent_onboarding_not_shown',
 
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
@@ -1577,4 +1852,6 @@ export type TelemetryEventProperties =
   | WorkspaceInviteFailedMetadata
   | BillingTelemetryEvent
   | CheckoutJourneyTelemetryEventPayload
+  | AgentPaywallShownMetadata
+  | AgentPaywallCtaMetadata
   | FetchTimeoutMetadata

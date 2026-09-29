@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Tencent'ın Hunyuan Image modelini kullanarak bir metin istemi doğrultusunda en fazla 5 referans görüntüyü düzenler veya birleştirir.",
+    "display_name": "Tencent HY Image: Düzenle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "yükseklik"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_watermark": {
+        "name": "filigran"
+      },
+      "model_width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Tencent'ın Hunyuan Image modelini kullanarak bir metin isteminden görüntüler oluşturur.",
+    "display_name": "Tencent HY Image: Metinden Görüntüye",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "yükseklik"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_watermark": {
+        "name": "filigran"
+      },
+      "model_width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanGörüntüdenVideoya",
     "inputs": {
@@ -9137,6 +9218,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Markdown kod blokları da dahil olmak üzere, metindeki ilk geçerli JSON nesnesinden bir anahtarın değerini çıkarın.",
     "display_name": "JSON'dan Dize Çıkar",
     "inputs": {
       "json_string": {
@@ -13234,6 +13316,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Daha ince yüzey ayrıntılarına sahip, daha yüksek doğruluklu geometri için ek bir iyileştirme geçişi çalıştırın."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Ultra geçişinin çözünürlüğü: 2k, en ince yüzey ayrıntıları için 2048³; 4k ise 4096³ olarak çalıştırır. 4k, meshy-7.1 veya daha yenisini gerektirir. Yalnızca ultra_mode etkinleştirildiğinde kullanılır."
       }
     },
     "outputs": {
@@ -13300,6 +13386,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Daha ince yüzey ayrıntılarına sahip, daha yüksek doğruluklu geometri için 2048³ çözünürlükte ek bir iyileştirme geçişi çalıştırın."
       }
     },
     "outputs": {
@@ -13441,6 +13531,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Daha ince yüzey ayrıntılarına sahip, daha yüksek doğruluklu geometri için ek bir iyileştirme geçişi çalıştırın."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Ultra geçişinin çözünürlüğü: 2k, en ince yüzey ayrıntıları için 2048³; 4k ise 4096³ olarak çalıştırır. 4k, meshy-7.1 veya daha yenisini gerektirir. Yalnızca ultra_mode etkinleştirildiğinde kullanılır."
       }
     },
     "outputs": {
@@ -18353,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Modelin çizimden önce ne kadar muhakeme yapacağını belirler. Daha yüksek seviyeler ayrıntıyı iyileştirir ve daha fazla token maliyetine yol açar. Yalnızca Arrow 2 modelleri tarafından kullanılır."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak deterministik değildir."
@@ -18391,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "İstenen SVG çıktısının metin açıklaması."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Modelin çizimden önce ne kadar muhakeme yapacağını belirler. Daha yüksek seviyeler ayrıntıyı iyileştirir ve daha fazla token maliyetine yol açar. Yalnızca Arrow 2 modelleri tarafından kullanılır."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19062,7 +19164,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Üretim için kullanılacak model. recraftv4_styles modelleri, stil tutarlı üretim için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir."
+        "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri, stille tutarlı oluşturma için geliştirilmiştir ve her zaman bir style_id veya style_references gerektirir; recraftv4_1_flash en hızlı ve en ucuz modeldir ve hiçbir stili desteklemez."
       },
       "model_size": {
         "name": "boyut"
@@ -23955,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Modelin sohbet şablonundaki sistem istemini değiştirir. Varsayılan şablon kullanılmadığında yok sayılır."
+      },
       "thinking": {
         "name": "düşünme",
         "tooltip": "Model destekliyorsa düşünme modunda çalış."
@@ -23971,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "oluşturulan_metin",
+        "tooltip": null
+      },
+      "1": {
+        "name": "düşünme",
         "tooltip": null
       }
     }
@@ -24021,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Modelin sohbet şablonundaki sistem istemini değiştirir. Varsayılan şablon kullanılmadığında yok sayılır."
+      },
       "thinking": {
         "name": "düşünme",
         "tooltip": "Model destekliyorsa düşünme modunda çalış."
@@ -24037,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "üretilen_metin",
+        "tooltip": null
+      },
+      "1": {
+        "name": "düşünme",
         "tooltip": null
       }
     }

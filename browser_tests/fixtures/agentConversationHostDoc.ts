@@ -1,4 +1,5 @@
 import {
+  SCHEMA_VERSION,
   applyOps,
   hasAppliedOp,
   linksMap,
@@ -95,6 +96,30 @@ export class HostDoc {
     return project(this.doc, this.catalog)
   }
 
+  // Test-only: removes meta.schema_version after mint() wrote it, so the next
+  // frame this host produces carries the exact "unreadable schema" shape
+  // KA-11's read gate (schemaGuard.ts) refuses — an absent version, not a
+  // merely different one.
+  corruptSchemaVersion(): void {
+    this.doc.getMap('meta').delete('schema_version')
+  }
+
+  // Test-only: restores meta.schema_version and returns the frame carrying
+  // just that repair, mirroring apply()'s before/after delta shape so the
+  // caller can transmit the repair as its own frame -- separately from, and
+  // before, whatever mutation comes next -- instead of folding it silently
+  // into a later apply()'s delta.
+  repairSchemaVersion(): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    this.doc.getMap('meta').set('schema_version', SCHEMA_VERSION)
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
   subscribed(): HostFrame {
     return {
       type: 'doc_subscribed',
@@ -105,6 +130,13 @@ export class HostDoc {
         seq: this.seq
       }
     }
+  }
+
+  initialSync(): HostFrame[] {
+    const emptyDoc = new Y.Doc()
+    const stateVector = toBase64(Y.encodeStateVector(emptyDoc))
+    emptyDoc.destroy()
+    return [this.subscribed(), this.catchUp(stateVector)]
   }
 
   /**

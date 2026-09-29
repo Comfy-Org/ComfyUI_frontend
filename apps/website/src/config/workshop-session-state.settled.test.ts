@@ -1,74 +1,53 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readonly, ref } from 'vue'
 
-const h = vi.hoisted(() => {
-  const state = {
-    flag: undefined as { value: boolean } | undefined,
-    listeners: new Set<(snapshot: unknown) => void>(),
-    snapshot: {
-      phase: 'pending',
-      user: null,
-      session: undefined
-    } as unknown,
-    activate: vi.fn(async () => undefined),
-    publish(next: unknown) {
-      state.snapshot = next
-      state.listeners.forEach((listener) => listener(next))
-    }
-  }
-  return state
-})
+let { useWorkshopAuthFlag } = await import('../scripts/posthog')
+let { workshopIdentity, workshopSessionClient } =
+  await import('./workshop-account')
 
-vi.mock<unknown>(import('../scripts/posthog'), async () => {
-  const { ref } = await import('vue')
-  const flag = ref(true)
-  h.flag = flag
-  return {
-    identifyWorkshopUser: vi.fn(),
-    useWorkshopAuthFlag: () => flag
-  }
-})
+vi.mock(import('../scripts/posthog'))
+vi.mock(import('./workshop-account'))
 
-vi.mock<unknown>(import('./workshop-account'), () => ({
-  workshopSessionClient: {
-    subscribe: (listener: (snapshot: unknown) => void) => {
-      h.listeners.add(listener)
-      listener(h.snapshot)
-      return () => h.listeners.delete(listener)
-    },
-    ensureFresh: vi.fn(),
-    remint: vi.fn(),
-    clearStoredCredential: vi.fn(),
-    getSnapshot: () => h.snapshot,
-    getToken: vi.fn()
-  },
-  workshopIdentity: { activate: h.activate, deactivate: vi.fn() },
-  subscribeAuthRefreshTelemetry: () => () => undefined
-}))
-
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetModules()
-  h.listeners.clear()
+  ;({ useWorkshopAuthFlag } = await import('../scripts/posthog'))
+  ;({ workshopIdentity, workshopSessionClient } =
+    await import('./workshop-account'))
 })
 
 describe('useWorkshopSession settled', () => {
   it('mirrors the client: settled only once Firebase has delivered the restored user or none', async () => {
+    const flag = ref(true)
+    vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(flag))
+    let publish: Parameters<
+      typeof workshopSessionClient.subscribe
+    >[0] = () => {}
+    vi.mocked(workshopSessionClient.subscribe).mockImplementation(
+      (listener) => {
+        publish = listener
+        listener({ phase: 'pending', user: null, session: undefined })
+        return () => {}
+      }
+    )
     const mod = await import('./workshop-session-state')
     const s = mod.useWorkshopSession()
-    await vi.waitFor(() => expect(h.activate).toHaveBeenCalledOnce())
+    await vi.waitFor(() =>
+      expect(workshopIdentity.activate).toHaveBeenCalledOnce()
+    )
 
     expect(
       s.settled.value,
       'before Firebase answers, nobody knows whether a user is signed in'
     ).toBe(false)
 
-    h.publish({
+    publish({
       phase: 'signed-out',
       user: null,
       session: undefined
     })
     expect(s.settled.value).toBe(true)
 
-    h.flag!.value = false
+    flag.value = false
     await vi.waitFor(() => expect(s.settled.value).toBe(false))
   })
 })

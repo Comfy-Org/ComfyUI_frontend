@@ -38,6 +38,7 @@ import { FollowerDoc } from './followerDoc'
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { createGraphMutations } from './graphMutations'
 import type { GraphOperation } from './graphOperations'
+import { mintWireOps } from './opEnvelope'
 import type { BatchOutcome, OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
@@ -50,17 +51,7 @@ class DummyNode extends LGraphNode {
 const WORKFLOW = 'wf-a'
 const CATALOG: WidgetCatalog = { types: { dummy: { widget_order: [] } } }
 
-function agentOperation(id: string, version: number, payload: object) {
-  return {
-    op_id: id,
-    actor: 'agent:test',
-    base_version: version,
-    stamp: [version, 'agent:test', id],
-    ...payload
-  }
-}
-
-function addNodePayload(id: number) {
+function addNodePayload(id: number): GraphOperation {
   return {
     op: 'add_node',
     node_id: id,
@@ -149,12 +140,16 @@ function setupRaceUntilReturn() {
       ops.map(() => 'applied')
     )
   }
-  const deliverFromHost = (payload?: object) => {
+  const deliverFromHost = (payload?: GraphOperation) => {
     const stateVector = Y.encodeStateVector(host)
     let opId: string | undefined
     if (payload) {
-      opId = `agent-op-${++opSequence}`
-      applyToHost([agentOperation(opId, opSequence, payload) as unknown as Op])
+      const ops = mintWireOps([payload], {
+        actor: 'agent:test',
+        baseVersion: ++opSequence
+      })
+      opId = ops[0].op_id
+      applyToHost(ops)
     }
     const update = sentInitialFrame
       ? Y.encodeStateAsUpdate(host, stateVector)

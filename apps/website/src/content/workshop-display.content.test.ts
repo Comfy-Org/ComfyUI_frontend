@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -13,9 +13,14 @@ import {
 import { fieldsForDefinition } from '../config/workshop-form-definition'
 import {
   WORKSHOP_USE_CASES,
-  workshopDisplayEntriesSchema
+  workshopDisplayEntriesSchema,
+  workshopDisplaySchema
 } from './workshop-display.schema'
 import { workshopModelSchema } from './workshop-models.schema'
+import {
+  appCatalog,
+  workflowCatalog
+} from '../config/workshop-workflow-catalog'
 
 const here = import.meta.dirname
 const display = workshopDisplayEntriesSchema.parse(
@@ -105,11 +110,18 @@ describe('the display overlay against the catalog', () => {
     expect(contentFor(id)?.displayName).toBe(name)
   })
 
-  it('covers models the catalog actually has', () => {
+  it('covers models, workflows and apps in the matching execution catalog', () => {
     expect(display.length).toBeGreaterThan(0)
-    const orphans = display
-      .map((entry) => entry.modelId)
-      .filter((id) => !modality.has(id))
+    const orphans = display.filter((entry) =>
+      entry.type === 'CLOUD' || entry.type === 'SERVERLESS'
+        ? !workflowCatalog.some(
+            (workflow) =>
+              workflow.id === entry.modelId && workflow.type === entry.type
+          )
+        : entry.type === 'APP'
+          ? !appCatalog.some((app) => app.id === entry.modelId)
+          : !modality.has(entry.modelId)
+    )
 
     expect(orphans).toEqual([])
   })
@@ -231,14 +243,40 @@ describe('the display overlay against the catalog', () => {
     expect(unplayable).toEqual([])
   })
 
-  it('points every asset at https', () => {
+  it('points every asset at https or at a file this site serves', () => {
     const insecure = display.flatMap((entry) =>
       [entry.media.thumbnail, ...(entry.media.samples ?? [])]
         .filter((asset) => asset !== undefined)
-        .filter((asset) => !asset.url.startsWith('https://'))
+        .filter((asset) => !/^(?:https:\/\/|\/(?!\/))/.test(asset.url))
         .map((asset) => asset.url)
     )
 
     expect(insecure).toEqual([])
+  })
+
+  it('keeps site-relative media to app entries', () => {
+    const model = display.find((entry) => entry.type !== 'APP')
+    if (!model) throw new Error('No model entry')
+    const withLocal = {
+      ...model,
+      media: {
+        ...model.media,
+        thumbnail: { url: '/images/x.jpg', kind: 'image' }
+      }
+    }
+    expect(workshopDisplaySchema.safeParse(withLocal).success).toBe(false)
+    expect(workshopDisplaySchema.safeParse(model).success).toBe(true)
+  })
+
+  it('finds every site-relative asset in public/', () => {
+    const publicDir = join(here, '..', '..', 'public')
+    const missing = display.flatMap((entry) =>
+      [entry.media.thumbnail, ...(entry.media.samples ?? [])]
+        .filter((asset) => asset?.url.startsWith('/'))
+        .map((asset) => asset?.url ?? '')
+        .filter((url) => !existsSync(join(publicDir, url)))
+    )
+
+    expect(missing).toEqual([])
   })
 })

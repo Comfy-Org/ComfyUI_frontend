@@ -13,7 +13,7 @@ import { isWorkshopInBuild } from '../config/workshop-release'
 import {
   hreflangAlternates,
   ogLocale,
-  ogLocaleAlternate
+  ogLocaleAlternates
 } from '../lib/hreflang'
 import { markdownTwinPath } from '../lib/markdown-twin-path'
 import { isHrefActive } from '../composables/useCurrentPath'
@@ -28,6 +28,9 @@ import { buildPageGraph, pageContext } from '../utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
 import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
+type PPFormulaFace =
+  'Light' | 'Regular' | 'Medium' | 'Semibold' | 'Bold' | 'NarrowSemibold'
+
 interface Props {
   title: string
   description?: string
@@ -39,6 +42,9 @@ interface Props {
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
+  hideAnnouncementBanner?: boolean
+  /** PP Formula faces this page renders above the fold beyond the site-wide set. */
+  preloadFonts?: readonly PPFormulaFace[]
 }
 
 const {
@@ -51,7 +57,9 @@ const {
   breadcrumbs,
   mainEntityId,
   extraJsonLd,
-  minimal = false
+  minimal = false,
+  hideAnnouncementBanner = false,
+  preloadFonts = []
 } = Astro.props
 
 const keywordsContent =
@@ -68,7 +76,7 @@ const alternates = shouldNoindex
   ? []
   : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
 const openGraphLocale = ogLocale(locale)
-const openGraphLocaleAlternate = ogLocaleAlternate(locale, alternates)
+const openGraphLocaleAlternates = ogLocaleAlternates(locale, alternates)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
@@ -78,11 +86,13 @@ const githubStars = rawStars ? formatStarCount(rawStars) : ''
 // suppressed when its CTA points at the current path.
 const bannerData = getBannerData(bannerConfig, locale)
 const bannerVisible =
+  !hideAnnouncementBanner &&
   evaluateBannerVisibility(bannerConfig, {
     currentLocale: locale,
     currentSection: 'sitewide',
     now: new Date()
-  }) && !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
+  }) &&
+  !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
 
 const structuredData = shouldNoindex
@@ -114,7 +124,6 @@ const structuredData = shouldNoindex
     {keywordsContent && <meta name="keywords" content={keywordsContent} />}
     {shouldNoindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
-
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" sizes="48x48" />
@@ -123,14 +132,23 @@ const structuredData = shouldNoindex
     <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
 
-    <!-- Preload the PP Formula faces used on first paint (body copy, headings,
-         and the narrow display face) so they're ready before CSS requests
-         them, avoiding a visible swap from the fallback font mid-load. -->
+    <!-- Every PP Formula face that renders above the fold. `font-display:
+         optional` drops a face that misses its short block period for the
+         whole page load, so an unpreloaded face silently renders as the
+         fallback — which is what put a fallback headline into a committed
+         visual baseline. -->
     <link
       rel="preload"
       as="font"
       type="font/woff2"
       href="/fonts/PPFormula-Regular.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/PPFormula-Light.woff2"
       crossorigin
     />
     <link
@@ -144,9 +162,25 @@ const structuredData = shouldNoindex
       rel="preload"
       as="font"
       type="font/woff2"
+      href="/fonts/PPFormula-Semibold.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
       href="/fonts/PPFormula-NarrowSemibold.woff2"
       crossorigin
     />
+    {preloadFonts.map((face) => (
+      <link
+        rel="preload"
+        as="font"
+        type="font/woff2"
+        href={`/fonts/PPFormula-${face}.woff2`}
+        crossorigin
+      />
+    ))}
     {!shouldNoindex && (
       <link
         rel="alternate"
@@ -177,9 +211,9 @@ const structuredData = shouldNoindex
     <meta property="og:image:height" content="630" />
     <meta property="og:url" content={canonicalURL.href} />
     <meta property="og:locale" content={openGraphLocale} />
-    {openGraphLocaleAlternate && (
-      <meta property="og:locale:alternate" content={openGraphLocaleAlternate} />
-    )}
+    {openGraphLocaleAlternates.map((alternate) => (
+      <meta property="og:locale:alternate" content={alternate} />
+    ))}
     <meta property="og:site_name" content="Comfy" />
 
     <!-- Twitter -->

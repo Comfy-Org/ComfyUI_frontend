@@ -5,6 +5,14 @@ import type { SessionSnapshot } from '@comfyorg/account-core/session'
 
 import { createBillingWebClient } from '@/session/billingWebClient'
 
+const h = vi.hoisted(() => ({
+  boundWorkspaceId: undefined as string | undefined
+}))
+
+vi.mock(import('@/entry/workspaceBinding'), () => ({
+  boundWorkspaceId: () => h.boundWorkspaceId
+}))
+
 const SIGNED_IN: SessionSnapshot = {
   phase: 'authenticated',
   user: { uid: 'uid-1', getIdToken: async () => 'id-token' },
@@ -43,6 +51,37 @@ const MEMBERS = [
   ['topup', (client: BillingClient) => client.topup.createTopupCheckout],
   ['commands', (client: BillingClient) => client.commands.subscribe]
 ] as const
+
+describe('workspace targeting', () => {
+  beforeEach(() => {
+    h.boundWorkspaceId = undefined
+  })
+
+  it('mints for the session workspace once no entry has bound the tab', async () => {
+    const { session } = signedInSession()
+    const client = createBillingWebClient(session)
+
+    await client.status.read()
+
+    expect(session.ensureFresh).toHaveBeenCalledWith(
+      undefined,
+      expect.objectContaining({ workspaceId: 'ws-1' })
+    )
+  })
+
+  it('mints for the entry-bound workspace over the session one', async () => {
+    h.boundWorkspaceId = 'ws-team'
+    const { session } = signedInSession()
+    const client = createBillingWebClient(session)
+
+    await client.status.read()
+
+    expect(session.ensureFresh).toHaveBeenCalledWith(
+      undefined,
+      expect.objectContaining({ workspaceId: 'ws-team' })
+    )
+  })
+})
 
 describe('createBillingWebClient', () => {
   it.for(MEMBERS)('wires %s', ([, entry]) => {
