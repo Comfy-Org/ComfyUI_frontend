@@ -286,7 +286,6 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     hasPendingCancellation,
     downloadList,
     lastCompletedDownload,
-    hasRecheckableDownloads,
     sessionDownloadCount,
     trackDownload,
     cancellingTaskIds,
