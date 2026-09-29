@@ -36,6 +36,7 @@ import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
+import { CARD_GRID } from '../../lib/workshop/card-layout'
 import { modelSlides } from '../../lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
@@ -299,7 +300,7 @@ watch(browseAll, (on) => on && resetFilters())
             {{ t('workshop.models.heading', locale) }}
           </h2>
           <ul
-            class="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            :class="CARD_GRID"
             aria-labelledby="workshop-models-heading"
             data-testid="workshop-models-grid"
           >

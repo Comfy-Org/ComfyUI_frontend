@@ -4,6 +4,7 @@ import { computed, nextTick, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { CARD_GRID, SHELF_CARD } from '../../lib/workshop/card-layout'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
 import CardRow from './CardRow.vue'
@@ -56,7 +57,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
 
     <ul
       v-if="browseAll"
-      class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
+      :class="CARD_GRID"
       :aria-label="ac('apps', locale)"
       data-testid="app-search-results"
     >
@@ -76,11 +77,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
               {{ ac('apps', locale) }}
             </h2>
           </template>
-          <li
-            v-for="app in shelf"
-            :key="app.key"
-            class="w-60 shrink-0 snap-start sm:w-[calc((100cqw-2*1.25rem)/2.5)] md:w-[calc((100cqw-3*1.25rem)/3.5)] lg:w-[calc((100cqw-4*1.25rem)/4.5)] xl:w-[calc((100cqw-5*1.25rem)/5.5)]"
-          >
+          <li v-for="app in shelf" :key="app.key" :class="SHELF_CARD">
             <WorkshopAppCard :app />
           </li>
         </CardRow>
