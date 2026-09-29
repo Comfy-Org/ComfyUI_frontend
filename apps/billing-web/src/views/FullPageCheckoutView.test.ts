@@ -653,15 +653,23 @@ describe('FullPageCheckoutView saved methods and rail failures', () => {
     expect(request).not.toHaveProperty('confirmation_token')
   })
 
-  it('180-6640: shows the saved card as its brand and last four, with no Change link', async () => {
-    await renderQuoted({ paymentMethods: { status: 'ok', value: [VISA] } })
+  it('180-6640: shows a lone saved card as a static row of its brand and last four, and charges it', async () => {
+    const fake = await renderQuoted({
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
 
-    const picker = savedPicker()
-    expect(picker).toHaveTextContent('visa')
-    expect(picker).toHaveTextContent('·· 4242')
+    expect(screen.getByText('visa')).toBeInTheDocument()
+    expect(screen.getByText('·· 4242')).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Change' })
     ).not.toBeInTheDocument()
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    expect(fake.subscribe.mock.calls[0][0]).toMatchObject({
+      saved_payment_method_id: 'pm_visa'
+    })
   })
 
   it('charges the saved method picked from the list', async () => {
