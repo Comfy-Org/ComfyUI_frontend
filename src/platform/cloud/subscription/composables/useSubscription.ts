@@ -480,17 +480,16 @@ function useSubscriptionInternal() {
     return true
   }
 
-  const fetchPendingCheckoutStatus = async (
-    source: PendingCheckoutRecoverySource
-  ) => {
+  const fetchPendingCheckoutStatus = async () => {
     const statusFetch = fetchSubscriptionStatus()
     activePendingCheckoutRecovery = statusFetch.then(
       () => undefined,
       () => undefined
     )
-    return source === 'deadline'
-      ? withTimeout(statusFetch, PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS)
-      : statusFetch
+    return withTimeout(
+      statusFetch,
+      PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS
+    )
   }
 
   const recoverPendingSubscriptionCheckout = async (
@@ -502,7 +501,7 @@ function useSubscriptionInternal() {
     isRecoveringPendingCheckout = true
 
     try {
-      await fetchPendingCheckoutStatus(source)
+      await fetchPendingCheckoutStatus()
     } catch (error) {
       handlePendingCheckoutRecoveryError(source, error)
     } finally {
