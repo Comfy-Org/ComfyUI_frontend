@@ -14,11 +14,13 @@ const {
   current,
   siblings,
   modelName,
+  takePicker = true,
   locale = 'en'
 } = defineProps<{
   current: Take
   siblings: readonly Take[]
   modelName: string
+  takePicker?: boolean
   locale?: Locale
 }>()
 
@@ -50,7 +52,7 @@ async function onKeydown(event: KeyboardEvent) {
       {{ tc('cinematic.stage.shot', locale, { number: current.shot }) }}
     </span>
     <div
-      v-if="siblings.length > 1"
+      v-if="takePicker && siblings.length > 1"
       role="radiogroup"
       :aria-label="tc('cinematic.stage.takes', locale)"
       class="flex gap-1"
