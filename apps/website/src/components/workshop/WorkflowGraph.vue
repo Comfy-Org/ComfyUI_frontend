@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Maximize2 } from '@lucide/vue'
 import { useMounted } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
@@ -12,6 +13,7 @@ const {
   source,
   samples = [],
   fallback,
+  fullHref,
   active = true
 } = defineProps<{
   /** Where the template JSON is published. */
@@ -20,6 +22,8 @@ const {
   samples?: readonly string[]
   /** The flat export, for when the JSON cannot be read. */
   fallback?: string
+  /** The flat export opened at full size, from the panel's own corner. */
+  fullHref?: string
   /** Whether the graph is on screen; it is not fetched until it first is. */
   active?: boolean
 }>()
@@ -197,6 +201,18 @@ const control =
     >
       {{ t('workshop.workflow.graphHint') }}
     </span>
+
+    <a
+      v-if="fullHref"
+      :href="fullHref"
+      target="_blank"
+      rel="noopener"
+      class="absolute top-3 right-3 inline-flex size-9 items-center justify-center rounded-xl bg-black/50 text-content-secondary backdrop-blur-md transition-colors hover:text-content-bright focus-visible:text-content-bright focus-visible:outline-primary-comfy-yellow"
+      data-testid="workflow-graph-full"
+    >
+      <Maximize2 class="size-4" aria-hidden="true" />
+      <span class="sr-only">{{ t('workshop.workflow.fullPreview') }}</span>
+    </a>
 
     <div
       v-if="picture"
