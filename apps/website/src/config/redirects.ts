@@ -8,7 +8,7 @@ import {
   hubModelSlugs,
   hubWorkflowHref
 } from './hub-models'
-import hubWorkflowNames from './hub-workflow-names.json'
+import hubWorkflowNames from './hub-workflow-names.json' with { type: 'json' }
 
 interface SiteRedirect {
   /** A literal path with no trailing slash; both slash forms redirect. */

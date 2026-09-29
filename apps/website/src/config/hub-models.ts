@@ -1,4 +1,4 @@
-import hubWorkflowNames from './hub-workflow-names.json'
+import hubWorkflowNames from './hub-workflow-names.json' with { type: 'json' }
 import { modelAliasUrls, modelPageUrls } from './model-urls'
 
 export const HUB_MODELS_PATH = '/hub/models'

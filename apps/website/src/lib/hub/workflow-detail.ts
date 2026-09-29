@@ -8,6 +8,7 @@ import hubTemplateDetails from '../../data/hubTemplateDetails.json'
 import hubTemplates from '../../data/hubTemplates.json'
 import { tagDisplayName } from './tag-aliases'
 import type { HubTemplate } from './types'
+import { hubWorkflowHref } from '../../config/hub-models'
 
 interface HubIoPort {
   readonly nodeType?: string
@@ -46,7 +47,7 @@ export interface HubWorkflowPage {
   readonly related: readonly HubTemplate[]
 }
 
-export const hubWorkflowPath = (name: string) => `/models/workflows/${name}/`
+export const hubWorkflowPath = hubWorkflowHref
 
 const templates = hubTemplates as HubTemplate[]
 const details = hubTemplateDetails as Record<string, HubTemplateDetails>
