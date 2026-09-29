@@ -2,7 +2,6 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { workshopModels } from '../../config/workshop-browse-content'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
-import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import {
   workshopEyebrowClass,
@@ -20,7 +19,6 @@ const directory = workshopModels.toSorted((a, b) =>
   {title}
   {description}
   preloadFonts={['Medium']}
-  canonicalPath={getRoutes().workshop}
 >
   <div
     class="mx-auto max-w-10xl px-6 pt-8 pb-4 max-sm:pt-5 lg:px-8 lg:pt-12 sm:short:pb-3"

@@ -132,7 +132,6 @@ describe('Workshop release output', () => {
     expect(disabled.map((route) => route.pattern)).toEqual([
       '/hub/models',
       '/hub/models/[slug]',
-      '/models',
       '/models/[...slug]',
       '/models/showcase',
       '/models/apps/[app]',
@@ -192,6 +191,35 @@ describe('Workshop release output', () => {
       )
     }
   )
+
+  it.for([
+    {
+      file: 'models/bfl--flux-2-max--generate-images/page.json',
+      content:
+        '{"related":[{"href":"/models/bfl--flux-2-pro--generate-images/"}]}'
+    },
+    {
+      file: 'models/catalogue.json',
+      content: '[{"href":"/models/bfl--flux-2-pro--generate-images/"}]'
+    },
+    {
+      file: 'index.md',
+      content:
+        '[Flux 2 Pro](https://comfy.org/models/bfl--flux-2-pro--generate-images/)'
+    }
+  ])('rejects an old model link in $file', async ({ file, content }) => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
+    await mkdir(join(root, file, '..'), { recursive: true })
+    await writeFile(
+      join(root, file),
+      content.replace('/models/bfl--flux-2-pro', '/hub/models/flux-2-pro')
+    )
+    await expect(buildDone()).resolves.toBeUndefined()
+    await writeFile(join(root, file), content)
+    await expect(buildDone()).rejects.toThrow(
+      `/${file} → /models/bfl--flux-2-pro--generate-images`
+    )
+  })
 
   it('retires legacy Workshop output even when Models is enabled', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '1')

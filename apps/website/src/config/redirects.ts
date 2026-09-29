@@ -1,6 +1,12 @@
 import type { RedirectConfig } from 'astro'
 
 import { models } from './models'
+import {
+  HUB_MODELS_PATH,
+  hubModelAliases,
+  hubModelPath,
+  hubModelSlugs
+} from './hub-models'
 
 interface SiteRedirect {
   /** A literal path with no trailing slash; both slash forms redirect. */
@@ -32,6 +38,23 @@ const modelAliasRedirects = models.flatMap(({ slug, canonicalSlug }) =>
       ]
     : []
 )
+
+const HUB_ROUTER_PENDING =
+  'switch to permanent once comfy-router#46 is confirmed live on prod; a 308 is cached by browsers and cannot be retracted'
+
+// Literal rows only: hub pages fetch /models/<slug>/page.json, so a /models/:path* catch-all would break them.
+const hubModelRedirects: readonly SiteRedirect[] = [
+  {
+    source: '/models',
+    destination: `${HUB_MODELS_PATH}/`,
+    temporaryBecause: HUB_ROUTER_PENDING
+  },
+  ...[...hubModelSlugs, ...hubModelAliases].map(([slug, hubSlug]) => ({
+    source: `/models/${slug}` as const,
+    destination: hubModelPath(hubSlug),
+    temporaryBecause: HUB_ROUTER_PENDING
+  }))
+]
 
 /**
  * Every redirect the website serves. `vercel.json` is generated from this
@@ -97,7 +120,8 @@ export const siteRedirects: readonly SiteRedirect[] = [
   // Affiliates exists in English only.
   { source: '/zh-CN/affiliates', destination: '/affiliates/' },
   { source: '/zh-CN/affiliates/terms', destination: '/affiliates/terms/' },
-  ...modelAliasRedirects
+  ...modelAliasRedirects,
+  ...hubModelRedirects
 ]
 
 export function isInternalDestination(destination: string): boolean {
@@ -105,6 +129,9 @@ export function isInternalDestination(destination: string): boolean {
 }
 
 const isPermanent = (row: SiteRedirect) => row.temporaryBecause === undefined
+
+const isOldModelsAddress = ({ source }: SiteRedirect) =>
+  source === '/models' || source.startsWith('/models/')
 
 const redirectsSlashForm = (row: SiteRedirect) =>
   row.slashFormIsPageBecause === undefined
@@ -128,14 +155,17 @@ export function toVercelRedirects(
  * Astro renders each entry as a meta-refresh stub so `astro preview` and the
  * e2e suite see the redirects; on Vercel the `vercel.json` rule answers first.
  * Astro cannot redirect off-site, and a stub for `/x` is the same file as a
- * page at `/x/`, so those rows live in `vercel.json` only.
+ * page at `/x/`, so those rows live in `vercel.json` only. The old Models
+ * addresses are left out too, so the build ships no stub pages under /models.
  */
 export const astroRedirects: Record<string, RedirectConfig> =
   Object.fromEntries(
     siteRedirects
       .filter(
         (row) =>
-          isInternalDestination(row.destination) && redirectsSlashForm(row)
+          isInternalDestination(row.destination) &&
+          redirectsSlashForm(row) &&
+          !isOldModelsAddress(row)
       )
       .map((row) => [
         row.source,

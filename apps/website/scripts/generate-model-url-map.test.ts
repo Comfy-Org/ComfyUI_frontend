@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
 import { modelAliasUrls, modelPageUrls } from '../src/config/model-urls'
-import { astroRedirects } from '../src/config/redirects'
+import { siteRedirects } from '../src/config/redirects'
 import {
   routerModelSlugAliases,
   workshopModels
@@ -49,7 +49,7 @@ function sitePathPatterns(): string[] {
   return [
     ...pages,
     ...modelsBuildRoutes(true).map((route) => route.pattern),
-    ...Object.keys(astroRedirects),
+    ...siteRedirects.map((redirect) => redirect.source),
     ...vercel.redirects.map((redirect) => redirect.source)
   ]
 }
