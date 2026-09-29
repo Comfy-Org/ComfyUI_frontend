@@ -26,7 +26,9 @@ test.describe(
       await agentPanel.selectWorkflow()
 
       await test.step('show exhaustion after a successful turn', async () => {
-        await creditsLifecycle.completeTurn('Build a red fox workflow', false)
+        await creditsLifecycle.completeTurn('Build a red fox workflow', {
+          fundingState: 'exhausted'
+        })
         await expect(sendButton).toBeVisible()
         await expect(paywall).toBeVisible()
         await expect(paywall).toContainText(
@@ -47,14 +49,14 @@ test.describe(
         const heldRefresh = agentBilling.holdNextFundedRefresh()
         const completedTurn = creditsLifecycle.completeTurn(
           'Make the lighting warmer',
-          true
+          { fundingState: 'funded' }
         )
         await heldRefresh.entered
+        agentBilling.failSubsequentRefreshes()
         await agentPanel.root
           .getByRole('button', { name: enMessages.agent.close })
           .click()
         await expect(agentPanel.root).toHaveCount(0)
-        agentBilling.failSubsequentRefreshes()
         heldRefresh.release()
         await heldRefresh.completed
         await completedTurn
@@ -64,13 +66,17 @@ test.describe(
       })
 
       await test.step('re-arm exhaustion after another successful turn', async () => {
-        await creditsLifecycle.completeTurn('Add shallow depth of field', false)
+        await creditsLifecycle.completeTurn('Add shallow depth of field', {
+          fundingState: 'exhausted'
+        })
         await expect(sendButton).toBeVisible()
         await expect(paywall).toBeVisible()
       })
 
       await test.step('recover again and preserve the conversation', async () => {
-        await creditsLifecycle.completeTurn('Finish the workflow', true)
+        await creditsLifecycle.completeTurn('Finish the workflow', {
+          fundingState: 'funded'
+        })
         await expect(sendButton).toBeVisible()
         await expect(paywall).toHaveCount(0)
         await expect(

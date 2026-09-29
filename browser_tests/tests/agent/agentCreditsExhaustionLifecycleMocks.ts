@@ -5,6 +5,7 @@ import type {
   AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -19,7 +20,10 @@ class AgentCreditsLifecycleFixture {
     private readonly setAgentFunds: (hasFunds: boolean) => void
   ) {}
 
-  async completeTurn(prompt: string, hasFunds: boolean): Promise<void> {
+  async completeTurn(
+    prompt: string,
+    { fundingState }: { fundingState: 'funded' | 'exhausted' }
+  ): Promise<void> {
     const acceptedTurnCount = this.acceptedTurns.length
     await this.agentPanel.sendMessage(prompt)
     await expect
@@ -31,9 +35,9 @@ class AgentCreditsLifecycleFixture {
     }
 
     await expect(
-      this.agentPanel.root.getByRole('button', { name: 'Stop' })
+      this.agentPanel.root.getByRole('button', { name: enMessages.agent.stop })
     ).toBeVisible()
-    this.setAgentFunds(hasFunds)
+    this.setAgentFunds(fundingState === 'funded')
     const billingRefresh = this.page.waitForResponse(
       (response) =>
         response.request().method() === 'GET' &&
