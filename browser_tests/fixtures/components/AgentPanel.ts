@@ -81,37 +81,32 @@ export class AgentPanel {
     if (await this.root.isVisible()) return this.root
     await onPanelHidden?.()
 
-    if (await this.root.isVisible()) return this.root
-
     // Keep Playwright's actionability checks, but decide whether the click is
     // still safe when it is dispatched. Startup activation can open after the
     // visibility read (even after the feature gate settles) and before the
     // pointer sequence reaches `click`; in that case the guard consumes only
     // the now-stale click instead of closing the panel again.
-    await this.openButton.evaluate<void, HTMLElement>((button) => {
-      const guardedButton = button as HTMLElement & {
-        __agentPanelOpenGuard?: EventListener
-      }
-      const guard: EventListener = (event) => {
+    const guard = await this.openButton.evaluateHandle<
+      EventListener,
+      HTMLElement
+    >((button) => {
+      const listener: EventListener = (event) => {
         if (button.getAttribute('aria-pressed') !== 'true') return
         event.preventDefault()
         event.stopImmediatePropagation()
       }
-      guardedButton.__agentPanelOpenGuard = guard
-      button.addEventListener('click', guard, true)
+      button.addEventListener('click', listener, true)
+      return listener
     })
     try {
       await this.openButton.click({ timeout })
     } finally {
-      await this.openButton.evaluate<void, HTMLElement>((button) => {
-        const guardedButton = button as HTMLElement & {
-          __agentPanelOpenGuard?: EventListener
-        }
-        const guard = guardedButton.__agentPanelOpenGuard
-        if (!guard) return
-        button.removeEventListener('click', guard, true)
-        delete guardedButton.__agentPanelOpenGuard
-      })
+      await this.openButton.evaluate(
+        (button, listener) =>
+          button.removeEventListener('click', listener, true),
+        guard
+      )
+      await guard.dispose()
     }
 
     // A click may be waiting on consent while aria-pressed remains false.
