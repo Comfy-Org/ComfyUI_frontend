@@ -29,7 +29,6 @@ const DROPPED_TAGS = new Set([
   'FORM',
   'NAV',
   'FOOTER',
-  'HEADER',
   'DIALOG',
   'SOURCE',
   'TRACK'
@@ -46,6 +45,7 @@ const BLOCK_TAGS = new Set([
   'DT',
   'FIGCAPTION',
   'FIGURE',
+  'HEADER',
   'MAIN',
   'P',
   'SECTION',
@@ -86,9 +86,15 @@ function tag(element: Element): string {
   return element.tagName.toUpperCase()
 }
 
+/** Only the site banner is chrome; a header inside main introduces the page. */
+function isBanner(element: Element): boolean {
+  return tag(element) === 'HEADER' && element.closest('main') === null
+}
+
 function isDropped(element: Element): boolean {
   return (
     DROPPED_TAGS.has(tag(element)) ||
+    isBanner(element) ||
     element.getAttribute('aria-hidden') === 'true' ||
     element.getAttribute('role') === 'status'
   )

@@ -23,10 +23,11 @@ const PAGE = `<!doctype html>
   <link rel="canonical" href="https://comfy.org/cli/">
 </head>
 <body>
+  <header><a href="/">Comfy home</a></header>
   <astro-island><nav><a href="/mcp/">Comfy MCP</a><a href="/cloud/">Comfy Cloud</a></nav></astro-island>
   <main>
     <section>
-      <h1>Drive ComfyUI from your terminal. <br>Or your agent's.</h1>
+      <header><h1>Drive ComfyUI from your terminal. <br>Or your agent's.</h1></header>
       <p>Generate from <a href="/cloud/">Comfy Cloud</a> or <a href="#setup">your own GPU</a> with <strong>comfy-cli</strong>.</p>
       <div aria-hidden="true"><p>Claude Code Codex Cursor</p></div>
       <div aria-hidden="true"><p>Claude Code Codex Cursor</p></div>
@@ -87,6 +88,7 @@ describe('htmlToTwin', () => {
       "# Drive ComfyUI from your terminal. Or your agent's."
     )
     expect(page.body).not.toContain('Comfy MCP')
+    expect(page.body).not.toContain('Comfy home')
     expect(page.body).not.toContain('Products')
     expect(page.body).not.toContain('window.track')
     expect(page.body).not.toContain('icon')
