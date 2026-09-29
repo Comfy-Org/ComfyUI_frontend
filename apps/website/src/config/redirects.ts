@@ -93,32 +93,41 @@ export function isInternalDestination(destination: string): boolean {
   return destination.startsWith('/')
 }
 
+const isPermanent = (row: SiteRedirect) => row.temporaryBecause === undefined
+
+const redirectsSlashForm = (row: SiteRedirect) =>
+  row.slashFormIsPageBecause === undefined
+
 export function toVercelRedirects(
   rows: readonly SiteRedirect[]
 ): VercelRedirect[] {
-  return rows.flatMap(
-    ({ source, destination, temporaryBecause, slashFormIsPageBecause }) =>
-      (slashFormIsPageBecause ? [source] : [source, `${source}/`]).map(
-        (form) => ({
-          source: form,
-          destination,
-          permanent: temporaryBecause === undefined
-        })
-      )
+  return rows.flatMap((row) =>
+    (redirectsSlashForm(row)
+      ? [row.source, `${row.source}/`]
+      : [row.source]
+    ).map((source) => ({
+      source,
+      destination: row.destination,
+      permanent: isPermanent(row)
+    }))
   )
 }
 
 /**
  * Astro renders each entry as a meta-refresh stub so `astro preview` and the
  * e2e suite see the redirects; on Vercel the `vercel.json` rule answers first.
- * Astro cannot redirect off-site, so external rows live in `vercel.json` only.
+ * Astro cannot redirect off-site, and a stub for `/x` is the same file as a
+ * page at `/x/`, so those rows live in `vercel.json` only.
  */
 export const astroRedirects: Record<string, RedirectConfig> =
   Object.fromEntries(
     siteRedirects
-      .filter(({ destination }) => isInternalDestination(destination))
-      .map(({ source, destination, temporaryBecause }) => [
-        source,
-        { status: temporaryBecause ? 307 : 308, destination }
+      .filter(
+        (row) =>
+          isInternalDestination(row.destination) && redirectsSlashForm(row)
+      )
+      .map((row) => [
+        row.source,
+        { status: isPermanent(row) ? 308 : 307, destination: row.destination }
       ])
   )

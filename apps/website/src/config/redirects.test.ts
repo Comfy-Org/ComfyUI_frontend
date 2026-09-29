@@ -11,6 +11,7 @@ import {
   siteRedirects,
   toVercelRedirects
 } from './redirects'
+import { getRoutes } from './routes'
 
 const appDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
@@ -27,6 +28,9 @@ const vercelConfig = VercelConfigSchema.parse(
 const VERCEL_ROUTE_LIMIT = 2048
 
 const withoutSlash = (path: string) => path.replace(/\/$/, '')
+
+const en = getRoutes('en')
+const zh = getRoutes('zh-CN')
 
 describe('vercel.json redirects', () => {
   it('match the list in redirects.ts (run `pnpm --filter @comfyorg/website sync:redirects`)', () => {
@@ -54,7 +58,7 @@ describe('the redirect list', () => {
 
   it('writes sources as literal paths without a trailing slash', () => {
     expect(
-      sources.filter((source) => source.endsWith('/') || /[:*(]/.test(source))
+      sources.filter((source) => !/^(\/[A-Za-z0-9._-]+)+$/.test(source))
     ).toEqual([])
   })
 
@@ -87,9 +91,9 @@ describe('generated Vercel rules', () => {
     vercelRedirects.find((redirect) => redirect.source === source)
 
   it.for([
-    { source: '/minimax', destination: '/minimax-h3/' },
-    { source: '/zh-CN/minimax', destination: '/zh-CN/minimax-h3/' },
-    { source: '/cloud/enterprise', destination: '/enterprise/' },
+    { source: '/minimax', destination: `${en.minimax}/` },
+    { source: '/zh-CN/minimax', destination: `${zh.minimax}/` },
+    { source: '/cloud/enterprise', destination: `${en.enterprise}/` },
     { source: '/zh-CN/affiliates', destination: '/affiliates/' },
     {
       source: '/p/supported-models/t5xxl-fp8-e4m3fn-scaled',
@@ -129,7 +133,7 @@ describe('generated Vercel rules', () => {
     expect(find('/login/')).toBeUndefined()
   })
 
-  it.for(['/minimax-h3', '/enterprise', '/zh-CN/enterprise', '/pricing'])(
+  it.for([en.minimax, zh.minimax, en.enterprise, zh.enterprise, en.pricing])(
     'leaves the destination %s unredirected',
     (path) => {
       expect(find(path)).toBeUndefined()
@@ -139,10 +143,14 @@ describe('generated Vercel rules', () => {
 })
 
 describe('Astro redirects', () => {
-  it('cover every internal row, so local preview matches Vercel', () => {
+  it('cover every internal row whose slash form redirects', () => {
     expect(Object.keys(astroRedirects)).toEqual(
       siteRedirects
-        .filter(({ destination }) => isInternalDestination(destination))
+        .filter(
+          ({ destination, slashFormIsPageBecause }) =>
+            isInternalDestination(destination) &&
+            slashFormIsPageBecause === undefined
+        )
         .map(({ source }) => source)
     )
   })

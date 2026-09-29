@@ -2,6 +2,8 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { z } from 'zod'
+
 import { siteRedirects, toVercelRedirects } from '../src/config/redirects'
 
 const vercelJsonPath = join(
@@ -10,8 +12,11 @@ const vercelJsonPath = join(
   'vercel.json'
 )
 
-const config: Record<string, unknown> = JSON.parse(
-  readFileSync(vercelJsonPath, 'utf8')
+const config = z
+  .record(z.string(), z.unknown())
+  .parse(JSON.parse(readFileSync(vercelJsonPath, 'utf8')))
+z.object({ buildCommand: z.string(), redirects: z.array(z.unknown()) }).parse(
+  config
 )
 
 writeFileSync(
