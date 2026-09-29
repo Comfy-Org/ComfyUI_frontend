@@ -1127,6 +1127,10 @@ type BillingSucceeded = {
   outcome: 'success'
 }
 
+type BillingRecoveredSucceeded = BillingSucceeded & {
+  recovery_outcome?: 'late_success'
+}
+
 type BillingFailed = BillingFailure & {
   stage: 'failed'
   outcome: 'failure'
@@ -1141,11 +1145,6 @@ type BillingTimedOut = {
 type SubscriptionCheckoutBillingEvent = {
   operation: 'subscription_checkout'
   billing_op_id?: string
-  /**
-   * Identifies the checkout attempt this event belongs to, so terminals a
-   * client may emit more than once — a second tab reaching the same deadline,
-   * a reload — collapse to one attempt downstream.
-   */
   checkout_attempt_id?: string
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
@@ -1156,13 +1155,12 @@ type SubscriptionCheckoutBillingEvent = {
    * `started` event through to this terminal event.
    */
   duration_ms?: number
-  recovery_outcome?: 'late_success'
 } & (
   | BillingIntent
   | BillingCheckoutReceived<SubscribeResponse['status']>
   | BillingRequestSent
   | BillingStarted
-  | BillingSucceeded
+  | BillingRecoveredSucceeded
   | BillingFailed
   | BillingTimedOut
 )
@@ -1191,8 +1189,7 @@ type ResubscribeBillingEvent = {
   source: ResubscribeClickMetadata['source']
   checkout_attempt_id?: string
   payment_intent_source?: PaymentIntentSource
-  recovery_outcome?: 'late_success'
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (BillingStarted | BillingRecoveredSucceeded | BillingFailed)
 
 type TopupBillingEvent = {
   operation: 'topup'
@@ -1258,34 +1255,30 @@ export function getBillingTelemetryEventName(
 
 type BillingTelemetryPayload = Record<string, unknown>
 
-type BillingTelemetryField = BillingTelemetryEvent extends infer Event
-  ? Event extends BillingTelemetryEvent
-    ? keyof Event
-    : never
-  : never
+type KeysOfUnion<T> = T extends unknown ? keyof T : never
 
 type BillingPayloadField = Exclude<
-  BillingTelemetryField,
+  KeysOfUnion<BillingTelemetryEvent>,
   'operation' | 'stage' | 'outcome'
 >
 
 const BILLING_PAYLOAD_FIELD_HANDLING = {
+  checkout_status: 'required',
+  failure_category: 'required',
+  member_removal_count: 'required',
+  member_removal_failures: 'required',
+  operation_type: 'required',
+  source: 'required',
   billing_op_id: 'optional',
   checkout_attempt_id: 'optional',
-  tier: 'optional',
-  cycle: 'optional',
   checkout_type: 'optional',
-  payment_intent_source: 'optional',
-  error_code: 'optional',
-  target_tier: 'optional',
+  cycle: 'optional',
   duration_ms: 'optional',
-  operation_type: 'required',
-  checkout_status: 'required',
-  source: 'required',
-  failure_category: 'required',
+  error_code: 'optional',
+  payment_intent_source: 'optional',
   recovery_outcome: 'optional',
-  member_removal_count: 'required',
-  member_removal_failures: 'required'
+  target_tier: 'optional',
+  tier: 'optional'
 } as const satisfies Record<BillingPayloadField, 'optional' | 'required'>
 
 const OPTIONAL_BILLING_PAYLOAD_FIELDS = Object.entries(

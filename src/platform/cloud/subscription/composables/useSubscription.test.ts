@@ -919,7 +919,7 @@ describe('useSubscription', () => {
       expect(mockReportTelemetryError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'cloud_checkout_completion_missing',
+          errorType: 'failure_completing_cloud_checkout',
           context: expect.objectContaining({
             checkout_attempt_id: 'attempt-timeout',
             attempt_age_ms: expect.any(Number)
@@ -985,7 +985,7 @@ describe('useSubscription', () => {
       expect(mockReportTelemetryError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'cloud_checkout_completion_missing',
+          errorType: 'failure_completing_cloud_checkout',
           context: expect.objectContaining({
             checkout_attempt_id: 'attempt-plan-change-timeout'
           })
@@ -1147,7 +1147,7 @@ describe('useSubscription', () => {
       expect(mockReportTelemetryError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'cloud_checkout_completion_missing',
+          errorType: 'failure_completing_cloud_checkout',
           context: expect.objectContaining({
             checkout_attempt_id: 'attempt-wakeup'
           })
@@ -1358,17 +1358,17 @@ describe('useSubscription', () => {
         mockReportTelemetryError.mock.calls.map(
           ([, options]) => options.errorType
         )
-      ).toEqual(expect.arrayContaining(['cloud_checkout_recovery_unreachable']))
+      ).toEqual(expect.arrayContaining(['failure_recovering_cloud_checkout']))
       expect(
         mockReportTelemetryError.mock.calls.every(
           ([, options]) =>
-            options.errorType === 'cloud_checkout_recovery_unreachable'
+            options.errorType === 'failure_recovering_cloud_checkout'
         )
       ).toBe(true)
       expect(mockReportTelemetryError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'cloud_checkout_recovery_unreachable',
+          errorType: 'failure_recovering_cloud_checkout',
           context: expect.objectContaining({
             checkout_attempt_id: 'attempt-hung-deadline-refresh'
           })
@@ -1411,17 +1411,17 @@ describe('useSubscription', () => {
         mockReportTelemetryError.mock.calls.map(
           ([, options]) => options.errorType
         )
-      ).toEqual(expect.arrayContaining(['cloud_checkout_recovery_unreachable']))
+      ).toEqual(expect.arrayContaining(['failure_recovering_cloud_checkout']))
       expect(
         mockReportTelemetryError.mock.calls.every(
           ([, options]) =>
-            options.errorType === 'cloud_checkout_recovery_unreachable'
+            options.errorType === 'failure_recovering_cloud_checkout'
         )
       ).toBe(true)
       expect(mockReportTelemetryError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'cloud_checkout_recovery_unreachable',
+          errorType: 'failure_recovering_cloud_checkout',
           context: expect.objectContaining({
             checkout_attempt_id: 'attempt-hung-before-deadline'
           })
@@ -1458,7 +1458,7 @@ describe('useSubscription', () => {
       expect(mockReportTelemetryError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'cloud_checkout_recovery_unreachable'
+          errorType: 'failure_recovering_cloud_checkout'
         })
       )
       expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith(
@@ -1473,7 +1473,7 @@ describe('useSubscription', () => {
         mockReportTelemetryError.mock.calls.map(
           ([, options]) => options.errorType
         )
-      ).toEqual(['cloud_checkout_recovery_unreachable'])
+      ).toEqual(['failure_recovering_cloud_checkout'])
     })
 
     it('lets any reachable billing read clear a past network failure', async () => {
@@ -1508,7 +1508,7 @@ describe('useSubscription', () => {
       expect(mockReportTelemetryError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'cloud_checkout_completion_missing'
+          errorType: 'failure_completing_cloud_checkout'
         })
       )
     })
@@ -1567,7 +1567,7 @@ describe('useSubscription', () => {
       expect(mockReportTelemetryError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'cloud_checkout_recovery_unreachable'
+          errorType: 'failure_recovering_cloud_checkout'
         })
       )
     })

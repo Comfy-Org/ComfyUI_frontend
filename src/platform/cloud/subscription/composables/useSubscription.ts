@@ -275,7 +275,7 @@ function useSubscriptionInternal() {
     reportTelemetryError(
       new Error('Pending subscription checkout recovery timed out'),
       {
-        errorType: 'cloud_checkout_completion_missing',
+        errorType: 'failure_completing_cloud_checkout',
         context: {
           checkout_attempt_id: attempt.attempt_id,
           checkout_type: attempt.checkout_type,
@@ -635,7 +635,7 @@ function useSubscriptionInternal() {
         'Pending subscription checkout recovery could not reach billing'
       ),
       {
-        errorType: 'cloud_checkout_recovery_unreachable',
+        errorType: 'failure_recovering_cloud_checkout',
         context: {
           checkout_attempt_id: attempt.attempt_id,
           checkout_type: attempt.checkout_type,
