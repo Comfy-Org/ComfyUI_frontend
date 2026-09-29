@@ -9,6 +9,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const plans = ref<Plan[]>([])
 const currentPlanSlug = ref<string | null>(null)
@@ -16,17 +17,33 @@ const teamCreditStops = ref<TeamCreditStops | null>(null)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 let fetchPromise: Promise<void> | null = null
+let adoptedScopeKey: string | null = null
+
+function billingScopeKey(): string {
+  return useTeamWorkspaceStore().activeWorkspaceId ?? 'personal'
+}
 
 export function useBillingPlans() {
-  function adopt(response: BillingPlansResponse): void {
+  function adopt(response: BillingPlansResponse, scopeKey: string): void {
+    if (!Array.isArray(response.plans)) {
+      throw new TypeError('Billing plans response did not contain a plan list')
+    }
     plans.value = response.plans
     currentPlanSlug.value = response.current_plan_slug ?? null
     teamCreditStops.value = response.team_credit_stops ?? null
+    adoptedScopeKey = scopeKey
   }
 
   function fetchPlans(): Promise<void> {
     if (fetchPromise) return fetchPromise
 
+    const scopeKey = billingScopeKey()
+    if (adoptedScopeKey !== null && adoptedScopeKey !== scopeKey) {
+      plans.value = []
+      currentPlanSlug.value = null
+      teamCreditStops.value = null
+      adoptedScopeKey = null
+    }
     const rail = useBillingReadRail()
     // A superseded read publishes nothing, so whatever the last read left
     // behind has to survive this one: the catalog stays, and so does the
@@ -43,25 +60,26 @@ export function useBillingPlans() {
         // Undefined is a read the scope moved on under; the catalog it would
         // have published belongs to an actor this host has left.
         if (response === undefined) error.value = priorError
-        else adopt(response)
+        else if (billingScopeKey() === scopeKey) adopt(response, scopeKey)
       })
       .catch((err: unknown) => {
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch plans'
-        const hasCachedPlans = plans.value.length > 0
+        const hasCachedPlans =
+          adoptedScopeKey === scopeKey &&
+          Array.isArray(plans.value) &&
+          plans.value.length > 0
         reportError(err, {
           errorType: 'cloud_billing_plan_catalog_fallback',
           tags: {
             failure_kind: hasCachedPlans ? 'degraded' : 'caught_unexpected',
             feature_area: 'billing',
             has_cached_plans: hasCachedPlans,
-            operation: 'load',
-            outcome: hasCachedPlans ? 'recovered' : 'failed'
-          },
-          context: {
             has_team_credit_stops:
               Array.isArray(teamCreditStops.value?.stops) &&
-              teamCreditStops.value.stops.length > 0
+              teamCreditStops.value.stops.length > 0,
+            operation: 'load',
+            outcome: hasCachedPlans ? 'recovered' : 'failed'
           },
           level: hasCachedPlans ? 'warning' : 'error'
         })

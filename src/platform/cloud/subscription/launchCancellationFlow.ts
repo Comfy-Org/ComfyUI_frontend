@@ -30,9 +30,8 @@ async function prepareCancellationSession(
   )
   if (preparation.session) return preparation.session
 
-  const workspaceStillCurrent = isLaunchWorkspaceCurrent()
-  if (preparation.threw) {
-    if (!workspaceStillCurrent) {
+  if (!isLaunchWorkspaceCurrent()) {
+    if (preparation.threw) {
       reportError(preparation.error, {
         errorType: 'cloud_cancellation_vendor_fallback',
         tags: {
@@ -44,39 +43,48 @@ async function prepareCancellationSession(
         },
         level: 'warning'
       })
-      return null
     }
+    return null
+  }
 
-    try {
-      await showFallback()
+  try {
+    await showFallback()
+    if (preparation.threw) {
+      const workspaceStillCurrent = isLaunchWorkspaceCurrent()
       reportError(preparation.error, {
         errorType: 'cloud_cancellation_vendor_fallback',
         tags: {
           failure_kind: 'degraded',
           feature_area: 'billing',
           operation: 'load',
-          outcome: 'recovered',
-          workspace_still_current: true
+          outcome: workspaceStillCurrent ? 'recovered' : 'aborted',
+          workspace_still_current: workspaceStillCurrent
         },
         level: 'warning'
       })
-    } catch (fallbackError) {
-      reportError(fallbackError, {
-        errorType: 'cloud_cancellation_vendor_fallback',
-        tags: {
-          failure_kind: 'caught_unexpected',
-          feature_area: 'billing',
-          operation: 'load',
-          outcome: 'failed',
-          workspace_still_current: true
-        },
-        level: 'error'
-      })
-      throw fallbackError
     }
-    return null
+  } catch (fallbackError) {
+    const reportedError = preparation.threw
+      ? new Error(
+          getErrorMessage(fallbackError) ?? 'Cancellation fallback failed',
+          {
+            cause: preparation.error
+          }
+        )
+      : fallbackError
+    reportError(reportedError, {
+      errorType: 'cloud_cancellation_vendor_fallback',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'billing',
+        operation: 'load',
+        outcome: 'failed',
+        vendor_preparation_failed: preparation.threw,
+        workspace_still_current: isLaunchWorkspaceCurrent()
+      },
+      level: 'error'
+    })
   }
-  if (workspaceStillCurrent) await showFallback()
   return null
 }
 

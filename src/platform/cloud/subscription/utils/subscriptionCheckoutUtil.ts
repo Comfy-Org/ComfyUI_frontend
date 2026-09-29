@@ -20,6 +20,7 @@ import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFai
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
 import type { BillingCycle } from './subscriptionTierRank'
+import { loadCheckoutAttributionModule } from './checkoutAttributionLoader'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
 
@@ -42,8 +43,7 @@ const getCheckoutAttributionForCloud =
 
     let attributionModule
     try {
-      attributionModule =
-        await import('@/platform/telemetry/utils/checkoutAttribution')
+      attributionModule = await loadCheckoutAttributionModule()
     } catch (error) {
       return { ok: false, error, stage: 'module_load' }
     }

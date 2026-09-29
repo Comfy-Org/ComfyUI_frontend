@@ -296,6 +296,49 @@ describe('launchCancellationFlow', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('reports and contains a failed fallback in an unconfigured environment', async () => {
+    mocks.prepare.mockResolvedValueOnce(null)
+    const fallbackError = new Error('dialog chunk unavailable')
+
+    await expect(
+      launchCancellationFlow({
+        showFallback: vi.fn().mockRejectedValue(fallbackError)
+      })
+    ).resolves.toBeUndefined()
+
+    expect(reportError).toHaveBeenCalledWith(
+      fallbackError,
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          outcome: 'failed',
+          vendor_preparation_failed: false
+        }),
+        level: 'error'
+      })
+    )
+  })
+
+  it('records an abort when the workspace changes while fallback loads', async () => {
+    const preparationError = new Error('blocked by browser')
+    mocks.prepare.mockRejectedValueOnce(preparationError)
+
+    await launchCancellationFlow({
+      showFallback: vi.fn(async () => {
+        mocks.activeWorkspaceId = 'workspace-2'
+      })
+    })
+
+    expect(reportError).toHaveBeenCalledWith(
+      preparationError,
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          outcome: 'aborted',
+          workspace_still_current: false
+        })
+      })
+    )
+  })
+
   it('records an aborted fallback when the workspace changes during preparation', async () => {
     const preparationError = new Error('blocked by browser')
     mocks.prepare.mockImplementationOnce(async () => {
@@ -322,23 +365,28 @@ describe('launchCancellationFlow', () => {
     mocks.prepare.mockRejectedValueOnce(new Error('blocked by browser'))
     const fallbackError = new Error('dialog chunk unavailable')
 
-    await expect(
-      launchCancellationFlow({
-        showFallback: vi.fn().mockRejectedValue(fallbackError)
-      })
-    ).rejects.toBe(fallbackError)
-
-    expect(reportError).toHaveBeenLastCalledWith(fallbackError, {
-      errorType: 'cloud_cancellation_vendor_fallback',
-      tags: {
-        failure_kind: 'caught_unexpected',
-        feature_area: 'billing',
-        operation: 'load',
-        outcome: 'failed',
-        workspace_still_current: true
-      },
-      level: 'error'
+    await launchCancellationFlow({
+      showFallback: vi.fn().mockRejectedValue(fallbackError)
     })
+
+    expect(reportError).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        message: 'dialog chunk unavailable',
+        cause: expect.objectContaining({ message: 'blocked by browser' })
+      }),
+      {
+        errorType: 'cloud_cancellation_vendor_fallback',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'billing',
+          operation: 'load',
+          outcome: 'failed',
+          vendor_preparation_failed: true,
+          workspace_still_current: true
+        },
+        level: 'error'
+      }
+    )
   })
 
   it('falls back and records a failed cancel callback', async () => {

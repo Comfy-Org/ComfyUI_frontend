@@ -7,12 +7,11 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 
 const {
-  mockAttributionModuleFails,
   mockIsCloud,
   mockGetCheckoutAttribution,
+  mockLoadCheckoutAttributionModule,
   mockLocalStorage
 } = vi.hoisted(() => ({
-  mockAttributionModuleFails: { value: false },
   mockIsCloud: { value: true },
   mockGetCheckoutAttribution: vi.fn(() => ({
     ga_client_id: 'ga-client-id',
@@ -26,6 +25,7 @@ const {
     gbraid: 'gbraid-456',
     wbraid: 'wbraid-789'
   })),
+  mockLoadCheckoutAttributionModule: vi.fn(),
   mockLocalStorage: (() => {
     const store = new Map<string, string>()
 
@@ -66,17 +66,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(
-  import('@/platform/telemetry/utils/checkoutAttribution'),
-  () => ({
-    get getCheckoutAttribution() {
-      if (mockAttributionModuleFails.value) {
-        throw new Error('Failed to fetch dynamically imported module')
-      }
-      return mockGetCheckoutAttribution
-    }
-  })
-)
+vi.mock(import('./checkoutAttributionLoader'), () => ({
+  loadCheckoutAttributionModule: mockLoadCheckoutAttributionModule
+}))
 
 global.fetch = vi.fn()
 
@@ -109,6 +101,9 @@ beforeEach(() => {
 
 describe('performSubscriptionCheckout', () => {
   beforeEach(() => {
+    mockLoadCheckoutAttributionModule.mockResolvedValue({
+      getCheckoutAttribution: mockGetCheckoutAttribution
+    })
     setDistribution('cloud')
     mockIsCloud.value = true
     Object.assign(useAuthStore(), { userId: 'user-123' })
@@ -227,12 +222,10 @@ describe('performSubscriptionCheckout', () => {
       json: async () => ({ checkout_url: 'https://checkout.stripe.com/test' })
     } as Response)
 
-    mockAttributionModuleFails.value = true
-    try {
-      await performSubscriptionCheckout('pro', 'monthly')
-    } finally {
-      mockAttributionModuleFails.value = false
-    }
+    mockLoadCheckoutAttributionModule.mockRejectedValueOnce(
+      new Error('Failed to fetch dynamically imported module')
+    )
+    await performSubscriptionCheckout('pro', 'monthly')
 
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
@@ -241,6 +234,7 @@ describe('performSubscriptionCheckout', () => {
         tags: expect.objectContaining({ attribution_stage: 'module_load' })
       })
     )
+
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/customers/cloud-subscription-checkout/pro'),
       expect.objectContaining({ body: JSON.stringify({}) })

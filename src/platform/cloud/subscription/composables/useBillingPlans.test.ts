@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -10,6 +11,7 @@ vi.mock(import('@/platform/telemetry/reportError'))
 const railState = vi.hoisted(() => ({
   rail: null as { readPlans: ReturnType<typeof vi.fn> } | null
 }))
+const scopeState = vi.hoisted(() => ({ workspaceId: 'workspace-1' }))
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingReadRail'),
   () => ({ useBillingReadRail: () => railState.rail })
@@ -43,6 +45,12 @@ describe('useBillingPlans', () => {
   beforeEach(() => {
     vi.resetModules()
     railState.rail = null
+    scopeState.workspaceId = 'workspace-1'
+    vi.spyOn(
+      useTeamWorkspaceStore(),
+      'activeWorkspaceId',
+      'get'
+    ).mockImplementation(() => scopeState.workspaceId)
   })
 
   describe('fetchPlans', () => {
@@ -168,11 +176,9 @@ describe('useBillingPlans', () => {
           failure_kind: 'caught_unexpected',
           feature_area: 'billing',
           has_cached_plans: false,
+          has_team_credit_stops: false,
           operation: 'load',
           outcome: 'failed'
-        },
-        context: {
-          has_team_credit_stops: false
         },
         level: 'error'
       })
@@ -207,10 +213,10 @@ describe('useBillingPlans', () => {
       expect(reportError).toHaveBeenLastCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          tags: expect.objectContaining({ outcome: 'recovered' }),
-          context: {
-            has_team_credit_stops: true
-          }
+          tags: expect.objectContaining({
+            has_team_credit_stops: true,
+            outcome: 'recovered'
+          })
         })
       )
     })
@@ -224,6 +230,49 @@ describe('useBillingPlans', () => {
       await fetchPlans()
 
       expect(error.value).toBe('Failed to fetch plans')
+    })
+
+    it('reports a malformed plan list without throwing from the fallback', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
+        plans: undefined
+      } as never)
+
+      const { fetchPlans, plans } = useBillingPlans()
+      await expect(fetchPlans()).resolves.toBeUndefined()
+
+      expect(plans.value).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(TypeError),
+        expect.objectContaining({
+          tags: expect.objectContaining({ outcome: 'failed' }),
+          level: 'error'
+        })
+      )
+    })
+
+    it('does not treat another workspace catalog as a recovered fallback', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      vi.mocked(workspaceApi.getBillingPlans)
+        .mockResolvedValueOnce({ plans: [buildPlan()] })
+        .mockRejectedValueOnce(new Error('network down'))
+      const { fetchPlans, plans } = useBillingPlans()
+
+      await fetchPlans()
+      scopeState.workspaceId = 'workspace-2'
+      await fetchPlans()
+
+      expect(plans.value).toEqual([])
+      expect(reportError).toHaveBeenLastCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            has_cached_plans: false,
+            outcome: 'failed'
+          }),
+          level: 'error'
+        })
+      )
     })
 
     it('clears previous error state when a new fetch succeeds', async () => {
