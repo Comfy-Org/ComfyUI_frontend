@@ -145,6 +145,7 @@ export function createBillingRouter(
   leave: (href: string) => void = leaveForHost
 ) {
   const router = createRouter({ history, routes })
+  let latestNavigation = 0
 
   function recordUnknownReturn(): boolean {
     recordBillingEntry({ status: 'error', code: 'UNKNOWN_RETURN_TARGET' })
@@ -165,11 +166,18 @@ export function createBillingRouter(
     return true
   }
 
-  /** The tab stays unbound to the link's workspace until the flag answers. */
+  /**
+   * The tab stays unbound to the link's workspace until the flag answers, and
+   * an answer that arrives after a newer navigation started acts on nothing.
+   */
   function readPlanless(entry: BillingEntry): boolean | Promise<boolean> {
     const kept = fullPageKeepsPlanless()
     if (kept === false) return sendToHost(entry)
-    return kept.then((full) => (full ? admitEntry(entry) : sendToHost(entry)))
+    const navigation = latestNavigation
+    return kept.then((full) => {
+      if (navigation !== latestNavigation) return false
+      return full ? admitEntry(entry) : sendToHost(entry)
+    })
   }
 
   function readEntry(fullPath: string): boolean | Promise<boolean> {
@@ -185,6 +193,7 @@ export function createBillingRouter(
   }
 
   router.beforeEach(async (to) => {
+    latestNavigation += 1
     if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)
     else if (to.path !== SIGN_IN_PATH && !(await readEntry(to.fullPath)))
       return false
