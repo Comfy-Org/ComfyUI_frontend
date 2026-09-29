@@ -1,10 +1,13 @@
-import type { SubscriptionCommandResult } from '@comfyorg/account-core/billing'
+import type {
+  BillingOperationState,
+  SubscriptionCommandResult
+} from '@comfyorg/account-core/billing'
 import {
   matchesServerCode,
   projectPaymentStep
 } from '@comfyorg/account-core/billing'
 
-import type { InlineOutcome } from '@/checkout/checkoutPage'
+import type { InlineOutcome, OperationOutcome } from '@/checkout/checkoutPage'
 
 /** The server refused the quote the customer consented to; re-price before asking again. */
 const STALE_QUOTE_SERVER_CODES = [
@@ -45,30 +48,45 @@ export function payVerdictOf(result: SubscriptionCommandResult): PayVerdict {
   }
   const { operation } = result.value
   if (operation === undefined) return { kind: 'settled' }
-  if (operation.phase === 'timed_out')
+  if (
+    operation.phase === 'timed_out' ||
+    operation.phase === 'reconciliation_needed'
+  )
     return { kind: 'outcome', outcome: { kind: 'reconciling' } }
+  const outcome = operationOutcomeOf(operation)
+  return outcome === undefined
+    ? { kind: 'settled' }
+    : { kind: 'outcome', outcome }
+}
+
+/**
+ * The card an operation's own verdict earns, through the shared projection.
+ * Nothing for one still pending or succeeded, and nothing for a poll budget
+ * that ran out or an operation parked for a human: an unknown outcome never
+ * gets the card (rule 12).
+ */
+export function operationOutcomeOf(
+  operation: BillingOperationState
+): OperationOutcome | undefined {
+  if (
+    operation.phase === 'timed_out' ||
+    operation.phase === 'superseded' ||
+    operation.phase === 'reconciliation_needed'
+  )
+    return undefined
   const projection = projectPaymentStep(operation, 'preview')
   const operationId = operation.id
   if (projection.step === 'processing_error')
-    return {
-      kind: 'outcome',
-      outcome: { kind: 'processing_error', operationId }
-    }
-  if (projection.step !== 'declined') return { kind: 'settled' }
+    return { kind: 'processing_error', operationId }
+  if (projection.step !== 'declined') return undefined
   if (projection.reasonKey === 'authentication_failed')
-    return {
-      kind: 'outcome',
-      outcome: { kind: 'not_completed', operationId }
-    }
+    return { kind: 'not_completed', operationId }
   return {
-    kind: 'outcome',
-    outcome: {
-      kind: 'declined',
-      operationId,
-      ...(projection.reasonKey === undefined
-        ? {}
-        : { reason: projection.reasonKey })
-    }
+    kind: 'declined',
+    operationId,
+    ...(projection.reasonKey === undefined
+      ? {}
+      : { reason: projection.reasonKey })
   }
 }
 
@@ -84,6 +102,15 @@ export function supportLinkFor(outcome: InlineOutcome): string {
       ? `Decline code: ${outcome.reason}`
       : undefined
   ].filter((fact) => fact !== undefined)
+  return supportMail(facts)
+}
+
+/** A mail to support that quotes the code an ending screen shows. */
+export function supportLinkWithCode(code: string | undefined): string {
+  return supportMail(code === undefined ? [] : [`Reference: ${code}`])
+}
+
+function supportMail(facts: readonly string[]): string {
   const query = new URLSearchParams({
     subject: 'Checkout payment',
     ...(facts.length === 0 ? {} : { body: facts.join('\n') })

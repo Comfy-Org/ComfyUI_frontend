@@ -1,9 +1,12 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import { nextTick, ref } from 'vue'
 import type { VNode } from 'vue'
 
 import type {
+  BillingOperationState,
+  BillingResult,
+  PendingBillingOperation,
   PreviewSubscribeResult,
   SavedPaymentMethod
 } from '@comfyorg/account-core/billing'
@@ -11,7 +14,12 @@ import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
-import { parseBillingEntry } from '@comfyorg/billing-contract'
+import {
+  parseBillingEntry,
+  parseReturnResult
+} from '@comfyorg/billing-contract'
+
+import type { OperationNotice } from '@/checkout/operationChannel'
 
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
@@ -23,7 +31,8 @@ import {
   createFakeBillingClient,
   failedOperation,
   pendingOperation,
-  previewOf
+  previewOf,
+  succeededOperation
 } from '@/test/fakeBillingClient'
 import FullPageCheckoutView from '@/views/FullPageCheckoutView.vue'
 
@@ -51,6 +60,41 @@ vi.mock(import('@/entry/workspaceBinding'), () => ({
   bindEntryWorkspace: () => false
 }))
 
+/** The cross-tab channel, held so a test can play a sibling tab. */
+const siblings = vi.hoisted(() => ({
+  scope: undefined as { uid: string; workspaceId: string } | undefined,
+  listeners: new Set<(notice: OperationNotice) => void>(),
+  published: [] as OperationNotice[],
+  closed: 0,
+  nudge(notice: OperationNotice) {
+    for (const listener of this.listeners) listener(notice)
+  },
+  reset() {
+    this.scope = undefined
+    this.listeners.clear()
+    this.published = []
+    this.closed = 0
+  }
+}))
+
+vi.mock(import('@/checkout/operationChannel'), () => ({
+  createOperationChannel: (uid: string, workspaceId: string) => {
+    siblings.scope = { uid, workspaceId }
+    return {
+      publish: (notice: OperationNotice) => {
+        siblings.published.push(notice)
+      },
+      subscribe: (listener: (notice: OperationNotice) => void) => {
+        siblings.listeners.add(listener)
+        return () => siblings.listeners.delete(listener)
+      },
+      close: () => {
+        siblings.closed += 1
+      }
+    }
+  }
+}))
+
 const SESSION: AccountCredential = {
   token: 'jwt-1',
   permissions: [],
@@ -75,7 +119,8 @@ vi.mock(import('@/session/billingWebSession'), async () => {
 /** The provider form is covered in its package; here it reports phases and hands back a token. */
 const form = vi.hoisted(() => ({
   mounts: 0,
-  emit: (() => {}) as (event: string, payload: unknown) => void
+  emit: (() => {}) as (event: string, ...payload: unknown[]) => void,
+  locked: (): boolean => false
 }))
 
 vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
@@ -85,21 +130,23 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
       name: 'StripePaymentForm',
       props: {
         canSubmit: { type: Boolean, default: true },
-        isLoading: { type: Boolean, default: false }
+        isLoading: { type: Boolean, default: false },
+        locked: { type: Boolean, default: false }
       },
       emits: ['confirm', 'phase'],
       setup(
-        props: { canSubmit: boolean; isLoading: boolean },
+        props: { canSubmit: boolean; isLoading: boolean; locked: boolean },
         {
           emit,
           slots
         }: {
-          emit: (event: string, payload: unknown) => void
+          emit: (event: string, ...payload: unknown[]) => void
           slots: { submit?: (slotProps: Record<string, unknown>) => VNode[] }
         }
       ) {
         form.mounts += 1
         form.emit = emit
+        form.locked = () => props.locked
         return () =>
           h(
             'div',
@@ -201,7 +248,7 @@ describe('FullPageCheckoutView', () => {
         value: previewOf({ transition_type: 'upgrade' })
       }
     })
-    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await screen.findByText('Upgrade to Creator Plan · Acme Team')
 
     expect(form.mounts).toBe(0)
     await userEvent.click(payButton())
@@ -281,19 +328,26 @@ describe('FullPageCheckoutView', () => {
     expect(payButton()).toBeDisabled()
   })
 
-  it('locks Pay once an operation is in flight, so a second click cannot charge twice', async () => {
+  it('leaves the form for the waiting state once money is in flight, so a second click cannot charge twice', async () => {
     const fake = await renderCheckout({
       preview: {
         status: 'ok',
         value: previewOf({ transition_type: 'upgrade' })
       }
     })
-    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await screen.findByText('Upgrade to Creator Plan · Acme Team')
     expect(payButton()).toBeEnabled()
 
     fake.publishOperation(pendingOperation())
 
-    await waitFor(() => expect(payButton()).toBeDisabled())
+    await screen.findByTestId('checkout-waiting')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "This payment is already processing and can't be canceled."
+    )
+    expect(payButton()).toBeDisabled()
+    expect(
+      screen.getByText('Upgrade to Creator Plan · Acme Team')
+    ).toBeInTheDocument()
   })
 
   it.for<{
@@ -321,10 +375,13 @@ describe('FullPageCheckoutView', () => {
       await renderCheckout(options, arrange)
 
       expect(
-        await screen.findByText(
-          "We couldn't reach the billing service. Please try again."
-        )
+        await screen.findByRole('heading', {
+          name: "Couldn't load your checkout"
+        })
       ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'REQUEST_FAILED'
+      )
       expect(
         screen.queryByRole('button', { name: 'Pay and subscribe' })
       ).not.toBeInTheDocument()
@@ -335,10 +392,12 @@ describe('FullPageCheckoutView', () => {
     await renderCheckout({ capabilities: {} })
 
     expect(
-      await screen.findByRole('heading', {
-        name: "You can't subscribe from this account"
-      })
+      await screen.findByRole('heading', { name: 'Checkout not available' })
     ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'UNSPECIFIED'
+    )
+    expect(screen.getByRole('link', { name: 'Contact support' })).toBeVisible()
     expect(
       screen.queryByRole('button', { name: 'Pay and subscribe' })
     ).not.toBeInTheDocument()
@@ -371,6 +430,101 @@ describe('FullPageCheckoutView', () => {
 
     expect(assign).toHaveBeenCalledWith(href)
   })
+
+  it.for<{ name: string; serverCode: string; heading: string }>([
+    {
+      name: 'a plan the catalog lacks is Plan not available',
+      serverCode: 'INVALID_PLAN',
+      heading: "This plan isn't available"
+    },
+    {
+      name: 'any other refused quote is a load failure',
+      serverCode: 'TRANSITION_NOT_ALLOWED',
+      heading: "Couldn't load your checkout"
+    }
+  ])('$name', async ({ serverCode, heading }) => {
+    await renderCheckout({
+      preview: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverCode: readBillingErrorCode({ code: serverCode, message: 'no' })
+      }
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: heading })
+    ).toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+  })
+
+  it.for<{
+    name: string
+    path: string
+    options: FakeBillingClientOptions
+    code: string
+    plans: string
+  }>([
+    {
+      name: 'a retired plan',
+      path: CHECKOUT_PATH,
+      options: {
+        preview: {
+          status: 'error',
+          code: 'REQUEST_FAILED',
+          httpStatus: 400,
+          serverCode: readBillingErrorCode({
+            code: 'INVALID_PLAN',
+            message: 'no'
+          })
+        }
+      },
+      code: 'PLAN_NOT_FOUND',
+      plans: 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+    },
+    {
+      name: 'a team plan named without its commit stop',
+      path: '/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=team_per_credit_monthly',
+      options: {
+        preview: {
+          status: 'ok',
+          value: previewOf({
+            new_plan: { ...previewOf().new_plan, tier: 'TEAM' }
+          })
+        }
+      },
+      code: 'CHECKOUT_LINK_INVALID',
+      plans: 'https://testcloud.comfy.org/?pricing=team&workspace=ws-team'
+    },
+    {
+      name: 'a link the contract cannot read',
+      path: '/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator/monthly',
+      options: {},
+      code: 'CHECKOUT_LINK_INVALID',
+      plans: 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+    }
+  ])(
+    '$name is Plan not available, coded for support, and View plans opens the live catalog',
+    async ({ path, options, code, plans }) => {
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      const fake = await renderCheckout(options, () => {}, path)
+
+      expect(
+        await screen.findByRole('heading', {
+          name: "This plan isn't available"
+        })
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(code)
+      expect(form.mounts).toBe(0)
+      expect(fake.subscribe).not.toHaveBeenCalled()
+
+      await userEvent.click(screen.getByRole('button', { name: 'View plans' }))
+
+      expect(assign).toHaveBeenCalledWith(plans)
+    }
+  )
 })
 
 const VISA: SavedPaymentMethod = {
@@ -617,24 +771,179 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     }
   )
 
-  it.for<{ name: string; code: 'OPERATION_ALREADY_PENDING' | 'CONFLICT' }>([
-    { name: 'an operation already pending', code: 'OPERATION_ALREADY_PENDING' },
-    { name: 'a server conflict', code: 'CONFLICT' }
+  it.for<{
+    name: string
+    code: 'OPERATION_ALREADY_PENDING' | 'CONFLICT'
+    found: BillingOperationState
+    lands: string
+    pay: 'disabled' | 'absent'
+  }>([
+    {
+      name: 'an operation already pending, still in flight',
+      code: 'OPERATION_ALREADY_PENDING',
+      found: pendingOperation('op_elsewhere'),
+      lands: "This payment is already processing and can't be canceled.",
+      pay: 'disabled'
+    },
+    {
+      name: 'a server conflict over a payment that went through',
+      code: 'CONFLICT',
+      found: succeededOperation('op_elsewhere'),
+      lands: 'Already completed',
+      pay: 'absent'
+    }
   ])(
-    'never shows a decline for $name, and keeps Pay locked',
-    async ({ code }) => {
+    'never shows a decline for $name: it re-reads the operation and lands on it',
+    async ({ code, found, lands, pay }) => {
       const fake = await payReady({ subscribe: { status: 'error', code } })
+      fake.recover.mockImplementationOnce(async () => {
+        fake.publishOperation(found)
+        return { status: 'ok', value: found }
+      })
 
       form.emit('confirm', 'ctoken_1')
 
-      await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
-      await waitFor(() => expect(payButton()).toBeDisabled())
+      expect(await screen.findByText(lands)).toBeInTheDocument()
+      expect(fake.subscribe).toHaveBeenCalledOnce()
+      expect(fake.recover).toHaveBeenCalledTimes(2)
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      const button = screen.queryByRole('button', { name: 'Pay and subscribe' })
+      if (pay === 'absent') expect(button).not.toBeInTheDocument()
+      else expect(button).toBeDisabled()
       expect(
         screen.queryByRole('link', { name: 'Contact support' })
       ).not.toBeInTheDocument()
     }
   )
+
+  it('frees Pay again when the collision re-reads as nothing pending', async () => {
+    const fake = await payReady({
+      subscribe: { status: 'error', code: 'OPERATION_ALREADY_PENDING' }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    await waitFor(() => expect(fake.recover).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    expect(form.mounts).toBe(1)
+  })
+
+  it("names the plan and the workspace once this page's own Pay goes through", async () => {
+    const fake = await payReady({
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_mine') }
+      }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Your plan for Acme Team has been successfully updated.')
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
+      'Creator$28.00 USD / mo'
+    )
+    expect(screen.queryByTestId('checkout-ending-code')).not.toBeInTheDocument()
+    expect(fake.subscribe).toHaveBeenCalledOnce()
+  })
+
+  describe('Close', () => {
+    const SETTLED: FakeBillingClientOptions = {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_mine') }
+      }
+    }
+
+    afterEach(() => {
+      Reflect.deleteProperty(window, 'opener')
+    })
+
+    it('goes back to return_to with the outcome and reference when no script opened the tab', async () => {
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      const close = vi.spyOn(window, 'close').mockImplementation(() => {})
+      await payReady(SETTLED)
+      form.emit('confirm', 'ctoken_1')
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Close' })
+      )
+
+      expect(close).not.toHaveBeenCalled()
+      expect(assign).toHaveBeenCalledOnce()
+      expect(parseReturnResult(String(assign.mock.calls[0][0]))).toEqual({
+        result: 'success',
+        reference: 'op_mine'
+      })
+    })
+
+    it("goes to the workspace's Plan & Credits settings when this family has no destination for return_to", async () => {
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      await renderCheckout(
+        SETTLED,
+        () => {},
+        '/v1/checkout?product=comfyui&return_to=platform_account&plan=creator_monthly'
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+      await waitFor(() => expect(payButton()).toBeEnabled())
+      form.emit('confirm', 'ctoken_1')
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Close' })
+      )
+
+      expect(assign).toHaveBeenCalledWith(
+        'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+      )
+    })
+
+    it('closes a tab a script opened, and navigates nowhere', async () => {
+      Object.defineProperty(window, 'opener', {
+        value: {},
+        configurable: true
+      })
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      const close = vi.spyOn(window, 'close').mockImplementation(() => {})
+      await payReady(SETTLED)
+      form.emit('confirm', 'ctoken_1')
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Close' })
+      )
+
+      expect(close).toHaveBeenCalledOnce()
+      expect(assign).not.toHaveBeenCalled()
+    })
+  })
+
+  it('lands on the terminal for a plan the server activated with no operation to follow', async () => {
+    await renderCheckout({
+      preview: {
+        status: 'ok',
+        value: previewOf({ transition_type: 'upgrade' })
+      },
+      subscribe: { status: 'ok', value: { phase: 'succeeded' } }
+    })
+    await screen.findByText('Upgrade to Creator Plan · Acme Team')
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    await userEvent.click(payButton())
+
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+  })
 
   it('re-prices an expired quote and says so, without charging', async () => {
     const fake = await payReady({
@@ -660,6 +969,9 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
     expect(form.mounts).toBe(1)
     expect(payButton()).toBeEnabled()
+    expect(
+      screen.queryByRole('link', { name: 'Contact support' })
+    ).not.toBeInTheDocument()
   })
 
   it('553-9297: a plan change on a plan set to end asks to keep it; Pay without the tick sends nothing, with it sends the consent', async () => {
@@ -683,7 +995,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
         cancel_at: '2026-07-28T00:00:00.000Z'
       }
     })
-    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await screen.findByText('Upgrade to Creator Plan · Acme Team')
 
     expect(
       await screen.findByText('Your plan was set to end on July 28, 2026')
@@ -768,7 +1080,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       subscribe: { status: 'error', code: 'REACTIVATION_CONFIRMATION_REQUIRED' }
     }
   ])(
-    'leaves no Pay over the refused price when re-quoting $name fails',
+    'leaves no Pay over the refused price when re-quoting $name fails, and Try again prices again in place',
     async ({ subscribe }) => {
       const fake = await payReady({ subscribe })
       fake.previewSubscribe.mockResolvedValueOnce({
@@ -779,15 +1091,879 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       form.emit('confirm', 'ctoken_1')
 
       expect(
-        await screen.findByText(
-          "We couldn't reach the billing service. Please try again."
-        )
+        await screen.findByRole('heading', {
+          name: "Couldn't load your checkout"
+        })
       ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'REQUEST_FAILED'
+      )
       expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
       expect(fake.subscribe).toHaveBeenCalledOnce()
       expect(
         screen.queryByRole('button', { name: 'Pay and subscribe' })
       ).not.toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+      expect(
+        await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      ).toBeInTheDocument()
+      expect(fake.previewSubscribe).toHaveBeenCalledTimes(3)
+      expect(fake.subscribe).toHaveBeenCalledOnce()
     }
   )
+})
+
+const waitingStatus = () => screen.findByTestId('checkout-waiting')
+
+const settlingOperation = (id: string): PendingBillingOperation => ({
+  ...pendingOperation(id),
+  authenticationState: 'processing',
+  serverPhase: 'in_progress'
+})
+
+/** Every read the capture needs has answered by the next macrotask. */
+const capturePromisesFlushed = () =>
+  new Promise((resolve) => setTimeout(resolve))
+
+describe('FullPageCheckoutView mount reconciliation', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
+  it('holds the skeleton until reconciliation answers, even with the quote in hand', async () => {
+    let answerRecovery: (
+      result: BillingResult<BillingOperationState | undefined>
+    ) => void = () => {}
+    await renderCheckout({}, (fake) =>
+      fake.recover.mockImplementationOnce(
+        () => new Promise((resolve) => (answerRecovery = resolve))
+      )
+    )
+    await waitFor(() => expect(screen.getByText('Loading…')).toBeVisible())
+    await capturePromisesFlushed()
+
+    expect(
+      screen.queryByText('Subscribe to Creator Plan · Acme Team')
+    ).not.toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+    expect(payButton()).toBeDisabled()
+
+    answerRecovery({ status: 'ok', value: undefined })
+
+    expect(
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    ).toBeInTheDocument()
+    expect(form.mounts).toBe(1)
+  })
+
+  it('renders the waiting state, never a form, for money already in flight, and follows it to Already completed', async () => {
+    const fake = await renderCheckout({
+      recover: { status: 'ok', value: pendingOperation('op_reloaded') }
+    })
+
+    await waitingStatus()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "This payment is already processing and can't be canceled."
+    )
+    expect(
+      screen.getByText('Subscribe to Creator Plan · Acme Team')
+    ).toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+    expect(payButton()).toBeDisabled()
+
+    fake.publishOperation(succeededOperation('op_reloaded'))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Already completed' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "This payment for Acme Team already went through. You won't be charged again."
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'op_reloaded'
+    )
+    expect(screen.queryByTestId('checkout-ending-plan')).not.toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+  })
+
+  it.for<{
+    name: string
+    serverPhase: 'awaiting_invoice_payment' | 'in_progress'
+  }>([
+    {
+      name: 'an invoice awaiting payment',
+      serverPhase: 'awaiting_invoice_payment'
+    },
+    { name: 'a charge in progress', serverPhase: 'in_progress' }
+  ])('treats $name as money in flight', async ({ serverPhase }) => {
+    await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: { ...pendingOperation(), serverPhase }
+      }
+    })
+
+    expect(await waitingStatus()).toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+  })
+
+  it('renders capture with Pay live for an operation parked on a payment method (rule 4)', async () => {
+    const fake = await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: {
+          ...pendingOperation('op_parked'),
+          serverPhase: 'awaiting_payment_method'
+        }
+      }
+    })
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    expect(screen.queryByTestId('checkout-waiting')).not.toBeInTheDocument()
+    form.emit('confirm', 'ctoken_1')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+  })
+
+  it('opens capture on the card of a recovered operation that already declined', async () => {
+    await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: failedOperation('insufficient_funds', 'op_declined_elsewhere')
+      }
+    })
+
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent('Payment declined')
+    expect(card).toHaveTextContent('Reported issue: Insufficient funds')
+    expect(
+      screen.getByRole('link', { name: 'Contact support' }).getAttribute('href')
+    ).toContain('op_declined_elsewhere')
+    expect(form.mounts).toBe(1)
+  })
+
+  it('lands on Already completed for a payment the server already settled', async () => {
+    await renderCheckout({
+      recover: { status: 'ok', value: succeededOperation('op_done') }
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Already completed' })
+    ).toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+  })
+
+  it('resolves a fresh capture, on its card, when the awaited operation declines', async () => {
+    const fake = await renderCheckout({
+      recover: { status: 'ok', value: pendingOperation('op_awaited') }
+    })
+    await waitingStatus()
+
+    fake.publishOperation(failedOperation('card_declined', 'op_awaited'))
+
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent('Payment declined')
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(form.mounts).toBe(1)
+  })
+
+  it('says so instead of a form when the recovery itself fails, and Try again resolves again in place', async () => {
+    const fake = await renderCheckout({
+      recover: { status: 'error', code: 'REQUEST_FAILED' }
+    })
+
+    expect(
+      await screen.findByRole('heading', {
+        name: "Couldn't load your checkout"
+      })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'REQUEST_FAILED'
+    )
+    expect(form.mounts).toBe(0)
+
+    fake.recover.mockResolvedValue({ status: 'ok', value: undefined })
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    ).toBeInTheDocument()
+    expect(fake.recover).toHaveBeenCalledTimes(2)
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(form.mounts).toBe(1)
+  })
+
+  it('renders Payment in progress for a capture the bank is still settling, then follows it to a card-less success', async () => {
+    const fake = await renderCheckout({
+      recover: { status: 'ok', value: settlingOperation('op_bank') }
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Payment in progress' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'op_bank'
+    )
+    expect(screen.getByRole('link', { name: 'Contact support' })).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Close' })
+    ).not.toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+
+    fake.publishOperation({
+      ...settlingOperation('op_bank'),
+      authenticationState: 'succeeded'
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Payment received' })
+    ).toBeInTheDocument()
+
+    fake.publishOperation(succeededOperation('op_bank'))
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+    expect(fake.subscribe).not.toHaveBeenCalled()
+  })
+
+  it.for<{ name: string; watched: PendingBillingOperation; heading: string }>([
+    {
+      name: 'a settling capture keeps Payment in progress',
+      watched: settlingOperation('op_lapsed'),
+      heading: 'Payment in progress'
+    },
+    {
+      name: 'money still being verified says it could not confirm',
+      watched: pendingOperation('op_lapsed'),
+      heading: "We couldn't confirm your payment"
+    }
+  ])(
+    'follows a watch whose poll budget ran out afresh: $name',
+    async ({ watched, heading }) => {
+      const fake = await renderCheckout({
+        recover: { status: 'ok', value: watched }
+      })
+      await waitFor(() => expect(fake.recover).toHaveBeenCalledOnce())
+
+      fake.publishOperation({
+        ...succeededOperation('op_lapsed'),
+        phase: 'timed_out'
+      })
+
+      expect(
+        await screen.findByRole('heading', { name: heading })
+      ).toBeInTheDocument()
+      await waitFor(() => expect(fake.recover).toHaveBeenCalledTimes(2))
+      expect(form.mounts).toBe(0)
+    }
+  )
+})
+
+function pageShow(persisted: boolean): Event {
+  const event = new Event('pageshow')
+  Object.defineProperty(event, 'persisted', { value: persisted })
+  return event
+}
+
+describe('FullPageCheckoutView re-reconciliation', () => {
+  beforeEach(() => {
+    form.mounts = 0
+    siblings.reset()
+  })
+
+  it('re-reads the operation when the page is restored from the back-forward cache, and lands on what it finds', async () => {
+    const fake = await payReady()
+    fake.recover.mockImplementationOnce(async () => {
+      fake.publishOperation(pendingOperation('op_moved_on'))
+      return { status: 'ok', value: pendingOperation('op_moved_on') }
+    })
+
+    window.dispatchEvent(pageShow(true))
+
+    expect(await waitingStatus()).toBeInTheDocument()
+    expect(fake.recover).toHaveBeenCalledTimes(2)
+    expect(payButton()).toBeDisabled()
+  })
+
+  it('leaves a fresh navigation alone', async () => {
+    const fake = await payReady()
+
+    window.dispatchEvent(pageShow(false))
+    await nextTick()
+
+    expect(fake.recover).toHaveBeenCalledOnce()
+    expect(payButton()).toBeEnabled()
+  })
+
+  it('lets the newest reconciliation win over a slower, older one', async () => {
+    let answerFirst: (
+      result: BillingResult<BillingOperationState | undefined>
+    ) => void = () => {}
+    const fake = await renderCheckout({}, (fake) =>
+      fake.recover.mockImplementationOnce(
+        () => new Promise((resolve) => (answerFirst = resolve))
+      )
+    )
+    await waitFor(() => expect(fake.recover).toHaveBeenCalledOnce())
+    fake.recover.mockImplementationOnce(async () => {
+      fake.publishOperation(pendingOperation('op_newer'))
+      return { status: 'ok', value: pendingOperation('op_newer') }
+    })
+
+    window.dispatchEvent(pageShow(true))
+    await waitingStatus()
+    answerFirst({ status: 'ok', value: undefined })
+    await capturePromisesFlushed()
+
+    expect(screen.getByTestId('checkout-waiting')).toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+  })
+
+  it('listens on a channel scoped to the signed-in user and the workspace, and lets go on unmount', async () => {
+    await renderQuoted()
+
+    expect(siblings.scope).toEqual({ uid: 'uid-1', workspaceId: 'ws-team' })
+    expect(siblings.listeners.size).toBe(1)
+
+    cleanup()
+
+    expect(siblings.listeners.size).toBe(0)
+    expect(siblings.closed).toBe(1)
+  })
+
+  it("re-reads the server on a sibling tab's nudge, trusting nothing in the notice itself", async () => {
+    const fake = await payReady()
+    fake.recover.mockImplementationOnce(async () => {
+      fake.publishOperation(succeededOperation('op_from_server'))
+      return { status: 'ok', value: succeededOperation('op_from_server') }
+    })
+
+    siblings.nudge({
+      workspaceId: 'ws-team',
+      operationId: 'op_claimed_by_notice',
+      kind: 'settled'
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Already completed' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'op_from_server'
+    )
+    expect(fake.recover).toHaveBeenCalledTimes(2)
+  })
+
+  it('tells sibling tabs when its own Pay starts an operation and when it settles, once each', async () => {
+    const fake = await payReady({
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_mine') }
+      }
+    })
+    fake.subscribe.mockImplementationOnce(async () => {
+      fake.publishOperation(pendingOperation('op_mine'))
+      await nextTick()
+      fake.publishOperation({
+        ...pendingOperation('op_mine'),
+        serverPhase: 'in_progress'
+      })
+      await nextTick()
+      fake.publishOperation(succeededOperation('op_mine'))
+      return {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_mine') }
+      }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    await screen.findByRole('heading', { name: "You're all set" })
+    expect(siblings.published).toEqual([
+      { workspaceId: 'ws-team', operationId: 'op_mine', kind: 'started' },
+      { workspaceId: 'ws-team', operationId: 'op_mine', kind: 'settled' }
+    ])
+  })
+
+  it('never announces an operation it only heard about', async () => {
+    const fake = await renderCheckout({
+      recover: { status: 'ok', value: pendingOperation('op_theirs') }
+    })
+    await waitingStatus()
+
+    fake.publishOperation(succeededOperation('op_theirs'))
+    await screen.findByRole('heading', { name: 'Already completed' })
+
+    expect(siblings.published).toEqual([])
+  })
+})
+
+const challengedOperation = (
+  id: string,
+  status: 'required' | 'in_progress'
+): PendingBillingOperation => ({
+  ...pendingOperation(id),
+  authenticationState: 'requires_action',
+  challenge: { clientSecret: 'cs', status }
+})
+
+const PHASE_A = 'Nothing has been charged yet.'
+const PHASE_B = "This payment is already processing and can't be canceled."
+const ALIPAY =
+  'Taking you to Alipay to finish paying. Nothing has been charged yet.'
+
+const footnote = () => screen.getByTestId('checkout-phase-footnote')
+
+/** A Pay whose subscribe never answers, so the page follows only what the lifecycle publishes. */
+async function payHeld(methodType?: string) {
+  const fake = await payReady()
+  fake.subscribe.mockImplementation(() => new Promise(() => {}))
+  form.emit('confirm', 'ctoken_1', methodType)
+  await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+  return fake
+}
+
+describe('FullPageCheckoutView payment authentication', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
+  it('locks its own Pay through a challenge, then processing, then lands on the success', async () => {
+    const fake = await payReady()
+    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    form.emit('confirm', 'ctoken_1')
+
+    fake.publishOperation(challengedOperation('op_3ds', 'in_progress'))
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_A))
+    expect(payButton()).toBeDisabled()
+    expect(payButton()).toHaveAttribute('aria-busy', 'true')
+    expect(form.locked()).toBe(true)
+    expect(
+      screen.queryByRole('button', { name: 'Back' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Cancel payment' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Continue verification' })
+    ).not.toBeInTheDocument()
+
+    fake.publishOperation({
+      ...pendingOperation('op_3ds'),
+      authenticationState: 'processing'
+    })
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_B))
+    expect(payButton()).toBeDisabled()
+
+    fake.publishOperation(succeededOperation('op_3ds'))
+
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+  })
+
+  it('makes the payment tabs inert while its own Pay is in flight', async () => {
+    const fake = await renderQuoted({
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    expect(screen.getByRole('tablist')).not.toHaveAttribute('inert')
+
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_B))
+    expect(screen.getByRole('tablist')).toHaveAttribute('inert')
+  })
+
+  it('puts a challenge the bank refused on its card and frees Pay for the retry, on the same form', async () => {
+    const fake = await payHeld()
+    fake.publishOperation(challengedOperation('op_3ds', 'in_progress'))
+    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_A))
+
+    fake.publishOperation({
+      ...pendingOperation('op_3ds'),
+      authenticationState: 'failed_retryable',
+      challenge: { clientSecret: 'cs', status: 'failed' }
+    })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Payment not completed'
+    )
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    expect(footnote()).toBeEmptyDOMElement()
+    expect(form.locked()).toBe(false)
+    expect(form.mounts).toBe(1)
+
+    form.emit('confirm', 'ctoken_2')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
+    expect(fake.subscribe.mock.calls[1][0]).toMatchObject({
+      confirmation_token: 'ctoken_2'
+    })
+  })
+
+  it.for<{
+    name: string
+    methodType: string
+    sent: string
+    challenged: string
+  }>([
+    {
+      name: 'an Alipay Pay names where it is going, even over a challenge',
+      methodType: 'alipay',
+      sent: ALIPAY,
+      challenged: ALIPAY
+    },
+    {
+      name: 'a card Pay is processing until the bank asks for a challenge',
+      methodType: 'card',
+      sent: PHASE_B,
+      challenged: PHASE_A
+    }
+  ])('$name', async ({ methodType, sent, challenged }) => {
+    const fake = await payHeld(methodType)
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(sent))
+
+    fake.publishOperation(challengedOperation('op_3ds', 'in_progress'))
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(challenged))
+  })
+
+  it('offers Continue verification after a reload mid-challenge, and drives the challenge again on click', async () => {
+    const fake = await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: challengedOperation('op_reload', 'required')
+      }
+    })
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_A))
+    expect(payButton()).toBeDisabled()
+    expect(
+      screen.queryByRole('button', { name: 'Back' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Cancel payment' })
+    ).not.toBeInTheDocument()
+    await capturePromisesFlushed()
+    fake.reportChallengeStarted.mockClear()
+    fake.reportChallengeSettled.mockClear()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Continue verification' })
+    )
+
+    expect(fake.reportChallengeStarted).toHaveBeenCalledExactlyOnceWith(
+      'op_reload'
+    )
+    await waitFor(() =>
+      expect(fake.reportChallengeSettled).toHaveBeenCalledExactlyOnceWith(
+        'op_reload',
+        'completed'
+      )
+    )
+  })
+
+  it('returns a challenge to this checkout, not the result page', async () => {
+    const fake = await payHeld()
+
+    const request = fake.subscribe.mock.calls[0][0]
+    expect(request.return_url).toContain('/v1/checkout')
+    expect(request.return_url).not.toContain('/v1/result')
+  })
+})
+
+const LAUNCH20_QUOTE = previewOf({
+  quote_id: 'q_promo',
+  amount_due_cents: 2240,
+  promotion_code: 'LAUNCH20',
+  discounts: [{ kind: 'promotion', code: 'LAUNCH20', amount_off_cents: 560 }]
+})
+
+function refusedWith(serverCode: string): PreviewSubscribeResult {
+  return {
+    status: 'error',
+    code: 'REQUEST_FAILED',
+    httpStatus: 400,
+    serverCode: readBillingErrorCode({ code: serverCode, message: 'refused' })
+  }
+}
+
+/** Answers a quote by the code it was asked for: none, LAUNCH20, or anything else. */
+function quotesByCode(
+  fake: FakeBillingClient,
+  launch20: PreviewSubscribeResult = { status: 'ok', value: LAUNCH20_QUOTE }
+) {
+  fake.previewSubscribe.mockImplementation(async ({ promotionCode }) => {
+    if (promotionCode === undefined)
+      return { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+    return promotionCode.toUpperCase() === 'LAUNCH20'
+      ? launch20
+      : refusedWith('PROMOTION_CODE_INVALID')
+  })
+}
+
+const promoField = () => screen.getByRole('textbox', { name: 'Promo code' })
+const orderSummary = () => screen.getByRole('region', { name: 'Order summary' })
+
+async function enterCode(code: string) {
+  await userEvent.click(screen.getByRole('button', { name: 'Add promo code' }))
+  await userEvent.type(promoField(), code)
+  await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+}
+
+describe('FullPageCheckoutView promo codes', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
+  it('applies a code: its row, its removable chip, the new total, and Pay binds the code', async () => {
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+
+    await enterCode('launch20')
+
+    expect(await screen.findByText('Promo code')).toBeInTheDocument()
+    expect(screen.getByText('−$5.60')).toBeInTheDocument()
+    expect(screen.getAllByText('$22.40')).toHaveLength(2)
+    expect(
+      screen.getByRole('button', { name: 'Remove LAUNCH20' })
+    ).toBeEnabled()
+    expect(
+      screen.queryByRole('button', { name: 'Add promo code' })
+    ).not.toBeInTheDocument()
+    expect(fake.previewSubscribe).toHaveBeenLastCalledWith(
+      expect.objectContaining({ promotionCode: 'launch20' }),
+      expect.anything()
+    )
+
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    form.emit('confirm', 'ctoken_1')
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledWith(
+        expect.objectContaining({
+          promotion_code: 'LAUNCH20',
+          quote_id: 'q_promo'
+        })
+      )
+    )
+  })
+
+  it('removing the chip re-quotes without the code', async () => {
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await enterCode('LAUNCH20')
+    await screen.findByText('−$5.60')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove LAUNCH20' })
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Add promo code' })
+    ).toBeInTheDocument()
+    expect(screen.queryByText('−$5.60')).not.toBeInTheDocument()
+    expect(screen.getAllByText('$28.00')).toHaveLength(2)
+    expect(fake.previewSubscribe).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ promotionCode: expect.anything() }),
+      expect.anything()
+    )
+  })
+
+  it('says an invalid code under the field, keeps it typed, and leaves the total alone', async () => {
+    await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    await enterCode('NOPE')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "This code isn't valid."
+    )
+    expect(promoField()).toHaveValue('NOPE')
+    expect(promoField()).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getAllByText('$28.00')).toHaveLength(2)
+    expect(screen.queryByText('Promo code')).not.toBeInTheDocument()
+  })
+
+  it('prefills a code from the URL without pricing it until Apply', async () => {
+    const fake = await renderCheckout(
+      {},
+      quotesByCode,
+      `${CHECKOUT_PATH}&promo=LAUNCH20`
+    )
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    expect(promoField()).toHaveValue('LAUNCH20')
+    expect(screen.getAllByText('$28.00')).toHaveLength(2)
+    expect(fake.previewSubscribe).toHaveBeenCalledOnce()
+    expect(fake.previewSubscribe).toHaveBeenCalledWith(
+      expect.not.objectContaining({ promotionCode: expect.anything() }),
+      expect.anything()
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+    expect(await screen.findByText('−$5.60')).toBeInTheDocument()
+  })
+
+  it('lets the URL prefill be removed before it is applied', async () => {
+    await renderCheckout({}, quotesByCode, `${CHECKOUT_PATH}&promo=LAUNCH20`)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Close promo code' })
+    )
+
+    expect(
+      screen.getByRole('button', { name: 'Add promo code' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('textbox', { name: 'Promo code' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('a code that lapsed before Pay: back to capture, chip gone, the expired card instead of a decline', async () => {
+    const fake = await renderCheckout(
+      {
+        subscribe: {
+          status: 'error',
+          code: 'REQUEST_FAILED',
+          serverCode: readBillingErrorCode({
+            code: 'SUBSCRIPTION_QUOTE_STALE',
+            message: 'stale'
+          })
+        }
+      },
+      quotesByCode
+    )
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await enterCode('LAUNCH20')
+    await screen.findByText('−$5.60')
+    quotesByCode(fake, refusedWith('PROMOTION_CODE_INVALID'))
+
+    form.emit('confirm', 'ctoken_1')
+
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent('Your promo code expired')
+    expect(card).toHaveTextContent(
+      'The LAUNCH20 code expired, so the total was updated.'
+    )
+    expect(card).not.toHaveTextContent('declined')
+    expect(
+      screen.queryByRole('button', { name: 'Remove LAUNCH20' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add promo code' })).toBeEnabled()
+    expect(screen.getAllByText('$28.00')).toHaveLength(2)
+    expect(payButton()).toBeEnabled()
+    expect(
+      screen.queryByRole('link', { name: 'Contact support' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('locks promo entry from the Pay click until the attempt resolves', async () => {
+    let settle: () => void = () => {}
+    const fake = await renderCheckout({}, (scripted) => {
+      quotesByCode(scripted)
+      scripted.subscribe.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            settle = () =>
+              resolve({
+                status: 'ok',
+                value: {
+                  phase: 'failed',
+                  operation: failedOperation('card_declined')
+                }
+              })
+          })
+      )
+    })
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    expect(
+      screen.getByRole('button', { name: 'Add promo code' })
+    ).toBeDisabled()
+
+    settle()
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Add promo code' })
+      ).toBeEnabled()
+    )
+  })
+
+  it('holds Pay while a code is being priced, so the old total cannot be charged', async () => {
+    let answer: (result: PreviewSubscribeResult) => void = () => {}
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    fake.previewSubscribe.mockImplementationOnce(
+      () => new Promise((resolve) => (answer = resolve))
+    )
+
+    await enterCode('LAUNCH20')
+
+    expect(payButton()).toBeDisabled()
+    expect(orderSummary()).toHaveAttribute('aria-busy', 'true')
+    answer({ status: 'ok', value: LAUNCH20_QUOTE })
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    expect(orderSummary()).toHaveAttribute('aria-busy', 'false')
+  })
+
+  it('keeps an applied code through a fresh capture after money it was watching declined', async () => {
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await enterCode('LAUNCH20')
+    await screen.findByText('−$5.60')
+    fake.recover.mockImplementationOnce(async () => {
+      fake.publishOperation(pendingOperation('op_watched'))
+      return { status: 'ok', value: pendingOperation('op_watched') }
+    })
+    window.dispatchEvent(pageShow(true))
+    await screen.findByTestId('checkout-waiting')
+
+    fake.publishOperation(failedOperation('card_declined', 'op_watched'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Payment declined'
+    )
+    expect(fake.previewSubscribe).toHaveBeenLastCalledWith(
+      expect.objectContaining({ promotionCode: 'LAUNCH20' }),
+      expect.anything()
+    )
+    expect(screen.getByText('−$5.60')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Remove LAUNCH20' })
+    ).toBeEnabled()
+  })
+
+  it('offers no promo entry on a change that charges nothing today', async () => {
+    await renderCheckout({
+      preview: {
+        status: 'ok',
+        value: previewOf({ transition_type: 'downgrade', is_immediate: false })
+      }
+    })
+    await screen.findByText(/Switch to Creator Plan/)
+
+    expect(
+      screen.queryByRole('button', { name: 'Add promo code' })
+    ).not.toBeInTheDocument()
+  })
 })

@@ -11,7 +11,7 @@ import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
 
 import type { CheckoutPage, PaymentTab } from '@/checkout/checkoutPage'
 import type { KeepSubscriptionCopy } from '@/checkout/keepSubscription'
-import { railView } from '@/checkout/checkoutPage'
+import { isLocked, railView, submitPhaseOf } from '@/checkout/checkoutPage'
 import type { PayContext } from '@/components/fullPage/CheckoutPayAction.vue'
 import CheckoutPayAction from '@/components/fullPage/CheckoutPayAction.vue'
 import PaymentFormError from '@/components/fullPage/PaymentFormError.vue'
@@ -30,15 +30,17 @@ const {
   publishableKey,
   canPay,
   submitting,
+  canCancel = false,
   failure,
   keepSubscription,
   savedMethods = []
 } = defineProps<{
-  page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' }>
+  page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
   charge?: CheckoutCharge
   publishableKey: string
   canPay: boolean
   submitting: boolean
+  canCancel?: boolean
   failure?: string
   /** The notice a plan set to end shows above Pay, worded for this quote. */
   keepSubscription?: KeepSubscriptionCopy
@@ -54,15 +56,21 @@ const emit = defineEmits<{
   selectTab: [tab: PaymentTab]
   confirmReactivation: [confirmed: boolean]
   consentMissing: []
+  cancel: []
+  continueVerification: []
 }>()
 
 const { t } = useI18n()
 
-/** A Pay that collided with another operation holds the skeleton until it is re-read. */
+const phase = computed(() => submitPhaseOf(page))
+const locked = computed(() => isLocked(page))
+
+const methodTypeOf = (id: string) =>
+  savedMethods.find((method) => method.id === id)?.type ?? ''
+
+/** A Pay that collided with another operation keeps the form, with Pay locked, until it is re-read. */
 const view = computed(() =>
-  page.kind === 'capture' && page.outcome?.kind !== 'reconciling'
-    ? railView(page.rail)
-    : undefined
+  page.kind === 'capture' ? railView(page.rail) : undefined
 )
 
 const payContext = computed<PayContext>(() => {
@@ -82,6 +90,9 @@ const payContext = computed<PayContext>(() => {
 const tabbed = computed(() =>
   view.value?.kind === 'tabs' ? view.value : undefined
 )
+
+/** The card form stays mounted behind the Saved tab; only the shown pay action carries the phase. */
+const formShown = computed(() => !tabbed.value || tabbed.value.tab === 'new')
 
 const elementLive = computed(() => {
   const current = view.value
@@ -104,7 +115,12 @@ const copy = computed<StripePaymentCopy>(() => ({
 <template>
   <section class="flex lg:w-1/2">
     <div class="flex w-full flex-col px-6 py-12 lg:max-w-lg lg:px-16">
-      <div v-if="!view" class="flex flex-col gap-6">
+      <div
+        v-if="!view"
+        class="flex flex-col gap-6"
+        :aria-busy="locked"
+        :data-testid="locked ? 'checkout-waiting' : undefined"
+      >
         <h3 class="m-0 text-base font-semibold text-base-foreground">
           {{ t('checkout.paymentMethod') }}
         </h3>
@@ -113,7 +129,14 @@ const copy = computed<StripePaymentCopy>(() => ({
           {{ t('checkout.billingAddress') }}
         </h4>
         <div class="h-84 rounded-lg bg-secondary-background-hover" />
-        <CheckoutPayAction disabled />
+        <CheckoutPayAction
+          disabled
+          :loading="locked"
+          :phase
+          :can-cancel="canCancel"
+          @cancel="emit('cancel')"
+          @continue-verification="emit('continueVerification')"
+        />
       </div>
       <PaymentFormError
         v-else-if="view.kind === 'column_error'"
@@ -128,8 +151,12 @@ const copy = computed<StripePaymentCopy>(() => ({
           v-bind="payContext"
           :disabled="!canPay"
           :loading="submitting"
+          :phase
+          :can-cancel="canCancel"
           @confirm-reactivation="emit('confirmReactivation', $event)"
           @consent-missing="emit('consentMissing')"
+          @cancel="emit('cancel')"
+          @continue-verification="emit('continueVerification')"
         />
       </form>
       <div v-else class="flex flex-col gap-6">
@@ -137,8 +164,14 @@ const copy = computed<StripePaymentCopy>(() => ({
           v-if="tabbed"
           :rail="tabbed"
           :methods="savedMethods"
+          :locked
           @select-tab="emit('selectTab', $event)"
-          @pay-saved="emit('pay', { savedMethodId: $event })"
+          @pay-saved="
+            emit('pay', {
+              savedMethodId: $event,
+              methodType: methodTypeOf($event)
+            })
+          "
           @retry-saved="emit('retrySaved')"
           @retry-element="emit('retryElement')"
         >
@@ -147,14 +180,18 @@ const copy = computed<StripePaymentCopy>(() => ({
               v-bind="payContext"
               :disabled="!canPay"
               :loading="submitting"
+              :phase
+              :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"
               @consent-missing="emit('consentMissing')"
+              @cancel="emit('cancel')"
+              @continue-verification="emit('continueVerification')"
             />
           </template>
         </PaymentTabsRail>
         <StripePaymentForm
           v-if="elementLive && charge"
-          v-show="!tabbed || tabbed.tab === 'new'"
+          v-show="formShown"
           :publishable-key
           :amount-cents="charge.amountCents"
           :currency="charge.currency"
@@ -162,16 +199,24 @@ const copy = computed<StripePaymentCopy>(() => ({
           :payment-method-configuration-id="charge.paymentMethodConfigurationId"
           :is-loading="submitting"
           :can-submit="canPay"
+          :locked
           @phase="emit('phase', $event)"
-          @confirm="emit('pay', { confirmationToken: $event })"
+          @confirm="
+            (token, methodType) =>
+              emit('pay', { confirmationToken: token, methodType })
+          "
         >
           <template #submit="{ disabled, loading }">
             <CheckoutPayAction
               v-bind="payContext"
               :disabled
               :loading
+              :phase="formShown ? phase : undefined"
+              :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"
               @consent-missing="emit('consentMissing')"
+              @cancel="emit('cancel')"
+              @continue-verification="emit('continueVerification')"
             />
           </template>
         </StripePaymentForm>
