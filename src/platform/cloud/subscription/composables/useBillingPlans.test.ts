@@ -1,12 +1,22 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { computed, nextTick } from 'vue'
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 /** Null is the legacy client; a rail is what the SDK store would hand back. */
 const railState = vi.hoisted(() => ({
   rail: null as { readPlans: ReturnType<typeof vi.fn> } | null
+}))
+const identityState = vi.hoisted(() => ({ userId: 'user-1' }))
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
+  useCurrentUser: () => ({
+    resolvedUserInfo: computed(() => ({ id: identityState.userId }))
+  })
 }))
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingReadRail'),
@@ -38,16 +48,13 @@ const importUseBillingPlans = async () => {
 }
 
 describe('useBillingPlans', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>
-
   beforeEach(() => {
     vi.resetModules()
     railState.rail = null
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    consoleErrorSpy.mockRestore()
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-1'
+    })
+    identityState.userId = 'user-1'
   })
 
   describe('fetchPlans', () => {
@@ -154,7 +161,150 @@ describe('useBillingPlans', () => {
       expect(isLoading.value).toBe(false)
     })
 
-    it('captures Error messages into error.value and logs to console', async () => {
+    it('starts a new read when the workspace changes during a fetch', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      let resolveFirst: (value: { plans: Plan[] }) => void = () => {}
+      vi.mocked(workspaceApi.getBillingPlans)
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveFirst = resolve
+            })
+        )
+        .mockResolvedValueOnce({
+          plans: [buildPlan({ slug: 'creator-monthly' })]
+        })
+      const { fetchPlans, plans } = useBillingPlans()
+
+      const first = fetchPlans()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      const second = fetchPlans()
+      await second
+      resolveFirst({ plans: [buildPlan()] })
+      await first
+
+      expect(workspaceApi.getBillingPlans).toHaveBeenCalledTimes(2)
+      expect(plans.value).toEqual([buildPlan({ slug: 'creator-monthly' })])
+    })
+
+    it('keeps a superseded caller pending until the live scope read settles', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      const resolvers: Array<(value: { plans: Plan[] }) => void> = []
+      vi.mocked(workspaceApi.getBillingPlans).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolvers.push(resolve)
+          })
+      )
+      const { fetchPlans } = useBillingPlans()
+
+      let firstResolved = false
+      const first = fetchPlans().then(() => {
+        firstResolved = true
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      const second = fetchPlans()
+      resolvers[0]({ plans: [buildPlan({ slug: 'old-scope' })] })
+      await Promise.resolve()
+      expect(firstResolved).toBe(false)
+
+      resolvers[1]({ plans: [buildPlan({ slug: 'current-scope' })] })
+      await Promise.all([first, second])
+      expect(firstResolved).toBe(true)
+    })
+
+    it('does not let an older read overwrite a newer read after returning to its scope', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      const resolvers: Array<(value: { plans: Plan[] }) => void> = []
+      vi.mocked(workspaceApi.getBillingPlans).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolvers.push(resolve)
+          })
+      )
+      const { fetchPlans, plans } = useBillingPlans()
+
+      const firstA = fetchPlans()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      const workspaceB = fetchPlans()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-1'
+      })
+      const secondA = fetchPlans()
+
+      resolvers[2]({ plans: [buildPlan({ slug: 'new-a' })] })
+      await secondA
+      resolvers[0]({ plans: [buildPlan({ slug: 'old-a' })] })
+      resolvers[1]({ plans: [buildPlan({ slug: 'workspace-b' })] })
+      await Promise.all([firstA, workspaceB])
+
+      expect(plans.value).toEqual([buildPlan({ slug: 'new-a' })])
+    })
+
+    it('follows each newly observed scope until the current catalog loads', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      const resolvers: Array<(value: { plans: Plan[] }) => void> = []
+      vi.mocked(workspaceApi.getBillingPlans).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolvers.push(resolve)
+          })
+      )
+      const { fetchPlans, plans } = useBillingPlans()
+
+      const pending = fetchPlans()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      resolvers[0]({ plans: [buildPlan({ slug: 'workspace-a' })] })
+      await vi.waitFor(() => expect(resolvers).toHaveLength(2))
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-3'
+      })
+      resolvers[1]({ plans: [buildPlan({ slug: 'workspace-b' })] })
+      await vi.waitFor(() => expect(resolvers).toHaveLength(3))
+      resolvers[2]({ plans: [buildPlan({ slug: 'workspace-c' })] })
+      await pending
+
+      expect(plans.value).toEqual([buildPlan({ slug: 'workspace-c' })])
+    })
+
+    it('reissues a read when its scope changes before the response arrives', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      let resolveFirst: (value: { plans: Plan[] }) => void = () => {}
+      vi.mocked(workspaceApi.getBillingPlans)
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveFirst = resolve
+            })
+        )
+        .mockResolvedValueOnce({
+          plans: [buildPlan({ slug: 'creator-monthly' })]
+        })
+      const { fetchPlans, plans, error } = useBillingPlans()
+
+      const first = fetchPlans()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      resolveFirst({ plans: [buildPlan()] })
+      await first
+
+      await vi.waitFor(() =>
+        expect(plans.value).toEqual([buildPlan({ slug: 'creator-monthly' })])
+      )
+      expect(workspaceApi.getBillingPlans).toHaveBeenCalledTimes(2)
+      expect(error.value).toBeNull()
+    })
+
+    it('reports an outright failure when no catalog was cached', async () => {
       const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
       vi.mocked(workspaceApi.getBillingPlans).mockRejectedValue(
         new Error('network down')
@@ -167,9 +317,54 @@ describe('useBillingPlans', () => {
       expect(error.value).toBe('network down')
       expect(isLoading.value).toBe(false)
       expect(plans.value).toEqual([])
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[useBillingPlans] Failed to fetch plans:',
-        expect.any(Error)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'cloud_billing_plan_catalog_fallback',
+        tags: {
+          failure_kind: 'degraded',
+          feature_area: 'billing',
+          has_cached_plans: false,
+          has_team_credit_stops: false,
+          operation: 'load',
+          outcome: 'failed'
+        },
+        level: 'warning'
+      })
+    })
+
+    it('reports a recovered fallback and preserves cached catalog state', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      const stops = {
+        default_stop_index: 0,
+        stops: [
+          {
+            id: 'team_700',
+            credits: 147_700,
+            monthly: { list_price_cents: 70_000, price_cents: 66_500 },
+            yearly: { list_price_cents: 70_000, price_cents: 63_000 }
+          }
+        ]
+      }
+      vi.mocked(workspaceApi.getBillingPlans)
+        .mockResolvedValueOnce({
+          plans: [buildPlan()],
+          team_credit_stops: stops
+        })
+        .mockRejectedValueOnce(new Error('network down'))
+
+      const { fetchPlans, plans, teamCreditStops } = useBillingPlans()
+      await fetchPlans()
+      await fetchPlans()
+
+      expect(plans.value).toEqual([buildPlan()])
+      expect(teamCreditStops.value).toEqual(stops)
+      expect(reportError).toHaveBeenLastCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            has_team_credit_stops: true,
+            outcome: 'recovered'
+          })
+        })
       )
     })
 
@@ -182,6 +377,141 @@ describe('useBillingPlans', () => {
       await fetchPlans()
 
       expect(error.value).toBe('Failed to fetch plans')
+    })
+
+    it('reports a malformed plan list without throwing from the fallback', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
+        plans: undefined
+      } as never)
+
+      const { fetchPlans, plans } = useBillingPlans()
+      await expect(fetchPlans()).resolves.toBeUndefined()
+
+      expect(plans.value).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(TypeError),
+        expect.objectContaining({
+          tags: expect.objectContaining({ outcome: 'failed' }),
+          level: 'warning'
+        })
+      )
+    })
+
+    it('rejects malformed team credit stops through the guarded fallback', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
+        plans: [buildPlan()],
+        team_credit_stops: { stops: { invalid: true } }
+      } as never)
+
+      const { fetchPlans, teamCreditStops } = useBillingPlans()
+      await expect(fetchPlans()).resolves.toBeUndefined()
+
+      expect(teamCreditStops.value).toBeNull()
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(TypeError),
+        expect.objectContaining({
+          tags: expect.objectContaining({ outcome: 'failed' }),
+          level: 'warning'
+        })
+      )
+    })
+
+    it('accepts an explicit null team credit stop catalog', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
+        plans: [buildPlan()],
+        team_credit_stops: null
+      } as never)
+
+      const { fetchPlans, plans, teamCreditStops } = useBillingPlans()
+      await fetchPlans()
+
+      expect(plans.value).toEqual([buildPlan()])
+      expect(teamCreditStops.value).toBeNull()
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('clears the adopted catalog as soon as its workspace changes', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
+        plans: [buildPlan()],
+        current_plan_slug: 'standard-monthly'
+      })
+      const { fetchPlans, plans, currentPlanSlug } = useBillingPlans()
+      await fetchPlans()
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      await nextTick()
+
+      expect(plans.value).toEqual([])
+      expect(currentPlanSlug.value).toBeNull()
+    })
+
+    it('does not reissue a superseded catalog read after sign-out', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      let resolveRead: (value: { plans: Plan[] }) => void = () => {}
+      vi.mocked(workspaceApi.getBillingPlans).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveRead = resolve
+          })
+      )
+      const { fetchPlans } = useBillingPlans()
+
+      const pending = fetchPlans()
+      identityState.userId = 'anonymous'
+      resolveRead({ plans: [buildPlan()] })
+      await pending
+
+      expect(workspaceApi.getBillingPlans).toHaveBeenCalledOnce()
+    })
+
+    it('does not treat another workspace catalog as a recovered fallback', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      vi.mocked(workspaceApi.getBillingPlans)
+        .mockResolvedValueOnce({ plans: [buildPlan()] })
+        .mockRejectedValueOnce(new Error('network down'))
+      const { fetchPlans, plans } = useBillingPlans()
+
+      await fetchPlans()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      await fetchPlans()
+
+      expect(plans.value).toEqual([])
+      expect(reportError).toHaveBeenLastCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            has_cached_plans: false,
+            outcome: 'failed'
+          }),
+          level: 'warning'
+        })
+      )
+    })
+
+    it('does not reuse a personal catalog after the signed-in user changes', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+      vi.mocked(workspaceApi.getBillingPlans)
+        .mockResolvedValueOnce({ plans: [buildPlan()] })
+        .mockResolvedValueOnce({
+          plans: [buildPlan({ slug: 'creator-monthly' })]
+        })
+      const { fetchPlans, plans } = useBillingPlans()
+
+      await fetchPlans()
+      identityState.userId = 'user-2'
+      await fetchPlans()
+
+      expect(plans.value).toEqual([buildPlan({ slug: 'creator-monthly' })])
+      expect(workspaceApi.getBillingPlans).toHaveBeenCalledTimes(2)
     })
 
     it('clears previous error state when a new fetch succeeds', async () => {
@@ -222,12 +552,18 @@ describe('useBillingPlans', () => {
       expect(currentPlanSlug.value).toBe('standard-monthly')
     })
 
-    it('keeps the previous catalog and reports nothing when the scope moved under the read', async () => {
+    it('does not spin on a superseded SDK read in the same scope', async () => {
       railState.rail = {
-        readPlans: vi.fn(async () => ({
-          status: 'error' as const,
-          code: 'SUPERSEDED' as const
-        }))
+        readPlans: vi
+          .fn()
+          .mockResolvedValueOnce({
+            status: 'error' as const,
+            code: 'SUPERSEDED' as const
+          })
+          .mockResolvedValueOnce({
+            status: 'ok' as const,
+            value: { plans: [buildPlan({ slug: 'replacement' })] }
+          })
       }
 
       const { useBillingPlans } = await importUseBillingPlans()
@@ -237,6 +573,7 @@ describe('useBillingPlans', () => {
       expect(plans.value).toEqual([])
       expect(error.value).toBeNull()
       expect(isLoading.value).toBe(false)
+      expect(railState.rail.readPlans).toHaveBeenCalledOnce()
     })
 
     it('leaves a reported failure standing when the next read is superseded', async () => {
@@ -248,6 +585,10 @@ describe('useBillingPlans', () => {
             code: 'REQUEST_FAILED' as const
           })
           .mockResolvedValueOnce({
+            status: 'error' as const,
+            code: 'SUPERSEDED' as const
+          })
+          .mockResolvedValue({
             status: 'error' as const,
             code: 'SUPERSEDED' as const
           })
@@ -266,6 +607,7 @@ describe('useBillingPlans', () => {
       // explanation for the empty one already on screen.
       expect(plans.value).toEqual([])
       expect(error.value).toBe(reported)
+      expect(railState.rail.readPlans).toHaveBeenCalledTimes(2)
     })
 
     it('surfaces a failed SDK read the way a failed client read is surfaced', async () => {
@@ -281,7 +623,13 @@ describe('useBillingPlans', () => {
       await fetchPlans()
 
       expect(error.value).toBe('REQUEST_FAILED')
-      expect(consoleErrorSpy).toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'cloud_billing_plan_catalog_fallback',
+          tags: expect.objectContaining({ outcome: 'failed' })
+        })
+      )
     })
   })
 
