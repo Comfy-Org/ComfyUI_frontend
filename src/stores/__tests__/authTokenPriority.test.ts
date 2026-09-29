@@ -440,14 +440,14 @@ describe('auth token priority chain', () => {
       expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
     })
 
-    it('getAuthHeader returns null when the unified token is empty and does not fall back', async () => {
+    it('getAuthHeader falls back to the Firebase token when the unified token is empty', async () => {
       mockUnifiedToken = null
       mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-key' })
 
       const header = await store.getAuthHeader()
 
-      expect(header).toBeNull()
-      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+      expect(header).toEqual({ Authorization: 'Bearer firebase-token' })
+      expect(mockUser.getIdToken).toHaveBeenCalled()
       expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
     })
 
