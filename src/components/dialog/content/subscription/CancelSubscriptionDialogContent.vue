@@ -82,6 +82,7 @@ const telemetry = useTelemetry()
 
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
+const didScopeAbort = ref(false)
 
 function cancellationMetadata() {
   return getSubscriptionCancellationMetadata({
@@ -101,7 +102,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (didCancelSucceed.value || isLoading.value) return
+  if (didCancelSucceed.value || didScopeAbort.value || isLoading.value) return
   telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
 })
 
@@ -126,10 +127,12 @@ function onClose() {
 
 async function onConfirmCancel() {
   if (!isScopeCurrent()) {
+    didScopeAbort.value = true
     toast.add({
       severity: 'warn',
       summary: t('subscription.cancelDialog.workspaceChanged')
     })
+    dialogStore.closeDialog({ key: 'cancel-subscription' })
     return
   }
   if (

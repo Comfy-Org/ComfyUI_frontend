@@ -172,9 +172,11 @@ describe('launchCancellationFlow', () => {
     mocks.billingType.value = 'legacy'
     mocks.activeWorkspaceId = null
     const openDialog = vi.fn()
+    let scopeCurrent: (() => boolean) | undefined
 
     await launchCancellationFlow({
       showFallback: vi.fn(async ({ isScopeCurrent } = {}) => {
+        scopeCurrent = isScopeCurrent
         await Promise.resolve()
         mocks.activeWorkspaceId = 'workspace-1'
         if (isScopeCurrent?.()) openDialog()
@@ -183,6 +185,8 @@ describe('launchCancellationFlow', () => {
     })
 
     expect(openDialog).toHaveBeenCalledOnce()
+    mocks.activeWorkspaceId = 'workspace-2'
+    expect(scopeCurrent?.()).toBe(false)
   })
 
   it('contains a failed native dialog for legacy billing', async () => {
@@ -380,6 +384,28 @@ describe('launchCancellationFlow', () => {
     )
   })
 
+  it('records an abort when a scoped fallback declines to open', async () => {
+    const preparationError = new Error('blocked by browser')
+    mocks.prepare.mockRejectedValueOnce(preparationError)
+
+    await launchCancellationFlow({
+      showFallback: vi.fn(async () => {
+        mocks.activeWorkspaceId = 'workspace-2'
+        return false
+      })
+    })
+
+    expect(reportError).toHaveBeenLastCalledWith(
+      preparationError,
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          outcome: 'aborted',
+          workspace_still_current: false
+        })
+      })
+    )
+  })
+
   it('lets a lazy fallback skip opening after the workspace changes', async () => {
     mocks.prepare.mockResolvedValueOnce(null)
     const openDialog = vi.fn()
@@ -452,7 +478,12 @@ describe('launchCancellationFlow', () => {
     expect(reportError).toHaveBeenLastCalledWith(
       expect.objectContaining({
         message: 'dialog chunk unavailable',
-        cause: expect.objectContaining({ message: 'blocked by browser' })
+        cause: expect.objectContaining({
+          fallbackError,
+          vendorError: expect.objectContaining({
+            message: 'blocked by browser'
+          })
+        })
       }),
       {
         errorType: 'cloud_cancellation_vendor_fallback',
@@ -485,12 +516,38 @@ describe('launchCancellationFlow', () => {
     expect(reportError).toHaveBeenLastCalledWith(
       expect.objectContaining({
         message: 'dialog chunk unavailable',
-        cause: providerError
+        cause: { fallbackError, vendorError: providerError }
       }),
       expect.objectContaining({
-        tags: expect.objectContaining({ vendor_preparation_failed: true }),
+        tags: expect.objectContaining({ vendor_preparation_failed: false }),
         level: 'error'
       })
+    )
+  })
+
+  it('contains a frozen fallback error while preserving both failures', async () => {
+    const providerError = new Error('provider unavailable')
+    const fallbackCause = new Error('chunk network failure')
+    const fallbackError = Object.freeze(
+      new Error('dialog chunk unavailable', { cause: fallbackCause })
+    )
+    mocks.prepare.mockResolvedValueOnce(
+      session(async () => {
+        throw providerError
+      })
+    )
+
+    await expect(
+      launchCancellationFlow({
+        showFallback: vi.fn().mockRejectedValue(fallbackError)
+      })
+    ).resolves.toBeUndefined()
+
+    expect(reportError).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        cause: { fallbackError, vendorError: providerError }
+      }),
+      expect.anything()
     )
   })
 

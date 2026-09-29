@@ -189,6 +189,34 @@ describe('useBillingPlans', () => {
       expect(plans.value).toEqual([buildPlan({ slug: 'creator-monthly' })])
     })
 
+    it('keeps a superseded caller pending until the live scope read settles', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      const resolvers: Array<(value: { plans: Plan[] }) => void> = []
+      vi.mocked(workspaceApi.getBillingPlans).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolvers.push(resolve)
+          })
+      )
+      const { fetchPlans } = useBillingPlans()
+
+      let firstResolved = false
+      const first = fetchPlans().then(() => {
+        firstResolved = true
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      const second = fetchPlans()
+      resolvers[0]({ plans: [buildPlan({ slug: 'old-scope' })] })
+      await Promise.resolve()
+      expect(firstResolved).toBe(false)
+
+      resolvers[1]({ plans: [buildPlan({ slug: 'current-scope' })] })
+      await Promise.all([first, second])
+      expect(firstResolved).toBe(true)
+    })
+
     it('does not let an older read overwrite a newer read after returning to its scope', async () => {
       const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
       const resolvers: Array<(value: { plans: Plan[] }) => void> = []
@@ -217,6 +245,34 @@ describe('useBillingPlans', () => {
       await Promise.all([firstA, workspaceB])
 
       expect(plans.value).toEqual([buildPlan({ slug: 'new-a' })])
+    })
+
+    it('follows each newly observed scope until the current catalog loads', async () => {
+      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      const resolvers: Array<(value: { plans: Plan[] }) => void> = []
+      vi.mocked(workspaceApi.getBillingPlans).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolvers.push(resolve)
+          })
+      )
+      const { fetchPlans, plans } = useBillingPlans()
+
+      const pending = fetchPlans()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      resolvers[0]({ plans: [buildPlan({ slug: 'workspace-a' })] })
+      await vi.waitFor(() => expect(resolvers).toHaveLength(2))
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-3'
+      })
+      resolvers[1]({ plans: [buildPlan({ slug: 'workspace-b' })] })
+      await vi.waitFor(() => expect(resolvers).toHaveLength(3))
+      resolvers[2]({ plans: [buildPlan({ slug: 'workspace-c' })] })
+      await pending
+
+      expect(plans.value).toEqual([buildPlan({ slug: 'workspace-c' })])
     })
 
     it('reissues a read when its scope changes before the response arrives', async () => {
@@ -496,21 +552,28 @@ describe('useBillingPlans', () => {
       expect(currentPlanSlug.value).toBe('standard-monthly')
     })
 
-    it('keeps the previous catalog and reports nothing when the scope moved under the read', async () => {
+    it('reissues a superseded SDK read and adopts its replacement', async () => {
       railState.rail = {
-        readPlans: vi.fn(async () => ({
-          status: 'error' as const,
-          code: 'SUPERSEDED' as const
-        }))
+        readPlans: vi
+          .fn()
+          .mockResolvedValueOnce({
+            status: 'error' as const,
+            code: 'SUPERSEDED' as const
+          })
+          .mockResolvedValueOnce({
+            status: 'ok' as const,
+            value: { plans: [buildPlan({ slug: 'replacement' })] }
+          })
       }
 
       const { useBillingPlans } = await importUseBillingPlans()
       const { fetchPlans, plans, error, isLoading } = useBillingPlans()
       await fetchPlans()
 
-      expect(plans.value).toEqual([])
+      expect(plans.value).toEqual([buildPlan({ slug: 'replacement' })])
       expect(error.value).toBeNull()
       expect(isLoading.value).toBe(false)
+      expect(railState.rail.readPlans).toHaveBeenCalledTimes(2)
     })
 
     it('leaves a reported failure standing when the next read is superseded', async () => {
@@ -520,6 +583,10 @@ describe('useBillingPlans', () => {
           .mockResolvedValueOnce({
             status: 'error' as const,
             code: 'REQUEST_FAILED' as const
+          })
+          .mockResolvedValueOnce({
+            status: 'error' as const,
+            code: 'SUPERSEDED' as const
           })
           .mockResolvedValueOnce({
             status: 'error' as const,

@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, effectScope, ref, watch } from 'vue'
 
 import type {
   BillingPlansResponse,
@@ -20,6 +20,7 @@ const error = ref<string | null>(null)
 let fetchPromise: Promise<void> | null = null
 let fetchPromiseScopeKey: string | null = null
 let adoptedScopeKey: string | null = null
+let isScopeWatcherInitialized = false
 
 function billingScopeKey(): string {
   const identity = useCurrentUser().resolvedUserInfo.value?.id ?? 'anonymous'
@@ -58,11 +59,19 @@ function reportCatalogFallback(err: unknown, hasCachedPlans: boolean): void {
   })
 }
 
-export function useBillingPlans() {
-  watch(billingScopeKey, (scopeKey) => {
-    if (adoptedScopeKey !== null && adoptedScopeKey !== scopeKey) clearCatalog()
-  })
+function ensureScopeWatcher(): void {
+  if (isScopeWatcherInitialized) return
+  isScopeWatcherInitialized = true
+  effectScope(true).run(() =>
+    watch(billingScopeKey, (scopeKey) => {
+      if (adoptedScopeKey !== null && adoptedScopeKey !== scopeKey)
+        clearCatalog()
+    })
+  )
+}
 
+export function useBillingPlans() {
+  ensureScopeWatcher()
   function adopt(response: BillingPlansResponse, scopeKey: string): void {
     if (!Array.isArray(response.plans)) {
       throw new TypeError('Billing plans response did not contain a plan list')
@@ -81,7 +90,7 @@ export function useBillingPlans() {
     adoptedScopeKey = scopeKey
   }
 
-  function fetchPlans(allowScopeReissue = true): Promise<void> {
+  function fetchPlans(reissuedScopes = new Set<string>()): Promise<void> {
     const scopeKey = billingScopeKey()
     if (fetchPromise && fetchPromiseScopeKey === scopeKey) return fetchPromise
     if (adoptedScopeKey !== null && adoptedScopeKey !== scopeKey) {
@@ -96,30 +105,34 @@ export function useBillingPlans() {
     isLoading.value = true
     error.value = null
 
-    const request = (
+    const reissueForCurrentScope = (): Promise<void> | undefined => {
+      error.value = priorError
+      const currentScope = billingScopeKey()
+      if (isAnonymousScope(currentScope) || reissuedScopes.has(currentScope))
+        return
+      const nextReissuedScopes = new Set(reissuedScopes).add(currentScope)
+      if (fetchPromise === request) {
+        fetchPromise = null
+        fetchPromiseScopeKey = null
+      }
+      return fetchPlans(nextReissuedScopes)
+    }
+
+    const request: Promise<void> = (
       rail ? readOnRail(rail.readPlans) : workspaceApi.getBillingPlans()
     )
       .then((response) => {
-        if (fetchPromise !== request) return
+        if (fetchPromise !== request) return fetchPromise ?? undefined
         // Undefined is a read the scope moved on under; the catalog it would
         // have published belongs to an actor this host has left.
-        if (response === undefined) error.value = priorError
+        if (response === undefined) return reissueForCurrentScope()
         else if (billingScopeKey() === scopeKey) adopt(response, scopeKey)
-        else {
-          error.value = priorError
-          const currentScope = billingScopeKey()
-          if (allowScopeReissue && !isAnonymousScope(currentScope))
-            return fetchPlans(false)
-        }
+        else return reissueForCurrentScope()
       })
       .catch((err: unknown) => {
-        if (fetchPromise !== request) return
+        if (fetchPromise !== request) return fetchPromise ?? undefined
         if (billingScopeKey() !== scopeKey) {
-          error.value = priorError
-          const currentScope = billingScopeKey()
-          if (allowScopeReissue && !isAnonymousScope(currentScope))
-            return fetchPlans(false)
-          return
+          return reissueForCurrentScope()
         }
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch plans'
@@ -134,7 +147,7 @@ export function useBillingPlans() {
 
     fetchPromise = request
     fetchPromiseScopeKey = scopeKey
-    return fetchPromise
+    return request
   }
 
   const monthlyPlans = computed(() =>

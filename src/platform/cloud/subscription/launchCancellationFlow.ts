@@ -14,47 +14,59 @@ interface CancellationFallbackOptions {
   isScopeCurrent?: () => boolean
 }
 
+type VendorFailure = {
+  stage: 'preparation' | 'session'
+  error: unknown
+}
+
+function reportFallbackFailure(
+  fallbackError: unknown,
+  vendorFailure: VendorFailure | undefined,
+  workspaceStillCurrent: boolean
+): void {
+  const reportedError = new Error(
+    getErrorMessage(fallbackError) ?? String(fallbackError),
+    {
+      cause: {
+        fallbackError,
+        vendorError: vendorFailure?.error
+      }
+    }
+  )
+  reportError(reportedError, {
+    errorType: 'cloud_cancellation_vendor_fallback',
+    tags: {
+      failure_kind: workspaceStillCurrent ? 'caught_unexpected' : 'degraded',
+      feature_area: 'billing',
+      operation: 'load',
+      outcome: workspaceStillCurrent ? 'failed' : 'aborted',
+      vendor_preparation_failed: vendorFailure?.stage === 'preparation',
+      workspace_still_current: workspaceStillCurrent
+    },
+    level: workspaceStillCurrent ? 'error' : 'warning'
+  })
+  if (!workspaceStillCurrent) return
+  useToastStore().add({
+    severity: 'error',
+    summary: t('subscription.cancelDialog.failed'),
+    life: 8000
+  })
+}
+
 async function showCancellationFallback(
   showFallback: LaunchCancellationFlowOptions['showFallback'],
   isScopeCurrent: () => boolean,
   options?: CancellationFallbackOptions,
-  vendorError?: unknown
-): Promise<boolean> {
-  if (!isScopeCurrent()) return false
+  vendorFailure?: VendorFailure
+): Promise<'shown' | 'declined' | 'failed'> {
+  if (!isScopeCurrent()) return 'declined'
   try {
     const opened = await showFallback({ ...options, isScopeCurrent })
-    return opened !== false
+    return opened === false ? 'declined' : 'shown'
   } catch (fallbackError) {
     const workspaceStillCurrent = isScopeCurrent()
-    const reportedError =
-      fallbackError instanceof Error
-        ? fallbackError
-        : new Error(String(fallbackError))
-    if (vendorError !== undefined)
-      Object.defineProperty(reportedError, 'cause', {
-        value: vendorError,
-        configurable: true
-      })
-    reportError(reportedError, {
-      errorType: 'cloud_cancellation_vendor_fallback',
-      tags: {
-        failure_kind: workspaceStillCurrent ? 'caught_unexpected' : 'degraded',
-        feature_area: 'billing',
-        operation: 'load',
-        outcome: workspaceStillCurrent ? 'failed' : 'aborted',
-        vendor_preparation_failed: vendorError !== undefined,
-        workspace_still_current: workspaceStillCurrent
-      },
-      level: workspaceStillCurrent ? 'error' : 'warning'
-    })
-    if (workspaceStillCurrent) {
-      useToastStore().add({
-        severity: 'error',
-        summary: t('subscription.cancelDialog.failed'),
-        life: 8000
-      })
-    }
-    return false
+    reportFallbackFailure(fallbackError, vendorFailure, workspaceStillCurrent)
+    return 'failed'
   }
 }
 
@@ -67,7 +79,8 @@ interface LaunchCancellationFlowOptions {
 
 async function prepareCancellationSession(
   isLaunchWorkspaceCurrent: () => boolean,
-  showFallback: LaunchCancellationFlowOptions['showFallback']
+  showFallback: LaunchCancellationFlowOptions['showFallback'],
+  sealScope: () => void
 ): Promise<ChurnkeySession | null> {
   const preparation = await prepareChurnkey().then(
     (session) => ({ session, threw: false as const }),
@@ -92,13 +105,16 @@ async function prepareCancellationSession(
     return null
   }
 
-  const fallbackShown = await showCancellationFallback(
+  const fallbackOutcome = await showCancellationFallback(
     showFallback,
     isLaunchWorkspaceCurrent,
     undefined,
-    preparation.threw ? preparation.error : undefined
+    preparation.threw
+      ? { stage: 'preparation', error: preparation.error }
+      : undefined
   )
-  if (preparation.threw && fallbackShown) {
+  sealScope()
+  if (preparation.threw && fallbackOutcome !== 'failed') {
     const workspaceStillCurrent = isLaunchWorkspaceCurrent()
     reportError(preparation.error, {
       errorType: 'cloud_cancellation_vendor_fallback',
@@ -106,7 +122,10 @@ async function prepareCancellationSession(
         failure_kind: 'degraded',
         feature_area: 'billing',
         operation: 'load',
-        outcome: workspaceStillCurrent ? 'recovered' : 'aborted',
+        outcome:
+          fallbackOutcome === 'shown' && workspaceStillCurrent
+            ? 'recovered'
+            : 'aborted',
         workspace_still_current: workspaceStillCurrent
       },
       level: 'warning'
@@ -121,22 +140,34 @@ export async function launchCancellationFlow({
 }: LaunchCancellationFlowOptions): Promise<void> {
   const billing = useBillingContext()
   const workspaceStore = useTeamWorkspaceStore()
-  const launchWorkspaceId = workspaceStore.activeWorkspaceId
-  const isLaunchWorkspaceCurrent = () =>
-    launchWorkspaceId === null ||
-    workspaceStore.activeWorkspaceId === launchWorkspaceId
+  let guardedWorkspaceId = workspaceStore.activeWorkspaceId
+  const launchWorkspaceId = guardedWorkspaceId
+  let allowInitialWorkspaceResolution = true
+  const isLaunchWorkspaceCurrent = () => {
+    const currentWorkspaceId = workspaceStore.activeWorkspaceId
+    if (guardedWorkspaceId === null && currentWorkspaceId !== null) {
+      if (!allowInitialWorkspaceResolution) return false
+      guardedWorkspaceId = currentWorkspaceId
+      return true
+    }
+    return currentWorkspaceId === guardedWorkspaceId
+  }
   if (
     billing.type.value !== 'workspace' ||
     !launchWorkspaceId ||
     workspaceStore.activeWorkspaceBillingRail !== 'stripe'
   ) {
     await showCancellationFallback(showFallback, isLaunchWorkspaceCurrent)
+    allowInitialWorkspaceResolution = false
     return
   }
 
   const session = await prepareCancellationSession(
     isLaunchWorkspaceCurrent,
-    showFallback
+    showFallback,
+    () => {
+      allowInitialWorkspaceResolution = false
+    }
   )
   if (!session) return
   if (!isLaunchWorkspaceCurrent()) return
@@ -204,7 +235,7 @@ export async function launchCancellationFlow({
       showFallback,
       isLaunchWorkspaceCurrent,
       { flowAlreadyOpened: true },
-      error
+      { stage: 'session', error }
     )
   }
 }

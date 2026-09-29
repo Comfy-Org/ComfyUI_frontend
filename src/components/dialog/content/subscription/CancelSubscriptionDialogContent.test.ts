@@ -199,7 +199,8 @@ describe('CancelSubscriptionDialogContent', () => {
 
     it('does not cancel when the workspace scope changed after opening', async () => {
       setSubscription(null)
-      renderComponent({ isScopeCurrent: () => false })
+      const closeDialog = vi.spyOn(useDialogStore(), 'closeDialog')
+      const view = renderComponent({ isScopeCurrent: () => false })
 
       await userEvent.click(
         screen.getByRole('button', { name: /^cancel subscription$/i })
@@ -212,6 +213,11 @@ describe('CancelSubscriptionDialogContent', () => {
           summary: 'Your active workspace changed. Switch back and try again.'
         })
       )
+      expect(closeDialog).toHaveBeenCalledWith({ key: 'cancel-subscription' })
+      view.unmount()
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).not.toHaveBeenCalledWith('abandoned', expect.anything())
     })
 
     it('tracks confirmed and failed with message-carrying rejection values', async () => {
