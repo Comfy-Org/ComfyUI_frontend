@@ -1,4 +1,4 @@
-import type { z } from 'zod'
+import { z } from 'zod'
 import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 
 export const FeaturesResponseSchema = zGetFeaturesResponse.extend({
