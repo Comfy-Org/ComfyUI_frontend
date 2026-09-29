@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises'
+
 import type { BrowserContext, Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
@@ -74,4 +76,23 @@ test('the workflow API tab opens with the key action and what it needs beside th
   const code = await frame(page.getByTestId('workflow-api-snippet'))
   expect(action.y).toBeLessThanOrEqual(code.y)
   expect(action.x).toBeGreaterThanOrEqual(code.x + code.width)
+})
+
+test('the workflow API tab downloads the API graph as JSON', async ({
+  page,
+  context
+}) => {
+  await allowWorkflows(context)
+  await page.goto(WORKFLOW_PATH)
+  await page.getByRole('tab', { name: 'API', exact: true }).click()
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: /Download the API graph/ }).click()
+  ])
+  expect(download.suggestedFilename()).toBe('remove-background-api.json')
+  const path = await download.path()
+  const graph = await readFile(path, 'utf8')
+  expect(Object.keys(JSON.parse(graph))).not.toHaveLength(0)
+  expect(graph).toContain('"class_type"')
 })
