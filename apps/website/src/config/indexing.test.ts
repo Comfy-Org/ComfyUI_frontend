@@ -3,8 +3,13 @@ import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 
+import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
 import { routeOf } from '../utils/hreflangRoutes'
-import { isExcludedFromSitemap, isNoindexPathname } from './indexing'
+import {
+  NOINDEX_ROUTES,
+  isExcludedFromSitemap,
+  isNoindexPathname
+} from './indexing'
 
 describe('indexing policy', () => {
   it('excludes render pages while keeping the public Models marketing routes', () => {
@@ -96,34 +101,65 @@ describe('indexing policy', () => {
   })
 })
 
-describe('pages that pass the noindex prop', () => {
-  const pagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'pages')
+const pagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'pages')
 
-  const astroFiles = (dir: string): string[] =>
-    readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-      const full = join(dir, entry.name)
-      if (entry.isDirectory()) return astroFiles(full)
-      return entry.name.endsWith('.astro') ? [full] : []
-    })
+const astroFiles = (dir: string): string[] =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name)
+    if (entry.isDirectory()) return astroFiles(full)
+    return entry.name.endsWith('.astro') ? [full] : []
+  })
 
-  const passesNoindex = (file: string) =>
-    /\snoindex(?=[\s/>=])/.test(
-      readFileSync(file, 'utf8').replace(/^---[\s\S]*?\n---/, '')
+const pageRoute = (file: string) =>
+  routeOf(`/src/pages/${relative(pagesDir, file).split(sep).join('/')}`)
+
+describe('pages that are noindex on their own', () => {
+  const isNoindexOnItsOwn = (file: string) => {
+    const source = readFileSync(file, 'utf8')
+    return (
+      /\bAuthLayout\b/.test(source) ||
+      /\snoindex(?=[\s/>=])/.test(source.replace(/^---[\s\S]*?\n---/, ''))
     )
+  }
 
   const routes = astroFiles(pagesDir)
-    .filter(passesNoindex)
-    .map((file) =>
-      routeOf(`/src/pages/${relative(pagesDir, file).split(sep).join('/')}`)
-    )
+    .filter(isNoindexOnItsOwn)
+    .map(pageRoute)
     .filter((route) => route !== '/404/')
 
-  it('finds the pages that set the prop', () => {
+  it('finds the pages that pass the prop or use AuthLayout', () => {
     expect(routes).toContain('/privacy-policy/')
     expect(routes).toContain('/comfy-agent/')
+    expect(routes).toContain('/login/')
   })
 
   it.for(routes)('lists %s in NOINDEX_ROUTES', (route) => {
     expect(isNoindexPathname(route)).toBe(true)
+  })
+})
+
+describe('NOINDEX_ROUTES', () => {
+  const toMatcher = (route: string) =>
+    new RegExp(
+      `^${route
+        .replace(/\/$/, '')
+        .split('/')
+        .map((segment) =>
+          segment.startsWith('[...')
+            ? '.+'
+            : segment.startsWith('[')
+              ? '[^/]+'
+              : segment.replace(/[.*+?^${}()|\\]/g, '\\$&')
+        )
+        .join('/')}$`
+    )
+
+  const builtRoutes = [
+    ...astroFiles(pagesDir).map(pageRoute),
+    ...modelsBuildRoutes(true).map(({ pattern }) => pattern)
+  ].map(toMatcher)
+
+  it.for(NOINDEX_ROUTES)('%s is a route this site builds', (route) => {
+    expect(builtRoutes.some((matcher) => matcher.test(route))).toBe(true)
   })
 })
