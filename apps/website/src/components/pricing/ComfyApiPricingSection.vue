@@ -1,11 +1,20 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
+import { computed } from 'vue'
+
+import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import PlatformPricingSection from '../../templates/platform/PricingSection.vue'
 import SectionHeader from '../common/SectionHeader.vue'
 import ComfyApiPlanLimitsSection from './ComfyApiPlanLimitsSection.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', showLearnMoreCta = false } = defineProps<{
+  locale?: Locale
+  /** Link to the dedicated Comfy API page — omit on that page itself. */
+  showLearnMoreCta?: boolean
+}>()
+
+const learnMoreHref = computed(() => getRoutes(locale).platformComfyApi)
 </script>
 
 <template>
@@ -18,6 +27,14 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700">
           {{ t('pricing.comfyApi.subtitle', locale) }}
+        </p>
+        <p v-if="showLearnMoreCta" class="mt-4 text-sm">
+          <a
+            :href="learnMoreHref"
+            class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+          >
+            {{ t('pricing.comfyApi.learnMore', locale) }}
+          </a>
         </p>
       </template>
     </SectionHeader>

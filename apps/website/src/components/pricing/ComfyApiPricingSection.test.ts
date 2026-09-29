@@ -28,4 +28,36 @@ describe('ComfyApiPricingSection', () => {
       screen.getAllByText(t('pricing.comfyApi.metric.releases', 'en')).length
     ).toBeGreaterThan(0)
   })
+
+  it('hides the Learn More CTA by default', () => {
+    render(ComfyApiPricingSection, { props: { locale: 'en' } })
+
+    expect(
+      screen.queryByRole('link', {
+        name: t('pricing.comfyApi.learnMore', 'en')
+      })
+    ).toBeNull()
+  })
+
+  it('links the Learn More CTA to the Comfy API page when shown', () => {
+    render(ComfyApiPricingSection, {
+      props: { locale: 'en', showLearnMoreCta: true }
+    })
+
+    expect(
+      screen.getByRole('link', { name: t('pricing.comfyApi.learnMore', 'en') })
+    ).toHaveAttribute('href', '/platform/comfy-api')
+  })
+
+  it('links the Learn More CTA to the localized Comfy API page for zh-CN', () => {
+    render(ComfyApiPricingSection, {
+      props: { locale: 'zh-CN', showLearnMoreCta: true }
+    })
+
+    expect(
+      screen.getByRole('link', {
+        name: t('pricing.comfyApi.learnMore', 'zh-CN')
+      })
+    ).toHaveAttribute('href', '/zh-CN/platform/comfy-api')
+  })
 })

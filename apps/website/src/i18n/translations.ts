@@ -9144,6 +9144,7 @@ Enterprise`
     en: 'Enterprise limits are determined by your contract.',
     'zh-CN': '企业版的限制由合同约定。'
   },
+  'pricing.comfyApi.learnMore': { en: 'Learn More', 'zh-CN': '了解更多' },
   'pricing.minimaxLicense.heading': {
     en: 'MiniMax license pricing',
     'zh-CN': 'MiniMax 许可定价'
