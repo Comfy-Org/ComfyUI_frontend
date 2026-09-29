@@ -15,6 +15,12 @@ const testState = vi.hoisted(() => ({
   cancelAnimationFrame: vi.fn()
 }))
 
+const { mockReportError } = vi.hoisted(() => ({ mockReportError: vi.fn() }))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
 function runNextAnimationFrame(): void {
   const nextEntry = testState.pendingFrames.entries().next().value
   if (!nextEntry) return
@@ -40,6 +46,7 @@ describe('useCanvasScheduler', () => {
     testState.pendingFrames.clear()
     testState.nextFrameId = 1
     testState.cancelAnimationFrame.mockReset()
+    mockReportError.mockReset()
 
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       const id = testState.nextFrameId++
@@ -173,10 +180,10 @@ describe('useCanvasScheduler', () => {
 
   it('continues executing remaining ops when one throws', async () => {
     const scheduler = await createScheduler()
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const first = vi.fn()
+    const error = new Error('op failed')
     const failing = vi.fn(() => {
-      throw new Error('op failed')
+      throw error
     })
     const third = vi.fn()
 
@@ -189,8 +196,14 @@ describe('useCanvasScheduler', () => {
     expect(first).toHaveBeenCalledOnce()
     expect(failing).toHaveBeenCalledOnce()
     expect(third).toHaveBeenCalledOnce()
-    expect(consoleSpy).toHaveBeenCalledOnce()
-    consoleSpy.mockRestore()
+    expect(mockReportError).toHaveBeenCalledWith(error, {
+      errorType: 'canvas_scheduled_operation_failed',
+      context: {
+        remainingInBatch: 1,
+        pendingQueue: 0,
+        canvasReady: true
+      }
+    })
   })
 
   it('auto-flushes queued ops when linearMode transitions to false', async () => {

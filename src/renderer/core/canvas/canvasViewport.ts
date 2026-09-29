@@ -37,11 +37,7 @@ function measureViewportFromElement(
   rawDpr?: number,
   prevGeneration?: number
 ): CanvasViewport {
-  const saved = { w: element.width, h: element.height }
-  element.width = element.height = NaN
   const { width, height } = element.getBoundingClientRect()
-  element.width = saved.w
-  element.height = saved.h
   return measureViewport(
     width,
     height,

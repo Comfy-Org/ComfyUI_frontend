@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   applyViewport,
-  measureViewport
+  measureViewport,
+  measureViewportFromElement
 } from '@/renderer/core/canvas/canvasViewport'
 
 function mockCanvas(
@@ -64,6 +65,25 @@ describe('measureViewport', () => {
   it('returns a frozen object', () => {
     const vp = measureViewport(800, 600, 2, 0)
     expect(Object.isFrozen(vp)).toBe(true)
+  })
+})
+
+describe('measureViewportFromElement', () => {
+  it('measures before mutating a canvas without CSS dimensions', () => {
+    const canvas = {
+      width: 800,
+      height: 600,
+      getBoundingClientRect() {
+        return { width: this.width, height: this.height }
+      }
+    } as HTMLCanvasElement
+
+    const viewport = measureViewportFromElement(canvas, 2, 0)
+
+    expect(viewport.cssWidth).toBe(800)
+    expect(viewport.cssHeight).toBe(600)
+    expect(canvas.width).toBe(800)
+    expect(canvas.height).toBe(600)
   })
 })
 
