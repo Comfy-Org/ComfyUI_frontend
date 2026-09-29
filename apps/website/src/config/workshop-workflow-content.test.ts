@@ -6,6 +6,7 @@ import { assert, describe, expect, it } from 'vitest'
 import displayJson from '../content/workshop-display.json'
 import categories from '../content/workshop-workflow-categories.json'
 import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
+import { modelTitle } from '../lib/workshop/model-title'
 import { workshopExecutionId } from './models-catalogue'
 import { initialWorkshopPageState } from './workshop-page-state'
 import { urlUploadField, validateForm } from './workshop-playground'
@@ -266,8 +267,8 @@ describe('curated workflow pages', () => {
 })
 
 describe('workshop pages', () => {
-  it('gives every model and workflow page its own display name', () => {
-    const names = workshopPages.map((model) => model.name)
-    expect(new Set(names).size).toBe(names.length)
+  it('gives every model and workflow page its own title', () => {
+    const titles = workshopPages.map((model) => modelTitle(model))
+    expect(new Set(titles).size).toBe(titles.length)
   })
 })
