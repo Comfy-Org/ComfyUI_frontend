@@ -81,18 +81,25 @@ describe('workflow API snippets', () => {
   )
 
   it.for([...workflowDetailsBySlug.values()])(
-    'writes a TypeScript snippet Node can parse for $slug',
+    'writes SDK snippets that parse and pass the key to run() for $slug',
     (model) => {
       const values = initialWorkshopPageState(model).values
-      const code = workflowTypeScript(
-        workflowSdkPlan(model, values, workflowSnippetRequest(model, values))
+      const plan = workflowSdkPlan(
+        model,
+        values,
+        workflowSnippetRequest(model, values)
       )
+      const code = workflowTypeScript(plan)
       const file = join(mkdtempSync(join(tmpdir(), 'sdk-')), 'snippet.mjs')
       writeFileSync(file, code)
 
       expect(() =>
         execFileSync(process.execPath, ['--check', file], { stdio: 'pipe' })
       ).not.toThrow()
+      expect(code).toContain('await client.run(workflow, { apiKey })')
+      expect(workflowPython(plan)).toContain(
+        'client.run(workflow, api_key=api_key)'
+      )
     }
   )
 
