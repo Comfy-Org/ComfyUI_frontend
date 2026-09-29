@@ -43,7 +43,7 @@ onMounted(() => {
     </p>
     <p
       v-if="outcome.kind === 'declined' && outcome.reason"
-      class="m-0 text-sm/5 text-muted-foreground"
+      class="m-0 text-sm/5 text-base-foreground"
     >
       {{
         t('checkout.fullPage.outcome.reportedIssue', {
