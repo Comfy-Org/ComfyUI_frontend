@@ -6,7 +6,7 @@ import {
   HUB_WORKFLOWS_PATH,
   hubModelAliases,
   hubModelSlugs,
-  hubWorkflowName
+  hubWorkflowHref
 } from './hub-models'
 
 const MODELS_BASE_PATH = '/models'
@@ -60,14 +60,15 @@ export function modelsUrlEntries({
       path: atHub(slug),
       kind: 'model' as const
     })),
+    { path: `${HUB_WORKFLOWS_PATH}/manifest.json`, kind: 'reserved' },
     ...workflows.map((slug) => ({
-      path: `${HUB_WORKFLOWS_PATH}/${hubWorkflowName(slug)}`,
+      path: hubWorkflowHref(slug),
       kind: 'workflow' as const
     })),
     ...workflows.map((slug) => ({
       path: at(slug),
       kind: 'alias' as const,
-      destination: `${HUB_WORKFLOWS_PATH}/${hubWorkflowName(slug)}`
+      destination: hubWorkflowHref(slug)
     })),
     ...apps.map(page('app')),
     ...[...models.keys(), ...workflows].map((slug) =>
