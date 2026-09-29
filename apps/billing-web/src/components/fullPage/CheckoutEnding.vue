@@ -7,6 +7,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { EndingKind, EndingScreen } from '@/checkout/endingScreen'
 import { supportLinkWithCode } from '@/checkout/payVerdict'
+import SuccessCloseFooter from '@/components/fullPage/SuccessCloseFooter.vue'
 
 export interface EndingPlan {
   readonly name: string
@@ -49,10 +50,16 @@ const ICON: Readonly<Record<Tone, string>> = {
   refused: 'icon-[lucide--circle-alert] text-muted-foreground'
 }
 
-const { screen, workspace, plan } = defineProps<{
+const {
+  screen,
+  workspace,
+  plan,
+  closesItself = false
+} = defineProps<{
   screen: EndingScreen
   workspace: string
   plan?: EndingPlan
+  closesItself?: boolean
 }>()
 
 const emit = defineEmits<{ close: []; retry: []; viewPlans: [] }>()
@@ -169,6 +176,11 @@ function act() {
         >
           {{ t(`checkout.fullPage.ending.actions.${primary}`) }}
         </button>
+        <SuccessCloseFooter
+          v-if="screen.kind === 'success'"
+          :closes-itself
+          @close="emit('close')"
+        />
         <a
           v-if="ending.support"
           :href="supportLink"

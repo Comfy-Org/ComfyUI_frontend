@@ -553,6 +553,7 @@ export function useFullPageCheckout() {
     payFailure,
     returnLink,
     viewPlansLink,
+    openedByScript,
     close,
     retryLoad,
     onPaymentPhase,

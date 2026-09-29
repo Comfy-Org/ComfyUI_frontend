@@ -64,6 +64,8 @@ test('a Pay that goes through names the plan and the workspace, and Close goes b
   ).toBeVisible()
   await expect(page.getByTestId('checkout-ending-plan')).toContainText('Pro')
   await expect(code(page)).toBeHidden()
+  await expect(page.getByText('You can close this tab now.')).toBeVisible()
+  await expect(page.getByText(/Closing in/)).toBeHidden()
 
   await page.getByRole('button', { name: 'Close' }).click()
 

@@ -11,9 +11,9 @@ import { createBillingI18n } from '@/i18n'
 
 const PLAN: EndingPlan = { name: 'Pro', price: '$50.00', period: 'USD / mo' }
 
-function renderEnding(ending: EndingScreen) {
+function renderEnding(ending: EndingScreen, closesItself = false) {
   return render(CheckoutEnding, {
-    props: { screen: ending, workspace: 'Acme Team', plan: PLAN },
+    props: { screen: ending, workspace: 'Acme Team', plan: PLAN, closesItself },
     global: { plugins: [createBillingI18n()] }
   })
 }
@@ -232,6 +232,52 @@ describe('CheckoutEnding', () => {
     await userEvent.click(screen.getByRole('button', { name: action }))
 
     expect(emitted()).toHaveProperty(event)
+  })
+
+  describe('the Success footer', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    it('counts down on a tab a script opened, then closes it', async () => {
+      const { emitted } = renderEnding({ kind: 'success' }, true)
+
+      expect(screen.getByText('Closing in 5…')).toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(screen.getByText('Closing in 4…')).toBeInTheDocument()
+      expect(emitted()).not.toHaveProperty('close')
+
+      await vi.advanceTimersByTimeAsync(4000)
+
+      expect(emitted('close')).toHaveLength(1)
+      expect(
+        screen.queryByText('You can close this tab now.')
+      ).not.toBeInTheDocument()
+    })
+
+    it('tells any other tab it can be closed, and never closes it', async () => {
+      const { emitted } = renderEnding({ kind: 'success' })
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(
+        screen.getByText('You can close this tab now.')
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/Closing in/)).not.toBeInTheDocument()
+      expect(emitted()).not.toHaveProperty('close')
+    })
+
+    it.for<EndingScreen>([
+      { kind: 'already_completed', code: 'op_old' },
+      { kind: 'completed', code: 'op_seen' }
+    ])('never counts down on $kind', async (ending) => {
+      const { emitted } = renderEnding(ending, true)
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(screen.queryByText(/Closing in/)).not.toBeInTheDocument()
+      expect(emitted()).not.toHaveProperty('close')
+    })
   })
 
   it('mails support with the code the screen shows', () => {

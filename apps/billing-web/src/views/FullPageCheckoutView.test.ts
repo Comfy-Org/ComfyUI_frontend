@@ -1027,6 +1027,26 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       expect(close).toHaveBeenCalledOnce()
       expect(assign).not.toHaveBeenCalled()
     })
+
+    it.for<{ name: string; opened: boolean; footer: string }>([
+      { name: 'a tab a script opened', opened: true, footer: 'Closing in 5…' },
+      {
+        name: 'any other tab',
+        opened: false,
+        footer: 'You can close this tab now.'
+      }
+    ])('ends Success on $name with "$footer"', async ({ opened, footer }) => {
+      if (opened)
+        Object.defineProperty(window, 'opener', {
+          value: {},
+          configurable: true
+        })
+      vi.spyOn(window, 'close').mockImplementation(() => {})
+      await payReady(SETTLED)
+      form.emit('confirm', 'ctoken_1')
+
+      expect(await screen.findByText(footer)).toBeInTheDocument()
+    })
   })
 
   it('lands on the terminal for a plan the server activated with no operation to follow', async () => {
