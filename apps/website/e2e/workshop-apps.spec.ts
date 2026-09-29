@@ -74,6 +74,36 @@ test('sends the old studio address to the app page it named', async ({
   await expect(page).toHaveURL(/\/models\/apps\/reshoot\/\?ux=d&model=flux$/)
 })
 
+test.describe('GitHub link before an app repo is published', () => {
+  for (const path of [
+    '/models/apps/cinematic-studio/',
+    '/models/apps/reshoot/'
+  ])
+    test(`shows a placeholder, not a link, on ${path}`, async ({
+      page,
+      context
+    }) => {
+      await mockFlags(context, { apps: true, workflows: false })
+      await page.goto(path)
+      await expect(page.getByText('GitHub · Coming soon')).toHaveCount(1)
+      await expect(
+        page.getByRole('link', { name: 'View on GitHub' })
+      ).toHaveCount(0)
+    })
+})
+
+test('asks Safari for a first frame on the Re-shoot example video tile', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/reshoot/')
+  await expect(page.getByTestId('example-video')).toHaveAttribute(
+    'src',
+    /#t=0\.1$/
+  )
+})
+
 test('keeps the Re-shoot camera help behind info buttons', async ({
   page,
   context
@@ -131,4 +161,37 @@ test('@mobile pins the Re-shoot preview while the camera controls scroll under i
   await expect
     .poll(async () => Number(await distance.inputValue()))
     .toBeLessThan(before)
+})
+
+test('shows a preview frame for every Cinematic Studio shot option', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/cinematic-studio/')
+  await page
+    .getByRole('button', { name: /^Shot\b/ })
+    .first()
+    .click()
+
+  const shots = page.getByRole('radiogroup', { name: 'Shot' })
+  await expect(shots.getByRole('radio')).toHaveCount(8)
+  await expect(
+    shots.locator('img[src^="/images/cinematic-studio/options/shot-"]')
+  ).toHaveCount(7)
+  for (const id of [
+    'xwide',
+    'wide',
+    'medium',
+    'close',
+    'xclose',
+    'ots',
+    'low'
+  ]) {
+    await expect(
+      shots.locator(
+        `img[src="/images/cinematic-studio/options/shot-${id}.jpg"]`
+      )
+    ).toHaveCount(1)
+  }
 })

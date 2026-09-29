@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises'
+
 import type { BrowserContext, Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
@@ -65,6 +67,9 @@ test('the workflow API tab opens with the key action and what it needs beside th
   await page.getByRole('tab', { name: 'API', exact: true }).click()
 
   const facts = page.getByTestId('api-facts')
+  await expect(facts).toContainText('run(workflow, api_key=…)')
+  await expect(facts).not.toContainText('/api/prompt')
+  await page.getByRole('tab', { name: 'cURL', exact: true }).click()
   await expect(facts).toContainText('POST')
   await expect(facts).toContainText('/api/prompt')
   await expect(facts).toContainText('X-API-Key')
@@ -114,4 +119,23 @@ test('@mobile opens a source picture full screen with its close button clear of 
     frame(dialog.getByRole('img'))
   ])
   expect(close.y + close.height).toBeLessThanOrEqual(picture.y)
+})
+
+test('the workflow API tab downloads the API graph as JSON', async ({
+  page,
+  context
+}) => {
+  await allowWorkflows(context)
+  await page.goto(WORKFLOW_PATH)
+  await page.getByRole('tab', { name: 'API', exact: true }).click()
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: /Download the API graph/ }).click()
+  ])
+  expect(download.suggestedFilename()).toBe('remove-background-api.json')
+  const path = await download.path()
+  const graph = await readFile(path, 'utf8')
+  expect(Object.keys(JSON.parse(graph))).not.toHaveLength(0)
+  expect(graph).toContain('"class_type"')
 })

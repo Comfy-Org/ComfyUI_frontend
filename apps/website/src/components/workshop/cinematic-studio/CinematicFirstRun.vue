@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { workshopAppRepo } from '../../../lib/workshop/apps'
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
 import { STARTER_SHOTS } from '../../../lib/workshop/cinematic-studio/starters'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicCheckBadge from './CinematicCheckBadge.vue'
+import AppRepoLink from './AppRepoLink.vue'
 
 const { selected, locale = 'en' } = defineProps<{
   selected?: string
@@ -29,6 +31,7 @@ const emit = defineEmits<{ start: [shot: StarterShot] }>()
       <p class="max-w-xl text-sm text-primary-comfy-canvas lg:text-base">
         {{ tc('cinematic.firstRun.body', locale) }}
       </p>
+      <AppRepoLink :repo="workshopAppRepo('studio')" :locale />
     </div>
     <ul class="grid w-full grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
       <li v-for="shot in STARTER_SHOTS" :key="shot.id">

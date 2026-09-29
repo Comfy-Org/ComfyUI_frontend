@@ -132,12 +132,12 @@ const copy = {
   'reshoot.speed.768p': { en: 'Sharper', 'zh-CN': '更清晰' },
   'reshoot.clip.yours': { en: 'Your clip', 'zh-CN': '你的片段' },
   'reshoot.empty.title': {
-    en: 'Your re-shoot will appear here',
-    'zh-CN': '重拍结果将显示在这里'
+    en: 'Your new angle plays here',
+    'zh-CN': '新机位的画面将在这里播放'
   },
   'reshoot.empty.hint': {
-    en: 'Upload a clip on the left or try an example below.',
-    'zh-CN': '在左侧上传片段，或试试下方的示例。'
+    en: 'Start with a 5 to 15 second clip, or pick an example.',
+    'zh-CN': '先选一段 5 到 15 秒的片段，或挑一个示例。'
   },
   'reshoot.section.camera': { en: 'New camera', 'zh-CN': '新机位' },
   'reshoot.section.move': { en: 'Camera move', 'zh-CN': '运镜' },
