@@ -167,7 +167,7 @@ const fill = computed(() =>
           <Badge
             variant="subtle"
             size="md"
-            class="border-white/10 bg-transparency-white-t20 text-primary-comfy-canvas backdrop-blur-xl backdrop-brightness-25"
+            class="border-white/10 bg-transparency-white-t20 text-primary-comfy-canvas backdrop-blur-lg backdrop-brightness-75 backdrop-saturate-150"
           >
             {{ active.kind }}
           </Badge>
@@ -176,7 +176,7 @@ const fill = computed(() =>
             :key="capability"
             variant="subtle"
             size="md"
-            class="border-white/10 bg-transparency-white-t20 text-content-secondary backdrop-blur-xl backdrop-brightness-25 max-sm:hidden"
+            class="border-white/10 bg-transparency-white-t20 text-content-secondary backdrop-blur-lg backdrop-brightness-75 backdrop-saturate-150 max-sm:hidden"
           >
             {{ capability }}
           </Badge>
