@@ -6,7 +6,8 @@ import type { WebSessionOptions } from './webSession.js'
 import {
   createWebSession,
   deleteWebSession,
-  readWebSession
+  readWebSession,
+  revokeAllWebSessions
 } from './webSession.js'
 
 const API = 'https://cloud.example/api'
@@ -20,11 +21,14 @@ function optionsFor(fetchImpl: typeof fetch): WebSessionOptions {
   return { apiBaseUrl: API, fetchImpl }
 }
 
-function respondWith(status: number, body: string): typeof fetch {
+function respondWith(status: number, body: string | null): typeof fetch {
   return vi.fn<typeof fetch>(async () => new Response(body, { status }))
 }
 
 const errorBody = (code: string) => JSON.stringify({ code, message: code })
+
+const revokeAll = (o: WebSessionOptions, csrfToken = 'fake-csrf-token') =>
+  revokeAllWebSessions(o, csrfToken, async () => 'id-token')
 
 const ENDPOINTS = [
   { name: 'read', call: (o: WebSessionOptions) => readWebSession(o) },
@@ -32,7 +36,8 @@ const ENDPOINTS = [
     name: 'create',
     call: (o: WebSessionOptions) => createWebSession(o, async () => 'proof')
   },
-  { name: 'delete', call: (o: WebSessionOptions) => deleteWebSession(o) }
+  { name: 'delete', call: (o: WebSessionOptions) => deleteWebSession(o) },
+  { name: 'revoke-all', call: (o: WebSessionOptions) => revokeAll(o) }
 ]
 
 describe('web session status mapping', () => {
@@ -210,7 +215,12 @@ describe('web session requests', () => {
       call: (o: WebSessionOptions) => createWebSession(o, async () => 'proof'),
       expected: ['include', 'include']
     },
-    { name: 'delete', call: deleteWebSession, expected: ['include'] }
+    { name: 'delete', call: deleteWebSession, expected: ['include'] },
+    {
+      name: 'revoke-all',
+      call: (o: WebSessionOptions) => revokeAll(o),
+      expected: ['include']
+    }
   ])('$name always sends credentials', async ({ call, expected }) => {
     const endpoint = fakeEndpoint({ kind: 'live', user: fakeWebSessionUser() })
 
@@ -327,6 +337,87 @@ describe('web session requests', () => {
     expect(result).toEqual({ status: 'ok' })
     expect(endpoint.requests[0]).toMatchObject({ method: 'DELETE' })
     expect(endpoint.requests[0].headers).not.toHaveProperty('x-csrf-token')
+  })
+})
+
+describe('revoke-all', () => {
+  it.for([
+    { status: 401, server: 'session_expired', code: 'SESSION_EXPIRED' },
+    { status: 403, server: 'csrf_invalid', code: 'CSRF_STALE' },
+    {
+      status: 403,
+      server: 'origin_not_allowed',
+      code: 'SESSION_REQUEST_REFUSED'
+    },
+    { status: 404, server: 'not_found', code: 'SESSION_REQUEST_REFUSED' }
+  ] as const)(
+    '$status $server is permanent $code',
+    async ({ status, server, code }) => {
+      const result = await revokeAll(
+        optionsFor(respondWith(status, errorBody(server)))
+      )
+
+      expect(result).toEqual({
+        status: 'error',
+        code,
+        retryable: false,
+        httpStatus: status,
+        serverCode: server
+      })
+    }
+  )
+
+  it.for([
+    { name: 'no body', status: 204, body: null },
+    { name: 'an empty object', status: 200, body: '{}' },
+    { name: 'a string count', status: 200, body: '{"revoked":"3"}' },
+    { name: 'a fractional count', status: 200, body: '{"revoked":1.5}' },
+    { name: 'the delete body', status: 200, body: '{"success":true}' },
+    { name: 'an html page', status: 200, body: '<html>ok</html>' }
+  ])('a 2xx with $name is transient, never ok', async ({ status, body }) => {
+    const result = await revokeAll(optionsFor(respondWith(status, body)))
+
+    expect(result).toEqual({
+      status: 'error',
+      code: 'SESSION_UNAVAILABLE',
+      retryable: true,
+      httpStatus: status
+    })
+  })
+
+  it('sends the identity proof and CSRF token to the revoke-all route', async () => {
+    const endpoint = fakeEndpoint({ kind: 'live', user: fakeWebSessionUser() })
+
+    await revokeAll(optionsFor(endpoint.fetch))
+
+    expect(endpoint.requests[0]).toMatchObject({
+      method: 'POST',
+      path: '/api/auth/sessions/revoke-all',
+      headers: {
+        authorization: 'Bearer id-token',
+        'x-csrf-token': 'fake-csrf-token'
+      }
+    })
+  })
+
+  it('ends the session, so the next read is SESSION_REVOKED', async () => {
+    const endpoint = fakeEndpoint({ kind: 'live', user: fakeWebSessionUser() })
+
+    const revoked = await revokeAll(optionsFor(endpoint.fetch))
+    const next = await readWebSession(optionsFor(endpoint.fetch))
+
+    expect(revoked).toEqual({ status: 'ok' })
+    expect(next).toMatchObject({ code: 'SESSION_REVOKED', retryable: false })
+  })
+
+  it('reports a stale CSRF token and leaves the session live', async () => {
+    const endpoint = fakeEndpoint({ kind: 'live', user: fakeWebSessionUser() })
+
+    const result = await revokeAll(optionsFor(endpoint.fetch), 'stale-token')
+    const next = await readWebSession(optionsFor(endpoint.fetch))
+
+    expect(result).toMatchObject({ code: 'CSRF_STALE', retryable: false })
+    expect(next).toMatchObject({ status: 'ok' })
   })
 })
 

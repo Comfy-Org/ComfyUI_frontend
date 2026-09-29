@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { WorkspaceStore } from '@e2e/types/globals'
 
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
@@ -31,7 +32,7 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
       exact: true
     })
     await expect(openButton).toBeVisible()
-    await openButton.click()
+    await new AgentPanel(page).open()
 
     await expect(panelRoot).toHaveCount(1)
     await expect(panelRoot).toBeVisible()
@@ -54,7 +55,7 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
     await expect.poll(activeWorkflowPath).toBe(selectedWorkflowPath)
   })
 
-  test('keeps a stored-closed panel hidden when toggling app mode and back', async ({
+  test('activation reopens a stored-closed panel across app mode changes', async ({
     comfyPage
   }) => {
     test.setTimeout(30_000)
@@ -70,15 +71,15 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
     )
     await comfyPage.workflow.reloadAndWaitForApp()
 
-    await expect(dockedPanel).toHaveCount(0)
-    await expect.poll(storedOpenState).toBe('false')
+    await expect(dockedPanel).toBeVisible()
+    await expect.poll(storedOpenState).toBe('true')
 
     await comfyPage.appMode.toggleAppMode()
-    await expect(dockedPanel).toHaveCount(0)
-    await expect.poll(storedOpenState).toBe('false')
+    await expect(dockedPanel).toBeVisible()
+    await expect.poll(storedOpenState).toBe('true')
 
     await comfyPage.appMode.toggleAppMode()
-    await expect(dockedPanel).toHaveCount(0)
-    await expect.poll(storedOpenState).toBe('false')
+    await expect(dockedPanel).toBeVisible()
+    await expect.poll(storedOpenState).toBe('true')
   })
 })
