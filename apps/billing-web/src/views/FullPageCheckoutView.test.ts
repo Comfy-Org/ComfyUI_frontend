@@ -1070,7 +1070,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       subscribe: { status: 'error', code: 'REACTIVATION_CONFIRMATION_REQUIRED' }
     }
   ])(
-    'leaves no Pay over the refused price when re-quoting $name fails',
+    'leaves no Pay over the refused price when re-quoting $name fails, and Try again prices again in place',
     async ({ subscribe }) => {
       const fake = await payReady({ subscribe })
       fake.previewSubscribe.mockResolvedValueOnce({
@@ -1081,15 +1081,26 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       form.emit('confirm', 'ctoken_1')
 
       expect(
-        await screen.findByText(
-          "We couldn't reach the billing service. Please try again."
-        )
+        await screen.findByRole('heading', {
+          name: "Couldn't load your checkout"
+        })
       ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'REQUEST_FAILED'
+      )
       expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
       expect(fake.subscribe).toHaveBeenCalledOnce()
       expect(
         screen.queryByRole('button', { name: 'Pay and subscribe' })
       ).not.toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+      expect(
+        await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      ).toBeInTheDocument()
+      expect(fake.previewSubscribe).toHaveBeenCalledTimes(3)
+      expect(fake.subscribe).toHaveBeenCalledOnce()
     }
   )
 })
