@@ -15,6 +15,11 @@ import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
+import {
+  shotAspects,
+  takesReferences
+} from '../../../lib/workshop/cinematic-studio/models'
+import CinematicColors from './CinematicColors.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
@@ -60,6 +65,8 @@ const resolution = defineModel<Resolution>('resolution', { required: true })
 const takes = defineModel<number>('takes', { required: true })
 const cast = defineModel<File | undefined>('cast')
 const palette = defineModel<File | undefined>('palette')
+const colors = defineModel<readonly string[]>('colors', { required: true })
+const mainColor = defineModel<number | undefined>('mainColor')
 
 const modelOptions = computed(() =>
   models.map((model) => ({
@@ -72,7 +79,10 @@ const model = computed(() =>
   models.find((candidate) => candidate.slug === modelSlug.value)
 )
 const blockedNote = computed(() =>
-  (cast.value || palette.value) && !model.value?.referenceSlug
+  !takesReferences(
+    model.value,
+    [cast.value, palette.value].filter(Boolean).length
+  )
     ? tc('cinematic.references.unsupported', locale, {
         model: model.value?.name ?? ''
       })
@@ -152,6 +162,7 @@ const cardClass =
           <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
           <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
         </div>
+        <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
       </section>
       <section class="flex flex-col gap-2">
         <h2 :class="labelClass">
@@ -161,6 +172,7 @@ const cardClass =
           v-model:aspect="aspect"
           v-model:resolution="resolution"
           v-model:takes="takes"
+          :aspects="shotAspects(model, !!(cast || palette))"
           :locale
         />
       </section>

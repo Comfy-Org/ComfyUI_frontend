@@ -161,7 +161,20 @@
       "promoApplied": "{code} applied.",
       "promoRenews": "Renews at {amount} on {date}"
     },
-    "error": "Error"
+    "error": "Error",
+    "invite": {
+      "title": "Invite your team",
+      "subtext": "You can also invite people later from Settings",
+      "placeholder": "Enter emails separated by commas",
+      "sendInvites": "Send invites",
+      "removeTag": "Remove tag",
+      "invalidEmailCount": "{count} invalid email address | {count} invalid email addresses",
+      "pendingInviteSingle": "This person already has a pending invite",
+      "pendingInviteCount": "{count} of these people already have a pending invite. They'll be skipped.",
+      "seatLimitExceeded": "This workspace is capped at {max} members. Remove {overage} to continue.",
+      "invitedMessage": "An invite was sent to {emails} | Invites were sent to {emails}",
+      "failedCount": "Couldn't send {count} invite. Try again. | Couldn't send {count} invites. Try again."
+    }
   },
   "hosted": {
     "loading": "Loading…",
@@ -207,6 +220,7 @@
       "SUPERSEDED": "Your workspace changed while we were loading. Please try again.",
       "REQUEST_FAILED": "We couldn't reach the billing service. Please try again.",
       "MALFORMED_RESPONSE": "The billing service sent something we couldn't read.",
+      "OPERATION_ALREADY_PENDING": "A payment you started earlier is still going through. It has to finish before you can choose a different plan.",
       "INVALID_REQUEST": "That plan change isn't a request we can make.",
       "NO_ACTIVE_SUBSCRIPTION": "There is no active subscription to change.",
       "REACTIVATION_CONFIRMATION_REQUIRED": "Confirm the reactivation charge before continuing.",
