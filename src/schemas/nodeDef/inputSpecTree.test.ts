@@ -125,10 +125,11 @@ describe('input specification diagnostics', () => {
   })
 
   it('deduplicates separately allocated equivalent specifications', () => {
-    const makeSpec = () =>
-      transformInputSpecV1ToV2(['COMFY_AUTOGROW_V3', { template: {} }], {
+    function makeSpec() {
+      return transformInputSpecV1ToV2(['COMFY_AUTOGROW_V3', { template: {} }], {
         name: 'equivalent-root'
       })
+    }
 
     inputSpecTree(makeSpec())
     inputSpecTree(makeSpec())
