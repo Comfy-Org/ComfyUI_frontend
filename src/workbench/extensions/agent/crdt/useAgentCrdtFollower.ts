@@ -467,7 +467,7 @@ function startAgentCrdtFollower(
   const applyFrame = (
     update: ClassifiedDocUpdate
   ): { created: NodeId[]; nodes: DocNodeDelta } => {
-    if (isOwnEcho(update)) {
+    if (isOwnEcho(update) && getGraph() !== null) {
       const nodes = projection.discardPending(update.workflowId)
       incrementOutcome('skipped')
       return { created: [], nodes }

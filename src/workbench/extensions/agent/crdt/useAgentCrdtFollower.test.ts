@@ -1341,12 +1341,18 @@ describe('useAgentCrdtFollower', () => {
   })
 
   describe('own-actor echo', () => {
+    const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
+
     async function mountAndSendOneOp(): Promise<{
       unmount: () => void
       status: () => AgentCrdtStatus
       ownActor: string
     }> {
-      const { unmount, status, enqueue } = mountFollower('wf-1')
+      const { unmount, status, enqueue } = mountFollower(
+        'wf-1',
+        true,
+        () => liveGraph
+      )
       enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
       await Promise.resolve()
       const [, , ops] = clientState.sendOps.mock.calls[0]
@@ -1373,6 +1379,49 @@ describe('useAgentCrdtFollower', () => {
         applied: 0,
         skipped: 1
       })
+      unmount()
+    })
+
+    it('keeps collected remote changes when an own echo arrives before the graph', async () => {
+      const graph = shallowRef<LGraph | null>(null)
+      const { unmount, enqueue } = mountFollower(
+        'wf-1',
+        true,
+        () => graph.value
+      )
+      enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+      await Promise.resolve()
+      const [, , ops] = clientState.sendOps.mock.calls[0]
+      const ownActor = ops[0].actor
+      const remoteUpdate = {
+        workflowId: 'wf-1',
+        seq: 41,
+        actor: 'agent:thread:turn',
+        catchUp: false
+      }
+      const ownEcho = {
+        workflowId: 'wf-1',
+        seq: 42,
+        actor: ownActor,
+        catchUp: false
+      }
+
+      dispatchFrame('doc_update', remoteUpdate)
+      dispatchFrame('doc_update', ownEcho)
+
+      expect(projectionState.applyFrame).toHaveBeenNthCalledWith(
+        1,
+        remoteUpdate
+      )
+      expect(projectionState.applyFrame).toHaveBeenNthCalledWith(2, ownEcho)
+      expect(projectionState.discardPending).not.toHaveBeenCalled()
+
+      graph.value = liveGraph
+      await nextTick()
+
+      expect(projectionState.applyCollected).toHaveBeenCalledExactlyOnceWith(
+        'wf-1'
+      )
       unmount()
     })
 
