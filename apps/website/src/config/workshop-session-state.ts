@@ -269,6 +269,7 @@ export function stopWorkshopSession(): void {
   operation.abandon()
   stopListeners()
   restoredForUid = undefined
+  // PENDING also idles credits, which follow this snapshot's settled state.
   snapshot.value = PENDING
   lifecycle.stop()
 }

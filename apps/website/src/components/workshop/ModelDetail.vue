@@ -296,6 +296,9 @@ const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
 )
 const isRunning = computed(() => runState.value.status === 'running')
+watch(isRunning, (running) => {
+  if (!running && !workshopEnabled.value && account.value) stopAccountServices()
+})
 const protectedHistoryIndex = ref<number>()
 let approvedTraversal = false
 let restoringTraversal = false
@@ -971,7 +974,7 @@ function useInCode() {
         class="flex min-w-0 flex-col gap-4 lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
       >
         <PlaygroundOutput
-          v-if="workshopEnabled || isRunning || runState.status === 'example'"
+          v-if="workshopEnabled || runState.status !== 'idle'"
           v-model:revealed="revealed"
           :state="runState"
           :earlier
