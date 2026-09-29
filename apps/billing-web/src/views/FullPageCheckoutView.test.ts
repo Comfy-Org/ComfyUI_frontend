@@ -44,9 +44,14 @@ vi.mock<unknown>(import('@/config/env'), () => ({
   CLOUD_BASE_URL: 'https://testcloud.comfy.org'
 }))
 
+/** The Stripe key this origin resolves; a test clears it to play a deployment without one. */
+const stripeKey = vi.hoisted(() => ({
+  value: 'pk_test_example' as string | undefined
+}))
+
 vi.mock(import('@/config/stripeKey'), () => ({
-  awaitBillingWebStripeKey: () => Promise.resolve('pk_test_example'),
-  useBillingWebStripeKey: () => ref('pk_test_example')
+  awaitBillingWebStripeKey: () => Promise.resolve(stripeKey.value),
+  useBillingWebStripeKey: () => ref(stripeKey.value)
 }))
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
@@ -257,6 +262,55 @@ describe('FullPageCheckoutView', () => {
     expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty(
       'confirmation_token'
     )
+  })
+
+  describe('with no Stripe key', () => {
+    beforeEach(() => {
+      stripeKey.value = undefined
+    })
+    afterEach(() => {
+      stripeKey.value = 'pk_test_example'
+    })
+
+    it('says the checkout could not load instead of a card form that can never mount, and Try again picks up a key that arrives', async () => {
+      const fake = await renderCheckout()
+
+      expect(
+        await screen.findByRole('heading', {
+          name: "Couldn't load your checkout"
+        })
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'PAYMENT_PROVIDER_UNAVAILABLE'
+      )
+      expect(form.mounts).toBe(0)
+
+      stripeKey.value = 'pk_test_example'
+      await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+      expect(
+        await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      ).toBeInTheDocument()
+      expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+      expect(form.mounts).toBe(1)
+    })
+
+    it('still charges a plan change to the method on file, which needs no card form', async () => {
+      const fake = await renderCheckout({
+        preview: {
+          status: 'ok',
+          value: previewOf({ transition_type: 'upgrade' })
+        }
+      })
+      await screen.findByText('Upgrade to Creator Plan · Acme Team')
+
+      await userEvent.click(payButton())
+
+      await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+      expect(
+        screen.queryByTestId('checkout-ending-code')
+      ).not.toBeInTheDocument()
+    })
   })
 
   it.for<Extract<StripePaymentPhase, { phase: 'payment_element_failed' }>>([
