@@ -8,11 +8,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 describe('eventUtils', () => {
   it('rejects a declared oversized dropped asset before buffering its body', async () => {
     const blob = vi.fn()
+    const cancel = vi.fn(async () => undefined)
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => ({
         ok: true,
         headers: new Headers({ 'Content-Length': '101' }),
+        body: { cancel },
         blob
       }))
     )
@@ -25,6 +27,24 @@ describe('eventUtils', () => {
       )
     ).rejects.toThrow('Dropped asset exceeds 100 bytes')
     expect(blob).not.toHaveBeenCalled()
+    expect(cancel).toHaveBeenCalledOnce()
+  })
+
+  it('cancels an unsuccessful dropped-asset response', async () => {
+    const cancel = vi.fn(async () => undefined)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 503,
+        body: { cancel }
+      }))
+    )
+
+    await expect(
+      fetchDroppedAsset({ name: 'asset.png', uri: 'https://example.com' })
+    ).rejects.toThrow('Dropped asset fetch failed with HTTP 503')
+    expect(cancel).toHaveBeenCalledOnce()
   })
 
   it('cancels an unknown-length stream once its byte limit is crossed', async () => {
@@ -270,6 +290,7 @@ describe('eventUtils', () => {
 
       expect(getDroppedAsset(dataTransfer)).toEqual({
         name: 'My asset',
+        filename: 'asset.png',
         uri: 'http://localhost/api/view?x=1',
         ref: 'stored-asset.png',
         kind: 'image',
@@ -290,6 +311,7 @@ describe('eventUtils', () => {
 
       expect(getDroppedAsset(dataTransfer)).toEqual({
         name: 'asset.mp4',
+        filename: 'asset.mp4',
         uri: undefined,
         ref: 'stored-asset.mp4',
         kind: 'video',

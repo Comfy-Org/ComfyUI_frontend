@@ -1165,7 +1165,7 @@ const attachment = useAttachment({
     })
     if (uploaded.subfolder) params.set('subfolder', uploaded.subfolder)
     return {
-      ref: filename,
+      ref: uploaded.subfolder ? `${uploaded.subfolder}/${filename}` : filename,
       subfolder: uploaded.subfolder || undefined,
       uploadType: uploaded.type || 'input',
       url: api.apiURL(`/view?${params.toString()}`)
@@ -1197,7 +1197,8 @@ const attachment = useAttachment({
     toast.add({ severity: 'warn', detail: message, life: 5000 }),
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,
-  remove: composerStore.removeAttachment
+  remove: composerStore.removeAttachment,
+  isPresent: (id) => composerStore.attachments.some((item) => item.id === id)
 })
 
 const removedUploadCancellationTimers = new Map<string, number>()
@@ -1228,10 +1229,10 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  attachment.cancelAllUploads()
   for (const timer of removedUploadCancellationTimers.values())
     window.clearTimeout(timer)
   removedUploadCancellationTimers.clear()
-  attachment.cancelAllUploads()
 })
 
 function onAttach(): void {
@@ -1316,18 +1317,18 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     return
   }
 
-  if (!isAgentAttachable(new File([], asset.name))) {
-    toast.add({ severity: 'warn', detail: t('agent.assetNotAttachable') })
-    return
-  }
-
-  if (asset.ref && asset.kind !== 'other') {
+  if (asset.ref) {
     panelRef.value?.addAttachment({
       id: `asset:${asset.ref}`,
       name: asset.name,
       ref: asset.ref,
       previewUrl: asset.previewUrl
     })
+    return
+  }
+
+  if (!isAgentAttachable(new File([], asset.filename ?? asset.name))) {
+    toast.add({ severity: 'warn', detail: t('agent.assetNotAttachable') })
     return
   }
 

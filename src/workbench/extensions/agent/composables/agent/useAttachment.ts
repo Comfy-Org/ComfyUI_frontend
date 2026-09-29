@@ -33,6 +33,7 @@ export interface UseAttachmentOptions {
   stage: (attachment: ComposerAttachment) => void
   update: (id: string, patch: Partial<ComposerAttachment>) => void
   remove: (id: string) => void
+  isPresent?: (id: string) => boolean
 }
 
 // A fetch upload reports no transfer progress, so the deadline is sized from a
@@ -172,6 +173,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       return 'uploaded'
     } catch (error) {
       if (cancelled.has(id)) return 'cancelled'
+      if (options.isPresent && !options.isPresent(id)) return 'cancelled'
       failAttachment(id, file.name, 'agent_attachment_upload_failed', error)()
       return 'failed'
     } finally {
@@ -210,7 +212,9 @@ export function useAttachment(options: UseAttachmentOptions) {
     const id = stage(name)
     const slot = acquireUploadSlot()
     if (slot) await slot
+    let fetchSlotReleased = false
     try {
+      if (cancelled.has(id)) return 'cancelled'
       const controller = new AbortController()
       inFlight.set(id, controller)
       // The source size is unknown until the fetch finishes. Size this first
@@ -232,12 +236,16 @@ export function useAttachment(options: UseAttachmentOptions) {
         options.remove(id)
         return 'failed'
       }
-      const outcome = await uploadStagedFile(id, file, true)
+      inFlight.delete(id)
+      releaseUploadSlot()
+      fetchSlotReleased = true
+      const outcome = await uploadStagedFile(id, file)
       if (outcome !== 'uploaded') return outcome
       options.onUploaded?.()
       return 'uploaded'
     } catch (error) {
       if (cancelled.has(id)) return 'cancelled'
+      if (options.isPresent && !options.isPresent(id)) return 'cancelled'
       if (error instanceof DroppedAssetTooLargeError) {
         options.onError?.(
           i18n.global.t('agent.attachmentTooLarge', {
@@ -252,7 +260,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       return 'failed'
     } finally {
       settle(id)
-      releaseUploadSlot()
+      if (!fetchSlotReleased) releaseUploadSlot()
     }
   }
 

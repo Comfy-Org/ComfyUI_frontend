@@ -477,6 +477,82 @@ describe('useAttachment', () => {
     expect(onError).not.toHaveBeenCalled()
   })
 
+  it('suppresses a failure after its attachment was dismissed', async () => {
+    let rejectUpload: (error: Error) => void = () => {}
+    const upload = vi.fn(
+      () =>
+        new Promise<{ ref: string }>((_resolve, reject) => {
+          rejectUpload = reject
+        })
+    )
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const pending = useAttachment({
+      upload,
+      onError,
+      isPresent: (id) => registry.chips.some((chip) => chip.id === id),
+      ...registry
+    }).addFiles([fileOfSize('dismissed.png', 1)])
+
+    registry.chips.splice(0)
+    rejectUpload(new Error('upload failed'))
+    await pending
+
+    expect(onError).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('never resolves a deferred source cancelled while it waited in the queue', async () => {
+    const sourceResolvers: Array<(file: File | undefined) => void> = []
+    const resolveSource = vi.fn(
+      () =>
+        new Promise<File | undefined>((resolve) => {
+          sourceResolvers.push(resolve)
+        })
+    )
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const registry = chipRegistry()
+    const { addDeferredFile, cancelUpload } = useAttachment({
+      upload,
+      ...registry
+    })
+
+    const pending = ['a', 'b', 'c', 'queued'].map((name) =>
+      addDeferredFile(`${name}.png`, resolveSource)
+    )
+    cancelUpload(registry.chips[3].id)
+    for (const resolve of sourceResolvers) resolve(undefined)
+
+    await Promise.all(pending)
+
+    expect(resolveSource).toHaveBeenCalledTimes(3)
+    expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('releases a deferred fetch slot before its upload settles', async () => {
+    const upload = vi.fn(
+      (_file: File, signal: AbortSignal) =>
+        new Promise<{ ref: string }>((_resolve, reject) => {
+          signal.addEventListener('abort', () => reject(signal.reason), {
+            once: true
+          })
+        })
+    )
+    const fourthSource = vi.fn(async () => undefined)
+    const registry = chipRegistry()
+    const { addDeferredFile, cancelAllUploads } = useAttachment({
+      upload,
+      ...registry
+    })
+
+    for (const name of ['a', 'b', 'c'])
+      void addDeferredFile(name, async () => fileOfSize(name, 1))
+    void addDeferredFile('fourth', fourthSource)
+
+    await vi.waitFor(() => expect(fourthSource).toHaveBeenCalledOnce())
+    cancelAllUploads()
+  })
+
   it('removes active and queued uploads synchronously when the panel goes away', async () => {
     const signals: AbortSignal[] = []
     const upload = vi.fn((_file: File, uploadSignal: AbortSignal) => {

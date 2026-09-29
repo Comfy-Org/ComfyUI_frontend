@@ -3,6 +3,7 @@ import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 
 export interface DroppedAsset {
   name: string
+  filename?: string
   uri?: string
   ref?: string
   kind?: MediaKind
@@ -38,6 +39,7 @@ export function getDroppedAsset(
   return uri || ref
     ? {
         name: name ?? ref ?? uri!,
+        filename: asset?.filename,
         uri,
         ref,
         kind: asset?.media_kind,
@@ -53,7 +55,10 @@ export async function fetchDroppedAsset(
 ): Promise<File | undefined> {
   if (!uri) return undefined
   const response = await fetch(uri, { signal })
-  if (!response.ok) throw new DroppedAssetFetchError(response.status)
+  if (!response.ok) {
+    await cancelResponseBody(response)
+    throw new DroppedAssetFetchError(response.status)
+  }
   const contentLengthHeader = response.headers.get('Content-Length')
   const contentLength =
     contentLengthHeader === null ? undefined : Number(contentLengthHeader)
@@ -62,8 +67,10 @@ export async function fetchDroppedAsset(
     contentLength !== undefined &&
     Number.isFinite(contentLength) &&
     contentLength > maxBytes
-  )
+  ) {
+    await cancelResponseBody(response)
     throw new DroppedAssetTooLargeError(maxBytes)
+  }
 
   if (maxBytes === undefined || !response.body) {
     const blob = await response.blob()
@@ -81,7 +88,11 @@ export async function fetchDroppedAsset(
       if (done) break
       bytesRead += value.byteLength
       if (bytesRead > maxBytes) {
-        await reader.cancel()
+        try {
+          await reader.cancel()
+        } catch {
+          // The size-policy error remains authoritative when teardown fails.
+        }
         throw new DroppedAssetTooLargeError(maxBytes)
       }
       chunks.push(value.slice().buffer)
@@ -93,6 +104,14 @@ export async function fetchDroppedAsset(
     type: response.headers.get('Content-Type') ?? undefined
   })
   return new File([blob], name, { type: blob.type })
+}
+
+async function cancelResponseBody(response: Response): Promise<void> {
+  try {
+    await response.body?.cancel()
+  } catch {
+    // The response is already being rejected, so cancellation is best effort.
+  }
 }
 
 export async function extractFilesFromDragEvent(

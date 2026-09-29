@@ -1971,6 +1971,40 @@ describe('AgentPanelRoot attach flow', () => {
     }
   )
 
+  it('stages a renamed non-media asset reference without downloading it', async () => {
+    const fetchSpy = vi.fn(async (_input?: RequestInfo | URL) =>
+      json(200, agentThreadList())
+    )
+    vi.stubGlobal('fetch', fetchSpy)
+    renderWithSelectedTarget()
+    await nextTick()
+    const dragData = {
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: 'model.obj',
+          display_name: 'Renamed model',
+          attachment_ref: 'stored-model.obj',
+          media_kind: '3D'
+        })
+    }
+
+    expect(dispatchDrag(screen.getByRole('textbox'), 'drop', dragData)).toBe(
+      true
+    )
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'Renamed model'
+      )
+    ).toBeInTheDocument()
+    expect(
+      fetchSpy.mock.calls.some(([url]) =>
+        /\/api\/(view|upload\/image)/.test(String(url))
+      )
+    ).toBe(false)
+  })
+
   it('shows an uploading chip while a Media-card URI is still loading', async () => {
     let resolveAsset: (response: Response) => void = () => {}
     vi.stubGlobal(
@@ -2263,6 +2297,7 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('releases a dismissed in-flight preview when its upload is cancelled', async () => {
+    vi.useFakeTimers()
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     vi.stubGlobal(
       'fetch',
@@ -2289,14 +2324,18 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toBeInTheDocument()
 
-    await userEvent.click(
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    await user.click(
       screen.getByRole('button', { name: i18n.global.t('agent.remove') })
     )
     expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
+    expect(revoke).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(5_000)
     expect(revoke).toHaveBeenCalledTimes(1)
     view.unmount()
     expect(revoke).toHaveBeenCalledTimes(1)
     revoke.mockRestore()
+    vi.useRealTimers()
   })
 })
 

@@ -302,10 +302,7 @@ export const useAssetsStore = defineStore('assets', () => {
         if (inputRefreshDirty) continue
 
         inputRefresh = undefined
-        // A caller can arrive after the check above and before ownership is
-        // released; loop again instead of dropping that request.
-        // oxlint-disable-next-line typescript/no-unnecessary-condition
-        if (!inputRefreshDirty) return
+        return
       }
     })()
     return inputRefresh
