@@ -11,7 +11,7 @@ const take: Take = {
   prompt: 'a courtyard at dusk',
   modelSlug: 'bfl--flux-2-max--generate-images',
   aspect: '16:9',
-  startedAt: Date.now(),
+  startedAt: 0,
   status: 'rendering'
 }
 
@@ -20,7 +20,11 @@ describe('CinematicTakeProgress', () => {
   // that is running has to answer to the same name, and "Rendering take A"
   // read as an instruction rather than as the name of a take.
   it('calls the running take what the take buttons call it', () => {
-    render(CinematicTakeProgress, { props: { take } })
+    // The clock counts from the take's own start, so a fixture frozen at
+    // module load would drift against it as the suite runs.
+    render(CinematicTakeProgress, {
+      props: { take: { ...take, startedAt: Date.now() } }
+    })
 
     const caption = screen.getByRole('status')
     expect(caption).toHaveTextContent('Shot 1, take A')
