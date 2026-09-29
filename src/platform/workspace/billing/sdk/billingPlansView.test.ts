@@ -12,6 +12,7 @@ const DECODED: BillingPlansData = {
       tier: 'CREATOR',
       duration: 'MONTHLY',
       availability: { available: true },
+      credits: 10_000n,
       credits_cents: 6900n,
       max_seats: 1n,
       price_cents: 2800n,
@@ -45,6 +46,7 @@ describe('projectBillingPlans', () => {
         tier: 'CREATOR',
         duration: 'MONTHLY',
         availability: { available: true },
+        credits: 10_000,
         credits_cents: 6900,
         max_seats: 1,
         price_cents: 2800,
@@ -82,6 +84,18 @@ describe('projectBillingPlans', () => {
     expect(projected?.plans).toHaveLength(1)
   })
 
+  it('leaves the flat credit grant absent when the catalog omitted it', () => {
+    const { credits: _credits, ...withoutCredits } = DECODED.plans[0]
+    const data: BillingPlansData = {
+      ...DECODED,
+      plans: [withoutCredits]
+    }
+
+    const projected = projectBillingPlans(data)
+
+    expect(projected?.plans[0]).not.toHaveProperty('credits')
+  })
+
   it('refuses a catalog with a price a number cannot hold exactly', () => {
     const tooLarge: BillingPlansData = {
       ...DECODED,
@@ -89,6 +103,20 @@ describe('projectBillingPlans', () => {
         {
           ...DECODED.plans[0],
           price_cents: BigInt(Number.MAX_SAFE_INTEGER) + 1n
+        }
+      ]
+    }
+
+    expect(projectBillingPlans(tooLarge)).toBeUndefined()
+  })
+
+  it('refuses a catalog with a credit grant a number cannot hold exactly', () => {
+    const tooLarge: BillingPlansData = {
+      ...DECODED,
+      plans: [
+        {
+          ...DECODED.plans[0],
+          credits: BigInt(Number.MAX_SAFE_INTEGER) + 1n
         }
       ]
     }
