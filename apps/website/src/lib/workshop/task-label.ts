@@ -31,8 +31,9 @@ const taskInputKey: Record<TaskInput, TranslationKey> = {
 export function taskLabelFor(model: WorkshopModel, locale: Locale): string {
   const task = model.task ? splitTask(model.task) : undefined
   return task && task.output !== 'other'
-    ? t('workshop.task.label', locale)
-        .replace('{input}', t(taskInputKey[task.input], locale))
-        .replace('{output}', t(modalityLabelKey[task.output], locale))
+    ? t('workshop.task.label', locale, {
+        input: t(taskInputKey[task.input], locale),
+        output: t(modalityLabelKey[task.output], locale)
+      })
     : t(modalityLabelKey[modalityOf(model)], locale)
 }
