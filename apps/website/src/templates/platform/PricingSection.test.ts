@@ -81,7 +81,7 @@ describe('PricingSection', () => {
       '{amount}',
       amount
     )
-    expect(screen.getAllByText(expected)).toHaveLength(2)
+    expect(screen.getAllByText(expected, { exact: false })).toHaveLength(2)
   })
 
   it('uses the platform heading by default and accepts overrides', () => {
