@@ -121,5 +121,15 @@ describe('WorkflowApi', () => {
         workflowSnippetRequest(model, values).prompt
       )
     })
+
+    it('offers no graph when the workflow cannot be posted to Cloud', () => {
+      render(WorkflowApi, {
+        props: { model: { ...model, type: 'SERVERLESS' }, values }
+      })
+
+      expect(
+        screen.queryByRole('button', { name: 'Download the API graph' })
+      ).toBeNull()
+    })
   })
 })
