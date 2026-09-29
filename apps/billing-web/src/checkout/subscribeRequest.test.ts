@@ -28,6 +28,7 @@ describe('buildSubscribeRequest', () => {
     plan: string
     quoted: SubscriptionPreview
     confirmationToken: string | undefined
+    savedPaymentMethodId?: string
     confirmReactivation: boolean
     returnUrl: string | undefined
     expected: SubscribeInput
@@ -46,6 +47,40 @@ describe('buildSubscribeRequest', () => {
         quote_id: 'q_1',
         quote_version: 3,
         return_url: 'https://billing.test/v1/result'
+      }
+    },
+    {
+      name: 'a quote priced with a promo code echoes the code it bound',
+      arrival,
+      plan: 'creator_monthly',
+      quoted: previewOf({
+        quote_id: 'q_3',
+        quote_version: 2,
+        promotion_code: 'LAUNCH20'
+      }),
+      confirmationToken: 'ctoken_1',
+      confirmReactivation: false,
+      returnUrl: undefined,
+      expected: {
+        plan_slug: 'creator_monthly',
+        confirmation_token: 'ctoken_1',
+        promotion_code: 'LAUNCH20',
+        quote_id: 'q_3',
+        quote_version: 2
+      }
+    },
+    {
+      name: 'a new subscription charged to a chosen saved method',
+      arrival,
+      plan: 'creator_monthly',
+      quoted: previewOf(),
+      confirmationToken: undefined,
+      savedPaymentMethodId: 'pm_saved',
+      confirmReactivation: false,
+      returnUrl: undefined,
+      expected: {
+        plan_slug: 'creator_monthly',
+        saved_payment_method_id: 'pm_saved'
       }
     },
     {
@@ -144,6 +179,7 @@ describe('buildSubscribeRequest', () => {
       plan,
       quoted,
       confirmationToken,
+      savedPaymentMethodId,
       confirmReactivation,
       returnUrl,
       expected
@@ -154,6 +190,7 @@ describe('buildSubscribeRequest', () => {
           plan,
           quoted,
           confirmationToken,
+          savedPaymentMethodId,
           confirmReactivation,
           returnUrl
         })
