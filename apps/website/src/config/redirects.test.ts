@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
+import { modelPageUrls } from './model-urls'
 import { redirects as astroRedirects } from './redirects'
 import { getRoutes } from './routes'
 
@@ -137,5 +138,34 @@ describe('legacy Enterprise redirects', () => {
     expect(findRedirect('/zh-CN/enterprise/')).toBeUndefined()
     expect(findRedirect('/enterprise/managed-builds')).toBeUndefined()
     expect(findRedirect('/enterprise/managed-builds/')).toBeUndefined()
+  })
+})
+
+function sourcePattern(source: string): RegExp {
+  const pattern = source
+    .replace(/\[\.\.\.[^\]]+\]|:[\w]+[*+]/g, '.*')
+    .replace(/\[[^\]]+\]|:[\w]+/g, '[^/]+')
+  return new RegExp(`^${pattern}/?$`)
+}
+
+describe('model page data', () => {
+  const dataPaths = [
+    '/models/catalogue.json',
+    ...modelPageUrls.map(({ oldSlug }) => `/models/${oldSlug}/page.json`)
+  ]
+  const sources = [
+    ...redirects.map(({ source }) => source),
+    ...Object.keys(astroRedirects)
+  ]
+
+  it('recognises a pattern that would swallow the data', () => {
+    expect(sourcePattern('/models/:path*').test(dataPaths[1])).toBe(true)
+  })
+
+  it('is never matched by a redirect, since /hub/models pages fetch it', () => {
+    const swallowed = sources.flatMap((source) =>
+      dataPaths.filter((path) => sourcePattern(source).test(path))
+    )
+    expect(swallowed).toEqual([])
   })
 })
