@@ -8,7 +8,9 @@ import {
 } from './refreshRemoteConfig'
 import {
   authenticatedRemoteConfigState,
+  cachedBillingControlEnabled,
   cachedLegacyBillingMigrationEnabled,
+  cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigErrorStatus,
   remoteConfigRevision,
@@ -66,6 +68,8 @@ describe('refreshRemoteConfig', () => {
     authenticatedRemoteConfigState.value = 'unloaded'
     remoteConfigRevision.value = 0
     cachedLegacyBillingMigrationEnabled.value = undefined
+    cachedBillingControlEnabled.value = undefined
+    cachedV1PaymentRecovery.value = undefined
     sessionAgentGrant.value = undefined
     sessionAgentGrantValidUntil.value = undefined
     window.__CONFIG__ = {}
@@ -79,6 +83,8 @@ describe('refreshRemoteConfig', () => {
       comfy_platform_base_url: 'https://platform.example.com'
     }
     window.__CONFIG__ = remoteConfig.value
+    sessionAgentGrant.value = true
+    sessionAgentGrantValidUntil.value = Date.now() + 60_000
 
     invalidateRemoteConfig()
 
@@ -89,6 +95,7 @@ describe('refreshRemoteConfig', () => {
     })
     expect(window.__CONFIG__).toEqual(remoteConfig.value)
     expect(remoteConfigState.value).toBe('unloaded')
+    expect(sessionAgentGrant.value).toBeUndefined()
     expect(authenticatedRemoteConfigState.value).toBe('unloaded')
     expect(sessionAgentGrantValidUntil.value).toBeUndefined()
   })
@@ -365,7 +372,12 @@ describe('refreshRemoteConfig', () => {
     })
 
     it("records this session's grant without persisting it anywhere", async () => {
-      sessionAgentGrant.value = undefined
+      // Prime the two feature values that are intentionally backed by storage,
+      // so any storage delta below can only come from the session grant.
+      localStorage.setItem('billing_control_enabled', 'false')
+      localStorage.setItem('v1_payment_recovery', 'false')
+      cachedBillingControlEnabled.value = false
+      cachedV1PaymentRecovery.value = false
       const localStorageBefore = storageEntries(localStorage)
       const sessionStorageBefore = storageEntries(sessionStorage)
       mockAuthenticatedFetch(
