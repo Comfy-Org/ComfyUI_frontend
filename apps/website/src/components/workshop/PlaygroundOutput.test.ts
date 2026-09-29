@@ -32,6 +32,21 @@ const succeeded = (out: RunOutput, nsfw = false): RunState => ({
 })
 
 describe('PlaygroundOutput', () => {
+  it('reserves a minimum height only until there is media to size the panel', async () => {
+    const { rerender } = render(PlaygroundOutput, {
+      props: {
+        modelName: 'Workflow',
+        now: 3000,
+        state: { status: 'running', startedAt: 1000, label: 'Queued' }
+      }
+    })
+    const panel = screen.getByTestId('playground-output')
+    expect(panel).toHaveClass('min-h-96')
+
+    await rerender({ state: succeeded(output('latest')) })
+    expect(panel).not.toHaveClass('min-h-96')
+  })
+
   it('uses a signed download without buffering media and refreshes an expired link', async () => {
     const user = userEvent.setup()
     const media = {
