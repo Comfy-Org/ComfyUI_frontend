@@ -185,7 +185,7 @@ test.describe('Desktop dropdown @interaction', () => {
       const card = nav.getByTestId('nav-dropdown').getByRole('link', {
         name: 'Explore the Gemini Omni 1.1 Flash release'
       })
-      await expect(card).toHaveAttribute('href', '/gemini-omni')
+      await expect(card).toHaveAttribute('href', '/gemini-omni/')
       const video = card.locator('video')
       await expect(video).toHaveAttribute(
         'src',

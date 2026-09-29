@@ -143,7 +143,7 @@ export function getMainNavigation(
         cta: {
           label: t('cta.watchDemo', locale),
           ariaLabel: t('nav.featuredCommunityCtaAria', locale),
-          href: `${routes.learning}/ads/product-photography`
+          href: `${routes.learning}ads/product-photography/`
         }
       },
       columns: [

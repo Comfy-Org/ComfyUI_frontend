@@ -37,8 +37,8 @@ describe('SiteFooter', () => {
   // The agent page gained a zh-CN twin, so the footer link has to follow the
   // active locale rather than staying pinned to the canonical /agent path.
   it.for([
-    ['en', 'Comfy Agent', '/agent'],
-    ['zh-CN', 'Comfy Agent', '/zh-CN/agent']
+    ['en', 'Comfy Agent', '/agent/'],
+    ['zh-CN', 'Comfy Agent', '/zh-CN/agent/']
   ] as const)(
     'links the Comfy Agent page at its localized path (%s)',
     ([locale, name, href]) => {
@@ -58,7 +58,7 @@ describe('SiteFooter', () => {
     const links = screen.getAllByRole('link', { name: 'MiniMax 商业许可' })
     expect(links.length).toBeGreaterThan(0)
     for (const link of links) {
-      expect(link.getAttribute('href')).toBe('/zh-CN/minimax/license')
+      expect(link.getAttribute('href')).toBe('/zh-CN/minimax/license/')
     }
   })
 })

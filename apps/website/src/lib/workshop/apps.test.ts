@@ -5,8 +5,8 @@ import { workshopAppHref, workshopApps } from './apps'
 
 describe('workshopAppHref', () => {
   it.for([
-    { app: 'studio', href: '/models/apps/cinematic-studio' },
-    { app: 'reshoot', href: '/models/apps/reshoot' }
+    { app: 'studio', href: '/models/apps/cinematic-studio/' },
+    { app: 'reshoot', href: '/models/apps/reshoot/' }
   ] as const)('puts $app at $href', ({ app, href }) => {
     expect(workshopAppHref(app, 'en')).toBe(href)
   })

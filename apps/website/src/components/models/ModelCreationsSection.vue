@@ -12,7 +12,7 @@ import GalleryDetailModal from '../gallery/GalleryDetailModal.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const modelName = 'Grok'
-const ctaHref = 'https://comfy.org/workflows/model/grok'
+const ctaHref = 'https://comfy.org/workflows/model/grok/'
 
 const items: GalleryItem[] = [
   {

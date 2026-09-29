@@ -144,7 +144,7 @@ test.describe('Enterprise pages @smoke', () => {
     await expect(page.getByRole('link', { name: 'SEE PRICING' })).toHaveCount(1)
     await expect(
       page.getByRole('link', { name: 'SEE PRICING' })
-    ).toHaveAttribute('href', '/pricing')
+    ).toHaveAttribute('href', '/pricing/')
     await expect(
       page.getByText(/Give teams a shared credit pool/)
     ).toBeVisible()

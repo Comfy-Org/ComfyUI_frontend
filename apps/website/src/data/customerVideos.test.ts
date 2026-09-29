@@ -48,7 +48,9 @@ describe('getCustomerVideoStory', () => {
 
 describe('customerVideoPath', () => {
   it('builds the watch-page path from a slug', () => {
-    expect(customerVideoPath('black-math')).toBe('/customers/videos/black-math')
+    expect(customerVideoPath('black-math')).toBe(
+      '/customers/videos/black-math/'
+    )
   })
 })
 

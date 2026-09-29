@@ -53,8 +53,13 @@ describe('localizeHref', () => {
     ).toBe('https://docs.comfy.org/agent-tools/cloud')
   })
 
-  it('never prefixes locale-invariant routes', () => {
-    expect(localizeHref('/terms-of-service', 'zh-CN')).toBe('/terms-of-service')
+  it.for([
+    '/terms-of-service',
+    '/terms-of-service/',
+    '/models/',
+    '/models/apps/reshoot/'
+  ])('never prefixes the locale-invariant route %s', (href) => {
+    expect(localizeHref(href, 'zh-CN')).toBe(href)
   })
 
   it('links to translated enterprise pages', () => {
@@ -73,33 +78,49 @@ describe('localizeHref', () => {
 describe('getRoutes workshop', () => {
   it('keeps the workshop routes locale-invariant', () => {
     for (const locale of ['en', 'zh-CN', 'ja'] as const) {
-      expect(getRoutes(locale).workshop).toBe('/models')
+      expect(getRoutes(locale).workshop).toBe('/models/')
       expect(getRoutes(locale).workshopSignIn).toBe('/login/')
     }
   })
 
   it('still localizes the rest of the Japanese routes', () => {
     expect(getRoutes('ja').home).toBe('/ja/')
-    expect(getRoutes('ja').cloud).toBe('/cloud')
+    expect(getRoutes('ja').cloud).toBe('/cloud/')
+  })
+})
+
+describe('getRoutes', () => {
+  it.for(['en', 'zh-CN', 'ja'] as const)(
+    'ends every %s page route with a slash',
+    (locale) => {
+      const slashless = Object.values(getRoutes(locale)).filter(
+        (path) => !path.endsWith('/')
+      )
+      expect(slashless).toEqual([])
+    }
+  )
+
+  it('keeps localized routes slash-terminated', () => {
+    expect(getRoutes('zh-CN').pricing).toBe('/zh-CN/pricing/')
   })
 })
 
 describe('getRoutes models', () => {
   it('serves the models catalog at its canonical path for zh-CN', () => {
-    expect(getRoutes('zh-CN').models).toBe('/p/supported-models')
+    expect(getRoutes('zh-CN').models).toBe('/p/supported-models/')
   })
 })
 
 describe('getRoutes minimaxLicenseProfessionalRequest', () => {
   it('serves the license request page at its canonical path for en', () => {
     expect(getRoutes('en').minimaxLicenseProfessionalRequest).toBe(
-      '/minimax/license/professional-request'
+      '/minimax/license/professional-request/'
     )
   })
 
   it('never prefixes the English-only license request page for zh-CN', () => {
     expect(getRoutes('zh-CN').minimaxLicenseProfessionalRequest).toBe(
-      '/minimax/license/professional-request'
+      '/minimax/license/professional-request/'
     )
   })
 })

@@ -15,8 +15,8 @@ describe('getMainNavigation', () => {
               )
             : [item.href]
         )
-      expect(links(false)).not.toContain('/models')
-      expect(links(true).filter((href) => href === '/models')).toHaveLength(2)
+      expect(links(false)).not.toContain('/models/')
+      expect(links(true).filter((href) => href === '/models/')).toHaveLength(2)
     }
   )
   it('includes a Products entry linking to Enterprise Managed Builds', () => {
@@ -30,7 +30,7 @@ describe('getMainNavigation', () => {
 
     expect(managedBuildsEntry).toMatchObject({
       label: 'Managed Builds',
-      href: '/enterprise/managed-builds'
+      href: '/enterprise/managed-builds/'
     })
   })
 
@@ -49,23 +49,23 @@ describe('getMainNavigation', () => {
   ] as const
 
   it.for([
-    { locale: 'en', card: featuredCards[0], href: '/gemini-omni' },
-    { locale: 'zh-CN', card: featuredCards[0], href: '/zh-CN/gemini-omni' },
-    { locale: 'ja', card: featuredCards[0], href: '/gemini-omni' },
+    { locale: 'en', card: featuredCards[0], href: '/gemini-omni/' },
+    { locale: 'zh-CN', card: featuredCards[0], href: '/zh-CN/gemini-omni/' },
+    { locale: 'ja', card: featuredCards[0], href: '/gemini-omni/' },
     {
       locale: 'en',
       card: featuredCards[1],
-      href: '/learning/ads/product-photography'
+      href: '/learning/ads/product-photography/'
     },
     {
       locale: 'zh-CN',
       card: featuredCards[1],
-      href: '/zh-CN/learning/ads/product-photography'
+      href: '/zh-CN/learning/ads/product-photography/'
     },
     {
       locale: 'ja',
       card: featuredCards[1],
-      href: '/learning/ads/product-photography'
+      href: '/learning/ads/product-photography/'
     }
   ] as const)(
     'links the featured card to $href for $locale',

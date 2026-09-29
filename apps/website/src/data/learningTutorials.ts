@@ -863,11 +863,11 @@ export const youtubeEmbedUrl = (id: string): string =>
 
 /** Canonical path for a category's directory page (wrap with localizeHref for zh-CN). */
 export const categoryPath = (category: LearningCategory): string =>
-  `/learning/${category}`
+  `/learning/${category}/`
 
 /** Canonical path for a tutorial's detail page (wrap with localizeHref for zh-CN). */
 export const tutorialPath = (tutorial: LearningTutorial): string =>
-  `${categoryPath(tutorial.category)}/${tutorial.slug}`
+  `${categoryPath(tutorial.category)}${tutorial.slug}/`
 
 export interface LearningCrumb {
   name: string
@@ -883,7 +883,7 @@ export const learningCrumbs = (
   category?: LearningCategory
 ): LearningCrumb[] => [
   { name: t('breadcrumb.home', locale), path: '/' },
-  { name: t('learning.title', locale), path: '/learning' },
+  { name: t('learning.title', locale), path: '/learning/' },
   ...(category
     ? [
         {

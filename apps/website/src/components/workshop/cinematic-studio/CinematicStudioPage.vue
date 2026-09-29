@@ -65,7 +65,7 @@ function showApp(id: WorkshopAppId) {
   const name = appOptions.value.find((option) => option.id === id)?.label
   if (name) document.title = `${name} - Comfy`
   const url = new URL(window.location.href)
-  url.pathname = `${workshopAppHref(id, locale)}/`
+  url.pathname = workshopAppHref(id, locale)
   url.searchParams.delete('app')
   window.history.replaceState(window.history.state, '', url)
 }

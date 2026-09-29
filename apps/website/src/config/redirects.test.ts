@@ -31,8 +31,8 @@ function findRedirect(source: string): VercelRedirect | undefined {
   return redirects.find((redirect) => redirect.source === source)
 }
 
-const minimaxCanonical = `${getRoutes('en').minimax}/`
-const minimaxZhCanonical = `${getRoutes('zh-CN').minimax}/`
+const minimaxCanonical = getRoutes('en').minimax
+const minimaxZhCanonical = getRoutes('zh-CN').minimax
 
 describe('legacy MiniMax H3 redirects', () => {
   it.for([
@@ -57,9 +57,9 @@ describe('legacy MiniMax H3 redirects', () => {
   )
 
   it.for([
-    getRoutes('en').minimax,
+    '/minimax-h3',
     minimaxCanonical,
-    getRoutes('zh-CN').minimax,
+    '/zh-CN/minimax-h3',
     minimaxZhCanonical
   ])('leaves the new canonical path %s unredirected', (canonicalPath) => {
     expect(findRedirect(canonicalPath)).toBeUndefined()
@@ -97,11 +97,11 @@ describe('legacy Enterprise redirects', () => {
   const cases = [
     {
       source: '/cloud/enterprise',
-      destination: `${getRoutes('en').enterprise}/`
+      destination: getRoutes('en').enterprise
     },
     {
       source: '/zh-CN/cloud/enterprise',
-      destination: `${getRoutes('zh-CN').enterprise}/`
+      destination: getRoutes('zh-CN').enterprise
     }
   ] as const
   const vercelCases = cases.flatMap(({ source, destination }) => [

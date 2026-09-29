@@ -45,7 +45,7 @@ test.describe('Customer watch pages @smoke', () => {
         breadcrumb.getByRole('link', {
           name: t('nav.customerStories', 'en')
         })
-      ).toHaveAttribute('href', '/customers')
+      ).toHaveAttribute('href', '/customers/')
       // The current page is plain text, never a link, in both the visible
       // breadcrumb and the JSON-LD BreadcrumbList.
       await expect(breadcrumb.getByText(story.title)).toBeVisible()
@@ -100,7 +100,7 @@ test.describe('Customer watch pages @smoke', () => {
 
       await expect(
         page.getByRole('link', { name: t('customers.watch.browseAll', 'en') })
-      ).toHaveAttribute('href', '/customers')
+      ).toHaveAttribute('href', '/customers/')
     })
   }
 
