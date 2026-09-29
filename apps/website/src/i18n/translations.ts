@@ -32,14 +32,6 @@ const translations = {
   'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
   'workshop.catalogue.workflowsSubtitle': {
     en: 'Turn your ideas into finished results with multi-step workflows powered by AI models.',
-    'zh-CN': '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
-  },
-  'workshop.catalogue.appsSubtitle': {
-    en: 'Take on bigger ideas with apps that bring multiple workflows together.',
-    'zh-CN': '用整合多个工作流的应用，挑战更大的创意。'
-  },
-  'workshop.catalogue.workflowsSubtitle': {
-    en: 'Turn your ideas into finished results with multi-step workflows powered by AI models.',
     'zh-CN': '用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。'
   },
   'workshop.catalogue.appsSubtitle': {
