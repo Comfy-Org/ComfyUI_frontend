@@ -1,8 +1,11 @@
 import type { BrowserContext, TestDetails, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import { SessionAdmin } from '@e2e/fixtures/helpers/SessionAdmin'
+import type { SessionAccount } from '@e2e/fixtures/helpers/SessionAdmin'
 import { SessionTab } from '@e2e/fixtures/helpers/SessionTab'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   CrossOriginSessionEnv,
   CrossOriginSessionEnvKey,
@@ -10,7 +13,7 @@ import type {
 } from '@e2e/fixtures/utils/crossOriginSessionConfig'
 import {
   allowedOrigins,
-  mappedOrigins,
+  localUpstreamFor,
   missingSessionEnv,
   parseCrossOriginSessionEnv,
   refusedComfyEgress
@@ -21,8 +24,6 @@ type StringEnvKey = Exclude<
   CrossOriginSessionEnvKey,
   'SESSION_E2E_EXTRA_ORIGINS'
 >
-
-type SessionAccount = { email: string; password: string }
 
 const UNIFIED_WEB_SESSION = 'unified_web_session'
 
@@ -52,11 +53,10 @@ async function installSessionRouting(
   env: CrossOriginSessionEnv,
   networkPolicy: NetworkPolicy
 ) {
-  const mapped = mappedOrigins(env)
   await context.route('**/*', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
-    const localOrigin = mapped.get(url.origin)
+    const localOrigin = localUpstreamFor(url, env)
     if (localOrigin) {
       const response = await route.fetch({
         url: `${localOrigin}${url.pathname}${url.search}`,
@@ -94,12 +94,19 @@ export function expectStepsWritten(): never {
   )
 }
 
-export async function signInOnCloud(
+export type SignInOptions = { unifiedWebSession: boolean }
+
+async function openCloudLogin(cloud: SessionTab) {
+  await cloud.goto('/cloud/login')
+}
+
+/** From the login page: email sign-in, then wait until Cloud accepts it. */
+export async function submitEmailSignIn(
   cloud: SessionTab,
-  account: SessionAccount
+  account: SessionAccount,
+  { unifiedWebSession }: SignInOptions
 ) {
   const { page } = cloud
-  await cloud.goto('/cloud/login')
   await page
     .getByRole('button', { name: 'Use email instead', exact: true })
     .click()
@@ -111,18 +118,89 @@ export async function signInOnCloud(
     (response) =>
       new URL(response.url()).pathname === '/v1/accounts:signInWithPassword'
   )
+  const sessionCreate = unifiedWebSession
+    ? page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          new URL(response.url()).pathname === '/api/auth/session'
+      )
+    : undefined
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   expect((await firebaseSignIn).ok(), 'Firebase accepts the credentials').toBe(
     true
   )
+  if (sessionCreate) {
+    expect(
+      (await sessionCreate).ok(),
+      'session create refused; 429 means the hourly create limit'
+    ).toBe(true)
+  }
   await expect(page, 'Cloud leaves the login page').not.toHaveURL(/\/login/)
 }
+
+export async function signInOnCloud(
+  cloud: SessionTab,
+  account: SessionAccount,
+  options: SignInOptions
+) {
+  await openCloudLogin(cloud)
+  await submitEmailSignIn(cloud, account, options)
+}
+
+export async function waitForCloudApp(cloud: SessionTab) {
+  await expect(
+    cloud.page.getByTestId(TestIds.user.currentUserButton)
+  ).toBeVisible()
+}
+
+/** Opens the user menu, reads the active workspace's name, closes it again. */
+export async function expectActiveWorkspace(cloud: SessionTab, name: string) {
+  const { page } = cloud
+  const menuButton = page.getByTestId(TestIds.user.currentUserButton)
+  const switcher = page.getByTestId('workspace-switcher-trigger')
+  await menuButton.click()
+  await expect(switcher).toContainText(name)
+  await menuButton.click()
+  await expect(switcher).toBeHidden()
+}
+
+export async function expectOnWebSession(cloud: SessionTab) {
+  await expect
+    .poll(() => cloud.sessionCalls.calls, {
+      message: 'Cloud reads its web session'
+    })
+    .toContain(`GET ${cloud.origin}/api/auth/session`)
+  const request = await cloud.nextSessionRequest(cloud.origin)
+  expect(request.authorization, 'A session request carries no token').toBeNull()
+}
+
+export async function expectOffWebSession(cloud: SessionTab) {
+  expect(
+    cloud.sessionCalls.calls,
+    'Flag off never reads a web session'
+  ).not.toContain(`GET ${cloud.origin}/api/auth/session`)
+  const request = await cloud.nextTokenRequest(cloud.origin)
+  expect(request.authorization, 'Flag off sends the Firebase token').toMatch(
+    /^Bearer /
+  )
+  await cloud.sockets.waitForSocket(
+    ({ pathname, searchParams }) =>
+      pathname === '/ws' && searchParams.has('token')
+  )
+}
+
+type NewCloudTab = (options?: {
+  unifiedWebSession?: boolean
+}) => Promise<SessionTab>
 
 export const crossOriginSessionFixture = base.extend<
   CrossOriginSessionOptions & {
     sessionEnv: CrossOriginSessionEnv
     sessionAccount: SessionAccount
     teamWorkspaceId: string
+    sessionAdmin: SessionAdmin
+    sessionCleanup: void
+    newCloudTab: NewCloudTab
     cloudTab: SessionTab
     websiteTab: SessionTab
     billingTab: SessionTab
@@ -174,19 +252,44 @@ export const crossOriginSessionFixture = base.extend<
     requireEnv(sessionEnv, ['SESSION_E2E_TEAM_WORKSPACE_ID'], testInfo)
     await use(envValue(sessionEnv, 'SESSION_E2E_TEAM_WORKSPACE_ID'))
   },
-  cloudTab: async (
+  sessionAdmin: async ({ playwright, sessionEnv, networkPolicy }, use) => {
+    const request = await playwright.request.newContext()
+    await use(new SessionAdmin(request, sessionEnv, networkPolicy))
+    await request.dispose()
+  },
+  sessionCleanup: [
+    async ({ sessionAdmin, sessionEnv, unifiedWebSession }, use, testInfo) => {
+      if (!unifiedWebSession) {
+        await use()
+        return
+      }
+      requireEnv(
+        sessionEnv,
+        ['SESSION_E2E_CLOUD_URL', 'SESSION_E2E_EMAIL', 'SESSION_E2E_PASSWORD'],
+        testInfo
+      )
+      await sessionAdmin.revokeAll()
+      await use()
+      await sessionAdmin.revokeAll()
+    },
+    { auto: true }
+  ],
+  newCloudTab: async (
     { context, sessionEnv, unifiedWebSession },
     use,
     testInfo
   ) => {
     requireEnv(sessionEnv, ['SESSION_E2E_CLOUD_URL'], testInfo)
+    const cloudUrl = envValue(sessionEnv, 'SESSION_E2E_CLOUD_URL')
     await use(
-      new SessionTab(
-        await context.newPage(),
-        envValue(sessionEnv, 'SESSION_E2E_CLOUD_URL'),
-        { ff: `${UNIFIED_WEB_SESSION}:${unifiedWebSession}` }
-      )
+      async ({ unifiedWebSession: flag = unifiedWebSession } = {}) =>
+        new SessionTab(await context.newPage(), cloudUrl, {
+          ff: `${UNIFIED_WEB_SESSION}:${flag}`
+        })
     )
+  },
+  cloudTab: async ({ newCloudTab }, use) => {
+    await use(await newCloudTab())
   },
   websiteTab: async ({ context, sessionEnv }, use, testInfo) => {
     requireEnv(

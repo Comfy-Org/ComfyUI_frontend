@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   allowedOrigins,
-  mappedOrigins,
+  localUpstreamFor,
   missingSessionEnv,
   parseCrossOriginSessionEnv,
   refusedComfyEgress
@@ -54,16 +54,41 @@ describe('parseCrossOriginSessionEnv', () => {
 describe('session env helpers', () => {
   const env = parseCrossOriginSessionEnv({
     SESSION_E2E_CLOUD_URL: 'https://testcloud.comfy.org',
+    SESSION_E2E_CLOUD_UPSTREAM: 'http://localhost:4173',
     SESSION_E2E_WEBSITE_URL: 'https://www.comfy.org/',
     SESSION_E2E_WEBSITE_UPSTREAM: 'http://localhost:4321/',
     SESSION_E2E_BILLING_URL: 'https://testbilling.comfy.org',
     SESSION_E2E_EXTRA_ORIGINS: 'https://challenges.cloudflare.com'
   })
 
-  it('maps only sites that have a local upstream', () => {
-    expect([...mappedOrigins(env)]).toEqual([
-      ['https://www.comfy.org', 'http://localhost:4321']
-    ])
+  it.for([
+    ['https://testcloud.comfy.org/api/features', undefined],
+    ['https://testcloud.comfy.org/api/auth/session', undefined],
+    ['https://testcloud.comfy.org/ws', undefined],
+    ['https://testcloud.comfy.org/internal/x', undefined],
+    ['https://testcloud.comfy.org/cloud/login', 'http://localhost:4173'],
+    ['https://testcloud.comfy.org/assets/x.js', 'http://localhost:4173'],
+    ['https://testcloud.comfy.org/oauth/consent', 'http://localhost:4173'],
+    ['https://testcloud.comfy.org/oauth/token', undefined],
+    ['https://testcloud.comfy.org/apix', 'http://localhost:4173'],
+    ['https://www.comfy.org/api/x', 'http://localhost:4321'],
+    ['https://testbilling.comfy.org/', undefined],
+    ['https://elsewhere.comfy.org/', undefined]
+  ] as const)('serves %s from %s', ([url, upstream]) => {
+    expect(localUpstreamFor(new URL(url), env)).toBe(upstream)
+  })
+
+  it('serves billing-web whole when it has an upstream', () => {
+    const withBilling = parseCrossOriginSessionEnv({
+      SESSION_E2E_BILLING_URL: 'https://testbilling.comfy.org',
+      SESSION_E2E_BILLING_UPSTREAM: 'http://localhost:5174'
+    })
+    expect(
+      localUpstreamFor(
+        new URL('https://testbilling.comfy.org/api/x'),
+        withBilling
+      )
+    ).toBe('http://localhost:5174')
   })
 
   it('allows the configured sites, Firebase Auth and the extra origins', () => {

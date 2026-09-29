@@ -14,7 +14,8 @@ test.describe(
       sessionEnv,
       websiteTab,
       cloudTab,
-      sessionAccount
+      sessionAccount,
+      unifiedWebSession
     }) => {
       const website = await websiteTab.goto('/')
       expect(website?.headers()[SERVED_LOCALLY_HEADER]).toBe(
@@ -38,7 +39,7 @@ test.describe(
         websiteTab.origin
       )
 
-      await signInOnCloud(cloudTab, sessionAccount)
+      await signInOnCloud(cloudTab, sessionAccount, { unifiedWebSession })
       expect(cloudTab.firebaseCalls.calls).not.toHaveLength(0)
     })
   }

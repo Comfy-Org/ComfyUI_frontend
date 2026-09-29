@@ -68,6 +68,7 @@ const originList = z
 
 const crossOriginSessionEnvSchema = z.object({
   SESSION_E2E_CLOUD_URL: nonProductionComfyOrigin.optional(),
+  SESSION_E2E_CLOUD_UPSTREAM: upstream.optional(),
   SESSION_E2E_WEBSITE_URL: nonProductionComfyOrigin.optional(),
   SESSION_E2E_WEBSITE_UPSTREAM: upstream.optional(),
   SESSION_E2E_BILLING_URL: nonProductionComfyOrigin.optional(),
@@ -107,17 +108,51 @@ export function missingSessionEnv(
   return keys.filter((key) => env[key] === undefined)
 }
 
-/** Origins served from a local upstream instead of the network. */
-export function mappedOrigins(env: CrossOriginSessionEnv): Map<string, string> {
-  const pairs: [string | undefined, string | undefined][] = [
-    [env.SESSION_E2E_WEBSITE_URL, env.SESSION_E2E_WEBSITE_UPSTREAM],
-    [env.SESSION_E2E_BILLING_URL, env.SESSION_E2E_BILLING_UPSTREAM]
-  ]
-  return new Map(
-    pairs.flatMap(([siteOrigin, localOrigin]) =>
-      siteOrigin && localOrigin ? [[siteOrigin, localOrigin]] : []
-    )
+const CLOUD_BACKEND_PREFIXES = [
+  '/api',
+  '/internal',
+  '/oauth',
+  '/ws',
+  '/workflow_templates',
+  '/extensions',
+  '/docs',
+  '/templates'
+] as const
+
+const CLOUD_OWNED_PATHS = ['/oauth/consent'] as const
+
+function isPathUnder(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`)
+}
+
+function isCloudBackendPath(pathname: string): boolean {
+  return (
+    CLOUD_BACKEND_PREFIXES.some((prefix) => isPathUnder(pathname, prefix)) &&
+    !CLOUD_OWNED_PATHS.some((path) => isPathUnder(pathname, path))
   )
+}
+
+/**
+ * The local upstream that serves this request, if any. The website and
+ * billing-web are served whole; Cloud is served only outside the backend
+ * prefixes, so its API and socket traffic still reach the real backend.
+ */
+export function localUpstreamFor(
+  url: URL,
+  env: CrossOriginSessionEnv
+): string | undefined {
+  if (url.origin === env.SESSION_E2E_CLOUD_URL) {
+    return isCloudBackendPath(url.pathname)
+      ? undefined
+      : env.SESSION_E2E_CLOUD_UPSTREAM
+  }
+  if (url.origin === env.SESSION_E2E_WEBSITE_URL) {
+    return env.SESSION_E2E_WEBSITE_UPSTREAM
+  }
+  if (url.origin === env.SESSION_E2E_BILLING_URL) {
+    return env.SESSION_E2E_BILLING_UPSTREAM
+  }
+  return undefined
 }
 
 export function allowedOrigins(env: CrossOriginSessionEnv): Set<string> {

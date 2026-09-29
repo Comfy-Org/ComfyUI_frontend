@@ -1,8 +1,28 @@
+import { expect } from '@playwright/test'
+
+import type { SessionTab } from '@e2e/fixtures/helpers/SessionTab'
 import {
   blockedBy,
   crossOriginSessionFixture as test,
-  expectStepsWritten
+  expectActiveWorkspace,
+  expectOffWebSession,
+  expectOnWebSession,
+  expectStepsWritten,
+  signInOnCloud,
+  waitForCloudApp
 } from '@e2e/fixtures/crossOriginSessionFixture'
+
+const WORKSPACE_LINK = /[?&]workspace=/
+const FLAG_ON = 'unified_web_session:true'
+const FLAG_OFF = 'unified_web_session:false'
+
+async function reloadAndReadScope(tab: SessionTab) {
+  tab.reset()
+  await tab.page.reload()
+  const request = await tab.nextSessionRequest(tab.origin)
+  const socket = new URL((await tab.cloudSocket()).url())
+  return { request, socket }
+}
 
 test.describe(
   'Cross-origin session, section 17 end to end',
@@ -11,7 +31,7 @@ test.describe(
     test.fixme(
       '[E2E-01] sign in on Cloud, arrive signed in on the website with zero Firebase calls there',
       blockedBy(
-        'FE-2896 website header, FE-2894 boot rules; C3 BE-17063 and C11 BE-17136 on testcloud'
+        'BE-17276: web_session_probe is false on testcloud, so the website never takes the session path'
       ),
       expectStepsWritten
     )
@@ -19,16 +39,51 @@ test.describe(
     test.fixme(
       '[E2E-02] sign in on the website, arrive signed in on Cloud with zero Firebase calls there',
       blockedBy(
-        'FE-2897 create on sign-in, FE-2903 Cloud lifecycle; C1 BE-17061 and C3 BE-17063 on testcloud'
+        'Product gap: the website sign-in creates no web session, and Cloud still needs its own Firebase login'
       ),
       expectStepsWritten
     )
 
-    test.fixme(
-      '[E2E-03] two tabs stay in two different workspaces',
-      blockedBy('FE-2904 workspace header; C5 BE-17066 on testcloud'),
-      expectStepsWritten
-    )
+    test('[E2E-03] two tabs stay in two different workspaces', async ({
+      sessionAccount,
+      sessionAdmin,
+      teamWorkspaceId,
+      cloudTab,
+      newCloudTab
+    }) => {
+      const { personalId, team } =
+        await sessionAdmin.workspaces(teamWorkspaceId)
+
+      await signInOnCloud(cloudTab, sessionAccount, { unifiedWebSession: true })
+      await cloudTab.goto(`/?workspace=${personalId}`)
+      await expect(cloudTab.page).not.toHaveURL(WORKSPACE_LINK)
+      await waitForCloudApp(cloudTab)
+
+      const teamTab = await newCloudTab()
+      await teamTab.goto(`/?workspace=${team.id}`)
+      await expect(teamTab.page).not.toHaveURL(WORKSPACE_LINK)
+      await waitForCloudApp(teamTab)
+      await expectActiveWorkspace(teamTab, team.name)
+
+      const inTeam = await reloadAndReadScope(teamTab)
+      expect(inTeam.request).toEqual({
+        workspaceId: team.id,
+        authorization: null
+      })
+      expect(inTeam.socket.searchParams.get('workspace_id')).toBe(team.id)
+      expect(inTeam.socket.searchParams.has('token')).toBe(false)
+
+      const inPersonal = await reloadAndReadScope(cloudTab)
+      expect(inPersonal.request).toEqual({
+        workspaceId: null,
+        authorization: null
+      })
+      expect(inPersonal.socket.searchParams.has('workspace_id')).toBe(false)
+      expect(inPersonal.socket.searchParams.has('token')).toBe(false)
+
+      teamTab.tokenMints.expectNone('The team tab mints no workspace token')
+      cloudTab.tokenMints.expectNone('The personal tab mints no token')
+    })
 
     test.fixme(
       '[E2E-04] team-workspace media loads from that workspace',
@@ -39,21 +94,57 @@ test.describe(
     test.fixme(
       '[E2E-05] sign out on one site, the other site signs out and its socket closes',
       blockedBy(
-        'FE-2897 lifecycle, FE-2903 Cloud lifecycle, FE-2905 socket; C6 BE-17067 on testcloud'
+        'BE-17276: web_session_probe is false on testcloud, so the second site never takes the session path'
       ),
       expectStepsWritten
     )
 
     test.fixme(
       '[E2E-06] a user removed from a workspace is refused on the next request and the UI falls back',
-      blockedBy('FE-2904 403 handling; C5 BE-17066 on testcloud'),
+      blockedBy('A member account: removing the owner account is not a test'),
       expectStepsWritten
     )
 
     test.fixme(
       "[E2E-07] sign out of all devices ends every site's session",
-      blockedBy('FE-2897 lifecycle; C2 BE-17064 revoke-all on testcloud'),
+      blockedBy(
+        'BE-17276: web_session_probe is false on testcloud, so the other sites never take the session path'
+      ),
       expectStepsWritten
+    )
+
+    test(
+      '[E2E-09] an already signed-in user crosses each rollout step without being signed out',
+      {
+        annotation: {
+          type: 'pending-step',
+          description:
+            'The website step waits for PR 2 (BE-17276: probe on testcloud)'
+        }
+      },
+      async ({ sessionAccount, newCloudTab }) => {
+        const cloud = await newCloudTab({ unifiedWebSession: false })
+
+        await signInOnCloud(cloud, sessionAccount, { unifiedWebSession: false })
+        await waitForCloudApp(cloud)
+        await expectOffWebSession(cloud)
+
+        cloud.reset()
+        await cloud.goto('/', { ff: FLAG_ON })
+        await waitForCloudApp(cloud)
+        await expectOnWebSession(cloud)
+        expect(
+          cloud.sessionCalls.calls.filter(
+            (call) => call === `POST ${cloud.origin}/api/auth/session`
+          ).length,
+          'Turning the flag on creates at most one session'
+        ).toBeLessThanOrEqual(1)
+
+        cloud.reset()
+        await cloud.goto('/', { ff: FLAG_OFF })
+        await waitForCloudApp(cloud)
+        await expectOffWebSession(cloud)
+      }
     )
   }
 )
@@ -62,20 +153,44 @@ test.describe(
   'Cross-origin session, section 17 end to end, flag off',
   { tag: ['@session', '@flag-off'] },
   () => {
-    test.fixme(
-      '[E2E-08] flag off, every app behaves exactly as today',
-      blockedBy(
-        'FE-2891 flag reader (#18708) and the apps reading it (FE-2894, FE-2903); HARNESS-01 covers the baseline until then'
-      ),
-      expectStepsWritten
-    )
+    test('[E2E-08] flag off, every app behaves exactly as today', async ({
+      sessionAccount,
+      cloudTab,
+      websiteTab,
+      billingTab
+    }) => {
+      await signInOnCloud(cloudTab, sessionAccount, {
+        unifiedWebSession: false
+      })
+      await waitForCloudApp(cloudTab)
+      await expectOffWebSession(cloudTab)
 
-    test.fixme(
-      '[E2E-09] an already signed-in user crosses each rollout step without being signed out',
-      blockedBy(
-        'FE-2903 Cloud lifecycle, FE-2907 rollout steps; C1 BE-17061, C3 BE-17063 and BE-17135 on testcloud'
-      ),
-      expectStepsWritten
-    )
+      const featureReadsWithClient: string[] = []
+      websiteTab.page.on('request', (request) => {
+        if (
+          new URL(request.url()).pathname === '/api/features' &&
+          'x-comfy-client' in request.headers()
+        ) {
+          featureReadsWithClient.push(request.url())
+        }
+      })
+      await websiteTab.goto('/')
+      await expect(
+        websiteTab.page.getByRole('link', { name: 'Sign in', exact: true })
+      ).toBeVisible()
+      websiteTab.sessionCalls.expectNone('The website reads no web session')
+      expect(
+        featureReadsWithClient,
+        'The website sends no credentialed flag read'
+      ).toEqual([])
+
+      await billingTab.goto('/')
+      await expect(
+        billingTab.page.getByRole('heading', {
+          name: 'Sign in to your account'
+        })
+      ).toBeVisible()
+      billingTab.sessionCalls.expectNone('billing-web reads no web session')
+    })
   }
 )
