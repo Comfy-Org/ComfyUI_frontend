@@ -280,6 +280,36 @@ describe('HostTelemetrySink', () => {
       properties: { reason: 'tour_active' }
     },
     {
+      name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentOfferExited({
+          exit: 'workspace_switching',
+          stage: 'offer',
+          retry_armed: true
+        }),
+      properties: {
+        exit: 'workspace_switching',
+        stage: 'offer',
+        retry_armed: true
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentOfferExited({
+          exit: 'scope_probe_failed',
+          stage: 'request',
+          retry_armed: false,
+          trigger: 'first_load'
+        }),
+      properties: {
+        exit: 'scope_probe_failed',
+        stage: 'request',
+        retry_armed: false,
+        trigger: 'first_load'
+      }
+    },
+    {
       name: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentOnboardingNotShown({

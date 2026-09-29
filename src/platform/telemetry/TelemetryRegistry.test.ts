@@ -361,6 +361,36 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentConsentNotOffered({ reason: 'first_run_screen' })
       },
       {
+        method: 'trackAgentConsentOfferExited',
+        expected: {
+          exit: 'already_offered',
+          stage: 'offer',
+          retry_armed: false
+        },
+        invoke: (registry) =>
+          registry.trackAgentConsentOfferExited({
+            exit: 'already_offered',
+            stage: 'offer',
+            retry_armed: false
+          })
+      },
+      {
+        method: 'trackAgentConsentOfferExited',
+        expected: {
+          exit: 'scope_changed_after_read',
+          stage: 'request',
+          retry_armed: false,
+          trigger: 'button_click'
+        },
+        invoke: (registry) =>
+          registry.trackAgentConsentOfferExited({
+            exit: 'scope_changed_after_read',
+            stage: 'request',
+            retry_armed: false,
+            trigger: 'button_click'
+          })
+      },
+      {
         method: 'trackAgentOnboardingNotShown',
         expected: { reason: 'app_mode' },
         invoke: (registry) =>
