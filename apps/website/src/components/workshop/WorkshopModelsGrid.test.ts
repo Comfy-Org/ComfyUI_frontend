@@ -146,7 +146,7 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toHaveLength(3)
   })
 
-  it('clears filter chips without leaving Browse all models', async () => {
+  it('clears the filters without leaving Browse all models', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
@@ -156,7 +156,7 @@ describe('WorkshopModelsGrid', () => {
     await user.click(
       within(dialog).getByRole('button', { name: 'Edit images 1' })
     )
-    await user.click(screen.getByTestId('workshop-filter-chips-clear'))
+    await user.click(within(dialog).getByTestId('workshop-filter-clear'))
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'All models 3'
@@ -165,69 +165,69 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toHaveLength(3)
   })
 
-  it('names the section it was browsing, and leaves it from that name', async () => {
+  // A shelf and the filter are the same choice: opening "Edit images" has to
+  // leave the menu saying so, or the reader sees a narrowed grid with nothing
+  // anywhere to say what narrowed it.
+  it('opens a shelf as the filter it is', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
     await user.click(screen.getByRole('button', { name: 'Edit images' }))
-    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Edit images'
     )
-
-    await user.click(screen.getByRole('button', { name: 'Remove Edit images' }))
-    expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
-    expect(cardNames()).toHaveLength(3)
-  })
-
-  it('names the use case it was narrowed by, and lets go of it from that name', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
+    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
 
     await user.click(screen.getByRole('button', { name: 'Use cases' }))
     const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Edit images 1' })
-    )
-    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
-      'Edit images'
-    )
-
-    await user.click(screen.getByRole('button', { name: 'Remove Edit images' }))
-    expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
-    expect(cardNames()).toHaveLength(3)
-  })
-
-  // A cross that cleared everything would pass a test that only ever set one
-  // filter, so this one sets two and keeps the other.
-  it('takes off the chip that was pressed and leaves the rest alone', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
-
-    await user.click(screen.getByRole('button', { name: 'Use cases' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Edit images 1' })
-    )
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Generate videos 1' })
-    )
-
-    await user.click(screen.getByRole('button', { name: 'Remove Edit images' }))
-    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
-      'Generate videos'
-    )
-    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
-    // The pressed cross went with its chip; focus stays in the row.
     expect(
-      screen.getByRole('button', { name: 'Remove Generate videos' })
-    ).toHaveFocus()
-
-    await user.click(screen.getByTestId('workshop-filter-chips-clear'))
-    expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Use cases' })).toHaveFocus()
+      within(dialog).getByRole('button', { name: 'Edit images 1' })
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(within(dialog).getByText('1 selected')).toBeTruthy()
   })
 
-  it('replaces a browsed section with a use-case filter', async () => {
+  it('counts what the menu narrowed by, and lets go of it from the menu', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Use cases' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Edit images 1' })
+    )
+    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Edit images 1' })
+    )
+    expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
+    expect(cardNames()).toHaveLength(3)
+  })
+
+  // Letting go of one choice must not take the others with it, which a test
+  // that only ever sets one would never catch.
+  it('lets go of one use case and leaves the rest alone', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Use cases' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Edit images 1' })
+    )
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Generate videos 1' })
+    )
+    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('2')
+
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Edit images 1' })
+    )
+    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+  })
+
+  it('adds a menu choice to the shelf already open', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
@@ -238,7 +238,45 @@ describe('WorkshopModelsGrid', () => {
       within(dialog).getByRole('button', { name: 'Generate videos 1' })
     )
 
-    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('2')
+    expect(cardNames()).toHaveLength(2)
+    expect(cardNames()).toEqual(
+      expect.arrayContaining([expect.stringContaining('Kling AI')])
+    )
+  })
+
+  // Coming back from a model, a browser can restore this page from its cache
+  // with the shelf still open, so the reader lands on a narrowed catalogue the
+  // address does not name. Reported by Eric: back should reach all models.
+  it('starts from the address again when the browser restores the page', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
+    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+
+    const restored = new Event('pageshow')
+    Object.defineProperty(restored, 'persisted', { value: true })
+    window.dispatchEvent(restored)
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
+    )
+    expect(cardNames()).toHaveLength(3)
+  })
+
+  // A first load is a pageshow too, and it must not throw away a shelf the
+  // visitor opened before the page had finished settling.
+  it('keeps the open shelf when the page was not restored', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
+    window.dispatchEvent(new Event('pageshow'))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+    )
   })
 
   it('narrows the use-case menu with its search box', async () => {
