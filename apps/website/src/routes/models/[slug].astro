@@ -9,6 +9,7 @@ import {
   hubModelSlugs,
   hubWorkflowName
 } from '../../config/hub-models'
+import { isIndexableModelPage } from '../../config/indexing'
 import { workshopPagePaths } from '../../config/workshop-page-content'
 import { modelDeveloper } from '../../config/model-vendors'
 import { modelMetaDescription } from '../../lib/workshop/model-meta-description'
@@ -57,7 +58,7 @@ const ogImage = modelOgImage(model)
   ogImage={ogImage}
   ogImageAlt={ogImage && `${model.name} example output`}
   canonicalPath={model.href}
-  noindex
+  noindex={!isIndexableModelPage(Astro.url.pathname)}
   pageType={jsonLd.pageType}
   breadcrumbs={jsonLd.breadcrumbs}
   mainEntityId={jsonLd.mainEntityId}

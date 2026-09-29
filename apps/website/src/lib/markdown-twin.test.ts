@@ -1,12 +1,20 @@
 import { mkdtemp, readFile, mkdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { isExcludedFromSitemap } from '../config/indexing'
+import {
+  routerModelSlugAliases,
+  workshopModels
+} from '../config/workshop-browse-content'
 import { writeMarkdownTwins } from '../integrations/markdown-twins'
 import { writeSectionIndexes } from './section-index'
 import { htmlToTwin, renderTwin } from './markdown-twin'
 import { markdownTwinPath } from './markdown-twin-path'
+
+const launch = vi.hoisted(() => ({ MODEL_PAGES_INDEXABLE: false }))
+vi.mock(import('../config/model-page-launch'), () => launch)
 
 const PAGE = `<!doctype html>
 <html lang="en">
@@ -255,5 +263,49 @@ describe('writeMarkdownTwins', () => {
     expect(indexes).toEqual(['/learning/llms.txt'])
     const index = await readFile(join(root, 'learning', 'llms.txt'), 'utf8')
     expect(index).toContain('[Learning](https://comfy.org/learning.md)')
+  })
+
+  describe('Models pages', () => {
+    const [{ slug: modelSlug }] = workshopModels
+    const [[aliasSlug]] = routerModelSlugAliases
+    const modelsPages = [
+      'models/',
+      'models/showcase/',
+      `models/${modelSlug}/`,
+      `models/${aliasSlug}/`
+    ]
+    const modelTwin = `/models/${modelSlug}.md`
+
+    afterEach(() => {
+      launch.MODEL_PAGES_INDEXABLE = false
+    })
+
+    it.for([false, true])(
+      'twins exactly the Models pages the sitemap lists (indexable: %s)',
+      async (indexable) => {
+        launch.MODEL_PAGES_INDEXABLE = indexable
+        const root = await mkdtemp(join(tmpdir(), 'twins-'))
+        for (const pathname of modelsPages) {
+          await mkdir(join(root, pathname), { recursive: true })
+          await writeFile(
+            join(root, pathname, 'index.html'),
+            `<html lang="en"><head><title>${pathname}</title></head><body><main><h1>${pathname}</h1></main></body></html>`
+          )
+        }
+        const listedInSitemap = modelsPages
+          .filter(
+            (pathname) =>
+              !isExcludedFromSitemap(
+                new URL(pathname, 'https://comfy.org').href
+              )
+          )
+          .map((pathname) => markdownTwinPath(`/${pathname}`))
+
+        const report = await writeMarkdownTwins(root, modelsPages)
+
+        expect(report.written).toEqual(listedInSitemap)
+        expect(report.written.includes(modelTwin)).toBe(indexable)
+      }
+    )
   })
 })

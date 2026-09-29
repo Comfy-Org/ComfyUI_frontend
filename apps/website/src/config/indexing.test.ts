@@ -1,13 +1,39 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   headIndexing,
   isExcludedFromSitemap,
   isIndexableBuild,
+  isIndexableModelPage,
   isNoindexPathname
 } from './indexing'
 import { hubModelSlugs } from './hub-models'
+import {
+  routerModelSlugAliases,
+  workshopModels
+} from './workshop-browse-content'
+
+const launch = vi.hoisted(() => ({ MODEL_PAGES_INDEXABLE: false }))
+vi.mock(import('./model-page-launch'), () => launch)
 
 const [hubModelSlug] = hubModelSlugs.values()
+const [{ slug: modelSlug }] = workshopModels
+const [aliasSlug] = routerModelSlugAliases.keys()
+
+const MODELS_PAGES_BY_KIND = [
+  ['hub', '/hub/models/'],
+  ['model', `/hub/models/${hubModelSlug}/`],
+  ['alias', '/models/'],
+  ['alias', `/models/${modelSlug}/`],
+  ['alias', `/models/${aliasSlug}/`],
+  ['workflow', '/hub/workflows/change-material/'],
+  ['app', '/models/apps/cinematic-studio/'],
+  ['showcase', '/models/showcase/'],
+  ['catalogue', '/models/catalogue.json'],
+  ['page data', `/models/${modelSlug}/page.json`]
+] as const
+
+const inSitemap = (pathname: string) =>
+  !isExcludedFromSitemap(`https://comfy.org${pathname}`)
 
 describe('indexing policy', () => {
   it('excludes render pages while keeping the public Models marketing routes', () => {
@@ -159,6 +185,31 @@ describe('indexing policy', () => {
     'head for pageNoindex=$pageNoindex indexableBuild=$indexableBuild',
     ({ pageNoindex, indexableBuild, ...expected }) => {
       expect(headIndexing({ pageNoindex, indexableBuild })).toEqual(expected)
+    }
+  )
+
+  it.for(MODELS_PAGES_BY_KIND)(
+    'keeps every Models page but the hub out of the sitemap before launch (%s)',
+    ([kind, pathname]) => {
+      expect(isIndexableModelPage(pathname)).toBe(false)
+      expect(inSitemap(pathname)).toBe(kind === 'hub')
+    }
+  )
+})
+
+describe('indexing policy once model pages launch', () => {
+  beforeEach(() => {
+    launch.MODEL_PAGES_INDEXABLE = true
+  })
+  afterEach(() => {
+    launch.MODEL_PAGES_INDEXABLE = false
+  })
+
+  it.for(MODELS_PAGES_BY_KIND)(
+    'lists only the hub and canonical model pages (%s)',
+    ([kind, pathname]) => {
+      expect(isIndexableModelPage(pathname)).toBe(kind === 'model')
+      expect(inSitemap(pathname)).toBe(kind === 'hub' || kind === 'model')
     }
   )
 })

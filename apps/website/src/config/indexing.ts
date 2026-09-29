@@ -1,6 +1,8 @@
 import { isProductionBuild } from './build-env'
 import { LOCALE_CODES, LOCALES } from './locales'
+import { MODEL_PAGES_INDEXABLE } from './model-page-launch'
 import { models } from './models'
+import { modelsUrlKind } from './models-url-registry'
 import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
 
 const PAYMENT_STATUSES = ['success', 'failed'] as const
@@ -78,12 +80,16 @@ export function isNoindexPathname(pathname: string): boolean {
   return NOINDEX_PATHNAMES.has(normalizePathname(pathname))
 }
 
+export function isIndexableModelPage(pathname: string): boolean {
+  return MODEL_PAGES_INDEXABLE && modelsUrlKind(pathname) === 'model'
+}
+
 export function isExcludedFromSitemap(page: string): boolean {
   const pathname = normalizePathname(new URL(page).pathname)
   return (
     isNoindexPathname(pathname) ||
     isLegacyWorkshopRoute(pathname) ||
     MODEL_REDIRECT_PATHNAMES.has(pathname) ||
-    isWorkshopRoute(pathname)
+    (isWorkshopRoute(pathname) && !isIndexableModelPage(pathname))
   )
 }
