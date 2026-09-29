@@ -36,7 +36,17 @@ import {
   isRendering,
   reduceReel
 } from '../lib/workshop/cinematic-studio/reel'
-import { useWorkshopAuthFlag, useWorkshopEnabled } from '../scripts/posthog'
+import { studioAnalytics } from '../lib/workshop/cinematic-studio/analytics'
+import {
+  captureWorkshopEvent,
+  useWorkshopAuthFlag,
+  useWorkshopEnabled
+} from '../scripts/posthog'
+import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
+import {
+  workshopFailureAnalytics,
+  workshopModelAnalytics
+} from '../scripts/workshop-analytics'
 
 interface ShotRequest {
   readonly modelSlug: string
@@ -227,6 +237,19 @@ export function useCinematicStudioRun(
   ) {
     const fingerprint = takeFingerprint(startedFor, model.slug, request, index)
     const { key, prepared } = unsettledTakeFor(fingerprint)
+    const analytics: WorkshopRunAnalytics = {
+      ...workshopModelAnalytics(model),
+      ...studioAnalytics(model.slug),
+      user_id: startedFor.uid,
+      workspace_id: startedFor.workspace.id,
+      attempt_id: workshopIdempotencyKey()
+    }
+    const startedAt = Date.now()
+    const finished = () => ({
+      ...analytics,
+      duration_ms: Date.now() - startedAt
+    })
+    captureWorkshopEvent({ name: 'run_started', properties: analytics })
     try {
       const result = await router_render(
         model.slug,
@@ -255,14 +278,52 @@ export function useCinematicStudioRun(
       releaseRouterOutputs(result.outputs.slice(1))
       if (signal.aborted) {
         if (output) releaseRouterOutputs([output])
+        captureWorkshopEvent({
+          name: 'run_finished',
+          properties: { ...finished(), status: 'cancelled' }
+        })
         return
       }
       if (!output) throw new WorkshopRouterError('response', result.requestId)
       dispatch({ type: 'takeSucceeded', id, output })
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...finished(),
+          status: 'succeeded',
+          request_id: result.requestId ?? undefined,
+          output_count: result.outputs.length
+        }
+      })
     } catch (error) {
-      if (signal.aborted) return
+      if (signal.aborted) {
+        captureWorkshopEvent({
+          name: 'run_finished',
+          properties: { ...finished(), status: 'cancelled' }
+        })
+        return
+      }
       if (!mayStillSettle(error)) unsettledTakes.delete(fingerprint)
       dispatch(takeFailure(id, error))
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...finished(),
+          status: 'failed',
+          ...workshopFailureAnalytics(
+            error instanceof WorkshopRouterError
+              ? error
+              : new WorkshopRouterError(
+                  'client',
+                  null,
+                  {},
+                  undefined,
+                  undefined,
+                  { cause: error }
+                )
+          )
+        }
+      })
     }
   }
 

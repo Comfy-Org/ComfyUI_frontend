@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import type { AccountCredential } from '@comfyorg/account-core/session'
@@ -23,10 +23,12 @@ import { useWorkshopSession } from '../../../config/workshop-session-state'
 import { appModels } from '../../../config/workshop-app-content'
 import { prepareModelPage } from '../../../routes/models/model-page'
 import {
+  captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopAppsEnabled
 } from '../../../scripts/posthog'
+import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
@@ -357,6 +359,98 @@ describe('CinematicStudio', () => {
     await user.click(reveal)
 
     expect(screen.queryByText(t('workshop.output.nsfw'))).toBeNull()
+  })
+
+  it.for([
+    {
+      name: 'a finished take',
+      render: async (slug: string) => rendered(slug),
+      outcome: {
+        status: 'succeeded',
+        request_id: 'request-1',
+        output_count: 1
+      }
+    },
+    {
+      name: 'a failed take',
+      render: async () => {
+        throw new WorkshopRouterError('provider', 'request-9')
+      },
+      outcome: { status: 'failed', reason: 'provider', request_id: 'request-9' }
+    }
+  ])(
+    'records $name as an app run, apart from model pages',
+    async ({ render: renderTake, outcome }) => {
+      vi.mocked(router_render).mockImplementation(renderTake)
+      const user = renderStudio()
+
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+
+      const app = {
+        model_slug: first.slug,
+        page_type: 'app',
+        app_slug: CINEMATIC_STUDIO_APP_SLUG,
+        render_engine: 'router',
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id
+      }
+      await vi.waitFor(() =>
+        expect(captureWorkshopEvent).toHaveBeenCalledWith({
+          name: 'run_finished',
+          properties: expect.objectContaining({ ...app, ...outcome })
+        })
+      )
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_started',
+        properties: expect.objectContaining(app)
+      })
+    }
+  )
+
+  it('records a take download as an app download', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+
+    const download = await screen.findByRole('link', {
+      name: tc('cinematic.stage.download')
+    })
+    const stayOnPage = (event: Event) => event.preventDefault()
+    window.addEventListener('click', stayOnPage, { capture: true })
+    onTestFinished(() =>
+      window.removeEventListener('click', stayOnPage, { capture: true })
+    )
+    await user.click(download)
+
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'output_download_clicked',
+      properties: {
+        model_slug: first.slug,
+        page_type: 'app',
+        app_slug: CINEMATIC_STUDIO_APP_SLUG,
+        output_kind: 'image'
+      }
+    })
+  })
+
+  it('records each app page once it can be seen', async () => {
+    render(CinematicStudioPage, { props: { apps: appModels, models } })
+
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'model_viewed',
+        properties: {
+          model_slug: CINEMATIC_STUDIO_APP_SLUG,
+          page_type: 'app',
+          app_slug: CINEMATIC_STUDIO_APP_SLUG
+        }
+      })
+    )
+    expect(appModels.find((app) => app.appId === 'studio')?.slug).toBe(
+      CINEMATIC_STUDIO_APP_SLUG
+    )
   })
 
   it('does not offer to generate when no model can run', () => {
