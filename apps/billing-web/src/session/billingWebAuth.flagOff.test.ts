@@ -244,7 +244,6 @@ describe('billing-web with unified_web_session off, after sign-in', () => {
   async function signedInRequests(
     run: (modules: {
       readonly auth: typeof AuthModule
-      readonly session: typeof SessionModule
       readonly requestsSinceSignIn: () => SentRequest[]
     }) => Promise<void>
   ) {
@@ -253,25 +252,22 @@ describe('billing-web with unified_web_session off, after sign-in', () => {
       {}
     )
     vi.stubGlobal('fetch', fetchImpl)
-    await signInThenCallBilling(async ({ auth, session, signIn }) => {
+    await signInThenCallBilling(async ({ auth, signIn }) => {
       await signIn(auth.billingWebSignInPort())
       const signedInCount = sent.length
       await run({
         auth,
-        session,
         requestsSinceSignIn: () => sent.slice(signedInCount)
       })
     })
   }
 
   it('an entry link naming another workspace re-mints once, for that workspace, however often it repeats', async () => {
-    await signedInRequests(async ({ auth, session, requestsSinceSignIn }) => {
+    await signedInRequests(async ({ auth, requestsSinceSignIn }) => {
       auth.onBillingWebEntryWorkspace('ws-2')
       auth.onBillingWebEntryWorkspace('ws-2')
 
-      await session
-        .billingWebSessionClient()
-        .ensureFresh(undefined, { workspaceId: 'ws-2' })
+      await vi.waitFor(() => expect(requestsSinceSignIn()).not.toEqual([]))
       expect(requestsSinceSignIn()).toEqual([
         {
           method: 'POST',
