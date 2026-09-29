@@ -1,0 +1,1 @@
+export const MAX_AGENT_STORAGE_CLOCK_SKEW_MS = 5 * 60 * 1000

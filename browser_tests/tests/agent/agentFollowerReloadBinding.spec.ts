@@ -13,7 +13,10 @@ test.describe(
   'Agent saved-workflow reattachment',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test.use({ conversationCase: 'agent-rec-set-widget-existing' })
+    test.use({
+      conversationCase: 'agent-rec-set-widget-existing',
+      humanOpsHost: 'apply'
+    })
 
     test.beforeEach(async ({ page }) => {
       const folders: ModelFolderInfo[] = []
@@ -52,6 +55,7 @@ test.describe(
         path: beforePath,
         contentType: 'image/png'
       })
+      const subscribesBeforeReload = agentConversation.subscribeCount()
 
       const restoredContent = page.waitForResponse(
         (response) =>
@@ -75,11 +79,10 @@ test.describe(
       await expect(picker).toHaveText('Reload reattachment')
       expect((await restoredContent).ok()).toBe(true)
       await expect(prompt).toHaveValue('saved before reload')
-      const before = agentConversation.subscribeCount()
       await agentConversation.sendPrompt()
       await expect
         .poll(() => agentConversation.subscribeCount())
-        .toBeGreaterThan(before)
+        .toBe(subscribesBeforeReload + 1)
 
       // This value was never saved or recorded. Only the post-reload live
       // subscription can deliver it; a stale local canvas cannot satisfy it.

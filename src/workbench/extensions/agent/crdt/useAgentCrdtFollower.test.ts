@@ -28,8 +28,12 @@ import type { BatchOutcome, OpSenderDeps } from './opSender'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
-    subscribe = vi.fn()
-    unsubscribe = vi.fn()
+    subscribe = vi.fn((workflowId: string) => {
+      this.subscribedWorkflowId = workflowId
+    })
+    unsubscribe = vi.fn(() => {
+      this.subscribedWorkflowId = null
+    })
     resubscribe = vi.fn()
     reconcile = vi.fn()
     destroy = vi.fn()
@@ -381,6 +385,27 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
     expect(status().workflowId).toBe('wf-1')
     expect(status().enabled).toBe(true)
+    unmount()
+  })
+
+  it('reports a connection only after the server acknowledges it', async () => {
+    const { unmount, workflowId, status } = mountFollower('wf-1')
+
+    expect(status().connected).toBe(false)
+
+    dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1' })
+    expect(status().connected).toBe(true)
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+    expect(status().connected).toBe(false)
+
+    dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-2' })
+    expect(status().connected).toBe(true)
+
+    bridge().subscribedWorkflowId = null
+    dispatchFrame('doc_subscribed', { ok: false, workflowId: 'wf-2' })
+    expect(status().connected).toBe(false)
     unmount()
   })
 
@@ -815,6 +840,21 @@ describe('useAgentCrdtFollower', () => {
     expect(status().connected).toBe(false)
     expect(status().workflowId).toBe('wf-1')
     expect(projectionState.discardPending).toHaveBeenCalledWith('wf-1')
+    unmount()
+  })
+
+  it('reports a disconnect when a doc_reset breaks the lineage', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(status().connected).toBe(true)
+
+    dispatchFrame('doc_reset', {
+      workflowId: 'wf-1',
+      actor: 'agent:turn',
+      seq: 43
+    })
+
+    expect(status().connected).toBe(false)
     unmount()
   })
 
