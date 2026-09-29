@@ -11,6 +11,8 @@ vi.mock(import('../../../scripts/posthog'))
 const UA = {
   iphone:
     'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+  windows:
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   mac: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
   linux:
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
@@ -108,7 +110,9 @@ describe('DownloadLocalButton', () => {
     render(DownloadLocalButton)
 
     expect(
-      await screen.findByRole('link', { name: 'DOWNLOAD DESKTOP' })
+      await screen.findByRole('link', {
+        name: 'DOWNLOAD DESKTOP macOS (Apple Silicon)'
+      })
     ).toHaveAttribute('href', 'https://download.comfy.org/mac/dmg/arm64')
     expect(screen.queryByRole('button', { name: 'All installers' })).toBeNull()
   })
@@ -128,5 +132,77 @@ describe('DownloadLocalButton', () => {
     expect(
       screen.getByRole('menuitem', { name: 'macOS（Apple 芯片）' })
     ).toHaveAttribute('href', 'https://download.comfy.org/mac/dmg/arm64')
+  })
+
+  it.for([
+    {
+      label: 'macOS',
+      userAgent: UA.mac,
+      buttons: [
+        [
+          'DOWNLOAD DESKTOP macOS (Apple Silicon)',
+          'https://download.comfy.org/mac/dmg/arm64'
+        ]
+      ]
+    },
+    {
+      label: 'Windows',
+      userAgent: UA.windows,
+      buttons: [
+        [
+          'DOWNLOAD DESKTOP Windows x64 (including Snapdragon)',
+          'https://comfy.org/download/windows/nsis/x64'
+        ]
+      ]
+    },
+    {
+      label: 'Linux',
+      userAgent: UA.linux,
+      buttons: [
+        [
+          'DOWNLOAD DESKTOP Linux x64 (AppImage)',
+          'https://download.comfy.org/linux/appimage/x64'
+        ]
+      ]
+    },
+    {
+      label: 'an unrecognized desktop',
+      userAgent: UA.freeBsd,
+      buttons: [
+        [
+          'DOWNLOAD DESKTOP Windows x64 (including Snapdragon)',
+          'https://comfy.org/download/windows/nsis/x64'
+        ],
+        [
+          'DOWNLOAD DESKTOP macOS (Apple Silicon)',
+          'https://download.comfy.org/mac/dmg/arm64'
+        ]
+      ]
+    }
+  ])(
+    'names the installer each button downloads on $label',
+    async ({ userAgent, buttons }) => {
+      visitWith(userAgent)
+
+      render(DownloadLocalButton)
+
+      const links = await screen.findAllByRole('link')
+      expect(
+        links.map((link) => [
+          link.textContent.replace(/\s+/g, ' ').trim(),
+          link.getAttribute('href')
+        ])
+      ).toEqual(buttons)
+    }
+  )
+
+  it('records the platform when downloading a Linux installer', async () => {
+    visitWith(UA.linux)
+    const user = userEvent.setup()
+    render(DownloadLocalButton)
+
+    await user.click(await screen.findByRole('link'))
+
+    expect(captureDownloadClick).toHaveBeenCalledExactlyOnceWith('linux')
   })
 })
