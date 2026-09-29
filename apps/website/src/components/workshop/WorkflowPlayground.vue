@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { Check } from '@lucide/vue'
 import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, ref, useTemplateRef, watch } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
 import {
@@ -355,21 +358,35 @@ function start() {
   >
     <h2
       id="workflow-examples-heading"
-      class="mb-5 text-2xl font-light text-primary-comfy-canvas"
+      class="mb-5 text-sm font-bold text-primary-warm-white"
     >
-      {{ t('workshop.workflow.explore') }}
+      {{ t('workshop.examples.start') }}
     </h2>
     <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       <button
         v-for="(example, index) in model.examples"
         :key="example.name"
         type="button"
-        :aria-pressed="selectedExample === index"
-        class="cursor-pointer overflow-hidden rounded-2xl border border-transparency-white-t8 text-left hover:border-primary-comfy-yellow focus-visible:outline-primary-comfy-yellow disabled:cursor-not-allowed disabled:opacity-50"
+        :aria-current="selectedExample === index ? 'true' : undefined"
+        :class="
+          cn(
+            'group relative cursor-pointer overflow-hidden rounded-2xl text-left ring-1 transition-all focus-visible:outline-primary-comfy-yellow disabled:cursor-not-allowed disabled:opacity-50',
+            selectedExample === index
+              ? 'ring-2 ring-primary-comfy-yellow'
+              : 'ring-transparency-white-t8 hover:ring-transparency-white-t20 hover:brightness-110'
+          )
+        "
         :disabled="formDisabled"
         @click="selectExample(index)"
       >
         <WorkflowExamplePreview :example :poster="model.thumbnailUrl" />
+        <span
+          v-if="selectedExample === index"
+          class="absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
+          data-testid="workflow-example-chosen"
+        >
+          <Check class="size-3" :stroke-width="3" aria-hidden="true" />
+        </span>
         <span class="block p-4 text-sm text-primary-warm-gray">
           {{ example.title }}
         </span>
