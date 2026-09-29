@@ -129,14 +129,11 @@ test.describe(
         })
       })
 
-      const opening = openAgentPanel(page)
-      await page.evaluate(
-        () =>
-          new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
-      )
-      await delayedMountStyle.evaluate((style) =>
-        style.parentNode?.removeChild(style)
-      )
+      const opening = openAgentPanel(page, undefined, async () => {
+        await delayedMountStyle.evaluate((style) =>
+          style.parentNode?.removeChild(style)
+        )
+      })
       await opening
 
       await expect(panel).toBeVisible()

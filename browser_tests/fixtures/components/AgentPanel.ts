@@ -5,7 +5,8 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 export async function openAgentPanel(
   page: Page,
-  timeout?: number
+  timeout?: number,
+  onPanelHidden?: () => void | Promise<void>
 ): Promise<Locator> {
   const panel = page.locator('#agent-panel-root')
   const openButton = page.getByRole('button', {
@@ -14,6 +15,7 @@ export async function openAgentPanel(
   })
   for (let attempt = 0; attempt < 2; attempt++) {
     if (await panel.isVisible()) return panel
+    await onPanelHidden?.()
     if ((await openButton.getAttribute('aria-pressed')) === 'true') {
       await expect(panel).toBeVisible({ timeout })
       return panel
