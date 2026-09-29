@@ -88,6 +88,8 @@ const bodyParams = computed(() =>
     : { workspace }
 )
 const code = computed(() => ('code' in screen ? screen.code : undefined))
+/** A code breaks after its underscores first, and mid-word only when one piece alone overflows. */
+const codeSegments = computed(() => code.value?.split(/(?<=_)/) ?? [])
 const supportLink = computed(() => supportLinkWithCode(code.value))
 const primary = computed(() => ending.value.primary)
 
@@ -153,10 +155,12 @@ function act() {
         </p>
         <div class="flex items-center justify-between gap-4">
           <code
-            class="font-mono text-base font-normal break-all text-base-foreground"
+            class="min-w-0 font-mono text-base font-normal wrap-anywhere text-base-foreground"
             data-testid="checkout-ending-code"
           >
-            {{ code }}
+            <template v-for="(segment, index) in codeSegments" :key="index">
+              <wbr v-if="index > 0" />{{ segment }}
+            </template>
           </code>
           <button
             type="button"
