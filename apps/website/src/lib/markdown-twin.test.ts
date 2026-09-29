@@ -361,11 +361,11 @@ describe('writeMarkdownTwins', () => {
       readFile(join(root, route, 'index.html'), 'utf8')
 
     beforeEach(() => {
-      launch.MODEL_PAGES_INDEXABLE = true
+      launch.launchedModelPages = 'all'
     })
 
     afterEach(() => {
-      launch.MODEL_PAGES_INDEXABLE = false
+      launch.launchedModelPages = new Set()
     })
 
     it('writes no twin and drops the markdown link for a spinner-only page', async () => {
