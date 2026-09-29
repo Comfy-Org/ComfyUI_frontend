@@ -2201,16 +2201,8 @@ describe('AgentPanelRoot attach flow', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) => {
-        if (url.endsWith('/api/upload/image')) {
-          return new Response(
-            JSON.stringify({
-              name: 'uploaded_cat.png',
-              subfolder: '',
-              type: 'input'
-            }),
-            { status: 200, headers: { 'Content-Type': 'application/json' } }
-          )
-        }
+        if (url.endsWith('/api/upload/image'))
+          return new Promise<Response>(() => {})
         return new Response('{"threads":[]}', {
           status: 200,
           headers: { 'Content-Type': 'application/json' }
