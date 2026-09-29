@@ -1177,6 +1177,17 @@ describe('useMembersPanel', () => {
       expect(panel.isPlanEnded.value).toBe(true)
     })
 
+    // Without a team signal or a real tier there is nothing to hang the
+    // ended-team treatment on — a terminal tierless payload off the team
+    // plan is most plausibly lapsed personal, which the upgrade banner owns.
+    it('keeps a tierless terminal plan off the team plan out of the treatment', async () => {
+      mockIsTeamPlan.value = false
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = null
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(false)
+    })
+
     // The real ended payload collapses max_seats to the no-plan default of 1
     // and fails the self-serve Team classifier (enterprise_* slug, no team
     // credit stop) — the treatment must survive both, or production hides

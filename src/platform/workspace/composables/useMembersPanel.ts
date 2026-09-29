@@ -156,10 +156,18 @@ export function useMembersPanel() {
       (subscriptionStatus.value === 'canceled' &&
         !canAccessSubscriptionFeatures.value)
   )
-  const isPlanEnded = computed(
-    () =>
-      (hasTeamPlan.value || isSalesManagedPlan.value) && isPlanTerminal.value
-  )
+  // Qualifying for the treatment needs a KNOWN signal — the team classifier
+  // or a real tier that is sales-managed. A terminal payload with no tier
+  // and no team signal is most plausibly a lapsed personal subscription,
+  // which belongs to the upgrade banner. (The nullish fail-close in
+  // isSalesManagedPlan below governs only the route back once a workspace
+  // is already in the treatment.)
+  const isPlanEnded = computed(() => {
+    if (!isPlanTerminal.value) return false
+    if (hasTeamPlan.value) return true
+    const tier = subscription.value?.tier
+    return tier != null && isSalesManagedTier(tier)
+  })
   // Sales-managed, not strictly ENTERPRISE: isSalesManagedTier() treats an
   // unrecognized tier as sales-managed too, so an ended unknown/future plan
   // routes to Contact sales rather than borrowing the self-serve Reactivate
