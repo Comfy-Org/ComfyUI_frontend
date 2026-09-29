@@ -30,7 +30,10 @@ import {
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import { runnableCinematicModels } from '../../../lib/workshop/cinematic-studio/models'
+import {
+  runnableCinematicModels,
+  runnableCinematicVideoModels
+} from '../../../lib/workshop/cinematic-studio/models'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPage from './CinematicStudioPage.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
@@ -51,6 +54,7 @@ vi.mock(import('astro:env/client'), () => ({
 
 const models = runnableCinematicModels(getRouterWorkshopModelDetail)
 const [first, second] = models
+const videoModels = runnableCinematicVideoModels(getRouterWorkshopModelDetail)
 
 /** What a take sent: the studio's own form, and the files attached to it. */
 function sent(call: Parameters<typeof router_render>) {
@@ -68,7 +72,12 @@ function sent(call: Parameters<typeof router_render>) {
 
 const { fetchData } = vi.hoisted(() => ({ fetchData: vi.fn<typeof fetch>() }))
 
+/** A still left on the provider's storage, which sends no CORS header. */
+const PROVIDER_LINK =
+  'https://ark-content-generation-v2-ap-southeast-1.tos-ap-southeast-1.volces.com/seedream/shot.jpeg'
+
 async function servePageData(input: RequestInfo | URL) {
+  if (String(input) === PROVIDER_LINK) throw new TypeError('Failed to fetch')
   if (String(input).startsWith('blob:'))
     return new Response(new Blob(['shot'], { type: 'image/png' }))
   const slug = decodeURIComponent(String(input).split('/')[2])
@@ -84,6 +93,13 @@ function rendered(slug: string): RouterRenderResult {
     requestId: 'request-1',
     deadlineCollections: 0,
     outputs: [{ kind: 'image', url: 'blob:shot', fileName: 'shot.png' }]
+  }
+}
+
+function renderedAtProvider(slug: string): RouterRenderResult {
+  return {
+    ...rendered(slug),
+    outputs: [{ kind: 'image', url: PROVIDER_LINK, fileName: 'shot.jpeg' }]
   }
 }
 
@@ -841,6 +857,115 @@ describe('CinematicStudio', () => {
       })
     }
   )
+
+  it('shoots a clip on the first video model in video mode', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio([...models, ...videoModels])
+
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+    await user.type(
+      screen.getByLabelText('Scene'),
+      'A lighthouse keeper climbs'
+    )
+    await user.click(generateButton())
+
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+    const call = vi.mocked(router_render).mock.calls[0]
+    expect(call[0]).toBe(videoModels[0].slug)
+    expect(sent(call).values).toMatchObject({
+      duration: 5,
+      resolution: '720p',
+      generate_audio: false
+    })
+    expect(sent(call).prompt).toContain('continuous motion')
+  })
+
+  it('shoots a clip on a video model that picks its own frame', async () => {
+    // Wan 3.0 and Gemini Omni Flash 1.1 list no frames because the operation
+    // chooses one, so an empty list here has to read as unrestricted -- the
+    // opposite of an empty list on the image path, where it means the model can
+    // make none. Seedance 2.5 Edit also lists none but wants a source video, so
+    // pick the one that is otherwise ready to run.
+    const ownFrame = videoModels.find(
+      (option) =>
+        option.video &&
+        !option.video.aspects.length &&
+        !option.video.sourceVideo
+    )!
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio([...models, ownFrame])
+
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+    await user.type(
+      screen.getByLabelText('Scene'),
+      'A lighthouse keeper climbs'
+    )
+    await user.click(generateButton())
+
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+    expect(vi.mocked(router_render).mock.calls[0][0]).toBe(ownFrame.slug)
+  })
+
+  it('animates a finished still on the image-to-video operation', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio([...models, ...videoModels])
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+    await user.click(
+      await screen.findByRole('button', { name: 'Animate image' })
+    )
+    await user.click(generateButton())
+
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+    const call = vi.mocked(router_render).mock.calls[1]
+    expect(call[0]).toBe(videoModels[0].firstFrameSlug)
+    expect(sent(call).references).toEqual([expect.any(File)])
+  })
+
+  describe('reusing a still the page cannot read', () => {
+    async function shootAtProvider() {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        renderedAtProvider(slug)
+      )
+      const user = renderStudio([...models, ...videoModels])
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await screen.findByAltText(/A diner at dawn/)
+      return user
+    }
+
+    it('animates it by handing its link to the video model', async () => {
+      const user = await shootAtProvider()
+      await user.click(screen.getByRole('button', { name: 'Animate image' }))
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+      const call = vi.mocked(router_render).mock.calls[1]
+      expect(call[0]).toBe(videoModels[0].firstFrameSlug)
+      expect(JSON.stringify(sent(call).values)).toContain(PROVIDER_LINK)
+    })
+
+    it('says so when the next model needs the picture itself', async () => {
+      const user = await shootAtProvider()
+      await user.click(screen.getByRole('button', { name: 'Use as reference' }))
+      expect(
+        await screen.findByText(/needs the picture itself/)
+      ).toBeInTheDocument()
+      expect(generateButton()).toBeDisabled()
+    })
+
+    it('offers it as a reference only for another still', async () => {
+      const user = await shootAtProvider()
+      await user.click(screen.getByRole('button', { name: 'Video' }))
+      expect(
+        screen.queryByRole('button', { name: 'Use as reference' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Animate image' })
+      ).toBeInTheDocument()
+    })
+  })
 
   describe('credits', () => {
     const priced: readonly CinematicModel[] = models.map((model) =>
