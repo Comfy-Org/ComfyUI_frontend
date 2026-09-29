@@ -13,7 +13,7 @@ const prices = (slug: string) =>
   models.find((model) => model.slug === slug)?.prices
 
 const FLUX = 'bfl--flux-2-pro--generate-images'
-const SEEDREAM = 'byteplus--seedream-4-5--generate-images'
+const SEEDREAM = 'byteplus--seedream-5-pro--generate-images'
 
 describe('priceCinematicModels', () => {
   it.for([
@@ -39,8 +39,9 @@ describe('priceCinematicModels', () => {
     expect(referenced?.max).toBeGreaterThan(referenced?.min ?? Infinity)
   })
 
-  it('prices every Seedream 4.5 format, with and without references', () => {
-    expect(Object.keys(prices(SEEDREAM) ?? {})).toHaveLength(30)
+  it('prices every Seedream 5.0 Pro format, with and without references', () => {
+    // 7 frames x 2 resolutions x 0, 1 or 2 references
+    expect(Object.keys(prices(SEEDREAM) ?? {})).toHaveLength(42)
   })
 })
 

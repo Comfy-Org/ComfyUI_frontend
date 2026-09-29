@@ -11,6 +11,9 @@ import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConve
 //      a draft WIP harness. Frozen area, so black-box only.
 //   51 "A text widget disappears when I connect an input to it"
 //      -- slack-27, linear-6. Expected: grey out. Actual: gone. Pin 18110.
+//      On a plain node the canvas replaces the control with the input slot
+//      row when a person wires it (subgraphPromotedWidgetExternalLink.spec),
+//      so an agent wire must land on that same row, not remove it.
 //   52 "Agent creates an incompatible connection, or refuses a compatible one"
 //      -- linear-15 (PM-1027). IMAGE-to-STRING accepted or wrongly denied.
 //      No pin. Frozen area.
@@ -96,11 +99,14 @@ test.describe(
 
       const promptNode =
         agentConversation.vueNodes.getNodeLocator(PROMPT_NODE_ID)
-      const promptWidget = promptNode.getByLabel(PROMPT_WIDGET, { exact: true })
+      const promptTextbox = promptNode.getByRole('textbox', {
+        name: PROMPT_WIDGET,
+        exact: true
+      })
 
       await test.step('before the wire, the prompt widget is on the node and editable', async () => {
-        await expect(promptWidget).toBeVisible()
-        await expect(promptWidget).toBeEditable()
+        await expect(promptTextbox).toBeVisible()
+        await expect(promptTextbox).toBeEditable()
       })
 
       await test.step('agent adds a string node and wires it into the prompt', () => {
@@ -132,9 +138,17 @@ test.describe(
           })
       })
 
-      await test.step('story 51: the prompt widget is greyed out, not gone', async () => {
-        await expect(promptWidget).toBeVisible()
-        await expect(promptWidget).not.toBeEditable()
+      await test.step('story 51: the prompt row stays as its input slot, as when a person wires it', async () => {
+        await expect(promptTextbox).toHaveCount(0)
+        await expect(
+          agentConversation.vueNodes.getInputSlotConnectionDot(
+            PROMPT_NODE_ID,
+            PROMPT_TEXT_SLOT
+          )
+        ).toBeVisible()
+        await expect(
+          promptNode.getByText(PROMPT_WIDGET, { exact: true })
+        ).toBeVisible()
       })
     })
 
