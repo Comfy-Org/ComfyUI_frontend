@@ -8,7 +8,9 @@ import {
 } from './refreshRemoteConfig'
 import {
   authenticatedRemoteConfigState,
+  cachedBillingControlEnabled,
   cachedLegacyBillingMigrationEnabled,
+  cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigErrorStatus,
   remoteConfigRevision,
@@ -51,6 +53,8 @@ describe('refreshRemoteConfig', () => {
   }
 
   beforeEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
     vi.mocked(api.apiURL).mockImplementation(
       (route: string) => `/ComfyUI/api${route}`
     )
@@ -61,6 +65,8 @@ describe('refreshRemoteConfig', () => {
     authenticatedRemoteConfigState.value = 'unloaded'
     remoteConfigRevision.value = 0
     cachedLegacyBillingMigrationEnabled.value = undefined
+    cachedBillingControlEnabled.value = undefined
+    cachedV1PaymentRecovery.value = undefined
     sessionAgentGrant.value = undefined
     sessionAgentGrantValidUntil.value = undefined
     window.__CONFIG__ = {}
@@ -362,18 +368,14 @@ describe('refreshRemoteConfig', () => {
     })
 
     it("records this session's grant without persisting it anywhere", async () => {
-      // Baseline through an ungranted refresh first. cachedBillingControlEnabled
-      // and cachedV1PaymentRecovery are module-scope useStorage refs still
-      // holding undefined, so the run's first authenticated refresh resolves
-      // them to false and writes two keys. Snapshotting before that happens
-      // makes the delta order-dependent: green in file order, red under -t.
-      mockAuthenticatedFetch(
-        mockSuccessResponse({ 'agent-in-app-experience': false })
-      )
-      await refreshRemoteConfig()
+      // Prime the two feature values that are intentionally backed by storage,
+      // so any storage delta below can only come from the session grant.
+      localStorage.setItem('billing_control_enabled', 'false')
+      localStorage.setItem('v1_payment_recovery', 'false')
+      cachedBillingControlEnabled.value = false
+      cachedV1PaymentRecovery.value = false
       const localStorageBefore = storageEntries(localStorage)
       const sessionStorageBefore = storageEntries(sessionStorage)
-      sessionAgentGrant.value = undefined
       mockAuthenticatedFetch(
         mockSuccessResponse({ 'agent-in-app-experience': true })
       )
