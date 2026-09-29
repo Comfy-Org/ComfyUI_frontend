@@ -27,6 +27,9 @@ export function checkoutReturnUrl(
     ...(arrival.teamCreditStopId === undefined
       ? {}
       : { teamCreditStopId: arrival.teamCreditStopId }),
+    ...(arrival.promotionCode === undefined
+      ? {}
+      : { promotionCode: arrival.promotionCode }),
     ...(workspaceId === undefined ? {} : { workspaceId })
   })
   return built.status === 'ok' ? built.url.href : undefined
