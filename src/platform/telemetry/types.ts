@@ -1188,26 +1188,36 @@ type BillingTelemetryField = BillingTelemetryEvent extends infer Event
     : never
   : never
 
-const OPTIONAL_BILLING_PAYLOAD_FIELDS = [
-  'billing_op_id',
-  'checkout_attempt_id',
-  'tier',
-  'cycle',
-  'checkout_type',
-  'payment_intent_source',
-  'error_code',
-  'target_tier',
-  'duration_ms'
-] as const satisfies readonly BillingTelemetryField[]
+type BillingPayloadField = Exclude<
+  BillingTelemetryField,
+  'operation' | 'stage' | 'outcome'
+>
 
-const REQUIRED_BILLING_PAYLOAD_FIELDS = [
-  'operation_type',
-  'checkout_status',
-  'source',
-  'failure_category',
-  'member_removal_count',
-  'member_removal_failures'
-] as const satisfies readonly BillingTelemetryField[]
+const BILLING_PAYLOAD_FIELD_HANDLING = {
+  billing_op_id: 'optional',
+  checkout_attempt_id: 'optional',
+  tier: 'optional',
+  cycle: 'optional',
+  checkout_type: 'optional',
+  payment_intent_source: 'optional',
+  error_code: 'optional',
+  target_tier: 'optional',
+  duration_ms: 'optional',
+  operation_type: 'required',
+  checkout_status: 'required',
+  source: 'required',
+  failure_category: 'required',
+  member_removal_count: 'required',
+  member_removal_failures: 'required'
+} as const satisfies Record<BillingPayloadField, 'optional' | 'required'>
+
+const OPTIONAL_BILLING_PAYLOAD_FIELDS = Object.entries(
+  BILLING_PAYLOAD_FIELD_HANDLING
+).flatMap(([field, handling]) => (handling === 'optional' ? [field] : []))
+
+const REQUIRED_BILLING_PAYLOAD_FIELDS = Object.entries(
+  BILLING_PAYLOAD_FIELD_HANDLING
+).flatMap(([field, handling]) => (handling === 'required' ? [field] : []))
 
 const optionalBillingPayloadFields: ReadonlySet<string> = new Set(
   OPTIONAL_BILLING_PAYLOAD_FIELDS

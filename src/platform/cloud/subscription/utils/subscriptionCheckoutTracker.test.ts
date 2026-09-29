@@ -72,12 +72,29 @@ describe('subscriptionCheckoutTracker', () => {
     }
   )
 
-  it('rejects a checkout attempt from the future', () => {
+  it('accepts bounded clock skew without discarding a checkout attempt', () => {
     localStorage.setItem(
       PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
       JSON.stringify({
         attempt_id: 'future-attempt',
         started_at_ms: Date.now() + 60_000,
+        tier: 'pro',
+        cycle: 'monthly',
+        checkout_type: 'new'
+      })
+    )
+
+    expect(getPendingSubscriptionCheckoutAttempt()).toEqual(
+      expect.objectContaining({ attempt_id: 'future-attempt' })
+    )
+  })
+
+  it('rejects an implausibly future checkout attempt', () => {
+    localStorage.setItem(
+      PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+      JSON.stringify({
+        attempt_id: 'far-future-attempt',
+        started_at_ms: Date.now() + 6 * 60 * 1000,
         tier: 'pro',
         cycle: 'monthly',
         checkout_type: 'new'

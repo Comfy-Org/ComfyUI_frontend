@@ -55,6 +55,7 @@ const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
 const PENDING_CHECKOUT_COMPLETION_DEADLINE_MS = 10 * 60 * 1000
 const PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS = 10_000
 const PENDING_CHECKOUT_DEADLINE_RETRY_MS = 1000
+const PENDING_CHECKOUT_DEADLINE_RETRY_LIMIT = 3
 const MAX_TIMER_DELAY_MS = 2_147_483_647
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
@@ -167,6 +168,8 @@ function useSubscriptionInternal() {
   let isRecoveringPendingCheckout = false
   let activePendingCheckoutRecovery: Promise<void> | null = null
   let didLastRecoveryAttemptThrow = false
+  let pendingCheckoutDeadlineRetryCount = 0
+  let isDisposed = false
 
   const stopPendingCheckoutRecovery = () => {
     if (pendingCheckoutRecoveryTimeout !== null && defaultWindow) {
@@ -175,10 +178,14 @@ function useSubscriptionInternal() {
 
     pendingCheckoutRecoveryTimeout = null
     pendingCheckoutRecoveryAttempt = 0
+    pendingCheckoutDeadlineRetryCount = 0
     didLastRecoveryAttemptThrow = false
   }
 
-  onScopeDispose(stopPendingCheckoutRecovery)
+  onScopeDispose(() => {
+    isDisposed = true
+    stopPendingCheckoutRecovery()
+  })
 
   /**
    * The retry ladder is exhausted by the time the deadline matters, so without
@@ -186,7 +193,11 @@ function useSubscriptionInternal() {
    * never fire for a user who simply leaves the tab open.
    */
   const armMissingCheckoutCompletionWakeUp = (remainingMs: number) => {
-    if (!defaultWindow || pendingCheckoutRecoveryTimeout !== null) {
+    if (
+      isDisposed ||
+      !defaultWindow ||
+      pendingCheckoutRecoveryTimeout !== null
+    ) {
       return
     }
 
@@ -256,10 +267,23 @@ function useSubscriptionInternal() {
       checkout_type: attempt.checkout_type,
       duration_ms: attemptAgeMs
     })
+    if (attempt.operation === 'resubscribe') {
+      telemetry?.trackBillingEvent({
+        operation: 'resubscribe',
+        stage: 'failed',
+        outcome: 'failure',
+        source: attempt.resubscribe_source ?? 'settings_billing_panel',
+        failure_category: 'poll_timeout',
+        ...(attempt.payment_intent_source
+          ? { payment_intent_source: attempt.payment_intent_source }
+          : {})
+      })
+    }
   }
 
   const schedulePendingCheckoutRecovery = () => {
     if (
+      isDisposed ||
       !defaultWindow ||
       pendingCheckoutRecoveryTimeout !== null ||
       !isLoggedIn.value ||
@@ -504,13 +528,41 @@ function useSubscriptionInternal() {
     }
   }
 
+  const rearmBoundedDeadlineWakeUp = () => {
+    if (
+      pendingCheckoutDeadlineRetryCount >= PENDING_CHECKOUT_DEADLINE_RETRY_LIMIT
+    ) {
+      return
+    }
+
+    pendingCheckoutDeadlineRetryCount += 1
+    armMissingCheckoutCompletionWakeUp(PENDING_CHECKOUT_DEADLINE_RETRY_MS)
+  }
+
+  const retryUnavailableDeadline = (source: PendingCheckoutRecoverySource) => {
+    if (source !== 'deadline') return
+
+    const attempt = getPendingSubscriptionCheckoutAttempt()
+    if (attempt && !hasReportedMissingCheckoutCompletion(attempt.attempt_id)) {
+      rearmBoundedDeadlineWakeUp()
+    }
+  }
+
+  const handleEmptyPendingCheckoutStatus = (
+    source: PendingCheckoutRecoverySource
+  ) => {
+    if (source === 'deadline') {
+      rearmBoundedDeadlineWakeUp()
+    } else {
+      schedulePendingCheckoutRecovery()
+    }
+  }
+
   const recoverPendingSubscriptionCheckout = async (
     source: PendingCheckoutRecoverySource
   ) => {
     if (!canRecoverPendingCheckout()) {
-      if (source === 'deadline' && hasPendingSubscriptionCheckoutAttempt()) {
-        armMissingCheckoutCompletionWakeUp(PENDING_CHECKOUT_DEADLINE_RETRY_MS)
-      }
+      retryUnavailableDeadline(source)
       return
     }
     if (isRecoveringPendingCheckout) {
@@ -522,7 +574,11 @@ function useSubscriptionInternal() {
     isRecoveringPendingCheckout = true
 
     try {
-      await fetchPendingCheckoutStatus()
+      const status = await fetchPendingCheckoutStatus()
+      if (status === null) {
+        handleEmptyPendingCheckoutStatus(source)
+        return
+      }
     } catch (error) {
       handlePendingCheckoutRecoveryError(source, error)
     } finally {
@@ -537,6 +593,7 @@ function useSubscriptionInternal() {
   let inFlightStatusFetch: Promise<BillingStatusResponse | null> | null = null
   let inFlightStatusOwnerId: string | null = null
   let inFlightStatusWorkspaceId: string | null = null
+  let statusFetchGeneration = 0
 
   const clearInFlightStatusFetch = (
     fetchPromise: Promise<BillingStatusResponse | null>
@@ -559,7 +616,12 @@ function useSubscriptionInternal() {
       return inFlightStatusFetch
     }
 
-    const fetchPromise = performFetchSubscriptionStatus(ownerId, workspaceId)
+    const generation = ++statusFetchGeneration
+    const fetchPromise = performFetchSubscriptionStatus(
+      ownerId,
+      workspaceId,
+      generation
+    )
     inFlightStatusFetch = fetchPromise
     inFlightStatusOwnerId = ownerId
     inFlightStatusWorkspaceId = workspaceId
@@ -584,9 +646,6 @@ function useSubscriptionInternal() {
       const status = rail
         ? await readOnRail(rail.readStatus)
         : await workspaceApi.getBillingStatus()
-      // Any read that lands proves billing is reachable, not just one made by
-      // the recovery ladder.
-      didLastRecoveryAttemptThrow = false
       return status
     } catch (error) {
       throw new AuthStoreError(
@@ -599,7 +658,8 @@ function useSubscriptionInternal() {
 
   async function performFetchSubscriptionStatus(
     ownerId: string | null,
-    workspaceId: string | null
+    workspaceId: string | null,
+    generation: number
   ): Promise<BillingStatusResponse | null> {
     if (!isCloud) return null
 
@@ -607,11 +667,14 @@ function useSubscriptionInternal() {
     // A superseded read publishes nothing: the scope moved on under it.
     if (statusData === undefined) return null
     if (
+      generation !== statusFetchGeneration ||
       (authStore.userId ?? null) !== ownerId ||
       workspaceStore.activeWorkspaceId !== workspaceId
     ) {
       return null
     }
+    // Only a current, publishable read proves billing is reachable.
+    didLastRecoveryAttemptThrow = false
     subscriptionStatus.value = statusData
     if (workspaceId && statusData.billing_rail) {
       workspaceStore.setWorkspaceBillingRail(

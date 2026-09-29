@@ -426,6 +426,83 @@ describe('useSubscription', () => {
       expect(subscriptionStatus.value).toEqual(published)
     })
 
+    it('retries recovery when a status read is superseded', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-superseded-recovery',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      railState.rail = { readStatus: mockReadStatus }
+      mockReadStatus
+        .mockResolvedValueOnce({ status: 'error', code: 'SUPERSEDED' })
+        .mockResolvedValueOnce({
+          status: 'ok',
+          value: buildStatus({
+            is_active: false,
+            has_funds: false,
+            renewal_date: ''
+          })
+        })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(3_000)
+
+      expect(mockReadStatus).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not publish an evicted status read after its replacement', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-evicted-read',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      let resolveEvicted!: (status: BillingStatusResponse) => void
+      mockGetBillingStatus
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveEvicted = resolve
+          })
+        )
+        .mockResolvedValueOnce(
+          buildStatus({
+            is_active: true,
+            has_funds: true,
+            renewal_date: 'active',
+            subscription_tier: 'STANDARD',
+            subscription_duration: 'MONTHLY'
+          })
+        )
+      mockIsLoggedIn.value = true
+
+      const { subscriptionStatus } = useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(10_000)
+      await vi.advanceTimersByTimeAsync(3_000)
+      expect(subscriptionStatus.value?.is_active).toBe(true)
+
+      resolveEvicted(
+        buildStatus({
+          is_active: false,
+          has_funds: false,
+          renewal_date: 'stale'
+        })
+      )
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(subscriptionStatus.value?.is_active).toBe(true)
+      expect(subscriptionStatus.value?.renewal_date).toBe('active')
+    })
+
     it('does not apply the previous account response after an identity switch', async () => {
       let resolvePreviousAccount!: (value: {
         is_active: boolean
@@ -786,6 +863,75 @@ describe('useSubscription', () => {
       )
     })
 
+    it('closes the resubscribe funnel when its checkout times out', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-resubscribe-timeout',
+          started_at_ms: Date.now() - 11 * 60 * 1000,
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          operation: 'resubscribe',
+          resubscribe_source: 'pricing_dialog'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+
+      expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'resubscribe',
+        stage: 'failed',
+        outcome: 'failure',
+        source: 'pricing_dialog',
+        failure_category: 'poll_timeout'
+      })
+    })
+
+    it('does not emit success after the same attempt timed out', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-late-success',
+          started_at_ms: Date.now() - 11 * 60 * 1000,
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      const { fetchStatus } = useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        renewal_date: '',
+        subscription_tier: 'STANDARD',
+        subscription_duration: 'MONTHLY'
+      })
+      await fetchStatus()
+
+      expect(
+        mockTelemetry.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
+      expect(
+        localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+      ).toBeNull()
+    })
+
     it('reports at the deadline without another lifecycle event', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -852,6 +998,36 @@ describe('useSubscription', () => {
       scope = undefined
       await vi.advanceTimersByTimeAsync(10 * 60 * 1000)
 
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+    })
+
+    it('does not resurrect recovery timers after disposal', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-disposed-in-flight',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      let rejectRead!: (error: Error) => void
+      mockGetBillingStatus.mockImplementation(
+        () =>
+          new Promise((_, reject) => {
+            rejectRead = reject
+          })
+      )
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      scope?.stop()
+      scope = undefined
+      rejectRead(new Error('offline after disposal'))
+      await vi.advanceTimersByTimeAsync(10 * 60 * 1000)
+
+      expect(mockGetBillingStatus).toHaveBeenCalledOnce()
       expect(mockReportTelemetryError).not.toHaveBeenCalled()
     })
 
@@ -1104,11 +1280,15 @@ describe('useSubscription', () => {
       // A reload drops all composable state but keeps the stored attempt.
       scope?.stop()
       scope = effectScope()
+      mockLocalStorage.getItem.mockClear()
       useSubscriptionWithScope()
       await vi.advanceTimersByTimeAsync(43_000)
 
       expect(mockReportTelemetryError).toHaveBeenCalledOnce()
       expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledOnce()
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
+        'comfy.subscription.missing_completion_reported'
+      )
     })
 
     it('separates an unreachable billing API from a missing completion', async () => {

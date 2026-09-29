@@ -17,6 +17,7 @@ import type {
 } from '@/platform/telemetry/types'
 
 const PENDING_SUBSCRIPTION_CHECKOUT_MAX_AGE_MS = 6 * 60 * 60 * 1000
+const PENDING_SUBSCRIPTION_CHECKOUT_CLOCK_SKEW_MS = 5 * 60 * 1000
 const VALID_TIER_KEYS: ReadonlySet<string> = new Set([
   'free',
   'standard',
@@ -186,7 +187,8 @@ const isCheckoutAttemptCore = (
   typeof value.attempt_id === 'string' &&
   typeof value.started_at_ms === 'number' &&
   Number.isFinite(value.started_at_ms) &&
-  value.started_at_ms <= Date.now() &&
+  value.started_at_ms <=
+    Date.now() + PENDING_SUBSCRIPTION_CHECKOUT_CLOCK_SKEW_MS &&
   isTierKey(value.tier) &&
   (value.cycle === 'monthly' || value.cycle === 'yearly') &&
   (value.checkout_type === 'new' || value.checkout_type === 'change')
@@ -289,19 +291,17 @@ export const getPendingSubscriptionCheckoutAttempt =
 export const hasReportedMissingCheckoutCompletion = (
   attemptId: string
 ): boolean => {
-  if (reportedMissingCompletionAttemptId === attemptId) return true
-
   const storage = getStorage()
   if (!storage) {
-    return false
+    return reportedMissingCompletionAttemptId === attemptId
   }
 
   try {
-    return (
+    const isStored =
       storage.getItem(REPORTED_MISSING_COMPLETION_STORAGE_KEY) === attemptId
-    )
+    return isStored || reportedMissingCompletionAttemptId === attemptId
   } catch {
-    return false
+    return reportedMissingCompletionAttemptId === attemptId
   }
 }
 
@@ -400,6 +400,13 @@ export const consumePendingSubscriptionCheckoutSuccess = (
 ): SubscriptionSuccessMetadata | null => {
   const attempt = getPendingSubscriptionCheckoutAttempt()
   if (!attempt || !didAttemptSucceed(attempt, status)) {
+    return null
+  }
+
+  // A client timeout is terminal for this attempt. A later billing refresh may
+  // observe eventual activation, but it must not emit a contradictory success.
+  if (hasReportedMissingCheckoutCompletion(attempt.attempt_id)) {
+    clearPendingSubscriptionCheckoutAttempt()
     return null
   }
 
