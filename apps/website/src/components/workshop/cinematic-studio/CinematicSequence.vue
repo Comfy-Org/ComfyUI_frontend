@@ -72,9 +72,10 @@ const thumbs = computed(() =>
       take,
       look,
       current,
-      label: tc('cinematic.stage.thumb', locale)
-        .replace('{shot}', String(take.shot))
-        .replace('{take}', take.letter),
+      label: tc('cinematic.stage.thumb', locale, {
+        shot: take.shot,
+        take: take.letter
+      }),
       description:
         kind === 'unpaid' ? tc('cinematic.state.noCredits', locale) : undefined,
       class: cn(

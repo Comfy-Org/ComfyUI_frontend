@@ -49,7 +49,10 @@ describe('CLI workflow rendering', () => {
         fetch,
         uploadFile: async () => 'uploaded-image.png'
       })
-      expect(submitted).toEqual(workflowCloudRequest(model.workflow, expected))
+      expect(submitted).toEqual({
+        ...workflowCloudRequest(model.workflow, expected),
+        extra_data: { api_key_comfy_org: 'test-key' }
+      })
       expect(rendered.run.run.id).toBe(id)
       expect(rendered.outputs).toEqual([])
       expect(fetch).toHaveBeenCalledTimes(2)

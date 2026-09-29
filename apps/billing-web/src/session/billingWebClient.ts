@@ -19,10 +19,14 @@
  */
 import type {
   BillingOperationPointerStorage,
-  BillingSession
+  BillingScopeSource,
+  BillingSession,
+  BillingTransport,
+  CredentialedWebSession
 } from '@comfyorg/account-core/billing'
 import {
   createBillingCommands,
+  createCredentialedBillingTransport,
   createBillingEventsReader,
   createBillingOperationLifecycle,
   createBillingStatusReader,
@@ -58,13 +62,40 @@ function targetWorkspaceId(session: BillingSession): string | undefined {
   return boundWorkspaceId() ?? pinnedWorkspaceId(session)
 }
 
+const resolveUrl = (route: string) => `${CLOUD_BASE_URL}/api${route}`
+
 export function createBillingWebClient(session: BillingSession): BillingClient {
   const transport = createSessionBillingTransport({
     session,
-    resolveUrl: (route) => `${CLOUD_BASE_URL}/api${route}`,
+    resolveUrl,
     workspaceId: () => targetWorkspaceId(session)
   })
-  const scopeSource = sessionBillingScopeSource(session)
+  return composeBillingWebClient(transport, sessionBillingScopeSource(session))
+}
+
+/**
+ * On the shared web session: the cookie authorizes each request, and the
+ * resolved workspace, which the entry link named, is its workspace header.
+ */
+export function createWebSessionBillingClient(unified: {
+  readonly scopeSource: BillingScopeSource
+  readonly webSession: CredentialedWebSession
+  readonly fetchImpl: typeof fetch
+}): BillingClient {
+  const { scopeSource, webSession, fetchImpl } = unified
+  const transport = createCredentialedBillingTransport({
+    resolveUrl,
+    scopeSource,
+    webSession,
+    fetchImpl
+  })
+  return composeBillingWebClient(transport, unified.scopeSource)
+}
+
+function composeBillingWebClient(
+  transport: BillingTransport,
+  scopeSource: BillingScopeSource
+): BillingClient {
   const readerOptions = { transport, scopeSource }
   const capabilities = createCapabilitiesReader(readerOptions)
   const credits = createCreditsReader(readerOptions)

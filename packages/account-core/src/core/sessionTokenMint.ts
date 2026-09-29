@@ -228,6 +228,8 @@ export function createSessionTokenMint({
     if (session === undefined) return failure('NO_SESSION')
     const userId = session.user.id
 
+    // The cache is checked before the backoff on purpose: a caller already
+    // holding a fresh token is still served while new mints wait.
     const cached = cache.get(workspaceId)
     if (cached && isCredentialFresh(cached, now(), refreshBufferMs)) {
       return { status: 'ok', credential: cached }
