@@ -2,6 +2,8 @@ import { OPAQUE_WIDGETS_KEY } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import { reportError } from '@/platform/telemetry/reportError'
+import { zProjectedSubgraphDefinition } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 /**
  * Root map the op layer mints `definitions.subgraphs` into, keyed by
@@ -191,58 +193,19 @@ function projectSubgraphDefinition(
   return definition as unknown as ExportedSubgraph
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function hasSafeInputs(value: unknown): boolean {
-  return (
-    value === undefined ||
-    (Array.isArray(value) &&
-      value.every(
-        (input) =>
-          isRecord(input) &&
-          typeof input.name === 'string' &&
-          (input.linkIds === undefined || Array.isArray(input.linkIds))
-      ))
-  )
-}
-
-function hasSafeNodes(value: unknown): boolean {
-  return (
-    value === undefined ||
-    (Array.isArray(value) &&
-      value.every(
-        (node) =>
-          isRecord(node) &&
-          (node.inputs === undefined ||
-            (Array.isArray(node.inputs) && node.inputs.every(isRecord)))
-      ))
-  )
-}
-
-function hasSafeLinks(value: unknown): boolean {
-  return value === undefined || (Array.isArray(value) && value.every(isRecord))
-}
-
-function hasSafeNestedDefinitions(value: unknown): boolean {
-  if (value === undefined) return true
-  if (!isRecord(value)) return false
-  const nested = value.subgraphs
-  return (
-    nested === undefined ||
-    (Array.isArray(nested) && nested.every(isSafeDefinition))
-  )
-}
-
-function isSafeDefinition(value: unknown): boolean {
-  return (
-    isRecord(value) &&
-    hasSafeInputs(value.inputs) &&
-    hasSafeNodes(value.nodes) &&
-    hasSafeLinks(value.links) &&
-    hasSafeNestedDefinitions(value.definitions)
-  )
+function parseDefinition(value: unknown): ExportedSubgraph | null {
+  const result = zProjectedSubgraphDefinition.safeParse(value)
+  if (!result.success) return null
+  const nesting = result.data.definitions
+  const definition = result.data as unknown as ExportedSubgraph
+  if (nesting === undefined) return definition
+  const subgraphs: ExportedSubgraph[] = []
+  for (const nested of nesting.subgraphs) {
+    const parsed = parseDefinition(nested)
+    if (parsed === null) return null
+    subgraphs.push(parsed)
+  }
+  return { ...definition, definitions: { subgraphs } }
 }
 
 function isExcludedDefinition(
@@ -290,7 +253,7 @@ function readDefinition(
   excludedDefinitionIds: ReadonlySet<string>
 ): ExportedSubgraph | null {
   const definition = projectSubgraphDefinition(source, excludedDefinitionIds)
-  return isSafeDefinition(definition) ? definition : null
+  return parseDefinition(definition)
 }
 
 function readField(source: unknown, key: string): unknown {
@@ -376,11 +339,26 @@ export function readSubgraphDefinitions(
   const definitions: ExportedSubgraph[] = []
   const root = definitionsMap(doc)
   if (!root) return definitions
-  root.forEach((value) => {
+  const reported =
+    reportedUnreadableDefinitions.get(doc) ??
+    reportedUnreadableDefinitions.set(doc, new Set()).get(doc)!
+  root.forEach((value, id) => {
     if (!(value instanceof Y.Map)) return
     if (isExcludedDefinition(value, excludedDefinitionIds)) return
     const definition = readDefinition(value, excludedDefinitionIds)
-    if (definition) definitions.push(definition)
+    if (definition) {
+      definitions.push(definition)
+      reported.delete(id)
+      return
+    }
+    if (reported.has(id)) return
+    reported.add(id)
+    reportError(
+      new Error(`Agent subgraph definition ${id} does not validate`),
+      { errorType: 'agent_crdt_unreadable_subgraph_definition' }
+    )
   })
   return definitions
 }
+
+const reportedUnreadableDefinitions = new WeakMap<Y.Doc, Set<string>>()

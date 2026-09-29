@@ -149,7 +149,13 @@ function registerSubgraphDefinitions(
   // Filter after flattening: a live nested definition must not be recreated
   // just because its outer is missing, and a missing nested definition must
   // still register when its outer is already live.
+  const seen = new Set<string>()
   const missing = allSubgraphDefinitions(definitions)
+    .filter((definition) => {
+      if (seen.has(definition.id)) return false
+      seen.add(definition.id)
+      return true
+    })
     .map((definition) => ({ ...definition, definitions: undefined }))
     .filter((definition) => !rootGraph.subgraphs.has(definition.id))
   const pending = new Set(missing.map((definition) => definition.id))
@@ -271,15 +277,24 @@ function reconcile(
     scope.rootGraphId,
     scope.owningGraphId
   )
-  const orphans = graph._nodes.filter(
-    (node) => !nodeStore.ownsNode(scope, node._state)
-  )
+  const orphans = graph._nodes.filter((node) => {
+    const registeredType = LiteGraph.registered_node_types[node.type]
+    return (
+      !nodeStore.ownsNode(scope, node._state) ||
+      Object.getPrototypeOf(node).constructor !== registeredType ||
+      (node.has_errors === true && graph.rootGraph.subgraphs.has(node.type))
+    )
+  })
   const orphansById = new Map(orphans.map((node) => [node.id, node]))
 
   const materialized: NodeId[] = []
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
-    if (live && nodeStore.ownsNode(scope, live._state)) {
+    if (
+      live &&
+      nodeStore.ownsNode(scope, live._state) &&
+      !orphansById.has(state.id)
+    ) {
       reconcileAutogrowInputs(live)
       continue
     }
@@ -299,7 +314,10 @@ function reconcile(
       graph._nodes_by_id[orphan.id] !== orphan || !recordIds.has(orphan.id)
   )
   for (const orphan of detached) {
-    graph.remove(orphan, { preserveCanonicalState: true })
+    graph.remove(orphan, {
+      preserveCanonicalState: true,
+      preserveSubgraphDefinitions: graph._nodes_by_id[orphan.id] !== orphan
+    })
   }
   return materialized
 }
@@ -387,6 +405,9 @@ function materialize(
   // ended. Provenance on the operation, not the bracket, is what keeps the
   // layout port quiet here.
   nodeStore.deleteNode(scope, state)
+  if (orphan && graph._nodes_by_id[orphan.id] === orphan) {
+    delete graph._nodes_by_id[orphan.id]
+  }
   let added: LGraphNode | null | undefined
   try {
     added = graph.add(node)
@@ -441,6 +462,7 @@ function materialize(
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
   }
+  node.last_serialization = serialised
   return true
 }
 
