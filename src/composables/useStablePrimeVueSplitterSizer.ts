@@ -1,5 +1,5 @@
 import type { SplitterResizeEndEvent } from 'primevue/splitter'
-import type { WatchSource } from 'vue'
+import type { MaybeRefOrGetter, WatchSource } from 'vue'
 
 import { unrefElement, useStorage } from '@vueuse/core'
 import type { MaybeComputedElementRef } from '@vueuse/core'
@@ -7,7 +7,15 @@ import { nextTick, watch } from 'vue'
 
 interface PanelConfig {
   ref: MaybeComputedElementRef
-  storageKey: string
+  storageKey: MaybeRefOrGetter<string>
+}
+
+interface SizerOptions {
+  /**
+   * Pin a panel that has no stored width at the width it first renders at, so
+   * it keeps that width when the splitter's container later changes size.
+   */
+  captureInitialWidth?: boolean
 }
 
 /**
@@ -21,7 +29,8 @@ interface PanelConfig {
  */
 export function useStablePrimeVueSplitterSizer(
   panels: PanelConfig[],
-  watchSources: WatchSource[]
+  watchSources: WatchSource[],
+  { captureInitialWidth = false }: SizerOptions = {}
 ) {
   const storedWidths = panels.map((panel) => ({
     ref: panel.ref,
@@ -37,7 +46,11 @@ export function useStablePrimeVueSplitterSizer(
   function applyStoredWidths() {
     for (const { ref, width } of storedWidths) {
       const el = resolveElement(ref)
-      if (!el || width.value === null) continue
+      if (!el) continue
+      if (width.value === null && captureInitialWidth && el.offsetWidth > 0) {
+        width.value = el.offsetWidth
+      }
+      if (width.value === null) continue
       el.style.flexBasis = `${width.value}px`
       el.style.flexGrow = '0'
       el.style.flexShrink = '0'
@@ -47,7 +60,7 @@ export function useStablePrimeVueSplitterSizer(
   function onResizeEnd(_event: SplitterResizeEndEvent) {
     for (const { ref, width } of storedWidths) {
       const el = resolveElement(ref)
-      if (el) width.value = el.offsetWidth
+      if (el && el.offsetWidth > 0) width.value = el.offsetWidth
     }
   }
 

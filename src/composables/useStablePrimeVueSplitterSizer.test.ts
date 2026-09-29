@@ -130,4 +130,63 @@ describe('useStablePrimeVueSplitterSizer', () => {
 
     expect(validRef.value.style.flexBasis).toBe('200px')
   })
+
+  it('does not overwrite a stored width from a hidden panel on resize end', async () => {
+    const panelRef = createPanel(0)
+    const trigger = ref(0)
+    vi.mocked(useStorage).mockImplementation(() => ref(350))
+
+    const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+      [{ ref: panelRef, storageKey: 'test-hidden' }],
+      [trigger]
+    )
+    await flushWatcher()
+
+    onResizeEnd(resizeEndEvent())
+    trigger.value++
+    await flushWatcher()
+
+    expect(panelRef.value.style.flexBasis).toBe('350px')
+  })
+
+  it.for([
+    { rendered: 280, captureInitialWidth: true, expected: '280px' },
+    { rendered: 280, captureInitialWidth: false, expected: '' },
+    { rendered: 0, captureInitialWidth: true, expected: '' }
+  ])(
+    'pins a panel with no stored width at its rendered width only when opted in and visible ($rendered px, capture $captureInitialWidth)',
+    async ({ rendered, captureInitialWidth, expected }) => {
+      const panelRef = createPanel(rendered)
+
+      useStablePrimeVueSplitterSizer(
+        [{ ref: panelRef, storageKey: 'test-capture-initial' }],
+        [ref(0)],
+        { captureInitialWidth }
+      )
+      await flushWatcher()
+
+      expect(panelRef.value.style.flexBasis).toBe(expected)
+    }
+  )
+
+  it('keeps the captured initial width after the panel is resized by its container', async () => {
+    let offsetWidth = 280
+    const el = document.createElement('div')
+    Object.defineProperty(el, 'offsetWidth', { get: () => offsetWidth })
+    const panelRef = ref(el)
+    const trigger = ref(0)
+
+    useStablePrimeVueSplitterSizer(
+      [{ ref: panelRef, storageKey: 'test-capture-once' }],
+      [trigger],
+      { captureInitialWidth: true }
+    )
+    await flushWatcher()
+
+    offsetWidth = 600
+    trigger.value++
+    await flushWatcher()
+
+    expect(el.style.flexBasis).toBe('280px')
+  })
 })

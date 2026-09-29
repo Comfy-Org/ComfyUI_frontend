@@ -30,11 +30,12 @@
           "
           state-storage="local"
           @resizestart="onResizestart"
-          @resizeend="normalizeSavedSizes"
+          @resizeend="onSplitterResizeEnd"
         >
           <!-- First panel: sidebar when left, properties when right -->
           <SplitterPanel
             v-if="firstPanelVisible && !agentNodeSelectionActive"
+            ref="firstPanel"
             :class="
               sidebarLocation === 'left'
                 ? cn(
@@ -111,6 +112,7 @@
           <!-- Last panel: properties when left, sidebar when right -->
           <SplitterPanel
             v-if="lastPanelVisible && !agentNodeSelectionActive"
+            ref="lastPanel"
             :class="
               sidebarLocation === 'right'
                 ? cn(
@@ -148,14 +150,19 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import type { MaybeElement } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Splitter from 'primevue/splitter'
-import type { SplitterResizeStartEvent } from 'primevue/splitter'
+import type {
+  SplitterResizeEndEvent,
+  SplitterResizeStartEvent
+} from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed, watchEffect } from 'vue'
+import { computed, useTemplateRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { useStablePrimeVueSplitterSizer } from '@/composables/useStablePrimeVueSplitterSizer'
 import {
   BUILDER_MIN_SIZE,
   CENTER_PANEL_SIZE,
@@ -197,7 +204,7 @@ const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
 const { isVisible: agentPanelOpen } = storeToRefs(agentPanelStore)
 // The agent docks in its own `agent-panel` slot outside the splitter, so it is
-// not an offside trigger; it only discriminates the saved layout key below.
+// not an offside trigger; toggling it only remounts the splitter.
 const showOffsideSplitter = computed(
   () => rightSidePanelVisible.value || isSelectMode.value
 )
@@ -336,6 +343,56 @@ function normalizeSavedSizes() {
 const splitterRefreshKey = computed(() => {
   return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${agentPanelOpen.value ? '-with-agent' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}`
 })
+
+const firstPanelRef = useTemplateRef<MaybeElement>('firstPanel')
+const lastPanelRef = useTemplateRef<MaybeElement>('lastPanel')
+
+/**
+ * The splitter restores its sizes as percentages, but its width changes
+ * whenever the agent panel beside it or the right side panel toggles. Pinning
+ * the side panels in pixels lets the center panel absorb that change instead.
+ * Builder mode keeps its own percentage layout.
+ */
+const sidebarPanelRef = computed(() => {
+  if (isSelectMode.value) return undefined
+  return sidebarLocation.value === 'left'
+    ? firstPanelRef.value
+    : lastPanelRef.value
+})
+const offsidePanelRef = computed(() => {
+  if (isSelectMode.value) return undefined
+  return sidebarLocation.value === 'left'
+    ? lastPanelRef.value
+    : firstPanelRef.value
+})
+
+const sidebarWidthKey = computed(() => {
+  const base =
+    sidebarLocation.value === 'left'
+      ? 'Comfy.Sidebar.LeftWidth'
+      : 'Comfy.Sidebar.RightWidth'
+  return unifiedWidth.value ? base : `${base}.${sidebarTabKey.value}`
+})
+
+const { onResizeEnd: savePanelWidths } = useStablePrimeVueSplitterSizer(
+  [
+    { ref: sidebarPanelRef, storageKey: sidebarWidthKey },
+    { ref: offsidePanelRef, storageKey: 'Comfy.RightSidePanel.Width' }
+  ],
+  [
+    splitterRefreshKey,
+    sidebarWidthKey,
+    sidebarPanelVisible,
+    focusMode,
+    agentNodeSelectionActive
+  ],
+  { captureInitialWidth: true }
+)
+
+function onSplitterResizeEnd(event: SplitterResizeEndEvent) {
+  normalizeSavedSizes()
+  savePanelWidths(event)
+}
 
 const firstPanelStyle = computed(() => {
   if (focusMode.value) return { display: 'none' }
