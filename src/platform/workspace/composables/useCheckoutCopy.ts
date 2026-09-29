@@ -11,7 +11,7 @@ import {
   getTierCredits,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierKey'
 
 /**
  * The app's translations and catalog for the shared checkout steps.

@@ -1,3 +1,4 @@
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -147,10 +148,11 @@ vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
+vi.mock(import('@/composables/billing/useBillingDialogs'))
+
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
-  subscriptionTier: null as string | null,
-  showSubscriptionDialog: vi.fn()
+  subscriptionTier: null as string | null
 }))
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => ({
@@ -165,8 +167,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
           ? { tier: mockBillingState.subscriptionTier }
           : null
       }
-    },
-    showSubscriptionDialog: mockBillingState.showSubscriptionDialog
+    }
   }))
 }))
 
@@ -733,7 +734,9 @@ describe('useCoreCommands', () => {
         await findCmd(id).function()
 
         expect(app.queuePrompt).toHaveBeenCalledWith(num, 1, expect.anything())
-        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+        expect(
+          useBillingDialogs().showSubscriptionRequiredDialog
+        ).not.toHaveBeenCalled()
       }
     )
 
@@ -742,7 +745,9 @@ describe('useCoreCommands', () => {
 
       await findCmd('Comfy.QueueSelectedOutputNodes').function()
 
-      expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+      expect(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).not.toHaveBeenCalled()
       expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
@@ -761,7 +766,9 @@ describe('useCoreCommands', () => {
         await findCmd(id).function()
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
-        expect(mockBillingState.showSubscriptionDialog).toHaveBeenCalledWith({
+        expect(
+          useBillingDialogs().showSubscriptionRequiredDialog
+        ).toHaveBeenCalledWith({
           reason: 'subscribe_to_run'
         })
       }
@@ -777,7 +784,9 @@ describe('useCoreCommands', () => {
         await findCmd('Comfy.QueuePrompt').function()
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
-        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+        expect(
+          useBillingDialogs().showSubscriptionRequiredDialog
+        ).not.toHaveBeenCalled()
         expect(useToastStore().add).toHaveBeenCalledWith(
           expect.objectContaining({ severity: 'warn' })
         )

@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
+
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+
 import { useLegacyBilling } from './useLegacyBilling'
 
 vi.mock(import('firebase/auth'))
@@ -50,5 +54,25 @@ describe('useLegacyBilling', () => {
       expect(useSubscription().subscribe).toHaveBeenCalledOnce()
       expect(useSubscription().subscribeDirect).not.toHaveBeenCalled()
     })
+  })
+
+  describe('topup', () => {
+    it.for([
+      { features: true, purchases: 1 },
+      { features: false, purchases: 0 }
+    ])(
+      'purchases $purchases time(s) when subscription features are $features',
+      async ({ features, purchases }) => {
+        const subscription = useSubscription()
+        vi.mocked(useSubscription).mockReturnValue(subscription)
+        subscription.canAccessSubscriptionFeatures = computed(() => features)
+
+        await useLegacyBilling().topup(500)
+
+        expect(useAuthActions().purchaseCredits).toHaveBeenCalledTimes(
+          purchases
+        )
+      }
+    )
   })
 })

@@ -6,7 +6,8 @@ import {
 import * as Y from 'yjs'
 import { z } from 'zod'
 
-import type { INodeFlags, INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeFlags } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'

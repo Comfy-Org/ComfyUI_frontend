@@ -1,5 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
@@ -94,6 +94,7 @@ vi.mock(import('@/platform/workspace/composables/useResubscribe'), () => ({
 }))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 const i18n = createI18n({
   legacy: false,
@@ -245,7 +246,7 @@ describe('BillingStatusBanner', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
     await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
   })
 
   it('offers an upgrade when self-serve subscription is available', () => {

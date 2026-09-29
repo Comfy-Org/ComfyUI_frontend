@@ -1,4 +1,5 @@
 import { defineAsyncComponent } from 'vue'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -11,7 +12,10 @@ import {
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import type {
+  SubscriptionCheckoutSelection,
+  SubscriptionDialogOptions
+} from '@/composables/billing/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -26,19 +30,6 @@ import type { PendingSubscriptionCheckout } from '@/platform/workspace/utils/pen
 
 const DIALOG_KEY = 'subscription-required'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
-
-export interface SubscriptionDialogOptions {
-  reason?: PaymentIntentSource
-  paymentIntentSource?: PaymentIntentSource
-  /**
-   * Forces the unified pricing dialog to open on a specific plan tab,
-   * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
-   * always lands on the team tab even from a personal workspace).
-   */
-  planMode?: 'personal' | 'team'
-  /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
-  initialCheckout?: SubscriptionCheckoutSelection
-}
 
 function getInitialPlanMode(
   explicitMode: SubscriptionDialogOptions['planMode'],
@@ -67,7 +58,6 @@ export const useSubscriptionDialog = () => {
   // Fired here — the choke point every paywall/pricing dialog variant passes
   // through — so both the legacy and workspace billing paths emit it.
   function trackModalOpened(reason?: PaymentIntentSource) {
-    // Resolved lazily to avoid the useBillingContext import cycle (see below).
     const { tier } = useBillingContext()
     useTelemetry()?.trackSubscription('modal_opened', {
       current_tier: tier.value?.toLowerCase(),
@@ -119,10 +109,6 @@ export const useSubscriptionDialog = () => {
     if (shouldUseUnifiedPricing.value) {
       // Existing per-member (legacy) team subscribers keep the old tier-based
       // team table; the unified credit-slider table is for everyone else.
-      // Resolved lazily (not at composable setup): these three composables form
-      // an import cycle (useBillingContext -> useWorkspaceBilling ->
-      // useSubscriptionDialog), so a setup-time read would deref the shared
-      // context before its state is constructed.
       const { currentPlanSlug, isLegacyTeamPlan, isTeamPlan } =
         useBillingContext()
       if (isLegacyTeamPlan.value) {
@@ -229,7 +215,7 @@ export const useSubscriptionDialog = () => {
    */
   function startTeamWorkspaceUpgradeFlow() {
     hide()
-    dialogService
+    useWorkspaceDialogs()
       .showTeamWorkspacesDialog(() => {
         try {
           sessionStorage.setItem(RESUME_PRICING_KEY, '1')

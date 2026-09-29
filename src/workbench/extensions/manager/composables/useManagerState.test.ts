@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import {
@@ -27,23 +26,6 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     getSystemStats: vi.fn()
   }
 }))
-
-vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
-
-vi.mock(
-  import('@/workbench/extensions/manager/composables/useManagerDialog'),
-
-  () => {
-    const show = vi.fn()
-    const hide = vi.fn()
-    return {
-      useManagerDialog: vi.fn(() => ({
-        show,
-        hide
-      }))
-    }
-  }
-)
 
 /**
  * Helper to build a minimal systemStats argv-only fixture.
@@ -84,7 +66,6 @@ describe('useManagerState', () => {
   let systemStatsStore: ReturnType<typeof useSystemStatsStore>
 
   beforeEach(() => {
-    vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
     systemStatsStore = useSystemStatsStore()
 
     // Reset all mocks
@@ -292,30 +273,6 @@ describe('useManagerState', () => {
 
       expect(useToastStore().add).toHaveBeenCalledTimes(1)
       expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: 'manager.incompatibleVersion.title',
-        detail: 'manager.incompatibleVersion.message',
-        life: 15000
-      })
-    })
-
-    it('openManager on INCOMPATIBLE re-emits the upgrade toast without settings redirect', async () => {
-      systemStatsStore.$patch({
-        systemStats: enabledManagerStats(),
-        isInitialized: true
-      })
-      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
-        supports_manager_v4_ui: true
-      })
-      mockServerFeatures({ supports_v4: true, supports_csrf_post: false })
-
-      const managerState = useManagerState()
-      expect(useToastStore().add).toHaveBeenCalledTimes(1)
-
-      await managerState.openManager()
-      expect(useToastStore().add).toHaveBeenCalledTimes(2)
-      // second call must still be the upgrade toast, not an error toast
-      expect(useToastStore().add).toHaveBeenLastCalledWith({
         severity: 'warn',
         summary: 'manager.incompatibleVersion.title',
         detail: 'manager.incompatibleVersion.message',

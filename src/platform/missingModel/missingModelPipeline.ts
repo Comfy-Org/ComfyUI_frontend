@@ -9,7 +9,10 @@ import {
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelWorkflowData } from '@/platform/missingModel/missingModelScan'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type {
+  MissingModelCandidate,
+  MissingModelPipelineResult
+} from '@/platform/missingModel/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
@@ -19,17 +22,12 @@ import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import {
   getNodeByExecutionId,
   isCandidateScopeActive,
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
-
-export interface MissingModelPipelineResult {
-  missingModels: ModelFile[]
-  confirmedCandidates: MissingModelCandidate[]
-}
 
 interface MissingModelPipelineStore {
   missingModelCandidates: MissingModelCandidate[] | null

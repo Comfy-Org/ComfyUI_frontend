@@ -14,7 +14,6 @@ import { t } from '@/i18n'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   CheckoutAttributionMetadata,
   ResubscribeClickMetadata
@@ -26,7 +25,6 @@ import { useBillingReadRail } from '@/platform/workspace/composables/useBillingR
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import { useDialogService } from '@/services/dialogService'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
@@ -57,7 +55,6 @@ function useSubscriptionInternal() {
     return subscriptionStatus.value?.is_active ?? false
   })
   const { reportError, accessBillingPortal } = useAuthActions()
-  const { showSubscriptionRequiredDialog } = useDialogService()
 
   const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -278,10 +275,6 @@ function useSubscriptionInternal() {
 
   const subscribe = wrapWithErrorHandlingAsync(subscribeDirect, reportError)
 
-  const showSubscriptionDialog = (options?: SubscriptionDialogOptions) => {
-    void showSubscriptionRequiredDialog(options)
-  }
-
   /**
    * Whether cloud subscription mode is enabled (cloud distribution with subscription_required config).
    */
@@ -304,14 +297,6 @@ function useSubscriptionInternal() {
     }
 
     startCancellationWatcher()
-  }
-
-  const requireActiveSubscription = async (): Promise<void> => {
-    await fetchSubscriptionStatus()
-
-    if (!canAccessSubscriptionFeatures.value) {
-      showSubscriptionDialog({ reason: 'subscription_required' })
-    }
   }
 
   const handleViewUsageHistory = () => {
@@ -545,9 +530,7 @@ function useSubscriptionInternal() {
     subscribe,
     subscribeDirect,
     fetchStatus,
-    showSubscriptionDialog,
     manageSubscription,
-    requireActiveSubscription,
     handleViewUsageHistory,
     handleLearnMore,
     handleInvoiceHistory

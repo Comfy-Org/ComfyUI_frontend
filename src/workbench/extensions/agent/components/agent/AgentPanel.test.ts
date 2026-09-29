@@ -15,7 +15,7 @@ vi.hoisted(() => {
 })
 
 import { i18n } from '@/i18n'
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import type { ComposerAttachment } from '../../types/composerPrompt'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
 

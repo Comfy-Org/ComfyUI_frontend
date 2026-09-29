@@ -15,7 +15,7 @@ import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import type { BookmarkCustomization } from '@/platform/settings/types'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { InjectKeyExpandedKeys } from '@/types/treeExplorerTypes'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 

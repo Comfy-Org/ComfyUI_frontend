@@ -1,3 +1,4 @@
+import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/dialog/dialogContentClasses'
 import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -30,8 +31,26 @@ export function useComfyHubPublishDialog() {
     })
   }
 
+  /** Extension-facing entry point; also used by the e2e publish fixture. */
+  async function showPublishDialog(): Promise<void> {
+    dialogService.showLayoutDialog({
+      key: DIALOG_KEY,
+      component: ComfyHubPublishDialog,
+      props: {
+        onClose: hide,
+        // Falls through to the BaseModalLayout root — keeps the e2e
+        // publish-dialog selector working without the PrimeVue pt hook.
+        'data-testid': 'publish-dialog'
+      },
+      dialogComponentProps: {
+        contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
+      }
+    })
+  }
+
   return {
     show,
-    hide
+    hide,
+    showPublishDialog
   }
 }

@@ -4,7 +4,7 @@ import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useNodeHelpContent as useNodeHelpContentComposable } from '@/composables/useNodeHelpContent'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const i18n = createI18n({
   legacy: false,

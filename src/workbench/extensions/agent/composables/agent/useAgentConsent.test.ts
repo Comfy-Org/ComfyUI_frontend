@@ -1,4 +1,4 @@
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 vi.mock(import('firebase/auth'))
@@ -38,6 +38,7 @@ vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
 }))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/auth/useAuthDialogs'))
 
 const reportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -681,7 +682,7 @@ describe('useAgentConsent', () => {
         })
       }
     )
-    vi.mocked(useDialogService().showSignInDialog).mockImplementationOnce(
+    vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
       async () => {
         authState.loggedIn = true
         authState.identity = 'account-a'
@@ -696,7 +697,7 @@ describe('useAgentConsent', () => {
     ;(dialog.contentProps.onAccept as () => void)()
     await request
 
-    expect(useDialogService().showSignInDialog).toHaveBeenCalledOnce()
+    expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
     expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
@@ -720,7 +721,7 @@ describe('useAgentConsent', () => {
   it('writes nothing when a signed-out Local user cancels sign-in', async () => {
     useCurrentUser().isLoggedIn = computed(() => false)
     useCurrentUser().resolvedUserInfo = computed(() => null)
-    vi.mocked(useDialogService().showSignInDialog).mockResolvedValueOnce(false)
+    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
     const onOpen = vi.fn()
 
     const request = useAgentConsent().withConsent('button_click', onOpen)
@@ -745,7 +746,7 @@ describe('useAgentConsent', () => {
   it('reports when signed-out acceptance cannot resolve a persistence scope', async () => {
     useCurrentUser().isLoggedIn = computed(() => false)
     useCurrentUser().resolvedUserInfo = computed(() => null)
-    vi.mocked(useDialogService().showSignInDialog).mockResolvedValueOnce(true)
+    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(true)
     vi.spyOn(useAgentConsentStore(), 'ensureScope').mockResolvedValueOnce(null)
     const onOpen = vi.fn()
 
@@ -764,7 +765,7 @@ describe('useAgentConsent', () => {
   it('reports when signed-out acceptance resolves but does not persist', async () => {
     useCurrentUser().isLoggedIn = computed(() => false)
     useCurrentUser().resolvedUserInfo = computed(() => null)
-    vi.mocked(useDialogService().showSignInDialog).mockResolvedValueOnce(true)
+    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(true)
     vi.spyOn(useAgentConsentStore(), 'ensureScope').mockResolvedValueOnce(
       'account-a/workspace-a'
     )
@@ -793,7 +794,7 @@ describe('useAgentConsent', () => {
       authState.identity ? { id: authState.identity } : null
     )
     const error = new Error('Sign-in chunk could not load')
-    vi.mocked(useDialogService().showSignInDialog).mockRejectedValueOnce(error)
+    vi.mocked(useAuthDialogs().showSignInDialog).mockRejectedValueOnce(error)
     const onOpen = vi.fn()
 
     const request = useAgentConsent().withConsent('button_click', onOpen)
@@ -813,7 +814,7 @@ describe('useAgentConsent', () => {
       })
     )
 
-    vi.mocked(useDialogService().showSignInDialog).mockImplementationOnce(
+    vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
       async () => {
         authState.loggedIn = true
         authState.identity = 'account-a'

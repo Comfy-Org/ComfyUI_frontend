@@ -19,7 +19,7 @@ import type {
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 type ActiveView = 'active' | 'pending'
 type SortField = 'inviteDate' | 'expiryDate' | 'role'
@@ -109,7 +109,7 @@ export function useMembersPanel() {
     showSetMemberCreditLimitDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog
-  } = useDialogService()
+  } = useWorkspaceDialogs()
   const workspaceStore = useTeamWorkspaceStore()
   const {
     activeWorkspace,

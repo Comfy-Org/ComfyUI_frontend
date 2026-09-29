@@ -6,8 +6,8 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isIntInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { addValueControlWidget } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
+import { addValueControlWidget } from '@/scripts/valueControlWidgets'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 
 function onValueChange(this: INumericWidget, v: number) {

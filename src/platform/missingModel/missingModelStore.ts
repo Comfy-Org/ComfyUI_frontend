@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import { t } from '@/i18n'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -80,7 +80,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   )
 
   const activeMissingModelGraphIds = computed<Set<string>>(() => {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return new Set()
     return getActiveGraphNodeIds(
       rootGraph,
@@ -282,7 +282,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
     isRefreshingMissingModels.value = true
     try {
-      await app.refreshMissingModels({
+      await useApp().refreshMissingModels({
         silent: true,
         reloadDefs: options.reloadDefs
       })

@@ -277,7 +277,6 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   RegistrySubscriptionTier,
-  TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import {
@@ -286,7 +285,10 @@ import {
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type {
+  BillingCycle,
+  TierKey
+} from '@/platform/cloud/subscription/constants/tierKey'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type {

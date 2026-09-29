@@ -2,7 +2,6 @@ import { computed, ref } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
@@ -44,8 +43,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     fetchStatus: legacyFetchStatus,
     manageSubscription: legacyManageSubscription,
     subscribe: legacySubscribe,
-    subscribeDirect: legacySubscribeDirect,
-    showSubscriptionDialog: legacyShowSubscriptionDialog
+    subscribeDirect: legacySubscribeDirect
   } = useSubscription()
 
   const authStore = useAuthStore()
@@ -208,6 +206,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function topup(amountCents: number): Promise<void> {
+    if (!canAccessSubscriptionFeatures.value) return
     // Facade standardizes on cents; legacy /customers/credit takes dollars.
     await authActions.purchaseCredits(amountCents / 100)
   }
@@ -215,17 +214,6 @@ export function useLegacyBilling(): BillingState & BillingActions {
   async function fetchPlans(): Promise<void> {
     // Legacy billing doesn't have workspace-style plans
     // Plans are hardcoded in the UI for legacy subscriptions
-  }
-
-  async function requireActiveSubscription(): Promise<void> {
-    await fetchStatus()
-    if (!canAccessSubscriptionFeatures.value) {
-      legacyShowSubscriptionDialog({ reason: 'subscription_required' })
-    }
-  }
-
-  function showSubscriptionDialog(options?: SubscriptionDialogOptions): void {
-    legacyShowSubscriptionDialog(options)
   }
 
   return {
@@ -258,8 +246,6 @@ export function useLegacyBilling(): BillingState & BillingActions {
     cancelSubscription,
     resubscribe,
     topup,
-    fetchPlans,
-    requireActiveSubscription,
-    showSubscriptionDialog
+    fetchPlans
   }
 }

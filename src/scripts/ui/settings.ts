@@ -2,7 +2,6 @@ import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams, Settings } from '@/platform/settings/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ComfyApp } from '@/scripts/app'
 
 import { ComfyDialog } from './dialog'
 
@@ -15,13 +14,6 @@ function saveSetting<K extends keyof Settings>(id: K, value: Settings[K]) {
 }
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
-  app: ComfyApp
-
-  constructor(app: ComfyApp) {
-    super()
-    this.app = app
-  }
-
   dispatchChange<T>(id: string, value: T, oldValue?: T) {
     this.dispatchEvent(
       new CustomEvent(id + '.change', {

@@ -12,6 +12,7 @@ import { setAssertReporter } from '@/base/assert'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   configValueOrDefault,
@@ -31,6 +32,7 @@ import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -41,7 +43,11 @@ import { i18n } from './i18n'
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
 
-if (isCloud) stripPaymentReturnParams()
+if (isCloud) {
+  stripPaymentReturnParams()
+  installCloudApiAuth()
+}
+installWorkspaceApiAuth()
 
 bootstrapTracer.armWatchdog()
 

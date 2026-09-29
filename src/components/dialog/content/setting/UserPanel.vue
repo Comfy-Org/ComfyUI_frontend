@@ -45,7 +45,7 @@
               }"
               variant="muted-textonly"
               size="icon-sm"
-              @click="dialogService.showUpdatePasswordDialog()"
+              @click="showUpdatePasswordDialog()"
             >
               <i class="pi pi-pen-to-square" />
             </Button>
@@ -93,9 +93,9 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 
-const dialogService = useDialogService()
+const { showUpdatePasswordDialog } = useAuthDialogs()
 const {
   loading,
   isLoggedIn,

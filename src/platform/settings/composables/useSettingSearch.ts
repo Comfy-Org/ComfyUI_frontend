@@ -1,14 +1,18 @@
 import { computed, ref, watch } from 'vue'
 
 import { st } from '@/i18n'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import {
   getSettingInfo,
   useSettingStore
 } from '@/platform/settings/settingStore'
 import type { ISettingGroup, SettingParams } from '@/platform/settings/types'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+
+export interface SettingTreeNode extends TreeNode {
+  data?: SettingParams
+}
 
 interface SearchableNavItem {
   key: string

@@ -6,11 +6,12 @@ import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type {
+  BillingCycle,
+  TierKey
+} from '@/platform/cloud/subscription/constants/tierKey'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -29,13 +30,13 @@ import type {
   BillingDeclineReason,
   BillingRecoveryAction
 } from '@/platform/workspace/api/workspaceApi'
+import { refreshBilling } from '@/platform/workspace/billing/billingRefresh'
 import {
   isBlockedOnCustomerPhase,
   legacyOperationActionHold,
   needsCustomerAttention
 } from '@/platform/workspace/billing/customerAttention'
 import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   clearCheckoutJourney,
@@ -824,20 +825,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         })
       }
 
-      const billingContext = useBillingContext()
-      const capabilities = useBillingCapabilities()
-      if (operation.type === 'subscription') {
-        await Promise.allSettled([
-          billingContext.reconcileSubscriptionSuccess(),
-          capabilities.refresh()
-        ])
-      } else {
-        await Promise.allSettled([
-          billingContext.fetchStatus(),
-          billingContext.fetchBalance(),
-          capabilities.refresh()
-        ])
-      }
+      await refreshBilling(
+        operation.type === 'subscription' ? 'subscription' : 'account'
+      )
 
       if (operation.type === 'cancel') {
         useTeamWorkspaceStore().updateActiveWorkspace({ isSubscribed: false })
@@ -1288,7 +1278,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     getOperation,
     startOperation,
     retryPaymentAuthentication,
-    pollPendingOperations,
     clearOperation,
     dismissOperation
   }

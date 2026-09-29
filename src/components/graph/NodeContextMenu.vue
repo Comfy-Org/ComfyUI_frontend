@@ -55,10 +55,7 @@ import {
   registerNodeOptionsInstance,
   useMoreOptionsMenu
 } from '@/composables/graph/useMoreOptionsMenu'
-import type {
-  MenuOption,
-  SubMenuOption
-} from '@/composables/graph/useMoreOptionsMenu'
+import type { MenuOption, SubMenuOption } from '@/composables/graph/menuOption'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import SubmenuPopover from './selectionToolbox/SubmenuPopover.vue'

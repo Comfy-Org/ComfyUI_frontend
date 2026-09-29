@@ -12,7 +12,7 @@ import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
   NodeExecutionOutput,

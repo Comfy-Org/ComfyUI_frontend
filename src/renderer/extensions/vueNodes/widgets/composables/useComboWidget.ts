@@ -18,9 +18,9 @@ import type {
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import type { BaseDOMWidget } from '@/scripts/domWidget'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { addValueControlWidgets } from '@/scripts/widgets'
+import type { BaseDOMWidget } from '@/types/domWidget'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
+import { addValueControlWidgets } from '@/scripts/valueControlWidgets'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 

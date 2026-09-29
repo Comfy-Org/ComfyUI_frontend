@@ -8,7 +8,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.TOPUP
 
@@ -23,7 +23,7 @@ const NAMESPACE = PRESERVED_QUERY_NAMESPACES.TOPUP
 export function useTopUpUrlLoader() {
   const route = useRoute()
   const router = useRouter()
-  const dialogService = useDialogService()
+  const { showTopUpCreditsDialog } = useBillingDialogs()
   const { canTopUp, canSubscribeSelfServe, initialize } =
     useBillingCapabilities()
   const telemetry = useTelemetry()
@@ -58,7 +58,7 @@ export function useTopUpUrlLoader() {
       telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })
     }
 
-    void dialogService.showTopUpCreditsDialog()
+    void showTopUpCreditsDialog()
   }
 
   return {

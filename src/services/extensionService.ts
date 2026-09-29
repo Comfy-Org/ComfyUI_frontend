@@ -2,7 +2,6 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
@@ -10,23 +9,9 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import type { ComfyExtension } from '@/types/comfy'
+import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
-import { app } from '@/scripts/app'
-import type { ComfyApp } from '@/scripts/app'
-
-const INLINED_CLOUD_EXTENSIONS = new Set([
-  '/extensions/cloud/rum.js',
-  '/extensions/cloud/sentry.js'
-])
-
-export function shouldLoadExtension(
-  extension: string,
-  isCloudBuild: boolean
-): boolean {
-  if (extension.includes('extensions/core')) return false
-  return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
-}
+import { useApp } from '@/scripts/appInstance'
 
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
@@ -37,35 +22,6 @@ export const useExtensionService = () => {
     wrapWithErrorHandlingAsync,
     toastErrorHandler
   } = useErrorHandling()
-
-  /**
-   * Loads all extensions from the API into the window in parallel
-   */
-  const loadExtensions = async () => {
-    extensionStore.loadDisabledExtensionNames(
-      settingStore.get('Comfy.Extension.Disabled')
-    )
-
-    const extensions = await api.getExtensions()
-
-    // Need to load core extensions first as some custom extensions
-    // may depend on them.
-    await import('../extensions/core/index')
-    extensionStore.captureCoreExtensions()
-    await Promise.all(
-      extensions
-        .filter((extension) =>
-          shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
-        )
-        .map(async (ext) => {
-          try {
-            await import(/* @vite-ignore */ api.fileURL(ext))
-          } catch (error) {
-            console.error('Error loading extension', ext, error)
-          }
-        })
-    )
-  }
 
   /**
    * Register an extension with the app
@@ -91,7 +47,7 @@ export const useExtensionService = () => {
       // getCustomWidgets.
       void (async () => {
         if (extension.getCustomWidgets) {
-          const widgets = await extension.getCustomWidgets(app)
+          const widgets = await extension.getCustomWidgets(useApp())
           useWidgetStore().registerCustomWidgets(widgets)
         }
       })()
@@ -100,7 +56,7 @@ export const useExtensionService = () => {
     if (extension.onAuthUserResolved) {
       const { onUserResolved } = useCurrentUser()
       const handleUserResolved = wrapWithErrorHandlingAsync(
-        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, app),
+        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, useApp()),
         (error) => {
           console.error('[Extension Auth Hook Error]', {
             extension: extension.name,
@@ -183,7 +139,7 @@ export const useExtensionService = () => {
         try {
           const fn = ext[method]
           if (typeof fn === 'function') {
-            results.push(fn.call(ext, ...args, app))
+            results.push(fn.call(ext, ...args, useApp()))
           }
         } catch (error) {
           console.error(
@@ -223,7 +179,7 @@ export const useExtensionService = () => {
               legacyMenuCompat.setCurrentExtension(ext.name)
             }
 
-            const result = await fn.call(ext, ...args, app)
+            const result = await fn.call(ext, ...args, useApp())
 
             // Clear current extension after setup
             if (method === 'setup') {
@@ -250,7 +206,6 @@ export const useExtensionService = () => {
   }
 
   return {
-    loadExtensions,
     registerExtension,
     invokeExtensions,
     invokeExtensionsAsync

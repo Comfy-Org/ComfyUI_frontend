@@ -22,7 +22,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -35,7 +35,7 @@ const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMdOrLarger = breakpoints.greaterOrEqual('md')
 
 const { permissions } = useWorkspaceUI()
-const { showSubscriptionDialog } = useBillingContext()
+const { showSubscriptionRequiredDialog } = useBillingDialogs()
 const { trackRunButton } = useRunButtonTelemetry()
 
 const canResubscribe = computed(() => permissions.value.canManageSubscription)
@@ -58,6 +58,6 @@ function handleSubscribeToRun() {
     trackRunButton({ subscribe_to_run: true })
   }
 
-  showSubscriptionDialog({ reason: 'subscribe_to_run' })
+  void showSubscriptionRequiredDialog({ reason: 'subscribe_to_run' })
 }
 </script>

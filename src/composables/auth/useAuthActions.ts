@@ -1,5 +1,4 @@
 import { FirebaseError } from 'firebase/app'
-import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
 import {
@@ -9,10 +8,8 @@ import {
 } from '@comfyorg/account-core/firebaseAuthError'
 import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { isCloud } from '@/platform/distribution/types'
@@ -179,9 +176,6 @@ export const useAuthActions = () => {
    * resolves instead of re-throwing on failure.
    */
   const purchaseCreditsDirect = async (amount: number): Promise<void> => {
-    const { canAccessSubscriptionFeatures } = useBillingContext()
-    if (!canAccessSubscriptionFeatures.value) return
-
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
       currency: 'usd'
@@ -263,62 +257,6 @@ export const useAuthActions = () => {
     reportAuthFlowError('email_sign_up')
   )
 
-  /**
-   * Recovery strategy for Firebase auth/requires-recent-login errors.
-   * Prompts user to reauthenticate and retries the operation after successful login.
-   */
-  const createReauthenticationRecovery = <
-    TArgs extends unknown[],
-    TReturn
-  >(): ErrorRecoveryStrategy<TArgs, TReturn> => {
-    const dialogService = useDialogService()
-
-    return {
-      shouldHandle: (error: unknown) =>
-        error instanceof FirebaseError &&
-        error.code === AuthErrorCodes.CREDENTIAL_TOO_OLD_LOGIN_AGAIN,
-
-      recover: async (
-        _error: unknown,
-        retry: (...args: TArgs) => Promise<TReturn> | TReturn,
-        args: TArgs
-      ) => {
-        const confirmed = await dialogService.confirm({
-          title: t('auth.reauthRequired.title'),
-          message: t('auth.reauthRequired.message'),
-          type: 'default'
-        })
-
-        if (!confirmed) {
-          return
-        }
-
-        await authStore.logout()
-
-        const signedIn = await dialogService.showSignInDialog()
-
-        if (signedIn) {
-          await retry(...args)
-        }
-      }
-    }
-  }
-
-  const updatePassword = wrapWithErrorHandlingAsync(
-    async (newPassword: string) => {
-      await authStore.updatePassword(newPassword)
-      toastStore.add({
-        severity: 'success',
-        summary: t('auth.passwordUpdate.success'),
-        detail: t('auth.passwordUpdate.successDetail'),
-        life: 5000
-      })
-    },
-    reportError,
-    undefined,
-    [createReauthenticationRecovery<[string], void>()]
-  )
-
   return {
     logout,
     sendPasswordReset,
@@ -330,7 +268,6 @@ export const useAuthActions = () => {
     signInWithGithub,
     signInWithEmail,
     signUpWithEmail,
-    updatePassword,
     accessError,
     reportError
   }

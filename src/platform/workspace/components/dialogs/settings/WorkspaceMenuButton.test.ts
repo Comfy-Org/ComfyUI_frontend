@@ -1,4 +1,4 @@
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -35,6 +35,7 @@ const mockCanManageSubscription = ref(true)
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 const i18n = createI18n({
   legacy: false,
@@ -106,7 +107,9 @@ describe('WorkspaceMenuButton', () => {
     ).toBeEnabled()
 
     await user.click(screen.getByRole('button', { name: 'Delete Workspace' }))
-    expect(useDialogService().showDeleteWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(
+      useWorkspaceDialogs().showDeleteWorkspaceDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it('does not expose Delete in a personal workspace', () => {
@@ -141,7 +144,9 @@ describe('WorkspaceMenuButton', () => {
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
-    expect(useDialogService().showLeaveWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(
+      useWorkspaceDialogs().showLeaveWorkspaceDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it('rechecks permission before opening the leave dialog', () => {
@@ -152,7 +157,9 @@ describe('WorkspaceMenuButton', () => {
     mockCanLeaveWorkspace.value = false
     leave.click()
 
-    expect(useDialogService().showLeaveWorkspaceDialog).not.toHaveBeenCalled()
+    expect(
+      useWorkspaceDialogs().showLeaveWorkspaceDialog
+    ).not.toHaveBeenCalled()
   })
 
   it('rechecks owner permission before opening the delete dialog', () => {
@@ -164,7 +171,9 @@ describe('WorkspaceMenuButton', () => {
     mockCanManageSubscription.value = false
     deleteWorkspace.click()
 
-    expect(useDialogService().showDeleteWorkspaceDialog).not.toHaveBeenCalled()
+    expect(
+      useWorkspaceDialogs().showDeleteWorkspaceDialog
+    ).not.toHaveBeenCalled()
   })
 
   it('rechecks the subscription lock before opening the delete dialog', () => {
@@ -176,6 +185,8 @@ describe('WorkspaceMenuButton', () => {
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: true })
     deleteWorkspace.click()
 
-    expect(useDialogService().showDeleteWorkspaceDialog).not.toHaveBeenCalled()
+    expect(
+      useWorkspaceDialogs().showDeleteWorkspaceDialog
+    ).not.toHaveBeenCalled()
   })
 })

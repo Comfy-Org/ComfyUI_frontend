@@ -31,6 +31,7 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 
+import { refreshBilling } from '@/platform/workspace/billing/billingRefresh'
 import { useBillingContext as useSharedBillingContext } from './useBillingContext'
 
 vi.mock(import('firebase/auth'))
@@ -550,14 +551,43 @@ describe('useBillingContext', () => {
     expect(canAccessSubscriptionFeatures.value).toBe(true)
   })
 
-  it('exposes requireActiveSubscription action', async () => {
-    const { requireActiveSubscription } = useBillingContext()
-    await expect(requireActiveSubscription()).resolves.toBeUndefined()
-  })
+  describe('announced billing refreshes', () => {
+    it.for([
+      { scope: 'account' as const, status: 1, balance: 1 },
+      { scope: 'subscription' as const, status: 1, balance: 1 },
+      { scope: 'capabilities' as const, status: 0, balance: 0 }
+    ])(
+      'refetches on the legacy rail for a $scope refresh',
+      async ({ scope, status, balance }) => {
+        mockBillingRail.value = 'legacy_stripe'
+        useBillingContext()
+        await vi.waitFor(() => {
+          expect(useAuthStore().fetchBalance).toHaveBeenCalled()
+        })
+        vi.clearAllMocks()
 
-  it('exposes showSubscriptionDialog action', () => {
-    const { showSubscriptionDialog } = useBillingContext()
-    expect(() => showSubscriptionDialog()).not.toThrow()
+        await refreshBilling(scope)
+
+        expect(useSubscription().fetchStatus).toHaveBeenCalledTimes(status)
+        expect(useAuthStore().fetchBalance).toHaveBeenCalledTimes(balance)
+      }
+    )
+
+    it('stops listening once its scope is disposed', async () => {
+      mockBillingRail.value = 'legacy_stripe'
+      const scope = effectScope()
+      scope.run(useSharedBillingContext)
+      await vi.waitFor(() => {
+        expect(useAuthStore().fetchBalance).toHaveBeenCalled()
+      })
+      scope.stop()
+      vi.clearAllMocks()
+
+      await refreshBilling('account')
+
+      expect(useSubscription().fetchStatus).not.toHaveBeenCalled()
+      expect(useAuthStore().fetchBalance).not.toHaveBeenCalled()
+    })
   })
 
   describe('subscription mirror to workspace store', () => {

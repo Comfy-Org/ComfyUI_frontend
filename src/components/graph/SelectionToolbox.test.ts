@@ -12,14 +12,14 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useExtensionService } from '@/services/extensionService'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useCommandStore } from '@/stores/commandStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
 import * as nodeFilterUtil from '@/utils/nodeFilterUtil'
 
 function createMockExtensionService(): ReturnType<typeof useExtensionService> {
   return {
     extensionCommands: { value: new Map() },
-    loadExtensions: vi.fn(),
     registerExtension: vi.fn(),
     invokeExtensions: vi.fn(() => []),
     invokeExtensionsAsync: vi.fn()
@@ -409,7 +409,6 @@ describe('SelectionToolbox', () => {
             ['test-command', { id: 'test-command', title: 'Test Command' }]
           ])
         },
-        loadExtensions: vi.fn(),
         registerExtension: vi.fn(),
         invokeExtensions: vi.fn(() => ['test-command']),
         invokeExtensionsAsync: vi.fn()

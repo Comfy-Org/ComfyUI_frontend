@@ -195,7 +195,9 @@ import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
+import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
+import { updateControlWidgetLabel } from '@/scripts/valueControlWidgets'
+import { loadExtensions } from '@/services/extensionLoader'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {
@@ -547,6 +549,10 @@ onMounted(async () => {
       throw settingsError.value
     }
 
+    // Extensions still listen for `<id>.change` events on the legacy dialog.
+    settingStore.onSettingChanged(({ id, value, oldValue }) =>
+      comfyApp.ui.settings.dispatchChange(id, value, oldValue)
+    )
     // Register core settings immediately after settings are ready
     CORE_SETTINGS.forEach(settingStore.addSetting)
 
@@ -560,6 +566,8 @@ onMounted(async () => {
         i18nError.value
       )
     }
+
+    await bootstrapTracer.settle('bootstrap/extensions-load', loadExtensions)
 
     // @ts-expect-error fixme ts strict error
     await comfyApp.setup(canvasRef.value)

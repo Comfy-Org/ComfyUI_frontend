@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
 import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useMissingNodes as useSharedMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'

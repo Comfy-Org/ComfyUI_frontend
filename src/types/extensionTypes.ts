@@ -1,9 +1,9 @@
 import type { Component } from 'vue'
 
-import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { WorkflowStore } from '@/platform/workflow/management/stores/workflowStoreTypes'
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
-import type { useDialogService } from '@/services/dialogService'
+import type { ExtensionDialogService } from '@/services/dialogServiceTypes'
 import type { ComfyCommand } from '@/stores/commandStore'
 
 interface BaseSidebarTabExtension {
@@ -13,6 +13,8 @@ interface BaseSidebarTabExtension {
   iconBadge?: string | (() => string | null)
   tooltip?: string
   label?: string
+  /** Returns true when the tab handled the toggle itself. */
+  onToggle?: () => boolean | Promise<boolean>
 }
 
 interface BaseBottomPanelExtension {
@@ -108,14 +110,14 @@ export interface ExtensionManager {
   getSidebarTabs(): SidebarTabExtension[]
 
   toast: ToastManager
-  dialog: ReturnType<typeof useDialogService>
+  dialog: ExtensionDialogService
   command: CommandManager
   setting: {
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Custom extensions declare settings outside the generated schema.
     get: <T = unknown>(id: string) => T | undefined
     set: (id: string, value: unknown) => void
   }
-  workflow: ReturnType<typeof useWorkflowStore>
+  workflow: WorkflowStore
 
   // Execution error state (read-only)
   lastNodeErrors: Record<string, NodeError> | null

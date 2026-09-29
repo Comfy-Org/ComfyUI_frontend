@@ -2,7 +2,7 @@ import { toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'

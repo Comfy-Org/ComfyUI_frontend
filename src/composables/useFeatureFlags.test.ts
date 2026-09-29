@@ -10,10 +10,10 @@ import {
 import { isReactive, isReadonly, nextTick } from 'vue'
 
 import {
-  ServerFeatureFlag,
   startFeatureFlagTelemetry,
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import * as distributionTypes from '@/platform/distribution/types'
 import {
   authenticatedRemoteConfigState,

@@ -1,7 +1,12 @@
 import type { ComputedRef, Ref } from 'vue'
 
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+import type {
+  BillingCycle,
+  TierKey
+} from '@/platform/cloud/subscription/constants/tierKey'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
@@ -19,6 +24,46 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 
 export type BillingType = 'legacy' | 'workspace'
+
+export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+
+export type SubscriptionCheckoutSelection =
+  | {
+      planMode: 'personal'
+      tierKey: CheckoutTierKey
+      billingCycle: BillingCycle
+    }
+  | {
+      planMode: 'team'
+      stop: TeamPlanSelection
+      billingCycle: BillingCycle
+      isChange?: boolean
+    }
+
+export interface SubscriptionDialogOptions {
+  reason?: PaymentIntentSource
+  paymentIntentSource?: PaymentIntentSource
+  /**
+   * Forces the unified pricing dialog to open on a specific plan tab,
+   * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
+   * always lands on the team tab even from a personal workspace).
+   */
+  planMode?: 'personal' | 'team'
+  /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
+  initialCheckout?: SubscriptionCheckoutSelection
+}
+
+// A type alias, not an interface: `showDialog`'s props are index-signature
+// typed, and only object literal types get an implicit index signature.
+export type TopUpCreditsDialogOptions = {
+  isInsufficientCredits?: boolean
+  source?: PaymentIntentSource
+}
+
+export interface DowngradeToPersonalResult {
+  preview: PreviewSubscribeResponse
+  response: SettledSubscribeResponse
+}
 
 export interface SubscriptionInfo {
   isActive: boolean
@@ -86,17 +131,6 @@ export interface BillingActions {
    */
   topup: (amountCents: number) => Promise<CreateTopupResponse | void>
   fetchPlans: () => Promise<void>
-  /**
-   * Ensures billing is initialized and subscription is active.
-   * Shows subscription dialog if not subscribed.
-   * Use this in extensions/entry points that require active subscription.
-   */
-  requireActiveSubscription: () => Promise<void>
-  /**
-   * Shows the subscription dialog. Pass a reason so the paywall open and any
-   * downstream checkout stay attributed to the triggering product moment.
-   */
-  showSubscriptionDialog: (options?: SubscriptionDialogOptions) => void
 }
 
 export interface BillingState {

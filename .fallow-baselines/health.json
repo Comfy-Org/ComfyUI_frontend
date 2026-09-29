@@ -1269,6 +1269,11 @@
         "count": 1
       }
     },
+    "src/composables/billing/useBillingDialogs.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "src/composables/bottomPanelTabs/useLogsTerminal.ts": {
       "crap_moderate": {
         "count": 1
@@ -1575,6 +1580,11 @@
     "src/composables/video/useVideoSourceUrl.ts": {
       "crap_moderate": {
         "count": 1
+      }
+    },
+    "src/core/graph/nodeDef/ComfyNodeDefImpl.ts": {
+      "crap_moderate": {
+        "count": 2
       }
     },
     "src/core/graph/subgraph/migration/proxyWidgetMigration.ts": {
@@ -3173,6 +3183,17 @@
         "count": 4
       }
     },
+    "src/scripts/clipspace.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "src/scripts/domWidget.ts": {
       "crap_high": {
         "count": 1
@@ -3221,7 +3242,7 @@
         "count": 1
       }
     },
-    "src/scripts/ui.ts": {
+    "src/scripts/ui/utils.ts": {
       "complexity_high": {
         "count": 1
       }
@@ -3344,11 +3365,6 @@
     },
     "src/stores/modelStore.ts": {
       "crap_high": {
-        "count": 1
-      }
-    },
-    "src/stores/nodeDefStore.ts": {
-      "crap_moderate": {
         "count": 1
       }
     },
@@ -3521,15 +3537,17 @@
         "count": 1
       }
     },
+    "src/workbench/extensions/manager/composables/useManagerDialog.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
     "src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts": {
       "crap_high": {
         "count": 1
       }
     },
     "src/workbench/extensions/manager/composables/useManagerState.ts": {
-      "crap_high": {
-        "count": 1
-      },
       "crap_moderate": {
         "count": 1
       }
@@ -3599,7 +3617,7 @@
     "src/platform/cloud/subscription/composables/useFreeTierQuota.ts:high impact",
     "src/platform/assets/utils/assetFilterUtils.ts:high impact",
     "src/services/dialogService.ts:circular dependency",
-    "src/scripts/ui.ts:complexity",
+    "src/scripts/ui/utils.ts:complexity",
     "src/composables/usePaste.ts:circular dependency",
     "src/workbench/extensions/manager/composables/useConflictDetection.ts:circular dependency",
     "src/renderer/core/canvas/canvasStore.ts:circular dependency",

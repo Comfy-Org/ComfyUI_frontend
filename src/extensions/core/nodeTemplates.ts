@@ -1,6 +1,6 @@
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -10,7 +10,8 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
-import { $el, ComfyDialog } from '../../scripts/ui'
+import { ComfyDialog } from '../../scripts/ui'
+import { $el } from '../../scripts/ui/utils'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:

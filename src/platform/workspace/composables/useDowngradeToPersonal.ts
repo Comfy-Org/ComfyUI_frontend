@@ -3,11 +3,14 @@ import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { DowngradeToPersonalResult } from '@/composables/billing/types'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type {
+  BillingCycle,
+  TierKey
+} from '@/platform/cloud/subscription/constants/tierKey'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { BillingFailure } from '@/platform/telemetry/types'
@@ -18,11 +21,6 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-
-export interface DowngradeToPersonalResult {
-  preview: PreviewSubscribeResponse
-  response: SettledSubscribeResponse
-}
 
 export interface DowngradePreview {
   preview: PreviewSubscribeResponse

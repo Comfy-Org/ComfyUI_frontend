@@ -1,4 +1,4 @@
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
@@ -48,6 +48,7 @@ vi.mock(import('@/composables/billing/usePartnerNodesRunGate'), async () => {
 })
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/auth/useAuthDialogs'))
 
 const { __setHasPartnerNodes } =
   partnerNodesInGraphModule as typeof partnerNodesInGraphModule & {
@@ -208,7 +209,7 @@ describe('PartnerNodesEducationCard', () => {
     await nextTick()
 
     await userEvent.click(screen.getByTestId('partner-nodes-education-sign-in'))
-    expect(useDialogService().showApiNodesSignInDialog).toHaveBeenCalledWith([
+    expect(useAuthDialogs().showApiNodesSignInDialog).toHaveBeenCalledWith([
       'Kling'
     ])
   })

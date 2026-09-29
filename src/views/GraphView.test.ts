@@ -9,7 +9,6 @@ import { useVersionCompatibilityStore } from '@/platform/updates/common/versionC
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 beforeEach(() => {
@@ -23,12 +22,6 @@ beforeEach(() => {
     () => {}
   )
   vi.mocked(useMenuItemStore().registerCoreMenuCommands).mockImplementation(
-    () => {}
-  )
-  vi.mocked(
-    useBottomPanelStore().registerCoreBottomPanelTabs
-  ).mockResolvedValue(undefined)
-  vi.mocked(useSidebarTabStore().registerCoreSidebarTabs).mockImplementation(
     () => {}
   )
 })
@@ -56,6 +49,15 @@ vi.mock(import('firebase/auth'))
 
 vi.mock(import('@/scripts/app'))
 
+vi.mock(import('@/composables/sidebarTabs/registerCoreSidebarTabs'), () => ({
+  registerCoreSidebarTabs: vi.fn()
+}))
+
+vi.mock(
+  import('@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'),
+  () => ({ registerCoreBottomPanelTabs: vi.fn(async () => {}) })
+)
+
 vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
   const refreshOnReconnect = vi.fn(async () => {})
   return { useReconnectQueueRefresh: () => refreshOnReconnect }
@@ -82,6 +84,9 @@ vi.mock(import('@/platform/remote/comfyui/useQueuePolling'), () => ({
 vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/composables/useProgressFavicon'), () => ({
   useProgressFavicon: vi.fn()
+}))
+vi.mock(import('@/composables/node/useProgressTextPreviews'), () => ({
+  useProgressTextPreviews: vi.fn()
 }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 
@@ -120,6 +125,14 @@ vi.mock<unknown>(
 )
 vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => stubModule)
 vi.mock<unknown>(import('@/views/LinearView.vue'), () => stubModule)
+vi.mock<unknown>(
+  import('@/platform/settings/components/SettingDialog.vue'),
+  () => stubModule
+)
+vi.mock<unknown>(
+  import('@/platform/assets/components/AssetBrowserModal.vue'),
+  () => stubModule
+)
 vi.mock<unknown>(
   import('@/components/builder/BuilderToolbar.vue'),
   () => stubModule

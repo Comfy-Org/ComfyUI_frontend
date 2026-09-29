@@ -5,7 +5,7 @@ import type { MaybeRef } from 'vue'
 import { TOOLTIP_ARROW_PT } from '@/composables/useTooltipConfig'
 import { resolveNodeDefSlotText, resolveNodeDefText } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 // PrimeVue adds this internal property to elements with tooltips

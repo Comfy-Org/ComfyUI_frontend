@@ -15,11 +15,13 @@ import {
   getLegacyWorkflowId
 } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
-import { app as comfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
@@ -34,66 +36,20 @@ import type { NodeId } from '@/types/nodeId'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
-import { ComfyWorkflow } from './comfyWorkflow'
+import { ComfyWorkflow, registerWorkflowRuntime } from './comfyWorkflow'
 import type { LoadedComfyWorkflow } from './comfyWorkflow'
+import type { WorkflowStore } from './workflowStoreTypes'
 export { ComfyWorkflow, type LoadedComfyWorkflow }
 
-/**
- * Exposed store interface for the workflow store.
- * Explicitly typed to avoid trigger following error:
- * error TS7056: The inferred type of this node exceeds the maximum length the
- * compiler will serialize. An explicit type annotation is needed.
- */
-interface WorkflowStore {
-  activeWorkflow: LoadedComfyWorkflow | null
-  attachWorkflow: (workflow: ComfyWorkflow, openIndex?: number) => void
-  isActive: (workflow: ComfyWorkflow) => boolean
-  openWorkflows: ComfyWorkflow[]
-  openedWorkflowIndexShift: (shift: number) => ComfyWorkflow | null
-  getMostRecentWorkflow: () => ComfyWorkflow | null
-  openWorkflow: (workflow: ComfyWorkflow) => Promise<LoadedComfyWorkflow>
-  openWorkflowsInBackground: (paths: {
-    left?: string[]
-    right?: string[]
-  }) => void
-  isOpen: (workflow: ComfyWorkflow) => boolean
-  isBusy: boolean
-  closeWorkflow: (workflow: ComfyWorkflow) => Promise<void>
-  createTemporary: (
-    path?: string,
-    workflowData?: ComfyWorkflowJSON
-  ) => ComfyWorkflow
-  createNewTemporary: (
-    path?: string,
-    workflowData?: ComfyWorkflowJSON
-  ) => ComfyWorkflow
-  renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
-  deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
-  saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
-
-  workflows: ComfyWorkflow[]
-  bookmarkedWorkflows: ComfyWorkflow[]
-  persistedWorkflows: ComfyWorkflow[]
-  modifiedWorkflows: ComfyWorkflow[]
-  getWorkflowByPath: (path: string) => ComfyWorkflow | null
-  syncWorkflows: (dir?: string) => Promise<void>
-  isSyncLoading: boolean
-  reorderWorkflows: (from: number, to: number) => void
-
-  /** `true` if any subgraph is currently being viewed. */
-  isSubgraphActive: boolean
-  activeSubgraph: Subgraph | undefined
-  /** Updates the {@link subgraphNamePath} and {@link isSubgraphActive} values. */
-  updateActiveGraph: () => void
-  executionIdToCurrentId: (id: string) => string | undefined
-  nodeIdToNodeLocatorId: (nodeId: NodeId, subgraph?: Subgraph) => NodeLocatorId
-  nodeToNodeLocatorId: (node: LGraphNode) => NodeLocatorId
-  nodeLocatorIdToNodeId: (locatorId: NodeLocatorId) => NodeId
-  nodeLocatorIdToNodeExecutionId: (
-    locatorId: NodeLocatorId,
-    targetSubgraph?: Subgraph
-  ) => NodeExecutionId | null
-}
+registerWorkflowRuntime({
+  createChangeTracker: (workflow, initialState) =>
+    new ChangeTracker(workflow, initialState),
+  getDraft: (path) => useWorkflowDraftStoreV2().getDraft(path),
+  removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
+  markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),
+  isDraftPersistenceEnabled: () =>
+    useSettingStore().get('Comfy.Workflow.Persist')
+})
 
 export const useWorkflowStore = defineStore('workflow', () => {
   /**
@@ -213,7 +169,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
     const loadedWorkflow = await workflow.load()
     activeWorkflow.value = loadedWorkflow
-    comfyApp.canvas.bg_tint = loadedWorkflow.tintCanvasBg
+    useApp().canvas.bg_tint = loadedWorkflow.tintCanvasBg
 
     // Track activation in history (move to end if already present)
     const historyIndex = tabActivationHistory.value.indexOf(workflow.path)
@@ -575,7 +531,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   /** @see WorkflowStore.updateActiveGraph */
   const updateActiveGraph = () => {
-    const canvas = comfyApp.canvasOrUndefined
+    const canvas = useApp().canvasOrUndefined
     if (!canvas) return
     const subgraph = canvas.subgraph
     activeSubgraph.value = subgraph ? markRaw(subgraph) : undefined
@@ -623,7 +579,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (nodeId === undefined) return
 
     const subgraphs = getSubgraphsFromInstanceIds(
-      comfyApp.rootGraph,
+      useApp().rootGraph,
       executionPath.slice(0, -1)
     )
     if (subgraphs?.at(-1) === subgraph) return nodeId
@@ -713,7 +669,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return null
     }
 
-    const path = findSubgraphPath(comfyApp.rootGraph, subgraphUuid)
+    const path = findSubgraphPath(useApp().rootGraph, subgraphUuid)
     if (!path) return null
 
     // If we have a target subgraph, check if the path goes through it
@@ -721,7 +677,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       targetSubgraph &&
       !path.some((_, idx) => {
         const subgraphs = getSubgraphsFromInstanceIds(
-          comfyApp.rootGraph,
+          useApp().rootGraph,
           path.slice(0, idx + 1).map((id) => String(id))
         )
         return subgraphs?.at(-1) === targetSubgraph

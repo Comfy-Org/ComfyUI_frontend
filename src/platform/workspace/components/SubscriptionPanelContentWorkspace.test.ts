@@ -1,5 +1,6 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getActivePinia } from 'pinia'
@@ -188,6 +189,8 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
@@ -799,7 +802,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Change plan' }))
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it('hides Change plan when the server denies seat changes to a client-side owner', () => {
@@ -970,7 +975,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     )
     expect(useBillingContext().resubscribe).toHaveBeenCalledOnce()
-    expect(useBillingContext().showSubscriptionDialog).not.toHaveBeenCalled()
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).not.toHaveBeenCalled()
   })
 
   it('drops the state card for an inactive ended subscription without a date', () => {
@@ -1057,7 +1064,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     )
 
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledWith({
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledWith({
       reason: 'settings_billing_panel'
     })
     expect(useBillingContext().resubscribe).not.toHaveBeenCalled()
@@ -1266,7 +1275,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Subscribe' }))
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -1319,7 +1330,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     await user.click(
       screen.getByRole('button', { name: 'Edit workspace details' })
     )
-    expect(useDialogService().showEditWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(useWorkspaceDialogs().showEditWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
   it('offers a subscribed personal workspace Edit and Cancel without Delete', () => {
@@ -1439,7 +1450,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
-    expect(useDialogService().showLeaveWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(
+      useWorkspaceDialogs().showLeaveWorkspaceDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it('offers an additional workspace owner Edit, Cancel, Leave, and locked Delete', async () => {
@@ -1457,7 +1470,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Cancel plan' }))
-    expect(useDialogService().showCancelSubscriptionFlow).toHaveBeenCalledWith(
+    expect(useBillingDialogs().showCancelSubscriptionFlow).toHaveBeenCalledWith(
       END_DATE_ISO
     )
   })

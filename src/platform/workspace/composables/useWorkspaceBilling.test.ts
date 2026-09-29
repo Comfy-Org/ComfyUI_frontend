@@ -1,3 +1,5 @@
+import { onBillingRefresh } from '@/platform/workspace/billing/billingRefresh'
+import type { BillingRefreshScope } from '@/platform/workspace/billing/billingRefresh'
 import { disarmHostedBillingReturnRefresh } from '@/platform/workspace/billing/openHostedBillingTab'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { billingOperation } from './billingOperationTestUtils'
@@ -10,7 +12,6 @@ import { effectScope } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 import type {
   BillingStatusResponse,
@@ -63,29 +64,16 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-// The hosted-billing opener refreshes through the shared context, not this
-// instance's own fetchStatus/fetchBalance. Stubbed with fixed fns (the
-// automock builds a fresh, unobservable pair on every call) so a test can
-// assert the opener's refresh ran, without chaining into
-// useBillingRouting/useFreeTierQuota/useAuthStore.
-const mockBillingContextFetchStatus = vi.hoisted(() => vi.fn(async () => {}))
-const mockBillingContextFetchBalance = vi.hoisted(() => vi.fn(async () => {}))
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    fetchStatus: mockBillingContextFetchStatus,
-    fetchBalance: mockBillingContextFetchBalance
-  })
-}))
+// The hosted-billing opener announces its return refresh instead of calling
+// this instance's own fetchStatus/fetchBalance, so a listener observes it.
+const announcedRefresh = vi.fn<(scope: BillingRefreshScope) => void>()
+onBillingRefresh(announcedRefresh)
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useBillingPlans'),
   () => ({
     useBillingPlans: () => mockBillingPlans
   })
-)
-
-vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -1043,9 +1031,8 @@ describe('useWorkspaceBilling', () => {
         expect(mockWorkspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()
         expect(mockRail.openPaymentPortal).not.toHaveBeenCalled()
 
-        mockBillingContextFetchStatus.mockClear()
         document.dispatchEvent(new Event('visibilitychange'))
-        expect(mockBillingContextFetchStatus).toHaveBeenCalledTimes(1)
+        expect(announcedRefresh).toHaveBeenCalledExactlyOnceWith('account')
       }
     )
 
@@ -1919,38 +1906,6 @@ describe('useWorkspaceBilling', () => {
       await billing.fetchPlans()
 
       expect(billing.error.value).toBe('plans lookup failed')
-    })
-  })
-
-  describe('requireActiveSubscription', () => {
-    it('opens the subscription dialog when not active', async () => {
-      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
-        ...activeStatus,
-        is_active: false
-      })
-
-      const billing = setupBilling()
-      await billing.requireActiveSubscription()
-
-      expect(useSubscriptionDialog().show).toHaveBeenCalledTimes(1)
-    })
-
-    it('does nothing when subscription is active', async () => {
-      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
-
-      const billing = setupBilling()
-      await billing.requireActiveSubscription()
-
-      expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('showSubscriptionDialog', () => {
-    it('delegates to the subscription dialog', () => {
-      const billing = setupBilling()
-      billing.showSubscriptionDialog()
-
-      expect(useSubscriptionDialog().show).toHaveBeenCalledTimes(1)
     })
   })
 

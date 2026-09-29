@@ -18,6 +18,10 @@ describe('API Feature Flags', () => {
   const wsEventHandlers: { [key: string]: (event: unknown) => void } = {}
 
   beforeEach(() => {
+    for (const event of Object.keys(wsEventHandlers)) {
+      delete wsEventHandlers[event]
+    }
+
     // Mock WebSocket
     mockWebSocket = {
       readyState: 1, // WebSocket.OPEN
@@ -68,6 +72,7 @@ describe('API Feature Flags', () => {
     it('should send client feature flags as first message on connection', async () => {
       // Initialize API connection
       const initPromise = api.init()
+      await vi.waitFor(() => expect(wsEventHandlers['open']).toBeDefined())
 
       // Simulate connection open
       wsEventHandlers['open'](new Event('open'))
@@ -124,8 +129,9 @@ describe('API Feature Flags', () => {
       expect(api.serverFeatureFlagsSettled.value).toBe(true)
     })
 
-    it('settles feature flags immediately when the server delivers an empty map', () => {
+    it('settles feature flags immediately when the server delivers an empty map', async () => {
       void api.init()
+      await vi.waitFor(() => expect(wsEventHandlers['open']).toBeDefined())
 
       wsEventHandlers['message']({
         data: JSON.stringify({
@@ -141,6 +147,7 @@ describe('API Feature Flags', () => {
     it('should handle server without feature flags support', async () => {
       // Initialize API connection
       const initPromise = api.init()
+      await vi.waitFor(() => expect(wsEventHandlers['open']).toBeDefined())
 
       // Simulate connection open
       wsEventHandlers['open'](new Event('open'))
@@ -176,8 +183,9 @@ describe('API Feature Flags', () => {
       expect(api.serverFeatureFlagsSettled.value).toBe(true)
     })
 
-    it('settles feature flags when the socket closes before opening', () => {
+    it('settles feature flags when the socket closes before opening', async () => {
       void api.init()
+      await vi.waitFor(() => expect(wsEventHandlers['open']).toBeDefined())
 
       wsEventHandlers['error'](new Event('error'))
       wsEventHandlers['close'](new Event('close'))
@@ -188,6 +196,7 @@ describe('API Feature Flags', () => {
 
     it('resets feature flag settlement for each replacement socket', async () => {
       void api.init()
+      await vi.waitFor(() => expect(wsEventHandlers['open']).toBeDefined())
 
       for (let attempt = 0; attempt < 3; attempt++) {
         wsEventHandlers['open'](new Event('open'))
@@ -355,6 +364,7 @@ describe('API Feature Flags', () => {
 
       // Connect the WebSocket so the message handler is active
       const initPromise = api.init()
+      await vi.waitFor(() => expect(wsEventHandlers['open']).toBeDefined())
       wsEventHandlers['open'](new Event('open'))
       wsEventHandlers['message']({
         data: JSON.stringify({
@@ -454,6 +464,7 @@ describe('API Feature Flags', () => {
     socketApi.addEventListener('graphChanged', graphChanged)
     socketApi.addEventListener('autoQueueGraphChanged', autoQueueGraphChanged)
     const initPromise = socketApi.init()
+    await vi.waitFor(() => expect(wsEventHandlers['open']).toBeDefined())
     wsEventHandlers['open'](new Event('open'))
     wsEventHandlers['message']({
       data: JSON.stringify({

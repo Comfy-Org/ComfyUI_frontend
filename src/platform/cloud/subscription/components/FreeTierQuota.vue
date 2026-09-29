@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 
 const DOT_COLORS = [
@@ -12,7 +13,8 @@ const DOT_COLORS = [
   'bg-success-background'
 ]
 
-const { isFreeTier, showSubscriptionDialog } = useBillingContext()
+const { isFreeTier } = useBillingContext()
+const { showSubscriptionRequiredDialog } = useBillingDialogs()
 const { t } = useI18n()
 const { available, hasInvalidNodes, maxAvailable, quotaEnabled } =
   useFreeTierQuota()
@@ -35,7 +37,7 @@ const label = computed(() =>
     v-if="quotaEnabled && isFreeTier"
     class="mt-2 w-full cursor-pointer border-t border-border-subtle bg-comfy-menu-bg px-4 pt-2 select-none"
     data-testid="free-tier-quota"
-    @click="showSubscriptionDialog({ reason: 'free_tier_quota' })"
+    @click="showSubscriptionRequiredDialog({ reason: 'free_tier_quota' })"
   >
     <div
       v-if="hasInvalidNodes"

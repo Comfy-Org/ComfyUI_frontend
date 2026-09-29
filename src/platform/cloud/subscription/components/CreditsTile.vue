@@ -238,7 +238,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useCustomerEventsService } from '@/services/customerEventsService'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 const { zeroState = false, inactivePlan } = defineProps<{
   /** Forces the zero-credit display (e.g. unsubscribed / member view). */
@@ -267,7 +267,7 @@ const {
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { showPricingTable } = useSubscriptionDialog()
 const customerEventsService = useCustomerEventsService()
-const dialogService = useDialogService()
+const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
 const { pendingTopupNeedsRefresh, isPendingTopupCompleted } = usePendingTopup()
 
@@ -525,7 +525,7 @@ const handleRefresh = wrapWithErrorHandlingAsync(refreshLatestCredits)
 
 function handleAddCredits() {
   telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
-  void dialogService.showTopUpCreditsDialog()
+  void showTopUpCreditsDialog()
 }
 
 function handleUpgradeToAddCredits() {

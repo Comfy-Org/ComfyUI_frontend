@@ -58,6 +58,9 @@ import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
+import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
+import { useProgressTextPreviews } from '@/composables/node/useProgressTextPreviews'
+import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreSidebarTabs'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
@@ -66,12 +69,17 @@ import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
-import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
+import type { ServerConfig } from '@/constants/serverConfig'
+import type { ServerConfigValue } from '@/platform/settings/types'
 import { setActiveLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
+import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
+import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
+import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
@@ -91,13 +99,13 @@ import { useAuthStore } from '@/stores/authStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
-import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import {
   useQueuePendingTaskCountStore,
   useQueueStore
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
@@ -110,6 +118,7 @@ import ManagerProgressToast from '@/workbench/extensions/manager/components/Mana
 
 setupAutoQueueHandler()
 useProgressFavicon()
+useProgressTextPreviews()
 useBrowserTabTitle()
 
 const settingStore = useSettingStore()
@@ -234,8 +243,10 @@ const coreCommands = useCoreCommands()
 useCommandStore().registerCommands(coreCommands)
 useMenuItemStore().registerCoreMenuCommands()
 useKeybindingService().registerCoreKeybindings()
-useSidebarTabStore().registerCoreSidebarTabs()
-void useBottomPanelStore().registerCoreBottomPanelTabs()
+registerCoreSidebarTabs()
+registerSettingDialogComponent(SettingDialog)
+registerAssetBrowserModalComponent(AssetBrowserModal)
+void registerCoreBottomPanelTabs()
 
 useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()

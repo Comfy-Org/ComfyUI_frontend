@@ -12,19 +12,19 @@
 </template>
 
 <script setup lang="ts">
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import UploadModelUpgradeModalBody from '@/platform/assets/components/UploadModelUpgradeModalBody.vue'
 import UploadModelUpgradeModalFooter from '@/platform/assets/components/UploadModelUpgradeModalFooter.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
-const { showSubscriptionDialog } = useBillingContext()
+const { showSubscriptionRequiredDialog } = useBillingDialogs()
 
 function handleClose() {
   dialogStore.closeDialog({ key: 'upload-model-upgrade' })
 }
 
 function handleSubscribe() {
-  showSubscriptionDialog({ reason: 'upload_model_upgrade' })
+  void showSubscriptionRequiredDialog({ reason: 'upload_model_upgrade' })
 }
 </script>

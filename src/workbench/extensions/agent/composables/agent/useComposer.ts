@@ -1,16 +1,9 @@
 import { storeToRefs } from 'pinia'
 import { computed, getCurrentScope, onScopeDispose } from 'vue'
 
+import type { ComposerAttachment } from '../../types/composerPrompt'
 import { composerPromptForSend } from '../../utils/composerPrompt'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-
-export interface ComposerAttachment {
-  id: string
-  name: string
-  ref: string
-  previewUrl?: string
-  uploading?: boolean
-}
 
 export interface UseComposerOptions {
   onSend: (text: string, attachments: ComposerAttachment[]) => void

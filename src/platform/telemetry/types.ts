@@ -28,8 +28,10 @@ import type {
 } from '@comfyorg/account-core/telemetry'
 import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
 
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type {
+  BillingCycle,
+  TierKey
+} from '@/platform/cloud/subscription/constants/tierKey'
 import type { AppMode } from '@/utils/appMode'
 
 export type { AuthMethod }

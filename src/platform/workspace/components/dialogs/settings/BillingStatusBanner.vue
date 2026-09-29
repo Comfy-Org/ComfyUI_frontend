@@ -78,7 +78,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
@@ -93,7 +93,7 @@ const {
   formattedDate: scheduledChangeDate,
   isDisplayable: canShowScheduledChange
 } = useScheduledPlanChange()
-const dialogService = useDialogService()
+const { showTopUpCreditsDialog } = useBillingDialogs()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
 // Strictly ENTERPRISE: an unrecognized tier must not borrow Enterprise copy
@@ -209,7 +209,7 @@ const banner = computed<BannerView | null>(() => {
 })
 
 function handleAddCredits() {
-  void dialogService.showTopUpCreditsDialog()
+  void showTopUpCreditsDialog()
 }
 function handleUpdatePayment() {
   void manageSubscription()

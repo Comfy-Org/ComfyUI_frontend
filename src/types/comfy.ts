@@ -1,22 +1,217 @@
+import type { ShallowRef } from 'vue'
+
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type {
-  IContextMenuValue,
-  Positionable
-} from '@/lib/litegraph/src/interfaces'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeReplacement } from '@/platform/nodeReplacement/types'
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  Vector2
+} from '@/lib/litegraph/src/litegraph'
+import type { MissingModelPipelineResult } from '@/platform/missingModel/types'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { SettingParams } from '@/platform/settings/types'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Keybinding } from '@/platform/keybindings/types'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { ComfyApp } from '@/scripts/app'
-import type { CustomComfyWidgetConstructor } from '@/scripts/widgets'
+import type {
+  ExecutionErrorWsMessage,
+  NodeExecutionOutput,
+  ProgressWsMessage
+} from '@/platform/remote/comfyui/execution/types'
+import type { NodeError } from '@/platform/remote/comfyui/types'
+import type {
+  WorkflowOpenSource,
+  WorkflowQueueIntent
+} from '@/platform/telemetry/types'
+import type {
+  ComfyWorkflow,
+  LoadedComfyWorkflow
+} from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyApi } from '@/scripts/api'
+import type { ComfyUI } from '@/scripts/ui'
+import type { ComfyAppMenu } from '@/scripts/ui/menu/index'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { AuthUserInfo } from '@/types/authTypes'
-import type { BottomPanelExtension } from '@/types/extensionTypes'
+import type {
+  BottomPanelExtension,
+  ExtensionManager
+} from '@/types/extensionTypes'
+
+export type ComfyWidgetConstructor = (
+  node: LGraphNode,
+  inputName: string,
+  inputData: InputSpec,
+  app: ComfyApp,
+  widgetName?: string
+) => { widget: IBaseWidget; minWidth?: number; minHeight?: number }
+
+export type CustomComfyWidgetConstructor = (
+  ...args: Parameters<ComfyWidgetConstructor>
+) =>
+  | {
+      widget?: IBaseWidget
+      minWidth?: number
+      minHeight?: number
+    }
+  | IBaseWidget
+  | undefined
 
 type Widgets = Record<string, CustomComfyWidgetConstructor>
+
+/**
+ * Optional inputs to {@link ComfyApp.queuePrompt}. `intent` is telemetry
+ * attribution only and never affects what gets executed.
+ */
+export interface QueuePromptOptions {
+  queueNodeIds?: NodeExecutionId[]
+  intent?: WorkflowQueueIntent
+}
+
+export interface LoadGraphDataOptions {
+  checkForRerouteMigration?: boolean
+  openSource?: WorkflowOpenSource
+  shareId?: string
+  deferWarnings?: boolean
+  skipAssetScans?: boolean
+  silentAssetErrors?: boolean
+  workflowNavigationId?: number
+}
+
+/**
+ * The public surface of the application singleton created in
+ * `@/scripts/app`. Modules that the app itself imports reach the running
+ * instance through `useApp()` from `@/scripts/appInstance`; only the
+ * composition root imports the class.
+ */
+export interface ComfyApp {
+  vueAppReady: boolean
+  readonly api: ComfyApi
+  readonly ui: ComfyUI
+  extensionManager: ExtensionManager
+  nodePreviewImages: Partial<Record<string, string[]>>
+  nodeOutputs: Partial<Record<string, NodeExecutionOutput>>
+
+  /** @deprecated Use {@link rootGraph} instead */
+  readonly graph: LGraph
+  readonly rootGraph: LGraph
+  readonly rootGraphOrUndefined: LGraph | undefined
+  /** Whether the root graph has been initialized. Safe to check without triggering error logs. */
+  readonly isGraphReady: boolean
+
+  /** The canvas, once {@link setup} has created it. Accessing it earlier is a bug. */
+  canvas: LGraphCanvas
+  /** Same as {@link canvas}, but `undefined` before {@link setup} creates it. */
+  readonly canvasOrUndefined: LGraphCanvas | undefined
+  readonly canvasElRef: ShallowRef<HTMLCanvasElement | undefined>
+  readonly canvasEl: HTMLCanvasElement
+  readonly configuringGraph: boolean
+  ctx: CanvasRenderingContext2D
+  dragOverNode: Pick<LGraphNode, 'onDragDrop' | 'id'> | null
+
+  bodyTop: HTMLElement
+  bodyLeft: HTMLElement
+  bodyRight: HTMLElement
+  bodyBottom: HTMLElement
+  canvasContainer: HTMLElement
+  readonly menu: ComfyAppMenu
+  /** Set by the Comfy.Clipspace extension. */
+  openClipspace: () => void
+
+  /** @deprecated Use app.extensionManager.lastNodeErrors instead */
+  readonly lastNodeErrors: Record<string, NodeError> | null
+  /** @deprecated Use app.extensionManager.lastExecutionError instead */
+  readonly lastExecutionError: ExecutionErrorWsMessage | null
+  /** @deprecated Use useExecutionStore().executingNodeId instead */
+  readonly runningNodeId: SerializedNodeId | null
+  /** @deprecated Use useWorkspaceStore().shiftDown instead */
+  readonly shiftDown: boolean
+  /** @deprecated Use useWidgetStore().widgets instead */
+  readonly widgets: Record<
+    string,
+    ComfyWidgetConstructor | CustomComfyWidgetConstructor
+  >
+  /** @deprecated storageLocation is always 'server' */
+  readonly storageLocation: string
+  /** @deprecated storage migration is no longer needed. */
+  readonly isNewUserSession: boolean
+  /** @deprecated Use useExtensionStore().extensions instead */
+  readonly extensions: ComfyExtension[]
+  /** @deprecated Use useExecutionStore().executingNodeProgress instead */
+  readonly progress: ProgressWsMessage | null
+
+  /** @deprecated Use useLitegraphService().resetView instead */
+  resetView(): void
+  getPreviewFormatParam(): string
+  getRandParam(): string
+
+  setup(canvasEl: HTMLCanvasElement): Promise<void>
+  getNodeDefs(): Promise<Record<string, ComfyNodeDef>>
+  registerNodes(): Promise<void>
+  registerNodeDef(nodeId: string, nodeDef: ComfyNodeDef): Promise<void>
+  registerNodesFromDefs(defs: Record<string, ComfyNodeDef>): Promise<void>
+  loadTemplateData(templateData: {
+    templates?: { name?: string; data?: string }[]
+  }): void
+  loadGraphData(
+    graphData?: ComfyWorkflowJSON,
+    clean?: boolean,
+    restore_view?: boolean,
+    workflow?: string | null | ComfyWorkflow,
+    options?: LoadGraphDataOptions
+  ): Promise<LoadedComfyWorkflow | boolean>
+  refreshMissingModels(options?: {
+    silent?: boolean
+    reloadDefs?: boolean
+  }): Promise<MissingModelPipelineResult>
+  graphToPrompt(
+    graph?: LGraph
+  ): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }>
+  queuePrompt(
+    number: number,
+    batchCount?: number,
+    options?: QueuePromptOptions
+  ): Promise<boolean>
+  queuePrompt(
+    number: number,
+    batchCount: number,
+    queueNodeIds: NodeExecutionId[]
+  ): Promise<boolean>
+  showErrorOnFileLoad(file: File): void
+  handleFile(
+    file: File,
+    openSource?: WorkflowOpenSource,
+    options?: {
+      deferWarnings?: boolean
+      onNodeCreated?: (node: LGraphNode) => void
+    }
+  ): Promise<void>
+  handleFileList(fileList: File[]): Promise<void>
+  handleAudioFileList(fileList: File[]): Promise<void>
+  handleVideoFileList(fileList: File[]): Promise<void>
+  positionNodes(nodes: LGraphNode[]): void
+  positionBatchNodes(nodes: LGraphNode[], batchNode: LGraphNode): void
+  isApiJson(data: unknown): data is ComfyApiWorkflow
+  loadApiJson(
+    apiData: ComfyApiWorkflow,
+    fileName: string,
+    options?: { deferWarnings?: boolean }
+  ): Promise<void>
+  registerExtension(extension: ComfyExtension): void
+  collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]
+  collectNodeMenuItems(node: LGraphNode): IContextMenuValue[]
+  reloadNodeDefs(): Promise<void>
+  refreshComboInNodes(): Promise<void>
+  clean(): void
+  clientPosToCanvasPos(pos: Vector2): Vector2
+  canvasPosToClientPos(pos: Vector2): Vector2
+}
 
 export interface AboutPageBadge {
   label: string
@@ -86,22 +281,6 @@ export interface ActionBarButton {
    */
   onClick: () => void
 }
-
-export type MissingNodeType =
-  | string
-  // Primarily used by group nodes.
-  | {
-      type: string
-      nodeId?: string | number
-      cnrId?: string
-      hint?: string
-      action?: {
-        text: string
-        callback: () => void
-      }
-      isReplaceable?: boolean
-      replacement?: NodeReplacement
-    }
 
 export interface ComfyExtension {
   /**

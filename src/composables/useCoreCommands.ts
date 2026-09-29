@@ -21,6 +21,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
@@ -42,6 +43,7 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -68,6 +70,7 @@ import {
   ManagerUIState,
   useManagerState
 } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
@@ -79,11 +82,8 @@ const moveSelectedNodesVersionAdded = '1.22.2'
 let onboardingReplayInProgress: Promise<void> | undefined
 
 export function useCoreCommands(): ComfyCommand[] {
-  const {
-    canAccessSubscriptionFeatures,
-    showSubscriptionDialog,
-    subscription
-  } = useBillingContext()
+  const { canAccessSubscriptionFeatures, subscription } = useBillingContext()
+  const { showSubscriptionRequiredDialog } = useBillingDialogs()
 
   function blockRunWithoutSubscription(): boolean {
     if (!isCloud || canAccessSubscriptionFeatures.value) return false
@@ -95,7 +95,7 @@ export function useCoreCommands(): ComfyCommand[] {
         life: 5000
       })
     } else {
-      showSubscriptionDialog({ reason: 'subscribe_to_run' })
+      void showSubscriptionRequiredDialog({ reason: 'subscribe_to_run' })
     }
     return true
   }
@@ -103,6 +103,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const workflowStore = useWorkflowStore()
   const settingsDialog = useSettingsDialog()
   const dialogService = useDialogService()
+  const { showSignInDialog } = useAuthDialogs()
   const colorPaletteStore = useColorPaletteStore()
   const authActions = useAuthActions()
   const toastStore = useToastStore()
@@ -1022,7 +1023,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
       function: async () => {
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           showToastOnLegacyError: true
         })
       }
@@ -1033,8 +1034,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Check for Custom Node Updates',
       versionAdded: '1.17.0',
       function: async () => {
-        const managerState = useManagerState()
-        const state = managerState.managerUIState.value
+        const state = useManagerState().managerUIState.value
 
         // For DISABLED state, show error toast instead of opening settings
         if (state === ManagerUIState.DISABLED) {
@@ -1046,7 +1046,7 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
 
-        await managerState.openManager({
+        await useManagerDialog().openManager({
           initialTab: ManagerTab.UpdateAvailable,
           showToastOnLegacyError: false
         })
@@ -1058,7 +1058,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Install Missing Custom Nodes',
       versionAdded: '1.17.0',
       function: async () => {
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           initialTab: ManagerTab.Missing,
           showToastOnLegacyError: false
         })
@@ -1070,7 +1070,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Open Sign In Dialog',
       versionAdded: '1.17.6',
       function: async () => {
-        await dialogService.showSignInDialog()
+        await showSignInDialog()
       }
     },
     {
@@ -1166,7 +1166,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'mdi mdi-puzzle-outline',
       label: 'Manager',
       function: async () => {
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           initialTab: ManagerTab.All,
           showToastOnLegacyError: false
         })
@@ -1305,7 +1305,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Custom Nodes (Legacy)',
       versionAdded: '1.16.4',
       function: async () => {
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           legacyCommand: 'Comfy.Manager.CustomNodesManager.ToggleVisibility',
           showToastOnLegacyError: true,
           isLegacyOnly: true
@@ -1318,7 +1318,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Manager Menu (Legacy)',
       versionAdded: '1.16.4',
       function: async () => {
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           showToastOnLegacyError: true,
           isLegacyOnly: true
         })

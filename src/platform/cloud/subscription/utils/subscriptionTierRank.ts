@@ -1,6 +1,7 @@
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-
-export type BillingCycle = 'monthly' | 'yearly'
+import type {
+  BillingCycle,
+  TierKey
+} from '@/platform/cloud/subscription/constants/tierKey'
 
 type RankedTierKey = Exclude<TierKey, 'founder' | 'free'>
 type RankedPlanKey = `${BillingCycle}-${RankedTierKey}`

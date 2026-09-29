@@ -87,8 +87,6 @@ export function useBillingContext(): BillingContext {
     cancelSubscription: async () => {},
     resubscribe: async () => {},
     topup: async () => {},
-    fetchPlans: async () => {},
-    requireActiveSubscription: async () => {},
-    showSubscriptionDialog: () => {}
+    fetchPlans: async () => {}
   }
 }

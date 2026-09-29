@@ -8,7 +8,7 @@ import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import type { WorkflowReference } from '../../types/workflowReference'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment } from '../../types/composerPrompt'
 
 interface UseAgentDraftSubmissionOptions {
   canSubmit: () => boolean

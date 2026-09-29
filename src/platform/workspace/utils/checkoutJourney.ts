@@ -1,4 +1,4 @@
-import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import type {
   CheckoutAssignmentStatus,
   CheckoutEntryFlow,

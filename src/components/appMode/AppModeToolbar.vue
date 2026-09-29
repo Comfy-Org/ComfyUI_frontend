@@ -5,12 +5,13 @@ import { useI18n } from 'vue-i18n'
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
+import { useEnterBuilder } from '@/components/builder/useEnterBuilder'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
 const { enableAppBuilder } = useAppMode()
 const appModeStore = useAppModeStore()
-const { enterBuilder } = appModeStore
+const { enterBuilder } = useEnterBuilder()
 const { hasNodes } = storeToRefs(appModeStore)
 </script>
 

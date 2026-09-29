@@ -1,4 +1,3 @@
-import type { ServerConfigValue } from '@/constants/serverConfig'
 import type { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/platform/keybindings/types'
@@ -245,6 +244,8 @@ export interface SettingParams<TValue = unknown> extends FormItem {
 /**
  * The base form item for rendering in a form.
  */
+export type ServerConfigValue = string | number | boolean | null | undefined
+
 export interface FormItem {
   name: string
   type: SettingInputType | SettingCustomRenderer
@@ -270,3 +271,9 @@ export type SettingPanelType =
   | 'workspace'
   | 'workspace-allowlist'
   | 'workspace-members'
+
+export interface SettingDialogProps {
+  onClose: () => void
+  defaultPanel?: SettingPanelType
+  scrollToSettingId?: string
+}

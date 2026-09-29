@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 
 import NodeLibrarySidebarTab from './NodeLibrarySidebarTab.vue'

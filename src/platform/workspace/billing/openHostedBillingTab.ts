@@ -7,11 +7,13 @@
  */
 import type { BillingIntent } from '@comfyorg/billing-contract'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  readCheckoutOperation,
+  refreshBilling
+} from '@/platform/workspace/billing/billingRefresh'
 import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 export interface OpenHostedBillingTabOptions {
@@ -93,18 +95,7 @@ function armReturnRefresh(
   workspaceId: string | undefined
 ): void {
   disarmHostedBillingReturnRefresh()
-  // Resolved inside the call, not at module scope: useBillingContext ->
-  // useWorkspaceBilling -> this module would otherwise dereference the
-  // shared context before its state is constructed.
-  const { fetchStatus, fetchBalance, readCheckoutOperation } =
-    useBillingContext()
-  stopReturnRefresh = registerRefreshOnReturn(() =>
-    Promise.allSettled([
-      fetchStatus(),
-      fetchBalance(),
-      useBillingCapabilities().refresh()
-    ])
-  )
+  stopReturnRefresh = registerRefreshOnReturn(() => refreshBilling('account'))
   if (OPERATION_INTENTS.has(intent)) {
     stopOperationWatch = watchForHostedOperation(
       readCheckoutOperation,

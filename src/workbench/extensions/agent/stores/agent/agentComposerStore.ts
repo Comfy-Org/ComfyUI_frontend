@@ -4,10 +4,10 @@ import { computed, ref, shallowRef } from 'vue'
 import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
 import type {
+  ComposerAttachment,
   ComposerInsertionPoint,
   ComposerPrompt,
   ComposerReference

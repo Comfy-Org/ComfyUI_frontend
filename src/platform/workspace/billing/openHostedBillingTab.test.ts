@@ -15,25 +15,6 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
-const mockFetchStatus = vi.hoisted(() => vi.fn(async () => {}))
-const mockFetchBalance = vi.hoisted(() => vi.fn(async () => {}))
-const mockReadOperation = vi.hoisted(() => vi.fn(async () => false))
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    fetchStatus: mockFetchStatus,
-    fetchBalance: mockFetchBalance,
-    readCheckoutOperation: mockReadOperation
-  })
-}))
-
-const mockCapabilitiesRefresh = vi.hoisted(() => vi.fn(async () => {}))
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: mockCapabilitiesRefresh })
-  })
-)
-
 const mockStop = vi.hoisted(() => vi.fn())
 const mockRegisterRefreshOnReturn = vi.hoisted(() =>
   vi.fn((_refresh: () => Promise<unknown>) => mockStop)
@@ -43,6 +24,11 @@ vi.mock<unknown>(
   () => ({ registerRefreshOnReturn: mockRegisterRefreshOnReturn })
 )
 
+import {
+  onBillingRefresh,
+  onCheckoutOperationRead
+} from '@/platform/workspace/billing/billingRefresh'
+import type { BillingRefreshScope } from '@/platform/workspace/billing/billingRefresh'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import {
@@ -55,6 +41,12 @@ const BILLING_WEB_ROUTE = {
   url: new URL('https://billing.example/v1/pricing')
 }
 
+const refreshed = vi.fn<(scope: BillingRefreshScope) => void>()
+onBillingRefresh(refreshed)
+
+const mockReadOperation = vi.fn(async () => false)
+onCheckoutOperationRead(mockReadOperation)
+
 function fakeTab(): Window {
   return { opener: undefined, location: { href: '' } } as unknown as Window
 }
@@ -62,9 +54,6 @@ function fakeTab(): Window {
 describe('openHostedBillingTab', () => {
   beforeEach(() => {
     mockHostedBillingRoute.mockReset().mockReturnValue(BILLING_WEB_ROUTE)
-    mockFetchStatus.mockClear()
-    mockFetchBalance.mockClear()
-    mockCapabilitiesRefresh.mockClear()
     mockStop.mockClear()
     mockRegisterRefreshOnReturn.mockClear().mockReturnValue(mockStop)
     flagState.hostedBillingDestination = 'billing_web'
@@ -145,16 +134,14 @@ describe('openHostedBillingTab', () => {
     expect(mockRegisterRefreshOnReturn).toHaveBeenCalledTimes(1)
   })
 
-  it('refreshes status, balance, and capabilities when the armed refresh runs', async () => {
+  it('announces an account refresh when the armed refresh runs', async () => {
     vi.spyOn(window, 'open').mockReturnValue(fakeTab())
 
     openHostedBillingTab('pricing')
     const [refresh] = mockRegisterRefreshOnReturn.mock.calls[0]
     await refresh()
 
-    expect(mockFetchStatus).toHaveBeenCalledTimes(1)
-    expect(mockFetchBalance).toHaveBeenCalledTimes(1)
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledTimes(1)
+    expect(refreshed).toHaveBeenCalledExactlyOnceWith('account')
   })
 
   it('stops the previous refresh before arming a new one on repeated opens', () => {
