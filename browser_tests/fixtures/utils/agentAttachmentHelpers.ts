@@ -50,6 +50,8 @@ export async function expectAssets(
   assets: ExpectedAssetPreview[],
   timeout = 10_000
 ) {
+  const deadline = Date.now() + timeout
+  const remaining = () => Math.max(1, deadline - Date.now())
   const userMessage = panel
     .getByTestId('user-message-bubble')
     .last()
@@ -57,12 +59,12 @@ export async function expectAssets(
   const previews = userMessage
     .getByTestId('reply-asset-group')
     .locator('img, video')
-  await expect(previews).toHaveCount(assets.length, { timeout })
+  await expect(previews).toHaveCount(assets.length, { timeout: remaining() })
   for (const [index, asset] of assets.entries()) {
     const preview = previews.nth(index)
-    await expect(preview).toBeVisible({ timeout })
+    await expect(preview).toBeVisible({ timeout: remaining() })
     await expect(preview.locator('..')).toHaveAccessibleName(asset.filename, {
-      timeout
+      timeout: remaining()
     })
     await expect
       .poll(
@@ -74,7 +76,7 @@ export async function expectAssets(
                 ? element.videoWidth > 0 && element.videoHeight > 0
                 : false
           ),
-        { timeout }
+        { timeout: remaining() }
       )
       .toBe(true)
   }
@@ -111,7 +113,7 @@ export async function expectAssets(
             return null
           })
         ),
-      { timeout }
+      { timeout: remaining() }
     )
     .toEqual(
       assets.map(({ filename, ref = filename, kind, width, height }) => ({
