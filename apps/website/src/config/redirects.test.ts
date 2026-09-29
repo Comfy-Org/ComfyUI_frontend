@@ -93,6 +93,33 @@ describe('astro redirect destinations', () => {
   })
 })
 
+/**
+ * The catalogue was reachable at both `/models` and `/models/`, each a 200,
+ * and search traffic split between them (only the slash form ranked). Every
+ * page canonicalizes with the slash, so the hosting layer sends the other
+ * form there permanently.
+ */
+describe('Models trailing-slash redirects', () => {
+  it.for(['/models', '/zh-CN/models'])(
+    'sends %s to its trailing-slash form permanently',
+    (source) => {
+      const redirect = findRedirect(source)
+
+      if (!redirect) {
+        throw new Error(`${source} is missing from vercel.json`)
+      }
+
+      expect(redirect.destination).toBe(`${source}/`)
+      expect(redirect.permanent).toBe(true)
+    }
+  )
+
+  it('leaves the canonical Models routes unredirected', () => {
+    expect(findRedirect('/models/')).toBeUndefined()
+    expect(findRedirect('/zh-CN/models/')).toBeUndefined()
+  })
+})
+
 describe('legacy Enterprise redirects', () => {
   const cases = [
     {

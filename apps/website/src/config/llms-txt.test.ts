@@ -17,12 +17,16 @@ import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
 const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
 const pagesDir = join(websiteRoot, 'src', 'pages')
+// A redirect that only adds the trailing slash (`/models` → `/models/`) does
+// not retire its source; the page is the destination, which llms.txt links.
 const vercelRedirectSources = new Set<string>(
   (
     JSON.parse(readFileSync(join(websiteRoot, 'vercel.json'), 'utf8')) as {
-      redirects: { source: string }[]
+      redirects: { source: string; destination: string }[]
     }
-  ).redirects.map((redirect) => normalizePath(redirect.source))
+  ).redirects
+    .filter((redirect) => redirect.destination !== `${redirect.source}/`)
+    .map((redirect) => normalizePath(redirect.source))
 )
 
 /**
