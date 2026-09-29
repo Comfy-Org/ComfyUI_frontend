@@ -188,14 +188,15 @@ with the refreshed snapshot.
 
 ## Hub workflows routing
 
-The website builds the workflow pages listed in `src/config/hub-workflow-names.json` at `/hub/workflows/<name>/`. It publishes `/hub/workflows/manifest.json` (`{ version, defaultOwner, pages, legacyRedirects }`), which comfy-router reads to decide who answers each `/hub/workflows/*` and `/workflows/*` URL. The build validates the manifest and fails if it is invalid.
+The website builds the workflow pages listed in `src/config/hub-workflow-names.json` at `/hub/workflows/<name>/`. It publishes `/hub/workflows/manifest.json` (`{ version, defaultOwner, pages, legacyRedirects }`), which comfy-router reads to decide who answers each `/hub/workflows/*` URL. The build validates the manifest and fails if it is invalid.
 
 The router (comfy-router#46) fetches the manifest from the website origin directly, not through comfy.org, so it never depends on its own routing to reach it. It also passes the public `comfy.org/hub/workflows/manifest.json` path straight through to the website, even though `manifest.json` is not in `pages`.
 
-Moving more workflows onto the website takes data only, no new code:
+To move more workflows onto the website:
 
-1. Add the pages; `hub-workflow-names.test.ts` fails until you refresh the list with `vitest -u`.
-2. In `src/config/hub-workflows-routing.ts`, list each moved `/workflows/<slug>/` URL in `legacyRedirects` (exact paths only, each pointing at a page in the list). Once every workflow has moved, flip `defaultOwner` to `website`.
+1. Add the pages; `hub-workflow-names.test.ts` fails until you refresh the list with `vitest -u`. The router picks up the new `pages` from the live manifest on the next website deploy.
+2. To redirect an old `/workflows/<slug>/` URL, list it in `legacyRedirects` in `src/config/hub-workflows-routing.ts` (exact paths only, each pointing at a page in the list), then copy the same entry into the router's bundled `src/hub-workflow-manifest.js` and redeploy the router. The router reads only its bundled copy for `/workflows/*`, so the website's entry alone redirects nothing.
+3. Once every workflow has moved, flip `defaultOwner` to `website`. This one is data only: it affects `/hub/workflows/*`, which reads the live manifest.
 
 The website itself never redirects `/workflows/*`; the router does.
 
