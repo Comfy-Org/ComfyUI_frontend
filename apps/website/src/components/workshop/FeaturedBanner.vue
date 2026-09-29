@@ -118,7 +118,7 @@ const fill = computed(() =>
     v-if="active"
     ref="banner"
     :aria-label="t('workshop.sections.featured', locale)"
-    class="relative isolate overflow-hidden rounded-4.5xl border border-transparency-white-t8"
+    class="relative isolate overflow-hidden rounded-3xl border border-transparency-white-t8"
     data-testid="section-featured"
   >
     <div
@@ -159,13 +159,13 @@ const fill = computed(() =>
       />
 
       <div
-        class="pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-3 p-7 pt-7 pb-12 max-sm:p-5 max-sm:pb-11 sm:max-w-2xl sm:justify-center lg:p-9 lg:pt-8 lg:pb-12"
+        class="pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-3 px-7 pt-7 pb-16 max-sm:px-5 max-sm:pt-5 sm:max-w-2xl sm:justify-center lg:px-9 lg:pt-8"
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge
             variant="subtle"
             size="md"
-            class="text-primary-comfy-canvas backdrop-blur-md"
+            class="bg-black/40 text-primary-comfy-canvas backdrop-blur-md"
           >
             {{ active.kind }}
           </Badge>
@@ -174,7 +174,7 @@ const fill = computed(() =>
             :key="capability"
             variant="subtle"
             size="md"
-            class="text-content-secondary backdrop-blur-md max-sm:hidden"
+            class="bg-black/40 text-content-secondary backdrop-blur-md max-sm:hidden"
           >
             {{ capability }}
           </Badge>

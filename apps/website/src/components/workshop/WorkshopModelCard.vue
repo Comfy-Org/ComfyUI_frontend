@@ -63,13 +63,11 @@ const pillClass =
 <template>
   <a
     :href="model.href"
-    class="group flex cursor-pointer flex-col gap-3 overflow-hidden rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+    class="group flex cursor-pointer flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     data-testid="workshop-model-card"
     :data-kind="model.type === 'APP' ? 'app' : workflow ? 'workflow' : 'model'"
   >
-    <div
-      class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface"
-    >
+    <div class="relative aspect-4/3 overflow-hidden rounded-2xl bg-hub-surface">
       <!-- First in the link, so the reader hears who answers for the card
         before its name rather than after everything else on it. -->
       <WorkshopCardMark :label="providerName" :logo />
@@ -89,7 +87,7 @@ const pillClass =
 
       <span
         v-if="thumbnailLabel"
-        class="pointer-events-none absolute bottom-3 left-3 z-10 rounded-xl border border-white/10 bg-site-dropdown px-3 py-2 text-sm leading-none font-bold whitespace-nowrap text-primary-warm-white shadow-sm transition-all duration-500 select-none group-hover:-translate-x-1 group-hover:translate-y-1 group-hover:opacity-0"
+        class="pointer-events-none absolute bottom-3 left-3 z-10 rounded-xl border border-white/10 bg-site-dropdown/70 px-3 py-2 text-sm leading-none font-bold whitespace-nowrap text-primary-warm-white shadow-sm backdrop-blur-md transition-all duration-500 select-none group-hover:-translate-x-1 group-hover:translate-y-1 group-hover:opacity-0"
         aria-hidden="true"
         data-testid="model-thumbnail-label"
       >
