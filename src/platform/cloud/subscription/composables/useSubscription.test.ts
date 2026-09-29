@@ -1539,6 +1539,16 @@ describe('useSubscription', () => {
       useSubscriptionWithScope()
       await vi.advanceTimersByTimeAsync(43_000)
       expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+      expect(
+        JSON.parse(
+          localStorage.getItem(
+            'comfy.subscription.pending_checkout_terminal'
+          ) ?? 'null'
+        )
+      ).toEqual({
+        attempt_id: 'attempt-reload',
+        terminal: 'completion_missing'
+      })
 
       // A reload drops all composable state but keeps the stored attempt.
       scope?.stop()
