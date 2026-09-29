@@ -34,8 +34,6 @@ jobs:
       PUBLIC_WORKSHOP_CLOUD_ENV: prod
       WORKSHOP_SITE_URL: https://comfy.org
       WORKSHOP_ACCEPTANCE_SCOPE: smoke
-      WORKSHOP_WORKSPACE_ID: ${{ vars.WORKSHOP_WORKSPACE_ID }}
-      WORKSHOP_EXPECTED_CHARGES_JSON: ${{ vars.WORKSHOP_EXPECTED_CHARGES_JSON }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -46,7 +44,7 @@ jobs:
         env:
           COMFY_API_KEY: ${{ secrets.WORKSHOP_ROUTER_API_KEY }}
         run: pnpm --filter @comfyorg/website test:workshop-upload --origin https://comfy.org
-      - name: Verify real customer journeys
+      - name: Verify model generation
         env:
           WORKSHOP_FIXTURE_DIR: ${{ runner.temp }}/workshop-fixtures
           WORKSHOP_ACCOUNT_EMAIL: ${{ secrets.WORKSHOP_ACCOUNT_EMAIL }}
@@ -68,4 +66,4 @@ jobs:
           RESULT: ${{ job.status }}
           SOURCE_REVISION: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
-          echo "Workshop production smoke: $RESULT. Test source: $SOURCE_REVISION. See the acceptance evidence artifact for job IDs, decoded outputs, and balance checks." >> "$GITHUB_STEP_SUMMARY"
+          echo "Workshop production smoke: $RESULT. Test source: $SOURCE_REVISION. See the acceptance evidence artifact for job IDs, decoded outputs, and generation checks." >> "$GITHUB_STEP_SUMMARY"

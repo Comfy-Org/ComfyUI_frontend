@@ -4,7 +4,7 @@ Date: 2026-09-21
 
 ## Status
 
-Proposed
+Superseded by [WEBSITE-ACCEPTANCE-0040](WEBSITE-ACCEPTANCE-0040-generation-tests-exclude-account-and-billing-journeys.md).
 
 ## Context
 

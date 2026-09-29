@@ -2,7 +2,7 @@
 
 Scheduled sweeps and real browser acceptance run in GitHub Actions under the
 **Workshop:** prefix. See [live acceptance](acceptance/README.md) for cadence,
-accounts, billing expectations, reports, and the remaining acceptance scope.
+account setup, generation reports, and the remaining acceptance scope.
 
 The tester calls `router_render(slug, {})` with the same initial inputs,
 parameter mappings, media conversion, temporary uploads, Router client and

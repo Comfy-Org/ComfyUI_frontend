@@ -2,43 +2,12 @@ import { execFileSync } from 'node:child_process'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { modelCases } from './cases'
-import { expectedCharge, liveSettings, requiredSetting } from './settings'
-
-function validateAccountSettings() {
-  const settings = liveSettings()
-  const checkout = process.env.WORKSHOP_ACCEPTANCE_SCOPE === 'checkout'
-  if (checkout && settings.environment !== 'test')
-    throw new Error('Checkout acceptance only runs against test Cloud')
-  const names = checkout
-    ? ['WORKSHOP_SIGNUP_EMAIL_DOMAIN', 'WORKSHOP_SIGNUP_PASSWORD']
-    : [
-        'WORKSHOP_ACCOUNT_EMAIL',
-        'WORKSHOP_ACCOUNT_PASSWORD',
-        'WORKSHOP_WORKSPACE_ID'
-      ]
-  names.forEach(requiredSetting)
-}
-
-function validateReviewedCharges() {
-  const selected =
-    process.env.WORKSHOP_ACCEPTANCE_SCOPE === 'release'
-      ? modelCases
-      : modelCases.filter((model) => model.smoke)
-  const variants =
-    process.env.WORKSHOP_ACCEPTANCE_SCOPE === 'checkout'
-      ? ['own']
-      : ['defaults', 'own', 'advanced']
-  for (const model of selected) validateModelCharges(model.slug, variants)
-}
-
-function validateModelCharges(slug: string, variants: string[]) {
-  for (const variant of variants) expectedCharge(slug, variant)
-}
+import { liveSettings, requiredSetting } from './settings'
 
 export default async function setup() {
-  validateAccountSettings()
-  validateReviewedCharges()
+  liveSettings()
+  requiredSetting('WORKSHOP_ACCOUNT_EMAIL')
+  requiredSetting('WORKSHOP_ACCOUNT_PASSWORD')
   const directory = requiredSetting('WORKSHOP_FIXTURE_DIR')
   await mkdir(directory, { recursive: true })
   execFileSync('ffmpeg', [
