@@ -6,6 +6,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
 import type { TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import SectionHeading from './SectionHeading.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
 
 const {
@@ -77,16 +78,11 @@ const facts = computed(() => {
     role="tabpanel"
     aria-labelledby="workflow-tab-workflow"
   >
-    <div class="mb-8">
-      <h2
-        class="text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
-      >
-        {{ t('workshop.workflow.inside') }}
-      </h2>
-      <p class="mt-2 text-sm/relaxed text-primary-warm-gray">
-        {{ t('workshop.workflow.previewHint') }}
-      </p>
-    </div>
+    <SectionHeading
+      class="mb-8"
+      :title="t('workshop.workflow.inside')"
+      :subtitle="t('workshop.workflow.previewHint')"
+    />
 
     <div class="grid gap-10 lg:grid-cols-12">
       <div class="lg:col-span-8">
