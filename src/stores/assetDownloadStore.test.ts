@@ -304,6 +304,37 @@ describe('useAssetDownloadStore', () => {
 
       expect(store.activeDownloads).toHaveLength(1)
     })
+
+    it('marks a task as failed after three consecutive missing responses', async () => {
+      const store = useAssetDownloadStore()
+
+      vi.mocked(taskService.getTask).mockResolvedValue(undefined)
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await vi.advanceTimersByTimeAsync(30_000)
+
+      expect(store.activeDownloads).toHaveLength(0)
+      expect(store.finishedDownloads[0]).toMatchObject({
+        assetId: 'asset-456',
+        assetName: 'model.safetensors',
+        bytesTotal: 1000,
+        bytesDownloaded: 500,
+        progress: 50,
+        status: 'failed'
+      })
+      expect(taskService.getTask).toHaveBeenCalledTimes(3)
+    })
+
+    it('accepts completion after a transient missing-task response', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.getTask).mockResolvedValue(undefined)
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await vi.advanceTimersByTimeAsync(10_000)
+      dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
+
+      expect(store.finishedDownloads[0].status).toBe('completed')
+    })
   })
 
   describe('clearFinishedDownloads', () => {

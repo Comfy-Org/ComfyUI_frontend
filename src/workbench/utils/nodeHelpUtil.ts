@@ -1,5 +1,5 @@
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
+import { NodeSourceType } from '@/types/nodeSource'
 import { normalizePackId } from '@/utils/packUtils'
 
 export function extractCustomNodeName(
@@ -14,11 +14,10 @@ export function extractCustomNodeName(
 }
 
 export function getNodeHelpBaseUrl(node: ComfyNodeDefImpl): string {
-  const nodeSource = getNodeSource(node.python_module)
-  if (nodeSource.type === NodeSourceType.Blueprint) {
+  if (node.python_module.split('.')[0] === 'blueprint') {
     return ''
   }
-  if (nodeSource.type === NodeSourceType.CustomNodes) {
+  if (node.nodeSource.type === NodeSourceType.CustomNodes) {
     const customNodeName = extractCustomNodeName(node.python_module)
     if (customNodeName) {
       return `/extensions/${customNodeName}/docs/`

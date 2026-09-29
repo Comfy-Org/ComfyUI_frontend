@@ -422,8 +422,6 @@ watch(
 
     // Reload color palette to apply background image
     await colorPaletteService.loadColorPalette(currentPaletteId)
-    // Mark background canvas as dirty
-    canvasStore.canvas.setDirty(false, true)
   }
 )
 watch(

@@ -206,8 +206,8 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
                 }
               },
               async handleDelete() {
-                if (!this.data) return
-                await nodeBookmarkStore.deleteBookmarkFolder(this.data)
+                if (!this.data) return false
+                return await nodeBookmarkStore.deleteBookmarkFolder(this.data)
               }
             })
       }

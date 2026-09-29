@@ -350,7 +350,7 @@ describe(assetService.uploadAssetAsync, () => {
 })
 
 describe(assetService.deleteAsset, () => {
-  it.fails('reports and preserves request failures', async () => {
+  it('reports and preserves request failures', async () => {
     const failure = new Error('Network unavailable')
     fetchApiMock.mockRejectedValueOnce(failure)
 
@@ -360,7 +360,7 @@ describe(assetService.deleteAsset, () => {
     })
   })
 
-  it.fails('returns false when the response is not ok', async () => {
+  it('returns false when the response is not ok', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse(null, { ok: false, status: 503 })
     )
@@ -368,7 +368,7 @@ describe(assetService.deleteAsset, () => {
     await expect(assetService.deleteAsset('asset-1')).resolves.toBe(false)
   })
 
-  it.fails('issues a DELETE to the asset endpoint when the response is ok', async () => {
+  it('issues a DELETE to the asset endpoint when the response is ok', async () => {
     fetchApiMock.mockResolvedValueOnce(buildResponse(null))
 
     await expect(assetService.deleteAsset('asset-1')).resolves.toBe(true)

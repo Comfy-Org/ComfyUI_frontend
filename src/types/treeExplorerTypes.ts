@@ -36,7 +36,9 @@ export interface TreeExplorerNode<T = unknown> extends TreeNode {
     newName: string
   ) => void | Promise<void>
   /** Function to handle deleting the node */
-  handleDelete?: (this: TreeExplorerNode<T>) => void | Promise<void>
+  handleDelete?: (
+    this: TreeExplorerNode<T>
+  ) => boolean | void | Promise<boolean | void>
   /** Function to handle adding a folder */
   handleAddFolder?: (
     this: TreeExplorerNode<T>,

@@ -366,8 +366,9 @@ async function saveAsNewPreset() {
 }
 
 async function handleDeletePreset() {
-  await presetService.deletePreset(keybindingStore.currentPresetName)
-  refreshPresetList()
+  if (await presetService.deletePreset(keybindingStore.currentPresetName)) {
+    await refreshPresetList()
+  }
 }
 
 async function handleImportPreset() {
