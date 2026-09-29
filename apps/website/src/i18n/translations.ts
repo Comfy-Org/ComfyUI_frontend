@@ -9726,6 +9726,7 @@ Enterprise`
   },
   'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
   'workshop.card.comfyApp': { en: 'Comfy app', 'zh-CN': 'Comfy 应用' },
+  'workshop.card.comfyApi': { en: 'Comfy API', 'zh-CN': 'Comfy API' },
   'workshop.card.runs': { en: '{n} runs', 'zh-CN': '{n} 次运行' },
   'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
   'workshop.card.from': { en: 'from', 'zh-CN': '起' },
