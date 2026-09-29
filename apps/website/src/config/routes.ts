@@ -6,6 +6,8 @@ import {
 } from './locales'
 import type { Locale } from './locales'
 
+const workshopHome = '/models/'
+
 const baseRoutes = {
   home: '/',
   download: '/download/',
@@ -30,7 +32,6 @@ const baseRoutes = {
   affiliateTerms: '/affiliates/terms/',
   contact: '/contact/',
   models: '/p/supported-models/',
-  modelsShowcase: '/models/',
   mcp: '/mcp/',
   agent: '/agent/',
   platform: '/platform/',
@@ -55,10 +56,10 @@ const baseRoutes = {
   brand: '/brand/',
   // The catalogue answers to /models now. The keys keep their old names while
   // the pull requests stacked on this branch are still open against them.
-  workshop: '/models/',
+  workshop: workshopHome,
   workshopSignIn: '/login/',
-  cinematicStudio: '/models/apps/cinematic-studio/',
-  reshoot: '/models/apps/reshoot/'
+  cinematicStudio: `${workshopHome}apps/cinematic-studio/`,
+  reshoot: `${workshopHome}apps/reshoot/`
 } as const
 
 type RouteKey = keyof typeof baseRoutes
@@ -86,8 +87,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
-// workshop, workshopSignIn, cinematicStudio, reshoot: prototype pages, English
-// only for now.
+// workshop, workshopSignIn, cinematicStudio, reshoot: English only, except the
+// zh-CN /models/ twin that SiteFooter links directly.
 //
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
 // built from a single English-language caption track — a "translated" watch
@@ -129,12 +130,12 @@ const LOCALE_INVARIANT_EXTRA_PATHS = [
   '/workshop'
 ]
 
-const LOCALE_INVARIANT_PATHS = new Set<string>([
-  ...[...LOCALE_INVARIANT_ROUTE_KEYS].map((key) =>
-    normalizeRoute(baseRoutes[key])
-  ),
-  ...LOCALE_INVARIANT_EXTRA_PATHS
-])
+const LOCALE_INVARIANT_PATHS = new Set<string>(
+  [
+    ...[...LOCALE_INVARIANT_ROUTE_KEYS].map((key) => baseRoutes[key]),
+    ...LOCALE_INVARIANT_EXTRA_PATHS
+  ].map(normalizeRoute)
+)
 
 /** True for a locale-invariant route or anything nested under one. */
 function isLocaleInvariantPath(pathname: string): boolean {

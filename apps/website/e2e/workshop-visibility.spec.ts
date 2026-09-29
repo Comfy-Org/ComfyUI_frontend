@@ -20,6 +20,23 @@ test('public HTML excludes catalogue and playground markup', async ({
   }
 })
 
+test.describe('server HTML', () => {
+  test.use({ javaScriptEnabled: false })
+
+  test('links the model catalogue from every locale', async ({ page }) => {
+    for (const [path, href] of [
+      ['/', '/models/'],
+      ['/pricing/', '/models/'],
+      ['/zh-CN/', '/zh-CN/models/'],
+      ['/zh-CN/pricing/', '/zh-CN/models/']
+    ]) {
+      await page.goto(path)
+      await expect(page.locator(`footer a[href="${href}"]`)).toHaveCount(1)
+      expect((await page.request.get(href)).ok()).toBe(true)
+    }
+  })
+})
+
 test('keeps the public site when PostHog is unavailable', async ({ page }) => {
   const dataRequests: string[] = []
   page.on('request', (request) => {
