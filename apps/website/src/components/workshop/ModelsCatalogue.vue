@@ -13,6 +13,7 @@ import WorkshopHero from './WorkshopHero.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
+import type { WorkshopPageType } from '../../scripts/workshop-analytics'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
@@ -98,15 +99,19 @@ const viewedTabs = new Set<CatalogueTab>()
 watch(
   () => (mounted.value && enabled.value ? activeTab.value : undefined),
   (tab) => {
-    if (!tab || tab === 'apps' || viewedTabs.has(tab)) return
+    if (!tab || viewedTabs.has(tab)) return
     viewedTabs.add(tab)
+    const catalogues = {
+      models: { model_count: routerModels.value.length, page_type: 'model' },
+      workflows: { model_count: workflows.value.length, page_type: 'workflow' },
+      apps: { model_count: apps.value.length, page_type: 'app' }
+    } as const satisfies Record<
+      CatalogueTab,
+      { model_count: number; page_type: WorkshopPageType }
+    >
     captureWorkshopEvent({
       name: 'catalogue_viewed',
-      properties: {
-        model_count:
-          tab === 'models' ? routerModels.value.length : workflows.value.length,
-        page_type: tab === 'models' ? 'model' : 'workflow'
-      }
+      properties: catalogues[tab]
     })
   }
 )

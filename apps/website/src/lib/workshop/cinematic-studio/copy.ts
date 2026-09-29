@@ -134,6 +134,18 @@ const copy = {
     en: 'Slow now',
     'zh-CN': '当前较慢'
   },
+  'cinematic.stage.generatingImage': {
+    en: 'Generating image',
+    'zh-CN': '正在生成图像'
+  },
+  'cinematic.stage.generatingVideo': {
+    en: 'Generating video',
+    'zh-CN': '正在生成视频'
+  },
+  'cinematic.stage.loadingTake': {
+    en: 'Loading the take',
+    'zh-CN': '正在加载镜头'
+  },
   'cinematic.stage.again': {
     en: 'Generate again',
     'zh-CN': '再生成一次'
@@ -572,6 +584,82 @@ const copy = {
   'cinematic.reference.remove': {
     en: 'Remove reference',
     'zh-CN': '移除参考'
+  },
+  'cinematic.video.audioOn': { en: 'On', 'zh-CN': '开启' },
+  'cinematic.video.audioOff': { en: 'Off', 'zh-CN': '关闭' },
+  'cinematic.video.enhanceHint': {
+    en: 'Adds cinematic motion and continuous action to the prompt',
+    'zh-CN': '在提示词中添加电影运镜和连续动作'
+  },
+  'cinematic.video.mode': { en: 'Creation type', 'zh-CN': '创作类型' },
+  'cinematic.video.image': { en: 'Image', 'zh-CN': '图像' },
+  'cinematic.video.video': { en: 'Video', 'zh-CN': '视频' },
+  'cinematic.video.animate': { en: 'Animate image', 'zh-CN': '将图像转为视频' },
+  'cinematic.video.preview': { en: 'Generated video', 'zh-CN': '生成的视频' },
+  'cinematic.video.duration': { en: 'Duration', 'zh-CN': '时长' },
+  'cinematic.video.audio': { en: 'Generate audio', 'zh-CN': '生成音频' },
+  'cinematic.video.firstFrame': { en: 'Starting frame', 'zh-CN': '起始帧' },
+  'cinematic.video.lastFrame': { en: 'Ending frame', 'zh-CN': '结束帧' },
+  'cinematic.video.addFirstFrame': {
+    en: 'Add a starting frame',
+    'zh-CN': '添加起始帧'
+  },
+  'cinematic.video.addLastFrame': {
+    en: 'Add an ending frame',
+    'zh-CN': '添加结束帧'
+  },
+  'cinematic.video.uploadFrame': { en: 'Upload an image', 'zh-CN': '上传图像' },
+  'cinematic.video.needFrame': {
+    en: 'Add a starting frame for this model.',
+    'zh-CN': '请为此模型添加起始帧。'
+  },
+  'cinematic.video.oneClip': {
+    en: 'One clip per request. Describe the action and camera movement in your scene.',
+    'zh-CN': '每次请求生成一个片段。请在场景中描述动作和镜头运动。'
+  },
+  'cinematic.video.start': {
+    en: 'Describe the movement. Choose a video model, or animate one of your stills.',
+    'zh-CN': '描述运动，选择视频模型，或将你的静帧转为视频。'
+  },
+  'cinematic.video.frameError': {
+    en: 'Could not load that starting frame. Download the image and upload it in the video settings.',
+    'zh-CN': '无法加载起始帧。请下载图像并在视频设置中上传。'
+  },
+  'cinematic.video.frameLoading': {
+    en: 'Preparing starting frame…',
+    'zh-CN': '正在准备起始帧…'
+  },
+  'cinematic.video.sourceVideo': {
+    en: 'Video to edit',
+    'zh-CN': '要编辑的视频'
+  },
+  'cinematic.video.addSourceVideo': {
+    en: 'Add the video to edit',
+    'zh-CN': '添加要编辑的视频'
+  },
+  'cinematic.references.needsPicture': {
+    en: "{model} needs the picture itself, and this image can't be read here. Download it and add it with +, or pick another model.",
+    'zh-CN':
+      '{model} 需要图片本身，但此处无法读取该图片。请下载后通过 + 添加，或选择其他模型。'
+  },
+  'cinematic.references.unreadable': {
+    en: "Couldn't use this image. Download it and add it with +.",
+    'zh-CN': '无法使用此图片。请下载后通过 + 添加。'
+  },
+  'cinematic.video.noFirstFrame': {
+    en: "{model} can't start from an image. Remove the frame or pick another model.",
+    'zh-CN': '{model} 无法从图像开始。请移除该帧或选择其他模型。'
+  },
+  'cinematic.video.needSourceVideo': {
+    en: 'Add the video to edit first.',
+    'zh-CN': '请先添加要编辑的视频。'
+  },
+  'cinematic.video.audioTag': { en: 'Audio', 'zh-CN': '音频' },
+  'cinematic.video.resolution': { en: 'Resolution', 'zh-CN': '分辨率' },
+  'cinematic.video.aspect': { en: 'Frame', 'zh-CN': '画幅' },
+  'cinematic.video.modelDecides': {
+    en: 'This model sets the length and resolution itself.',
+    'zh-CN': '此模型自行决定时长和分辨率。'
   },
   'cinematic.colors.title': {
     en: 'Colors',
