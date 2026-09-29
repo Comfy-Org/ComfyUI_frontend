@@ -57,11 +57,6 @@ const siblings = computed(() =>
 )
 // The column keeps the frame's width until the finished media has loaded.
 const frameLoaded = ref(false)
-const currentIsVideo = computed(
-  () =>
-    models.find((model) => model.slug === current.value?.modelSlug)?.mode ===
-    'video'
-)
 const modelName = computed(
   () =>
     models.find((model) => model.slug === current.value?.modelSlug)?.name ?? ''
@@ -97,7 +92,6 @@ const otherModel = computed(() => {
         <CinematicTakeFrame
           v-model:loaded="frameLoaded"
           :current
-          :video="currentIsVideo"
           :other-model="otherModel"
           :member-workspace="memberWorkspace"
           :height="FRAME_HEIGHT"
