@@ -3,7 +3,7 @@ import { Check, Music2 } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { PlaygroundExample } from '../../config/workshop-playground'
-import { isVideoUrl } from '../../config/workshop-playground'
+import { isVideoUrl, videoPosterUrl } from '../../config/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -116,11 +116,12 @@ function actionFor(example: PlaygroundExample, active = false) {
               v-if="
                 example.mediaKind === 'video' || isVideoUrl(example.outputUrl)
               "
-              :src="example.outputUrl"
+              :src="videoPosterUrl(example.outputUrl)"
               class="size-full object-cover"
               muted
               playsinline
               preload="metadata"
+              data-testid="example-video"
             />
             <Music2
               v-else-if="example.mediaKind === 'audio'"
