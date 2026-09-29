@@ -3,7 +3,6 @@ import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
-import { BUILD_ASSETS_DIR } from './src/config/build'
 import { isExcludedFromSitemap } from './src/config/indexing'
 import { DEFAULT_LOCALE, LOCALE_CODES } from './src/config/locales'
 import { redirects } from './src/config/redirects'
@@ -23,7 +22,7 @@ export default defineConfig({
   markdown: { smartypants: false },
   redirects,
   build: {
-    assets: BUILD_ASSETS_DIR
+    assets: '_website'
   },
   devToolbar: { enabled: !process.env.NO_TOOLBAR },
   integrations: [

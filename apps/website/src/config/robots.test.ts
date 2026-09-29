@@ -3,82 +3,25 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-import { BUILD_ASSETS_DIR } from './build'
-
-const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const robotsTxt = readFileSync(
-  join(websiteRoot, 'public', 'robots.txt'),
+  join(dirname(fileURLToPath(import.meta.url)), '../../public/robots.txt'),
   'utf8'
 )
 
-interface Rule {
-  allow: boolean
-  pattern: string
-}
-
-interface Group {
-  agents: string[]
-  rules: Rule[]
-}
-
-function directives(text: string) {
-  return text.split('\n').flatMap((line) => {
-    const match = /^\s*([a-z-]+)\s*:\s*(\S*)/i.exec(line)
-    return match ? [{ key: match[1].toLowerCase(), value: match[2] }] : []
-  })
-}
-
-function addAgent(groups: Group[], agent: string) {
-  const current = groups.at(-1)
-  if (current?.rules.length === 0) current.agents.push(agent)
-  else groups.push({ agents: [agent], rules: [] })
-}
-
-function parseGroups(text: string): Group[] {
-  const groups: Group[] = []
-  for (const { key, value } of directives(text)) {
-    if (key === 'user-agent') addAgent(groups, value.toLowerCase())
-    else if ((key === 'allow' || key === 'disallow') && value)
-      groups.at(-1)?.rules.push({ allow: key === 'allow', pattern: value })
-  }
-  return groups
-}
-
-function patternMatches(pattern: string, path: string) {
-  const anchored = pattern.endsWith('$')
-  const body = (anchored ? pattern.slice(0, -1) : pattern)
-    .split('*')
-    .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
-    .join('.*')
-  return new RegExp(`^${body}${anchored ? '$' : ''}`).test(path)
-}
-
-function isAllowed(agent: string, path: string) {
-  const groups = parseGroups(robotsTxt)
-  const group =
-    groups.find((g) => g.agents.includes(agent.toLowerCase())) ??
-    groups.find((g) => g.agents.includes('*'))
-  const winner = (group?.rules ?? [])
-    .filter((rule) => patternMatches(rule.pattern, path))
-    .sort(
-      (a, b) =>
-        b.pattern.length - a.pattern.length || Number(b.allow) - Number(a.allow)
+const rulesFor = (directive: string) =>
+  robotsTxt
+    .split('\n')
+    .flatMap(
+      (line) =>
+        new RegExp(`^${directive}:\\s*(\\S+)`, 'i').exec(line)?.[1] ?? []
     )
-    .at(0)
-  return winner?.allow ?? true
-}
 
 describe('robots.txt', () => {
-  it.for([
-    { agent: 'Googlebot', path: `/${BUILD_ASSETS_DIR}/page.Ab12Cd34.js` },
-    { agent: 'Googlebot', path: `/${BUILD_ASSETS_DIR}/index.Ab12Cd34.css` },
-    { agent: 'Googlebot', path: '/_astro/page.Ab12Cd34.js' },
-    { agent: 'Bingbot', path: `/${BUILD_ASSETS_DIR}/page.Ab12Cd34.js` }
-  ])('lets $agent fetch $path', ({ agent, path }) => {
-    expect(isAllowed(agent, path)).toBe(true)
+  it('disallows only /_vercel/, so crawlers can fetch the /_astro/ and /_website/ assets', () => {
+    expect(rulesFor('disallow')).toEqual(['/_vercel/'])
   })
 
-  it('still keeps crawlers out of Vercel internals', () => {
-    expect(isAllowed('Googlebot', '/_vercel/insights/script.js')).toBe(false)
+  it('still allows the whole site', () => {
+    expect(rulesFor('allow')).toContain('/')
   })
 })
