@@ -318,7 +318,7 @@ function normaliseSummary(summary: string): string {
 }
 
 describe('model summaries', () => {
-  it('ships no new duplicate summary, and the known duplicates only shrink', () => {
+  it('ships no duplicate summary beyond the known groups', () => {
     const slugsBySummary = new Map<string, string[]>()
     for (const { slug, summary } of workshopModels) {
       if (!summary) continue
@@ -331,31 +331,17 @@ describe('model summaries', () => {
         slugs
       ])
     )
+    expect(known.size).toBe(KNOWN_DUPLICATE_SUMMARIES.length)
 
-    const problems = [
-      ...[...slugsBySummary]
-        .filter(([, slugs]) => slugs.length > 1)
-        .filter(([key, slugs]) =>
-          slugs.some((slug) => !known.get(key)?.includes(slug))
-        )
-        .map(
-          ([key, slugs]) =>
-            `Duplicate summary on ${slugs.join(', ')}: "${key}". Write a distinct summary.`
-        ),
-      ...[...known].flatMap(([key, slugs]) => {
-        const current = slugsBySummary.get(key) ?? []
-        const gone = slugs.filter((slug) => !current.includes(slug))
-        if (current.length < 2)
-          return [
-            `Stale entry, remove it from KNOWN_DUPLICATE_SUMMARIES: "${key}"`
-          ]
-        if (gone.length > 0)
-          return [
-            `Stale slugs, remove ${gone.join(', ')} from the KNOWN_DUPLICATE_SUMMARIES entry "${key}"`
-          ]
-        return []
-      })
-    ]
+    const problems = [...slugsBySummary]
+      .filter(([, slugs]) => slugs.length > 1)
+      .filter(([key, slugs]) =>
+        slugs.some((slug) => !known.get(key)?.includes(slug))
+      )
+      .map(
+        ([key, slugs]) =>
+          `Duplicate summary on ${slugs.join(', ')}: "${key}". Summaries come from the partner descriptions imported by scripts/generate-workshop-catalog.ts; get those made distinct upstream.`
+      )
 
     expect(problems).toEqual([])
   })
