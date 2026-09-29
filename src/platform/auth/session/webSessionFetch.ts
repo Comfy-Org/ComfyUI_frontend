@@ -1,6 +1,9 @@
 import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
-import type { SessionTokenFailure } from '@comfyorg/account-core/sessionTokenMint'
+import type {
+  SessionTokenFailure,
+  SessionTokenResult
+} from '@comfyorg/account-core/sessionTokenMint'
 import type { WebSession } from '@comfyorg/account-core/webSession'
 
 /** A refused mint, with the message already localized for the person. */
@@ -89,6 +92,10 @@ export interface WebSessionRequests {
     init: RequestInit,
     scope: WebSessionRequestScope
   ) => Promise<Response>
+  /** The web session's token for this scope's workspace; never rejects. */
+  readonly workspaceToken: (
+    scope: WebSessionRequestScope
+  ) => Promise<SessionTokenResult>
   /** Bearer headers for a service other than ingest; mints on first use. Rejects with WebSessionTokenError. */
   readonly authorizeResource: (
     scope: WebSessionRequestScope
@@ -109,6 +116,19 @@ export function provideWebSessionRequests(
 
 export function webSessionRequests(): WebSessionRequests | undefined {
   return provided
+}
+
+export type WebSessionSend = (
+  url: string,
+  init: RequestInit
+) => Promise<Response>
+
+/** Sends on the signed-in session, or undefined when this tab is not on it. */
+export async function webSessionSend(): Promise<WebSessionSend | undefined> {
+  const requests = webSessionRequests()
+  if (!requests) return undefined
+  const scope = await requests.scope()
+  return scope && ((url, init) => requests.send(url, init, scope))
 }
 
 /** Undefined unless the session is on and this tab is signed in on it. */

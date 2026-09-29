@@ -43,7 +43,7 @@ const columns = computed(() =>
   <div
     :class="
       cn(
-        'relative grid w-fit shrink-0 rounded-2xl bg-transparency-white-t8 p-1',
+        'relative grid w-fit shrink-0 rounded-2xl bg-transparency-white-t8 p-1 max-sm:w-full',
         columns
       )
     "
@@ -53,7 +53,7 @@ const columns = computed(() =>
   >
     <div :class="cn('pointer-events-none absolute inset-1 grid', columns)">
       <div
-        class="rounded-xl bg-primary-warm-white transition-transform duration-300 ease-out motion-reduce:transition-none"
+        class="rounded-xl bg-primary-comfy-canvas transition-transform duration-300 ease-out motion-reduce:transition-none"
         :style="{ transform: marker }"
       />
     </div>

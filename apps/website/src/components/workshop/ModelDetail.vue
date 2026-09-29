@@ -1058,7 +1058,6 @@ function useInCode() {
           :earlier
           :attachments
           :now
-          :model-name="model.name"
           :modality="model.modality"
           :locale
           :member-workspace="

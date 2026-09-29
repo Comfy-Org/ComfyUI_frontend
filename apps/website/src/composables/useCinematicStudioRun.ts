@@ -5,10 +5,8 @@ import type { WorkshopModelDetail } from '../config/models-catalogue'
 import { fetchModelsPage } from '../config/models-page-data'
 import type { PreparedRouterRender } from '../config/router-render'
 import { router_render } from '../config/router-render'
-import {
-  refreshWorkshopCredits,
-  useWorkshopCredits
-} from '../config/workshop-credits'
+import { refreshWorkshopCredits } from '../config/workshop-credits'
+import { useWorkshopModelBalance } from '../config/workshop-model-balance'
 import { releaseRouterOutputs } from '../config/workshop-response'
 import {
   WorkshopRouterError,
@@ -24,6 +22,11 @@ import {
   watermarksOff
 } from '../lib/workshop/cinematic-studio/frames'
 import { studioGate } from '../lib/workshop/cinematic-studio/gate'
+import type { CinematicVideoShot } from '../lib/workshop/cinematic-studio/video'
+import {
+  videoCapabilities,
+  videoParameters
+} from '../lib/workshop/cinematic-studio/video'
 import { studioRouterForm } from '../lib/workshop/cinematic-studio/request'
 import type { Reel, ReelEvent } from '../lib/workshop/cinematic-studio/reel'
 import {
@@ -31,16 +34,31 @@ import {
   isRendering,
   reduceReel
 } from '../lib/workshop/cinematic-studio/reel'
-import { useWorkshopAuthFlag, useWorkshopEnabled } from '../scripts/posthog'
+import { studioAnalytics } from '../lib/workshop/cinematic-studio/analytics'
+import {
+  captureWorkshopEvent,
+  useWorkshopAuthFlag,
+  useWorkshopEnabled
+} from '../scripts/posthog'
+import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
+import {
+  workshopFailureAnalytics,
+  workshopModelAnalytics
+} from '../scripts/workshop-analytics'
 
 interface ShotRequest {
   readonly modelSlug: string
   readonly referenceSlug?: string
+  /** The operation that starts from an image, for a video with a first frame. */
+  readonly firstFrameSlug?: string
+  /** Present for a video shot. */
+  readonly video?: Omit<CinematicVideoShot, 'aspect'>
   readonly prompt: string
   readonly aspect: AspectRatio
   readonly resolutionPixels: number
   readonly takes: number
-  readonly references: readonly File[]
+  /** Pictures, or links for a model that fetches them itself. */
+  readonly references: readonly (File | string)[]
   readonly preview?: string
 }
 
@@ -50,7 +68,8 @@ interface UnsettledTake {
 }
 
 const fileIds = new WeakMap<File, string>()
-function fileId(file: File): string {
+function fileId(file: File | string): string {
+  if (typeof file === 'string') return file
   const known = fileIds.get(file)
   if (known) return known
   const id = crypto.randomUUID()
@@ -72,11 +91,32 @@ function takeFingerprint(
     request.aspect,
     request.resolutionPixels,
     request.references.map(fileId),
+    request.video && {
+      ...request.video,
+      firstFrame: request.video.firstFrame && fileId(request.video.firstFrame),
+      lastFrame: request.video.lastFrame && fileId(request.video.lastFrame),
+      sourceVideo:
+        request.video.sourceVideo && fileId(request.video.sourceVideo)
+    },
     index
   ])
 }
 
 function shotParameters(request: ShotRequest, model: WorkshopModelDetail) {
+  if (request.video && model.execution) {
+    const clip = videoParameters(videoCapabilities(model.execution), {
+      ...request.video,
+      aspect: request.aspect
+    })
+    return {
+      prompt: request.prompt,
+      ...clip,
+      model_specific: {
+        ...clip.model_specific,
+        ...watermarksOff(model.execution)
+      }
+    }
+  }
   const frame = frameParameters(
     model.execution,
     request.aspect,
@@ -122,7 +162,7 @@ export function useCinematicStudioRun(
 ) {
   const { user, session, sessionFailure, settled, ensureFresh } =
     useWorkshopSession()
-  const { balance } = useWorkshopCredits()
+  const balance = useWorkshopModelBalance(session)
   const workshopEnabled = useWorkshopEnabled()
   const authEnabled = useWorkshopAuthFlag()
   const mounted = useMounted()
@@ -185,6 +225,42 @@ export function useCinematicStudioRun(
     return credential.session.token
   }
 
+  function takeAnalytics(
+    startedFor: WorkshopSession,
+    slug: string,
+    model?: WorkshopModelDetail
+  ): WorkshopRunAnalytics {
+    return {
+      ...(model ? workshopModelAnalytics(model) : { render_engine: 'router' }),
+      ...studioAnalytics(slug),
+      user_id: startedFor.uid,
+      workspace_id: startedFor.workspace.id,
+      attempt_id: workshopIdempotencyKey()
+    }
+  }
+
+  function recordUnloadedTake(analytics: WorkshopRunAnalytics, error: unknown) {
+    captureWorkshopEvent({ name: 'run_started', properties: analytics })
+    captureWorkshopEvent({
+      name: 'run_finished',
+      properties: {
+        ...analytics,
+        duration_ms: 0,
+        status: 'failed',
+        ...workshopFailureAnalytics(
+          new WorkshopRouterError(
+            'unavailable',
+            null,
+            {},
+            undefined,
+            'input_preparation',
+            { cause: error }
+          )
+        )
+      }
+    })
+  }
+
   async function renderTake(
     id: string,
     index: number,
@@ -195,6 +271,13 @@ export function useCinematicStudioRun(
   ) {
     const fingerprint = takeFingerprint(startedFor, model.slug, request, index)
     const { key, prepared } = unsettledTakeFor(fingerprint)
+    const analytics = takeAnalytics(startedFor, model.slug, model)
+    const startedAt = Date.now()
+    const finished = () => ({
+      ...analytics,
+      duration_ms: Date.now() - startedAt
+    })
+    captureWorkshopEvent({ name: 'run_started', properties: analytics })
     try {
       const result = await router_render(
         model.slug,
@@ -223,14 +306,52 @@ export function useCinematicStudioRun(
       releaseRouterOutputs(result.outputs.slice(1))
       if (signal.aborted) {
         if (output) releaseRouterOutputs([output])
+        captureWorkshopEvent({
+          name: 'run_finished',
+          properties: { ...finished(), status: 'cancelled' }
+        })
         return
       }
       if (!output) throw new WorkshopRouterError('response', result.requestId)
       dispatch({ type: 'takeSucceeded', id, output })
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...finished(),
+          status: 'succeeded',
+          request_id: result.requestId ?? undefined,
+          output_count: result.outputs.length
+        }
+      })
     } catch (error) {
-      if (signal.aborted) return
+      if (signal.aborted) {
+        captureWorkshopEvent({
+          name: 'run_finished',
+          properties: { ...finished(), status: 'cancelled' }
+        })
+        return
+      }
       if (!mayStillSettle(error)) unsettledTakes.delete(fingerprint)
       dispatch(takeFailure(id, error))
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...finished(),
+          status: 'failed',
+          ...workshopFailureAnalytics(
+            error instanceof WorkshopRouterError
+              ? error
+              : new WorkshopRouterError(
+                  'client',
+                  null,
+                  {},
+                  undefined,
+                  undefined,
+                  { cause: error }
+                )
+          )
+        }
+      })
     }
   }
 
@@ -250,16 +371,22 @@ export function useCinematicStudioRun(
     controller = attempt
     try {
       await Promise.all(
-        takes.map(async ({ id, index, slug, request }) =>
-          renderTake(
+        takes.map(async ({ id, index, slug, request }) => {
+          const model = await loadModel(slug).catch((error: unknown) => {
+            if (!attempt.signal.aborted)
+              recordUnloadedTake(takeAnalytics(startedFor, slug), error)
+            throw error
+          })
+          attempt.signal.throwIfAborted()
+          return renderTake(
             id,
             index,
-            await loadModel(slug),
+            model,
             request,
             startedFor,
             attempt.signal
           )
-        )
+        })
       )
     } catch {
       if (!attempt.signal.aborted)
@@ -276,7 +403,9 @@ export function useCinematicStudioRun(
     const startedFor = session.value
     const slug = request.references.length
       ? request.referenceSlug
-      : request.modelSlug
+      : request.video?.firstFrame
+        ? request.firstFrameSlug
+        : request.modelSlug
     if (rendering.value || gate.value !== 'ready' || !startedFor || !slug)
       return
     const takes = Array.from({ length: request.takes }, (_, index) => ({

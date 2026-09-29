@@ -53,6 +53,20 @@ import type {
   SubscriptionInfo
 } from '../../../composables/billing/types'
 
+export class CancellationScopeChangedError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'CancellationScopeChangedError'
+  }
+}
+
+function assertCancellationScopeCurrent(isScopeCurrent: () => boolean): void {
+  if (isScopeCurrent()) return
+  throw new CancellationScopeChangedError(
+    t('subscription.cancelDialog.workspaceChanged')
+  )
+}
+
 /**
  * Which client path resumes a recovered operation. Exhaustive on purpose: the
  * two-way check this replaces sent anything that was not `topup` down the
@@ -591,7 +605,10 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     }
   }
 
-  async function cancelSubscription(): Promise<void> {
+  async function cancelSubscription(
+    isScopeCurrent: () => boolean = () => true
+  ): Promise<void> {
+    assertCancellationScopeCurrent(isScopeCurrent)
     const attemptStartedAt = Date.now()
     const trackCancelSucceeded = () =>
       telemetry?.trackBillingEvent({
@@ -631,6 +648,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         return
       }
     }
+
+    assertCancellationScopeCurrent(isScopeCurrent)
 
     isLoading.value = true
     error.value = null
