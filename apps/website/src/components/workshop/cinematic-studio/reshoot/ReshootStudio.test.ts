@@ -129,6 +129,6 @@ describe('Re-shoot on one screen', () => {
     expect(caption).toHaveTextContent(take)
 
     await user.click(screen.getByRole('button', { name: 'Aim' }))
-    expect(caption).toHaveTextContent('')
+    expect(caption).toHaveTextContent(/^$/)
   })
 })
