@@ -1,6 +1,6 @@
 import { deflateSync } from 'node:zlib'
 
-import type { Page, Route } from '@playwright/test'
+import type { Page, Request, Route } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 /**
@@ -65,6 +65,16 @@ function reshootGeometry({ frames = 2, width = 8, height = 8 } = {}): Buffer {
   ])
 }
 
+type Answer = Parameters<Route['fulfill']>[0]
+
+const QUOTE = {
+  free_runs_allowance: { runs: 5, period: 'P7D', period_seconds: 604_800 },
+  free_runs_remaining: 3,
+  resets_at: null,
+  price_credits: 40,
+  next_run: 'free'
+}
+
 const ANALYZE_JOB = {
   id: 'e2e-reshoot-analyze',
   status: 'succeeded',
@@ -79,47 +89,36 @@ const ANALYZE_JOB = {
 export async function mockReshootProxy(page: Page, workspaceToken: string) {
   const calls: string[] = []
   const geometry = reshootGeometry()
+  const answers = new Map<string, (request: Request) => Answer>(
+    Object.entries({
+      'GET /quote': () => ({ json: QUOTE }),
+      'POST /assets': () => ({ json: { file_path: 'crossview-e2e.mp4' } }),
+      'POST /jobs': (request: Request) => {
+        expect(request.postData()).toContain('CrossViewGeometryExport')
+        return { json: ANALYZE_JOB }
+      },
+      [`GET /jobs/${ANALYZE_JOB.id}`]: () => ({ json: ANALYZE_JOB }),
+      [`GET /jobs/${ANALYZE_JOB.id}/outputs/geo/content`]: () => ({
+        contentType: 'application/octet-stream',
+        body: geometry
+      })
+    })
+  )
   await page.route(/\/app-proxy\/[^/]+\//, async (route: Route) => {
     const request = route.request()
     const path = new URL(request.url()).pathname.replace(
       /^.*\/app-proxy\/[^/]+/,
       ''
     )
-    const method = request.method()
-    calls.push(`${method} ${path}`)
+    const call = `${request.method()} ${path}`
+    calls.push(call)
     expect(request.headers()['authorization']).toBe(`Bearer ${workspaceToken}`)
-
-    if (method === 'GET' && path === '/quote')
-      return route.fulfill({
-        json: {
-          free_runs_allowance: {
-            runs: 5,
-            period: 'P7D',
-            period_seconds: 604_800
-          },
-          free_runs_remaining: 3,
-          resets_at: null,
-          price_credits: 40,
-          next_run: 'free'
-        }
-      })
-    if (method === 'POST' && path === '/assets')
-      return route.fulfill({ json: { file_path: 'crossview-e2e.mp4' } })
-    if (method === 'POST' && path === '/jobs') {
-      expect(request.postData()).toContain('CrossViewGeometryExport')
-      return route.fulfill({ json: ANALYZE_JOB })
-    }
-    if (method === 'GET' && path === `/jobs/${ANALYZE_JOB.id}`)
-      return route.fulfill({ json: ANALYZE_JOB })
-    if (
-      method === 'GET' &&
-      path === `/jobs/${ANALYZE_JOB.id}/outputs/geo/content`
+    const answer = answers.get(call)
+    return route.fulfill(
+      answer
+        ? answer(request)
+        : { status: 404, json: { error_type: 'not_found' } }
     )
-      return route.fulfill({
-        contentType: 'application/octet-stream',
-        body: geometry
-      })
-    return route.fulfill({ status: 404, json: { error_type: 'not_found' } })
   })
   return calls
 }
