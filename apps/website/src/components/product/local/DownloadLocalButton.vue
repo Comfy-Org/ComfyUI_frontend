@@ -5,7 +5,7 @@ import type { HTMLAttributes } from 'vue'
 
 import type { Platform } from '../../../composables/useDownloadUrl'
 import {
-  downloadUrls,
+  downloadUrl,
   useDownloadUrl
 } from '../../../composables/useDownloadUrl'
 import { t } from '../../../i18n/translations'
@@ -17,7 +17,7 @@ const { locale = 'en', class: customClass = '' } = defineProps<{
   class?: HTMLAttributes['class']
 }>()
 
-const { downloadUrl, platform, showFallback } = useDownloadUrl()
+const { platform, showDownload } = useDownloadUrl()
 
 const label = computed(() => t('download.hero.downloadLocal', locale))
 
@@ -27,63 +27,20 @@ const ICONS: Record<Platform, string> = {
   linux: '/icons/os/linux.svg'
 }
 
-interface ButtonSpec {
-  key: Platform
-  href: string
-  icon: string
-  ariaLabel?: string
-}
-
-const buttons = computed<ButtonSpec[]>(() => {
-  if (platform.value) {
-    return [
-      {
-        key: platform.value,
-        href: downloadUrl.value,
-        icon: ICONS[platform.value]
-      }
-    ]
-  }
-  if (showFallback.value) {
-    return [
-      {
-        key: 'windows',
-        href: downloadUrls.windows,
-        icon: ICONS.windows,
-        ariaLabel: `${label.value}: Windows`
-      },
-      {
-        key: 'mac',
-        href: downloadUrls.macArm,
-        icon: ICONS.mac,
-        ariaLabel: `${label.value}: macOS`
-      },
-      {
-        key: 'linux',
-        href: downloadUrls.linux,
-        icon: ICONS.linux,
-        ariaLabel: `${label.value}: Linux`
-      }
-    ]
-  }
-  return []
-})
+const icon = computed(() => (platform.value ? ICONS[platform.value] : null))
 </script>
 
 <template>
   <BrandButton
-    v-for="btn in buttons"
-    :key="btn.key"
-    :href="btn.href"
+    v-if="showDownload"
+    :href="downloadUrl"
     target="_blank"
     size="lg"
     :class="customClass"
-    :aria-label="btn.ariaLabel"
-    :data-astro-prefetch="btn.key === 'windows' ? 'false' : undefined"
-    @click="captureDownloadClick(btn.key)"
+    @click="captureDownloadClick(platform ?? 'any')"
   >
     <span class="inline-flex items-center gap-2">
-      <img :src="btn.icon" alt="" class="inline-block size-5" />
+      <img v-if="icon" :src="icon" alt="" class="inline-block size-5" />
       <span class="inline-block">{{ label }}</span>
     </span>
   </BrandButton>

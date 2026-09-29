@@ -69,7 +69,7 @@ type AnalyticsEvent =
   | { name: typeof ANALYTICS_EVENT.pageview; properties?: undefined }
   | {
       name: typeof ANALYTICS_EVENT.downloadButtonClicked
-      properties: { platform: Platform }
+      properties: { platform: Platform | 'any' }
     }
   | {
       name:
@@ -364,7 +364,7 @@ export function captureWorkshopEvent(event: WorkshopAnalyticsEvent): void {
   })
 }
 
-export function captureDownloadClick(platform: Platform): void {
+export function captureDownloadClick(platform: Platform | 'any'): void {
   captureEvent({
     name: ANALYTICS_EVENT.downloadButtonClicked,
     properties: { platform }

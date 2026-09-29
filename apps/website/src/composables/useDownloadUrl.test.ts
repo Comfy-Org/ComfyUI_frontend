@@ -1,9 +1,8 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h } from 'vue'
 
-import { detectDevice, useDownloadUrl } from './useDownloadUrl'
+import { detectDevice, downloadUrl, useDownloadUrl } from './useDownloadUrl'
 
 const UA = {
   iphone:
@@ -21,6 +20,8 @@ const UA = {
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   linux:
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+  linuxArm:
+    'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   chromeOs:
     'Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   freeBsd:
@@ -61,8 +62,11 @@ describe('detectDevice', () => {
     })
   })
 
-  it('treats desktop Linux as a linux desktop', () => {
-    expect(detectDevice(UA.linux, 0)).toEqual({
+  it.for([
+    { label: 'x86 Linux', ua: UA.linux },
+    { label: 'ARM Linux', ua: UA.linuxArm }
+  ])('treats $label as a linux desktop', ({ ua }) => {
+    expect(detectDevice(ua, 0)).toEqual({
       platform: 'linux',
       isMobileUa: false
     })
@@ -79,219 +83,48 @@ describe('detectDevice', () => {
   })
 })
 
-const DEBUG_RENDERER_INFO = { UNMASKED_RENDERER_WEBGL: 0x9246 }
-
-function reportingCpu(architecture: string): NavigatorUAData {
-  return { getHighEntropyValues: async () => ({ architecture }) }
-}
-
-function fakeGpu(getParameter: (pname: number) => unknown) {
-  const loseContext = vi.fn()
-  const webgl = () =>
-    fromPartial<WebGLRenderingContext>({
-      getExtension: (name: string) => {
-        if (name === 'WEBGL_debug_renderer_info') return DEBUG_RENDERER_INFO
-        if (name === 'WEBGL_lose_context') return { loseContext }
-        return null
-      },
-      getParameter
-    })
-  return { webgl, loseContext }
-}
-
-function reportingGpu(renderer: string): () => WebGLRenderingContext {
-  return fakeGpu((pname) =>
-    pname === DEBUG_RENDERER_INFO.UNMASKED_RENDERER_WEBGL ? renderer : null
-  ).webgl
-}
-
-const NVIDIA_GPU = reportingGpu(
-  'ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 (0x00002B85) Direct3D11 vs_5_0 ps_5_0, D3D11)'
-)
-
-function visitOnWindows(
-  userAgentData: NavigatorUAData | undefined,
-  webgl: () => WebGLRenderingContext | null
-) {
-  vi.stubGlobal('navigator', {
-    userAgent: UA.windows,
-    maxTouchPoints: 0,
-    userAgentData
-  } satisfies Partial<Navigator>)
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(webgl)
-}
-
 const DownloadLink = defineComponent({
   setup() {
-    const { downloadUrl, platform } = useDownloadUrl()
+    const { showDownload } = useDownloadUrl()
     return () =>
-      platform.value ? h('a', { href: downloadUrl.value }, 'Download') : null
+      showDownload.value ? h('a', { href: downloadUrl }, 'Download') : null
   }
 })
 
-describe('useDownloadUrl on Windows', () => {
+function visitWith(userAgent: string, maxTouchPoints = 0) {
+  vi.stubGlobal('navigator', {
+    userAgent,
+    maxTouchPoints
+  } satisfies Partial<Navigator>)
+}
+
+describe('useDownloadUrl', () => {
   it.for([
-    {
-      label: 'an ARM PC with an NVIDIA GPU',
-      cpu: reportingCpu('arm'),
-      gpu: NVIDIA_GPU,
-      installer: 'arm64'
-    },
-    {
-      label: 'an ARM PC with a Qualcomm GPU',
-      cpu: reportingCpu('arm'),
-      gpu: reportingGpu(
-        'ANGLE (Qualcomm, Qualcomm(R) Adreno(TM) X1-85 GPU (0x0000364E) Direct3D11 vs_5_0 ps_5_0, D3D11)'
-      ),
-      installer: 'x64'
-    },
-    {
-      label: 'an ARM PC without WebGL',
-      cpu: reportingCpu('arm'),
-      gpu: () => null,
-      installer: 'x64'
-    },
-    {
-      label: 'an ARM PC hiding its GPU renderer',
-      cpu: reportingCpu('arm'),
-      gpu: () =>
-        fromPartial<WebGLRenderingContext>({ getExtension: () => null }),
-      installer: 'x64'
-    },
-    {
-      label: 'an ARM PC whose WebGL probe throws',
-      cpu: reportingCpu('arm'),
-      gpu: () => {
-        throw new DOMException('blocked', 'SecurityError')
-      },
-      installer: 'x64'
-    },
-    {
-      label: 'an x86 PC with an NVIDIA GPU',
-      cpu: reportingCpu('x86'),
-      gpu: NVIDIA_GPU,
-      installer: 'x64'
-    },
-    {
-      label: 'a PC hiding its CPU architecture',
-      cpu: reportingCpu(''),
-      gpu: NVIDIA_GPU,
-      installer: 'x64'
-    },
-    {
-      label: 'a browser without client hints',
-      cpu: undefined,
-      gpu: NVIDIA_GPU,
-      installer: 'x64'
-    },
-    {
-      label: 'a browser rejecting client hints',
-      cpu: {
-        getHighEntropyValues: () =>
-          Promise.reject(new DOMException('blocked', 'NotAllowedError'))
-      },
-      gpu: NVIDIA_GPU,
-      installer: 'x64'
-    }
-  ])(
-    'links $label to the $installer installer',
-    async ({ cpu, gpu, installer }) => {
-      visitOnWindows(cpu, gpu)
-
-      render(DownloadLink)
-
-      expect(await screen.findByRole('link')).toHaveAttribute(
-        'href',
-        `https://dl.comfy.org/windows/nsis/${installer}`
-      )
-    }
-  )
-
-  it('shows no installer link until the CPU architecture is known', async () => {
-    let reportArchitecture!: (hints: { architecture: string }) => void
-    visitOnWindows(
-      {
-        getHighEntropyValues: () =>
-          new Promise((resolve) => {
-            reportArchitecture = resolve
-          })
-      },
-      NVIDIA_GPU
-    )
+    { label: 'Windows', ua: UA.windows },
+    { label: 'macOS', ua: UA.mac },
+    { label: 'x86 Linux', ua: UA.linux },
+    { label: 'ARM Linux', ua: UA.linuxArm },
+    { label: 'FreeBSD', ua: UA.freeBsd },
+    { label: 'Chrome OS', ua: UA.chromeOs }
+  ])('offers $label the single download url', async ({ ua }) => {
+    visitWith(ua)
 
     render(DownloadLink)
-    await nextTick()
+
+    expect(await screen.findByRole('link')).toHaveAttribute(
+      'href',
+      'https://dl.comfy.org'
+    )
+  })
+
+  it.for([
+    { label: 'iPhone', ua: UA.iphone },
+    { label: 'Android phone', ua: UA.androidPhone }
+  ])('offers no download on $label', ({ ua }) => {
+    visitWith(ua, 5)
+
+    render(DownloadLink)
+
     expect(screen.queryByRole('link')).toBeNull()
-
-    reportArchitecture({ architecture: 'arm' })
-    expect(await screen.findByRole('link')).toHaveAttribute(
-      'href',
-      'https://dl.comfy.org/windows/nsis/arm64'
-    )
-  })
-
-  it('never probes the GPU of a PC without an ARM CPU', async () => {
-    visitOnWindows(reportingCpu('x86'), NVIDIA_GPU)
-
-    render(DownloadLink)
-    await screen.findByRole('link')
-
-    expect(HTMLCanvasElement.prototype.getContext).not.toHaveBeenCalled()
-  })
-
-  it.for([
-    { label: 'reads the renderer', readRenderer: () => 'NVIDIA' },
-    {
-      label: 'throws reading the renderer',
-      readRenderer: () => {
-        throw new DOMException('lost', 'InvalidStateError')
-      }
-    }
-  ])(
-    'releases the WebGL context when the probe $label',
-    async ({ readRenderer }) => {
-      const { webgl, loseContext } = fakeGpu(readRenderer)
-      visitOnWindows(reportingCpu('arm'), webgl)
-
-      render(DownloadLink)
-      await screen.findByRole('link')
-
-      expect(loseContext).toHaveBeenCalledOnce()
-    }
-  )
-})
-
-describe('useDownloadUrl on Linux', () => {
-  it.for([
-    { label: 'an ARM machine', cpu: reportingCpu('arm'), build: 'arm64' },
-    { label: 'an x86 machine', cpu: reportingCpu('x86'), build: 'x64' },
-    { label: 'a browser without client hints', cpu: undefined, build: 'x64' }
-  ])('links $label to the $build AppImage', async ({ cpu, build }) => {
-    vi.stubGlobal('navigator', {
-      userAgent: UA.linux,
-      maxTouchPoints: 0,
-      userAgentData: cpu
-    } satisfies Partial<Navigator>)
-
-    render(DownloadLink)
-
-    expect(await screen.findByRole('link')).toHaveAttribute(
-      'href',
-      `https://dl.comfy.org/linux/appimage/${build}`
-    )
-  })
-
-  it('never probes the GPU of a Linux machine', async () => {
-    vi.stubGlobal('navigator', {
-      userAgent: UA.linux,
-      maxTouchPoints: 0,
-      userAgentData: reportingCpu('arm')
-    } satisfies Partial<Navigator>)
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext')
-
-    render(DownloadLink)
-    await screen.findByRole('link')
-
-    expect(HTMLCanvasElement.prototype.getContext).not.toHaveBeenCalled()
   })
 })
