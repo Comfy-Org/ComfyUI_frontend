@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { afterEach, assert, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { h, markRaw } from 'vue'
 
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
@@ -114,19 +114,13 @@ describe('WorkflowApi', () => {
   })
 
   describe('downloading the API graph', () => {
-    const { createObjectURL, revokeObjectURL } = URL
-    afterEach(() => {
-      URL.createObjectURL = createObjectURL
-      URL.revokeObjectURL = revokeObjectURL
-    })
-
     it('hands over the same graph the snippet posts', async () => {
       const blobs: Blob[] = []
-      URL.createObjectURL = vi.fn((blob: Blob) => {
-        blobs.push(blob)
+      vi.spyOn(URL, 'createObjectURL').mockImplementation((source) => {
+        if (source instanceof Blob) blobs.push(source)
         return 'blob:graph'
       })
-      URL.revokeObjectURL = vi.fn()
+      vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
       render({ setup: () => () => h(WorkflowApi, { model, values }) })
 
       await userEvent.click(

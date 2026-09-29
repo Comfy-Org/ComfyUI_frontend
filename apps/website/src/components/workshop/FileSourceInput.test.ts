@@ -336,6 +336,28 @@ describe('undoing a removal', () => {
     expect(screen.queryByTestId('removed-file-undo')).toBeNull()
   })
 
+  it('puts a picture back where it was, not at the end of the row', async () => {
+    const second: FileValue = {
+      name: 'rooftop.png',
+      size: 4096,
+      type: 'image/png',
+      sourceUrl: 'https://example.test/rooftop.png'
+    }
+    const values = mountInput(false, field, [sample, second])
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getAllByRole('button', { name: /Remove/ })[0])
+    expect(values.value).toEqual([second])
+
+    await visitor.click(
+      within(screen.getByTestId('removed-file-undo')).getByRole('button', {
+        name: 'Put it back'
+      })
+    )
+
+    expect(values.value).toEqual([sample, second])
+  })
+
   it('drops the offer once the reader has chosen a file themselves', async () => {
     mountInput(false, { ...field, multiple: false }, sample)
     const visitor = userEvent.setup()
