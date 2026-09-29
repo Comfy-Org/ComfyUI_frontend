@@ -35,12 +35,12 @@ describe('ModelReleaseSection', () => {
 
     const explore = screen.getByRole('link', { name: 'Explore Seedance 2.5' })
     expect(explore.getAttribute('href')).toBe(
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+      '/hub/models/seedance-2-5-text-to-video/'
     )
 
     const tryCta = screen.getByRole('link', { name: 'Try Workflow' })
     expect(tryCta.getAttribute('href')).toBe(
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+      '/hub/models/seedance-2-5-text-to-video/'
     )
     expect(tryCta.getAttribute('target')).toBeNull()
 
@@ -58,7 +58,7 @@ describe('ModelReleaseSection', () => {
 
     const explore = screen.getByRole('link', { name: '探索 Seedance 2.5' })
     expect(explore.getAttribute('href')).toBe(
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+      '/hub/models/seedance-2-5-text-to-video/'
     )
 
     expect(screen.getByRole('link', { name: '试用工作流' })).toBeTruthy()

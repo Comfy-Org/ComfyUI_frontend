@@ -41,6 +41,22 @@ test.describe('canonical redirects', () => {
     )
   })
 
+  test('builds each model page at /hub/models and points its old address there', () => {
+    const canonical =
+      'rel="canonical" href="https://comfy.org/hub/models/flux-2-max-text-to-image/"'
+    for (const path of [
+      'hub/models/flux-2-max-text-to-image',
+      'models/bfl--flux-2-max--generate-images'
+    ]) {
+      expect(readFileSync(`dist/${path}/index.html`, 'utf8')).toContain(
+        canonical
+      )
+    }
+    expect(readFileSync('dist/models/index.html', 'utf8')).toContain(
+      'rel="canonical" href="https://comfy.org/hub/models/"'
+    )
+  })
+
   test('builds the former Enterprise routes with the canonical destination', () => {
     for (const { source, destination } of enterpriseCases) {
       const redirectPage = readFileSync(`dist${source}/index.html`, 'utf8')

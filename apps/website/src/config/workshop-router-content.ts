@@ -176,7 +176,7 @@ export function getRouterWorkshopModelDetail(
 /**
  * Resolves a Router API `{provider}/{model}` id (or the legacy catalog id
  * some content is filed under, when the two differ) plus its use case to
- * that model's canonical `/models/[slug]` href, one hop, without going
+ * that model's canonical `/hub/models/[slug]` href, one hop, without going
  * through the redirect a bare `{provider}/{model}` id needs when the same
  * id maps to more than one use case's page.
  */

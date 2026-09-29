@@ -3,10 +3,12 @@ import type {
   ExchangeTokenResponse
 } from '@comfyorg/ingest-types'
 
+import { hubModelHref } from '../../src/config/hub-models'
 import { test as base } from './blockExternalMedia'
 import { stubWorkshopFlags } from './workshopFlags'
 
-export const MODEL_PATH = '/models/bfl--flux-2-max--generate-images/'
+export const MODEL_ID = 'bfl--flux-2-max--generate-images'
+export const MODEL_PATH = hubModelHref(MODEL_ID)
 
 /** The identity this fixture signs in as, and the workspace its token mints. */
 export const MODELS_ACCOUNT_UID = 'e2e-models-user'

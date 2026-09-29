@@ -7,6 +7,7 @@ import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGu
 import type { AppWorkshopModel } from '../../../config/models-catalogue'
 import type { WorkshopAppId } from '../../../lib/workshop/apps'
 import { workshopAppHref } from '../../../lib/workshop/apps'
+import { getRoutes } from '../../../config/routes'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -35,6 +36,8 @@ const {
   initialApp?: WorkshopAppId
   locale?: Locale
 }>()
+
+const workshopHref = getRoutes(locale).workshop
 
 const LAYOUTS = [
   { id: 'e', label: 'cinematic.ux.composer' },
@@ -172,7 +175,7 @@ function pickApp(id: string) {
           {{ tc('cinematic.unavailable.title', locale) }}
         </p>
         <a
-          href="/models/"
+          :href="workshopHref"
           class="text-sm text-primary-comfy-yellow underline underline-offset-4"
         >
           {{ tc('cinematic.unavailable.link', locale) }}

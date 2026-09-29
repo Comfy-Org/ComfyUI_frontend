@@ -135,7 +135,9 @@ describe('model URL map', () => {
   })
 
   it('claims no path another route already serves', () => {
-    const patterns = sitePathPatterns()
+    const patterns = sitePathPatterns().filter(
+      (pattern) => pattern !== '/hub/models/[slug]'
+    )
     const collisions = newSlugs.flatMap((slug) =>
       patterns.filter((pattern) =>
         matchesRoute(pattern, `/hub/models/${slug}/`)
@@ -326,6 +328,7 @@ describe('compileModelUrlMap', () => {
 
   it.for([
     ['a shared old slug', ['veo--veo-3', 'veo--veo-3'], 'share an old slug'],
+    ['a dot-only old slug', ['..', 'veo--veo-4'], 'Invalid old slug'],
     [
       'a quote in an old slug',
       ["veo--veo-3'", 'veo--veo-4'],

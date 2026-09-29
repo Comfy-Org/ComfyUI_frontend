@@ -1493,7 +1493,7 @@ describe('CinematicStudio', () => {
 
     expect(
       await screen.findByRole('link', { name: tc('cinematic.backToApps') })
-    ).toHaveAttribute('href', '/models/?type=apps')
+    ).toHaveAttribute('href', '/hub/models/?type=apps')
   })
 
   it('shows every setting in the side panel, with Format last before the run button', async () => {

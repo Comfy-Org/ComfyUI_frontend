@@ -16,6 +16,7 @@ import { workshopContentInputs } from './workshop-content-inputs'
 import { modelSummary } from '../lib/workshop/model-summary'
 import { providerName } from '../lib/workshop/provider-name'
 import { modelOrderRank } from './workshop-model-order'
+import { hubModelHref } from './hub-models'
 import {
   isWorkshopModelDisabled,
   workshopModelAvailability
@@ -164,7 +165,7 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
       name,
       workflowCount: exampleCount,
       ...(recommendedRank !== undefined ? { recommendedRank } : {}),
-      href: `/models/${slug}/`,
+      ...(isWorkshopModelDisabled(slug) ? {} : { href: hubModelHref(slug) }),
       routerId: record.id,
       incompleteReason: record.incompleteReason,
       provider,

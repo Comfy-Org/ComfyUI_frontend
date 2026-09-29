@@ -12,14 +12,14 @@ const MODEL_NAME = 'FLUX 2 Max Text-to-Image'
 test('public HTML excludes catalogue and playground markup', async ({
   request
 }) => {
-  for (const path of ['/', '/models/']) {
+  for (const path of ['/', '/hub/models/']) {
     const response = await request.get(path)
     expect(response.ok()).toBe(true)
     const html = await response.text()
     expect(html).not.toMatch(
       /data-testid="(?:workshop-search|model-discovery|model-hero|model-detail)"/
     )
-    if (path === '/models/') {
+    if (path === '/hub/models/') {
       expect(html).not.toContain('noindex')
     }
   }
@@ -56,7 +56,7 @@ function recordAccountRequests(context: BrowserContext): string[] {
 }
 
 async function expectModelContentWithoutRun(page: Page) {
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   await expect(page.getByTestId('workshop-search')).toBeVisible()
   await expect(page.getByText(/Grok Imagine in ComfyUI/)).toHaveCount(0)
 
@@ -129,13 +129,13 @@ async function expectHubHeadingAndDirectory(page: Page) {
   ).toHaveCount(publishedModelSlugs.size)
 }
 
-test('/models/ keeps its heading and model links when the catalogue fails', async ({
+test('/hub/models/ keeps its heading and model links when the catalogue fails', async ({
   page
 }) => {
   await page.route('**/models/catalogue.json', (route) =>
     route.fulfill({ status: 500 })
   )
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   await expect(page.getByTestId('models-load-error')).toBeVisible()
   await expectHubHeadingAndDirectory(page)
 })
@@ -143,13 +143,13 @@ test('/models/ keeps its heading and model links when the catalogue fails', asyn
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false })
 
-  test('/models/ shows its heading and every model link', async ({ page }) => {
-    await page.goto('/models/')
+  test('/hub/models/ shows its heading and every model link', async ({ page }) => {
+    await page.goto('/hub/models/')
     await expectHubHeadingAndDirectory(page)
   })
 
-  test('a /models/ directory link opens its model page', async ({ page }) => {
-    await page.goto('/models/')
+  test('a /hub/models/ directory link opens its model page', async ({ page }) => {
+    await page.goto('/hub/models/')
     const link = page
       .getByTestId('models-directory')
       .getByRole('link', { name: MODEL_NAME, exact: true })
@@ -158,7 +158,7 @@ test.describe('without JavaScript', () => {
     await expect(page).toHaveTitle(new RegExp(`^${MODEL_NAME} API & Playground - Comfy$`))
   })
 
-  for (const path of ['/models/']) {
+  for (const path of ['/hub/models/']) {
     test(`${path} shows no loader or error panel`, async ({ page }) => {
       await page.goto(path)
       await expect(page.getByTestId('workshop-loading')).toBeHidden()
@@ -186,7 +186,7 @@ test.describe('without JavaScript', () => {
         .getByTestId('related-models')
         .getByRole('link', { name: /FLUX 2 Pro/ })
         .first()
-    ).toHaveAttribute('href', '/models/bfl--flux-2-pro--generate-images/')
+    ).toHaveAttribute('href', '/hub/models/flux-2-pro-text-to-image/')
     await expect(page.getByTestId('workshop-loading')).toHaveCount(0)
     await expect(page.getByText(/Grok Imagine in ComfyUI/)).toHaveCount(0)
   })

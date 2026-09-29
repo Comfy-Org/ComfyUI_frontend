@@ -37,7 +37,7 @@ for (const viewport of viewports) {
       await expect(desktopLinks).toBeVisible()
       await expect(
         desktopLinks.getByRole('link', { name: 'Models', exact: true })
-      ).toHaveAttribute('href', '/models/')
+      ).toHaveAttribute('href', '/hub/models/')
       await expect(menuButton).toBeHidden()
     } else {
       await expect(desktopLinks).toBeHidden()
@@ -47,7 +47,7 @@ for (const viewport of viewports) {
       await expect(menu).toBeVisible()
       await expect(
         menu.getByRole('link', { name: /^Models\b/ })
-      ).toHaveAttribute('href', '/models/')
+      ).toHaveAttribute('href', '/hub/models/')
     }
 
     await expectNoHorizontalOverflow(page)

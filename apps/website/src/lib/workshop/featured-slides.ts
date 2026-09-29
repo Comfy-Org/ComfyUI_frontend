@@ -23,16 +23,18 @@ export function modelSlides(
   models: readonly WorkshopModel[],
   locale: Locale
 ): FeaturedSlide[] {
-  return models.map((model) => ({
-    key: model.slug,
-    href: model.href,
-    title: bannerName(model.name, taskLabelFor(model, 'en')),
-    kind: taskLabelFor(model, locale),
-    tags: model.capabilities.slice(0, TAG_LIMIT),
-    summary: model.summary,
-    media: slideMedia(model),
-    docsHref: modelDocsHref(model)
-  }))
+  return models
+    .flatMap(({ href, ...model }) => (href ? [{ ...model, href }] : []))
+    .map((model) => ({
+      key: model.slug,
+      href: model.href,
+      title: bannerName(model.name, taskLabelFor(model, 'en')),
+      kind: taskLabelFor(model, locale),
+      tags: model.capabilities.slice(0, TAG_LIMIT),
+      summary: model.summary,
+      media: slideMedia(model),
+      docsHref: modelDocsHref(model)
+    }))
 }
 
 export function studioSlide(locale: Locale): FeaturedSlide {

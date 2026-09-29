@@ -5,16 +5,17 @@ import {
   isIndexableBuild,
   isNoindexPathname
 } from './indexing'
-import { workshopModels } from './workshop-browse-content'
+import { hubModelSlugs } from './hub-models'
 
-const [{ slug: modelSlug }] = workshopModels
+const [hubModelSlug] = hubModelSlugs.values()
 
 describe('indexing policy', () => {
   it('excludes render pages while keeping the public Models marketing routes', () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '1')
-    expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
+    expect(isExcludedFromSitemap('https://comfy.org/hub/models/')).toBe(false)
+    expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(true)
     expect(
-      isExcludedFromSitemap(`https://comfy.org/models/${modelSlug}/`)
+      isExcludedFromSitemap(`https://comfy.org/hub/models/${hubModelSlug}/`)
     ).toBe(true)
     expect(isExcludedFromSitemap('https://comfy.org/models/local/')).toBe(false)
     expect(isExcludedFromSitemap('https://comfy.org/models/showcase/')).toBe(
@@ -23,7 +24,7 @@ describe('indexing policy', () => {
     expect(isNoindexPathname('/models/showcase/')).toBe(true)
     expect(isNoindexPathname('/zh-CN/models/showcase')).toBe(true)
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
-    expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
+    expect(isExcludedFromSitemap('https://comfy.org/hub/models/')).toBe(false)
   })
   it.for(['0', '1'])(
     'excludes retired Workshop in either build (%s)',

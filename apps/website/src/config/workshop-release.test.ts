@@ -5,9 +5,9 @@ import {
   isWorkshopInBuild,
   isWorkshopRoute
 } from './workshop-release'
-import { workshopModels } from './workshop-browse-content'
+import { hubModelSlugs } from './hub-models'
 
-const [{ slug: modelSlug }] = workshopModels
+const [hubModelSlug] = hubModelSlugs.values()
 
 describe('isWorkshopInBuild', () => {
   it.for([
@@ -58,12 +58,13 @@ describe('isWorkshopRoute', () => {
   it('claims the Workshop tree and nothing else', () => {
     expect(isWorkshopRoute('/workshop')).toBe(true)
     expect(isWorkshopRoute('/workshop/models/[slug]')).toBe(true)
-    expect(isWorkshopRoute(`/models/${modelSlug}/`)).toBe(true)
+    expect(isWorkshopRoute(`/hub/models/${hubModelSlug}/`)).toBe(true)
     expect(isWorkshopRoute('/models/local/')).toBe(false)
     expect(isWorkshopRoute('/models/showcase/')).toBe(true)
     expect(isWorkshopRoute('/cinematic-studio/')).toBe(true)
-    expect(isWorkshopRoute('/models')).toBe(false)
-    expect(isWorkshopRoute('/models/')).toBe(false)
+    expect(isWorkshopRoute('/models')).toBe(true)
+    expect(isWorkshopRoute('/hub/models')).toBe(false)
+    expect(isWorkshopRoute('/hub/models/')).toBe(false)
 
     expect(isWorkshopRoute('/')).toBe(false)
     expect(isWorkshopRoute('/pricing')).toBe(false)

@@ -91,12 +91,12 @@ describe('ModelDiscoverySection', async () => {
 
     const provider = screen.getByRole('link', { name: /Fixture Studio & Co/ })
     expect(provider.getAttribute('href')).toBe(
-      '/models/?q=Fixture+Studio+%26+Co'
+      '/hub/models/?q=Fixture+Studio+%26+Co'
     )
     expect(screen.queryByRole('link', { name: /ByteDance/ })).toBeNull()
 
     const browse = screen.getByRole('link', { name: 'Browse all models' })
-    expect(browse.getAttribute('href')).toBe('/models/')
+    expect(browse.getAttribute('href')).toBe('/hub/models/')
   })
 
   it('hides the looping copy of the row from assistive tech', async () => {
@@ -158,7 +158,7 @@ describe('ModelDiscoverySection', async () => {
     ).toHaveAttribute('href', '/models/workflows/sketch/')
     expect(
       screen.getByRole('link', { name: 'Browse all workflows' })
-    ).toHaveAttribute('href', '/models/?type=workflows')
+    ).toHaveAttribute('href', '/hub/models/?type=workflows')
   })
 
   // Both rows cross the screen at one pace, so switching tabs does not speed
@@ -213,6 +213,6 @@ describe('ModelDiscoverySection', async () => {
     await nextTick()
 
     const browse = screen.getByRole('link', { name: '浏览全部模型' })
-    expect(browse.getAttribute('href')).toBe('/models/')
+    expect(browse.getAttribute('href')).toBe('/hub/models/')
   })
 })

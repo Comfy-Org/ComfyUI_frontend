@@ -1,9 +1,6 @@
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
-import {
-  routerModelSlugAliases,
-  workshopDisplayEntries,
-  workshopModels
-} from './workshop-browse-content'
+import { HUB_MODELS_PATH, hubModelAliases, hubModelSlugs } from './hub-models'
+import { workshopDisplayEntries } from './workshop-browse-content'
 
 const MODELS_BASE_PATH = '/models'
 
@@ -32,35 +29,49 @@ export interface ModelsUrlRegistry {
 }
 
 interface ModelsUrlSources {
-  readonly models: readonly string[]
+  /** Old page id under `/models` → its slug under `/hub/models`. */
+  readonly models: ReadonlyMap<string, string>
   readonly workflows: readonly string[]
   readonly apps: readonly string[]
+  /** Old alias under `/models` → the slug under `/hub/models` it serves. */
   readonly aliases: ReadonlyMap<string, string>
 }
 
 const withoutTrailingSlash = (pathname: string) => pathname.replace(/\/$/, '')
 
-export function modelsUrlEntries(
-  { models, workflows, apps, aliases }: ModelsUrlSources,
-  base = MODELS_BASE_PATH
-): ModelsUrlEntry[] {
-  const root = withoutTrailingSlash(base)
-  const at = (slug: string) => `${root}/${slug}`
+export function modelsUrlEntries({
+  models,
+  workflows,
+  apps,
+  aliases
+}: ModelsUrlSources): ModelsUrlEntry[] {
+  const at = (slug: string) => `${MODELS_BASE_PATH}/${slug}`
+  const atHub = (slug: string) => `${HUB_MODELS_PATH}/${slug}`
   const page = (kind: PageKind) => (slug: string) => ({ path: at(slug), kind })
+  const redirect = ([slug, hubSlug]: readonly [string, string]) => ({
+    path: at(slug),
+    kind: 'alias' as const,
+    destination: atHub(hubSlug)
+  })
   return [
-    { path: root, kind: 'hub' },
+    { path: HUB_MODELS_PATH, kind: 'hub' },
+    {
+      path: MODELS_BASE_PATH,
+      kind: 'alias',
+      destination: HUB_MODELS_PATH
+    },
     ...['showcase', 'catalogue.json'].map(page('reserved')),
-    ...models.map(page('model')),
+    ...Array.from(models.values(), (slug) => ({
+      path: atHub(slug),
+      kind: 'model' as const
+    })),
     ...workflows.map(page('workflow')),
     ...apps.map(page('app')),
-    ...[...models, ...workflows].map((slug) =>
+    ...[...models.keys(), ...workflows].map((slug) =>
       page('reserved')(`${slug}/page.json`)
     ),
-    ...Array.from(aliases, ([slug, canonical]) => ({
-      path: at(slug),
-      kind: 'alias' as const,
-      destination: at(canonical)
-    }))
+    ...Array.from(models, redirect),
+    ...Array.from(aliases, redirect)
   ]
 }
 
@@ -118,12 +129,12 @@ const slugsOfType = (types: readonly WorkshopDisplayEntry['type'][]) =>
 
 const modelsUrlRegistry = buildModelsUrlRegistry(
   modelsUrlEntries({
-    models: workshopModels.map(({ slug }) => slug),
+    models: hubModelSlugs,
     workflows: slugsOfType(['CLOUD', 'SERVERLESS']),
     apps: slugsOfType(['APP']),
-    aliases: routerModelSlugAliases
+    aliases: hubModelAliases
   }),
-  [MODELS_BASE_PATH]
+  [MODELS_BASE_PATH, HUB_MODELS_PATH]
 )
 
 export function modelsUrlKind(

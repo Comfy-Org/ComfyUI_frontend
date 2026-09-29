@@ -201,10 +201,11 @@ describe('writeMarkdownTwins', () => {
 
   it('writes the Models twin from the catalogue page itself', async () => {
     const root = await mkdtemp(join(tmpdir(), 'twins-'))
+    await mkdir(join(root, 'hub', 'models'), { recursive: true })
     await mkdir(join(root, 'models', 'showcase'), { recursive: true })
     await writeFile(
-      join(root, 'models', 'index.html'),
-      '<html><head><title>Models - Comfy</title><link rel="canonical" href="https://comfy.org/models/"></head><body><main><h1>ComfyUI models</h1><a href="/models/bfl--flux-2-max--generate-images/">FLUX 2 Max Text-to-Image</a></main></body></html>'
+      join(root, 'hub', 'models', 'index.html'),
+      '<html><head><title>Models - Comfy</title><link rel="canonical" href="https://comfy.org/hub/models/"></head><body><main><h1>ComfyUI models</h1><a href="/models/bfl--flux-2-max--generate-images/">FLUX 2 Max Text-to-Image</a></main></body></html>'
     )
     await writeFile(
       join(root, 'models', 'showcase', 'index.html'),
@@ -212,14 +213,14 @@ describe('writeMarkdownTwins', () => {
     )
 
     const report = await writeMarkdownTwins(root, [
-      'models/',
+      'hub/models/',
       'models/showcase/'
     ])
-    const twin = await readFile(join(root, 'models.md'), 'utf8')
+    const twin = await readFile(join(root, 'hub', 'models.md'), 'utf8')
 
-    expect(report.written).toEqual(['/models.md'])
+    expect(report.written).toEqual(['/hub/models.md'])
     expect(report.skipped).toEqual(['/models/showcase.md'])
-    expect(twin).toContain('canonical: https://comfy.org/models/')
+    expect(twin).toContain('canonical: https://comfy.org/hub/models/')
     expect(twin).toContain('# ComfyUI models')
     expect(twin).toContain(
       '[FLUX 2 Max Text-to-Image](https://comfy.org/models/bfl--flux-2-max--generate-images/)'

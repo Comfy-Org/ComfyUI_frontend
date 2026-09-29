@@ -54,6 +54,7 @@ const modelsPageDataSchema = z.object({
 export type ModelsPageData = z.output<typeof modelsPageDataSchema>
 
 export async function fetchModelsPage(slug: string): Promise<ModelsPageData> {
+  // Hub pages read their data from /models; redirects.test.ts keeps it unredirected.
   const data = await readModelsData(
     `/models/${slug.split('/').map(encodeURIComponent).join('/')}/page.json`
   )

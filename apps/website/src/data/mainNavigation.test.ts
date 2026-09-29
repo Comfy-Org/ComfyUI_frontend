@@ -16,7 +16,7 @@ describe('getMainNavigation', () => {
             : [item.href]
         )
       const catalogue = getRoutes(locale).workshop
-      expect(catalogue).toBe('/models/')
+      expect(catalogue).toBe('/hub/models/')
       expect(links(false)).not.toContain(catalogue)
       expect(links(true).filter((href) => href === catalogue)).toHaveLength(2)
     }

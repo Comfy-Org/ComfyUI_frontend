@@ -149,7 +149,7 @@ describe('Models page entry', () => {
           within(screen.getByTestId('model-hero')).getByRole('link', {
             name: 'Generate images'
           })
-        ).toHaveAttribute('href', '/models/?useCase=generate-images')
+        ).toHaveAttribute('href', '/hub/models/?useCase=generate-images')
       }
       enabled.value = !enabled.value
       await nextTick()

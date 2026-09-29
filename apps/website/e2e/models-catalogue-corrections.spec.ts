@@ -54,7 +54,9 @@ test('GPT Image generation pages remain discoverable while disabled edit pages a
     await route.fallback()
   })
   try {
-    await page.goto('/models/?useCase=generate-images', { waitUntil: 'commit' })
+    await page.goto('/hub/models/?useCase=generate-images', {
+      waitUntil: 'commit'
+    })
     await moduleRequested
     await expect(page.getByTestId('workshop-search')).toHaveCount(0)
     await expect(page.getByTestId('models-loading')).toBeVisible()
@@ -76,13 +78,11 @@ test('GPT Image generation pages remain discoverable while disabled edit pages a
     .getByTestId('workshop-models-grid')
     .getByRole('link', { name: /GPT Image 1\.5/ })
     .click()
-  await expect(page).toHaveURL(
-    /\/models\/openai--gpt-image-1\.5--edit-images\/$/
-  )
+  await expect(page).toHaveURL(/\/hub\/models\/gpt-image-1-5-image-edit\/$/)
   await expect(
     page.getByRole('textbox', { name: 'Prompt', exact: true })
   ).toBeVisible()
-  await page.goto('/models/?useCase=edit-images')
+  await page.goto('/hub/models/?useCase=edit-images')
   await page.getByTestId('workshop-search').fill('gpt image')
   await expect(cards).toHaveCount(0)
   const disabledPage = await page.goto(
@@ -95,7 +95,7 @@ test('GPT Image generation pages remain discoverable while disabled edit pages a
 test('role-specific pages omit controls that their requests cannot accept', async ({
   page
 }) => {
-  await page.goto('/models/vertexai--veo-3--animate-images/')
+  await page.goto('/hub/models/veo-3-image-to-video/')
   await expect(
     page.getByRole('group', { name: 'First frame', exact: true })
   ).toBeVisible()
@@ -103,7 +103,7 @@ test('role-specific pages omit controls that their requests cannot accept', asyn
     page.getByRole('group', { name: 'Reference images', exact: true })
   ).toHaveCount(0)
 
-  await page.goto('/models/byteplus--seedream-5-pro--generate-images/')
+  await page.goto('/hub/models/seedream-5-0-pro-text-to-image/')
   await expect(
     page.getByRole('group', { name: 'Source images', exact: true })
   ).toHaveCount(0)

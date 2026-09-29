@@ -14,10 +14,10 @@ const liveDom = (html: string) =>
     )
     .replace(/<noscript>[\s\S]*?<\/noscript>/g, '')
 
-test('static HTML at /models/ names the catalogue and links every model', async ({
+test('static HTML at /hub/models/ names the catalogue and links every model', async ({
   request
 }) => {
-  const live = liveDom(await (await request.get('/models/')).text())
+  const live = liveDom(await (await request.get('/hub/models/')).text())
   expect(live.match(/<h1\b[\s\S]*?<\/h1>/g)).toEqual([
     expect.stringContaining('ComfyUI models')
   ])
@@ -29,7 +29,7 @@ test('static HTML at /models/ names the catalogue and links every model', async 
     /data-testid="models-directory"[\s\S]*?<\/section>/
   )?.[0]
   const linked = Array.from(
-    directory?.matchAll(/href="\/models\/([^"/]+)\/"/g) ?? [],
+    directory?.matchAll(/href="\/hub\/models\/([^"/]+)\/"/g) ?? [],
     ([, slug]) => slug
   )
   expect(new Set(linked)).toEqual(publishedModelSlugs)
@@ -90,7 +90,7 @@ test.describe('enabled workshop', () => {
   })
 
   test('client-side navigation does not flash marketing', async ({ page }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await waitForIsland(page, page.getByTestId('workshop-search'))
     await page
       .getByTestId('workshop-sections')

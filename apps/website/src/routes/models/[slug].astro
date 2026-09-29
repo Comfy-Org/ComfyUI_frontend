@@ -4,6 +4,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 import ModelPage from '../../components/workshop/ModelPage.vue'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import { HUB_MODELS_PATH, hubModelSlugs } from '../../config/hub-models'
 import { workshopPagePaths } from '../../config/workshop-page-content'
 import { modelDeveloper } from '../../config/model-vendors'
 import { modelMetaDescription } from '../../lib/workshop/model-meta-description'
@@ -12,10 +13,22 @@ import { pageContext } from '../../utils/jsonLd'
 import { modelPageJsonLd } from '../../utils/modelJsonLd'
 import { modelOgImage, prepareModelPage } from './model-page'
 
-export const getStaticPaths: GetStaticPaths = () =>
-  workshopPagePaths.map((slug) => ({ params: { slug } }))
+interface Props {
+  id: string
+}
 
-const page = await prepareModelPage(Astro.params.slug)
+export const getStaticPaths: GetStaticPaths = ({ routePattern }) =>
+  routePattern.startsWith(HUB_MODELS_PATH)
+    ? Array.from(hubModelSlugs, ([id, slug]) => ({
+        params: { slug },
+        props: { id }
+      }))
+    : workshopPagePaths.map((slug) => ({
+        params: { slug },
+        props: { id: slug }
+      }))
+
+const page = await prepareModelPage(Astro.props.id)
 // Static output uses an immediate meta refresh, not an HTTP 301 response.
 // Pre-launch aliases stay noindex; hosting-level permanent redirects are a
 // separate deployment decision, not a reason to switch this site to SSR.
@@ -41,6 +54,7 @@ const ogImage = modelOgImage(model)
   description={modelMetaDescription(page)}
   ogImage={ogImage}
   ogImageAlt={ogImage && `${model.name} example output`}
+  canonicalPath={model.href}
   noindex
   pageType={jsonLd.pageType}
   breadcrumbs={jsonLd.breadcrumbs}

@@ -29,7 +29,7 @@ interface ModelUrlMap {
 }
 
 export const MODEL_URL_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/
-const OLD_URL_SLUG = /^[\w.-]+$/
+const OLD_URL_SLUG = /^(?!\.+$)[\w.-]+$/
 const VERSION = /(^|[-_])v?\d+(\.\d+)*($|[-_])/
 
 const TASK_WORDS_BY_USE_CASE: Readonly<Record<UseCase, readonly string[]>> = {

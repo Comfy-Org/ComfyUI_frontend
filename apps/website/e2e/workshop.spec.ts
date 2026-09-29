@@ -11,7 +11,7 @@ test.describe('Retired prototype routes', () => {
   })
 
   test('ignores old stored and query layout overrides', async ({ page }) => {
-    await page.goto('/models/?version=v2')
+    await page.goto('/hub/models/?version=v2')
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
     await expect(page.getByTestId('workshop-hub')).toHaveCount(0)
     await expect(page.getByTestId('workshop-tabs')).toHaveCount(0)
@@ -35,7 +35,7 @@ test.describe('Models catalog', () => {
   test('opens the featured model from the full banner surface', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     const slide = page.getByTestId('featured-slide')
     const href = await page
       .getByTestId('featured-slide-link')
@@ -52,7 +52,7 @@ test.describe('Models catalog', () => {
     page
   }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     const strip = page.getByTestId('featured-pagination')
     const card = page.getByTestId('featured-slide')
     const href = await page
@@ -73,7 +73,7 @@ test.describe('Models catalog', () => {
     page
   }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     const strip = page.getByTestId('featured-pagination')
     const card = page.getByTestId('featured-slide')
     const [bars, card_] = [await strip.boundingBox(), await card.boundingBox()]
@@ -85,7 +85,7 @@ test.describe('Models catalog', () => {
   test('switches between the curated recommendation and alphabetical order', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     const sort = page.getByTestId('workshop-sort')
@@ -112,45 +112,45 @@ test.describe('Models catalog', () => {
       cards.slice(0, 6).map((card) => card.getAttribute('href') ?? '')
     )
     expect(recommended).toEqual([
-      '/models/byteplus--seedream-5-pro--generate-images/',
-      '/models/openai--gpt-image-2--generate-images/',
-      '/models/byteplus--seedream-4--generate-images/',
-      '/models/xai--grok-imagine-image-2.0--generate-images/',
-      '/models/vertexai--gemini-nano-banana-2--generate-images/',
-      '/models/bfl--flux-2-pro--generate-images/'
+      '/hub/models/seedream-5-0-pro-text-to-image/',
+      '/hub/models/gpt-image-2-text-to-image/',
+      '/hub/models/seedream-4-0-text-to-image/',
+      '/hub/models/grok-imagine-image-2-0-text-to-image/',
+      '/hub/models/nano-banana-2-text-to-image/',
+      '/hub/models/flux-2-pro-text-to-image/'
     ])
     expect(await recommendedIn('generate-videos', 5)).toEqual([
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/',
-      '/models/kling--kling-3.0-turbo-text-to-video--generate-videos/',
-      '/models/xai--grok-imagine-video-1.5--generate-videos/',
-      '/models/wan--text-to-video-3.0--generate-videos/',
-      '/models/gemini--omni-1.1-flash--generate-videos/'
+      '/hub/models/seedance-2-5-text-to-video/',
+      '/hub/models/kling-3-0-turbo-text-to-video/',
+      '/hub/models/grok-imagine-video-1-5-text-to-video/',
+      '/hub/models/wan-3-0-text-to-video/',
+      '/hub/models/gemini-omni-1-1-flash-text-to-video/'
     ])
     expect(await recommendedIn('animate-images', 6)).toEqual([
-      '/models/byteplus--seedance-2-5-reference--generate-videos/',
-      '/models/byteplus--seedance-2-5-first-last-frame--animate-images/',
-      '/models/byteplus--seedance-2-image-to-video--animate-images/',
-      '/models/xai--grok-imagine-video--animate-images/',
-      '/models/wan--image-to-video-3.0--animate-images/',
-      '/models/wan--reference-to-video-3.0--animate-images/'
+      '/hub/models/seedance-2-5-reference-to-video/',
+      '/hub/models/seedance-2-5-first-last-frame/',
+      '/hub/models/seedance-2-0-image-to-video/',
+      '/hub/models/grok-imagine-video-image-to-video/',
+      '/hub/models/wan-3-0-image-to-video/',
+      '/hub/models/wan-3-0-reference-to-video/'
     ])
     expect(await recommendedIn('other-formats', 1)).toEqual([
-      '/models/byteplus--seed-audio-1.0--audio/'
+      '/hub/models/seed-audio-1-0-text-to-speech/'
     ])
     expect(await recommendedIn('edit-videos', 6)).toEqual([
-      '/models/byteplus--seedance-2-5-edit-video--edit-videos/',
-      '/models/kling--omni-pro-edit-video--edit-videos/',
-      '/models/gemini--omni-1.1-flash--edit-videos/',
-      '/models/runway--aleph2-video-to-video--edit-videos/',
-      '/models/gemini--omni-flash-preview--edit-videos/',
-      '/models/wan--video-edit-2.7--edit-videos/'
+      '/hub/models/seedance-2-5-video-edit/',
+      '/hub/models/kling-o3-video-edit/',
+      '/hub/models/gemini-omni-1-1-flash-video-edit/',
+      '/hub/models/runway-aleph-2-video-to-video/',
+      '/hub/models/gemini-omni-flash-preview-video-edit/',
+      '/hub/models/wan-2-7-video-edit/'
     ])
     expect(await recommendedIn('edit-images', 5)).toEqual([
-      '/models/vertexai--gemini-nano-banana-2--edit-images/',
-      '/models/vertexai--gemini-3-pro-image--edit-images/',
-      '/models/byteplus--seedream-5-pro--edit-images/',
-      '/models/byteplus--seedream-5-pro-layer-separation--edit-images/',
-      '/models/byteplus--seedream-4-5--edit-images/'
+      '/hub/models/nano-banana-2-image-edit/',
+      '/hub/models/nano-banana-pro-image-edit/',
+      '/hub/models/seedream-5-0-pro-image-edit/',
+      '/hub/models/seedream-5-0-pro-layer-separation/',
+      '/hub/models/seedream-4-5-image-edit/'
     ])
 
     await sort.click()
@@ -190,7 +190,7 @@ test.describe('Models catalog', () => {
   test('searches the approved catalog and recovers from empty results', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
     const cards = page
       .getByTestId('workshop-models-grid')
@@ -215,7 +215,7 @@ test.describe('Models catalog', () => {
   test('category rows drill into the promised number of models', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     const videos = page.getByTestId('section-generate-videos')
@@ -247,7 +247,7 @@ test.describe('Models catalog', () => {
   // A row loads eight whatever its total says, so a row holding fewer than
   // eight cards is showing its whole shelf and has nothing left to open.
   test('a shelf showing everything stops promising more', async ({ page }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     await expect(
@@ -271,7 +271,7 @@ test.describe('Models catalog', () => {
   })
 
   test('the rows listing opens the whole catalogue', async ({ page }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await page.getByTestId('browse-all-end').click()
 
     await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
@@ -297,7 +297,7 @@ test.describe('Models catalog', () => {
   test('a model page returns to the shelf it was opened from', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await page.getByTestId('section-generate-videos-open').click()
     await expect(
       page.getByRole('heading', { level: 2, name: 'Generate videos' })
@@ -312,7 +312,7 @@ test.describe('Models catalog', () => {
     await expect(back).toHaveText('Back to Generate videos')
     await expect(back).toHaveAttribute(
       'href',
-      '/models/?useCase=generate-videos'
+      '/hub/models/?useCase=generate-videos'
     )
     await back.click()
     await expect(
@@ -324,7 +324,7 @@ test.describe('Models catalog', () => {
   test('the search field stays put as the results swap under it', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
     await page.evaluate(() => window.scrollTo(0, 700))
     const search = page.getByTestId('workshop-search')
@@ -352,7 +352,7 @@ test.describe('Models catalog', () => {
   test('the category heading stays clear of the nav while searching', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await page.getByTestId('section-generate-videos-open').click()
     const heading = page.getByRole('heading', {
       level: 2,
@@ -390,7 +390,7 @@ test.describe('Models catalog', () => {
   test('cards open canonical model pages with related models', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await page.getByTestId('workshop-search').fill('kling avatar')
     await page.getByRole('heading', { level: 1 }).click()
     await page
@@ -398,7 +398,7 @@ test.describe('Models catalog', () => {
       .getByTestId('workshop-model-card')
       .first()
       .click()
-    await expect(page).toHaveURL(/\/models\/kling--avatar--animate-images\/$/)
+    await expect(page).toHaveURL(/\/hub\/models\/kling-avatar\/$/)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Kling Avatar'
     )
@@ -415,16 +415,14 @@ test.describe('Models catalog', () => {
   }) => {
     const response = await page.goto('/models/bfl--flux-2-max/')
     expect(response?.status()).toBe(200)
-    await expect(page).toHaveURL(
-      /\/models\/bfl--flux-2-max--generate-images\/$/
-    )
+    await expect(page).toHaveURL(/\/hub\/models\/flux-2-max-text-to-image\/$/)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'FLUX 2 Max Text-to-Image'
     )
   })
 
   test('the use-case filter actually narrows the catalog', async ({ page }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
     const all = await page.getByTestId('workshop-model-card').count()
     expect(all).toBeGreaterThan(0)
@@ -437,12 +435,12 @@ test.describe('Models catalog', () => {
     expect(await cards.count()).toBeLessThan(all)
     await expect(
       page.locator(
-        '[data-testid="workshop-model-card"][href="/models/vertexai--gemini-nano-banana-2--edit-images/"]'
+        '[data-testid="workshop-model-card"][href="/hub/models/nano-banana-2-image-edit/"]'
       )
     ).toBeVisible()
     await expect(
       page.locator(
-        '[data-testid="workshop-model-card"][href="/models/bfl--flux-2-max--generate-images/"]'
+        '[data-testid="workshop-model-card"][href="/hub/models/flux-2-max-text-to-image/"]'
       )
     ).toHaveCount(0)
     await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
@@ -458,9 +456,9 @@ test.describe('Models catalog', () => {
     const tag = page
       .getByTestId('model-tags')
       .getByRole('link', { name: 'premium', exact: true })
-    await expect(tag).toHaveAttribute('href', '/models/?q=premium')
+    await expect(tag).toHaveAttribute('href', '/hub/models/?q=premium')
     await tag.click()
-    await expect(page).toHaveURL(/\/models\/?\?q=premium$/)
+    await expect(page).toHaveURL(/\/hub\/models\/?\?q=premium$/)
     await expect(page.getByTestId('workshop-search')).toHaveValue('premium')
     const cards = page
       .getByTestId('workshop-models-grid')
@@ -471,12 +469,12 @@ test.describe('Models catalog', () => {
   })
 
   test('the hero medium deep-links into the catalog', async ({ page }) => {
-    await page.goto('/models/kling--avatar--animate-images/')
+    await page.goto('/hub/models/kling-avatar/')
     await page
       .getByTestId('model-hero')
       .getByRole('link', { name: 'Image to video', exact: true })
       .click()
-    await expect(page).toHaveURL(/\/models\/?\?useCase=animate-images$/)
+    await expect(page).toHaveURL(/\/hub\/models\/?\?useCase=animate-images$/)
     await expect(
       page.getByRole('heading', { level: 2, name: /Image to video/ })
     ).toBeVisible()
@@ -491,10 +489,7 @@ test.describe('Models catalog', () => {
       .scrollIntoViewIfNeeded()
     await expect(
       page.getByRole('link', { name: /Explore Seedance/i })
-    ).toHaveAttribute(
-      'href',
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
-    )
+    ).toHaveAttribute('href', '/hub/models/seedance-2-5-text-to-video/')
   })
 
   test('the row arrow sits level with the middle of a card', async ({
@@ -502,7 +497,7 @@ test.describe('Models catalog', () => {
   }) => {
     for (const width of [1440, 820, 420]) {
       await page.setViewportSize({ width, height: 1000 })
-      await page.goto('/models/')
+      await page.goto('/hub/models/')
       const row = page.getByTestId('section-generate-images')
       const card = row.getByTestId('workshop-model-card').first()
       await expect(card).toBeVisible()
@@ -517,7 +512,7 @@ test.describe('Models catalog', () => {
   })
 
   test('the fade reaches both ends of the scrolling row', async ({ page }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     const row = page.getByTestId('section-generate-images')
     await expect(row.getByTestId('workshop-model-card').first()).toBeVisible()
     await row.hover()
@@ -661,7 +656,7 @@ test.describe('Model playground', () => {
   })
 
   test('API snippets keep uploaded media local', async ({ page }) => {
-    await page.goto('/models/byteplus--seedream-4-5--edit-images/')
+    await page.goto('/hub/models/seedream-4-5-image-edit/')
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
       page.getByRole('button', { name: /^Replace seedream-4-5-input-/ }).click()
@@ -730,7 +725,7 @@ test.describe('Model playground', () => {
   })
 
   test('three examples fill the available desktop row', async ({ page }) => {
-    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    await page.goto('/hub/models/krea-2-medium-turbo-text-to-image/')
     const list = page.getByTestId('examples-tab').locator('ul')
     const cards = page.getByTestId('example-card')
     await expect(cards).toHaveCount(3)
@@ -754,7 +749,7 @@ test.describe('Model playground', () => {
   })
 
   test('a phone sample is big enough to judge @mobile', async ({ page }) => {
-    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    await page.goto('/hub/models/krea-2-medium-turbo-text-to-image/')
     const cards = page.getByTestId('example-card')
     await expect(cards).toHaveCount(3)
 
@@ -778,7 +773,7 @@ test.describe('Model playground', () => {
   }) => {
     const width = 320
     await page.setViewportSize({ width, height: 720 })
-    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    await page.goto('/hub/models/krea-2-medium-turbo-text-to-image/')
     const cards = page.getByTestId('example-card')
     await expect(cards).toHaveCount(3)
 
@@ -794,7 +789,7 @@ test.describe('Model playground', () => {
   })
 
   test('a lone sample takes the phone row @mobile', async ({ page }) => {
-    await page.goto('/models/bfl--flux-2-pro--generate-images/')
+    await page.goto('/hub/models/flux-2-pro-text-to-image/')
     const cards = page.getByTestId('example-card')
     await expect(cards).toHaveCount(1)
 
@@ -815,7 +810,7 @@ test.describe('Model playground', () => {
 
 test.describe('Filter sheet @mobile', () => {
   test('the handle pulls the sheet up and lets it go', async ({ page }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await page.getByTestId('workshop-filter').click()
 
     const sheet = page.getByTestId('workshop-filter-menu')
