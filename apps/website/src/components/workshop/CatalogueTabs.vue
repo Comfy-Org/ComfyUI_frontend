@@ -9,13 +9,14 @@ import { t } from '../../i18n/translations'
 export type CatalogueTab = 'models' | 'workflows' | 'apps'
 
 const {
-  tabs = ['models', 'workflows', 'apps'],
   locale = 'en',
-  focusActive = false
+  focusActive = false,
+  tabs = ['models', 'workflows', 'apps']
 } = defineProps<{
-  tabs?: readonly CatalogueTab[]
   locale?: Locale
   focusActive?: boolean
+  /** The home page teaches the same control with the halves it can open. */
+  tabs?: readonly CatalogueTab[]
 }>()
 const emit = defineEmits<{ focused: [] }>()
 const active = defineModel<CatalogueTab>({ required: true })
@@ -33,30 +34,26 @@ onMounted(() => {
 const marker = computed(
   () => `translateX(${tabs.indexOf(active.value) * 100}%)`
 )
+const columns = computed(() =>
+  tabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+)
 </script>
 
 <template>
   <div
     :class="
       cn(
-        'relative grid w-fit shrink-0 rounded-2xl bg-transparency-white-t8 p-1',
-        tabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+        'relative grid w-fit shrink-0 rounded-2xl bg-transparency-white-t8 p-1 max-sm:w-full',
+        columns
       )
     "
     role="group"
     :aria-label="t('workshop.catalogue.show', locale)"
     data-testid="catalogue-tabs"
   >
-    <div
-      :class="
-        cn(
-          'pointer-events-none absolute inset-1 grid',
-          tabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
-        )
-      "
-    >
+    <div :class="cn('pointer-events-none absolute inset-1 grid', columns)">
       <div
-        class="rounded-xl bg-primary-warm-white transition-transform duration-300 ease-out motion-reduce:transition-none"
+        class="rounded-xl bg-primary-comfy-canvas transition-transform duration-300 ease-out motion-reduce:transition-none"
         :style="{ transform: marker }"
       />
     </div>

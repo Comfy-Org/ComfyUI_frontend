@@ -12,8 +12,10 @@ import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import FeaturedBannerPagination from './FeaturedBannerPagination.vue'
 
 /**
  * One thing worth opening, whatever kind of thing the catalogue holds. The
@@ -120,7 +122,7 @@ const fill = computed(() =>
     data-testid="section-featured"
   >
     <div
-      class="group relative block h-84 short:h-57 sm:short:h-60"
+      class="group relative flex min-h-68 short:min-h-48 sm:short:min-h-50"
       data-testid="featured-slide"
     >
       <a
@@ -157,7 +159,7 @@ const fill = computed(() =>
       />
 
       <div
-        class="pointer-events-none relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14"
+        class="pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-3 p-7 pt-7 pb-12 max-sm:p-5 max-sm:pb-11 sm:max-w-2xl sm:justify-center lg:p-9 lg:pt-8 lg:pb-12"
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge
@@ -211,31 +213,12 @@ const fill = computed(() =>
       </div>
     </div>
 
-    <div
+    <FeaturedBannerPagination
       v-if="slides.length > 1"
-      class="pointer-events-none absolute inset-x-8 bottom-5 flex gap-2 lg:inset-x-12"
-      data-testid="featured-pagination"
-    >
-      <button
-        v-for="(slide, index) in slides"
-        :key="slide.key"
-        type="button"
-        :aria-label="slide.title"
-        :aria-current="index === activeIndex ? 'true' : undefined"
-        class="group pointer-events-auto max-w-12 min-w-0 flex-1 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-        @click="goTo(index)"
-      >
-        <span
-          class="block h-1 overflow-hidden rounded-full bg-transparency-white-t20 group-hover:bg-primary-warm-gray"
-        >
-          <span
-            class="block h-full rounded-full bg-primary-warm-white"
-            :style="{
-              width: index === activeIndex ? `${fill * 100}%` : '0%'
-            }"
-          />
-        </span>
-      </button>
-    </div>
+      :slides
+      :active-index="activeIndex"
+      :fill
+      @go="goTo"
+    />
   </section>
 </template>

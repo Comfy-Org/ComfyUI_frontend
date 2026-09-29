@@ -2,16 +2,16 @@
 // eslint-disable-next-line import-x/no-unresolved -- import is correct at time of test execution
 import { app } from '../../scripts/app.js'
 
-function legacyWidget(node, inputName, inputData) {
+function legacyWidget(node, inputName, _inputData) {
   if (!node.widgets) node.widgets = []
   const widget = {
-    draw: function (ctx, node, widget_width, y, H) {
+    draw: function (ctx, _node, widget_width, y, H) {
       ctx.save()
       ctx.fillStyle = '#7F7'
       ctx.fillRect(15, y, widget_width - 15 * 2, H)
       ctx.restore()
     },
-    mouse: function mouseAnnotated(event, [x, y], node) {
+    mouse: function mouseAnnotated(_event, [x, _y], node) {
       const widget_width = this.width || node.size[0]
       if (x < 30) {
         this.value--

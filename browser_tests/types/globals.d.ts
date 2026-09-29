@@ -58,6 +58,7 @@ declare global {
     changeCount?: number
     widgetValue?: unknown
     __commandExecutionCounts?: Record<string, number>
+    __autoShownReads?: number
     __perfFrameState?: PerfFrameState
     __perfLongtaskState?: PerfLongtaskState
 
@@ -78,6 +79,15 @@ declare global {
      * @see browser_tests/tests/agent/agentHumanAddTabSwitch.spec.ts
      */
     __tabSwitchLens?: TabSwitchLens
+    /**
+     * Every `data-node-id` the DOM has mounted since the recorder was
+     * installed, so a test can tell "the node was rendered and then removed"
+     * apart from "the node was never rendered".
+     * @see browser_tests/tests/agent/agentClearedWorkflowStaysCleared.spec.ts
+     */
+    __mountedNodeIds?: Set<string>
+
+    __mountedNodeObserver?: MutationObserver
     __agentRecoveryGraph?: LGraph
   }
 

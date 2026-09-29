@@ -548,6 +548,13 @@ export class ChangeTracker {
         // The layer editor has its own session-local undo history
         if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
+        keyIgnored =
+          e.key === 'Control' ||
+          e.key === 'Shift' ||
+          e.key === 'Alt' ||
+          e.key === 'Meta'
+        if (keyIgnored) return
+
         const selectOnlyAtKeydown = isSelectOnly(app.canvas)
         requestAnimationFrame(async () => {
           let bindInputEl: Element | null = null
@@ -555,13 +562,6 @@ export class ChangeTracker {
           if (!isAutoQueueOnChange()) {
             bindInputEl = activeEl
           }
-
-          keyIgnored =
-            e.key === 'Control' ||
-            e.key === 'Shift' ||
-            e.key === 'Alt' ||
-            e.key === 'Meta'
-          if (keyIgnored) return
 
           const changeTracker = getCurrentChangeTracker()
           if (!changeTracker) return

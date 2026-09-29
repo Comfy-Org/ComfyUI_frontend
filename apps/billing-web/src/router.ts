@@ -3,12 +3,17 @@ import type { RouterHistory, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
 import type { SessionSnapshot } from '@comfyorg/account-core/session'
-import type { BillingEntry, BillingIntent } from '@comfyorg/billing-contract'
+import type {
+  BillingEntry,
+  BillingIntent,
+  ReturnTarget
+} from '@comfyorg/billing-contract'
 import {
   BILLING_INTENTS,
   billingIntentPath,
   buildReturnUrl,
-  parseBillingEntry
+  parseBillingEntry,
+  resolveReturnTarget
 } from '@comfyorg/billing-contract'
 
 import { BILLING_WEB_ENV } from '@/config/env'
@@ -18,7 +23,7 @@ import {
   onBillingWebEntryWorkspace
 } from '@/session/billingWebAuth'
 import BillingHomeView from '@/views/BillingHomeView.vue'
-import CheckoutView from '@/views/CheckoutView.vue'
+import CheckoutRouteView from '@/views/CheckoutRouteView.vue'
 import EntryErrorView from '@/views/EntryErrorView.vue'
 import InvoicesView from '@/views/InvoicesView.vue'
 import PaymentMethodsView from '@/views/PaymentMethodsView.vue'
@@ -34,7 +39,7 @@ export const SIGN_IN_PATH = '/sign-in'
 const INTENT_VIEWS: Record<BillingIntent, Component> = {
   pricing: EntryErrorView,
   subscription: SubscriptionView,
-  checkout: CheckoutView,
+  checkout: CheckoutRouteView,
   'payment-methods': PaymentMethodsView,
   invoices: InvoicesView,
   result: ResultView
@@ -86,6 +91,24 @@ function hostReturnHref(entry: BillingEntry): string | undefined {
   })?.href
 }
 
+const CHECKOUT_PATH = billingIntentPath('checkout')
+const CHECKOUT_FALLBACK_RETURN: ReturnTarget = 'comfyui_credits'
+
+/**
+ * A checkout's `return_to` is optional. One that is missing, outside the
+ * registry, or without a destination in this family is ignored, never
+ * followed, and the checkout returns to Plan & Credits instead.
+ */
+function withCheckoutReturn(fullPath: string): string {
+  const url = new URL(fullPath, 'https://billing.invalid')
+  if (url.pathname !== CHECKOUT_PATH) return fullPath
+  const target = url.searchParams.get('return_to')
+  if (target !== null && resolveReturnTarget(target, BILLING_WEB_ENV))
+    return fullPath
+  url.searchParams.set('return_to', CHECKOUT_FALLBACK_RETURN)
+  return `${url.pathname}${url.search}`
+}
+
 function leaveForHost(href: string): void {
   window.location.replace(href)
 }
@@ -135,18 +158,13 @@ export function createBillingRouter(
   }
 
   function readEntry(fullPath: string): boolean {
-    const result = parseBillingEntry(fullPath)
+    const result = parseBillingEntry(withCheckoutReturn(fullPath))
     if (result.status === 'error') {
       recordBillingEntry(result)
       return true
     }
     const { entry } = result
     if (hostOwnsPlanSelection(entry)) return sendToHost(entry)
-    // Every way out of checkout leads back to the host, so a checkout with
-    // no resolvable return is an entry error rather than a dead-ended form.
-    if (entry.intent === 'checkout' && hostReturnHref(entry) === undefined) {
-      return recordUnknownReturn()
-    }
     return admitEntry(entry)
   }
 
