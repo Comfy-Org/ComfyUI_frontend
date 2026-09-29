@@ -156,6 +156,32 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('restores nested temporary attachment preview metadata', () => {
+    const message = row(1, 'user', 'turn-a', 'check this image', 'row-1')
+    message.content = {
+      text: 'check this image',
+      attachments: [
+        {
+          name: 'stored.png',
+          ref: 'nested folder/stored.png',
+          subfolder: 'nested folder',
+          upload_type: 'temp'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+      {
+        name: 'stored.png',
+        ref: 'stored.png',
+        subfolder: 'nested folder',
+        uploadType: 'temp'
+      }
+    ])
+  })
+
   it('falls back to attachment_refs when content.attachments is empty', () => {
     const message = row(1, 'user', 'turn-a', 'check this image', 'row-1')
     message.content = {
@@ -168,6 +194,19 @@ describe('normalizeAgentTranscript', () => {
 
     expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
       { name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }
+    ])
+  })
+
+  it('does not treat an attachment MIME type as an upload location', () => {
+    const message = row(1, 'user', 'turn-a', 'check this image', 'row-1')
+    message.content = {
+      attachments: [{ name: 'stored.png', type: 'image/png' }]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+      { name: 'stored.png', ref: 'stored.png' }
     ])
   })
 

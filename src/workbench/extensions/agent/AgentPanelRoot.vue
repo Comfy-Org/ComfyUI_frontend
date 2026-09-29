@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import './agentPanel.css'
 
+import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -25,11 +26,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import {
-  fetchDroppedAsset,
-  getDroppedAsset,
-  hasVideoType
-} from '@/utils/eventUtils'
+import { fetchTrustedDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -1159,21 +1157,43 @@ function onSelectNodes(): void {
 const assetsStore = useAssetsStore()
 
 const attachment = useAttachment({
-  upload: async (file) => {
-    const uploaded = await rest.uploadImage(file, file.name)
-    // The library caches input assets; without this refresh a just-uploaded
-    // file is neither listed in the Assets tab nor mentionable this session.
-    void assetsStore.inputAssets.loadNew()
-    return { ref: uploaded.name }
+  upload: async (file, signal) => {
+    const uploaded = await rest.uploadImage(file, file.name, signal, null)
+    const filename = uploaded.name!
+    const uploadType = uploaded.type || 'input'
+    if (uploadType !== 'input') {
+      return Promise.reject(
+        new Error(`Unsupported attachment upload location: ${uploadType}`)
+      )
+    }
+    const params = new URLSearchParams({
+      filename,
+      type: uploadType
+    })
+    if (uploaded.subfolder) params.set('subfolder', uploaded.subfolder)
+    return {
+      ref: filename,
+      subfolder: uploaded.subfolder || undefined,
+      uploadType,
+      url: api.apiURL(`/view?${params.toString()}`)
+    }
   },
-  maxBytes: (file) => {
-    const serverLimit = api.getServerFeature(
-      'max_upload_size',
-      MAX_ATTACHMENT_BYTES
-    )
-    return hasVideoType(file)
-      ? serverLimit
-      : Math.min(MAX_ATTACHMENT_BYTES, serverLimit)
+  // The store coalesces concurrent completions while retaining one trailing
+  // refresh, including when this panel is closed and reopened mid-request.
+  onUploaded: () => {
+    void assetsStore.refreshInputAssets().catch(() => undefined)
+  },
+  maxBytes: () => {
+    const serverLimit =
+      api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
+        'max_upload_size'
+      )
+    const absoluteClientCap = 100 * 1024 * 1024
+    return typeof serverLimit === 'number' &&
+      Number.isFinite(serverLimit) &&
+      serverLimit > 0
+      ? Math.min(absoluteClientCap, serverLimit)
+      : MAX_ATTACHMENT_BYTES
   },
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
@@ -1181,7 +1201,42 @@ const attachment = useAttachment({
     toast.add({ severity: 'warn', detail: message, life: 5000 }),
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,
-  remove: composerStore.removeAttachment
+  remove: composerStore.removeAttachment,
+  isPresent: (id) => composerStore.attachments.some((item) => item.id === id)
+})
+
+const removedUploadCancellationTimers = new Map<string, number>()
+
+watch(
+  () => composerStore.attachments.map(({ id }) => id),
+  (ids, previousIds = []) => {
+    const retained = new Set(ids)
+    for (const id of ids) {
+      const timer = removedUploadCancellationTimers.get(id)
+      if (timer !== undefined) {
+        window.clearTimeout(timer)
+        removedUploadCancellationTimers.delete(id)
+      }
+    }
+    for (const id of previousIds) {
+      if (retained.has(id) || removedUploadCancellationTimers.has(id)) continue
+      removedUploadCancellationTimers.set(
+        id,
+        window.setTimeout(() => {
+          removedUploadCancellationTimers.delete(id)
+          attachment.cancelUpload(id)
+        }, 5_000)
+      )
+    }
+  },
+  { flush: 'sync' }
+)
+
+onBeforeUnmount(() => {
+  attachment.cancelAllUploads()
+  for (const timer of removedUploadCancellationTimers.values())
+    window.clearTimeout(timer)
+  removedUploadCancellationTimers.clear()
 })
 
 function onAttach(): void {
@@ -1266,21 +1321,45 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     return
   }
 
-  if (asset.ref && asset.kind !== 'other') {
+  const assetFilename = asset.filename ?? asset.name
+  const safeRef =
+    asset.ref &&
+    !asset.ref.startsWith('/') &&
+    !asset.ref.includes('\\') &&
+    !asset.ref.split('/').some((segment) => segment === '..')
+  if (
+    asset.ref &&
+    safeRef &&
+    asset.kind !== undefined &&
+    asset.kind !== 'other' &&
+    getMediaTypeFromFilename(assetFilename) === asset.kind
+  ) {
     panelRef.value?.addAttachment({
       id: `asset:${asset.ref}`,
-      name: asset.name,
+      name: assetFilename,
       ref: asset.ref,
       previewUrl: asset.previewUrl
     })
     return
   }
 
-  const file = await attachment.addDeferredFile(asset.name, async () => {
-    const file = await fetchDroppedAsset(asset)
-    return file && isAgentAttachable(file) ? file : undefined
-  })
-  if (!file)
+  if (!isAgentAttachable(new File([], assetFilename))) {
+    toast.add({ severity: 'warn', detail: t('agent.assetNotAttachable') })
+    return
+  }
+
+  const result = await attachment.addDeferredFile(
+    assetFilename,
+    async (signal, maxBytes) => {
+      const file = await fetchTrustedDroppedAsset(
+        { ...asset, name: assetFilename },
+        signal,
+        maxBytes
+      )
+      return file
+    }
+  )
+  if (result === 'unsupported')
     toast.add({
       severity: 'warn',
       detail: t('agent.assetNotAttachable'),

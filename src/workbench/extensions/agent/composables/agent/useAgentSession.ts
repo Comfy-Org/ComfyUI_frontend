@@ -35,6 +35,8 @@ interface SentAttachment {
   ref: string
   name: string
   previewUrl?: string
+  subfolder?: string
+  uploadType?: string
 }
 
 interface SentTag {
@@ -312,7 +314,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
             tags !== undefined && tags.length > 0
               ? { node_ids: tags.map((tag) => tag.id) }
               : undefined,
-          attachments: attachments?.map((attachment) => attachment.ref),
+          attachments: attachments?.map((attachment) =>
+            attachment.subfolder
+              ? `${attachment.subfolder}/${attachment.ref}`
+              : attachment.ref
+          ),
           ...(unboundTarget ? { currentTabUnbound: true } : {}),
           ...(shouldSendDraft ? { draft } : {})
         }
@@ -344,11 +350,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.recordUser(
         turnId,
         text,
-        attachments?.map(({ name, previewUrl, ref }) => ({
-          name,
-          previewUrl,
-          ref
-        })),
+        attachments?.map(
+          ({ name, previewUrl, ref, subfolder, uploadType }) => ({
+            name,
+            previewUrl,
+            ref,
+            subfolder,
+            uploadType
+          })
+        ),
         tags?.map((tag) => `${tag.title} #${tag.id}`),
         workflowReferences
       )

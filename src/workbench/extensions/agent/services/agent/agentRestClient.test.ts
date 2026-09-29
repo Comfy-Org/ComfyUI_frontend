@@ -258,15 +258,41 @@ describe('uploadImage multipart', () => {
     respond(jsonResponse(200, { name: 'x.png', subfolder: '', type: 'input' }))
     const appendSpy = vi.spyOn(FormData.prototype, 'append')
     const blob = new Blob(['bytes'], { type: 'image/png' })
-    await makeClient().uploadImage(blob, 'x.png')
+    const controller = new AbortController()
+    await makeClient().uploadImage(blob, 'x.png', controller.signal)
 
     const { route, init } = lastCall()
     expect(route).toBe('/upload/image')
     expect(init.method).toBe('POST')
     expect(init.body).toBeInstanceOf(FormData)
+    expect(init.signal).toBe(controller.signal)
     expect(appendSpy).toHaveBeenCalledWith('image', blob, 'x.png')
     expect(contentType(init)).toBeUndefined()
     appendSpy.mockRestore()
+  })
+
+  it('rejects a success response without the server-stored filename', async () => {
+    respond(jsonResponse(200, { subfolder: '', type: 'input' }))
+
+    await expect(
+      makeClient().uploadImage(new Blob(['bytes']), 'submitted.png')
+    ).rejects.toThrow('Upload response must include the stored filename')
+  })
+
+  it('uses an explicit caller-owned timeout with an abort signal', async () => {
+    respond(jsonResponse(200, { name: 'x.png' }))
+    const controller = new AbortController()
+
+    await makeClient().uploadImage(
+      new Blob(['bytes']),
+      'x.png',
+      controller.signal,
+      null
+    )
+
+    expect(
+      (lastCall().init as RequestInit & { timeoutMs?: number | null }).timeoutMs
+    ).toBeNull()
   })
 })
 

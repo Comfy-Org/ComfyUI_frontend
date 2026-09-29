@@ -14,6 +14,8 @@ export interface UserAttachment {
   name: string
   previewUrl?: string
   ref?: string
+  subfolder?: string
+  uploadType?: string
 }
 
 export interface NormalizedAgentTranscript {
@@ -32,13 +34,56 @@ export interface NormalizedAgentTranscript {
   }
 }
 
-function attachmentRefNames(value: unknown): string[] {
+function parseAttachment(value: unknown): UserAttachment | undefined {
+  if (typeof value === 'string') {
+    const separator = value.lastIndexOf('/')
+    return separator < 0
+      ? { name: value, ref: value }
+      : {
+          name: value.slice(separator + 1),
+          ref: value.slice(separator + 1),
+          subfolder: value.slice(0, separator)
+        }
+  }
+  if (typeof value !== 'object' || value === null || !('name' in value)) return
+  const name = typeof value.name === 'string' ? value.name : undefined
+  if (!name) return
+  const rawRef =
+    'ref' in value && typeof value.ref === 'string' ? value.ref : name
+  const subfolder =
+    'subfolder' in value && typeof value.subfolder === 'string'
+      ? value.subfolder
+      : undefined
+  const rawUploadType =
+    ('uploadType' in value && typeof value.uploadType === 'string'
+      ? value.uploadType
+      : undefined) ??
+    ('upload_type' in value && typeof value.upload_type === 'string'
+      ? value.upload_type
+      : undefined)
+  const uploadType =
+    rawUploadType === 'input' ||
+    rawUploadType === 'output' ||
+    rawUploadType === 'temp'
+      ? rawUploadType
+      : undefined
+  const ref =
+    subfolder && rawRef.startsWith(`${subfolder}/`)
+      ? rawRef.slice(subfolder.length + 1)
+      : rawRef
+  return {
+    name,
+    ref,
+    ...(subfolder ? { subfolder } : {}),
+    ...(uploadType ? { uploadType } : {})
+  }
+}
+
+function parseAttachments(value: unknown): UserAttachment[] {
   if (!Array.isArray(value)) return []
-  return (value as unknown[]).flatMap((entry) => {
-    if (typeof entry !== 'object' || entry === null || !('name' in entry))
-      return []
-    const { name } = entry
-    return typeof name === 'string' ? [name] : []
+  return value.flatMap((entry) => {
+    const attachment = parseAttachment(entry)
+    return attachment ? [attachment] : []
   })
 }
 
@@ -52,18 +97,14 @@ function attachmentRefNames(value: unknown): string[] {
 function parseUserAttachments(
   content: Record<string, unknown> | undefined
 ): UserAttachment[] | undefined {
-  const attachmentNames = Array.isArray(content?.attachments)
-    ? content.attachments.filter(
-        (name): name is string => typeof name === 'string'
-      )
+  const attachments = Array.isArray(content?.attachments)
+    ? parseAttachments(content.attachments)
     : []
-  const names =
-    attachmentNames.length > 0
-      ? attachmentNames
-      : attachmentRefNames(content?.attachment_refs)
-  return names.length > 0
-    ? names.map((name) => ({ name, ref: name }))
-    : undefined
+  const normalized =
+    attachments.length > 0
+      ? attachments
+      : parseAttachments(content?.attachment_refs)
+  return normalized.length > 0 ? normalized : undefined
 }
 
 /**
