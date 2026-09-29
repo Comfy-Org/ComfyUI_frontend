@@ -29,11 +29,6 @@ const page = source
 const workflows = workshopPages.filter((model) => model.routerId === undefined)
 const publicDirectory = join(import.meta.dirname, '../../public')
 
-const partialExamples: Record<string, Record<string, string>> = {
-  'workflows/remove-object': { mask: 'required' },
-  'workflows/virtual-try-on': { image1: 'required' }
-}
-
 describe('curated workflow pages', () => {
   it.for(workflows)(
     'opens $slug with its example in the shared form',
@@ -41,9 +36,7 @@ describe('curated workflow pages', () => {
       const detail = getWorkshopPageDetail(model.slug)
       assert.exists(detail)
       const state = initialWorkshopPageState(detail)
-      expect(validateForm(state.schema, state.values)).toEqual(
-        partialExamples[model.slug] ?? {}
-      )
+      expect(validateForm(state.schema, state.values)).toEqual({})
     }
   )
 
@@ -62,10 +55,18 @@ describe('curated workflow pages', () => {
     }
   )
 
-  it('explains that the Bria example needs a mask', () => {
+  it('runs the Bria example with its website-owned apple mask', () => {
     const detail = getWorkshopPageDetail('workflows/remove-object')
     assert.exists(detail)
-    expect(detail.examples[0].description).toContain('mask is not included')
+    const { mask } = initialWorkshopPageState(detail).values
+    expect(mask).toBe(
+      'https://comfy.org/workflow-inputs/remove-object-apple-mask.png'
+    )
+    expect(
+      existsSync(
+        join(publicDirectory, 'workflow-inputs/remove-object-apple-mask.png')
+      )
+    ).toBe(true)
   })
 
   it('opens the inpainting example with the original image and its transparency mask', () => {
