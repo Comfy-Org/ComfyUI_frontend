@@ -121,8 +121,10 @@ const fill = computed(() =>
     class="relative isolate overflow-hidden rounded-3xl border border-transparency-white-t8"
     data-testid="section-featured"
   >
+    <!-- The floor is the tallest slide, a name that needs two lines, so the
+      frame is the same on every tab while a name that fits keeps to one. -->
     <div
-      class="group relative flex min-h-68 short:min-h-48 sm:short:min-h-50"
+      class="group relative flex min-h-72 short:min-h-60 sm:short:min-h-65"
       data-testid="featured-slide"
     >
       <a
@@ -165,7 +167,7 @@ const fill = computed(() =>
           <Badge
             variant="subtle"
             size="md"
-            class="bg-black/40 text-primary-comfy-canvas backdrop-blur-md"
+            class="border-white/10 bg-transparency-white-t20 text-primary-comfy-canvas backdrop-blur-xl backdrop-brightness-25"
           >
             {{ active.kind }}
           </Badge>
@@ -174,16 +176,14 @@ const fill = computed(() =>
             :key="capability"
             variant="subtle"
             size="md"
-            class="bg-black/40 text-content-secondary backdrop-blur-md max-sm:hidden"
+            class="border-white/10 bg-transparency-white-t20 text-content-secondary backdrop-blur-xl backdrop-brightness-25 max-sm:hidden"
           >
             {{ capability }}
           </Badge>
         </div>
 
-        <!-- Two lines are reserved whether the name needs them or not, so the
-          banner is the same height on every tab. -->
         <h2
-          class="line-clamp-2 min-h-[2lh] text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
+          class="line-clamp-2 text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
         >
           {{ active.title }}
         </h2>
