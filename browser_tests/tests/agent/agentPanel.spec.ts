@@ -1,11 +1,17 @@
+import assert from 'node:assert/strict'
+
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
+import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  zAgentAdmissionError,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   INTERMEDIATE_MESSAGE_EVENT,
@@ -211,6 +217,94 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       const paywall = panel.getByRole('alert')
       await expect(paywall).toContainText(enMessages.agent.paywall.title)
       await expect(paywall).toContainText('Add credits to continue.')
+    })
+  })
+
+  test('keeps the standing paywall in sync across turn completion and panel close', async ({
+    acceptedTurns,
+    agentBilling,
+    agentPanel,
+    comfyPage,
+    getWebSocket,
+    postedMessages
+  }) => {
+    test.setTimeout(30_000)
+    const page = comfyPage.page
+    const paywall = page.getByTestId('agent-credits-exhausted-paywall')
+    const ws = await getWebSocket()
+
+    await test.step('show the standing paywall after an accepted turn exhausts credits', async () => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+      agentBilling.setAgentFunds(false)
+      await agentPanel.sendMessage('Complete this workflow without a refusal')
+      await expect.poll(() => postedMessages.length).toBe(1)
+      pushEvent(ws, THINKING_EVENT)
+      await expect(
+        agentPanel.root.getByRole('button', { name: 'Stop' })
+      ).toBeVisible()
+      await expect(paywall).toHaveCount(0)
+      pushEvent(ws, MESSAGE_DONE_EVENT)
+      await expect(paywall).toBeVisible()
+    })
+
+    await test.step('finish the funded recovery while the panel is closed', async () => {
+      agentBilling.setAgentFunds(true)
+      const recovery = agentBilling.holdNextFundedRefresh()
+      await paywall.getByRole('button', { name: 'Add Credits' }).click()
+      const topUpDialog = new TopUpCreditsDialog(page)
+      await topUpDialog.waitForVisible()
+      await recovery.entered
+      await topUpDialog.close()
+      await agentPanel.root
+        .getByRole('button', { name: enMessages.g.close })
+        .click()
+      await expect(agentPanel.root).toHaveCount(0)
+      recovery.release()
+      await recovery.completed
+    })
+
+    await test.step('reopen without the stale paywall', async () => {
+      await agentPanel.open()
+      await expect(paywall).toHaveCount(0)
+    })
+
+    await test.step('show the standing paywall after a second exhaustion', async () => {
+      agentBilling.setAgentFunds(false)
+      await agentPanel.sendMessage(
+        'Complete another workflow without a refusal'
+      )
+      await expect.poll(() => postedMessages.length).toBe(2)
+      expect(acceptedTurns).toHaveLength(2)
+      const secondTurn = acceptedTurns.at(-1)
+      assert(secondTurn)
+      pushEvent(
+        ws,
+        zAgentWsEvent.parse({
+          ...THINKING_EVENT,
+          data: { ...THINKING_EVENT.data, message_id: secondTurn.message_id }
+        })
+      )
+      await expect(
+        agentPanel.root.getByRole('button', { name: 'Stop' })
+      ).toBeVisible()
+      pushEvent(
+        ws,
+        zAgentWsEvent.parse({
+          ...MESSAGE_DONE_EVENT,
+          data: {
+            ...MESSAGE_DONE_EVENT.data,
+            message_id: secondTurn.message_id
+          }
+        })
+      )
+      await expect(paywall).toBeVisible()
+    })
+
+    await test.step('remove the standing paywall after the final funded refresh', async () => {
+      agentBilling.setAgentFunds(true)
+      await paywall.getByRole('button', { name: 'Add Credits' }).click()
+      await expect(paywall).toHaveCount(0)
     })
   })
 
