@@ -124,7 +124,9 @@ function createContent() {
             h(ModelsCatalogue, {
               models: models.filter(
                 (model) =>
-                  model.routerId !== undefined || workflowsEnabled.value
+                  model.routerId !== undefined ||
+                  model.type === 'APP' ||
+                  workflowsEnabled.value
               )
             })
           ]

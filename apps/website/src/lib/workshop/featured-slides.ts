@@ -1,6 +1,8 @@
 import type { WorkshopModel } from '../../config/models-catalogue'
 import type { FeaturedSlide } from '../../components/workshop/FeaturedBanner.vue'
 import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+import { getRoutes } from '../../config/routes'
 import { bannerName } from './banner-name'
 import { modelDocsHref } from './model-docs'
 import { taskLabelFor } from './task-label'
@@ -31,4 +33,18 @@ export function modelSlides(
     media: slideMedia(model),
     docsHref: modelDocsHref(model)
   }))
+}
+
+export function studioSlide(locale: Locale): FeaturedSlide {
+  return {
+    key: 'cinematic-studio',
+    href: getRoutes(locale).cinematicStudio,
+    title: t('nav.cinematicStudio', locale),
+    kind: t('workshop.cinematic.badge', locale),
+    tags: [],
+    summary: t('workshop.cinematic.summary', locale),
+    media: { url: '/images/cinematic-studio/neon-street.jpg', kind: 'image' },
+    docsHref: undefined,
+    cta: t('workshop.cinematic.cta', locale)
+  }
 }

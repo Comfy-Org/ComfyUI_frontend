@@ -37,22 +37,13 @@ vi.mock(
 )
 
 const legacyCheckoutMocks = vi.hoisted(() => ({
-  performSubscriptionCheckout: vi.fn(),
-  performTeamSubscriptionCheckout: vi.fn()
+  performSubscriptionCheckout: vi.fn()
 }))
 
 vi.mock(
   import('@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'),
   () => ({
     performSubscriptionCheckout: legacyCheckoutMocks.performSubscriptionCheckout
-  })
-)
-
-vi.mock(
-  import('@/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil'),
-  () => ({
-    performTeamSubscriptionCheckout:
-      legacyCheckoutMocks.performTeamSubscriptionCheckout
   })
 )
 
@@ -210,9 +201,6 @@ describe('CloudSubscriptionRedirectView', () => {
         billingCycle: 'yearly'
       }
     })
-    expect(
-      legacyCheckoutMocks.performTeamSubscriptionCheckout
-    ).not.toHaveBeenCalled()
   })
 
   test('opens the generic team pricing table when plan loading fails', async () => {
@@ -229,9 +217,6 @@ describe('CloudSubscriptionRedirectView', () => {
       initialCheckout: undefined
     })
     expect(mockRouterPush).not.toHaveBeenCalled()
-    expect(
-      legacyCheckoutMocks.performTeamSubscriptionCheckout
-    ).not.toHaveBeenCalled()
   })
 
   test('removes the pre-Vue splash loader on mount', async () => {

@@ -208,3 +208,42 @@ describe('prepared workflow catalog', () => {
     )
   })
 })
+
+describe('published Cloud graphs', () => {
+  const nodes = workflowCatalog.flatMap(({ id, cloud }) =>
+    Object.entries(cloud.workflow).map(([nodeId, node]) => ({
+      id,
+      nodeId,
+      node
+    }))
+  )
+
+  it.for(nodes.filter(({ node }) => node.class_type === 'ComfyMathExpression'))(
+    'supplies every variable used by $id math node $nodeId',
+    ({ node }) => {
+      const expression = String(node.inputs.expression)
+      const used = new Set(expression.match(/\b[a-z]\b/g))
+      expect(
+        [...used].filter(
+          (name) => !Object.hasOwn(node.inputs, `values.${name}`)
+        )
+      ).toEqual([])
+    }
+  )
+
+  it.for(
+    workflowCatalog.filter(({ cloud }) =>
+      Object.values(cloud.workflow).some(
+        (node) => node.class_type === 'LTXVEmptyLatentAudio'
+      )
+    )
+  )('batches $id audio latents like its video latents', ({ cloud }) => {
+    const batchSizes = (classType: string) =>
+      Object.values(cloud.workflow)
+        .filter((node) => node.class_type === classType)
+        .map((node) => node.inputs.batch_size)
+    expect(new Set(batchSizes('LTXVEmptyLatentAudio'))).toEqual(
+      new Set(batchSizes('EmptyLTXVLatentVideo'))
+    )
+  })
+})

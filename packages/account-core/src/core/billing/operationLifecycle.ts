@@ -39,7 +39,11 @@ import {
   NO_POINTER_STORE,
   createOperationPointerStore
 } from './operationPointer.js'
-import { hasExhaustedPollBudget, nextPollDelayMs } from './operationPolicy.js'
+import {
+  hasExhaustedPollBudget,
+  isWaitingOnCustomerWithoutAction,
+  nextPollDelayMs
+} from './operationPolicy.js'
 import type {
   BillingDeclineReason,
   BillingOpStatus,
@@ -169,6 +173,11 @@ const SUPERSEDED = {
   code: 'SUPERSEDED'
 } as const satisfies BillingFailure
 
+const OPERATION_ALREADY_PENDING = {
+  status: 'error',
+  code: 'OPERATION_ALREADY_PENDING'
+} as const satisfies BillingFailure
+
 /** A command attempt still settling, kept with the scope that issued it. */
 interface InFlightCommand {
   readonly context: BillingScopeContext
@@ -180,6 +189,8 @@ interface OperationRecord {
   readonly context: BillingScopeContext
   readonly resumed: boolean
   delayMs: number | undefined
+  /** When the operation last became blocked on the customer with no action here. */
+  waitingWithoutActionSince: number | undefined
   timer: ReturnType<typeof setTimeout> | undefined
   inFlightPoll: Promise<void> | undefined
   readonly settled: Promise<BillingOperationState>
@@ -367,7 +378,18 @@ export function createBillingOperationLifecycle(
   function schedule(record: OperationRecord) {
     if (record.state.phase !== 'pending') return
     stopTimer(record)
-    const delayMs = nextPollDelayMs(record.state, record.delayMs)
+    record.waitingWithoutActionSince = isWaitingOnCustomerWithoutAction(
+      record.state
+    )
+      ? (record.waitingWithoutActionSince ?? now())
+      : undefined
+    const delayMs = nextPollDelayMs(
+      record.state,
+      record.delayMs,
+      record.waitingWithoutActionSince === undefined
+        ? 0
+        : now() - record.waitingWithoutActionSince
+    )
     record.delayMs = delayMs
     record.timer = setTimeout(() => void poll(record), delayMs)
   }
@@ -492,6 +514,7 @@ export function createBillingOperationLifecycle(
       context: input.context,
       resumed: input.resumed,
       delayMs: undefined,
+      waitingWithoutActionSince: undefined,
       timer: undefined,
       inFlightPoll: undefined,
       settled,
@@ -548,34 +571,23 @@ export function createBillingOperationLifecycle(
     if (status.status === 'error') return status
 
     const rail = status.value.status.billing_rail
-    const pending = pendingFromStatus(status.value.status)
-    if (pending !== undefined && pending.kind === kind) {
-      const record = adopt({
-        ...pending,
-        context,
-        presentation: routeFor(rail, pending),
-        attemptStartedAt: now(),
-        resumed: true
-      })
-      return { status: 'ok', value: record.state }
-    }
+    const parked = await resubmitTarget(
+      pendingFromStatus(status.value.status),
+      kind
+    )
+    if (!isLive(context)) return SUPERSEDED
+    if (parked === 'refused') return OPERATION_ALREADY_PENDING
 
     const attemptStartedAt = now()
     const issued = await issue(context.scope)
     if (!isLive(context)) {
-      // The operation exists server-side under the scope this tab just left;
-      // the pointer waits there so a return recovers it rather than reissuing.
-      if (issued.status === 'ok') {
-        pointers.write(context.scope, {
-          operationId: issued.value.operationId,
-          kind,
-          presentation: routeFor(rail, issued.value),
-          attemptStartedAt
-        })
-      }
-      return SUPERSEDED
+      return leftScope(context, kind, rail, issued, attemptStartedAt)
     }
     if (issued.status === 'error') return issued
+
+    const resumed =
+      parked === undefined ? undefined : resumeParked(parked, issued.value)
+    if (resumed !== undefined) return { status: 'ok', value: resumed }
 
     const record = adopt({
       id: issued.value.operationId,
@@ -587,6 +599,76 @@ export function createBillingOperationLifecycle(
       resumed: false
     })
     return { status: 'ok', value: record.state }
+  }
+
+  // The operation exists server-side under the scope this tab just left; the
+  // pointer waits there so a return recovers it rather than reissuing.
+  function leftScope(
+    context: BillingScopeContext,
+    kind: BillingOperationKind,
+    rail: BillingStatusData['billing_rail'],
+    issued: BillingResult<IssuedBillingOperation>,
+    attemptStartedAt: number
+  ): typeof SUPERSEDED {
+    if (issued.status === 'ok') {
+      pointers.write(context.scope, {
+        operationId: issued.value.operationId,
+        kind,
+        presentation: routeFor(rail, issued.value),
+        attemptStartedAt
+      })
+    }
+    return SUPERSEDED
+  }
+
+  /**
+   * Declines rather than joins an operation of this kind the server already
+   * has pending, because the status names no plan: this caller asked for one
+   * outcome and the parked attempt settles another, so reporting that one as
+   * this command's result would tell the customer they bought something they
+   * did not choose. recover() is where a deliberate return to it belongs.
+   *
+   * The exception is a checkout this tab watches parked on a card. The server
+   * keeps no link back to it, and a resubmit is how it resumes that checkout
+   * or replaces it, so the command goes through with that record in hand.
+   */
+  async function resubmitTarget(
+    pending: ServerPendingOperation | undefined,
+    kind: BillingOperationKind
+  ): Promise<OperationRecord | 'refused' | undefined> {
+    if (pending?.kind !== kind) return undefined
+    const record = operations.get(pending.id)
+    if (
+      record?.state.phase === 'pending' &&
+      record.state.serverPhase === undefined
+    ) {
+      const read = await readOperation(pending.id)
+      if (read.status === 'ok') {
+        dispatch(record, { type: 'status_polled', status: read.value.data })
+      }
+    }
+    return record?.state.phase === 'pending' &&
+      record.state.serverPhase === 'awaiting_payment_method'
+      ? record
+      : 'refused'
+  }
+
+  /**
+   * The same id is the parked checkout resumed, with the fresh hosted step the
+   * server minted for it; another id replaced it, so this tab stops watching.
+   */
+  function resumeParked(
+    parked: OperationRecord,
+    issued: IssuedBillingOperation
+  ): BillingOperationState | undefined {
+    if (parked.state.id !== issued.operationId) {
+      dispatch(parked, { type: 'superseded' })
+      return undefined
+    }
+    if (issued.actionUrl !== undefined) {
+      dispatch(parked, { type: 'action_reissued', actionUrl: issued.actionUrl })
+    }
+    return parked.state
   }
 
   function begin(
