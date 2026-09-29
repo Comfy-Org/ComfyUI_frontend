@@ -9,10 +9,7 @@
   "11": {
     "class_type": "LoraLoaderModelOnly",
     "inputs": {
-      "model": [
-        "10",
-        0
-      ],
+      "model": ["10", 0],
       "lora_name": "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
       "strength_model": 1
     }
@@ -72,37 +69,16 @@
   "18": {
     "class_type": "MiniMaxH3ReferenceToVideo",
     "inputs": {
-      "clip": [
-        "12",
-        0
-      ],
+      "clip": ["12", 0],
       "prompt": "Restyle the video using <Picture 1> as the reference for style, background and lighting. Keep the motion, framing and timing of <Video 1> exactly as they are. Replace the environment with the shattered stone courtyard from <Picture 1>, molten orange firelight, heavy volumetric smoke, deep teal shadows, cinematic high contrast film grade.",
-      "width": [
-        "15",
-        0
-      ],
-      "height": [
-        "15",
-        1
-      ],
+      "width": ["15", 0],
+      "height": ["15", 1],
       "length": 124,
       "ref_image_size": "match",
-      "vae": [
-        "13",
-        0
-      ],
-      "audio_vae": [
-        "14",
-        0
-      ],
-      "ref_images.ref_image_0": [
-        "16",
-        0
-      ],
-      "ref_videos.ref_video_0": [
-        "17",
-        0
-      ]
+      "vae": ["13", 0],
+      "audio_vae": ["14", 0],
+      "ref_images.ref_image_0": ["16", 0],
+      "ref_videos.ref_video_0": ["17", 0]
     }
   },
   "19": {
@@ -120,10 +96,7 @@
   "21": {
     "class_type": "BasicScheduler",
     "inputs": {
-      "model": [
-        "11",
-        0
-      ],
+      "model": ["11", 0],
       "scheduler": "simple",
       "steps": 4,
       "denoise": 1
@@ -132,78 +105,39 @@
   "22": {
     "class_type": "BasicGuider",
     "inputs": {
-      "model": [
-        "11",
-        0
-      ],
-      "conditioning": [
-        "18",
-        0
-      ]
+      "model": ["11", 0],
+      "conditioning": ["18", 0]
     }
   },
   "23": {
     "class_type": "SamplerCustomAdvanced",
     "inputs": {
-      "noise": [
-        "19",
-        0
-      ],
-      "guider": [
-        "22",
-        0
-      ],
-      "sampler": [
-        "20",
-        0
-      ],
-      "sigmas": [
-        "21",
-        0
-      ],
-      "latent_image": [
-        "18",
-        1
-      ]
+      "noise": ["19", 0],
+      "guider": ["22", 0],
+      "sampler": ["20", 0],
+      "sigmas": ["21", 0],
+      "latent_image": ["18", 1]
     }
   },
   "24": {
     "class_type": "VAEDecode",
     "inputs": {
-      "samples": [
-        "23",
-        0
-      ],
-      "vae": [
-        "13",
-        0
-      ]
+      "samples": ["23", 0],
+      "vae": ["13", 0]
     }
   },
   "25": {
     "class_type": "VAEDecodeAudio",
     "inputs": {
-      "samples": [
-        "23",
-        0
-      ],
-      "vae": [
-        "14",
-        0
-      ]
+      "samples": ["23", 0],
+      "vae": ["14", 0]
     }
   },
   "26": {
     "class_type": "CreateVideo",
     "inputs": {
-      "images": [
-        "24",
-        0
-      ],
-      "audio": [
-        "25",
-        0
-      ],
+      "images": ["24", 0],
+      "audio": ["25", 0],
       "fps": 24,
       "bit_depth": 8
     }
@@ -214,10 +148,7 @@
       "title": "RESULT"
     },
     "inputs": {
-      "video": [
-        "26",
-        0
-      ],
+      "video": ["26", 0],
       "filename_prefix": "video/act1_restyle",
       "format": "auto",
       "codec": "auto"
