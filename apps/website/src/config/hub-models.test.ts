@@ -35,4 +35,21 @@ describe('hub model addresses', () => {
       '/models'
     ])
   })
+
+  it.for([
+    {
+      format: 'page data JSON',
+      content:
+        '{"href":"/models/bfl--flux-2-max--generate-images/","next":{"href":"/hub/models/flux-2-max-text-to-image/"}}'
+    },
+    {
+      format: 'a markdown twin',
+      content:
+        '[Flux](https://comfy.org/models/bfl--flux-2-max--generate-images/) and [Hub](https://comfy.org/hub/models/) and [Relight](/models/workflows/relight/)'
+    }
+  ])('finds old model links in $format', ({ content }) => {
+    expect(oldModelLinks(content)).toEqual([
+      '/models/bfl--flux-2-max--generate-images'
+    ])
+  })
 })
