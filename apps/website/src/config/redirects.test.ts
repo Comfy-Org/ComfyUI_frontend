@@ -87,6 +87,8 @@ describe('generated Vercel rules', () => {
     vercelRedirects.find((redirect) => redirect.source === source)
 
   it.for([
+    { source: '/minimax', destination: '/minimax-h3/' },
+    { source: '/zh-CN/minimax', destination: '/zh-CN/minimax-h3/' },
     { source: '/cloud/enterprise', destination: '/enterprise/' },
     { source: '/zh-CN/affiliates', destination: '/affiliates/' },
     {
@@ -118,11 +120,7 @@ describe('generated Vercel rules', () => {
       '/share-news',
       '/share-news/',
       '/share-news-pleaseeee',
-      '/share-news-pleaseeee/',
-      '/minimax',
-      '/minimax/',
-      '/zh-CN/minimax',
-      '/zh-CN/minimax/'
+      '/share-news-pleaseeee/'
     ])
   })
 

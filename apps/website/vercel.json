@@ -140,22 +140,22 @@
     {
       "source": "/minimax",
       "destination": "/minimax-h3/",
-      "permanent": false
+      "permanent": true
     },
     {
       "source": "/minimax/",
       "destination": "/minimax-h3/",
-      "permanent": false
+      "permanent": true
     },
     {
       "source": "/zh-CN/minimax",
       "destination": "/zh-CN/minimax-h3/",
-      "permanent": false
+      "permanent": true
     },
     {
       "source": "/zh-CN/minimax/",
       "destination": "/zh-CN/minimax-h3/",
-      "permanent": false
+      "permanent": true
     },
     {
       "source": "/cloud/enterprise",

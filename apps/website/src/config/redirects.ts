@@ -62,16 +62,8 @@ export const siteRedirects: readonly SiteRedirect[] = [
     destination: 'https://vibe-code-support-page.vercel.app/',
     temporaryBecause: 'a campaign link; a 301 stuck in the edge cache (#18611)'
   },
-  {
-    source: '/minimax',
-    destination: '/minimax-h3/',
-    temporaryBecause: 'the MiniMax launch may reuse /minimax/'
-  },
-  {
-    source: '/zh-CN/minimax',
-    destination: '/zh-CN/minimax-h3/',
-    temporaryBecause: 'the MiniMax launch may reuse /minimax/'
-  },
+  { source: '/minimax', destination: '/minimax-h3/' },
+  { source: '/zh-CN/minimax', destination: '/zh-CN/minimax-h3/' },
   { source: '/cloud/enterprise', destination: '/enterprise/' },
   { source: '/zh-CN/cloud/enterprise', destination: '/zh-CN/enterprise/' },
   {
