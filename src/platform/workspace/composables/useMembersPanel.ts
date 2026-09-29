@@ -144,8 +144,12 @@ export function useMembersPanel() {
   // shapes report a terminal plan: subscription_status 'ended', and a
   // cancelled row whose access has already closed (the backend reconciles
   // that shape into 'ended' on read, but a stale payload can still carry
-  // it). Scoped to team plans: a lapsed personal subscription belongs to
-  // the upgrade banner, not the team-ended treatment.
+  // it). Scoped by subscription shape, not seat capacity: when a plan
+  // truly ends the backend collapses max_seats to the no-plan default of 1
+  // (observed on test: ended + ENTERPRISE + max_seats 1), so a seat gate
+  // reads the flagship ended workspace as "seatless" and hides the very
+  // explanation this state exists to show. A lapsed personal subscription
+  // stays out via the team/sales-managed gate instead.
   const isPlanTerminal = computed(
     () =>
       subscriptionStatus.value === 'ended' ||
@@ -153,7 +157,8 @@ export function useMembersPanel() {
         !canAccessSubscriptionFeatures.value)
   )
   const isPlanEnded = computed(
-    () => hasMemberSeats.value && isPlanTerminal.value
+    () =>
+      (hasTeamPlan.value || isSalesManagedPlan.value) && isPlanTerminal.value
   )
   // Sales-managed, not strictly ENTERPRISE: isSalesManagedTier() treats an
   // unrecognized tier as sales-managed too, so an ended unknown/future plan
@@ -190,7 +195,10 @@ export function useMembersPanel() {
   })
 
   const uiConfig = computed(() => {
-    if (!hasMemberSeats.value) {
+    // An ended plan keeps the members-table presentation: the collapsed
+    // seat limit (see isPlanEnded) must not demote the page to the seatless
+    // layout, or the roster and the banner's context disappear together.
+    if (!hasMemberSeats.value && !isPlanEnded.value) {
       return {
         ...workspaceUiConfig.value,
         showMembersList: false,
@@ -251,9 +259,7 @@ export function useMembersPanel() {
   const showInviteButton = computed(() =>
     isCloud
       ? canInviteMembers.value ||
-        (isPlanEnded.value &&
-          hasMemberSeats.value &&
-          permissions.value.canManageSubscription)
+        (isPlanEnded.value && permissions.value.canManageSubscription)
       : workspaceRole.value === 'owner'
   )
 
