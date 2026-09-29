@@ -4,6 +4,7 @@ import type { PreviewSubscribeResult } from '@comfyorg/account-core/billing'
 
 import type { PromoEntry, PromoEntryEvent } from '@/checkout/promoEntry'
 import {
+  hasUnappliedDraft,
   initialPromoEntry,
   promoRejectionOf,
   reducePromoEntry
@@ -73,6 +74,7 @@ export function useCheckoutPromo({
     busy: computed(
       () => entry.value.kind === 'applying' || entry.value.kind === 'removing'
     ),
+    unapplied: computed(() => hasUnappliedDraft(entry.value)),
     appliedCode: computed(() =>
       entry.value.kind === 'applied' ? entry.value.code : undefined
     ),

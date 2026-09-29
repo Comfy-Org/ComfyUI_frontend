@@ -119,6 +119,11 @@ export function reducePromoEntry(
   }
 }
 
+/** A typed code Apply has not judged yet, which a Pay prices before it charges. */
+export function hasUnappliedDraft(entry: PromoEntry): boolean {
+  return entry.kind === 'editing' && entry.draft.trim() !== ''
+}
+
 /** The server's refusals of the code itself; any other failure leaves it unjudged. */
 const REFUSED_CODE_SERVER_CODES = [
   'PROMOTION_CODE_INVALID',

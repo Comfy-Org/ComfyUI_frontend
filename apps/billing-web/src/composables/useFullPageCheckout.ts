@@ -506,6 +506,9 @@ export function useFullPageCheckout() {
   let payGeneration = 0
 
   /**
+   * A code still typed in the field is priced first, and this click ends
+   * there: the customer sees the new total before a second Pay charges it.
+   *
    * A challenge the bank refused leaves the operation pending, so the
    * subscribe never resolves for that attempt; the page has already moved on
    * from the operation's own verdict, and a later Pay owns the form. Only
@@ -515,6 +518,7 @@ export function useFullPageCheckout() {
     const arrival = entry.value
     const quoted = preview.value
     if (arrival?.plan === undefined || !quoted || !canPay.value) return
+    if (promo.unapplied.value) return promo.apply()
     if (needsConsent(page.value)) return payWithoutConsent()
     const planned = { ...arrival, plan: arrival.plan }
     const mine = ++payGeneration
