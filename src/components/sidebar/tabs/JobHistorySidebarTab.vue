@@ -7,7 +7,7 @@
       <JobHistoryActionsMenu @clear-history="onClearHistory" />
     </template>
     <template #header>
-      <div class="overflow-x-auto px-4 pt-2">
+      <div class="overflow-x-auto px-4 pt-2 pb-px">
         <TabList
           :aria-label="$t('queue.jobHistory')"
           :model-value="selectedJobTab"
@@ -51,11 +51,10 @@
     </template>
     <template #body>
       <div class="flex h-full min-h-0 flex-col">
-        <TabPanel
-          v-for="tab in visibleJobTabs"
-          :key="tab"
-          :model-value="selectedJobTab"
-          :value="tab"
+        <div
+          :id="`tabpanel-${selectedJobTab}`"
+          role="tabpanel"
+          :aria-labelledby="`tab-${selectedJobTab}`"
           class="flex min-h-0 flex-1 flex-col"
         >
           <JobAssetsList
@@ -66,7 +65,7 @@
             @view-item="onViewItem"
             @menu="onMenuItem"
           />
-        </TabPanel>
+        </div>
         <JobContextMenu
           ref="jobContextMenuRef"
           :entries="jobMenuEntries"
@@ -91,12 +90,10 @@ import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
-import {
-  getVisibleJobTabs,
-  jobTabLabelKeys,
-  useJobList
-} from '@/composables/queue/useJobList'
-import type { JobListItem, JobTab } from '@/composables/queue/useJobList'
+import { getVisibleJobTabs, jobTabLabelKeys } from '@/composables/queue/jobTabs'
+import type { JobTab } from '@/composables/queue/jobTabs'
+import { useJobList } from '@/composables/queue/useJobList'
+import type { JobListItem } from '@/composables/queue/useJobList'
 import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHistoryDialog'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -104,7 +101,6 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
-import TabPanel from '@/components/tab/TabPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useCommandStore } from '@/stores/commandStore'

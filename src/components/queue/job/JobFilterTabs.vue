@@ -19,11 +19,8 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import {
-  getVisibleJobTabs,
-  jobTabLabelKeys
-} from '@/composables/queue/useJobList'
-import type { JobTab } from '@/composables/queue/useJobList'
+import { getVisibleJobTabs, jobTabLabelKeys } from '@/composables/queue/jobTabs'
+import type { JobTab } from '@/composables/queue/jobTabs'
 
 const { selectedJobTab, hasFailedJobs } = defineProps<{
   selectedJobTab: JobTab

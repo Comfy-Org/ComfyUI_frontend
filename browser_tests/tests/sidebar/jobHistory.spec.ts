@@ -117,7 +117,7 @@ function clearQueueButton(comfyPage: ComfyPage) {
 
 async function openSidebarClearHistoryDialog(comfyPage: ComfyPage) {
   const sidebar = jobHistorySidebar(comfyPage)
-  await sidebar.hover()
+  await sidebar.getByText('Job History', { exact: true }).hover()
   await sidebar.getByLabel(/More options/i).click()
   await comfyPage.page.getByTestId(TestIds.queue.clearHistoryAction).click()
 }

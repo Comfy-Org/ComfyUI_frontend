@@ -9,7 +9,7 @@ import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { getVisibleJobTabs, useJobList } from '@/composables/queue/useJobList'
+import { useJobList } from '@/composables/queue/useJobList'
 import type { JobState } from '@/types/queue'
 import type { BuildJobDisplayCtx } from '@/utils/queueDisplay'
 import { buildJobDisplay } from '@/utils/queueDisplay'
@@ -558,16 +558,4 @@ describe('useJobList', () => {
       'today-small'
     ])
   })
-})
-
-describe('getVisibleJobTabs', () => {
-  it.for([
-    { hasFailedJobs: true, expected: ['All', 'Completed', 'Failed'] },
-    { hasFailedJobs: false, expected: ['All', 'Completed'] }
-  ])(
-    'shows $expected when hasFailedJobs is $hasFailedJobs',
-    ({ hasFailedJobs, expected }) => {
-      expect(getVisibleJobTabs(hasFailedJobs)).toEqual(expected)
-    }
-  )
 })

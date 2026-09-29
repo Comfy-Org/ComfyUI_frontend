@@ -22,19 +22,9 @@ import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { buildJobDisplay } from '@/utils/queueDisplay'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
-/** Tabs for job list filtering */
-export const jobTabs = ['All', 'Completed', 'Failed'] as const
-export type JobTab = (typeof jobTabs)[number]
+import type { JobTab } from '@/composables/queue/jobTabs'
 
-export const jobTabLabelKeys: Record<JobTab, string> = {
-  All: 'g.all',
-  Completed: 'g.completed',
-  Failed: 'g.failed'
-}
-
-export function getVisibleJobTabs(hasFailedJobs: boolean): readonly JobTab[] {
-  return hasFailedJobs ? jobTabs : jobTabs.filter((tab) => tab !== 'Failed')
-}
+export type { JobTab } from '@/composables/queue/jobTabs'
 
 export const jobSortModes = ['mostRecent', 'totalGenerationTime'] as const
 export type JobSortMode = (typeof jobSortModes)[number]
