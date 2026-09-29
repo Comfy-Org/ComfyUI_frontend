@@ -1113,6 +1113,7 @@ export class ComfyApp {
     const viewport = measureViewportFromElement(canvas)
     applyViewport(viewport, canvas, this.canvas.bgcanvas)
     this.canvas.dpr = viewport.dpr
+    useCanvasScheduler().flush()
     this.canvas.draw(true, true)
   }
 

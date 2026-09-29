@@ -64,6 +64,7 @@ describe('getCanvasContextMenuTarget', () => {
     )
     canvas.connections_width = 3
     canvas.links_render_mode = LinkRenderType.SPLINE_LINK
+    canvas.dpr = 1
   })
 
   function resolve() {
@@ -148,17 +149,18 @@ describe('getCanvasContextMenuTarget', () => {
 
     expect(mockQueryLinkSegmentAtPoint).toHaveBeenCalledWith(
       { x: 10, y: 20 },
-      canvas.ctx
+      canvas.ctx,
+      1
     )
     expect(target.group).toBe(group)
     expect(target.link).toBe(link)
   })
 
   it.for([
-    { dpi: 0.5, x: 10, y: 20 },
+    { dpi: 0.5, x: 5, y: 10 },
     { dpi: 2, x: 20, y: 40 }
   ])('falls back to current-frame paths at DPI $dpi', ({ dpi, x, y }) => {
-    vi.stubGlobal('devicePixelRatio', dpi)
+    canvas.dpr = dpi
     const link = createLink(4)
     link.path = fromPartial<Path2D>({})
     canvas.renderedPaths.add(link)
