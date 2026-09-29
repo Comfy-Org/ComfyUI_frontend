@@ -16,7 +16,10 @@ import type {
   BillingStatusResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
+import {
+  CancellationScopeChangedError,
+  useWorkspaceBilling
+} from '@/platform/workspace/composables/useWorkspaceBilling'
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   getBillingStatus: vi.fn(),
@@ -94,7 +97,8 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 const mockRail = vi.hoisted(() => ({
   enabled: false,
-  openPaymentPortal: vi.fn()
+  openPaymentPortal: vi.fn(),
+  cancelSubscription: vi.fn()
 }))
 
 vi.mock<unknown>(
@@ -220,6 +224,7 @@ describe('useWorkspaceBilling', () => {
   afterEach(() => {
     scope?.stop()
     scope = undefined
+    mockRail.enabled = false
   })
 
   describe('initialize', () => {
@@ -1323,6 +1328,25 @@ describe('useWorkspaceBilling', () => {
         }
       )
       expect(billing.error.value).toBeNull()
+    })
+
+    it('rejects before the legacy request when scope changes while the rail declines', async () => {
+      const deferredRail = createDeferred<{ status: 'unavailable' }>()
+      mockRail.enabled = true
+      mockRail.cancelSubscription.mockReturnValue(deferredRail.promise)
+      let scopeIsCurrent = true
+
+      const pending = setupBilling().cancelSubscription(() => scopeIsCurrent)
+      await vi.waitFor(() =>
+        expect(mockRail.cancelSubscription).toHaveBeenCalledOnce()
+      )
+      scopeIsCurrent = false
+      deferredRail.resolve({ status: 'unavailable' })
+
+      await expect(pending).rejects.toBeInstanceOf(
+        CancellationScopeChangedError
+      )
+      expect(mockWorkspaceApi.cancelSubscription).not.toHaveBeenCalled()
     })
 
     it('throws the op error message when the cancel op fails', async () => {
