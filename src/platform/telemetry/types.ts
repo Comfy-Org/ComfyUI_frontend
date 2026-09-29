@@ -1182,16 +1182,39 @@ export function getBillingTelemetryEventName(
 
 type BillingTelemetryPayload = Record<string, unknown>
 
-function copyBillingPayloadField(
-  payload: BillingTelemetryPayload,
-  event: BillingTelemetryEvent,
-  field: string,
-  omitUndefined = false
-): void {
-  if (!(field in event)) return
-  const value = (event as unknown as BillingTelemetryPayload)[field]
-  if (!omitUndefined || value !== undefined) payload[field] = value
-}
+type BillingTelemetryField = BillingTelemetryEvent extends infer Event
+  ? Event extends BillingTelemetryEvent
+    ? keyof Event
+    : never
+  : never
+
+const OPTIONAL_BILLING_PAYLOAD_FIELDS = [
+  'billing_op_id',
+  'checkout_attempt_id',
+  'tier',
+  'cycle',
+  'checkout_type',
+  'payment_intent_source',
+  'error_code',
+  'target_tier',
+  'duration_ms'
+] as const satisfies readonly BillingTelemetryField[]
+
+const REQUIRED_BILLING_PAYLOAD_FIELDS = [
+  'operation_type',
+  'checkout_status',
+  'source',
+  'failure_category',
+  'member_removal_count',
+  'member_removal_failures'
+] as const satisfies readonly BillingTelemetryField[]
+
+const optionalBillingPayloadFields: ReadonlySet<string> = new Set(
+  OPTIONAL_BILLING_PAYLOAD_FIELDS
+)
+const requiredBillingPayloadFields: ReadonlySet<string> = new Set(
+  REQUIRED_BILLING_PAYLOAD_FIELDS
+)
 
 export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
   const payload: BillingTelemetryPayload = {
@@ -1200,28 +1223,12 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
     outcome: event.outcome
   }
 
-  for (const field of [
-    'billing_op_id',
-    'checkout_attempt_id',
-    'tier',
-    'cycle',
-    'checkout_type',
-    'payment_intent_source',
-    'error_code',
-    'target_tier',
-    'duration_ms'
-  ]) {
-    copyBillingPayloadField(payload, event, field, true)
-  }
-  for (const field of [
-    'operation_type',
-    'checkout_status',
-    'source',
-    'failure_category',
-    'member_removal_count',
-    'member_removal_failures'
-  ]) {
-    copyBillingPayloadField(payload, event, field)
+  for (const [field, value] of Object.entries(event)) {
+    if (requiredBillingPayloadFields.has(field)) {
+      payload[field] = value
+    } else if (optionalBillingPayloadFields.has(field) && value !== undefined) {
+      payload[field] = value
+    }
   }
 
   return payload
