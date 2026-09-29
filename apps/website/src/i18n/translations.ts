@@ -67,12 +67,27 @@ const translations = {
     'zh-CN': '显示 {n} 个工作流'
   },
   'workshop.hero.heading': {
-    en: 'What will you make next?',
-    'zh-CN': '接下来你想创造什么？'
+    en: 'ComfyUI models',
+    'zh-CN': 'ComfyUI 模型'
   },
   'workshop.hero.subtitle': {
-    en: 'Try the latest AI models with your own ideas, right in your browser.',
-    'zh-CN': '用你自己的创意试用最新的 AI 模型，就在浏览器中。'
+    en: 'What will you make next? Try the latest AI models with your own ideas, right in your browser.',
+    'zh-CN':
+      '接下来你想创造什么？用你自己的创意试用最新的 AI 模型，就在浏览器中。'
+  },
+  'models.hub.meta.title': {
+    en: 'ComfyUI Models: Run AI Image, Video & Audio Models - Comfy',
+    'zh-CN': 'ComfyUI 模型：运行 AI 图像、视频和音频模型 - Comfy'
+  },
+  'models.hub.meta.description': {
+    en: 'Browse {count} AI model in ComfyUI, including {names}. Try it in your browser, then call it from your code. | Browse {count} AI models in ComfyUI, including {names}. Try any model in your browser, then call it from your code.',
+    'zh-CN':
+      '在 ComfyUI 中浏览 {count} 个 AI 模型，包括 {names}。在浏览器中试用任意模型，然后在你的代码中调用它。'
+  },
+  'models.hub.meta.descriptionWithoutNames': {
+    en: 'Browse {count} AI model in ComfyUI. Try it in your browser, then call it from your code. | Browse {count} AI models in ComfyUI. Try any model in your browser, then call it from your code.',
+    'zh-CN':
+      '在 ComfyUI 中浏览 {count} 个 AI 模型。在浏览器中试用任意模型，然后在你的代码中调用它。'
   },
   'workshop.search.label': {
     en: 'Search models, providers, and categories',

@@ -8,6 +8,8 @@ import {
   deriveUpcomingEvents,
   directoryEvents,
   eventJsonLdNode,
+  eventOgImage,
+  eventVideoThumbnail,
   eventStatus,
   pastEvents,
   toCalendarEvent,
@@ -390,5 +392,48 @@ describe('site event data', () => {
         })
       }
     }
+  })
+})
+
+describe('eventOgImage', () => {
+  const alt = { en: 'Card', 'zh-CN': '卡片' }
+
+  it.for([
+    [
+      'an image',
+      { type: 'image', src: 'https://cdn/card.png', alt },
+      'https://cdn/card.png'
+    ],
+    [
+      'a video poster',
+      {
+        type: 'video',
+        src: 'https://cdn/clip.mp4',
+        alt,
+        poster: 'https://cdn/still.png'
+      },
+      'https://cdn/still.png'
+    ],
+    [
+      'nothing for a video without a poster',
+      { type: 'video', src: 'https://cdn/clip.mp4', alt },
+      undefined
+    ],
+    ['nothing without media', undefined, undefined]
+  ] as const)('returns %s', ([, media, expected]) => {
+    expect(eventOgImage({ ...baseEvent, media })).toBe(expected)
+  })
+})
+
+describe('eventVideoThumbnail', () => {
+  it('falls back to the default card for a video without a poster', () => {
+    const media = {
+      type: 'video',
+      src: 'https://cdn/clip.mp4',
+      alt: { en: 'Clip', 'zh-CN': '片段' }
+    } as const
+    expect(eventVideoThumbnail({ ...baseEvent, media })).toBe(
+      'https://media.comfy.org/website/comfy.webp'
+    )
   })
 })

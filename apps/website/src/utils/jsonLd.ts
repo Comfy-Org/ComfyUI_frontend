@@ -1,6 +1,7 @@
 import type { Locale } from '../config/locales'
 import { resolveLocale } from '../config/locales'
-import { externalLinks } from '../config/routes'
+import { externalLinks, getRoutes } from '../config/routes'
+import { t } from '../i18n/translations'
 
 export type JsonLdNode = Record<string, unknown> & { '@type': string }
 
@@ -28,7 +29,7 @@ export interface Crumb {
 export const DEFAULT_OG_IMAGE = 'https://media.comfy.org/website/comfy.webp'
 
 const sameAs = [
-  externalLinks.github,
+  externalLinks.githubOrg,
   externalLinks.x,
   externalLinks.youtube,
   externalLinks.discord,
@@ -85,7 +86,7 @@ function buildGraph(...nodes: (JsonLdNode | null | undefined)[]): JsonLdGraph {
   }
 }
 
-function organizationNode(siteUrl: string): JsonLdNode {
+function organizationNode(siteUrl: string, locale: Locale): JsonLdNode {
   return {
     '@type': 'Organization',
     '@id': organizationId(siteUrl),
@@ -97,6 +98,13 @@ function organizationNode(siteUrl: string): JsonLdNode {
       width: 512,
       height: 512
     },
+    description: t('hero.subtitle', locale),
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'customer support',
+      email: 'support@comfy.org',
+      url: `${siteUrl}${getRoutes().contact}/`
+    },
     sameAs
   }
 }
@@ -106,6 +114,7 @@ function websiteNode(siteUrl: string): JsonLdNode {
     '@type': 'WebSite',
     '@id': websiteId(siteUrl),
     name: 'Comfy',
+    alternateName: ['Comfy Org', 'comfy.org'],
     url: siteUrl,
     publisher: { '@id': organizationId(siteUrl) }
   }
@@ -188,6 +197,10 @@ export function articleNode(input: ArticleInput): JsonLdNode {
     author: orgRef,
     publisher: orgRef
   }
+}
+
+export function webPageName(title: string): string {
+  return title.replace(/ [-·] Comfy$/, '')
 }
 
 interface WebPageInput {
@@ -493,7 +506,7 @@ export function buildPageGraph(
   }
   const hasCrumbs = Boolean(page.crumbs && page.crumbs.length > 0)
   return buildGraph(
-    organizationNode(ctx.siteUrl),
+    organizationNode(ctx.siteUrl, ctx.locale),
     websiteNode(ctx.siteUrl),
     webPageNode(input, type),
     hasCrumbs ? breadcrumbNode(page.url, page.crumbs!) : undefined,

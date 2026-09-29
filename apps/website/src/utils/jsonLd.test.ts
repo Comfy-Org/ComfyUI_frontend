@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { externalLinks } from '../config/routes'
+import { t } from '../i18n/translations'
 import { escapeJsonLd } from './escapeJsonLd'
 import type { JsonLdGraph } from './jsonLd'
 import {
@@ -18,7 +19,8 @@ import {
   pageContext,
   productNode,
   softwareApplicationNode,
-  videoObjectNode
+  videoObjectNode,
+  webPageName
 } from './jsonLd'
 
 const siteUrl = 'https://comfy.org'
@@ -175,6 +177,66 @@ describe('softwareApplicationNode', () => {
     })
     expect(node.author).toBeUndefined()
     expect(node.publisher).toBeUndefined()
+  })
+})
+
+describe('site identity', () => {
+  const graph = buildPageGraph(
+    { siteUrl, locale: 'en' },
+    { url: `${siteUrl}/`, name: 'Home' }
+  )
+  const nodeOfType = (type: string) =>
+    graph['@graph'].find((node) => node['@type'] === type)
+
+  it('describes the organization and how to contact it', () => {
+    const org = nodeOfType('Organization')
+    expect(org?.description).toEqual(expect.stringContaining('Comfy'))
+    expect(org?.contactPoint).toEqual({
+      '@type': 'ContactPoint',
+      contactType: 'customer support',
+      email: 'support@comfy.org',
+      url: 'https://comfy.org/contact/'
+    })
+    expect(org).not.toHaveProperty('address')
+  })
+
+  it('describes the organization in the page language', () => {
+    const zhGraph = buildPageGraph(
+      { siteUrl, locale: 'zh-CN' },
+      { url: `${siteUrl}/zh-CN/`, name: '首页' }
+    )
+    const zhOrg = zhGraph['@graph'].find(
+      (node) => node['@type'] === 'Organization'
+    )
+    expect(zhOrg?.description).toBe(t('hero.subtitle', 'zh-CN'))
+  })
+
+  it('names the GitHub organization, not the ComfyUI repository', () => {
+    const org = nodeOfType('Organization')
+    expect(org?.sameAs).toContain('https://github.com/Comfy-Org')
+    expect(org?.sameAs).not.toContain('https://github.com/Comfy-Org/ComfyUI')
+  })
+
+  it('gives the website its alternate names', () => {
+    expect(nodeOfType('WebSite')?.alternateName).toEqual([
+      'Comfy Org',
+      'comfy.org'
+    ])
+  })
+})
+
+describe('webPageName', () => {
+  it.for([
+    ['Models - Comfy', 'Models'],
+    ['404 - Page Not Found - Comfy', '404 - Page Not Found'],
+    ['Pricing - Comfy Cloud', 'Pricing - Comfy Cloud'],
+    [
+      'Serverless animation comparison · Comfy',
+      'Serverless animation comparison'
+    ],
+    ['Comfy', 'Comfy']
+  ])('%s -> %s', ([title, name]) => {
+    expect(webPageName(title)).toBe(name)
   })
 })
 
