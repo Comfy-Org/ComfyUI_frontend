@@ -1,3 +1,4 @@
+import { isProductionBuild } from './build-env'
 import { LOCALE_CODES, LOCALES } from './locales'
 import { models } from './models'
 import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
@@ -49,8 +50,7 @@ function normalizePathname(pathname: string): string {
 }
 
 export function isIndexableBuild(): boolean {
-  const vercelEnv = process.env.VERCEL_ENV
-  if (vercelEnv) return vercelEnv === 'production'
+  if (process.env.VERCEL_ENV) return isProductionBuild()
   return process.env.WEBSITE_INDEXABLE === '1'
 }
 
