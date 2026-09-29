@@ -54,6 +54,7 @@ const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
  * time a real user spends on card entry and 3DS. */
 const PENDING_CHECKOUT_COMPLETION_DEADLINE_MS = 10 * 60 * 1000
 const PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS = 10_000
+const PENDING_CHECKOUT_DEADLINE_RETRY_MS = 1000
 const MAX_TIMER_DELAY_MS = 2_147_483_647
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
@@ -504,9 +505,15 @@ function useSubscriptionInternal() {
   const recoverPendingSubscriptionCheckout = async (
     source: PendingCheckoutRecoverySource
   ) => {
-    if (!canRecoverPendingCheckout()) return
+    if (!canRecoverPendingCheckout()) {
+      if (source === 'deadline' && hasPendingSubscriptionCheckoutAttempt()) {
+        armMissingCheckoutCompletionWakeUp(PENDING_CHECKOUT_DEADLINE_RETRY_MS)
+      }
+      return
+    }
     if (isRecoveringPendingCheckout) {
       await waitForActiveRecoveryAtDeadline(source)
+      if (source === 'deadline') reportMissingCheckoutCompletion()
       return
     }
 
@@ -520,6 +527,8 @@ function useSubscriptionInternal() {
       isRecoveringPendingCheckout = false
       activePendingCheckoutRecovery = null
     }
+
+    if (source === 'deadline') reportMissingCheckoutCompletion()
   }
 
   // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
