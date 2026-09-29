@@ -57,14 +57,6 @@ const {
       return {
         getItem: vi.fn((key: string) => store.get(key) ?? null),
         setItem: vi.fn((key: string, value: string) => {
-          if (key === PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) {
-            const attempt = JSON.parse(value) as Record<string, unknown>
-            if (!('owner_id' in attempt)) attempt.owner_id = 'user-123'
-            if (!('workspace_id' in attempt)) {
-              attempt.workspace_id = 'workspace-123'
-            }
-            value = JSON.stringify(attempt)
-          }
           store.set(key, value)
         }),
         removeItem: vi.fn((key: string) => {
@@ -746,7 +738,7 @@ describe('useSubscription', () => {
       )
       expect(stored.operation).toBe('resubscribe')
       expect(stored.resubscribe_source).toBe('settings_billing_panel')
-      expect(stored.previous_cancel_at).toBeNull()
+      expect(stored.previous_cancel_at).toBeUndefined()
       expect(stored.owner_id).toBe('user-123')
       expect(stored.workspace_id).toBe('workspace-123')
 

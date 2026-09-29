@@ -238,7 +238,7 @@ describe('performSubscriptionCheckout', () => {
     openSpy.mockRestore()
   })
 
-  it('uses the latest userId when it changes after checkout starts', async () => {
+  it('keeps the initiating user when identity changes during checkout', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
     const authHeader =
@@ -267,7 +267,7 @@ describe('performSubscriptionCheckout', () => {
     expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledTimes(1)
     expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
       expect.objectContaining({
-        user_id: 'user-late',
+        user_id: 'user-early',
         tier: 'pro',
         cycle: 'yearly',
         checkout_type: 'new',

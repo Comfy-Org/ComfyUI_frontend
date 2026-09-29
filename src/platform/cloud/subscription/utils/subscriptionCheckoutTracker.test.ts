@@ -129,7 +129,7 @@ describe('subscriptionCheckoutTracker', () => {
     )
   })
 
-  it('preserves a future timestamp so its age is not reset on every read', () => {
+  it('rejects a timestamp beyond the allowed clock skew', () => {
     const startedAt = Date.now() + 6 * 60 * 1000
     localStorage.setItem(
       PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -142,15 +142,10 @@ describe('subscriptionCheckoutTracker', () => {
       })
     )
 
-    expect(getPendingSubscriptionCheckoutAttempt()).toEqual(
-      expect.objectContaining({
-        attempt_id: 'far-future-attempt',
-        started_at_ms: startedAt
-      })
-    )
+    expect(getPendingSubscriptionCheckoutAttempt()).toBeNull()
     expect(
       localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
-    ).not.toBeNull()
+    ).toBeNull()
   })
 
   it('deduplicates reports in memory when storage writes fail', () => {

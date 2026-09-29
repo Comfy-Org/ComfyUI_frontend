@@ -92,6 +92,8 @@ async function initiateSubscriptionCheckout(
 
   const authStore = useAuthStore()
   const { userId } = storeToRefs(authStore)
+  const checkoutOwnerId = userId.value
+  const checkoutWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
   const telemetry = useTelemetry()
   const authHeader = await authStore.getFirebaseAuthHeader()
 
@@ -138,7 +140,8 @@ async function initiateSubscriptionCheckout(
     currentBillingCycle,
     paymentIntentSource,
     openInNewTab,
-    userId: userId.value,
+    userId: checkoutOwnerId,
+    workspaceId: checkoutWorkspaceId,
     checkoutAttribution,
     telemetry
   })
@@ -152,6 +155,7 @@ function completeSubscriptionCheckout(
     paymentIntentSource?: PaymentIntentSource
     openInNewTab: boolean
     userId: string | null | undefined
+    workspaceId: string | null
     checkoutAttribution: CheckoutAttributionMetadata
     telemetry: ReturnType<typeof useTelemetry>
   }
@@ -164,6 +168,7 @@ function completeSubscriptionCheckout(
     paymentIntentSource,
     openInNewTab,
     userId,
+    workspaceId,
     checkoutAttribution,
     telemetry
   } = context
@@ -174,7 +179,7 @@ function completeSubscriptionCheckout(
     checkout_type: 'new',
     payment_intent_source: paymentIntentSource,
     owner_id: userId ?? undefined,
-    workspace_id: useTeamWorkspaceStore().activeWorkspaceId
+    workspace_id: workspaceId
   })
 
   if (userId) {

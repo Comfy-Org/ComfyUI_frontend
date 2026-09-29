@@ -17,6 +17,7 @@ import type {
 } from '@/platform/telemetry/types'
 
 const PENDING_SUBSCRIPTION_CHECKOUT_MAX_AGE_MS = 6 * 60 * 60 * 1000
+const PENDING_SUBSCRIPTION_CHECKOUT_MAX_FUTURE_SKEW_MS = 5 * 60 * 1000
 const VALID_TIER_KEYS: ReadonlySet<string> = new Set([
   'free',
   'standard',
@@ -198,6 +199,8 @@ const isCheckoutAttemptCore = (
   typeof value.attempt_id === 'string' &&
   typeof value.started_at_ms === 'number' &&
   Number.isFinite(value.started_at_ms) &&
+  value.started_at_ms <=
+    Date.now() + PENDING_SUBSCRIPTION_CHECKOUT_MAX_FUTURE_SKEW_MS &&
   isTierKey(value.tier) &&
   (value.cycle === 'monthly' || value.cycle === 'yearly') &&
   (value.checkout_type === 'new' || value.checkout_type === 'change')
@@ -444,7 +447,9 @@ const didAttemptSucceed = (
   if (attempt.operation === 'resubscribe') {
     return (
       attempt.previous_cancel_at !== undefined &&
-      status.cancel_at !== attempt.previous_cancel_at
+      (status.cancel_at ?? null) !== attempt.previous_cancel_at &&
+      getTierFromStatus(status) === attempt.tier &&
+      getCycleFromStatus(status) === attempt.cycle
     )
   }
 

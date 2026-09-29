@@ -21,9 +21,13 @@ import type {
   SubscriptionSuccessMetadata
 } from '@/platform/telemetry/types'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
@@ -57,8 +61,26 @@ const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
  * time a real user spends on card entry and 3DS. */
 const PENDING_CHECKOUT_COMPLETION_DEADLINE_MS = 10 * 60 * 1000
 const PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS = 10_000
-const PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS = [1000, 5000, 30000] as const
+const PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS = [
+  1000,
+  5000,
+  30000,
+  2 * 60 * 1000,
+  5 * 60 * 1000,
+  10 * 60 * 1000
+] as const
 const MAX_TIMER_DELAY_MS = 2_147_483_647
+
+type CheckoutScopeOwnership = 'unresolved' | 'matched' | 'mismatched'
+
+function compareCheckoutScopeStamp(
+  stampedId: string | null | undefined,
+  currentId: string | null | undefined
+): CheckoutScopeOwnership {
+  if (typeof stampedId !== 'string') return 'matched'
+  if (!currentId) return 'unresolved'
+  return stampedId === currentId ? 'matched' : 'mismatched'
+}
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
   let timeoutId: ReturnType<typeof setTimeout> | undefined
@@ -214,11 +236,7 @@ function useSubscriptionInternal() {
 
   const getReportableMissingCheckout = () => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
-    if (
-      !attempt ||
-      hasReportedMissingCheckoutCompletion(attempt.attempt_id) ||
-      hasReportedRecoveryUnreachable(attempt.attempt_id)
-    ) {
+    if (!attempt || hasReportedMissingCheckoutCompletion(attempt.attempt_id)) {
       return null
     }
 
@@ -337,18 +355,18 @@ function useSubscriptionInternal() {
     }, nextDelay)
   }
 
-  const getPendingAttemptOwnership = ():
-    | 'unresolved'
-    | 'matched'
-    | 'mismatched' => {
+  const getPendingAttemptOwnership = (): CheckoutScopeOwnership => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
     if (!attempt) return 'matched'
-    if (attempt.owner_id && !authStore.userId) return 'unresolved'
-    if (attempt.workspace_id && !workspaceStore.activeWorkspaceId)
-      return 'unresolved'
-    if (attempt.owner_id !== authStore.userId) return 'mismatched'
-    if (attempt.workspace_id !== workspaceStore.activeWorkspaceId)
+    const owner = compareCheckoutScopeStamp(attempt.owner_id, authStore.userId)
+    const workspace = compareCheckoutScopeStamp(
+      attempt.workspace_id,
+      workspaceStore.activeWorkspaceId
+    )
+    if (owner === 'mismatched' || workspace === 'mismatched')
       return 'mismatched'
+    if (owner === 'unresolved' || workspace === 'unresolved')
+      return 'unresolved'
     return 'matched'
   }
 
@@ -384,10 +402,12 @@ function useSubscriptionInternal() {
   const syncPendingSubscriptionSuccess = (
     statusData: BillingStatusResponse
   ) => {
-    if (getPendingAttemptOwnership() !== 'matched') {
+    const ownership = getPendingAttemptOwnership()
+    if (ownership === 'mismatched') {
       stopPendingCheckoutRecovery()
       return
     }
+    if (ownership === 'unresolved') return
     const metadata = consumePendingSubscriptionCheckoutSuccess(statusData)
 
     if (!metadata) {
@@ -447,7 +467,14 @@ function useSubscriptionInternal() {
     if (subscriptionDuration.value === 'MONTHLY') return 'monthly'
   }
 
-  const recordStandardCheckoutAttempt = (options?: SubscribeDirectOptions) => {
+  const recordStandardCheckoutAttempt = (
+    options: SubscribeDirectOptions | undefined,
+    scope: {
+      ownerId: string | undefined
+      workspaceId: string | null
+      previousCancelAt: string | null | undefined
+    }
+  ) => {
     const previousTier = subscriptionTier.value
       ? toTierKey(subscriptionTier.value)
       : null
@@ -458,7 +485,9 @@ function useSubscriptionInternal() {
         ? {
             operation: options.operation,
             resubscribe_source: options.source,
-            previous_cancel_at: subscriptionStatus.value?.cancel_at ?? null
+            ...(scope.previousCancelAt !== undefined
+              ? { previous_cancel_at: scope.previousCancelAt }
+              : {})
           }
         : {}
 
@@ -469,8 +498,8 @@ function useSubscriptionInternal() {
       previous_tier: previousTier ?? undefined,
       previous_cycle: previousCycle,
       ...resubscribeDetails,
-      owner_id: authStore.userId ?? undefined,
-      workspace_id: workspaceStore.activeWorkspaceId
+      owner_id: scope.ownerId,
+      workspace_id: scope.workspaceId
     })
   }
 
@@ -478,6 +507,13 @@ function useSubscriptionInternal() {
   const subscribeDirect = async (
     options?: SubscribeDirectOptions
   ): Promise<void> => {
+    const checkoutScope = {
+      ownerId: authStore.userId ?? undefined,
+      workspaceId: workspaceStore.activeWorkspaceId,
+      previousCancelAt: subscriptionStatus.value
+        ? (subscriptionStatus.value.cancel_at ?? null)
+        : undefined
+    }
     const response = await initiateSubscriptionCheckout()
 
     if (!response.checkout_url) {
@@ -493,7 +529,7 @@ function useSubscriptionInternal() {
       return
     }
 
-    recordStandardCheckoutAttempt(options)
+    recordStandardCheckoutAttempt(options, checkoutScope)
   }
 
   const subscribe = wrapWithErrorHandlingAsync(subscribeDirect, reportError)
@@ -576,14 +612,14 @@ function useSubscriptionInternal() {
       Date.now() - attempt.started_at_ms >=
         PENDING_CHECKOUT_COMPLETION_DEADLINE_MS
     if (source === 'deadline' || isPastDeadline) {
-      reportRecoveryUnreachable()
+      reportRecoveryUnreachable(error)
       rearmBoundedDeadlineWakeUp()
     } else {
       schedulePendingCheckoutRecovery()
     }
   }
 
-  const reportRecoveryUnreachable = () => {
+  const reportRecoveryUnreachable = (error?: unknown) => {
     if (isDisposed) return
     const attempt = getPendingSubscriptionCheckoutAttempt()
     if (
@@ -616,7 +652,7 @@ function useSubscriptionInternal() {
       stage: 'failed',
       outcome: 'failure',
       checkout_attempt_id: attempt.attempt_id,
-      failure_category: 'network',
+      failure_category: categorizeBillingApiError(error),
       tier: attempt.tier,
       cycle: attempt.cycle,
       checkout_type: attempt.checkout_type,
@@ -629,7 +665,7 @@ function useSubscriptionInternal() {
         outcome: 'failure',
         source: attempt.resubscribe_source ?? 'settings_billing_panel',
         checkout_attempt_id: attempt.attempt_id,
-        failure_category: 'network'
+        failure_category: categorizeBillingApiError(error)
       })
     }
   }
@@ -651,7 +687,7 @@ function useSubscriptionInternal() {
         '[Subscription] Pending checkout recovery was still running at the deadline:',
         error
       )
-      reportRecoveryUnreachable()
+      reportRecoveryUnreachable(error)
       rearmBoundedDeadlineWakeUp()
       return false
     }
@@ -675,15 +711,16 @@ function useSubscriptionInternal() {
   const rearmBoundedDeadlineWakeUp = () => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
     if (!attempt) return
-    const delayIndex = Math.min(
-      pendingCheckoutDeadlineRetryCount,
-      PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS.length - 1
-    )
-    const delay = PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS[delayIndex]
-    pendingCheckoutDeadlineRetryCount = Math.min(
-      pendingCheckoutDeadlineRetryCount + 1,
+    if (
+      pendingCheckoutDeadlineRetryCount >=
       PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS.length
     )
+      return
+    const delay =
+      PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS[
+        pendingCheckoutDeadlineRetryCount
+      ]
+    pendingCheckoutDeadlineRetryCount += 1
     armMissingCheckoutCompletionWakeUp(delay)
   }
 
@@ -751,7 +788,6 @@ function useSubscriptionInternal() {
   let inFlightStatusOwnerId: string | null = null
   let inFlightStatusWorkspaceId: string | null = null
   let nextStatusFetchSequence = 0
-  let publishedStatusFetchSequence = 0
   let statusScopeGeneration = 0
   let observedStatusScope = `${authStore.userId ?? ''}\0${workspaceStore.activeWorkspaceId ?? ''}`
 
@@ -769,6 +805,13 @@ function useSubscriptionInternal() {
     () => [authStore.userId, workspaceStore.activeWorkspaceId] as const,
     ([ownerId, workspaceId]) => {
       observeStatusScope(ownerId ?? null, workspaceId)
+      if (
+        workspaceId &&
+        hasPendingSubscriptionCheckoutAttempt() &&
+        getPendingAttemptOwnership() === 'matched'
+      ) {
+        void recoverPendingSubscriptionCheckout('retry')
+      }
     }
   )
 
@@ -828,10 +871,15 @@ function useSubscriptionInternal() {
         : await workspaceApi.getBillingStatus()
       return status
     } catch (error) {
+      const status =
+        error instanceof WorkspaceApiError || error instanceof AuthStoreError
+          ? error.status
+          : undefined
       throw new AuthStoreError(
         t('toastMessages.failedToFetchSubscription', {
           error: error instanceof Error ? error.message : String(error)
-        })
+        }),
+        status
       )
     }
   }
@@ -855,7 +903,7 @@ function useSubscriptionInternal() {
       )
     )
       return null
-    publishSubscriptionStatus(statusData, workspaceId, sequence)
+    publishSubscriptionStatus(statusData, workspaceId)
 
     return statusData
   }
@@ -871,7 +919,7 @@ function useSubscriptionInternal() {
       !isDisposed &&
       statusData !== undefined &&
       scopeGeneration === statusScopeGeneration &&
-      sequence > publishedStatusFetchSequence &&
+      sequence === nextStatusFetchSequence &&
       (authStore.userId ?? null) === ownerId &&
       workspaceStore.activeWorkspaceId === workspaceId
     )
@@ -879,10 +927,8 @@ function useSubscriptionInternal() {
 
   function publishSubscriptionStatus(
     statusData: BillingStatusResponse,
-    workspaceId: string | null,
-    sequence: number
+    workspaceId: string | null
   ): void {
-    publishedStatusFetchSequence = sequence
     // Only a current, publishable read proves billing is reachable.
     lastPendingCheckoutStatus = statusData
     subscriptionStatus.value = statusData
@@ -935,7 +981,7 @@ function useSubscriptionInternal() {
 
       if (loggedIn && isCloud) {
         try {
-          if (hasPendingSubscriptionCheckoutAttempt()) {
+          if (hasOwnedPendingCheckoutAttempt()) {
             await recoverPendingSubscriptionCheckout('bootstrap')
           } else {
             await fetchSubscriptionStatus()
