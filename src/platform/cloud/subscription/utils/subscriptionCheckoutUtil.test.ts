@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 
 const { mockIsCloud, mockGetCheckoutAttribution, mockLocalStorage } =
@@ -298,7 +299,7 @@ describe('performSubscriptionCheckout', () => {
     openSpy.mockRestore()
   })
 
-  it('keeps the initiating user when identity changes during checkout', async () => {
+  it('keeps the initiating scope when identity changes during checkout', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
     const authHeader =
@@ -309,6 +310,9 @@ describe('performSubscriptionCheckout', () => {
       >()
 
     Object.assign(useAuthStore(), { userId: 'user-early' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-early'
+    })
     vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementationOnce(
       () => authHeader.promise
     )
@@ -320,6 +324,9 @@ describe('performSubscriptionCheckout', () => {
     const checkoutPromise = performSubscriptionCheckout('pro', 'yearly')
 
     Object.assign(useAuthStore(), { userId: 'user-late' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-late'
+    })
     authHeader.resolve({ Authorization: 'Bearer test-token' as const })
 
     await checkoutPromise
@@ -334,6 +341,11 @@ describe('performSubscriptionCheckout', () => {
         checkout_attempt_id: expect.any(String)
       })
     )
+    const [, storedAttempt] = mockLocalStorage.setItem.mock.calls[0]
+    expect(JSON.parse(storedAttempt)).toMatchObject({
+      owner_id: 'user-early',
+      workspace_id: 'workspace-early'
+    })
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
   })
 

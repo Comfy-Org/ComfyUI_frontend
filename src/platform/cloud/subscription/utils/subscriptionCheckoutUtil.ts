@@ -152,18 +152,44 @@ async function initiateSubscriptionCheckout(
   })
 }
 
+interface CheckoutCompletionContext {
+  tierKey: TierKey
+  currentBillingCycle: BillingCycle
+  paymentIntentSource?: PaymentIntentSource
+  openInNewTab: boolean
+  userId: string | null | undefined
+  workspaceId: string | null
+  checkoutAttribution: CheckoutAttributionMetadata
+  telemetry: ReturnType<typeof useTelemetry>
+}
+
+function trackBeginCheckout(
+  context: CheckoutCompletionContext,
+  pendingAttempt: ReturnType<typeof createPendingSubscriptionCheckoutAttempt>
+) {
+  const { userId, paymentIntentSource } = context
+  if (!userId) return
+
+  context.telemetry?.trackBeginCheckout(
+    withPendingCheckoutAttemptId(
+      {
+        user_id: userId,
+        tier: context.tierKey,
+        cycle: context.currentBillingCycle,
+        checkout_type: 'new',
+        ...(paymentIntentSource
+          ? { payment_intent_source: paymentIntentSource }
+          : {}),
+        ...context.checkoutAttribution
+      },
+      pendingAttempt
+    )
+  )
+}
+
 function completeSubscriptionCheckout(
   checkoutUrl: string | undefined,
-  context: {
-    tierKey: TierKey
-    currentBillingCycle: BillingCycle
-    paymentIntentSource?: PaymentIntentSource
-    openInNewTab: boolean
-    userId: string | null | undefined
-    workspaceId: string | null
-    checkoutAttribution: CheckoutAttributionMetadata
-    telemetry: ReturnType<typeof useTelemetry>
-  }
+  context: CheckoutCompletionContext
 ) {
   if (!checkoutUrl) return
 
@@ -173,9 +199,7 @@ function completeSubscriptionCheckout(
     paymentIntentSource,
     openInNewTab,
     userId,
-    workspaceId,
-    checkoutAttribution,
-    telemetry
+    workspaceId
   } = context
 
   const pendingAttempt = createPendingSubscriptionCheckoutAttempt({
@@ -187,23 +211,7 @@ function completeSubscriptionCheckout(
     workspace_id: workspaceId
   })
 
-  if (userId) {
-    telemetry?.trackBeginCheckout(
-      withPendingCheckoutAttemptId(
-        {
-          user_id: userId,
-          tier: tierKey,
-          cycle: currentBillingCycle,
-          checkout_type: 'new',
-          ...(paymentIntentSource
-            ? { payment_intent_source: paymentIntentSource }
-            : {}),
-          ...checkoutAttribution
-        },
-        pendingAttempt
-      )
-    )
-  }
+  trackBeginCheckout(context, pendingAttempt)
 
   if (openInNewTab) {
     const checkoutWindow = window.open(checkoutUrl, '_blank')
