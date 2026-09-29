@@ -6,7 +6,12 @@ import { MODEL_PATH } from './fixtures/modelsAccount'
 
 declare global {
   interface Window {
-    __renderGuard?: { cls: number; loaderLastSeenAt?: number }
+    __renderGuard?: {
+      cls: number
+      loaderLastSeenAt: number
+      frames: number
+      flush: () => void
+    }
   }
 }
 
@@ -44,8 +49,8 @@ const PAGES: readonly GuardedPage[] = [
 ]
 
 const VIEWPORTS = [
-  { name: 'desktop', width: 1280, height: 800 },
-  { name: 'mobile', width: 390, height: 844 }
+  { name: '1280px', width: 1280, height: 800 },
+  { name: '390px', width: 390, height: 844 }
 ] as const
 
 async function answerWorkshopFlag(context: BrowserContext, enabled: boolean) {
@@ -66,10 +71,8 @@ async function answerWorkshopFlag(context: BrowserContext, enabled: boolean) {
 
 async function recordLoaderAndLayoutShift(page: Page) {
   await page.addInitScript(() => {
-    const guard: NonNullable<Window['__renderGuard']> = { cls: 0 }
-    window.__renderGuard = guard
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
+    const addShifts = (entries: PerformanceEntryList) => {
+      for (const entry of entries) {
         if (
           'hadRecentInput' in entry &&
           !entry.hadRecentInput &&
@@ -78,8 +81,20 @@ async function recordLoaderAndLayoutShift(page: Page) {
         )
           guard.cls += entry.value
       }
-    }).observe({ type: 'layout-shift', buffered: true })
+    }
+    const observer = new PerformanceObserver((list) =>
+      addShifts(list.getEntries())
+    )
+    const guard: NonNullable<Window['__renderGuard']> = {
+      cls: 0,
+      loaderLastSeenAt: 0,
+      frames: 0,
+      flush: () => addShifts(observer.takeRecords())
+    }
+    window.__renderGuard = guard
+    observer.observe({ type: 'layout-shift', buffered: true })
     const watchLoader = () => {
+      guard.frames++
       const loader = document.querySelector('[data-testid="workshop-loading"]')
       if (loader?.checkVisibility()) guard.loaderLastSeenAt = performance.now()
       requestAnimationFrame(watchLoader)
@@ -88,15 +103,30 @@ async function recordLoaderAndLayoutShift(page: Page) {
   })
 }
 
-async function waitUntilSettled(page: Page, kind: GuardedPage['kind']) {
+async function expectHydrated(page: Page, testId: string) {
+  const island = page
+    .locator('astro-island')
+    .filter({ has: page.getByTestId(testId) })
+  await expect(island).toHaveCount(1)
+  await expect(island).not.toHaveAttribute('ssr')
+}
+
+async function waitUntilSettled(
+  page: Page,
+  kind: GuardedPage['kind'],
+  enabled: boolean
+) {
   if (kind === 'model') {
+    await expectHydrated(page, 'model-detail')
     await expect(
-      page
-        .locator('astro-island')
-        .filter({ has: page.getByTestId('model-detail') })
-    ).not.toHaveAttribute('ssr')
-    await expect(page.locator('[data-gate="resolving"]')).toHaveCount(0)
+      enabled
+        ? page.locator(
+            '[data-testid="run-button"]:not([data-gate="resolving"])'
+          )
+        : page.getByTestId('run-rollout-note')
+    ).toBeVisible()
   } else {
+    await expectHydrated(page, 'workshop-search')
     await expect(page.getByTestId('workshop-model-card').first()).toBeVisible()
   }
   await page.waitForFunction(
@@ -138,17 +168,33 @@ for (const viewport of VIEWPORTS) {
           test.fail(!!runtimePending, runtimePending)
           await answerWorkshopFlag(context, enabled)
           await recordLoaderAndLayoutShift(page)
+          const flagAnswered = page.waitForResponse((response) =>
+            /t\.comfy\.org\/(flags|decide)\//.test(response.url())
+          )
           await page.goto(path)
+          await flagAnswered
 
           const h1 = page.getByRole('heading', { level: 1 })
           await expect(h1).toHaveCount(1)
           await expect(h1).toHaveText(heading)
-          await waitUntilSettled(page, kind)
+          await waitUntilSettled(page, kind, enabled)
           await expect(h1).toHaveCount(1)
+          await expect(h1).toHaveText(heading)
 
-          const { cls, loaderLastSeenAt = 0 } = await page.evaluate(
-            () => window.__renderGuard ?? { cls: Number.POSITIVE_INFINITY }
-          )
+          const guard = await page.evaluate(() => {
+            const state = window.__renderGuard
+            state?.flush()
+            return (
+              state && {
+                cls: state.cls,
+                loaderLastSeenAt: state.loaderLastSeenAt,
+                frames: state.frames
+              }
+            )
+          })
+          if (!guard) throw new Error('The render guard never installed')
+          const { cls, loaderLastSeenAt, frames } = guard
+          expect(frames, 'frames the loader watcher ran').toBeGreaterThan(0)
           test.info().annotations.push({
             type: 'render-guard',
             description: `cls=${cls} loaderLastSeenAt=${loaderLastSeenAt}`
