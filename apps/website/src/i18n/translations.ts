@@ -4346,6 +4346,7 @@ Enterprise`
   },
   'footer.products': { en: 'Products', 'zh-CN': '产品' },
   'footer.models': { en: 'Models', 'zh-CN': '模型' },
+  'footer.modelCatalogue': { en: 'ComfyUI Models', 'zh-CN': 'ComfyUI 模型' },
   'footer.resources': { en: 'Resources', 'zh-CN': '资源' },
   'footer.company': { en: 'Company', 'zh-CN': '公司' },
   'footer.contact': { en: 'Contact', 'zh-CN': '联系我们' },

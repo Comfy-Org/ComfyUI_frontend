@@ -5,15 +5,21 @@ import { externalLinks } from '../../config/routes'
 import SiteFooter from './SiteFooter.vue'
 
 describe('SiteFooter', () => {
-  // The /models showcase page is intentionally not promoted from the footer.
-  it('does not link the Models showcase page', () => {
-    render(SiteFooter, { props: { locale: 'en' } })
+  it.for([
+    ['en', 'ComfyUI Models'],
+    ['zh-CN', 'ComfyUI 模型']
+  ] as const)(
+    'links the model catalogue at its slash-terminated path (%s)',
+    ([locale, name]) => {
+      render(SiteFooter, { props: { locale } })
 
-    const hrefs = screen
-      .getAllByRole('link')
-      .map((link) => link.getAttribute('href'))
-    expect(hrefs).not.toContain('/models')
-  })
+      const links = screen.getAllByRole('link', { name })
+      expect(links.length).toBeGreaterThan(0)
+      for (const link of links) {
+        expect(link.getAttribute('href')).toBe('/models/')
+      }
+    }
+  )
 
   it.for([
     ['en', 'Workflows', externalLinks.workflows],

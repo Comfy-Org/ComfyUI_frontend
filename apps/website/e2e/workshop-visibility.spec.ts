@@ -20,6 +20,16 @@ test('public HTML excludes catalogue and playground markup', async ({
   }
 })
 
+test('server HTML links the model catalogue from every locale', async ({
+  request
+}) => {
+  for (const path of ['/', '/pricing/', '/zh-CN/', '/zh-CN/pricing/']) {
+    const response = await request.get(path)
+    expect(response.ok()).toBe(true)
+    expect(await response.text()).toContain('href="/models/"')
+  }
+})
+
 test('keeps the public site when PostHog is unavailable', async ({ page }) => {
   const dataRequests: string[] = []
   page.on('request', (request) => {
