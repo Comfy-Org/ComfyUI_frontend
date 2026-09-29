@@ -103,7 +103,7 @@ function organizationNode(siteUrl: string, locale: Locale): JsonLdNode {
       '@type': 'ContactPoint',
       contactType: 'customer support',
       email: 'support@comfy.org',
-      url: `${siteUrl}${getRoutes().contact}/`
+      url: absoluteUrl(new URL(siteUrl), getRoutes().contact)
     },
     sameAs
   }

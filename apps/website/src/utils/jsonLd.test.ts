@@ -36,6 +36,13 @@ describe('absoluteUrl', () => {
     expect(absoluteUrl(site, '/about/')).toBe('https://comfy.org/about/')
     expect(absoluteUrl(site, '/')).toBe('https://comfy.org/')
   })
+
+  it.for(['/contact', '/contact/'])(
+    'ends %s with exactly one slash',
+    (path) => {
+      expect(absoluteUrl(site, path)).toBe('https://comfy.org/contact/')
+    }
+  )
 })
 
 describe('pageContext', () => {
