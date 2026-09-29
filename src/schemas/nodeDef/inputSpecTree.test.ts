@@ -123,4 +123,16 @@ describe('input specification diagnostics', () => {
 
     expect(reportError).toHaveBeenCalledOnce()
   })
+
+  it('deduplicates separately allocated equivalent specifications', () => {
+    const makeSpec = () =>
+      transformInputSpecV1ToV2(['COMFY_AUTOGROW_V3', { template: {} }], {
+        name: 'equivalent-root'
+      })
+
+    inputSpecTree(makeSpec())
+    inputSpecTree(makeSpec())
+
+    expect(reportError).toHaveBeenCalledOnce()
+  })
 })
