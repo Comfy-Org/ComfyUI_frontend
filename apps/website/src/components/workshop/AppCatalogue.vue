@@ -4,6 +4,7 @@ import { computed, nextTick, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { AppWorkshopModel } from '../../config/models-catalogue'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
 import CardRow from './CardRow.vue'
@@ -12,7 +13,7 @@ import WorkshopAppCard from './WorkshopAppCard.vue'
 const ROW_LIMIT = 8
 
 const { apps, locale = 'en' } = defineProps<{
-  apps: readonly CatalogueApp[]
+  apps: readonly AppWorkshopModel[]
   locale?: Locale
 }>()
 
@@ -21,8 +22,17 @@ const emit = defineEmits<{ section: [boolean] }>()
 watch(browseAll, (value) => emit('section', value), { immediate: true })
 watch(browseAll, () => void nextTick(() => window.scrollTo({ top: 0 })))
 
-const shelf = computed(() => apps.slice(0, ROW_LIMIT))
-const hasMore = computed(() => apps.length > ROW_LIMIT)
+const cards = computed<readonly CatalogueApp[]>(() =>
+  apps.map((app) => ({
+    key: app.slug,
+    name: app.name,
+    task: ac(app.appId === 'studio' ? 'studioTask' : 'reshootTask', locale),
+    href: app.href,
+    image: app.thumbnail?.url ?? app.thumbnailUrl
+  }))
+)
+const shelf = computed(() => cards.value.slice(0, ROW_LIMIT))
+const hasMore = computed(() => cards.value.length > ROW_LIMIT)
 </script>
 
 <template>
@@ -43,7 +53,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
         {{ ac('allApps', locale) }}
         <span
           class="text-base font-normal text-primary-warm-gray tabular-nums"
-          >{{ apps.length }}</span
+          >{{ cards.length }}</span
         >
       </h1>
     </template>
@@ -60,7 +70,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
       :aria-label="ac('apps', locale)"
       data-testid="app-search-results"
     >
-      <li v-for="app in apps" :key="app.key">
+      <li v-for="app in cards" :key="app.key">
         <WorkshopAppCard :app />
       </li>
     </ul>

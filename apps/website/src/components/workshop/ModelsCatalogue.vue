@@ -18,8 +18,6 @@ import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled
 } from '../../scripts/posthog'
-import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
-import { ac } from '../../lib/workshop/catalogue-apps'
 
 const WorkflowCatalogue = defineAsyncComponent(
   () => import('./WorkflowCatalogue.vue')
@@ -56,15 +54,6 @@ const workflows = computed(() =>
 )
 const apps = computed(() =>
   models.filter((model): model is AppWorkshopModel => model.type === 'APP')
-)
-const appCards = computed<readonly CatalogueApp[]>(() =>
-  apps.value.map((app) => ({
-    key: app.slug,
-    name: app.name,
-    task: ac(app.appId === 'studio' ? 'studioTask' : 'reshootTask', locale),
-    href: app.href,
-    image: app.thumbnail?.url ?? app.thumbnailUrl
-  }))
 )
 const availableTabs = computed<readonly CatalogueTab[]>(() => [
   'models',
@@ -159,7 +148,7 @@ watch(
   <AppCatalogue
     v-else
     v-model:browse-all="browseAll"
-    :apps="appCards"
+    :apps
     :locale
     @section="inSection = $event"
   >
