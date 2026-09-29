@@ -40,16 +40,34 @@ const gpuRates = rateCard.gpus.map((rate) => ({
 }))
 
 const storageRates = groupStorageRatesForDisplay(rateCard.storage).map(
-  (rate) => ({
-    key: rate.key,
-    price: formatUsdPerGbMonth(rate.pricePerGbMonthUsd),
-    credits: formatCreditsPerGbMonth(rate.creditsPerGbMonth)
-  })
+  (rate) => {
+    const isContainerDisk = rate.key === 'containerDisk'
+    return {
+      key: rate.key,
+      price: formatUsdPerGbMonth(rate.pricePerGbMonthUsd),
+      credits: formatCreditsPerGbMonth(rate.creditsPerGbMonth),
+      title: t(
+        isContainerDisk
+          ? 'platform.pricing.storage.containerDisk'
+          : 'platform.pricing.storage.title',
+        locale
+      ),
+      subLabel: isContainerDisk
+        ? t('platform.pricing.storage.sub.containerDisk', locale)
+        : ''
+    }
+  }
 )
 
 const storageExampleAmount = formatStorageExampleAmount(
   getStorageRate('network_standard')
 )
+
+const rootTag = bare ? 'div' : 'section'
+const rootId = bare ? undefined : 'pricing'
+const rootClass = bare
+  ? 'mx-auto max-w-9xl'
+  : 'mx-auto max-w-9xl scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14'
 
 const mobileGpuRows = gpuRates.map((rate) => ({
   ...rate,
@@ -64,15 +82,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
 </script>
 
 <template>
-  <component
-    :is="bare ? 'div' : 'section'"
-    :id="bare ? undefined : 'pricing'"
-    :class="
-      bare
-        ? 'mx-auto max-w-9xl'
-        : 'mx-auto max-w-9xl scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14'
-    "
-  >
+  <component :is="rootTag" :id="rootId" :class="rootClass">
     <SectionHeader v-if="!bare" max-width="xl" :heading-size="headingSize">
       {{ heading ?? t('platform.pricing.heading', locale) }}
       <template #subtitle>
@@ -136,18 +146,12 @@ const mobileStorageRows = storageRates.map((rate) => ({
             class="flex items-start justify-between gap-4"
           >
             <div>
-              <p class="text-sm text-primary-warm-white">
-                {{
-                  rate.key === 'containerDisk'
-                    ? t('platform.pricing.storage.containerDisk', locale)
-                    : t('platform.pricing.storage.title', locale)
-                }}
-              </p>
+              <p class="text-sm text-primary-warm-white">{{ rate.title }}</p>
               <p
-                v-if="rate.key === 'containerDisk'"
+                v-if="rate.subLabel"
                 class="mt-0.5 text-xs text-primary-warm-gray"
               >
-                {{ t('platform.pricing.storage.sub.containerDisk', locale) }}
+                {{ rate.subLabel }}
               </p>
             </div>
             <div class="shrink-0 text-right font-mono">
@@ -258,19 +262,13 @@ const mobileStorageRows = storageRates.map((rate) => ({
                 <tr v-for="rate in storageRates" :key="rate.key">
                   <td class="max-w-56 px-2 py-3.5">
                     <p class="text-sm text-primary-warm-white">
-                      {{
-                        rate.key === 'containerDisk'
-                          ? t('platform.pricing.storage.containerDisk', locale)
-                          : t('platform.pricing.storage.title', locale)
-                      }}
+                      {{ rate.title }}
                     </p>
                     <p
-                      v-if="rate.key === 'containerDisk'"
+                      v-if="rate.subLabel"
                       class="mt-0.5 text-xs text-primary-warm-gray"
                     >
-                      {{
-                        t('platform.pricing.storage.sub.containerDisk', locale)
-                      }}
+                      {{ rate.subLabel }}
                     </p>
                   </td>
                   <td
