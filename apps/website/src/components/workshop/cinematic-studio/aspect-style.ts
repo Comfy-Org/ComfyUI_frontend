@@ -1,6 +1,6 @@
 import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog'
 
-const aspectStyle = (aspect: AspectRatio) => ({
+export const aspectStyle = (aspect: AspectRatio) => ({
   aspectRatio: aspect.replace(':', ' / ')
 })
 

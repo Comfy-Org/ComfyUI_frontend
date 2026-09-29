@@ -84,10 +84,6 @@ const siblings = computed(() =>
         <CinematicTakeFrame
           class="max-sm:rounded-none"
           :current
-          :video="
-            models.find((model) => model.slug === current?.modelSlug)?.mode ===
-            'video'
-          "
           :member-workspace="memberWorkspace"
           :locale
           @retry="emit('retry', current.id)"
