@@ -6,7 +6,8 @@ import {
   durationRange,
   resolutionLabel,
   topResolution,
-  videoCapabilities
+  videoCapabilities,
+  videoParameters
 } from './video'
 
 function capabilities(slug: string) {
@@ -97,5 +98,56 @@ describe('runnableCinematicVideoModels', () => {
       'byteplus--seedance-2-mini-text-to-video--generate-videos'
     )
     expect(bySlug['Seedance 2.5 Edit']).toBeUndefined()
+  })
+})
+
+describe('videoParameters', () => {
+  const frame = new File(['frame'], 'frame.png', { type: 'image/png' })
+
+  it('asks for what the operation offers and drops what it does not', () => {
+    const seedance = capabilities(
+      'byteplus--seedance-2-5-first-last-frame--animate-images'
+    )
+    expect(
+      videoParameters(seedance, {
+        aspect: '21:9',
+        durationSeconds: 7,
+        resolution: '1080p',
+        audio: false,
+        firstFrame: frame,
+        lastFrame: frame
+      })
+    ).toEqual({
+      aspect_ratio: '21:9',
+      duration_seconds: 7,
+      resolution: '1080p',
+      first_frame: frame,
+      last_frame: frame,
+      model_specific: { generate_audio: false }
+    })
+    const wan = capabilities('wan--image-to-video-3.0--animate-images')
+    expect(
+      videoParameters(wan, {
+        aspect: '21:9',
+        durationSeconds: 40,
+        resolution: '4k',
+        audio: true,
+        firstFrame: frame,
+        lastFrame: frame
+      })
+    ).toEqual({ duration_seconds: 30, first_frame: frame })
+  })
+
+  it('sends the video to edit', () => {
+    const video = new File(['clip'], 'clip.mp4', { type: 'video/mp4' })
+    const edit = capabilities('byteplus--seedance-2-5-edit-video--edit-videos')
+    expect(
+      videoParameters(edit, {
+        aspect: '16:9',
+        resolution: '720p',
+        audio: true,
+        sourceVideo: video
+      })
+    ).toMatchObject({ source_videos: [video], resolution: '720p' })
   })
 })

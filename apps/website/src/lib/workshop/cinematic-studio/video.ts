@@ -1,4 +1,7 @@
-import type { RouterParameterName } from '../../../config/router-parameters'
+import type {
+  RouterParameterName,
+  RouterRenderParameters
+} from '../../../config/router-parameters'
 import {
   createRouterParameters,
   routerParameterMappings
@@ -174,4 +177,48 @@ export function durationRange(
   const last = capabilities.durations.at(-1)
   if (first === undefined) return undefined
   return first === last ? `${first}s` : `${first}–${last}s`
+}
+
+/** What a video shot asks for; the operation drops what it cannot take. */
+export interface CinematicVideoShot {
+  readonly aspect: AspectRatio
+  readonly durationSeconds?: number
+  readonly resolution?: string
+  readonly audio: boolean
+  readonly firstFrame?: File
+  readonly lastFrame?: File
+  readonly sourceVideo?: File
+}
+
+/** The Router parameters for a video shot on one operation. */
+export function videoParameters(
+  capabilities: CinematicVideoCapabilities,
+  shot: CinematicVideoShot
+): RouterRenderParameters {
+  const { durations, resolutions, aspects, audioField, firstFrame } =
+    capabilities
+  const duration =
+    shot.durationSeconds !== undefined && durations.length
+      ? nearest(durations, shot.durationSeconds)
+      : undefined
+  return {
+    ...(aspects.includes(shot.aspect) ? { aspect_ratio: shot.aspect } : {}),
+    ...(shot.resolution && resolutions.includes(shot.resolution)
+      ? { resolution: shot.resolution }
+      : {}),
+    ...(duration !== undefined ? { duration_seconds: duration } : {}),
+    ...(shot.firstFrame && firstFrame === 'first_frame'
+      ? { first_frame: shot.firstFrame }
+      : {}),
+    ...(shot.firstFrame && firstFrame === 'source_images'
+      ? { source_images: [shot.firstFrame] }
+      : {}),
+    ...(shot.lastFrame && capabilities.lastFrame
+      ? { last_frame: shot.lastFrame }
+      : {}),
+    ...(shot.sourceVideo && capabilities.sourceVideo
+      ? { source_videos: [shot.sourceVideo] }
+      : {}),
+    ...(audioField ? { model_specific: { [audioField]: shot.audio } } : {})
+  }
 }
