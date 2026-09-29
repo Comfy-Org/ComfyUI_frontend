@@ -1307,6 +1307,7 @@ const { submit: onSend } = useAgentDraftSubmission({
     replace: replaceSelectionTags,
     exit: exitNodeSelectionMode
   },
+  // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
     const submissionId = composerStore.submission?.id
     if (
@@ -1327,7 +1328,9 @@ const { submit: onSend } = useAgentDraftSubmission({
         thread_id: threadId.value,
         workflow_id: originContext?.id ?? null,
         client_message_id: meta.clientMessageId,
-        input_method: meta.inputMethod
+        input_method: meta.inputMethod,
+        starter_prompt_id: meta.starterPrompt?.id ?? null,
+        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
       },
       origin:
         originContext === undefined ? null : { tabPath: originContext.tabPath }

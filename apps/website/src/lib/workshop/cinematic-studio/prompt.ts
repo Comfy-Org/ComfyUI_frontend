@@ -1,12 +1,18 @@
 import type { Direction, DirectionPart } from './catalog'
 import { directionOption } from './catalog'
+import { colorPromptSentences } from './colors'
 
 export interface CinematicBrief {
   readonly scene: string
   readonly direction: Direction
   readonly enhance: boolean
+  /** A video shot asks for motion rather than a still. */
+  readonly video?: boolean
   readonly cast: boolean
   readonly palette: boolean
+  /** Colours sent as words; `mainColor` indexes the dominant one. */
+  readonly colors?: readonly string[]
+  readonly mainColor?: number
 }
 
 type PromptSource = 'scene' | 'direction' | 'enhance' | 'reference'
@@ -47,7 +53,9 @@ export function cinematicPromptSegments(
     !!shot && { text: sentence(shot), source: 'direction' },
     !!scene && { text: scene, source: 'scene' },
     brief.enhance && {
-      text: 'Cinematic film still, natural texture.',
+      text: brief.video
+        ? 'Cinematic film shot, continuous motion, natural texture.'
+        : 'Cinematic film still, natural texture.',
       source: 'enhance'
     },
     camera.length > 0 && {
@@ -62,7 +70,10 @@ export function cinematicPromptSegments(
     brief.palette && {
       text: `Match the color palette of reference image ${castIndex + 1}.`,
       source: 'reference'
-    }
+    },
+    ...colorPromptSentences(brief.colors ?? [], brief.mainColor).map(
+      (text) => ({ text, source: 'direction' as const })
+    )
   ]
   return segments.filter((segment): segment is PromptSegment => !!segment)
 }
