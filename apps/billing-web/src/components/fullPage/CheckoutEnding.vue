@@ -96,7 +96,9 @@ function act() {
     >
       <div class="flex flex-col items-center gap-3">
         <i :class="cn(ICON[ending.tone], 'size-10')" aria-hidden="true" />
-        <h1 class="m-0 text-2xl font-semibold text-base-foreground">
+        <h1
+          class="m-0 text-2xl font-semibold text-base-foreground sm:whitespace-nowrap"
+        >
           {{ t(`${copyKey}.title`) }}
         </h1>
         <p class="m-0 text-sm/5 text-muted-foreground">
@@ -109,11 +111,11 @@ function act() {
         class="flex w-full flex-col gap-2 rounded-lg bg-secondary-background p-6 text-left"
         data-testid="checkout-ending-plan"
       >
-        <p class="m-0 text-sm font-semibold text-base-foreground">
+        <p class="m-0 text-base font-bold text-base-foreground">
           {{ plan.name }}
         </p>
         <p class="m-0 text-base-foreground tabular-nums">
-          <span class="text-3xl font-semibold">{{ plan.price }}</span>
+          <span class="text-[2rem] font-semibold">{{ plan.price }}</span>
           {{ plan.period }}
         </p>
       </div>
@@ -127,7 +129,7 @@ function act() {
         </p>
         <div class="flex items-center justify-between gap-4">
           <code
-            class="font-mono text-sm break-all text-base-foreground"
+            class="font-mono text-base font-normal break-all text-base-foreground"
             data-testid="checkout-ending-code"
           >
             {{ code }}
