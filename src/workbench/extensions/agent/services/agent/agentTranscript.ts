@@ -496,7 +496,7 @@ export function normalizeAgentTranscript(
     }
     if (row.role === 'assistant') {
       latestAssistantStatus.set(turnId, row.status)
-      pending = recordAssistantRow(row, turnId, text, assistants) ?? pending
+      pending = recordAssistantRow(row, turnId, text, assistants)
     }
   }
 

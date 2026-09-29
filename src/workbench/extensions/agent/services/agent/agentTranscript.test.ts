@@ -89,6 +89,8 @@ describe('normalizeAgentTranscript', () => {
     const transcript = normalizeAgentTranscript([streaming, terminal])
 
     expect(transcript.streamingTurnIds).not.toContain(toTurnId('turn-a'))
+    expect(transcript.pending).toBeUndefined()
+    expect(transcript.messages[0].streaming).toBe(false)
   })
 
   it('keeps message identity stable when persisted row ids change', () => {
