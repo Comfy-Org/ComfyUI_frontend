@@ -92,7 +92,7 @@ describe('relatedModels', () => {
       2
     ],
     [
-      'still ends with the next model when the other tasks fill the row',
+      'goes one past the limit to keep the next model when the other tasks fill the row',
       [
         model('a-3', { routerId: 'x/a' }),
         model('a', { routerId: 'x/a' }),
@@ -100,6 +100,18 @@ describe('relatedModels', () => {
         model('b')
       ],
       ['a', 'a-2', 'b'],
+      2
+    ],
+    [
+      'stays within the limit when the next model is linked by its own tasks',
+      [
+        model('a-3', { routerId: 'x/a' }),
+        model('a', { routerId: 'x/a' }),
+        model('a-2', { routerId: 'x/a' }),
+        model('b-1', { routerId: 'x/b' }),
+        model('b-2', { routerId: 'x/b' })
+      ],
+      ['a', 'a-2'],
       2
     ],
     [
@@ -136,13 +148,13 @@ describe('relatedModels', () => {
       2
     ],
     [
-      'represents another model by its next page in the catalogue',
+      'keeps the best page of another model when its next page has other tasks',
       [
         model('m'),
         model('b-busy', { routerId: 'x/o', workflowCount: 9 }),
         model('n-quiet', { routerId: 'x/o', workflowCount: 0 })
       ],
-      ['n-quiet']
+      ['b-busy']
     ],
     ['is empty when the model is alone', [model('alone')], []]
   ])('%s', ([, list, expected, limit]) => {

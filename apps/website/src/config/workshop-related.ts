@@ -20,9 +20,10 @@ function nextInCatalogue(model: WorkshopModel, list: readonly WorkshopModel[]) {
 
 // Most visitors land on a model page from search or from the home page, so the
 // rest of the catalog is surfaced there. The model's other tasks come first,
-// then the same provider, topped up with the nearest category. The last card
-// is the next model in catalogue order, even past the limit, so every page is
-// linked from another.
+// then the same provider, topped up with the nearest category. A page with
+// other tasks is linked from them; one without is kept in its catalogue
+// predecessor's row, so every page is linked from another. The row is `limit`
+// cards, or the other tasks plus that kept page when the tasks fill it.
 export function relatedModels(
   model: WorkshopModel,
   list: readonly WorkshopModel[],
@@ -33,7 +34,16 @@ export function relatedModels(
     (other) => other.slug !== model.slug && workshopExecutionId(other) === id
   )
   const next = nextInCatalogue(model, list)
-  const pinned = next && workshopExecutionId(next) !== id ? next : undefined
+  const isOnlyTask = (other: WorkshopModel) =>
+    !list.some(
+      (page) =>
+        page.slug !== other.slug &&
+        workshopExecutionId(page) === workshopExecutionId(other)
+    )
+  const pinned =
+    next && workshopExecutionId(next) !== id && isOnlyTask(next)
+      ? next
+      : undefined
   const sameProvider = (other: WorkshopModel) =>
     model.provider !== undefined && other.provider === model.provider
   const sharedCapabilities = (other: WorkshopModel) =>
@@ -51,11 +61,6 @@ export function relatedModels(
           Number(a.modality === model.modality) ||
         b.workflowCount - a.workflowCount
     )
-    .map((other) =>
-      pinned && workshopExecutionId(other) === workshopExecutionId(pinned)
-        ? pinned
-        : other
-    )
     .filter((other) => {
       const otherId = workshopExecutionId(other)
       if (seen.has(otherId)) return false
@@ -66,7 +71,7 @@ export function relatedModels(
   const top = others.slice(0, room)
   return [
     ...siblings,
-    ...(!pinned || top.includes(pinned)
+    ...(!pinned || top.some((other) => other.slug === pinned.slug)
       ? top
       : [...top.slice(0, Math.max(0, room - 1)), pinned])
   ]

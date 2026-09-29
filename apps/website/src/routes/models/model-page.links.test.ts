@@ -3,21 +3,18 @@ import { describe, expect, it } from 'vitest'
 import { workshopModels } from '../../config/workshop-browse-content'
 import { prepareModelPage } from './model-page'
 
-async function relatedRows() {
-  return Promise.all(
-    workshopModels.map(async (model) => {
-      const page = await prepareModelPage(model.slug)
-      if (page.kind !== 'page') throw new Error(`Not canonical: ${model.slug}`)
-      return { model, hrefs: page.related.map((other) => other.href) }
-    })
-  )
-}
+const relatedRows = await Promise.all(
+  workshopModels.map(async (model) => {
+    const page = await prepareModelPage(model.slug)
+    if (page.kind !== 'page') throw new Error(`Not canonical: ${model.slug}`)
+    return { model, hrefs: page.related.map((other) => other.href) }
+  })
+)
 
 describe('related links across the published model pages', () => {
-  it('links every model page from at least one other model page', async () => {
-    const rows = await relatedRows()
+  it('links every model page from at least one other model page', () => {
     const linked = new Set(
-      rows.flatMap(({ model, hrefs }) =>
+      relatedRows.flatMap(({ model, hrefs }) =>
         hrefs.filter((href) => href !== model.href)
       )
     )
@@ -28,8 +25,8 @@ describe('related links across the published model pages', () => {
     expect(orphans).toEqual([])
   })
 
-  it('links the other tasks of the same model and never the page itself', async () => {
-    const wrongLinks = (await relatedRows()).flatMap(({ model, hrefs }) =>
+  it('links the other tasks of the same model and never the page itself', () => {
+    const wrongLinks = relatedRows.flatMap(({ model, hrefs }) =>
       workshopModels
         .filter((other) => other.routerId === model.routerId)
         .filter((other) =>
