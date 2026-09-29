@@ -98,8 +98,9 @@ function applyOpeningView(drawn: GraphPicture) {
 }
 
 function onPointerDown(event: PointerEvent) {
-  // Capturing a press on a zoom control would retarget its click to the frame.
-  if ((event.target as Element).closest('button')) return
+  // Capturing a press on a control would retarget its click to the frame, so
+  // the zoom buttons and the link out to the full-size export never fire.
+  if ((event.target as Element).closest('button, a')) return
   dragging.value = true
   frame.value?.setPointerCapture(event.pointerId)
 }
