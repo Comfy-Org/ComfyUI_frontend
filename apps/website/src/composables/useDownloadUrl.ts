@@ -52,10 +52,13 @@ function hasNvidiaGpu(): boolean {
   try {
     const gl = document.createElement('canvas').getContext('webgl')
     if (!gl) return false
-    const info = gl.getExtension('WEBGL_debug_renderer_info')
-    const renderer = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : ''
-    gl.getExtension('WEBGL_lose_context')?.loseContext()
-    return /nvidia/i.test(String(renderer))
+    try {
+      const info = gl.getExtension('WEBGL_debug_renderer_info')
+      const renderer = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : ''
+      return /nvidia/i.test(String(renderer))
+    } finally {
+      gl.getExtension('WEBGL_lose_context')?.loseContext()
+    }
   } catch {
     return false
   }

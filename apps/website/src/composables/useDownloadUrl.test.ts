@@ -71,14 +71,24 @@ function reportingCpu(architecture: string): NavigatorUAData {
   return { getHighEntropyValues: async () => ({ architecture }) }
 }
 
-function reportingGpu(renderer: string): () => WebGLRenderingContext {
-  return () =>
+function fakeGpu(getParameter: (pname: number) => unknown) {
+  const loseContext = vi.fn()
+  const webgl = () =>
     fromPartial<WebGLRenderingContext>({
-      getExtension: (name: string) =>
-        name === 'WEBGL_debug_renderer_info' ? DEBUG_RENDERER_INFO : null,
-      getParameter: (pname: number) =>
-        pname === DEBUG_RENDERER_INFO.UNMASKED_RENDERER_WEBGL ? renderer : null
+      getExtension: (name: string) => {
+        if (name === 'WEBGL_debug_renderer_info') return DEBUG_RENDERER_INFO
+        if (name === 'WEBGL_lose_context') return { loseContext }
+        return null
+      },
+      getParameter
     })
+  return { webgl, loseContext }
+}
+
+function reportingGpu(renderer: string): () => WebGLRenderingContext {
+  return fakeGpu((pname) =>
+    pname === DEBUG_RENDERER_INFO.UNMASKED_RENDERER_WEBGL ? renderer : null
+  ).webgl
 }
 
 const NVIDIA_GPU = reportingGpu(
@@ -205,4 +215,34 @@ describe('useDownloadUrl on Windows', () => {
       'https://comfy.org/download/windows/nsis/arm64'
     )
   })
+
+  it('never probes the GPU of a PC without an ARM CPU', async () => {
+    visitOnWindows(reportingCpu('x86'), NVIDIA_GPU)
+
+    render(DownloadLink)
+    await screen.findByRole('link')
+
+    expect(HTMLCanvasElement.prototype.getContext).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { label: 'reads the renderer', readRenderer: () => 'NVIDIA' },
+    {
+      label: 'throws reading the renderer',
+      readRenderer: () => {
+        throw new DOMException('lost', 'InvalidStateError')
+      }
+    }
+  ])(
+    'releases the WebGL context when the probe $label',
+    async ({ readRenderer }) => {
+      const { webgl, loseContext } = fakeGpu(readRenderer)
+      visitOnWindows(reportingCpu('arm'), webgl)
+
+      render(DownloadLink)
+      await screen.findByRole('link')
+
+      expect(loseContext).toHaveBeenCalledOnce()
+    }
+  )
 })
