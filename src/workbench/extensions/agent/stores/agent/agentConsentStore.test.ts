@@ -123,7 +123,8 @@ describe('agentConsentStore', () => {
       provideWebSessionRequests({
         scope: async () => fromPartial<WebSessionRequestScope>({}),
         workspaceId: () => undefined,
-        send
+        send,
+        authorizeResource: vi.fn<WebSessionRequests['authorizeResource']>()
       })
     )
     const store = useAgentConsentStore()
