@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 
-const NON_MODEL_ROUTES = new Set(['showcase', 'workflows'])
+const NON_MODEL_ROUTES = new Set(['apps', 'showcase', 'workflows'])
 
 if (!existsSync('dist/models'))
   throw new Error('dist/models is missing: build the website first')
@@ -8,8 +8,14 @@ if (!existsSync('dist/models'))
 /** Every canonical model page in the build, read from dist rather than the data that renders the directory. */
 export const publishedModelSlugs = new Set(
   readdirSync('dist/models', { withFileTypes: true }).flatMap((entry) => {
-    if (!entry.isDirectory() || NON_MODEL_ROUTES.has(entry.name)) return []
-    const html = readFileSync(`dist/models/${entry.name}/index.html`, 'utf8')
+    const page = `dist/models/${entry.name}/index.html`
+    if (
+      !entry.isDirectory() ||
+      NON_MODEL_ROUTES.has(entry.name) ||
+      !existsSync(page)
+    )
+      return []
+    const html = readFileSync(page, 'utf8')
     return html.includes('http-equiv="refresh"') ? [] : [entry.name]
   })
 )
