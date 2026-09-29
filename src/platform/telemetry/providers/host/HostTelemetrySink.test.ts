@@ -317,8 +317,11 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_CONSENT_RESOLVED,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentConsentResolved({ decision: 'accepted' }),
-      properties: { decision: 'accepted' }
+        sink.trackAgentConsentResolved({
+          decision: 'dismissed',
+          save_error_shown: true
+        }),
+      properties: { decision: 'dismissed', save_error_shown: true }
     },
     {
       name: TelemetryEvents.AGENT_ONBOARDING_SHOWN,
@@ -420,6 +423,36 @@ describe('HostTelemetrySink', () => {
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentNotOffered({ reason: 'tour_active' }),
       properties: { reason: 'tour_active' }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentOfferExited({
+          exit: 'workspace_switching',
+          stage: 'offer',
+          retry_armed: true
+        }),
+      properties: {
+        exit: 'workspace_switching',
+        stage: 'offer',
+        retry_armed: true
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentOfferExited({
+          exit: 'scope_probe_failed',
+          stage: 'request',
+          retry_armed: false,
+          trigger: 'first_load'
+        }),
+      properties: {
+        exit: 'scope_probe_failed',
+        stage: 'request',
+        retry_armed: false,
+        trigger: 'first_load'
+      }
     },
     {
       name: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
