@@ -1,8 +1,11 @@
 import { mkdtemp, readFile, mkdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 
+import WorkshopLoading from '../components/workshop/WorkshopLoading.vue'
 import { isExcludedFromSitemap } from '../config/indexing'
 import {
   routerModelSlugAliases,
@@ -15,6 +18,10 @@ import { markdownTwinPath } from './markdown-twin-path'
 
 const launch = vi.hoisted(() => ({ MODEL_PAGES_INDEXABLE: false }))
 vi.mock(import('../config/model-page-launch'), () => launch)
+
+const loadingSpinner = await renderToString(
+  h(WorkshopLoading, { label: 'Loading' })
+)
 
 const PAGE = `<!doctype html>
 <html lang="en">
@@ -38,7 +45,8 @@ const PAGE = `<!doctype html>
       <svg><title>icon</title></svg>
       <video src="/clip.mp4"></video>
       <button>Copy</button>
-      <div role="status"><p>Loading</p></div>
+      ${loadingSpinner}
+      <p role="status">Saved to your library.</p>
     </section>
     <section>
       <h2>Set up Comfy CLI</h2>
@@ -95,7 +103,11 @@ describe('htmlToTwin', () => {
     expect(page.body).not.toContain('icon')
     expect(page.body).not.toContain('Copy')
     expect(page.body).not.toContain('clip.mp4')
+  })
+
+  it('drops the Workshop loading spinner but keeps other status copy', () => {
     expect(page.body).not.toContain('Loading')
+    expect(page.body).toContain('Saved to your library.')
   })
 
   it('makes links absolute, drops anchor links, and keeps emphasis', () => {
@@ -322,62 +334,62 @@ describe('writeMarkdownTwins', () => {
   })
 
   describe('model pages', () => {
-    const [modelSlug] = workshopModels.map(({ slug }) => slug)
-    const [[aliasSlug]] = routerModelSlugAliases
-    const modelPages = [
-      `models/${modelSlug}/`,
-      `models/${aliasSlug}/`,
-      'models/showcase/'
-    ]
+    const [{ slug: modelSlug }] = workshopModels
+    const route = `models/${modelSlug}/`
+    const twinPath = `/models/${modelSlug}.md`
 
-    async function buildModelPages() {
+    async function buildModelPage(main: string) {
       const root = await mkdtemp(join(tmpdir(), 'twins-'))
-      for (const pathname of modelPages) {
-        await mkdir(join(root, pathname), { recursive: true })
-        await writeFile(
-          join(root, pathname, 'index.html'),
-          `<html lang="en"><head><title>${pathname}</title><link rel="canonical" href="https://comfy.org/${pathname}"></head><body><header><a href="/">Comfy home</a></header><main><astro-island><header data-testid="model-hero"><p>Provider</p><h1>${pathname}</h1><p>Model summary.</p></header><div role="status"><p>Loading</p></div></astro-island></main></body></html>`
-        )
-      }
+      await mkdir(join(root, route), { recursive: true })
+      await writeFile(
+        join(root, route, 'index.html'),
+        `<html lang="en"><head><title>${modelSlug}</title><link rel="canonical" href="https://comfy.org/${route}"><link rel="alternate" type="text/markdown" href="${twinPath}"></head><body><header><a href="/">Comfy home</a></header><main>${main}</main></body></html>`
+      )
       return root
     }
+
+    const readPage = (root: string) =>
+      readFile(join(root, route, 'index.html'), 'utf8')
+
+    beforeEach(() => {
+      launch.MODEL_PAGES_INDEXABLE = true
+    })
 
     afterEach(() => {
       launch.MODEL_PAGES_INDEXABLE = false
     })
 
-    it('writes no model twin until model pages are indexable', async () => {
-      const report = await writeMarkdownTwins(
-        await buildModelPages(),
-        modelPages
+    it('writes no twin and drops the markdown link for a spinner-only page', async () => {
+      const root = await buildModelPage(
+        `<astro-island>${loadingSpinner}</astro-island><noscript><h1>Grok Imagine in ComfyUI</h1></noscript>`
       )
+
+      const report = await writeMarkdownTwins(root, [route])
 
       expect(report.written).toEqual([])
+      expect(report.skipped).toEqual([twinPath])
+      await expect(readFile(join(root, twinPath))).rejects.toThrow()
+      const html = await readPage(root)
+      expect(html).not.toContain('text/markdown')
+      expect(html).toContain('rel="canonical"')
     })
 
-    it('twins only canonical model pages once they are indexable', async () => {
-      launch.MODEL_PAGES_INDEXABLE = true
-      const root = await buildModelPages()
-
-      const report = await writeMarkdownTwins(root, modelPages)
-
-      expect(report.written).toEqual([`/models/${modelSlug}.md`])
-      expect(report.skipped).toEqual([
-        `/models/${aliasSlug}.md`,
-        '/models/showcase.md'
-      ])
-      const twin = await readFile(
-        join(root, 'models', `${modelSlug}.md`),
-        'utf8'
+    it('twins the server-rendered hero and drops the spinner (post-FE-2942 shape)', async () => {
+      const root = await buildModelPage(
+        `<header data-testid="model-hero"><p>Provider</p><h1>Model name</h1><p>Model summary.</p></header><astro-island>${loadingSpinner}</astro-island>`
       )
+
+      const report = await writeMarkdownTwins(root, [route])
+
+      expect(report.written).toEqual([twinPath])
+      const twin = await readFile(join(root, twinPath), 'utf8')
+      expect(twin).toContain(`canonical: https://comfy.org/${route}\n`)
       expect(twin).toContain(
-        `canonical: https://comfy.org/models/${modelSlug}/\n`
-      )
-      expect(twin).toContain(
-        `---\n\nProvider\n\n# models/${modelSlug}/\n\nModel summary.\n`
+        '---\n\nProvider\n\n# Model name\n\nModel summary.\n'
       )
       expect(twin).not.toContain('Loading')
       expect(twin).not.toContain('Comfy home')
+      expect(await readPage(root)).toContain('text/markdown')
     })
   })
 })
