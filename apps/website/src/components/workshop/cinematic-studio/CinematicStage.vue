@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Reel } from '../../../lib/workshop/cinematic-studio/reel'
 import {
@@ -104,9 +106,19 @@ const otherModel = computed(() => {
           @switch-model="emit('switchModel', $event)"
           @edit-scene="emit('editScene')"
         >
+          <!-- A clip's own play bar sits at the bottom, so its take details
+               sit at the top instead of covering the controls. -->
           <div
             v-if="current.status === 'done'"
-            class="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 bg-linear-to-t from-primary-comfy-ink/90 via-primary-comfy-ink/50 to-transparent p-4 pt-16 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
+            data-testid="cinematic-take-overlay"
+            :class="
+              cn(
+                'absolute inset-x-0 flex flex-wrap justify-between gap-3 from-primary-comfy-ink/90 via-primary-comfy-ink/50 to-transparent p-4 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100',
+                current.output.kind === 'video'
+                  ? 'top-0 items-start bg-linear-to-b pb-16'
+                  : 'bottom-0 items-end bg-linear-to-t pt-16'
+              )
+            "
           >
             <CinematicTakeBar
               :current

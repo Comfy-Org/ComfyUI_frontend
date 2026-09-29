@@ -83,3 +83,19 @@ describe('CinematicSequence', () => {
     expect(new Set(thumbs.map((thumb) => thumb.className)).size).toBe(1)
   })
 })
+
+describe('take details over a finished take', () => {
+  it('sit at the top of a clip, clear of its play bar', async () => {
+    const clip: Take = {
+      ...done,
+      output: { kind: 'video', url: 'blob:clip', fileName: 'clip.mp4' }
+    }
+    const { unmount } = render(CinematicStage, {
+      props: { reel: { takes: [clip] }, models: [] }
+    })
+    expect(screen.getByTestId('cinematic-take-overlay')).toHaveClass('top-0')
+    unmount()
+    render(CinematicStage, { props: { reel: { takes: [done] }, models: [] } })
+    expect(screen.getByTestId('cinematic-take-overlay')).toHaveClass('bottom-0')
+  })
+})
