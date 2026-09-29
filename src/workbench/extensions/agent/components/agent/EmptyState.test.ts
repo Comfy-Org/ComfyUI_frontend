@@ -104,4 +104,28 @@ describe('EmptyState', () => {
     )
     expect(Object.values(attribution)).not.toContain(PROMPTS[1].text)
   })
+
+  it('attributes the displayed localized copy and locale together', async () => {
+    const previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'zh'
+    try {
+      const user = userEvent.setup()
+      const { emitted } = render(EmptyState, { global: { plugins: [i18n] } })
+      const localizedPrompt = i18n.global.t('agent.suggestedPrompts.0')
+
+      await user.click(screen.getByRole('button', { name: localizedPrompt }))
+
+      expect(emitted().insert).toEqual([
+        [
+          localizedPrompt,
+          expect.objectContaining({
+            promptTextHash: starterPromptTextHash(localizedPrompt),
+            locale: 'zh'
+          })
+        ]
+      ])
+    } finally {
+      i18n.global.locale.value = previousLocale
+    }
+  })
 })

@@ -1747,7 +1747,14 @@ describe('Composer', () => {
       })
       render(Host, { global: { plugins: [i18n] } })
       return {
-        insert: (text: string) => composer.value?.insert(text)
+        insert: (text: string) =>
+          composer.value?.insert(text, {
+            promptId: 'generate_image',
+            promptIndex: 0,
+            promptCount: 5,
+            promptTextHash: 'deadbeef',
+            locale: 'en'
+          })
       }
     }
 

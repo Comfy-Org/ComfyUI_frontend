@@ -133,19 +133,19 @@ describe('useComposer', () => {
 
   it('insert appends to the draft without sending', () => {
     const { composer, onSend } = setup()
-    composer.insert('first')
-    composer.insert('second')
+    composer.insert('first', CHIP)
+    composer.insert('second', CHIP)
 
     expect(composer.draft.value).toBe('first second')
     expect(onSend).not.toHaveBeenCalled()
   })
 
-  it('attributes an inserted suggestion chip to the suggestion origin', () => {
+  it('attributes an inserted starter-prompt chip to the suggestion origin', () => {
     const { composer } = setup()
     const store = useAgentComposerStore()
     expect(store.promptOrigin).toBe('typed')
 
-    composer.insert('Upscale this image')
+    composer.insert('Upscale this image', CHIP)
 
     expect(store.promptOrigin).toBe('suggestion')
   })
@@ -193,25 +193,15 @@ describe('useComposer', () => {
     )
   })
 
-  it('reports no click when the affordance does not identify a prompt', () => {
+  it('treats a whitespace-only draft as empty for clean prompt attribution', () => {
     const { composer } = setup()
-    const store = useAgentComposerStore()
-
-    composer.insert('Upscale this image')
-
-    expect(telemetry.trackAgentStarterPromptClicked).not.toHaveBeenCalled()
-    expect(store.promptOrigin).toBe('suggestion')
-    expect(store.starterPrompt).toBeNull()
-  })
-
-  it('does not leave a previous chip attributed to an unidentified insert', () => {
-    const { composer } = setup()
-    const store = useAgentComposerStore()
+    composer.setText('    ')
 
     composer.insert('List my saved workflows', CHIP)
-    composer.insert('something else entirely')
 
-    expect(store.starterPrompt).toBeNull()
+    expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledWith(
+      expect.objectContaining({ draft_was_empty: true })
+    )
   })
 
   it('a recreated composer rehydrates the pending draft and attachments', () => {

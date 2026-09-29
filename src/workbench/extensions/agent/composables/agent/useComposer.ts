@@ -48,22 +48,17 @@ export function useComposer(options: UseComposerOptions) {
 
   /**
    * Puts an affordance's text in the composer. `starterPrompt` identifies the
-   * empty-state chip it came from; supplying it is what emits
+   * empty-state chip it came from; it is what emits
    * `app:agent_starter_prompt_clicked` and what lets the resulting send be
-   * attributed to that chip. A caller that does not identify a prompt still
-   * inserts and is still recorded as `suggestion`, but reports no click — so a
-   * future affordance cannot silently inflate the starter-prompt counts.
+   * attributed to that chip. New suggestion affordances need their own origin
+   * contract instead of silently entering the starter-prompt population.
    */
   function insert(
     text: string,
-    starterPrompt?: AgentStarterPromptAttribution
+    starterPrompt: AgentStarterPromptAttribution
   ): void {
-    const draftWasEmpty = !draft.value
+    const draftWasEmpty = !draft.value.trim()
     store.setText(draft.value ? `${draft.value} ${text}` : text)
-    if (!starterPrompt) {
-      store.markSuggestedPrompt()
-      return
-    }
     const clickId = uuidv4()
     store.markSuggestedPrompt({ id: starterPrompt.promptId, clickId })
     useTelemetry()?.trackAgentStarterPromptClicked({

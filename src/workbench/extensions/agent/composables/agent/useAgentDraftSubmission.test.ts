@@ -412,7 +412,7 @@ describe('Agent draft submission', () => {
     })
   })
 
-  it('puts it back for the retry when the send failed', async () => {
+  it('reports retries as separate attempts joined to the same starter click', async () => {
     const { composer, submit, send } = setup()
     send.mockResolvedValue(false)
     composer.markSuggestedPrompt({ id: 'find_workflow', clickId: 'click-2' })
@@ -420,10 +420,18 @@ describe('Agent draft submission', () => {
     await submit()
     await submit()
 
-    expect(send.mock.calls[1][4]).toMatchObject({
-      inputMethod: 'suggestion',
-      starterPrompt: { id: 'find_workflow', clickId: 'click-2' }
-    })
+    expect(send.mock.calls.map((call) => call[4])).toEqual([
+      {
+        clientMessageId: expect.any(String),
+        inputMethod: 'suggestion',
+        starterPrompt: { id: 'find_workflow', clickId: 'click-2' }
+      },
+      {
+        clientMessageId: expect.any(String),
+        inputMethod: 'suggestion',
+        starterPrompt: { id: 'find_workflow', clickId: 'click-2' }
+      }
+    ])
     expect(send.mock.calls[1][4].clientMessageId).not.toBe(
       send.mock.calls[0][4].clientMessageId
     )

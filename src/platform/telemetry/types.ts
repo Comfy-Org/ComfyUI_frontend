@@ -724,9 +724,11 @@ export interface AgentStarterPromptClickedMetadata extends Record<
   /** The i18n locale that produced `prompt_text_hash`; two locales are two hashes of one prompt. */
   locale: string
   /**
-   * Minted per click. Carried onto the `app:agent_message_sent` this click
-   * leads to, if any, as `starter_prompt_click_id` — that is the click → send →
-   * turn chain. A click with no matching send is a click that never converted.
+   * Minted per click. Carried onto every `app:agent_message_sent` attempt
+   * attributable to this click as `starter_prompt_click_id`. Retries mint a
+   * new `client_message_id` but retain this id, so click conversion must count
+   * distinct `starter_prompt_click_id` values rather than send events. A click
+   * with no matching send attempt never converted.
    */
   click_id: string
   /**
@@ -759,8 +761,8 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
   /**
    * Which starter prompt supplied this draft, `null` when none did. The last
    * chip clicked before the send wins, because inserting appends and the send
-   * is one message. For identified suggestions, this is non-null and
-   * `input_method` is `suggestion`; unattributed suggestions may have a null ID.
+   * is one message. Starter-prompt suggestions always carry a non-null ID and
+   * use `input_method: 'suggestion'`.
    */
   starter_prompt_id: AgentStarterPromptId | null
   /** `click_id` of the `app:agent_starter_prompt_clicked` this send came from, `null` when typed. */

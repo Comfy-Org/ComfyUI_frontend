@@ -46,6 +46,11 @@ describe('starter prompt identity', () => {
     expect(starterPromptTextHash(text)).not.toBe(starterPromptTextHash(''))
   })
 
+  it('pins known hash vectors, including a leading-zero result', () => {
+    expect(starterPromptTextHash('List my saved workflows')).toBe('3d98efb0')
+    expect(starterPromptTextHash('prompt-130')).toBe('00657dba')
+  })
+
   it('carries the slot, the set size and the locale that produced the hash', () => {
     expect(
       starterPromptAttribution('Explain the selected node', 3, 5, 'zh')
