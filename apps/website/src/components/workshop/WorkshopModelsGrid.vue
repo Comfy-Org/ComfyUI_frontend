@@ -19,7 +19,6 @@ import {
   sortOrdersFor,
   sortWorkshopModels
 } from '../../config/models-catalogue'
-import { getRoutes } from '../../config/routes'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
@@ -30,8 +29,7 @@ import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
-import { modelSlides, studioSlide } from '../../lib/workshop/featured-slides'
-import { useWorkshopAppsEnabled } from '../../scripts/posthog'
+import { modelSlides } from '../../lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
@@ -129,8 +127,9 @@ const sectionTitleKey = computed<TranslationKey>(() =>
 
 // A category names the screen it opens, so the page heading above it would say
 // the catalogue's name twice.
-const emit = defineEmits<{ section: [boolean] }>()
+const emit = defineEmits<{ section: [boolean]; browsing: [boolean] }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
+watch(browsing, (value) => emit('browsing', value), { immediate: true })
 
 // Keep the launch-requested video models in the set, then let the same curated
 // order used by the rows decide where every selected model appears.
@@ -153,11 +152,7 @@ const featured = computed(() => {
     'popular'
   )
 })
-const studioEnabled = useWorkshopAppsEnabled()
-const featuredSlides = computed(() => [
-  ...(studioEnabled.value ? [studioSlide(locale)] : []),
-  ...modelSlides(featured.value, locale)
-])
+const featuredSlides = computed(() => modelSlides(featured.value, locale))
 
 // What narrowed the list stays legible next to it, so a reader can take one
 // choice off without reopening the menu that made it.
@@ -222,10 +217,8 @@ function rememberModel(
 watch(browseAll, (on) => on && resetFilters())
 
 const pitch = computed(() => ({
-  heading: t('workshop.pitch.models.heading', locale),
-  body: t('workshop.pitch.models.body', locale),
-  action:
-    sortWorkshopModels(models, 'popular')[0]?.href ?? getRoutes(locale).workshop
+  heading: t('workshop.hero.heading', locale),
+  body: t('workshop.hero.subtitle', locale)
 }))
 </script>
 

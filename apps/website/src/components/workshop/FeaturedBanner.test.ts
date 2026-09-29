@@ -312,4 +312,30 @@ describe('FeaturedBanner', () => {
       )
     }
   )
+  const pitch = {
+    heading: 'What will you make next?',
+    body: 'Try the latest AI models with your own ideas, right in your browser.'
+  }
+
+  it('still pitches the tab when the catalogue promotes nothing', () => {
+    render(FeaturedBanner, { props: { slides: [], pitch } })
+
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+      pitch.heading
+    )
+    expect(screen.getByText(pitch.body)).toBeTruthy()
+    expect(screen.queryByTestId('featured-now-showing')).toBeNull()
+  })
+
+  it('names the slide beside the pitch and keeps its markers in that strip', () => {
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en'), pitch }
+    })
+
+    const showing = screen.getByTestId('featured-now-showing')
+    expect(showing.textContent).toContain('Flux · Text to Image')
+    expect(showing.contains(screen.getByTestId('featured-pagination'))).toBe(
+      true
+    )
+  })
 })

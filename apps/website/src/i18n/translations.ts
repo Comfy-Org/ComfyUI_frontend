@@ -10516,34 +10516,6 @@ Enterprise`
   },
   'workshop.hub.title': { en: 'Browse models', 'zh-CN': '浏览模型' },
   'workshop.hub.nowShowing': { en: 'Now showing', 'zh-CN': '正在展示' },
-  'workshop.hub.startPrompt': {
-    en: 'Start with a prompt',
-    'zh-CN': '从提示词开始'
-  },
-  'workshop.pitch.models.heading': {
-    en: 'Every frontier model, one place to try it.',
-    'zh-CN': '所有前沿模型，一处即可试用。'
-  },
-  'workshop.pitch.models.body': {
-    en: 'Nothing to install. Type a prompt, press run, see what it makes.',
-    'zh-CN': '无需安装。输入提示词，点击运行，看看它能做什么。'
-  },
-  'workshop.pitch.workflows.heading': {
-    en: 'Whole recipes, not single steps.',
-    'zh-CN': '完整流程，而非单个步骤。'
-  },
-  'workshop.pitch.workflows.body': {
-    en: 'Each one chains the models a job needs, and runs here as it is.',
-    'zh-CN': '每一个都串联起任务所需的模型，并可直接在此运行。'
-  },
-  'workshop.pitch.apps.heading': {
-    en: 'Tools built on the graph, without the graph.',
-    'zh-CN': '基于节点图打造的工具，无需接触节点图。'
-  },
-  'workshop.pitch.apps.body': {
-    en: 'A made screen for one job, running the same models underneath.',
-    'zh-CN': '为单一任务定制的界面，底层运行同样的模型。'
-  },
   'workshop.hub.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
   'workshop.hub.search': {
     en: 'Search workflows, models, creators...',

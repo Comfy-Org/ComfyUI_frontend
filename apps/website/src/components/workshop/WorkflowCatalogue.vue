@@ -12,7 +12,6 @@ import {
   filterWorkshopModels,
   sortWorkshopModels
 } from '../../config/models-catalogue'
-import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import CardRow from './CardRow.vue'
@@ -37,7 +36,7 @@ const sort = ref<SortOrder>('popular')
 const filterMenu =
   useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
 const browseAll = defineModel<boolean>('browseAll', { default: false })
-const emit = defineEmits<{ section: [boolean] }>()
+const emit = defineEmits<{ section: [boolean]; browsing: [boolean] }>()
 watch(browseAll, (value) => emit('section', value), { immediate: true })
 watch(browseAll, () => {
   clear()
@@ -121,6 +120,7 @@ const browsing = computed(
     !runsOn.value.length &&
     !browseAll.value
 )
+watch(browsing, (value) => emit('browsing', value), { immediate: true })
 const featured = computed(() =>
   rows.value.flatMap((category) =>
     category.models.filter((model) => model.categoryHighlight)
@@ -160,9 +160,8 @@ function leaveSection() {
 }
 
 const pitch = computed(() => ({
-  heading: t('workshop.pitch.workflows.heading', locale),
-  body: t('workshop.pitch.workflows.body', locale),
-  action: featured.value[0]?.href ?? getRoutes(locale).workshop
+  heading: t('workshop.hero.heading', locale),
+  body: t('workshop.catalogue.workflowsSubtitle', locale)
 }))
 </script>
 

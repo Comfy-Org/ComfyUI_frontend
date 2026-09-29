@@ -14,7 +14,6 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
 import FeaturedBannerPagination from './FeaturedBannerPagination.vue'
 import FeaturedNowShowing from './FeaturedNowShowing.vue'
 import FeaturedSlideCopy from './FeaturedSlideCopy.vue'
@@ -48,7 +47,6 @@ const AUTOPLAY_MS = 7000
 interface FeaturedPitch {
   readonly heading: string
   readonly body: string
-  readonly action: string
 }
 
 const {
@@ -125,6 +123,8 @@ const { pause, resume } = useRafFn(
 watch(rotating, (on) => (on ? resume() : pause()), { immediate: true })
 watch(activeIndex, () => (elapsed.value = 0))
 
+const strip = computed(() => active.value !== undefined && pitch !== undefined)
+
 const fill = computed(() =>
   !autoplay || prefersReducedMotion()
     ? 1
@@ -151,41 +151,42 @@ const fill = computed(() =>
       "
       data-testid="featured-slide"
     >
-      <a
-        v-if="active"
-        :href="active.href"
-        tabindex="-1"
-        aria-hidden="true"
-        class="absolute inset-0"
-        data-testid="featured-slide-link"
-      ></a>
-      <video
-        v-if="active?.media?.kind === 'video'"
-        :key="active!.key"
-        ref="video"
-        :src="previewSrc"
-        class="pointer-events-none absolute inset-0 size-full object-cover"
-        aria-hidden="true"
-        muted
-        loop
-        playsinline
-        preload="metadata"
-        data-testid="featured-video"
-      />
-      <img
-        v-else-if="active?.media"
-        :key="active!.key"
-        :src="active!.media!.url"
-        alt=""
-        class="pointer-events-none absolute inset-0 size-full object-cover"
-        decoding="async"
-      />
+      <template v-if="active">
+        <a
+          :href="active.href"
+          tabindex="-1"
+          aria-hidden="true"
+          class="absolute inset-0"
+          data-testid="featured-slide-link"
+        ></a>
+        <video
+          v-if="active.media?.kind === 'video'"
+          :key="active.key"
+          ref="video"
+          :src="previewSrc"
+          class="pointer-events-none absolute inset-0 size-full object-cover"
+          aria-hidden="true"
+          muted
+          loop
+          playsinline
+          preload="metadata"
+          data-testid="featured-video"
+        />
+        <img
+          v-else-if="active.media"
+          :key="active.key"
+          :src="active.media.url"
+          alt=""
+          class="pointer-events-none absolute inset-0 size-full object-cover"
+          decoding="async"
+        />
+      </template>
       <div
         :class="
           cn(
             'pointer-events-none absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20',
             pitch
-              ? 'sm:bg-linear-to-r sm:from-page sm:from-45% sm:via-page/60 sm:via-64% sm:to-transparent'
+              ? 'sm:bg-linear-to-r sm:from-page sm:from-36% sm:via-page/55 sm:via-54% sm:to-transparent'
               : 'sm:bg-linear-to-r sm:via-page/75 sm:to-transparent'
           )
         "
@@ -208,33 +209,36 @@ const fill = computed(() =>
           >
             {{ pitch.heading }}
           </h1>
-          <p class="max-w-prose text-content-secondary short:hidden">
+          <p class="max-w-prose text-content-secondary">
             {{ pitch.body }}
           </p>
-          <div class="pointer-events-auto flex w-fit items-center gap-3">
-            <Button as="a" :href="pitch.action" class="w-fit">
-              {{ t('workshop.hub.startPrompt', locale) }}
-            </Button>
-          </div>
         </template>
 
         <FeaturedSlideCopy v-else-if="active" :slide="active" :locale />
       </div>
 
       <FeaturedNowShowing
-        v-if="pitch && active"
+        v-if="active && pitch"
         :title="active.title"
         :kind="active.kind"
         :locale
-      />
+      >
+        <FeaturedBannerPagination
+          v-if="slides.length > 1"
+          :slides
+          :active-index="activeIndex"
+          :fill
+          aside
+          @go="goTo"
+        />
+      </FeaturedNowShowing>
     </div>
 
     <FeaturedBannerPagination
-      v-if="slides.length > 1"
+      v-if="slides.length > 1 && !strip"
       :slides
       :active-index="activeIndex"
       :fill
-      :aside="pitch !== undefined"
       @go="goTo"
     />
   </section>

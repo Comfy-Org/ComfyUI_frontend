@@ -92,13 +92,13 @@ describe('ModelsCatalogue', () => {
       locale: 'en',
       tab: 'models',
       subtitle:
-        'Nothing to install. Type a prompt, press run, see what it makes.'
+        'Try the latest AI models with your own ideas, right in your browser.'
     },
     {
       locale: 'en',
       tab: 'workflows',
       subtitle:
-        'Each one chains the models a job needs, and runs here as it is.'
+        'Turn your ideas into finished results with multi-step workflows powered by AI models.'
     },
     {
       locale: 'en',
@@ -109,12 +109,12 @@ describe('ModelsCatalogue', () => {
     {
       locale: 'zh-CN',
       tab: 'models',
-      subtitle: '无需安装。输入提示词，点击运行，看看它能做什么。'
+      subtitle: '用你自己的创意试用最新的 AI 模型，就在浏览器中。'
     },
     {
       locale: 'zh-CN',
       tab: 'workflows',
-      subtitle: '每一个都串联起任务所需的模型，并可直接在此运行。'
+      subtitle: '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
     },
     {
       locale: 'zh-CN',

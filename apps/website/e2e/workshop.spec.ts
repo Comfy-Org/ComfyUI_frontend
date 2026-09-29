@@ -61,9 +61,9 @@ test.describe('Models catalog', () => {
     if (!href || !bars || !area)
       throw new Error('Featured banner is not laid out')
 
-    // The strip spans the card so the bars can share the room, which puts a
-    // wide empty stretch of it over the link.
-    await page.mouse.click(area.x + area.width - 80, bars.y + bars.height / 2)
+    // The strip that holds the bars leaves a wide empty stretch beside them,
+    // and that stretch is still the card's link.
+    await page.mouse.click(bars.x - 40, bars.y + bars.height / 2)
 
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
@@ -240,7 +240,7 @@ test.describe('Models catalog', () => {
       .getByRole('button', { name: 'Back to all categories', exact: true })
       .click()
     await expect(sections).toBeVisible()
-    await expect(page.getByTestId('workshop-hero')).toBeVisible()
+    await expect(page.getByTestId('catalogue-pitch')).toBeVisible()
   })
 
   // A row loads eight whatever its total says, so a row holding fewer than

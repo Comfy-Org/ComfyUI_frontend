@@ -6,8 +6,8 @@ const { slides, activeIndex, fill, aside } = defineProps<{
   activeIndex: number
   /** How far the current slide has run, 0 to 1. */
   fill: number
-  /** Whether the banner keeps a pitch beside the picture, so the dots belong
-   * to the picture rather than to the whole width. */
+  /** Whether the banner keeps a pitch beside the picture, so the dots ride in
+   * the strip that names the slide rather than across the whole width. */
   aside?: boolean
 }>()
 
@@ -18,8 +18,8 @@ const emit = defineEmits<{ go: [index: number] }>()
   <div
     :class="
       cn(
-        'pointer-events-none absolute bottom-5 flex gap-2',
-        aside ? 'right-6 justify-end' : 'inset-x-8 lg:inset-x-12'
+        'pointer-events-none flex gap-2',
+        aside ? 'shrink-0' : 'absolute inset-x-8 bottom-5 lg:inset-x-12'
       )
     "
     data-testid="featured-pagination"
@@ -30,7 +30,12 @@ const emit = defineEmits<{ go: [index: number] }>()
       type="button"
       :aria-label="slide.title"
       :aria-current="index === activeIndex ? 'true' : undefined"
-      class="group pointer-events-auto max-w-12 min-w-0 flex-1 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+      :class="
+        cn(
+          'group pointer-events-auto min-w-0 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
+          aside ? 'w-6 shrink-0' : 'max-w-12 flex-1'
+        )
+      "
       @click="emit('go', index)"
     >
       <span

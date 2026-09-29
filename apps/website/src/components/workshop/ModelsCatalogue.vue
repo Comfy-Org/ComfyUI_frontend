@@ -32,6 +32,7 @@ const { models, locale = 'en' } = defineProps<{
 }>()
 
 const inSection = ref(false)
+const browsing = ref(true)
 const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
@@ -114,7 +115,7 @@ watch(
 
 <template>
   <WorkshopHero
-    v-if="!inSection && activeTab === 'apps'"
+    v-if="!inSection && (activeTab === 'apps' || !browsing)"
     :eyebrow="t('workshop.catalogue.eyebrow', locale)"
     :heading="t('workshop.hero.heading', locale)"
     :subtitle="t(heroSubtitle[activeTab], locale)"
@@ -125,6 +126,7 @@ watch(
     :models="routerModels"
     :locale
     @section="inSection = $event"
+    @browsing="browsing = $event"
   >
     <template #tabs>
       <CatalogueTabs
@@ -144,6 +146,7 @@ watch(
     :models="workflows"
     :locale
     @section="inSection = $event"
+    @browsing="browsing = $event"
   >
     <template #tabs>
       <CatalogueTabs
