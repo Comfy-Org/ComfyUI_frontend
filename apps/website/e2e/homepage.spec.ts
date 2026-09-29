@@ -283,3 +283,61 @@ test.describe('Get started section links @smoke', () => {
     )
   })
 })
+
+test.describe('Model discovery row @interaction', () => {
+  test('a hovered or focused workflow card gives its whole name', async ({
+    page,
+    context
+  }) => {
+    await context.route('**/t.comfy.org/**', (route) =>
+      /\/(flags|decide)\//.test(route.request().url())
+        ? route.fulfill({
+            json: {
+              featureFlags: {
+                'workshop-enabled': true,
+                'workshop-workflows-enabled': true
+              },
+              featureFlagPayloads: {}
+            }
+          })
+        : route.abort('blockedbyclient')
+    )
+    await page.goto('/')
+    await page
+      .getByTestId('catalogue-tabs')
+      .getByRole('button', { name: 'Workflows' })
+      .click()
+    const cards = page.getByTestId('discovery-workflow')
+    await expect(cards.first()).toBeAttached()
+    await page.addStyleTag({
+      content:
+        '[data-testid="discovery-marquee"] { animation: none !important }'
+    })
+
+    const cut = await cards.evaluateAll((elements) =>
+      elements.findIndex((element) => {
+        const name = element.querySelector('span[title]')
+        const box = element.getBoundingClientRect()
+        return (
+          name !== null &&
+          name.scrollWidth > name.clientWidth + 1 &&
+          box.x > 0 &&
+          box.right < window.innerWidth
+        )
+      })
+    )
+    expect(cut).toBeGreaterThan(-1)
+
+    const card = cards.nth(cut)
+    const name = card.locator('span[title]')
+    const overflow = () =>
+      name.evaluate((element) => element.scrollWidth - element.clientWidth)
+    await card.hover()
+    await expect.poll(overflow).toBeLessThanOrEqual(1)
+
+    await page.mouse.move(0, 0)
+    await expect.poll(overflow).toBeGreaterThan(1)
+    await card.focus()
+    await expect.poll(overflow).toBeLessThanOrEqual(1)
+  })
+})

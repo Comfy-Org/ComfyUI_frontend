@@ -39,12 +39,12 @@ describe('WorkflowPage header', () => {
     expect(screen.queryByTestId('workflow-use-case')).toBeNull()
   })
 
-  it('credits the template and leaves the models to the Details tab', () => {
+  it('leaves the credit and the models to the Details tab', () => {
     mount()
 
     const hero = screen.getByTestId('workflow-hero')
     expect(hero).toHaveTextContent(model.name)
-    expect(hero).toHaveTextContent(`Template by ${template.author}`)
+    expect(hero).not.toHaveTextContent(`Template by ${template.author}`)
     for (const name of template.models) expect(hero).not.toHaveTextContent(name)
   })
 })
