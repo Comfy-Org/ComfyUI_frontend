@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -39,6 +40,7 @@ export function useTemplateWorkflows() {
   const { t } = useI18n()
   const workflowTemplatesStore = useWorkflowTemplatesStore()
   const dialogStore = useDialogStore()
+  const { trackFeatureUsed } = useSurveyFeatureTracking('example-workflows')
 
   // State
   const selectedTemplate = ref<WorkflowTemplates | null>(null)
@@ -224,6 +226,11 @@ export function useTemplateWorkflows() {
       if (loadedWorkflow === false) return 'graph-failed'
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
+      // Counted here rather than at the call site: only this path means the
+      // template reached the canvas. A failed load never showed the user the
+      // compacted-vs-exploded layout the survey asks about, so it must not
+      // push them toward the eligibility threshold.
+      trackFeatureUsed()
       return 'loaded'
     } catch (error) {
       reportTemplateError(error)

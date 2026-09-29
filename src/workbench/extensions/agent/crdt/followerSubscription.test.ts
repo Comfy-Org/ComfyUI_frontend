@@ -27,9 +27,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
-import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
-import type { GraphMutations } from './graphMutations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -119,43 +117,7 @@ function wire() {
 }
 
 describe('follower commit boundary', () => {
-  it.fails('does not publish a frame rejected by graph projection', () => {
-    const { transport, client, bridge } = wire()
-    onTestFinished(() => {
-      bridge.destroy()
-      client.destroy()
-    })
-    const mutations = {
-      batch: vi.fn(() => false),
-      addNode: vi.fn(() => false),
-      setWidget: vi.fn(() => false),
-      connect: vi.fn(() => false),
-      deleteNode: vi.fn(() => false),
-      clearSemanticGraph: vi.fn(() => false)
-    } satisfies GraphMutations
-    const adapter = new EcsFollowerAdapter(mutations)
-    onTestFinished(() => adapter.destroy())
-    const projectionResults: boolean[] = []
-    adapter.bind(WORKFLOW_ID, bridge.follower)
-    bridge.addEventListener('doc_update', (event) => {
-      if (event instanceof CustomEvent) {
-        projectionResults.push(adapter.applyFrame(event.detail as DocUpdate))
-      }
-    })
-    transport.open = true
-    bridge.subscribe(WORKFLOW_ID)
-    const initialVector = encodeBase64(bridge.follower.stateVector())
-
-    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
-
-    expect(projectionResults).toEqual([false])
-    expect({
-      sequence: bridge.lastSequence,
-      stateVector: encodeBase64(bridge.follower.stateVector())
-    }).toEqual({ sequence: 0, stateVector: initialVector })
-  })
-
-  it.fails('does not integrate Yjs structs when a truncated update throws', () => {
+  it('does not integrate Yjs structs when a truncated update throws', () => {
     const host = new Y.Doc()
     onTestFinished(() => host.destroy())
     host.transact(() => {

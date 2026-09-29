@@ -13,7 +13,7 @@ import { renderWorkflow as render } from '../src/config/workflow-render'
 
 let definitions: ReadonlyMap<string, WorkflowWorkshopModelDetail> | undefined
 
-function lookupWorkflow(slug: string) {
+function loadDefinitions() {
   if (!definitions) {
     const pages: unknown = JSON.parse(
       readFileSync(
@@ -33,7 +33,15 @@ function lookupWorkflow(slug: string) {
       )
     )
   }
-  return definitions.get(slug)
+  return definitions
+}
+
+export function publishedWorkflows(): WorkflowWorkshopModelDetail[] {
+  return [...loadDefinitions().values()]
+}
+
+function lookupWorkflow(slug: string) {
+  return loadDefinitions().get(slug)
 }
 
 function modelFor(slug: string) {

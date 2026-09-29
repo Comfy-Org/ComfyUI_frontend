@@ -287,7 +287,7 @@ describe('createBillingOperationLifecycle', () => {
       ])
     })
 
-    it("adopts the backend's pending operation of the same kind instead of issuing a second", async () => {
+    it("refuses over the backend's pending operation of the same kind instead of issuing a second", async () => {
       const { lifecycle, telemetry } = harness({
         status: statusSnapshot({
           pending_billing_op_id: 'op-9',
@@ -301,19 +301,12 @@ describe('createBillingOperationLifecycle', () => {
       const began = await lifecycle.begin('topup', issue)
 
       expect(issue).not.toHaveBeenCalled()
-      expect(began).toMatchObject({
-        status: 'ok',
-        value: {
-          id: 'op-9',
-          actionUrl: 'https://billing.example/continue',
-          customerActionSeen: true
-        }
+      expect(began).toEqual({
+        status: 'error',
+        code: 'OPERATION_ALREADY_PENDING'
       })
-      expect(telemetry[0]).toMatchObject({
-        name: 'billing.operation.started',
-        billing_op_id: 'op-9',
-        resumed: true
-      })
+      // Nothing was taken over, so no attempt started under this caller.
+      expect(telemetry).toEqual([])
     })
 
     it('shares one in-flight command per kind', async () => {
@@ -508,6 +501,79 @@ describe('createBillingOperationLifecycle', () => {
       })
     })
 
+    describe('a blocked phase that offers the customer no action', () => {
+      const actionless = httpOk(
+        opStatus({
+          phase: 'awaiting_invoice_payment',
+          payment_intent_client_secret: 'pi_secret',
+          authentication_state: 'processing'
+        })
+      )
+      const challengeRequired = httpOk(
+        opStatus({
+          phase: 'awaiting_invoice_payment',
+          payment_intent_client_secret: 'pi_secret',
+          authentication_state: 'requires_action'
+        })
+      )
+      const pastTheDiscoveryWindow =
+        OPERATION_POLL_TIMING.actionDiscoveryMs +
+        2 * OPERATION_POLL_TIMING.maxMs
+
+      it('reaches a challenge on the last poll the discovery window schedules on the fast backoff', async () => {
+        const { lifecycle } = harness({
+          embedded: true,
+          answers: [
+            httpOk(opStatus({ phase: 'in_progress' })),
+            ...Array.from({ length: 10 }, () => actionless),
+            challengeRequired
+          ]
+        })
+        await lifecycle.begin('subscription', issued())
+
+        await vi.advanceTimersByTimeAsync(68_000)
+
+        expect(lifecycle.get('op-1')).toMatchObject({
+          challenge: { clientSecret: 'pi_secret', status: 'required' }
+        })
+      })
+
+      it('falls back to the parked cadence once the discovery window passes', async () => {
+        const { lifecycle, calls } = harness({
+          embedded: true,
+          answers: [httpOk(opStatus({ phase: 'in_progress' })), actionless]
+        })
+        await lifecycle.begin('subscription', issued())
+        await vi.advanceTimersByTimeAsync(pastTheDiscoveryWindow)
+        const polledBeforeParking = calls.length
+
+        await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs)
+        expect(calls).toHaveLength(polledBeforeParking + 1)
+        await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs)
+        expect(calls).toHaveLength(polledBeforeParking + 2)
+      })
+
+      it('keeps the customer-action budget', async () => {
+        const { lifecycle } = harness({
+          embedded: true,
+          answers: [httpOk(opStatus({ phase: 'in_progress' })), actionless]
+        })
+        await lifecycle.begin('subscription', issued())
+        await vi.advanceTimersByTimeAsync(pastTheDiscoveryWindow)
+
+        vi.setSystemTime(
+          NOW +
+            OPERATION_POLL_BUDGET.customerActionMs -
+            2 * OPERATION_POLL_TIMING.parkedMs
+        )
+        await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs)
+        expect(lifecycle.get('op-1')).toMatchObject({ phase: 'pending' })
+
+        await vi.advanceTimersByTimeAsync(2 * OPERATION_POLL_TIMING.parkedMs)
+        expect(lifecycle.get('op-1')).toMatchObject({ phase: 'timed_out' })
+      })
+    })
+
     it('joins a wake to the poll in flight rather than issuing a second request', async () => {
       const gate = deferred<BillingResult<BillingHttpResponse>>()
       const { lifecycle, calls } = harness({
@@ -688,7 +754,7 @@ describe('createBillingOperationLifecycle', () => {
           pending_billing_op_type: 'topup'
         })
       )
-      const readopted = await lifecycle.begin('topup', issued())
+      const readopted = await lifecycle.recover()
       await flush()
 
       expect(readopted).toMatchObject({

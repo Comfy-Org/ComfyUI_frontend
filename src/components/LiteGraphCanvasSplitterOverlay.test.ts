@@ -11,6 +11,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import type { SidebarTabExtension } from '@/types/extensionTypes'
 vi.mock(import('firebase/auth'))
 
 /**
@@ -115,10 +117,46 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
 
     expect(screen.getByTestId('topmenu')).toBeInTheDocument()
   })
+  it('reserves room for the sidebar so the Agent panel stops before it', async () => {
+    const agentPanelStore = useAgentPanelStore()
+    const sidebarTabStore = useSidebarTabStore()
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: { sideToolbar: { sidebar: 'Sidebar' } } }
+    })
+
+    render(LiteGraphCanvasSplitterOverlay, {
+      global: {
+        plugins: [getActivePinia()!, i18n],
+        stubs: { Splitter: true, SplitterPanel: true }
+      }
+    })
+
+    window.innerWidth = 1200
+    window.dispatchEvent(new Event('resize'))
+    agentPanelStore.toggleMaximize()
+    await nextTick()
+    const widthWithoutSidebar = agentPanelStore.width
+
+    sidebarTabStore.sidebarTabs = [
+      { id: 'probe', title: 'Probe' } as SidebarTabExtension
+    ]
+    sidebarTabStore.activeSidebarTabId = 'probe'
+    await nextTick()
+
+    expect(agentPanelStore.width).toBeLessThan(widthWithoutSidebar)
+
+    sidebarTabStore.activeSidebarTabId = null
+    await nextTick()
+
+    expect(agentPanelStore.width).toBe(widthWithoutSidebar)
+  })
+
   it('refreshes the splitter only when the Agent panel becomes visible', async () => {
     const agentPanelStore = useAgentPanelStore()
     agentPanelStore.enabled = true
-    agentPanelStore.isOpen = true
+    agentPanelStore.isOpen = false
     agentPanelStore.consentAccepted = false
 
     const splitterMounts = vi.fn()
@@ -140,13 +178,13 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
         }
       }
     })
-    const mountsBeforeConsent = splitterMounts.mock.calls.length
+    const mountsBeforePanelOpen = splitterMounts.mock.calls.length
 
-    agentPanelStore.consentAccepted = true
+    agentPanelStore.isOpen = true
     await nextTick()
 
     expect(splitterMounts.mock.calls.length).toBeGreaterThan(
-      mountsBeforeConsent
+      mountsBeforePanelOpen
     )
   })
 })
