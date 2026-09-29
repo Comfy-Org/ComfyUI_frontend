@@ -26,10 +26,9 @@ function workflowsOf(person: FdctTechnologist): CardWorkflowItem[] {
 
 const people = technologists(locale).map((person) => ({
   ...person,
-  ctaLabel: t('fdct.technologists.seeWork', locale).replace(
-    '{name}',
-    person.nickname ?? person.name.split(' ')[0]
-  ),
+  ctaLabel: t('fdct.technologists.seeWork', locale, {
+    name: person.nickname ?? person.name.split(' ')[0]
+  }),
   workflows: workflowsOf(person)
 }))
 </script>

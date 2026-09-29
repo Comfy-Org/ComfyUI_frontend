@@ -3,7 +3,12 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import {
+  authenticatedRemoteConfigState,
+  remoteConfigRevision
+} from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentConsentNotOfferedReason } from '@/platform/telemetry/types'
@@ -16,17 +21,20 @@ import {
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import {
+  notifyRestoreMintersAfterGraphConfigure,
+  notifyRestoreMintersBeforeGraphLoad,
+  notifyRestoreMintersGraphLoadError
+} from '@/workbench/extensions/agent/crdt/restoreOpMinter'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import {
-  notifyMintPortsAfterGraphConfigure,
-  notifyMintPortsBeforeGraphLoad
-} from '@/workbench/extensions/agent/crdt/mintPortWiring'
+
+/** Upper bound on how long readiness consumers wait for a gate decision. */
+export const GATE_SETTLE_TIMEOUT_MS = 5_000
 
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
 
@@ -60,46 +68,6 @@ function prepareAutoShow(
 
 let registered = false
 
-/**
- * Owns the local-dirty-tracking suppression window(s) graph loads open in
- * `beforeLoadGraph`. Two loads can genuinely overlap - e.g. two rapid tab
- * switches, each an async `loadGraphData` call - and each one's
- * `beforeLoadGraph` opens the same underlying suppression before either
- * finishes. A single boolean flag cannot tell those apart: whichever load
- * finishes first (success or error) would close the flag while the other is
- * still mid-`configure`, and that other load's own structural writes would
- * then get misread as a human edit and wrongly marked dirty.
- *
- * A depth counter fixes that: every `beforeLoadGraph` increments it and
- * opens the store's suppression only on the 0 -> 1 transition; every
- * matching completion (`afterConfigureGraph` or `onGraphLoadError`, in
- * either order) decrements it and closes the suppression only once the
- * count is back at 0, i.e. once every overlapping load that opened it has
- * also finished. `app.ts`'s `loadGraphData` mirrors this: a single try
- * wraps its entire body from right after `beforeLoadGraph` through
- * `rootGraph.configure` succeeding (asset-scan resets, `clean()`, workflow
- * cloning, `validateWorkflow`, reroute-migration inspection, subgraph
- * loading, a `beforeConfigureGraph` extension hook throwing, or a
- * node-replacement load failure), so every one of those paths also routes
- * through `onGraphLoadError` and this counter's decrement is never skipped.
- * A leaked-open suppression would misread every later context-less user
- * edit as structural and never mark it dirty again.
- */
-let widgetDirtySuppressionDepth = 0
-
-function openWidgetDirtySuppression(): void {
-  widgetDirtySuppressionDepth++
-  if (widgetDirtySuppressionDepth > 1) return
-  useWidgetValueStore().beginLocalDirtyTrackingSuppression()
-}
-
-function closeWidgetDirtySuppression(): void {
-  if (widgetDirtySuppressionDepth === 0) return
-  widgetDirtySuppressionDepth--
-  if (widgetDirtySuppressionDepth > 0) return
-  useWidgetValueStore().endLocalDirtyTrackingSuppression()
-}
-
 export function registerAgentPanelExtension(): void {
   if (registered) return
   registered = true
@@ -107,10 +75,9 @@ export function registerAgentPanelExtension(): void {
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
-      notifyMintPortsBeforeGraphLoad()
-      openWidgetDirtySuppression()
+      notifyRestoreMintersBeforeGraphLoad()
       const agentPanelStore = useAgentPanelStore()
-      if (!agentPanelStore.isVisible) return
+      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) return
 
       const nodeSelectionStore = useAgentNodeSelectionStore()
       nodeSelectionStore.beginWorkflowLoad()
@@ -119,7 +86,7 @@ export function registerAgentPanelExtension(): void {
       const agentPanelStore = useAgentPanelStore()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (!nodeSelectionStore.isLoadingWorkflow) return
-      if (!agentPanelStore.isVisible) {
+      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) {
         nodeSelectionStore.finishWorkflowLoad()
         return
       }
@@ -151,24 +118,24 @@ export function registerAgentPanelExtension(): void {
       }
     },
     onGraphLoadError() {
-      closeWidgetDirtySuppression()
+      notifyRestoreMintersGraphLoadError()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (nodeSelectionStore.isLoadingWorkflow) {
         nodeSelectionStore.finishWorkflowLoad()
       }
     },
     afterConfigureGraph() {
-      notifyMintPortsAfterGraphConfigure()
-      closeWidgetDirtySuppression()
+      notifyRestoreMintersAfterGraphConfigure()
     },
     setup() {
       const agentPanelStore = useAgentPanelStore()
       const consentStore = useAgentConsentStore()
       const { enabled } = storeToRefs(agentPanelStore)
       const workspaceStore = useTeamWorkspaceStore()
-      const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
+      const { isAuthInitialized, resolvedUserInfo, isLoggedIn } =
+        useCurrentUser()
       const { withConsent } = useAgentConsent()
-      const { firstRunTookScreen, whenStartupDecided } = useFirstRunEntry()
+      const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
       registerWorkflowTabActivityTracker(enabled)
@@ -187,9 +154,9 @@ export function registerAgentPanelExtension(): void {
           : dialogStore.dialogStack.length > 0
             ? 'dialog_open'
             : null
-      const screenIsClear = computed(() => screenBusyReason() === null)
       const screenHolder = (): AgentConsentNotOfferedReason | null =>
-        firstRunTookScreen.value ? 'first_run_screen' : screenBusyReason()
+        firstRunHoldsScreen.value ? 'first_run_screen' : screenBusyReason()
+      const screenIsClear = computed(() => screenHolder() === null)
 
       const reportedWithheld = new Set<string>()
       const withholdOffer = (
@@ -215,7 +182,7 @@ export function registerAgentPanelExtension(): void {
         workspaceId?: string
       ): void => {
         withholdOffer(reason, userId, workspaceId)
-        if (reason !== 'first_run_screen') offerHeld.value = true
+        offerHeld.value = true
       }
 
       const consentScope = (): string | null => {
@@ -265,7 +232,7 @@ export function registerAgentPanelExtension(): void {
         void withConsent(
           'first_load',
           () => {
-            if (!agentPanelStore.enabled) return
+            if (!agentPanelStore.enabled || agentPanelStore.isOpen) return
             agentPanelStore.open('automatic_consent')
           },
           {
@@ -299,6 +266,29 @@ export function registerAgentPanelExtension(): void {
           })
       }
 
+      let activationPending = false
+      let activationOffered = false
+      const openWhenStartupDecided = (): void => {
+        if (!agentPanelStore.enabled || activationPending || activationOffered)
+          return
+        activationPending = true
+        whenStartupDecided()
+          .then((decided) => {
+            if (decided && agentPanelStore.enabled) {
+              activationOffered = true
+              if (!agentPanelStore.isOpen) agentPanelStore.open('activation')
+            }
+          })
+          .catch((error: unknown) => {
+            reportError(error, {
+              errorType: 'agent_panel_activation_failure'
+            })
+          })
+          .finally(() => {
+            activationPending = false
+          })
+      }
+
       const loadConsentIfEligible = (): void => {
         if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
         void consentStore
@@ -324,55 +314,73 @@ export function registerAgentPanelExtension(): void {
           loadConsentIfEligible()
         }
       )
-      return setupFlagGate(loadConsentIfEligible)
+      setupFlagGate(
+        loadConsentIfEligible,
+        openWhenStartupDecided,
+        () => isAuthInitialized.value && resolvedUserInfo.value === null
+      )
     }
   })
 }
 
-async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
+function setupFlagGate(
+  loadConsentIfEligible: () => void,
+  openWhenStartupDecided: () => void,
+  isSignedOut: () => boolean
+): void {
   const agentPanelStore = useAgentPanelStore()
-  const settle = (): void => {
-    agentPanelStore.gateSettled = true
-  }
-  try {
-    const [
-      { createPostHogFlagSource, FLAG_SETTLE_TIMEOUT_MS },
-      { default: posthog }
-    ] = await Promise.all([
-      import('@/workbench/extensions/agent/utils/postHogFlagSource'),
-      import('posthog-js')
-    ])
-    const source = createPostHogFlagSource(posthog)
-    const sync = (): void => {
-      const forceInDev = import.meta.env.MODE === 'development'
-      agentPanelStore.enabled = forceInDev || source.isEnabled()
+  const { flags } = useFeatureFlags()
+
+  watch(
+    () =>
+      [
+        import.meta.env.MODE === 'development' ||
+          flags.agentInAppExperienceEnabled,
+        remoteConfigRevision.value
+      ] as const,
+    ([enabled]) => {
+      agentPanelStore.enabled = enabled
       loadConsentIfEligible()
-      if (!agentPanelStore.enabled) {
+      openWhenStartupDecided()
+      if (!enabled) {
         const nodeSelectionStore = useAgentNodeSelectionStore()
         if (nodeSelectionStore.isLoadingWorkflow)
           nodeSelectionStore.finishWorkflowLoad()
       }
-    }
-    source.onChange?.(() => {
-      sync()
-      settle()
-    })
-    sync()
-    if (import.meta.env.MODE === 'development') settle()
-    else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
-  } catch (error) {
-    settle()
-    reportError(error, {
-      errorType: 'agent_flag_gate_load_failure',
-      tags: {
-        failure_kind: 'caught_unexpected',
-        feature_area: 'agent',
-        operation: 'load',
-        outcome: 'failed',
-        feature_flag: 'agent_panel',
-        feature_flag_state: 'unknown',
-        project_context: 'application_bootstrap'
-      }
-    })
+    },
+    { immediate: true }
+  )
+
+  const settle = (): void => {
+    agentPanelStore.gateSettled = true
   }
+  let settleTimer: ReturnType<typeof setTimeout> | undefined
+  const clearSettleTimer = (): void => {
+    clearTimeout(settleTimer)
+    settleTimer = undefined
+  }
+  const scheduleSignedOutFallback = (): void => {
+    clearSettleTimer()
+    settleTimer = setTimeout(() => {
+      if (isSignedOut()) settle()
+    }, GATE_SETTLE_TIMEOUT_MS)
+  }
+  watch(
+    () =>
+      [
+        import.meta.env.MODE === 'development' ||
+          authenticatedRemoteConfigState.value === 'authenticated' ||
+          authenticatedRemoteConfigState.value === 'error',
+        isSignedOut()
+      ] as const,
+    ([decided, signedOut]) => {
+      agentPanelStore.gateSettled = decided
+      clearSettleTimer()
+      if (!decided && signedOut) scheduleSignedOutFallback()
+    },
+    { immediate: true }
+  )
+  // A signed-out session never runs the authenticated /features refresh
+  // (WorkspaceAuthGate returns early with no user), so the watch above never
+  // reaches a decided state for it.
 }

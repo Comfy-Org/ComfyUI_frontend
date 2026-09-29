@@ -57,7 +57,8 @@ const baseRoutes = {
   // the pull requests stacked on this branch are still open against them.
   workshop: '/models',
   workshopSignIn: '/login/',
-  cinematicStudio: '/cinematic-studio'
+  cinematicStudio: '/models/apps/cinematic-studio',
+  reshoot: '/models/apps/reshoot'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
@@ -85,7 +86,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
-// workshop, workshopSignIn, cinematicStudio: prototype pages, English only for now.
+// workshop, workshopSignIn, cinematicStudio, reshoot: prototype pages, English
+// only for now.
 //
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
 // built from a single English-language caption track — a "translated" watch
@@ -101,6 +103,7 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'workshop',
   'workshopSignIn',
   'cinematicStudio',
+  'reshoot',
   'customerVideoBlackMath',
   'customerVideoSilversideAi'
 ])
@@ -190,6 +193,7 @@ export const externalLinks = {
   docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
   comfyCliRepo: 'https://github.com/Comfy-Org/comfy-cli',
   comfyMcpRepo: 'https://github.com/Comfy-Org/comfy-mcp',
+  docsInAppAgent: 'https://docs.comfy.org/agent-tools/in-app-agent',
   docsCli: 'https://docs.comfy.org/agent-tools/cli',
   // Markdown variant handed to agents in the "ask your agent" cards, same
   // rationale as docsMcpMd below.

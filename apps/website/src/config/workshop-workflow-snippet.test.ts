@@ -31,7 +31,10 @@ describe('workflow API snippets', () => {
         async (source) =>
           'UPLOADED_' + new URL(String(source)).pathname.slice(1) + '_FILENAME'
       )
-      expect(request).toEqual(workflowCloudRequest(model.workflow, prepared))
+      expect(request).toEqual({
+        ...workflowCloudRequest(model.workflow, prepared),
+        extra_data: { api_key_comfy_org: 'YOUR_API_KEY' }
+      })
     }
   )
 

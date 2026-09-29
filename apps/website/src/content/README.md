@@ -51,6 +51,13 @@ an execution entry. Prepare this data offline when adding a workflow; the websit
 does not inspect APP widgets or compile graphs. Keep downloadable graphs and SVG
 previews under `public/workflow-graphs/` consistent with the prepared request.
 
+Workshop apps are listed the same way. An `APP` line in
+`workshop-workflows.jsonl` (`{"id":"apps/<slug>","type":"APP","app":"<page>"}`)
+names the app page that runs it, and a matching `workshop-display.json` entry
+(`type: "APP"`, same id and slug) supplies the card's name, description,
+thumbnail and rank. Each app is listed in the catalogue's Apps tab and served at
+`/models/apps/<slug>/`, behind the `workshop-apps-enabled` flag.
+
 Pair each example with its actual input media and output. Pin external assets to
 immutable revisions, check their media type and CORS headers, and validate the
 example with the shared form. Static validation does not prove Cloud runtime
