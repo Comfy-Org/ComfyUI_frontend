@@ -387,6 +387,7 @@ describe('launchCancellationFlow', () => {
     await launchCancellationFlow({
       showFallback: vi.fn(async () => {
         mocks.activeWorkspaceId = 'workspace-2'
+        return false
       })
     })
 
@@ -432,6 +433,7 @@ describe('launchCancellationFlow', () => {
         await Promise.resolve()
         mocks.activeWorkspaceId = 'workspace-2'
         if (isScopeCurrent?.()) openDialog()
+        return false
       })
     })
 
