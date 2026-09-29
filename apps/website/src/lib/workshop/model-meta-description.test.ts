@@ -50,6 +50,19 @@ describe('modelMetaDescription', () => {
       expected: 'Kling Omni. Run it in your browser or call it via API.'
     },
     {
+      name: 'names a provider with no Latin letters',
+      page: {
+        model: { name: 'Seed 3', provider: '字节跳动', summary: 'Draws.' }
+      },
+      expected:
+        'Seed 3 by 字节跳动: Draws. Run it in your browser or call it via API.'
+    },
+    {
+      name: 'treats a blank summary as missing',
+      page: { model: { name: 'Kling Omni', provider: 'Kling', summary: '  ' } },
+      expected: 'Kling Omni. Run it in your browser or call it via API.'
+    },
+    {
       name: 'omits the provider and price when neither is known',
       page: {
         model: { name: 'Remove an object', summary: 'Erase what you mark.' }

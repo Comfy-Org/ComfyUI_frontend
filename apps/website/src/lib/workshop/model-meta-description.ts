@@ -8,8 +8,10 @@ const META_DESCRIPTION_MAX = 170
 const SINGLE_CREDIT_FIGURE = /^(~?\d+(?:\.\d+)?) credits$/
 
 function nameCarriesProvider(name: string, provider: string) {
+  const providerWords = words(provider)
+  if (providerWords.length === 0) return name.includes(provider)
   const nameWords = new Set(words(name))
-  return words(provider).every((word) => nameWords.has(word))
+  return providerWords.every((word) => nameWords.has(word))
 }
 
 function cutAtWord(text: string, maxLength: number) {
@@ -21,7 +23,8 @@ function cutAtWord(text: string, maxLength: number) {
 }
 
 function cleanSummary(summary: string | undefined) {
-  return summary?.replace(/`([^`]*)`/g, '$1').replace(/(?<![.!?。！？])$/u, '.')
+  const text = summary?.replace(/`([^`]*)`/g, '$1').trim()
+  return text ? text.replace(/(?<![.!?。！？])$/u, '.') : undefined
 }
 
 function priceClause(priceEstimate: string | undefined, locale: Locale) {
