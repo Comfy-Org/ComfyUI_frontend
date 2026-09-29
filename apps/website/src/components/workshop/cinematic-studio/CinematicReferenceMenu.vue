@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { Palette, Plus, SwatchBook, UserRound, X } from '@lucide/vue'
+import {
+  Clapperboard,
+  Film,
+  Palette,
+  Plus,
+  SwatchBook,
+  UserRound,
+  X
+} from '@lucide/vue'
 import { useObjectUrl } from '@vueuse/core'
 import {
   DropdownMenuContent,
@@ -10,17 +18,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, useTemplateRef } from 'vue'
+import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicTooltip from './CinematicTooltip.vue'
+import type { ReferenceKind } from './reference-kind'
+import { REFERENCE_SLOTS } from './reference-kind'
 
-type ReferenceKind = 'cast' | 'palette'
-
-const { colorCount = 0, locale = 'en' } = defineProps<{
+const {
+  shown = ['cast', 'palette'],
+  colorCount = 0,
+  locale = 'en'
+} = defineProps<{
+  /** The slots this shot can fill: references for a still, frames for a clip. */
+  shown?: readonly ReferenceKind[]
   /** Colours set in the Colors panel, which this menu opens. */
   colorCount?: number
   locale?: Locale
@@ -29,51 +43,60 @@ const emit = defineEmits<{ colors: [] }>()
 
 const cast = defineModel<File | undefined>('cast')
 const palette = defineModel<File | undefined>('palette')
+const firstFrame = defineModel<File | undefined>('firstFrame')
+const lastFrame = defineModel<File | undefined>('lastFrame')
+const sourceVideo = defineModel<File | undefined>('sourceVideo')
+const files = { cast, palette, firstFrame, lastFrame, video: sourceVideo }
+const previews = {
+  cast: useObjectUrl(cast),
+  palette: useObjectUrl(palette),
+  firstFrame: useObjectUrl(firstFrame),
+  lastFrame: useObjectUrl(lastFrame)
+}
 
-const castPreview = useObjectUrl(cast)
-const palettePreview = useObjectUrl(palette)
-const castInput = useTemplateRef<HTMLInputElement>('castInput')
-const paletteInput = useTemplateRef<HTMLInputElement>('paletteInput')
+const ICONS: Readonly<Record<ReferenceKind, typeof Plus>> = {
+  cast: UserRound,
+  palette: Palette,
+  firstFrame: Clapperboard,
+  lastFrame: Clapperboard,
+  video: Film
+}
 
-const kinds = computed(() => [
-  {
-    kind: 'cast' as const,
-    icon: UserRound,
-    label: tc('cinematic.reference.cast', locale),
-    action: tc('cinematic.reference.castAction', locale),
-    file: cast.value,
-    preview: castPreview.value
-  },
-  {
-    kind: 'palette' as const,
-    icon: Palette,
-    label: tc('cinematic.reference.palette', locale),
-    action: tc('cinematic.reference.paletteAction', locale),
-    file: palette.value,
-    preview: palettePreview.value
-  }
-])
+const kinds = computed(() =>
+  shown.map((kind) => ({
+    kind,
+    icon: ICONS[kind],
+    label: tc(REFERENCE_SLOTS[kind].label, locale),
+    action: tc(REFERENCE_SLOTS[kind].action, locale),
+    file: files[kind].value,
+    preview: kind === 'video' ? undefined : previews[kind].value
+  }))
+)
 const attached = computed(() => kinds.value.filter((entry) => entry.file))
-const cover = computed(() => attached.value[0]?.preview)
+const cover = computed(
+  () => attached.value.find((entry) => entry.preview)?.preview
+)
 const heading = computed(() => tc('cinematic.section.references', locale))
 
+const inputs: Partial<Record<ReferenceKind, HTMLInputElement>> = {}
+function keepInput(kind: ReferenceKind, element: unknown) {
+  if (element instanceof HTMLInputElement) inputs[kind] = element
+}
+
 function pick(kind: ReferenceKind) {
-  const input = kind === 'cast' ? castInput.value : paletteInput.value
-  input?.click()
+  inputs[kind]?.click()
 }
 
 function attach(kind: ReferenceKind, event: Event) {
   const target = event.target
   if (!(target instanceof HTMLInputElement)) return
   const [picked] = target.files ?? []
-  if (picked && kind === 'cast') cast.value = picked
-  if (picked && kind === 'palette') palette.value = picked
+  if (picked) files[kind].value = picked
   target.value = ''
 }
 
 function remove(kind: ReferenceKind) {
-  if (kind === 'cast') cast.value = undefined
-  else palette.value = undefined
+  files[kind].value = undefined
 }
 
 const itemClass =
@@ -193,23 +216,15 @@ const itemClass =
     </span>
   </CinematicTooltip>
   <input
-    ref="castInput"
+    v-for="kind in shown"
+    :key="kind"
+    :ref="(element) => keepInput(kind, element)"
     type="file"
-    accept="image/png,image/jpeg,image/webp"
-    data-testid="cinematic-reference-cast"
+    :accept="REFERENCE_SLOTS[kind].accept"
+    :data-testid="`cinematic-reference-${kind}`"
     class="sr-only"
     tabindex="-1"
     aria-hidden="true"
-    @change="attach('cast', $event)"
-  />
-  <input
-    ref="paletteInput"
-    type="file"
-    accept="image/png,image/jpeg,image/webp"
-    data-testid="cinematic-reference-palette"
-    class="sr-only"
-    tabindex="-1"
-    aria-hidden="true"
-    @change="attach('palette', $event)"
+    @change="attach(kind, $event)"
   />
 </template>

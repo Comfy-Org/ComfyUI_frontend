@@ -15,11 +15,13 @@ import RunLeaveDialog from '../RunLeaveDialog.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicComposer from './CinematicComposer.vue'
 import CinematicColors from './CinematicColors.vue'
+import CinematicModeSwitch from './CinematicModeSwitch.vue'
 import CinematicPicker from './CinematicPicker.vue'
 import CinematicPopover from './CinematicPopover.vue'
 import CinematicStage from './CinematicStage.vue'
 import type { PickerKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
+import { referenceSlots } from './reference-kind'
 
 const {
   models,
@@ -33,6 +35,19 @@ const {
 
 const {
   studio,
+  mode,
+  modeModels,
+  hasVideo,
+  model,
+  video,
+  duration,
+  videoResolution,
+  audio,
+  firstFrame,
+  lastFrame,
+  sourceVideo,
+  blocked,
+  animate,
   modelSlug,
   scene,
   enhance,
@@ -100,6 +115,12 @@ async function useAsReference(url: string, name: string) {
     cast.value = new File([blob], name, { type: blob.type || 'image/png' })
 }
 
+const canAnimate = models.some((option) => !!option.firstFrameSlug)
+async function animateTake(url: string, name: string) {
+  closePopover()
+  if (await animate(url, name)) focusScene()
+}
+
 function generate() {
   closePopover()
   generateShot()
@@ -120,6 +141,7 @@ function generateOn(slug: string) {
     <CinematicStage
       :reel="studio.reel.value"
       :models
+      :can-animate="canAnimate"
       :locale
       :starter
       :member-workspace="memberWorkspace"
@@ -128,6 +150,7 @@ function generateOn(slug: string) {
       @again="generate"
       @retry="studio.retry"
       @reference="useAsReference"
+      @animate="animateTake"
       @switch-model="generateOn"
       @edit-scene="focusScene"
     />
@@ -161,6 +184,13 @@ function generateOn(slug: string) {
           @choose="choose"
           @close="closePopover"
         />
+        <CinematicModeSwitch
+          v-if="hasVideo"
+          v-model="mode"
+          :disabled="studio.rendering.value"
+          :locale
+          class="mb-3 w-fit"
+        />
         <CinematicComposer
           v-model:scene="scene"
           v-model:model="modelSlug"
@@ -170,9 +200,18 @@ function generateOn(slug: string) {
           v-model:enhance="enhance"
           v-model:cast="cast"
           v-model:palette="palette"
-          :models
+          v-model:first-frame="firstFrame"
+          v-model:last-frame="lastFrame"
+          v-model:source-video="sourceVideo"
+          v-model:duration="duration"
+          v-model:video-resolution="videoResolution"
+          v-model:audio="audio"
+          :models="modeModels"
           :aspects
+          :slots="referenceSlots(model, !!firstFrame)"
           :color-count="colors.length"
+          :blocked
+          :video
           :direction
           :gate="studio.gate.value"
           :workspace-name="studio.session.value?.workspace.name"

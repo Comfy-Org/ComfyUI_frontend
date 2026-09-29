@@ -625,10 +625,15 @@ const copy = {
     en: 'Add the video to edit',
     'zh-CN': '添加要编辑的视频'
   },
+  'cinematic.video.noFirstFrame': {
+    en: "{model} can't start from an image. Remove the frame or pick another model.",
+    'zh-CN': '{model} 无法从图像开始。请移除该帧或选择其他模型。'
+  },
   'cinematic.video.needSourceVideo': {
     en: 'Add the video to edit first.',
     'zh-CN': '请先添加要编辑的视频。'
   },
+  'cinematic.video.audioTag': { en: 'Audio', 'zh-CN': '音频' },
   'cinematic.video.resolution': { en: 'Resolution', 'zh-CN': '分辨率' },
   'cinematic.video.aspect': { en: 'Frame', 'zh-CN': '画幅' },
   'cinematic.video.modelDecides': {

@@ -27,6 +27,8 @@ const {
 } = defineProps<{
   reel: Reel
   models: readonly CinematicModel[]
+  /** Whether a still can be animated into a clip. */
+  canAnimate?: boolean
   starter?: string
   memberWorkspace?: string
   locale?: Locale
@@ -38,6 +40,7 @@ const emit = defineEmits<{
   again: []
   retry: [...ids: string[]]
   reference: [url: string, name: string]
+  animate: [url: string, name: string]
   switchModel: [slug: string]
   editScene: []
 }>()
@@ -52,9 +55,15 @@ const modelName = computed(
   () =>
     models.find((model) => model.slug === current.value?.modelSlug)?.name ?? ''
 )
-const otherModel = computed(() =>
-  models.find((model) => model.slug !== current.value?.modelSlug)
-)
+const otherModel = computed(() => {
+  const mode = models.find(
+    (model) => model.slug === current.value?.modelSlug
+  )?.mode
+  // A failed clip is retried on another video model, a still on an image one.
+  return models.find(
+    (model) => model.slug !== current.value?.modelSlug && model.mode === mode
+  )
+})
 </script>
 
 <template>
@@ -96,9 +105,11 @@ const otherModel = computed(() =>
             />
             <CinematicTakeActions
               :take="current"
+              :can-animate="canAnimate"
               :locale
               @again="emit('again')"
               @reference="(url, name) => emit('reference', url, name)"
+              @animate="(url, name) => emit('animate', url, name)"
             />
           </div>
         </CinematicTakeFrame>

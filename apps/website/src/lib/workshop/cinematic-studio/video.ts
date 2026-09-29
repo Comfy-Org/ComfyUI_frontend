@@ -222,3 +222,17 @@ export function videoParameters(
     ...(audioField ? { model_specific: { [audioField]: shot.audio } } : {})
   }
 }
+
+/** A video model's picker tags: sharpest resolution, lengths and sound. */
+export function videoTags(
+  capabilities: CinematicVideoCapabilities | undefined,
+  audioTag: string
+): string | undefined {
+  if (!capabilities) return undefined
+  const tags = [
+    topResolution(capabilities),
+    durationRange(capabilities),
+    capabilities.audioField ? audioTag : undefined
+  ].filter(Boolean)
+  return tags.length ? tags.join(' · ') : undefined
+}

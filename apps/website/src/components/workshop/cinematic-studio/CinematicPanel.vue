@@ -15,10 +15,10 @@ import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import {
-  shotAspects,
-  takesReferences
-} from '../../../lib/workshop/cinematic-studio/models'
+import { shotAspects } from '../../../lib/workshop/cinematic-studio/models'
+import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic-studio/video'
+import { videoTags } from '../../../lib/workshop/cinematic-studio/video'
+import type { ShotBlock } from '../../../composables/useCinematicShot'
 import CinematicColors from './CinematicColors.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
@@ -26,10 +26,14 @@ import CinematicOutputControls from './CinematicOutputControls.vue'
 import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
 import CinematicSceneField from './CinematicSceneField.vue'
 import CinematicShotList from './CinematicShotList.vue'
+import CinematicVideoControls from './CinematicVideoControls.vue'
 import type { PickerKey } from './picker-key'
+import { referenceSlots } from './reference-kind'
 
 const {
   models,
+  blocked,
+  video,
   gate,
   workspaceName,
   rendering,
@@ -40,6 +44,9 @@ const {
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
+  blocked?: ShotBlock
+  /** Present in video mode: what the running operation lets a shot choose. */
+  video?: CinematicVideoCapabilities
   gate: StudioGate
   workspaceName?: string
   rendering: boolean
@@ -67,26 +74,27 @@ const cast = defineModel<File | undefined>('cast')
 const palette = defineModel<File | undefined>('palette')
 const colors = defineModel<readonly string[]>('colors', { required: true })
 const mainColor = defineModel<number | undefined>('mainColor')
+const firstFrame = defineModel<File | undefined>('firstFrame')
+const lastFrame = defineModel<File | undefined>('lastFrame')
+const sourceVideo = defineModel<File | undefined>('sourceVideo')
+const duration = defineModel<number | undefined>('duration')
+const videoResolution = defineModel<string | undefined>('videoResolution')
+const audio = defineModel<boolean>('audio', { default: false })
 
 const modelOptions = computed(() =>
   models.map((model) => ({
     id: model.slug,
     label: model.name,
-    logo: model.logo
+    logo: model.logo,
+    meta: videoTags(model.video, tc('cinematic.video.audioTag', locale))
   }))
 )
 const model = computed(() =>
   models.find((candidate) => candidate.slug === modelSlug.value)
 )
+const slots = computed(() => referenceSlots(model.value, !!firstFrame.value))
 const blockedNote = computed(() =>
-  !takesReferences(
-    model.value,
-    [cast.value, palette.value].filter(Boolean).length
-  )
-    ? tc('cinematic.references.unsupported', locale, {
-        model: model.value?.name ?? ''
-      })
-    : undefined
+  blocked ? tc(blocked.key, locale, { model: blocked.model }) : undefined
 )
 const canGenerate = computed(
   () => gate === 'ready' && scene.value.trim().length > 0 && !blockedNote.value
@@ -136,6 +144,7 @@ const cardClass =
       <CinematicSceneField
         v-model:scene="scene"
         v-model:enhance="enhance"
+        :video="!!video"
         :locale
       />
       <section class="flex flex-col gap-2">
@@ -158,7 +167,28 @@ const cardClass =
             {{ tc('cinematic.reference.optional', locale) }}
           </span>
         </div>
-        <div class="grid grid-cols-2 gap-2">
+        <div v-if="video" class="grid grid-cols-2 gap-2">
+          <CinematicReferenceSlot
+            v-if="slots.includes('video')"
+            v-model="sourceVideo"
+            kind="video"
+            class="col-span-2"
+            :locale
+          />
+          <CinematicReferenceSlot
+            v-if="slots.includes('firstFrame')"
+            v-model="firstFrame"
+            kind="firstFrame"
+            :locale
+          />
+          <CinematicReferenceSlot
+            v-if="slots.includes('lastFrame')"
+            v-model="lastFrame"
+            kind="lastFrame"
+            :locale
+          />
+        </div>
+        <div v-else class="grid grid-cols-2 gap-2">
           <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
           <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
         </div>
@@ -168,7 +198,17 @@ const cardClass =
         <h2 :class="labelClass">
           {{ tc('cinematic.section.output', locale) }}
         </h2>
+        <CinematicVideoControls
+          v-if="video"
+          v-model:aspect="aspect"
+          v-model:duration="duration"
+          v-model:resolution="videoResolution"
+          v-model:audio="audio"
+          :video
+          :locale
+        />
         <CinematicOutputControls
+          v-else
           v-model:aspect="aspect"
           v-model:resolution="resolution"
           v-model:takes="takes"

@@ -30,7 +30,10 @@ import {
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import { runnableCinematicModels } from '../../../lib/workshop/cinematic-studio/models'
+import {
+  runnableCinematicModels,
+  runnableCinematicVideoModels
+} from '../../../lib/workshop/cinematic-studio/models'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPage from './CinematicStudioPage.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
@@ -51,6 +54,7 @@ vi.mock(import('astro:env/client'), () => ({
 
 const models = runnableCinematicModels(getRouterWorkshopModelDetail)
 const [first, second] = models
+const videoModels = runnableCinematicVideoModels(getRouterWorkshopModelDetail)
 
 /** What a take sent: the studio's own form, and the files attached to it. */
 function sent(call: Parameters<typeof router_render>) {
@@ -841,6 +845,45 @@ describe('CinematicStudio', () => {
       })
     }
   )
+
+  it('shoots a clip on the first video model in video mode', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio([...models, ...videoModels])
+
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+    await user.type(
+      screen.getByLabelText('Scene'),
+      'A lighthouse keeper climbs'
+    )
+    await user.click(generateButton())
+
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+    const call = vi.mocked(router_render).mock.calls[0]
+    expect(call[0]).toBe(videoModels[0].slug)
+    expect(sent(call).values).toMatchObject({
+      duration: 5,
+      resolution: '720p',
+      generate_audio: false
+    })
+    expect(sent(call).prompt).toContain('continuous motion')
+  })
+
+  it('animates a finished still on the image-to-video operation', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio([...models, ...videoModels])
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+    await user.click(
+      await screen.findByRole('button', { name: 'Animate image' })
+    )
+    await user.click(generateButton())
+
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+    const call = vi.mocked(router_render).mock.calls[1]
+    expect(call[0]).toBe(videoModels[0].firstFrameSlug)
+    expect(sent(call).references).toEqual([expect.any(File)])
+  })
 
   describe('credits', () => {
     const priced: readonly CinematicModel[] = models.map((model) =>
