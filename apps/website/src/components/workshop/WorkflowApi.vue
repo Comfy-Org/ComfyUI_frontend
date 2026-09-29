@@ -12,6 +12,7 @@ import { SNIPPET_LANGUAGES } from '../../config/models-snippets'
 import { apiKeysLink, externalLinks } from '../../config/routes'
 import type { FormValues } from '../../config/workshop-playground'
 import { urlUploadField } from '../../config/workshop-playground'
+import { OBJECT_URL_LIFETIME_MS } from '../../config/workshop-output-download'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
@@ -84,7 +85,7 @@ function downloadGraph() {
   anchor.href = url
   anchor.download = graphFile
   anchor.click()
-  URL.revokeObjectURL(url)
+  setTimeout(() => URL.revokeObjectURL(url), OBJECT_URL_LIFETIME_MS)
 }
 const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
   urlUploadField(field)

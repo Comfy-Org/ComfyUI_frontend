@@ -4,6 +4,7 @@ import { assert, describe, expect, it, vi } from 'vitest'
 import { h, markRaw } from 'vue'
 
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
+import { OBJECT_URL_LIFETIME_MS } from '../../config/workshop-output-download'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
 import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
 import { workflowSnippetRequest } from '../../config/workshop-workflow-snippet'
@@ -130,6 +131,22 @@ describe('WorkflowApi', () => {
       expect(JSON.parse(await blobs[0].text())).toEqual(
         workflowSnippetRequest(model, values).prompt
       )
+    })
+
+    it('leaves the graph readable while the browser takes it', async () => {
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:graph')
+      const revoke = vi
+        .spyOn(URL, 'revokeObjectURL')
+        .mockImplementation(() => {})
+      render({ setup: () => () => h(WorkflowApi, { model, values }) })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Download the API graph' })
+      )
+      expect(revoke).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(OBJECT_URL_LIFETIME_MS)
+      expect(revoke).toHaveBeenCalledWith('blob:graph')
     })
 
     it('offers no graph when the workflow cannot be posted to Cloud', () => {
