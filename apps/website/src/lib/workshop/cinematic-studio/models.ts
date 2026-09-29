@@ -196,12 +196,10 @@ const CINEMATIC_VIDEO_MODELS: Readonly<Record<string, VideoEntry>> = {
     name: 'Grok Imagine 1.5',
     logo: '/icons/ai-models/grok.svg',
     firstFrame: 'xai--grok-imagine-video-1.5--animate-images'
-  },
-  'kling--v3--generate-videos': {
-    name: 'Kling 3.0',
-    logo: '/icons/ai-models/kling.svg',
-    firstFrame: 'kling--v3--animate-images'
   }
+  // Kling 3.0 is left out until its Router route can start from an image:
+  // its image-to-video form has no first-frame field, so it could only run
+  // text-to-video here.
 }
 
 function firstFrameSupport(

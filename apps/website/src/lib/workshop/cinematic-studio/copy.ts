@@ -270,8 +270,8 @@ const copy = {
     'zh-CN': '描述这一刻：谁、在哪里、发生了什么。'
   },
   'cinematic.scene.enhance': {
-    en: 'AI prompt',
-    'zh-CN': 'AI 提示词'
+    en: 'Enhance prompt',
+    'zh-CN': '增强提示词'
   },
   'cinematic.scene.enhanceHint': {
     en: 'Adds “cinematic film still” to the prompt',

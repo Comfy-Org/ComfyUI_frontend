@@ -77,7 +77,8 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const mainColor = ref<number>()
   const duration = ref<number>()
   const videoResolution = ref<string>()
-  const audio = ref(false)
+  // sound is on by default; it only reaches models that have an audio field
+  const audio = ref(true)
   const firstFrame = shallowRef<StudioImage>()
   const lastFrame = shallowRef<StudioImage>()
   const sourceVideo = shallowRef<StudioImage>()

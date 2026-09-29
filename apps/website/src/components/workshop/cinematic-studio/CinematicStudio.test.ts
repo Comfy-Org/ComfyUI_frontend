@@ -202,7 +202,7 @@ describe('CinematicStudio', () => {
     expect(screen.getByText(`${first.name} · 16:9`)).toBeInTheDocument()
   })
 
-  it('sends the aspect and AI prompt setting chosen in the composer', async () => {
+  it('sends the aspect and Enhance prompt setting chosen in the composer', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
 
@@ -210,7 +210,7 @@ describe('CinematicStudio', () => {
     // Seedream 5.0 Pro, the first model, has no 21:9 size, so it opens on 16:9.
     await user.click(screen.getByRole('button', { name: 'Aspect ratio: 16:9' }))
     await user.click(await screen.findByRole('menuitemradio', { name: /1:1/ }))
-    await user.click(screen.getByRole('switch', { name: 'AI prompt' }))
+    await user.click(screen.getByRole('switch', { name: 'Enhance prompt' }))
     await user.click(generateButton())
 
     await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(1))
@@ -1083,7 +1083,8 @@ describe('CinematicStudio', () => {
     expect(sent(call).values).toMatchObject({
       duration: 5,
       resolution: '720p',
-      generate_audio: false
+      // sound is on unless it is switched off
+      generate_audio: true
     })
     expect(sent(call).prompt).toContain('continuous motion')
   })
