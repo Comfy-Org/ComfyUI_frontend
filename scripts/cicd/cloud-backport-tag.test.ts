@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
 interface WorkflowStep {
+  env?: Record<string, string>
   name?: string
   run?: string
 }
@@ -20,7 +21,9 @@ interface Workflow {
   jobs?: Record<string, WorkflowJob>
   on?: {
     pull_request?: unknown
-    workflow_dispatch?: unknown
+    workflow_dispatch?: {
+      inputs?: Record<string, unknown>
+    }
   }
 }
 
@@ -28,14 +31,19 @@ const workflow = parse(
   readFileSync('.github/workflows/cloud-backport-tag.yaml', 'utf8')
 ) as Workflow
 
-const tagScript = workflow.jobs?.['create-tag']?.steps?.find(
+const tagStep = workflow.jobs?.['create-tag']?.steps?.find(
   (step) => step.name === 'Create tag for cloud backport'
-)?.run
+)
+const tagScript = tagStep?.run
 
 describe('cloud backport tag workflow', () => {
   it('supports merged backports and manual recovery', () => {
     expect(workflow.on?.pull_request).toBeDefined()
     expect(workflow.on?.workflow_dispatch).toBeDefined()
+    expect(workflow.on?.workflow_dispatch?.inputs).toHaveProperty('branch')
+    expect(workflow.on?.workflow_dispatch?.inputs).toHaveProperty('commit')
+    expect(tagStep?.env?.SHA).toContain('inputs.commit')
+    expect(tagScript).toContain('^[0-9a-f]{40}$')
   })
 
   it('preserves every merged commit as an independent run', () => {
