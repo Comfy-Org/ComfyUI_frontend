@@ -92,6 +92,7 @@ async function filesLinkingOldModels(
       join(root, pathname, 'index.html'),
       join(root, `${trimmed}.html`)
     ].find((candidate) => existsSync(candidate))
+    // Twins exist only because markdownTwins() runs before this in astro.config.ts.
     return [html, join(root, markdownTwinPath(`/${pathname}`))]
   })
   const found: string[] = []

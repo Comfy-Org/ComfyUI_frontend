@@ -48,6 +48,10 @@ describe('hub model addresses', () => {
       format: 'a markdown twin',
       content:
         '[Flux](https://comfy.org/models/bfl--flux-2-max--generate-images/) and [Hub](https://comfy.org/hub/models/) and [Relight](/models/workflows/relight/)'
+    },
+    {
+      format: 'pretty-printed JSON',
+      content: '{\n  "href": "/models/bfl--flux-2-max--generate-images/"\n}'
     }
   ])('finds old model links in $format', ({ content }) => {
     expect(oldModelLinks(content)).toEqual([
