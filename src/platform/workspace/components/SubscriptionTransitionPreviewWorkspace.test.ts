@@ -53,7 +53,7 @@ const i18n = createI18n({
 const globalOptions = {
   plugins: [i18n],
   stubs: {
-    SubscriptionTermsNote: { template: '<div />' }
+    CheckoutTermsNote: { template: '<div />' }
   }
 }
 
@@ -194,6 +194,25 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
       '_blank',
       'noopener,noreferrer'
     )
+  })
+
+  it('locks the plan change while an earlier payment awaits verification', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({}),
+        actionUrl: 'https://verify.example/sensitive-token'
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getByText('subscription.preview.pendingVerificationDetail')
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', {
+        name: 'subscription.preview.confirmUpgradeCta'
+      })
+    ).toBeDisabled()
   })
 
   it('reports failed verification without offering to resume it', () => {
