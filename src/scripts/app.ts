@@ -1496,7 +1496,12 @@ export class ComfyApp {
         // Always fit view for templates to ensure they're visible on load
         if (openSource === 'template') {
           useLitegraphService().fitView()
-        } else if (isValidCameraState(graphData.extra?.ds)) {
+        } else if (
+          isValidCameraState(graphData.extra?.ds, {
+            minScale: this.canvas.ds.min_scale,
+            maxScale: this.canvas.ds.max_scale
+          })
+        ) {
           this.canvas.ds.offset = graphData.extra.ds.offset
           this.canvas.ds.scale = graphData.extra.ds.scale
 
