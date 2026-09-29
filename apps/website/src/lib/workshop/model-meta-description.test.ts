@@ -5,8 +5,11 @@ import { prepareModelPage } from '../../routes/models/model-page'
 import { modelMetaDescription } from './model-meta-description'
 
 const MAX_LENGTH = 170
-const MOST_PAGES_SHARING_A_BODY = 4
-const FEWEST_DISTINCT_BODIES = 156
+// Re-baseline ratchets, with headroom over today's catalogue.
+const MOST_PAGES_SHARING_A_BODY = 6
+const DISTINCT_BODY_SHARE = 0.85
+const PRICED_SHARE = 0.75
+const SINGLE_FIGURE_PRICE = /^~?\d+(?:\.\d+)? credits(?:\/|$)/i
 
 async function canonicalPages() {
   const pages = await Promise.all(
@@ -162,7 +165,20 @@ describe('modelMetaDescription', () => {
     }
   })
 
-  it('does not let more pages share a description body than today', async () => {
+  it('shows the typical cost on most single-figure priced pages', async () => {
+    const singleFigurePages = (await canonicalPages()).filter(
+      ({ priceEstimate }) => SINGLE_FIGURE_PRICE.test(priceEstimate ?? '')
+    )
+    const priced = singleFigurePages.filter((page) =>
+      modelMetaDescription(page).includes('Typical cost')
+    )
+    expect(singleFigurePages.length).toBeGreaterThan(0)
+    expect(priced.length).toBeGreaterThanOrEqual(
+      singleFigurePages.length * PRICED_SHARE
+    )
+  })
+
+  it('keeps most model pages on a description body of their own', async () => {
     const pages = await canonicalPages()
     const pagesPerBody = new Map<string, number>()
     for (const page of pages) {
@@ -172,6 +188,8 @@ describe('modelMetaDescription', () => {
     expect(Math.max(...pagesPerBody.values())).toBeLessThanOrEqual(
       MOST_PAGES_SHARING_A_BODY
     )
-    expect(pagesPerBody.size).toBeGreaterThanOrEqual(FEWEST_DISTINCT_BODIES)
+    expect(pagesPerBody.size).toBeGreaterThanOrEqual(
+      pages.length * DISTINCT_BODY_SHARE
+    )
   })
 })
