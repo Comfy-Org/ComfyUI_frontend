@@ -1915,6 +1915,27 @@ describe('FullPageCheckoutView promo codes', () => {
     )
   })
 
+  it('opens a URL code it cannot read as refused under the field, and still loads the checkout', async () => {
+    const fake = await renderCheckout(
+      {},
+      quotesByCode,
+      `${CHECKOUT_PATH}&promo=SAVE%2020`
+    )
+
+    expect(
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    ).toBeInTheDocument()
+    expect(promoField()).toHaveValue('SAVE 20')
+    expect(promoField()).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "This code isn't valid."
+    )
+    expect(fake.previewSubscribe).toHaveBeenCalledExactlyOnceWith(
+      expect.not.objectContaining({ promotionCode: expect.anything() }),
+      expect.anything()
+    )
+  })
+
   it('lets the URL prefill be removed before it is applied', async () => {
     await renderCheckout({}, quotesByCode, `${CHECKOUT_PATH}&promo=LAUNCH20`)
     await screen.findByText('Subscribe to Creator Plan · Acme Team')

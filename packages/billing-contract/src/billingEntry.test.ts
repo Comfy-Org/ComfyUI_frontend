@@ -137,6 +137,26 @@ describe('parseBillingEntry', () => {
     })
   })
 
+  it.for(['SAVE 20', 'a/b', ''])(
+    'keeps the link when its promo code %j is unreadable, carrying it apart from a usable code',
+    (promo) => {
+      const url = `/v1/checkout?product=platform&return_to=platform_account&plan=pro_monthly&workspace=ws_1&promo=${encodeURIComponent(promo)}`
+
+      expect(parseBillingEntry(url)).toEqual({
+        status: 'ok',
+        entry: {
+          version: 'v1',
+          intent: 'checkout',
+          product: 'platform',
+          returnTo: 'platform_account',
+          plan: 'pro_monthly',
+          workspaceId: 'ws_1',
+          unreadablePromotionCode: promo
+        }
+      })
+    }
+  )
+
   it.for([
     [
       '/v2/checkout?product=platform&return_to=platform_account',
