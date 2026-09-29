@@ -181,7 +181,7 @@ test('643-14654: a change already scheduled is named from the server, and withou
   await expect(heading(page, 'Checkout not available')).toBeVisible()
   await expect(
     page.getByText(
-      'Your plan is set to change to Pro · Monthly on October 28, 2026. Cancel that change in your billing settings to make a different one.'
+      'Your plan is set to change to Pro on October 28, 2026. Cancel that change in your billing settings to make a different one.'
     )
   ).toBeVisible()
   await expect(code(page)).toHaveText('SUBSCRIPTION_CHANGE_IN_PROGRESS')
@@ -417,6 +417,11 @@ test("a re-read of the workspace's payments that fails never claims nothing was 
   await signIn(CHECKOUT)
 
   await expect(heading(page, "Couldn't load your checkout")).toBeVisible()
+  await expect(
+    page.getByText(
+      "We couldn't check your recent payments, so checkout can't open yet. Try again, or contact support if this keeps happening."
+    )
+  ).toBeVisible()
   await expect(page.getByText(/Nothing has been charged/)).toBeHidden()
   await expect(payButton(page)).toBeHidden()
 

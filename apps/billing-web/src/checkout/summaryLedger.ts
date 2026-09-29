@@ -126,8 +126,8 @@ function verbOf(quote: SubscriptionPreview, commitChange: boolean) {
   return commitChange ? 'change' : 'upgrade'
 }
 
-function planLabeller({ t, tierName }: LedgerContext) {
-  return (plan: Plan, cadenceShown: boolean) =>
+function planLabeller({ t, tierName }: Pick<LedgerContext, 't' | 'tierName'>) {
+  return (plan: Pick<Plan, 'tier' | 'duration'>, cadenceShown: boolean) =>
     cadenceShown
       ? t(`${S}.planWithCadence`, {
           tier: tierName(plan.tier),
@@ -266,11 +266,20 @@ function scheduledLedger(r: QuoteReading): FamilyLedger {
   }
 }
 
+/** A plan named in a sentence: "Pro", or "Pro Yearly" when its cadence matters. */
+export function namedPlan(
+  context: Pick<LedgerContext, 't' | 'tierName'>,
+  plan: Pick<Plan, 'tier' | 'duration'>,
+  cadenceShown: boolean
+): string {
+  return cadenceShown
+    ? planLabeller(context)(plan, true)
+    : context.tierName(plan.tier)
+}
+
 /** A team plan is one tier at many commitments, so the kept one is named by its rate. */
 function keptPlanLine(r: QuoteReading, current: Plan, until: string): string {
-  const plan = r.cadenceChanges
-    ? r.planLabel(current, true)
-    : r.tierName(current.tier)
+  const plan = namedPlan(r, current, r.cadenceChanges)
   if (!r.commitChange)
     return r.t(`${S}.trailing.keepUntil`, { plan, date: until })
   return r.t(`${S}.trailing.keepCommitmentUntil`, {
