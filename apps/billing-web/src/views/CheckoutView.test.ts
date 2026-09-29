@@ -1094,7 +1094,8 @@ describe('CheckoutView', () => {
         httpStatus: 409,
         serverMessage: 'a subscription change is already in progress'
       },
-      shown: 'Something went wrong. Please try again.'
+      shown:
+        'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
     }
   ] as const)('refused subscribe: $name', async ({ failure, shown }) => {
     await renderCheckout(CHECKOUT_PATH, {
