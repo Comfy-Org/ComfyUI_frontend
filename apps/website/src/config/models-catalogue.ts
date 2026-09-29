@@ -185,6 +185,10 @@ export type WorkshopModelDetail =
   | RouterWorkshopModelDetail
   | WorkflowWorkshopModelDetail
 
+export function isWorkflowSlug(slug: string): boolean {
+  return slug.startsWith('workflows/')
+}
+
 export function workshopExecutionId(model: WorkshopModel): string {
   return model.routerId ?? model.workflowId
 }

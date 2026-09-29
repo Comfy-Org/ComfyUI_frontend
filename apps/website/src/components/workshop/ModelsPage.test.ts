@@ -89,6 +89,20 @@ describe('Models page entry', () => {
     }
   )
 
+  it('keeps a workflow page behind its gate while the workshop flag is off', async () => {
+    const fetchData = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', fetchData)
+    workflowsEnabled.value = true
+    render(ModelsPage, {
+      props: { slug: 'workflows/change-material' },
+      slots: { fallback: '<h1>Public Models</h1>' }
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Public Models' })
+    ).toBeVisible()
+    expect(fetchData).not.toHaveBeenCalled()
+  })
+
   it('adds workflows to a loaded catalogue when their flag answers late', async () => {
     vi.stubGlobal(
       'fetch',
@@ -127,6 +141,7 @@ describe('Models page entry', () => {
           })
         ).toBeTruthy()
         expect(screen.getByTestId('model-detail')).toBeTruthy()
+        expect(screen.getByTestId('model-tags-rest')).toBeTruthy()
         expect(screen.getByTestId('related-models').textContent).toContain(
           'Browse all'
         )

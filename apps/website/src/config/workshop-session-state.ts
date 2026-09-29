@@ -265,6 +265,14 @@ function start(): void {
   })
 }
 
+export function stopWorkshopSession(): void {
+  operation.abandon()
+  stopListeners()
+  restoredForUid = undefined
+  snapshot.value = PENDING
+  lifecycle.stop()
+}
+
 async function signOut(): Promise<void> {
   const { signOutWorkshop } = await import('./workshop-firebase')
   await signOutWorkshop()
