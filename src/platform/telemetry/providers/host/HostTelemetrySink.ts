@@ -15,10 +15,8 @@ import type {
   AgentOnboardingNotShownMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
-  AgentConsentResolvedMetadata,
-  AgentConsentShownMetadata,
-  AgentOnboardingNotShownMetadata,
   AgentOnboardingStepMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
@@ -343,6 +341,12 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
   }
 
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
+  }
+
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.capture(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
   }
@@ -353,12 +357,6 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.capture(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
-  trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
-    this.capture(TelemetryEvents.AGENT_CONSENT_SHOWN, metadata)
-  }
-
-  trackAgentConsentResolved(metadata: AgentConsentResolvedMetadata): void {
-    this.capture(TelemetryEvents.AGENT_CONSENT_RESOLVED, metadata)
   }
 
   trackAgentOnboardingShown(): void {

@@ -105,6 +105,7 @@ function requestWithTrigger(
   onAccept: () => void
 ) {
   return useAgentConsent().withConsent(
+    trigger,
     onAccept,
     trigger === 'first_load' ? { onShown: vi.fn() } : {}
   )

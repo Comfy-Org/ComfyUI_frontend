@@ -24,6 +24,7 @@ import type {
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
@@ -727,6 +728,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
   }
 
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
+  }
+
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
   }
@@ -741,14 +748,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
-  }
-
-  trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
-    this.trackEvent(TelemetryEvents.AGENT_CONSENT_SHOWN, metadata)
-  }
-
-  trackAgentConsentResolved(metadata: AgentConsentResolvedMetadata): void {
-    this.trackEvent(TelemetryEvents.AGENT_CONSENT_RESOLVED, metadata)
   }
 
   trackAgentConsentOfferExited(

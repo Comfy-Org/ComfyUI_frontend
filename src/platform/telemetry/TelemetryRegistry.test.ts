@@ -11,8 +11,6 @@ import type {
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
-  AgentPaywallCtaMetadata,
-  AgentPaywallShownMetadata,
   AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
   BillingTelemetryEvent,
@@ -315,7 +313,8 @@ describe('TelemetryRegistry', () => {
       trigger: 'button_click'
     } satisfies AgentConsentShownMetadata
     const consentResolvedMetadata = {
-      decision: 'accepted'
+      decision: 'accepted',
+      save_error_shown: false
     } satisfies AgentConsentResolvedMetadata
     const onboardingStepMetadata = {
       step: 2,

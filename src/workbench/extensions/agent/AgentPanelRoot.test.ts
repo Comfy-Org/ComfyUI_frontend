@@ -233,6 +233,7 @@ const telemetry = vi.hoisted(() => ({
   trackAgentMessageFeedback: vi.fn(),
   trackAgentWorkflowApplied: vi.fn(),
   trackAgentMessageSent: vi.fn(),
+  trackAgentStarterPromptClicked: vi.fn(),
   trackAgentNodeTagged: vi.fn(),
   trackAgentAttachButtonClicked: vi.fn(),
   trackAgentCloseButtonClicked: vi.fn(),
@@ -3115,9 +3116,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     // The click is reported when it happens, so it holds the first minted id and
     // the send that follows holds the second.
-    expect(
-      telemetry.trackAgentStarterPromptClicked.mock.calls
-    ).toEqual([
+    expect(telemetry.trackAgentStarterPromptClicked.mock.calls).toEqual([
       [
         {
           prompt_id: 'list_workflows',
@@ -3130,20 +3129,18 @@ describe('AgentPanelRoot workflow binding', () => {
         }
       ]
     ])
-    expect(telemetry.trackAgentMessageSent.mock.calls).toEqual(
+    expect(telemetry.trackAgentMessageSent.mock.calls).toEqual([
       [
-        [
-          {
-            attachment_count: 0,
-            node_tag_count: 0,
-            thread_id: null,
-            workflow_id: 'wf-42',
-            client_message_id: 'client-message-2',
-            input_method: 'suggestion',
-            starter_prompt_id: 'list_workflows',
-            starter_prompt_click_id: 'client-message-1'
-          }
-        ]
+        {
+          attachment_count: 0,
+          node_tag_count: 0,
+          thread_id: null,
+          workflow_id: 'wf-42',
+          client_message_id: 'client-message-2',
+          input_method: 'suggestion',
+          starter_prompt_id: 'list_workflows',
+          starter_prompt_click_id: 'client-message-1'
+        }
       ]
     ])
   })
@@ -3178,18 +3175,16 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
     expect(telemetry.trackAgentMessageSent.mock.calls).toEqual([
       [
-        [
-          {
-            attachment_count: 0,
-            node_tag_count: 0,
-            thread_id: null,
-            workflow_id: 'wf-42',
-            client_message_id: 'client-message-1',
-            input_method: 'typed',
-            starter_prompt_id: null,
-            starter_prompt_click_id: null
-          }
-        ]
+        {
+          attachment_count: 0,
+          node_tag_count: 0,
+          thread_id: null,
+          workflow_id: 'wf-42',
+          client_message_id: 'client-message-1',
+          input_method: 'typed',
+          starter_prompt_id: null,
+          starter_prompt_click_id: null
+        }
       ]
     ])
   })
@@ -3213,18 +3208,16 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-77' })
     expect(telemetry.trackAgentMessageSent.mock.calls).toEqual([
       [
-        [
-          {
-            attachment_count: 0,
-            node_tag_count: 0,
-            thread_id: null,
-            workflow_id: 'wf-77',
-            client_message_id: 'client-message-1',
-            input_method: 'typed',
-            starter_prompt_id: null,
-            starter_prompt_click_id: null
-          }
-        ]
+        {
+          attachment_count: 0,
+          node_tag_count: 0,
+          thread_id: null,
+          workflow_id: 'wf-77',
+          client_message_id: 'client-message-1',
+          input_method: 'typed',
+          starter_prompt_id: null,
+          starter_prompt_click_id: null
+        }
       ]
     ])
   })

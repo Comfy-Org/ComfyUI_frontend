@@ -20,7 +20,7 @@ const CHIP: AgentStarterPromptAttribution = {
   locale: 'en'
 }
 
-function setup(running = false) {
+function setup(streaming = false) {
   const onSend =
     vi.fn<(text: string, attachments: ComposerAttachment[]) => void>()
   const onStop = vi.fn()

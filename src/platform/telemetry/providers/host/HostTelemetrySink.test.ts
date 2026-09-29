@@ -247,8 +247,26 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_MESSAGE_SENT,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentMessageSent({ attachment_count: 2, node_tag_count: 1 }),
-      properties: { attachment_count: 2, node_tag_count: 1 }
+        sink.trackAgentMessageSent({
+          attachment_count: 2,
+          node_tag_count: 1,
+          thread_id: null,
+          workflow_id: null,
+          client_message_id: 'message-1',
+          input_method: 'typed',
+          starter_prompt_id: null,
+          starter_prompt_click_id: null
+        }),
+      properties: {
+        attachment_count: 2,
+        node_tag_count: 1,
+        thread_id: null,
+        workflow_id: null,
+        client_message_id: 'message-1',
+        input_method: 'typed',
+        starter_prompt_id: null,
+        starter_prompt_click_id: null
+      }
     },
     {
       name: TelemetryEvents.AGENT_NODE_TAGGED,
@@ -272,6 +290,8 @@ describe('HostTelemetrySink', () => {
         workflow_id: 'workflow-1',
         target: 'active_tab_switch'
       }
+    },
+    {
       name: TelemetryEvents.AGENT_CONSENT_SHOWN,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentShown({ trigger: 'first_load' }),
@@ -280,8 +300,11 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_CONSENT_RESOLVED,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentConsentResolved({ decision: 'accepted' }),
-      properties: { decision: 'accepted' }
+        sink.trackAgentConsentResolved({
+          decision: 'accepted',
+          save_error_shown: false
+        }),
+      properties: { decision: 'accepted', save_error_shown: false }
     },
     {
       name: TelemetryEvents.AGENT_ONBOARDING_SHOWN,

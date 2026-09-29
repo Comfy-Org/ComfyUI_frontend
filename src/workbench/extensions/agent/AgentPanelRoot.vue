@@ -19,7 +19,6 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentMessageSentMetadata } from '@/platform/telemetry/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -1063,11 +1062,8 @@ const { submit: onSend } = useAgentDraftSubmission({
       origin:
         originContext === undefined ? null : { tabPath: originContext.tabPath }
     }
-    const selectionWorkflow = selectedTarget.value
     try {
-      return await sendMessage(text, attachments, nodes, references, () =>
-        selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
-      )
+      return await sendMessage(text, attachments, nodes, references)
     } finally {
       // Normally already consumed by the refresh. A send rejected before it
       // gets that far still reports here, so the funnel counts the attempt.
