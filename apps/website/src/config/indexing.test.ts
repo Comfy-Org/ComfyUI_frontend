@@ -4,7 +4,6 @@ import {
   isIndexableModelPage,
   isNoindexPathname
 } from './indexing'
-import { WAVE_1_ROUTER_IDS_BY_FAMILY } from './model-page-launch'
 import {
   routerModelSlugAliases,
   workshopModels
@@ -12,8 +11,7 @@ import {
 
 const MODELS_PAGES_BY_KIND = [
   ['hub', '/models/'],
-  ['wave 1 model', '/models/krea--krea-2-large--generate-images/'],
-  ['later model', '/models/recraft--v4-text-to-image--generate-images/'],
+  ['model', '/models/krea--krea-2-large--generate-images/'],
   ['alias', '/models/krea--krea-2-large/'],
   ['workflow', '/models/workflows/change-material/'],
   ['app', '/models/apps/cinematic-studio/'],
@@ -22,22 +20,13 @@ const MODELS_PAGES_BY_KIND = [
   ['page data', '/models/krea--krea-2-large--generate-images/page.json']
 ] as const
 
-const wave1RouterIds = new Set<string>(
-  Object.values(WAVE_1_ROUTER_IDS_BY_FAMILY).flat()
-)
-
 const inSitemap = (pathname: string) =>
   !isExcludedFromSitemap(`https://comfy.org${pathname}`)
 
 describe('indexing policy', () => {
-  it('excludes render pages while keeping the public Models marketing routes', () => {
+  it('keeps the public Models marketing routes and drops the showcase render page', () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '1')
     expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
-    expect(
-      isExcludedFromSitemap(
-        'https://comfy.org/models/recraft--v4-text-to-image--generate-images/'
-      )
-    ).toBe(true)
     expect(isExcludedFromSitemap('https://comfy.org/models/local/')).toBe(false)
     expect(isExcludedFromSitemap('https://comfy.org/models/showcase/')).toBe(
       true
@@ -115,51 +104,33 @@ describe('indexing policy', () => {
   })
 })
 
-describe('model page launch waves', () => {
+describe('model page launch', () => {
   it.for(MODELS_PAGES_BY_KIND)(
-    'lists only the hub and wave 1 model pages (%s)',
+    'lists only the hub and canonical model pages (%s)',
     ([kind, pathname]) => {
-      expect(isIndexableModelPage(pathname)).toBe(kind === 'wave 1 model')
-      expect(inSitemap(pathname)).toBe(
-        kind === 'hub' || kind === 'wave 1 model'
-      )
+      expect(isIndexableModelPage(pathname)).toBe(kind === 'model')
+      expect(inSitemap(pathname)).toBe(kind === 'hub' || kind === 'model')
     }
   )
 
-  it('names only published Router models in wave 1', () => {
-    const published = new Set(workshopModels.map(({ routerId }) => routerId))
-    expect([...wave1RouterIds].filter((id) => !published.has(id))).toEqual([])
-  })
-
-  it('indexes every page of a wave 1 model and no other model page', () => {
-    expect(
-      workshopModels.filter(({ href }) => isIndexableModelPage(href))
-    ).toEqual(
-      workshopModels.filter(({ routerId }) => wave1RouterIds.has(routerId))
+  it('indexes every canonical model page and no alias', () => {
+    expect(workshopModels.every(({ href }) => isIndexableModelPage(href))).toBe(
+      true
     )
-  })
-
-  it('indexes every canonical model page once all waves launch', () => {
-    expect(
-      workshopModels.every(({ href }) => isIndexableModelPage(href, 'all'))
-    ).toBe(true)
     expect(
       [...routerModelSlugAliases.keys()].some((alias) =>
-        isIndexableModelPage(`/models/${alias}/`, 'all')
+        isIndexableModelPage(`/models/${alias}/`)
       )
     ).toBe(false)
   })
 
-  it.for(MODELS_PAGES_BY_KIND)(
-    'never indexes a Models page that is not a canonical model page (%s)',
-    ([kind, pathname]) => {
-      expect(isIndexableModelPage(pathname, 'all')).toBe(
-        kind === 'wave 1 model' || kind === 'later model'
-      )
-    }
-  )
-
-  it('indexes no model page when every wave is rolled back', () => {
+  it('rolls back to only the model pages of the Router ids it keeps', () => {
+    const kept = new Set(['krea/krea-2-large'])
+    expect(
+      workshopModels
+        .filter(({ href }) => isIndexableModelPage(href, kept))
+        .map(({ slug }) => slug)
+    ).toEqual(['krea--krea-2-large--generate-images'])
     expect(
       workshopModels.some(({ href }) => isIndexableModelPage(href, new Set()))
     ).toBe(false)
