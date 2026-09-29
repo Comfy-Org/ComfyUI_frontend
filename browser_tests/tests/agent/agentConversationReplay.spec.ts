@@ -103,9 +103,6 @@ test.describe(
           }, toNodeId(3))
         )
 
-        // Source: https://github.com/Comfy-Org/ComfyUI_frontend/pull/18754
-        // Keep the extracted store-level remote-write coverage anchored to
-        // what a user can actually see after this recorded agent edit.
         await expect(
           agentConversation.vueNodes
             .getWidgetByName('KSampler', 'steps')

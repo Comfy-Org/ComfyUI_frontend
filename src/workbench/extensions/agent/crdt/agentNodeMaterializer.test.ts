@@ -537,7 +537,7 @@ describe('reconcileAgentAdapters', () => {
       ).toBe(9)
     })
 
-    const arrangeCanonicalLayoutNode = () => {
+    function arrangeCanonicalLayoutNode() {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)
       layoutStore.applyOperation({
@@ -609,7 +609,7 @@ describe('reconcileAgentAdapters', () => {
   })
 
   describe('remote update of a live node', () => {
-    const arrangeCanonicalWidgetState = () => {
+    function arrangeCanonicalWidgetState() {
       const graph = new LGraph()
       const scope = graphScopeOf(graph)
       const mutations = remoteMutations(scope)
@@ -728,7 +728,7 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.serialize().nodes).toHaveLength(1)
     })
 
-    const replaceRenamedNode = () => {
+    function replaceRenamedNode() {
       const graph = new LGraph()
       const scope = graphScopeOf(graph)
       const mutations = remoteMutations(scope)

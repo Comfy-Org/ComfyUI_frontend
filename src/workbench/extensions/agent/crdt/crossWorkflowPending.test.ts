@@ -430,10 +430,11 @@ function ackResubscribe(workflowId: string): void {
 /**
  * These pins exercise one observable same-page-session transport sequence:
  * mark the transport down, exhaust the retry budget, mark it up, emit
- * `reconnected`, and acknowledge resubscription. The three separate pins cover
- * eventual delivery, retention of the original `op_id`, and exactly-once
- * delivery after the matching host result. They do not exercise tab suspension
- * or persistence across a full page reload.
+ * `reconnected`, and acknowledge resubscription. The expected-failure pin
+ * covers eventual delivery after retry exhaustion. The adjacent retry tests
+ * establish identity and exactly-once mechanics without claiming that
+ * post-exhaustion replay is accepted policy. None exercise tab suspension or
+ * persistence across a full page reload.
  */
 describe('a human edit made while the document connection is down', () => {
   const RETRY_INTERVAL_MS = 500
@@ -454,8 +455,8 @@ describe('a human edit made while the document connection is down', () => {
   /**
    * Characterization of today, NOT a desired property: the retry budget is a
    * delivery budget, so the batch is dropped rather than retained. If retention
-   * lands, this test goes red and the three pins below go green in the same
-   * change. Do not "fix" it by relaxing the assertion.
+   * lands, this test goes red and the eventual-delivery pin below goes green in
+   * the same change. Do not "fix" it by relaxing the assertion.
    */
   it('is abandoned once the retry budget runs out, and nothing retains it', async () => {
     const { enqueue } = mountFollower('wf-a')
@@ -501,25 +502,6 @@ describe('a human edit made while the document connection is down', () => {
     expect(clientState.sent).toHaveLength(0)
   })
 
-  /**
-   * Three pins, one property each, because `it.fails` passes on the FIRST
-   * failing assertion and abandons the rest of the body. Bundled, the delivery
-   * assertion fails while `sent` is still empty, so an id or duplicate check
-   * behind it never executes -- and an implementation that delivered the op
-   * while re-minting its `op_id` would still report as an expected failure,
-   * hiding a FORECLOSE #7 violation behind a green run. Split, each property
-   * fails and gets fixed on its own name.
-   *
-   * Stated rather than papered over: nothing is delivered at all today, so pins
-   * 2 and 3 currently fail for pin 1's reason and cannot yet reach their own
-   * subject. That is why they are separate names now -- when delivery lands,
-   * each one starts reporting on the property it is named for instead of one
-   * masking the other two.
-   *
-   * All three use the same transport-down, budget-exhaustion, reconnect-event,
-   * and resubscribe-ack sequence. None asserts tab lifecycle behavior or
-   * survival across a reload; see the describe docstring.
-   */
   it.fails('KNOWN GAP: still reaches the host after reconnect, in the same session', async () => {
     const { enqueue } = mountFollower('wf-a')
     clientState.transportUp = false
@@ -531,43 +513,38 @@ describe('a human edit made while the document connection is down', () => {
     apiState.target.dispatchEvent(new Event('reconnected'))
     ackResubscribe('wf-a')
 
-    // Delivered, toward the workflow it was minted against. The ONLY
-    // assertion in this body, so this is the property that fails.
     expect(clientState.sent).toMatchObject([{ workflowId: 'wf-a' }])
   })
 
-  it.fails('KNOWN GAP: that replay carries the op_id it was minted with', async () => {
+  it('keeps the original op_id when a transport retry succeeds', async () => {
     const { enqueue } = mountFollower('wf-a')
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
-    vi.advanceTimersByTime(RETRY_BUDGET_MS)
+    vi.advanceTimersByTime(2 * RETRY_INTERVAL_MS)
     const operationId = clientState.attempts[0].ops[0].op_id
 
     clientState.transportUp = true
-    apiState.target.dispatchEvent(new Event('reconnected'))
-    ackResubscribe('wf-a')
+    vi.advanceTimersByTime(RETRY_INTERVAL_MS)
 
-    // Re-minting would defeat the applier's op_id dedupe and let a replay
-    // apply the edit a second time.
-    expect(clientState.sent[0]?.ops[0]).toMatchObject({
+    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent[0].ops[0]).toMatchObject({
       op_id: operationId,
       op: 'delete_node',
       node_id: 'edited-during-outage'
     })
   })
 
-  it.fails('KNOWN GAP: that replay happens exactly once, not on every later reconnect', async () => {
+  it('does not resend an acknowledged retry on a later reconnect', async () => {
     const { enqueue } = mountFollower('wf-a')
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
-    vi.advanceTimersByTime(RETRY_BUDGET_MS)
+    vi.advanceTimersByTime(2 * RETRY_INTERVAL_MS)
 
     clientState.transportUp = true
-    apiState.target.dispatchEvent(new Event('reconnected'))
-    ackResubscribe('wf-a')
-    await vi.waitFor(() => expect(clientState.sent).toHaveLength(1))
+    vi.advanceTimersByTime(RETRY_INTERVAL_MS)
+    expect(clientState.sent).toHaveLength(1)
     const replayedOperationId = clientState.sent[0].ops[0].op_id
 
     dispatchOpsResult({
