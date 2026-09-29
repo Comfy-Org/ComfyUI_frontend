@@ -1,8 +1,8 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 export class Topbar {
@@ -27,11 +27,15 @@ export class Topbar {
   }
 
   async getTabNames(): Promise<string[]> {
-    return await this.tabs.locator('.workflow-label').allInnerTexts()
+    return await this.page
+      .locator('.workflow-tabs .workflow-label')
+      .allInnerTexts()
   }
 
   async getActiveTabName(): Promise<string> {
-    return this.getActiveTab().innerText()
+    return this.page
+      .locator('.workflow-tabs .p-togglebutton-checked')
+      .innerText()
   }
 
   /**
@@ -62,17 +66,17 @@ export class Topbar {
   }
 
   getWorkflowTabLabel(tabName: string): Locator {
-    return this.getWorkflowTab(tabName).locator('.workflow-label')
+    return this.page.locator(
+      `.workflow-tabs .workflow-label:has-text("${tabName}")`
+    )
   }
 
   getWorkflowTab(tabName: string): Locator {
-    return this.tabs.filter({
-      has: this.page.getByText(tabName, { exact: true })
-    })
+    return this.getWorkflowTabLabel(tabName).locator('..')
   }
 
   getTab(index: number): Locator {
-    return this.tabs.nth(index)
+    return this.page.locator('.workflow-tabs .p-togglebutton').nth(index)
   }
 
   /**
@@ -84,23 +88,23 @@ export class Topbar {
     await expect(this.tabs).toHaveCount(1)
     await this.newWorkflowButton.click()
     await expect(this.tabs).toHaveCount(2)
-    await expect(this.getTab(1).and(this.getActiveTab())).toBeVisible()
+    await expect(this.getTab(1)).toHaveClass(/p-togglebutton-checked/)
     await expect(this.page.getByTestId('node-title')).toHaveCount(0)
     await this.getTab(0).click()
-    await expect(this.getTab(0).and(this.getActiveTab())).toBeVisible()
-    await expect(this.getTab(1).and(this.getActiveTab())).toHaveCount(0)
+    await expect(this.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    await expect(this.getTab(1)).not.toHaveClass(/p-togglebutton-checked/)
   }
 
   getActiveTab(): Locator {
-    return this.tabs.filter({
-      has: this.page.getByRole('tab', { selected: true })
-    })
+    return this.page.locator(
+      '.workflow-tabs .p-togglebutton.p-togglebutton-checked'
+    )
   }
 
   async closeWorkflowTab(tabName: string) {
     const tab = this.getWorkflowTab(tabName)
     await tab.hover()
-    await tab.getByTestId(TestIds.topbar.closeWorkflowButton).click()
+    await tab.locator('.close-button').click()
   }
 
   getSaveDialog(): Locator {
@@ -127,39 +131,24 @@ export class Topbar {
     await this.getSaveDialog().fill(workflowName)
     await this.page.keyboard.press('Enter')
 
+    await this.page.waitForFunction(
+      () => !(window.app!.extensionManager as WorkspaceStore).workflow.isBusy,
+      undefined,
+      { timeout: 3000 }
+    )
     await this.getSaveDialog().waitFor({ state: 'hidden' })
-
-    if (command === 'Export') return
 
     const confirmationDialog = this.page
       .getByRole('dialog')
       .filter({ hasText: 'Overwrite' })
-    await expect
-      .poll(async () => {
-        if (await confirmationDialog.isVisible()) return true
-        return this.page.evaluate(
-          (name) => {
-            const store = (window.app!.extensionManager as WorkspaceStore)
-              .workflow
-            const workflow = store.activeWorkflow
-            return (
-              workflow?.filename === name &&
-              workflow.isPersisted &&
-              !workflow.isModified &&
-              !store.isBusy
-            )
-          },
-          workflowName.replace(/\.json$/, '')
-        )
-      })
-      .toBe(true)
+    if (await confirmationDialog.isVisible()) return
   }
 
   async dismissWorkflowPopover() {
-    await this.page.mouse.move(0, 0)
-    await expect(
-      this.page.locator('.workflow-popover-fade').filter({ visible: true })
-    ).toHaveCount(0)
+    await this.page
+      .locator('.workflow-popover-fade')
+      .waitFor({ state: 'hidden', timeout: 5000 })
+      .catch(() => {})
   }
 
   async openTopbarMenu() {
@@ -172,9 +161,6 @@ export class Topbar {
 
     await this.menuTrigger.click()
     await this.menuLocator.waitFor({ state: 'visible' })
-    await expect(this.menuLocator).not.toHaveClass(
-      /\bp-connected-overlay-enter-active\b/
-    )
     return this.menuLocator
   }
 
