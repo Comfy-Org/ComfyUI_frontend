@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
-import type { CheckoutSavedMethodCopy } from '@comfyorg/account-ui/billing/checkout'
-import { CheckoutSavedMethods } from '@comfyorg/account-ui/billing/checkout'
 
 import PaymentFormError from '@/components/fullPage/PaymentFormError.vue'
+import SavedMethodSelect from '@/components/fullPage/SavedMethodSelect.vue'
 
 /** The Saved tab: the list and its Pay, a row skeleton while it re-reads, or its own error. */
 const {
@@ -23,10 +21,7 @@ const {
 const emit = defineEmits<{
   pay: [savedMethodId: string]
   retry: []
-  addNew: []
 }>()
-
-const { t } = useI18n()
 
 const pickedMethodId = ref<string | null>(null)
 
@@ -40,14 +35,6 @@ const chosenMethodId = computed(
 function pay() {
   if (chosenMethodId.value !== undefined) emit('pay', chosenMethodId.value)
 }
-
-const copy = computed<CheckoutSavedMethodCopy>(() => ({
-  savedPaymentMethod: t('checkout.fullPage.saved.label'),
-  changePaymentMethod: t('checkout.fullPage.saved.change'),
-  addNewPaymentMethod: t('checkout.fullPage.saved.addNew'),
-  alipay: t('checkout.fullPage.saved.alipay'),
-  selectLabel: t('checkout.fullPage.saved.selectLabel')
-}))
 </script>
 
 <template>
@@ -61,13 +48,11 @@ const copy = computed<CheckoutSavedMethodCopy>(() => ({
     class="h-10 rounded-lg bg-secondary-background-hover"
   />
   <form v-else class="flex flex-col gap-6" @submit.prevent="pay">
-    <div :inert="locked">
-      <CheckoutSavedMethods
+    <div v-if="chosenMethodId !== undefined" :inert="locked">
+      <SavedMethodSelect
         :methods
-        :copy
-        :selected-method-id="chosenMethodId ?? null"
-        @update:selected-method-id="pickedMethodId = $event"
-        @change-payment-method="emit('addNew')"
+        :model-value="chosenMethodId"
+        @update:model-value="pickedMethodId = $event"
       />
     </div>
     <slot name="pay" />

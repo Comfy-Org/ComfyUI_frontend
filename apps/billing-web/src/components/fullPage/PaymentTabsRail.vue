@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
 
 import type { PaymentTab, RailView } from '@/checkout/checkoutPage'
@@ -26,14 +24,9 @@ const emit = defineEmits<{
   retrySaved: []
   retryElement: []
 }>()
-
-const { t } = useI18n()
 </script>
 
 <template>
-  <h3 class="m-0 text-base font-semibold text-base-foreground">
-    {{ t('checkout.paymentMethod') }}
-  </h3>
   <PaymentMethodTabs
     :selected="rail.tab"
     :inert="locked"
@@ -46,7 +39,6 @@ const { t } = useI18n()
     :locked
     @pay="emit('paySaved', $event)"
     @retry="emit('retrySaved')"
-    @add-new="emit('selectTab', 'new')"
   >
     <template #pay>
       <slot name="pay" />

@@ -62,6 +62,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+const SECTION_LABEL = 'm-0 text-base font-normal text-base-foreground'
+
 const phase = computed(() => submitPhaseOf(page))
 const locked = computed(() => isLocked(page))
 
@@ -103,7 +105,7 @@ const elementLive = computed(() => {
 })
 
 const copy = computed<StripePaymentCopy>(() => ({
-  paymentMethod: tabbed.value ? '' : t('checkout.paymentMethod'),
+  paymentMethod: t('checkout.paymentMethod'),
   methodChoice: t('checkout.methodChoice'),
   billingAddress: t('checkout.billingAddress'),
   alipayRenewalNote: t('checkout.alipayRenewalNote'),
@@ -121,14 +123,14 @@ const copy = computed<StripePaymentCopy>(() => ({
         :aria-busy="locked"
         :data-testid="locked ? 'checkout-waiting' : undefined"
       >
-        <h3 class="m-0 text-base font-semibold text-base-foreground">
-          {{ t('checkout.paymentMethod') }}
-        </h3>
-        <div class="h-84 rounded-lg bg-secondary-background-hover" />
-        <h4 class="m-0 text-sm font-medium text-base-foreground">
-          {{ t('checkout.billingAddress') }}
-        </h4>
-        <div class="h-84 rounded-lg bg-secondary-background-hover" />
+        <div class="flex flex-col gap-3">
+          <h3 :class="SECTION_LABEL">{{ t('checkout.paymentMethod') }}</h3>
+          <div class="h-84 rounded-lg bg-secondary-background-hover" />
+        </div>
+        <div class="flex flex-col gap-3">
+          <h4 :class="SECTION_LABEL">{{ t('checkout.billingAddress') }}</h4>
+          <div class="h-84 rounded-lg bg-secondary-background-hover" />
+        </div>
         <CheckoutPayAction
           disabled
           :loading="locked"
@@ -159,7 +161,8 @@ const copy = computed<StripePaymentCopy>(() => ({
           @continue-verification="emit('continueVerification')"
         />
       </form>
-      <div v-else class="flex flex-col gap-6">
+      <div v-else class="flex flex-col gap-3">
+        <h3 :class="SECTION_LABEL">{{ t('checkout.paymentMethod') }}</h3>
         <PaymentTabsRail
           v-if="tabbed"
           :rail="tabbed"
@@ -200,6 +203,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           :is-loading="submitting"
           :can-submit="canPay"
           :locked
+          page-layout
           @phase="emit('phase', $event)"
           @confirm="
             (token, methodType) =>

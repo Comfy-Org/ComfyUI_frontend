@@ -182,10 +182,8 @@
         "new": "Add new payment"
       },
       "saved": {
-        "label": "Saved payment method",
-        "change": "Change",
-        "addNew": "Add new payment method",
         "alipay": "Alipay",
+        "last4": "·· {last4}",
         "selectLabel": "Choose a saved payment method"
       },
       "railFailed": {
