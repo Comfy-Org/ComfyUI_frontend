@@ -551,6 +551,24 @@ test.describe('Model playground', () => {
     await expect.poll(hidden).toBeLessThanOrEqual(1)
   })
 
+  test('keeps a long prompt whole when the layout narrows under it', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByTestId('field-prompt')
+    const hidden = () =>
+      prompt.evaluate((box) => box.scrollHeight - box.clientHeight)
+
+    await prompt.fill(
+      'A slow push-in on a glass teapot lit from behind by a low winter sun, steam rising and catching the light while the room around it stays in shadow, the reflections on the table kept sharp and the background soft, with no people, no text and no logos anywhere in the frame.'
+    )
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+
+    await page.setViewportSize({ width: 380, height: 900 })
+
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+  })
+
   test('puts data-declared parameters in the Advanced disclosure', async ({
     page
   }) => {
