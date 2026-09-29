@@ -4,8 +4,8 @@ import type { HTMLAttributes } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import TagRemoveButton from './TagRemoveButton.vue'
-import { tagVariants } from './tag.variants'
-import type { TagVariants } from './tag.variants'
+import { tagVariants } from '@comfyorg/design-system/tag.variants'
+import type { TagVariants } from '@comfyorg/design-system/tag.variants'
 
 const {
   label,
