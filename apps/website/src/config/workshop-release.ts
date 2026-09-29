@@ -6,9 +6,9 @@ export function isWorkshopInBuild(): boolean {
   return process.env.WORKSHOP_IN_BUILD !== '0'
 }
 
-/** Every route Workshop owns. Kept here so the gate has one definition. */
-export function isWorkshopRoute(pattern: string): boolean {
-  const pathname = pattern.replace(/\/$/, '')
+/** Whether a built pathname is a Workshop page, which stays out of the sitemap. */
+export function isWorkshopRoute(route: string): boolean {
+  const pathname = route.replace(/\/$/, '')
   const modelsKind = modelsUrlKind(pathname)
   return (
     isLegacyWorkshopRoute(pathname) ||

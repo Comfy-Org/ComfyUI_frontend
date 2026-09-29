@@ -52,17 +52,29 @@ export function modelsUrlEntries(
   ]
 }
 
+const withoutTrailingSlash = (pathname: string) => pathname.replace(/\/$/, '')
+
 export function buildModelsUrlRegistry(
   entries: readonly ModelsUrlEntry[]
 ): ModelsUrlRegistry {
   const registry = new Map<string, ModelsUrlEntry>()
   for (const entry of entries) {
-    const claimed = registry.get(entry.path)
+    const path = withoutTrailingSlash(entry.path)
+    const claimed = registry.get(path)
     if (claimed)
       throw new Error(
-        `${entry.path} is registered twice, as ${claimed.kind} and as ${entry.kind}`
+        `${path} is registered twice, as ${claimed.kind} and as ${entry.kind}`
       )
-    registry.set(entry.path, entry)
+    registry.set(
+      path,
+      entry.kind === 'alias'
+        ? {
+            ...entry,
+            path,
+            destination: withoutTrailingSlash(entry.destination)
+          }
+        : { ...entry, path }
+    )
   }
   for (const entry of registry.values()) {
     if (entry.kind !== 'alias') continue
@@ -94,7 +106,7 @@ export function modelsUrlKind(
   pathname: string,
   registry: ModelsUrlRegistry = modelsUrlRegistry
 ): ModelsUrlKind | undefined {
-  return registry.get(pathname.replace(/\/$/, ''))?.kind
+  return registry.get(withoutTrailingSlash(pathname))?.kind
 }
 
 /** Built pages under the Models base that no registry entry claims. */
@@ -104,7 +116,9 @@ export function unregisteredModelsPaths(
   base = MODELS_BASE_PATH
 ): string[] {
   return pathnames
-    .map((pathname) => `/${pathname}`.replace(/^\/+/, '/').replace(/\/$/, ''))
+    .map((pathname) =>
+      withoutTrailingSlash(`/${pathname}`.replace(/^\/+/, '/'))
+    )
     .filter(
       (pathname) =>
         pathname.startsWith(`${base}/`) &&

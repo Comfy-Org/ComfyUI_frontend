@@ -83,6 +83,24 @@ describe('models URL registry', () => {
     )
   })
 
+  it('treats a trailing slash as the same address', () => {
+    expect(() =>
+      buildModelsUrlRegistry([
+        { path: '/models/new/', kind: 'model' },
+        { path: '/models/new', kind: 'workflow' }
+      ])
+    ).toThrow('/models/new is registered twice')
+    const registry = buildModelsUrlRegistry([
+      { path: '/models/new/', kind: 'model' },
+      { path: '/models/old/', kind: 'alias', destination: '/models/new/' }
+    ])
+    expect(registry.get('/models/old')).toEqual({
+      path: '/models/old',
+      kind: 'alias',
+      destination: '/models/new'
+    })
+  })
+
   it('finds built Models pages that nothing registered', () => {
     const registry = buildModelsUrlRegistry(modelsUrlEntries(sources))
     expect(
