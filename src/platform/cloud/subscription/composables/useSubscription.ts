@@ -56,8 +56,6 @@ type CloudSubscriptionCheckoutResponse = NonNullable<
 
 const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
 
-/** The ladder above exhausts 43s after the checkout tab opens, well inside the
- * time a real user spends on card entry and 3DS. */
 const PENDING_CHECKOUT_COMPLETION_DEADLINE_MS = 10 * 60 * 1000
 const PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS = 10_000
 const PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS = [
@@ -68,7 +66,6 @@ const PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS = [
   5 * 60 * 1000,
   10 * 60 * 1000
 ] as const
-const MAX_TIMER_DELAY_MS = 2_147_483_647
 
 type CheckoutScopeOwnership = 'unresolved' | 'matched' | 'mismatched'
 
@@ -186,23 +183,38 @@ function useSubscriptionInternal() {
       return getCheckoutAttribution()
     }
 
-  let pendingCheckoutRecoveryTimeout: number | null = null
-  let pendingCheckoutRecoveryAttempt = 0
-  let isRecoveringPendingCheckout = false
-  let activePendingCheckoutRecovery: Promise<BillingStatusResponse | null> | null =
+  interface PendingCheckoutSchedule {
+    timeoutId: number | null
+    retryRung: number
+    deadlineRung: number
+  }
+
+  const IDLE_PENDING_CHECKOUT_SCHEDULE: PendingCheckoutSchedule = {
+    timeoutId: null,
+    retryRung: 0,
+    deadlineRung: 0
+  }
+
+  let pendingCheckoutSchedule = IDLE_PENDING_CHECKOUT_SCHEDULE
+  let activePendingCheckoutRead: Promise<BillingStatusResponse | null> | null =
     null
-  let pendingCheckoutDeadlineRetryCount = 0
   let lastPendingCheckoutStatus: BillingStatusResponse | null = null
   let isDisposed = false
 
   const stopPendingCheckoutRecovery = () => {
-    if (pendingCheckoutRecoveryTimeout !== null && defaultWindow) {
-      defaultWindow.clearTimeout(pendingCheckoutRecoveryTimeout)
+    if (pendingCheckoutSchedule.timeoutId !== null && defaultWindow) {
+      defaultWindow.clearTimeout(pendingCheckoutSchedule.timeoutId)
     }
+    pendingCheckoutSchedule = IDLE_PENDING_CHECKOUT_SCHEDULE
+  }
 
-    pendingCheckoutRecoveryTimeout = null
-    pendingCheckoutRecoveryAttempt = 0
-    pendingCheckoutDeadlineRetryCount = 0
+  const armPendingCheckoutTimer = (delayMs: number, onFire: () => void) => {
+    if (!defaultWindow) return
+    const timeoutId = defaultWindow.setTimeout(() => {
+      pendingCheckoutSchedule = { ...pendingCheckoutSchedule, timeoutId: null }
+      onFire()
+    }, delayMs)
+    pendingCheckoutSchedule = { ...pendingCheckoutSchedule, timeoutId }
   }
 
   onScopeDispose(() => {
@@ -216,21 +228,11 @@ function useSubscriptionInternal() {
    * never fire for a user who simply leaves the tab open.
    */
   const armMissingCheckoutCompletionWakeUp = (remainingMs: number) => {
-    if (
-      isDisposed ||
-      !defaultWindow ||
-      pendingCheckoutRecoveryTimeout !== null
-    ) {
-      return
-    }
+    if (isDisposed || pendingCheckoutSchedule.timeoutId !== null) return
 
-    pendingCheckoutRecoveryTimeout = defaultWindow.setTimeout(
-      () => {
-        pendingCheckoutRecoveryTimeout = null
-        void recoverPendingSubscriptionCheckout('deadline')
-      },
-      Math.min(Math.max(remainingMs, 0), MAX_TIMER_DELAY_MS)
-    )
+    armPendingCheckoutTimer(Math.max(remainingMs, 0), () => {
+      void recoverPendingSubscriptionCheckout('deadline')
+    })
   }
 
   const getCurrentPendingCheckoutAttempt = (attemptId: string) => {
@@ -320,22 +322,17 @@ function useSubscriptionInternal() {
     !(
       isDisposed ||
       !defaultWindow ||
-      pendingCheckoutRecoveryTimeout !== null ||
+      pendingCheckoutSchedule.timeoutId !== null ||
       !isLoggedIn.value ||
       !attempt
     )
 
   const schedulePendingCheckoutRecovery = () => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
-    if (
-      !canSchedulePendingCheckoutRecovery(attempt) ||
-      !attempt ||
-      !defaultWindow
-    )
-      return
+    if (!canSchedulePendingCheckoutRecovery(attempt) || !attempt) return
 
     const nextDelay = getPendingCheckoutRetryDelay(
-      pendingCheckoutRecoveryAttempt
+      pendingCheckoutSchedule.retryRung
     )
 
     if (nextDelay === undefined) {
@@ -351,11 +348,13 @@ function useSubscriptionInternal() {
       return
     }
 
-    pendingCheckoutRecoveryTimeout = defaultWindow.setTimeout(() => {
-      pendingCheckoutRecoveryTimeout = null
-      pendingCheckoutRecoveryAttempt += 1
+    armPendingCheckoutTimer(nextDelay, () => {
+      pendingCheckoutSchedule = {
+        ...pendingCheckoutSchedule,
+        retryRung: pendingCheckoutSchedule.retryRung + 1
+      }
       void recoverPendingSubscriptionCheckout('retry')
-    }, nextDelay)
+    })
   }
 
   const getPendingAttemptOwnership = (): CheckoutScopeOwnership => {
@@ -674,12 +673,12 @@ function useSubscriptionInternal() {
     source: PendingCheckoutRecoverySource,
     attemptId: string
   ): Promise<boolean> => {
-    if (!isRecoveringPendingCheckout) return false
-    if (source !== 'deadline' || !activePendingCheckoutRecovery) return true
+    if (!activePendingCheckoutRead) return false
+    if (source !== 'deadline') return true
 
     try {
       const status = await withTimeout(
-        activePendingCheckoutRecovery,
+        activePendingCheckoutRead,
         PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS
       )
       return status !== null
@@ -697,7 +696,7 @@ function useSubscriptionInternal() {
   const fetchPendingCheckoutStatus = async () => {
     lastPendingCheckoutStatus = null
     const statusFetch = fetchSubscriptionStatus()
-    activePendingCheckoutRecovery = statusFetch
+    activePendingCheckoutRead = statusFetch
     try {
       return await withTimeout(
         statusFetch,
@@ -712,16 +711,13 @@ function useSubscriptionInternal() {
   const rearmBoundedDeadlineWakeUp = () => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
     if (!attempt) return
-    if (
-      pendingCheckoutDeadlineRetryCount >=
-      PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS.length
-    )
-      return
-    const delay =
-      PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS[
-        pendingCheckoutDeadlineRetryCount
-      ]
-    pendingCheckoutDeadlineRetryCount += 1
+    const { deadlineRung } = pendingCheckoutSchedule
+    if (deadlineRung >= PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS.length) return
+    const delay = PENDING_CHECKOUT_DEADLINE_RETRY_DELAYS_MS[deadlineRung]
+    pendingCheckoutSchedule = {
+      ...pendingCheckoutSchedule,
+      deadlineRung: deadlineRung + 1
+    }
     armMissingCheckoutCompletionWakeUp(delay)
   }
 
@@ -752,7 +748,7 @@ function useSubscriptionInternal() {
     const attempt = getPendingSubscriptionCheckoutAttempt()
     if (!attempt) return
     const attemptId = attempt.attempt_id
-    if (isRecoveringPendingCheckout) {
+    if (activePendingCheckoutRead) {
       const didObserveStatus = await waitForActiveRecoveryAtDeadline(
         source,
         attemptId
@@ -773,7 +769,6 @@ function useSubscriptionInternal() {
     source: PendingCheckoutRecoverySource,
     attemptId: string
   ): Promise<boolean> => {
-    isRecoveringPendingCheckout = true
     try {
       const status = await fetchPendingCheckoutStatus()
       if (isDisposed) return false
@@ -786,15 +781,16 @@ function useSubscriptionInternal() {
       handlePendingCheckoutRecoveryError(source, attemptId, error)
       return false
     } finally {
-      isRecoveringPendingCheckout = false
-      activePendingCheckoutRecovery = null
+      activePendingCheckoutRead = null
     }
   }
 
   // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
-  let inFlightStatusFetch: Promise<BillingStatusResponse | null> | null = null
-  let inFlightStatusOwnerId: string | null = null
-  let inFlightStatusWorkspaceId: string | null = null
+  let inFlightStatusRead: {
+    promise: Promise<BillingStatusResponse | null>
+    ownerId: string | null
+    workspaceId: string | null
+  } | null = null
   let nextStatusFetchSequence = 0
   let statusScopeGeneration = 0
   let observedStatusScope = `${authStore.userId ?? ''}\0${workspaceStore.activeWorkspaceId ?? ''}`
@@ -826,11 +822,7 @@ function useSubscriptionInternal() {
   const clearInFlightStatusFetch = (
     fetchPromise: Promise<BillingStatusResponse | null>
   ) => {
-    if (inFlightStatusFetch !== fetchPromise) return
-
-    inFlightStatusFetch = null
-    inFlightStatusOwnerId = null
-    inFlightStatusWorkspaceId = null
+    if (inFlightStatusRead?.promise === fetchPromise) inFlightStatusRead = null
   }
 
   function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
@@ -838,11 +830,10 @@ function useSubscriptionInternal() {
     const workspaceId = workspaceStore.activeWorkspaceId
     observeStatusScope(ownerId, workspaceId)
     if (
-      inFlightStatusFetch &&
-      inFlightStatusOwnerId === ownerId &&
-      inFlightStatusWorkspaceId === workspaceId
+      inFlightStatusRead?.ownerId === ownerId &&
+      inFlightStatusRead.workspaceId === workspaceId
     ) {
-      return inFlightStatusFetch
+      return inFlightStatusRead.promise
     }
 
     const sequence = ++nextStatusFetchSequence
@@ -853,9 +844,7 @@ function useSubscriptionInternal() {
       sequence,
       scopeGeneration
     )
-    inFlightStatusFetch = fetchPromise
-    inFlightStatusOwnerId = ownerId
-    inFlightStatusWorkspaceId = workspaceId
+    inFlightStatusRead = { promise: fetchPromise, ownerId, workspaceId }
     void fetchPromise
       .catch(() => undefined)
       .finally(() => {
