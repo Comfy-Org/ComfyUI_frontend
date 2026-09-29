@@ -545,7 +545,7 @@ test.describe(
         await page.getByTestId('getting-started-blank').click()
         await expect(gettingStarted).toHaveCount(0)
         await expect(consent).toBeVisible()
-        await expect(agentPanel.root).toHaveCount(0)
+        await expect(agentPanel.root).toBeVisible()
         expect(agentConsentWrites).toHaveLength(0)
       })
     })
