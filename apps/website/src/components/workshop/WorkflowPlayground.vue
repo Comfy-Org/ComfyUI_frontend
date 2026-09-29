@@ -46,7 +46,7 @@ import WorkflowCreditsGuard from './WorkflowCreditsGuard.vue'
 import WorkflowRunControls from './WorkflowRunControls.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
-import WorkflowExamplePreview from './WorkflowExamplePreview.vue'
+import WorkflowExampleCard from './WorkflowExampleCard.vue'
 
 const { model, scope, cloudHref } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -375,25 +375,20 @@ function start() {
   >
     <h2
       id="workflow-examples-heading"
-      class="mb-5 text-2xl font-light text-primary-comfy-canvas"
+      class="mb-5 text-sm font-bold text-primary-warm-white"
     >
-      {{ t('workshop.workflow.explore') }}
+      {{ t('workshop.examples.start') }}
     </h2>
     <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      <button
+      <WorkflowExampleCard
         v-for="(example, index) in model.examples"
         :key="example.name"
-        type="button"
-        :aria-pressed="selectedExample === index"
-        class="cursor-pointer overflow-hidden rounded-2xl border border-transparency-white-t8 text-left hover:border-primary-comfy-yellow focus-visible:outline-primary-comfy-yellow disabled:cursor-not-allowed disabled:opacity-50"
+        :example
+        :chosen="selectedExample === index"
+        :poster="model.thumbnailUrl"
         :disabled="formDisabled"
-        @click="selectExample(index)"
-      >
-        <WorkflowExamplePreview :example :poster="model.thumbnailUrl" />
-        <span class="block p-4 text-sm text-primary-warm-gray">
-          {{ example.title }}
-        </span>
-      </button>
+        @open="selectExample(index)"
+      />
     </div>
   </section>
   <ExampleReplaceDialog

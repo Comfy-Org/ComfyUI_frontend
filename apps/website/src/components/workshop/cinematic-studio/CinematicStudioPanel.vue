@@ -5,10 +5,12 @@ import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGu
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
+import { workshopAppRepo } from '../../../lib/workshop/apps'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
+import AppRepoLink from './AppRepoLink.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicModeSwitch from './CinematicModeSwitch.vue'
 import CinematicPanel from './CinematicPanel.vue'
@@ -103,7 +105,7 @@ function generate() {
     data-testid="cinematic"
   >
     <AppsBackLink :locale class="mb-3" />
-    <div class="mb-6 flex items-center gap-3">
+    <div class="mb-6 flex flex-wrap items-center gap-3">
       <h1 class="text-2xl font-semibold text-primary-warm-white lg:text-3xl">
         {{ tc('cinematic.title', locale) }}
       </h1>
@@ -112,6 +114,11 @@ function generate() {
       >
         {{ tc('cinematic.beta', locale) }}
       </span>
+      <AppRepoLink
+        :repo="workshopAppRepo('studio')"
+        :locale
+        class="sm:ml-auto"
+      />
     </div>
     <CinematicModeSwitch
       v-if="hasVideo"

@@ -36,7 +36,17 @@ import {
   isRendering,
   reduceReel
 } from '../lib/workshop/cinematic-studio/reel'
-import { useWorkshopAuthFlag, useWorkshopEnabled } from '../scripts/posthog'
+import { studioAnalytics } from '../lib/workshop/cinematic-studio/analytics'
+import {
+  captureWorkshopEvent,
+  useWorkshopAuthFlag,
+  useWorkshopEnabled
+} from '../scripts/posthog'
+import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
+import {
+  workshopFailureAnalytics,
+  workshopModelAnalytics
+} from '../scripts/workshop-analytics'
 
 interface ShotRequest {
   readonly modelSlug: string
@@ -217,6 +227,42 @@ export function useCinematicStudioRun(
     return credential.session.token
   }
 
+  function takeAnalytics(
+    startedFor: WorkshopSession,
+    slug: string,
+    model?: WorkshopModelDetail
+  ): WorkshopRunAnalytics {
+    return {
+      ...(model ? workshopModelAnalytics(model) : { render_engine: 'router' }),
+      ...studioAnalytics(slug),
+      user_id: startedFor.uid,
+      workspace_id: startedFor.workspace.id,
+      attempt_id: workshopIdempotencyKey()
+    }
+  }
+
+  function recordUnloadedTake(analytics: WorkshopRunAnalytics, error: unknown) {
+    captureWorkshopEvent({ name: 'run_started', properties: analytics })
+    captureWorkshopEvent({
+      name: 'run_finished',
+      properties: {
+        ...analytics,
+        duration_ms: 0,
+        status: 'failed',
+        ...workshopFailureAnalytics(
+          new WorkshopRouterError(
+            'unavailable',
+            null,
+            {},
+            undefined,
+            'input_preparation',
+            { cause: error }
+          )
+        )
+      }
+    })
+  }
+
   async function renderTake(
     id: string,
     index: number,
@@ -227,6 +273,13 @@ export function useCinematicStudioRun(
   ) {
     const fingerprint = takeFingerprint(startedFor, model.slug, request, index)
     const { key, prepared } = unsettledTakeFor(fingerprint)
+    const analytics = takeAnalytics(startedFor, model.slug, model)
+    const startedAt = Date.now()
+    const finished = () => ({
+      ...analytics,
+      duration_ms: Date.now() - startedAt
+    })
+    captureWorkshopEvent({ name: 'run_started', properties: analytics })
     try {
       const result = await router_render(
         model.slug,
@@ -255,14 +308,52 @@ export function useCinematicStudioRun(
       releaseRouterOutputs(result.outputs.slice(1))
       if (signal.aborted) {
         if (output) releaseRouterOutputs([output])
+        captureWorkshopEvent({
+          name: 'run_finished',
+          properties: { ...finished(), status: 'cancelled' }
+        })
         return
       }
       if (!output) throw new WorkshopRouterError('response', result.requestId)
       dispatch({ type: 'takeSucceeded', id, output })
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...finished(),
+          status: 'succeeded',
+          request_id: result.requestId ?? undefined,
+          output_count: result.outputs.length
+        }
+      })
     } catch (error) {
-      if (signal.aborted) return
+      if (signal.aborted) {
+        captureWorkshopEvent({
+          name: 'run_finished',
+          properties: { ...finished(), status: 'cancelled' }
+        })
+        return
+      }
       if (!mayStillSettle(error)) unsettledTakes.delete(fingerprint)
       dispatch(takeFailure(id, error))
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...finished(),
+          status: 'failed',
+          ...workshopFailureAnalytics(
+            error instanceof WorkshopRouterError
+              ? error
+              : new WorkshopRouterError(
+                  'client',
+                  null,
+                  {},
+                  undefined,
+                  undefined,
+                  { cause: error }
+                )
+          )
+        }
+      })
     }
   }
 
@@ -282,16 +373,22 @@ export function useCinematicStudioRun(
     controller = attempt
     try {
       await Promise.all(
-        takes.map(async ({ id, index, slug, request }) =>
-          renderTake(
+        takes.map(async ({ id, index, slug, request }) => {
+          const model = await loadModel(slug).catch((error: unknown) => {
+            if (!attempt.signal.aborted)
+              recordUnloadedTake(takeAnalytics(startedFor, slug), error)
+            throw error
+          })
+          attempt.signal.throwIfAborted()
+          return renderTake(
             id,
             index,
-            await loadModel(slug),
+            model,
             request,
             startedFor,
             attempt.signal
           )
-        )
+        })
       )
     } catch {
       if (!attempt.signal.aborted)

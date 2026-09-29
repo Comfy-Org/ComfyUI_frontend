@@ -1,11 +1,13 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { assert, describe, expect, it } from 'vitest'
-import { markRaw } from 'vue'
+import { assert, describe, expect, it, vi } from 'vitest'
+import { h, markRaw } from 'vue'
 
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
+import { OBJECT_URL_LIFETIME_MS } from '../../config/workshop-output-download'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
 import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
+import { workflowSnippetRequest } from '../../config/workshop-workflow-snippet'
 import WorkflowApi from './WorkflowApi.vue'
 
 const fixture = workflowDetailsBySlug.get('workflows/animate-reference-sheet')
@@ -107,5 +109,66 @@ describe('WorkflowApi', () => {
         .getAttribute('href')
     ).toBe('https://docs.comfy.org/development/cloud/overview#quick-start')
     expect(screen.getByRole('link', { name: /API key/i })).toBeTruthy()
+  })
+
+  it('shows the manual upload and polling steps only for cURL', async () => {
+    render(WorkflowApi, { props: { model, values } })
+    const visitor = userEvent.setup()
+
+    expect(screen.queryByTestId('workflow-api-steps')).toBeNull()
+
+    await visitor.click(screen.getByRole('tab', { name: 'cURL' }))
+    expect(screen.getByTestId('workflow-api-steps')).toHaveTextContent(
+      'POST /api/inputs/upload-url'
+    )
+
+    await visitor.click(screen.getByRole('tab', { name: 'TypeScript' }))
+    expect(screen.queryByTestId('workflow-api-steps')).toBeNull()
+  })
+
+  describe('downloading the API graph', () => {
+    it('hands over the same graph the snippet posts', async () => {
+      const blobs: Blob[] = []
+      vi.spyOn(URL, 'createObjectURL').mockImplementation((source) => {
+        if (source instanceof Blob) blobs.push(source)
+        return 'blob:graph'
+      })
+      vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+      render({ setup: () => () => h(WorkflowApi, { model, values }) })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Download the API graph' })
+      )
+
+      expect(JSON.parse(await blobs[0].text())).toEqual(
+        workflowSnippetRequest(model, values).prompt
+      )
+    })
+
+    it('leaves the graph readable while the browser takes it', async () => {
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:graph')
+      const revoke = vi
+        .spyOn(URL, 'revokeObjectURL')
+        .mockImplementation(() => {})
+      render({ setup: () => () => h(WorkflowApi, { model, values }) })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Download the API graph' })
+      )
+      expect(revoke).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(OBJECT_URL_LIFETIME_MS)
+      expect(revoke).toHaveBeenCalledWith('blob:graph')
+    })
+
+    it('offers no graph when the workflow cannot be posted to Cloud', () => {
+      render(WorkflowApi, {
+        props: { model: { ...model, type: 'SERVERLESS' }, values }
+      })
+
+      expect(
+        screen.queryByRole('button', { name: 'Download the API graph' })
+      ).toBeNull()
+    })
   })
 })

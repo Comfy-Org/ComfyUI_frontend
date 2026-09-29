@@ -155,7 +155,13 @@ export function workshopModelAnalytics(
 ): WorkshopModelAnalytics {
   return {
     model_slug: model.slug,
-    page_type: model.routerId === undefined ? 'workflow' : 'model',
+    page_type:
+      model.type === 'APP'
+        ? 'app'
+        : model.routerId === undefined
+          ? 'workflow'
+          : 'model',
+    ...(model.type === 'APP' ? { app_slug: model.slug } : {}),
     render_engine:
       model.type === 'CLOUD'
         ? 'cloud'

@@ -221,7 +221,6 @@ function leaveSection() {
       :slides="featuredSlides"
       :locale
       :autoplay="false"
-      compact
       class="mb-10 short:mb-6"
     />
 
