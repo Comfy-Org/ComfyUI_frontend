@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import type { AccountCredential } from '@comfyorg/account-core/session'
@@ -14,6 +14,7 @@ import type {
   RouterRenderResult
 } from '../../../config/router-render'
 import {
+  refreshWorkshopCredits,
   useTopUpWatch,
   useWorkshopCredits
 } from '../../../config/workshop-credits'
@@ -23,10 +24,12 @@ import { useWorkshopSession } from '../../../config/workshop-session-state'
 import { appModels } from '../../../config/workshop-app-content'
 import { prepareModelPage } from '../../../routes/models/model-page'
 import {
+  captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopAppsEnabled
 } from '../../../scripts/posthog'
+import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
@@ -357,6 +360,209 @@ describe('CinematicStudio', () => {
     await user.click(reveal)
 
     expect(screen.queryByText(t('workshop.output.nsfw'))).toBeNull()
+  })
+
+  it.for([
+    {
+      name: 'a finished take',
+      render: async (slug: string) => rendered(slug),
+      outcome: {
+        status: 'succeeded',
+        request_id: 'request-1',
+        output_count: 1
+      }
+    },
+    {
+      name: 'a failed take',
+      render: async () => {
+        throw new WorkshopRouterError('provider', 'request-9')
+      },
+      outcome: { status: 'failed', reason: 'provider', request_id: 'request-9' }
+    }
+  ])(
+    'records $name as an app run, apart from model pages',
+    async ({ render: renderTake, outcome }) => {
+      vi.mocked(router_render).mockImplementation(renderTake)
+      const user = renderStudio()
+
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+
+      const app = {
+        model_slug: first.slug,
+        page_type: 'app',
+        app_slug: CINEMATIC_STUDIO_APP_SLUG,
+        render_engine: 'router',
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id
+      }
+      await vi.waitFor(() =>
+        expect(captureWorkshopEvent).toHaveBeenCalledWith({
+          name: 'run_finished',
+          properties: expect.objectContaining({ ...app, ...outcome })
+        })
+      )
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_started',
+        properties: expect.objectContaining(app)
+      })
+    }
+  )
+
+  it.for([
+    {
+      name: 'a cancelled take',
+      prepare: () =>
+        vi
+          .mocked(router_render)
+          .mockImplementation(
+            (_slug, _parameters, options) =>
+              new Promise((_resolve, reject) =>
+                options.signal?.addEventListener('abort', () =>
+                  reject(options.signal?.reason)
+                )
+              )
+          ),
+      act: async (user: ReturnType<typeof userEvent.setup>) =>
+        user.click(await screen.findByRole('button', { name: 'Cancel' })),
+      outcome: { status: 'cancelled' }
+    },
+    {
+      name: 'a take whose model cannot load',
+      prepare: () =>
+        fetchData.mockImplementation(async (input) =>
+          String(input).startsWith('blob:')
+            ? servePageData(input)
+            : new Response('unavailable', { status: 500 })
+        ),
+      act: async () => {},
+      outcome: {
+        status: 'failed',
+        reason: 'unavailable',
+        failure_stage: 'input_preparation'
+      }
+    }
+  ])('records $name as an app run', async ({ prepare, act, outcome }) => {
+    prepare()
+    const user = renderStudio()
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+    await act(user)
+
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          model_slug: first.slug,
+          page_type: 'app',
+          app_slug: CINEMATIC_STUDIO_APP_SLUG,
+          ...outcome
+        })
+      })
+    )
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.filter(([event]) => event.name === 'run_finished')
+    ).toHaveLength(1)
+  })
+
+  it.for([
+    { name: 'arrives', page: servePageData },
+    {
+      name: 'fails',
+      page: async () => new Response('unavailable', { status: 500 })
+    }
+  ])(
+    'records no run for a take cancelled before its model page $name',
+    async ({ page }) => {
+      const requested = Promise.withResolvers<void>()
+      const cancelled = Promise.withResolvers<void>()
+      fetchData.mockImplementation(async (input) => {
+        if (String(input).startsWith('blob:')) return servePageData(input)
+        requested.resolve()
+        await cancelled.promise
+        return page(input)
+      })
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderStudio()
+
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await requested.promise
+      await user.click(await screen.findByRole('button', { name: 'Cancel' }))
+      vi.mocked(refreshWorkshopCredits).mockClear()
+      cancelled.resolve()
+
+      await vi.waitFor(() =>
+        expect(refreshWorkshopCredits).toHaveBeenCalledWith({ force: true })
+      )
+      expect(router_render).not.toHaveBeenCalled()
+      expect(
+        vi
+          .mocked(captureWorkshopEvent)
+          .mock.calls.filter(([event]) => event.name.startsWith('run_'))
+      ).toEqual([])
+    }
+  )
+
+  it('records a take download as an app download', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+
+    const download = await screen.findByRole('link', {
+      name: tc('cinematic.stage.download')
+    })
+    const stayOnPage = (event: Event) => event.preventDefault()
+    window.addEventListener('click', stayOnPage, { capture: true })
+    onTestFinished(() =>
+      window.removeEventListener('click', stayOnPage, { capture: true })
+    )
+    await user.click(download)
+
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'output_download_clicked',
+      properties: {
+        model_slug: first.slug,
+        page_type: 'app',
+        app_slug: CINEMATIC_STUDIO_APP_SLUG,
+        output_kind: 'image'
+      }
+    })
+  })
+
+  it('records each app page once, however often it is picked', async () => {
+    render(CinematicStudioPage, { props: { apps: appModels, models } })
+    const user = userEvent.setup()
+    const pick = async (name: string) => {
+      await user.click(
+        await screen.findByRole('button', { name: /^Layout to review/ })
+      )
+      await user.click(await screen.findByRole('menuitemradio', { name }))
+    }
+
+    await pick('Re-shoot a video')
+    await pick('Cinematic Studio')
+    await pick('Re-shoot a video')
+
+    const viewed = (slug: string) => ({
+      name: 'model_viewed',
+      properties: { model_slug: slug, page_type: 'app', app_slug: slug }
+    })
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.filter(([event]) => event.name === 'model_viewed')
+        .map(([event]) => event)
+    ).toEqual([viewed(CINEMATIC_STUDIO_APP_SLUG), viewed('apps/reshoot')])
+    expect(appModels.find((app) => app.appId === 'studio')?.slug).toBe(
+      CINEMATIC_STUDIO_APP_SLUG
+    )
   })
 
   it('does not offer to generate when no model can run', () => {
