@@ -92,24 +92,13 @@ const pillClass =
     <div class="flex flex-col gap-3 px-3">
       <!-- The mark over the artwork already says who answers for this, so the
           line under it is the card's own name and nothing else. -->
-      <div class="relative">
-        <h3
-          class="truncate text-xs font-medium text-content-bright transition-opacity duration-200 group-hover:opacity-0 group-focus-visible:opacity-0 lg:text-sm"
-          :title="model.name"
-          data-testid="model-card-name"
-        >
-          {{ model.name }}
-        </h3>
-        <!-- The whole name arrives over the card rather than inside it: a
-          name that grew the card would push every neighbour in its row. -->
-        <span
-          class="pointer-events-none absolute -inset-x-2 top-0 z-10 rounded-lg bg-hub-surface-hover px-2 pb-1 text-xs font-medium text-content-bright opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 lg:text-sm"
-          aria-hidden="true"
-          data-testid="model-card-full-name"
-        >
-          {{ model.name }}
-        </span>
-      </div>
+      <h3
+        class="truncate text-xs font-medium text-content-bright lg:text-sm"
+        :title="model.name"
+        data-testid="model-card-name"
+      >
+        {{ model.name }}
+      </h3>
       <div class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden">
         <span :class="pillClass" data-testid="model-card-task">
           {{ taskLabel }}
