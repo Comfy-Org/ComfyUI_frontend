@@ -133,43 +133,76 @@ async function initiateSubscriptionCheckout(
 
   const data = await response.json()
 
-  if (data.checkout_url) {
-    const pendingAttempt = createPendingSubscriptionCheckoutAttempt({
-      tier: tierKey,
-      cycle: currentBillingCycle,
-      checkout_type: 'new',
-      payment_intent_source: paymentIntentSource,
-      owner_id: userId.value ?? undefined,
-      workspace_id: useTeamWorkspaceStore().activeWorkspaceId
-    })
+  completeSubscriptionCheckout(data.checkout_url, {
+    tierKey,
+    currentBillingCycle,
+    paymentIntentSource,
+    openInNewTab,
+    userId: userId.value,
+    checkoutAttribution,
+    telemetry
+  })
+}
 
-    if (userId.value) {
-      telemetry?.trackBeginCheckout(
-        withPendingCheckoutAttemptId(
-          {
-            user_id: userId.value,
-            tier: tierKey,
-            cycle: currentBillingCycle,
-            checkout_type: 'new',
-            ...(paymentIntentSource
-              ? { payment_intent_source: paymentIntentSource }
-              : {}),
-            ...checkoutAttribution
-          },
-          pendingAttempt
-        )
+function completeSubscriptionCheckout(
+  checkoutUrl: string | undefined,
+  context: {
+    tierKey: TierKey
+    currentBillingCycle: BillingCycle
+    paymentIntentSource?: PaymentIntentSource
+    openInNewTab: boolean
+    userId: string | null | undefined
+    checkoutAttribution: CheckoutAttributionMetadata
+    telemetry: ReturnType<typeof useTelemetry>
+  }
+) {
+  if (!checkoutUrl) return
+
+  const {
+    tierKey,
+    currentBillingCycle,
+    paymentIntentSource,
+    openInNewTab,
+    userId,
+    checkoutAttribution,
+    telemetry
+  } = context
+
+  const pendingAttempt = createPendingSubscriptionCheckoutAttempt({
+    tier: tierKey,
+    cycle: currentBillingCycle,
+    checkout_type: 'new',
+    payment_intent_source: paymentIntentSource,
+    owner_id: userId ?? undefined,
+    workspace_id: useTeamWorkspaceStore().activeWorkspaceId
+  })
+
+  if (userId) {
+    telemetry?.trackBeginCheckout(
+      withPendingCheckoutAttemptId(
+        {
+          user_id: userId,
+          tier: tierKey,
+          cycle: currentBillingCycle,
+          checkout_type: 'new',
+          ...(paymentIntentSource
+            ? { payment_intent_source: paymentIntentSource }
+            : {}),
+          ...checkoutAttribution
+        },
+        pendingAttempt
       )
-    }
+    )
+  }
 
-    if (openInNewTab) {
-      const checkoutWindow = window.open(data.checkout_url, '_blank')
-      if (!checkoutWindow) {
-        return
-      }
-      persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
-    } else {
-      persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
-      globalThis.location.href = data.checkout_url
+  if (openInNewTab) {
+    const checkoutWindow = window.open(checkoutUrl, '_blank')
+    if (!checkoutWindow) {
+      return
     }
+    persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
+  } else {
+    persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
+    globalThis.location.href = checkoutUrl
   }
 }
