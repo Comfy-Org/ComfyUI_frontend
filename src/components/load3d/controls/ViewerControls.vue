@@ -23,6 +23,7 @@ import { useI18n } from 'vue-i18n'
 
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { LOAD3D_VIEWER_CONTENT_CLASS } from '@/components/load3d/load3dViewerDialog'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -43,8 +44,7 @@ const openIn3DViewer = () => {
     dialogComponentProps: {
       renderer: 'reka',
       size: 'full',
-      contentClass:
-        'w-[80vw] max-w-[min(80vw,calc(100vw-var(--workspace-inset-right,0px)-1rem))] h-[80vh] max-h-[80vh]',
+      contentClass: LOAD3D_VIEWER_CONTENT_CLASS,
       maximizable: true,
       onClose: async () => {
         await useLoad3dService().handleViewerClose(props.node)
