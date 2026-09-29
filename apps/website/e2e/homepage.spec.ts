@@ -280,7 +280,7 @@ test.describe('Get started section links @smoke', () => {
 })
 
 test.describe('Model discovery row @interaction', () => {
-  test('a hovered workflow card gives its whole name', async ({
+  test('a hovered or focused workflow card gives its whole name', async ({
     page,
     context
   }) => {
@@ -325,11 +325,14 @@ test.describe('Model discovery row @interaction', () => {
 
     const card = cards.nth(cut)
     const name = card.locator('span[title]')
+    const overflow = () =>
+      name.evaluate((element) => element.scrollWidth - element.clientWidth)
     await card.hover()
-    await expect
-      .poll(() =>
-        name.evaluate((element) => element.scrollWidth - element.clientWidth)
-      )
-      .toBeLessThanOrEqual(1)
+    await expect.poll(overflow).toBeLessThanOrEqual(1)
+
+    await page.mouse.move(0, 0)
+    await expect.poll(overflow).toBeGreaterThan(1)
+    await card.focus()
+    await expect.poll(overflow).toBeLessThanOrEqual(1)
   })
 })
