@@ -154,7 +154,7 @@ describe('useComposer', () => {
     const { composer } = setup()
     const store = useAgentComposerStore()
 
-    composer.insert('List my saved workflows', CHIP)
+    composer.insert('List my saved workflows', { ...CHIP, locale: 'zh' })
 
     expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledTimes(1)
     expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledWith({
@@ -162,7 +162,7 @@ describe('useComposer', () => {
       prompt_index: 1,
       prompt_count: 5,
       prompt_text_hash: 'deadbeef',
-      locale: 'en',
+      locale: 'zh',
       click_id: expect.any(String),
       draft_was_empty: true
     })
