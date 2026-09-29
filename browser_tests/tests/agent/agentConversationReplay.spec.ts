@@ -113,6 +113,17 @@ test.describe(
             }, toNodeId(3))
         })
 
+        await expect(
+          agentConversation.vueNodes
+            .getWidgetByName('KSampler', 'steps')
+            .getByRole('spinbutton')
+        ).toHaveValue('30')
+        await expect(
+          agentConversation.vueNodes
+            .getWidgetByName('KSampler', 'cfg')
+            .getByRole('spinbutton')
+        ).toHaveValue('5.0')
+
         const sampler = agentConversation.vueNodes
           .getNodeLocator('3')
           .getByRole('combobox', { name: 'sampler_name', exact: true })

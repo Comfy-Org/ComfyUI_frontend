@@ -626,7 +626,7 @@ export type AgentPanelCloseSource =
   | 'topbar_button'
   | 'pagehide'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'restored' | 'topbar_button' | 'automatic_consent'
+  source: 'restored' | 'topbar_button' | 'automatic_consent' | 'activation'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
@@ -653,7 +653,10 @@ export interface AgentEntryButtonClickedMetadata extends Record<
 > {
   resulting_state: 'opened' | 'closed'
 }
-export type AgentConsentTrigger = 'first_load' | 'button_click'
+export type AgentConsentTrigger =
+  | 'first_load'
+  | 'button_click'
+  | 'first_message'
 export interface AgentConsentShownMetadata extends Record<string, unknown> {
   trigger: AgentConsentTrigger
 }

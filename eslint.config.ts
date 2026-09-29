@@ -302,8 +302,13 @@ export default defineConfig([
   importX.flatConfigs.recommended,
   importX.flatConfigs.typescript,
   {
+    // oxlint runs this rule elsewhere; it cannot see template usages in SFCs
+    files: ['**/*.vue', '**/*.astro'],
+    plugins: { 'unused-imports': unusedImports },
+    rules: { 'unused-imports/no-unused-imports': 'error' }
+  },
+  {
     plugins: {
-      'unused-imports': unusedImports,
       // @ts-expect-error Type incompatibility in i18n plugin
       '@intlify/vue-i18n': pluginI18n
     },
@@ -314,7 +319,6 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-imports': 'error',
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
-      'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
       // Prohibit dark-theme: and dark: prefixes
       'vue/no-restricted-class': ['error', '/^dark(-theme)?:/'],
