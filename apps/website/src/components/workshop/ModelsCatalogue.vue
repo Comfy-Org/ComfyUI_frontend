@@ -7,7 +7,7 @@ import type {
   WorkflowWorkshopModel,
   WorkshopModel
 } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopHero from './WorkshopHero.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
@@ -75,6 +75,14 @@ const activeTab = computed(() =>
   availableTabs.value.includes(selectedTab.value) ? selectedTab.value : 'models'
 )
 
+// Each tab says what its own listing is for, in Eric's words.
+const SUBTITLE_KEY = {
+  models: 'workshop.hero.subtitle',
+  workflows: 'workshop.catalogue.workflowsSubtitle',
+  apps: 'workshop.catalogue.appsSubtitle'
+} as const satisfies Record<CatalogueTab, TranslationKey>
+const subtitleKey = computed(() => SUBTITLE_KEY[activeTab.value])
+
 const focusTabs = ref(false)
 function changeTab(tab: CatalogueTab) {
   focusTabs.value = Boolean(
@@ -112,14 +120,7 @@ watch(
     v-if="!inSection"
     :eyebrow="t('workshop.catalogue.eyebrow', locale)"
     :heading="t('workshop.hero.heading', locale)"
-    :subtitle="
-      t(
-        activeTab === 'models'
-          ? 'workshop.hero.subtitle'
-          : 'workshop.catalogue.subtitle',
-        locale
-      )
-    "
+    :subtitle="t(subtitleKey, locale)"
   />
   <WorkshopModelsGrid
     v-if="activeTab === 'models'"
