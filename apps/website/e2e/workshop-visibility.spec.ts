@@ -26,7 +26,12 @@ test('server HTML links the model catalogue from every locale', async ({
   for (const path of ['/', '/pricing/', '/zh-CN/', '/zh-CN/pricing/']) {
     const response = await request.get(path)
     expect(response.ok()).toBe(true)
-    expect(await response.text()).toContain('href="/models/"')
+    const html = await response.text()
+    const footer = html.slice(
+      html.indexOf('<footer'),
+      html.indexOf('</footer>')
+    )
+    expect(footer).toContain('href="/models/"')
   }
 })
 
