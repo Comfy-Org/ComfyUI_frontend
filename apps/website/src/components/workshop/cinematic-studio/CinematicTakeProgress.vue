@@ -10,10 +10,7 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const LONG_WAIT_MS = 30_000
 
-const {
-  take,
-  locale = 'en'
-} = defineProps<{
+const { take, locale = 'en' } = defineProps<{
   take: Take
   locale?: Locale
 }>()
