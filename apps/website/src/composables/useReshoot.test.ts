@@ -120,6 +120,25 @@ describe('useReshoot', () => {
     expect(reshoot.depth.value).toBe('ready')
   })
 
+  it('keeps Generate off while the price could not be fetched', async () => {
+    vi.mocked(transport.quote).mockRejectedValue(new Error('network down'))
+    const reshoot = start()
+    await readScene(reshoot)
+
+    expect(reshoot.depth.value).toBe('ready')
+    expect(reshoot.priceNote.value).toBeUndefined()
+    expect(reshoot.canGenerate.value).toBe(false)
+  })
+
+  it('lets the unmetered dev transport generate with no quote', async () => {
+    vi.mocked(transport.quote).mockResolvedValue(undefined)
+    const reshoot = start()
+    await readScene(reshoot)
+
+    expect(reshoot.priceNote.value).toBeUndefined()
+    expect(reshoot.canGenerate.value).toBe(true)
+  })
+
   it('keeps only the most recent scenes it read', async () => {
     const reshoot = start()
     await readScene(reshoot)

@@ -132,6 +132,12 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const takes = ref<ReshootTake[]>([EXAMPLE_TAKE])
   const selected = ref<string>('example')
   const quote = shallowRef<ReshootQuote>()
+  /**
+   * The last quote request answered. A metered transport answers with the
+   * price, the unmetered dev transport with nothing; one that failed leaves
+   * the price unknown, so Generate waits rather than run without showing it.
+   */
+  const quoteSettled = ref(false)
   const unavailable = ref(transport === undefined)
 
   const depth = computed<DepthState>(() => scene.value.phase)
@@ -165,6 +171,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       gate.value === 'ready' &&
       depth.value === 'ready' &&
       !rendering.value &&
+      quoteSettled.value &&
       quote.value?.next_run !== 'blocked'
   )
   const run = computed<ReshootRun>(() => ({
@@ -194,16 +201,19 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     const request = ++quoteRequest
     if (!transport || !session.value) {
       quote.value = undefined
+      quoteSettled.value = false
       return
     }
     try {
       const next = await transport.quote()
       if (request !== quoteRequest) return
       quote.value = next
+      quoteSettled.value = true
       unavailable.value = false
     } catch (error) {
       if (request !== quoteRequest) return
       quote.value = undefined
+      quoteSettled.value = false
       if (error instanceof ReshootError && error.code === 'app_unavailable')
         unavailable.value = true
     }
