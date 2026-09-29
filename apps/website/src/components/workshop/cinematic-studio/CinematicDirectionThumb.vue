@@ -15,6 +15,7 @@ const { option } = defineProps<{
         v-for="(color, stripe) in option.palette"
         :key="stripe"
         class="h-full flex-1"
+        data-testid="direction-thumb-stripe"
         :style="{ backgroundColor: color }"
       />
     </template>
@@ -24,10 +25,12 @@ const { option } = defineProps<{
       alt=""
       loading="lazy"
       class="size-full object-cover"
+      data-testid="direction-thumb-frame"
     />
     <span
       v-else
       class="grid size-full place-items-center bg-transparency-white-t4 text-primary-warm-gray"
+      data-testid="direction-thumb-auto"
     >
       <CircleDashed class="size-4" />
     </span>
