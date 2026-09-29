@@ -167,7 +167,6 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
     const measurement = await comfyPage.perf.stopMeasuring(
       'minimap-progress-execution-cadence'
     )
-    recordMeasurement(measurement)
     const instrumentation = await cleanupMinimapInstrumentation(comfyPage)
 
     const finalProgress = await comfyPage.page.evaluate(() => {
@@ -182,6 +181,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
       finalUpdate % 2 === 0 ? undefined : finalUpdate / UPDATE_COUNT
     expect(finalProgress).toBe(expectedProgress)
     expectInstrumentationCoverage(instrumentation)
+    recordMeasurement(measurement)
   })
 
   test('node geometry cadence', async ({ comfyPage }) => {
@@ -209,7 +209,6 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
     const measurement = await comfyPage.perf.stopMeasuring(
       'minimap-geometry-cadence'
     )
-    recordMeasurement(measurement)
     const instrumentation = await cleanupMinimapInstrumentation(comfyPage)
 
     const finalX = await comfyPage.page.evaluate(() => {
@@ -221,6 +220,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
     })
     expect(finalX).toBe(initialX + UPDATE_COUNT)
     expectInstrumentationCoverage(instrumentation)
+    recordMeasurement(measurement)
   })
 
   test('node topology cadence', async ({ comfyPage }) => {
@@ -267,7 +267,6 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
     const measurement = await comfyPage.perf.stopMeasuring(
       'minimap-topology-cadence'
     )
-    recordMeasurement(measurement)
     const instrumentation = await cleanupMinimapInstrumentation(comfyPage)
 
     const finalCount = await comfyPage.page.evaluate(() => {
@@ -277,5 +276,6 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
     })
     expect(finalCount).toBe(initialCount)
     expectInstrumentationCoverage(instrumentation)
+    recordMeasurement(measurement)
   })
 })
