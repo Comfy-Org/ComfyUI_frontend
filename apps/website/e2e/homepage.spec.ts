@@ -252,7 +252,12 @@ test.describe('Product cards links @smoke', () => {
     })
     const products = section.getByRole('group', { name: 'Products' })
 
-    for (const href of ['/download', '/cloud', '/platform', '/enterprise']) {
+    for (const href of [
+      '/download/',
+      '/cloud/',
+      '/platform/',
+      '/enterprise/'
+    ]) {
       await expect(products.locator(`a[href="${href}"]`)).toBeVisible()
     }
   })

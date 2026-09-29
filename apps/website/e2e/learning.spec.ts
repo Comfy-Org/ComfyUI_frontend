@@ -319,7 +319,7 @@ test.describe('Learning tutorial page @smoke', () => {
       breadcrumb.getByRole('link', {
         name: t(`learning.categories.${firstTutorial.category}.label`, 'en')
       })
-    ).toHaveAttribute('href', `/learning/${firstTutorial.category}`)
+    ).toHaveAttribute('href', `/learning/${firstTutorial.category}/`)
     await expect(breadcrumb.getByText(firstTutorial.title.en)).toBeVisible()
   })
 

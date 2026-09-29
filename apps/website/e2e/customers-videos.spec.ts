@@ -29,7 +29,7 @@ test.describe('Customer watch pages @smoke', () => {
       )
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
         'href',
-        `https://comfy.org${customerVideoPath(story.slug)}/`
+        `https://comfy.org${customerVideoPath(story.slug)}`
       )
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(
         story.title
@@ -119,7 +119,7 @@ test.describe('Customer watch pages @smoke', () => {
     ).toBeVisible()
     expect(silverside.relatedStorySlug).toBe('svedka-silverside')
     await expect(
-      page.locator(`a[href="/customers/${silverside.relatedStorySlug}"]`, {
+      page.locator(`a[href="/customers/${silverside.relatedStorySlug}/"]`, {
         hasText: t('customers.watch.readWrittenStory', 'en')
       })
     ).toBeVisible()
