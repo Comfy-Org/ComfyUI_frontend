@@ -85,7 +85,7 @@ test.describe('GitHub link before an app repo is published', () => {
     }) => {
       await mockFlags(context, { apps: true, workflows: false })
       await page.goto(path)
-      await expect(page.getByText('GitHub · Coming soon').first()).toBeVisible()
+      await expect(page.getByText('GitHub · Coming soon')).toHaveCount(1)
       await expect(
         page.getByRole('link', { name: 'View on GitHub' })
       ).toHaveCount(0)
