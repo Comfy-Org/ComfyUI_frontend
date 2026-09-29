@@ -45,6 +45,10 @@ export interface CinematicModel {
   readonly firstFrameVideo?: CinematicVideoCapabilities
 }
 
+// GPT Image 2, 2.5 Flare and 2.5 Sunburst are left out until their Router
+// contracts are refreshed: the Router now takes `image` on the same call for
+// edits, but the pinned contracts have no image field, so here they could
+// only run without references.
 const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
   'byteplus--seedream-5-pro--generate-images': '/icons/ai-models/bytedance.svg',
   'vertexai--gemini-3-pro-image--generate-images':
@@ -58,10 +62,6 @@ const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
     '/icons/ai-models/gemini.svg',
   'qwen--qwen-image-3.0-text-to-image--generate-images':
     '/icons/ai-models/qwen.svg',
-  'openai--gpt-image-2--generate-images': '/icons/ai-models/openai.svg',
-  'openai--gpt-image-2.5-flare--generate-images': '/icons/ai-models/openai.svg',
-  'openai--gpt-image-2.5-sunburst--generate-images':
-    '/icons/ai-models/openai.svg',
   'xai--grok-imagine-image-2.0--generate-images': '/icons/ai-models/grok.svg',
   'recraft--v4.1-text-to-image--generate-images': '/icons/ai-models/recraft.svg'
 }

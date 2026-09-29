@@ -1131,6 +1131,58 @@ describe('CinematicStudio', () => {
     expect(sent(call).references).toEqual([expect.any(File)])
   })
 
+  describe('in the side panel', () => {
+    function renderPanel() {
+      render(CinematicStudioPanel, {
+        props: { models: [...models, ...videoModels] }
+      })
+      return userEvent.setup()
+    }
+
+    it('offers a finished still as a reference and reruns with it', async () => {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderPanel()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await screen.findByAltText(/A diner at dawn/)
+
+      expect(screen.getByTestId('cinematic-take-overlay')).toBeInTheDocument()
+      await user.click(
+        screen.getByRole('button', {
+          name: tc('cinematic.stage.useAsReference')
+        })
+      )
+      await user.click(
+        screen.getByRole('button', { name: tc('cinematic.stage.again') })
+      )
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+      expect(sent(vi.mocked(router_render).mock.calls[1]).references).toEqual([
+        expect.any(File)
+      ])
+    })
+
+    it('animates a finished still on the image-to-video operation', async () => {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderPanel()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await user.click(
+        await screen.findByRole('button', { name: 'Animate image' })
+      )
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+      const call = vi.mocked(router_render).mock.calls[1]
+      expect(call[0]).toBe(videoModels[0].firstFrameSlug)
+      expect(sent(call).references).toEqual([expect.any(File)])
+    })
+  })
+
   describe('reusing a still the page cannot read', () => {
     async function shootAtProvider() {
       vi.mocked(router_render).mockImplementation(async (slug) =>

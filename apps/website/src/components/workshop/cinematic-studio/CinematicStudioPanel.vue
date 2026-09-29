@@ -56,6 +56,8 @@ const {
   estimate,
   memberWorkspace,
   choose,
+  animate,
+  useAsReference: useTake,
   generate: generateShot
 } = useCinematicShot(models)
 reportStudioBusy(() => studio.rendering.value)
@@ -96,6 +98,19 @@ function generate() {
   closePicker()
   generateShot()
   output.value?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+}
+
+// A finished take goes back into the panel: as a character reference for
+// the next still, or as the first frame of a clip.
+const takeError = ref(false)
+async function useAsReference(url: string, name: string) {
+  takeError.value = !(await useTake(url, name))
+}
+const canAnimate = models.some((option) => !!option.firstFrameSlug)
+async function animateTake(url: string, name: string) {
+  closePicker()
+  takeError.value = !(await animate(url, name))
+  if (!takeError.value) document.getElementById('cinematic-scene')?.focus()
 }
 </script>
 
@@ -168,14 +183,26 @@ function generate() {
         ref="output"
         class="relative flex min-w-0 flex-col lg:sticky lg:top-26 lg:self-start"
       >
+        <p
+          v-if="takeError"
+          role="status"
+          class="mb-2 text-xs text-primary-comfy-canvas"
+        >
+          {{ tc('cinematic.references.unreadable', locale) }}
+        </p>
         <CinematicStageCard
           :reel="studio.reel.value"
           :aspect
           :models
           :member-workspace="memberWorkspace"
+          :can-animate="canAnimate"
+          :can-reference="mode === 'image'"
           :locale
           @select="studio.select"
           @retry="studio.retry"
+          @again="generate"
+          @reference="useAsReference"
+          @animate="animateTake"
         />
       </div>
       <div
