@@ -16,7 +16,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import FeaturedBannerPagination from './FeaturedBannerPagination.vue'
 import FeaturedCarousel from './FeaturedCarousel.vue'
-import FeaturedNowShowing from './FeaturedNowShowing.vue'
 import FeaturedSlideCopy from './FeaturedSlideCopy.vue'
 
 /**
@@ -196,20 +195,14 @@ const fill = computed(() =>
           />
         </FeaturedCarousel>
 
-        <FeaturedNowShowing
-          :title="active.title"
-          :kind="active.kind"
-          :href="active.href"
-        >
-          <FeaturedBannerPagination
-            v-if="slides.length > 1"
-            :slides
-            :active-index="activeIndex"
-            :fill
-            aside
-            @go="goTo"
-          />
-        </FeaturedNowShowing>
+        <FeaturedBannerPagination
+          v-if="slides.length > 1"
+          :slides
+          :active-index="activeIndex"
+          :fill
+          aside
+          @go="goTo"
+        />
       </div>
     </template>
 

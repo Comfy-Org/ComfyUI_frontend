@@ -42,25 +42,20 @@ test.describe('Models catalog', () => {
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
 
-  test('opens the model from the banner beside the pagination bars', async ({
+  test('a picture beside the open one becomes the open one', async ({
     page
   }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await page.goto('/models/')
-    const strip = page.getByTestId('featured-pagination')
-    const card = page.getByTestId('featured-slide')
-    const href = await page
-      .getByTestId('featured-slide-link')
-      .getAttribute('href')
-    const [bars, area] = [await strip.boundingBox(), await card.boundingBox()]
-    if (!href || !bars || !area)
-      throw new Error('Featured banner is not laid out')
+    const neighbour = page.getByTestId('featured-neighbour').first()
+    // Hovering stops the rotation, so the name read here is the name clicked.
+    await neighbour.hover()
+    const name = (await neighbour.textContent())?.trim()
+    if (!name) throw new Error('The carousel shows no neighbouring slide')
 
-    // The strip that holds the bars leaves a wide empty stretch beside them,
-    // and that stretch is still the card's link.
-    await page.mouse.click(bars.x - 40, bars.y + bars.height / 2)
+    await neighbour.click()
 
-    await expect(page).toHaveURL(new URL(href, page.url()).href)
+    await expect(page.getByTestId('featured-now-showing')).toContainText(name)
   })
 
   test('keeps every pagination bar inside the banner on a phone', async ({

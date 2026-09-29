@@ -327,19 +327,19 @@ describe('FeaturedBanner', () => {
     expect(screen.queryByTestId('featured-now-showing')).toBeNull()
   })
 
-  it('names the slide beside the pitch and keeps its markers in that strip', () => {
+  it('names the slide under its own picture, with the kind beside the name', () => {
     render(FeaturedBanner, {
       props: { slides: modelSlides([base, kling], 'en'), pitch }
     })
 
     const showing = screen.getByTestId('featured-now-showing')
-    expect(showing.contains(screen.getByTestId('featured-pagination'))).toBe(
-      true
+    expect(within(showing).getByText('Flux')).toBeTruthy()
+    expect(within(showing).getByText('Text to Image')).toBeTruthy()
+    // Without the slide's own copy beside it, the picture the name sits under
+    // is the only way into the slide that a keyboard reaches.
+    expect(screen.getByTestId('featured-slide-link')).toHaveAttribute(
+      'href',
+      '/models/flux/'
     )
-    // Without the slide's own copy beside it, this name is the only way into
-    // the slide that a keyboard reaches.
-    expect(
-      within(showing).getByRole('link', { name: 'Flux · Text to Image' })
-    ).toHaveAttribute('href', '/models/flux/')
   })
 })
