@@ -17,9 +17,9 @@ const i18n = createI18n({
 })
 
 describe('NodeHelpPage', () => {
-  it('closes the sidebar panel from the close button', async () => {
+  it('closes the help page and the sidebar panel from the close button', async () => {
     useSidebarTabStore().activeSidebarTabId = 'node-library'
-    render(NodeHelpPage, {
+    const { emitted } = render(NodeHelpPage, {
       props: {
         node: new ComfyNodeDefImpl({
           name: 'KSampler',
@@ -44,5 +44,6 @@ describe('NodeHelpPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Close sidebar' }))
 
     expect(useSidebarTabStore().activeSidebarTabId).toBeNull()
+    expect(emitted('close')).toHaveLength(1)
   })
 })
