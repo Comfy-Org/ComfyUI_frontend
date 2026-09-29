@@ -111,7 +111,7 @@ describe('subscriptionCheckoutTracker', () => {
     }
   )
 
-  it('accepts bounded clock skew without discarding a checkout attempt', () => {
+  it('persists bounded clock skew as the current start time', () => {
     localStorage.setItem(
       PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
       JSON.stringify({
@@ -124,7 +124,15 @@ describe('subscriptionCheckoutTracker', () => {
     )
 
     expect(getPendingSubscriptionCheckoutAttempt()).toEqual(
-      expect.objectContaining({ attempt_id: 'future-attempt' })
+      expect.objectContaining({
+        attempt_id: 'future-attempt',
+        started_at_ms: Date.now()
+      })
+    )
+    vi.advanceTimersByTime(60_000)
+
+    expect(getPendingSubscriptionCheckoutAttempt()?.started_at_ms).toBe(
+      Date.now() - 60_000
     )
   })
 

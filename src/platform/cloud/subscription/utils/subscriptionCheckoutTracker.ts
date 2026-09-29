@@ -246,7 +246,7 @@ const normalizeAttempt = (
 
   return {
     attempt_id: value.attempt_id,
-    started_at_ms: value.started_at_ms,
+    started_at_ms: Math.min(value.started_at_ms, Date.now()),
     tier: value.tier,
     cycle: value.cycle,
     checkout_type: value.checkout_type,
@@ -276,6 +276,20 @@ export const clearPendingSubscriptionCheckoutAttempt = (): void => {
   dispatchPendingCheckoutChangeEvent()
 }
 
+const persistClampedStartTime = (
+  storage: CheckoutStorage,
+  attempt: PendingSubscriptionCheckoutAttempt
+) => {
+  try {
+    storage.setItem(
+      PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+      JSON.stringify(attempt)
+    )
+  } catch {
+    return
+  }
+}
+
 export const getPendingSubscriptionCheckoutAttempt =
   (): PendingSubscriptionCheckoutAttempt | null => {
     const storage = getStorage()
@@ -302,6 +316,13 @@ export const getPendingSubscriptionCheckoutAttempt =
       if (!attempt || isExpired(attempt)) {
         clearPendingSubscriptionCheckoutAttempt()
         return null
+      }
+
+      if (
+        isUnknownRecord(parsed) &&
+        parsed.started_at_ms !== attempt.started_at_ms
+      ) {
+        persistClampedStartTime(storage, attempt)
       }
 
       return attempt
