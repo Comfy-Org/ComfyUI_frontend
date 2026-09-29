@@ -46,9 +46,7 @@ const remoteConfigModule: typeof realRemoteConfig = {
   remoteConfigRevision: testScopedRef(0),
   remoteConfigErrorStatus: testScopedRef(null),
   isAuthenticatedConfigLoaded: computed(
-    () =>
-      authenticatedRemoteConfigStateRef.value === 'authenticated' ||
-      remoteConfigStateRef.value === 'authenticated'
+    () => authenticatedRemoteConfigStateRef.value === 'authenticated'
   ),
   configValueOrDefault(remoteConfig, key, defaultValue) {
     return remoteConfig[key] || defaultValue
