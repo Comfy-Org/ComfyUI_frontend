@@ -1,10 +1,11 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   createNodeExecutionId,
@@ -1034,5 +1035,24 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     expect(mockNode.imgs).toEqual([mockImg])
     expect(mockNode.imageIndex).toBe(0)
+  })
+})
+
+describe('nodeOutputStore canvas invalidation', () => {
+  const locator = createNodeLocatorId(null, toNodeId(7))
+
+  it('dirties the canvas on output, preview, and revoke writes', () => {
+    const store = useNodeOutputStore()
+    const setDirty = vi.fn()
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({ setDirty })
+
+    store.setNodeOutputs(createMockNode({ id: 7 }), 'img.png')
+    expect(setDirty).toHaveBeenCalledTimes(1)
+
+    store.setNodePreviewsByLocatorId(locator, ['blob:x'])
+    expect(setDirty).toHaveBeenCalledTimes(2)
+
+    store.revokePreviewsByLocatorId(locator)
+    expect(setDirty).toHaveBeenCalledTimes(3)
   })
 })
