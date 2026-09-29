@@ -50,7 +50,7 @@ const TONE = {
 } as const
 
 function frameTone(take: Take): string | undefined {
-  if (take.status === 'rendering') return 'bg-primary-comfy-ink-light'
+  if (take.status === 'rendering') return 'bg-black/20'
   if (take.status === 'cancelled') return TONE.neutral
   if (take.status !== 'failed') return undefined
   if (take.reason === 'policy' || take.reason === 'validation')

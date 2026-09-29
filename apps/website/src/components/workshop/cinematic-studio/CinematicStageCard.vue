@@ -52,9 +52,22 @@ const siblings = computed(() =>
     :aria-label="tc('cinematic.stage.label', locale)"
   >
     <header
-      class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+      class="flex min-h-11 items-center justify-between gap-3 border-b border-transparency-white-t8 px-5 py-1"
+      data-testid="cinematic-output-header"
     >
-      {{ t('workshop.output.title', locale) }}
+      <span
+        class="shrink-0 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+      >
+        {{ t('workshop.output.title', locale) }}
+      </span>
+      <CinematicTakeBar
+        v-if="current"
+        :current
+        :siblings
+        :model-name="modelName"
+        :locale
+        @select="emit('select', $event)"
+      />
     </header>
     <div
       class="flex min-h-72 flex-col items-center justify-center gap-4 p-4 sm:p-6 lg:min-h-112"
@@ -65,13 +78,6 @@ const siblings = computed(() =>
           :member-workspace="memberWorkspace"
           :locale
           @retry="emit('retry', current.id)"
-        />
-        <CinematicTakeBar
-          :current
-          :siblings
-          :model-name="modelName"
-          :locale
-          @select="emit('select', $event)"
         />
         <CinematicCreditSummary
           :takes="siblings"
@@ -106,6 +112,7 @@ const siblings = computed(() =>
       :takes="reel.takes"
       :current-id="current?.id"
       :locale
+      class="border-t border-transparency-white-t8 px-4 py-3"
       @select="emit('select', $event)"
     />
   </section>
