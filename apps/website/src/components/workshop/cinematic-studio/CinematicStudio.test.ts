@@ -713,6 +713,28 @@ describe('CinematicStudio', () => {
     ).toBeInTheDocument()
   })
 
+  it('drops the preset grade phrase when a palette picture arrives from the menu', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio()
+
+    await user.click(screen.getByRole('button', { name: /^Grade:/ }))
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Grade' })).getByRole('radio', {
+        name: 'Teal and orange'
+      })
+    )
+    await user.upload(
+      screen.getByTestId('cinematic-reference-palette'),
+      new File(['ref'], 'colors.png', { type: 'image/png' })
+    )
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+
+    await screen.findByAltText(/A diner at dawn/)
+    const shot = sent(vi.mocked(router_render).mock.calls[0])
+    expect(shot.prompt).not.toContain('teal and orange grade')
+  })
+
   it('keeps the camera picker open across columns until clicked away', async () => {
     const user = renderStudio()
 

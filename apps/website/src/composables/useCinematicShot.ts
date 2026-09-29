@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, shallowRef, watchEffect } from 'vue'
+import { computed, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
 
 import type { CinematicCopyKey } from '../lib/workshop/cinematic-studio/copy'
 
@@ -81,6 +81,13 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const firstFrame = shallowRef<StudioImage>()
   const lastFrame = shallowRef<StudioImage>()
   const sourceVideo = shallowRef<StudioImage>()
+
+  // The colour comes from one place. A picture can arrive through the Grade
+  // picker or the composer's references menu, and either way it stands in for
+  // the preset, whose phrase would otherwise contradict it in the prompt.
+  watch(palette, (picture) => {
+    if (picture) direction.value = { ...direction.value, grade: 'auto' }
+  })
 
   onMounted(() => {
     const requested = new URLSearchParams(window.location.search).get('model')
