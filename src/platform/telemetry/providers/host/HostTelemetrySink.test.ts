@@ -278,7 +278,7 @@ describe('HostTelemetrySink', () => {
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
           input_method: 'suggestion',
-          starter_prompt_id: 'list_workflows',
+          starter_prompt_id: 'slot_2',
           starter_prompt_click_id: 'click-1'
         }),
       properties: {
@@ -288,7 +288,7 @@ describe('HostTelemetrySink', () => {
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
         input_method: 'suggestion',
-        starter_prompt_id: 'list_workflows',
+        starter_prompt_id: 'slot_2',
         starter_prompt_click_id: 'click-1'
       }
     },
@@ -320,7 +320,7 @@ describe('HostTelemetrySink', () => {
       name: TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentStarterPromptClicked({
-          prompt_id: 'explain_selected_node',
+          prompt_id: 'slot_4',
           prompt_index: 3,
           prompt_count: 5,
           prompt_text_hash: 'deadbeef',
@@ -329,7 +329,7 @@ describe('HostTelemetrySink', () => {
           draft_was_empty: false
         }),
       properties: {
-        prompt_id: 'explain_selected_node',
+        prompt_id: 'slot_4',
         prompt_index: 3,
         prompt_count: 5,
         prompt_text_hash: 'deadbeef',

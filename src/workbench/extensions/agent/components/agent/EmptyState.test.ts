@@ -16,20 +16,20 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 const PROMPTS = [
   {
-    id: 'generate_image',
+    id: 'slot_1',
     text: 'Generate a realistic portrait of an astronaut'
   },
   {
-    id: 'list_workflows',
+    id: 'slot_2',
     text: 'An image-to-video workflow that fits my GPU'
   },
-  { id: 'find_workflow', text: 'Explain the selected nodes' },
+  { id: 'slot_3', text: 'Explain the selected nodes' },
   {
-    id: 'explain_selected_node',
+    id: 'slot_4',
     text: 'Help me install the missing nodes for this workflow'
   },
   {
-    id: 'build_video_workflow',
+    id: 'slot_5',
     text: 'Fix the errors in this workflow'
   }
 ] as const
@@ -55,7 +55,7 @@ describe('EmptyState', () => {
       [
         prompt,
         {
-          promptId: 'build_video_workflow',
+          promptId: 'slot_5',
           promptIndex: 4,
           promptCount: 5,
           promptTextHash: '2f8b1ba4',
@@ -72,16 +72,34 @@ describe('EmptyState', () => {
       global: { plugins: [i18n] }
     })
 
-    expect(
-      screen.getByRole('button', {
-        name: 'Turn the product image into a short ad'
-      })
-    ).toBeVisible()
+    const productAdPrompt = screen.getByRole('button', {
+      name: 'Turn the product image into a short ad'
+    })
+
+    expect(productAdPrompt).toBeVisible()
+    expect(screen.getByTestId('starter-prompt-icon-1')).toHaveClass(
+      'icon-[lucide--video]'
+    )
     expect(
       screen.queryByRole('button', {
         name: 'Help me install the missing nodes for this workflow'
       })
     ).not.toBeInTheDocument()
+  })
+
+  it('matches local-only prompt icons to their copy', () => {
+    render(EmptyState, {
+      global: { plugins: [i18n] }
+    })
+
+    const missingNodesPrompt = screen.getByRole('button', {
+      name: 'Help me install the missing nodes for this workflow'
+    })
+
+    expect(missingNodesPrompt).toBeVisible()
+    expect(screen.getByTestId('starter-prompt-icon-3')).toHaveClass(
+      'icon-[lucide--puzzle]'
+    )
   })
 
   it.for(PROMPTS.map((prompt, index) => ({ ...prompt, index })))(
@@ -119,10 +137,7 @@ describe('EmptyState', () => {
 
     expect(
       emitted().insert.map((call) => (call as unknown[])[1])
-    ).toMatchObject([
-      { promptId: 'generate_image' },
-      { promptId: 'list_workflows' }
-    ])
+    ).toMatchObject([{ promptId: 'slot_1' }, { promptId: 'slot_2' }])
   })
 
   it('distinguishes the copy a click was made against, without carrying it', async () => {

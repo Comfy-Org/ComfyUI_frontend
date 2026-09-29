@@ -14,11 +14,11 @@ import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
  * borrowing a neighbour's identity.
  */
 export const STARTER_PROMPT_IDS = [
-  'generate_image',
-  'list_workflows',
-  'find_workflow',
-  'explain_selected_node',
-  'build_video_workflow'
+  'slot_1',
+  'slot_2',
+  'slot_3',
+  'slot_4',
+  'slot_5'
 ] as const satisfies readonly AgentStarterPromptId[]
 
 /** What the empty state knows about the chip that was clicked. */

@@ -35,13 +35,21 @@ function onPromptClick(prompt: string, index: number): void {
   )
 }
 
-const promptIcons = [
-  'icon-[lucide--lightbulb]',
-  'icon-[lucide--list]',
-  'icon-[lucide--search]',
-  'icon-[lucide--message-circle-warning]',
-  'icon-[lucide--workflow]'
-]
+const promptIcons = isCloud
+  ? [
+      'icon-[lucide--image]',
+      'icon-[lucide--video]',
+      'icon-[lucide--message-circle-question-mark]',
+      'icon-[lucide--scan-search]',
+      'icon-[lucide--message-circle-warning]'
+    ]
+  : [
+      'icon-[lucide--image]',
+      'icon-[lucide--video]',
+      'icon-[lucide--message-circle-question-mark]',
+      'icon-[lucide--puzzle]',
+      'icon-[lucide--message-circle-warning]'
+    ]
 </script>
 
 <template>
@@ -71,6 +79,7 @@ const promptIcons = [
           @click="onPromptClick(prompt, index)"
         >
           <span
+            :data-testid="`starter-prompt-icon-${index}`"
             :class="
               cn(
                 'size-3 shrink-0 text-muted-foreground',

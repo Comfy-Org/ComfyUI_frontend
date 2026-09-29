@@ -92,7 +92,7 @@ const draftCalls: {
 
 const suggestedPrompt = 'Generate a yellow duck with a hockey mask'
 const suggestedPromptAttribution: AgentStarterPromptAttribution = {
-  promptId: 'generate_image',
+  promptId: 'slot_1',
   promptIndex: 0,
   promptCount: 5,
   promptTextHash: 'a62d17a3',

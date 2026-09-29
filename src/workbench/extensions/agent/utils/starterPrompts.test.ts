@@ -66,7 +66,7 @@ describe('starter prompt identity', () => {
     expect(
       starterPromptAttribution('Explain the selected node', 3, 5, 'zh')
     ).toEqual({
-      promptId: 'explain_selected_node',
+      promptId: 'slot_4',
       promptIndex: 3,
       promptCount: 5,
       promptTextHash: '3849a858',
