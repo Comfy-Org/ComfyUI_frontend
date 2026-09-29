@@ -13,7 +13,6 @@ import {
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -53,6 +52,16 @@ const THREAD_ID = 'b3f1c4a2-0000-4000-8000-000000000032'
 const PROMPT_TEXT = 'a shiba inu wearing sunglasses, z-image-turbo'
 const SEED_VALUE = 111111
 const EDITED_SEED_VALUE = 222222
+
+async function crdtDevEventCount(page: Page, kind: string): Promise<number> {
+  return page.evaluate(async (eventKind) => {
+    const modulePath = '/src/workbench/extensions/agent/crdt/devPanelLog.ts'
+    const { devEvents } = (await import(/* @vite-ignore */ modulePath)) as {
+      devEvents: { value: ReadonlyArray<{ kind: string }> }
+    }
+    return devEvents.value.filter((event) => event.kind === eventKind).length
+  }, kind)
+}
 
 const nodeDefs: Record<string, ComfyNodeDef> = {
   AgentClipSource: {
@@ -242,6 +251,7 @@ async function driveThroughDuplicateInsert(
   await page.setViewportSize({ width: 1920, height: 1280 })
   await page.addInitScript(() => {
     localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
+    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
   })
   await bootAgentApp(page, true, {
     settings: { 'Comfy.VueNodes.Enabled': true },
@@ -277,23 +287,23 @@ async function driveThroughDuplicateInsert(
   const host = new HostDoc(WORKFLOW_ID, { nodes: [], links: [] }, catalog)
   for (const frame of host.initialSync()) socket.send(JSON.stringify(frame))
 
-  await expect
-    .poll(() => page.evaluate(() => window.app!.graph.nodes.length))
-    .toBe(0)
+  await expect.poll(() => crdtDevEventCount(page, 'doc_subscribed')).toBe(1)
 
   // First `insert_workflow`: the agent's own first (unnecessary) tool call.
   socket.send(JSON.stringify(applyInsertWorkflow(host, 'insert-zturbo-op-a')))
   await expect.poll(() => ksamplerNodeIds(page)).toHaveLength(1)
   const [copyANodeId] = await ksamplerNodeIds(page)
+  if (!copyANodeId) throw new Error('first KSampler copy did not materialize')
 
   // Second `insert_workflow`, a DIFFERENT op id, the SAME template -- the
   // duplicate call the report's debug log caught (two disjoint
   // `insert:<opId>:root:node:<id>` namespaces holding the same 3 node ids).
   socket.send(JSON.stringify(applyInsertWorkflow(host, 'insert-zturbo-op-b')))
   await expect.poll(() => ksamplerNodeIds(page)).toHaveLength(2)
-  const copyBNodeId = (await ksamplerNodeIds(page)).find(
-    (id) => id !== copyANodeId
-  )!
+  const nodeIds = await ksamplerNodeIds(page)
+  const copyBNodeId = nodeIds.find((id) => id !== copyANodeId)
+  if (!copyBNodeId)
+    throw new Error(`second KSampler copy did not materialize: ${nodeIds}`)
 
   return {
     vueNodes: new VueNodeHelpers(page),
@@ -355,16 +365,16 @@ async function driveThroughRejectedWidgetEdit(
     .toContainEqual(expect.stringContaining('"op":"set_widget"'))
   const opsFrame = outboundFrames
     .slice(framesBeforeEdit)
-    .map(
-      (frame) =>
-        JSON.parse(frame) as {
-          type: string
-          data: { ops: Array<{ op_id: string }> }
-        }
-    )
-    .find((frame) => frame.type === 'doc_ops')
+    .find((frame) => frame.includes('"type":"doc_ops"'))
   if (!opsFrame) throw new Error('expected a doc_ops frame for the widget edit')
-  const rejectedOpId = opsFrame.data.ops[0].op_id
+  const parsedFrame = JSON.parse(opsFrame) as {
+    data?: { ops?: Array<{ op?: string; op_id?: string }> }
+  }
+  const rejectedOp = parsedFrame.data?.ops?.find((op) => op.op === 'set_widget')
+  if (!rejectedOp?.op_id)
+    throw new Error('expected the doc_ops frame to contain a set_widget op')
+  const rejectedOpId = rejectedOp.op_id
+  const resultEventsBefore = await crdtDevEventCount(page, 'doc_ops_result')
 
   socket.send(
     JSON.stringify({
@@ -385,12 +395,9 @@ async function driveThroughRejectedWidgetEdit(
     })
   )
 
-  // Give the browser's own event loop a couple of turns to run the
-  // `doc_ops_result` listener the injected WS message wakes -- it is a
-  // synchronous handler (`useAgentCrdtFollower.ts`'s `onOpsResult`), so by
-  // the time these resolve it has already run, without an arbitrary sleep.
-  await nextFrame(page)
-  await nextFrame(page)
+  await expect
+    .poll(() => crdtDevEventCount(page, 'doc_ops_result'))
+    .toBe(resultEventsBefore + 1)
 
   return { ...handles, seedInput }
 }
@@ -432,15 +439,19 @@ test.describe(
       // to stop moving (two consecutive identical reads) before comparing it
       // to copy B's, or the comparison below races the animation instead of
       // measuring the settled overlap.
-      let previousBoxA: Awaited<ReturnType<Locator['boundingBox']>> = null
+      let previousBoxes: string | null = null
       await expect
         .poll(async () => {
-          const box = await vueNodes.getNodeLocator(copyANodeId).boundingBox()
+          const boxes = await Promise.all([
+            vueNodes.getNodeLocator(copyANodeId).boundingBox(),
+            vueNodes.getNodeLocator(copyBNodeId).boundingBox()
+          ])
+          const serialized = JSON.stringify(boxes)
           const settled =
-            previousBoxA !== null &&
-            box !== null &&
-            JSON.stringify(box) === JSON.stringify(previousBoxA)
-          previousBoxA = box
+            previousBoxes !== null &&
+            boxes.every((box) => box !== null) &&
+            serialized === previousBoxes
+          previousBoxes = serialized
           return settled
         })
         .toBe(true)
@@ -489,7 +500,7 @@ test.describe(
       // inline alert on the widget or the panel) tells the human this write
       // never reached the shared document.
       test.fail()
-      await expect(new ToastHelper(page).toastErrors).toBeVisible({
+      await expect(new ToastHelper(page).toastErrors).toHaveCount(1, {
         timeout: 3_000
       })
     })

@@ -12,7 +12,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { AgentTurnAccepted,AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -111,9 +111,12 @@ export async function mockAgentTurnApi(
   await page.route('**/api/agent/run-mode', (route) =>
     route.fulfill(jsonRoute(runMode))
   )
-  await page.route('**/api/agent/threads/*/messages', (route) =>
-    route.fulfill(jsonRoute(turnAccepted))
-  )
+  await page.route('**/api/agent/threads/*/messages', (route) => {
+    if (route.request().method() === 'POST')
+      return route.fulfill(jsonRoute(turnAccepted))
+    const history: AgentMessages = []
+    return route.fulfill(jsonRoute(history))
+  })
 }
 
 export async function mockWorkflowPersistence(
