@@ -119,7 +119,7 @@ describe('CheckoutEnding', () => {
     {
       ending: { kind: 'in_progress', code: 'op_s' },
       title: 'Payment in progress',
-      body: "Your bank is still settling this payment — this can take up to a day. Nothing more is needed from you, and don't pay again: you could be charged twice.",
+      body: 'Your bank is still settling this payment. This can take up to a day. Nothing more is needed from you.',
       codeLabel:
         'If nothing has changed after 24 hours, contact support with this code:',
       support: true,
@@ -278,6 +278,24 @@ describe('CheckoutEnding', () => {
       expect(screen.queryByText(/Closing in/)).not.toBeInTheDocument()
       expect(emitted()).not.toHaveProperty('close')
     })
+  })
+
+  it('372-4951: Payment in progress warns in bold not to pay again', () => {
+    renderEnding({ kind: 'in_progress', code: 'op_s' })
+
+    const warning = screen.getByText(/you could be charged twice/)
+    expect(warning).toHaveTextContent(
+      "Don't pay again, you could be charged twice."
+    )
+    expect(
+      screen.getByText("Don't pay again", { selector: 'strong' })
+    ).toBeInTheDocument()
+  })
+
+  it('warns only while money may still move twice', () => {
+    renderEnding({ kind: 'received', code: 'op_r' })
+
+    expect(screen.queryByText(/Don't pay again/)).not.toBeInTheDocument()
   })
 
   it('mails support with the code the screen shows', () => {

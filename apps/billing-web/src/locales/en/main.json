@@ -292,7 +292,9 @@
         },
         "in_progress": {
           "title": "Payment in progress",
-          "body": "Your bank is still settling this payment — this can take up to a day. Nothing more is needed from you, and don't pay again: you could be charged twice.",
+          "body": "Your bank is still settling this payment. This can take up to a day. Nothing more is needed from you.",
+          "warning": "{dontPayAgain}, you could be charged twice.",
+          "dontPayAgain": "Don't pay again",
           "codeLabel": "If nothing has changed after 24 hours, contact support with this code:"
         },
         "received": {
