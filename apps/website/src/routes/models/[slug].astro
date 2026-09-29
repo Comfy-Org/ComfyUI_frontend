@@ -21,10 +21,9 @@ const ogImage = modelOgImage(model)
 
 <BaseLayout
   title={`${model.name} · ${t('workshop.title')} - Comfy`}
-  description={t('workshop.model.meta.description').replace(
-    '{name}',
-    model.name
-  )}
+  description={t('workshop.model.meta.description', 'en', {
+    name: model.name
+  })}
   ogImage={ogImage}
   ogImageAlt={ogImage && `${model.name} example output`}
   noindex

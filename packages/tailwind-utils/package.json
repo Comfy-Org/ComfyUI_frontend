@@ -9,7 +9,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
   "dependencies": {
     "clsx": "^2.1.1",
