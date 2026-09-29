@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Locale } from '../config/locales'
 import { LOCALE_CODES } from '../config/locales'
 import cinematicEn from '../locales/en/cinematic.json' with { type: 'json' }
+import mainEn from '../locales/en/main.json' with { type: 'json' }
 import cinematicJa from '../locales/ja/cinematic.json' with { type: 'json' }
 import reshootEn from '../locales/en/reshoot.json' with { type: 'json' }
 import reshootJa from '../locales/ja/reshoot.json' with { type: 'json' }
@@ -22,15 +23,41 @@ import {
 
 const pluralKeys: readonly string[] = ['cloudNodesLaunch.models.nodeCount']
 
+type Catalog = { [key: string]: string | Catalog }
+
+function leafMessages(tree: Catalog, prefix = ''): [string, string][] {
+  return Object.entries(tree).flatMap<[string, string]>(([key, value]) =>
+    typeof value === 'string'
+      ? [[`${prefix}${key}`, value]]
+      : leafMessages(value, `${prefix}${key}.`)
+  )
+}
+
+function valuesForPlaceholders(message: string): Record<string, string> {
+  const names = message
+    .replace(/\{'(?:[^'\\]|\\.)*'\}/g, '')
+    .matchAll(/\{\s*(\w+)\s*\}/g)
+  return Object.fromEntries([...names].map(([, name]) => [name, name]))
+}
+
 function unrenderable<Key extends string>(
-  translator: { keys: readonly Key[]; t: (key: Key, locale: Locale) => string },
+  translator: {
+    keys: readonly Key[]
+    t: (key: Key, locale: Locale, named: Record<string, string>) => string
+  },
+  english: Catalog,
   locale: Locale
 ): Key[] {
+  const englishMessages = new Map(leafMessages(english))
   return translator.keys
     .filter((key) => !pluralKeys.includes(key))
     .filter((key) => {
       try {
-        translator.t(key, locale)
+        translator.t(
+          key,
+          locale,
+          valuesForPlaceholders(englishMessages.get(key) ?? '')
+        )
         return false
       } catch {
         return true
@@ -42,7 +69,7 @@ const catalogs = [
   {
     file: 'main.json',
     unrenderable: (locale: Locale) =>
-      unrenderable({ keys: translationKeys, t }, locale)
+      unrenderable({ keys: translationKeys, t }, mainEn, locale)
   },
   {
     file: 'cinematic.json',
@@ -53,6 +80,7 @@ const catalogs = [
           'zh-CN': cinematicZhCN,
           ja: cinematicJa
         }),
+        cinematicEn,
         locale
       )
   },
@@ -65,6 +93,7 @@ const catalogs = [
           'zh-CN': reshootZhCN,
           ja: reshootJa
         }),
+        reshootEn,
         locale
       )
   },
@@ -73,6 +102,7 @@ const catalogs = [
     unrenderable: (locale: Locale) =>
       unrenderable(
         createTranslator({ en: routerEn, 'zh-CN': routerZhCN, ja: routerJa }),
+        routerEn,
         locale
       )
   }
@@ -123,9 +153,9 @@ describe('t()', () => {
     )
   })
 
-  it('keeps missing named values visible', () => {
-    expect(t('validation.minLength', 'en')).toBe(
-      'Must be at least {length} characters'
+  it('refuses a message whose named values are missing', () => {
+    expect(() => t('validation.minLength', 'en')).toThrow(
+      'Translation validation.minLength in en needs values for {length}'
     )
   })
 
@@ -170,6 +200,7 @@ describe('createTranslator', () => {
       item: 'Item {0}',
       contact: 'Write to support@comfy.org',
       nodes: '{count} node | {count} nodes',
+      unitNodes: '{count} node in {unit} | {count} nodes in {unit}',
       hero: 'Hello'
     },
     'zh-CN': {
@@ -184,8 +215,11 @@ describe('createTranslator', () => {
     )
   })
 
-  it('keeps a spaced placeholder visible when its value is missing', () => {
-    expect(catalog.t('greeting')).toBe('Hi { name }')
+  it('reads a spaced placeholder as a named value', () => {
+    expect(catalog.t('greeting', 'en', { name: 'Ada' })).toBe('Hi Ada')
+    expect(() => catalog.t('greeting')).toThrow(
+      'Translation greeting in en needs values for {name}'
+    )
   })
 
   it('refuses a list placeholder', () => {
@@ -203,6 +237,12 @@ describe('createTranslator', () => {
   it('picks plural forms by the locale plural rules', () => {
     expect(catalog.tPlural('nodes', 1, 'en')).toBe('1 node')
     expect(catalog.tPlural('nodes', 1, 'zh-CN')).toBe('1 个节点')
+  })
+
+  it('refuses a plural message with a placeholder besides {count}', () => {
+    expect(() => catalog.tPlural('unitNodes', 2)).toThrow(
+      'Translation unitNodes in en needs values for {unit}'
+    )
   })
 
   it('preserves an explicitly empty translation', () => {
@@ -230,23 +270,28 @@ describe('tAround', () => {
     ).toEqual(['{brand} in ', ''])
   })
 
-  it.for([
+  it.for<{
+    key: TranslationKey
+    slot: string
+    named: Record<string, string | number>
+    error: string
+  }>([
     {
       key: 'models.faq.whatIs.localAnswer',
       slot: 'name',
+      named: { description: 'a model', count: 3 },
       error: 'repeats slot {name}'
     },
     {
       key: 'models.list.heroTitle',
       slot: 'creators',
+      named: { name: 'Flux', brand: 'ComfyUI' },
       error: 'missing slot {creators}'
     }
-  ] as const)(
+  ])(
     'throws "$error" for a slot that is not in the message exactly once',
-    ({ key, slot, error }) => {
-      expect(() =>
-        tAround(key, 'en', slot, { description: 'a model', count: 3 })
-      ).toThrow(error)
+    ({ key, slot, named, error }) => {
+      expect(() => tAround(key, 'en', slot, named)).toThrow(error)
     }
   )
 })

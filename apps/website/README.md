@@ -42,12 +42,13 @@ and [vue-i18n message syntax](https://vue-i18n.intlify.dev/guide/essentials/synt
 as the application's `src/locales/` at the repository root:
 
 - Named placeholders: `"Show {n} models"`, filled with
-  `t('workshop.search.show', locale, { n })`. A value the caller leaves out
-  stays visible as `{n}`. List placeholders such as `{0}` are refused.
+  `t('workshop.search.show', locale, { n })`. Every placeholder needs a value;
+  list placeholders such as `{0}` are refused.
 - Plural forms separated by `|`: `"{count} node | {count} nodes"`, picked with
-  `tPlural('cloudNodesLaunch.models.nodeCount', count, locale)`. The first form
-  is used when the locale's plural category for the count is `one`, the last
-  otherwise, judged by the locale the message came from.
+  `tPlural('cloudNodesLaunch.models.nodeCount', count, locale)`, which fills
+  `{count}` and nothing else. The first form is used when the locale's plural
+  category for the count is `one`, the last otherwise, judged by the locale the
+  message came from.
 - The characters `{`, `}`, `@` and `|` are message syntax, so literal ones are
   written as `{'{'}`, `{'}'}`, `{'@'}` and `{'|'}`.
 
@@ -55,9 +56,11 @@ as the application's `src/locales/` at the repository root:
 explicitly on every call (`t(key, locale, named?)`), never switched globally,
 because the site is rendered statically per locale. Any key the requested
 locale lacks falls back to English. `t()` throws on a key the English catalog
-does not have, on an unescaped `|`, and on a message that does not compile,
-naming the key and locale. A unit test renders every message in every locale,
-so those mistakes fail `pnpm test:unit` rather than a page.
+does not have, on a placeholder the caller gives no value for, on an unescaped
+`|`, and on a message that does not compile, naming the key and locale. A unit
+test renders every message in every locale with the English message's
+placeholders filled, so those mistakes, and a translation that adds a
+placeholder English lacks, fail `pnpm test:unit` rather than a page.
 
 `main.json` is the site-wide catalog every page loads. A feature whose copy
 should ship only with its own pages keeps a catalog beside it and reads it
