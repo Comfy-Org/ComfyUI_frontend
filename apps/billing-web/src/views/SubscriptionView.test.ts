@@ -351,6 +351,26 @@ describe('SubscriptionView', () => {
     ).toBeInTheDocument()
   })
 
+  it('explains a cancel refused while an earlier payment is still open', async () => {
+    await renderSubscription({
+      capabilities: { can_cancel: true },
+      cancel: { status: 'error', code: 'OPERATION_ALREADY_PENDING' }
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel subscription' })
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm cancellation' })
+    )
+
+    expect(
+      await screen.findByText(
+        'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
+      )
+    ).toBeInTheDocument()
+  })
+
   it('explains a failed catalog read with copy of our own', async () => {
     await renderSubscription({
       plans: { status: 'error', code: 'REQUEST_FAILED' }

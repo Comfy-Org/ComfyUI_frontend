@@ -55,6 +55,8 @@ const NOT_SCHEDULED_FOR_CANCELLATION_SERVER_CODE =
   'NOT_SCHEDULED_FOR_CANCELLATION'
 const ALREADY_CANCELED_SERVER_CODE = 'ALREADY_CANCELED'
 const SUBSCRIPTION_QUOTE_STALE_SERVER_CODE = 'SUBSCRIPTION_QUOTE_STALE'
+const SUBSCRIPTION_CHANGE_IN_PROGRESS_SERVER_CODE =
+  'SUBSCRIPTION_CHANGE_IN_PROGRESS'
 
 export type SubscribeInput = z.infer<typeof zSubscribeRequest>
 
@@ -234,6 +236,16 @@ function refusedWith(failure: BillingFailure, serverCode: string): boolean {
   )
 }
 
+/**
+ * The server's refusal because another subscription operation is still open
+ * is the same answer the lifecycle gives when it sees that operation first.
+ */
+function refusedWhilePending(failure: BillingFailure): BillingFailure {
+  return refusedWith(failure, SUBSCRIPTION_CHANGE_IN_PROGRESS_SERVER_CODE)
+    ? { ...failure, code: 'OPERATION_ALREADY_PENDING' }
+    : failure
+}
+
 function mapServerCode(
   failure: BillingFailure,
   alreadyHeldCode: string
@@ -244,7 +256,7 @@ function mapServerCode(
   }
   return matchesServerCode(failure, NO_ACTIVE_SUBSCRIPTION_SERVER_CODE)
     ? coded('NO_ACTIVE_SUBSCRIPTION')
-    : failure
+    : refusedWhilePending(failure)
 }
 
 function dropEmpty(value: string | undefined): string | undefined {
@@ -363,7 +375,7 @@ export function createBillingCommands(
       }
       return refusedWith(response, SUBSCRIPTION_QUOTE_STALE_SERVER_CODE)
         ? coded('QUOTE_STALE')
-        : response
+        : refusedWhilePending(response)
     }
     const { billing_op_id, status, payment_method_url } = response.value.data
     if (status !== 'needs_payment_method') {
