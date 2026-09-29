@@ -548,5 +548,5 @@ test('@mobile stretches the catalogue tabs across the toolbar on a phone', async
     toolbar.boundingBox(),
     tabs.boundingBox()
   ])
-  expect((bar?.width ?? 0) - (group?.width ?? 0)).toBeLessThan(12)
+  expect(Math.abs((bar?.width ?? 0) - (group?.width ?? 0))).toBeLessThan(12)
 })
