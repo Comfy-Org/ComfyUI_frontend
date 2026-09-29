@@ -30,7 +30,9 @@ export function auditExampleGallery(
       )
   }
   for (const [tag] of live.matchAll(/<img\b[^>]*>/g)) {
-    const alt = /\salt="([^"]*)"/.exec(tag)?.[1]
+    const alt =
+      /\salt(?:="([^"]*)")?(?=[\s/>])/.exec(tag)?.[1] ??
+      (/\salt[\s/>]/.test(tag) ? '' : undefined)
     const src = /\ssrc="([^"]*)"/.exec(tag)?.[1]
     if (alt === undefined) errors.push(`has an image without alt: ${src}`)
     else if (alt === 'Output' || /^Sample \d+$/.test(alt))

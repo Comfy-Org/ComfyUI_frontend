@@ -73,7 +73,7 @@ describe(auditExampleGallery, () => {
       name: 'placeholder and missing alts',
       html:
         gallery(figure('Sample 1') + figure('Output')) +
-        '<img data-alt="Logo" src="y.webp">',
+        '<img data-alt="Logo" src="y.webp"><img src="z.webp" alt class="card">',
       examples: [{}, {}],
       errors: [
         'has an image with alt "Sample 1": x.webp',
