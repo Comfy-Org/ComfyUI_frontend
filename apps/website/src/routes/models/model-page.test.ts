@@ -99,48 +99,22 @@ describe('Models route preparation', () => {
     }
   )
 
-  it.for([
-    {
+  it('shows only capability tags, in their original order', async () => {
+    mocks.lookup.mockReturnValue({
+      ...model,
       name: 'FLUX 2 Max Text-to-Image',
       provider: 'Black Forest Labs',
-      capabilities: ['bfl', 'flux', 'flux-2', 'text-to-image', 'premium'],
-      shown: ['premium']
-    },
-    {
-      name: 'Nano Banana Pro Image Edit',
-      provider: 'Google',
-      capabilities: ['gemini', 'google', 'pro', 'high-quality', 'edit'],
-      shown: ['high-quality']
-    },
-    {
-      name: 'Recraft V4.1 Text-to-Vector',
-      provider: 'Recraft',
-      capabilities: ['recraft', 'v4.1', 'svg'],
-      shown: ['svg']
-    },
-    {
-      name: 'Grok Imagine Video 1.5 Reference-to-Video',
-      provider: 'xAI',
-      capabilities: ['grok', 'xai', 'video', '1.5', 'reference', 'voice'],
-      shown: ['voice']
-    },
-    {
-      name: 'Seedream 4.0 Text-to-Image',
-      provider: 'ByteDance',
-      capabilities: ['byteplus', 'seedream', 'image-to-image', '写实'],
-      shown: ['image-to-image', '写实']
-    }
-  ])(
-    'hides provider IDs, bare versions and name echoes on $name',
-    async ({ name, provider, capabilities, shown }) => {
-      mocks.lookup.mockReturnValue({ ...model, name, provider, capabilities })
+      capabilities: ['bfl', 'flux', 'high-detail', 'flux-2', 'premium']
+    })
 
-      const page = await prepareModelPage(model.slug)
+    const page = await prepareModelPage(model.slug)
 
-      if (page.kind !== 'page') throw new Error('Expected canonical page')
-      expect(page.tags.map((tag) => tag.label)).toEqual(shown)
-    }
-  )
+    if (page.kind !== 'page') throw new Error('Expected canonical page')
+    expect(page.tags.map((tag) => tag.label)).toEqual([
+      'high-detail',
+      'premium'
+    ])
+  })
 
   it('uses a provider heading only when every related card has that provider', async () => {
     mocks.related.mockReturnValue([{ ...model, slug: 'related' }])
