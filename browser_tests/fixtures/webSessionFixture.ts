@@ -9,16 +9,24 @@ import {
   WEB_SESSION,
   WEB_SESSION_COOKIE,
   WEB_SESSION_FEATURES,
+  WEB_SESSION_MINT,
   currentWorkspace
 } from '@e2e/fixtures/data/webSession'
 import { WORKSPACE_SWITCHER_WORKSPACES } from '@e2e/fixtures/data/workspaceSwitcher'
+import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
+interface TokenMint {
+  body: unknown
+  authorization: string | undefined
+  workspace: string | undefined
+}
+
 interface WebSessionFixtures {
-  tokenMints: string[]
+  tokenMints: TokenMint[]
   workspaceReads: Request[]
 }
 
@@ -29,10 +37,15 @@ interface WebSessionFixtures {
  */
 export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
   tokenMints: async ({ context }, use) => {
-    const mints: string[] = []
+    const mints: TokenMint[] = []
     context.on('request', (request) => {
       if (new URL(request.url()).pathname.startsWith('/api/auth/token')) {
-        mints.push(`${request.method()} ${request.url()}`)
+        const headers = request.headers()
+        mints.push({
+          body: request.postDataJSON(),
+          authorization: headers['authorization'],
+          workspace: headers['x-comfy-workspace-id']
+        })
       }
     })
     await use(mints)
@@ -66,6 +79,12 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
       if (route.request().method() !== 'GET') return route.fallback()
       await route.fulfill(jsonRoute(WEB_SESSION))
     })
+
+    await page.route('**/api/auth/token', (route) =>
+      route.fulfill(jsonRoute(WEB_SESSION_MINT))
+    )
+
+    await mockBilling(page, { workspaceId: 'ws-team' })
 
     await mockWorkspaceList(page, WORKSPACE_SWITCHER_WORKSPACES)
 

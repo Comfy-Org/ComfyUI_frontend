@@ -1,10 +1,13 @@
 import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+
 import {
   PROMPT_ACCEPTED,
   WEB_SESSION_COOKIE,
   WEB_SESSION_CSRF_TOKEN,
+  WEB_SESSION_MINT,
   WORKSPACE_ACCESS_DENIED
 } from '@e2e/fixtures/data/webSession'
 import {
@@ -43,6 +46,13 @@ async function postPrompt(page: Page) {
   })
 }
 
+async function runDefaultWorkflow(comfyPage: ComfyPage) {
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+  await comfyPage.workflow.loadWorkflow('default')
+  await comfyPage.toast.closeToasts()
+  await comfyPage.runButton.click()
+}
+
 async function mockPromptAccepted(page: Page) {
   await page.route('**/api/prompt', (route) =>
     route.fulfill(jsonRoute(PROMPT_ACCEPTED))
@@ -64,7 +74,7 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
       await mockPromptAccepted(page)
 
       const promptRequest = page.waitForRequest(isPromptPost)
-      await postPrompt(page)
+      await runDefaultWorkflow(comfyPage)
       const request = await promptRequest
       const headers = await request.allHeaders()
 
@@ -74,6 +84,31 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
       expect(headers['authorization']).toBeUndefined()
       expect(headers['cookie']).toContain(
         `${WEB_SESSION_COOKIE.name}=${WEB_SESSION_COOKIE.value}`
+      )
+    })
+
+    test('the prompt carries the one workspace token minted from the session', async ({
+      comfyPage,
+      tokenMints
+    }) => {
+      const page = comfyPage.page
+      await mockPromptAccepted(page)
+
+      const promptRequest = page.waitForRequest(isPromptPost)
+      await runDefaultWorkflow(comfyPage)
+      const request = await promptRequest
+
+      await expect
+        .poll(() => tokenMints)
+        .toEqual([
+          {
+            body: { workspace_id: TEAM_WORKSPACE_ID },
+            authorization: undefined,
+            workspace: TEAM_WORKSPACE_ID
+          }
+        ])
+      expect(request.postDataJSON().extra_data.auth_token_comfy_org).toBe(
+        WEB_SESSION_MINT.token
       )
     })
 
@@ -161,11 +196,15 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
     await teamRead
     await comfyPage.waitForAppReady()
 
+    expect(tokenMints, 'switch mints no workspace token').toEqual([])
+
     const promptRequest = page.waitForRequest(isPromptPost)
-    await postPrompt(page)
+    await runDefaultWorkflow(comfyPage)
     const headers = await (await promptRequest).allHeaders()
 
     expect(headers[WORKSPACE_HEADER]).toBe(TEAM_WORKSPACE_ID)
-    expect(tokenMints, 'switch mints no workspace token').toEqual([])
+    await expect
+      .poll(() => tokenMints.map(({ workspace }) => workspace))
+      .toEqual([TEAM_WORKSPACE_ID])
   })
 })
