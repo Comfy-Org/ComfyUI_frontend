@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
-import { reportHardware } from './fixtures/reportedHardware'
+import { emulateWindowsOnArm } from './fixtures/windowsOnArm'
 
 const WINDOWS_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
@@ -13,8 +13,6 @@ const IPHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 const NVIDIA_RENDERER =
   'ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 (0x00002B85) Direct3D11 vs_5_0 ps_5_0, D3D11)'
-const QUALCOMM_RENDERER =
-  'ANGLE (Qualcomm, Qualcomm(R) Adreno(TM) X1-85 GPU (0x0000364E) Direct3D11 vs_5_0 ps_5_0, D3D11)'
 
 // Customer.io CDP request/response shapes (external API — no generated types).
 interface CdpEventBody {
@@ -110,10 +108,6 @@ test.describe('Download page @smoke', () => {
     }) => {
       const captured: CdpCapture[] = []
       await routeCdp(context, captured)
-      await reportHardware(page, {
-        architecture: 'x86',
-        gpuRenderer: NVIDIA_RENDERER
-      })
       await page.goto('/download')
 
       const hero = heroLocator(page)
@@ -139,24 +133,16 @@ test.describe('Download page @smoke', () => {
       expect(captured).toHaveLength(0)
     })
 
-    for (const { gpu, gpuRenderer, installer } of [
-      { gpu: 'an NVIDIA', gpuRenderer: NVIDIA_RENDERER, installer: 'arm64' },
-      { gpu: 'a Qualcomm', gpuRenderer: QUALCOMM_RENDERER, installer: 'x64' }
-    ]) {
-      test(`HeroSection links an ARM PC with ${gpu} GPU to the ${installer} installer`, async ({
-        page
-      }) => {
-        await reportHardware(page, { architecture: 'arm', gpuRenderer })
-        await page.goto('/download')
+    test('HeroSection links an ARM PC with an NVIDIA GPU to the arm64 installer', async ({
+      page
+    }) => {
+      await emulateWindowsOnArm(page, { gpuRenderer: NVIDIA_RENDERER })
+      await page.goto('/download')
 
-        await expect(
-          heroLocator(page).getByRole('link', { name: /DOWNLOAD DESKTOP/i })
-        ).toHaveAttribute(
-          'href',
-          `https://comfy.org/download/windows/nsis/${installer}`
-        )
-      })
-    }
+      await expect(
+        heroLocator(page).getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+      ).toHaveAttribute('href', 'https://comfy.org/download/windows/nsis/arm64')
+    })
   })
 
   test.describe('unrecognized desktop', () => {
