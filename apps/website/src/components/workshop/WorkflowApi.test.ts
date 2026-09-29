@@ -1,9 +1,12 @@
 import { render, screen } from '@testing-library/vue'
-import { assert, describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { afterEach, assert, describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
 
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
 import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
+import { workflowSnippetRequest } from '../../config/workshop-workflow-snippet'
 import WorkflowApi from './WorkflowApi.vue'
 
 const model = workflowDetailsBySlug.get('workflows/animate-reference-sheet')
@@ -36,5 +39,30 @@ describe('WorkflowApi', () => {
         .getAttribute('href')
     ).toBe('https://docs.comfy.org/development/cloud/overview#quick-start')
     expect(screen.getByRole('link', { name: /API key/i })).toBeTruthy()
+  })
+  describe('downloading the API graph', () => {
+    const { createObjectURL, revokeObjectURL } = URL
+    afterEach(() => {
+      URL.createObjectURL = createObjectURL
+      URL.revokeObjectURL = revokeObjectURL
+    })
+
+    it('hands over the same graph the snippet posts', async () => {
+      const blobs: Blob[] = []
+      URL.createObjectURL = vi.fn((blob: Blob) => {
+        blobs.push(blob)
+        return 'blob:graph'
+      })
+      URL.revokeObjectURL = vi.fn()
+      render({ setup: () => () => h(WorkflowApi, { model, values }) })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Download the API graph' })
+      )
+
+      expect(JSON.parse(await blobs[0].text())).toEqual(
+        workflowSnippetRequest(model, values).prompt
+      )
+    })
   })
 })
