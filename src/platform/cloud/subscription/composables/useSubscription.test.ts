@@ -854,6 +854,49 @@ describe('useSubscription', () => {
       )
     })
 
+    it('bounds a lifecycle recovery already running at the deadline', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-hung-before-deadline',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      await vi.advanceTimersByTimeAsync(556_000)
+
+      mockGetBillingStatus.mockImplementation(
+        () => new Promise(() => undefined)
+      )
+      window.dispatchEvent(new Event('pageshow'))
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+      expect(mockReportTelemetryError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'cloud_checkout_recovery_unreachable',
+          context: expect.objectContaining({
+            checkout_attempt_id: 'attempt-hung-before-deadline'
+          })
+        })
+      )
+    })
+
     it('does not carry a past network failure into a reachable-billing report', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,

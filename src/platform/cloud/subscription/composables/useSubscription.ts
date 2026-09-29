@@ -163,6 +163,7 @@ function useSubscriptionInternal() {
   let pendingCheckoutRecoveryTimeout: number | null = null
   let pendingCheckoutRecoveryAttempt = 0
   let isRecoveringPendingCheckout = false
+  let activePendingCheckoutRecovery: Promise<void> | null = null
   let didLastRecoveryAttemptThrow = false
 
   const stopPendingCheckoutRecovery = () => {
@@ -441,9 +442,27 @@ function useSubscriptionInternal() {
     if (
       !isCloud ||
       !isLoggedIn.value ||
-      !hasPendingSubscriptionCheckoutAttempt() ||
-      isRecoveringPendingCheckout
+      !hasPendingSubscriptionCheckoutAttempt()
     ) {
+      return
+    }
+
+    if (isRecoveringPendingCheckout) {
+      if (source !== 'deadline' || !activePendingCheckoutRecovery) return
+
+      try {
+        await withTimeout(
+          activePendingCheckoutRecovery,
+          PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS
+        )
+      } catch (error) {
+        console.error(
+          '[Subscription] Pending checkout recovery was still running at the deadline:',
+          error
+        )
+        didLastRecoveryAttemptThrow = true
+        reportMissingCheckoutCompletion()
+      }
       return
     }
 
@@ -451,6 +470,10 @@ function useSubscriptionInternal() {
 
     try {
       const statusFetch = fetchSubscriptionStatus()
+      activePendingCheckoutRecovery = statusFetch.then(
+        () => undefined,
+        () => undefined
+      )
       if (source === 'deadline') {
         await withTimeout(
           statusFetch,
@@ -468,6 +491,7 @@ function useSubscriptionInternal() {
       schedulePendingCheckoutRecovery()
     } finally {
       isRecoveringPendingCheckout = false
+      activePendingCheckoutRecovery = null
     }
   }
 
