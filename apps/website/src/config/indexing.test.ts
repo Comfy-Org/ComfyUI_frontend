@@ -5,9 +5,12 @@ describe('indexing policy', () => {
   it('excludes render pages while keeping the public Models marketing routes', () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '1')
     expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
-    expect(isExcludedFromSitemap('https://comfy.org/models/example/')).toBe(
-      true
-    )
+    expect(
+      isExcludedFromSitemap(
+        'https://comfy.org/models/bfl--flux-2-max--generate-images/'
+      )
+    ).toBe(true)
+    expect(isExcludedFromSitemap('https://comfy.org/models/local/')).toBe(false)
     expect(isExcludedFromSitemap('https://comfy.org/models/showcase/')).toBe(
       true
     )
