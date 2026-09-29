@@ -57,6 +57,32 @@ test('names the plan and the workspace, and enables Pay once the form is ready',
   ).toBe(true)
 })
 
+for (const { name, query } of [
+  { name: 'no return_to', query: 'product=comfyui&plan=pro_monthly' },
+  {
+    name: 'an unapproved return_to',
+    query: 'product=comfyui&return_to=elsewhere&plan=pro_monthly'
+  }
+]) {
+  test(`a link with ${name} still checks out, and the back arrow goes to Plan & Credits`, async ({
+    page,
+    cloud,
+    signIn
+  }) => {
+    cloud.scenario.paymentMethods = []
+    await signIn(`/v1/checkout?${query}`)
+
+    await expect(page.getByText(EYEBROW)).toBeVisible()
+    await expect(payButton(page)).toBeEnabled()
+
+    await page.getByRole('button', { name: 'Back' }).click()
+
+    await expect(page).toHaveURL(
+      'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws_e2e'
+    )
+  })
+}
+
 test('360-4874: with no saved method a failed form takes the column, and Try again remounts it', async ({
   page,
   cloud,
