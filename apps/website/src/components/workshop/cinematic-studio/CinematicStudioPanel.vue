@@ -10,6 +10,7 @@ import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import AppsBackLink from './AppsBackLink.vue'
+import CinematicModeSwitch from './CinematicModeSwitch.vue'
 import CinematicPanel from './CinematicPanel.vue'
 import CinematicPicker from './CinematicPicker.vue'
 import CinematicStageCard from './CinematicStageCard.vue'
@@ -28,6 +29,17 @@ const {
 
 const {
   studio,
+  mode,
+  modeModels,
+  hasVideo,
+  video,
+  blocked,
+  duration,
+  videoResolution,
+  audio,
+  firstFrame,
+  lastFrame,
+  sourceVideo,
   modelSlug,
   scene,
   enhance,
@@ -101,6 +113,13 @@ function generate() {
         {{ tc('cinematic.beta', locale) }}
       </span>
     </div>
+    <CinematicModeSwitch
+      v-if="hasVideo"
+      v-model="mode"
+      :disabled="studio.rendering.value"
+      :locale
+      class="mb-4 w-fit"
+    />
     <div
       ref="layout"
       class="relative grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
@@ -117,7 +136,15 @@ function generate() {
         v-model:palette="palette"
         v-model:colors="colors"
         v-model:main-color="mainColor"
-        :models
+        v-model:duration="duration"
+        v-model:video-resolution="videoResolution"
+        v-model:audio="audio"
+        v-model:first-frame="firstFrame"
+        v-model:last-frame="lastFrame"
+        v-model:source-video="sourceVideo"
+        :models="modeModels"
+        :blocked
+        :video
         :gate="studio.gate.value"
         :workspace-name="studio.session.value?.workspace.name"
         :rendering="studio.rendering.value"

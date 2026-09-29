@@ -10,8 +10,13 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const LONG_WAIT_MS = 30_000
 
-const { take, locale = 'en' } = defineProps<{
+const {
+  take,
+  video = false,
+  locale = 'en'
+} = defineProps<{
   take: Take
+  video?: boolean
   locale?: Locale
 }>()
 
@@ -40,7 +45,14 @@ const elapsed = computed(() => Math.max(0, now.value - take.startedAt))
       class="size-4 text-primary-comfy-yellow motion-safe:animate-spin"
       aria-hidden="true"
     />
-    {{ tc('cinematic.stage.renderingTake', locale, { take: take.letter }) }}
+    {{
+      tc(
+        video
+          ? 'cinematic.stage.generatingVideo'
+          : 'cinematic.stage.generatingImage',
+        locale
+      )
+    }}
     <span class="font-mono text-primary-comfy-canvas tabular-nums">
       {{ formatElapsed(elapsed) }}
     </span>

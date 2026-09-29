@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest'
 import { resolveModelRouterRender } from '../../../config/router-render'
 import { workshopContract } from '../../../config/workshop-contract-catalog'
 import { getAuthoredRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
-import { cinematicStudioHref, runnableCinematicModels } from './models'
+import type { CinematicModel } from './models'
+import {
+  cinematicStudioHref,
+  runnableCinematicModels,
+  videoShotBlock
+} from './models'
 
 const SEEDREAM = 'byteplus--seedream-5-pro--generate-images'
 const FLUX = 'bfl--flux-2-pro--generate-images'
@@ -97,5 +102,66 @@ describe('reference operations', () => {
       'xai--grok-imagine-image-2.0--generate-images',
       'recraft--v4.1-text-to-image--generate-images'
     ])
+  })
+})
+
+describe('videoShotBlock', () => {
+  const inputs = {
+    sourceVideo: false,
+    firstFrame: false,
+    firstSendable: false,
+    lastFrame: false,
+    lastSendable: false
+  }
+  const edit = {
+    slug: 'edit',
+    name: 'Edit',
+    provider: '',
+    logo: '',
+    video: { sourceVideo: true }
+  } as unknown as CinematicModel
+  const clip = {
+    slug: 'clip',
+    name: 'Clip',
+    provider: '',
+    logo: '',
+    firstFrameSlug: 'clip-i2v'
+  } as CinematicModel
+
+  it('asks for the video an edit model needs', () => {
+    expect(videoShotBlock(edit, inputs)).toBe('cinematic.video.needSourceVideo')
+    expect(
+      videoShotBlock(edit, { ...inputs, sourceVideo: true })
+    ).toBeUndefined()
+  })
+
+  it('refuses a starting frame on a model that cannot take one', () => {
+    expect(
+      videoShotBlock(
+        { ...clip, firstFrameSlug: undefined },
+        {
+          ...inputs,
+          firstFrame: true,
+          firstSendable: true
+        }
+      )
+    ).toBe('cinematic.video.noFirstFrame')
+  })
+
+  it('holds back a frame the page could not read for a model that needs it', () => {
+    expect(videoShotBlock(clip, { ...inputs, firstFrame: true })).toBe(
+      'cinematic.references.needsPicture'
+    )
+    expect(
+      videoShotBlock(clip, {
+        ...inputs,
+        firstFrame: true,
+        firstSendable: true,
+        lastFrame: true
+      })
+    ).toBe('cinematic.references.needsPicture')
+    expect(
+      videoShotBlock(clip, { ...inputs, firstFrame: true, firstSendable: true })
+    ).toBeUndefined()
   })
 })
