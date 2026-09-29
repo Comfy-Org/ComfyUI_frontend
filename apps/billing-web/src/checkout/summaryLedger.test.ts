@@ -80,6 +80,8 @@ describe('buildSummaryLedger', () => {
           }
         ],
         adjustments: [],
+        chips: [],
+        acceptsPromo: true,
         total: '$700.00',
         trailing: ['Renews at $700.00 on July 28, 2026']
       }
@@ -109,12 +111,14 @@ describe('buildSummaryLedger', () => {
           }
         ],
         adjustments: [],
+        chips: [],
+        acceptsPromo: true,
         total: '$7,560.00',
         trailing: ['Renews at $7,560.00 on June 28, 2027']
       }
     },
     {
-      name: '$0 due new subscription: the trailing line says why the card is collected',
+      name: '$0 due new subscription: no row contradicts the total, and the trailing line says why the card is collected',
       quote: {
         transition_type: 'new_subscription',
         amount_due_cents: 0,
@@ -130,14 +134,10 @@ describe('buildSummaryLedger', () => {
         eyebrow: 'Subscribe to Team Plan · Comfy Studios',
         headline: { amount: '$0', currency: 'USD' },
         credits: { count: '1,772,400', qualifier: 'credits per year' },
-        items: [
-          {
-            label: 'Team Plan',
-            amount: '$7,560.00',
-            sublines: ['Billed yearly']
-          }
-        ],
+        items: [],
         adjustments: [],
+        chips: [],
+        acceptsPromo: true,
         total: '$0.00',
         trailing: [
           'Renews at $7,560.00 on June 28, 2027',
@@ -178,6 +178,8 @@ describe('buildSummaryLedger', () => {
           }
         ],
         adjustments: [],
+        chips: [],
+        acceptsPromo: true,
         total: '$32.50',
         trailing: [
           'Existing credits are kept',
@@ -217,6 +219,8 @@ describe('buildSummaryLedger', () => {
           }
         ],
         adjustments: [],
+        chips: [],
+        acceptsPromo: true,
         total: '$32.50',
         trailing: ['Renews at $100.00 on July 28, 2026']
       }
@@ -250,6 +254,8 @@ describe('buildSummaryLedger', () => {
           }
         ],
         adjustments: [],
+        chips: [],
+        acceptsPromo: true,
         total: '$336.00',
         trailing: [
           'Renews at $336.00 on June 28, 2027',
@@ -285,6 +291,8 @@ describe('buildSummaryLedger', () => {
           }
         ],
         adjustments: [],
+        chips: [],
+        acceptsPromo: true,
         total: '$960.00',
         trailing: [
           'Renews at $960.00 on June 28, 2027',
@@ -323,6 +331,8 @@ describe('buildSummaryLedger', () => {
           }
         ],
         adjustments: [],
+        chips: [],
+        acceptsPromo: false,
         total: '$0.00',
         trailing: ["You'll keep Pro until July 28, 2026"]
       }
@@ -357,6 +367,8 @@ describe('buildSummaryLedger', () => {
           }
         ],
         adjustments: [],
+        chips: [],
+        acceptsPromo: false,
         total: '$0.00',
         trailing: ["You'll keep Creator Yearly until June 28, 2027"]
       }
@@ -394,6 +406,8 @@ describe('buildSummaryLedger', () => {
           }
         ],
         adjustments: [],
+        chips: [],
+        acceptsPromo: true,
         total: '$123.45',
         trailing: ['Renews at $1,400.00 on July 28, 2026']
       }
@@ -406,8 +420,175 @@ describe('buildSummaryLedger', () => {
     expect(ledgerOf({}, null).eyebrow).toBe('Subscribe to Creator Plan')
   })
 
-  it('leaves Subtotal out while a single money row precedes the total', () => {
-    expect(ledgerOf({}).subtotal).toBeUndefined()
+  it('drops the prorated row too when the quote leaves its gap to the total unexplained', () => {
+    expect(
+      ledgerOf({
+        transition_type: 'upgrade',
+        proration_at: PRICED_AT,
+        amount_due_cents: 0,
+        cost_today_cents: 3250,
+        current_plan: planOf('CREATOR', 'MONTHLY', 3500),
+        new_plan: planOf('PRO', 'MONTHLY', 10_000)
+      }).items
+    ).toEqual([])
+  })
+})
+
+type Discount = NonNullable<SubscriptionPreview['discounts']>[number]
+
+const ANNUAL_RATE: Discount = {
+  kind: 'plan',
+  code: 'annual_plan_discount_20',
+  name: 'Annual plan discount',
+  amount_off_cents: 189_000
+}
+const EDUCATION: Discount = {
+  kind: 'promotion',
+  code: 'COMFY-EDU',
+  name: 'Education discount',
+  amount_off_cents: 151_200
+}
+const entered = (
+  code: string,
+  amountOff?: number,
+  name?: string
+): Discount => ({
+  kind: 'promotion',
+  code,
+  ...(amountOff === undefined ? {} : { amount_off_cents: amountOff }),
+  ...(name === undefined ? {} : { name })
+})
+
+function discountSlotsOf(
+  discounts: Discount[],
+  promotionCode?: string,
+  amountDueCents = 0
+) {
+  const { adjustments, subtotal, promo, chips } = ledgerOf({
+    transition_type: 'new_subscription',
+    amount_due_cents: amountDueCents,
+    cost_today_cents: 756_000,
+    new_plan: planOf('TEAM', 'ANNUAL', 756_000),
+    discounts,
+    ...(promotionCode === undefined ? {} : { promotion_code: promotionCode })
+  })
+  return { adjustments, subtotal, promo, chips }
+}
+
+describe('buildSummaryLedger discounts', () => {
+  it.for<{
+    name: string
+    discounts: Discount[]
+    promotionCode?: string
+    amountDueCents?: number
+    slots: ReturnType<typeof discountSlotsOf>
+  }>([
+    {
+      name: 'a catalog coupon folds into the price: no row, no chip',
+      discounts: [ANNUAL_RATE],
+      amountDueCents: 756_000,
+      slots: {
+        adjustments: [],
+        subtotal: undefined,
+        promo: undefined,
+        chips: []
+      }
+    },
+    {
+      name: 'an unnamed entered code reads "Promo code"; the code sits only on its removable chip',
+      discounts: [ANNUAL_RATE, entered('COMFYFREE', 756_000)],
+      promotionCode: 'COMFYFREE',
+      slots: {
+        adjustments: [],
+        subtotal: undefined,
+        promo: { label: 'Promo code', amount: '−$7,560.00' },
+        chips: [{ code: 'COMFYFREE', removable: true }]
+      }
+    },
+    {
+      name: 'a named entered code reads its coupon name',
+      discounts: [entered('LAUNCH20', 151_200, 'Launch week')],
+      promotionCode: 'LAUNCH20',
+      amountDueCents: 604_800,
+      slots: {
+        adjustments: [],
+        subtotal: undefined,
+        promo: { label: 'Launch week', amount: '−$1,512.00' },
+        chips: [{ code: 'LAUNCH20', removable: true }]
+      }
+    },
+    {
+      name: 'the entered code matches the quote whatever its case',
+      discounts: [entered('launch20', 151_200)],
+      promotionCode: 'LAUNCH20',
+      amountDueCents: 604_800,
+      slots: {
+        adjustments: [],
+        subtotal: undefined,
+        promo: { label: 'Promo code', amount: '−$1,512.00' },
+        chips: [{ code: 'LAUNCH20', removable: true }]
+      }
+    },
+    {
+      name: 'a held discount is a pre-applied row whose chip has no remove',
+      discounts: [EDUCATION],
+      amountDueCents: 604_800,
+      slots: {
+        adjustments: [{ label: 'Education discount', amount: '−$1,512.00' }],
+        subtotal: undefined,
+        promo: undefined,
+        chips: [{ code: 'COMFY-EDU', removable: false }]
+      }
+    },
+    {
+      name: 'a held discount before an entered code still leaves Subtotal out: the quote reports no pre-discount base',
+      discounts: [ANNUAL_RATE, EDUCATION, entered('COMFY50', 302_400)],
+      promotionCode: 'COMFY50',
+      amountDueCents: 302_400,
+      slots: {
+        adjustments: [{ label: 'Education discount', amount: '−$1,512.00' }],
+        subtotal: undefined,
+        promo: { label: 'Promo code', amount: '−$3,024.00' },
+        chips: [
+          { code: 'COMFY-EDU', removable: false },
+          { code: 'COMFY50', removable: true }
+        ]
+      }
+    },
+    {
+      name: 'an entered code with no reported amount keeps its row and no Subtotal',
+      discounts: [EDUCATION, entered('COMFY50')],
+      promotionCode: 'COMFY50',
+      amountDueCents: 302_400,
+      slots: {
+        adjustments: [{ label: 'Education discount', amount: '−$1,512.00' }],
+        subtotal: undefined,
+        promo: { label: 'Promo code' },
+        chips: [
+          { code: 'COMFY-EDU', removable: false },
+          { code: 'COMFY50', removable: true }
+        ]
+      }
+    }
+  ])('$name', ({ discounts, promotionCode, amountDueCents, slots }) => {
+    expect(discountSlotsOf(discounts, promotionCode, amountDueCents)).toEqual(
+      slots
+    )
+  })
+
+  it('keeps the plan row over a $0 due once an entered code explains it', () => {
+    const { items } = ledgerOf({
+      transition_type: 'new_subscription',
+      amount_due_cents: 0,
+      cost_today_cents: 756_000,
+      new_plan: planOf('TEAM', 'ANNUAL', 756_000),
+      discounts: [entered('COMFYFREE', 756_000)],
+      promotion_code: 'COMFYFREE'
+    })
+
+    expect(items).toEqual([
+      { label: 'Team Plan', amount: '$7,560.00', sublines: ['Billed yearly'] }
+    ])
   })
 })
 

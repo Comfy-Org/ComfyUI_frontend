@@ -50,6 +50,26 @@ describe('buildSubscribeRequest', () => {
       }
     },
     {
+      name: 'a quote priced with a promo code echoes the code it bound',
+      arrival,
+      plan: 'creator_monthly',
+      quoted: previewOf({
+        quote_id: 'q_3',
+        quote_version: 2,
+        promotion_code: 'LAUNCH20'
+      }),
+      confirmationToken: 'ctoken_1',
+      confirmReactivation: false,
+      returnUrl: undefined,
+      expected: {
+        plan_slug: 'creator_monthly',
+        confirmation_token: 'ctoken_1',
+        promotion_code: 'LAUNCH20',
+        quote_id: 'q_3',
+        quote_version: 2
+      }
+    },
+    {
       name: 'a new subscription charged to a chosen saved method',
       arrival,
       plan: 'creator_monthly',
