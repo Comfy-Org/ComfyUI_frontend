@@ -9879,12 +9879,12 @@ Enterprise`
     'zh-CN': '可在浏览器或 API 中运行。'
   },
   'workshop.model.meta.price': {
-    en: 'Typical cost: {amount} per {unit}.',
-    'zh-CN': '默认设置下约 {amount}/{unit}。'
+    en: 'Typical cost: {credits} credits per {unit}.',
+    'zh-CN': '默认设置下约 {credits} 积分。'
   },
   'workshop.model.meta.priceNoUnit': {
-    en: 'Typical cost: {amount}.',
-    'zh-CN': '默认设置下约 {amount}。'
+    en: 'Typical cost: {credits} credits.',
+    'zh-CN': '默认设置下约 {credits} 积分。'
   },
   'workshop.model.tabs.playground': { en: 'Playground', 'zh-CN': 'Playground' },
   'workshop.model.tabs.api': { en: 'API', 'zh-CN': 'API' },

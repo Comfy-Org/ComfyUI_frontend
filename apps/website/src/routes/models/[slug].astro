@@ -5,7 +5,8 @@ import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
 import { workshopPagePaths } from '../../config/workshop-page-content'
 import { t } from '../../i18n/translations'
-import { modelMetaDescription, prepareModelPage } from './model-page'
+import { modelMetaDescription } from '../../lib/workshop/model-meta-description'
+import { prepareModelPage } from './model-page'
 
 export const getStaticPaths: GetStaticPaths = () =>
   workshopPagePaths.map((slug) => ({ params: { slug } }))
