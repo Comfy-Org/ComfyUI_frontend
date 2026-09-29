@@ -107,7 +107,7 @@ const entryLines = (fields: Record<string, string>) =>
   [
     '  {',
     Object.entries(fields)
-      .map(([k, v]) => `    ${k}: '${v}'`)
+      .map(([k, v]) => `    ${k}: '${v.replace(/[\\']/g, '\\$&')}'`)
       .join(',\n'),
     '  }'
   ].join('\n')
