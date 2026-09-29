@@ -160,7 +160,7 @@ function leaveSection() {
 }
 
 const pitch = computed(() => ({
-  heading: t('workshop.hero.heading', locale),
+  heading: t('workshop.hub.heading', locale),
   body: t('workshop.catalogue.workflowsSubtitle', locale)
 }))
 </script>

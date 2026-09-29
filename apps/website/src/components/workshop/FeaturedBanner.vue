@@ -125,11 +125,19 @@ watch(activeIndex, () => (elapsed.value = 0))
 
 const strip = computed(() => active.value !== undefined && pitch !== undefined)
 
+// The picture keeps its own panel inside the frame, so the seam between what
+// the tab says and what it shows is an edge rather than a fade.
+const picture = computed(() =>
+  pitch
+    ? 'pointer-events-none relative min-h-52 w-full shrink-0 overflow-hidden rounded-3xl border border-transparency-white-t8 lg:min-h-0 lg:w-1/2 lg:shrink'
+    : 'pointer-events-none absolute inset-0'
+)
+
 // A pitch gives the picture only half the width, so the frame takes back the
-// height a short window would otherwise trim, and the crop stays kind to it.
+// height a short window would otherwise trim.
 const frame = computed(() =>
   pitch
-    ? 'min-h-84 short:min-h-80'
+    ? 'gap-3 p-3 min-h-84 short:min-h-80'
     : compact
       ? 'min-h-68 short:min-h-48 sm:short:min-h-50'
       : 'min-h-84 short:min-h-57 sm:short:min-h-60'
@@ -150,54 +158,24 @@ const fill = computed(() =>
     class="relative isolate overflow-hidden rounded-4.5xl border border-transparency-white-t8"
     data-testid="section-featured"
   >
-    <div :class="cn('group relative flex', frame)" data-testid="featured-slide">
-      <template v-if="active">
-        <a
-          :href="active.href"
-          tabindex="-1"
-          aria-hidden="true"
-          class="absolute inset-0"
-          data-testid="featured-slide-link"
-        ></a>
-        <video
-          v-if="active.media?.kind === 'video'"
-          :key="active.key"
-          ref="video"
-          :src="previewSrc"
-          class="pointer-events-none absolute inset-0 size-full object-cover"
-          aria-hidden="true"
-          muted
-          loop
-          playsinline
-          preload="metadata"
-          data-testid="featured-video"
-        />
-        <img
-          v-else-if="active.media"
-          :key="active.key"
-          :src="active.media.url"
-          alt=""
-          class="pointer-events-none absolute inset-0 size-full object-cover"
-          decoding="async"
-        />
-      </template>
-      <div
-        :class="
-          cn(
-            'pointer-events-none absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20',
-            pitch
-              ? 'lg:bg-linear-to-r lg:from-page lg:from-42% lg:via-page/58 lg:via-60% lg:to-transparent'
-              : 'sm:bg-linear-to-r sm:via-page/75 sm:to-transparent'
-          )
-        "
+    <div
+      :class="cn('group relative flex', frame, pitch && 'flex-col lg:flex-row')"
+      data-testid="featured-slide"
+    >
+      <a
+        v-if="active"
+        :href="active.href"
+        tabindex="-1"
         aria-hidden="true"
-      />
+        class="absolute inset-0"
+        data-testid="featured-slide-link"
+      ></a>
 
       <div
         :class="
           cn(
             'pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14',
-            pitch && 'lg:w-1/2',
+            pitch && 'justify-center pb-8 max-sm:pb-6 lg:w-1/2 lg:pb-12',
             compact &&
               'gap-3 p-7 pt-7 pb-12 max-sm:p-5 max-sm:pb-11 lg:p-9 lg:pt-8 lg:pb-12'
           )
@@ -218,22 +196,53 @@ const fill = computed(() =>
         <FeaturedSlideCopy v-else-if="active" :slide="active" :locale />
       </div>
 
-      <FeaturedNowShowing
-        v-if="active && pitch"
-        :title="active.title"
-        :kind="active.kind"
-        :href="active.href"
-        :locale
-      >
-        <FeaturedBannerPagination
-          v-if="slides.length > 1"
-          :slides
-          :active-index="activeIndex"
-          :fill
-          aside
-          @go="goTo"
+      <div :class="picture">
+        <template v-if="active">
+          <video
+            v-if="active.media?.kind === 'video'"
+            :key="active.key"
+            ref="video"
+            :src="previewSrc"
+            class="pointer-events-none absolute inset-0 size-full object-cover"
+            aria-hidden="true"
+            muted
+            loop
+            playsinline
+            preload="metadata"
+            data-testid="featured-video"
+          />
+          <img
+            v-else-if="active.media"
+            :key="active.key"
+            :src="active.media.url"
+            alt=""
+            class="pointer-events-none absolute inset-0 size-full object-cover"
+            decoding="async"
+          />
+        </template>
+        <div
+          v-if="!pitch"
+          class="pointer-events-none absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20 sm:bg-linear-to-r sm:via-page/75 sm:to-transparent"
+          aria-hidden="true"
         />
-      </FeaturedNowShowing>
+
+        <FeaturedNowShowing
+          v-if="active && pitch"
+          :title="active.title"
+          :kind="active.kind"
+          :href="active.href"
+          :locale
+        >
+          <FeaturedBannerPagination
+            v-if="slides.length > 1"
+            :slides
+            :active-index="activeIndex"
+            :fill
+            aside
+            @go="goTo"
+          />
+        </FeaturedNowShowing>
+      </div>
     </div>
 
     <FeaturedBannerPagination

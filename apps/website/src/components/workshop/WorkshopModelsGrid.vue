@@ -217,7 +217,7 @@ function rememberModel(
 watch(browseAll, (on) => on && resetFilters())
 
 const pitch = computed(() => ({
-  heading: t('workshop.hero.heading', locale),
+  heading: t('workshop.hub.heading', locale),
   body: t('workshop.hero.subtitle', locale)
 }))
 </script>
