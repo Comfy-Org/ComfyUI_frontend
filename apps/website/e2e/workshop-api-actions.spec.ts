@@ -75,3 +75,16 @@ test('the workflow API tab opens with the key action and what it needs beside th
   expect(action.y).toBeLessThanOrEqual(code.y)
   expect(action.x).toBeGreaterThanOrEqual(code.x + code.width)
 })
+
+test('@mobile the workflow example output is as tall as its 16:9 media', async ({
+  page,
+  context
+}) => {
+  await allowWorkflows(context)
+  await page.goto(WORKFLOW_PATH)
+
+  const output = page.getByTestId('playground-output')
+  await expect(output).toHaveAttribute('data-state', 'example')
+  const media = await frame(output.getByTestId('output-media'))
+  expect(media.height).toBeCloseTo((media.width * 9) / 16, 0)
+})
