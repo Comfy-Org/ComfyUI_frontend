@@ -138,6 +138,53 @@ test('a code in the URL is prefilled and priced only on Apply', async ({
   await expect(summary(page)).toContainText('Total due today$40.00')
 })
 
+test('a Pay over the URL code prices it first, and the second Pay charges the new total', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  quoteCodes(cloud)
+  await signIn(
+    entryPath('checkout', { plan: 'pro_monthly', promo: 'LAUNCH20' })
+  )
+  await expect(promoField(page)).toHaveValue('LAUNCH20')
+  const pay = page.getByRole('button', { name: 'Pay and subscribe' })
+
+  await pay.click()
+
+  await expect(summary(page)).toContainText('Total due today$40.00')
+  await expect(
+    page.getByRole('button', { name: 'Remove LAUNCH20' })
+  ).toBeVisible()
+  expect(
+    cloud.requests.some((request) => request.path === '/billing/subscribe')
+  ).toBe(false)
+
+  await pay.click()
+
+  await expect
+    .poll(() =>
+      cloud.requests.find((request) => request.path === '/billing/subscribe')
+    )
+    .toMatchObject({
+      body: { promotion_code: 'LAUNCH20', quote_id: 'quote_launch20' }
+    })
+})
+
+test('a URL code the link cannot carry loads the checkout with the code refused in the field', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  quoteCodes(cloud)
+  await signIn(entryPath('checkout', { plan: 'pro_monthly', promo: 'SAVE 20' }))
+
+  await expect(page.getByText(EYEBROW)).toBeVisible()
+  await expect(promoField(page)).toHaveValue('SAVE 20')
+  await expect(page.getByText("This code isn't valid.")).toBeVisible()
+  await expect(summary(page)).toContainText('Total due today$50.00')
+})
+
 test('a code that lapses before Pay returns to capture with the expired card', async ({
   page,
   cloud,
