@@ -2,6 +2,9 @@
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { billingIntentPath } from '@comfyorg/billing-contract'
+
+import { safeReturnTo } from '@/auth/returnTo'
 import BillingShell from '@/components/BillingShell.vue'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { SIGN_IN_PATH } from '@/router'
@@ -25,6 +28,22 @@ watch(billingWebLivePhase, (next) => {
   })
 })
 
+/**
+ * A checkout link that cannot be read is the checkout's own 404 on the full
+ * page, so that route decides how to explain it once the variant is known,
+ * which takes a signed-in session; every other unreadable link is explained
+ * here, before any session. On the sign-in page the link is the one it will
+ * return to.
+ */
+const CHECKOUT_PATH = billingIntentPath('checkout')
+const checkoutLink = computed(() => {
+  const path =
+    route.path === SIGN_IN_PATH
+      ? safeReturnTo(route.query.returnTo).split('?')[0]
+      : route.path
+  return path === CHECKOUT_PATH
+})
+
 /** A new key is a new scope, so the shell remounts with a fresh client. */
 const scopeKey = computed(() =>
   billedScope.value
@@ -35,7 +54,7 @@ const scopeKey = computed(() =>
 
 <template>
   <!-- An entry error outranks the session: no account repairs a bad link. -->
-  <EntryErrorView v-if="error" />
+  <EntryErrorView v-if="error && !checkoutLink" />
   <BillingShell v-else-if="scopeKey" :key="scopeKey">
     <RouterView />
   </BillingShell>

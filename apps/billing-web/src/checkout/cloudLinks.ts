@@ -20,6 +20,14 @@ function cloudDeepLink(
   return url.href
 }
 
+/** The pricing table, opened on the Team tab for a link that asked for a team plan. */
+export function pricingTableUrl(
+  tab: 'team' | 'default',
+  workspaceId: string | undefined
+): string {
+  return cloudDeepLink({ pricing: tab === 'team' ? 'team' : '1' }, workspaceId)
+}
+
 /** The Plan & Credits settings panel: where checkout returns when the link named nowhere to go back to. */
 export function planCreditsSettingsUrl(
   workspaceId: string | undefined

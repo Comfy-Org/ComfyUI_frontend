@@ -29,11 +29,11 @@ const test = base.extend<{ fullPage: void }>({
 
 const CHECKOUT = entryPath('checkout', { plan: 'pro_monthly' })
 const EYEBROW = 'Subscribe to Pro Plan · Personal'
-const WAITING = 'Finishing your payment…'
+const WAITING = "This payment is already processing and can't be canceled."
 
 const payButton = (page: Page) =>
   page.getByRole('button', { name: 'Pay and subscribe' })
-const waiting = (page: Page) => page.getByRole('status')
+const waiting = (page: Page) => page.getByTestId('checkout-phase-footnote')
 
 function markPending(cloud: MockCloud, id: string) {
   cloud.scenario.status = {
@@ -76,7 +76,7 @@ test('a reload while a payment is in flight renders the waiting state, never a f
 
   await expect(waiting(page)).toHaveText(WAITING)
   await expect(page.getByText(EYEBROW)).toBeVisible()
-  await expect(payButton(page)).toBeHidden()
+  await expect(payButton(page)).toBeDisabled()
   await expect(page).toHaveURL(/\/v1\/checkout\?/)
 
   cloud.scenario.operations.op_in_flight = succeededOperation('op_in_flight')
@@ -84,8 +84,10 @@ test('a reload while a payment is in flight renders the waiting state, never a f
   await expect(
     page.getByRole('heading', { name: 'Already completed' })
   ).toBeVisible()
-  await expect(page.getByText('Reference: op_in_flight')).toBeVisible()
-  await expect(page.getByText('Pro Plan')).toBeHidden()
+  await expect(page.getByTestId('checkout-ending-code')).toHaveText(
+    'op_in_flight'
+  )
+  await expect(page.getByTestId('checkout-ending-plan')).toBeHidden()
   expect(subscribeRequests(cloud)).toHaveLength(0)
 })
 
@@ -103,7 +105,7 @@ test('an operation parked on a payment method renders capture, and Pay resubmits
   await signIn(CHECKOUT)
 
   await expect(payButton(page)).toBeEnabled()
-  await expect(waiting(page)).toBeHidden()
+  await expect(waiting(page)).toHaveText('')
   await payButton(page).click()
 
   await expect.poll(() => subscribeRequests(cloud)).toHaveLength(1)
@@ -123,7 +125,7 @@ test('a Pay refused for an operation already pending re-reads it and waits on it
   await payButton(page).click()
 
   await expect(waiting(page)).toHaveText(WAITING)
-  await expect(payButton(page)).toBeHidden()
+  await expect(payButton(page)).toBeDisabled()
   await expect(page.getByText('Payment declined')).toBeHidden()
   await expect(page.getByRole('link', { name: 'Contact support' })).toBeHidden()
   expect(subscribeRequests(cloud)).toHaveLength(0)
@@ -221,10 +223,10 @@ for (const { name, pending, lands } of [
     await expect(page).toHaveURL(CHECKOUT)
     if (lands === 'waiting') {
       await expect(waiting(page)).toHaveText(WAITING)
-      await expect(payButton(page)).toBeHidden()
+      await expect(payButton(page)).toBeDisabled()
     } else {
       await expect(payButton(page)).toBeEnabled()
-      await expect(waiting(page)).toBeHidden()
+      await expect(waiting(page)).toHaveText('')
     }
     expect(subscribeRequests(cloud)).toHaveLength(0)
   })
