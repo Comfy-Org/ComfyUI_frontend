@@ -149,6 +149,8 @@ export type CheckoutPageEvent =
       readonly outcome: Exclude<InlineOutcome, { kind: 'reconciling' }>
     }
   | { readonly type: 'payRejectedAsPending' }
+  /** The server refused the Pay with a code, which the page words beside Pay; Pay is free again. */
+  | { readonly type: 'payRefused' }
   /** The server activated the plan on the spot, issuing no operation to follow. */
   | { readonly type: 'paySettled' }
   /** A fresh quote after the server refused the old one; the form stays as typed. */
@@ -370,6 +372,7 @@ type AttemptEvent = Extract<
       | 'paySubmitted'
       | 'payFailed'
       | 'payRejectedAsPending'
+      | 'payRefused'
       | 'paySettled'
       | 'requoted'
   }
@@ -381,6 +384,7 @@ const ATTEMPT_EVENT: Readonly<Record<AttemptEvent['type'], true>> = {
   paySubmitted: true,
   payFailed: true,
   payRejectedAsPending: true,
+  payRefused: true,
   paySettled: true,
   requoted: true
 }
@@ -429,6 +433,8 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
         attempt: IDLE,
         outcome: { kind: 'reconciling' }
       }))
+    case 'payRefused':
+      return withCapture(page, (capture) => ({ ...capture, attempt: IDLE }))
     case 'paySettled':
       return page.kind === 'capture'
         ? { kind: 'terminal', attribution: 'started' }

@@ -477,6 +477,8 @@ export function useFullPageCheckout() {
       dispatch({ type: 'payFailed', outcome: verdict.outcome })
     } else if (verdict.kind === 'requote') {
       await requote(verdict.because, arrival)
+    } else {
+      dispatch({ type: 'payRefused' })
     }
   }
 
