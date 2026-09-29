@@ -13,6 +13,7 @@ import type {
   AgentPanelOpenedMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
+  AgentSendFailedMetadata,
   AgentWorkflowAppliedMetadata,
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent,
@@ -300,6 +301,14 @@ describe('TelemetryRegistry', () => {
       client_message_id: 'cm-1',
       input_method: 'typed'
     } satisfies AgentMessageSentMetadata
+    const sendFailedMetadata = {
+      stage: 'refused',
+      reason: 'admission_denied',
+      http_status: 402,
+      admission_reason: 'no_funds',
+      thread_id: 'th-1',
+      client_message_id: 'cm-1'
+    } satisfies AgentSendFailedMetadata
     const consentShownMetadata = {
       trigger: 'button_click'
     } satisfies AgentConsentShownMetadata
@@ -363,6 +372,11 @@ describe('TelemetryRegistry', () => {
         expected: { ...messageSentMetadata },
         invoke: (registry) =>
           registry.trackAgentMessageSent(messageSentMetadata)
+      },
+      {
+        method: 'trackAgentSendFailed',
+        expected: { ...sendFailedMetadata },
+        invoke: (registry) => registry.trackAgentSendFailed(sendFailedMetadata)
       },
       {
         method: 'trackAgentConsentShown',

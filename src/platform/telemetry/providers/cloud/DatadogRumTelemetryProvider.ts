@@ -4,6 +4,7 @@ import { datadogRum } from '@datadog/browser-rum'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import type {
+  AgentSendFailedMetadata,
   AuthMetadata,
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent,
@@ -64,6 +65,14 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
         : TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
       metadata
     )
+  }
+
+  /**
+   * A funnel drop-off worth a monitor, so ADR-TELEMETRY-ROUTING-0013 puts it
+   * here as well as in PostHog rather than only in the growth layer.
+   */
+  trackAgentSendFailed(metadata: AgentSendFailedMetadata): void {
+    datadogRum.addAction(TelemetryEvents.AGENT_SEND_FAILED, metadata)
   }
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {

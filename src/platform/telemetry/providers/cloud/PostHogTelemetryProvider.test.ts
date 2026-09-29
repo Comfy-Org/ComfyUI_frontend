@@ -478,6 +478,32 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures a failed send against the attempt it belongs to', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentSendFailed({
+        stage: 'refused',
+        reason: 'admission_denied',
+        http_status: 402,
+        admission_reason: 'no_funds',
+        thread_id: null,
+        client_message_id: 'client-message-1'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_SEND_FAILED,
+        {
+          stage: 'refused',
+          reason: 'admission_denied',
+          http_status: 402,
+          admission_reason: 'no_funds',
+          thread_id: null,
+          client_message_id: 'client-message-1'
+        }
+      )
+    })
+
     it('captures link dedup drop events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

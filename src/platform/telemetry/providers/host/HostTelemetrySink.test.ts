@@ -309,6 +309,26 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
+      name: TelemetryEvents.AGENT_SEND_FAILED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentSendFailed({
+          stage: 'no_response',
+          reason: 'timeout',
+          http_status: null,
+          admission_reason: null,
+          thread_id: 'thread-1',
+          client_message_id: 'client-message-3'
+        }),
+      properties: {
+        stage: 'no_response',
+        reason: 'timeout',
+        http_status: null,
+        admission_reason: null,
+        thread_id: 'thread-1',
+        client_message_id: 'client-message-3'
+      }
+    },
+    {
       name: TelemetryEvents.AGENT_CONSENT_SHOWN,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentShown({ trigger: 'first_load' }),

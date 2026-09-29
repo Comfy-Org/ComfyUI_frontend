@@ -4,6 +4,7 @@ import { i18n } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
+  AgentSendFailure,
   AgentStopClickedMetadata,
   AgentStopMethod,
   AgentThreadStartSource,
@@ -25,7 +26,6 @@ import {
   isAgentEvent,
   parseAgentWsEvent,
   toTurnId,
-  zAgentAdmissionError,
   zDisownedWorkflowError
 } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
@@ -38,6 +38,11 @@ import type {
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type { WorkflowReference } from '../../types/workflowReference'
+import {
+  classifyAgentSendError,
+  parseAdmissionError,
+  sendNotDispatched
+} from '../../utils/agentSendFailure'
 import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
 
 export interface AgentEventSource {
@@ -93,6 +98,13 @@ export interface AgentSessionDeps {
   events: AgentEventSource
   onThreadStarted?: (source: AgentSessionThreadStartSource) => void
   onAskResolved?: (askId: string) => void
+  /**
+   * Once per send attempt that produced no turn. A turn the server accepted
+   * after the session moved on is not reported here: the ack was dropped by the
+   * client, but the turn exists, and counting it as a failed send would
+   * overstate the loss the event is measuring.
+   */
+  onSendFailed?: (failure: AgentSendFailure) => void
   workflow?: {
     /** Resolve fresh versus restored startup before asynchronous hydration. */
     initialize?(hasThread: boolean): void
@@ -147,16 +159,6 @@ function consumeStopPendingAck() {
   return pending
 }
 
-function parseAdmissionError(error: unknown) {
-  if (!(error instanceof AgentApiError)) return undefined
-  const parsed = zAgentAdmissionError.safeParse(error.body)
-  if (!parsed.success) return undefined
-  const expectedStatus =
-    parsed.data.error.type === 'PAYMENT_REQUIRED' ? 402 : 503
-  if (error.status !== expectedStatus) return undefined
-  return { ...parsed.data.error, retryAfterSeconds: error.retryAfterSeconds }
-}
-
 function disownsWorkflow(error: unknown): boolean {
   return (
     error instanceof AgentApiError &&
@@ -166,7 +168,14 @@ function disownsWorkflow(error: unknown): boolean {
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
-  const { rest, events, onThreadStarted, onAskResolved, workflow } = deps
+  const {
+    rest,
+    events,
+    onThreadStarted,
+    onAskResolved,
+    onSendFailed,
+    workflow
+  } = deps
   const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
   clearLegacyAgentStorage()
 
@@ -533,6 +542,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (pendingStop !== null) void stopTurn(pendingStop.method)
   }
 
+  function reportSendFailure(failure: AgentSendFailure): void {
+    onSendFailed?.(failure)
+  }
+
   function recordSendError(error: unknown, text: string): void {
     const admission = parseAdmissionError(error)
     if (admission?.reason === 'no_funds') {
@@ -604,10 +617,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     let sentContext: WorkflowTurnContext | undefined
     try {
       await prepareWorkflow()
-      if (generation !== loadGeneration) return false
+      if (generation !== loadGeneration) {
+        reportSendFailure(sendNotDispatched('session_reset'))
+        return false
+      }
       const wfContext = workflow?.current(origin)
       if (workflowTargetChanged(originContext, wfContext)) {
         recordUnavailableTarget(text)
+        reportSendFailure(sendNotDispatched('target_changed'))
         return false
       }
       sentContext = wfContext
@@ -621,6 +638,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflowReferences,
         selectionWorkflowId
       )
+      // A dropped ack is not a failed send - see onSendFailed's contract.
       if (generation !== loadGeneration) return false
       acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
       return true
@@ -629,6 +647,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // persisted, so a refusal that lands after newChat()/loadThread() has
       // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
+      // Also before it: the attempt was counted when it was made, so the
+      // refusal has to be counted even when nothing is left to render it to.
+      reportSendFailure(classifyAgentSendError(error))
       if (generation !== loadGeneration) return false
       recordSendError(error, text)
       return false
@@ -656,6 +677,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         text,
         i18n.global.t('agent.sendBusy')
       )
+      reportSendFailure(sendNotDispatched('send_in_flight'))
       return false
     }
     promptEditState.value = { phase: 'idle' }
