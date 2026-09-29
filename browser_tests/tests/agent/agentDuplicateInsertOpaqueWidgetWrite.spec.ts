@@ -359,12 +359,15 @@ async function driveThroughRejectedWidgetEdit(
       (frame) =>
         JSON.parse(frame) as {
           type: string
-          data: { ops: Array<{ op_id: string }> }
+          data: { ops: Array<{ op: string; op_id: string }> }
         }
     )
     .find((frame) => frame.type === 'doc_ops')
   if (!opsFrame) throw new Error('expected a doc_ops frame for the widget edit')
-  const rejectedOpId = opsFrame.data.ops[0].op_id
+  const setWidgetOp = opsFrame.data.ops.find((op) => op.op === 'set_widget')
+  if (!setWidgetOp)
+    throw new Error('expected a set_widget op in the doc_ops batch')
+  const rejectedOpId = setWidgetOp.op_id
 
   socket.send(
     JSON.stringify({
@@ -428,30 +431,44 @@ test.describe(
         .getByRole('button', { name: 'Fit View (.)', exact: true })
         .click()
 
-      // `Fit View` pans/zooms with a brief transition; wait for copy A's box
-      // to stop moving (two consecutive identical reads) before comparing it
-      // to copy B's, or the comparison below races the animation instead of
-      // measuring the settled overlap.
-      let previousBoxA: Awaited<ReturnType<Locator['boundingBox']>> = null
+      // `Fit View` pans/zooms with a brief transition; read both copies'
+      // boxes together on each poll tick so neither is a stale sample from a
+      // different moment of the transition, and require two consecutive
+      // matching reads (within a pixel tolerance, not exact float equality)
+      // before trusting them as settled.
+      type Box = NonNullable<Awaited<ReturnType<Locator['boundingBox']>>>
+      const PIXEL_TOLERANCE = 1
+      const closeEnough = (a: Box, b: Box): boolean =>
+        Math.abs(a.x - b.x) <= PIXEL_TOLERANCE &&
+        Math.abs(a.y - b.y) <= PIXEL_TOLERANCE &&
+        Math.abs(a.width - b.width) <= PIXEL_TOLERANCE &&
+        Math.abs(a.height - b.height) <= PIXEL_TOLERANCE
+
+      const settledBoxes: { boxA: Box; boxB: Box }[] = []
+      let previous: { boxA: Box; boxB: Box } | null = null
       await expect
         .poll(async () => {
-          const box = await vueNodes.getNodeLocator(copyANodeId).boundingBox()
-          const settled =
-            previousBoxA !== null &&
-            box !== null &&
-            JSON.stringify(box) === JSON.stringify(previousBoxA)
-          previousBoxA = box
-          return settled
+          const boxA = await vueNodes.getNodeLocator(copyANodeId).boundingBox()
+          const boxB = await vueNodes.getNodeLocator(copyBNodeId).boundingBox()
+          if (boxA === null || boxB === null) return false
+          const isSettled =
+            previous !== null &&
+            closeEnough(boxA, previous.boxA) &&
+            closeEnough(boxB, previous.boxB)
+          previous = { boxA, boxB }
+          if (isSettled) settledBoxes.push({ boxA, boxB })
+          return isSettled
         })
         .toBe(true)
+      const settled = settledBoxes.at(-1)
+      if (settled === undefined)
+        throw new Error('boxes never settled after Fit View')
 
       // Nobody previously asserted the resulting VISUAL overlap: the same
       // template inserted twice renders both copies at pixel-identical
-      // positions, so a human cannot tell them apart on canvas.
-      const boxA = await vueNodes.getNodeLocator(copyANodeId).boundingBox()
-      const boxB = await vueNodes.getNodeLocator(copyBNodeId).boundingBox()
-      expect(boxA).not.toBeNull()
-      expect(boxB).toEqual(boxA)
+      // positions (within a small tolerance), so a human cannot tell them
+      // apart on canvas.
+      expect(closeEnough(settled.boxA, settled.boxB)).toBe(true)
     })
 
     test('a widget edit the host rejects as opaque leaves the human-typed value on screen and the shared document silently unrevised', async ({
