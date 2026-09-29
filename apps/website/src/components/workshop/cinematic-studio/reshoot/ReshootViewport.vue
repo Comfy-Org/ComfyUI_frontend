@@ -126,13 +126,18 @@ function zoom(event: WheelEvent) {
       class="absolute inset-x-4 bottom-4 flex items-center justify-between gap-3 text-xs text-primary-warm-white"
     >
       <span
-        class="flex items-center gap-2 rounded-full bg-primary-comfy-ink/80 px-3 py-1.5"
+        class="flex min-w-0 items-center gap-2 rounded-full bg-primary-comfy-ink/80 px-3 py-1.5 whitespace-nowrap"
       >
-        <Move3d class="size-3.5" aria-hidden="true" />
-        {{ rc('reshoot.dragHint', locale) }}
+        <Move3d class="size-3.5 shrink-0" aria-hidden="true" />
+        <span class="truncate pointer-coarse:hidden">
+          {{ rc('reshoot.dragHint', locale) }}
+        </span>
+        <span class="hidden truncate pointer-coarse:inline">
+          {{ rc('reshoot.dragHint.touch', locale) }}
+        </span>
       </span>
       <span
-        class="flex items-center gap-2 rounded-full bg-primary-comfy-ink/80 px-3 py-1.5 font-mono tabular-nums"
+        class="flex shrink-0 items-center gap-2 rounded-full bg-primary-comfy-ink/80 px-3 py-1.5 font-mono whitespace-nowrap tabular-nums"
       >
         <ReshootZone :zone="cameraZone(camera)" dot-only />
         {{ camera.azimuth }}° · {{ camera.elevation }}°
