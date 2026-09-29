@@ -36,6 +36,12 @@ import {
 } from '@/test/fakeBillingClient'
 import FullPageCheckoutView from '@/views/FullPageCheckoutView.vue'
 
+/** Money the bank is capturing: the phase that can no longer be called back. */
+const processingOperation = (id = 'op_1'): PendingBillingOperation => ({
+  ...pendingOperation(id),
+  authenticationState: 'processing'
+})
+
 const CHECKOUT_PATH =
   '/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator_monthly'
 
@@ -392,7 +398,7 @@ describe('FullPageCheckoutView', () => {
     await screen.findByText('Upgrade to Creator Plan · Acme Team')
     expect(payButton()).toBeEnabled()
 
-    fake.publishOperation(pendingOperation())
+    fake.publishOperation(processingOperation())
 
     await screen.findByTestId('checkout-waiting')
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -866,7 +872,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     {
       name: 'an operation already pending, still in flight',
       code: 'OPERATION_ALREADY_PENDING',
-      found: pendingOperation('op_elsewhere'),
+      found: processingOperation('op_elsewhere'),
       lands: "This payment is already processing and can't be canceled.",
       pay: 'disabled'
     },
@@ -1284,7 +1290,7 @@ describe('FullPageCheckoutView mount reconciliation', () => {
 
   it('renders the waiting state, never a form, for money already in flight, and follows it to Already completed', async () => {
     const fake = await renderCheckout({
-      recover: { status: 'ok', value: pendingOperation('op_reloaded') }
+      recover: { status: 'ok', value: processingOperation('op_reloaded') }
     })
 
     await waitingStatus()
@@ -1705,8 +1711,9 @@ describe('FullPageCheckoutView payment authentication', () => {
 
     await userEvent.click(payButton())
 
-    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_B))
-    expect(screen.getByRole('tablist')).toHaveAttribute('inert')
+    await waitFor(() =>
+      expect(screen.getByRole('tablist')).toHaveAttribute('inert')
+    )
   })
 
   it('puts a challenge the bank refused on its card and frees Pay for the retry, on the same form', async () => {
@@ -1749,19 +1756,33 @@ describe('FullPageCheckoutView payment authentication', () => {
       challenged: ALIPAY
     },
     {
-      name: 'a card Pay is processing until the bank asks for a challenge',
+      name: 'a card Pay claims no phase until the bank asks for a challenge',
       methodType: 'card',
-      sent: PHASE_B,
+      sent: '',
       challenged: PHASE_A
     }
   ])('$name', async ({ methodType, sent, challenged }) => {
     const fake = await payHeld(methodType)
 
-    await waitFor(() => expect(footnote()).toHaveTextContent(sent))
+    await waitFor(() => expect(footnote().textContent.trim()).toBe(sent))
+    expect(payButton()).toHaveAttribute('aria-busy', 'true')
 
     fake.publishOperation(challengedOperation('op_3ds', 'in_progress'))
 
-    await waitFor(() => expect(footnote()).toHaveTextContent(challenged))
+    await waitFor(() => expect(footnote().textContent.trim()).toBe(challenged))
+  })
+
+  it('claims no phase for an operation the bank has not answered for, then Phase B once it is processing', async () => {
+    const fake = await payHeld()
+    fake.publishOperation(pendingOperation('op_card'))
+    await nextTick()
+
+    expect(footnote()).toBeEmptyDOMElement()
+    expect(payButton()).toHaveAttribute('aria-busy', 'true')
+
+    fake.publishOperation(processingOperation('op_card'))
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_B))
   })
 
   it('offers Continue verification after a reload mid-challenge, and drives the challenge again on click', async () => {

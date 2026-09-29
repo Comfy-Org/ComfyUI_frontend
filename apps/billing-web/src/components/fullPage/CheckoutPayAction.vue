@@ -64,7 +64,12 @@ function guardConsent(event: Event) {
 
 /** The line above Pay for a phase in flight; empty at rest so the live region stays mounted. */
 const footnote = computed(() => {
-  if (phase === undefined || phase.kind === 'capture') return ''
+  if (
+    phase === undefined ||
+    phase.kind === 'capture' ||
+    phase.kind === 'unknown'
+  )
+    return ''
   if (phase.kind === 'challenge') return t('checkout.fullPage.phase.challenge')
   if (phase.kind === 'processing')
     return t('checkout.fullPage.phase.processing')

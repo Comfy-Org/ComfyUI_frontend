@@ -11,6 +11,7 @@ import type { MockCloud } from './fixtures/cloud'
 import { PORTAL_URL } from './fixtures/env'
 import {
   challengeRequiredOperation,
+  pendingOperation,
   succeededOperation
 } from './fixtures/scenario'
 import { installFakeStripe } from './fixtures/stripe'
@@ -115,6 +116,27 @@ test('145-4584 → 342-4767: Pay walks Phase A, locked with nothing charged, int
     page.getByRole('heading', { name: "You're all set" })
   ).toBeVisible()
   expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+test('a card Pay shows only the spinner until the server says which phase it is in', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  const moveOperation = scriptOperation(cloud)
+  moveOperation(pendingOperation(OPERATION))
+  await signIn(CHECKOUT)
+
+  await payButton(page).click()
+
+  await expect(payButton(page)).toHaveAttribute('aria-busy', 'true')
+  await expect(backArrow(page)).toBeHidden()
+  await expect(footnote(page)).toHaveText('')
+
+  moveOperation(processing())
+
+  await expect(footnote(page)).toHaveText(PHASE_B)
 })
 
 test('a saved-method Pay keeps the tabs and the list inert through Phase A', async ({

@@ -1102,7 +1102,12 @@ describe('submitPhaseOf', () => {
     {
       name: 'a Pay sent with no operation yet',
       page: capturing({ kind: 'sent' }),
-      phase: { kind: 'processing' }
+      phase: { kind: 'unknown' }
+    },
+    {
+      name: 'a Pay whose operation the bank has not answered yet',
+      page: capturing({ kind: 'sent', operation: pendingOperation() }),
+      phase: { kind: 'unknown' }
     },
     {
       name: 'a Pay whose operation asks for a challenge',
@@ -1132,8 +1137,16 @@ describe('submitPhaseOf', () => {
       phase: { kind: 'challenge', operation: challengedOperation() }
     },
     {
-      name: 'waiting over plain pending money',
+      name: 'waiting over money the bank has not answered for',
       page: { kind: 'waiting', operation: pendingOperation() },
+      phase: { kind: 'unknown' }
+    },
+    {
+      name: 'waiting over money the bank is processing',
+      page: {
+        kind: 'waiting',
+        operation: { ...pendingOperation(), authenticationState: 'processing' }
+      },
       phase: { kind: 'processing' }
     }
   ])('$name is $phase.kind', ({ page, phase }) => {

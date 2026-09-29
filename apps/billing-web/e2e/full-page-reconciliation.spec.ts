@@ -7,7 +7,11 @@
 import type { Page } from '@playwright/test'
 
 import { E2E_USER } from './fixtures/env'
-import { pendingOperation, succeededOperation } from './fixtures/scenario'
+import {
+  pendingOperation,
+  processingOperation,
+  succeededOperation
+} from './fixtures/scenario'
 import type { MockCloud } from './fixtures/cloud'
 import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
@@ -71,7 +75,7 @@ test('a reload while a payment is in flight renders the waiting state, never a f
 }) => {
   cloud.scenario.paymentMethods = []
   markPending(cloud, 'op_in_flight')
-  cloud.scenario.operations.op_in_flight = pendingOperation('op_in_flight')
+  cloud.scenario.operations.op_in_flight = processingOperation('op_in_flight')
   await signIn(CHECKOUT)
 
   await expect(waiting(page)).toHaveText(WAITING)
@@ -118,7 +122,7 @@ test('a Pay refused for an operation already pending re-reads it and waits on it
 }) => {
   cloud.scenario.paymentMethods = []
   pendingFromRead(cloud, 'op_elsewhere', 2)
-  cloud.scenario.operations.op_elsewhere = pendingOperation('op_elsewhere')
+  cloud.scenario.operations.op_elsewhere = processingOperation('op_elsewhere')
   await signIn(CHECKOUT)
   await expect(payButton(page)).toBeEnabled()
 
@@ -217,7 +221,7 @@ for (const { name, pending, lands } of [
       }))
     }
     cloud.scenario.operations.op_after_reauth =
-      pendingOperation('op_after_reauth')
+      processingOperation('op_after_reauth')
     await page.getByRole('button', { name: 'Retry session' }).click()
 
     await expect(page).toHaveURL(CHECKOUT)

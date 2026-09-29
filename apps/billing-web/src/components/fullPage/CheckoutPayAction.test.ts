@@ -55,6 +55,13 @@ describe('CheckoutPayAction', () => {
       buttons: []
     },
     {
+      name: 'a Pay the bank has not answered yet',
+      phase: { kind: 'unknown' },
+      canCancel: true,
+      line: '',
+      buttons: []
+    },
+    {
       name: 'a charge processing',
       phase: { kind: 'processing' },
       canCancel: true,

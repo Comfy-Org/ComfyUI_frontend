@@ -10,7 +10,7 @@
 import type { Page } from '@playwright/test'
 
 import type { MockCloud } from './fixtures/cloud'
-import { pendingOperation } from './fixtures/scenario'
+import { processingOperation } from './fixtures/scenario'
 import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
 
@@ -59,7 +59,7 @@ test('a Pay in one tab takes a sibling tab on the same checkout to the waiting s
 }) => {
   cloud.scenario.paymentMethods = []
   pendingAfterSubscribe(cloud, 'op_subscribe')
-  cloud.scenario.operations.op_subscribe = pendingOperation('op_subscribe')
+  cloud.scenario.operations.op_subscribe = processingOperation('op_subscribe')
   await signIn(CHECKOUT)
   // The same signed-in identity, so the sibling lands on the checkout directly.
   const sibling = await context.newPage()
@@ -97,7 +97,7 @@ test('a page restored from the back-forward cache re-reads the operation instead
     pending_billing_op_id: 'op_meanwhile',
     pending_billing_op_type: 'subscription'
   }
-  cloud.scenario.operations.op_meanwhile = pendingOperation('op_meanwhile')
+  cloud.scenario.operations.op_meanwhile = processingOperation('op_meanwhile')
   await page.evaluate(() => {
     const event = new Event('pageshow')
     Object.defineProperty(event, 'persisted', { value: true })

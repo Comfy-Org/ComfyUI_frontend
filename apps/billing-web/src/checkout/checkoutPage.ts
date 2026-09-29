@@ -712,12 +712,15 @@ function isChallengePending(operation: PendingBillingOperation): boolean {
 /**
  * The submit area's phase. `challenge` (Phase A): the bank is waiting on
  * the customer, nothing charged, the challenge re-openable. `processing`
- * (Phase B): the charge is in flight and cannot be called back.
- * `redirecting`: the chosen method pays on its own site, so the page is
- * about to unload with nothing charged. `capture` is Pay at rest.
+ * (Phase B): the server says the charge is in flight and cannot be called
+ * back. `unknown`: sent, but the server has not said which of the two it
+ * is, so the page claims neither. `redirecting`: the chosen method pays on
+ * its own site, so the page is about to unload with nothing charged.
+ * `capture` is Pay at rest.
  */
 export type SubmitPhase =
   | { readonly kind: 'capture' }
+  | { readonly kind: 'unknown' }
   | { readonly kind: 'processing' }
   | { readonly kind: 'challenge'; readonly operation: PendingBillingOperation }
   | { readonly kind: 'redirecting'; readonly method: string }
@@ -731,13 +734,20 @@ export function submitPhaseOf(
   const { redirectMethod, operation } = page.attempt
   if (redirectMethod !== undefined)
     return { kind: 'redirecting', method: redirectMethod }
-  return operation === undefined ? { kind: 'processing' } : phaseOver(operation)
+  return operation === undefined ? { kind: 'unknown' } : phaseOver(operation)
 }
 
 function phaseOver(operation: PendingBillingOperation): SubmitPhase {
-  return isChallengePending(operation)
-    ? { kind: 'challenge', operation }
-    : { kind: 'processing' }
+  if (isChallengePending(operation)) return { kind: 'challenge', operation }
+  return isProcessing(operation) ? { kind: 'processing' } : { kind: 'unknown' }
+}
+
+/** Past the bank's challenge on the server's word, so it can no longer be called back. */
+function isProcessing(operation: PendingBillingOperation): boolean {
+  return (
+    operation.authenticationState === 'processing' ||
+    operation.authenticationState === 'succeeded'
+  )
 }
 
 /**
