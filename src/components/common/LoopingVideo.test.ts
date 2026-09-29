@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { usePreferredReducedMotion } from '@vueuse/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
@@ -87,6 +87,22 @@ describe('LoopingVideo', () => {
       expect(screen.getByTestId('clip')).toHaveProperty('autoplay', autoplay)
     }
   )
+
+  it('pauses a playing video when the user switches to reduced motion', async () => {
+    const preference = ref<'reduce' | 'no-preference'>('no-preference')
+    vi.mocked(usePreferredReducedMotion).mockReturnValue(
+      computed(() => preference.value)
+    )
+    renderVideo({ webmSrc: WEBM })
+    const video = screen.getByTestId<HTMLVideoElement>('clip')
+    await video.play()
+    expect(video.paused).toBe(false)
+
+    preference.value = 'reduce'
+    await nextTick()
+
+    expect(video.paused).toBe(true)
+  })
 
   it('pauses and resumes from its control', async () => {
     const user = userEvent.setup()
