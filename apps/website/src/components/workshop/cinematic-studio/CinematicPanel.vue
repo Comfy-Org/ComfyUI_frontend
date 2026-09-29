@@ -19,7 +19,7 @@ import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/mode
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
-import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
+import CinematicReferenceMenu from './CinematicReferenceMenu.vue'
 import CinematicSceneField from './CinematicSceneField.vue'
 import CinematicShotList from './CinematicShotList.vue'
 import type { PickerKey } from './picker-key'
@@ -130,7 +130,7 @@ const cardClass =
         v-model:enhance="enhance"
         :locale
       >
-        <CinematicReferenceSlot v-model="cast" :locale />
+        <CinematicReferenceMenu v-model:cast="cast" :kinds="['cast']" :locale />
       </CinematicSceneField>
       <section class="flex flex-col gap-2">
         <h2 :class="labelClass">

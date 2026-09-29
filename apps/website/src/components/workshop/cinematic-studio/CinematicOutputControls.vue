@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ChevronDown, Layers, Maximize } from '@lucide/vue'
+import { ChevronDown, Maximize } from '@lucide/vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
   AspectRatio,
   Resolution
 } from '../../../lib/workshop/cinematic-studio/catalog'
+import { MAX_TAKES } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
@@ -19,14 +22,9 @@ const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
 const takes = defineModel<number>('takes', { required: true })
 
-const {
-  aspectOptions,
-  resolutionOptions,
-  takeOptions,
-  aspectValue,
-  resolutionValue,
-  takesValue
-} = useFormatMenus(aspect, resolution, takes, () => locale)
+const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
+  useFormatMenus(aspect, resolution, takes, () => locale)
+const takeCounts = Array.from({ length: MAX_TAKES }, (_, index) => index + 1)
 
 const triggerClass =
   'h-10 w-full gap-2 border border-transparency-white-t8 px-3 text-sm text-primary-warm-white hover:border-transparency-white-t20'
@@ -67,17 +65,30 @@ const triggerClass =
       <span class="flex-1 text-left">{{ resolution }}</span>
       <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
     </CinematicMenu>
-    <CinematicMenu
-      v-model="takesValue"
-      :options="takeOptions"
-      :heading="tc('cinematic.output.takes', locale)"
-      side="bottom"
-      tooltip
-      :trigger-class="triggerClass"
+    <div
+      role="radiogroup"
+      :aria-label="tc('cinematic.output.takes', locale)"
+      :title="tc('cinematic.output.takes', locale)"
+      class="grid h-10 grid-cols-4 rounded-xl border border-transparency-white-t8 p-0.5"
     >
-      <Layers class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
-      <span class="flex-1 text-left tabular-nums">×{{ takes }}</span>
-      <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
-    </CinematicMenu>
+      <button
+        v-for="count in takeCounts"
+        :key="count"
+        type="button"
+        role="radio"
+        :aria-checked="takes === count"
+        :class="
+          cn(
+            'rounded-lg text-sm tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50',
+            takes === count
+              ? 'bg-primary-warm-white text-primary-comfy-ink'
+              : 'text-primary-comfy-canvas hover:text-primary-warm-white'
+          )
+        "
+        @click="takes = count"
+      >
+        {{ count }}
+      </button>
+    </div>
   </div>
 </template>

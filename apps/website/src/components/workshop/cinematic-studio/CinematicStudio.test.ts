@@ -93,6 +93,11 @@ async function chooseTakes(
   user: ReturnType<typeof userEvent.setup>,
   takes: number
 ) {
+  const segmented = screen.queryByRole('radiogroup', { name: 'Takes' })
+  if (segmented) {
+    await user.click(within(segmented).getByRole('radio', { name: `${takes}` }))
+    return
+  }
   await user.click(screen.getByRole('button', { name: /^Takes: / }))
   await user.click(
     await screen.findByRole('menuitemradio', { name: `×${takes}` })
@@ -1380,22 +1385,34 @@ describe('CinematicStudio', () => {
       ).toBeInTheDocument()
     })
 
-    it('attaches the character reference from the scene box', async () => {
+    it('picks the number of takes with one click', async () => {
       const user = renderPanel()
-      const chip = screen.getByTestId('cinematic-character-chip')
+      const takes = screen.getByRole('radiogroup', { name: 'Takes' })
+
+      await user.click(within(takes).getByRole('radio', { name: '3' }))
+
+      expect(within(takes).getByRole('radio', { name: '3' })).toBeChecked()
+      expect(within(takes).getByRole('radio', { name: '1' })).not.toBeChecked()
+    })
+
+    it('offers only the character reference from the scene box', async () => {
+      const user = renderPanel()
 
       await user.upload(
-        within(chip).getByTestId('cinematic-reference-cast'),
+        screen.getByTestId('cinematic-reference-cast'),
         new File(['ref'], 'face.png', { type: 'image/png' })
       )
-      expect(chip).toHaveTextContent('face.png')
-
       await user.click(
-        within(chip).getByRole('button', {
-          name: tc('cinematic.reference.remove')
+        screen.getByRole('button', {
+          name: tc('cinematic.composer.references')
         })
       )
-      expect(chip).toHaveTextContent(tc('cinematic.reference.cast'))
+
+      expect(
+        await screen.findByRole('menuitem', { name: /^Character.*face\.png/ })
+      ).toBeInTheDocument()
+      expect(screen.queryByRole('menuitem', { name: /^Palette/ })).toBeNull()
+      expect(screen.queryByTestId('cinematic-reference-palette')).toBeNull()
     })
   })
 })

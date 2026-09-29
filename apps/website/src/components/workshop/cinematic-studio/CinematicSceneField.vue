@@ -28,11 +28,9 @@ const labelClass = 'text-xs font-medium text-primary-warm-gray'
         :placeholder="tc('cinematic.scene.placeholder', locale)"
         class="h-28 resize-none bg-transparent px-3.5 py-3 text-sm leading-relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
       />
-      <div
-        class="flex items-center justify-between gap-3 border-t border-transparency-white-t8 py-2 pr-2 pl-3.5"
-      >
-        <CinematicEnhanceSwitch v-model="enhance" :locale />
+      <div class="flex items-center justify-between gap-3 px-2.5 pb-2.5">
         <slot />
+        <CinematicEnhanceSwitch v-model="enhance" :locale />
       </div>
     </div>
   </section>
