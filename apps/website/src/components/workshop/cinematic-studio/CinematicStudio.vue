@@ -131,6 +131,7 @@ function generateOn(slug: string) {
         <CinematicPicker
           v-if="popover"
           :key="popover"
+          v-model:palette="palette"
           :groups="pickerGroups(popover)"
           :direction
           :title="popoverTitle(popover, locale)"

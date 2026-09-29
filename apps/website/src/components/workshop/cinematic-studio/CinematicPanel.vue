@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown } from '@lucide/vue'
+import { useObjectUrl } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -60,6 +61,7 @@ const resolution = defineModel<Resolution>('resolution', { required: true })
 const takes = defineModel<number>('takes', { required: true })
 const cast = defineModel<File | undefined>('cast')
 const palette = defineModel<File | undefined>('palette')
+const palettePreview = useObjectUrl(palette)
 
 const modelOptions = computed(() =>
   models.map((model) => ({
@@ -134,6 +136,7 @@ const cardClass =
         </h2>
         <CinematicShotList
           :direction
+          :palette-preview="palettePreview"
           :open-picker="openPicker"
           :locale
           @open="emit('open', $event)"
@@ -148,10 +151,7 @@ const cardClass =
             {{ tc('cinematic.reference.optional', locale) }}
           </span>
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
-          <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
-        </div>
+        <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
       </section>
       <section class="flex flex-col gap-2">
         <h2 :class="labelClass">

@@ -106,3 +106,23 @@ test('shows a preview frame for every Cinematic Studio shot option', async ({
     ).toHaveCount(1)
   }
 })
+
+test('matches the Cinematic Studio grade to an uploaded image', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/cinematic-studio/')
+
+  await expect(
+    page.getByRole('button', { name: /Add a palette reference/ })
+  ).toHaveCount(0)
+  await page.getByRole('button', { name: /^Grade/ }).click()
+  await page
+    .getByTestId('cinematic-grade-image-input')
+    .setInputFiles('public/images/cinematic-studio/neon-street.jpg')
+
+  await expect(page.getByRole('button', { name: /^Grade/ })).toContainText(
+    'Your image'
+  )
+})

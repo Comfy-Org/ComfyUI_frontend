@@ -8,21 +8,23 @@ import type {
   LookPart
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import {
-  directionOption,
   gradeGroup,
   lookGroups
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { shownOption } from '../../../lib/workshop/cinematic-studio/grade-image'
 import CinematicDirectionThumb from './CinematicDirectionThumb.vue'
 import CinematicTooltip from './CinematicTooltip.vue'
 
 const {
   direction,
   open,
+  palettePreview,
   locale = 'en'
 } = defineProps<{
   direction: Direction
+  palettePreview?: string
   open?: string
   locale?: Locale
 }>()
@@ -31,11 +33,11 @@ const emit = defineEmits<{ open: [part: LookPart | 'grade'] }>()
 
 const segments = computed(() =>
   [...lookGroups, gradeGroup].map((group) => {
-    const option = directionOption(group.part, direction)
+    const { label, option } = shownOption(group.part, direction, palettePreview)
     return {
       part: group.part,
       title: tc(group.title, locale),
-      label: tc(option.label, locale),
+      label: tc(label, locale),
       option
     }
   })

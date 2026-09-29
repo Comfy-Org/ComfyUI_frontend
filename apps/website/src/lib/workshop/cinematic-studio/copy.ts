@@ -553,6 +553,18 @@ const copy = {
     en: 'Add a character reference',
     'zh-CN': '添加角色参考'
   },
+  'cinematic.grade.fromImage': {
+    en: 'From an image',
+    'zh-CN': '来自图片'
+  },
+  'cinematic.grade.fromImageAction': {
+    en: 'Match the colors of an image',
+    'zh-CN': '匹配图片的色彩'
+  },
+  'cinematic.grade.yourImage': {
+    en: 'Your image',
+    'zh-CN': '你的图片'
+  },
   'cinematic.reference.palette': {
     en: 'Palette',
     'zh-CN': '色板'

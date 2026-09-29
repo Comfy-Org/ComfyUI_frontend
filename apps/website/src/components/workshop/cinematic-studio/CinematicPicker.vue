@@ -7,6 +7,7 @@ import type {
   DirectionPart
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
+import CinematicGradeImageTile from './CinematicGradeImageTile.vue'
 import CinematicOptionGrid from './CinematicOptionGrid.vue'
 import CinematicOptionList from './CinematicOptionList.vue'
 import CinematicPickerTabs from './CinematicPickerTabs.vue'
@@ -29,13 +30,24 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const palette = defineModel<File | undefined>('palette')
+
 const multiple = groups.length > 1
 const activePart = ref(groups[0].part)
 
 function choose(part: DirectionPart, id: string) {
+  if (part === 'grade') palette.value = undefined
   emit('choose', part, id)
   if (!multiple) emit('close')
 }
+
+function matchImage() {
+  emit('choose', 'grade', 'auto')
+  emit('close')
+}
+
+const selectedIn = (part: DirectionPart) =>
+  part === 'grade' && palette.value ? '' : direction[part]
 </script>
 
 <template>
@@ -63,10 +75,17 @@ function choose(part: DirectionPart, id: string) {
         v-for="group in groups"
         :key="group.part"
         :group
-        :selected="direction[group.part]"
+        :selected="selectedIn(group.part)"
         :locale
         @choose="choose(group.part, $event)"
-      />
+      >
+        <CinematicGradeImageTile
+          v-if="group.part === 'grade'"
+          v-model="palette"
+          :locale
+          @picked="matchImage"
+        />
+      </CinematicOptionGrid>
     </template>
   </CinematicPopover>
 </template>

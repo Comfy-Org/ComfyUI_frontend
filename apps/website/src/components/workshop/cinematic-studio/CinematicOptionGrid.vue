@@ -74,5 +74,6 @@ const emit = defineEmits<{ choose: [id: string] }>()
         {{ tc(option.label, locale) }}
       </span>
     </button>
+    <slot />
   </div>
 </template>

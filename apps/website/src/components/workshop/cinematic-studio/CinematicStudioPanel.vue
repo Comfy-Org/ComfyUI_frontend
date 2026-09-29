@@ -148,6 +148,7 @@ function generate() {
       <CinematicPicker
         v-if="picker"
         :key="picker"
+        v-model:palette="palette"
         :groups="pickerGroups(picker)"
         :direction
         :title="popoverTitle(picker, locale)"

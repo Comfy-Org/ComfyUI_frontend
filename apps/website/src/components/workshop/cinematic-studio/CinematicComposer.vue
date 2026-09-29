@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown } from '@lucide/vue'
+import { useObjectUrl } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -66,6 +67,7 @@ const resolution = defineModel<Resolution>('resolution', { required: true })
 const enhance = defineModel<boolean>('enhance', { required: true })
 const cast = defineModel<File | undefined>('cast')
 const palette = defineModel<File | undefined>('palette')
+const palettePreview = useObjectUrl(palette)
 
 const modelOptions = computed(() =>
   models.map((model) => ({
@@ -194,6 +196,7 @@ const chipClass = (key: PickerKey) =>
         </CinematicTooltip>
         <CinematicDirectionSegments
           :direction
+          :palette-preview="palettePreview"
           :open="openPopover"
           :locale
           @open="emit('open', $event)"

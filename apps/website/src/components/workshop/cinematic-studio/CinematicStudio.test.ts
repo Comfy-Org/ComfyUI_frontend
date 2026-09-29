@@ -1327,4 +1327,51 @@ describe('CinematicStudio', () => {
       expect(panel()).toBeInTheDocument()
     })
   })
+
+  describe('side panel direction', () => {
+    const renderPanel = () => {
+      render(CinematicStudioPanel, { props: { models } })
+      return userEvent.setup()
+    }
+    const gradeRow = () => screen.getByRole('button', { name: /^Grade/ })
+
+    it('matches the grade to an uploaded image in place of a palette reference', async () => {
+      const user = renderPanel()
+      expect(
+        screen.queryByRole('button', { name: /Add a palette reference/ })
+      ).toBeNull()
+
+      await user.click(gradeRow())
+      await user.upload(
+        screen.getByTestId('cinematic-grade-image-input'),
+        new File(['ref'], 'colors.png', { type: 'image/png' })
+      )
+
+      expect(gradeRow()).toHaveTextContent(tc('cinematic.grade.yourImage'))
+
+      await user.click(gradeRow())
+      const picker = screen.getByRole('dialog', { name: 'Grade' })
+      expect(
+        within(picker).getByRole('radio', {
+          name: tc('cinematic.grade.fromImageAction')
+        })
+      ).toHaveAttribute('aria-checked', 'true')
+      await user.click(
+        within(picker).getByRole('radio', { name: 'Teal and orange' })
+      )
+
+      expect(gradeRow()).toHaveTextContent('Teal and orange')
+    })
+
+    it('lists the camera settings beside the body as separate chips', async () => {
+      const user = renderPanel()
+
+      await user.click(screen.getByRole('button', { name: /^Camera/ }))
+      await user.click(screen.getByRole('radio', { name: '85mm' }))
+
+      expect(
+        within(screen.getByTestId('camera-specs')).getByText('85mm')
+      ).toBeInTheDocument()
+    })
+  })
 })
