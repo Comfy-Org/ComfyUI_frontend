@@ -509,7 +509,7 @@ describe('agentEventTransport run approval', () => {
     )
   })
 
-  it('reports an unknown ask kind once with a bounded tag', () => {
+  it('reports an unknown ask kind once with a bounded-cardinality tag', () => {
     const unknownKind = 'x'.repeat(100)
     drive([
       runApproval('unknown-1', unknownKind),
@@ -522,8 +522,9 @@ describe('agentEventTransport run approval', () => {
       expect.objectContaining({
         tags: {
           reason: 'unknown-kind',
-          ask_kind: 'x'.repeat(64)
-        }
+          ask_kind: 'other'
+        },
+        context: expect.objectContaining({ askKind: unknownKind })
       })
     )
   })
