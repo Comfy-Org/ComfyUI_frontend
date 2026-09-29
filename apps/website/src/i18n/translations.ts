@@ -10244,10 +10244,6 @@ Enterprise`
     'zh-CN': '预览已缩短。请在下方下载完整响应。'
   },
   'workshop.output.example': { en: 'Example', 'zh-CN': '示例' },
-  'workshop.output.exampleHint': {
-    en: 'Run {model} to make your own.',
-    'zh-CN': '运行 {model} 以生成你自己的结果。'
-  },
   'workshop.run.preparingSession': {
     en: 'Checking your session…',
     'zh-CN': '正在检查登录状态…',
@@ -10626,10 +10622,6 @@ Enterprise`
     en: 'POST /api/prompt returns prompt_id. Poll GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain with your credential. Selected outputs contain temporary short_url links; read the job again to refresh them.',
     'zh-CN':
       'POST /api/prompt 返回 prompt_id。使用凭证轮询 GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain。选定输出包含临时 short_url 链接；再次读取运行即可刷新链接。'
-  },
-  'workshop.workflow.exampleHint': {
-    en: 'An example from this template.',
-    'zh-CN': '此模板的示例。'
   },
   'workshop.output.refreshLink': {
     en: 'Refresh download link',
