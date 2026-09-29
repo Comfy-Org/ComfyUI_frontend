@@ -17,7 +17,8 @@ import { shotEstimate } from '../lib/workshop/cinematic-studio/estimate'
 import type { CinematicModel } from '../lib/workshop/cinematic-studio/models'
 import {
   shotAspects,
-  takesReferences
+  takesReferences,
+  videoShotBlock
 } from '../lib/workshop/cinematic-studio/models'
 import { nearestAspect } from '../lib/workshop/cinematic-studio/frames'
 import type { CinematicVideoCapabilities } from '../lib/workshop/cinematic-studio/video'
@@ -32,7 +33,7 @@ import type { StarterShot } from '../lib/workshop/cinematic-studio/starters'
 import { isCinematicDemo, useCinematicDemoRun } from './useCinematicDemoRun'
 import { useCinematicStudioRun } from './useCinematicStudioRun'
 
-export type CinematicMode = 'image' | 'video'
+type CinematicMode = 'image' | 'video'
 
 /** Why Generate is held back, for the note beside it. */
 export interface ShotBlock {
@@ -195,25 +196,26 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     frameInput(lastFrame.value, !!model.value?.firstFrameVideo?.lastFrameLinks)
   )
 
+  function imageBlock(): CinematicCopyKey | undefined {
+    if (!takesReferences(model.value, references.value.length))
+      return 'cinematic.references.unsupported'
+    return referenceInputs.value.includes(undefined)
+      ? 'cinematic.references.needsPicture'
+      : undefined
+  }
+
+  const videoBlock = () =>
+    videoShotBlock(model.value, {
+      sourceVideo: !!sourceVideo.value,
+      firstFrame: !!firstFrame.value,
+      firstSendable: !!firstInput.value,
+      lastFrame: !!lastFrame.value,
+      lastSendable: !!lastInput.value
+    })
+
   const blocked = computed<ShotBlock | undefined>(() => {
-    const name = model.value?.name ?? ''
-    if (mode.value === 'image') {
-      if (!takesReferences(model.value, references.value.length))
-        return { key: 'cinematic.references.unsupported', model: name }
-      return referenceInputs.value.includes(undefined)
-        ? { key: 'cinematic.references.needsPicture', model: name }
-        : undefined
-    }
-    if (model.value?.video?.sourceVideo && !sourceVideo.value)
-      return { key: 'cinematic.video.needSourceVideo', model: name }
-    if (firstFrame.value && !model.value?.firstFrameSlug)
-      return { key: 'cinematic.video.noFirstFrame', model: name }
-    if (
-      (firstFrame.value && !firstInput.value) ||
-      (lastFrame.value && !lastInput.value)
-    )
-      return { key: 'cinematic.references.needsPicture', model: name }
-    return undefined
+    const key = mode.value === 'image' ? imageBlock() : videoBlock()
+    return key && { key, model: model.value?.name ?? '' }
   })
 
   const canGenerate = computed(

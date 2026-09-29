@@ -68,10 +68,15 @@ const kinds = computed(() =>
     kind,
     icon: ICONS[kind],
     label: tc(REFERENCE_SLOTS[kind].label, locale),
-    action: tc(REFERENCE_SLOTS[kind].action, locale),
     file: files[kind].value,
+    detail: files[kind].value?.name ?? tc(REFERENCE_SLOTS[kind].action, locale),
     preview: kind === 'video' ? undefined : previews[kind].value
   }))
+)
+const colorsDetail = computed(() =>
+  colorCount
+    ? `${colorCount} · ${tc('cinematic.colors.hint', locale)}`
+    : tc('cinematic.colors.hint', locale)
 )
 const attached = computed(() => kinds.value.filter((entry) => entry.file))
 const cover = computed(
@@ -167,7 +172,7 @@ const itemClass =
               <span class="flex min-w-0 flex-1 flex-col">
                 <span class="text-content-bright">{{ entry.label }}</span>
                 <span class="truncate text-xs text-primary-warm-gray">
-                  {{ entry.file?.name ?? entry.action }}
+                  {{ entry.detail }}
                 </span>
               </span>
               <Plus
@@ -188,11 +193,7 @@ const itemClass =
                   {{ tc('cinematic.colors.title', locale) }}
                 </span>
                 <span class="truncate text-xs text-primary-warm-gray">
-                  {{
-                    colorCount
-                      ? `${colorCount} · ${tc('cinematic.colors.hint', locale)}`
-                      : tc('cinematic.colors.hint', locale)
-                  }}
+                  {{ colorsDetail }}
                 </span>
               </span>
             </DropdownMenuItem>

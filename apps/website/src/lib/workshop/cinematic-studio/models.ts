@@ -1,5 +1,6 @@
 import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import type { AspectRatio } from './catalog'
+import type { CinematicCopyKey } from './copy'
 import type { CinematicPrices } from './estimate'
 import { contractAspects, referenceCapacity } from './frames'
 import { acceptsLinks } from './take-image'
@@ -252,4 +253,28 @@ export function cinematicStudioHref(
   return slug in CINEMATIC_MODEL_LOGOS || slug in CINEMATIC_VIDEO_MODELS
     ? `${studioRoute}?model=${encodeURIComponent(slug)}`
     : undefined
+}
+
+/** What a video shot holds, and whether each frame can be sent as it is. */
+export interface VideoShotInputs {
+  readonly sourceVideo: boolean
+  readonly firstFrame: boolean
+  readonly firstSendable: boolean
+  readonly lastFrame: boolean
+  readonly lastSendable: boolean
+}
+
+/** Why a video shot cannot run on this model yet, if it cannot. */
+export function videoShotBlock(
+  model: CinematicModel | undefined,
+  inputs: VideoShotInputs
+): CinematicCopyKey | undefined {
+  if (model?.video?.sourceVideo && !inputs.sourceVideo)
+    return 'cinematic.video.needSourceVideo'
+  if (inputs.firstFrame && !model?.firstFrameSlug)
+    return 'cinematic.video.noFirstFrame'
+  const unreadable =
+    (inputs.firstFrame && !inputs.firstSendable) ||
+    (inputs.lastFrame && !inputs.lastSendable)
+  return unreadable ? 'cinematic.references.needsPicture' : undefined
 }
