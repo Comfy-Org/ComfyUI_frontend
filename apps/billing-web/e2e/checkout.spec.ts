@@ -135,6 +135,41 @@ test('a scheduled plan change confirms against the saved payment method, no card
   expect(await page.evaluate('window.__e2eFakeStripe')).toBeUndefined()
 })
 
+test('a reactivating upgrade taller than the frame scrolls to its confirm', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await page.setViewportSize({ width: 1280, height: 520 })
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    transition_type: 'upgrade',
+    requires_reactivation_confirmation: true,
+    cost_today_cents: 90_000,
+    amount_due_cents: 90_000,
+    current_plan: {
+      ...cloud.scenario.preview.new_plan,
+      slug: 'standard_monthly',
+      tier: 'STANDARD',
+      price_cents: 2000,
+      period_end: new Date(Date.now() + 86_400_000).toISOString()
+    }
+  }
+  await signIn(CHECKOUT)
+
+  const heading = page.getByRole('heading', { name: 'Confirm your upgrade' })
+  await expect(heading).toBeVisible()
+  const confirm = page.getByRole('button', { name: /Confirm & reactivate/ })
+  await expect(confirm).not.toBeInViewport()
+
+  const box = await heading.boundingBox()
+  if (!box) throw new Error('the confirm heading has no box')
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height + 40)
+  await page.mouse.wheel(0, 2000)
+
+  await expect(confirm).toBeInViewport()
+})
+
 test('a saved default method is charged in place of the card form', async ({
   page,
   cloud,
@@ -390,4 +425,40 @@ test('a checkout link that names no plan goes back to the host to choose one', a
     'https://testcloud.comfy.org/?workspace=ws_team_e2e'
   )
   await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
+})
+
+test('Close on a checkout tab the product opened closes that tab', async ({
+  page,
+  context,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+  const [checkoutTab] = await Promise.all([
+    context.waitForEvent('page'),
+    page.evaluate((url) => {
+      window.open(url, '_blank')
+    }, CHECKOUT)
+  ])
+  await expect(
+    checkoutTab.getByRole('heading', { name: 'Confirm your payment' })
+  ).toBeVisible()
+
+  const closed = checkoutTab.waitForEvent('close')
+  await checkoutTab.getByRole('button', { name: 'Close' }).click()
+  await closed
+
+  expect(checkoutTab.isClosed()).toBe(true)
+})
+
+test('Back on a checkout tab opened directly goes back to the product', async ({
+  page,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+
+  await page.getByRole('button', { name: 'Back' }).click()
+
+  await expect(page).toHaveURL(
+    `https://testcloud.comfy.org/?workspace=${E2E_USER.workspaceId}`
+  )
 })
