@@ -6,17 +6,16 @@ import SiteFooter from './SiteFooter.vue'
 
 describe('SiteFooter', () => {
   it.for([
-    ['en', 'ComfyUI Models'],
-    ['zh-CN', 'ComfyUI 模型']
+    ['en', 'ComfyUI Models', '/models/'],
+    ['zh-CN', 'ComfyUI 模型', '/zh-CN/models/'],
+    ['ja', 'ComfyUI Models', '/models/']
   ] as const)(
-    'links the model catalogue at its slash-terminated path (%s)',
-    ([locale, name]) => {
+    'links the model catalogue in the active locale when it has one (%s)',
+    ([locale, name, href]) => {
       render(SiteFooter, { props: { locale } })
 
-      const links = screen.getAllByRole('link', { name })
-      expect(links.length).toBeGreaterThan(0)
-      for (const link of links) {
-        expect(link.getAttribute('href')).toBe('/models/')
+      for (const link of screen.getAllByRole('link', { name })) {
+        expect(link.getAttribute('href')).toBe(href)
       }
     }
   )

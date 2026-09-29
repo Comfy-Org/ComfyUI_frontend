@@ -4346,6 +4346,7 @@ Enterprise`
   },
   'footer.products': { en: 'Products', 'zh-CN': '产品' },
   'footer.models': { en: 'Models', 'zh-CN': '模型' },
+  // Not nav.workshop: a bare "Models" would repeat the column heading above it.
   'footer.modelCatalogue': { en: 'ComfyUI Models', 'zh-CN': 'ComfyUI 模型' },
   'footer.resources': { en: 'Resources', 'zh-CN': '资源' },
   'footer.company': { en: 'Company', 'zh-CN': '公司' },

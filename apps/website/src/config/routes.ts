@@ -6,6 +6,8 @@ import {
 } from './locales'
 import type { Locale } from './locales'
 
+const workshopHome = '/models/'
+
 const baseRoutes = {
   home: '/',
   download: '/download',
@@ -54,10 +56,10 @@ const baseRoutes = {
   brand: '/brand',
   // The catalogue answers to /models now. The keys keep their old names while
   // the pull requests stacked on this branch are still open against them.
-  workshop: '/models/',
+  workshop: workshopHome,
   workshopSignIn: '/login/',
-  cinematicStudio: '/models/apps/cinematic-studio',
-  reshoot: '/models/apps/reshoot'
+  cinematicStudio: `${workshopHome}apps/cinematic-studio`,
+  reshoot: `${workshopHome}apps/reshoot`
 } as const
 
 type RouteKey = keyof typeof baseRoutes
