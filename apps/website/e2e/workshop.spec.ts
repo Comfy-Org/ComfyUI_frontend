@@ -31,41 +31,31 @@ test.describe('Retired prototype routes', () => {
 })
 
 test.describe('Models catalog', () => {
-  test('opens the featured model from the full banner surface', async ({
-    page
-  }) => {
+  test('opens the featured model from its picture', async ({ page }) => {
     await page.goto('/models/')
-    const slide = page.getByTestId('featured-slide')
-    const href = await page
-      .getByTestId('featured-slide-link')
-      .getAttribute('href')
-    const bounds = await slide.boundingBox()
-    if (!href || !bounds) throw new Error('Featured slide is not clickable')
+    const picture = page.getByTestId('featured-slide-link')
+    const href = await picture.getAttribute('href')
+    if (!href) throw new Error('Featured slide is not clickable')
 
-    await slide.click({ position: { x: bounds.width - 24, y: 24 } })
+    await picture.click()
 
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
 
-  test('opens the model from the banner beside the pagination bars', async ({
+  test('a picture beside the open one becomes the open one', async ({
     page
   }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await page.goto('/models/')
-    const strip = page.getByTestId('featured-pagination')
-    const card = page.getByTestId('featured-slide')
-    const href = await page
-      .getByTestId('featured-slide-link')
-      .getAttribute('href')
-    const [bars, area] = [await strip.boundingBox(), await card.boundingBox()]
-    if (!href || !bars || !area)
-      throw new Error('Featured banner is not laid out')
+    const neighbour = page.getByTestId('featured-neighbour').first()
+    // Hovering stops the rotation, so the name read here is the name clicked.
+    await neighbour.hover()
+    const name = (await neighbour.textContent())?.trim()
+    if (!name) throw new Error('The carousel shows no neighbouring slide')
 
-    // The strip spans the card so the bars can share the room, which puts a
-    // wide empty stretch of it over the link.
-    await page.mouse.click(area.x + area.width - 80, bars.y + bars.height / 2)
+    await neighbour.click()
 
-    await expect(page).toHaveURL(new URL(href, page.url()).href)
+    await expect(page.getByTestId('featured-now-showing')).toContainText(name)
   })
 
   test('keeps every pagination bar inside the banner on a phone', async ({
@@ -74,11 +64,14 @@ test.describe('Models catalog', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/models/')
     const strip = page.getByTestId('featured-pagination')
-    const card = page.getByTestId('featured-slide')
-    const [bars, card_] = [await strip.boundingBox(), await card.boundingBox()]
-    if (!bars || !card_) throw new Error('Featured banner is not laid out')
-    expect(bars.x + bars.width).toBeLessThanOrEqual(card_.x + card_.width)
-    expect(bars.x).toBeGreaterThanOrEqual(card_.x)
+    const banner = page.getByTestId('section-featured')
+    const [bars, frame] = [
+      await strip.boundingBox(),
+      await banner.boundingBox()
+    ]
+    if (!bars || !frame) throw new Error('Featured banner is not laid out')
+    expect(bars.x + bars.width).toBeLessThanOrEqual(frame.x + frame.width)
+    expect(bars.x).toBeGreaterThanOrEqual(frame.x)
   })
 
   test('switches between the curated recommendation and alphabetical order', async ({
@@ -240,7 +233,7 @@ test.describe('Models catalog', () => {
       .getByRole('button', { name: 'Back to all categories', exact: true })
       .click()
     await expect(sections).toBeVisible()
-    await expect(page.getByTestId('workshop-hero')).toBeVisible()
+    await expect(page.getByTestId('catalogue-pitch')).toBeVisible()
   })
 
   // A row loads eight whatever its total says, so a row holding fewer than

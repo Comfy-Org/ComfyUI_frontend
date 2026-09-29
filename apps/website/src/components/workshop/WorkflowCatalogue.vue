@@ -16,6 +16,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import CardRow from './CardRow.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
+import { CARD_GRID, SHELF_CARD } from '../../lib/workshop/card-layout'
 import { modelSlides } from '../../lib/workshop/featured-slides'
 import type { FilterChip } from './WorkshopFilterChips.vue'
 import WorkshopFilterChips from './WorkshopFilterChips.vue'
@@ -36,7 +37,7 @@ const sort = ref<SortOrder>('popular')
 const filterMenu =
   useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
 const browseAll = defineModel<boolean>('browseAll', { default: false })
-const emit = defineEmits<{ section: [boolean] }>()
+const emit = defineEmits<{ section: [boolean]; browsing: [boolean] }>()
 watch(browseAll, (value) => emit('section', value), { immediate: true })
 watch(browseAll, () => {
   clear()
@@ -120,6 +121,7 @@ const browsing = computed(
     !runsOn.value.length &&
     !browseAll.value
 )
+watch(browsing, (value) => emit('browsing', value), { immediate: true })
 const featured = computed(() =>
   rows.value.flatMap((category) =>
     category.models.filter((model) => model.categoryHighlight)
@@ -157,6 +159,11 @@ function leaveSection() {
   browseAll.value = false
   clear()
 }
+
+const pitch = computed(() => ({
+  heading: t('workshop.hub.heading', locale),
+  body: t('workshop.hub.subtitle', locale)
+}))
 </script>
 
 <template>
@@ -181,6 +188,16 @@ function leaveSection() {
         >
       </h1>
     </template>
+    <FeaturedBanner
+      v-if="browsing"
+      :slides="featuredSlides"
+      :locale
+      :pitch
+      :autoplay="false"
+      compact
+      class="mb-10 short:mb-6"
+    />
+
     <div
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       data-testid="workshop-toolbar"
@@ -216,15 +233,6 @@ function leaveSection() {
       </div>
     </div>
 
-    <FeaturedBanner
-      v-if="browsing && featured.length"
-      :slides="featuredSlides"
-      :locale
-      :autoplay="false"
-      compact
-      class="mb-10 short:mb-6"
-    />
-
     <WorkshopFilterChips
       :chips
       :locale
@@ -252,7 +260,7 @@ function leaveSection() {
           <li
             v-for="model in category.models"
             :key="model.slug"
-            class="w-60 shrink-0 snap-start sm:w-[calc((100cqw-2*1.25rem)/2.5)] md:w-[calc((100cqw-3*1.25rem)/3.5)] lg:w-[calc((100cqw-4*1.25rem)/4.5)] xl:w-[calc((100cqw-5*1.25rem)/5.5)]"
+            :class="SHELF_CARD"
           >
             <WorkshopModelCard :model :locale />
           </li>
@@ -274,7 +282,7 @@ function leaveSection() {
 
     <ul
       v-else-if="visible.length"
-      class="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+      :class="CARD_GRID"
       :aria-label="t('workshop.hub.workflows', locale)"
       data-testid="workflow-search-results"
     >

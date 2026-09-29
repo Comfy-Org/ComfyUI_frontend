@@ -29,8 +29,8 @@ import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
-import { modelSlides, studioSlide } from '../../lib/workshop/featured-slides'
-import { useWorkshopAppsEnabled } from '../../scripts/posthog'
+import { CARD_GRID } from '../../lib/workshop/card-layout'
+import { modelSlides } from '../../lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
@@ -128,8 +128,9 @@ const sectionTitleKey = computed<TranslationKey>(() =>
 
 // A category names the screen it opens, so the page heading above it would say
 // the catalogue's name twice.
-const emit = defineEmits<{ section: [boolean] }>()
+const emit = defineEmits<{ section: [boolean]; browsing: [boolean] }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
+watch(browsing, (value) => emit('browsing', value), { immediate: true })
 
 // Keep the launch-requested video models in the set, then let the same curated
 // order used by the rows decide where every selected model appears.
@@ -152,11 +153,7 @@ const featured = computed(() => {
     'popular'
   )
 })
-const studioEnabled = useWorkshopAppsEnabled()
-const featuredSlides = computed(() => [
-  ...(studioEnabled.value ? [studioSlide(locale)] : []),
-  ...modelSlides(featured.value, locale)
-])
+const featuredSlides = computed(() => modelSlides(featured.value, locale))
 
 // What narrowed the list stays legible next to it, so a reader can take one
 // choice off without reopening the menu that made it.
@@ -219,6 +216,11 @@ function rememberModel(
 }
 
 watch(browseAll, (on) => on && resetFilters())
+
+const pitch = computed(() => ({
+  heading: t('workshop.hub.heading', locale),
+  body: t('workshop.hub.subtitle', locale)
+}))
 </script>
 
 <template>
@@ -246,6 +248,14 @@ watch(browseAll, (on) => on && resetFilters())
           {{ visible.length }}
         </span>
       </h1>
+
+      <FeaturedBanner
+        v-if="browsing"
+        :slides="featuredSlides"
+        :locale
+        :pitch
+        class="mb-10 short:mb-6"
+      />
 
       <div
         ref="toolbar"
@@ -278,13 +288,6 @@ watch(browseAll, (on) => on && resetFilters())
           </div>
         </div>
       </div>
-
-      <FeaturedBanner
-        v-if="browsing && featured.length"
-        :slides="featuredSlides"
-        :locale
-        class="mb-10 short:mb-6"
-      />
 
       <WorkshopFilterChips
         :chips
@@ -323,7 +326,7 @@ watch(browseAll, (on) => on && resetFilters())
             {{ t('workshop.models.heading', locale) }}
           </h2>
           <ul
-            class="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            :class="CARD_GRID"
             aria-labelledby="workshop-models-heading"
             data-testid="workshop-models-grid"
           >

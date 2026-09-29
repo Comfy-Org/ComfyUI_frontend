@@ -33,13 +33,15 @@ test('workflow launch groups lead to the existing shared form', async ({
   await page.getByTestId('catalogue-tab-workflows').click()
   const catalogue = page.getByTestId('workflow-catalogue')
   await expect(catalogue.getByRole('heading', { level: 2 })).toHaveText([
-    'Turn an image into a video',
     'Create & edit videos',
     'Animate characters',
     'Create product photos & ads',
     'Upscale & restore',
     'Edit & clean up photos'
   ])
+  await expect(catalogue.getByTestId('featured-now-showing')).toContainText(
+    'Turn an image into a video'
+  )
   await expect(catalogue.getByTestId('workshop-model-card')).toHaveCount(30)
   await expect(catalogue.getByTestId('workshop-sort')).toHaveText('Recommended')
   await expect(catalogue.getByRole('button', { name: /See all/ })).toHaveCount(
@@ -82,7 +84,7 @@ test('workflow launch groups lead to the existing shared form', async ({
     page.getByTestId('workflow-search-results').getByRole('link').first()
   ).toHaveAttribute('href', '/models/workflows/animate-reference-sheet/')
   await page.getByTestId('section-back').click()
-  await expect(page.getByTestId('workshop-hero')).toBeVisible()
+  await expect(page.getByTestId('catalogue-pitch')).toBeVisible()
   await page.getByTestId('workshop-search').fill('Change a material')
   await page.getByRole('link', { name: /Change a material/ }).click()
   await expect(

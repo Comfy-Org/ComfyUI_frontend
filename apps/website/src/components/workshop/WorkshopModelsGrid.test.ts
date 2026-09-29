@@ -47,7 +47,9 @@ const models: WorkshopModel[] = [
 ]
 
 function cardNames() {
-  return screen.queryAllByRole('link').map((card) => card.textContent)
+  return screen
+    .queryAllByTestId('model-card-name')
+    .map((name) => name.textContent)
 }
 
 async function search() {
@@ -273,12 +275,11 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()[0]).toContain('Flux')
   })
 
-  it.for([
-    { studio: true, lead: ['Cinematic Studio'] },
-    { studio: false, lead: [] }
-  ])(
-    'keeps Flux 3 out of the featured models (studio flag $studio)',
-    ({ studio, lead }) => {
+  // Cinematic Studio is an app, and the Models banner promotes models, so the
+  // apps flag no longer puts it in front of them.
+  it.for([{ studio: true }, { studio: false }])(
+    'keeps Flux 3 and Cinematic Studio out of the featured models (studio flag $studio)',
+    ({ studio }) => {
       vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => studio))
       const featured = [
         {
@@ -312,7 +313,7 @@ describe('WorkshopModelsGrid', () => {
         within(pagination)
           .getAllByRole('button')
           .map((button) => button.getAttribute('aria-label'))
-      ).toEqual([...lead, 'Seedream 5 Pro', 'Seedance 2 Fast'])
+      ).toEqual(['Seedream 5 Pro', 'Seedance 2 Fast'])
     }
   )
 

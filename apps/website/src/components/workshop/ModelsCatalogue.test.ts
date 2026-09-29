@@ -87,18 +87,18 @@ const launchModels: WorkshopModel[] = [
 ]
 
 describe('ModelsCatalogue', () => {
+  // One line speaks for the whole Hub now; Apps has no banner yet, so its
+  // stacked hero still speaks for that tab alone.
   it.for([
     {
       locale: 'en',
       tab: 'models',
-      subtitle:
-        'Try the latest AI models with your own ideas, right in your browser.'
+      subtitle: 'Try models, workflows and apps, right in your browser.'
     },
     {
       locale: 'en',
       tab: 'workflows',
-      subtitle:
-        'Turn your ideas into finished results with multi-step workflows powered by AI models.'
+      subtitle: 'Try models, workflows and apps, right in your browser.'
     },
     {
       locale: 'en',
@@ -109,12 +109,12 @@ describe('ModelsCatalogue', () => {
     {
       locale: 'zh-CN',
       tab: 'models',
-      subtitle: '用你自己的创意试用最新的 AI 模型，就在浏览器中。'
+      subtitle: '在浏览器中直接试用模型、工作流和应用。'
     },
     {
       locale: 'zh-CN',
       tab: 'workflows',
-      subtitle: '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
+      subtitle: '在浏览器中直接试用模型、工作流和应用。'
     },
     {
       locale: 'zh-CN',
@@ -122,16 +122,16 @@ describe('ModelsCatalogue', () => {
       subtitle: '用整合多个工作流的应用，挑战更大的创意。'
     }
   ] as const)(
-    'introduces the $tab tab in its own words ($locale)',
+    'says what the $tab tab is for ($locale)',
     async ({ locale, tab, subtitle }) => {
       const user = userEvent.setup()
       render(ModelsCatalogue, { props: { models: launchModels, locale } })
       if (tab !== 'models')
         await user.click(screen.getByTestId(`catalogue-tab-${tab}`))
 
-      expect(await screen.findByTestId('workshop-hero')).toHaveTextContent(
-        subtitle
-      )
+      // Which box holds it is the design's business; that the tab says what
+      // it is for, in its own words, is not.
+      await waitFor(() => expect(document.body).toHaveTextContent(subtitle))
     }
   )
 
@@ -162,18 +162,15 @@ describe('ModelsCatalogue', () => {
     ).toBeNull()
   })
 
-  // The line under the title belongs to the half that is open, so the eyebrow
-  // is what has to hold still: it names the whole catalogue, not the tab.
-  it('names the Hub in the eyebrow on every tab', async () => {
+  // Models and workflows say what they are for in the banner over their list.
+  // Apps has no banner, so the heading it keeps still names the whole Hub.
+  it('names the Hub over the half that has no banner', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
+    expect(screen.queryByTestId('workshop-hero')).toBeNull()
 
-    const hero = () => screen.getByTestId('workshop-hero')
-    expect(hero()).toHaveTextContent('Hub')
-
-    await user.click(screen.getByRole('button', { name: 'Workflows' }))
-    await screen.findByRole('heading', { name: 'Create product photos & ads' })
-    expect(hero()).toHaveTextContent('Hub')
+    await user.click(screen.getByRole('button', { name: 'Apps' }))
+    expect(await screen.findByTestId('workshop-hero')).toHaveTextContent('Hub')
   })
 
   it('opens the workflow tab from its return link and filters by its own categories', async () => {
@@ -212,11 +209,7 @@ describe('ModelsCatalogue', () => {
 
     const controls = await screen.findByTestId('workshop-toolbar')
     expect(within(controls).getByTestId('catalogue-tabs')).toBeVisible()
-    expect(
-      within(screen.getByTestId('workshop-hero')).queryByTestId(
-        'catalogue-tabs'
-      )
-    ).toBeNull()
+    expect(screen.getAllByTestId('catalogue-tabs')).toHaveLength(1)
   })
 
   it.for([
@@ -306,10 +299,10 @@ describe('ModelsCatalogue', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'All workflows 2'
     )
-    expect(screen.queryByTestId('workshop-hero')).toBeNull()
+    expect(screen.queryByTestId('catalogue-pitch')).toBeNull()
     expect(screen.getByTestId('workflow-search-results')).toBeVisible()
     await user.click(screen.getByTestId('section-back'))
-    expect(screen.getByTestId('workshop-hero')).toBeVisible()
+    expect(screen.getByTestId('catalogue-pitch')).toBeVisible()
     expect(
       screen.getByRole('heading', { name: 'Create product photos & ads' })
     ).toBeVisible()
@@ -370,21 +363,21 @@ describe('ModelsCatalogue', () => {
       history.replaceState(null, '', `/models/${query}`)
       localStorage.setItem('comfy-workshop-version', 'v2')
       render(ModelsCatalogue, { props: { models: [] } })
-      expect(screen.getByTestId('workshop-hero')).toBeTruthy()
+      expect(screen.getByTestId('catalogue-pitch')).toBeTruthy()
       expect(screen.queryByTestId('workshop-hub')).toBeNull()
       expect(screen.getByTestId('workshop-sections')).toBeTruthy()
     }
   )
 
-  it('gives the hero away to the section the reader opened', async () => {
+  it('gives the heading away to the section the reader opened', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: [] } })
-    expect(screen.getByTestId('workshop-hero')).toBeTruthy()
+    expect(screen.getByTestId('catalogue-pitch')).toBeTruthy()
 
     // Inside a section the page is about that section, and the heading over it
     // belongs to the whole catalogue.
     await user.click(screen.getByTestId('browse-all-end'))
 
-    expect(screen.queryByTestId('workshop-hero')).toBeNull()
+    expect(screen.queryByTestId('catalogue-pitch')).toBeNull()
   })
 })

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -312,4 +312,34 @@ describe('FeaturedBanner', () => {
       )
     }
   )
+  const pitch = {
+    heading: 'What will you make next?',
+    body: 'Try the latest AI models with your own ideas, right in your browser.'
+  }
+
+  it('still pitches the tab when the catalogue promotes nothing', () => {
+    render(FeaturedBanner, { props: { slides: [], pitch } })
+
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+      pitch.heading
+    )
+    expect(screen.getByText(pitch.body)).toBeTruthy()
+    expect(screen.queryByTestId('featured-now-showing')).toBeNull()
+  })
+
+  it('names the slide under its own picture, with the kind beside the name', () => {
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en'), pitch }
+    })
+
+    const showing = screen.getByTestId('featured-now-showing')
+    expect(within(showing).getByText('Flux')).toBeTruthy()
+    expect(within(showing).getByText('Text to Image')).toBeTruthy()
+    // Without the slide's own copy beside it, the picture the name sits under
+    // is the only way into the slide that a keyboard reaches.
+    expect(screen.getByTestId('featured-slide-link')).toHaveAttribute(
+      'href',
+      '/models/flux/'
+    )
+  })
 })

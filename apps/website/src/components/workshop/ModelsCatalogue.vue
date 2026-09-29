@@ -32,6 +32,7 @@ const { models, locale = 'en' } = defineProps<{
 }>()
 
 const inSection = ref(false)
+const browsing = ref(true)
 const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
@@ -88,6 +89,9 @@ function changeTab(tab: CatalogueTab) {
   selectedTab.value = tab
   inSection.value = false
   browseAll.value = false
+  // A new tab always opens unfiltered. Waiting for it to say so would show
+  // the stacked hero for as long as it takes to arrive.
+  browsing.value = true
   const url = new URL(location.href)
   url.search = ''
   if (tab !== 'models') url.searchParams.set('type', tab)
@@ -114,7 +118,7 @@ watch(
 
 <template>
   <WorkshopHero
-    v-if="!inSection"
+    v-if="!inSection && (activeTab === 'apps' || !browsing)"
     :eyebrow="t('workshop.catalogue.eyebrow', locale)"
     :heading="t('workshop.hero.heading', locale)"
     :subtitle="t(heroSubtitle[activeTab], locale)"
@@ -125,6 +129,7 @@ watch(
     :models="routerModels"
     :locale
     @section="inSection = $event"
+    @browsing="browsing = $event"
   >
     <template #tabs>
       <CatalogueTabs
@@ -144,6 +149,7 @@ watch(
     :models="workflows"
     :locale
     @section="inSection = $event"
+    @browsing="browsing = $event"
   >
     <template #tabs>
       <CatalogueTabs
