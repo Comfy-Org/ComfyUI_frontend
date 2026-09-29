@@ -13,6 +13,7 @@ import {
 } from './workshop-browse-content'
 
 const hub: ModelsUrlEntry = { path: '/models', kind: 'hub' }
+const roots = ['/models']
 
 const sources = {
   models: ['acme--image--generate-images'],
@@ -33,12 +34,12 @@ describe('models URL registry', () => {
     ['/models/workflows/relight/page.json', 'reserved'],
     ['/models/local/', undefined]
   ])('registers %s as %s', ([path, kind]) => {
-    const registry = buildModelsUrlRegistry(modelsUrlEntries(sources))
+    const registry = buildModelsUrlRegistry(modelsUrlEntries(sources), roots)
     expect(modelsUrlKind(path, registry)).toBe(kind)
   })
 
   it('points each alias at the page it redirects to', () => {
-    const registry = buildModelsUrlRegistry(modelsUrlEntries(sources))
+    const registry = buildModelsUrlRegistry(modelsUrlEntries(sources), roots)
     expect(registry.entries.get('/models/acme--image')).toEqual({
       path: '/models/acme--image',
       kind: 'alias',
@@ -65,9 +66,9 @@ describe('models URL registry', () => {
       }
     ]
   ])('rejects %s', ([, collision]) => {
-    expect(() => buildModelsUrlRegistry(modelsUrlEntries(collision))).toThrow(
-      'is registered twice'
-    )
+    expect(() =>
+      buildModelsUrlRegistry(modelsUrlEntries(collision), roots)
+    ).toThrow('is registered twice')
   })
 
   it.for<[string, ModelsUrlEntry[]]>([
@@ -96,7 +97,7 @@ describe('models URL registry', () => {
       ]
     ]
   ])('rejects an alias that redirects to %s', ([, entries]) => {
-    expect(() => buildModelsUrlRegistry(entries)).toThrow(
+    expect(() => buildModelsUrlRegistry(entries, roots)).toThrow(
       'is not a registered page'
     )
   })
@@ -109,27 +110,33 @@ describe('models URL registry', () => {
       'exactly one hub'
     ],
     [
-      'an address outside its hub',
+      'an address outside every root',
       [hub, { path: '/hub/models/new', kind: 'model' }],
-      'outside the /models hub'
+      '/hub/models/new is outside /models'
     ]
   ])('rejects a registry with %s', ([, entries, message]) => {
-    expect(() => buildModelsUrlRegistry(entries)).toThrow(message)
+    expect(() => buildModelsUrlRegistry(entries, roots)).toThrow(message)
   })
 
   it('treats a trailing slash as the same address', () => {
     expect(() =>
-      buildModelsUrlRegistry([
+      buildModelsUrlRegistry(
+        [
+          hub,
+          { path: '/models/new/', kind: 'model' },
+          { path: '/models/new', kind: 'workflow' }
+        ],
+        roots
+      )
+    ).toThrow('/models/new is registered twice')
+    const registry = buildModelsUrlRegistry(
+      [
         hub,
         { path: '/models/new/', kind: 'model' },
-        { path: '/models/new', kind: 'workflow' }
-      ])
-    ).toThrow('/models/new is registered twice')
-    const registry = buildModelsUrlRegistry([
-      hub,
-      { path: '/models/new/', kind: 'model' },
-      { path: '/models/old/', kind: 'alias', destination: '/models/new/' }
-    ])
+        { path: '/models/old/', kind: 'alias', destination: '/models/new/' }
+      ],
+      roots
+    )
     expect(modelsUrlKind('/models/old/', registry)).toBe('alias')
     expect(registry.entries.get('/models/old')).toEqual({
       path: '/models/old',
@@ -139,7 +146,7 @@ describe('models URL registry', () => {
   })
 
   it('finds built Models pages that nothing registered', () => {
-    const registry = buildModelsUrlRegistry(modelsUrlEntries(sources))
+    const registry = buildModelsUrlRegistry(modelsUrlEntries(sources), roots)
     expect(
       unregisteredModelsPaths(
         [
@@ -155,18 +162,37 @@ describe('models URL registry', () => {
     ).toEqual(['/models/local'])
   })
 
-  it('checks built pages against the base the registry was built for', () => {
+  it('governs every root it is given, with aliases across roots', () => {
     const registry = buildModelsUrlRegistry(
-      modelsUrlEntries(sources, '/hub/models')
+      [
+        { path: '/hub/models', kind: 'hub' },
+        { path: '/hub/models/y', kind: 'model' },
+        { path: '/models', kind: 'alias', destination: '/hub/models' },
+        { path: '/models/x', kind: 'alias', destination: '/hub/models/y' }
+      ],
+      ['/models', '/hub/models']
     )
+    expect(modelsUrlKind('/models/x/', registry)).toBe('alias')
     expect(
       unregisteredModelsPaths(
-        [
-          'hub/models/',
-          'hub/models/acme--image--generate-images/',
-          'hub/models/local/',
-          'models/local/'
-        ],
+        ['hub/models/y/', 'hub/models/z/', 'models/x/', 'models/w/', 'hub/'],
+        registry
+      )
+    ).toEqual(['/hub/models/z', '/models/w'])
+  })
+
+  it('matches built pages when the base or a root ends in a slash', () => {
+    const registry = buildModelsUrlRegistry(
+      modelsUrlEntries(sources, '/hub/models/'),
+      ['/hub/models/']
+    )
+    expect(registry.roots).toEqual(['/hub/models'])
+    expect(
+      modelsUrlKind('/hub/models/acme--image--generate-images/', registry)
+    ).toBe('model')
+    expect(
+      unregisteredModelsPaths(
+        ['hub/models/', 'hub/models/acme--image/', 'hub/models/local/'],
         registry
       )
     ).toEqual(['/hub/models/local'])
