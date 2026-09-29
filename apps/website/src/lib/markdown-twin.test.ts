@@ -399,7 +399,7 @@ describe('writeMarkdownTwins', () => {
       )
     })
 
-    it('twins the server-rendered hero and drops the spinner (post-FE-2942 shape)', async () => {
+    it('twins the server-rendered hero and drops the spinner (post-FE-2942 (#18899) shape)', async () => {
       const root = await buildModelPage(
         `<header data-testid="model-hero"><p>Provider</p><h1>Model name</h1><p>Model summary.</p></header><astro-island>${loadingSpinner}</astro-island>`
       )
