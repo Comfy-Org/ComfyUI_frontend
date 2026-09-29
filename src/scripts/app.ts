@@ -397,6 +397,7 @@ export class ComfyApp {
 
   private configuringGraphLevel: number = 0
   private graphLoadSequence = 0
+  private committedGraphLoadSequence = 0
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -1314,7 +1315,7 @@ export class ComfyApp {
   ): Promise<LoadedComfyWorkflow | boolean> {
     const canvasScheduler = useCanvasScheduler()
     const loadId = ++this.graphLoadSequence
-    const isCurrentLoad = () => loadId === this.graphLoadSequence
+    const isCurrentLoad = () => loadId === this.committedGraphLoadSequence
 
     const {
       checkForRerouteMigration = false,
@@ -1529,6 +1530,8 @@ export class ComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
+        if (loadId !== this.graphLoadSequence) return false
+
         this.rootGraph.configure(graphData as ISerialisedGraph)
 
         // Save original renderer version before scaling (it gets modified during scaling)
@@ -1547,6 +1550,7 @@ export class ComfyApp {
           )
         }
 
+        this.committedGraphLoadSequence = loadId
         canvasScheduler.schedule({
           key: 'graph-load-camera',
           element: this.canvasEl,
