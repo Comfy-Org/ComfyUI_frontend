@@ -23,12 +23,6 @@ const elapsed = computed(() => Math.max(0, now.value - take.startedAt))
 </script>
 
 <template>
-  <img
-    v-if="take.preview"
-    :src="take.preview"
-    alt=""
-    class="absolute inset-0 size-full scale-125 object-cover opacity-40 blur-3xl saturate-50"
-  />
   <p
     v-if="elapsed >= LONG_WAIT_MS"
     class="absolute inset-x-4 top-4 mx-auto w-fit rounded-full border border-transparency-white-t8 bg-primary-comfy-ink/80 px-3.5 py-2 text-center text-xs text-primary-comfy-canvas"
@@ -37,20 +31,22 @@ const elapsed = computed(() => Math.max(0, now.value - take.startedAt))
   </p>
   <figcaption
     role="status"
-    class="absolute bottom-4 left-5 flex items-center gap-2.5 text-[13px] text-primary-warm-white"
+    class="relative flex flex-col items-center gap-4 p-6 text-center"
   >
     <LoaderCircle
-      class="size-4 text-primary-comfy-yellow motion-safe:animate-spin"
+      class="size-8 text-primary-comfy-yellow motion-safe:animate-spin"
       aria-hidden="true"
     />
-    {{
-      tc('cinematic.stage.renderingTakeName', locale, {
-        shot: take.shot,
-        take: take.letter
-      })
-    }}
-    <span class="font-mono text-primary-comfy-canvas tabular-nums">
-      {{ formatElapsed(elapsed) }}
+    <span class="flex items-baseline gap-2 text-sm text-primary-warm-white">
+      {{
+        tc('cinematic.stage.renderingTakeName', locale, {
+          shot: take.shot,
+          take: take.letter
+        })
+      }}
+      <span class="text-primary-warm-gray tabular-nums">
+        {{ formatElapsed(elapsed) }}
+      </span>
     </span>
   </figcaption>
 </template>
