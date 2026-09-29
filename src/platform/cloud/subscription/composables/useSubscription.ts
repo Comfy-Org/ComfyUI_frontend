@@ -292,9 +292,10 @@ function useSubscriptionInternal() {
     return true
   }
 
-  const schedulePendingCheckoutRecovery = () => {
-    const attempt = getPendingSubscriptionCheckoutAttempt()
-    if (
+  const canSchedulePendingCheckoutRecovery = (
+    attempt: ReturnType<typeof getPendingSubscriptionCheckoutAttempt>
+  ) =>
+    !(
       isDisposed ||
       !defaultWindow ||
       pendingCheckoutRecoveryTimeout !== null ||
@@ -302,9 +303,11 @@ function useSubscriptionInternal() {
       !attempt ||
       hasReportedMissingCheckoutCompletion(attempt.attempt_id) ||
       hasReportedRecoveryUnreachable(attempt.attempt_id)
-    ) {
-      return
-    }
+    )
+
+  const schedulePendingCheckoutRecovery = () => {
+    const attempt = getPendingSubscriptionCheckoutAttempt()
+    if (!canSchedulePendingCheckoutRecovery(attempt) || !attempt) return
 
     const nextDelay = getPendingCheckoutRetryDelay(
       pendingCheckoutRecoveryAttempt
@@ -441,17 +444,22 @@ function useSubscriptionInternal() {
       : null
     const previousCycle = getPreviousCycle()
 
+    const resubscribeDetails =
+      options?.operation === 'resubscribe'
+        ? {
+            operation: options.operation,
+            resubscribe_source: options.source,
+            previous_cancel_at: subscriptionStatus.value?.cancel_at ?? null
+          }
+        : {}
+
     recordPendingSubscriptionCheckoutAttempt({
       tier: 'standard',
       cycle: 'monthly',
       checkout_type: canAccessSubscriptionFeatures.value ? 'change' : 'new',
       previous_tier: previousTier ?? undefined,
       previous_cycle: previousCycle,
-      operation: options?.operation,
-      resubscribe_source: options?.source,
-      ...(options?.operation === 'resubscribe'
-        ? { previous_cancel_at: subscriptionStatus.value?.cancel_at ?? null }
-        : {}),
+      ...resubscribeDetails,
       owner_id: authStore.userId ?? undefined,
       workspace_id: workspaceStore.activeWorkspaceId
     })
