@@ -6,6 +6,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import type { WorkflowReference } from '../../types/workflowReference'
+import type { AgentStarterPromptSource } from '../../utils/starterPrompts'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
 import type { ComposerAttachment } from './useComposer'
@@ -40,6 +41,12 @@ interface UseAgentDraftSubmissionOptions {
 export interface SubmissionMeta {
   clientMessageId: string
   inputMethod: AgentInputMethod
+  /**
+   * The starter prompt this draft came from, `null` when none did. Read here
+   * rather than at report time for the same reason `inputMethod` is:
+   * `startSubmission` clears it, and a failed send restores it for the retry.
+   */
+  starterPrompt: AgentStarterPromptSource | null
 }
 
 export function useAgentDraftSubmission(
@@ -94,6 +101,7 @@ export function useAgentDraftSubmission(
     options.onSubmit()
     const prompt = composer.prompt
     const inputMethod = composer.promptOrigin
+    const starterPrompt = composer.starterPrompt
     const sentAttachments = [...attachments]
     const sentReferences = [...references]
     selection.exit()
@@ -113,7 +121,7 @@ export function useAgentDraftSubmission(
       sentAttachments,
       nodes,
       sentReferences,
-      { clientMessageId: uuidv4(), inputMethod }
+      { clientMessageId: uuidv4(), inputMethod, starterPrompt }
     )
     const stopRequested =
       composer.submission?.id === submissionId &&
