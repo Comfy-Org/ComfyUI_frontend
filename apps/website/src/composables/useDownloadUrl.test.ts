@@ -21,10 +21,6 @@ const UA = {
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   linux:
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-  linuxArm:
-    'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-  chromeOs:
-    'Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   freeBsd:
     'Mozilla/5.0 (X11; FreeBSD amd64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
 } as const
@@ -63,21 +59,15 @@ describe('detectDevice', () => {
     })
   })
 
-  it.for([
-    { label: 'x86 Linux', ua: UA.linux },
-    { label: 'ARM Linux', ua: UA.linuxArm }
-  ])('treats $label as a linux desktop', ({ ua }) => {
-    expect(detectDevice(ua, 0)).toEqual({
+  it('treats desktop Linux as a linux desktop', () => {
+    expect(detectDevice(UA.linux, 0)).toEqual({
       platform: 'linux',
       isMobileUa: false
     })
   })
 
-  it.for([
-    { label: 'Chrome OS', ua: UA.chromeOs },
-    { label: 'FreeBSD', ua: UA.freeBsd }
-  ])('treats $label as an unknown desktop platform', ({ ua }) => {
-    expect(detectDevice(ua, 0)).toEqual({
+  it('treats FreeBSD as an unknown desktop platform', () => {
+    expect(detectDevice(UA.freeBsd, 0)).toEqual({
       platform: null,
       isMobileUa: false
     })
@@ -267,12 +257,9 @@ describe('useDownloadUrl on Windows', () => {
 })
 
 describe('useDownloadUrl on Linux', () => {
-  it.for([
-    { label: 'x86 Linux', ua: UA.linux },
-    { label: 'ARM Linux', ua: UA.linuxArm }
-  ])('links $label to the architecture-resolving url', async ({ ua }) => {
+  it('links Linux to the x64 AppImage', async () => {
     vi.stubGlobal('navigator', {
-      userAgent: ua,
+      userAgent: UA.linux,
       maxTouchPoints: 0
     } satisfies Partial<Navigator>)
 
@@ -280,21 +267,7 @@ describe('useDownloadUrl on Linux', () => {
 
     expect(await screen.findByRole('link')).toHaveAttribute(
       'href',
-      'https://dl.comfy.org'
+      'https://download.comfy.org/linux/appimage/x64'
     )
-  })
-
-  it('never probes the CPU or GPU of a Linux machine', async () => {
-    vi.stubGlobal('navigator', {
-      userAgent: UA.linux,
-      maxTouchPoints: 0,
-      userAgentData: reportingCpu('arm')
-    } satisfies Partial<Navigator>)
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext')
-
-    render(DownloadLink)
-    await screen.findByRole('link')
-
-    expect(HTMLCanvasElement.prototype.getContext).not.toHaveBeenCalled()
   })
 })

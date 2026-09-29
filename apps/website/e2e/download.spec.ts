@@ -150,9 +150,7 @@ test.describe('Download page @smoke', () => {
   test.describe('Linux desktop', () => {
     test.use({ userAgent: LINUX_UA })
 
-    test('HeroSection offers Linux one download with a Linux logo', async ({
-      page
-    }) => {
+    test('HeroSection links Linux to the x64 AppImage', async ({ page }) => {
       await page.goto('/download')
 
       const hero = heroLocator(page)
@@ -160,7 +158,10 @@ test.describe('Download page @smoke', () => {
 
       await expect(downloadBtn).toHaveCount(1)
       await expect(downloadBtn).toBeVisible()
-      await expect(downloadBtn).toHaveAttribute('href', 'https://dl.comfy.org')
+      await expect(downloadBtn).toHaveAttribute(
+        'href',
+        'https://download.comfy.org/linux/appimage/x64'
+      )
       await expect(downloadBtn.locator('img')).toHaveAttribute(
         'src',
         '/icons/os/linux.svg'
@@ -173,18 +174,28 @@ test.describe('Download page @smoke', () => {
   test.describe('unrecognized desktop', () => {
     test.use({ userAgent: FREEBSD_UA })
 
-    test('HeroSection falls back to one unbranded download when UA is unrecognized', async ({
+    test('HeroSection falls back to both Windows + Mac when UA is unrecognized', async ({
       page
     }) => {
       await page.goto('/download')
 
       const hero = heroLocator(page)
-      const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
 
-      await expect(downloadBtn).toHaveCount(1)
-      await expect(downloadBtn).toBeVisible()
-      await expect(downloadBtn).toHaveAttribute('href', 'https://dl.comfy.org')
-      await expect(downloadBtn.locator('img')).toHaveCount(0)
+      const windowsBtn = hero.locator(
+        'a[href="https://comfy.org/download/windows/nsis/x64"]'
+      )
+      await expect(windowsBtn).toBeVisible()
+      await expect(windowsBtn).toHaveText(/DOWNLOAD DESKTOP/i)
+
+      const macBtn = hero.locator(
+        'a[href="https://download.comfy.org/mac/dmg/arm64"]'
+      )
+      await expect(macBtn).toBeVisible()
+      await expect(macBtn).toHaveText(/DOWNLOAD DESKTOP/i)
+
+      await expect(
+        hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+      ).toHaveCount(2)
 
       await expect(hero.getByRole('textbox')).toHaveCount(0)
     })

@@ -28,9 +28,10 @@ const ICONS: Record<Platform, string> = {
 }
 
 interface ButtonSpec {
-  key: Platform | 'any'
+  key: Platform
   href: string
-  icon?: string
+  icon: string
+  ariaLabel?: string
 }
 
 const buttons = computed<ButtonSpec[]>(() => {
@@ -44,7 +45,20 @@ const buttons = computed<ButtonSpec[]>(() => {
     ]
   }
   if (showFallback.value) {
-    return [{ key: 'any', href: downloadUrls.any }]
+    return [
+      {
+        key: 'windows',
+        href: downloadUrls.windows,
+        icon: ICONS.windows,
+        ariaLabel: `${label.value} — Windows`
+      },
+      {
+        key: 'mac',
+        href: downloadUrls.macArm,
+        icon: ICONS.mac,
+        ariaLabel: `${label.value} — macOS`
+      }
+    ]
   }
   return []
 })
@@ -58,11 +72,12 @@ const buttons = computed<ButtonSpec[]>(() => {
     target="_blank"
     size="lg"
     :class="customClass"
+    :aria-label="btn.ariaLabel"
     :data-astro-prefetch="btn.key === 'windows' ? 'false' : undefined"
     @click="captureDownloadClick(btn.key)"
   >
     <span class="inline-flex items-center gap-2">
-      <img v-if="btn.icon" :src="btn.icon" alt="" class="inline-block size-5" />
+      <img :src="btn.icon" alt="" class="inline-block size-5" />
       <span class="inline-block">{{ label }}</span>
     </span>
   </BrandButton>

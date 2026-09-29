@@ -6,7 +6,7 @@ export const downloadUrls = {
   windows: 'https://comfy.org/download/windows/nsis/x64',
   windowsArm: 'https://comfy.org/download/windows/nsis/arm64',
   macArm: 'https://download.comfy.org/mac/dmg/arm64',
-  any: 'https://dl.comfy.org'
+  linux: 'https://download.comfy.org/linux/appimage/x64'
 } as const
 
 export type Platform = 'windows' | 'mac' | 'linux'
@@ -72,7 +72,6 @@ async function needsArmInstaller(): Promise<boolean> {
   return (await isArmCpu(navigator.userAgentData)) && hasNvidiaGpu()
 }
 
-// TODO: macOS arm64 is the only mac build, so Intel Macs get the arm64 dmg.
 export function useDownloadUrl() {
   const platform = ref<Platform | null>(null)
   const detected = ref(false)
@@ -84,7 +83,7 @@ export function useDownloadUrl() {
       return armInstaller.value ? downloadUrls.windowsArm : downloadUrls.windows
     }
     if (platform.value === 'mac') return downloadUrls.macArm
-    if (platform.value === 'linux') return downloadUrls.any
+    if (platform.value === 'linux') return downloadUrls.linux
     return externalLinks.github
   })
 
