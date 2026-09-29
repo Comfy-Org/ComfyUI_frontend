@@ -65,6 +65,9 @@ test('the workflow API tab opens with the key action and what it needs beside th
   await page.getByRole('tab', { name: 'API', exact: true }).click()
 
   const facts = page.getByTestId('api-facts')
+  await expect(facts).toContainText('run(workflow, api_key=…)')
+  await expect(facts).not.toContainText('/api/prompt')
+  await page.getByRole('tab', { name: 'cURL', exact: true }).click()
   await expect(facts).toContainText('POST')
   await expect(facts).toContainText('/api/prompt')
   await expect(facts).toContainText('X-API-Key')
