@@ -114,7 +114,7 @@ describe('buildSummaryLedger', () => {
       }
     },
     {
-      name: '$0 due new subscription: the trailing line says why the card is collected',
+      name: '$0 due new subscription: no row contradicts the total, and the trailing line says why the card is collected',
       quote: {
         transition_type: 'new_subscription',
         amount_due_cents: 0,
@@ -130,13 +130,7 @@ describe('buildSummaryLedger', () => {
         eyebrow: 'Subscribe to Team Plan · Comfy Studios',
         headline: { amount: '$0', currency: 'USD' },
         credits: { count: '1,772,400', qualifier: 'credits per year' },
-        items: [
-          {
-            label: 'Team Plan',
-            amount: '$7,560.00',
-            sublines: ['Billed yearly']
-          }
-        ],
+        items: [],
         adjustments: [],
         total: '$0.00',
         trailing: [
@@ -408,6 +402,19 @@ describe('buildSummaryLedger', () => {
 
   it('leaves Subtotal out while a single money row precedes the total', () => {
     expect(ledgerOf({}).subtotal).toBeUndefined()
+  })
+
+  it('drops the prorated row too when the quote leaves its gap to the total unexplained', () => {
+    expect(
+      ledgerOf({
+        transition_type: 'upgrade',
+        proration_at: PRICED_AT,
+        amount_due_cents: 0,
+        cost_today_cents: 3250,
+        current_plan: planOf('CREATOR', 'MONTHLY', 3500),
+        new_plan: planOf('PRO', 'MONTHLY', 10_000)
+      }).items
+    ).toEqual([])
   })
 })
 

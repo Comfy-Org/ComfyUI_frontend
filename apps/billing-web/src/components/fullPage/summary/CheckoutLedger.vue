@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SummaryLedger } from '@/checkout/summaryLedger'
@@ -6,6 +7,8 @@ import type { SummaryLedger } from '@/checkout/summaryLedger'
 const { ledger } = defineProps<{ ledger: SummaryLedger }>()
 
 const { t } = useI18n()
+
+const rows = computed(() => [...ledger.items, ...ledger.adjustments])
 </script>
 
 <template>
@@ -32,30 +35,28 @@ const { t } = useI18n()
     </p>
   </div>
 
-  <hr class="mt-8 mb-0 border-border-default" />
-  <ul class="m-0 flex list-none flex-col gap-4 p-0 pt-6">
-    <li
-      v-for="row in [...ledger.items, ...ledger.adjustments]"
-      :key="row.label"
-      class="flex flex-col gap-1"
-    >
-      <div class="flex items-baseline justify-between gap-4">
-        <span class="text-sm font-semibold text-base-foreground">
-          {{ row.label }}
+  <template v-if="rows.length > 0">
+    <hr class="mt-8 mb-0 border-border-default" />
+    <ul class="m-0 flex list-none flex-col gap-4 p-0 pt-6">
+      <li v-for="row in rows" :key="row.label" class="flex flex-col gap-1">
+        <div class="flex items-baseline justify-between gap-4">
+          <span class="text-sm font-semibold text-base-foreground">
+            {{ row.label }}
+          </span>
+          <span class="shrink-0 text-sm text-base-foreground tabular-nums">
+            {{ row.amount }}
+          </span>
+        </div>
+        <span
+          v-for="subline in row.sublines"
+          :key="subline"
+          class="text-xs text-muted-foreground"
+        >
+          {{ subline }}
         </span>
-        <span class="shrink-0 text-sm text-base-foreground tabular-nums">
-          {{ row.amount }}
-        </span>
-      </div>
-      <span
-        v-for="subline in row.sublines"
-        :key="subline"
-        class="text-xs text-muted-foreground"
-      >
-        {{ subline }}
-      </span>
-    </li>
-  </ul>
+      </li>
+    </ul>
+  </template>
 
   <template v-if="ledger.subtotal">
     <hr class="mt-6 mb-0 border-border-default" />

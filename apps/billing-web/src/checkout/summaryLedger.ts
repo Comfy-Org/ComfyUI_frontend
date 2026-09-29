@@ -29,7 +29,8 @@ export interface SummaryLedger {
     readonly rate?: string
   }
   readonly credits?: { readonly count: string; readonly qualifier: string }
-  readonly items: readonly [LedgerRow, ...LedgerRow[]]
+  /** Money rows the total reconciles with; see `moneyItems`. */
+  readonly items: readonly LedgerRow[]
   /** Promo rows; strikethrough is reserved for these. */
   readonly adjustments: readonly LedgerRow[]
   readonly subtotal?: string
@@ -183,6 +184,20 @@ function refillsToLine(r: QuoteReading): string {
   })
 }
 
+/**
+ * A money row renders only when the total reconciles with it. Today's charge
+ * can come out under the item (a $0 first period, a credit on file) with
+ * nothing in the quote to itemize the difference; the row would then
+ * contradict the total, so it comes off and the total stands on its own.
+ */
+function moneyItems(
+  r: QuoteReading,
+  cents: number,
+  row: Omit<LedgerRow, 'amount'>
+): LedgerRow[] {
+  return cents === r.dueCents ? [{ ...row, amount: r.money(cents) }] : []
+}
+
 function scheduledLedger(r: QuoteReading): SummaryLedger {
   const startsAt = r.date(r.quote.effective_at)
   const current = r.current
@@ -239,19 +254,16 @@ function proratedLedger(r: QuoteReading): SummaryLedger {
     family: 'prorated_change',
     headline: { amount: r.headlineMoney(r.dueCents), currency: r.currency },
     credits: grantedToday(r),
-    items: [
-      {
-        label: r.t(`${S}.item.prorated`, { plan: r.plan }),
-        amount: r.money(r.quote.cost_today_cents),
-        sublines: [
-          r.t(`${S}.item.remainingTime`, {
-            plan: r.tierName(r.next.tier),
-            current: r.tierName(r.current?.tier ?? r.next.tier)
-          }),
-          refillsToLine(r)
-        ]
-      }
-    ],
+    items: moneyItems(r, r.quote.cost_today_cents, {
+      label: r.t(`${S}.item.prorated`, { plan: r.plan }),
+      sublines: [
+        r.t(`${S}.item.remainingTime`, {
+          plan: r.tierName(r.next.tier),
+          current: r.tierName(r.current?.tier ?? r.next.tier)
+        }),
+        refillsToLine(r)
+      ]
+    }),
     trailing: [r.t(`${S}.trailing.creditsKept`, {}), renewalLine(r)]
   }
 }
@@ -318,16 +330,13 @@ function chargeNowLedger(r: QuoteReading): SummaryLedger {
     family: 'charge_now',
     headline: { amount: r.headlineMoney(r.dueCents), currency: r.currency },
     credits: chargeNowCredits(r),
-    items: [
-      {
-        label: r.plan,
-        amount: r.money(r.quote.cost_today_cents),
-        sublines:
-          r.cadenceChanges || !grantIsAllowance(r)
-            ? [cadenceLine, refillsToLine(r)]
-            : [cadenceLine]
-      }
-    ],
+    items: moneyItems(r, r.quote.cost_today_cents, {
+      label: r.plan,
+      sublines:
+        r.cadenceChanges || !grantIsAllowance(r)
+          ? [cadenceLine, refillsToLine(r)]
+          : [cadenceLine]
+    }),
     trailing: chargeNowTrailing(r)
   }
 }
