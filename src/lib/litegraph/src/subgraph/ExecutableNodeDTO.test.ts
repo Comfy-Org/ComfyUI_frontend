@@ -430,6 +430,7 @@ describe('Bypass node output resolution', () => {
     const bypassedNode = new LGraphNode('Bypassed')
     bypassedNode.addInput('image', 'IMAGE')
     bypassedNode.addInput('width', 'INT')
+    bypassedNode.addInput('height', 'INT')
     bypassedNode.addInput('first', 'CONDITIONING')
     bypassedNode.addInput('second', 'CONDITIONING')
     bypassedNode.addOutput('image', 'IMAGE')
@@ -438,8 +439,8 @@ describe('Bypass node output resolution', () => {
     bypassedNode.mode = LGraphEventMode.BYPASS
     graph.add(bypassedNode)
 
-    firstSource.connect(0, bypassedNode, 2)
-    secondSource.connect(0, bypassedNode, 3)
+    firstSource.connect(0, bypassedNode, 3)
+    secondSource.connect(0, bypassedNode, 4)
 
     const nodeDtoMap = new Map()
     const firstDto = new ExecutableNodeDTO(firstSource, [], nodeDtoMap)
@@ -453,6 +454,45 @@ describe('Bypass node output resolution', () => {
       firstDto
     )
     expect(bypassedDto.resolveOutput(2, 'CONDITIONING', new Set())?.node).toBe(
+      firstDto
+    )
+  })
+
+  it('should retain fallback when same-type output names are ambiguous', () => {
+    const graph = new LGraph()
+
+    const firstSource = new LGraphNode('First Source')
+    firstSource.addOutput('first', 'CONDITIONING')
+    graph.add(firstSource)
+
+    const secondSource = new LGraphNode('Second Source')
+    secondSource.addOutput('second', 'CONDITIONING')
+    graph.add(secondSource)
+
+    const bypassedNode = new LGraphNode('Bypassed')
+    bypassedNode.addInput('image', 'IMAGE')
+    bypassedNode.addInput('width', 'INT')
+    bypassedNode.addInput('height', 'INT')
+    bypassedNode.addInput('first', 'CONDITIONING')
+    bypassedNode.addInput('shared', 'CONDITIONING')
+    bypassedNode.addOutput('image', 'IMAGE')
+    bypassedNode.addOutput('shared', 'CONDITIONING')
+    bypassedNode.addOutput('shared', 'CONDITIONING')
+    bypassedNode.mode = LGraphEventMode.BYPASS
+    graph.add(bypassedNode)
+
+    firstSource.connect(0, bypassedNode, 3)
+    secondSource.connect(0, bypassedNode, 4)
+
+    const nodeDtoMap = new Map()
+    const firstDto = new ExecutableNodeDTO(firstSource, [], nodeDtoMap)
+    const secondDto = new ExecutableNodeDTO(secondSource, [], nodeDtoMap)
+    const bypassedDto = new ExecutableNodeDTO(bypassedNode, [], nodeDtoMap)
+    for (const dto of [firstDto, secondDto, bypassedDto]) {
+      nodeDtoMap.set(dto.id, dto)
+    }
+
+    expect(bypassedDto.resolveOutput(1, 'CONDITIONING', new Set())?.node).toBe(
       firstDto
     )
   })

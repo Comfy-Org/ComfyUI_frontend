@@ -373,7 +373,11 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     }
 
     const outputName = this.node.outputs[slot].name
-    const nameMatches = outputName
+    const outputNameIsUnique =
+      !!outputName &&
+      this.node.outputs.filter((output) => output.name === outputName)
+        .length === 1
+    const nameMatches = outputNameIsUnique
       ? inputs.filter(
           (input) =>
             input.name === outputName &&
