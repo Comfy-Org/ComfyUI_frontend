@@ -36,6 +36,7 @@ describe('ReshootSide', () => {
 
     expect(screen.queryByText(help)).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: help }))
-    expect(await screen.findAllByText(help)).not.toHaveLength(0)
+    const [shownHelp] = await screen.findAllByText(help)
+    expect(shownHelp).toBeVisible()
   })
 })
