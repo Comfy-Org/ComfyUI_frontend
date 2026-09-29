@@ -20,7 +20,7 @@
  * live evidence was a VIDEO link's tuple landing on a STRING input.
  */
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
@@ -190,6 +190,7 @@ describe('agent CRDT outbound leg: link mint by live position vs. doc order', ()
       boundRootGraphId: () => ROOT_GRAPH_ID,
       docInputNames: (nodeId) => readDocSlotNames(doc, String(nodeId), 'inputs')
     })
+    onTestFinished(() => port.detach())
 
     emitGraphIntent({
       type: 'connect',

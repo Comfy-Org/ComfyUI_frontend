@@ -178,9 +178,9 @@ function owningGraphIdOf(graph: LGraph, event: IntentOf<'set_widget'>): string {
  * document has no such node yet. Undefined when the document has the node
  * but no slot by that name.
  */
-function docInputIndex(
+export function docInputIndex(
   docNames: readonly (string | undefined)[] | null,
-  input: INodeInputSlot | undefined,
+  input: Pick<INodeInputSlot, 'name'> | undefined,
   liveIndex: number
 ): number | undefined {
   if (docNames === null || input === undefined) return liveIndex

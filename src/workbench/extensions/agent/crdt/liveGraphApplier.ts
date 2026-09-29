@@ -677,8 +677,7 @@ export class LiveGraphApplier {
       if (!isWidgetValue(value)) continue
       if (this.holdsLocalWrite(node, name, value)) continue
       const input = promoted.find((candidate) => candidate.name === name)
-      const widget = input && node.getWidgetFromSlot(input)
-      if (!widget) {
+      if (!input) {
         this.reportOnce(
           `widget:${String(node.id)}:${name}`,
           `Subgraph host ${String(node.id)} (${node.type}) promotes no widget '${name}'`,
@@ -687,7 +686,28 @@ export class LiveGraphApplier {
         )
         continue
       }
-      this.setWidgetValue(node, widget, value)
+      const widget = node.getWidgetFromSlot(input)
+      if (!widget) {
+        this.reportOnce(
+          `widget:${String(node.id)}:${name}:unresolved`,
+          `Subgraph host ${String(node.id)} (${node.type}) could not resolve promoted widget '${name}'`,
+          'agent_graph_widget_missing',
+          { nodeId: node.id, type: node.type, name }
+        )
+        continue
+      }
+      try {
+        this.setPromotedWidgetValue(node, widget, value)
+      } catch (error) {
+        reportError(error, {
+          errorType: 'agent_graph_apply_failed',
+          context: {
+            ...AGENT_APPLY_TAGS,
+            nodeId: String(node.id),
+            widget: name
+          }
+        })
+      }
     }
   }
 
@@ -714,6 +734,34 @@ export class LiveGraphApplier {
       node.onWidgetChanged?.(widget.name, value, previous, widget)
     } catch (error) {
       rollback()
+      throw error
+    }
+    node.graph?.incrementVersion()
+  }
+
+  private setPromotedWidgetValue(
+    node: LGraphNode,
+    widget: IBaseWidget,
+    value: WidgetValue
+  ): void {
+    if (widget.type === 'button' || Object.is(widget.value, value)) return
+    const previous = widget.value
+    const callback = widget.callback
+    widget.callback = undefined
+    const rollback = writeWidgetValue(node, widget, value, false)
+    widget.callback = callback
+    try {
+      callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
+      node.onWidgetChanged?.(widget.name, value, previous, widget)
+      if (!Object.is(widget.value, value)) {
+        widget.callback = undefined
+        writeWidgetValue(node, widget, value, false)
+        widget.callback = callback
+      }
+    } catch (error) {
+      widget.callback = undefined
+      rollback()
+      widget.callback = callback
       throw error
     }
     node.graph?.incrementVersion()
@@ -842,11 +890,12 @@ function hostWidgetEntries(
 function writeWidgetValue(
   node: LGraphNode,
   widget: IBaseWidget,
-  value: WidgetValue
+  value: WidgetValue,
+  mirrorProperty = true
 ): () => void {
   const previous = widget.value
   const property = widget.options.property
-  if (!property || node.properties[property] === undefined) {
+  if (!mirrorProperty || !property || node.properties[property] === undefined) {
     widget.value = value
     return () => {
       widget.value = previous

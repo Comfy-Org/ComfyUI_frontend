@@ -159,7 +159,9 @@ test.describe(
       await test.step('route the promoted seed edit without changing text', async () => {
         const outboundBeforeRemoteEdit = outboundFrames.length
         await page.evaluate((hostId) => {
-          const host = window.app!.graph.nodes.find(
+          const app = window.app
+          if (!app) throw new Error('Comfy app was not initialized')
+          const host = app.graph.nodes.find(
             ({ id }) => String(id) === String(hostId)
           )
           const seed = host?.widgets?.find(({ name }) => name === 'seed')
@@ -209,9 +211,6 @@ test.describe(
               )
             )
         )
-        expect(outboundFrames.slice(outboundBeforeRemoteEdit)).not.toEqual(
-          expect.arrayContaining([expect.stringContaining('doc_ops')])
-        )
         await expect
           .poll(() =>
             page.evaluate(() =>
@@ -219,6 +218,13 @@ test.describe(
             )
           )
           .toBe(String(AGENT_SUBGRAPH_EDITED_SEED))
+        await expect
+          .poll(() =>
+            outboundFrames
+              .slice(outboundBeforeRemoteEdit)
+              .some((frame) => frame.includes('doc_ops'))
+          )
+          .toBe(false)
         await page.screenshot({
           path: test.info().outputPath('subgraph-edited.png')
         })

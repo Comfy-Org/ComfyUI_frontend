@@ -1340,6 +1340,34 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('defers rejected-op reverts until the bound workflow is active again', async () => {
+    const { unmount, enqueue, isTargetActive } = mountFollower('wf-1')
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+
+    isTargetActive.value = false
+    await nextTick()
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: { index: 0, op_id: ops[0].op_id, code: 'unknown_node' }
+    })
+
+    expect(projectionState.revertRejected).not.toHaveBeenCalled()
+
+    isTargetActive.value = true
+    await nextTick()
+
+    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
+      'wf-1',
+      [ops[0]]
+    )
+    unmount()
+  })
+
   describe('own-actor echo', () => {
     const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
 

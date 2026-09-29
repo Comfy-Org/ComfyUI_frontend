@@ -179,7 +179,7 @@ function startFollower(options: FixtureOptions = {}) {
   follower.applyRemoteUpdate(update)
   expect(
     adapter.applyFrame({ workflowId: 'workflow', seq: 1, update })
-  ).not.toBeNull()
+  ).toMatchObject({ applied: true })
   const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
   expect(instance).toBeInstanceOf(SubgraphNode)
   expect(instance.widgets[0]?.value).toBe(
@@ -218,7 +218,7 @@ function deliver(
       actor: 'agent:test',
       opIds: [id]
     })
-  ).not.toBeNull()
+  ).toMatchObject({ applied: true })
 }
 
 /**
@@ -237,7 +237,7 @@ function forwardRaw(
   state.follower.applyRemoteUpdate(update)
   expect(
     state.adapter.applyFrame({ workflowId: 'workflow', seq: seq + 1, update })
-  ).not.toBeNull()
+  ).toMatchObject({ applied: true })
 }
 
 beforeEach(() => {
