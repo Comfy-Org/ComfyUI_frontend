@@ -4,6 +4,7 @@ import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 import { publishedModelSlugs } from './fixtures/modelsCatalogue'
 import { MODEL_PATH } from './fixtures/modelsAccount'
+import { stubWorkshopFlags } from './fixtures/workshopFlags'
 
 const liveDom = (html: string) =>
   html
@@ -75,23 +76,7 @@ test('the server-rendered prompt takes no input until the island hydrates', asyn
 
 test.describe('enabled workshop', () => {
   test.beforeEach(async ({ context }) => {
-    await context.route('**/cdn-cgi/trace', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'text/plain',
-        body: 'loc=US\n'
-      })
-    )
-    await context.route('**/t.comfy.org/**', (route) =>
-      /\/(flags|decide)\//.test(route.request().url())
-        ? route.fulfill({
-            json: {
-              featureFlags: { 'workshop-enabled': true },
-              featureFlagPayloads: {}
-            }
-          })
-        : route.abort('blockedbyclient')
-    )
+    await stubWorkshopFlags(context, { 'workshop-enabled': true })
   })
 
   test('resolves to the playground without a marketing frame', async ({
@@ -121,16 +106,7 @@ test('a disabled visitor gets the model page without a marketing frame', async (
   context,
   page
 }) => {
-  await context.route('**/t.comfy.org/**', (route) =>
-    /\/(flags|decide)\//.test(route.request().url())
-      ? route.fulfill({
-          json: {
-            featureFlags: { 'workshop-enabled': false },
-            featureFlagPayloads: {}
-          }
-        })
-      : route.abort('blockedbyclient')
-  )
+  await stubWorkshopFlags(context, { 'workshop-enabled': false })
   const flags = page.waitForResponse((response) =>
     /t\.comfy\.org\/(flags|decide)\//.test(response.url())
   )

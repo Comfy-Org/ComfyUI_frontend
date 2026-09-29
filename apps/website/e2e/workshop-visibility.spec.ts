@@ -5,6 +5,7 @@ import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 import { publishedModelSlugs } from './fixtures/modelsCatalogue'
 import { MODEL_PATH } from './fixtures/modelsAccount'
+import { stubWorkshopFlags } from './fixtures/workshopFlags'
 
 const MODEL_NAME = 'FLUX 2 Max Text-to-Image'
 
@@ -54,19 +55,6 @@ function recordAccountRequests(context: BrowserContext): string[] {
   return requests
 }
 
-async function disableWorkshopFlag(context: BrowserContext) {
-  await context.route('**/t.comfy.org/**', (route) =>
-    /\/(flags|decide)\//.test(route.request().url())
-      ? route.fulfill({
-          json: {
-            featureFlags: { 'workshop-auth': true, 'workshop-enabled': false },
-            featureFlagPayloads: {}
-          }
-        })
-      : route.abort('blockedbyclient')
-  )
-}
-
 async function expectModelContentWithoutRun(page: Page) {
   await page.goto('/models/')
   await expect(page.getByTestId('workshop-search')).toBeVisible()
@@ -111,7 +99,10 @@ test('shows model content without Run when the flag is disabled', async ({
   page
 }) => {
   const accountRequests = recordAccountRequests(context)
-  await disableWorkshopFlag(context)
+  await stubWorkshopFlags(context, {
+    'workshop-auth': true,
+    'workshop-enabled': false
+  })
   const flags = page.waitForResponse((response) =>
     /t\.comfy\.org\/(flags|decide)\//.test(response.url())
   )
