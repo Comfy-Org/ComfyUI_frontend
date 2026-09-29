@@ -37,6 +37,7 @@ test.describe(
       }) => {
         test.setTimeout(90_000)
         await agentConversation.runTurns()
+        await page.evaluate(() => window.app!.canvas.deselectAll())
 
         await expect(page.locator('#graph-canvas')).toHaveScreenshot(
           'two-turn-dependent-edit-wired.png',
