@@ -2252,6 +2252,8 @@ Enterprise`
     en: 'Yearly (Up to 20% off)',
     'zh-CN': '按年（最高 20% 优惠）'
   },
+  'pricing.cycle.monthly': { en: 'monthly', 'zh-CN': '按月' },
+  'pricing.cycle.yearly': { en: 'yearly', 'zh-CN': '按年' },
   'pricing.period.billedMonthly': { en: 'Billed monthly', 'zh-CN': '按月计费' },
   'pricing.period.billedYearly': {
     en: '{total} billed yearly',

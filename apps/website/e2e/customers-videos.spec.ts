@@ -74,18 +74,20 @@ test.describe('Customer watch pages @smoke', () => {
       expect(items?.at(-1)?.item).toBeUndefined()
 
       const video = graph.find((node) => node['@type'] === 'VideoObject')
-      expect(video?.name).toBe(story.title)
-      expect(video?.description).toBe(story.description)
-      expect(video?.thumbnailUrl).toBe(story.poster)
-      expect(video?.contentUrl).toBe(story.videoSrc)
-      expect(video?.inLanguage).toBe('en')
-      expect(video?.publisher).toHaveProperty(
-        '@id',
-        'https://comfy.org/#organization'
+      expect(video).toEqual(
+        expect.objectContaining({
+          name: story.title,
+          description: story.description,
+          thumbnailUrl: story.poster,
+          contentUrl: story.videoSrc,
+          uploadDate: story.uploadDate,
+          inLanguage: 'en',
+          publisher: { '@id': 'https://comfy.org/#organization' }
+        })
       )
 
       const webPage = graph.find((node) => node['@type'] === 'WebPage')
-      expect(webPage?.mainEntity).toHaveProperty('@id', video?.['@id'])
+      expect(webPage?.mainEntity).toEqual({ '@id': video?.['@id'] })
 
       const player = page.locator('video')
       await expect(player).toHaveCount(1)

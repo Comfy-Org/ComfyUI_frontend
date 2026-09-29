@@ -25,6 +25,8 @@ export interface Crumb {
   url?: string
 }
 
+export const DEFAULT_OG_IMAGE = 'https://media.comfy.org/website/comfy.webp'
+
 const sameAs = [
   externalLinks.github,
   externalLinks.x,
@@ -337,14 +339,22 @@ export function comfyUiSourceCodeNode(siteUrl: string): JsonLdNode {
 interface OfferInput {
   name: string
   price: string | number
+  cycle: 'monthly' | 'yearly'
   url?: string
 }
+
+const billingPeriod = {
+  monthly: { unitCode: 'MON', billingDuration: 'P1M' },
+  yearly: { unitCode: 'ANN', billingDuration: 'P1Y' }
+} as const
 
 export interface ProductInput {
   siteUrl: string
   id: string
   name: string
   url: string
+  image: string
+  description: string
   offers: OfferInput[]
 }
 
@@ -354,19 +364,22 @@ export function productNode(input: ProductInput): JsonLdNode {
     '@id': input.id,
     name: input.name,
     url: input.url,
+    image: input.image,
+    description: input.description,
     brand: { '@id': organizationId(input.siteUrl) },
     offers: input.offers.map((offer) => ({
       '@type': 'Offer',
       name: offer.name,
       price: offer.price,
       priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
       url: offer.url,
       seller: { '@id': organizationId(input.siteUrl) },
       priceSpecification: {
         '@type': 'UnitPriceSpecification',
         price: offer.price,
         priceCurrency: 'USD',
-        unitText: 'MONTH'
+        ...billingPeriod[offer.cycle]
       }
     }))
   }
@@ -417,15 +430,19 @@ export interface VideoObjectInput {
   thumbnailUrl: string
   /** Self-hosted media URL; omit for embed-only videos (set embedUrl instead). */
   contentUrl?: string
-  /** ISO 8601 date; required by VideoObjectInput but callers without a
-   * verified upload date should still omit `uploadDate` from the node —
-   * see videoObjectNode's `uploadDate` handling below. */
-  uploadDate?: string
+  /** ISO 8601 date or datetime. */
+  uploadDate: string
   locale: Locale
   embedUrl?: string
   /** ISO 8601 duration (e.g. "PT4M32S"); omit when unverified rather than
    * estimating — see data/customerVideos.ts `isoDuration`. */
   duration?: string
+}
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+
+export function isoDateTime(value: string): string {
+  return DATE_ONLY.test(value) ? `${value}T00:00:00+00:00` : value
 }
 
 export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
@@ -437,7 +454,7 @@ export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
     thumbnailUrl: input.thumbnailUrl,
     contentUrl: input.contentUrl,
     embedUrl: input.embedUrl,
-    uploadDate: input.uploadDate,
+    uploadDate: isoDateTime(input.uploadDate),
     duration: input.duration,
     inLanguage: input.locale,
     publisher: { '@id': organizationId(input.siteUrl) },
