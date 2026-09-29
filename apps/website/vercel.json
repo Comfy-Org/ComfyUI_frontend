@@ -410,3912 +410,3912 @@
     {
       "source": "/models",
       "destination": "/hub/models/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/",
       "destination": "/hub/models/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/beeble--switchx-image-edit--edit-images",
       "destination": "/hub/models/beeble-switchx-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/beeble--switchx-image-edit--edit-images/",
       "destination": "/hub/models/beeble-switchx-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/beeble--switchx-video-edit--edit-videos",
       "destination": "/hub/models/beeble-switchx-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/beeble--switchx-video-edit--edit-videos/",
       "destination": "/hub/models/beeble-switchx-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-2-max--generate-images",
       "destination": "/hub/models/flux-2-max-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-2-max--generate-images/",
       "destination": "/hub/models/flux-2-max-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-2-pro--generate-images",
       "destination": "/hub/models/flux-2-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-2-pro--generate-images/",
       "destination": "/hub/models/flux-2-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-3-image-to-video--animate-images",
       "destination": "/hub/models/flux-3-video-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-3-image-to-video--animate-images/",
       "destination": "/hub/models/flux-3-video-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-3-text-to-video--generate-videos",
       "destination": "/hub/models/flux-3-video-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-3-text-to-video--generate-videos/",
       "destination": "/hub/models/flux-3-video-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-erase--edit-images",
       "destination": "/hub/models/flux-tools-erase/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-erase--edit-images/",
       "destination": "/hub/models/flux-tools-erase/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-kontext-max--edit-images",
       "destination": "/hub/models/flux-1-kontext-max-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-kontext-max--edit-images/",
       "destination": "/hub/models/flux-1-kontext-max-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-kontext-pro--edit-images",
       "destination": "/hub/models/flux-1-kontext-pro-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-kontext-pro--edit-images/",
       "destination": "/hub/models/flux-1-kontext-pro-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-1.1--generate-images",
       "destination": "/hub/models/flux-pro-1-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-1.1--generate-images/",
       "destination": "/hub/models/flux-pro-1-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-1.1-ultra--generate-images",
       "destination": "/hub/models/flux-pro-1-1-ultra-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-1.1-ultra--generate-images/",
       "destination": "/hub/models/flux-pro-1-1-ultra-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-expand--edit-images",
       "destination": "/hub/models/flux-pro-expand/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-expand--edit-images/",
       "destination": "/hub/models/flux-pro-expand/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-fill--edit-images",
       "destination": "/hub/models/flux-pro-fill/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-fill--edit-images/",
       "destination": "/hub/models/flux-pro-fill/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-video-upscale--edit-videos",
       "destination": "/hub/models/flux-video-upscale/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-video-upscale--edit-videos/",
       "destination": "/hub/models/flux-video-upscale/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-virtual-try-on--edit-images",
       "destination": "/hub/models/flux-virtual-try-on/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-virtual-try-on--edit-images/",
       "destination": "/hub/models/flux-virtual-try-on/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--eraser--edit-images",
       "destination": "/hub/models/bria-eraser/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--eraser--edit-images/",
       "destination": "/hub/models/bria-eraser/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--expand-image--edit-images",
       "destination": "/hub/models/bria-expand-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--expand-image--edit-images/",
       "destination": "/hub/models/bria-expand-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--fibo-image-edit--edit-images",
       "destination": "/hub/models/bria-fibo-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--fibo-image-edit--edit-images/",
       "destination": "/hub/models/bria-fibo-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--generative-fill--edit-images",
       "destination": "/hub/models/bria-generative-fill/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--generative-fill--edit-images/",
       "destination": "/hub/models/bria-generative-fill/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--green-screen-video--edit-videos",
       "destination": "/hub/models/bria-green-screen-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--green-screen-video--edit-videos/",
       "destination": "/hub/models/bria-green-screen-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--increase-resolution--edit-images",
       "destination": "/hub/models/bria-increase-resolution/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--increase-resolution--edit-images/",
       "destination": "/hub/models/bria-increase-resolution/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--remove-image-background--edit-images",
       "destination": "/hub/models/bria-rmbg-2-0/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--remove-image-background--edit-images/",
       "destination": "/hub/models/bria-rmbg-2-0/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--remove-video-background--edit-videos",
       "destination": "/hub/models/bria-remove-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--remove-video-background--edit-videos/",
       "destination": "/hub/models/bria-remove-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--replace-video-background--edit-videos",
       "destination": "/hub/models/bria-replace-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--replace-video-background--edit-videos/",
       "destination": "/hub/models/bria-replace-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seed-audio-1.0--audio",
       "destination": "/hub/models/seed-audio-1-0-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seed-audio-1.0--audio/",
       "destination": "/hub/models/seed-audio-1-0-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seed-audio-1.0-multilingual--audio",
       "destination": "/hub/models/seed-audio-1-0-multilingual-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seed-audio-1.0-multilingual--audio/",
       "destination": "/hub/models/seed-audio-1-0-multilingual-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-edit-video--edit-videos",
       "destination": "/hub/models/seedance-2-5-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-edit-video--edit-videos/",
       "destination": "/hub/models/seedance-2-5-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-first-last-frame--animate-images",
       "destination": "/hub/models/seedance-2-5-first-last-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-first-last-frame--animate-images/",
       "destination": "/hub/models/seedance-2-5-first-last-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-reference--generate-videos",
       "destination": "/hub/models/seedance-2-5-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-reference--generate-videos/",
       "destination": "/hub/models/seedance-2-5-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-text-to-video--generate-videos",
       "destination": "/hub/models/seedance-2-5-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-text-to-video--generate-videos/",
       "destination": "/hub/models/seedance-2-5-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-fast-first-last-frame--animate-images",
       "destination": "/hub/models/seedance-2-0-fast-first-last-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-fast-first-last-frame--animate-images/",
       "destination": "/hub/models/seedance-2-0-fast-first-last-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-fast-reference--generate-videos",
       "destination": "/hub/models/seedance-2-0-fast-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-fast-reference--generate-videos/",
       "destination": "/hub/models/seedance-2-0-fast-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-fast-text-to-video--generate-videos",
       "destination": "/hub/models/seedance-2-0-fast-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-fast-text-to-video--generate-videos/",
       "destination": "/hub/models/seedance-2-0-fast-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-image-to-video--animate-images",
       "destination": "/hub/models/seedance-2-0-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-image-to-video--animate-images/",
       "destination": "/hub/models/seedance-2-0-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-mini-text-to-video--generate-videos",
       "destination": "/hub/models/seedance-2-0-mini-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-mini-text-to-video--generate-videos/",
       "destination": "/hub/models/seedance-2-0-mini-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-reference--generate-videos",
       "destination": "/hub/models/seedance-2-0-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-reference--generate-videos/",
       "destination": "/hub/models/seedance-2-0-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-text-to-video--generate-videos",
       "destination": "/hub/models/seedance-2-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-text-to-video--generate-videos/",
       "destination": "/hub/models/seedance-2-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4--edit-images",
       "destination": "/hub/models/seedream-4-0-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4--edit-images/",
       "destination": "/hub/models/seedream-4-0-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4--generate-images",
       "destination": "/hub/models/seedream-4-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4--generate-images/",
       "destination": "/hub/models/seedream-4-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4-5--edit-images",
       "destination": "/hub/models/seedream-4-5-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4-5--edit-images/",
       "destination": "/hub/models/seedream-4-5-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4-5--generate-images",
       "destination": "/hub/models/seedream-4-5-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4-5--generate-images/",
       "destination": "/hub/models/seedream-4-5-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-lite--edit-images",
       "destination": "/hub/models/seedream-5-0-lite-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-lite--edit-images/",
       "destination": "/hub/models/seedream-5-0-lite-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-lite--generate-images",
       "destination": "/hub/models/seedream-5-0-lite-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-lite--generate-images/",
       "destination": "/hub/models/seedream-5-0-lite-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-pro--edit-images",
       "destination": "/hub/models/seedream-5-0-pro-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-pro--edit-images/",
       "destination": "/hub/models/seedream-5-0-pro-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-pro--generate-images",
       "destination": "/hub/models/seedream-5-0-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-pro--generate-images/",
       "destination": "/hub/models/seedream-5-0-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-pro-layer-separation--edit-images",
       "destination": "/hub/models/seedream-5-0-pro-layer-separation/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-pro-layer-separation--edit-images/",
       "destination": "/hub/models/seedream-5-0-pro-layer-separation/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/elevenlabs--text-to-dialogue--audio",
       "destination": "/hub/models/elevenlabs-text-to-dialogue/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/elevenlabs--text-to-dialogue--audio/",
       "destination": "/hub/models/elevenlabs-text-to-dialogue/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/freepik--magnific-skin-enhancer--edit-images",
       "destination": "/hub/models/magnific-skin-enhancer/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/freepik--magnific-skin-enhancer--edit-images/",
       "destination": "/hub/models/magnific-skin-enhancer/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-1.1-flash--animate-images",
       "destination": "/hub/models/gemini-omni-1-1-flash-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-1.1-flash--animate-images/",
       "destination": "/hub/models/gemini-omni-1-1-flash-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-1.1-flash--edit-videos",
       "destination": "/hub/models/gemini-omni-1-1-flash-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-1.1-flash--edit-videos/",
       "destination": "/hub/models/gemini-omni-1-1-flash-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-1.1-flash--generate-videos",
       "destination": "/hub/models/gemini-omni-1-1-flash-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-1.1-flash--generate-videos/",
       "destination": "/hub/models/gemini-omni-1-1-flash-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-flash-preview--animate-images",
       "destination": "/hub/models/gemini-omni-flash-preview-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-flash-preview--animate-images/",
       "destination": "/hub/models/gemini-omni-flash-preview-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-flash-preview--edit-videos",
       "destination": "/hub/models/gemini-omni-flash-preview-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-flash-preview--edit-videos/",
       "destination": "/hub/models/gemini-omni-flash-preview-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-flash-preview--generate-videos",
       "destination": "/hub/models/gemini-omni-flash-preview-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-flash-preview--generate-videos/",
       "destination": "/hub/models/gemini-omni-flash-preview-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/heygen--starfish-tts--audio",
       "destination": "/hub/models/heygen-starfish-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/heygen--starfish-tts--audio/",
       "destination": "/hub/models/heygen-starfish-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/ideogram--v3--generate-images",
       "destination": "/hub/models/ideogram-v3-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/ideogram--v3--generate-images/",
       "destination": "/hub/models/ideogram-v3-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/ideogram--v4--generate-images",
       "destination": "/hub/models/ideogram-v4-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/ideogram--v4--generate-images/",
       "destination": "/hub/models/ideogram-v4-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--avatar--animate-images",
       "destination": "/hub/models/kling-avatar/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--avatar--animate-images/",
       "destination": "/hub/models/kling-avatar/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-3.0-turbo-text-to-video--generate-videos",
       "destination": "/hub/models/kling-3-0-turbo-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-3.0-turbo-text-to-video--generate-videos/",
       "destination": "/hub/models/kling-3-0-turbo-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--lip-sync-audio-to-video--edit-videos",
       "destination": "/hub/models/kling-lip-sync-audio-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--lip-sync-audio-to-video--edit-videos/",
       "destination": "/hub/models/kling-lip-sync-audio-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--lip-sync-text-to-video--edit-videos",
       "destination": "/hub/models/kling-lip-sync-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--lip-sync-text-to-video--edit-videos/",
       "destination": "/hub/models/kling-lip-sync-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-edit-video--edit-videos",
       "destination": "/hub/models/kling-o3-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-edit-video--edit-videos/",
       "destination": "/hub/models/kling-o3-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-image-to-video--animate-images",
       "destination": "/hub/models/kling-o3-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-image-to-video--animate-images/",
       "destination": "/hub/models/kling-o3-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-text-to-video--generate-videos",
       "destination": "/hub/models/kling-o3-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-text-to-video--generate-videos/",
       "destination": "/hub/models/kling-o3-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-video-to-video--edit-videos",
       "destination": "/hub/models/kling-o3-video-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-video-to-video--edit-videos/",
       "destination": "/hub/models/kling-o3-video-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--text-to-video--generate-videos",
       "destination": "/hub/models/kling-2-5-turbo-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--text-to-video--generate-videos/",
       "destination": "/hub/models/kling-2-5-turbo-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--text-to-video-with-audio--generate-videos",
       "destination": "/hub/models/kling-2-6-pro-text-to-video-with-audio/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--text-to-video-with-audio--generate-videos/",
       "destination": "/hub/models/kling-2-6-pro-text-to-video-with-audio/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--v3--generate-videos",
       "destination": "/hub/models/kling-3-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--v3--generate-videos/",
       "destination": "/hub/models/kling-3-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/krea--krea-2-large--generate-images",
       "destination": "/hub/models/krea-2-large-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/krea--krea-2-large--generate-images/",
       "destination": "/hub/models/krea-2-large-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/krea--krea-2-medium--generate-images",
       "destination": "/hub/models/krea-2-medium-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/krea--krea-2-medium--generate-images/",
       "destination": "/hub/models/krea-2-medium-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/krea--krea-2-medium-turbo--generate-images",
       "destination": "/hub/models/krea-2-medium-turbo-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/krea--krea-2-medium-turbo--generate-images/",
       "destination": "/hub/models/krea-2-medium-turbo-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-1-image-generation--generate-images",
       "destination": "/hub/models/luma-photon-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-1-image-generation--generate-images/",
       "destination": "/hub/models/luma-photon-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-1-image-modify--edit-images",
       "destination": "/hub/models/luma-photon-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-1-image-modify--edit-images/",
       "destination": "/hub/models/luma-photon-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-flash-1-image-generation--generate-images",
       "destination": "/hub/models/luma-photon-flash-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-flash-1-image-generation--generate-images/",
       "destination": "/hub/models/luma-photon-flash-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-flash-1-image-modify--edit-images",
       "destination": "/hub/models/luma-photon-flash-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-flash-1-image-modify--edit-images/",
       "destination": "/hub/models/luma-photon-flash-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-2-image-to-video--animate-images",
       "destination": "/hub/models/luma-ray-2-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-2-image-to-video--animate-images/",
       "destination": "/hub/models/luma-ray-2-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-2-text-to-video--generate-videos",
       "destination": "/hub/models/luma-ray-2-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-2-text-to-video--generate-videos/",
       "destination": "/hub/models/luma-ray-2-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-flash-2-image-to-video--animate-images",
       "destination": "/hub/models/luma-ray-flash-2-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-flash-2-image-to-video--animate-images/",
       "destination": "/hub/models/luma-ray-flash-2-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-flash-2-text-to-video--generate-videos",
       "destination": "/hub/models/luma-ray-flash-2-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-flash-2-text-to-video--generate-videos/",
       "destination": "/hub/models/luma-ray-flash-2-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-image-edit--edit-images",
       "destination": "/hub/models/luma-uni-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-image-edit--edit-images/",
       "destination": "/hub/models/luma-uni-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-image-generation--generate-images",
       "destination": "/hub/models/luma-uni-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-image-generation--generate-images/",
       "destination": "/hub/models/luma-uni-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-max-image-edit--edit-images",
       "destination": "/hub/models/luma-uni-1-max-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-max-image-edit--edit-images/",
       "destination": "/hub/models/luma-uni-1-max-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-max-image-generation--generate-images",
       "destination": "/hub/models/luma-uni-1-max-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-max-image-generation--generate-images/",
       "destination": "/hub/models/luma-uni-1-max-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-1--edit-images",
       "destination": "/hub/models/gpt-image-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-1--edit-images/",
       "destination": "/hub/models/gpt-image-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-1.5--edit-images",
       "destination": "/hub/models/gpt-image-1-5-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-1.5--edit-images/",
       "destination": "/hub/models/gpt-image-1-5-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-2--generate-images",
       "destination": "/hub/models/gpt-image-2-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-2--generate-images/",
       "destination": "/hub/models/gpt-image-2-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-2.5-flare--generate-images",
       "destination": "/hub/models/gpt-image-2-5-flare-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-2.5-flare--generate-images/",
       "destination": "/hub/models/gpt-image-2-5-flare-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-2.5-sunburst--generate-images",
       "destination": "/hub/models/gpt-image-2-5-sunburst-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-2.5-sunburst--generate-images/",
       "destination": "/hub/models/gpt-image-2-5-sunburst-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-image-edit--edit-images",
       "destination": "/hub/models/qwen-image-3-0-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-image-edit--edit-images/",
       "destination": "/hub/models/qwen-image-3-0-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-pro-image-edit--edit-images",
       "destination": "/hub/models/qwen-image-3-0-pro-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-pro-image-edit--edit-images/",
       "destination": "/hub/models/qwen-image-3-0-pro-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-pro-text-to-image--generate-images",
       "destination": "/hub/models/qwen-image-3-0-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-pro-text-to-image--generate-images/",
       "destination": "/hub/models/qwen-image-3-0-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-text-to-image--generate-images",
       "destination": "/hub/models/qwen-image-3-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-text-to-image--generate-images/",
       "destination": "/hub/models/qwen-image-3-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v3-text-to-image--generate-images",
       "destination": "/hub/models/recraft-v3-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v3-text-to-image--generate-images/",
       "destination": "/hub/models/recraft-v3-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v3-text-to-vector--generate-images",
       "destination": "/hub/models/recraft-v3-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v3-text-to-vector--generate-images/",
       "destination": "/hub/models/recraft-v3-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-pro-text-to-image--generate-images",
       "destination": "/hub/models/recraft-v4-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-pro-text-to-image--generate-images/",
       "destination": "/hub/models/recraft-v4-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-pro-text-to-vector--generate-images",
       "destination": "/hub/models/recraft-v4-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-pro-text-to-vector--generate-images/",
       "destination": "/hub/models/recraft-v4-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-text-to-image--generate-images",
       "destination": "/hub/models/recraft-v4-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-text-to-image--generate-images/",
       "destination": "/hub/models/recraft-v4-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-text-to-vector--generate-images",
       "destination": "/hub/models/recraft-v4-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-text-to-vector--generate-images/",
       "destination": "/hub/models/recraft-v4-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-pro-text-to-image--generate-images",
       "destination": "/hub/models/recraft-v4-1-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-pro-text-to-image--generate-images/",
       "destination": "/hub/models/recraft-v4-1-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-pro-text-to-vector--generate-images",
       "destination": "/hub/models/recraft-v4-1-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-pro-text-to-vector--generate-images/",
       "destination": "/hub/models/recraft-v4-1-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-text-to-image--generate-images",
       "destination": "/hub/models/recraft-v4-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-text-to-image--generate-images/",
       "destination": "/hub/models/recraft-v4-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-text-to-vector--generate-images",
       "destination": "/hub/models/recraft-v4-1-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-text-to-vector--generate-images/",
       "destination": "/hub/models/recraft-v4-1-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-pro-text-to-image--generate-images",
       "destination": "/hub/models/recraft-v4-1-utility-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-pro-text-to-image--generate-images/",
       "destination": "/hub/models/recraft-v4-1-utility-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-pro-text-to-vector--generate-images",
       "destination": "/hub/models/recraft-v4-1-utility-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-pro-text-to-vector--generate-images/",
       "destination": "/hub/models/recraft-v4-1-utility-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-text-to-image--generate-images",
       "destination": "/hub/models/recraft-v4-1-utility-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-text-to-image--generate-images/",
       "destination": "/hub/models/recraft-v4-1-utility-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-text-to-vector--generate-images",
       "destination": "/hub/models/recraft-v4-1-utility-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-text-to-vector--generate-images/",
       "destination": "/hub/models/recraft-v4-1-utility-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--aleph2-video-to-video--edit-videos",
       "destination": "/hub/models/runway-aleph-2-video-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--aleph2-video-to-video--edit-videos/",
       "destination": "/hub/models/runway-aleph-2-video-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--gen4-image--generate-images",
       "destination": "/hub/models/runway-gen-4-image-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--gen4-image--generate-images/",
       "destination": "/hub/models/runway-gen-4-image-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--gen4-turbo-image-to-video--animate-images",
       "destination": "/hub/models/runway-gen-4-turbo-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--gen4-turbo-image-to-video--animate-images/",
       "destination": "/hub/models/runway-gen-4-turbo-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-2.5-flash-image--edit-images",
       "destination": "/hub/models/nano-banana-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-2.5-flash-image--edit-images/",
       "destination": "/hub/models/nano-banana-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-2.5-flash-image--generate-images",
       "destination": "/hub/models/nano-banana-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-2.5-flash-image--generate-images/",
       "destination": "/hub/models/nano-banana-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-3-pro-image--edit-images",
       "destination": "/hub/models/nano-banana-pro-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-3-pro-image--edit-images/",
       "destination": "/hub/models/nano-banana-pro-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-3-pro-image--generate-images",
       "destination": "/hub/models/nano-banana-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-3-pro-image--generate-images/",
       "destination": "/hub/models/nano-banana-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-nano-banana-2--edit-images",
       "destination": "/hub/models/nano-banana-2-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-nano-banana-2--edit-images/",
       "destination": "/hub/models/nano-banana-2-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-nano-banana-2--generate-images",
       "destination": "/hub/models/nano-banana-2-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-nano-banana-2--generate-images/",
       "destination": "/hub/models/nano-banana-2-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--veo-3--animate-images",
       "destination": "/hub/models/veo-3-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--veo-3--animate-images/",
       "destination": "/hub/models/veo-3-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--veo-3--generate-videos",
       "destination": "/hub/models/veo-3-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--veo-3--generate-videos/",
       "destination": "/hub/models/veo-3-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--veo-3-first-last-frame--animate-images",
       "destination": "/hub/models/veo-3-first-last-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--veo-3-first-last-frame--animate-images/",
       "destination": "/hub/models/veo-3-first-last-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-reference-video--animate-images",
       "destination": "/hub/models/happyhorse-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-reference-video--animate-images/",
       "destination": "/hub/models/happyhorse-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-text-to-video--generate-videos",
       "destination": "/hub/models/happyhorse-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-text-to-video--generate-videos/",
       "destination": "/hub/models/happyhorse-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-video-edit--edit-videos",
       "destination": "/hub/models/happyhorse-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-video-edit--edit-videos/",
       "destination": "/hub/models/happyhorse-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-image--edit-images",
       "destination": "/hub/models/wan-2-5-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-image--edit-images/",
       "destination": "/hub/models/wan-2-5-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video--animate-images",
       "destination": "/hub/models/wan-2-6-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video--animate-images/",
       "destination": "/hub/models/wan-2-6-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video-2.7--animate-images",
       "destination": "/hub/models/wan-2-7-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video-2.7--animate-images/",
       "destination": "/hub/models/wan-2-7-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video-3.0--animate-images",
       "destination": "/hub/models/wan-3-0-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video-3.0--animate-images/",
       "destination": "/hub/models/wan-3-0-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video-3.0-prime--animate-images",
       "destination": "/hub/models/wan-3-0-prime-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video-3.0-prime--animate-images/",
       "destination": "/hub/models/wan-3-0-prime-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-to-video-3.0--animate-images",
       "destination": "/hub/models/wan-3-0-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-to-video-3.0--animate-images/",
       "destination": "/hub/models/wan-3-0-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-to-video-3.0-prime--animate-images",
       "destination": "/hub/models/wan-3-0-prime-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-to-video-3.0-prime--animate-images/",
       "destination": "/hub/models/wan-3-0-prime-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-video--edit-videos",
       "destination": "/hub/models/wan-2-6-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-video--edit-videos/",
       "destination": "/hub/models/wan-2-6-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-video-2.7--animate-images",
       "destination": "/hub/models/wan-2-7-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-video-2.7--animate-images/",
       "destination": "/hub/models/wan-2-7-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-image--generate-images",
       "destination": "/hub/models/wan-2-5-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-image--generate-images/",
       "destination": "/hub/models/wan-2-5-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video--generate-videos",
       "destination": "/hub/models/wan-2-6-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video--generate-videos/",
       "destination": "/hub/models/wan-2-6-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video-2.7--generate-videos",
       "destination": "/hub/models/wan-2-7-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video-2.7--generate-videos/",
       "destination": "/hub/models/wan-2-7-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video-3.0--generate-videos",
       "destination": "/hub/models/wan-3-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video-3.0--generate-videos/",
       "destination": "/hub/models/wan-3-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video-3.0-prime--generate-videos",
       "destination": "/hub/models/wan-3-0-prime-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video-3.0-prime--generate-videos/",
       "destination": "/hub/models/wan-3-0-prime-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--video-continuation-2.7--animate-images",
       "destination": "/hub/models/wan-2-7-video-continuation/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--video-continuation-2.7--animate-images/",
       "destination": "/hub/models/wan-2-7-video-continuation/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--video-edit-2.7--edit-videos",
       "destination": "/hub/models/wan-2-7-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--video-edit-2.7--edit-videos/",
       "destination": "/hub/models/wan-2-7-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--flashvsr--edit-videos",
       "destination": "/hub/models/flashvsr/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--flashvsr--edit-videos/",
       "destination": "/hub/models/flashvsr/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--seedvr2-image--edit-images",
       "destination": "/hub/models/seedvr2-image-upscaler/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--seedvr2-image--edit-images/",
       "destination": "/hub/models/seedvr2-image-upscaler/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--ultimate-image-upscaler--edit-images",
       "destination": "/hub/models/ultimate-image-upscaler/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--ultimate-image-upscaler--edit-images/",
       "destination": "/hub/models/ultimate-image-upscaler/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-image--generate-images",
       "destination": "/hub/models/grok-imagine-image-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-image--generate-images/",
       "destination": "/hub/models/grok-imagine-image-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-image-2.0--generate-images",
       "destination": "/hub/models/grok-imagine-image-2-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-image-2.0--generate-images/",
       "destination": "/hub/models/grok-imagine-image-2-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video--animate-images",
       "destination": "/hub/models/grok-imagine-video-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video--animate-images/",
       "destination": "/hub/models/grok-imagine-video-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video--generate-videos",
       "destination": "/hub/models/grok-imagine-video-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video--generate-videos/",
       "destination": "/hub/models/grok-imagine-video-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-1.5--animate-images",
       "destination": "/hub/models/grok-imagine-video-1-5-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-1.5--animate-images/",
       "destination": "/hub/models/grok-imagine-video-1-5-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-1.5--generate-videos",
       "destination": "/hub/models/grok-imagine-video-1-5-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-1.5--generate-videos/",
       "destination": "/hub/models/grok-imagine-video-1-5-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-1.5-reference--animate-images",
       "destination": "/hub/models/grok-imagine-video-1-5-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-1.5-reference--animate-images/",
       "destination": "/hub/models/grok-imagine-video-1-5-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-reference--animate-images",
       "destination": "/hub/models/grok-imagine-video-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-reference--animate-images/",
       "destination": "/hub/models/grok-imagine-video-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/beeble--switchx",
       "destination": "/hub/models/beeble-switchx-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/beeble--switchx/",
       "destination": "/hub/models/beeble-switchx-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/beeble--switchx-image-edit",
       "destination": "/hub/models/beeble-switchx-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/beeble--switchx-image-edit/",
       "destination": "/hub/models/beeble-switchx-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/beeble--switchx-video-edit",
       "destination": "/hub/models/beeble-switchx-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/beeble--switchx-video-edit/",
       "destination": "/hub/models/beeble-switchx-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--erase-v1",
       "destination": "/hub/models/flux-tools-erase/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--erase-v1/",
       "destination": "/hub/models/flux-tools-erase/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-2-max",
       "destination": "/hub/models/flux-2-max-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-2-max/",
       "destination": "/hub/models/flux-2-max-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-2-pro",
       "destination": "/hub/models/flux-2-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-2-pro/",
       "destination": "/hub/models/flux-2-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-3-image-to-video",
       "destination": "/hub/models/flux-3-video-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-3-image-to-video/",
       "destination": "/hub/models/flux-3-video-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-3-text-to-video",
       "destination": "/hub/models/flux-3-video-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-3-text-to-video/",
       "destination": "/hub/models/flux-3-video-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-3-video",
       "destination": "/hub/models/flux-3-video-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-3-video/",
       "destination": "/hub/models/flux-3-video-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-erase",
       "destination": "/hub/models/flux-tools-erase/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-erase/",
       "destination": "/hub/models/flux-tools-erase/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-kontext-max",
       "destination": "/hub/models/flux-1-kontext-max-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-kontext-max/",
       "destination": "/hub/models/flux-1-kontext-max-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-kontext-pro",
       "destination": "/hub/models/flux-1-kontext-pro-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-kontext-pro/",
       "destination": "/hub/models/flux-1-kontext-pro-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-1.0-expand",
       "destination": "/hub/models/flux-pro-expand/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-1.0-expand/",
       "destination": "/hub/models/flux-pro-expand/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-1.0-fill",
       "destination": "/hub/models/flux-pro-fill/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-1.0-fill/",
       "destination": "/hub/models/flux-pro-fill/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-1.1",
       "destination": "/hub/models/flux-pro-1-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-1.1/",
       "destination": "/hub/models/flux-pro-1-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-1.1-ultra",
       "destination": "/hub/models/flux-pro-1-1-ultra-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-1.1-ultra/",
       "destination": "/hub/models/flux-pro-1-1-ultra-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-expand",
       "destination": "/hub/models/flux-pro-expand/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-expand/",
       "destination": "/hub/models/flux-pro-expand/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-fill",
       "destination": "/hub/models/flux-pro-fill/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-pro-fill/",
       "destination": "/hub/models/flux-pro-fill/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-video-upscale",
       "destination": "/hub/models/flux-video-upscale/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-video-upscale/",
       "destination": "/hub/models/flux-video-upscale/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-virtual-try-on",
       "destination": "/hub/models/flux-virtual-try-on/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--flux-virtual-try-on/",
       "destination": "/hub/models/flux-virtual-try-on/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--video-upscale-v1",
       "destination": "/hub/models/flux-video-upscale/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--video-upscale-v1/",
       "destination": "/hub/models/flux-video-upscale/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--vto-v1",
       "destination": "/hub/models/flux-virtual-try-on/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bfl--vto-v1/",
       "destination": "/hub/models/flux-virtual-try-on/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--eraser",
       "destination": "/hub/models/bria-eraser/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--eraser/",
       "destination": "/hub/models/bria-eraser/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--expand-image",
       "destination": "/hub/models/bria-expand-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--expand-image/",
       "destination": "/hub/models/bria-expand-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--fibo",
       "destination": "/hub/models/bria-fibo-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--fibo/",
       "destination": "/hub/models/bria-fibo-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--fibo-image-edit",
       "destination": "/hub/models/bria-fibo-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--fibo-image-edit/",
       "destination": "/hub/models/bria-fibo-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--generative-fill",
       "destination": "/hub/models/bria-generative-fill/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--generative-fill/",
       "destination": "/hub/models/bria-generative-fill/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--green-screen-video",
       "destination": "/hub/models/bria-green-screen-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--green-screen-video/",
       "destination": "/hub/models/bria-green-screen-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--image-edit-erase",
       "destination": "/hub/models/bria-eraser/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--image-edit-erase/",
       "destination": "/hub/models/bria-eraser/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--image-edit-expand",
       "destination": "/hub/models/bria-expand-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--image-edit-expand/",
       "destination": "/hub/models/bria-expand-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--image-edit-gen-fill",
       "destination": "/hub/models/bria-generative-fill/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--image-edit-gen-fill/",
       "destination": "/hub/models/bria-generative-fill/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--image-edit-increase-resolution",
       "destination": "/hub/models/bria-increase-resolution/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--image-edit-increase-resolution/",
       "destination": "/hub/models/bria-increase-resolution/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--image-edit-remove-background",
       "destination": "/hub/models/bria-rmbg-2-0/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--image-edit-remove-background/",
       "destination": "/hub/models/bria-rmbg-2-0/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--increase-resolution",
       "destination": "/hub/models/bria-increase-resolution/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--increase-resolution/",
       "destination": "/hub/models/bria-increase-resolution/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--remove-image-background",
       "destination": "/hub/models/bria-rmbg-2-0/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--remove-image-background/",
       "destination": "/hub/models/bria-rmbg-2-0/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--remove-video-background",
       "destination": "/hub/models/bria-remove-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--remove-video-background/",
       "destination": "/hub/models/bria-remove-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--replace-video-background",
       "destination": "/hub/models/bria-replace-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--replace-video-background/",
       "destination": "/hub/models/bria-replace-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--video-edit-green-screen",
       "destination": "/hub/models/bria-green-screen-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--video-edit-green-screen/",
       "destination": "/hub/models/bria-green-screen-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--video-edit-remove-background",
       "destination": "/hub/models/bria-remove-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--video-edit-remove-background/",
       "destination": "/hub/models/bria-remove-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--video-edit-replace-background",
       "destination": "/hub/models/bria-replace-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/bria--video-edit-replace-background/",
       "destination": "/hub/models/bria-replace-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--dreamina-seedance-2-0-260128",
       "destination": "/hub/models/seedance-2-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--dreamina-seedance-2-0-260128/",
       "destination": "/hub/models/seedance-2-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--dreamina-seedance-2-0-fast-260128",
       "destination": "/hub/models/seedance-2-0-fast-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--dreamina-seedance-2-0-fast-260128/",
       "destination": "/hub/models/seedance-2-0-fast-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--dreamina-seedance-2-0-mini",
       "destination": "/hub/models/seedance-2-0-mini-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--dreamina-seedance-2-0-mini/",
       "destination": "/hub/models/seedance-2-0-mini-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--dreamina-seedance-2-5-260628",
       "destination": "/hub/models/seedance-2-5-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--dreamina-seedance-2-5-260628/",
       "destination": "/hub/models/seedance-2-5-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seed-audio-1.0",
       "destination": "/hub/models/seed-audio-1-0-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seed-audio-1.0/",
       "destination": "/hub/models/seed-audio-1-0-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seed-audio-1.0-multilingual",
       "destination": "/hub/models/seed-audio-1-0-multilingual-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seed-audio-1.0-multilingual/",
       "destination": "/hub/models/seed-audio-1-0-multilingual-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-edit-video",
       "destination": "/hub/models/seedance-2-5-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-edit-video/",
       "destination": "/hub/models/seedance-2-5-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-first-last-frame",
       "destination": "/hub/models/seedance-2-5-first-last-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-first-last-frame/",
       "destination": "/hub/models/seedance-2-5-first-last-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-reference",
       "destination": "/hub/models/seedance-2-5-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-reference/",
       "destination": "/hub/models/seedance-2-5-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-text-to-video",
       "destination": "/hub/models/seedance-2-5-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-5-text-to-video/",
       "destination": "/hub/models/seedance-2-5-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-fast-first-last-frame",
       "destination": "/hub/models/seedance-2-0-fast-first-last-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-fast-first-last-frame/",
       "destination": "/hub/models/seedance-2-0-fast-first-last-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-fast-reference",
       "destination": "/hub/models/seedance-2-0-fast-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-fast-reference/",
       "destination": "/hub/models/seedance-2-0-fast-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-fast-text-to-video",
       "destination": "/hub/models/seedance-2-0-fast-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-fast-text-to-video/",
       "destination": "/hub/models/seedance-2-0-fast-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-image-to-video",
       "destination": "/hub/models/seedance-2-0-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-image-to-video/",
       "destination": "/hub/models/seedance-2-0-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-mini-text-to-video",
       "destination": "/hub/models/seedance-2-0-mini-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-mini-text-to-video/",
       "destination": "/hub/models/seedance-2-0-mini-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-reference",
       "destination": "/hub/models/seedance-2-0-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-reference/",
       "destination": "/hub/models/seedance-2-0-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-text-to-video",
       "destination": "/hub/models/seedance-2-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedance-2-text-to-video/",
       "destination": "/hub/models/seedance-2-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4",
       "destination": "/hub/models/seedream-4-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4/",
       "destination": "/hub/models/seedream-4-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4-0-250828",
       "destination": "/hub/models/seedream-4-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4-0-250828/",
       "destination": "/hub/models/seedream-4-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4-5",
       "destination": "/hub/models/seedream-4-5-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4-5/",
       "destination": "/hub/models/seedream-4-5-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4-5-251128",
       "destination": "/hub/models/seedream-4-5-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-4-5-251128/",
       "destination": "/hub/models/seedream-4-5-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-0-260128",
       "destination": "/hub/models/seedream-5-0-lite-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-0-260128/",
       "destination": "/hub/models/seedream-5-0-lite-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-0-pro-260628",
       "destination": "/hub/models/seedream-5-0-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-0-pro-260628/",
       "destination": "/hub/models/seedream-5-0-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-lite",
       "destination": "/hub/models/seedream-5-0-lite-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-lite/",
       "destination": "/hub/models/seedream-5-0-lite-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-pro",
       "destination": "/hub/models/seedream-5-0-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-pro/",
       "destination": "/hub/models/seedream-5-0-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-pro-layer-separation",
       "destination": "/hub/models/seedream-5-0-pro-layer-separation/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/byteplus--seedream-5-pro-layer-separation/",
       "destination": "/hub/models/seedream-5-0-pro-layer-separation/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/elevenlabs--eleven_v3",
       "destination": "/hub/models/elevenlabs-text-to-dialogue/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/elevenlabs--eleven_v3/",
       "destination": "/hub/models/elevenlabs-text-to-dialogue/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/elevenlabs--text-to-dialogue",
       "destination": "/hub/models/elevenlabs-text-to-dialogue/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/elevenlabs--text-to-dialogue/",
       "destination": "/hub/models/elevenlabs-text-to-dialogue/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/freepik--ai-skin-enhancer-creative",
       "destination": "/hub/models/magnific-skin-enhancer/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/freepik--ai-skin-enhancer-creative/",
       "destination": "/hub/models/magnific-skin-enhancer/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/freepik--magnific-skin-enhancer",
       "destination": "/hub/models/magnific-skin-enhancer/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/freepik--magnific-skin-enhancer/",
       "destination": "/hub/models/magnific-skin-enhancer/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-1.1-flash",
       "destination": "/hub/models/gemini-omni-1-1-flash-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-1.1-flash/",
       "destination": "/hub/models/gemini-omni-1-1-flash-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-flash-preview",
       "destination": "/hub/models/gemini-omni-flash-preview-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini--omni-flash-preview/",
       "destination": "/hub/models/gemini-omni-flash-preview-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini-interactions--gemini-omni-1.1-flash",
       "destination": "/hub/models/gemini-omni-1-1-flash-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini-interactions--gemini-omni-1.1-flash/",
       "destination": "/hub/models/gemini-omni-1-1-flash-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini-interactions--gemini-omni-flash-preview",
       "destination": "/hub/models/gemini-omni-flash-preview-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/gemini-interactions--gemini-omni-flash-preview/",
       "destination": "/hub/models/gemini-omni-flash-preview-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/heygen--starfish",
       "destination": "/hub/models/heygen-starfish-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/heygen--starfish/",
       "destination": "/hub/models/heygen-starfish-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/heygen--starfish-tts",
       "destination": "/hub/models/heygen-starfish-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/heygen--starfish-tts/",
       "destination": "/hub/models/heygen-starfish-text-to-speech/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/ideogram--ideogram-v3",
       "destination": "/hub/models/ideogram-v3-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/ideogram--ideogram-v3/",
       "destination": "/hub/models/ideogram-v3-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/ideogram--ideogram-v4",
       "destination": "/hub/models/ideogram-v4-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/ideogram--ideogram-v4/",
       "destination": "/hub/models/ideogram-v4-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/ideogram--v3",
       "destination": "/hub/models/ideogram-v3-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/ideogram--v3/",
       "destination": "/hub/models/ideogram-v3-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/ideogram--v4",
       "destination": "/hub/models/ideogram-v4-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/ideogram--v4/",
       "destination": "/hub/models/ideogram-v4-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--avatar",
       "destination": "/hub/models/kling-avatar/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--avatar/",
       "destination": "/hub/models/kling-avatar/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-3.0-turbo",
       "destination": "/hub/models/kling-3-0-turbo-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-3.0-turbo/",
       "destination": "/hub/models/kling-3-0-turbo-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-3.0-turbo-text-to-video",
       "destination": "/hub/models/kling-3-0-turbo-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-3.0-turbo-text-to-video/",
       "destination": "/hub/models/kling-3-0-turbo-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-v2-5-turbo",
       "destination": "/hub/models/kling-2-5-turbo-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-v2-5-turbo/",
       "destination": "/hub/models/kling-2-5-turbo-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-v2-6",
       "destination": "/hub/models/kling-2-6-pro-text-to-video-with-audio/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-v2-6/",
       "destination": "/hub/models/kling-2-6-pro-text-to-video-with-audio/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-v3",
       "destination": "/hub/models/kling-3-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-v3/",
       "destination": "/hub/models/kling-3-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-v3-omni",
       "destination": "/hub/models/kling-o3-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-v3-omni/",
       "destination": "/hub/models/kling-o3-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-video-o1",
       "destination": "/hub/models/kling-o3-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--kling-video-o1/",
       "destination": "/hub/models/kling-o3-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--lip-sync-audio-to-video",
       "destination": "/hub/models/kling-lip-sync-audio-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--lip-sync-audio-to-video/",
       "destination": "/hub/models/kling-lip-sync-audio-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--lip-sync-text-to-video",
       "destination": "/hub/models/kling-lip-sync-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--lip-sync-text-to-video/",
       "destination": "/hub/models/kling-lip-sync-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-edit-video",
       "destination": "/hub/models/kling-o3-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-edit-video/",
       "destination": "/hub/models/kling-o3-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-image-to-video",
       "destination": "/hub/models/kling-o3-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-image-to-video/",
       "destination": "/hub/models/kling-o3-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-text-to-video",
       "destination": "/hub/models/kling-o3-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-text-to-video/",
       "destination": "/hub/models/kling-o3-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-video-to-video",
       "destination": "/hub/models/kling-o3-video-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--omni-pro-video-to-video/",
       "destination": "/hub/models/kling-o3-video-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--text-to-video",
       "destination": "/hub/models/kling-2-5-turbo-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--text-to-video/",
       "destination": "/hub/models/kling-2-5-turbo-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--text-to-video-with-audio",
       "destination": "/hub/models/kling-2-6-pro-text-to-video-with-audio/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--text-to-video-with-audio/",
       "destination": "/hub/models/kling-2-6-pro-text-to-video-with-audio/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--v3",
       "destination": "/hub/models/kling-3-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--v3/",
       "destination": "/hub/models/kling-3-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--videos-avatar-image2video",
       "destination": "/hub/models/kling-avatar/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--videos-avatar-image2video/",
       "destination": "/hub/models/kling-avatar/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--videos-lip-sync",
       "destination": "/hub/models/kling-lip-sync-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/kling--videos-lip-sync/",
       "destination": "/hub/models/kling-lip-sync-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/krea--krea-2-large",
       "destination": "/hub/models/krea-2-large-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/krea--krea-2-large/",
       "destination": "/hub/models/krea-2-large-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/krea--krea-2-medium",
       "destination": "/hub/models/krea-2-medium-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/krea--krea-2-medium/",
       "destination": "/hub/models/krea-2-medium-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/krea--krea-2-medium-turbo",
       "destination": "/hub/models/krea-2-medium-turbo-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/krea--krea-2-medium-turbo/",
       "destination": "/hub/models/krea-2-medium-turbo-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-1",
       "destination": "/hub/models/luma-photon-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-1/",
       "destination": "/hub/models/luma-photon-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-1-image-generation",
       "destination": "/hub/models/luma-photon-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-1-image-generation/",
       "destination": "/hub/models/luma-photon-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-1-image-modify",
       "destination": "/hub/models/luma-photon-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-1-image-modify/",
       "destination": "/hub/models/luma-photon-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-flash-1",
       "destination": "/hub/models/luma-photon-flash-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-flash-1/",
       "destination": "/hub/models/luma-photon-flash-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-flash-1-image-generation",
       "destination": "/hub/models/luma-photon-flash-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-flash-1-image-generation/",
       "destination": "/hub/models/luma-photon-flash-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-flash-1-image-modify",
       "destination": "/hub/models/luma-photon-flash-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--photon-flash-1-image-modify/",
       "destination": "/hub/models/luma-photon-flash-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-2",
       "destination": "/hub/models/luma-ray-2-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-2/",
       "destination": "/hub/models/luma-ray-2-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-2-image-to-video",
       "destination": "/hub/models/luma-ray-2-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-2-image-to-video/",
       "destination": "/hub/models/luma-ray-2-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-2-text-to-video",
       "destination": "/hub/models/luma-ray-2-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-2-text-to-video/",
       "destination": "/hub/models/luma-ray-2-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-flash-2",
       "destination": "/hub/models/luma-ray-flash-2-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-flash-2/",
       "destination": "/hub/models/luma-ray-flash-2-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-flash-2-image-to-video",
       "destination": "/hub/models/luma-ray-flash-2-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-flash-2-image-to-video/",
       "destination": "/hub/models/luma-ray-flash-2-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-flash-2-text-to-video",
       "destination": "/hub/models/luma-ray-flash-2-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma--ray-flash-2-text-to-video/",
       "destination": "/hub/models/luma-ray-flash-2-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1",
       "destination": "/hub/models/luma-uni-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1/",
       "destination": "/hub/models/luma-uni-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-image-edit",
       "destination": "/hub/models/luma-uni-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-image-edit/",
       "destination": "/hub/models/luma-uni-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-image-generation",
       "destination": "/hub/models/luma-uni-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-image-generation/",
       "destination": "/hub/models/luma-uni-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-max",
       "destination": "/hub/models/luma-uni-1-max-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-max/",
       "destination": "/hub/models/luma-uni-1-max-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-max-image-edit",
       "destination": "/hub/models/luma-uni-1-max-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-max-image-edit/",
       "destination": "/hub/models/luma-uni-1-max-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-max-image-generation",
       "destination": "/hub/models/luma-uni-1-max-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/luma_2--uni-1-max-image-generation/",
       "destination": "/hub/models/luma-uni-1-max-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-1",
       "destination": "/hub/models/gpt-image-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-1/",
       "destination": "/hub/models/gpt-image-1-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-1.5",
       "destination": "/hub/models/gpt-image-1-5-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-1.5/",
       "destination": "/hub/models/gpt-image-1-5-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-2",
       "destination": "/hub/models/gpt-image-2-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-2/",
       "destination": "/hub/models/gpt-image-2-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-2.5-flare",
       "destination": "/hub/models/gpt-image-2-5-flare-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-2.5-flare/",
       "destination": "/hub/models/gpt-image-2-5-flare-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-2.5-sunburst",
       "destination": "/hub/models/gpt-image-2-5-sunburst-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/openai--gpt-image-2.5-sunburst/",
       "destination": "/hub/models/gpt-image-2-5-sunburst-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0",
       "destination": "/hub/models/qwen-image-3-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0/",
       "destination": "/hub/models/qwen-image-3-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-image-edit",
       "destination": "/hub/models/qwen-image-3-0-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-image-edit/",
       "destination": "/hub/models/qwen-image-3-0-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-pro",
       "destination": "/hub/models/qwen-image-3-0-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-pro/",
       "destination": "/hub/models/qwen-image-3-0-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-pro-image-edit",
       "destination": "/hub/models/qwen-image-3-0-pro-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-pro-image-edit/",
       "destination": "/hub/models/qwen-image-3-0-pro-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-pro-text-to-image",
       "destination": "/hub/models/qwen-image-3-0-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-pro-text-to-image/",
       "destination": "/hub/models/qwen-image-3-0-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-text-to-image",
       "destination": "/hub/models/qwen-image-3-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/qwen--qwen-image-3.0-text-to-image/",
       "destination": "/hub/models/qwen-image-3-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv3",
       "destination": "/hub/models/recraft-v3-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv3/",
       "destination": "/hub/models/recraft-v3-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4",
       "destination": "/hub/models/recraft-v4-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4/",
       "destination": "/hub/models/recraft-v4-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1",
       "destination": "/hub/models/recraft-v4-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1/",
       "destination": "/hub/models/recraft-v4-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_pro",
       "destination": "/hub/models/recraft-v4-1-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_pro/",
       "destination": "/hub/models/recraft-v4-1-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_pro_vector",
       "destination": "/hub/models/recraft-v4-1-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_pro_vector/",
       "destination": "/hub/models/recraft-v4-1-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_utility",
       "destination": "/hub/models/recraft-v4-1-utility-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_utility/",
       "destination": "/hub/models/recraft-v4-1-utility-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_utility_pro",
       "destination": "/hub/models/recraft-v4-1-utility-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_utility_pro/",
       "destination": "/hub/models/recraft-v4-1-utility-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_utility_pro_vector",
       "destination": "/hub/models/recraft-v4-1-utility-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_utility_pro_vector/",
       "destination": "/hub/models/recraft-v4-1-utility-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_utility_vector",
       "destination": "/hub/models/recraft-v4-1-utility-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_utility_vector/",
       "destination": "/hub/models/recraft-v4-1-utility-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_vector",
       "destination": "/hub/models/recraft-v4-1-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_1_vector/",
       "destination": "/hub/models/recraft-v4-1-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_pro",
       "destination": "/hub/models/recraft-v4-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--recraftv4_pro/",
       "destination": "/hub/models/recraft-v4-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v3-text-to-image",
       "destination": "/hub/models/recraft-v3-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v3-text-to-image/",
       "destination": "/hub/models/recraft-v3-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v3-text-to-vector",
       "destination": "/hub/models/recraft-v3-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v3-text-to-vector/",
       "destination": "/hub/models/recraft-v3-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-pro-text-to-image",
       "destination": "/hub/models/recraft-v4-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-pro-text-to-image/",
       "destination": "/hub/models/recraft-v4-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-pro-text-to-vector",
       "destination": "/hub/models/recraft-v4-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-pro-text-to-vector/",
       "destination": "/hub/models/recraft-v4-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-text-to-image",
       "destination": "/hub/models/recraft-v4-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-text-to-image/",
       "destination": "/hub/models/recraft-v4-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-text-to-vector",
       "destination": "/hub/models/recraft-v4-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4-text-to-vector/",
       "destination": "/hub/models/recraft-v4-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-pro-text-to-image",
       "destination": "/hub/models/recraft-v4-1-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-pro-text-to-image/",
       "destination": "/hub/models/recraft-v4-1-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-pro-text-to-vector",
       "destination": "/hub/models/recraft-v4-1-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-pro-text-to-vector/",
       "destination": "/hub/models/recraft-v4-1-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-text-to-image",
       "destination": "/hub/models/recraft-v4-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-text-to-image/",
       "destination": "/hub/models/recraft-v4-1-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-text-to-vector",
       "destination": "/hub/models/recraft-v4-1-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-text-to-vector/",
       "destination": "/hub/models/recraft-v4-1-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-pro-text-to-image",
       "destination": "/hub/models/recraft-v4-1-utility-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-pro-text-to-image/",
       "destination": "/hub/models/recraft-v4-1-utility-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-pro-text-to-vector",
       "destination": "/hub/models/recraft-v4-1-utility-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-pro-text-to-vector/",
       "destination": "/hub/models/recraft-v4-1-utility-pro-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-text-to-image",
       "destination": "/hub/models/recraft-v4-1-utility-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-text-to-image/",
       "destination": "/hub/models/recraft-v4-1-utility-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-text-to-vector",
       "destination": "/hub/models/recraft-v4-1-utility-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/recraft--v4.1-utility-text-to-vector/",
       "destination": "/hub/models/recraft-v4-1-utility-text-to-vector/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--aleph2",
       "destination": "/hub/models/runway-aleph-2-video-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--aleph2/",
       "destination": "/hub/models/runway-aleph-2-video-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--aleph2-video-to-video",
       "destination": "/hub/models/runway-aleph-2-video-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--aleph2-video-to-video/",
       "destination": "/hub/models/runway-aleph-2-video-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--gen4-image",
       "destination": "/hub/models/runway-gen-4-image-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--gen4-image/",
       "destination": "/hub/models/runway-gen-4-image-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--gen4-turbo-image-to-video",
       "destination": "/hub/models/runway-gen-4-turbo-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--gen4-turbo-image-to-video/",
       "destination": "/hub/models/runway-gen-4-turbo-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--gen4_image",
       "destination": "/hub/models/runway-gen-4-image-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--gen4_image/",
       "destination": "/hub/models/runway-gen-4-image-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--gen4_turbo",
       "destination": "/hub/models/runway-gen-4-turbo-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/runway--gen4_turbo/",
       "destination": "/hub/models/runway-gen-4-turbo-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/veo--veo-3.1-generate-001",
       "destination": "/hub/models/veo-3-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/veo--veo-3.1-generate-001/",
       "destination": "/hub/models/veo-3-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-2.5-flash-image",
       "destination": "/hub/models/nano-banana-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-2.5-flash-image/",
       "destination": "/hub/models/nano-banana-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-3-pro-image",
       "destination": "/hub/models/nano-banana-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-3-pro-image/",
       "destination": "/hub/models/nano-banana-pro-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-3.1-flash-image",
       "destination": "/hub/models/nano-banana-2-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-3.1-flash-image/",
       "destination": "/hub/models/nano-banana-2-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-nano-banana-2",
       "destination": "/hub/models/nano-banana-2-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--gemini-nano-banana-2/",
       "destination": "/hub/models/nano-banana-2-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--veo-3",
       "destination": "/hub/models/veo-3-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--veo-3/",
       "destination": "/hub/models/veo-3-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--veo-3-first-last-frame",
       "destination": "/hub/models/veo-3-first-last-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/vertexai--veo-3-first-last-frame/",
       "destination": "/hub/models/veo-3-first-last-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-1.0-video-edit",
       "destination": "/hub/models/happyhorse-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-1.0-video-edit/",
       "destination": "/hub/models/happyhorse-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-1.1-r2v",
       "destination": "/hub/models/happyhorse-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-1.1-r2v/",
       "destination": "/hub/models/happyhorse-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-1.1-t2v",
       "destination": "/hub/models/happyhorse-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-1.1-t2v/",
       "destination": "/hub/models/happyhorse-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-reference-video",
       "destination": "/hub/models/happyhorse-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-reference-video/",
       "destination": "/hub/models/happyhorse-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-text-to-video",
       "destination": "/hub/models/happyhorse-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-text-to-video/",
       "destination": "/hub/models/happyhorse-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-video-edit",
       "destination": "/hub/models/happyhorse-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--happyhorse-video-edit/",
       "destination": "/hub/models/happyhorse-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-image",
       "destination": "/hub/models/wan-2-5-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-image/",
       "destination": "/hub/models/wan-2-5-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video",
       "destination": "/hub/models/wan-2-6-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video/",
       "destination": "/hub/models/wan-2-6-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video-2.7",
       "destination": "/hub/models/wan-2-7-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video-2.7/",
       "destination": "/hub/models/wan-2-7-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video-3.0",
       "destination": "/hub/models/wan-3-0-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video-3.0/",
       "destination": "/hub/models/wan-3-0-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video-3.0-prime",
       "destination": "/hub/models/wan-3-0-prime-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--image-to-video-3.0-prime/",
       "destination": "/hub/models/wan-3-0-prime-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-to-video-3.0",
       "destination": "/hub/models/wan-3-0-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-to-video-3.0/",
       "destination": "/hub/models/wan-3-0-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-to-video-3.0-prime",
       "destination": "/hub/models/wan-3-0-prime-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-to-video-3.0-prime/",
       "destination": "/hub/models/wan-3-0-prime-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-video",
       "destination": "/hub/models/wan-2-6-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-video/",
       "destination": "/hub/models/wan-2-6-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-video-2.7",
       "destination": "/hub/models/wan-2-7-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--reference-video-2.7/",
       "destination": "/hub/models/wan-2-7-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-image",
       "destination": "/hub/models/wan-2-5-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-image/",
       "destination": "/hub/models/wan-2-5-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video",
       "destination": "/hub/models/wan-2-6-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video/",
       "destination": "/hub/models/wan-2-6-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video-2.7",
       "destination": "/hub/models/wan-2-7-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video-2.7/",
       "destination": "/hub/models/wan-2-7-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video-3.0",
       "destination": "/hub/models/wan-3-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video-3.0/",
       "destination": "/hub/models/wan-3-0-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video-3.0-prime",
       "destination": "/hub/models/wan-3-0-prime-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--text-to-video-3.0-prime/",
       "destination": "/hub/models/wan-3-0-prime-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--video-continuation-2.7",
       "destination": "/hub/models/wan-2-7-video-continuation/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--video-continuation-2.7/",
       "destination": "/hub/models/wan-2-7-video-continuation/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--video-edit-2.7",
       "destination": "/hub/models/wan-2-7-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--video-edit-2.7/",
       "destination": "/hub/models/wan-2-7-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.5-i2i-preview",
       "destination": "/hub/models/wan-2-5-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.5-i2i-preview/",
       "destination": "/hub/models/wan-2-5-image-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.5-t2i-preview",
       "destination": "/hub/models/wan-2-5-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.5-t2i-preview/",
       "destination": "/hub/models/wan-2-5-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.6-i2v",
       "destination": "/hub/models/wan-2-6-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.6-i2v/",
       "destination": "/hub/models/wan-2-6-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.6-r2v",
       "destination": "/hub/models/wan-2-6-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.6-r2v/",
       "destination": "/hub/models/wan-2-6-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.6-t2v",
       "destination": "/hub/models/wan-2-6-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.6-t2v/",
       "destination": "/hub/models/wan-2-6-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.7-i2v",
       "destination": "/hub/models/wan-2-7-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.7-i2v/",
       "destination": "/hub/models/wan-2-7-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.7-r2v",
       "destination": "/hub/models/wan-2-7-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.7-r2v/",
       "destination": "/hub/models/wan-2-7-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.7-t2v",
       "destination": "/hub/models/wan-2-7-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.7-t2v/",
       "destination": "/hub/models/wan-2-7-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.7-videoedit",
       "destination": "/hub/models/wan-2-7-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan2.7-videoedit/",
       "destination": "/hub/models/wan-2-7-video-edit/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan3.0-video",
       "destination": "/hub/models/wan-3-0-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan3.0-video/",
       "destination": "/hub/models/wan-3-0-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan3.0-video-prime",
       "destination": "/hub/models/wan-3-0-prime-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wan--wan3.0-video-prime/",
       "destination": "/hub/models/wan-3-0-prime-image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--flashvsr",
       "destination": "/hub/models/flashvsr/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--flashvsr/",
       "destination": "/hub/models/flashvsr/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--seedvr2",
       "destination": "/hub/models/seedvr2-image-upscaler/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--seedvr2/",
       "destination": "/hub/models/seedvr2-image-upscaler/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--seedvr2-image",
       "destination": "/hub/models/seedvr2-image-upscaler/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--seedvr2-image/",
       "destination": "/hub/models/seedvr2-image-upscaler/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--ultimate-image-upscaler",
       "destination": "/hub/models/ultimate-image-upscaler/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/wavespeed--ultimate-image-upscaler/",
       "destination": "/hub/models/ultimate-image-upscaler/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-image",
       "destination": "/hub/models/grok-imagine-image-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-image/",
       "destination": "/hub/models/grok-imagine-image-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-image-2.0",
       "destination": "/hub/models/grok-imagine-image-2-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-image-2.0/",
       "destination": "/hub/models/grok-imagine-image-2-0-text-to-image/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video",
       "destination": "/hub/models/grok-imagine-video-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video/",
       "destination": "/hub/models/grok-imagine-video-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-1.5",
       "destination": "/hub/models/grok-imagine-video-1-5-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-1.5/",
       "destination": "/hub/models/grok-imagine-video-1-5-text-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-1.5-reference",
       "destination": "/hub/models/grok-imagine-video-1-5-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-1.5-reference/",
       "destination": "/hub/models/grok-imagine-video-1-5-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-reference",
       "destination": "/hub/models/grok-imagine-video-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/xai--grok-imagine-video-reference/",
       "destination": "/hub/models/grok-imagine-video-reference-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/animate-reference-sheet",
       "destination": "/hub/workflows/animate-reference-sheet/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/animate-reference-sheet/",
       "destination": "/hub/workflows/animate-reference-sheet/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/change-material",
       "destination": "/hub/workflows/change-material/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/change-material/",
       "destination": "/hub/workflows/change-material/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/change-video-background",
       "destination": "/hub/workflows/change-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/change-video-background/",
       "destination": "/hub/workflows/change-video-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/character-turnaround",
       "destination": "/hub/workflows/character-turnaround/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/character-turnaround/",
       "destination": "/hub/workflows/character-turnaround/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/connect-images-with-motion",
       "destination": "/hub/workflows/connect-images-with-motion/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/connect-images-with-motion/",
       "destination": "/hub/workflows/connect-images-with-motion/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/edit-selected-region",
       "destination": "/hub/workflows/edit-selected-region/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/edit-selected-region/",
       "destination": "/hub/workflows/edit-selected-region/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/editable-layers",
       "destination": "/hub/workflows/editable-layers/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/editable-layers/",
       "destination": "/hub/workflows/editable-layers/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/expand-video-frame",
       "destination": "/hub/workflows/expand-video-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/expand-video-frame/",
       "destination": "/hub/workflows/expand-video-frame/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/extend-image-borders",
       "destination": "/hub/workflows/extend-image-borders/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/extend-image-borders/",
       "destination": "/hub/workflows/extend-image-borders/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/image-to-video",
       "destination": "/hub/workflows/image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/image-to-video/",
       "destination": "/hub/workflows/image-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/match-lighting",
       "destination": "/hub/workflows/match-lighting/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/match-lighting/",
       "destination": "/hub/workflows/match-lighting/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/motion-transfer",
       "destination": "/hub/workflows/motion-transfer/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/motion-transfer/",
       "destination": "/hub/workflows/motion-transfer/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/new-angle",
       "destination": "/hub/workflows/new-angle/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/new-angle/",
       "destination": "/hub/workflows/new-angle/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/product-in-scene",
       "destination": "/hub/workflows/product-in-scene/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/product-in-scene/",
       "destination": "/hub/workflows/product-in-scene/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/product-mockup",
       "destination": "/hub/workflows/product-mockup/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/product-mockup/",
       "destination": "/hub/workflows/product-mockup/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/product-photo-to-video",
       "destination": "/hub/workflows/product-photo-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/product-photo-to-video/",
       "destination": "/hub/workflows/product-photo-to-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/remove-background",
       "destination": "/hub/workflows/remove-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/remove-background/",
       "destination": "/hub/workflows/remove-background/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/remove-object",
       "destination": "/hub/workflows/remove-object/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/remove-object/",
       "destination": "/hub/workflows/remove-object/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/remove-object-from-video",
       "destination": "/hub/workflows/remove-object-from-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/remove-object-from-video/",
       "destination": "/hub/workflows/remove-object-from-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/replace-character",
       "destination": "/hub/workflows/replace-character/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/replace-character/",
       "destination": "/hub/workflows/replace-character/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/restore-archival-footage",
       "destination": "/hub/workflows/restore-archival-footage/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/restore-archival-footage/",
       "destination": "/hub/workflows/restore-archival-footage/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/restore-portrait",
       "destination": "/hub/workflows/restore-portrait/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/restore-portrait/",
       "destination": "/hub/workflows/restore-portrait/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/sharpen-product-photo",
       "destination": "/hub/workflows/sharpen-product-photo/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/sharpen-product-photo/",
       "destination": "/hub/workflows/sharpen-product-photo/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/singing-character",
       "destination": "/hub/workflows/singing-character/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/singing-character/",
       "destination": "/hub/workflows/singing-character/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/talking-character",
       "destination": "/hub/workflows/talking-character/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/talking-character/",
       "destination": "/hub/workflows/talking-character/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/upscale-and-restore",
       "destination": "/hub/workflows/upscale-and-restore/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/upscale-and-restore/",
       "destination": "/hub/workflows/upscale-and-restore/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/upscale-illustration",
       "destination": "/hub/workflows/upscale-illustration/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/upscale-illustration/",
       "destination": "/hub/workflows/upscale-illustration/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/upscale-video",
       "destination": "/hub/workflows/upscale-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/upscale-video/",
       "destination": "/hub/workflows/upscale-video/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/video-from-references",
       "destination": "/hub/workflows/video-from-references/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/video-from-references/",
       "destination": "/hub/workflows/video-from-references/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/virtual-try-on",
       "destination": "/hub/workflows/virtual-try-on/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/models/workflows/virtual-try-on/",
       "destination": "/hub/workflows/virtual-try-on/",
-      "permanent": true
+      "permanent": false
     }
   ]
 }

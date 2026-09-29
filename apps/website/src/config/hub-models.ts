@@ -42,11 +42,14 @@ const oldModelPaths = new Set([
   ].map((slug) => `/models/${slug}`)
 ])
 
-/** Links in a page that still point at an old, redirecting Models address. */
-export function oldModelLinks(html: string): string[] {
+/**
+ * Links that still point at an old, redirecting model address, in built HTML
+ * (`href="…"`), page data JSON (`"href":"…"`) or a markdown twin (`](…)`).
+ */
+export function oldModelLinks(content: string): string[] {
   return Array.from(
-    html.matchAll(
-      /href="(?:https:\/\/comfy\.org)?(\/models(?:\/[^"?#]*)?)["?#]/g
+    content.matchAll(
+      /(?:href="|"href":"|\]\()(?:https:\/\/comfy\.org)?(\/models(?:\/[^"?#)\s]*)?)["?#)]/g
     ),
     ([, path]) => path.replace(/\/$/, '')
   ).filter((path) => oldModelPaths.has(path))

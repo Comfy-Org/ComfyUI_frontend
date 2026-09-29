@@ -4,9 +4,9 @@ import { envField } from 'astro/config'
 // "Vite module runner has been closed" — by `astro:build:done` the runner that
 // resolves module specifiers is gone, so anything not already loaded fails.
 import { existsSync } from 'node:fs'
-import { readFile, rm } from 'node:fs/promises'
+import { readdir, readFile, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { join } from 'node:path'
+import { basename, join, relative } from 'node:path'
 
 import { workshopClientBoundary } from './workshop-client-boundary'
 
@@ -16,6 +16,7 @@ import {
   oldModelLinks
 } from '../config/hub-models'
 import { unregisteredModelsPaths } from '../config/models-url-registry'
+import { markdownTwinPath } from '../lib/markdown-twin-path'
 
 import {
   assertWorkshopCloudEnvForBuild,
@@ -69,21 +70,35 @@ export function modelsBuildRoutes(enabled: boolean) {
   ]
 }
 
-async function pagesLinkingOldModels(
+async function modelsDataFiles(root: string) {
+  const modelsDir = join(root, 'models')
+  if (!existsSync(modelsDir)) return []
+  const entries = await readdir(modelsDir, { recursive: true })
+  return entries
+    .filter(
+      (entry) => entry === 'catalogue.json' || basename(entry) === 'page.json'
+    )
+    .map((entry) => join(modelsDir, entry))
+}
+
+async function filesLinkingOldModels(
   root: string,
   pages: readonly { pathname: string }[]
 ) {
-  const found: string[] = []
-  for (const { pathname } of pages) {
-    if (isLegacyWorkshopRoute(`/${pathname}`)) continue
+  const pageFiles = pages.flatMap(({ pathname }) => {
+    if (isLegacyWorkshopRoute(`/${pathname}`)) return []
     const trimmed = pathname.replace(/\/$/, '')
-    const file = [
+    const html = [
       join(root, pathname, 'index.html'),
       join(root, `${trimmed}.html`)
     ].find((candidate) => existsSync(candidate))
-    if (!file) continue
+    return [html, join(root, markdownTwinPath(`/${pathname}`))]
+  })
+  const found: string[] = []
+  for (const file of [...pageFiles, ...(await modelsDataFiles(root))]) {
+    if (!file || !existsSync(file)) continue
     for (const link of oldModelLinks(await readFile(file, 'utf8')))
-      found.push(`/${pathname} → ${link}`)
+      found.push(`/${relative(root, file)} → ${link}`)
   }
   return found
 }
@@ -139,7 +154,7 @@ export function workshopReleaseGate(): AstroIntegration {
         }
 
         const root = fileURLToPath(dir)
-        const stale = await pagesLinkingOldModels(root, pages)
+        const stale = await filesLinkingOldModels(root, pages)
         if (stale.length > 0) {
           throw new Error(
             `workshop-release-gate found links to old /models addresses, which now redirect (${stale.join(', ')}); link the /hub/models page instead.`
