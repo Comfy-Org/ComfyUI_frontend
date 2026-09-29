@@ -84,11 +84,7 @@ interface LaunchCancellationFlowOptions {
   launchWorkspaceId?: string | null
   showFallback: (
     options?: CancellationFallbackOptions
-  ) =>
-    | boolean
-    | void
-    | DialogInstance
-    | Promise<boolean | void | DialogInstance>
+  ) => boolean | DialogInstance | Promise<boolean | DialogInstance>
 }
 
 async function prepareCancellationSession(
@@ -164,7 +160,10 @@ export async function launchCancellationFlow({
     !launchWorkspaceId ||
     workspaceStore.activeWorkspaceBillingRail !== 'stripe'
   ) {
-    await showCancellationFallback(showFallback, () => true)
+    await showCancellationFallback(
+      showFallback,
+      launchWorkspaceId ? isLaunchWorkspaceCurrent : () => true
+    )
     return
   }
 

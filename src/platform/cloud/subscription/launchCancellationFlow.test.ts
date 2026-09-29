@@ -216,6 +216,22 @@ describe('launchCancellationFlow', () => {
     expect(mocks.prepare).not.toHaveBeenCalled()
   })
 
+  it('keeps the native Metronome dialog bound to its launch workspace', async () => {
+    mocks.billingRail = 'metronome'
+    const openDialog = vi.fn()
+
+    await launchCancellationFlow({
+      showFallback: vi.fn(async ({ isScopeCurrent } = {}) => {
+        mocks.activeWorkspaceId = 'workspace-2'
+        if (isScopeCurrent?.()) openDialog()
+        return true
+      })
+    })
+
+    expect(openDialog).not.toHaveBeenCalled()
+    expect(mocks.prepare).not.toHaveBeenCalled()
+  })
+
   it('uses the native dialog without telemetry when no session is available', async () => {
     mocks.prepare.mockResolvedValue(null)
     const showFallback = vi.fn()
