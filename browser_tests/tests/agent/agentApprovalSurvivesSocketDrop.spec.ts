@@ -56,7 +56,6 @@ test.describe(
       turnLock.push(reconnected, RUN_APPROVAL_EVENT)
       expect(turnLock.pendingAskIsPrimed()).toBe(false)
 
-      test.fail()
       await expect(
         turnLock.panel.getByText(enMessages.agent.runApproval.question)
       ).toBeVisible()
@@ -76,7 +75,6 @@ test.describe(
       turnLock.push(reconnected, RUN_APPROVAL_EVENT)
       expect(turnLock.pendingAskIsPrimed()).toBe(false)
 
-      test.fail()
       // Recovery must restore both the card and its active turn identity;
       // `answerAsk` deliberately refuses to POST without `activeTurnId`.
       await turnLock.panel
