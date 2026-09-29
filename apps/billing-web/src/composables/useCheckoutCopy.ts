@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import type {
   CheckoutCopy,
+  CheckoutInviteCopy,
   CheckoutSuccessCopy
 } from '@comfyorg/account-ui/billing/checkout'
 
@@ -141,6 +142,23 @@ export function useCheckoutCopy() {
     close: t('checkout.close')
   }))
 
+  const inviteCopy = computed<CheckoutInviteCopy>(() => ({
+    title: t('checkout.invite.title'),
+    subtext: t('checkout.invite.subtext'),
+    placeholder: t('checkout.invite.placeholder'),
+    sendInvites: t('checkout.invite.sendInvites'),
+    removeTag: t('checkout.invite.removeTag'),
+    invalidEmailCount: (count) => t('checkout.invite.invalidEmailCount', count),
+    pendingInviteSingle: t('checkout.invite.pendingInviteSingle'),
+    pendingInviteCount: (count) =>
+      t('checkout.invite.pendingInviteCount', { count }),
+    seatLimitExceeded: (max, overage) =>
+      t('checkout.invite.seatLimitExceeded', { max, overage }),
+    invitedMessage: (emails, count) =>
+      t('checkout.invite.invitedMessage', { emails }, count),
+    failedCount: (count) => t('checkout.invite.failedCount', count)
+  }))
+
   /** The cloud app's tier naming: catalog copy, else the tier in words. */
   function tierName(tier: string): string {
     const key = `checkout.tiers.${tier.toLowerCase()}`
@@ -153,5 +171,5 @@ export function useCheckoutCopy() {
       .join(' ')
   }
 
-  return { copy, successCopy, tierName }
+  return { copy, successCopy, inviteCopy, tierName }
 }

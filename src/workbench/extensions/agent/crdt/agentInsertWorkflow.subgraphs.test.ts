@@ -30,14 +30,11 @@ import {
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { FollowerDoc } from './followerDoc'
-import { createGraphMutations } from './graphMutations'
 
 class NumberWidgetNode extends LGraphNode {
   constructor() {
@@ -138,15 +135,7 @@ function setWidgetOp(
 
 function bindProjection(workflowId: string, graph: LGraph) {
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(
-    createGraphMutations({
-      getScope: () => graphScopeOf(graph),
-      layout: { createNode: () => {}, deleteNodes: () => {} },
-      placement: inertPlacementPort
-    }),
-    () => graph,
-    () => follower.doc
-  )
+  const projection = new AgentCrdtProjection(() => graph)
   projection.bind(workflowId, follower)
   onTestFinished(() => {
     projection.destroy()
@@ -162,8 +151,7 @@ function bindProjection(workflowId: string, graph: LGraph) {
       update,
       actor: 'agent:test',
       opIds
-    })
-    projection.reconcileLiveGraph(workflowId)
+    }).applied
     return committed
   }
   return deliver
@@ -181,14 +169,11 @@ function serializeBlueprint(graph: LGraph): InsertWorkflowOp['workflow'] {
   ) as InsertWorkflowOp['workflow']
 }
 
-/**
- * A subgraph host's `widgets_values` is a named record when it promotes
- * named widgets, even though `LGraphNode`'s general type only declares the
- * positional-array shape `ISerialisedNode` uses. Read it through this one
- * narrow accessor rather than asserting at every call site.
- */
+/** The host's live promoted widgets, by name. */
 function promotedWidgetValues(node: SubgraphNode): Record<string, unknown> {
-  return node.widgets_values as unknown as Record<string, unknown>
+  return Object.fromEntries(
+    node.widgets.map((widget) => [widget.name, widget.value])
+  )
 }
 
 describe('insert_workflow materializes subgraphs correctly', () => {
@@ -359,8 +344,6 @@ describe('insert_workflow materializes subgraphs correctly', () => {
 
     const [instance] = findSubgraphInstances(graph)
     expect(instance).toBeDefined()
-    // Read through the host's keyed `widgets_values` rather than the live
-    // `widgets` array: both promoted values land here correctly.
     expect(promotedWidgetValues(instance)).toEqual({
       mode: 'randomize',
       steps: 77
