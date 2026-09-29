@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ArrowUpRight } from '@lucide/vue'
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import { useMounted } from '@vueuse/core'
+import { computed, onScopeDispose, ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
 import {
@@ -13,24 +13,39 @@ import {
 } from '../../config/workshop-playground'
 import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
 import {
-  workflowErrorKey,
+  workflowNoticeKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
+import {
+  refreshWorkshopCredits,
+  useWorkshopCredits
+} from '../../config/workshop-credits'
+import type { WorkflowCreditsRefusal } from '../../lib/workshop/workflow-credits-gate'
+import {
+  withRefusalBaseline,
+  workflowCreditsGate
+} from '../../lib/workshop/workflow-credits-gate'
+import { panelSaysRefusal } from '../../lib/workshop/workflow-refusal'
+import { useStickyFooterScrollPadding } from '../../composables/useStickyFooterScrollPadding'
 import { useTablist } from '../../composables/useTablist'
 import { useWorkflowFormDraft } from '../../composables/useWorkflowFormDraft'
 import { useWorkflowRun } from '../../composables/useWorkflowRun'
 import { t } from '../../i18n/translations'
 import {
+  captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled
 } from '../../scripts/posthog'
+import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
 import { sameFormValues } from '../../lib/workshop/form-values'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import WorkflowResults from './WorkflowResults.vue'
+import WorkflowCreditsGuard from './WorkflowCreditsGuard.vue'
 import WorkflowRunControls from './WorkflowRunControls.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
+import WorkflowExamplePreview from './WorkflowExamplePreview.vue'
 
 const { model, scope, cloudHref } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -41,9 +56,11 @@ const emit = defineEmits<{ recovery: [active: boolean] }>()
 const sections = ['playground', 'workflow', 'api'] as const
 const section = ref<(typeof sections)[number]>('playground')
 const { onKeydown } = useTablist(() => sections, section)
+const footer = useTemplateRef<HTMLElement>('footer')
+useStickyFooterScrollPadding(footer, () => section.value === 'playground')
 const sectionLabels = {
   playground: 'workshop.model.tabs.playground',
-  workflow: 'workshop.workflow.graph',
+  workflow: 'workshop.model.tabs.details',
   api: 'workshop.model.tabs.api'
 } as const
 const initial = initialWorkshopPageState(model)
@@ -78,6 +95,20 @@ const draft = useWorkflowFormDraft(
 )
 const enabled = useWorkshopEnabled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const mounted = useMounted()
+const modelAnalytics = workshopModelAnalytics(model)
+watch(
+  () => mounted.value && enabled.value && workflowsEnabled.value,
+  (visible) => {
+    if (visible)
+      captureWorkshopEvent({ name: 'model_viewed', properties: modelAnalytics })
+  },
+  { once: true }
+)
+watch([section, enabled, workflowsEnabled], ([active, enabled, workflows]) => {
+  if (enabled && workflows && active === 'api')
+    captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
+})
 const busy = computed(() =>
   ['preparing', 'active', 'interrupted'].includes(state.value.phase)
 )
@@ -107,6 +138,39 @@ const error = computed(() =>
       : undefined
 )
 const fieldErrors = computed(() => error.value?.fieldErrors ?? {})
+// What is left for this page to say is what the panel does not carry.
+const refusalSaidHere = computed(() =>
+  error.value && !panelSaysRefusal(state.value)
+    ? t(workflowNoticeKey(state.value, error.value))
+    : undefined
+)
+const { balance, session } = useWorkshopCredits()
+const credits = computed(() =>
+  balance.value.status === 'ok' ? balance.value.credits : undefined
+)
+const refusal = ref<WorkflowCreditsRefusal>()
+watch(
+  () =>
+    state.value.phase === 'failed' &&
+    state.value.error.code === 'insufficient_credits',
+  (refused) => {
+    refusal.value = refused ? { credits: credits.value } : undefined
+    if (refused) void refreshWorkshopCredits({ force: true })
+  }
+)
+watch(credits, (known) => {
+  refusal.value = withRefusalBaseline(refusal.value, known)
+})
+const creditsGate = computed(() =>
+  signedIn.value
+    ? workflowCreditsGate({
+        busy: busy.value,
+        member: session.value?.role === 'member',
+        credits: credits.value,
+        refusal: refusal.value
+      })
+    : 'run'
+)
 const statusLabel = computed(() => {
   if (cancelRequested.value && busy.value)
     return t('workshop.workflow.cancelling')
@@ -178,7 +242,7 @@ function start() {
       :aria-selected="section === item"
       :aria-controls="`workflow-panel-${item}`"
       :tabindex="tabIndex(item)"
-      class="min-h-12 cursor-pointer border-b-2 border-transparent px-1 text-sm font-medium text-primary-warm-gray transition-colors hover:text-primary-comfy-yellow aria-selected:border-primary-comfy-yellow aria-selected:text-primary-comfy-canvas aria-selected:hover:text-primary-comfy-yellow"
+      class="min-h-12 cursor-pointer border-b-2 border-transparent px-1 text-sm font-bold tracking-wider text-primary-warm-gray uppercase transition-colors hover:text-primary-warm-white aria-selected:border-primary-comfy-yellow aria-selected:text-primary-warm-white"
       @click="section = item"
     >
       {{ t(sectionLabels[item]) }}
@@ -189,25 +253,20 @@ function start() {
     id="workflow-panel-playground"
     role="tabpanel"
     aria-labelledby="workflow-tab-playground"
-    class="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
+    class="grid gap-8 lg:grid-cols-12"
   >
     <section
-      class="overflow-hidden rounded-2xl border border-transparency-white-t20"
+      class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
       aria-labelledby="workflow-inputs-heading"
     >
-      <form @submit.prevent="start">
-        <div class="space-y-6 p-5 lg:p-6">
-          <div>
-            <h2
-              id="workflow-inputs-heading"
-              class="text-lg font-medium text-primary-comfy-canvas"
-            >
-              {{ t('workshop.workflow.makeYours') }}
-            </h2>
-            <p class="mt-1 text-sm text-primary-warm-gray">
-              {{ t('workshop.workflow.inputHint') }}
-            </p>
-          </div>
+      <form class="flex min-h-full flex-col" @submit.prevent="start">
+        <h2
+          id="workflow-inputs-heading"
+          class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+        >
+          {{ t('workshop.input.title') }}
+        </h2>
+        <div class="space-y-6 p-5">
           <PlaygroundForm
             v-model="values"
             :schema="initial.schema"
@@ -222,10 +281,11 @@ function start() {
             {{ t('workshop.form.draftRestoreFailed') }}
           </p>
         </div>
-        <div class="space-y-3 border-t border-transparency-white-t8 p-5 lg:p-6">
-          <p class="text-xs/relaxed text-primary-warm-gray">
-            {{ t('workshop.workflow.cloudBilling') }}
-          </p>
+        <div
+          ref="footer"
+          class="sticky bottom-0 z-10 mt-auto space-y-3 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
+          data-testid="workflow-run-footer"
+        >
           <p
             v-if="admissionPaused"
             role="status"
@@ -233,31 +293,31 @@ function start() {
           >
             {{ t('workshop.workflow.paused') }}
           </p>
-          <p v-if="error" role="alert" class="text-sm text-primary-comfy-red">
-            {{ t(workflowErrorKey(error)) }}
+          <p
+            v-if="refusalSaidHere"
+            role="alert"
+            class="text-sm text-primary-comfy-red"
+          >
+            {{ refusalSaidHere }}
           </p>
-          <WorkflowRunControls
-            :state="state"
-            :signed-in="signedIn"
-            :can-start="canStart"
-            :status-label="statusLabel"
-            @resume="workflow.resume()"
-            @cancel="workflow.cancel()"
-            @dismiss="workflow.dismiss()"
-          />
-          <a
-            v-if="cloudHref"
-            :href="cloudHref"
-            target="_blank"
-            rel="noopener"
-            class="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-transparency-white-t20 text-sm font-medium text-primary-comfy-canvas hover:bg-transparency-white-t8"
-            >{{ t('workshop.workflow.tryCloud')
-            }}<ArrowUpRight class="size-4" aria-hidden="true"
-          /></a>
+          <WorkflowCreditsGuard
+            :gate="creditsGate"
+            :workspace-name="session?.workspace.name"
+          >
+            <WorkflowRunControls
+              :state="state"
+              :signed-in="signedIn"
+              :can-start="canStart"
+              :status-label="statusLabel"
+              @resume="workflow.resume()"
+              @cancel="workflow.cancel()"
+              @dismiss="workflow.dismiss()"
+            />
+          </WorkflowCreditsGuard>
         </div>
       </form>
     </section>
-    <div class="space-y-4 lg:sticky lg:top-24">
+    <div class="space-y-4 lg:sticky lg:top-24 lg:col-span-7">
       <WorkflowResults
         :key="selectedRunId"
         :model="model"
@@ -267,6 +327,8 @@ function start() {
         :status-label="statusLabel"
         :can-start="canStart"
         :refresh-output="workflow.refreshOutput"
+        :analytics="workflow.analytics.value"
+        :visible="section === 'playground'"
         @retry="start"
         @retry-delivery="workflow.retryDelivery()"
       />
@@ -274,6 +336,7 @@ function start() {
   </div>
   <WorkflowPreview
     v-show="section === 'workflow'"
+    :active="section === 'workflow'"
     :model="model"
     :cloud-href="cloudHref"
   />
@@ -306,19 +369,9 @@ function start() {
         :disabled="formDisabled"
         @click="selectExample(index)"
       >
-        <img
-          :src="example.thumbnailUrl"
-          :alt="example.title"
-          loading="lazy"
-          class="aspect-4/3 w-full object-cover"
-        />
+        <WorkflowExamplePreview :example :poster="model.thumbnailUrl" />
         <span class="block p-4 text-sm text-primary-warm-gray">
-          {{
-            t('workshop.workflow.templateExample').replace(
-              '{n}',
-              String(index + 1)
-            )
-          }}
+          {{ example.title }}
         </span>
       </button>
     </div>

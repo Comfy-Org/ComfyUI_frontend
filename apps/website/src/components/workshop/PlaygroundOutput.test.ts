@@ -116,6 +116,35 @@ describe('PlaygroundOutput', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Queued')
     expect(screen.queryByText('Generating…')).toBeNull()
   })
+
+  // A spinner and a climbing clock both promise the run is being watched.
+  it.for([
+    { stalled: false, spinners: 1, reads: '1:00' },
+    { stalled: true, spinners: 0, reads: undefined }
+  ])(
+    'stalled $stalled keeps $spinners spinner and reads $reads',
+    ({ stalled, spinners, reads }) => {
+      render(PlaygroundOutput, {
+        props: {
+          modelName: 'Workflow',
+          now: 62_000,
+          state: {
+            status: 'running',
+            startedAt: 2000,
+            label: 'Connection interrupted',
+            stalled
+          }
+        }
+      })
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Connection interrupted'
+      )
+      expect(screen.queryAllByTestId('run-spinner')).toHaveLength(spinners)
+      const clock = screen.queryByTestId('run-elapsed')
+      expect(clock?.textContent.trim()).toBe(reads)
+    }
+  )
   it.for([
     { event: 'playing', status: 'succeeded' },
     { event: 'pause', status: 'cancelled' }
@@ -536,12 +565,12 @@ describe('PlaygroundOutput', () => {
     {
       locale: 'en' as const,
       label: 'Open output',
-      hint: 'Automatic download failed. Open the output to save it.'
+      hint: 'If your download did not start, open the output to save a copy.'
     },
     {
       locale: 'zh-CN' as const,
       label: '打开输出',
-      hint: '自动下载失败。请打开输出文件后保存。'
+      hint: '如果下载未开始，请打开输出文件并保存副本。'
     }
   ])(
     'offers a native fallback link after download failure in $locale',

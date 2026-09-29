@@ -72,7 +72,7 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({ add: mockToastAdd })
   })
@@ -100,9 +100,14 @@ function topupResponse(
   }
 }
 
-function renderDialog() {
+function renderDialog(
+  props: Partial<
+    InstanceType<typeof TopUpCreditsDialogContentWorkspace>['$props']
+  > = {}
+) {
   mockBillingContext()
   return render(TopUpCreditsDialogContentWorkspace, {
+    props,
     global: {
       plugins: [i18n],
       stubs: {
@@ -188,6 +193,32 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
   })
 
+  it('enables purchase after capabilities resolve and blocks a revoked capability', async () => {
+    const canTopUp = ref(false)
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
+    renderDialog()
+    const addCredits = screen.getByRole('button', { name: 'Add credits' })
+    expect(addCredits).toBeDisabled()
+    await userEvent.click(addCredits)
+    expect(
+      screen.queryByRole('button', { name: 'Pay $50.00' })
+    ).not.toBeInTheDocument()
+    expect(mockBillingContext().topup).not.toHaveBeenCalled()
+
+    canTopUp.value = true
+    await nextTick()
+    expect(addCredits).toBeEnabled()
+    await userEvent.click(addCredits)
+    const pay = screen.getByRole('button', { name: 'Pay $50.00' })
+    expect(pay).toBeEnabled()
+
+    canTopUp.value = false
+    await nextTick()
+    expect(pay).toBeDisabled()
+    await userEvent.click(pay)
+    expect(mockBillingContext().topup).not.toHaveBeenCalled()
+  })
+
   it('fires a started event before the purchase resolves', async () => {
     vi.mocked(mockBillingContext().topup).mockResolvedValue(
       topupResponse('pending')
@@ -210,6 +241,72 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       outcome: 'pending',
       operation_type: 'topup'
     })
+  })
+
+  it('attributes the topup journey to the surface that opened the dialog', async () => {
+    renderDialog({ source: 'agent_paywall' })
+
+    await waitFor(() =>
+      expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'entered',
+          entry_flow: 'topup',
+          entry_source: 'agent_paywall'
+        })
+      )
+    )
+  })
+
+  it('keeps the settings-billing attribution when no source is named', async () => {
+    renderDialog()
+
+    await waitFor(() =>
+      expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'entered',
+          entry_source: 'settings_billing'
+        })
+      )
+    )
+  })
+
+  it('does not inherit a prior surface when a top-up is opened from a different one', async () => {
+    resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'workspace-1',
+      entryFlow: 'topup',
+      entrySource: 'settings_billing',
+      assignment: { status: 'unavailable' }
+    })
+
+    renderDialog({ source: 'agent_paywall' })
+
+    await waitFor(() =>
+      expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'entered',
+          entry_source: 'agent_paywall'
+        })
+      )
+    )
+    expect(getActiveCheckoutJourney()?.entry_source).toBe('agent_paywall')
+  })
+
+  it('still resumes a journey from the same surface rather than restarting it', async () => {
+    const first = resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'workspace-1',
+      entryFlow: 'topup',
+      entrySource: 'settings_billing',
+      intent: 'settings_billing',
+      assignment: { status: 'unavailable' }
+    })
+    assert(first.status === 'active')
+
+    renderDialog()
+    await nextTick()
+
+    expect(getActiveCheckoutJourney()?.journey_id).toBe(first.record.journey_id)
   })
 
   it('enters a topup journey on mount and correlates the purchase', async () => {
@@ -325,6 +422,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByText('$50.00')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
     expect(mockBillingContext().topup).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith({
+      operation: 'topup',
+      stage: 'intent',
+      outcome: 'pending'
+    })
   })
 
   it('shows the saved-card note when a payment method is on file', async () => {
@@ -810,6 +912,61 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
 
+  // Asserting the whole projected collection rather than one stage: a source
+  // dropped from any single emit site leaves the others green, and a funnel
+  // whose terminal events are attributed while its `started` is not reads as
+  // a conversion cliff rather than a gap.
+  it.for([
+    { outcome: 'completed', stages: ['intent', 'started', 'succeeded'] },
+    { outcome: 'failed', stages: ['intent', 'started', 'failed'] },
+    { outcome: 'no response', stages: ['intent', 'started', 'failed'] },
+    { outcome: 'rejected', stages: ['intent', 'started', 'failed'] }
+  ] as const)(
+    'carries the opening surface onto every top-up event when the purchase is $outcome',
+    async ({ outcome, stages }) => {
+      const topup = vi.mocked(mockBillingContext().topup)
+      if (outcome === 'rejected') topup.mockRejectedValue(new Error('declined'))
+      else if (outcome === 'no response') topup.mockResolvedValue(undefined)
+      else topup.mockResolvedValue(topupResponse(outcome))
+
+      renderDialog({ source: 'agent_paywall' })
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+      await waitFor(() =>
+        expect(
+          vi
+            .mocked(useTelemetry()!.trackBillingEvent)
+            .mock.calls.map(([event]) => event)
+            .filter((event) => event.operation === 'topup')
+            .map((event) => [event.stage, event.payment_intent_source])
+        ).toEqual(stages.map((stage) => [stage, 'agent_paywall']))
+      )
+    }
+  )
+
+  // A real payment usually settles on the poller, not synchronously, so this
+  // hand-off is what carries the source onto the poller's own terminal events.
+  it('hands the opening surface to the poller for a pending top-up', async () => {
+    vi.mocked(mockBillingContext().topup).mockResolvedValue(
+      topupResponse('pending')
+    )
+
+    renderDialog({ source: 'agent_paywall' })
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+      'op-1',
+      'topup',
+      {
+        attemptStartedAt: expect.any(Number),
+        paymentIntentSource: 'agent_paywall',
+        autoHandleRequiresAction: true
+      }
+    )
+  })
+
   // Completing out of band is the expected outcome here — the copy sends the
   // customer to their bank — and the marker is what refreshes the balance when
   // they come back, so neither exit may discard it.
@@ -868,7 +1025,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
-    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledTimes(4)
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledTimes(5)
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'succeeded',

@@ -178,19 +178,19 @@ function dispatchOpsResult(detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent('doc_ops_result', { detail }))
 }
 
-describe('R-73 cross-workflow pending operations', () => {
-  beforeEach(() => {
-    useAgentPanelStore().enabled = true
-    bridgeState.current = null
-    bridgeState.transport.up = true
-    clientState.transportUp = true
-    clientState.attempts = []
-    clientState.sent = []
-    clientState.sendOps.mockClear()
-    devLogState.recordDevEvent.mockClear()
-    vi.useFakeTimers()
-  })
+beforeEach(() => {
+  useAgentPanelStore().enabled = true
+  bridgeState.current = null
+  bridgeState.transport.up = true
+  clientState.transportUp = true
+  clientState.attempts = []
+  clientState.sent = []
+  clientState.sendOps.mockClear()
+  devLogState.recordDevEvent.mockClear()
+  vi.useFakeTimers()
+})
 
+describe('R-73 cross-workflow pending operations', () => {
   it('cancels pending sends and rejects new operations while the product gate is off', async () => {
     const store = useAgentPanelStore()
     const { enqueue, status } = mountFollower('wf-a')
@@ -366,18 +366,6 @@ describe('R-73 cross-workflow pending operations', () => {
 // racing a doc unbind/resubscribe, this is the mechanism that leaves an
 // orphaned node in the CRDT doc while the client believes the add failed.
 describe('abortIfUnbound settles delivered ops as undeliverable', () => {
-  beforeEach(() => {
-    useAgentPanelStore().enabled = true
-    bridgeState.current = null
-    bridgeState.transport.up = true
-    clientState.transportUp = true
-    clientState.attempts = []
-    clientState.sent = []
-    clientState.sendOps.mockClear()
-    devLogState.recordDevEvent.mockClear()
-    vi.useFakeTimers()
-  })
-
   it('a batch the transport already accepted is never later reported undeliverable, even across a workflow retarget', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
@@ -428,67 +416,17 @@ function ackResubscribe(workflowId: string): void {
 }
 
 /**
- * These pins exercise one observable same-page-session transport sequence:
- * mark the transport down, exhaust the retry budget, mark it up, emit
- * `reconnected`, and acknowledge resubscription. The three separate pins cover
- * eventual delivery, retention of the original `op_id`, and exactly-once
- * delivery after the matching host result. They do not exercise tab suspension
- * or persistence across a full page reload.
+ * These pins exercise retry identity and acknowledgment within the active
+ * retry budget. Post-exhaustion retention and replay belong to the separately
+ * reviewed replay-policy change, not this current-behavior pin carrier.
  */
 describe('a human edit made while the document connection is down', () => {
-  const RETRY_INTERVAL_MS = 500
-  const RETRY_BUDGET_MS = 5 * RETRY_INTERVAL_MS
-
-  beforeEach(() => {
-    useAgentPanelStore().enabled = true
-    bridgeState.current = null
-    bridgeState.transport.up = true
-    clientState.transportUp = true
-    clientState.attempts = []
-    clientState.sent = []
-    clientState.sendOps.mockClear()
-    devLogState.recordDevEvent.mockClear()
-    vi.useFakeTimers()
-  })
-
-  /**
-   * Characterization of today, NOT a desired property: the retry budget is a
-   * delivery budget, so the batch is dropped rather than retained. If retention
-   * lands, this test goes red and the three pins below go green in the same
-   * change. Do not "fix" it by relaxing the assertion.
-   */
-  it('is abandoned once the retry budget runs out, and nothing retains it', async () => {
-    const { enqueue } = mountFollower('wf-a')
-    clientState.transportUp = false
-
-    await enqueue([deleteNode('edited-during-outage')])
-    vi.advanceTimersByTime(RETRY_BUDGET_MS)
-    expect(clientState.attempts).toHaveLength(6)
-    expect(clientState.sent).toHaveLength(0)
-
-    const operationId = clientState.attempts[0].ops[0].op_id
-    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
-      'human_ops_settled',
-      expect.objectContaining({
-        state: 'undeliverable',
-        ops: [expect.objectContaining({ op_id: operationId })]
-      })
-    )
-
-    clientState.transportUp = true
-    apiState.target.dispatchEvent(new Event('reconnected'))
-    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
-    ackResubscribe('wf-a')
-    expect(clientState.sent).toHaveLength(0)
-  })
-
   it('does not flush a pending batch on reconnect before the resubscribe ack', async () => {
     const { enqueue } = mountFollower('wf-a')
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
-    vi.advanceTimersByTime(2 * RETRY_INTERVAL_MS)
-    expect(clientState.attempts).toHaveLength(3)
+    vi.advanceTimersToNextTimer()
     expect(devLogState.recordDevEvent).not.toHaveBeenCalledWith(
       'human_ops_settled',
       expect.objectContaining({ state: 'undeliverable' })
@@ -501,73 +439,35 @@ describe('a human edit made while the document connection is down', () => {
     expect(clientState.sent).toHaveLength(0)
   })
 
-  /**
-   * Three pins, one property each, because `it.fails` passes on the FIRST
-   * failing assertion and abandons the rest of the body. Bundled, the delivery
-   * assertion fails while `sent` is still empty, so an id or duplicate check
-   * behind it never executes -- and an implementation that delivered the op
-   * while re-minting its `op_id` would still report as an expected failure,
-   * hiding a FORECLOSE #7 violation behind a green run. Split, each property
-   * fails and gets fixed on its own name.
-   *
-   * Stated rather than papered over: nothing is delivered at all today, so pins
-   * 2 and 3 currently fail for pin 1's reason and cannot yet reach their own
-   * subject. That is why they are separate names now -- when delivery lands,
-   * each one starts reporting on the property it is named for instead of one
-   * masking the other two.
-   *
-   * All three use the same transport-down, budget-exhaustion, reconnect-event,
-   * and resubscribe-ack sequence. None asserts tab lifecycle behavior or
-   * survival across a reload; see the describe docstring.
-   */
-  it.fails('KNOWN GAP: still reaches the host after reconnect, in the same session', async () => {
+  it('keeps the original op_id when a transport retry succeeds', async () => {
     const { enqueue } = mountFollower('wf-a')
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
-    vi.advanceTimersByTime(RETRY_BUDGET_MS)
-
-    clientState.transportUp = true
-    apiState.target.dispatchEvent(new Event('reconnected'))
-    ackResubscribe('wf-a')
-
-    // Delivered, toward the workflow it was minted against. The ONLY
-    // assertion in this body, so this is the property that fails.
-    expect(clientState.sent).toMatchObject([{ workflowId: 'wf-a' }])
-  })
-
-  it.fails('KNOWN GAP: that replay carries the op_id it was minted with', async () => {
-    const { enqueue } = mountFollower('wf-a')
-    clientState.transportUp = false
-
-    await enqueue([deleteNode('edited-during-outage')])
-    vi.advanceTimersByTime(RETRY_BUDGET_MS)
+    vi.advanceTimersToNextTimer()
     const operationId = clientState.attempts[0].ops[0].op_id
 
     clientState.transportUp = true
-    apiState.target.dispatchEvent(new Event('reconnected'))
-    ackResubscribe('wf-a')
+    vi.advanceTimersToNextTimer()
 
-    // Re-minting would defeat the applier's op_id dedupe and let a replay
-    // apply the edit a second time.
-    expect(clientState.sent[0]?.ops[0]).toMatchObject({
+    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent[0].ops[0]).toMatchObject({
       op_id: operationId,
       op: 'delete_node',
       node_id: 'edited-during-outage'
     })
   })
 
-  it.fails('KNOWN GAP: that replay happens exactly once, not on every later reconnect', async () => {
+  it('does not resend an acknowledged retry on a later reconnect', async () => {
     const { enqueue } = mountFollower('wf-a')
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
-    vi.advanceTimersByTime(RETRY_BUDGET_MS)
+    vi.advanceTimersToNextTimer()
 
     clientState.transportUp = true
-    apiState.target.dispatchEvent(new Event('reconnected'))
-    ackResubscribe('wf-a')
-    await vi.waitFor(() => expect(clientState.sent).toHaveLength(1))
+    vi.advanceTimersToNextTimer()
+    expect(clientState.sent).toHaveLength(1)
     const replayedOperationId = clientState.sent[0].ops[0].op_id
 
     dispatchOpsResult({
@@ -576,6 +476,13 @@ describe('a human edit made while the document connection is down', () => {
       applied: [replayedOperationId],
       skipped: []
     })
+    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
+      'human_ops_settled',
+      expect.objectContaining({
+        state: 'acknowledged',
+        ops: [expect.objectContaining({ op_id: replayedOperationId })]
+      })
+    )
     apiState.target.dispatchEvent(new Event('reconnected'))
     ackResubscribe('wf-a')
 

@@ -436,6 +436,7 @@ import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
+  ENTERPRISE_URL,
   TIER_PRICING,
   amountForBillingCycle,
   hasActivePaidPlan,
@@ -448,10 +449,12 @@ import type {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import {
-  DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS,
   getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
+} from '@comfyorg/account-ui/billing/catalog'
+import {
+  DEFAULT_TEAM_PLAN_STOP_INDEX,
+  TEAM_PLAN_CREDIT_STOPS
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -534,7 +537,6 @@ const VIDEO_TEMPLATE_URL =
 
 /** External footnote destinations — rendered as real links (open in a new tab). */
 const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
-const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
 const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
@@ -862,10 +864,7 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
 }
 
-// The catalog grant for the selected duration is authoritative; the static
-// per-month figure is only the pre-resolve (loading / OSS) fallback.
 const creditsForTier = (tier: PricingTierConfig): number =>
-  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits_cents ??
   amountForCurrentCycle(tier.pricing.credits)
 
 const videoEstimateForTier = (tier: PricingTierConfig): number =>

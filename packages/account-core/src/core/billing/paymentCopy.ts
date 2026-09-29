@@ -4,6 +4,10 @@
  * `noChargeConfirmed` may ever unlock.
  */
 import type {
+  BillingDeclineReason,
+  BillingRecoveryAction
+} from './operationState.js'
+import type {
   PaymentProjection,
   PaymentReasonKey,
   PaymentStep
@@ -13,7 +17,10 @@ export type PaymentCopyKey =
   | `billing.step.${PaymentStep}.header`
   | `billing.step.${PaymentStep}.body`
   | `billing.reason.${PaymentReasonKey}`
+  | `billing.recovery.${BillingRecoveryAction}`
   | 'billing.action.retry'
+  | 'billing.action.replace_payment_method'
+  | 'billing.action.contact_support'
   | 'billing.action.continue_verification'
   | 'billing.safety.nothing_was_charged'
 
@@ -50,9 +57,48 @@ export const DEFAULT_PAYMENT_COPY: Readonly<Record<PaymentCopyKey, string>> = {
     'Authentication with your bank did not complete.',
   'billing.reason.processing_error':
     'The payment could not be processed right now.',
+  'billing.recovery.retry': 'Please try again.',
+  'billing.recovery.replace_payment_method':
+    'Try again with a different payment method.',
+  'billing.recovery.authenticate_payment':
+    'Try again and complete the verification your bank asks for.',
+  'billing.recovery.contact_support':
+    'This payment cannot be retried. Contact support@comfy.org and we will help you finish it.',
   'billing.action.retry': 'Try again',
+  'billing.action.replace_payment_method': 'Use a different payment method',
+  'billing.action.contact_support': 'Contact support',
   'billing.action.continue_verification': 'Continue verification',
   [SAFETY_KEY]: 'Nothing was charged.'
+}
+
+/** The host's toast detail for a payment the server declined. */
+export type DeclineDetailKey =
+  | 'insufficientFundsDetail'
+  | 'expiredCardDetail'
+  | 'incorrectCvcDetail'
+  | 'authenticationFailedDetail'
+  | 'processingErrorDetail'
+  | 'paymentDeclinedDetail'
+
+export function declineDetailKey(
+  reason: BillingDeclineReason
+): DeclineDetailKey {
+  switch (reason) {
+    case 'insufficient_funds':
+      return 'insufficientFundsDetail'
+    case 'expired_card':
+      return 'expiredCardDetail'
+    case 'incorrect_cvc':
+      return 'incorrectCvcDetail'
+    case 'authentication_required':
+    case 'authentication_failed':
+      return 'authenticationFailedDetail'
+    case 'processing_error':
+      return 'processingErrorDetail'
+    case 'card_declined':
+    case 'generic':
+      return 'paymentDeclinedDetail'
+  }
 }
 
 export function createPaymentCopy(
@@ -64,9 +110,18 @@ export function createPaymentCopy(
 
 export interface PaymentCopyKeys {
   readonly header: PaymentCopyKey
+  /** The server's recovery line when it names one, else the step's own body. */
   readonly body: PaymentCopyKey
   readonly reason?: PaymentCopyKey
   readonly safety?: typeof SAFETY_KEY
+}
+
+function recoveryCopyKey(
+  action: BillingRecoveryAction | undefined
+): PaymentCopyKey | undefined {
+  if (action === undefined) return undefined
+  const key = `billing.recovery.${action}` as const
+  return key in DEFAULT_PAYMENT_COPY ? key : undefined
 }
 
 export function paymentCopyKeys(
@@ -74,7 +129,9 @@ export function paymentCopyKeys(
 ): PaymentCopyKeys {
   return {
     header: `billing.step.${projection.step}.header`,
-    body: `billing.step.${projection.step}.body`,
+    body:
+      recoveryCopyKey(projection.recoveryAction) ??
+      `billing.step.${projection.step}.body`,
     ...(projection.reasonKey === undefined
       ? {}
       : { reason: `billing.reason.${projection.reasonKey}` as const }),

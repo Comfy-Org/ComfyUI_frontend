@@ -1,24 +1,31 @@
-import { useEventListener, useLocalStorage } from '@vueuse/core'
+import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
+import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
+import {
+  SIDEBAR_MIN_WIDTH,
+  SIDE_TOOLBAR_WIDTH
+} from '@/constants/splitterConstants'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentPanelCloseSource,
   AgentPanelOpenedMetadata
 } from '@/platform/telemetry/types'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { api } from '@/scripts/api'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
 
-type WorkflowTargetSelection =
-  | { status: 'uninitialized' }
-  | { status: 'cleared' }
-  | { status: 'selected'; workflow: ComfyWorkflow }
+type TargetTracking =
+  | { mode: 'uninitialized' }
+  | { mode: 'following' }
+  | { mode: 'restoring' }
+  | { mode: 'retained'; workflow: ComfyWorkflow | null }
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
@@ -32,37 +39,62 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
-  const width = ref(PANEL_MIN_WIDTH)
+  const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
+  const maximized = ref(false)
+  const draggedWidth = ref(PANEL_MIN_WIDTH)
+  /**
+   * Width the workspace left of the panel needs: the side toolbar, plus the
+   * sidebar when one is open. The layout that owns those keeps it current, so
+   * the panel gives way the moment it would meet the sidebar.
+   */
+  const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const dismissedSelectionSignature = ref<string | null>(null)
-  const workflowTargetSelection = ref<WorkflowTargetSelection>({
-    status: 'uninitialized'
-  })
-  const selectedWorkflow = computed(() =>
-    workflowTargetSelection.value.status === 'selected'
-      ? workflowTargetSelection.value.workflow
-      : null
+  const workflowStore = useWorkflowStore()
+  const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
+  const followsVisibleWorkflow = computed(
+    () => targetTracking.value.mode === 'following'
   )
+  const selectedWorkflow = computed(() => {
+    const target = targetTracking.value
+    if (target.mode === 'following') return workflowStore.activeWorkflow
+    return target.mode === 'retained' ? target.workflow : null
+  })
   const canRestoreWorkflow = computed(
-    () => workflowTargetSelection.value.status === 'uninitialized'
+    () => targetTracking.value.mode === 'restoring'
   )
 
-  function resetWorkflowTarget(): void {
-    workflowTargetSelection.value = { status: 'uninitialized' }
+  function beginWorkflowRestoration(): void {
+    targetTracking.value = { mode: 'restoring' }
+  }
+
+  function initializeTargetTracking(hasThread: boolean): void {
+    if (targetTracking.value.mode !== 'uninitialized') return
+    targetTracking.value = { mode: hasThread ? 'restoring' : 'following' }
+  }
+
+  function retainWorkflowTarget(): void {
+    if (targetTracking.value.mode === 'retained') return
+    setWorkflowTarget(selectedWorkflow.value)
+  }
+
+  function startFollowingVisibleWorkflow(): void {
+    targetTracking.value = { mode: 'following' }
   }
 
   function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
-    workflowTargetSelection.value = workflow
-      ? { status: 'selected', workflow }
-      : { status: 'cleared' }
+    targetTracking.value = { mode: 'retained', workflow }
   }
 
-  const workflowStore = useWorkflowStore()
+  // Only a retained target can become detached. A following target belongs to
+  // the editor, including its replacement when the visible tab closes.
   watch(
-    () => [selectedWorkflow.value, ...workflowStore.openWorkflows],
+    () => [targetTracking.value, ...workflowStore.openWorkflows],
     () => {
+      const target = targetTracking.value
       if (
-        selectedWorkflow.value !== null &&
-        !workflowStore.openWorkflows.includes(selectedWorkflow.value)
+        target.mode === 'retained' &&
+        target.workflow !== null &&
+        !workflowStore.openWorkflows.includes(target.workflow)
       )
         setWorkflowTarget(null)
     }
@@ -75,9 +107,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
   let teardownReported = false
 
-  const isVisible = computed(
-    () => enabled.value && isOpen.value && consentAccepted.value
-  )
+  const isVisible = computed(() => enabled.value && isOpen.value)
 
   watch(isVisible, (visible) => {
     if (!visible) {
@@ -91,7 +121,28 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
   })
 
-  const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
+  const { width: windowWidth } = useWindowSize()
+
+  /**
+   * Falls below `PANEL_MIN_WIDTH` when the window leaves less room than that.
+   * A panel narrower than its minimum still beats one that leaves the window.
+   */
+  const maxWidth = computed(() =>
+    clamp(windowWidth.value - reservedWorkspaceWidth.value, 0, PANEL_MAX_WIDTH)
+  )
+
+  /**
+   * The rendered width. Narrowing the window clamps it; widening restores the
+   * width the user asked for, so a maximized panel never leaves the viewport.
+   */
+  const width = computed(() =>
+    Math.min(
+      maxWidth.value,
+      maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
+    )
+  )
+
+  const isMaximized = computed(() => maximized.value)
 
   function open(
     source: AgentPanelOpenedMetadata['source'] = 'topbar_button'
@@ -150,12 +201,18 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     else open()
   }
 
+  function setReservedWorkspaceWidth(px: number): void {
+    reservedWorkspaceWidth.value = Math.max(0, px)
+  }
+
   function setWidth(px: number): void {
-    width.value = Math.min(PANEL_MAX_WIDTH, Math.max(PANEL_MIN_WIDTH, px))
+    maximized.value = false
+    draggedWidth.value = clamp(px, PANEL_MIN_WIDTH, PANEL_MAX_WIDTH)
   }
 
   function toggleMaximize(): void {
-    setWidth(isMaximized.value ? PANEL_MIN_WIDTH : PANEL_MAX_WIDTH)
+    maximized.value = !maximized.value
+    if (!maximized.value) draggedWidth.value = PANEL_MIN_WIDTH
   }
 
   return {
@@ -165,19 +222,25 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isVisible,
     hasEverOpened,
     gateSettled,
+    flagsSettled,
     width,
     isMaximized,
     dismissedSelectionSignature,
     open,
-    workflowTargetSelection,
+    targetTracking,
+    followsVisibleWorkflow,
+    initializeTargetTracking,
+    retainWorkflowTarget,
+    startFollowingVisibleWorkflow,
     selectedWorkflow,
     canRestoreWorkflow,
-    resetWorkflowTarget,
+    beginWorkflowRestoration,
     setWorkflowTarget,
     toggle,
     close,
     suppressRestoredOpen,
     setWidth,
+    setReservedWorkspaceWidth,
     toggleMaximize
   }
 })

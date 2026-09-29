@@ -3,6 +3,7 @@ import { expect, mergeTests } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 
@@ -16,12 +17,7 @@ test.describe(
       page,
       workflowSelection
     }, testInfo) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       await panel
         .getByRole('button', { name: enMessages.agent.switchWorkflow })
@@ -59,12 +55,7 @@ test.describe(
       page,
       workflowSelection
     }) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const targetPicker = panel.getByRole('button', {
         name: enMessages.agent.switchWorkflow
@@ -84,6 +75,7 @@ test.describe(
         .click()
       const tabs = page.getByTestId('workflow-tab')
       await expect(tabs).toHaveCount(2)
+      await tabs.first().click()
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await composer.fill('Keep this interrupted draft')
       workflowSelection.pauseWorkflowLookups()
@@ -92,6 +84,7 @@ test.describe(
       await expect
         .poll(() => workflowSelection.workflowLookups())
         .toBeGreaterThan(lookups)
+      await tabs.last().click()
       await tabs.first().hover()
       await tabs
         .first()
@@ -116,12 +109,7 @@ test.describe(
       page,
       workflowSelection
     }, testInfo) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const targetPicker = panel.getByRole('button', {
         name: enMessages.agent.switchWorkflow
@@ -158,6 +146,10 @@ test.describe(
       await expect(tabs).toHaveCount(1)
 
       const composer = panel.getByRole('textbox', { includeHidden: true })
+      await composer.fill('Start in this workflow')
+      await composer.press('Enter')
+      await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
+      await expect(composer).toHaveText('Start in this workflow')
       await composer.fill('@')
       await panel
         .getByRole('menuitem', {
@@ -216,7 +208,7 @@ test.describe(
         'Unsaved Workflow Use this workflow as inspiration'
       )
       await expect(chip).toBeVisible()
-      expect(workflowSelection.postedMessages).toHaveLength(0)
+      expect(workflowSelection.postedMessages).toHaveLength(1)
 
       await open.focus()
       await open.press('Tab')
@@ -229,21 +221,31 @@ test.describe(
       await expect(new Topbar(page).getActiveTab()).toHaveText(
         'Unsaved Workflow'
       )
-      expect(workflowSelection.postedMessages).toHaveLength(0)
+      expect(workflowSelection.postedMessages).toHaveLength(1)
     })
 
     test('explains disabled node references until the selected workflow is visible', async ({
       page,
       workflowSelection
     }, testInfo) => {
+      await new AgentPanel(page).open()
+      const panel = page.locator('#agent-panel-root')
+      const composer = panel.getByRole('textbox', { includeHidden: true })
+      await composer.fill('Start in this workflow')
+      await composer.press('Enter')
+      await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
+      await expect(composer).toHaveText('Start in this workflow')
+      await composer.fill('')
       await page
         .getByRole('button', {
-          name: enMessages.agent.entryButton,
+          name: enMessages.sideToolbar.newBlankWorkflow,
           exact: true
         })
         .click()
-      const panel = page.locator('#agent-panel-root')
-      const reason = enMessages.agent.selectWorkflowForNodes
+      const reason = enMessages.agent.switchWorkflowForNodes.replace(
+        '{workflowName}',
+        'Unsaved Workflow'
+      )
       const inline = panel.getByRole('button', {
         name: 'mention nodes'
       })
@@ -270,7 +272,6 @@ test.describe(
         panel.getByRole('button', { name: enMessages.agent.addToPrompt })
       ).toBeFocused()
 
-      const composer = panel.getByRole('textbox', { includeHidden: true })
       await composer.fill('@')
       const nodes = panel.getByRole('menuitem', {
         name: enMessages.agent.nodes,
@@ -291,13 +292,13 @@ test.describe(
       await composer.press('ControlOrMeta+a')
       await composer.press('Backspace')
       await expect(inline).toBeVisible()
-      expect(workflowSelection.postedMessages).toHaveLength(0)
+      expect(workflowSelection.postedMessages).toHaveLength(1)
 
       await panel
         .getByRole('button', { name: enMessages.agent.switchWorkflow })
         .click()
       await page
-        .getByRole('menuitemradio', { name: /Unsaved Workflow/ })
+        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
         .click()
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
@@ -331,12 +332,7 @@ test.describe(
       await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
       await topbar.getTab(0).click()
       await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       await page
         .getByRole('button', { name: enMessages.agent.switchWorkflow })
         .click()
@@ -381,26 +377,26 @@ test.describe(
       page,
       workflowSelection
     }, testInfo) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await expect(
-        panel.getByText(enMessages.agent.selectWorkflowForAgent)
-      ).toBeVisible()
+        panel.getByRole('button', {
+          name: enMessages.agent.switchWorkflow
+        })
+      ).toHaveText('Unsaved Workflow')
       await composer.fill('Find a workflow for skin upscaling')
-      await composer.press('Enter')
+      await panel
+        .getByRole('button', {
+          name: enMessages.agent.switchWorkflow
+        })
+        .click()
       await expect(
         page.getByPlaceholder(enMessages.agent.searchWorkflows)
       ).toBeFocused()
       await expect(
         page.getByRole('menuitemradio', { checked: true })
-      ).toHaveCount(0)
-      await expect(composer).toHaveText('Find a workflow for skin upscaling')
+      ).toHaveCount(1)
       expect(workflowSelection.postedMessages).toHaveLength(0)
 
       const row = page.getByRole('menuitemradio', {
@@ -426,6 +422,10 @@ test.describe(
       ).toHaveText('Unsaved Workflow')
       await expect(composer).toHaveText('Find a workflow for skin upscaling')
       expect(workflowSelection.postedMessages).toHaveLength(0)
+
+      await composer.press('Enter')
+      await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
+      await expect(composer).toHaveText('Find a workflow for skin upscaling')
 
       const editorTabs = page.getByTestId('workflow-tab')
       const targetTab = editorTabs
@@ -547,12 +547,7 @@ test.describe(
       page,
       workflowSelection
     }) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await composer.fill('Keep this draft')
@@ -567,7 +562,7 @@ test.describe(
       workflowSelection.finishSave(false)
       await expect(page.getByRole('menu').getByRole('status')).toHaveCount(0)
       await expect(row).toBeEnabled()
-      await expect(row).not.toBeChecked()
+      await expect(row).toBeChecked()
       await expect(
         page.getByText(enMessages.shareWorkflow.saveFailedTitle)
       ).toBeVisible()

@@ -148,13 +148,29 @@ export type RouterWorkshopModel = WorkshopPresentation & {
 }
 
 export type WorkflowWorkshopModel = WorkshopPresentation & {
+  readonly categoryLabel?: { readonly en: string; readonly 'zh-CN': string }
+  readonly categoryOrder?: number
+  readonly categoryHighlight?: boolean
   readonly type: 'CLOUD' | 'SERVERLESS'
   readonly workflowId: string
   readonly routerId?: never
   readonly category?: string
+  readonly models?: readonly string[]
+  readonly author?: string
 }
 
-export type WorkshopModel = RouterWorkshopModel | WorkflowWorkshopModel
+export type AppWorkshopModel = WorkshopPresentation & {
+  readonly type: 'APP'
+  /** Which app page runs it: see `WorkshopAppEntry.app`. */
+  readonly appId: 'studio' | 'reshoot'
+  readonly routerId?: never
+  readonly workflowId?: never
+}
+
+export type WorkshopModel =
+  | RouterWorkshopModel
+  | WorkflowWorkshopModel
+  | AppWorkshopModel
 
 interface WorkshopDetailPresentation {
   readonly nodeDisplayName?: string
@@ -181,7 +197,7 @@ export type WorkshopModelDetail =
   | WorkflowWorkshopModelDetail
 
 export function workshopExecutionId(model: WorkshopModel): string {
-  return model.routerId ?? model.workflowId
+  return model.routerId ?? model.workflowId ?? model.slug
 }
 
 // makes it image/video/audio-to-X, anything else is text-to-X.
@@ -456,6 +472,9 @@ function searchText(model: WorkshopModel): string {
   return [
     model.name,
     model.provider ?? '',
+    ...(model.type === 'CLOUD' || model.type === 'SERVERLESS'
+      ? [model.category ?? '', model.author ?? '', ...(model.models ?? [])]
+      : []),
     ...useCasesFor(model).map((value) => value.replaceAll('-', ' ')),
     ...model.capabilities,
     modalityOf(model),

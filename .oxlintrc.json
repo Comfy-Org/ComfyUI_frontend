@@ -6,6 +6,8 @@
     "components.d.ts",
     "coverage/*",
     "dist/*",
+    "apps/website/src/types/rate-card/types.gen.ts",
+    "apps/website/src/types/rate-card/zod.gen.ts",
     "packages/ingest-types/src/types.gen.ts",
     "packages/ingest-types/src/zod.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
@@ -27,20 +29,35 @@
     "vue"
   ],
   "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
+  "extends": ["./scripts/primevue-import-allowlist.json"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
     "comfy/no-js-private-class-members": "error",
     "comfy/no-render-in-watch-effect": "error",
-    "no-async-promise-executor": "off",
+    "no-array-constructor": "error",
+    "no-case-declarations": "error",
     "no-console": [
       "error",
       {
         "allow": ["warn", "error"]
       }
     ],
-    "no-control-regex": "off",
+    "no-empty": "error",
     "no-eval": "error",
+    "no-fallthrough": [
+      "error",
+      {
+        "commentPattern": "falls?\\s?through"
+      }
+    ],
+    "no-prototype-builtins": "error",
     "no-redeclare": "error",
+    "no-regex-spaces": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "prefer-rest-params": "error",
+    "prefer-spread": "error",
+    "preserve-caught-error": "error",
     "no-restricted-imports": [
       "error",
       {
@@ -71,10 +88,9 @@
     "no-unsafe-optional-chaining": "error",
     "no-self-assign": "allow",
     "no-unreachable": "error",
-    "no-unused-expressions": "off",
-    "no-unused-private-class-members": "off",
     "no-useless-rename": "off",
     "import/default": "error",
+    "import/no-named-as-default": "error",
     "import/export": "error",
     "import/namespace": "error",
     "import/no-duplicates": "error",
@@ -85,7 +101,12 @@
     "vitest/no-standalone-expect": "off",
     "vitest/valid-title": "off",
     "vitest/require-to-throw-message": "off",
+    "typescript/ban-ts-comment": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/no-namespace": "error",
+    "typescript/no-require-imports": "error",
     "typescript/no-this-alias": "error",
+    "typescript/no-unsafe-function-type": "error",
     "typescript/no-useless-default-assignment": "error",
     "typescript/no-unnecessary-boolean-literal-compare": "error",
     "typescript/no-unnecessary-condition": "error",
@@ -100,7 +121,20 @@
     "typescript/no-unsafe-declaration-merging": "off",
     "typescript/require-array-sort-compare": "error",
     "typescript/triple-slash-reference": "error",
-    "typescript/no-unused-vars": "off",
+    "typescript/no-unused-vars": [
+      "error",
+      {
+        "vars": "all",
+        "varsIgnorePattern": "^_",
+        "args": "all",
+        "argsIgnorePattern": "^_",
+        "caughtErrors": "all",
+        "caughtErrorsIgnorePattern": "^_",
+        "destructuredArrayIgnorePattern": "^_",
+        "ignoreRestSiblings": true,
+        "fix": { "imports": "safe-fix", "variables": "off" }
+      }
+    ],
     "unicorn/no-empty-file": "off",
     "vitest/require-mock-type-parameters": "off",
     "vitest/valid-expect": "error",
@@ -173,6 +207,13 @@
       "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": {
         "comfy/no-dom-in-computed": "warn"
+      }
+    },
+    {
+      "files": ["src/**/*.{js,mjs,cjs,ts,mts,cts,vue}"],
+      "excludeFiles": ["src/**/*.test.{ts,tsx}"],
+      "rules": {
+        "comfy/no-es2023-array-copy-method": "error"
       }
     },
     {
@@ -258,7 +299,26 @@
         "comfy/no-module-scope-vitest-mocks": "error",
         "comfy/no-persistent-litegraph-registration": "error",
         "comfy/no-redundant-litegraph-cleanup": "error",
-        "comfy/no-redundant-vitest-cleanup": "error"
+        "comfy/no-redundant-vitest-cleanup": "error",
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "vi",
+            "property": "doMock",
+            "message": "Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/testing/vitest-patterns.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/*.astro"],
+      "rules": {
+        "no-empty": [
+          "error",
+          {
+            "allowEmptyCatch": true
+          }
+        ]
       }
     },
     {
@@ -319,10 +379,7 @@
       "jsPlugins": ["eslint-plugin-playwright"],
       "rules": {
         "typescript/no-explicit-any": "error",
-        "no-async-promise-executor": "error",
-        "no-control-regex": "error",
         "no-useless-rename": "error",
-        "no-unused-private-class-members": "error",
         "unicorn/no-empty-file": "error",
         "playwright/consistent-spacing-between-blocks": "error",
         "playwright/expect-expect": [

@@ -65,4 +65,9 @@ export interface LGraphCanvasEventMap {
   'litegraph:read-only-changed': {
     readOnly: boolean
   }
+
+  /** Item dragging has started or ended. */
+  'litegraph:dragging-items-changed': {
+    dragging: boolean
+  }
 }

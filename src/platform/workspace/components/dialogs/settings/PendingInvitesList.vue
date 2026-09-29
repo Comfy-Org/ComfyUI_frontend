@@ -11,7 +11,11 @@
         )
       "
     >
-      <div class="flex items-center gap-3">
+      <div
+        :class="
+          cn('flex items-center gap-3', isExpired(invite) && 'opacity-60')
+        "
+      >
         <div
           class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
         >
@@ -31,8 +35,23 @@
       <span class="text-sm text-muted-foreground">
         {{ formatDate(invite.inviteDate) }}
       </span>
-      <span class="text-sm text-muted-foreground">
-        {{ formatDate(invite.expiryDate) }}
+      <span
+        :class="
+          cn(
+            'text-sm',
+            isExpired(invite)
+              ? 'text-warning-background'
+              : 'text-muted-foreground'
+          )
+        "
+      >
+        {{
+          isExpired(invite)
+            ? $t('workspacePanel.members.expiredOn', {
+                date: formatDate(invite.expiryDate)
+              })
+            : formatDate(invite.expiryDate)
+        }}
       </span>
       <div class="flex items-center justify-end">
         <MoreButton v-slot="{ close }" :aria-label="$t('g.moreOptions')">
@@ -131,6 +150,12 @@ function getInviteInitial(email: string): string {
 
 function formatDate(date: Date): string {
   return d(date, { dateStyle: 'medium' })
+}
+
+// Same predicate that gates the Copy invite link item: the BE returns a token
+// only for non-expired invites, so the marker always explains the missing action.
+function isExpired(invite: WorkspacePendingInvite): boolean {
+  return !invite.token
 }
 
 async function copyInviteLink(invite: WorkspacePendingInvite) {

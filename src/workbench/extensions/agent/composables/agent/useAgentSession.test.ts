@@ -5,8 +5,9 @@ import type {
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -38,6 +39,7 @@ import { useAgentSession } from './useAgentSession'
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 vi.mock(import('@/platform/telemetry'))
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
@@ -217,8 +219,22 @@ function admissionError(
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
     vi.mocked(reportError).mockClear()
     telemetry.trackAgentStopClicked.mockClear()
+  })
+
+  it('initializes when legacy storage cleanup fails', () => {
+    vi.spyOn(localStorage, 'removeItem').mockImplementationOnce(() => {
+      throw new DOMException('Storage unavailable', 'SecurityError')
+    })
+
+    expect(() =>
+      useAgentSession({
+        rest: fakeRest(),
+        events: fakeEvents().source
+      })
+    ).not.toThrow()
   })
 
   it('(a) posts to new, adopts ids, records the user turn, and renders a settled reply', async () => {
@@ -348,6 +364,29 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBeNull()
   })
 
+  it('does not persist a send that resolves after the session stops', async () => {
+    let resolvePost: (value: AgentTurnAccepted) => void = () => {}
+    const postMessage = vi.fn(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    const send = session.sendMessage('late reply')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+    session.stop()
+    resolvePost({ thread_id: 'th-late', message_id: 'msg-late' })
+
+    await expect(send).resolves.toBe(false)
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
+  })
+
   it('(b5) a stop followed by a successor start in the same microtask window skips the abort', async () => {
     const rest = fakeRest()
     const conversation = useAgentConversationStore()
@@ -407,7 +446,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(b8) a stale boot hydrate cannot kill a turn started after a remount', async () => {
     const conversation = useAgentConversationStore()
-    localStorage.setItem('Comfy.Agent.ThreadId', 'th-9')
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-9')
     const resolvers: Array<(rows: []) => void> = []
     const getMessages = vi.fn(
       () =>
@@ -1133,59 +1172,67 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     })
 
-  it.fails('(g3) KNOWN BUG: a reconnect leaves the turn running instead of settling it', async () => {
-    const rest = streamingTurnRest()
-    const { source, emit, status } = fakeEvents()
-    const session = useAgentSession({ rest, events: source })
-    session.start()
-    status(true)
+  it.fails(
+    '(g3) KNOWN BUG: a reconnect leaves the turn running instead of settling it',
+    { retry: 0 },
+    async () => {
+      const rest = streamingTurnRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
 
-    await session.sendMessage('go')
-    emit(delta('msg-1', 'partial'))
-    expect(session.isStreaming.value).toBe(true)
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+      expect(session.isStreaming.value).toBe(true)
 
-    status(false)
-    status(true)
+      status(false)
+      status(true)
 
-    // Generous on purpose, and matched in (g4). Under it.fails a waitFor that
-    // runs out its budget THROWS, and a throw is what marks the case green — so
-    // a tight budget here would quietly disarm the tripwire against any repair
-    // that debounces recovery after the socket flaps.
-    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true), {
-      timeout: 2000
-    })
-  })
+      // Generous on purpose, and matched in (g4). Under it.fails a waitFor that
+      // runs out its budget THROWS, and a throw is what marks the case green — so
+      // a tight budget here would quietly disarm the tripwire against any repair
+      // that debounces recovery after the socket flaps.
+      await vi.waitFor(() => expect(session.isStreaming.value).toBe(true), {
+        timeout: 2000
+      })
+    }
+  )
 
-  it.fails('(g4) KNOWN BUG: deltas that arrive after a reconnect still reach the turn', async () => {
-    const rest = streamingTurnRest()
-    const { source, emit, status } = fakeEvents()
-    const session = useAgentSession({ rest, events: source })
-    session.start()
-    status(true)
+  it.fails(
+    '(g4) KNOWN BUG: deltas that arrive after a reconnect still reach the turn',
+    { retry: 0 },
+    async () => {
+      const rest = streamingTurnRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
 
-    await session.sendMessage('go')
-    emit(delta('msg-1', 'partial'))
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
 
-    status(false)
-    status(true)
-    emit(delta('msg-1', ' and the rest'))
+      status(false)
+      status(true)
+      emit(delta('msg-1', ' and the rest'))
 
-    // Retried, because a re-hydrate repair reaches the reply through an async
-    // getMessages. Joined rather than part-by-part: a re-attach that opens a
-    // fresh text part on reconnect still shows the user the whole reply, and
-    // must count as fixed.
-    await vi.waitFor(
-      () => {
-        const assistant = session.entries.value.at(-1)
-        assert(assistant !== undefined && 'parts' in assistant)
-        const replyText = assistant.parts
-          .flatMap((part) => (part.type === 'text' ? [part.text] : []))
-          .join('')
-        expect(replyText).toBe('partial and the rest')
-      },
-      { timeout: 2000 }
-    )
-  })
+      // Retried, because a re-hydrate repair reaches the reply through an async
+      // getMessages. Joined rather than part-by-part: a re-attach that opens a
+      // fresh text part on reconnect still shows the user the whole reply, and
+      // must count as fixed.
+      await vi.waitFor(
+        () => {
+          const assistant = session.entries.value.at(-1)
+          assert(assistant !== undefined && 'parts' in assistant)
+          const replyText = assistant.parts
+            .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+            .join('')
+          expect(replyText).toBe('partial and the rest')
+        },
+        { timeout: 2000 }
+      )
+    }
+  )
 
   it('(h) attachments pass through to the postMessage wire body', async () => {
     const rest = fakeRest()
@@ -1732,7 +1779,7 @@ describe('useAgentSession (v1 composition root)', () => {
     )
     await nextTick()
     useAgentWorkflowTabBindingStore().$dispose()
-    localStorage.setItem('Comfy.Agent.ThreadId', 'th-existing')
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-existing')
 
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-existing',
@@ -2666,7 +2713,7 @@ describe('thread resume (B17)', () => {
   })
 
   it('restores the persisted thread and hydrates its transcript on start', async () => {
-    localStorage.setItem('Comfy.Agent.ThreadId', 'th-9')
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-9')
     const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
     const session = useAgentSession({
       rest: fakeRest({ getMessages }),
@@ -2684,7 +2731,7 @@ describe('thread resume (B17)', () => {
   })
 
   it('forgets a stale persisted thread on 404 without surfacing an error', async () => {
-    localStorage.setItem('Comfy.Agent.ThreadId', 'th-gone')
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-gone')
     const getMessages = vi.fn(async (): Promise<AgentMessages> => {
       throw new AgentApiError('not found', 404, null)
     })
@@ -2694,7 +2741,9 @@ describe('thread resume (B17)', () => {
     })
     session.start()
     await vi.waitFor(() =>
-      expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+      expect(
+        localStorage.getItem(StorageKeys.agentThread('personal'))
+      ).toBeNull()
     )
     expect(session.threadId.value).toBeNull()
     expect(session.entries.value).toHaveLength(0)
@@ -2708,10 +2757,12 @@ describe('thread resume (B17)', () => {
     })
     session.start()
     await session.sendMessage('hello')
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-1')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-1'
+    )
 
     session.newChat()
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
     expect(useAgentConversationStore().threadId).toBeNull()
   })
 
@@ -2759,12 +2810,51 @@ describe('thread resume (B17)', () => {
 
     expect(getMessages).toHaveBeenCalledWith('th-9')
     expect(session.threadId.value).toBe('th-9')
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-9')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-9'
+    )
     await vi.waitFor(() => expect(session.entries.value).toHaveLength(2))
     expect(session.entries.value[0]).toMatchObject({
       role: 'user',
       text: 'build a duck'
     })
+  })
+
+  it('ignores an unscoped thread from an unknown account', () => {
+    localStorage.setItem('Comfy.Agent.ThreadId', 'th-other-account')
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+
+    session.start()
+
+    expect(getMessages).not.toHaveBeenCalled()
+    expect(session.threadId.value).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+  })
+
+  it('restores only the active team workspace thread', async () => {
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'team', id: 'workspace-b' })
+    )
+    localStorage.setItem(StorageKeys.agentThread('workspace-a'), 'th-a')
+    localStorage.setItem(StorageKeys.agentThread('workspace-b'), 'th-b')
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+
+    session.start()
+
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledWith('th-b'))
+    expect(session.threadId.value).toBe('th-b')
+    expect(localStorage.getItem(StorageKeys.agentThread('workspace-a'))).toBe(
+      'th-a'
+    )
   })
 
   it('invalidates an in-flight workflow restoration when starting a new chat', async () => {

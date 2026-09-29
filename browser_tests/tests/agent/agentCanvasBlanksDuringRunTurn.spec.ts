@@ -21,6 +21,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -120,7 +121,6 @@ const SEED: WorkflowJSON = {
   links: []
 }
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const COMPOSER_LABEL = createI18n({
   legacy: false,
@@ -259,7 +259,7 @@ async function driveThroughDocReset(
   })
 
   const panel = page.locator('#agent-panel-root')
-  await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+  await new AgentPanel(page).open()
   await expect(panel).toBeVisible({ timeout: 30_000 })
 
   let savedName: string | undefined

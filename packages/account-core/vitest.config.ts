@@ -20,6 +20,7 @@ const sharedTest = {
 
 export default defineConfig({
   test: {
+    fsModuleCache: true,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
