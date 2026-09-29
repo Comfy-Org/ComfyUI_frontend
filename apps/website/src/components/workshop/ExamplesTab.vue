@@ -12,12 +12,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   examples,
-  modelName,
+  galleryLabel,
   activeId,
   locale = 'en'
 } = defineProps<{
   examples: readonly PlaygroundExample[]
-  modelName: string
+  galleryLabel: string
   activeId?: string
   locale?: Locale
 }>()
@@ -26,11 +26,10 @@ const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
 
 const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
 const altOf = (example: PlaygroundExample) =>
-  exampleAlt(modelName, example.title, locale)
+  exampleAlt(galleryLabel, example.title, locale)
 // No posters yet: first frames load near the screen, not ahead of the LCP.
 const gallery = useTemplateRef<HTMLUListElement>('gallery')
 const galleryNear = useElementVisibility(gallery, {
-  initialValue: false,
   rootMargin: '20% 0px'
 })
 const galleryReached = ref(false)

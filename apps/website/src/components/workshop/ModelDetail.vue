@@ -1199,7 +1199,7 @@ function useInCode() {
     >
       <ExamplesTab
         :examples
-        :model-name="model.name"
+        :gallery-label="model.name"
         :active-id="activeExampleId"
         :locale
         @open="openExample"

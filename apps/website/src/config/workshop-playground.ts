@@ -645,10 +645,10 @@ export function exampleAlt(
 ): string {
   const sample = /^Sample (\d+)$/.exec(title)
   return sample
-    ? t('workshop.examples.sampleAlt', locale).replace(
-        /\{(name|n)\}/g,
-        (_, key: string) => (key === 'name' ? modelName : sample[1])
-      )
+    ? t('workshop.examples.sampleAlt', locale, {
+        name: modelName,
+        n: sample[1]
+      })
     : `${modelName}: ${title}`
 }
 

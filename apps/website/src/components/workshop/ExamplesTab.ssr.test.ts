@@ -10,7 +10,7 @@ it('renders every video card on the server, loading nothing yet', async () => {
     createSSRApp({
       render: () =>
         h(ExamplesTab, {
-          modelName: 'Seedance',
+          galleryLabel: 'Seedance',
           examples: ['a', 'b'].map((id) => ({
             id,
             title: id,

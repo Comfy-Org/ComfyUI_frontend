@@ -29,7 +29,7 @@ export function promptText(prompt: unknown): string | undefined {
   try {
     structured = JSON.parse(prompt)
   } catch {
-    return prompt
+    return
   }
   if (typeof structured !== 'object' || structured === null) return
   const fields = new Map<string, unknown>(Object.entries(structured))

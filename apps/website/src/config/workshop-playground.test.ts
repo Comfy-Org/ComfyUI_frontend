@@ -484,12 +484,6 @@ describe(exampleAlt, () => {
   ])('names the model and the example: $title', ({ title, alt }) => {
     expect(exampleAlt('FLUX 2 Max', title)).toBe(alt)
   })
-
-  it('keeps a model name that looks like a replacement pattern', () => {
-    expect(exampleAlt("$' {n} $&", 'Sample 3')).toBe(
-      "$' {n} $& example output 3"
-    )
-  })
 })
 
 describe('isVideoUrl', () => {

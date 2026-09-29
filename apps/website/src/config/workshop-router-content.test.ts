@@ -413,6 +413,11 @@ describe(promptText, () => {
       prompt: JSON.stringify({ style_description: { aesthetics: 'collage' } }),
       text: undefined
     },
+    {
+      name: 'unparseable JSON',
+      prompt: '{"high_level_description": "A train',
+      text: undefined
+    },
     { name: 'a blank prompt', prompt: '  ', text: undefined }
   ])('$name', ({ prompt, text }) => {
     expect(promptText(prompt)).toBe(text)

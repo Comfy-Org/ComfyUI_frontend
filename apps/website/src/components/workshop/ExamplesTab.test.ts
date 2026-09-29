@@ -29,7 +29,7 @@ it('keeps the audio transport separate from the preset action', async () => {
     mediaKind: 'audio'
   })
   const { emitted } = render(ExamplesTab, {
-    props: { examples: [speech], modelName: 'Voice' }
+    props: { examples: [speech], galleryLabel: 'Voice' }
   })
   const preset = screen.getByRole('button')
   expect(within(preset).queryByLabelText('Voice: Speech sample')).toBeNull()
@@ -42,7 +42,7 @@ it('keeps the audio transport separate from the preset action', async () => {
 it('captions each output with the prompt that produced it, and only those', () => {
   render(ExamplesTab, {
     props: {
-      modelName: 'FLUX 2 Max',
+      galleryLabel: 'FLUX 2 Max',
       examples: [
         example({ id: 'a', title: 'Object Swap', prompt: 'a red fox, dusk' }),
         example({ id: 'b', title: 'Sample 2' })
@@ -66,7 +66,7 @@ it('loads no video until the gallery nears the screen, and plays none', async ()
   stubIntersectionObserver()
   render(ExamplesTab, {
     props: {
-      modelName: 'Seedance',
+      galleryLabel: 'Seedance',
       examples: [
         example({
           title: 'Racer',
@@ -91,7 +91,7 @@ it('loads the first frame at once where nothing can watch the screen', async () 
   try {
     render(ExamplesTab, {
       props: {
-        modelName: 'Seedance',
+        galleryLabel: 'Seedance',
         examples: [example({ title: 'Racer', mediaKind: 'video' })]
       }
     })
