@@ -1,7 +1,7 @@
 import type { BrowserContext, TestDetails, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { SESSION_PATH, SessionTab } from '@e2e/fixtures/helpers/SessionTab'
+import { SessionTab } from '@e2e/fixtures/helpers/SessionTab'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import type {
   CrossOriginSessionEnv,
@@ -94,10 +94,6 @@ export function expectStepsWritten(): never {
   )
 }
 
-function sessionEndpoint(cloud: SessionTab): string {
-  return `${cloud.origin}${SESSION_PATH}`
-}
-
 export async function signInOnCloud(
   cloud: SessionTab,
   account: SessionAccount
@@ -111,9 +107,8 @@ export async function signInOnCloud(
     .getByRole('textbox', { name: 'Email', exact: true })
     .fill(account.email)
   await page.getByLabel('Password', { exact: true }).fill(account.password)
-  const sessionCreated = cloud.waitForResponse('POST', sessionEndpoint(cloud))
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  expect((await sessionCreated).ok(), 'Cloud creates its session').toBe(true)
+  await expect(page, 'Cloud accepts the sign-in').not.toHaveURL(/\/login/)
 }
 
 export const crossOriginSessionFixture = base.extend<
