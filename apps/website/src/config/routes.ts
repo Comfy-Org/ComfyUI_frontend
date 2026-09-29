@@ -128,12 +128,12 @@ const LOCALE_INVARIANT_EXTRA_PATHS = [
   '/workshop'
 ]
 
-const LOCALE_INVARIANT_PATHS = new Set<string>([
-  ...[...LOCALE_INVARIANT_ROUTE_KEYS].map((key) =>
-    normalizeRoute(baseRoutes[key])
-  ),
-  ...LOCALE_INVARIANT_EXTRA_PATHS
-])
+const LOCALE_INVARIANT_PATHS = new Set<string>(
+  [
+    ...[...LOCALE_INVARIANT_ROUTE_KEYS].map((key) => baseRoutes[key]),
+    ...LOCALE_INVARIANT_EXTRA_PATHS
+  ].map(normalizeRoute)
+)
 
 /** True for a locale-invariant route or anything nested under one. */
 function isLocaleInvariantPath(pathname: string): boolean {
