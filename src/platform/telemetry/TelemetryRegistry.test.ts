@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { TelemetryRegistry } from './TelemetryRegistry'
 import type {
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
@@ -290,6 +292,13 @@ describe('TelemetryRegistry', () => {
       attachment_count: 1,
       node_tag_count: 2
     } satisfies AgentMessageSentMetadata
+    const consentShownMetadata = {
+      trigger: 'button_click'
+    } satisfies AgentConsentShownMetadata
+    const consentResolvedMetadata = {
+      decision: 'dismissed',
+      save_error_shown: true
+    } satisfies AgentConsentResolvedMetadata
     const nodeTaggedMetadata = {
       source: 'mention_picker'
     } satisfies AgentNodeTaggedMetadata
@@ -337,6 +346,18 @@ describe('TelemetryRegistry', () => {
         expected: { ...messageSentMetadata },
         invoke: (registry) =>
           registry.trackAgentMessageSent(messageSentMetadata)
+      },
+      {
+        method: 'trackAgentConsentShown',
+        expected: { ...consentShownMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentShown(consentShownMetadata)
+      },
+      {
+        method: 'trackAgentConsentResolved',
+        expected: { ...consentResolvedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentResolved(consentResolvedMetadata)
       },
       {
         method: 'trackAgentNodeTagged',
