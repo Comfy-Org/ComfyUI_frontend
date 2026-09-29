@@ -16,13 +16,13 @@
     "addFromAssets": "اسحب أصلاً من لوحة الأصول",
     "addNodesFromGraph": "اذكر العُقد من الرسم البياني",
     "addToPrompt": "إضافة إلى المطالبة",
-    "alpha": "ألفا",
     "assetNotAttachable": "يمكن إرفاق الصور والفيديو والصوت ونماذج 3D والملفات النصية",
     "attach": "إرفاق ملف",
     "attachFiles": "ارفع صورًا أو ملفات",
     "attachmentTooLarge": "حجم {name} أكبر من {limit}",
     "attachmentUploadFailed": "تعذر تحميل {name}",
     "backToPreviousChat": "العودة إلى المحادثة السابقة",
+    "beta": "تجريبي",
     "changeWorkflowForChat": "غيّر سير العمل الذي يمكن للوكيل تعديله",
     "chatOptions": "خيارات المحادثة",
     "chooseWorkflow": "اختر سير عمل",
@@ -126,6 +126,7 @@
     "runApproval": {
       "cancel": "إلغاء",
       "lead": "تريد هذه الأداة تشغيل سير العمل:",
+      "leadBound": "تريد هذه الأداة تشغيل سير العمل هذا.",
       "question": "هل توافق؟",
       "run": "تشغيل",
       "thisWorkflow": "سير العمل هذا"
@@ -193,6 +194,9 @@
     "workedForSeconds": "عمل لمدة {seconds} ثوانٍ",
     "workflowEditNotice": "يمكن للوكيل الآن تعديل {workflow}. يعمل على سير عمل واحد في كل مرة، ويمكنك التبديل بين سير العمل أثناء الدردشة.",
     "workflowReferenceUnavailableReason": "سير العمل المشار إليه هذا لم يعد متاحًا أو ليس لديك صلاحية الوصول إليه.",
+    "workflowSyncFailedDetail": "تم إنشاء سير العمل هذا بإصدار مستند غير متوافق. لم يتم تغيير اللوحة الخاصة بك.",
+    "workflowSyncFailedDetailCatalogMismatch": "يستخدم سير العمل هذا فهرس عُقَد غير متوافق مع مساحة العمل هذه. لم يتم تغيير اللوحة الخاصة بك.",
+    "workflowSyncFailedTitle": "لا يمكن مزامنة سير العمل هذا",
     "workflows": "سير العمل",
     "working": "جارٍ العمل..."
   },
@@ -540,6 +544,7 @@
     "expiredCardDetail": "انتهت صلاحية هذه البطاقة. استخدم طريقة دفع مختلفة.",
     "incorrectCvcDetail": "رمز أمان البطاقة غير صحيح. تحقّق منه وحاول مرة أخرى.",
     "insufficientFundsDetail": "لا تتوفر أموال كافية في طريقة الدفع هذه. جرّب طريقة دفع أخرى أو تواصل مع مصرفك.",
+    "operationAlreadyPendingDetail": "دفعة بدأتَها سابقًا لا تزال قيد المعالجة. يجب أن تكتمل قبل أن تتمكن من اختيار خطة مختلفة.",
     "paymentDeclinedDetail": "رفض مصرفك هذه الدفعة. جرّب طريقة دفع أخرى أو تواصل مع مصرفك.",
     "processingErrorDetail": "تعذرت معالجة دفعتك. حاول مرة أخرى أو استخدم طريقة دفع أخرى.",
     "reconciliationDetail": "تم استلام دفعتك، لكن تعذر علينا إكمال تحديث مساحة عملك. تواصل مع الدعم وأدرج معرّف العملية هذا:",
@@ -2223,8 +2228,10 @@
     "star": "نجمة"
   },
   "imageCompare": {
+    "afterAlt": "الصورة اللاحقة",
     "batchLabelA": "أ: ",
     "batchLabelB": "ب: ",
+    "beforeAlt": "الصورة السابقة",
     "noImages": "لا توجد صور للمقارنة"
   },
   "imageCrop": {
@@ -3212,7 +3219,6 @@
     "Rodin": "رودان",
     "Runway": "رن واي",
     "Sonilo": "Sonilo",
-    "Sora": "سورا",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "تريبو",
@@ -3280,6 +3286,7 @@
     "mask": "قناع",
     "merging": "دمج",
     "mesh": "شبكة",
+    "ming image": "صورة مينغ",
     "minimax": "minimax",
     "minimax music": "موسيقى minimax",
     "mochi": "mochi",
@@ -4385,9 +4392,12 @@
       "message": "سيتم إطلاق الفوترة الجماعية قريباً. ستتمكن من الاشتراك في خطة لمساحة العمل الخاصة بك مع تسعير لكل مستخدم. ترقبوا التحديثات.",
       "title": "قريباً"
     },
+    "billingTabBlocked": "تعذّر فتح صفحة الفوترة. اسمح بالنوافذ المنبثقة لهذا الموقع وحاول مرة أخرى.",
     "cancelDialog": {
       "confirmCancel": "تأكيد إلغاء الاشتراك",
       "description": "سيستمر وصولك حتى {date}. لن يتم خصم أي رسوم أخرى منك، وسيتم الاحتفاظ بمساحة العمل والرصيد الخاص بك. يمكنك إعادة الاشتراك في أي وقت.",
+      "discountApplied": "تم تطبيق خصمك، لذا لم يُلغَ هذا الاشتراك. أغلق هذه النافذة لرؤية خطتك المحدّثة.",
+      "discountRefreshFailed": "تم تطبيق خصمك. حدّث الصفحة لرؤية خطتك المحدّثة.",
       "endOfBillingPeriod": "نهاية فترة الفوترة",
       "failed": "فشل إلغاء الاشتراك",
       "keepSubscription": "الاحتفاظ بالاشتراك",
@@ -4577,6 +4587,7 @@
       "payAndSubscribe": "ادفع واشترك",
       "paymentMethod": "طريقة الدفع",
       "paymentPopupBlocked": "تعذر فتح صفحة الدفع — يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.",
+      "pendingVerificationDetail": "دفعة بدأتَها سابقًا لا تزال تتطلب انتباهك. سيؤدي إكمالها إلى تفعيل الخطة التي اخترتها حينها. يمكنك اختيار خطة مختلفة بعد اكتمالها.",
       "perMember": "/ عضو",
       "privacyPolicy": "سياسة الخصوصية",
       "promoCodePlaceholder": "رمز ترويجي",
@@ -4809,6 +4820,7 @@
     },
     "clearAllFilters": "مسح جميع الفلاتر",
     "error": {
+      "loading": "تعذّر فتح القالب. يُرجى المحاولة مرة أخرى.",
       "templateNotFound": "النموذج \"{templateName}\" غير موجود"
     },
     "filtersApplied": "{count} فلتر مُطبَّق | {count} فلاتر مُطبَّقة",
@@ -5089,6 +5101,7 @@
   },
   "workspace": {
     "addedToWorkspace": "تمت إضافتك إلى:",
+    "deepLinkStayed": "تعذّر فتح مساحة العمل تلك. ما زلت في {workspaceName}.",
     "inviteAccepted": "تم قبول الدعوة",
     "inviteFailed": "فشل في قبول الدعوة",
     "switchFailed": "فشل في تبديل مساحة العمل. يرجى المحاولة مرة أخرى.",
