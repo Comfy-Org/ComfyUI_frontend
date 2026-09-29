@@ -24,6 +24,7 @@ import {
   succeededOperation,
   serverPhasePendingOperation
 } from '@/test/fakeBillingClient'
+import { WORKSPACE_INVITES_KEY } from '@/session/workspaceInvites'
 import CheckoutView from '@/views/CheckoutView.vue'
 
 const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
@@ -181,7 +182,10 @@ async function renderCheckout(
   render(CheckoutView, {
     global: {
       plugins: [createBillingI18n(), router],
-      provide: { [BILLING_CLIENT_KEY]: fake.client },
+      provide: {
+        [BILLING_CLIENT_KEY]: fake.client,
+        [WORKSPACE_INVITES_KEY]: fake.invites
+      },
       stubs: { CheckoutPaymentForm: PaymentFormStub }
     }
   })
@@ -602,6 +606,57 @@ describe('CheckoutView', () => {
     )
   })
 
+  it('offers the team invite on a multi-seat success and sends it to the workspace', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      },
+      status: {
+        is_active: true,
+        has_funds: true,
+        max_seats: 20,
+        occupied_seats: 1,
+        scheduled_change: null,
+        team_credit_stop: null
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    reportConfirm('ctoken_1')
+
+    expect(
+      await screen.findByRole('heading', { name: 'Invite your team' })
+    ).toBeInTheDocument()
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Enter emails separated by commas' }),
+      'ada@example.com,'
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Send invites' }))
+
+    expect(
+      await screen.findByText('An invite was sent to ada@example.com')
+    ).toBeInTheDocument()
+    expect(fake.invites.createInvite).toHaveBeenCalledWith('ada@example.com')
+  })
+
+  it('shows no invite on a single-seat success', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    reportConfirm('ctoken_1')
+
+    await screen.findByRole('heading', { name: "You're all set" })
+    await waitFor(() => expect(fake.readStatus).toHaveBeenCalled())
+    expect(
+      screen.queryByRole('heading', { name: 'Invite your team' })
+    ).toBeNull()
+    expect(fake.invites.listPendingInvites).not.toHaveBeenCalled()
+  })
+
   it('returns the customer into the workspace the session was minted for', async () => {
     const assign = stubNavigation()
     workspace.session = teamSession()
@@ -644,7 +699,15 @@ describe('CheckoutView', () => {
     ['insufficient_funds', 'This payment method has insufficient funds.'],
     ['expired_card', 'This card has expired.'],
     ['incorrect_cvc', 'The card security code is incorrect.'],
-    ['processing_error', "Your payment couldn't be processed."]
+    ['processing_error', "Your payment couldn't be processed."],
+    [
+      'authentication_failed',
+      "We couldn't complete payment verification. Please try again."
+    ],
+    [
+      'authentication_required',
+      "We couldn't complete payment verification. Please try again."
+    ]
   ] as const)(
     'reports a %s decline as the app does and keeps the confirm usable',
     async ([reason, detail]) => {
@@ -889,6 +952,45 @@ describe('CheckoutView', () => {
     expect(
       screen.getByRole('button', { name: 'Pay and subscribe' })
     ).toBeEnabled()
+  })
+
+  it.for(['Back', 'Close'])(
+    'closes a tab the product opened on %s, leaving the product where it was',
+    async (action) => {
+      const assign = stubNavigation()
+      const close = vi.spyOn(window, 'close').mockImplementation(() => {
+        vi.spyOn(window, 'closed', 'get').mockReturnValue(true)
+      })
+      await renderCheckout()
+      await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+      await userEvent.click(screen.getByRole('button', { name: action }))
+
+      expect(close).toHaveBeenCalledOnce()
+      expect(assign).not.toHaveBeenCalled()
+    }
+  )
+
+  it('closes the tab from the success step instead of opening the product in it', async () => {
+    const assign = stubNavigation()
+    const close = vi.spyOn(window, 'close').mockImplementation(() => {
+      vi.spyOn(window, 'closed', 'get').mockReturnValue(true)
+    })
+    await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    reportConfirm('ctoken_1')
+    await screen.findByRole('heading', { name: "You're all set" })
+
+    const [, closeButton] = screen.getAllByRole('button', { name: 'Close' })
+    await userEvent.click(closeButton)
+
+    expect(close).toHaveBeenCalledOnce()
+    expect(assign).not.toHaveBeenCalled()
   })
 
   it.for(['Back', 'Close'])(

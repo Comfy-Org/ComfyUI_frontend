@@ -19,7 +19,8 @@
  */
 import type {
   BillingOperationPointerStorage,
-  BillingSession
+  BillingSession,
+  WorkspaceInviteCommands
 } from '@comfyorg/account-core/billing'
 import {
   createBillingCommands,
@@ -32,6 +33,7 @@ import {
   createPlansReader,
   createSessionBillingTransport,
   createTopupCommand,
+  createWorkspaceInviteCommands,
   sessionBillingScopeSource
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
@@ -58,7 +60,18 @@ function targetWorkspaceId(session: BillingSession): string | undefined {
   return boundWorkspaceId() ?? pinnedWorkspaceId(session)
 }
 
-export function createBillingWebClient(session: BillingSession): BillingClient {
+/**
+ * The billing client plus the workspace's invite commands, over one
+ * transport, so the checkout's team invite goes to the workspace the tab is
+ * billing.
+ */
+export type BillingWebClient = BillingClient & {
+  readonly invites: WorkspaceInviteCommands
+}
+
+export function createBillingWebClient(
+  session: BillingSession
+): BillingWebClient {
   const transport = createSessionBillingTransport({
     session,
     resolveUrl: (route) => `${CLOUD_BASE_URL}/api${route}`,
@@ -89,6 +102,7 @@ export function createBillingWebClient(session: BillingSession): BillingClient {
     paymentMethods,
     events,
     topup: createTopupCommand({ transport, lifecycle, capabilities, credits }),
+    invites: createWorkspaceInviteCommands({ transport }),
     commands: createBillingCommands({
       transport,
       lifecycle,
