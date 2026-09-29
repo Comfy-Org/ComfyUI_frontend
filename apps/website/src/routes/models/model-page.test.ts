@@ -127,6 +127,16 @@ describe('Models route preparation', () => {
     expect(mocks.successor).toHaveBeenCalledWith('new-model')
   })
 
+  it.for(['old-alias', model.slug])(
+    'fails the build when %s resolves to a model with no page',
+    async (slug) => {
+      mocks.lookup.mockReturnValue({ ...model, href: undefined })
+      await expect(prepareModelPage(slug)).rejects.toThrow(
+        `Models route ${slug} resolved to ${model.slug}, which has no page`
+      )
+    }
+  )
+
   it('fails an unknown or missing route explicitly', async () => {
     mocks.lookup.mockReturnValue(undefined)
     await expect(prepareModelPage('unknown')).rejects.toThrow(
