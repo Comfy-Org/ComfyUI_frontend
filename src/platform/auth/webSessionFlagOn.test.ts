@@ -740,10 +740,11 @@ describe('live updates and media on the shared web session', () => {
     assert.instanceOf(sessionSocket, FakeSocket)
 
     await useAuthStore().logout()
+    expect(sessionSocket.readyState).toBe(FakeSocket.CLOSED)
+
     sessionSocket.closeFromServer()
     await vi.advanceTimersByTimeAsync(1_000)
 
-    expect(sessionSocket.readyState).toBe(FakeSocket.CLOSED)
     expect(FakeSocket.created).toEqual([sessionSocket])
     expect(api.socket).toBeNull()
   })
