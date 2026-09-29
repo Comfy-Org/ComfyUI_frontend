@@ -618,7 +618,8 @@ function attributionOf(
  * the challenge, until a verdict: the Pay's own once it settles, or the
  * operation's while it is still pending (a challenge the bank refused never
  * settles the Pay). A success is attributed to it. An operation nobody here
- * sent takes the form away while in flight, or lands its verdict above Pay.
+ * sent takes the form away while in flight, or lands its verdict above Pay;
+ * one parked on a card releases a Pay held for the re-read.
  */
 function followedInCapture(
   page: Capture,
@@ -636,7 +637,9 @@ function followedInCapture(
   if (page.attempt.kind === 'sent')
     return followedOwn(page, page.attempt, operation, outcome)
   if (outcome !== undefined) return { ...page, attempt: IDLE, outcome }
-  return isInFlight(operation) ? { kind: 'waiting', operation } : page
+  return isInFlight(operation)
+    ? { kind: 'waiting', operation }
+    : nothingPending(page)
 }
 
 /**
