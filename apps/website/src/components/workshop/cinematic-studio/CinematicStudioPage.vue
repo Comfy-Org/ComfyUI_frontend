@@ -32,6 +32,8 @@ const {
   locale?: Locale
 }>()
 
+const workshopHref = getRoutes(locale).workshop
+
 const LAYOUTS = [
   { id: 'e', label: 'cinematic.ux.composer' },
   { id: 'd', label: 'cinematic.ux.panel' },
@@ -146,7 +148,7 @@ function pickApp(id: string) {
           {{ tc('cinematic.unavailable.title', locale) }}
         </p>
         <a
-          :href="getRoutes().workshop"
+          :href="workshopHref"
           class="text-sm text-primary-comfy-yellow underline underline-offset-4"
         >
           {{ tc('cinematic.unavailable.link', locale) }}
