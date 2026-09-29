@@ -110,7 +110,9 @@ test('opens on the saved method and subscribes with it, no card token', async ({
   await signIn(CHECKOUT)
 
   await expect(tab(page, 'Saved')).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByText('visa •••• 4242')).toBeVisible()
+  await expect(
+    page.getByRole('combobox', { name: 'Choose a saved payment method' })
+  ).toContainText('·· 4242')
   await expect(page.getByText('Billing address')).toBeHidden()
   await payButton(page).click()
 
@@ -178,7 +180,9 @@ test('368-15401: a failed saved-methods read errors on Saved only, and Add new s
   healthy = true
   await page.getByRole('button', { name: 'Try again' }).click()
 
-  await expect(page.getByText('visa •••• 4242')).toBeVisible()
+  await expect(
+    page.getByRole('combobox', { name: 'Choose a saved payment method' })
+  ).toContainText('·· 4242')
   await expect(page.getByText(SAVED_FAILED)).toBeHidden()
   await expect(payButton(page)).toBeEnabled()
 })

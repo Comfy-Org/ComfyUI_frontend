@@ -606,6 +606,9 @@ const MASTERCARD: SavedPaymentMethod = {
 const tab = (name: 'Saved' | 'Add new payment') =>
   screen.getByRole('tab', { name })
 
+const savedPicker = () =>
+  screen.getByRole('combobox', { name: 'Choose a saved payment method' })
+
 async function renderQuoted(options: FakeBillingClientOptions = {}) {
   const fake = await renderCheckout(options)
   await screen.findByText('Subscribe to Creator Plan · Acme Team')
@@ -632,11 +635,31 @@ describe('FullPageCheckoutView saved methods and rail failures', () => {
     expect(request).not.toHaveProperty('confirmation_token')
   })
 
-  it('shows a single saved method as a row, not a picker', async () => {
+  it('180-6640: shows the saved card as its brand and last four, with no Change link', async () => {
     await renderQuoted({ paymentMethods: { status: 'ok', value: [VISA] } })
 
-    expect(screen.getByText('visa •••• 4242')).toBeInTheDocument()
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    const picker = savedPicker()
+    expect(picker).toHaveTextContent('visa')
+    expect(picker).toHaveTextContent('·· 4242')
+    expect(
+      screen.queryByRole('button', { name: 'Change' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('charges the saved method picked from the list', async () => {
+    const fake = await renderQuoted({
+      paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
+    })
+
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4242/ }))
+    expect(savedPicker()).toHaveTextContent('·· 4242')
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    expect(fake.subscribe.mock.calls[0][0]).toMatchObject({
+      saved_payment_method_id: 'pm_visa'
+    })
   })
 
   it('keeps the card form mounted across tab switches, so typed details survive', async () => {
@@ -689,7 +712,7 @@ describe('FullPageCheckoutView saved methods and rail failures', () => {
     })
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
 
-    expect(await screen.findByText('visa •••• 4242')).toBeInTheDocument()
+    expect(await screen.findByText('·· 4242')).toBeInTheDocument()
     expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
     expect(payButton()).toBeEnabled()
     expect(form.mounts).toBe(1)

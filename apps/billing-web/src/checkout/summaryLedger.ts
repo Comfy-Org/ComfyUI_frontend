@@ -262,18 +262,24 @@ function scheduledLedger(r: QuoteReading): FamilyLedger {
         sublines: [r.t(r.byNew.startsOn, { date: startsAt })]
       }
     ],
-    trailing:
-      current === undefined
-        ? []
-        : [
-            r.t(`${S}.trailing.keepUntil`, {
-              plan: r.cadenceChanges
-                ? r.planLabel(current, true)
-                : r.tierName(current.tier),
-              date: startsAt
-            })
-          ]
+    trailing: current === undefined ? [] : [keptPlanLine(r, current, startsAt)]
   }
+}
+
+/** A team plan is one tier at many commitments, so the kept one is named by its rate. */
+function keptPlanLine(r: QuoteReading, current: Plan, until: string): string {
+  const plan = r.cadenceChanges
+    ? r.planLabel(current, true)
+    : r.tierName(current.tier)
+  if (!r.commitChange)
+    return r.t(`${S}.trailing.keepUntil`, { plan, date: until })
+  return r.t(`${S}.trailing.keepCommitmentUntil`, {
+    plan,
+    rate: r.t(BY_DURATION[current.duration].itemRate, {
+      amount: r.money(current.seat_summary.total_cost_cents)
+    }),
+    date: until
+  })
 }
 
 /** Today's grant, dated by the server's renewal when it carries one. */

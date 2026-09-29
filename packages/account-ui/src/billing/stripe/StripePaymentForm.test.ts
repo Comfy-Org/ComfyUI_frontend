@@ -83,6 +83,7 @@ function renderForm(
     locked?: boolean
     publishableKey?: string
     themeKey?: string
+    pageLayout?: boolean
     onConfirm?: (token: string) => void
     onSubmittingChange?: (submitting: boolean) => void
     container?: HTMLElement
@@ -473,6 +474,30 @@ describe('StripePaymentForm', () => {
       screen.getByRole('button', { name: 'Pay and subscribe' })
     ).toBeDefined()
   })
+
+  it.for([
+    { layout: 'embedded', pageLayout: false, titled: true },
+    { layout: 'page', pageLayout: true, titled: false }
+  ])(
+    'the $layout layout names the payment group either way, and only titles it itself when embedded',
+    async ({ pageLayout, titled }) => {
+      renderForm(66500, 'pmc_test', { pageLayout })
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+      expect(
+        screen.getByRole('group', { name: 'Payment method' })
+      ).toBeDefined()
+      expect(
+        screen.queryByRole('heading', { name: 'Payment method' }) !== null
+      ).toBe(titled)
+      expect(screen.queryByText('Choose a payment method') !== null).toBe(
+        titled
+      )
+      expect(
+        screen.getByRole('heading', { name: 'Billing address' })
+      ).toBeDefined()
+    }
+  )
 
   it('collects a billing address alongside the payment element', async () => {
     renderForm()

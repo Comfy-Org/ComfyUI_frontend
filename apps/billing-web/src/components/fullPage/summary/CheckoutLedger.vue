@@ -64,7 +64,7 @@ const { t } = useI18n()
         <span class="text-sm font-semibold text-base-foreground">
           {{ row.label }}
         </span>
-        <span class="shrink-0 text-sm text-base-foreground tabular-nums">
+        <span class="shrink-0 text-sm text-muted-foreground tabular-nums">
           {{ row.amount }}
         </span>
       </li>
@@ -88,7 +88,7 @@ const { t } = useI18n()
     <span class="text-sm font-semibold text-base-foreground">
       {{ ledger.promo.label }}
     </span>
-    <span class="shrink-0 text-sm text-base-foreground tabular-nums">
+    <span class="shrink-0 text-sm text-muted-foreground tabular-nums">
       {{ ledger.promo.amount }}
     </span>
   </div>
