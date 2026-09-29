@@ -104,12 +104,19 @@ function createPreviewWidget(
       if (!img?.ready || !img.naturalWidth) return
 
       const boxWidth = width - 4
-      const drawHeight = boxWidth / (img.naturalWidth / img.naturalHeight)
+      const aspect = img.naturalWidth / img.naturalHeight
+      const intrinsicHeight = boxWidth / aspect
+      const rowHeight = widget.computedHeight
+      const drawHeight =
+        rowHeight == null
+          ? intrinsicHeight
+          : Math.min(intrinsicHeight, Math.max(0, rowHeight - 4))
+      const drawWidth = drawHeight * aspect
       ctx.drawImage(
         img as unknown as CanvasImageSource,
-        2,
+        2 + (boxWidth - drawWidth) / 2,
         y + 2,
-        boxWidth,
+        drawWidth,
         drawHeight
       )
     }

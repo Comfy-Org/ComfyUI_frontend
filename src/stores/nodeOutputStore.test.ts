@@ -1054,5 +1054,6 @@ describe('nodeOutputStore canvas invalidation', () => {
 
     store.revokePreviewsByLocatorId(locator)
     expect(setDirty).toHaveBeenCalledTimes(3)
+    expect(setDirty).toHaveBeenCalledWith(true)
   })
 })

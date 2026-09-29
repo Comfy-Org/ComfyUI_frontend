@@ -216,13 +216,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       }
       nodeOutputs.value[nodeLocatorId] = mergedOutput
       app.nodeOutputs[nodeLocatorId] = clone(mergedOutput)
-      useCanvasStore().canvas?.setDirty(false)
+      useCanvasStore().canvas?.setDirty(true)
       return
     }
 
     nodeOutputs.value[nodeLocatorId] = outputs
     app.nodeOutputs[nodeLocatorId] = clone(outputs)
-    useCanvasStore().canvas?.setDirty(false)
+    useCanvasStore().canvas?.setDirty(true)
   }
 
   function setNodeOutputs(
@@ -322,7 +322,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
     nodePreviewImages.value[nodeLocatorId] = [...previewImages]
     app.nodePreviewImages[nodeLocatorId] = [...previewImages]
-    useCanvasStore().canvas?.setDirty(false)
+    useCanvasStore().canvas?.setDirty(true)
   }
 
   function setNodePreviewsByNodeId(nodeId: NodeId, previewImages: string[]) {
@@ -347,7 +347,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     delete nodePreviewImages.value[nodeLocatorId]
     delete app.nodePreviewImages[nodeLocatorId]
-    useCanvasStore().canvas?.setDirty(false)
+    useCanvasStore().canvas?.setDirty(true)
   }
 
   function releasePreviewUrls(previews: NodePreviewMap) {
