@@ -29,7 +29,7 @@ export const NOINDEX_ROUTES = [
   '/terms-of-service',
   '/platform/serverless-animation',
   ...PLACEHOLDER_PATHNAMES
-]
+] as const
 
 const NOINDEX_PATHNAMES = new Set([
   ...ALL_LOCALE_PREFIXES.flatMap((prefix) =>
