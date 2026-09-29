@@ -29,7 +29,6 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -46,6 +45,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
+import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -85,21 +85,8 @@ const PROGRESS_SUMMARY = {
 } as const satisfies Record<string, Record<ProgressKind, string>>
 type ToastMessage = Parameters<ReturnType<typeof useToastStore>['add']>[0]
 
-/**
- * The server's `/features` value when configured, this deployment's
- * build-time fallback otherwise. `remoteConfig` already carries this
- * document — fetched once at boot — so reading it here costs no extra
- * request; a non-string or empty server value is treated as absent.
- */
-function resolvedStripePublishableKey(): string | undefined {
-  const fromServer = remoteConfig.value.stripe_publishable_key
-  return typeof fromServer === 'string' && fromServer !== ''
-    ? fromServer
-    : import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-}
-
 async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
-  const publishableKey = resolvedStripePublishableKey()
+  const publishableKey = resolveStripePublishableKey()
   const stripe = publishableKey
     ? await loadStripe(publishableKey).catch(() => null)
     : null
@@ -132,7 +119,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     workspaceId: () => workspaceAuthStore.getUnifiedMintWorkspaceId(),
     pointerStorage: sessionStorage,
     embeddedCheckoutAvailable: () =>
-      flags.embeddedCheckoutEnabled && Boolean(resolvedStripePublishableKey()),
+      flags.embeddedCheckoutEnabled && Boolean(resolveStripePublishableKey()),
     hostedDestination: () => flags.hostedBillingDestination,
     onTelemetry: reportTelemetry,
     challengePort: loadChallengePort
