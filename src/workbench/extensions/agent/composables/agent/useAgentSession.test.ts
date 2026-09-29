@@ -3,7 +3,6 @@ import type {
   AgentAdmissionError,
   UploadImageResponse
 } from '@comfyorg/ingest-types'
-import { nextTick } from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
