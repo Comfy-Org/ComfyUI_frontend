@@ -569,6 +569,27 @@ test.describe('Model playground', () => {
     await expect.poll(hidden).toBeLessThanOrEqual(1)
   })
 
+  test('stops the prompt box short of swallowing the window', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByTestId('field-prompt')
+
+    await prompt.fill(
+      Array.from({ length: 60 }, (_, line) => `Line ${line + 1}.`).join('\n')
+    )
+
+    // A prompt this long would bury the rest of the form, so the box keeps a
+    // share of the window and scrolls what is left.
+    await expect
+      .poll(() => prompt.evaluate((box) => box.clientHeight))
+      .toBeLessThan(800)
+    await expect
+      .poll(() => prompt.evaluate((box) => box.scrollHeight - box.clientHeight))
+      .toBeGreaterThan(1)
+  })
+
   test('puts data-declared parameters in the Advanced disclosure', async ({
     page
   }) => {
