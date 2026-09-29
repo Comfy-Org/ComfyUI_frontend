@@ -260,6 +260,47 @@ describe('CinematicStudio', () => {
     expect(vi.mocked(router_render).mock.calls[1][0]).toBe(second.slug)
   })
 
+  it('settles the frame when a failed take switches to a narrower model', async () => {
+    // Nano Banana Pro makes 21:9, so the studio opens on it; Seedream 5.0 Pro
+    // does not, and `switch-model` sets the model and generates in one handler.
+    const wide = models.find((model) => model.aspects?.includes('21:9'))!
+    const narrow = models.find((model) => !model.aspects?.includes('21:9'))!
+    vi.mocked(router_render)
+      .mockRejectedValueOnce(new WorkshopRouterError('provider', 'request-9'))
+      .mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio([wide, narrow])
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    expect(
+      screen.getByRole('button', { name: 'Aspect ratio: 21:9' })
+    ).toBeInTheDocument()
+    await user.click(generateButton())
+
+    const notice = await screen.findByRole('status')
+    await user.click(
+      within(notice).getByRole('button', {
+        name: tc('cinematic.state.tryOn', 'en', { model: narrow.name })
+      })
+    )
+
+    await screen.findByAltText(/A diner at dawn/)
+    const calls = vi.mocked(router_render).mock.calls
+    expect(calls[1][0]).toBe(narrow.slug)
+    // The take must fall to the nearest frame the new model can make, not carry
+    // 21:9 over from the model that failed.
+    expect(sent(calls[1]).values).toMatchObject({ size: '1920x1080' })
+    const chosen = screen.getByRole('button', { name: 'Aspect ratio: 16:9' })
+    expect(chosen).toBeInTheDocument()
+    // The menu follows the model too, so 21:9 is no longer on offer.
+    await user.click(chosen)
+    expect(
+      await screen.findByRole('menuitemradio', { name: /16:9/ })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('menuitemradio', { name: /21:9/ })
+    ).not.toBeInTheDocument()
+  })
+
   it('sends a take blocked by content policy back to the scene', async () => {
     vi.mocked(router_render).mockRejectedValue(
       new WorkshopRouterError('policy')

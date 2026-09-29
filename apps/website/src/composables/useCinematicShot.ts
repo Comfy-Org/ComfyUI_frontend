@@ -62,9 +62,13 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     shotAspects(model.value, references.value.length > 0)
   )
   // A model that cannot make the chosen frame moves it to its nearest one.
-  watchEffect(() => {
-    if (aspects.value) aspect.value = nearestAspect(aspect.value, aspects.value)
-  })
+  // `undefined` leaves every frame available; `[]` means the model offers none,
+  // and there is no nearest frame to fall to.
+  function settleAspect() {
+    if (aspects.value?.length)
+      aspect.value = nearestAspect(aspect.value, aspects.value)
+  }
+  watchEffect(settleAspect)
   const estimate = computed(() =>
     shotEstimate(model.value?.prices, {
       aspect: aspect.value,
@@ -98,10 +102,16 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     () =>
       studio.gate.value === 'ready' &&
       scene.value.trim().length > 0 &&
-      takesReferences(model.value, references.value.length)
+      takesReferences(model.value, references.value.length) &&
+      // A model offering no frame at all has nothing honest to send.
+      (aspects.value === undefined || aspects.value.includes(aspect.value))
   )
 
   function generate() {
+    // `switch-model` sets the model and generates in the same handler, so the
+    // watchEffect above has not flushed: settle the frame here rather than
+    // carrying the previous model's over into the request and the price.
+    settleAspect()
     if (!canGenerate.value) return
     void studio.generate({
       modelSlug: modelSlug.value,
