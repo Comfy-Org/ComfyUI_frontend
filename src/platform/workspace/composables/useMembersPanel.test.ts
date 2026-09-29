@@ -1198,7 +1198,10 @@ describe('useMembersPanel', () => {
       mockMaxSeats.value = 1
       mockSubscriptionStatus.value = 'ended'
       mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
-      useBillingCapabilities().canInviteMembers = computed(() => false)
+      // can_invite_members stays TRUE on the real ended payload —
+      // ResolveBillingWritePermissions grants it from the owner role alone.
+      // The disabled state, not the capability, carries the denial.
+      useBillingCapabilities().canInviteMembers = computed(() => true)
       const panel = await setup()
       expect(panel.isPlanEnded.value).toBe(true)
       expect(panel.isSalesManagedPlan.value).toBe(true)

@@ -261,9 +261,12 @@ export function useMembersPanel() {
       (hasMultipleMembers.value || pendingInvites.value.length > 0)
   )
 
-  // An ended plan resolves can_invite_members false, but hiding the control
-  // from the owner leaves no explanation — keep it visible and disabled, with
-  // the banner carrying the route back. Members stay hidden (role denial).
+  // On the real ended payload can_invite_members stays TRUE — the server
+  // grants it from the owner role alone (ResolveBillingWritePermissions),
+  // and the disabled state carries the denial. The second disjunct is the
+  // guarantee for any rail that resolves the capability false: an owner
+  // keeps a visible, disabled control with the banner carrying the route
+  // back. Members stay hidden (role denial).
   const showInviteButton = computed(() =>
     isCloud
       ? canInviteMembers.value ||
