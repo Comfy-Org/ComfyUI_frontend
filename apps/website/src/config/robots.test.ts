@@ -13,7 +13,8 @@ const rulesFor = (directive: string) =>
     .split('\n')
     .flatMap(
       (line) =>
-        new RegExp(`^${directive}:\\s*(\\S+)`, 'i').exec(line)?.[1] ?? []
+        new RegExp(`^\\s*${directive}\\s*:\\s*(\\S+)`, 'i').exec(line)?.[1] ??
+        []
     )
 
 describe('robots.txt', () => {
