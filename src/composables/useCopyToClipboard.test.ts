@@ -3,15 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockWriteText = vi.fn()
 const mockToastAdd = vi.fn()
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: vi.fn(() => ({
-    add: mockToastAdd
-  }))
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
 
-vi.mock('@/i18n', () => ({
-  t: (key: string) => key
-}))
+  () => ({
+    useToast: vi.fn(() => ({
+      add: mockToastAdd
+    }))
+  })
+)
+
+vi.mock(import('@/i18n'))
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 

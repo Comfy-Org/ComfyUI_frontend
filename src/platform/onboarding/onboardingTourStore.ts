@@ -172,7 +172,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     const current = state.value
     if (!isRunning(current)) return
     const nextStep = current.steps[idx]
-    if (!nextStep) return
 
     stepController?.abort()
     const controller = new AbortController()

@@ -1,184 +1,159 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, watch } from 'vue'
+import { nextTick, toValue, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   AssetItem,
   AssetResponse
 } from '@/platform/assets/schemas/assetSchema'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { assetService } from '@/platform/assets/services/assetService'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { api } from '@/scripts/api'
 
 // Mock the api module
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getHistory: vi.fn(),
     internalURL: vi.fn((path) => `http://localhost:3000${path}`),
     apiURL: vi.fn((path) => `http://localhost:3000/api${path}`),
     addEventListener: vi.fn(),
+    fetchApi: vi.fn(),
     removeEventListener: vi.fn(),
     getServerFeature: vi.fn(() => false),
     user: 'test-user'
   }
 }))
 
-// Mock the asset service
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    getAssetsPageByTag: vi.fn(),
-    getAssetsPageForNodeType: vi.fn(),
-    updateAsset: vi.fn(),
-    addAssetTags: vi.fn(),
-    removeAssetTags: vi.fn()
-  },
-  INPUT_TAG: 'input',
-  OUTPUT_TAG: 'output'
-}))
+vi.mock(import('@/platform/assets/services/assetService'))
 
 // Mock distribution type - hoisted so it can be changed per test
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-// Mock modelToNodeStore with proper node providers and category lookups
-vi.mock('@/stores/modelToNodeStore', () => ({
-  useModelToNodeStore: () => ({
-    getAllNodeProviders: vi.fn((category: string) => {
-      const providers: Record<
-        string,
-        Array<{ nodeDef: { name: string }; key: string }>
-      > = {
-        checkpoints: [
-          { nodeDef: { name: 'CheckpointLoaderSimple' }, key: 'ckpt_name' },
-          { nodeDef: { name: 'ImageOnlyCheckpointLoader' }, key: 'ckpt_name' }
-        ],
-        loras: [
-          { nodeDef: { name: 'LoraLoader' }, key: 'lora_name' },
-          { nodeDef: { name: 'LoraLoaderModelOnly' }, key: 'lora_name' }
-        ],
-        vae: [{ nodeDef: { name: 'VAELoader' }, key: 'vae_name' }]
-      }
-      return providers[category] ?? []
-    }),
-    getCategoryForNodeType: vi.fn((nodeType: string) => {
-      const nodeToCategory: Record<string, string> = {
-        CheckpointLoaderSimple: 'checkpoints',
-        ImageOnlyCheckpointLoader: 'checkpoints',
-        LoraLoader: 'loras',
-        LoraLoaderModelOnly: 'loras',
-        VAELoader: 'vae'
-      }
-      return nodeToCategory[nodeType]
-    }),
-    getNodeProvider: vi.fn(),
-    registerDefaults: vi.fn()
-  })
-}))
-
-type MockOutput = {
-  supportsPreview: boolean
-  filename: string
-  subfolder: string
-  type: string
-  url: string
-}
-
-// Per-test override for mock outputs (defaults to single output)
-const mockOutputOverrides = vi.hoisted(() => ({
-  value: null as MockOutput[] | null
-}))
-
-// Mock TaskItemImpl
-const PREVIEWABLE_MEDIA_TYPES = new Set(['images', 'video', 'audio'])
-
-vi.mock('@/stores/queueStore', () => ({
-  TaskItemImpl: class {
-    public flatOutputs: Array<{
-      supportsPreview: boolean
-      filename: string
-      subfolder: string
-      type: string
-      url: string
-    }>
-    public previewOutput:
-      | {
-          supportsPreview: boolean
-          filename: string
-          subfolder: string
-          type: string
-          url: string
-        }
-      | undefined
-    public jobId: string
-    public outputsCount: number | null
-    public previewableOutputsCount: number | undefined
-
-    constructor(public job: JobListItem) {
-      this.jobId = job.id
-      this.outputsCount = job.outputs_count ?? null
-      this.previewableOutputsCount = job.previewable_outputs_count ?? undefined
-      if (mockOutputOverrides.value) {
-        this.flatOutputs = mockOutputOverrides.value
-        const previewable = mockOutputOverrides.value.filter(
-          (o) => o.supportsPreview
-        )
-        this.previewOutput =
-          previewable.findLast((o) => o.type === 'output') ?? previewable.at(-1)
-      } else {
-        const preview = job.preview_output
-        const isPreviewable =
-          !!preview?.filename && PREVIEWABLE_MEDIA_TYPES.has(preview.mediaType)
-        if (preview && isPreviewable) {
-          const item = {
-            supportsPreview: true,
-            filename: preview.filename!,
-            subfolder: preview.subfolder ?? '',
-            type: preview.type ?? 'output',
-            url: `http://test.com/${preview.filename}`
-          }
-          this.flatOutputs = [item]
-          this.previewOutput = item
-        } else {
-          this.flatOutputs = []
-          this.previewOutput = undefined
-        }
-      }
-    }
-
-    get previewableOutputs() {
-      return this.flatOutputs.filter((o) => o.supportsPreview)
-    }
-  }
-}))
+beforeEach(() => {
+  useNodeDefStore().nodeDefsByName = Object.fromEntries(
+    [
+      'CheckpointLoaderSimple',
+      'ImageOnlyCheckpointLoader',
+      'LoraLoader',
+      'LoraLoaderModelOnly',
+      'VAELoader'
+    ].map((name) => [
+      name,
+      new ComfyNodeDefImpl({
+        name,
+        display_name: name,
+        description: '',
+        input: {},
+        output: [],
+        category: 'loaders',
+        python_module: 'nodes',
+        output_node: false
+      })
+    ])
+  )
+})
 
 // Mock asset mappers - add unique timestamps
-vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
-  mapInputFileToAssetItem: vi.fn((name, index, type) => ({
-    id: `${type}-${index}`,
-    name,
-    size: 0,
-    created_at: new Date(Date.now() - index * 1000).toISOString(),
-    tags: [type],
-    preview_url: `http://test.com/${name}`
-  })),
-  mapTaskOutputToAssetItem: vi.fn((task, output) => {
-    const index = parseInt(task.jobId.split('_')[1]) || 0
-    return {
-      id: task.jobId,
-      name: output.filename,
+vi.mock<unknown>(
+  import('@/platform/assets/composables/media/assetMappers'),
+  () => ({
+    mapInputFileToAssetItem: vi.fn((name, index, type) => ({
+      id: `${type}-${index}`,
+      name,
       size: 0,
       created_at: new Date(Date.now() - index * 1000).toISOString(),
-      tags: ['output'],
-      preview_url: output.url,
-      user_metadata: {}
+      tags: [type],
+      preview_url: `http://test.com/${name}`
+    })),
+    mapTaskOutputToAssetItem: vi.fn((task, output) => {
+      const index = parseInt(task.jobId.split('_')[1]) || 0
+      return {
+        id: task.jobId,
+        name: output.filename,
+        size: 0,
+        created_at: new Date(Date.now() - index * 1000).toISOString(),
+        tags: ['output'],
+        preview_url: output.url,
+        user_metadata: {}
+      }
+    }),
+    unflattenOutputAssets: vi.fn((items: AssetItem[]) => items)
+  })
+)
+
+function createHistoryPage(start: number): JobListItem[] {
+  return Array.from({ length: 200 }, (_, index) => {
+    const id = `job_${start + index}`
+    return {
+      id,
+      status: 'completed',
+      create_time: start + index,
+      priority: 0,
+      outputs_count: 1,
+      previewable_outputs_count: 1,
+      preview_output: {
+        filename: `${id}.png`,
+        mediaType: 'images',
+        nodeId: '1',
+        subfolder: '',
+        type: 'output'
+      }
     }
-  }),
-  unflattenOutputAssets: vi.fn((items: AssetItem[]) => items)
-}))
+  })
+}
+
+describe('assetsStore - OSS history pagination', () => {
+  it('serializes refresh with pagination without skipping the next offset', async () => {
+    let resolveFirstPage!: (jobs: JobListItem[]) => void
+    const firstPage = new Promise<JobListItem[]>((resolve) => {
+      resolveFirstPage = resolve
+    })
+    vi.mocked(api.getHistory)
+      .mockImplementationOnce(() => firstPage)
+      .mockResolvedValueOnce([])
+    const store = useAssetsStore()
+
+    const refresh = store.outputAssets.invalidate()
+    const pagination = store.outputAssets.loadMore()
+    await vi.waitFor(() => expect(api.getHistory).toHaveBeenCalledTimes(1))
+
+    resolveFirstPage(createHistoryPage(0))
+    await Promise.all([refresh, pagination])
+
+    expect(
+      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
+    ).toEqual([{ offset: 0 }, { offset: 200 }])
+  })
+
+  it('loads history pages until it finds the requested output asset', async () => {
+    vi.mocked(api.getHistory)
+      .mockResolvedValueOnce(createHistoryPage(0))
+      .mockResolvedValueOnce(createHistoryPage(200))
+    const store = useAssetsStore()
+
+    await expect(store.loadOutputAsset('job_200')).resolves.toBe(true)
+
+    expect(
+      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
+    ).toEqual([{ offset: 0 }, { offset: 200 }])
+  })
+
+  it('stops looking when history has no more pages', async () => {
+    vi.mocked(api.getHistory).mockResolvedValueOnce([])
+    const store = useAssetsStore()
+
+    await expect(store.loadOutputAsset('missing-job')).resolves.toBe(false)
+
+    expect(api.getHistory).toHaveBeenCalledOnce()
+  })
+})
 
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {
@@ -208,6 +183,39 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     total: assets.length,
     has_more: page.has_more ?? false,
     ...(page.next_cursor === undefined ? {} : { next_cursor: page.next_cursor })
+  })
+
+  it('bounds output lookup when pagination never reports exhaustion', async () => {
+    let outputPage = 0
+    vi.mocked(api.fetchApi).mockImplementation(async (url) => {
+      const isInputQuery = url.includes('tags_any=input')
+      const body: AssetResponse = isInputQuery
+        ? makePage([])
+        : makePage(
+            [
+              fromPartial<AssetItem>({
+                id: `output-${++outputPage}`,
+                name: `output-${outputPage}.png`,
+                loader_path: `output-${outputPage}.png`,
+                tags: ['output'],
+                created_at: '2026-09-22T00:00:00Z',
+                updated_at: '2026-09-22T00:00:00Z'
+              })
+            ],
+            { has_more: true, next_cursor: `page-${outputPage + 1}` }
+          )
+      return new Response(JSON.stringify(body), {
+        headers: { 'Content-Type': 'application/json' }
+      })
+    })
+    const store = useAssetsStore()
+    await vi.waitFor(() =>
+      expect(toValue(store.outputAssets.isLoading)).toBe(false)
+    )
+
+    await expect(store.loadOutputAsset('missing-output')).resolves.toBe(false)
+
+    expect(outputPage).toBe(21)
   })
 
   describe('getAssets cache invalidation', () => {

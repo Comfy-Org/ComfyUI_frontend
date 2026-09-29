@@ -4,15 +4,10 @@ import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 
-const mocks = vi.hoisted(() => ({
-  resolveOutputAssetItems: vi.fn()
-}))
-
-vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
-  resolveOutputAssetItems: mocks.resolveOutputAssetItems
-}))
+vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
 type Deferred<T> = {
   promise: Promise<T>
@@ -59,14 +54,14 @@ describe('useOutputStacks', () => {
       user_metadata: undefined
     })
 
-    vi.mocked(mocks.resolveOutputAssetItems).mockResolvedValue([childA, childB])
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([childA, childB])
 
     const { assetItems, isStackExpanded, selectableAssets, toggleStack } =
       useOutputStacks({ assets: ref([parent]) })
 
     await toggleStack(parent)
 
-    expect(mocks.resolveOutputAssetItems).toHaveBeenCalledWith(
+    expect(resolveOutputAssetItems).toHaveBeenCalledWith(
       expect.objectContaining({ jobId: 'job-1' }),
       {
         createdAt: parent.created_at,
@@ -102,7 +97,7 @@ describe('useOutputStacks', () => {
       user_metadata: undefined
     })
 
-    vi.mocked(mocks.resolveOutputAssetItems).mockResolvedValue([child])
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([child])
 
     const { assetItems, isStackExpanded, toggleStack } = useOutputStacks({
       assets: ref([parent])
@@ -128,7 +123,7 @@ describe('useOutputStacks', () => {
 
     await toggleStack(asset)
 
-    expect(mocks.resolveOutputAssetItems).not.toHaveBeenCalled()
+    expect(resolveOutputAssetItems).not.toHaveBeenCalled()
     expect(isStackExpanded(asset)).toBe(false)
     expect(assetItems.value).toHaveLength(1)
     expect(assetItems.value[0].asset).toMatchObject(asset)
@@ -137,7 +132,7 @@ describe('useOutputStacks', () => {
   it('does not expand when no children are resolved', async () => {
     const parent = createAsset({ id: 'parent', name: 'parent.png' })
 
-    vi.mocked(mocks.resolveOutputAssetItems).mockResolvedValue([])
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([])
 
     const { assetItems, isStackExpanded, toggleStack } = useOutputStacks({
       assets: ref([parent])
@@ -153,7 +148,7 @@ describe('useOutputStacks', () => {
     const parent = createAsset({ id: 'parent', name: 'parent.png' })
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    vi.mocked(mocks.resolveOutputAssetItems).mockRejectedValue(
+    vi.mocked(resolveOutputAssetItems).mockRejectedValue(
       new Error('resolve failed')
     )
 
@@ -178,7 +173,7 @@ describe('useOutputStacks', () => {
     })
     const deferred = createDeferred<AssetItem[]>()
 
-    vi.mocked(mocks.resolveOutputAssetItems).mockReturnValue(deferred.promise)
+    vi.mocked(resolveOutputAssetItems).mockReturnValue(deferred.promise)
 
     const { assetItems, toggleStack } = useOutputStacks({
       assets: ref([parent])
@@ -187,7 +182,7 @@ describe('useOutputStacks', () => {
     const firstToggle = toggleStack(parent)
     const secondToggle = toggleStack(parent)
 
-    expect(mocks.resolveOutputAssetItems).toHaveBeenCalledTimes(1)
+    expect(resolveOutputAssetItems).toHaveBeenCalledTimes(1)
 
     deferred.resolve([child])
 

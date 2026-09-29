@@ -1,28 +1,18 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive } from 'vue'
+import { nextTick } from 'vue'
+
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { createCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 
 const testState = vi.hoisted(() => ({
-  canvasElement: {
-    offsetParent: {} as Element | null,
-    offsetWidth: 1920,
-    offsetHeight: 1080
-  },
+  offsetParent: {} as Element | null,
+  offsetWidth: 1920,
+  offsetHeight: 1080,
   pendingFrames: new Map<number, FrameRequestCallback>(),
   nextFrameId: 1,
   cancelAnimationFrame: vi.fn()
-}))
-
-const mockStore = reactive({
-  linearMode: false,
-  canvas: {
-    get canvas() {
-      return testState.canvasElement
-    }
-  }
-})
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => mockStore
 }))
 
 function runNextAnimationFrame(): void {
@@ -35,10 +25,18 @@ function runNextAnimationFrame(): void {
 
 describe('useCanvasScheduler', () => {
   beforeEach(async () => {
-    mockStore.linearMode = false
-    testState.canvasElement.offsetParent = document.body
-    testState.canvasElement.offsetWidth = 1920
-    testState.canvasElement.offsetHeight = 1080
+    const canvasElement = document.createElement('canvas')
+    Object.defineProperties(canvasElement, {
+      offsetParent: { configurable: true, get: () => testState.offsetParent },
+      offsetWidth: { configurable: true, get: () => testState.offsetWidth },
+      offsetHeight: { configurable: true, get: () => testState.offsetHeight }
+    })
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ canvas: canvasElement })
+    canvasStore.linearMode = false
+    testState.offsetParent = document.body
+    testState.offsetWidth = 1920
+    testState.offsetHeight = 1080
     testState.pendingFrames.clear()
     testState.nextFrameId = 1
     testState.cancelAnimationFrame.mockReset()
@@ -52,20 +50,15 @@ describe('useCanvasScheduler', () => {
       testState.cancelAnimationFrame(id)
       testState.pendingFrames.delete(id)
     })
-
-    vi.resetModules()
   })
 
-  async function createScheduler() {
-    const mod = await import('@/renderer/core/canvas/useCanvasScheduler')
-    return mod.useCanvasScheduler()
-  }
+  const createScheduler = createCanvasScheduler
 
   it('schedule executes operation in next RAF when canvas is ready', async () => {
     const scheduler = await createScheduler()
     const op = vi.fn()
 
-    scheduler.schedule(op)
+    scheduler.schedule({ run: op })
     expect(op).not.toHaveBeenCalled()
 
     runNextAnimationFrame()
@@ -76,8 +69,8 @@ describe('useCanvasScheduler', () => {
     const scheduler = await createScheduler()
     const op = vi.fn()
 
-    testState.canvasElement.offsetParent = null
-    scheduler.schedule(op)
+    testState.offsetParent = null
+    scheduler.schedule({ run: op })
 
     expect(scheduler.pending()).toBe(1)
     expect(op).not.toHaveBeenCalled()
@@ -88,9 +81,9 @@ describe('useCanvasScheduler', () => {
     const scheduler = await createScheduler()
     const op = vi.fn()
 
-    testState.canvasElement.offsetWidth = 0
-    testState.canvasElement.offsetHeight = 0
-    scheduler.schedule(op)
+    testState.offsetWidth = 0
+    testState.offsetHeight = 0
+    scheduler.schedule({ run: op })
 
     expect(scheduler.pending()).toBe(1)
     expect(op).not.toHaveBeenCalled()
@@ -102,11 +95,11 @@ describe('useCanvasScheduler', () => {
     const first = vi.fn()
     const second = vi.fn()
 
-    testState.canvasElement.offsetParent = null
-    scheduler.schedule(first)
-    scheduler.schedule(second)
+    testState.offsetParent = null
+    scheduler.schedule({ run: first })
+    scheduler.schedule({ run: second })
 
-    testState.canvasElement.offsetParent = document.body
+    testState.offsetParent = document.body
     scheduler.flush()
 
     expect(first).toHaveBeenCalledOnce()
@@ -118,8 +111,8 @@ describe('useCanvasScheduler', () => {
     const scheduler = await createScheduler()
     const op = vi.fn()
 
-    testState.canvasElement.offsetParent = null
-    scheduler.schedule(op)
+    testState.offsetParent = null
+    scheduler.schedule({ run: op })
     scheduler.flush()
 
     expect(op).not.toHaveBeenCalled()
@@ -130,7 +123,7 @@ describe('useCanvasScheduler', () => {
     const scheduler = await createScheduler()
     const op = vi.fn()
 
-    scheduler.schedule(op)
+    scheduler.schedule({ run: op })
     expect(testState.pendingFrames.size).toBe(1)
 
     scheduler.clear()
@@ -144,9 +137,9 @@ describe('useCanvasScheduler', () => {
   it('deduplicates RAF scheduling to one pending frame', async () => {
     const scheduler = await createScheduler()
 
-    scheduler.schedule(vi.fn())
-    scheduler.schedule(vi.fn())
-    scheduler.schedule(vi.fn())
+    scheduler.schedule({ run: vi.fn() })
+    scheduler.schedule({ run: vi.fn() })
+    scheduler.schedule({ run: vi.fn() })
 
     expect(testState.pendingFrames.size).toBe(1)
   })
@@ -155,65 +148,13 @@ describe('useCanvasScheduler', () => {
     const scheduler = await createScheduler()
     const calls: string[] = []
 
-    scheduler.schedule(() => calls.push('first'))
-    scheduler.schedule(() => calls.push('second'))
-    scheduler.schedule(() => calls.push('third'))
+    scheduler.schedule({ run: () => calls.push('first') })
+    scheduler.schedule({ run: () => calls.push('second') })
+    scheduler.schedule({ run: () => calls.push('third') })
 
     runNextAnimationFrame()
 
     expect(calls).toEqual(['first', 'second', 'third'])
-  })
-
-  it('rejects a stale camera intent that reaches flush', async () => {
-    const scheduler = await createScheduler()
-    const stale = vi.fn()
-    let isCurrent = true
-    scheduler.scheduleCameraIntent({
-      isCurrent: () => isCurrent,
-      run: stale
-    })
-
-    expect(scheduler.pending()).toBe(1)
-    isCurrent = false
-    runNextAnimationFrame()
-    expect(stale).not.toHaveBeenCalled()
-  })
-
-  it('does not let a late stale intent replace current same-key work', async () => {
-    const scheduler = await createScheduler()
-    const current = vi.fn()
-    const stale = vi.fn()
-    scheduler.scheduleCameraIntent({
-      isCurrent: () => true,
-      run: current
-    })
-    scheduler.scheduleCameraIntent({
-      isCurrent: () => false,
-      run: stale
-    })
-
-    expect(scheduler.pending()).toBe(1)
-    runNextAnimationFrame()
-    expect(stale).not.toHaveBeenCalled()
-    expect(current).toHaveBeenCalledOnce()
-  })
-
-  it('preserves ordinary work when replacing the pending camera intent', async () => {
-    const scheduler = await createScheduler()
-    const calls: string[] = []
-
-    scheduler.schedule(() => calls.push('ordinary'))
-    scheduler.scheduleCameraIntent({
-      isCurrent: () => true,
-      run: () => calls.push('superseded')
-    })
-    scheduler.scheduleCameraIntent({
-      isCurrent: () => true,
-      run: () => calls.push('current')
-    })
-
-    runNextAnimationFrame()
-    expect(calls).toEqual(['ordinary', 'current'])
   })
 
   it('continues executing remaining ops when one throws', async () => {
@@ -225,9 +166,9 @@ describe('useCanvasScheduler', () => {
     })
     const third = vi.fn()
 
-    scheduler.schedule(first)
-    scheduler.schedule(failing)
-    scheduler.schedule(third)
+    scheduler.schedule({ run: first })
+    scheduler.schedule({ run: failing })
+    scheduler.schedule({ run: third })
 
     runNextAnimationFrame()
 
@@ -242,22 +183,67 @@ describe('useCanvasScheduler', () => {
     const scheduler = await createScheduler()
     const op = vi.fn()
 
-    testState.canvasElement.offsetParent = null
-    mockStore.linearMode = true
+    testState.offsetParent = null
+    useCanvasStore().linearMode = true
     await nextTick()
 
-    scheduler.schedule(op)
+    scheduler.schedule({ run: op })
     expect(scheduler.pending()).toBe(1)
 
     const framesBefore = testState.pendingFrames.size
 
-    testState.canvasElement.offsetParent = document.body
-    mockStore.linearMode = false
+    testState.offsetParent = document.body
+    useCanvasStore().linearMode = false
     await nextTick()
 
     expect(testState.pendingFrames.size).toBeGreaterThan(framesBefore)
 
     while (testState.pendingFrames.size > 0) runNextAnimationFrame()
     expect(op).toHaveBeenCalledOnce()
+  })
+
+  it('replaces a pending operation with the same key', async () => {
+    const scheduler = await createScheduler()
+    const stale = vi.fn()
+    const current = vi.fn()
+
+    scheduler.schedule({ key: 'camera', run: stale })
+    scheduler.schedule({ key: 'camera', run: current })
+    runNextAnimationFrame()
+
+    expect(stale).not.toHaveBeenCalled()
+    expect(current).toHaveBeenCalledOnce()
+  })
+
+  it('does not let a stale operation replace a current keyed operation', async () => {
+    const scheduler = await createScheduler()
+    const current = vi.fn()
+    const stale = vi.fn()
+
+    scheduler.schedule({ key: 'camera', run: current })
+    scheduler.schedule({
+      key: 'camera',
+      isCurrent: () => false,
+      run: stale
+    })
+    runNextAnimationFrame()
+
+    expect(current).toHaveBeenCalledOnce()
+    expect(stale).not.toHaveBeenCalled()
+  })
+
+  it('drops an operation that becomes stale before flush', async () => {
+    const scheduler = await createScheduler()
+    const run = vi.fn()
+    let current = true
+
+    scheduler.schedule({
+      isCurrent: () => current,
+      run
+    })
+    current = false
+    runNextAnimationFrame()
+
+    expect(run).not.toHaveBeenCalled()
   })
 })

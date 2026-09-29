@@ -4,15 +4,14 @@ import type { Route } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 test.describe('Workflows sidebar', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Sidebar'
-    )
+  test.use({
+    initialSettings: { 'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar' }
+  })
 
+  test.beforeEach(async ({ comfyPage }) => {
     // Open the sidebar
     const tab = comfyPage.menu.workflowsTab
     await tab.open()
@@ -231,7 +230,9 @@ test.describe('Workflows sidebar', () => {
     })
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'zh')
-    await comfyPage.setup()
+    await expect(
+      comfyPage.page.getByRole('button', { name: '运行', exact: true })
+    ).toBeVisible()
 
     // Compare the exported workflow with the original
     delete downloadedContent.id

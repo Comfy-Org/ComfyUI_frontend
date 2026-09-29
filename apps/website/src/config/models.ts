@@ -34,6 +34,7 @@ export interface Model {
   readonly hubSlug?: string
   readonly featured: boolean
   readonly workflowCount: number
+  readonly whatIsBacklinkUrl?: string
 }
 
 export const models: readonly Model[] = (

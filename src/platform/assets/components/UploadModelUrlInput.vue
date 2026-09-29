@@ -2,7 +2,7 @@
   <div class="flex h-full flex-col justify-between gap-6 text-sm">
     <div class="flex flex-col gap-6">
       <div class="flex flex-col gap-2">
-        <p class="text-foreground m-0">
+        <p class="m-0 text-base-foreground">
           {{ $t('assetBrowser.uploadModelDescription1Generic') }}
         </p>
         <div class="m-0">

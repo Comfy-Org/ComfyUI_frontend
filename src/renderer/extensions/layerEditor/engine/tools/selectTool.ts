@@ -2,7 +2,7 @@ import { SetTransformCommand } from '../commands/setTransform'
 import { filterTopmost, findNode } from '../document'
 import { CommandGroup, Dirty } from '../history'
 import type { Command } from '../history'
-import type { GroupData, SceneNode, Transform, Vec2 } from '../node'
+import type { SceneNode, Transform, Vec2 } from '../node'
 import { getNodeKind } from '../nodeKind'
 import { defaultControl } from '../tool'
 import type { Overlay, Tool, ToolContext, ToolControl, ToolDef } from '../tool'
@@ -32,7 +32,7 @@ function nodeBounds(node: SceneNode): Transform {
 function moveLeaves(node: SceneNode): SceneNode[] {
   if (node.locks.position) return []
   if (node.kind !== 'group') return [node]
-  return (node as GroupData).children.flatMap((c) => moveLeaves(c))
+  return node.children.flatMap((c) => moveLeaves(c))
 }
 
 class SelectTool implements Tool {

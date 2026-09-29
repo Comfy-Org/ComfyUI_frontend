@@ -19,7 +19,7 @@ const { tutorial, locale = 'en' } = defineProps<{
 
 <template>
   <article
-    class="bg-transparency-white-t4 rounded-4.5xl grid items-center gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-10 lg:p-8"
+    class="grid items-center gap-6 rounded-4.5xl bg-transparency-white-t4 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-10 lg:p-8"
   >
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-3">

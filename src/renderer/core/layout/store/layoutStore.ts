@@ -6,6 +6,7 @@ import * as Y from 'yjs'
 import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 import type { GroupId } from '@/types/groupId'
+import { reportError } from '@/platform/telemetry/reportError'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { toRerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
@@ -117,7 +118,7 @@ function makeScopedLayoutKey(
 function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
   const separatorIndex = key.indexOf(':')
   return {
-    graphId: key.slice(0, separatorIndex) as UUID,
+    graphId: key.slice(0, separatorIndex),
     localId: key.slice(separatorIndex + 1)
   }
 }
@@ -161,6 +162,11 @@ function isSlotOffsetSnapshotEqual(
   return true
 }
 
+type LayoutListenerScope = 'geometry' | 'global' | 'node'
+type LayoutListener =
+  | ((change: LayoutChange) => void)
+  | ((graphIds: ReadonlySet<UUID>) => void)
+
 class LayoutStoreImpl {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
     id: toRerouteId(0),
@@ -177,6 +183,7 @@ class LayoutStoreImpl {
   private version = ref(0)
   private _nodeGeometryVersion = 0
   private _contentSizeVersion = 0
+  private _slotOffsetVersion = ref(0)
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
     .toString(36)
     .substring(2, 2 + ACTOR_CONFIG.ID_LENGTH)}`
@@ -195,12 +202,21 @@ class LayoutStoreImpl {
   private geometryListeners = new Set<(graphIds: ReadonlySet<UUID>) => void>()
   private pendingGeometryChanges: ReadonlySet<UUID>[] = []
   private isGeometryDispatchQueued = false
+  private readonly reportedListenerFailures: Record<
+    LayoutListenerScope,
+    WeakSet<LayoutListener>
+  > = {
+    geometry: new WeakSet(),
+    global: new WeakSet(),
+    node: new WeakSet()
+  }
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
   private slotOffsets = new Map<ScopedLayoutKey, SlotOffsetSnapshot>()
   private contentSizes = new Map<ScopedLayoutKey, Size>()
+  private suppressedContentSizes = new Map<ScopedLayoutKey, Size>()
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
   // Spatial index managers
@@ -261,6 +277,15 @@ class LayoutStoreImpl {
   /** Non-reactive revision for measured Vue content dimensions. */
   get contentSizeVersion(): number {
     return this._contentSizeVersion
+  }
+
+  /**
+   * Reactive counter bumped when measured slot offsets are dropped in bulk.
+   * A Vue node that stays mounted through a graph reload has nothing else to
+   * tell it that its measurements are gone, so it re-measures on this.
+   */
+  get slotOffsetVersion(): number {
+    return this._slotOffsetVersion.value
   }
 
   constructor() {
@@ -399,10 +424,25 @@ class LayoutStoreImpl {
 
   reportContentSize(rootGraphId: UUID, nodeId: NodeId, size: Size): void {
     const key = makeScopedLayoutKey(rootGraphId, nodeId)
+    const suppressed = this.suppressedContentSizes.get(key)
+    if (suppressed) {
+      if (suppressed.width === size.width && suppressed.height === size.height)
+        return
+      this.suppressedContentSizes.delete(key)
+    }
     const previous = this.contentSizes.get(key)
     if (previous?.width === size.width && previous.height === size.height)
       return
     this.contentSizes.set(key, size)
+    this._contentSizeVersion++
+  }
+
+  clearContentSize(rootGraphId: UUID, nodeId: NodeId): void {
+    const key = makeScopedLayoutKey(rootGraphId, nodeId)
+    const previous = this.contentSizes.get(key)
+    if (!previous) return
+    this.suppressedContentSizes.set(key, previous)
+    this.contentSizes.delete(key)
     this._contentSizeVersion++
   }
 
@@ -424,9 +464,7 @@ class LayoutStoreImpl {
       isBoundsEqual(existing.bounds, layout.bounds) &&
       isPointEqual(existing.centerPos, layout.centerPos)
     ) {
-      if (layout.path) {
-        existing.path = layout.path
-      }
+      existing.path = layout.path
       return
     }
 
@@ -544,9 +582,7 @@ class LayoutStoreImpl {
       isBoundsEqual(existing.bounds, layout.bounds) &&
       isPointEqual(existing.centerPos, layout.centerPos)
     ) {
-      if (layout.path) {
-        existing.path = layout.path
-      }
+      existing.path = layout.path
       return
     }
 
@@ -626,13 +662,8 @@ class LayoutStoreImpl {
       const segmentLayout = this.linkSegmentLayouts.get(key)
       if (!segmentLayout) continue
 
-      if (ctx && segmentLayout.path) {
-        // Prefer the caller-supplied DPR (the active LGraphCanvas.dpr) so
-        // this hit-test stays in lockstep with processMouseDown's fallback
-        // path; fall back to window.devicePixelRatio for legacy callers.
-        const dpi =
-          dpr ??
-          ((typeof window !== 'undefined' && window?.devicePixelRatio) || 1)
+      if (ctx) {
+        const dpi = (dpr ?? window.devicePixelRatio) || 1
         const hit = ctx.isPointInStroke(
           segmentLayout.path,
           point.x * dpi,
@@ -725,11 +756,11 @@ class LayoutStoreImpl {
   applyOperation(operation: LayoutOperation): void {
     const stamped = this.stampActor(operation)
     const change = createLayoutChange(stamped)
-    let applied = false
+    const result: { applied?: boolean } = {}
     this.ydoc.transact(() => {
-      applied = this.applyOperationInTransaction(stamped, change)
+      result.applied = this.applyOperationInTransaction(stamped, change)
     }, this.currentActor)
-    if (!applied) return
+    if (!result.applied) return
 
     this.finalizeOperation(change)
   }
@@ -834,7 +865,7 @@ class LayoutStoreImpl {
     const prefix = graphId + ':'
     let deleted = false
 
-    for (const key of [...this.ynodes.keys()]) {
+    for (const key of Array.from(this.ynodes.keys())) {
       if (!key.startsWith(prefix)) continue
       this.ynodes.delete(key)
       change.nodeIds.push(toNodeId(parseLayoutKey(key).localId))
@@ -845,15 +876,22 @@ class LayoutStoreImpl {
       this.contentSizes.delete(key)
       this._contentSizeVersion++
     }
-    for (const key of this.slotOffsets.keys()) {
-      if (key.startsWith(prefix)) this.slotOffsets.delete(key)
+    for (const key of this.suppressedContentSizes.keys()) {
+      if (key.startsWith(prefix)) this.suppressedContentSizes.delete(key)
     }
-    for (const key of [...this.ygroups.keys()]) {
+    let slotOffsetsDropped = false
+    for (const key of this.slotOffsets.keys()) {
+      if (!key.startsWith(prefix)) continue
+      this.slotOffsets.delete(key)
+      slotOffsetsDropped = true
+    }
+    if (slotOffsetsDropped) this._slotOffsetVersion.value++
+    for (const key of Array.from(this.ygroups.keys())) {
       if (!key.startsWith(prefix)) continue
       this.ygroups.delete(key)
       deleted = true
     }
-    for (const key of [...this.yreroutes.keys()]) {
+    for (const key of Array.from(this.yreroutes.keys())) {
       if (!key.startsWith(prefix)) continue
       this.yreroutes.delete(key)
       deleted = true
@@ -965,7 +1003,11 @@ class LayoutStoreImpl {
         this.contentSizes.clear()
         this._contentSizeVersion++
       }
-      this.slotOffsets.clear()
+      this.suppressedContentSizes.clear()
+      if (this.slotOffsets.size > 0) {
+        this.slotOffsets.clear()
+        this._slotOffsetVersion.value++
+      }
       // Reroute layouts outlive active-graph switches.
       this.pendingGlobalChanges = []
       this.isGlobalDispatchQueued = false
@@ -1077,6 +1119,7 @@ class LayoutStoreImpl {
 
     this.ynodes.delete(nodeKey)
     if (this.contentSizes.delete(nodeKey)) this._contentSizeVersion++
+    this.suppressedContentSizes.delete(nodeKey)
     this.slotOffsets.delete(nodeKey)
     // Link geometry is cleaned up per-link by LLink.disconnect as the node's
     // connections are severed, so nothing to do here.
@@ -1095,7 +1138,7 @@ class LayoutStoreImpl {
       const ynode = this.ynodes.get(
         makeScopedLayoutKey(operation.graphId, nodeId)
       )
-      if (!ynode || !bounds) continue
+      if (!ynode) continue
 
       const rect = ynode.get('rect')
       if (
@@ -1274,10 +1317,32 @@ class LayoutStoreImpl {
           try {
             listener(change)
           } catch (error) {
-            console.error('Error in layout geometry listener:', error)
+            this.reportListenerFailure(error, 'geometry', listener)
           }
         }
       }
+    })
+  }
+
+  private reportListenerFailure(
+    error: unknown,
+    scope: LayoutListenerScope,
+    listener: LayoutListener
+  ): void {
+    const reportedFailures = this.reportedListenerFailures[scope]
+    if (reportedFailures.has(listener)) return
+    reportedFailures.add(listener)
+
+    reportError(error, {
+      errorType: 'canvas_layout_listener_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'canvas',
+        operation: 'sync',
+        outcome: 'failed',
+        listener_scope: scope
+      },
+      level: 'error'
     })
   }
 
@@ -1286,7 +1351,7 @@ class LayoutStoreImpl {
       try {
         listener(change)
       } catch (error) {
-        console.error('Error in layout change listener:', error)
+        this.reportListenerFailure(error, 'global', listener)
       }
     })
   }
@@ -1303,7 +1368,7 @@ class LayoutStoreImpl {
         try {
           listener(change)
         } catch (error) {
-          console.error('Error in node-scoped layout change listener:', error)
+          this.reportListenerFailure(error, 'node', listener)
         }
       })
     }

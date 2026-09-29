@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -6,6 +5,7 @@ import {
   FakeIntersectionObserver,
   stubIntersectionObserver
 } from '../../test/fakeIntersectionObserver'
+import type * as CameraWidgetModule from './camera/CameraWidget'
 import type { CameraWidgetOptions } from './camera/types'
 import AngleNode from './AngleNode.vue'
 
@@ -19,16 +19,26 @@ const widgets = vi.hoisted(() => ({
   }[]
 }))
 
-vi.mock('./camera/CameraWidget', () => ({
-  CameraWidget: class {
-    setState = vi.fn()
-    pause = vi.fn()
-    resume = vi.fn()
-    dispose = vi.fn()
-    constructor(readonly options: CameraWidgetOptions) {
-      widgets.instances.push(this)
-    }
+// The concrete class has private fields, so a structural fake cannot implement
+// it. Pin the fake to the public surface these tests drive instead.
+type CameraWidgetContract = Pick<
+  CameraWidgetModule.CameraWidget,
+  'setState' | 'pause' | 'resume' | 'dispose'
+>
+
+class FakeCameraWidget implements CameraWidgetContract {
+  setState = vi.fn()
+  pause = vi.fn()
+  resume = vi.fn()
+  dispose = vi.fn()
+  constructor(readonly options: CameraWidgetOptions) {
+    widgets.instances.push(this)
   }
+}
+
+vi.mock(import('./camera/CameraWidget'), () => ({
+  CameraWidget:
+    FakeCameraWidget as unknown as typeof CameraWidgetModule.CameraWidget
 }))
 
 async function renderAngleNode() {

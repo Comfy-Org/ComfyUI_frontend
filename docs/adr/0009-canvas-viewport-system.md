@@ -41,11 +41,6 @@ Two functions operate on this type:
 - **`measureViewport(container, dpr?)`** — a pure function that produces a new `CanvasViewport` from DOM measurements. Accepts an optional DPR override for testing and for scenarios where DPR changes mid-session (display switching).
 - **`applyViewport(viewport, fgCanvas, bgCanvas)`** — a side-effecting function that atomically sizes both foreground and background canvases to the viewport's physical dimensions and scales their 2D contexts. Both canvases are updated in a single call, eliminating the possibility of a partial resize.
 
-A `devAssert(condition, message)` utility throws in DEV mode and `console.error`s in production. It is used at draw boundaries to enforce invariants:
-
-- Foreground and background canvas dimensions are equal.
-- The viewport generation is fresh (not stale from a previous resize cycle).
-
 The existing `LGraphCanvas.resize()` method and `resizeCanvas()` in app.ts are both replaced by calls through the viewport system. Both paths collapse into one: measure → apply → draw.
 
 `LGraphCanvas` stores a `dpr` property that is set whenever a viewport is applied. All internal DPR consumers (`drawFrontCanvas`, `drawBackCanvas`, `centerOnNode`, `renderInfo`, `processMouseDown` hit testing, LOD threshold calculation) read `this.dpr` instead of `window.devicePixelRatio`. External consumers with access to the canvas instance (e.g. `litegraphService`, minimap composables) also read `canvas.dpr`. The only code that reads `window.devicePixelRatio` directly is (a) the viewport measurement functions themselves, (b) `DragAndScale` which doesn't have access to the canvas instance, and (c) `layoutStore` which operates at a layer without a direct canvas reference.
@@ -73,7 +68,7 @@ Following the ECS principles established in [ADR 0008](0008-entity-component-sys
 
 - Single source of truth for canvas dimensions and DPR eliminates an entire class of sizing bugs where foreground and background canvases diverge.
 - The generation counter enables stale-state detection — any consumer can verify it is reading from a consistent resize cycle.
-- Phase separation (measure vs apply) makes the resize lifecycle explicit and assertable.
+- Phase separation (measure vs apply) makes the resize lifecycle explicit and testable.
 - Pure functions (`measureViewport`) are trivially testable without DOM fixtures.
 - Composes cleanly with the existing `CanvasScheduler` without modifying it.
 
@@ -85,4 +80,3 @@ Following the ECS principles established in [ADR 0008](0008-entity-component-sys
 ## Notes
 
 - References [ADR 0008](0008-entity-component-system.md) for the design principles (plain data components, pure system functions, no methods on entities).
-- The `devAssert` utility is general-purpose and can be used beyond canvas sizing for any invariant that should be loud in development but non-fatal in production.

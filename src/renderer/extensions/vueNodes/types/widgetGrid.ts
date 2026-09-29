@@ -23,6 +23,11 @@ export interface WidgetGridItem {
   simplified: SimplifiedWidget
   vueComponent: Component
   visible: boolean
+  /**
+   * The widget's input is satisfied by an upstream link; the row renders
+   * socket-only (no control) instead of disappearing entirely.
+   */
+  suppressedByConnection?: boolean
   renderKey: string
   hasLayoutSize?: boolean
   hasError?: boolean

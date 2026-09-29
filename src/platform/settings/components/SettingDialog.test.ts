@@ -3,6 +3,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { i18n } from '@/i18n'
 import type { NavGroupData } from '@/types/navTypes'
 
 import SettingDialog from './SettingDialog.vue'
@@ -16,55 +17,61 @@ const searchMocks = vi.hoisted(() => ({
   searchQuery: null as unknown as Ref<string>,
   searchResultsCategories: null as unknown as Ref<Set<string>>
 }))
-const mockFetchBalance = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/settings/composables/useSettingUI', () => ({
-  useSettingUI: () => ({
-    defaultCategory: {
-      value: {
-        key: 'workspace-allowlist',
-        label: 'Allowlist',
-        children: []
+vi.mock<unknown>(
+  import('@/platform/settings/composables/useSettingUI'),
+  () => ({
+    useSettingUI: () => ({
+      defaultCategory: {
+        value: {
+          key: 'workspace-allowlist',
+          label: 'Allowlist',
+          children: []
+        }
+      },
+      settingCategories: { value: [] },
+      navGroups: settingUiMocks.navGroups,
+      findCategoryByKey: (key: string) =>
+        settingUiMocks.navGroups.value
+          .flatMap(({ items }) => items)
+          .find(({ id }) => id === key) ?? null,
+      findPanelByKey: (key: string) => {
+        const item = settingUiMocks.navGroups.value
+          .flatMap(({ items }) => items)
+          .find(({ id }) => id === key)
+        return item
+          ? {
+              node: { key: item.id, label: item.label, children: [] },
+              component: { template: `<div>${key} panel</div>` }
+            }
+          : null
       }
-    },
-    settingCategories: { value: [] },
-    navGroups: settingUiMocks.navGroups,
-    findCategoryByKey: (key: string) =>
-      settingUiMocks.navGroups.value
-        .flatMap(({ items }) => items)
-        .find(({ id }) => id === key) ?? null,
-    findPanelByKey: (key: string) => {
-      const item = settingUiMocks.navGroups.value
-        .flatMap(({ items }) => items)
-        .find(({ id }) => id === key)
-      return item
-        ? {
-            node: { key: item.id, label: item.label, children: [] },
-            component: { template: `<div>${key} panel</div>` }
-          }
-        : null
-    }
+    })
   })
-}))
+)
 
-vi.mock('@/platform/settings/composables/useSettingSearch', () => ({
-  useSettingSearch: () => ({
-    searchQuery: searchMocks.searchQuery,
-    inSearch: searchMocks.inSearch,
-    searchResultsCategories: searchMocks.searchResultsCategories,
-    matchedNavItemKeys: searchMocks.matchedNavItemKeys,
-    handleSearch: vi.fn(),
-    getSearchResults: () => []
+vi.mock<unknown>(
+  import('@/platform/settings/composables/useSettingSearch'),
+  () => ({
+    useSettingSearch: () => ({
+      searchQuery: searchMocks.searchQuery,
+      inSearch: searchMocks.inSearch,
+      searchResultsCategories: searchMocks.searchResultsCategories,
+      matchedNavItemKeys: searchMocks.matchedNavItemKeys,
+      handleSearch: vi.fn(),
+      getSearchResults: () => []
+    })
   })
-}))
+)
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({ fetchBalance: mockFetchBalance })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock('@/platform/telemetry/searchQuery/useSearchQueryTracking', () => ({
-  useSearchQueryTracking: vi.fn()
-}))
+vi.mock(
+  import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
+  () => ({
+    useSearchQueryTracking: vi.fn()
+  })
+)
 
 beforeEach(() => {
   settingUiMocks.navGroups = ref([
@@ -94,15 +101,14 @@ it('falls back when the active navigation item becomes unavailable', async () =>
   render(SettingDialog, {
     props: { onClose: vi.fn() },
     global: {
-      mocks: { $t: (key: string) => key },
+      plugins: [i18n],
       stubs: {
         BaseModalLayout: {
           template:
             '<div><slot name="leftPanel" /><slot name="content" /></div>'
         },
         NavItem: { template: '<button><slot /></button>' },
-        NavTitle: true,
-        SearchInput: true
+        NavTitle: true
       }
     }
   })

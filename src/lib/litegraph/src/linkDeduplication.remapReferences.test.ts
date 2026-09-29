@@ -37,7 +37,7 @@ describe('remapLinkReferences', () => {
     expect(data.inputs[0].linkIds).toEqual([1])
     expect(data.outputs[0].linkIds).toEqual([1])
     expect(data.reroutes[0].linkIds).toEqual([1])
-    expect(data.extra.linkExtensions?.[0].id).toBe(1)
+    expect(data.extra.linkExtensions[0].id).toBe(1)
   })
 
   it('preserves a null input reference', () => {

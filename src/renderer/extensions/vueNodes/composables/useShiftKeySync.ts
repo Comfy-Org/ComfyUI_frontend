@@ -1,7 +1,7 @@
 import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
 import { shallowRef } from 'vue'
 
-import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 /**
  * Composable for synchronizing shift key state from Vue nodes to LiteGraph canvas.
@@ -39,7 +39,7 @@ export function useShiftKeySync() {
 
     // Lazy-initialize canvas reference on first use
     if (!canvasEl) {
-      canvasEl = app.canvas?.canvas ?? null
+      canvasEl = useCanvasStore().canvas?.canvas ?? null
       if (!canvasEl) return // Canvas not ready yet
     }
 

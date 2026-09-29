@@ -24,7 +24,7 @@ function mkRaster(
     contentId,
     naturalWidth: w,
     naturalHeight: h
-  } as RasterData
+  }
 }
 
 function mkText(
@@ -48,7 +48,7 @@ function mkText(
 }
 
 function fakeContent(
-  canvases: Record<string, HTMLCanvasElement>
+  canvases: Partial<Record<string, HTMLCanvasElement>>
 ): ContentStore {
   return {
     get: (id: string) => (canvases[id] ? { canvas: canvases[id] } : undefined)

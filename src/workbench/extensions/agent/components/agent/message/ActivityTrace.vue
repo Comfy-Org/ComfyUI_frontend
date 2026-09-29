@@ -1,0 +1,88 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
+
+import type { ActivityRow } from '../../../services/agent/agentActivityRows'
+import { foldActivity } from '../../../services/agent/agentActivityRows'
+import type {
+  ActivityPart,
+  PartState
+} from '../../../services/agent/agentMessageParts'
+import { toolGlyph, toolLabel } from '../../../services/agent/agentToolGlyph'
+
+const { parts, live = false } = defineProps<{
+  parts: readonly ActivityPart[]
+  /** The turn is still running, so a newly mounted row is a real arrival. */
+  live?: boolean
+}>()
+
+const { t } = useI18n()
+
+const rows = computed(() => foldActivity(parts))
+
+const LABEL = 'text-muted-foreground min-w-0 text-sm/5'
+const LABEL_STREAMING = `${LABEL} agent-shimmer-text`
+
+function labelClass(state: PartState): string {
+  return state === 'streaming' ? LABEL_STREAMING : LABEL
+}
+
+function glyphOf(row: ActivityRow): string {
+  return row.kind === 'thinking'
+    ? 'icon-[lucide--brain]'
+    : toolGlyph(row.name, row.state, row.ok)
+}
+
+// Every part object is rebuilt on each token, so a settled row is only
+// recognisable as unchanged by its contents.
+function rowSignature(row: ActivityRow): string {
+  return row.kind === 'tool'
+    ? `tool:${row.name}:${row.state}:${row.ok}:${row.count}`
+    : `think:${row.state}:${row.text}`
+}
+</script>
+
+<template>
+  <div role="list" class="flex flex-col">
+    <div
+      v-for="(row, index) in rows"
+      :key="index"
+      v-memo="[rowSignature(row), index === rows.length - 1, live]"
+      role="listitem"
+      :class="cn('flex gap-2 px-2', live && 'agent-row-enter')"
+    >
+      <div class="flex w-4 shrink-0 flex-col items-center">
+        <span
+          :class="
+            cn('mt-0.5 size-4 shrink-0 text-muted-foreground', glyphOf(row))
+          "
+        />
+        <span
+          v-if="index < rows.length - 1"
+          class="mt-1 w-px flex-1 bg-component-node-border"
+        />
+      </div>
+      <div class="flex min-w-0 flex-1 items-start gap-2 pb-3">
+        <span
+          v-if="row.kind === 'thinking'"
+          :class="
+            cn(labelClass(row.state), 'wrap-break-word whitespace-pre-wrap')
+          "
+          >{{ row.text || t('agent.thinking') }}</span
+        >
+        <template v-else>
+          <span :class="labelClass(row.state)">{{
+            toolLabel(row.name, row.state, t)
+          }}</span>
+          <span
+            v-if="row.count > 1"
+            class="mt-0.5 shrink-0 text-xs text-muted-foreground"
+            >×{{ row.count }}</span
+          >
+        </template>
+      </div>
+    </div>
+  </div>
+</template>

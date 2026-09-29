@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
 import type { NodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
@@ -27,19 +28,18 @@ async function getInputLinkDetails(
   return await page.evaluate(
     ([targetNodeId, targetSlot]) => {
       const app = window.app
-      const graph = app?.canvas?.graph ?? app?.graph
-      if (!graph) return null
+      if (app === undefined) return null
+      const graph = app.canvas.graph ?? app.graph
 
       const node = graph.getNodeById(targetNodeId)
       if (!node) return null
 
-      const input = node.inputs?.[targetSlot]
-      if (!input) return null
+      const input = node.inputs[targetSlot]
 
       const linkId = input.link
       if (linkId == null) return null
 
-      const link = graph.getLink?.(linkId)
+      const link = graph.getLink(linkId)
       if (!link) return null
 
       return {
@@ -105,7 +105,6 @@ test.describe(
   { tag: ['@screenshot', '@vue-nodes'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
       await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
       await fitToViewInstant(comfyPage)
     })
@@ -114,9 +113,7 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       expect(samplerNode).toBeTruthy()
 
       const slot = slotLocator(comfyPage.page, samplerNode.id, 0, false)
@@ -127,7 +124,7 @@ test.describe(
       // Arbitrary value
       const dragTarget = {
         x: start.x + 180,
-        y: start.y - 140
+        y: start.y + 140
       }
 
       await comfyMouse.move(start)
@@ -135,6 +132,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       try {
+        await expect(comfyPage.page.getByRole('tooltip')).toBeHidden()
         await expect(comfyPage.canvas).toHaveScreenshot(
           'vue-node-dragging-link.png'
         )
@@ -146,14 +144,8 @@ test.describe(
     test('should create a link when dropping on a compatible slot', async ({
       comfyPage
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const vaeNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      )[0]
-      expect(samplerNode && vaeNode).toBeTruthy()
-
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
       const samplerOutput = await samplerNode.getOutput(0)
       const vaeInput = await vaeNode.getInput(0)
 
@@ -164,8 +156,8 @@ test.describe(
         () => comfyPage.nextFrame()
       )
 
-      await expect.poll(() => samplerOutput.getLinkCount()).toBe(1)
-      await expect.poll(() => vaeInput.getLinkCount()).toBe(1)
+      await samplerOutput.expectLinkCount(1)
+      await vaeInput.expectLinkCount(1)
 
       await expect
         .poll(() => getInputLinkDetails(comfyPage.page, vaeNode.id, 0))
@@ -177,17 +169,32 @@ test.describe(
         })
     })
 
+    test('undo right after dropping a link on a slot removes that link', async ({
+      comfyPage
+    }) => {
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
+      const vaeInput = await vaeNode.getInput(0)
+
+      await connectSlots(
+        comfyPage.page,
+        { nodeId: samplerNode.id, index: 0 },
+        { nodeId: vaeNode.id, index: 0 },
+        () => comfyPage.nextFrame()
+      )
+      await vaeInput.expectLinkCount(1)
+
+      await comfyPage.keyboard.undo()
+
+      await vaeInput.expectLinkCount(0)
+    })
+
     test('should not create a link when slot types are incompatible', async ({
       comfyPage
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const clipNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
-      expect(samplerNode && clipNode).toBeTruthy()
-
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const clipNode =
+        await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
       const samplerOutput = await samplerNode.getOutput(0)
       const clipInput = await clipNode.getInput(0)
 
@@ -199,8 +206,8 @@ test.describe(
       await outputSlot.dragTo(inputSlot, { force: true })
       await comfyPage.nextFrame()
 
-      await expect.poll(() => samplerOutput.getLinkCount()).toBe(0)
-      await expect.poll(() => clipInput.getLinkCount()).toBe(0)
+      await samplerOutput.expectLinkCount(0)
+      await clipInput.expectLinkCount(0)
 
       await expect
         .poll(() => getInputLinkDetails(comfyPage.page, clipNode.id, 0))
@@ -210,9 +217,7 @@ test.describe(
     test('should not create a link when dropping onto a slot on the same node', async ({
       comfyPage
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       expect(samplerNode).toBeTruthy()
 
       const samplerOutput = await samplerNode.getOutput(0)
@@ -226,21 +231,16 @@ test.describe(
       await outputSlot.dragTo(inputSlot, { force: true })
       await comfyPage.nextFrame()
 
-      await expect.poll(() => samplerOutput.getLinkCount()).toBe(0)
-      await expect.poll(() => samplerInput.getLinkCount()).toBe(0)
+      await samplerOutput.expectLinkCount(0)
+      await samplerInput.expectLinkCount(0)
     })
 
     test('should reuse the existing origin when dragging an input link', async ({
       comfyPage,
       comfyMouse
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const vaeNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      )[0]
-      expect(samplerNode && vaeNode).toBeTruthy()
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
       const samplerOutputCenter = await getSlotCenter(
         comfyPage.page,
         samplerNode.id,
@@ -275,14 +275,8 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const vaeNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      )[0]
-      expect(samplerNode && vaeNode).toBeTruthy()
-
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
       const samplerOutput = await samplerNode.getOutput(0)
       const vaeInput = await vaeNode.getInput(0)
 
@@ -328,22 +322,16 @@ test.describe(
       await comfyPage.nextFrame()
 
       // Technically intended to disconnect existing as well
-      await expect.poll(() => vaeInput.getLinkCount()).toBe(0)
-      await expect.poll(() => samplerOutput.getLinkCount()).toBe(0)
+      await vaeInput.expectLinkCount(0)
+      await samplerOutput.expectLinkCount(0)
     })
 
     test('dropping an input link back on its slot restores the original connection', async ({
       comfyPage,
       comfyMouse
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const vaeNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      )[0]
-      expect(samplerNode && vaeNode).toBeTruthy()
-
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
       const samplerOutput = await samplerNode.getOutput(0)
       const vaeInput = await vaeNode.getInput(0)
 
@@ -412,20 +400,16 @@ test.describe(
           targetSlot: originalLink!.targetSlot,
           parentId: originalLink!.parentId
         })
-      await expect.poll(() => samplerOutput.getLinkCount()).toBe(1)
-      await expect.poll(() => vaeInput.getLinkCount()).toBe(1)
+      await samplerOutput.expectLinkCount(1)
+      await vaeInput.expectLinkCount(1)
     })
 
     test('rerouted input drag preview remains anchored to reroute', async ({
       comfyPage,
       comfyMouse
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const vaeNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      )[0]
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
 
       const samplerOutput = await samplerNode.getOutput(0)
       const vaeInput = await vaeNode.getInput(0)
@@ -446,12 +430,11 @@ test.describe(
       await comfyPage.page.evaluate(
         ([targetNodeId, targetSlot, clientPoint]) => {
           const app = window.app
-          const graph = app?.canvas?.graph ?? app?.graph
-          if (!graph) throw new Error('Graph not available')
+          if (app === undefined) throw new Error('App not available')
+          const graph = app.canvas.graph ?? app.graph
           const node = graph.getNodeById(targetNodeId)
           if (!node) throw new Error('Target node not found')
-          const input = node.inputs?.[targetSlot]
-          if (!input) throw new Error('Target input slot not found')
+          const input = node.inputs[targetSlot]
 
           const linkId = input.link
           if (linkId == null) throw new Error('Expected existing link on input')
@@ -459,7 +442,7 @@ test.describe(
           if (!link) throw new Error('Link not found')
 
           // Convert the client/canvas pixel coordinates to graph space
-          const pos = app!.canvas.ds.convertCanvasToOffset([
+          const pos = app.canvas.ds.convertCanvasToOffset([
             clientPoint.x,
             clientPoint.y
           ])
@@ -481,7 +464,6 @@ test.describe(
         y: vaeInputCenter.y - 120
       }
 
-      let dropped = false
       try {
         await comfyMouse.move(vaeInputCenter)
         await comfyMouse.drag(dragTarget)
@@ -490,11 +472,9 @@ test.describe(
         )
         await comfyMouse.move(vaeInputCenter)
         await comfyMouse.drop()
-        dropped = true
-      } finally {
-        if (!dropped) {
-          await comfyMouse.drop().catch(() => {})
-        }
+      } catch (error) {
+        await comfyMouse.drop().catch(() => {})
+        throw error
       }
 
       await expect
@@ -514,14 +494,8 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const vaeNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      )[0]
-      expect(samplerNode && vaeNode).toBeTruthy()
-
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
       const samplerOutput = await samplerNode.getOutput(0)
       const vaeInput = await vaeNode.getInput(0)
 
@@ -541,12 +515,11 @@ test.describe(
       await comfyPage.page.evaluate(
         ([targetNodeId, targetSlot, clientPoint]) => {
           const app = window.app
-          const graph = app?.canvas?.graph ?? app?.graph
-          if (!graph) throw new Error('Graph not available')
+          if (app === undefined) throw new Error('App not available')
+          const graph = app.canvas.graph ?? app.graph
           const node = graph.getNodeById(targetNodeId)
           if (!node) throw new Error('Target node not found')
-          const input = node.inputs?.[targetSlot]
-          if (!input) throw new Error('Target input slot not found')
+          const input = node.inputs[targetSlot]
 
           const linkId = input.link
           if (linkId == null) throw new Error('Expected existing link on input')
@@ -554,7 +527,7 @@ test.describe(
           if (!link) throw new Error('Link not found')
 
           // Convert the client/canvas pixel coordinates to graph space
-          const pos = app!.canvas.ds.convertCanvasToOffset([
+          const pos = app.canvas.ds.convertCanvasToOffset([
             clientPoint.x,
             clientPoint.y
           ])
@@ -612,14 +585,9 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const clipNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      expect(clipNode && samplerNode).toBeTruthy()
-
+      const clipNode =
+        await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       // Step 1: Connect CLIP's only output (index 0) to KSampler's second input (index 1)
       await connectSlots(
         comfyPage.page,
@@ -674,14 +642,9 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const clipNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      expect(clipNode && samplerNode).toBeTruthy()
-
+      const clipNode =
+        await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       const clipOutput = await clipNode.getOutput(0)
 
       // Connect output[0] -> inputs[1] and [2]
@@ -698,7 +661,7 @@ test.describe(
         () => comfyPage.nextFrame()
       )
 
-      await expect.poll(() => clipOutput.getLinkCount()).toBe(2)
+      await clipOutput.expectLinkCount(2)
 
       const outputCenter = await getSlotCenter(
         comfyPage.page,
@@ -733,14 +696,9 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const clipNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      expect(clipNode && samplerNode).toBeTruthy()
-
+      const clipNode =
+        await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       // Start drag from CLIP output[0]
       const clipOutputCenter = await getSlotCenter(
         comfyPage.page,
@@ -792,14 +750,9 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const clipNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      expect(clipNode && samplerNode).toBeTruthy()
-
+      const clipNode =
+        await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       // Drag from CLIP output[0] to KSampler input[2] (third slot) which is the
       // second compatible input for CLIP
       const clipOutputCenter = await getSlotCenter(
@@ -838,14 +791,9 @@ test.describe(
     test('should batch disconnect all links with ctrl+alt+click on slot', async ({
       comfyPage
     }) => {
-      const clipNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      expect(clipNode && samplerNode).toBeTruthy()
-
+      const clipNode =
+        await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       await connectSlots(
         comfyPage.page,
         { nodeId: clipNode.id, index: 0 },
@@ -860,7 +808,7 @@ test.describe(
       )
 
       const clipOutput = await clipNode.getOutput(0)
-      await expect.poll(() => clipOutput.getLinkCount()).toBe(2)
+      await clipOutput.expectLinkCount(2)
 
       const clipOutputSlot = slotLocator(comfyPage.page, clipNode.id, 0, false)
 
@@ -874,7 +822,7 @@ test.describe(
         cancelable: true
       })
 
-      await expect.poll(() => clipOutput.getLinkCount()).toBe(0)
+      await clipOutput.expectLinkCount(0)
     })
 
     test.describe('Release actions (Shift-drop)', () => {
@@ -887,9 +835,7 @@ test.describe(
           'context menu'
         )
 
-        const samplerNode = (
-          await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-        )[0]
+        const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
         expect(samplerNode).toBeTruthy()
 
         const outputCenter = await getSlotCenter(
@@ -918,15 +864,16 @@ test.describe(
         await expect
           .poll(() =>
             comfyPage.page.evaluate(() => {
-              const snap =
-                window.app?.canvas?.linkConnector?.state?.snapLinksPos
+              if (window.app === undefined) return null
+              const snap = window.app.canvas.linkConnector.state.snapLinksPos
               return Array.isArray(snap) ? [snap[0], snap[1]] : null
             })
           )
           .not.toBeNull()
 
         const before = await comfyPage.page.evaluate(() => {
-          const snap = window.app?.canvas?.linkConnector?.state?.snapLinksPos
+          if (window.app === undefined) return null
+          const snap = window.app.canvas.linkConnector.state.snapLinksPos
           return Array.isArray(snap) ? [snap[0], snap[1]] : null
         })
 
@@ -935,8 +882,8 @@ test.describe(
         await expect
           .poll(() =>
             comfyPage.page.evaluate(() => {
-              const snap =
-                window.app?.canvas?.linkConnector?.state?.snapLinksPos
+              if (window.app === undefined) return null
+              const snap = window.app.canvas.linkConnector.state.snapLinksPos
               return Array.isArray(snap) ? [snap[0], snap[1]] : null
             })
           )
@@ -956,9 +903,7 @@ test.describe(
           'v1 (legacy)'
         )
 
-        const samplerNode = (
-          await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-        )[0]
+        const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
         expect(samplerNode).toBeTruthy()
 
         const outputCenter = await getSlotCenter(
@@ -994,7 +939,7 @@ test.describe(
 
         // KSampler output should now have an outgoing link
         const samplerOutput = await samplerNode.getOutput(0)
-        await expect.poll(() => samplerOutput.getLinkCount()).toBe(1)
+        await samplerOutput.expectLinkCount(1)
 
         // One of the VAEDecode nodes should have an incoming link on input[0]
         await expect
@@ -1027,9 +972,7 @@ test.describe(
           'v1 (legacy)'
         )
 
-        const samplerNode = (
-          await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-        )[0]
+        const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
         expect(samplerNode).toBeTruthy()
 
         const outputCenter = await getSlotCenter(
@@ -1059,7 +1002,7 @@ test.describe(
         await comfyPage.searchBox.fillAndSelectFirstNode('VAEDecode')
 
         const samplerOutput = await samplerNode.getOutput(0)
-        await expect.poll(() => samplerOutput.getLinkCount()).toBe(1)
+        await samplerOutput.expectLinkCount(1)
 
         await expect
           .poll(async () => {
@@ -1090,9 +1033,7 @@ test.describe(
       await comfyPage.nodeOps.waitForGraphNodes(1)
 
       // Convert the KSampler node to a subgraph
-      let ksamplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )?.[0]
+      let ksamplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       await comfyPage.vueNodes.selectNode(String(ksamplerNode.id))
       await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
 
@@ -1101,9 +1042,7 @@ test.describe(
       await fitToViewInstant(comfyPage)
 
       // Get the KSampler node inside the subgraph
-      ksamplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler', true)
-      )?.[0]
+      ksamplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler', true)
       const positiveInput = await ksamplerNode.getInput(1)
       const negativeInput = await ksamplerNode.getInput(2)
 
@@ -1122,8 +1061,8 @@ test.describe(
       await comfyMouse.drop()
 
       // Verify connection went to the correct slot
-      await expect.poll(() => positiveInput.getLinkCount()).toBe(1)
-      await expect.poll(() => negativeInput.getLinkCount()).toBe(0)
+      await positiveInput.expectLinkCount(1)
+      await negativeInput.expectLinkCount(0)
     })
   }
 )
@@ -1137,10 +1076,8 @@ test.describe('Vue Node Widget Link Position', { tag: '@vue-nodes' }, () => {
     await comfyPage.workflow.loadWorkflow(
       'vueNodes/ksampler-denoise-widget-link'
     )
-    await comfyPage.vueNodes.waitForNodes(2)
     await comfyPage.workflow.waitForDraftPersisted()
     await comfyPage.workflow.reloadAndWaitForApp()
-    await comfyPage.vueNodes.waitForNodes(2)
 
     const ksampler = await comfyPage.page.evaluate(() => {
       const node = window.app!.graph.nodes.find((n) => n.type === 'KSampler')
@@ -1273,7 +1210,6 @@ test(
 
 test.describe('Vue link drag panning', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
     await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
     await fitToViewInstant(comfyPage)
   })
@@ -1308,9 +1244,10 @@ test.describe('Vue link drag panning', { tag: '@vue-nodes' }, () => {
       await comfyPage.page.mouse.up()
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(
-            () => graph?.nodes?.at(-1)?.getOutputNodes(0)?.length === 1
-          )
+          comfyPage.page.evaluate(() => {
+            if (graph === undefined) return false
+            return graph.nodes.at(-1)?.getOutputNodes(0)?.length === 1
+          })
         )
         .toBe(true)
     })
@@ -1370,3 +1307,85 @@ test('Floating reroutes', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
     )
     .toBe(false)
 })
+
+test(
+  'Extends a floating reroute chain',
+  { tag: '@vue-nodes' },
+  async ({ comfyPage, comfyMouse }) => {
+    await comfyPage.nodeOps.clearGraph()
+
+    const sourceNode = await test.step('Add an Int node', async () => {
+      await comfyPage.searchBoxV2.addNode('Int', {
+        position: { x: 800, y: 200 }
+      })
+      return comfyPage.nodeOps.getNodeRefByTitle('Int')
+    })
+
+    const firstReroute =
+      await test.step('Create a floating reroute from the Int output', async () => {
+        const primitiveNode = await comfyPage.vueNodes.getFixtureByTitle('Int')
+        await primitiveNode
+          .getSlot('INT')
+          .first()
+          .dragTo(comfyPage.canvas, {
+            targetPosition: { x: 700, y: 400 }
+          })
+        await comfyPage.contextMenu.clickLitegraphMenuItem('Add Reroute')
+
+        return comfyPage.page.evaluate(() => {
+          const reroute = [...window.app!.graph.reroutes.values()][0]
+          const [x, y] = window.app!.canvasPosToClientPos([
+            reroute.pos[0] + window.LiteGraph!.Reroute.slotOffset,
+            reroute.pos[1]
+          ])
+          return { id: reroute.id, position: { x, y } }
+        })
+      })
+
+    await test.step('Extend the reroute while keeping the chain connected', async () => {
+      const reroutePosition = firstReroute.position
+      await comfyMouse.move(reroutePosition)
+      await comfyPage.canvasOps.dragAndDrop(reroutePosition, {
+        x: reroutePosition.x - 120,
+        y: reroutePosition.y + 80
+      })
+      await comfyPage.contextMenu.clickLitegraphMenuItem('Add Reroute')
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const graph = window.app!.graph
+            const reroutes = [...graph.reroutes.values()]
+            const tip = reroutes.find((reroute) => reroute.floating)
+            const link = [...graph.floatingLinks.values()][0]
+            return {
+              rerouteCount: reroutes.length,
+              floatingLinkCount: graph.floatingLinks.size,
+              regularLinkCount: graph.links.size,
+              linkEndsAtTip: link.parentId === tip?.id,
+              tipParentId: tip?.parentId,
+              originId: link.origin_id,
+              originSlot: link.origin_slot,
+              targetId: link.target_id,
+              targetSlot: link.target_slot,
+              chainMembership: reroutes.every((reroute) =>
+                reroute.floatingLinkIds.has(link.id)
+              )
+            }
+          })
+        )
+        .toEqual({
+          rerouteCount: 2,
+          floatingLinkCount: 1,
+          regularLinkCount: 0,
+          linkEndsAtTip: true,
+          tipParentId: firstReroute.id,
+          originId: sourceNode.id,
+          originSlot: 0,
+          targetId: UNASSIGNED_NODE_ID,
+          targetSlot: -1,
+          chainMembership: true
+        })
+    })
+  }
+)
