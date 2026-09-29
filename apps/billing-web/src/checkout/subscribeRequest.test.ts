@@ -5,7 +5,10 @@ import type {
 import type { BillingEntry } from '@comfyorg/billing-contract'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
-import { buildSubscribeRequest } from '@/checkout/subscribeRequest'
+import {
+  buildSubscribeRequest,
+  checkoutReturnUrl
+} from '@/checkout/subscribeRequest'
 import { previewOf } from '@/test/fakeBillingClient'
 
 function entryOf(query: string): BillingEntry {
@@ -20,6 +23,24 @@ const arrival = entryOf(
 const teamArrival = entryOf(
   'product=comfyui&return_to=comfyui_workspace&plan=team_per_credit_annual&team_credit_stop_id=stop_700'
 )
+
+describe('checkoutReturnUrl', () => {
+  it.for<{ name: string; arrival: BillingEntry }>([
+    { name: 'a plan', arrival },
+    { name: 'a team credit stop', arrival: teamArrival },
+    {
+      name: 'a promo prefill',
+      arrival: entryOf(
+        'product=comfyui&return_to=comfyui_workspace&plan=creator_monthly&promo=LAUNCH20'
+      )
+    }
+  ])('returns to the same request for $name', ({ arrival }) => {
+    const url = checkoutReturnUrl(arrival, undefined, 'https://billing.test')
+    if (url === undefined) throw new Error('no return URL')
+
+    expect(parseBillingEntry(url)).toEqual({ status: 'ok', entry: arrival })
+  })
+})
 
 describe('buildSubscribeRequest', () => {
   it.for<{
