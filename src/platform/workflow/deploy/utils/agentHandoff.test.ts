@@ -14,6 +14,10 @@ const inputs: BuildInputs = {
   models: ['sd_xl_base_1.0.safetensors']
 }
 
+function fenceLines(text: string) {
+  return text.match(/^```/gm)?.length ?? 0
+}
+
 describe('buildAgentHandoffDocument', () => {
   it('sends cloud through the workflow-file path, naming the export', () => {
     const document = buildAgentHandoffDocument({
@@ -148,7 +152,6 @@ workflow file is needed.`)
   )
 
   it('keeps every value read off the workflow on its own list line, as code', () => {
-    const fenceLines = (text: string) => text.match(/^```/gm)?.length ?? 0
     const control = buildAgentHandoffDocument({
       distribution: 'cloud',
       inputs: {
@@ -240,16 +243,19 @@ workflow file is needed.`)
   it.for([
     {
       distribution: 'cloud' as const,
+      uploaded: 'the whole workflow JSON is uploaded',
       importer: '--from-workflow "<path-to-file>"'
     },
     {
       distribution: 'desktop' as const,
+      uploaded: 'the whole snapshot JSON is uploaded',
       importer: '--from-snapshot "<newest-snapshot>"'
     }
   ])(
     'asks before $distribution uploads to the importer, and again before the cut',
-    ({ distribution, importer }) => {
+    ({ distribution, uploaded, importer }) => {
       const document = buildAgentHandoffDocument({ distribution, inputs })
+      const uploadDisclosure = document.indexOf(uploaded)
       const importDisclosure = document.indexOf(
         'wait for a yes before you\nrun it'
       )
@@ -258,7 +264,8 @@ workflow file is needed.`)
         'Before anything is pushed or cut, tell the user, and wait for a yes:'
       )
 
-      expect(importDisclosure).toBeGreaterThan(-1)
+      expect(uploadDisclosure).toBeGreaterThan(-1)
+      expect(importDisclosure).toBeGreaterThan(uploadDisclosure)
       expect(importCommand).toBeGreaterThan(importDisclosure)
       expect(cutDisclosure).toBeGreaterThan(importCommand)
     }

@@ -14,6 +14,16 @@ function loaderInput(nodeType: string): readonly string[] {
   return LOADERS[nodeType] ?? []
 }
 
+function subgraph(id: string, type: string) {
+  return {
+    id,
+    name: id,
+    nodes: [{ id: 9, type }],
+    inputNode: null,
+    outputNode: null
+  }
+}
+
 describe('deriveBuildInputs', () => {
   it('reads classes, packs and models off the workflow, deduped and sorted', () => {
     const inputs = deriveBuildInputs(
@@ -183,14 +193,6 @@ describe('deriveBuildInputs', () => {
   })
 
   it('leaves out a subgraph definition the graph no longer uses', () => {
-    const subgraph = (id: string, type: string) => ({
-      id,
-      name: id,
-      nodes: [{ id: 9, type }],
-      inputNode: null,
-      outputNode: null
-    })
-
     const inputs = deriveBuildInputs(
       {
         nodes: [{ id: 1, type: 'used' }],
