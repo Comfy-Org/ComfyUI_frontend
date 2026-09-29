@@ -18,11 +18,21 @@ const path = '/api/jobs/' + runId
 const uploadPath = '/api/uploads/' + uploadId
 const inputName = 'uploaded-photo.webp'
 const image = readFileSync('e2e/assets/placeholder-1x1.webp')
+const creditRefusal = {
+  status: 429,
+  json: {
+    error: {
+      type: 'PAYMENT_REQUIRED',
+      message: 'Insufficient credits to queue workflows'
+    }
+  }
+}
 
 async function setup(context: BrowserContext) {
   let enabled = true
   let generation = 0
   let reachable = true
+  let refusesForCredits = false
   await context.route('https://apis.google.com/js/api.js*', (route) =>
     route.abort('blockedbyclient')
   )
@@ -102,7 +112,9 @@ async function setup(context: BrowserContext) {
     })
     if (url.pathname === '/api/prompt') {
       expect(request.headers()).toHaveProperty('authorization')
-      return route.fulfill({ json: { prompt_id: runId } })
+      return route.fulfill(
+        refusesForCredits ? creditRefusal : { json: { prompt_id: runId } }
+      )
     }
     if (url.pathname.endsWith('/cancel'))
       return route.fulfill({ json: { cancelled: true } })
@@ -120,6 +132,9 @@ async function setup(context: BrowserContext) {
     drop() {
       reachable = false
     },
+    refuseForCredits() {
+      refusesForCredits = true
+    },
     cancel() {
       current = { ...current, status: 'cancelled', update_time: Date.now() }
     }
@@ -127,6 +142,14 @@ async function setup(context: BrowserContext) {
 }
 
 async function signInAndRun(
+  page: Page,
+  account: { email: string; password: string }
+) {
+  await signInAndSubmit(page, account)
+  await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
+}
+
+async function signInAndSubmit(
   page: Page,
   account: { email: string; password: string }
 ) {
@@ -148,7 +171,6 @@ async function signInAndRun(
     page.getByRole('button', { name: 'Replace photo.webp' })
   ).toBeVisible()
   await page.getByTestId('workflow-run').click()
-  await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
 }
 
 test('Cloud upload, refresh, partial delivery and downloads retain one run @mobile', async ({
@@ -287,6 +309,36 @@ test('the credit chip shows a charge Cloud books after the run finishes', async 
   await expect(chip).toHaveAccessibleName(showing(483_200))
 })
 
+test('a Cloud credit refusal turns Run into Add credits', async ({
+  page,
+  context,
+  modelsAccount
+}) => {
+  const cloud = await setup(context)
+  cloud.refuseForCredits()
+  await context.route('**/api/billing/balance', (route) =>
+    route.fulfill({
+      json: {
+        amount_micros: 1_200,
+        effective_balance_micros: 1_200,
+        currency: 'usd'
+      } satisfies BillingBalanceResponse
+    })
+  )
+
+  await signInAndSubmit(page, modelsAccount)
+
+  const primary = page.getByTestId('workflow-run')
+  await expect(primary).toHaveText('Add credits')
+  await expect(primary).toHaveAttribute('data-gate', 'noCredits')
+  await expect(page.getByRole('button', { name: 'Run' })).toHaveCount(0)
+  await primary.click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  expect(
+    cloud.commands.filter((command) => command.path === '/api/prompt')
+  ).toHaveLength(1)
+})
+
 test('workflow cancellation survives disabled admission and hides on sign-out', async ({
   page,
   context,
@@ -353,4 +405,7 @@ test('a run the page stops hearing about holds the panel still', async ({
   await expect(
     page.getByRole('button', { name: 'Reconnect to this run' })
   ).toBeVisible()
+  await expect(page.getByTestId('workflow-run-footer')).toContainText(
+    'It may still be running on Cloud and using credits.'
+  )
 })
