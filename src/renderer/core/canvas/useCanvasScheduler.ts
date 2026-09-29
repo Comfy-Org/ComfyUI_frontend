@@ -6,6 +6,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 
 export interface CanvasOperation {
   key?: string
+  element?: HTMLCanvasElement
   isCurrent?: () => boolean
   run: () => void
 }
@@ -28,21 +29,24 @@ export function createCanvasScheduler(): CanvasScheduler {
   const queue: CanvasOperation[] = []
   let rafId: number | null = null
 
-  function isCanvasReady(): boolean {
+  function isElementReady(element?: HTMLCanvasElement): boolean {
     try {
-      const el = canvasStore.canvas?.canvas
-      if (el == null || el.offsetParent === null) return false
-      return el.offsetWidth > 0 && el.offsetHeight > 0
+      if (element == null || element.offsetParent === null) return false
+      return element.offsetWidth > 0 && element.offsetHeight > 0
     } catch {
       return false
     }
+  }
+
+  function isCanvasReady(): boolean {
+    return isElementReady(canvasStore.canvas?.canvas)
   }
 
   function requestFlush(): void {
     if (rafId != null || queue.length === 0) return
     rafId = requestAnimationFrame(() => {
       rafId = null
-      flush()
+      flushQueued(true)
     })
   }
 
@@ -55,14 +59,23 @@ export function createCanvasScheduler(): CanvasScheduler {
     if (existingIndex === -1) queue.push(operation)
     else queue[existingIndex] = operation
 
-    if (isCanvasReady()) requestFlush()
+    if (isElementReady(operation.element ?? canvasStore.canvas?.canvas)) {
+      requestFlush()
+    }
   }
 
   function flush(): void {
-    if (!isCanvasReady()) return
+    flushQueued(false)
+  }
+
+  function flushQueued(retryIfNotReady: boolean): void {
     const operations = queue.splice(0)
     for (const [index, operation] of operations.entries()) {
       if (operation.isCurrent?.() === false) continue
+      if (!isElementReady(operation.element ?? canvasStore.canvas?.canvas)) {
+        queue.push(operation)
+        continue
+      }
       try {
         operation.run()
       } catch (err) {
@@ -76,6 +89,7 @@ export function createCanvasScheduler(): CanvasScheduler {
         })
       }
     }
+    if (retryIfNotReady && queue.length > 0) requestFlush()
   }
 
   function clear(): void {

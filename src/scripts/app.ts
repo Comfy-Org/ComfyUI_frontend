@@ -1549,6 +1549,7 @@ export class ComfyApp {
 
         canvasScheduler.schedule({
           key: 'graph-load-camera',
+          element: this.canvasEl,
           isCurrent: isCurrentLoad,
           run: () => {
             const viewport = measureViewportFromElement(this.canvasEl)

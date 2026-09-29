@@ -84,6 +84,24 @@ describe('useCanvasScheduler', () => {
     expect(testState.pendingFrames.size).toBe(0)
   })
 
+  it('uses the operation canvas when checking readiness', async () => {
+    const scheduler = await createScheduler()
+    const op = vi.fn()
+    const operationCanvas = document.createElement('canvas')
+    Object.defineProperties(operationCanvas, {
+      offsetParent: { configurable: true, value: document.body },
+      offsetWidth: { configurable: true, value: 640 },
+      offsetHeight: { configurable: true, value: 480 }
+    })
+
+    testState.offsetParent = null
+    scheduler.schedule({ element: operationCanvas, run: op })
+    runNextAnimationFrame()
+
+    expect(op).toHaveBeenCalledOnce()
+    expect(scheduler.pending()).toBe(0)
+  })
+
   it('schedule queues when canvas has zero dimensions', async () => {
     const scheduler = await createScheduler()
     const op = vi.fn()
