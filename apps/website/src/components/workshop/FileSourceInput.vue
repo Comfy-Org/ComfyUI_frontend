@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Upload } from '@lucide/vue'
 import { useDropZone } from '@vueuse/core'
-import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -54,7 +54,11 @@ const uploadLimit = computed(() =>
 const rejection = ref<TranslationKey>()
 // Removing the only picture the example brought left the field empty with no
 // way back but the example card further down, which rewrites the whole form.
-const removed = ref<{ at: number; file: FileValue }>()
+const removed = ref<{
+  at: number
+  file: FileValue
+  left: readonly FileValue[]
+}>()
 const replacement = ref<number>()
 const input = useTemplateRef<HTMLInputElement>('input')
 const zone = useTemplateRef<HTMLElement>('zone')
@@ -173,7 +177,11 @@ function remove(index: number) {
   const remaining = selectedFiles.value.filter(
     (_, position) => position !== index
   )
-  removed.value = { at: index, file: selectedFiles.value[index] }
+  removed.value = {
+    at: index,
+    file: selectedFiles.value[index],
+    left: remaining
+  }
   value.value = remaining.length
     ? field.multiple
       ? remaining
@@ -181,6 +189,18 @@ function remove(index: number) {
     : undefined
   rejection.value = undefined
 }
+
+// The undo answers one removal. Anything that replaces the selection afterwards
+// — a new pick, or the form filling itself from an example — is what the reader
+// wants now, and putting the old file back would undo that instead.
+watch(selectedFiles, (files) => {
+  const undo = removed.value
+  if (!undo) return
+  const untouched =
+    files.length === undo.left.length &&
+    files.every((file, position) => file === undo.left[position])
+  if (!untouched) removed.value = undefined
+})
 
 function putBack() {
   const undo = removed.value

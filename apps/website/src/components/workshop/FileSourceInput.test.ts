@@ -350,4 +350,27 @@ describe('undoing a removal', () => {
 
     expect(screen.queryByTestId('removed-file-undo')).toBeNull()
   })
+
+  // Choosing an example rewrites the whole form from outside this field. The
+  // offer is about one removal, so it cannot survive the selection changing
+  // underneath it and put the old file back over the new one.
+  it('drops the offer when the form replaces the selection', async () => {
+    const values = mountInput(false, { ...field, multiple: false }, sample)
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getByRole('button', { name: /Remove/ }))
+    expect(screen.getByTestId('removed-file-undo')).toBeTruthy()
+
+    const fromExample: FileValue = {
+      name: 'rooftop.png',
+      size: 4096,
+      type: 'image/png',
+      sourceUrl: 'https://example.test/rooftop.png'
+    }
+    values.value = fromExample
+    await nextTick()
+
+    expect(screen.queryByTestId('removed-file-undo')).toBeNull()
+    expect(values.value).toEqual(fromExample)
+  })
 })
