@@ -44,6 +44,15 @@ describe('keepSubscriptionCopy', () => {
       body: 'Switching to yearly keeps your subscription. It renews on July 28, 2027 at $300.00.'
     },
     {
+      name: 'monthly to yearly on a quote that names no renewal date',
+      quote: {
+        transition_type: 'duration_change',
+        new_plan: { ...previewOf().new_plan, duration: 'ANNUAL' },
+        cost_next_period_cents: 30_000
+      },
+      body: 'Switching to yearly keeps your subscription. It renews at $300.00.'
+    },
+    {
       name: 'yearly to monthly at period end',
       quote: { transition_type: 'duration_change' },
       body: 'Switching to monthly keeps your subscription, and it renews that day at $28.00.'
