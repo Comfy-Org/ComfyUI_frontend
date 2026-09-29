@@ -5,137 +5,158 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
-import { redirects as astroRedirects } from './redirects'
+import {
+  astroRedirects,
+  isInternalDestination,
+  siteRedirects,
+  toVercelRedirects
+} from './redirects'
 import { getRoutes } from './routes'
 
 const appDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
-const VercelRedirectSchema = z.object({
-  source: z.string(),
-  destination: z.string(),
-  permanent: z.boolean().optional(),
-  statusCode: z.number().optional()
-})
-
 const VercelConfigSchema = z.object({
-  redirects: z.array(VercelRedirectSchema)
+  redirects: z.array(z.unknown()),
+  headers: z.array(z.unknown()).default([]),
+  rewrites: z.array(z.unknown()).default([])
 })
 
-type VercelRedirect = z.infer<typeof VercelRedirectSchema>
-
-const { redirects } = VercelConfigSchema.parse(
+const vercelConfig = VercelConfigSchema.parse(
   JSON.parse(readFileSync(join(appDir, 'vercel.json'), 'utf8'))
 )
 
-function findRedirect(source: string): VercelRedirect | undefined {
-  return redirects.find((redirect) => redirect.source === source)
-}
+const VERCEL_ROUTE_LIMIT = 2048
 
-const minimaxCanonical = `${getRoutes('en').minimax}/`
-const minimaxZhCanonical = `${getRoutes('zh-CN').minimax}/`
+const withoutSlash = (path: string) => path.replace(/\/$/, '')
 
-describe('legacy MiniMax H3 redirects', () => {
-  it.for([
-    { source: '/minimax', destination: minimaxCanonical },
-    { source: '/minimax/', destination: minimaxCanonical },
-    { source: '/zh-CN/minimax', destination: minimaxZhCanonical },
-    { source: '/zh-CN/minimax/', destination: minimaxZhCanonical }
-  ])(
-    'sends $source to $destination with a temporary status',
-    ({ source, destination }) => {
-      const redirect = findRedirect(source)
+const en = getRoutes('en')
+const zh = getRoutes('zh-CN')
 
-      if (!redirect) {
-        throw new Error(`${source} is missing from vercel.json`)
-      }
+describe('vercel.json redirects', () => {
+  it('match the list in redirects.ts (run `pnpm --filter @comfyorg/website sync:redirects`)', () => {
+    expect(vercelConfig.redirects).toEqual(toVercelRedirects(siteRedirects))
+  })
 
-      expect(redirect.destination).toBe(destination)
-      expect(redirect.permanent, `${source} must be a temporary redirect`).toBe(
-        false
-      )
-    }
-  )
-
-  it.for([
-    getRoutes('en').minimax,
-    minimaxCanonical,
-    getRoutes('zh-CN').minimax,
-    minimaxZhCanonical
-  ])('leaves the new canonical path %s unredirected', (canonicalPath) => {
-    expect(findRedirect(canonicalPath)).toBeUndefined()
+  it('stay under the Vercel route limit', () => {
+    const routes =
+      vercelConfig.redirects.length +
+      vercelConfig.headers.length +
+      vercelConfig.rewrites.length
+    expect(routes).toBeLessThan(VERCEL_ROUTE_LIMIT)
   })
 })
 
-/**
- * Astro renders a stub page for each entry in its redirect map, and that stub's
- * canonical is the destination string verbatim. Every real page self-canonicalizes
- * with a trailing slash via `absoluteUrl()`, so a slash-less destination points
- * the stub's canonical one hop short of the page it redirects to.
- *
- * #14390 fixed exactly this once already and it regressed, which is why it is a
- * test now rather than a convention.
- */
-describe('astro redirect destinations', () => {
-  const destinations = Object.values(astroRedirects).map((entry) =>
-    typeof entry === 'string' ? entry : entry.destination
-  )
+describe('the redirect list', () => {
+  const sources = siteRedirects.map(({ source }) => source)
 
-  it('every destination ends with a trailing slash', () => {
-    const slashless = destinations.filter(
-      // A dynamic destination names a route rather than a URL, and Astro
-      // rejects it outright when it carries a trailing slash.
-      (destination) => !destination.includes('[') && !destination.endsWith('/')
+  it('names each source once', () => {
+    const duplicates = sources.filter(
+      (source, index) => sources.indexOf(source) !== index
     )
+    expect(duplicates).toEqual([])
+  })
+
+  it('writes sources as literal paths without a trailing slash', () => {
     expect(
-      slashless,
-      'these canonicalize one hop short of their target'
+      sources.filter((source) => !/^(\/[A-Za-z0-9._-]+)+$/.test(source))
+    ).toEqual([])
+  })
+
+  it('ends every internal destination with a trailing slash', () => {
+    expect(
+      siteRedirects
+        .map(({ destination }) => destination)
+        .filter(
+          (destination) =>
+            isInternalDestination(destination) && !destination.endsWith('/')
+        )
+    ).toEqual([])
+  })
+
+  it('reaches every destination in one hop', () => {
+    const sourceSet = new Set<string>(sources)
+    expect(
+      siteRedirects.filter(
+        ({ destination }) =>
+          isInternalDestination(destination) &&
+          sourceSet.has(withoutSlash(destination))
+      )
     ).toEqual([])
   })
 })
 
-describe('legacy Enterprise redirects', () => {
-  const cases = [
+describe('generated Vercel rules', () => {
+  const vercelRedirects = toVercelRedirects(siteRedirects)
+  const find = (source: string) =>
+    vercelRedirects.find((redirect) => redirect.source === source)
+
+  it.for([
+    { source: '/minimax', destination: `${en.minimax}/` },
+    { source: '/zh-CN/minimax', destination: `${zh.minimax}/` },
+    { source: '/cloud/enterprise', destination: `${en.enterprise}/` },
+    { source: '/zh-CN/affiliates', destination: '/affiliates/' },
     {
-      source: '/cloud/enterprise',
-      destination: `${getRoutes('en').enterprise}/`
-    },
-    {
-      source: '/zh-CN/cloud/enterprise',
-      destination: `${getRoutes('zh-CN').enterprise}/`
+      source: '/p/supported-models/t5xxl-fp8-e4m3fn-scaled',
+      destination: '/p/supported-models/t5xxl-fp16/'
     }
-  ] as const
-  const vercelCases = cases.flatMap(({ source, destination }) => [
-    { source, destination },
-    { source: `${source}/`, destination }
-  ])
-
-  it.for(vercelCases)(
-    'sends $source to $destination permanently',
+  ])(
+    'send $source and $source/ to $destination permanently',
     ({ source, destination }) => {
-      const redirect = findRedirect(source)
-
-      if (!redirect) {
-        throw new Error(`${source} is missing from vercel.json`)
+      for (const form of [source, `${source}/`]) {
+        expect(find(form)).toEqual({
+          source: form,
+          destination,
+          permanent: true
+        })
       }
-
-      expect(redirect.destination).toBe(destination)
-      expect(redirect.permanent).toBe(true)
     }
   )
 
-  it.for(cases)(
-    'sets the Astro redirect for $source',
-    ({ source, destination }) => {
-      expect(astroRedirects[source]).toEqual({ status: 301, destination })
+  it('keeps only the listed rows temporary', () => {
+    expect(
+      vercelRedirects
+        .filter(({ permanent }) => !permanent)
+        .map(({ source }) => source)
+    ).toEqual([
+      '/trust',
+      '/trust/',
+      '/login',
+      '/share-news',
+      '/share-news/',
+      '/share-news-pleaseeee',
+      '/share-news-pleaseeee/'
+    ])
+  })
+
+  it('leaves /login/ to the Workshop sign-in page', () => {
+    expect(find('/login')?.permanent).toBe(false)
+    expect(find('/login/')).toBeUndefined()
+  })
+
+  it.for([en.minimax, zh.minimax, en.enterprise, zh.enterprise, en.pricing])(
+    'leaves the destination %s unredirected',
+    (path) => {
+      expect(find(path)).toBeUndefined()
+      expect(find(`${path}/`)).toBeUndefined()
     }
   )
+})
 
-  it('leaves the canonical Enterprise routes unredirected', () => {
-    expect(findRedirect('/enterprise')).toBeUndefined()
-    expect(findRedirect('/enterprise/')).toBeUndefined()
-    expect(findRedirect('/zh-CN/enterprise')).toBeUndefined()
-    expect(findRedirect('/zh-CN/enterprise/')).toBeUndefined()
-    expect(findRedirect('/enterprise/managed-builds')).toBeUndefined()
-    expect(findRedirect('/enterprise/managed-builds/')).toBeUndefined()
+describe('Astro redirects', () => {
+  it('cover every internal row whose slash form redirects', () => {
+    expect(Object.keys(astroRedirects)).toEqual(
+      siteRedirects
+        .filter(
+          ({ destination, slashFormIsPageBecause }) =>
+            isInternalDestination(destination) &&
+            slashFormIsPageBecause === undefined
+        )
+        .map(({ source }) => source)
+    )
+  })
+
+  it('leave off-site rows to Vercel', () => {
+    expect(astroRedirects['/blog']).toBeUndefined()
+    expect(astroRedirects['/login']).toBeUndefined()
   })
 })
