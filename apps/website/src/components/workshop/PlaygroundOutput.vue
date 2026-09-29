@@ -28,7 +28,6 @@ import { t } from '../../i18n/translations'
 const {
   state,
   now,
-  modelName,
   modality,
   earlier = [],
   attachments = [],
@@ -40,7 +39,6 @@ const {
 } = defineProps<{
   state: RunState
   now: number
-  modelName: string
   modality?: Modality
   earlier?: readonly RunRecord[]
   attachments?: readonly RunOutput[]
@@ -290,7 +288,12 @@ const earlierClass = (active: boolean) =>
 
 <template>
   <section
-    class="flex min-h-96 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
+    :class="
+      cn(
+        'flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4',
+        !shown && 'min-h-96'
+      )
+    "
     data-testid="playground-output"
     :data-state="state.status"
   >
@@ -451,6 +454,7 @@ const earlierClass = (active: boolean) =>
     <template v-else-if="shown">
       <div
         class="relative aspect-video max-h-[70dvh] w-full flex-1 overflow-hidden bg-black/20"
+        data-testid="output-media"
       >
         <div
           :key="currentUrl"
@@ -638,15 +642,6 @@ const earlierClass = (active: boolean) =>
         class="px-5 py-2 text-xs text-primary-warm-gray"
       >
         {{ t('workshop.output.truncated', locale) }}
-      </p>
-      <p
-        v-if="state.status === 'example'"
-        class="border-t border-transparency-white-t8 px-5 py-2 text-xs text-primary-warm-gray"
-        data-testid="output-example-hint"
-      >
-        <slot name="example-hint">
-          {{ t('workshop.output.exampleHint', locale, { model: modelName }) }}
-        </slot>
       </p>
       <div
         v-if="state.status === 'succeeded'"

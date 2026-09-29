@@ -103,3 +103,25 @@ it('loads the first frame at once where nothing can watch the screen', async () 
     window.IntersectionObserver = observer
   }
 })
+
+it('asks a video example for a frame it can paint before playback', () => {
+  render(ExamplesTab, {
+    props: {
+      examples: [
+        {
+          id: 'clip',
+          title: 'Sci-fi pilot',
+          specs: [],
+          values: {},
+          outputUrl: 'https://media.example/clip.mp4',
+          mediaKind: 'video' as const
+        }
+      ],
+      galleryLabel: 'Sci-fi'
+    }
+  })
+  expect(screen.getByTestId('example-video')).toHaveAttribute(
+    'src',
+    'https://media.example/clip.mp4#t=0.1'
+  )
+})

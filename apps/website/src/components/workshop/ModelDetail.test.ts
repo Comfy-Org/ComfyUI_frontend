@@ -2454,10 +2454,10 @@ describe('ModelDetail', () => {
     )
 
     expect(screen.getByTestId('example-replace-dialog').textContent).toContain(
-      '要替换你的输入吗？'
+      '要载入这个示例吗？'
     )
     expect(screen.getByTestId('example-replace-confirm').textContent).toContain(
-      '使用该示例'
+      '载入示例'
     )
   })
 

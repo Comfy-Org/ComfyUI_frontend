@@ -74,17 +74,6 @@ const cloudHref = template
       >
         {{ model.summary }}
       </p>
-      <p
-        v-if="template"
-        class="mt-5 text-xs text-primary-warm-gray"
-        data-testid="workflow-author"
-      >
-        {{
-          t('workshop.workflow.templateBy', 'en', {
-            author: template.author
-          })
-        }}
-      </p>
     </header>
 
     <WorkflowPlayground

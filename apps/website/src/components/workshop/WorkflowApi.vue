@@ -12,6 +12,7 @@ import { SNIPPET_LANGUAGES } from '../../config/models-snippets'
 import { apiKeysLink, externalLinks } from '../../config/routes'
 import type { FormValues } from '../../config/workshop-playground'
 import { urlUploadField } from '../../config/workshop-playground'
+import { OBJECT_URL_LIFETIME_MS } from '../../config/workshop-output-download'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
@@ -27,6 +28,7 @@ import { t } from '../../i18n/translations'
 import type { CodeLang } from '../../lib/highlight'
 import ApiFacts from './ApiFacts.vue'
 import HighlightedCode from './HighlightedCode.vue'
+import SectionHeading from './SectionHeading.vue'
 
 const { model, values } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -70,6 +72,21 @@ const highlightLanguage = {
   typescript: 'typescript',
   curl: 'shell'
 } satisfies Record<SnippetLanguage, CodeLang>
+const graphFile = `${model.slug.split('/').pop()}-api.json`
+
+function downloadGraph() {
+  if (!request.value) return
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(request.value.prompt, null, 2)], {
+      type: 'application/json'
+    })
+  )
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = graphFile
+  anchor.click()
+  setTimeout(() => URL.revokeObjectURL(url), OBJECT_URL_LIFETIME_MS)
+}
 const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
   urlUploadField(field)
 )
@@ -117,17 +134,11 @@ const facts = computed(() => {
 
 <template>
   <section class="flex flex-col gap-6" aria-labelledby="workflow-api-heading">
-    <div class="space-y-2">
-      <h2
-        id="workflow-api-heading"
-        class="text-2xl font-light text-primary-comfy-canvas"
-      >
-        {{ t('workshop.api.heading') }}
-      </h2>
-      <p class="max-w-3xl text-sm/relaxed text-primary-warm-gray">
-        {{ t('workshop.workflow.apiHint') }}
-      </p>
-    </div>
+    <SectionHeading
+      title-id="workflow-api-heading"
+      :title="t('workshop.api.heading')"
+      :subtitle="t('workshop.workflow.apiHint')"
+    />
     <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
       <div
         class="flex w-full flex-col gap-3 lg:sticky lg:top-24 lg:w-95 lg:shrink-0"
@@ -137,16 +148,42 @@ const facts = computed(() => {
           :href="keyHref"
           target="_blank"
           rel="noopener"
-          class="w-full justify-center"
+          class="w-full justify-between"
           data-testid="api-get-key"
-          >{{ t('workshop.api.getKey') }}</Button
         >
+          <template #prepend>
+            <span
+              class="inline-flex size-6 items-center justify-center rounded-full bg-primary-comfy-ink/15 text-xs font-bold"
+              aria-hidden="true"
+              >1</span
+            >
+          </template>
+          {{ t('workshop.api.getKey') }}
+          <template #append><span aria-hidden="true">↗</span></template>
+        </Button>
+        <Button
+          v-if="request"
+          variant="outline"
+          class="w-full justify-between"
+          @click="downloadGraph"
+        >
+          <template #prepend>
+            <span
+              class="inline-flex size-6 items-center justify-center rounded-full bg-primary-comfy-yellow/15 text-xs font-bold"
+              aria-hidden="true"
+              >2</span
+            >
+          </template>
+          {{ t('workshop.api.downloadGraph') }}
+          <template #append><span aria-hidden="true">↓</span></template>
+        </Button>
         <div data-testid="workflow-api-endpoint">
-          <ApiFacts :where="t('workshop.api.runsOnCloud')" :rows="facts" />
+          <ApiFacts
+            :where="t('workshop.api.runsOnCloud')"
+            :rows="facts"
+            :note="t('workshop.workflow.apiNote')"
+          />
         </div>
-        <p class="text-sm/relaxed text-primary-warm-gray">
-          {{ t('workshop.workflow.apiNote') }}
-        </p>
       </div>
 
       <div class="flex min-w-0 flex-1 flex-col gap-4">
@@ -204,24 +241,31 @@ const facts = computed(() => {
           {{ t('workshop.api.inputInvalid') }}
         </p>
 
-        <div
-          v-if="hasMedia && language === 'curl'"
-          class="space-y-2 text-sm/relaxed text-primary-warm-gray"
-        >
-          <h3 class="font-medium text-primary-comfy-canvas">
-            {{ t('workshop.workflow.apiUploads') }}
-          </h3>
-          <p>{{ t('workshop.workflow.apiUploadGrant') }}</p>
-          <p>{{ t('workshop.workflow.apiUploadPut') }}</p>
-          <p>{{ t('workshop.workflow.apiUploadFinalize') }}</p>
-        </div>
-
-        <p
+        <details
           v-if="language === 'curl'"
-          class="text-sm/relaxed text-primary-warm-gray"
+          class="rounded-2xl border border-transparency-white-t8 px-5"
+          data-testid="workflow-api-steps"
         >
-          {{ t('workshop.workflow.apiPoll') }}
-        </p>
+          <summary
+            class="cursor-pointer list-none py-4 text-sm font-medium text-primary-comfy-canvas marker:hidden hover:text-primary-warm-white"
+          >
+            {{ t('workshop.workflow.apiSteps') }}
+          </summary>
+          <div class="space-y-2 pb-5 text-sm/relaxed text-primary-warm-gray">
+            <template v-if="hasMedia">
+              <h3 class="font-medium text-primary-comfy-canvas">
+                {{ t('workshop.workflow.apiUploads') }}
+              </h3>
+              <ol class="list-decimal space-y-1 ps-5">
+                <li>{{ t('workshop.workflow.apiUploadGrant') }}</li>
+                <li>{{ t('workshop.workflow.apiUploadPut') }}</li>
+                <li>{{ t('workshop.workflow.apiUploadFinalize') }}</li>
+              </ol>
+            </template>
+            <p>{{ t('workshop.workflow.apiPoll') }}</p>
+          </div>
+        </details>
+
         <a
           :href="externalLinks.docsApi"
           target="_blank"

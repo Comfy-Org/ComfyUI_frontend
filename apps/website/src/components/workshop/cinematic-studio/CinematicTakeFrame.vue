@@ -20,8 +20,6 @@ const {
   locale = 'en'
 } = defineProps<{
   current: Take
-  /** The take is a clip, so the progress says "Generating video". */
-  video?: boolean
   otherModel?: { slug: string; name: string }
   memberWorkspace?: string
   height?: string
@@ -68,7 +66,7 @@ const TONE = {
 } as const
 
 function frameTone(take: Take): string | undefined {
-  if (take.status === 'rendering') return 'bg-primary-comfy-ink-light'
+  if (take.status === 'rendering') return 'bg-black/20'
   if (take.status === 'cancelled') return TONE.neutral
   if (take.status !== 'failed') return undefined
   if (take.reason === 'policy' || take.reason === 'validation')
@@ -105,7 +103,6 @@ function frameTone(take: Take): string | undefined {
     <CinematicTakeProgress
       v-else-if="current.status === 'rendering'"
       :take="current"
-      :video
       :locale
     />
     <CinematicTakeNotice

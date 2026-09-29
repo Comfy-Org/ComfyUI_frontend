@@ -114,12 +114,12 @@ describe('ModelsCatalogue', () => {
     {
       locale: 'zh-CN',
       tab: 'workflows',
-      subtitle: '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
+      subtitle: '用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。'
     },
     {
       locale: 'zh-CN',
       tab: 'apps',
-      subtitle: '用整合多个工作流的应用，挑战更大的创意。'
+      subtitle: '用把多个工作流组合在一起的应用，挑战更大的想法。'
     }
   ] as const)(
     'introduces the $tab tab in its own words ($locale)',
@@ -164,6 +164,26 @@ describe('ModelsCatalogue', () => {
 
   // The line under the title belongs to the half that is open, so the eyebrow
   // is what has to hold still: it names the whole catalogue, not the tab.
+  // Each listing is for something different, so the line under the heading
+  // has to change with the tab rather than describe models on all three.
+  it('gives each tab its own subtitle', async () => {
+    const user = userEvent.setup()
+    render(ModelsCatalogue, { props: { models: launchModels } })
+
+    const hero = () => screen.getByTestId('workshop-hero')
+    expect(hero()).toHaveTextContent('Try the latest AI models')
+
+    await user.click(screen.getByRole('button', { name: 'Workflows' }))
+    await waitFor(() =>
+      expect(hero()).toHaveTextContent('Turn your ideas into finished results')
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Apps' }))
+    await waitFor(() =>
+      expect(hero()).toHaveTextContent('Take on bigger ideas with apps')
+    )
+  })
+
   it('opens the workflow tab from its return link and filters by its own categories', async () => {
     history.replaceState(null, '', '/models/?type=workflows')
     const user = userEvent.setup()

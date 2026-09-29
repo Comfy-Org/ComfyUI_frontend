@@ -4,7 +4,11 @@ import { useElementVisibility, useMounted, whenever } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 
 import type { PlaygroundExample } from '../../config/workshop-playground'
-import { exampleAlt, isVideoUrl } from '../../config/workshop-playground'
+import {
+  exampleAlt,
+  isVideoUrl,
+  videoPosterUrl
+} from '../../config/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -136,12 +140,13 @@ function actionFor(example: PlaygroundExample, active = false) {
                 v-if="
                   example.mediaKind === 'video' || isVideoUrl(example.outputUrl)
                 "
-                :src="example.outputUrl"
+                :src="videoPosterUrl(example.outputUrl)"
                 :aria-label="altOf(example)"
                 class="size-full object-cover"
                 muted
                 playsinline
                 :preload="videoPreload"
+                data-testid="example-video"
               />
               <Music2
                 v-else-if="example.mediaKind === 'audio'"

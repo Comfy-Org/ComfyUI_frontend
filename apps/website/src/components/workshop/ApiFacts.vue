@@ -7,10 +7,13 @@ import { t } from '../../i18n/translations'
 const {
   where,
   rows,
+  note,
   locale = 'en'
 } = defineProps<{
   where: string
   rows: readonly { label: string; value: string; mono?: boolean }[]
+  /** What the reader needs before any of this works, kept with the facts. */
+  note?: string
   locale?: Locale
 }>()
 </script>
@@ -44,5 +47,14 @@ const {
         </dd>
       </template>
     </dl>
+    <template v-if="note">
+      <div class="h-px bg-transparency-white-t8"></div>
+      <p
+        class="text-sm/relaxed text-primary-warm-gray"
+        data-testid="api-facts-note"
+      >
+        {{ note }}
+      </p>
+    </template>
   </div>
 </template>

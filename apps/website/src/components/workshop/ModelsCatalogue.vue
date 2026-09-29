@@ -72,14 +72,17 @@ const availableTabs = computed<readonly CatalogueTab[]>(() => [
   ...(workflows.value.length ? (['workflows'] as const) : []),
   ...(appsEnabled.value && apps.value.length ? (['apps'] as const) : [])
 ])
-const heroSubtitle = {
+const activeTab = computed(() =>
+  availableTabs.value.includes(selectedTab.value) ? selectedTab.value : 'models'
+)
+
+// Each tab says what its own listing is for, in Eric's words.
+const SUBTITLE_KEY = {
   models: 'workshop.hero.subtitle',
   workflows: 'workshop.catalogue.workflowsSubtitle',
   apps: 'workshop.catalogue.appsSubtitle'
 } as const satisfies Record<CatalogueTab, TranslationKey>
-const activeTab = computed(() =>
-  availableTabs.value.includes(selectedTab.value) ? selectedTab.value : 'models'
-)
+const subtitleKey = computed(() => SUBTITLE_KEY[activeTab.value])
 
 const focusTabs = ref(false)
 function changeTab(tab: CatalogueTab) {
@@ -124,11 +127,7 @@ watch(
     data-testid="workshop-hero"
   >
     <p class="text-lg text-primary-comfy-canvas/70">
-      <SplitReveal
-        :text="t(heroSubtitle[activeTab], locale)"
-        :delay="260"
-        :stagger="50"
-      />
+      <SplitReveal :text="t(subtitleKey, locale)" :delay="260" :stagger="50" />
     </p>
   </div>
   <WorkshopModelsGrid

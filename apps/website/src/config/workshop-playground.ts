@@ -662,3 +662,8 @@ export function exampleValues(
 export function isVideoUrl(url: string): boolean {
   return /\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)
 }
+
+/** A video address that makes Safari paint a frame before playback. */
+export function videoPosterUrl(url: string): string {
+  return url.includes('#') ? url : `${url}#t=0.1`
+}
