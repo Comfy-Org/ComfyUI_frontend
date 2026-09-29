@@ -417,6 +417,11 @@ test("a re-read of the workspace's payments that fails never claims nothing was 
   await signIn(CHECKOUT)
 
   await expect(heading(page, "Couldn't load your checkout")).toBeVisible()
+  await expect(
+    page.getByText(
+      "We couldn't check your recent payments, so checkout can't open yet. Try again, or contact support if this keeps happening."
+    )
+  ).toBeVisible()
   await expect(page.getByText(/Nothing has been charged/)).toBeHidden()
   await expect(payButton(page)).toBeHidden()
 

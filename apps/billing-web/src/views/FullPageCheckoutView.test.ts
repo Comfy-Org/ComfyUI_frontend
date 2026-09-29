@@ -1513,6 +1513,11 @@ describe('FullPageCheckoutView mount reconciliation', () => {
       })
     ).toBeInTheDocument()
     expect(
+      screen.getByText(
+        "We couldn't check your recent payments, so checkout can't open yet. Try again, or contact support if this keeps happening."
+      )
+    ).toBeInTheDocument()
+    expect(
       screen.queryByText(/Nothing has been charged/)
     ).not.toBeInTheDocument()
     expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(

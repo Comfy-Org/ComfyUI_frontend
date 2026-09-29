@@ -44,8 +44,7 @@ const ENDINGS: Readonly<
   unconfirmed: { tone: 'waiting', support: true },
   refused: { tone: 'refused', support: true },
   plan_unavailable: { tone: 'refused', primary: 'view_plans', support: true },
-  load_failed: { tone: 'refused', primary: 'retry', support: true },
-  recheck_failed: { tone: 'refused', primary: 'retry', support: true }
+  load_failed: { tone: 'refused', primary: 'retry', support: true }
 }
 
 const ICON: Readonly<Record<Tone, string>> = {
@@ -73,11 +72,12 @@ const { coded } = useHostedCopy()
 
 const ending = computed(() => ENDINGS[screen.kind])
 const copyKey = computed(() => `checkout.fullPage.ending.${screen.kind}`)
-const bodyKey = computed(() =>
-  screen.kind === 'refused'
-    ? `${copyKey.value}.body.${screen.copy}`
-    : `${copyKey.value}.body`
-)
+const bodyKey = computed(() => {
+  if (screen.kind === 'refused') return `${copyKey.value}.body.${screen.copy}`
+  if (screen.kind === 'load_failed')
+    return `${copyKey.value}.body.${screen.cause}`
+  return `${copyKey.value}.body`
+})
 const bodyParams = computed(() =>
   screen.kind === 'refused' && screen.copy === 'change_scheduled'
     ? {

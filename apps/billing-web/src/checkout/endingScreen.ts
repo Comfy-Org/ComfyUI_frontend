@@ -2,6 +2,7 @@ import type { CapabilityDenialReason } from '@comfyorg/account-core/billing'
 
 import type {
   CheckoutPage,
+  LoadFailure,
   PlanUnavailableReason,
   ScheduledChange
 } from '@/checkout/checkoutPage'
@@ -61,8 +62,11 @@ export type EndingScreen =
       readonly scheduled: ScheduledChange
     }
   | { readonly kind: 'plan_unavailable'; readonly code: string }
-  | { readonly kind: 'load_failed'; readonly code: string }
-  | { readonly kind: 'recheck_failed'; readonly code: string }
+  | {
+      readonly kind: 'load_failed'
+      readonly cause: LoadFailure
+      readonly code: string
+    }
 
 export type EndingKind = EndingScreen['kind']
 
@@ -72,9 +76,7 @@ export function endingOf(page: CheckoutPage): EndingScreen | undefined {
     case 'refused':
       return refusedEnding(page)
     case 'unavailable':
-      return { kind: 'load_failed', code: page.code }
-    case 'recheck_failed':
-      return { kind: 'recheck_failed', code: page.code }
+      return { kind: 'load_failed', cause: page.cause, code: page.code }
     case 'plan_unavailable':
       return {
         kind: 'plan_unavailable',

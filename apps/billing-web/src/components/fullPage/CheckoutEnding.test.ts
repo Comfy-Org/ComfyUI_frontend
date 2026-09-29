@@ -182,7 +182,7 @@ describe('CheckoutEnding', () => {
       closeLine: false
     },
     {
-      ending: { kind: 'load_failed', code: 'REQUEST_FAILED' },
+      ending: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' },
       title: "Couldn't load your checkout",
       body: "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
       codeLabel: 'If this keeps happening, contact support with this code:',
@@ -191,16 +191,16 @@ describe('CheckoutEnding', () => {
       closeLine: false
     },
     {
-      ending: { kind: 'recheck_failed', code: 'REQUEST_FAILED' },
+      ending: { kind: 'load_failed', cause: 'recheck', code: 'REQUEST_FAILED' },
       title: "Couldn't load your checkout",
-      body: "We couldn't check this workspace's payments, so we can't show your checkout yet. Try again, or contact support if this keeps happening.",
+      body: "We couldn't check your recent payments, so checkout can't open yet. Try again, or contact support if this keeps happening.",
       codeLabel: 'If this keeps happening, contact support with this code:',
       action: 'Try again',
       support: true,
       closeLine: false
     }
   ])(
-    '$ending.kind reads as designed',
+    '$ending.kind reads as designed: $body',
     ({ ending, title, body, codeLabel, action, support, closeLine }) => {
       renderEnding(ending)
 
@@ -240,12 +240,12 @@ describe('CheckoutEnding', () => {
   it.for<{ ending: EndingScreen; action: Action; event: string }>([
     { ending: { kind: 'success' }, action: 'Close', event: 'close' },
     {
-      ending: { kind: 'load_failed', code: 'REQUEST_FAILED' },
+      ending: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' },
       action: 'Try again',
       event: 'retry'
     },
     {
-      ending: { kind: 'recheck_failed', code: 'REQUEST_FAILED' },
+      ending: { kind: 'load_failed', cause: 'recheck', code: 'REQUEST_FAILED' },
       action: 'Try again',
       event: 'retry'
     },
