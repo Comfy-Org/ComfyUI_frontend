@@ -314,7 +314,7 @@ const renderTreeNode = (
         handleDelete: workflow.isTemporary
           ? undefined
           : async function () {
-              await workflowService.deleteWorkflow(workflow)
+              return await workflowService.deleteWorkflow(workflow)
             },
         contextMenuItems() {
           return [

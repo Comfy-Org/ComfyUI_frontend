@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -13,6 +13,7 @@ import AppBuilder from './AppBuilder.vue'
 
 beforeEach(async () => {
   const workflow = await useWorkflowStore().createTemporary('test.json').load()
+  assert(workflow)
   workflow.activeMode = 'builder:inputs'
   useWorkflowStore().activeWorkflow = workflow
 })

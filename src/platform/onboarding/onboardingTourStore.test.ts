@@ -73,9 +73,9 @@ function shownCount(coachId?: CoachId) {
 }
 
 beforeEach(async () => {
-  useWorkflowStore().activeWorkflow = await useWorkflowStore()
-    .createTemporary('test.json')
-    .load()
+  const workflow = await useWorkflowStore().createTemporary('test.json').load()
+  assert(workflow)
+  useWorkflowStore().activeWorkflow = workflow
   useSettingStore().settingValues[TOUR_SEEN_SETTING] = []
   vi.mocked(useSettingStore().set).mockImplementation(
     (key: string, value: unknown) => {

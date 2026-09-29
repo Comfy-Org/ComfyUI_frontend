@@ -763,7 +763,10 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         ...original,
         user_metadata: { note: 'server-confirmed' }
       }
-      vi.mocked(assetService.updateAsset).mockResolvedValueOnce(serverResponse)
+      vi.mocked(assetService.updateAsset).mockResolvedValueOnce({
+        kind: 'updated',
+        asset: serverResponse
+      })
 
       await store.updateAssetMetadata(
         original,
@@ -804,7 +807,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       consoleSpy.mockRestore()
     })
 
-    it.fails('rolls back cached metadata when the server outcome is unknown', async () => {
+    it('rolls back cached metadata when the server outcome is unknown', async () => {
       const store = useAssetsStore()
       const original = {
         ...createMockAsset('opt-unknown'),
@@ -815,7 +818,10 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         makePage([original])
       )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
-      mockFailedUpdate('unknown')
+      vi.mocked(assetService.updateAsset).mockResolvedValueOnce({
+        kind: 'failed',
+        serverState: 'unknown'
+      })
 
       await store.updateAssetMetadata(
         original,
@@ -827,7 +833,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(cached.user_metadata).toEqual({ note: 'before' })
     })
 
-    it.fails('rolls back when the server confirms the update was rejected', async () => {
+    it('rolls back when the server confirms the update was rejected', async () => {
       const store = useAssetsStore()
       const original = {
         ...createMockAsset('opt-3'),

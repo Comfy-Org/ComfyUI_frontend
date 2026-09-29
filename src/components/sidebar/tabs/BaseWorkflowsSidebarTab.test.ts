@@ -196,7 +196,7 @@ describe('BaseWorkflowsSidebarTab', () => {
     expect(getLeafPaths(getSearchRoot())).toEqual(['workflows/test-alpha.json'])
   })
 
-  it.fails('propagates failed workflow deletion to the tree', async () => {
+  it('propagates failed workflow deletion to the tree', async () => {
     const workflow = createMockWorkflow('workflows/test.json')
     Object.assign(useWorkflowStore(), { workflows: [workflow] })
     vi.mocked(useWorkflowService()).deleteWorkflow.mockResolvedValueOnce(false)

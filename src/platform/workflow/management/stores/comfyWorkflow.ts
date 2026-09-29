@@ -34,6 +34,26 @@ export interface PendingWarnings {
   missingMediaCandidates?: MissingMediaCandidate[]
 }
 
+function parseWorkflowContent(
+  path: string,
+  content: string | null
+): ComfyWorkflowJSON | undefined {
+  if (content == null) {
+    console.error(new Error(`Workflow content was not loaded for '${path}'`))
+    return
+  }
+  if (content.trim().length === 0) {
+    console.error(new Error(`Workflow content is empty for '${path}'`))
+    return
+  }
+
+  try {
+    return JSON.parse(content)
+  } catch (error) {
+    console.error(`Workflow content is invalid for '${path}'`, error)
+  }
+}
+
 export class ComfyWorkflow extends UserFile {
   static readonly basePath: string = 'workflows/'
   readonly tintCanvasBg?: string
@@ -106,7 +126,7 @@ export class ComfyWorkflow extends UserFile {
    * @returns this
    */
   override async load({ force = false }: { force?: boolean } = {}): Promise<
-    this & LoadedComfyWorkflow
+    (this & LoadedComfyWorkflow) | undefined
   > {
     if (!force && this.isLoaded && this.changeTracker) {
       return this as this & LoadedComfyWorkflow
@@ -139,18 +159,16 @@ export class ComfyWorkflow extends UserFile {
       }
     }
 
-    await super.load({ force })
+    const previousContent = this.content
+    const previousOriginalContent = this.originalContent
+    if (!(await super.load({ force }))) return
 
-    if (this.originalContent == null) {
-      throw new Error(
-        `[ASSERT] Workflow content should be loaded for '${this.path}'`
-      )
+    const initialState = parseWorkflowContent(this.path, this.originalContent)
+    if (!initialState) {
+      this.content = previousContent
+      this.originalContent = previousOriginalContent
+      return
     }
-    if (this.originalContent.trim().length === 0) {
-      throw new Error(`Workflow content is empty for '${this.path}'`)
-    }
-
-    const initialState = JSON.parse(this.originalContent)
     const { ChangeTracker } = await import('@/scripts/changeTracker')
     this.changeTracker = markRaw(new ChangeTracker(this, initialState))
     if (draftState && draftContent) {
