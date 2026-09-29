@@ -12,6 +12,9 @@ export function auditExampleGallery(
   const live = withoutHiddenMarkup(html)
   if (examples.length === 0 && live.includes('data-testid="examples-section"'))
     errors.push('renders a gallery with no examples')
+  const cards = live.split('data-testid="example-item"').length - 1
+  if (cards !== examples.length)
+    errors.push(`renders ${cards} example cards, expected ${examples.length}`)
   const captions = [
     ...live.matchAll(/<figcaption\b[^>]*>([\s\S]*?)<\/figcaption>/g)
   ].map(([, inner]) => textOf(inner))
@@ -26,12 +29,12 @@ export function auditExampleGallery(
         `captions "${prompt.slice(0, 40)}" ${found} times, expected ${expected}`
       )
   }
-  const alts = [...live.matchAll(/<img\b[^>]*>/g)].map(
-    ([tag]) => /\balt="([^"]*)"/.exec(tag)?.[1]
-  )
-  if (alts.includes(undefined)) errors.push('has an image without alt')
-  for (const alt of new Set(alts))
-    if (alt === 'Output' || (alt && /^Sample \d+$/.test(alt)))
-      errors.push(`has an image with alt "${alt}"`)
+  for (const [tag] of live.matchAll(/<img\b[^>]*>/g)) {
+    const alt = /\salt="([^"]*)"/.exec(tag)?.[1]
+    const src = /\ssrc="([^"]*)"/.exec(tag)?.[1]
+    if (alt === undefined) errors.push(`has an image without alt: ${src}`)
+    else if (alt === 'Output' || /^Sample \d+$/.test(alt))
+      errors.push(`has an image with alt "${alt}": ${src}`)
+  }
   return errors
 }

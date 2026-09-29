@@ -5,7 +5,7 @@ import { auditExampleGallery } from './models-gallery-audit'
 const gallery = (figures: string) =>
   `<section data-testid="examples-section"><ul>${figures}</ul></section>`
 const figure = (alt: string, caption?: string) =>
-  `<li><figure><button><img src="x.webp" alt="${alt}"></button>${
+  `<li data-testid="example-item"><figure><button><img src="x.webp" alt="${alt}"></button>${
     caption === undefined ? '' : `<figcaption>\n  ${caption}\n</figcaption>`
   }</figure></li>`
 const prompt = 'a red fox & a "blue" moon'
@@ -34,6 +34,12 @@ describe(auditExampleGallery, () => {
       errors: ['renders a gallery with no examples']
     },
     {
+      name: 'examples without a gallery',
+      html: '<main><h1>FLUX</h1></main>',
+      examples: [{}],
+      errors: ['renders 0 example cards, expected 1']
+    },
+    {
       name: 'a prompt only in the island props',
       html: `<astro-island props="{&quot;prompt&quot;:&quot;fox&quot;}">${gallery(figure('A: B'))}</astro-island>`,
       examples: [{ prompt: 'fox' }],
@@ -43,7 +49,10 @@ describe(auditExampleGallery, () => {
       name: 'a prompt captioned twice for one example',
       html: gallery(figure('A: B', 'fox') + figure('A: C', 'fox')),
       examples: [{ prompt: 'fox' }],
-      errors: ['captions "fox" 2 times, expected 1']
+      errors: [
+        'renders 2 example cards, expected 1',
+        'captions "fox" 2 times, expected 1'
+      ]
     },
     {
       name: 'two examples sharing a prompt',
@@ -55,17 +64,21 @@ describe(auditExampleGallery, () => {
       name: 'a prompt only in a template',
       html: `<template>${gallery(figure('A: B', 'fox'))}</template>`,
       examples: [{ prompt: 'fox' }],
-      errors: ['captions "fox" 0 times, expected 1']
+      errors: [
+        'renders 0 example cards, expected 1',
+        'captions "fox" 0 times, expected 1'
+      ]
     },
     {
       name: 'placeholder and missing alts',
       html:
-        gallery(figure('Sample 1') + figure('Output')) + '<img src="y.webp">',
+        gallery(figure('Sample 1') + figure('Output')) +
+        '<img data-alt="Logo" src="y.webp">',
       examples: [{}, {}],
       errors: [
-        'has an image without alt',
-        'has an image with alt "Sample 1"',
-        'has an image with alt "Output"'
+        'has an image with alt "Sample 1": x.webp',
+        'has an image with alt "Output": x.webp',
+        'has an image without alt: y.webp'
       ]
     }
   ])('$name', ({ html, examples, errors }) => {

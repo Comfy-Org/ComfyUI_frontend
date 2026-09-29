@@ -8,6 +8,12 @@ import { auditModelPage } from './models-html-audit'
 
 const DIST = join(process.cwd(), 'dist')
 
+function examplesOf(slug: string) {
+  const detail = getRouterWorkshopModelDetail(slug)
+  if (!detail) throw new Error(`Missing model record: ${slug}`)
+  return detail.examples
+}
+
 const errors = workshopModels.flatMap((model) => {
   const html = readFileSync(
     join(DIST, 'models', model.slug, 'index.html'),
@@ -15,10 +21,7 @@ const errors = workshopModels.flatMap((model) => {
   )
   return [
     ...auditModelPage(html, model.name),
-    ...auditExampleGallery(
-      html,
-      getRouterWorkshopModelDetail(model.slug)?.examples ?? []
-    )
+    ...auditExampleGallery(html, examplesOf(model.slug))
   ].map((error) => `/models/${model.slug}/: ${error}`)
 })
 
