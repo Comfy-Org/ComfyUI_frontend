@@ -8926,6 +8926,38 @@ Enterprise`
     'zh-CN':
       'Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Comfy API，并按需扩展。'
   },
+  'platform.howItWorks.chat.channel': {
+    en: 'creative-team',
+    'zh-CN': '创意团队'
+  },
+  'platform.howItWorks.chat.message': {
+    en: "here's the link",
+    'zh-CN': '链接在这里'
+  },
+  'platform.howItWorks.chat.reply': {
+    en: 'got it!',
+    'zh-CN': '收到！'
+  },
+  'platform.howItWorks.chat.messageReady': {
+    en: 'The workflow is ready to try',
+    'zh-CN': '工作流可以试用了'
+  },
+  'platform.howItWorks.chat.replyTesting': {
+    en: 'Testing it now!',
+    'zh-CN': '现在就来试！'
+  },
+  'platform.howItWorks.chat.messagePreview': {
+    en: 'Preview is live',
+    'zh-CN': '预览已上线'
+  },
+  'platform.howItWorks.chat.replySharing': {
+    en: "I'll share it with the team",
+    'zh-CN': '我会分享给团队'
+  },
+  'platform.howItWorks.chat.placeholder': {
+    en: 'Message your team',
+    'zh-CN': '发送消息给团队'
+  },
   'platform.howItWorks.1.title': {
     en: 'Deploy your workflow as an API',
     'zh-CN': '把工作流部署为 API'

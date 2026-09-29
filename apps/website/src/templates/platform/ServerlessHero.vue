@@ -20,8 +20,14 @@ const desktop = useMediaQuery('(min-width: 1024px)', { ssrWidth: 1024 })
     :title="t('platform.serverlessHero.heading', locale)"
     title-class="text-primary-comfy-yellow text-3xl/tight font-light tracking-normal md:text-4xl/tight lg:text-5xl/tight"
     :subtitle="t('platform.serverlessHero.subtitle', locale)"
-    :primary-cta="ctas.getStarted"
-    :secondary-cta="ctas.docs"
+    :primary-cta="{
+      ...ctas.getStarted,
+      href: 'https://platform.comfy.org/?onboarding=comfyapi'
+    }"
+    :secondary-cta="{
+      ...ctas.docs,
+      href: 'https://docs.comfy.org/development/serverless/overview'
+    }"
     media-wrapper-class="hidden lg:block"
   >
     <template #aboveCtas>
