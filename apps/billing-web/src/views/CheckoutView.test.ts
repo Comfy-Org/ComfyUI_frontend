@@ -955,6 +955,45 @@ describe('CheckoutView', () => {
   })
 
   it.for(['Back', 'Close'])(
+    'closes a tab the product opened on %s, leaving the product where it was',
+    async (action) => {
+      const assign = stubNavigation()
+      const close = vi.spyOn(window, 'close').mockImplementation(() => {
+        vi.spyOn(window, 'closed', 'get').mockReturnValue(true)
+      })
+      await renderCheckout()
+      await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+      await userEvent.click(screen.getByRole('button', { name: action }))
+
+      expect(close).toHaveBeenCalledOnce()
+      expect(assign).not.toHaveBeenCalled()
+    }
+  )
+
+  it('closes the tab from the success step instead of opening the product in it', async () => {
+    const assign = stubNavigation()
+    const close = vi.spyOn(window, 'close').mockImplementation(() => {
+      vi.spyOn(window, 'closed', 'get').mockReturnValue(true)
+    })
+    await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    reportConfirm('ctoken_1')
+    await screen.findByRole('heading', { name: "You're all set" })
+
+    const [, closeButton] = screen.getAllByRole('button', { name: 'Close' })
+    await userEvent.click(closeButton)
+
+    expect(close).toHaveBeenCalledOnce()
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it.for(['Back', 'Close'])(
     'returns to the product, where plans are chosen, on %s',
     async (action) => {
       const assign = stubNavigation()
