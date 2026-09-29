@@ -363,6 +363,21 @@ describe('launchCancellationFlow', () => {
     )
   })
 
+  it('lets a lazy fallback skip opening after the workspace changes', async () => {
+    mocks.prepare.mockResolvedValueOnce(null)
+    const openDialog = vi.fn()
+
+    await launchCancellationFlow({
+      showFallback: vi.fn(async ({ isScopeCurrent } = {}) => {
+        await Promise.resolve()
+        mocks.activeWorkspaceId = 'workspace-2'
+        if (isScopeCurrent?.()) openDialog()
+      })
+    })
+
+    expect(openDialog).not.toHaveBeenCalled()
+  })
+
   it('classifies a fallback failure after a workspace switch as aborted', async () => {
     mocks.prepare.mockResolvedValueOnce(null)
     const fallbackError = new Error('dialog chunk unavailable')

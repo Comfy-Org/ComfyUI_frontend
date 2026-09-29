@@ -840,10 +840,12 @@ export const useDialogService = () => {
 
   async function showCancelSubscriptionDialog(
     cancelAt?: string,
-    flowAlreadyOpened = false
+    flowAlreadyOpened = false,
+    isScopeCurrent: () => boolean = () => true
   ) {
     const { default: component } =
       await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
+    if (!isScopeCurrent()) return
     return dialogStore.showDialog({
       key: 'cancel-subscription',
       component,
@@ -859,8 +861,15 @@ export const useDialogService = () => {
       await import('@/platform/cloud/subscription/launchCancellationFlow')
     return cancellationFlow.launchCancellationFlow({
       cancelAt,
-      showFallback: ({ flowAlreadyOpened = false } = {}) =>
-        showCancelSubscriptionDialog(cancelAt, flowAlreadyOpened)
+      showFallback: ({
+        flowAlreadyOpened = false,
+        isScopeCurrent = () => true
+      } = {}) =>
+        showCancelSubscriptionDialog(
+          cancelAt,
+          flowAlreadyOpened,
+          isScopeCurrent
+        )
     })
   }
 
