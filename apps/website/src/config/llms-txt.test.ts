@@ -97,11 +97,9 @@ function routeMatcher(route: string): RegExp {
   const pattern = route
     .split('/')
     .map((segment) =>
-      segment.startsWith('[...')
-        ? '.+'
-        : segment.startsWith('[')
-          ? '[^/]+'
-          : segment.replace(/[.*+?^${}()|\\]/g, '\\$&')
+      segment.startsWith('[')
+        ? '[^/]+'
+        : segment.replace(/[.*+?^${}()|\\]/g, '\\$&')
     )
     .join('/')
   return new RegExp(`^${pattern}$`)
