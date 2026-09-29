@@ -54,8 +54,8 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { close: 'Close' },
       sideToolbar: {
+        closeSidebar: 'Close sidebar',
         nodeLibraryTab: {
           noMatchingNodes: 'No nodes match "{query}"'
         }
@@ -100,7 +100,7 @@ describe('NodeLibrarySidebarTabV2', () => {
     useSidebarTabStore().activeSidebarTabId = 'node-library'
     renderComponent()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Close sidebar' }))
 
     expect(useSidebarTabStore().activeSidebarTabId).toBeNull()
   })

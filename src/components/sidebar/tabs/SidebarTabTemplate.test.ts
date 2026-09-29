@@ -10,7 +10,7 @@ import SidebarTabTemplate from './SidebarTabTemplate.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: { g: { close: 'Close' } } }
+  messages: { en: { sideToolbar: { closeSidebar: 'Close sidebar' } } }
 })
 
 function renderTemplate(closable?: boolean) {
@@ -25,7 +25,7 @@ describe('SidebarTabTemplate', () => {
     useSidebarTabStore().activeSidebarTabId = 'model-library'
     renderTemplate(true)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Close sidebar' }))
 
     expect(useSidebarTabStore().activeSidebarTabId).toBeNull()
   })
@@ -34,7 +34,7 @@ describe('SidebarTabTemplate', () => {
     renderTemplate()
 
     expect(
-      screen.queryByRole('button', { name: 'Close' })
+      screen.queryByRole('button', { name: 'Close sidebar' })
     ).not.toBeInTheDocument()
   })
 })

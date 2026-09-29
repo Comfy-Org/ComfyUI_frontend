@@ -1,10 +1,11 @@
 <template>
   <Button
-    v-tooltip.bottom="{ value: $t('g.close'), showDelay: 300 }"
+    v-tooltip.bottom="{ value: $t('sideToolbar.closeSidebar'), showDelay: 300 }"
     variant="muted-textonly"
     size="icon"
     class="shrink-0"
-    :aria-label="$t('g.close')"
+    data-testid="sidebar-close-button"
+    :aria-label="$t('sideToolbar.closeSidebar')"
     @click="sidebarTabStore.activeSidebarTabId = null"
   >
     <i class="icon-[lucide--x] size-4" />

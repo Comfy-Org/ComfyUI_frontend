@@ -18,6 +18,7 @@ export const TestIds = {
     nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
     workflowsRefreshButton: 'workflows-refresh-button',
+    closeButton: 'sidebar-close-button',
     modeToggle: 'mode-toggle',
     tabButton: (tabId: string) => `${tabId}-tab-button`
   },

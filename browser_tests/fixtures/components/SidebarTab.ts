@@ -17,9 +17,7 @@ export class SidebarTab {
     this.selectedTabButton = this.tabButton.and(
       page.locator('.side-bar-button-selected')
     )
-    this.closeButton = page
-      .locator('.sidebar-content-container')
-      .getByRole('button', { name: 'Close', exact: true })
+    this.closeButton = page.getByTestId(TestIds.sidebar.closeButton)
   }
 
   async open() {

@@ -911,6 +911,7 @@
   },
   "sideToolbar": {
     "sidebar": "Sidebar",
+    "closeSidebar": "Close sidebar",
     "themeToggle": "Toggle Theme",
     "helpCenter": "Help Center",
     "logout": "Logout",

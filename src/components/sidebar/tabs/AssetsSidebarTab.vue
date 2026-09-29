@@ -2,7 +2,7 @@
   <SidebarTabTemplate
     ref="panelRef"
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
-    :closable="sidebarTabStore.activeSidebarTabId === 'assets'"
+    :closable
     v-bind="$attrs"
   >
     <template #alt-title>
@@ -240,7 +240,6 @@ import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import {
   formatDuration,
   getMediaTypeFromFilename,
@@ -253,6 +252,8 @@ const Load3dViewerContent = defineAsyncComponent(
 )
 
 const { t } = useI18n()
+
+const { closable = true } = defineProps<{ closable?: boolean }>()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
@@ -307,7 +308,6 @@ const formattedExecutionTime = computed(() => {
 
 const toast = useToast()
 const assetsStore = useAssetsStore()
-const sidebarTabStore = useSidebarTabStore()
 
 // Asset selection
 const {

@@ -5,7 +5,6 @@ import { createI18n } from 'vue-i18n'
 
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
@@ -89,7 +88,7 @@ const i18n = createI18n({
   messages: {
     en: {
       assetBrowser: { jobId: 'Job ID' },
-      g: { close: 'Close', copyJobId: 'Copy Job ID' },
+      g: { copyJobId: 'Copy Job ID' },
       sideToolbar: {
         backToAssets: 'Back to all assets',
         mediaAssets: { title: 'Media Assets' },
@@ -104,7 +103,7 @@ const sidebarTabTemplateStub = {
   template: `
     <section>
       <h2 v-if="title">{{ title }}</h2>
-      <button v-if="closable" aria-label="Close" />
+      <button v-if="closable" aria-label="Close sidebar" />
       <div data-testid="folder-title"><slot name="alt-title" /></div>
       <div data-testid="folder-controls"><slot name="header" /></div>
       <slot name="body" />
@@ -125,8 +124,9 @@ const assetsGridStub = {
   `
 }
 
-function renderTab() {
+function renderTab(props: { closable?: boolean } = {}) {
   return render(AssetsSidebarTab, {
+    props,
     global: {
       plugins: [i18n],
       directives: {
@@ -202,20 +202,18 @@ describe('AssetsSidebarTab close button', () => {
   it.for([
     { view: 'the asset list', open: async () => {} },
     { view: 'folder view', open: enterFolderView }
-  ])('is shown in $view while open in the sidebar', async ({ open }) => {
-    useSidebarTabStore().activeSidebarTabId = 'assets'
+  ])('is shown in $view', async ({ open }) => {
     renderTab()
     await open()
 
-    expect(screen.getByRole('button', { name: 'Close' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Close sidebar' })).toBeVisible()
   })
 
-  it('is hidden when the tab is not open in the sidebar', () => {
-    useSidebarTabStore().activeSidebarTabId = null
-    renderTab()
+  it('is hidden when the host opts out', () => {
+    renderTab({ closable: false })
 
     expect(
-      screen.queryByRole('button', { name: 'Close' })
+      screen.queryByRole('button', { name: 'Close sidebar' })
     ).not.toBeInTheDocument()
   })
 })
