@@ -133,7 +133,8 @@ export function workshopReleaseGate(): AstroIntegration {
       'astro:build:start': () => {
         assertWorkshopCloudEnvForBuild()
       },
-      'astro:build:done': async ({ dir, pages, logger }) => {
+      'astro:build:done': async ({ dir, pages, assets, logger }) => {
+        // The sitemap and .md twins read these same pages; extend if either walks dist/
         const unregistered = unregisteredModelsPaths(
           pages.map((page) => page.pathname)
         )
@@ -165,12 +166,15 @@ export function workshopReleaseGate(): AstroIntegration {
         logger.info(`Removed ${built} retired Workshop pages.`)
         if (isWorkshopInBuild()) return
 
+        const unbuilt = modelsBuildRoutes(false)
+          .map(({ pattern }) => pattern)
+          .filter((pattern) => !assets.get(pattern)?.length)
         const leaked = WORKSHOP_ONLY_ROUTES.map(
-          (route) => route.pattern
-        ).filter((pattern) => existsSync(join(root, pattern)))
-        if (leaked.length > 0) {
+          ({ pattern }) => pattern
+        ).filter((pattern) => assets.has(pattern))
+        if (unbuilt.length > 0 || leaked.length > 0) {
           throw new Error(
-            `workshop-release-gate found Workshop-only pages (${leaked.join(', ')}) in a build without Workshop; refusing to ship them.`
+            `workshop-release-gate: a build without Workshop must keep every Models page and no Workshop-only page. Missing: ${unbuilt.join(', ') || 'none'}. Workshop-only: ${leaked.join(', ') || 'none'}.`
           )
         }
         logger.info(

@@ -10,6 +10,10 @@ import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { modelsBuildRoutes, workshopReleaseGate } from './workshop-release-gate'
 
+import { workshopModels } from '../config/workshop-browse-content'
+
+const [{ slug: modelSlug }] = workshopModels
+
 let root: string
 const logger: AstroIntegrationLogger = {
   label: 'test',
@@ -47,7 +51,18 @@ function pluginNames(option: unknown): unknown[] {
     : []
 }
 
-async function buildDone(modelsPages: string[] = []) {
+const builtModelsRoutes = (patterns = modelsBuildRoutes(false)) =>
+  new Map(
+    patterns.map(({ pattern }) => [
+      pattern,
+      [pathToFileURL(`${root}${pattern}/index.html`)]
+    ])
+  )
+
+async function buildDone(
+  assets = builtModelsRoutes(),
+  modelsPages: string[] = []
+) {
   const hook = workshopReleaseGate().hooks['astro:build:done']
   if (!hook) throw new Error('Missing build hook')
   await hook({
@@ -57,7 +72,7 @@ async function buildDone(modelsPages: string[] = []) {
       { pathname: 'workshop/' },
       ...modelsPages.map((pathname) => ({ pathname }))
     ],
-    assets: new Map(),
+    assets,
     logger
   })
 }
@@ -139,19 +154,18 @@ describe('Workshop release output', () => {
     }
   })
 
-  it('ships model pages without Workshop and rejects Workshop-only pages', async () => {
+  it('fails a build without Workshop that drops a Models page or ships a Workshop-only page', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
-    await mkdir(join(root, 'models/example'), { recursive: true })
-    await writeFile(join(root, 'models/index.html'), 'Models catalogue')
-    await writeFile(join(root, 'models/example/index.html'), 'Example model')
-    await buildDone()
-    expect(
-      await readFile(join(root, 'models/example/index.html'), 'utf8')
-    ).toBe('Example model')
-    await mkdir(join(root, 'zh-CN/checkout-return'), { recursive: true })
-    await writeFile(join(root, 'zh-CN/checkout-return/index.html'), 'Paid')
-    await expect(buildDone()).rejects.toThrow(
-      'Workshop-only pages (/zh-CN/checkout-return)'
+    await expect(buildDone()).resolves.toBeUndefined()
+    const withoutModelPages = builtModelsRoutes()
+    withoutModelPages.delete('/models/[...slug]')
+    await expect(buildDone(withoutModelPages)).rejects.toThrow(
+      'Missing: /models/[...slug]. Workshop-only: none.'
+    )
+    await expect(
+      buildDone(builtModelsRoutes(modelsBuildRoutes(true)))
+    ).rejects.toThrow(
+      'Missing: none. Workshop-only: /checkout-opening, /zh-CN/checkout-opening, /checkout-return, /zh-CN/checkout-return.'
     )
   })
 
@@ -168,9 +182,11 @@ describe('Workshop release output', () => {
     async (value) => {
       vi.stubEnv('WORKSHOP_IN_BUILD', value)
       await expect(
-        buildDone(['models/', 'models/bfl--flux-2-max--generate-images/'])
+        buildDone(builtModelsRoutes(), ['models/', `models/${modelSlug}/`])
       ).resolves.toBeUndefined()
-      await expect(buildDone(['models/unregistered/'])).rejects.toThrow(
+      await expect(
+        buildDone(builtModelsRoutes(), ['models/unregistered/'])
+      ).rejects.toThrow(
         'missing from models-url-registry.ts (/models/unregistered)'
       )
     }

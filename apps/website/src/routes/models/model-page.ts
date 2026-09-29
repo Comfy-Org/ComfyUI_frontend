@@ -24,8 +24,12 @@ export async function prepareModelPage(
 ) {
   const model = slug ? getWorkshopPageDetail(slug) : undefined
   if (!model) throw new Error(`Unknown Models route: ${slug ?? '(missing)'}`)
-  if (slug !== model.slug)
-    return { kind: 'redirect', href: model.href } as const
+  const { href } = model
+  if (!href)
+    throw new Error(
+      `Models route ${slug} resolved to ${model.slug}, which has no page`
+    )
+  if (slug !== model.slug) return { kind: 'redirect', href } as const
   const related = relatedModels(
     model,
     workshopPages.filter(
@@ -44,7 +48,7 @@ export async function prepareModelPage(
   }))
   return {
     kind: 'page' as const,
-    model,
+    model: { ...model, href },
     related,
     relatedHeading: relatedProvider
       ? t('workshop.model.relatedProvider', locale, {

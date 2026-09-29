@@ -14,10 +14,8 @@ const vercelJsonPath = join(
 
 const config = z
   .record(z.string(), z.unknown())
+  .and(z.object({ buildCommand: z.string(), redirects: z.array(z.unknown()) }))
   .parse(JSON.parse(readFileSync(vercelJsonPath, 'utf8')))
-z.object({ buildCommand: z.string(), redirects: z.array(z.unknown()) }).parse(
-  config
-)
 
 writeFileSync(
   vercelJsonPath,
