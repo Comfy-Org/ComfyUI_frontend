@@ -290,6 +290,21 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
   })
 
+  test('an opened shelf reads as a chosen filter', async ({ page }) => {
+    await page.goto('/models/')
+    await page.getByTestId('section-generate-videos-open').click()
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Generate videos'
+    )
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    await page.getByTestId('workshop-filter').click()
+    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
+      '1 selected'
+    )
+    await page.getByTestId('workshop-filter-clear').click()
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+  })
+
   test('a model page returns to the shelf it was opened from', async ({
     page
   }) => {
@@ -770,6 +785,9 @@ test.describe('Model playground', () => {
     await prompt.fill('')
 
     await page.getByTestId('example-card').first().click()
+    const dialog = page.getByTestId('example-replace-dialog')
+    await expect(dialog.getByRole('heading')).toHaveText('Load this example?')
+    await expect(dialog.getByRole('button')).toHaveCount(2)
     await page.getByTestId('example-replace-keep').click()
 
     await expect(page.getByTestId('example-replace-dialog')).toHaveCount(0)
