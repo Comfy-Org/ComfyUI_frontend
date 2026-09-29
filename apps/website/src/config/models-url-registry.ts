@@ -6,7 +6,7 @@ import {
   workshopModels
 } from './workshop-browse-content'
 
-export const MODELS_BASE_PATH = '/models'
+const MODELS_BASE_PATH = '/models'
 
 type PageKind = 'hub' | 'model' | 'workflow' | 'app' | 'reserved'
 
@@ -81,7 +81,7 @@ const displaySlugs = (types: readonly WorkshopDisplayEntry['type'][]) =>
     .filter((entry) => types.includes(entry.type))
     .map(({ slug }) => slug)
 
-export const modelsUrlRegistry = buildModelsUrlRegistry(
+const modelsUrlRegistry = buildModelsUrlRegistry(
   modelsUrlEntries({
     models: workshopModels.map(({ slug }) => slug),
     workflows: displaySlugs(['CLOUD', 'SERVERLESS']),
