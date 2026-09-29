@@ -19,7 +19,10 @@ import { useWorkshopSession } from '../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../config/workshop-snippets'
 import { createWorkshopUrlUploader } from '../config/workshop-url-upload'
 import type { AspectRatio } from '../lib/workshop/cinematic-studio/catalog'
-import { frameParameters } from '../lib/workshop/cinematic-studio/frames'
+import {
+  frameParameters,
+  watermarksOff
+} from '../lib/workshop/cinematic-studio/frames'
 import { studioGate } from '../lib/workshop/cinematic-studio/gate'
 import type { Reel, ReelEvent } from '../lib/workshop/cinematic-studio/reel'
 import {
@@ -73,13 +76,16 @@ function takeFingerprint(
 }
 
 function shotParameters(request: ShotRequest, model: WorkshopModelDetail) {
+  const frame = frameParameters(
+    model.execution,
+    request.aspect,
+    request.resolutionPixels
+  )
+  const clean = watermarksOff(model.execution)
   return {
     prompt: request.prompt,
-    ...frameParameters(
-      model.execution,
-      request.aspect,
-      request.resolutionPixels
-    ),
+    ...frame,
+    ...(clean ? { model_specific: { ...frame.model_specific, ...clean } } : {}),
     ...(request.references.length
       ? { reference_images: request.references }
       : {})

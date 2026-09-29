@@ -135,6 +135,23 @@ export function referenceCapacity(contract: WorkshopContract): number {
   }, 0)
 }
 
+/**
+ * Every watermark switch a contract has, turned off. Some providers stamp a
+ * visible "AI generated" mark by default (Seedream's `watermark` is on unless
+ * asked otherwise); a studio frame should come back clean.
+ */
+export function watermarksOff(
+  contract: WorkshopContract | undefined
+): Readonly<Record<string, boolean>> | undefined {
+  if (!contract) return undefined
+  const entries = contractSchema(contract).flatMap((field) =>
+    field.kind === 'toggle' && /watermark/i.test(field.name)
+      ? [[field.name, false] as const]
+      : []
+  )
+  return entries.length ? Object.fromEntries(entries) : undefined
+}
+
 /** The Router parameters for one studio frame. */
 export function frameParameters(
   contract: WorkshopContract | undefined,

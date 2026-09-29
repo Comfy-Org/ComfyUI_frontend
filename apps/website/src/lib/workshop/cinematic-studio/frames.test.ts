@@ -7,7 +7,8 @@ import {
   frameParameters,
   frameSize,
   nearestAspect,
-  referenceCapacity
+  referenceCapacity,
+  watermarksOff
 } from './frames'
 import type { CinematicModel } from './models'
 import { shotAspects, takesReferences } from './models'
@@ -112,5 +113,41 @@ describe('studio model rules', () => {
       false
     )
     expect(takesReferences(undefined, 0)).toBe(true)
+  })
+})
+
+describe('watermarksOff', () => {
+  it('turns off every watermark switch a contract has', () => {
+    expect(
+      watermarksOff(contract('byteplus--seedream-5-pro--generate-images'))
+    ).toEqual({ watermark: false })
+    expect(
+      watermarksOff(contract('byteplus--seedream-5-pro--edit-images'))
+    ).toEqual({ watermark: false })
+    expect(
+      watermarksOff(
+        contract('qwen--qwen-image-3.0-text-to-image--generate-images')
+      )
+    ).toEqual({ param_watermark: false })
+  })
+
+  it('leaves models without one alone', () => {
+    expect(watermarksOff(contract(FLUX))).toBeUndefined()
+  })
+
+  it('reaches the Router body through the real parameter mapper', () => {
+    const detail = getAuthoredRouterWorkshopModelDetail(
+      'byteplus--seedream-5-pro--generate-images'
+    )!
+    const frame = frameParameters(detail.execution, '16:9', 2048)
+    const { values } = resolveModelRouterRender(detail, {
+      ...frame,
+      model_specific: {
+        ...frame.model_specific,
+        ...watermarksOff(detail.execution)
+      }
+    })
+    expect(values.watermark).toBe(false)
+    expect(values.size).toBe('1920x1080')
   })
 })
