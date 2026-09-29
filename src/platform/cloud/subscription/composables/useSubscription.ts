@@ -501,7 +501,10 @@ function useSubscriptionInternal() {
     source: PendingCheckoutRecoverySource
   ) => {
     if (!canRecoverPendingCheckout()) return
-    if (await waitForActiveRecoveryAtDeadline(source)) return
+    if (isRecoveringPendingCheckout) {
+      await waitForActiveRecoveryAtDeadline(source)
+      return
+    }
 
     isRecoveringPendingCheckout = true
 
