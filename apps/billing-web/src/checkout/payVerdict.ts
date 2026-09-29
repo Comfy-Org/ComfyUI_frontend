@@ -39,6 +39,8 @@ export function payVerdictOf(result: SubscriptionCommandResult): PayVerdict {
     )
       return { kind: 'requote', because: 'quote_expired' }
     switch (result.code) {
+      case 'QUOTE_STALE':
+        return { kind: 'requote', because: 'quote_expired' }
       case 'REACTIVATION_CONFIRMATION_REQUIRED':
         return { kind: 'requote', because: 'reactivation_required' }
       case 'OPERATION_ALREADY_PENDING':
