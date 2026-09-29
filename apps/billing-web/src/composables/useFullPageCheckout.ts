@@ -35,24 +35,39 @@ import {
 } from '@/checkout/checkoutPage'
 import { planCreditsSettingsUrl, pricingTableUrl } from '@/checkout/cloudLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
+import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
 import type { PayVerdict } from '@/checkout/payVerdict'
 import { operationOutcomeOf, payVerdictOf } from '@/checkout/payVerdict'
 import {
   buildSubscribeRequest,
-  checkoutResultUrl
+  checkoutReturnUrl
 } from '@/checkout/subscribeRequest'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
+import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { useBillingWebSession } from '@/session/billingWebSession'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
-/** What Pay charges: a new card's token, a saved method, or the method on file. */
+/**
+ * What Pay charges: a new method's token, a saved method, or the method on
+ * file. `methodType` is the provider's type (`card`, `alipay`, …); any
+ * non-card type finishes paying on its own site.
+ */
 export type PayChoice =
-  | { readonly confirmationToken: string }
-  | { readonly savedMethodId: string }
+  | { readonly confirmationToken: string; readonly methodType: string }
+  | { readonly savedMethodId: string; readonly methodType: string }
   | undefined
+
+const CARD_METHOD_TYPE = 'card'
+
+/** The method's type when it authenticates away from this page, else nothing. */
+function redirectMethodOf(choice: PayChoice): string | undefined {
+  if (choice === undefined || choice.methodType === CARD_METHOD_TYPE)
+    return undefined
+  return choice.methodType
+}
 
 type PlannedEntry = BillingEntry & { plan: string }
 
@@ -143,12 +158,13 @@ export function useFullPageCheckout() {
     }
   }
 
-  function quoteArrival(arrival: PlannedEntry) {
+  function quoteArrival(arrival: PlannedEntry, promotionCode?: string) {
     return quote({
       planSlug: arrival.plan,
       ...(arrival.teamCreditStopId === undefined
         ? {}
-        : { teamCreditStopId: arrival.teamCreditStopId })
+        : { teamCreditStopId: arrival.teamCreditStopId }),
+      ...(promotionCode === undefined ? {} : { promotionCode })
     })
   }
 
@@ -161,6 +177,27 @@ export function useFullPageCheckout() {
       read.status === 'ok' ? read.value.status.cancel_at : undefined
   }
 
+  /** An operation parked on a card is what a Pay resubmits, so it is not money in flight. */
+  const moneyInFlight = computed(() => {
+    const operation = checkout.operation.value
+    return operation?.phase === 'pending' && !isParked(operation)
+  })
+
+  const promoLive = computed(() =>
+    promoEntryLive(page.value, checkout.submitting.value || moneyInFlight.value)
+  )
+
+  const promo = useCheckoutPromo({
+    prefill: entry.value?.promotionCode,
+    live: () => promoLive.value,
+    requote: (promotionCode) => {
+      const arrival = entry.value
+      return arrival?.plan === undefined
+        ? Promise.resolve({ status: 'error', code: 'REQUEST_FAILED' })
+        : quoteArrival({ ...arrival, plan: arrival.plan }, promotionCode)
+    }
+  })
+
   const asksReactivation = (quoted: SubscriptionPreview) =>
     quoted.requires_reactivation_confirmation === true
 
@@ -169,15 +206,18 @@ export function useFullPageCheckout() {
     return asked
   }
 
+  /** A capture read again after the page went back to resolving keeps the applied code. */
   async function captureEvent(
     arrival: PlannedEntry
   ): Promise<CheckoutPageEvent> {
-    const [allowed, quoted, methods] = await Promise.all([
-      capabilities.read(),
-      quoteArrival(arrival),
-      saved.refresh(),
-      awaitBillingWebStripeKey()
-    ])
+    const [allowed, { requoted: quoted, expiredPromo }, methods] =
+      await Promise.all([
+        capabilities.read(),
+        requoteWithPromo(arrival),
+        saved.refresh(),
+        awaitBillingWebStripeKey()
+      ])
+    if (expiredPromo !== undefined) promo.expire()
     const stopped = capabilityStop(allowed)
     if (stopped !== undefined) return stopped
     if (quoted.status === 'error')
@@ -273,7 +313,8 @@ export function useFullPageCheckout() {
 
   watch(checkout.operation, (operation) => {
     if (operation === undefined) return
-    const own = page.value.kind === 'capture' && page.value.attempt === 'sent'
+    const own =
+      page.value.kind === 'capture' && page.value.attempt.kind === 'sent'
     dispatch({
       type: 'operationChanged',
       operation,
@@ -302,15 +343,15 @@ export function useFullPageCheckout() {
 
   /**
    * Money in flight keeps Pay locked, so a second click cannot charge twice.
-   * An operation parked on a card is what a Pay resubmits, so it does not.
+   * A re-quote for a promo code holds Pay until the price settles.
    */
-  const canPay = computed(() => {
-    const operation = checkout.operation.value
-    const inFlight = operation?.phase === 'pending' && !isParked(operation)
-    return (
-      railAcceptsPay(page.value) && preview.value?.allowed === true && !inFlight
-    )
-  })
+  const canPay = computed(
+    () =>
+      railAcceptsPay(page.value) &&
+      preview.value?.allowed === true &&
+      !moneyInFlight.value &&
+      !promo.busy.value
+  )
 
   const payFailure = computed(() => {
     const result = checkout.result.value
@@ -385,12 +426,25 @@ export function useFullPageCheckout() {
         : {}),
       confirmReactivation:
         current.kind === 'capture' && current.reactivation === 'confirmed',
-      returnUrl: checkoutResultUrl(
+      returnUrl: checkoutReturnUrl(
         arrival,
         billedWorkspace(),
         window.location.origin
       )
     })
+  }
+
+  /** A code the server now refuses has lapsed since Apply, so the plan is priced without it. */
+  async function requoteWithPromo(arrival: PlannedEntry) {
+    const code = promo.appliedCode.value
+    const withCode = await quoteArrival(arrival, code)
+    if (
+      code === undefined ||
+      withCode.status === 'ok' ||
+      promoRejectionOf(withCode) !== 'invalid'
+    )
+      return { requoted: withCode }
+    return { requoted: await quoteArrival(arrival), expiredPromo: code }
   }
 
   /** A Pay the server refused for an operation already under way re-reads it, never a decline (rule 18). */
@@ -415,17 +469,19 @@ export function useFullPageCheckout() {
     because: Extract<PayVerdict, { kind: 'requote' }>['because'],
     arrival: BillingEntry & { plan: string }
   ) {
-    const requoted = await quoteArrival(arrival)
+    const { requoted, expiredPromo } = await requoteWithPromo(arrival)
     if (requoted.status !== 'ok') {
       dispatch({ type: 'requoteFailed', code: requoted.code })
       return
     }
+    if (expiredPromo !== undefined) promo.expire()
     dispatch({
       type: 'requoted',
       reactivation: consentAsked(
         because === 'reactivation_required' || asksReactivation(requoted.value)
       ),
-      priceUpdated: because === 'quote_expired'
+      priceUpdated: because === 'quote_expired',
+      ...(expiredPromo === undefined ? {} : { expiredPromo })
     })
   }
 
@@ -434,22 +490,41 @@ export function useFullPageCheckout() {
     dispatch({ type: 'consentMissing' })
   }
 
+  let payGeneration = 0
+
+  /**
+   * A challenge the bank refused leaves the operation pending, so the
+   * subscribe never resolves for that attempt; the page has already moved on
+   * from the operation's own verdict, and a later Pay owns the form. Only
+   * the newest Pay's result may settle it.
+   */
   async function pay(choice: PayChoice) {
     const arrival = entry.value
     const quoted = preview.value
     if (arrival?.plan === undefined || !quoted || !canPay.value) return
     if (needsConsent(page.value)) return payWithoutConsent()
     const planned = { ...arrival, plan: arrival.plan }
-    dispatch({ type: 'paySubmitted' })
+    const mine = ++payGeneration
+    const redirectMethod = redirectMethodOf(choice)
+    dispatch({
+      type: 'paySubmitted',
+      ...(redirectMethod === undefined ? {} : { redirectMethod })
+    })
     const result = await checkout.subscribe(requestFor(planned, quoted, choice))
+    if (mine !== payGeneration) return
     await settle(payVerdictOf(result), planned)
   }
+
+  /** Busy from the Pay click until the attempt resolves, whatever the lifecycle's promise does. */
+  const submitting = computed(
+    () => page.value.kind === 'capture' && page.value.attempt.kind === 'sent'
+  )
 
   return {
     page: shallowReadonly(page),
     preview,
     canPay,
-    submitting: checkout.submitting,
+    submitting,
     payFailure,
     returnLink,
     viewPlansLink,
@@ -466,7 +541,10 @@ export function useFullPageCheckout() {
       dispatch({ type: 'reactivationConfirmed', confirmed }),
     payWithoutConsent,
     cancelAt: shallowReadonly(cancelAt),
-    pay
+    promo,
+    promoLive,
+    pay,
+    continueVerification: checkout.continueVerification
   }
 }
 

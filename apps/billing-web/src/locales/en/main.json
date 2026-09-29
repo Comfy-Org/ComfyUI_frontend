@@ -171,8 +171,6 @@
     "unavailable": "The payment form isn't available right now. Please try again later.",
     "fullPage": {
       "logo": "Comfy",
-      "eyebrow": "Subscribe to {plan} · {workspace}",
-      "eyebrowPlanOnly": "Subscribe to {plan}",
       "planName": "{tier} Plan",
       "terms": {
         "agreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method each billing period until you cancel.",
@@ -218,6 +216,10 @@
           "title": "Payment not completed",
           "body": "Your payment wasn't completed, so you haven't been charged. Pay to try again, or use a different payment method."
         },
+        "promo_expired": {
+          "title": "Your promo code expired",
+          "body": "The {code} code expired, so the total was updated. Review the new total before paying — you have not been charged."
+        },
         "price_updated": {
           "title": "The price has updated",
           "body": "Your quote expired, so the numbers were refreshed. Review the new total before paying — you have not been charged."
@@ -250,9 +252,16 @@
           "other": "This change keeps your subscription, and it renews that day at {amount}."
         }
       },
-      "waiting": {
-        "status": "Finishing your payment…",
-        "body": "A payment for this workspace is still going through. This page will update on its own; nothing more is needed from you."
+      "phase": {
+        "challenge": "Nothing has been charged yet.",
+        "processing": "This payment is already processing and can't be canceled.",
+        "redirecting": "Taking you to {method} to finish paying. Nothing has been charged yet.",
+        "redirectingUnnamed": "Taking you to your payment provider to finish paying. Nothing has been charged yet.",
+        "methods": {
+          "alipay": "Alipay"
+        },
+        "continueVerification": "Continue verification",
+        "cancel": "Cancel payment"
       },
       "ending": {
         "thisWorkspace": "this workspace",
@@ -310,6 +319,68 @@
           "body": "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
           "codeLabel": "If this keeps happening, contact support with this code:"
         }
+      },
+      "summary": {
+        "label": "Order summary",
+        "verb": {
+          "subscribe": "Subscribe to {plan}",
+          "upgrade": "Upgrade to {plan}",
+          "switch": "Switch to {plan}",
+          "change": "Change to {plan}"
+        },
+        "scoped": "{action} · {workspace}",
+        "planWithCadence": "{tier} {cadence}",
+        "cadence": {
+          "monthly": "Monthly",
+          "yearly": "Yearly"
+        },
+        "rate": {
+          "monthly": "/ mo",
+          "yearly": "/ yr"
+        },
+        "credits": {
+          "perMonth": "credits per month",
+          "perYear": "credits per year",
+          "bare": "credits",
+          "addedToday": "credits added today",
+          "addedTodayExpire": "credits added today (expire {date})",
+          "refillMonthlyAfter": "credits refill monthly after {date}",
+          "refillYearlyAfter": "credits refill yearly after {date}"
+        },
+        "item": {
+          "prorated": "{plan} - Prorated",
+          "remainingTime": "Remaining time for {plan} plan, less unused time from {current} plan",
+          "billedMonthly": "{amount} /mo, billed monthly",
+          "billedYearly": "Billed yearly",
+          "rateMonthly": "{amount} /mo",
+          "rateYearly": "{amount} /yr",
+          "refillsMonthly": "Credits refill to {credits} each month",
+          "refillsYearly": "Credits refill to {credits} each year",
+          "startsMonthly": "Starts {date}, billed monthly",
+          "startsYearly": "Starts {date}, billed yearly"
+        },
+        "subtotal": "Subtotal",
+        "discount": {
+          "fallbackLabel": "Promo code",
+          "amount": "−{amount}"
+        },
+        "promo": {
+          "add": "Add promo code",
+          "field": "Promo code",
+          "apply": "Apply",
+          "dismiss": "Close promo code",
+          "remove": "Remove {code}",
+          "invalid": "This code isn't valid.",
+          "unchecked": "We couldn't check this code. Try again."
+        },
+        "trailing": {
+          "renewsAt": "Renews at {amount} on {date}",
+          "renewsAtAmount": "Renews at {amount}",
+          "creditsKept": "Existing credits are kept",
+          "creditsOverlap": "This month's credits stay valid until {date}",
+          "keepUntil": "You'll keep {plan} until {date}",
+          "zeroDue": "You won't be charged today. Your payment method renews the plan at {amount} on {date}."
+        }
       }
     }
   },
@@ -345,7 +416,8 @@
       "INVALID_PLAN": "That link names a plan we can't read.",
       "INVALID_CORRELATION_ID": "That link carries a reference we can't read.",
       "INVALID_WORKSPACE_ID": "That link names a workspace we can't read.",
-      "INVALID_TEAM_CREDIT_STOP_ID": "That link names a credit amount we can't read."
+      "INVALID_TEAM_CREDIT_STOP_ID": "That link names a credit amount we can't read.",
+      "INVALID_PROMOTION_CODE": "That link carries a promo code we can't read."
     },
     "failure": {
       "unknown": "Something went wrong. Please try again.",
