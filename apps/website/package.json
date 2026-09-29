@@ -37,6 +37,7 @@
     "generate:workshop-node-pricing": "tsx ./scripts/generate-workshop-node-pricing.ts",
     "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
     "check:hreflang": "tsx ./scripts/check-hreflang.ts",
+    "list:models-pages": "tsx ./scripts/list-models-pages.ts",
     "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts",
     "workshop:generate": "tsx ./scripts/generate-workshop-models.ts",
     "workshop:generate-versions": "tsx ./scripts/generate-workshop-versions.ts",

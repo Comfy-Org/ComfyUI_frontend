@@ -62,11 +62,11 @@ jobs:
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
           WORKSHOP_IN_BUILD: '0'
         run: |
-          models_pages() { find apps/website/dist/models -name index.html 2>/dev/null | sed "s|.*/dist/||" | sort; }
+          models_pages() { pnpm --silent --filter @comfyorg/website list:models-pages; }
           # dist/ still holds the "Build website" step's Workshop-enabled output.
           models_pages > "$RUNNER_TEMP/models-with-workshop.txt"
           if [ ! -s "$RUNNER_TEMP/models-with-workshop.txt" ]; then
-            echo "::error title=No Workshop-enabled baseline::apps/website/dist/models has no pages before the WORKSHOP_IN_BUILD=0 build. Run this step after \"Build website\"."
+            echo "::error title=No Workshop-enabled baseline::No pages under the Models URL registry's roots before the WORKSHOP_IN_BUILD=0 build. Run this step after \"Build website\"."
             exit 1
           fi
           pnpm --filter @comfyorg/website build
