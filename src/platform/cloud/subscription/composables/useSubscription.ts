@@ -751,20 +751,26 @@ function useSubscriptionInternal() {
     if (!attempt) return
     const attemptId = attempt.attempt_id
     if (activePendingCheckoutRead?.attemptId === attemptId) {
-      const didObserveStatus = await waitForActiveRecoveryAtDeadline(
-        source,
-        attemptId
-      )
-      if (!isDisposed && source === 'deadline') {
-        if (didObserveStatus) reportMissingCheckoutCompletion(attemptId)
-        else retryUnavailableDeadline(source)
-      }
+      await joinActivePendingCheckoutRecovery(source, attemptId)
       return
     }
 
     if (!(await runPendingCheckoutRecovery(source, attemptId))) return
 
     if (source === 'deadline') reportMissingCheckoutCompletion(attemptId)
+  }
+
+  const joinActivePendingCheckoutRecovery = async (
+    source: PendingCheckoutRecoverySource,
+    attemptId: string
+  ) => {
+    const didObserveStatus = await waitForActiveRecoveryAtDeadline(
+      source,
+      attemptId
+    )
+    if (isDisposed || source !== 'deadline') return
+    if (didObserveStatus) reportMissingCheckoutCompletion(attemptId)
+    else retryUnavailableDeadline(source)
   }
 
   const runPendingCheckoutRecovery = async (
