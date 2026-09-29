@@ -749,14 +749,13 @@ describe('reconcileAgentAdapters', () => {
 
       const materialized = reconcileAgentAdapters(graph)
       const replacement = graph.getNodeById(toNodeId(1))
+      assert.exists(replacement)
       return { graph, materialized, replacement, stale }
     }
 
     it('sets up and replaces the renamed node before checking title preservation', () => {
       const { graph, materialized, replacement, stale } = replaceRenamedNode()
 
-      expect(stale).toBeDefined()
-      expect(replacement).toBeDefined()
       expect({
         materialized,
         nodeCount: graph._nodes.length,
@@ -773,7 +772,7 @@ describe('reconcileAgentAdapters', () => {
     it.fails('KNOWN GAP: keeps the live title when a replacement payload carries another', () => {
       const { replacement } = replaceRenamedNode()
 
-      expect(replacement?.title).toBe('My hand-named node')
+      expect(replacement.title).toBe('My hand-named node')
     })
 
     it('runs stale-node lifecycle without clearing successor-owned state', () => {
