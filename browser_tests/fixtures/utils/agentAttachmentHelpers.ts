@@ -48,7 +48,11 @@ export async function expectAssets(
   assets: ExpectedAssetPreview[],
   timeout = 10_000
 ) {
-  const previews = panel.getByTestId(/^reply-(image|video)-preview$/)
+  // core/1.54 predates the per-image test id, but both image and video
+  // previews are children of the stable reply asset group contract.
+  const previews = panel
+    .getByTestId('reply-asset-group')
+    .locator('img:not([alt=""]), video')
   await expect(previews).toHaveCount(assets.length, { timeout })
   for (const [index, { visible }] of assets.entries()) {
     await expect(previews.nth(index)).toBeVisible({ visible, timeout })
