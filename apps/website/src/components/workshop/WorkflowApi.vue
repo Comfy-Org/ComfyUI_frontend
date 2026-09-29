@@ -39,6 +39,21 @@ const request = computed(() => {
   }
 })
 const code = computed(() => (request.value ? workflowCurl(request.value) : ''))
+const graphFile = `${model.slug.split('/').pop()}-api.json`
+
+function downloadGraph() {
+  if (!request.value) return
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(request.value.prompt, null, 2)], {
+      type: 'application/json'
+    })
+  )
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = graphFile
+  anchor.click()
+  URL.revokeObjectURL(url)
+}
 const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
   urlUploadField(field)
 )
@@ -87,10 +102,35 @@ const facts = computed(() => [
           :href="keyHref"
           target="_blank"
           rel="noopener"
-          class="w-full justify-center"
+          class="w-full justify-between"
           data-testid="api-get-key"
-          >{{ t('workshop.api.getKey') }}</Button
         >
+          <template #prepend>
+            <span
+              class="inline-flex size-6 items-center justify-center rounded-full bg-primary-comfy-ink/15 text-xs font-bold"
+              aria-hidden="true"
+              >1</span
+            >
+          </template>
+          {{ t('workshop.api.getKey') }}
+          <template #append><span aria-hidden="true">↗</span></template>
+        </Button>
+        <Button
+          v-if="request"
+          variant="outline"
+          class="w-full justify-between"
+          @click="downloadGraph"
+        >
+          <template #prepend>
+            <span
+              class="inline-flex size-6 items-center justify-center rounded-full bg-primary-comfy-yellow/15 text-xs font-bold"
+              aria-hidden="true"
+              >2</span
+            >
+          </template>
+          {{ t('workshop.api.downloadGraph') }}
+          <template #append><span aria-hidden="true">↓</span></template>
+        </Button>
         <div data-testid="workflow-api-endpoint">
           <ApiFacts :where="t('workshop.api.runsOnCloud')" :rows="facts" />
         </div>
@@ -131,9 +171,11 @@ const facts = computed(() => [
           <h3 class="font-medium text-primary-comfy-canvas">
             {{ t('workshop.workflow.apiUploads') }}
           </h3>
-          <p>{{ t('workshop.workflow.apiUploadGrant') }}</p>
-          <p>{{ t('workshop.workflow.apiUploadPut') }}</p>
-          <p>{{ t('workshop.workflow.apiUploadFinalize') }}</p>
+          <ol class="list-decimal space-y-1 ps-5">
+            <li>{{ t('workshop.workflow.apiUploadGrant') }}</li>
+            <li>{{ t('workshop.workflow.apiUploadPut') }}</li>
+            <li>{{ t('workshop.workflow.apiUploadFinalize') }}</li>
+          </ol>
         </div>
 
         <p class="text-sm/relaxed text-primary-warm-gray">
