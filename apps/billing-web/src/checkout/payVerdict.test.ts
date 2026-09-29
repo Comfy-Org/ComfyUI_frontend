@@ -124,7 +124,7 @@ describe('payVerdictOf', () => {
     },
     {
       name: 'a stale subscription quote',
-      result: refusedWith('REQUEST_FAILED', 'SUBSCRIPTION_QUOTE_STALE'),
+      result: { status: 'error', code: 'QUOTE_STALE' },
       expected: { kind: 'requote', because: 'quote_expired' }
     },
     {
