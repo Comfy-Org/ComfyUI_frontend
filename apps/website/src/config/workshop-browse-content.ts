@@ -191,7 +191,7 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
       name,
       workflowCount: exampleCount,
       ...(recommendedRank !== undefined ? { recommendedRank } : {}),
-      href: hubModelHref(slug),
+      ...(isWorkshopModelDisabled(slug) ? {} : { href: hubModelHref(slug) }),
       routerId: record.id,
       incompleteReason: record.incompleteReason,
       provider,

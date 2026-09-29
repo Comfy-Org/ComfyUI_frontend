@@ -58,4 +58,10 @@ describe('hub model addresses', () => {
       '/models/bfl--flux-2-max--generate-images'
     ])
   })
+
+  it('refuses a slug that has no built page', () => {
+    expect(() =>
+      hubModelHref('byteplus--seedance-1-0-lite-text-to-video--generate-videos')
+    ).toThrow(/No \/hub\/models page/)
+  })
 })

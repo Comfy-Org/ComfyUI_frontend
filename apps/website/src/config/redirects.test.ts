@@ -12,6 +12,7 @@ import {
   toVercelRedirects
 } from './redirects'
 import { hubModelAliases, hubModelSlugs } from './hub-models'
+import { modelPageUrls } from './model-urls'
 import { modelsUrlKind } from './models-url-registry'
 import { getRoutes } from './routes'
 
@@ -170,13 +171,6 @@ describe('generated Vercel rules', () => {
     ])
   })
 
-  it('never adds a /models catch-all, since hub pages fetch /models/<slug>/page.json', () => {
-    expect(
-      vercelRedirects.filter(({ source }) => /[:*()]/.test(source))
-    ).toEqual([])
-    expect(find('/models/catalogue.json')).toBeUndefined()
-  })
-
   it('leaves /login/ to the Workshop sign-in page', () => {
     expect(find('/login')?.permanent).toBe(false)
     expect(find('/login/')).toBeUndefined()
@@ -236,5 +230,34 @@ describe('old Models addresses', () => {
         )
       })
     ).toEqual([])
+  })
+})
+
+function sourcePattern(source: string): RegExp {
+  const pattern = source
+    .replace(/\[\.\.\.[^\]]+\]|:[\w]+[*+]/g, '.*')
+    .replace(/\[[^\]]+\]|:[\w]+/g, '[^/]+')
+  return new RegExp(`^${pattern}/?$`)
+}
+
+describe('model page data', () => {
+  const dataPaths = [
+    '/models/catalogue.json',
+    ...modelPageUrls.map(({ oldSlug }) => `/models/${oldSlug}/page.json`)
+  ]
+  const sources = [
+    ...toVercelRedirects(siteRedirects).map(({ source }) => source),
+    ...Object.keys(astroRedirects)
+  ]
+
+  it('recognises a pattern that would swallow the data', () => {
+    expect(sourcePattern('/models/:path*').test(dataPaths[1])).toBe(true)
+  })
+
+  it('is never matched by a redirect, since /hub/models pages fetch it', () => {
+    const swallowed = sources.flatMap((source) =>
+      dataPaths.filter((path) => sourcePattern(source).test(path))
+    )
+    expect(swallowed).toEqual([])
   })
 })

@@ -32,11 +32,12 @@ export const hubModelAliases: ReadonlyMap<string, string> = new Map(
   modelAliasUrls.map(({ alias, newSlug }) => [alias, newSlug])
 )
 
-/** Disabled models have no row; their pages are never built. */
-export const hubModelHref = (oldSlug: string) =>
-  hubModelPath(
-    hubModelSlugs.get(oldSlug) ?? hubModelAliases.get(oldSlug) ?? oldSlug
-  )
+/** Throws for a slug with no built page, such as a disabled model. */
+export function hubModelHref(oldSlug: string): string {
+  const newSlug = hubModelSlugs.get(oldSlug) ?? hubModelAliases.get(oldSlug)
+  if (!newSlug) throw new Error(`No /hub/models page for ${oldSlug}`)
+  return hubModelPath(newSlug)
+}
 
 const oldModelPaths = new Set([
   '/models',

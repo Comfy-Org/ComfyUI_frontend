@@ -215,7 +215,7 @@ function rememberModel(
   event: MouseEvent,
   shelf = useCase.value
 ) {
-  rememberShelfOnClick(shelf, model.href, event)
+  if (model.href) rememberShelfOnClick(shelf, model.href, event)
 }
 
 watch(browseAll, (on) => on && resetFilters())

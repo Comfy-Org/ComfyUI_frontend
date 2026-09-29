@@ -24,7 +24,7 @@ for (const path of PAGES) {
   }) => {
     if (path === '/hub/models/') {
       // The Hub only draws its own toolbar and shelves once Workshop is on;
-      // with it off, /models/ would hide the faces this case measures.
+      // with it off, /hub/models/ would hide the faces this case measures.
       await context.route('**/t.comfy.org/**', (route) =>
         /\/(flags|decide)\//.test(route.request().url())
           ? route.fulfill({
