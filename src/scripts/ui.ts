@@ -1,7 +1,6 @@
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import type {
@@ -83,7 +82,7 @@ function dragElement(dragEl): () => void {
       )
 
       positionElement()
-    } catch (exception) {
+    } catch {
       // robust
     }
   }
@@ -658,7 +657,7 @@ export class ComfyUI {
               !useSettingStore().get('Comfy.ConfirmClear') ||
               confirm('Clear workflow?')
             ) {
-              runMintPortsIntentionalClear(() => this.app.clean())
+              this.app.clean()
               this.host.resetView()
               api.dispatchCustomEvent('graphCleared')
             }

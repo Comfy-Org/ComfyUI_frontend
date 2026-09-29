@@ -55,7 +55,6 @@
               "
             >
               <ActionBarButtons />
-              <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
               <div
                 ref="legacyCommandsContainerRef"
                 data-testid="legacy-topbar-container"
@@ -320,7 +319,6 @@ function openRightSidePanel() {
   rightSidePanelStore.togglePanel()
 }
 
-// Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()
 const hasLegacyContent = ref(false)
 let legacyContentCheckRafId: number | null = null
@@ -331,38 +329,33 @@ function checkLegacyContent() {
     hasLegacyContent.value = false
     return
   }
-  // Mirror the CSS: [&:not(:has(*>*:not(:empty)))]:hidden
   hasLegacyContent.value =
     el.querySelector(':scope > * > *:not(:empty)') !== null
 }
 
-function scheduleLegacyContentCheck() {
-  if (legacyContentCheckRafId !== null) return
-
-  legacyContentCheckRafId = requestAnimationFrame(() => {
-    legacyContentCheckRafId = null
-    checkLegacyContent()
-  })
-}
-
-useMutationObserver(legacyCommandsContainerRef, scheduleLegacyContentCheck, {
-  childList: true,
-  subtree: true
-})
+useMutationObserver(
+  legacyCommandsContainerRef,
+  () => {
+    if (legacyContentCheckRafId !== null) return
+    legacyContentCheckRafId = requestAnimationFrame(() => {
+      legacyContentCheckRafId = null
+      checkLegacyContent()
+    })
+  },
+  { childList: true, subtree: true }
+)
 
 onMounted(() => {
-  if (legacyCommandsContainerRef.value) {
-    app.menu.element.style.width = 'fit-content'
-    legacyCommandsContainerRef.value.appendChild(app.menu.element)
-    checkLegacyContent()
-  }
+  const container = legacyCommandsContainerRef.value
+  if (!container) return
+  app.menu.element.style.width = 'fit-content'
+  container.appendChild(app.menu.element)
+  checkLegacyContent()
 })
 
 onBeforeUnmount(() => {
   if (legacyContentCheckRafId === null) return
-
   cancelAnimationFrame(legacyContentCheckRafId)
-  legacyContentCheckRafId = null
 })
 
 const openCustomNodeManager = async () => {

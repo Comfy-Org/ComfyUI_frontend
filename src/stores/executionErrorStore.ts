@@ -2,8 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref, toRaw, watch } from 'vue'
 import { whenever } from '@vueuse/core'
 
-import { classifyValidationErrorAbsorption } from '@/components/rightSidePanel/errors/missingResourceAbsorption'
-import type { MissingResourceAbsorption } from '@/components/rightSidePanel/errors/missingResourceAbsorption'
+import { classifyPanelErrors } from '@/utils/errorSeverityClassification'
+import { classifyValidationErrorAbsorption } from '@/utils/missingResourceAbsorption'
+import type { MissingResourceAbsorption } from '@/utils/missingResourceAbsorption'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import {
@@ -803,6 +804,39 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       : lastNodeErrors.value
   })
 
+  const errorClassification = computed(() =>
+    classifyPanelErrors({
+      promptError: lastPromptError.value,
+      executionError: lastExecutionError.value,
+      nodeErrors: surfacedNodeErrors.value,
+      missingModels: missingModelStore.visibleMissingModelCandidates,
+      missingMedia: missingMediaStore.visibleMissingMediaCandidates,
+      hasMissingNodes: missingNodesStore.hasMissingNodes
+    })
+  )
+
+  const blockingErrorNodeLocatorIds = computed(() => {
+    const classification = errorClassification.value
+    const executionIds = classification.nodeErrors
+      .filter(({ errors }) => errors.some(({ absorption }) => !absorption))
+      .map(({ rawNodeId }) => rawNodeId)
+    if (classification.executionError?.rawNodeId != null) {
+      executionIds.push(classification.executionError.rawNodeId)
+    }
+
+    const locators = new Set<NodeLocatorId>()
+    for (const executionId of executionIds) {
+      for (const ancestorId of getAncestorExecutionIds(executionId)) {
+        const locator = executionIdToNodeLocatorId(
+          useApp().rootGraphOrUndefined,
+          ancestorId
+        )
+        if (locator) locators.add(locator)
+      }
+    }
+    return locators
+  })
+
   const hasMissingError = computed(
     () =>
       missingNodesStore.hasMissingNodes ||
@@ -969,10 +1003,13 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     hasExecutionError,
     hasPromptError,
     hasNodeError,
+    errorClassification,
+    blockingErrorNodeLocatorIds,
     hasMissingError,
     hasAnyError,
     allErrorExecutionIds,
     lastExecutionErrorNodeId,
+    lastExecutionErrorNodeLocatorId,
     activeGraphErrorNodeIds,
 
     // Added-node scan coordination

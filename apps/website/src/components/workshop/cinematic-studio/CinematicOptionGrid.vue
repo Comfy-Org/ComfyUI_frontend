@@ -4,8 +4,11 @@ import { CircleDashed } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { DirectionGroup } from '../../../lib/workshop/cinematic-studio/catalog'
+import { directionIcon } from '../../../lib/workshop/cinematic-studio/direction-icons'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import CinematicCheckBadge from './CinematicCheckBadge.vue'
+import CinematicDirectionIcon from './CinematicDirectionIcon.vue'
 
 const {
   group,
@@ -18,6 +21,9 @@ const {
 }>()
 
 const emit = defineEmits<{ choose: [id: string] }>()
+
+const drawn = (option: string) =>
+  option !== 'auto' && directionIcon(group.part, option) !== undefined
 </script>
 
 <template>
@@ -65,6 +71,18 @@ const emit = defineEmits<{ choose: [id: string] }>()
             :style="{ backgroundColor: color }"
           />
         </template>
+        <span
+          v-if="option.preview && drawn(option.id)"
+          class="absolute bottom-1.5 left-1.5 grid size-8 place-items-center rounded-lg bg-primary-comfy-ink/80 text-primary-warm-white backdrop-blur-sm"
+          aria-hidden="true"
+        >
+          <CinematicDirectionIcon
+            :part="group.part"
+            :option="option.id"
+            class="size-6"
+          />
+        </span>
+        <CinematicCheckBadge v-if="selected === option.id" />
       </span>
       <span
         class="truncate px-1 text-sm text-primary-comfy-canvas group-hover:text-primary-warm-white"

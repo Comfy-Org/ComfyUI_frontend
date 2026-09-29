@@ -8,7 +8,9 @@ import {
   cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
-  remoteConfig
+  remoteConfig,
+  sessionAgentGrant,
+  sessionAgentGrantValidUntil
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
@@ -79,6 +81,36 @@ function resolveAuthGatedFlag(
   if (!isAuthenticatedConfigLoaded.value) return cachedValue.value ?? false
 
   return remoteConfigValue ?? api.getServerFeature(flagKey, false)
+}
+
+/**
+ * Resolves a per-user allowlist flag. Before the first authenticated answer it
+ * is off; after one, a failed refresh falls back to that answer so a blip
+ * cannot pull a granted surface out from under the user mid-session. Unlike
+ * `resolveAuthGatedFlag` the fallback is never read from storage — a persisted
+ * grant is what let one browser show the surface while another hid it for the
+ * same account (PM-1707).
+ */
+function resolveWhitelistFlag(
+  flagKey: string,
+  remoteConfigValue: boolean | undefined,
+  grantedThisSession: Ref<boolean | undefined>,
+  grantValidUntil: Ref<number | undefined>
+): boolean {
+  const sessionOverride = getSessionOverride<boolean>(flagKey)
+  if (sessionOverride !== undefined) return sessionOverride
+
+  const override = getDevOverride<boolean>(flagKey)
+  if (override !== undefined) return override
+
+  if (!isCloud) return false
+  if (!isAuthenticatedConfigLoaded.value)
+    return (
+      grantedThisSession.value === true &&
+      (grantValidUntil.value ?? 0) > Date.now()
+    )
+
+  return remoteConfigValue === true
 }
 
 /**
@@ -320,6 +352,14 @@ export function useFeatureFlags() {
     },
     get assetsEnabled() {
       return isCloud || resolveFlag('assets', undefined, false)
+    },
+    get agentInAppExperienceEnabled() {
+      return resolveWhitelistFlag(
+        ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE,
+        remoteConfig.value['agent-in-app-experience'],
+        sessionAgentGrant,
+        sessionAgentGrantValidUntil
+      )
     }
   })
 
@@ -380,6 +420,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,
+      [ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE]:
+        flags.agentInAppExperienceEnabled,
       assets: flags.assetsEnabled
     }
 

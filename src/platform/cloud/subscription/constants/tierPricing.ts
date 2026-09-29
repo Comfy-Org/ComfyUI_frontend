@@ -1,3 +1,4 @@
+import { TIER_CATALOG } from '@comfyorg/account-ui/billing/catalog'
 import type { SubscriptionTier as IngestSubscriptionTier } from '@comfyorg/ingest-types'
 
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierKey'
@@ -35,9 +36,9 @@ export const TIER_PRICING: Record<
   Exclude<TierKey, 'free' | 'founder'>,
   TierPricing
 > = {
-  standard: { monthly: 20, yearly: 16, credits: 4200, videoEstimate: 380 },
-  creator: { monthly: 35, yearly: 28, credits: 7400, videoEstimate: 670 },
-  pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 1915 }
+  standard: { ...TIER_CATALOG.standard, videoEstimate: 380 },
+  creator: { ...TIER_CATALOG.creator, videoEstimate: 670 },
+  pro: { ...TIER_CATALOG.pro, videoEstimate: 1915 }
 }
 
 const MONTHS_PER_YEAR = 12

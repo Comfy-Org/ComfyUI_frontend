@@ -172,12 +172,8 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   const nodeDataTypes = computed(() => {
     const types = new Set<string>()
     for (const nodeDef of nodeDefs.value) {
-      for (const input of Object.values(nodeDef.inputs)) {
-        types.add(input.type)
-      }
-      for (const output of nodeDef.outputs) {
-        types.add(output.type)
-      }
+      for (const type of nodeDef.inputTypes) types.add(type)
+      for (const type of nodeDef.outputTypes) types.add(type)
     }
     return types
   })

@@ -1,7 +1,10 @@
 import { cloneDeep, uniq } from 'es-toolkit/compat'
 
 import { resolveNodeDefText } from '@/i18n'
-import { resolveInputType } from '@/core/graph/widgets/dynamicTypes'
+import {
+  collectSearchableInputTypes,
+  collectSearchableOutputTypes
+} from '@/schemas/nodeDef/searchableSlotTypes'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -87,6 +90,7 @@ export class ComfyNodeDefImpl
   // ComfyNodeDefImpl fields
   readonly nodeSource: NodeSource
   readonly inputTypes: string[]
+  readonly outputTypes: string[]
 
   /**
    * Raw `/object_info` text, kept unresolved so `display_name` and
@@ -177,7 +181,16 @@ export class ComfyNodeDefImpl
 
     // Initialize node source
     this.nodeSource = getNodeSource(obj.python_module, this.essentials_category)
-    this.inputTypes = uniq(Object.values(this.inputs).flatMap(resolveInputType))
+    this.inputTypes = uniq(
+      Object.values(this.inputs).flatMap(collectSearchableInputTypes)
+    )
+    this.outputTypes = uniq(
+      collectSearchableOutputTypes(
+        this.outputs,
+        this.inputs,
+        obj.output_matchtypes
+      )
+    )
   }
 
   /**

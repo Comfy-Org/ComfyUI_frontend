@@ -744,6 +744,13 @@ export const zSavedPaymentMethod = z.object({
 })
 
 /**
+ * Response after signing out of all devices
+ */
+export const zRevokeAllSessionsResponse = z.object({
+  revoked: z.number().int()
+})
+
+/**
  * Response after accepting a resubscribe request.
  */
 export const zResubscribeResponse = z.object({
@@ -1063,6 +1070,15 @@ export const zPlanAvailability = z.object({
  */
 export const zPlan = z.object({
   availability: zPlanAvailability,
+  credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   credits_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -2028,6 +2044,25 @@ export const zForkWorkflowRequest = z.object({
 })
 
 /**
+ * 403 for a credential the route does not take. `accepted` names the ones it does, as `WWW-Authenticate` does.
+ */
+export const zAuthTypeNotAllowedError = z.object({
+  accepted: z.array(z.string()),
+  error: z.object({
+    message: z.string(),
+    type: z.enum(['auth_type_not_allowed'])
+  })
+})
+
+/**
+ * A 403 body: ErrorResponse, or AuthTypeNotAllowedError for a credential the route does not take.
+ */
+export const zForbiddenError = z.union([
+  zErrorResponse,
+  zAuthTypeNotAllowedError
+])
+
+/**
  * Response after submitting feedback
  */
 export const zFeedbackResponse = z.record(z.unknown())
@@ -2139,6 +2174,7 @@ export const zCurrentWorkspaceResponse = z.object({
   auth_method: z.string(),
   id: z.string(),
   name: z.string(),
+  permissions: z.array(z.string()).optional(),
   role: z.enum(['owner', 'member']).optional(),
   type: z.enum(['personal', 'team'])
 })
@@ -2365,6 +2401,8 @@ export const zBillingStatusResponse = z.object({
   plan_slug: z.string().optional(),
   renewal_date: z.string().datetime().optional(),
   scheduled_change: zScheduledPlanChange.nullable(),
+  scoped_effective_has_funds: z.record(z.boolean()).optional(),
+  scoped_has_funds: z.record(z.boolean()).optional(),
   subscription_duration: zSubscriptionDuration.optional(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
   subscription_tier: zSubscriptionTier.optional(),
@@ -3331,6 +3369,11 @@ export const zGetSessionResponse = zWebSessionResponse
  */
 export const zCreateSessionResponse2 = zCreateSessionResponse
 
+/**
+ * Every session ended
+ */
+export const zRevokeAllSessionsResponse2 = zRevokeAllSessionsResponse
+
 export const zExchangeTokenBody = zExchangeTokenRequest
 
 /**
@@ -3519,7 +3562,8 @@ export const zGetFeaturesResponse = z.object({
     .optional(),
   max_upload_size: z.number().int().optional(),
   stripe_publishable_key: z.string().optional(),
-  supports_preview_metadata: z.boolean().optional()
+  supports_preview_metadata: z.boolean().optional(),
+  web_session_probe: z.boolean().optional()
 })
 
 export const zSubmitFeedbackBody = zFeedbackRequest
@@ -4568,5 +4612,7 @@ export const zGetViewCompatAliasQuery = z.object({
 })
 
 export const zGetWebsocketQuery = z.object({
+  token: z.string().optional(),
+  workspace_id: z.string().optional(),
   clientId: z.string().optional()
 })

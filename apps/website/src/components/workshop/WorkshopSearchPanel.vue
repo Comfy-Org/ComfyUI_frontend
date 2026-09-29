@@ -40,6 +40,12 @@ const suggestions = computed(() =>
     ? sortWorkshopModels(matching.value, 'name').slice(0, SUGGESTIONS)
     : []
 )
+
+function sourceOf(model: WorkshopModel): string | undefined {
+  if (model.type === 'APP') return t('workshop.card.comfyApp', locale)
+  if (model.routerId === undefined) return model.models?.join(', ')
+  return model.provider ?? t('workshop.card.partnerNode', locale)
+}
 </script>
 
 <template>
@@ -97,11 +103,7 @@ const suggestions = computed(() =>
             {{ model.name }}
           </span>
           <span class="truncate text-xs text-primary-warm-gray">
-            {{
-              model.routerId === undefined
-                ? model.models?.join(', ')
-                : (model.provider ?? t('workshop.card.partnerNode', locale))
-            }}
+            {{ sourceOf(model) }}
           </span>
         </span>
       </button>

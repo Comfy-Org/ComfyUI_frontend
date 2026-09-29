@@ -35,8 +35,13 @@ function openDisownedTab(url: URL): boolean {
 
 let stopReturnRefresh: (() => void) | null = null
 
-function armReturnRefresh(): void {
+export function disarmHostedBillingReturnRefresh(): void {
   stopReturnRefresh?.()
+  stopReturnRefresh = null
+}
+
+function armReturnRefresh(): void {
+  disarmHostedBillingReturnRefresh()
   stopReturnRefresh = registerRefreshOnReturn(() => refreshBilling('account'))
 }
 

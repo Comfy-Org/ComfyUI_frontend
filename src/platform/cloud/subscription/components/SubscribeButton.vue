@@ -54,7 +54,8 @@ watch(
 
 const handleSubscribe = () => {
   useTelemetry()?.trackSubscription('subscribe_clicked', {
-    current_tier: tier.value?.toLowerCase()
+    current_tier: tier.value?.toLowerCase(),
+    reason: 'subscribe_now_button'
   })
   isAwaitingStripeSubscription.value = true
   void showSubscriptionRequiredDialog({ reason: 'subscribe_now_button' })

@@ -8,7 +8,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
-} from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+} from '@comfyorg/account-ui/billing/catalog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'

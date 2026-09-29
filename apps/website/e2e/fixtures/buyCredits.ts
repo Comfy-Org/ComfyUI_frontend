@@ -114,7 +114,11 @@ export async function stubBuyCredits(
   }
 
   await context.route('**/api/features', (route) => {
-    traffic.featureReads.push(route.request().url())
+    const request = route.request()
+    if (!request.headers()['authorization']) {
+      return fulfillJson(route, { status: 200, body: {} })
+    }
+    traffic.featureReads.push(request.url())
     return fulfillJson(route, replies.features)
   })
 

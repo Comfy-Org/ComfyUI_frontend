@@ -90,7 +90,7 @@ declare module '@/lib/litegraph/src/litegraph' {
   interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
     type?: string
     comfyClass: string
-    title: string
+    title?: string
     nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2 & { [key: symbol]: unknown }
     category?: string
     new (): T

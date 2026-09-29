@@ -64,11 +64,45 @@ const fetchTimeoutRejection = {
 describe('api.fetchApi', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
+    mockDistribution.isCloud = false
     // Reset api state
     api.user = 'test-user'
   })
 
   describe('header handling', () => {
+    afterEach(() => {
+      api.setAuthProvider(anonymousApiAuthProvider)
+    })
+
+    it('reports that no auth header was attached off-cloud', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const onAuthHeader = vi.fn()
+
+      await api.fetchApi('/test', { onAuthHeader })
+
+      expect(onAuthHeader).toHaveBeenCalledExactlyOnceWith(false)
+      expect(vi.mocked(global.fetch).mock.calls[0][1]).not.toHaveProperty(
+        'onAuthHeader'
+      )
+    })
+
+    it('reports when a cloud auth header was attached', async () => {
+      mockDistribution.isCloud = true
+      vi.spyOn(firebaseIdentity, 'onUserChanged').mockReturnValue(() => {})
+      vi.spyOn(firebaseIdentity, 'onTokenChanged').mockReturnValue(() => {})
+      useAuthStore().isInitialized = true
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
+        Authorization: 'Bearer tokenA'
+      })
+      installCloudApiAuth()
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const onAuthHeader = vi.fn()
+
+      await api.fetchApi('/test', { onAuthHeader })
+
+      expect(onAuthHeader).toHaveBeenCalledExactlyOnceWith(true)
+    })
+
     it('should add Comfy-User header with plain object headers', async () => {
       vi.mocked(global.fetch).mockResolvedValue(new Response())
 

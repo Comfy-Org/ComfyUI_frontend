@@ -76,11 +76,10 @@ describe('lint-staged config', () => {
     const first = lintStaged(['src/one.ts'])
     const second = lintStaged(['src/two.ts'])
 
-    expect(first).toContain(
-      'pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored "src/one.ts"'
-    )
-    expect(second).toContain(
-      'pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored "src/two.ts"'
-    )
+    expect(first).toContain(`${stagedEslint} "src/one.ts"`)
+    expect(second).toContain(`${stagedEslint} "src/two.ts"`)
   })
 })
+
+const stagedEslint =
+  "pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored --rule 'better-tailwindcss/enforce-canonical-classes: off' --report-unused-disable-directives-severity off"
