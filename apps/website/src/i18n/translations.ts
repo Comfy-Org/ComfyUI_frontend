@@ -2293,22 +2293,6 @@ Enterprise`
     en: '30 minute max workflow runtime',
     'zh-CN': '单个工作流最长运行 30 分钟'
   },
-  'pricing.feature.apiConcurrency1': {
-    en: 'Run up to 1 concurrent workflow via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 1 个工作流'
-  },
-  'pricing.feature.apiConcurrency3': {
-    en: 'Run up to 3 concurrent workflows via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 3 个工作流'
-  },
-  'pricing.feature.apiConcurrency5': {
-    en: 'Run up to 5 concurrent workflows via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 5 个工作流'
-  },
-  'pricing.feature.apiConcurrency25': {
-    en: 'Run up to 25 concurrent workflows via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 25 个工作流'
-  },
   'pricing.feature.addCredits': {
     en: 'Add more credits anytime',
     'zh-CN': '可随时增加积分'
@@ -9141,6 +9125,28 @@ Enterprise`
   'pricing.resourceCosts.heading': {
     en: 'Developer Platform pricing',
     'zh-CN': '开发者平台定价'
+  },
+  'pricing.comfyApi.heading': {
+    en: 'Comfy API plan limits',
+    'zh-CN': 'Comfy API 套餐限制'
+  },
+  'pricing.comfyApi.subtitle': {
+    en: 'Comfy API is a separate product from your Comfy Cloud plan, for teams building on the Comfy Cloud platform programmatically. These limits apply to each Comfy Cloud plan below.',
+    'zh-CN':
+      'Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。以下限制适用于下方各个 Comfy Cloud 套餐。'
+  },
+  'pricing.comfyApi.metricColumn': { en: 'Limit', 'zh-CN': '限制项' },
+  'pricing.comfyApi.metric.builds': {
+    en: 'Total builds limit',
+    'zh-CN': '构建总数上限'
+  },
+  'pricing.comfyApi.metric.deployments': {
+    en: 'Total deployments limit',
+    'zh-CN': '部署总数上限'
+  },
+  'pricing.comfyApi.metric.concurrency': {
+    en: 'Max worker concurrency (per deployment)',
+    'zh-CN': '最大工作节点并发数（每个部署）'
   },
   'pricing.minimaxLicense.heading': {
     en: 'MiniMax license pricing',

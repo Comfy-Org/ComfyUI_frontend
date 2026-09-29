@@ -4,6 +4,7 @@ import CloudPricingSection from '../components/pricing/CloudPricingSection.vue'
 import WhatsIncludedSection from '../components/pricing/WhatsIncludedSection.vue'
 import PricingFaq from '../components/pricing/PricingFaq.astro'
 import ResourceCostsSection from '../templates/platform/PricingSection.vue'
+import ComfyApiPlanLimitsSection from '../components/pricing/ComfyApiPlanLimitsSection.vue'
 import MinimaxLicensePricingSection from '../components/pricing/MinimaxLicensePricingSection.vue'
 import MinimaxLicenseHeroSection from '../components/common/MinimaxLicenseHeroSection.vue'
 import { pricingOffers } from '../config/pricing'
@@ -50,6 +51,7 @@ const productId = jsonLdId(url, 'product')
     subtitle={t('pricing.resourceCosts.subtitle', locale)}
     headingSize="subsection"
   />
+  <ComfyApiPlanLimitsSection locale={locale} />
   <MinimaxLicenseHeroSection client:visible />
   <MinimaxLicensePricingSection locale={locale} />
   <PricingFaq locale={locale} />
