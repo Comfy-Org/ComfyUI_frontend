@@ -95,7 +95,8 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 const mockRail = vi.hoisted(() => ({
   enabled: false,
-  openPaymentPortal: vi.fn()
+  openPaymentPortal: vi.fn(),
+  cancelSubscription: vi.fn()
 }))
 
 vi.mock<unknown>(
@@ -218,6 +219,7 @@ describe('useWorkspaceBilling', () => {
   afterEach(() => {
     scope?.stop()
     scope = undefined
+    mockRail.enabled = false
   })
 
   describe('initialize', () => {
@@ -1265,29 +1267,23 @@ describe('useWorkspaceBilling', () => {
       expect(billing.error.value).toBeNull()
     })
 
-    it('rejects when the cancellation scope changes while the operation settles', async () => {
-      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
-        billing_op_id: 'op-cancel',
-        cancel_at: '2026-06-01T00:00:00Z'
-      })
-      const deferredOperation = createDeferred<ReturnType<typeof operation>>()
-      vi.mocked(useBillingOperationStore().startOperation).mockReturnValue(
-        deferredOperation.promise
-      )
+    it('rejects before the legacy request when scope changes while the rail declines', async () => {
+      const deferredRail = createDeferred<{ status: 'unavailable' }>()
+      mockRail.enabled = true
+      mockRail.cancelSubscription.mockReturnValue(deferredRail.promise)
       let scopeIsCurrent = true
 
-      const pending = setupBilling().cancelSubscription(
-        () => scopeIsCurrent
-      )
+      const pending = setupBilling().cancelSubscription(() => scopeIsCurrent)
       await vi.waitFor(() =>
-        expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
+        expect(mockRail.cancelSubscription).toHaveBeenCalledOnce()
       )
       scopeIsCurrent = false
-      deferredOperation.resolve(operation())
+      deferredRail.resolve({ status: 'unavailable' })
 
       await expect(pending).rejects.toBeInstanceOf(
         CancellationScopeChangedError
       )
+      expect(mockWorkspaceApi.cancelSubscription).not.toHaveBeenCalled()
     })
 
     it('throws the op error message when the cancel op fails', async () => {
