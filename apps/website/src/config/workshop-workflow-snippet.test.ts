@@ -117,6 +117,9 @@ describe('workflow API snippets', () => {
     expect(workflowPython(plan)).toContain(
       'client.assets.from_url("https://example.com/replace-with-a-url/mask")'
     )
+    expect(workflowTypeScript(plan)).toContain(
+      '// Replace each example.com URL with a public URL of your file.'
+    )
   })
 
   it('quotes the exact Cloud request without executing prompt text', () => {

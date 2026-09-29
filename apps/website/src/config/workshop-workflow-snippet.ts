@@ -58,12 +58,20 @@ export interface WorkflowSdkPlan {
   readonly outputNodeIds: readonly string[]
 }
 
+const STAND_IN_URL = 'https://example.com/replace-with-a-url/'
+
+function standInNote(plan: WorkflowSdkPlan, marker: string): string[] {
+  return plan.uploads.some((upload) => upload.url.startsWith(STAND_IN_URL))
+    ? [`${marker} Replace each example.com URL with a public URL of your file.`]
+    : []
+}
+
 function uploadUrl(value: FieldValue, name: string): string {
   const file = Array.isArray(value) ? value[0] : value
   const url = typeof file === 'object' ? file.sourceUrl : file
   return typeof url === 'string' && url.startsWith('https://')
     ? url
-    : `https://example.com/replace-with-a-url/${name}`
+    : `${STAND_IN_URL}${name}`
 }
 
 function nodeInputs(node: unknown): Record<string, unknown> {
@@ -109,9 +117,12 @@ export function workflowTypeScript(plan: WorkflowSdkPlan): string {
     '// Node 22+: npm install @comfyorg/sdk@0.4.0',
     "import { Comfy } from '@comfyorg/sdk'",
     '',
-    'const apiKey = process.env.COMFY_API_KEY',
+    'const apiKey = process.env.COMFY_API_KEY?.trim()',
+    'if (!apiKey) throw new Error("Set COMFY_API_KEY")',
+    `process.env.COMFY_BASE_URL ??= ${literal(WORKSHOP_CLOUD_BASE_URL)}`,
     'const client = new Comfy({ apiKey })',
     `const workflow = client.workflows.fromJson(${JSON.stringify(plan.graph, null, 2)})`,
+    ...standInNote(plan, '//'),
     ...plan.uploads.map(
       (upload) =>
         `workflow.setInput(${literal(upload.nodeId)}, ${literal(upload.input)}, await client.assets.fromUrl(${literal(upload.url)}))`
@@ -134,9 +145,12 @@ export function workflowPython(plan: WorkflowSdkPlan): string {
     '',
     'from comfy_sdk import Comfy',
     '',
-    'api_key = os.environ["COMFY_API_KEY"]',
+    'api_key = os.environ.get("COMFY_API_KEY", "").strip()',
+    'if not api_key: raise RuntimeError("Set COMFY_API_KEY")',
+    `os.environ.setdefault("COMFY_BASE_URL", ${literal(WORKSHOP_CLOUD_BASE_URL)})`,
     'client = Comfy(api_key=api_key)',
     `workflow = client.workflows.from_json(${pythonLiteral(plan.graph)})`,
+    ...standInNote(plan, '#'),
     ...plan.uploads.map(
       (upload) =>
         `workflow.set_input(${literal(upload.nodeId)}, ${literal(upload.input)}, client.assets.from_url(${literal(upload.url)}))`
