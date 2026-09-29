@@ -75,9 +75,9 @@ test.describe(
           ])
         // Consent semantics are unchanged: a dismissal is still not a decision.
         expect(agentConsentWrites).toHaveLength(0)
-        // Activation now opens the panel independently of consent. Dismissing
-        // the automatic card leaves that already-open panel in place.
-        await expect(agentPanel.root).toBeVisible()
+        // core/1.54 predates panel activation, so dismissing the automatic
+        // consent card closes the panel with it.
+        await expect(agentPanel.root).toHaveCount(0)
       })
 
       await test.step('One outcome per impression, not one per close path', async () => {
@@ -153,30 +153,13 @@ test.describe(
       consentTelemetry
     }) => {
       const page = comfyPage.page
-      // Every read fails. The automatic chain exits at the `load` stage without
-      // asking, which `gc-16`'s instrument already names; the user then clicks
-      // the entry button, and that attempt fails inside the request. This is the
-      // shape behind the 23 `agent_consent_setting_load_failure` events in
-      // Sentry that product analytics saw nothing of.
+      // The next read fails. The already-visible automatic card proves the
+      // initial load path; dismiss it, then exercise the user-initiated request.
       await page.route(
         `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
         (route) => route.fulfill({ status: 500, body: '{"code":"INTERNAL"}' })
       )
-      await comfyPage.workflow.reloadAndWaitForApp()
-
-      await expect
-        .poll(() =>
-          consentTelemetry
-            .filter((e) => e.event === 'app:agent_consent_offer_exited')
-            .map((e) => [e.properties.stage, e.properties.exit])
-        )
-        .toContainEqual(['load', 'consent_read_failed'])
-
-      // Activation opens the panel before consent. Close that activated panel,
-      // then reopen it to exercise the user-initiated consent request.
-      await expect(agentPanel.root).toBeVisible()
-      await expect(agentPanel.openButton).toBeEnabled()
-      await agentPanel.openButton.click()
+      await page.keyboard.press('Escape')
       await expect(agentPanel.root).toHaveCount(0)
       await agentPanel.openButton.click()
 
