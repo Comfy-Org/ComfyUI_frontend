@@ -526,7 +526,7 @@ test('@mobile keeps the catalogue tabs in place when a tab changes the hero subt
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   const models = page.getByTestId('catalogue-tab-models')
   const workflows = page.getByTestId('catalogue-tab-workflows')
   await expect(workflows).toBeVisible()
@@ -546,7 +546,7 @@ test('@mobile stretches the catalogue tabs across the toolbar on a phone', async
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   const toolbar = page.getByTestId('workshop-toolbar')
   const tabs = toolbar.getByTestId('catalogue-tabs')
   await expect(tabs).toBeVisible()
@@ -563,7 +563,7 @@ test('the examples below the form read and mark themselves like a model page', a
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/workflows/change-material/')
+  await page.goto('/hub/workflows/change-material/')
 
   await expect(
     page.getByRole('heading', { name: 'Try an example' })

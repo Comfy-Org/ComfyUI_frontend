@@ -295,11 +295,11 @@ test.describe('Models catalog', () => {
   })
 
   test('an opened shelf reads as a chosen filter', async ({ page }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await page.getByTestId('section-generate-videos-open').click()
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      'Generate videos'
-    )
+    await expect(
+      page.getByRole('heading', { level: 2, name: /Generate videos/ })
+    ).toBeVisible()
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await page.getByTestId('workshop-filter').click()
     await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
