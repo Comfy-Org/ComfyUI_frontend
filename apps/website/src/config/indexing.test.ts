@@ -1,4 +1,9 @@
+import { readFileSync, readdirSync } from 'node:fs'
+import { dirname, join, relative, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
+
+import { routeOf } from '../utils/hreflangRoutes'
 import { isExcludedFromSitemap, isNoindexPathname } from './indexing'
 
 describe('indexing policy', () => {
@@ -88,5 +93,37 @@ describe('indexing policy', () => {
         'https://comfy.org/zh-CN/p/supported-models/grok-image/'
       )
     ).toBe(true)
+  })
+})
+
+describe('pages that pass the noindex prop', () => {
+  const pagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'pages')
+
+  const astroFiles = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = join(dir, entry.name)
+      if (entry.isDirectory()) return astroFiles(full)
+      return entry.name.endsWith('.astro') ? [full] : []
+    })
+
+  const passesNoindex = (file: string) =>
+    /\snoindex(?=[\s/>=])/.test(
+      readFileSync(file, 'utf8').replace(/^---[\s\S]*?\n---/, '')
+    )
+
+  const routes = astroFiles(pagesDir)
+    .filter(passesNoindex)
+    .map((file) =>
+      routeOf(`/src/pages/${relative(pagesDir, file).split(sep).join('/')}`)
+    )
+    .filter((route) => route !== '/404/')
+
+  it('finds the pages that set the prop', () => {
+    expect(routes).toContain('/privacy-policy/')
+    expect(routes).toContain('/comfy-agent/')
+  })
+
+  it.for(routes)('lists %s in NOINDEX_ROUTES', (route) => {
+    expect(isNoindexPathname(route)).toBe(true)
   })
 })
