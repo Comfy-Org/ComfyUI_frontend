@@ -436,59 +436,75 @@ function useSubscriptionInternal() {
     await accessBillingPortal()
   }
 
-  const recoverPendingSubscriptionCheckout = async (
-    source: 'bootstrap' | 'pageshow' | 'visibilitychange' | 'retry' | 'deadline'
+  type PendingCheckoutRecoverySource =
+    | 'bootstrap'
+    | 'pageshow'
+    | 'visibilitychange'
+    | 'retry'
+    | 'deadline'
+
+  const canRecoverPendingCheckout = () =>
+    isCloud && isLoggedIn.value && hasPendingSubscriptionCheckoutAttempt()
+
+  const handlePendingCheckoutRecoveryError = (
+    source: PendingCheckoutRecoverySource,
+    error: unknown
   ) => {
-    if (
-      !isCloud ||
-      !isLoggedIn.value ||
-      !hasPendingSubscriptionCheckoutAttempt()
-    ) {
-      return
-    }
+    console.error(
+      `[Subscription] Failed to recover pending checkout on ${source}:`,
+      error
+    )
+    didLastRecoveryAttemptThrow = true
+    schedulePendingCheckoutRecovery()
+  }
 
-    if (isRecoveringPendingCheckout) {
-      if (source !== 'deadline' || !activePendingCheckoutRecovery) return
+  const waitForActiveRecoveryAtDeadline = async (
+    source: PendingCheckoutRecoverySource
+  ): Promise<boolean> => {
+    if (!isRecoveringPendingCheckout) return false
+    if (source !== 'deadline' || !activePendingCheckoutRecovery) return true
 
-      try {
-        await withTimeout(
-          activePendingCheckoutRecovery,
-          PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS
-        )
-      } catch (error) {
-        console.error(
-          '[Subscription] Pending checkout recovery was still running at the deadline:',
-          error
-        )
-        didLastRecoveryAttemptThrow = true
-        reportMissingCheckoutCompletion()
-      }
-      return
+    try {
+      await withTimeout(
+        activePendingCheckoutRecovery,
+        PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS
+      )
+    } catch (error) {
+      console.error(
+        '[Subscription] Pending checkout recovery was still running at the deadline:',
+        error
+      )
+      didLastRecoveryAttemptThrow = true
+      reportMissingCheckoutCompletion()
     }
+    return true
+  }
+
+  const fetchPendingCheckoutStatus = async (
+    source: PendingCheckoutRecoverySource
+  ) => {
+    const statusFetch = fetchSubscriptionStatus()
+    activePendingCheckoutRecovery = statusFetch.then(
+      () => undefined,
+      () => undefined
+    )
+    return source === 'deadline'
+      ? withTimeout(statusFetch, PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS)
+      : statusFetch
+  }
+
+  const recoverPendingSubscriptionCheckout = async (
+    source: PendingCheckoutRecoverySource
+  ) => {
+    if (!canRecoverPendingCheckout()) return
+    if (await waitForActiveRecoveryAtDeadline(source)) return
 
     isRecoveringPendingCheckout = true
 
     try {
-      const statusFetch = fetchSubscriptionStatus()
-      activePendingCheckoutRecovery = statusFetch.then(
-        () => undefined,
-        () => undefined
-      )
-      if (source === 'deadline') {
-        await withTimeout(
-          statusFetch,
-          PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS
-        )
-      } else {
-        await statusFetch
-      }
+      await fetchPendingCheckoutStatus(source)
     } catch (error) {
-      console.error(
-        `[Subscription] Failed to recover pending checkout on ${source}:`,
-        error
-      )
-      didLastRecoveryAttemptThrow = true
-      schedulePendingCheckoutRecovery()
+      handlePendingCheckoutRecoveryError(source, error)
     } finally {
       isRecoveringPendingCheckout = false
       activePendingCheckoutRecovery = null
