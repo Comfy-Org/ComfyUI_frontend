@@ -15,6 +15,7 @@ import {
   urlUploadField
 } from '../../../config/workshop-playground'
 import { ASPECT_RATIOS } from './catalog'
+import { acceptsLinks } from './take-image'
 import type { AspectRatio } from './catalog'
 
 /*
@@ -37,7 +38,10 @@ export interface CinematicVideoCapabilities {
   /** How the model takes a starting image, when it takes one. */
   readonly firstFrame?: 'first_frame' | 'source_images'
   readonly firstFrameRequired: boolean
+  /** Whether the starting frame may be a web link the model fetches itself. */
+  readonly firstFrameLinks: boolean
   readonly lastFrame: boolean
+  readonly lastFrameLinks: boolean
   /** Video to edit; an operation that has one requires it. */
   readonly sourceVideo: boolean
 }
@@ -138,7 +142,12 @@ export function videoCapabilities(
         }
       : {}),
     firstFrameRequired: !!start?.required,
+    firstFrameLinks: acceptsLinks(
+      contract,
+      first ? 'first_frame' : 'source_images'
+    ),
     lastFrame: media('last_frame').length > 0,
+    lastFrameLinks: acceptsLinks(contract, 'last_frame'),
     sourceVideo: media('source_videos', 'video/mp4').some(
       (field) => field.required
     )
@@ -185,8 +194,8 @@ export interface CinematicVideoShot {
   readonly durationSeconds?: number
   readonly resolution?: string
   readonly audio: boolean
-  readonly firstFrame?: File
-  readonly lastFrame?: File
+  readonly firstFrame?: File | string
+  readonly lastFrame?: File | string
   readonly sourceVideo?: File
 }
 

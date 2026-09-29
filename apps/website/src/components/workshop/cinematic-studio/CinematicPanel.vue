@@ -19,6 +19,7 @@ import { shotAspects } from '../../../lib/workshop/cinematic-studio/models'
 import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic-studio/video'
 import { videoTags } from '../../../lib/workshop/cinematic-studio/video'
 import type { ShotBlock } from '../../../composables/useCinematicShot'
+import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
 import CinematicColors from './CinematicColors.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
@@ -70,16 +71,16 @@ const direction = defineModel<Direction>('direction', { required: true })
 const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
 const takes = defineModel<number>('takes', { required: true })
-const cast = defineModel<File | undefined>('cast')
-const palette = defineModel<File | undefined>('palette')
+const cast = defineModel<StudioImage | undefined>('cast')
+const palette = defineModel<StudioImage | undefined>('palette')
 const colors = defineModel<readonly string[]>('colors', { required: true })
 const mainColor = defineModel<number | undefined>('mainColor')
-const firstFrame = defineModel<File | undefined>('firstFrame')
-const lastFrame = defineModel<File | undefined>('lastFrame')
-const sourceVideo = defineModel<File | undefined>('sourceVideo')
 const duration = defineModel<number | undefined>('duration')
 const videoResolution = defineModel<string | undefined>('videoResolution')
 const audio = defineModel<boolean>('audio', { default: false })
+const firstFrame = defineModel<StudioImage | undefined>('firstFrame')
+const lastFrame = defineModel<StudioImage | undefined>('lastFrame')
+const sourceVideo = defineModel<StudioImage | undefined>('sourceVideo')
 
 const modelOptions = computed(() =>
   models.map((model) => ({

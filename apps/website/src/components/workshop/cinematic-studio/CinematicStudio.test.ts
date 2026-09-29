@@ -72,7 +72,12 @@ function sent(call: Parameters<typeof router_render>) {
 
 const { fetchData } = vi.hoisted(() => ({ fetchData: vi.fn<typeof fetch>() }))
 
+/** A still left on the provider's storage, which sends no CORS header. */
+const PROVIDER_LINK =
+  'https://ark-content-generation-v2-ap-southeast-1.tos-ap-southeast-1.volces.com/seedream/shot.jpeg'
+
 async function servePageData(input: RequestInfo | URL) {
+  if (String(input) === PROVIDER_LINK) throw new TypeError('Failed to fetch')
   if (String(input).startsWith('blob:'))
     return new Response(new Blob(['shot'], { type: 'image/png' }))
   const slug = decodeURIComponent(String(input).split('/')[2])
@@ -88,6 +93,13 @@ function rendered(slug: string): RouterRenderResult {
     requestId: 'request-1',
     deadlineCollections: 0,
     outputs: [{ kind: 'image', url: 'blob:shot', fileName: 'shot.png' }]
+  }
+}
+
+function renderedAtProvider(slug: string): RouterRenderResult {
+  return {
+    ...rendered(slug),
+    outputs: [{ kind: 'image', url: PROVIDER_LINK, fileName: 'shot.jpeg' }]
   }
 }
 
@@ -883,6 +895,50 @@ describe('CinematicStudio', () => {
     const call = vi.mocked(router_render).mock.calls[1]
     expect(call[0]).toBe(videoModels[0].firstFrameSlug)
     expect(sent(call).references).toEqual([expect.any(File)])
+  })
+
+  describe('reusing a still the page cannot read', () => {
+    async function shootAtProvider() {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        renderedAtProvider(slug)
+      )
+      const user = renderStudio([...models, ...videoModels])
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await screen.findByAltText(/A diner at dawn/)
+      return user
+    }
+
+    it('animates it by handing its link to the video model', async () => {
+      const user = await shootAtProvider()
+      await user.click(screen.getByRole('button', { name: 'Animate image' }))
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+      const call = vi.mocked(router_render).mock.calls[1]
+      expect(call[0]).toBe(videoModels[0].firstFrameSlug)
+      expect(JSON.stringify(sent(call).values)).toContain(PROVIDER_LINK)
+    })
+
+    it('says so when the next model needs the picture itself', async () => {
+      const user = await shootAtProvider()
+      await user.click(screen.getByRole('button', { name: 'Use as reference' }))
+      expect(
+        await screen.findByText(/needs the picture itself/)
+      ).toBeInTheDocument()
+      expect(generateButton()).toBeDisabled()
+    })
+
+    it('offers it as a reference only for another still', async () => {
+      const user = await shootAtProvider()
+      await user.click(screen.getByRole('button', { name: 'Video' }))
+      expect(
+        screen.queryByRole('button', { name: 'Use as reference' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Animate image' })
+      ).toBeInTheDocument()
+    })
   })
 
   describe('credits', () => {

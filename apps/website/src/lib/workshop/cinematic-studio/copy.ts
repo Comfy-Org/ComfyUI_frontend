@@ -625,6 +625,15 @@ const copy = {
     en: 'Add the video to edit',
     'zh-CN': '添加要编辑的视频'
   },
+  'cinematic.references.needsPicture': {
+    en: "{model} needs the picture itself, and this image can't be read here. Download it and add it with +, or pick another model.",
+    'zh-CN':
+      '{model} 需要图片本身，但此处无法读取该图片。请下载后通过 + 添加，或选择其他模型。'
+  },
+  'cinematic.references.unreadable': {
+    en: "Couldn't use this image. Download it and add it with +.",
+    'zh-CN': '无法使用此图片。请下载后通过 + 添加。'
+  },
   'cinematic.video.noFirstFrame': {
     en: "{model} can't start from an image. Remove the frame or pick another model.",
     'zh-CN': '{model} 无法从图像开始。请移除该帧或选择其他模型。'

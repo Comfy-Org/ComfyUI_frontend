@@ -8,10 +8,13 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 const {
   take,
   canAnimate = false,
+  canReference = true,
   locale = 'en'
 } = defineProps<{
   take: Extract<Take, { status: 'done' }>
   canAnimate?: boolean
+  /** A still becomes a character reference only for another still. */
+  canReference?: boolean
   locale?: Locale
 }>()
 
@@ -32,7 +35,7 @@ const actionClass =
       {{ tc('cinematic.stage.again', locale) }}
     </button>
     <button
-      v-if="take.output.kind === 'image'"
+      v-if="canReference && take.output.kind === 'image'"
       type="button"
       :class="actionClass"
       @click="emit('reference', take.output.url, take.output.fileName)"

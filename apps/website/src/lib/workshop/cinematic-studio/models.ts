@@ -2,6 +2,7 @@ import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import type { AspectRatio } from './catalog'
 import type { CinematicPrices } from './estimate'
 import { contractAspects, referenceCapacity } from './frames'
+import { acceptsLinks } from './take-image'
 import { canRunModel } from './gate'
 import type { CinematicVideoCapabilities } from './video'
 import { videoCapabilities } from './video'
@@ -25,6 +26,8 @@ export interface CinematicModel {
   readonly referenceSlug?: string
   /** How many reference images that operation takes. */
   readonly referenceMax?: number
+  /** Whether those references may be web links the model fetches itself. */
+  readonly referenceLinks?: boolean
   /** The frames the model makes exactly; every frame when absent. */
   readonly aspects?: readonly AspectRatio[]
   /** The frames its reference operation makes, when that is another model. */
@@ -77,7 +80,10 @@ function referenceSupport(
   slug: string,
   model: NonNullable<ReturnType<ModelLookup>>,
   lookup: ModelLookup
-): Pick<CinematicModel, 'referenceSlug' | 'referenceMax' | 'referenceAspects'> {
+): Pick<
+  CinematicModel,
+  'referenceSlug' | 'referenceMax' | 'referenceLinks' | 'referenceAspects'
+> {
   const operation = REFERENCE_OPERATIONS[slug]
   const referenceModel = operation ? lookup(operation) : model
   if (!referenceModel?.execution || !canRunModel(referenceModel)) return {}
@@ -86,6 +92,7 @@ function referenceSupport(
   return {
     referenceSlug: referenceModel.slug,
     referenceMax,
+    referenceLinks: acceptsLinks(referenceModel.execution, 'reference_images'),
     ...(referenceModel !== model
       ? { referenceAspects: contractAspects(referenceModel.execution) }
       : {})

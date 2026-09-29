@@ -48,6 +48,7 @@ const {
   sourceVideo,
   blocked,
   animate,
+  useAsReference: useTake,
   modelSlug,
   scene,
   enhance,
@@ -107,18 +108,17 @@ function start(shot: StarterShot) {
   focusScene()
 }
 
+const takeError = ref(false)
+
 async function useAsReference(url: string, name: string) {
-  const blob = await fetch(url)
-    .then((response) => (response.ok ? response.blob() : undefined))
-    .catch(() => undefined)
-  if (blob)
-    cast.value = new File([blob], name, { type: blob.type || 'image/png' })
+  takeError.value = !(await useTake(url, name))
 }
 
 const canAnimate = models.some((option) => !!option.firstFrameSlug)
 async function animateTake(url: string, name: string) {
   closePopover()
-  if (await animate(url, name)) focusScene()
+  takeError.value = !(await animate(url, name))
+  if (!takeError.value) focusScene()
 }
 
 function generate() {
@@ -142,6 +142,7 @@ function generateOn(slug: string) {
       :reel="studio.reel.value"
       :models
       :can-animate="canAnimate"
+      :can-reference="mode === 'image'"
       :locale
       :starter
       :member-workspace="memberWorkspace"
@@ -184,6 +185,13 @@ function generateOn(slug: string) {
           @choose="choose"
           @close="closePopover"
         />
+        <p
+          v-if="takeError"
+          role="status"
+          class="mb-2 text-xs text-primary-comfy-canvas"
+        >
+          {{ tc('cinematic.references.unreadable', locale) }}
+        </p>
         <CinematicModeSwitch
           v-if="hasVideo"
           v-model="mode"

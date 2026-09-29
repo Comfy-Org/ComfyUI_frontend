@@ -49,7 +49,8 @@ interface ShotRequest {
   readonly aspect: AspectRatio
   readonly resolutionPixels: number
   readonly takes: number
-  readonly references: readonly File[]
+  /** Pictures, or links for a model that fetches them itself. */
+  readonly references: readonly (File | string)[]
   readonly preview?: string
 }
 
@@ -59,7 +60,8 @@ interface UnsettledTake {
 }
 
 const fileIds = new WeakMap<File, string>()
-function fileId(file: File): string {
+function fileId(file: File | string): string {
+  if (typeof file === 'string') return file
   const known = fileIds.get(file)
   if (known) return known
   const id = crypto.randomUUID()

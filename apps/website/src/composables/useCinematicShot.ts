@@ -21,6 +21,12 @@ import {
 } from '../lib/workshop/cinematic-studio/models'
 import { nearestAspect } from '../lib/workshop/cinematic-studio/frames'
 import type { CinematicVideoCapabilities } from '../lib/workshop/cinematic-studio/video'
+import type { StudioImage } from '../lib/workshop/cinematic-studio/take-image'
+import {
+  imageFile,
+  imageInput,
+  keepTake
+} from '../lib/workshop/cinematic-studio/take-image'
 import { cinematicPrompt } from '../lib/workshop/cinematic-studio/prompt'
 import type { StarterShot } from '../lib/workshop/cinematic-studio/starters'
 import { isCinematicDemo, useCinematicDemoRun } from './useCinematicDemoRun'
@@ -64,16 +70,16 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const aspect = ref<AspectRatio>('21:9')
   const resolution = ref<Resolution>('2K')
   const takes = ref(1)
-  const cast = shallowRef<File>()
-  const palette = shallowRef<File>()
+  const cast = shallowRef<StudioImage>()
+  const palette = shallowRef<StudioImage>()
   const colors = ref<readonly string[]>([])
   const mainColor = ref<number>()
   const duration = ref<number>()
   const videoResolution = ref<string>()
   const audio = ref(false)
-  const firstFrame = shallowRef<File>()
-  const lastFrame = shallowRef<File>()
-  const sourceVideo = shallowRef<File>()
+  const firstFrame = shallowRef<StudioImage>()
+  const lastFrame = shallowRef<StudioImage>()
+  const sourceVideo = shallowRef<StudioImage>()
 
   onMounted(() => {
     const requested = new URLSearchParams(window.location.search).get('model')
@@ -95,7 +101,9 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   }))
   const references = computed(() =>
     mode.value === 'image'
-      ? [cast.value, palette.value].filter((file): file is File => !!file)
+      ? [cast.value, palette.value].filter(
+          (image): image is StudioImage => !!image
+        )
       : []
   )
   const model = computed(() =>
@@ -168,16 +176,43 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     aspect.value = shot.aspect
   }
 
+  // A take is sent as a link to a model that fetches it itself, and as the
+  // picture otherwise; undefined when that picture could not be read here.
+  const referenceInputs = computed(() =>
+    references.value.map((image) =>
+      imageInput(image, !!model.value?.referenceLinks)
+    )
+  )
+  const frameInput = (image: StudioImage | undefined, links: boolean) =>
+    image && imageInput(image, links)
+  const firstInput = computed(() =>
+    frameInput(
+      firstFrame.value,
+      !!model.value?.firstFrameVideo?.firstFrameLinks
+    )
+  )
+  const lastInput = computed(() =>
+    frameInput(lastFrame.value, !!model.value?.firstFrameVideo?.lastFrameLinks)
+  )
+
   const blocked = computed<ShotBlock | undefined>(() => {
     const name = model.value?.name ?? ''
-    if (mode.value === 'image')
-      return takesReferences(model.value, references.value.length)
-        ? undefined
-        : { key: 'cinematic.references.unsupported', model: name }
+    if (mode.value === 'image') {
+      if (!takesReferences(model.value, references.value.length))
+        return { key: 'cinematic.references.unsupported', model: name }
+      return referenceInputs.value.includes(undefined)
+        ? { key: 'cinematic.references.needsPicture', model: name }
+        : undefined
+    }
     if (model.value?.video?.sourceVideo && !sourceVideo.value)
       return { key: 'cinematic.video.needSourceVideo', model: name }
     if (firstFrame.value && !model.value?.firstFrameSlug)
       return { key: 'cinematic.video.noFirstFrame', model: name }
+    if (
+      (firstFrame.value && !firstInput.value) ||
+      (lastFrame.value && !lastInput.value)
+    )
+      return { key: 'cinematic.references.needsPicture', model: name }
     return undefined
   })
 
@@ -190,15 +225,19 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
       (aspects.value === undefined || aspects.value.includes(aspect.value))
   )
 
+  /** Reuses a take as the character reference of the next still. */
+  async function useAsReference(url: string, name: string) {
+    const image = await keepTake(url, name)
+    if (!image) return false
+    cast.value = image
+    return true
+  }
+
   /** Starts a video from a still: the take becomes the first frame. */
   async function animate(url: string, name: string) {
-    const blob = await fetch(url)
-      .then((response) => (response.ok ? response.blob() : undefined))
-      .catch(() => undefined)
-    if (!blob) return false
-    firstFrame.value = new File([blob], name, {
-      type: blob.type || 'image/png'
-    })
+    const image = await keepTake(url, name)
+    if (!image) return false
+    firstFrame.value = image
     mode.value = 'video'
     if (!model.value?.firstFrameSlug) {
       const animating = videoModels.find((option) => option.firstFrameSlug)
@@ -227,9 +266,9 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
           durationSeconds: duration.value,
           resolution: videoResolution.value,
           audio: audio.value,
-          firstFrame: firstFrame.value,
-          lastFrame: firstFrame.value ? lastFrame.value : undefined,
-          sourceVideo: sourceVideo.value
+          firstFrame: firstInput.value,
+          lastFrame: firstInput.value ? lastInput.value : undefined,
+          sourceVideo: imageFile(sourceVideo.value)
         },
         preview: directionOption('look', direction.value).preview
       })
@@ -244,7 +283,9 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
         RESOLUTIONS.find((option) => option.id === resolution.value)?.pixels ??
         2048,
       takes: takes.value,
-      references: references.value,
+      references: referenceInputs.value.filter(
+        (input): input is File | string => !!input
+      ),
       preview: directionOption('look', direction.value).preview
     })
   }
@@ -266,6 +307,7 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     blocked,
     canGenerate,
     animate,
+    useAsReference,
     scene,
     enhance,
     direction,

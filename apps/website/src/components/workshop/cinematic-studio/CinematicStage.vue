@@ -29,6 +29,8 @@ const {
   models: readonly CinematicModel[]
   /** Whether a still can be animated into a clip. */
   canAnimate?: boolean
+  /** Whether a still can become the next still's character reference. */
+  canReference?: boolean
   starter?: string
   memberWorkspace?: string
   locale?: Locale
@@ -106,6 +108,7 @@ const otherModel = computed(() => {
             <CinematicTakeActions
               :take="current"
               :can-animate="canAnimate"
+              :can-reference="canReference"
               :locale
               @again="emit('again')"
               @reference="(url, name) => emit('reference', url, name)"

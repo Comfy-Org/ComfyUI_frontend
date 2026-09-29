@@ -1,22 +1,23 @@
 <script setup lang="ts">
 import { Plus, X } from '@lucide/vue'
-import { useObjectUrl } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
 import type { ReferenceKind } from './reference-kind'
 import { REFERENCE_SLOTS } from './reference-kind'
+import { useImagePreview } from './useImagePreview'
 
 const { kind, locale = 'en' } = defineProps<{
   kind: ReferenceKind
   locale?: Locale
 }>()
 
-const file = defineModel<File | undefined>()
-const preview = useObjectUrl(file)
+const file = defineModel<StudioImage | undefined>()
+const preview = useImagePreview(() => file.value)
 const input = useTemplateRef<HTMLInputElement>('input')
 
 const label = computed(() => tc(REFERENCE_SLOTS[kind].label, locale))

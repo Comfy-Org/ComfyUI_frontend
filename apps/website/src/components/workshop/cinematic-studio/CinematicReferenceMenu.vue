@@ -8,7 +8,6 @@ import {
   UserRound,
   X
 } from '@lucide/vue'
-import { useObjectUrl } from '@vueuse/core'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -23,9 +22,11 @@ import { computed } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
+import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicTooltip from './CinematicTooltip.vue'
 import type { ReferenceKind } from './reference-kind'
+import { useImagePreview } from './useImagePreview'
 import { REFERENCE_SLOTS } from './reference-kind'
 
 const {
@@ -41,17 +42,17 @@ const {
 }>()
 const emit = defineEmits<{ colors: [] }>()
 
-const cast = defineModel<File | undefined>('cast')
-const palette = defineModel<File | undefined>('palette')
-const firstFrame = defineModel<File | undefined>('firstFrame')
-const lastFrame = defineModel<File | undefined>('lastFrame')
-const sourceVideo = defineModel<File | undefined>('sourceVideo')
+const cast = defineModel<StudioImage | undefined>('cast')
+const palette = defineModel<StudioImage | undefined>('palette')
+const firstFrame = defineModel<StudioImage | undefined>('firstFrame')
+const lastFrame = defineModel<StudioImage | undefined>('lastFrame')
+const sourceVideo = defineModel<StudioImage | undefined>('sourceVideo')
 const files = { cast, palette, firstFrame, lastFrame, video: sourceVideo }
 const previews = {
-  cast: useObjectUrl(cast),
-  palette: useObjectUrl(palette),
-  firstFrame: useObjectUrl(firstFrame),
-  lastFrame: useObjectUrl(lastFrame)
+  cast: useImagePreview(() => cast.value),
+  palette: useImagePreview(() => palette.value),
+  firstFrame: useImagePreview(() => firstFrame.value),
+  lastFrame: useImagePreview(() => lastFrame.value)
 }
 
 const ICONS: Readonly<Record<ReferenceKind, typeof Plus>> = {
