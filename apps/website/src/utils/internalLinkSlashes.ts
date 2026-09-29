@@ -32,10 +32,36 @@ export function slashlessPageHrefs(
   html: string,
   origins: readonly string[]
 ): string[] {
-  const hrefs = [...html.matchAll(HREF_ATTRIBUTE)].map((match) =>
+  return [
+    ...new Set(
+      hrefsIn(html).filter((href) => isSlashlessPageHref(href, origins))
+    )
+  ]
+}
+
+/** Every distinct href in one HTML document that points at an alias host. */
+export function aliasHostHrefs(
+  html: string,
+  aliasOrigins: readonly string[]
+): string[] {
+  return [
+    ...new Set(
+      hrefsIn(html).filter((href) =>
+        aliasOrigins.some((origin) => isOnOrigin(href, origin))
+      )
+    )
+  ]
+}
+
+function isOnOrigin(href: string, origin: string): boolean {
+  return (
+    href === origin ||
+    ['/', '?', '#'].some((next) => href.startsWith(`${origin}${next}`))
+  )
+}
+
+function hrefsIn(html: string): string[] {
+  return [...html.matchAll(HREF_ATTRIBUTE)].map((match) =>
     match[2].replaceAll('&amp;', '&')
   )
-  return [
-    ...new Set(hrefs.filter((href) => isSlashlessPageHref(href, origins)))
-  ]
 }

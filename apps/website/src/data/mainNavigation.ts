@@ -1,4 +1,5 @@
-import { externalLinks, getRoutes } from '../config/routes'
+import { externalLinks, getRoutes, localizeHref } from '../config/routes'
+import { categoryPath } from './learningTutorials'
 import type { Locale } from '../i18n/translations'
 import { t } from '../i18n/translations'
 
@@ -143,7 +144,10 @@ export function getMainNavigation(
         cta: {
           label: t('cta.watchDemo', locale),
           ariaLabel: t('nav.featuredCommunityCtaAria', locale),
-          href: `${routes.learning}ads/product-photography/`
+          href: localizeHref(
+            `${categoryPath('ads')}product-photography/`,
+            locale
+          )
         }
       },
       columns: [

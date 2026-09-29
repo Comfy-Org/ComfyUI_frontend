@@ -51,7 +51,7 @@ export const GET: APIRoute = ({ site }) => {
     '',
     '- [ComfyUI, open source](https://comfy.org/download/): free on your own hardware (open models; partner models call the provider API)',
     '- [Comfy Cloud](https://cloud.comfy.org): hosted GPUs, same graph, every parameter',
-    '- [Workflow templates](https://www.comfy.org/workflows/): community workflows, ready to load',
+    '- [Workflow templates](https://comfy.org/workflows/): community workflows, ready to load',
     '- [Comfy SDKs](https://docs.comfy.org/development/api-development/sdks.md): run workflows from Python or TypeScript (beta)',
     '- [Comfy CLI](https://docs.comfy.org/agent-tools/cli.md): run workflows and partner models from a terminal or a coding agent',
     '- [Comfy MCP](https://docs.comfy.org/agent-tools/mcp.md): drive ComfyUI from Claude Code, Cursor, or Codex; the hosted server is https://cloud.comfy.org/mcp',

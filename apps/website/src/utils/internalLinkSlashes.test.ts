@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { isSlashlessPageHref, slashlessPageHrefs } from './internalLinkSlashes'
+import {
+  aliasHostHrefs,
+  isSlashlessPageHref,
+  slashlessPageHrefs
+} from './internalLinkSlashes'
 
 const ORIGIN = 'https://comfy.org'
-const ORIGINS = [ORIGIN, 'https://www.comfy.org']
+const ORIGINS = [ORIGIN]
+const ALIAS_ORIGINS = ['https://www.comfy.org']
 
 describe('isSlashlessPageHref', () => {
   it.for([
@@ -14,7 +19,6 @@ describe('isSlashlessPageHref', () => {
     ['/seedance-2.5', true],
     ['/wan-3.0', true],
     [`${ORIGIN}/pricing`, true],
-    ['https://www.comfy.org/cloud', true],
     ['/', false],
     ['/pricing/', false],
     ['/cloud/pricing/#faq', false],
@@ -48,6 +52,24 @@ describe('slashlessPageHrefs', () => {
     expect(slashlessPageHrefs(html, ORIGINS)).toEqual([
       '/pricing',
       '/models?type=apps&q=wan'
+    ])
+  })
+})
+
+describe('aliasHostHrefs', () => {
+  it('reports links through the www host, slashed or not', () => {
+    const html = `
+      <a href="https://www.comfy.org/cloud/">Cloud</a>
+      <a href="https://www.comfy.org">Home</a>
+      <a href="https://www.comfy.org?ref=x">Home with query</a>
+      <a href="https://comfy.org/cloud/">Apex</a>
+      <a href="https://www.comfy.org.evil.com/">Lookalike</a>
+      <a href="https://docs.comfy.org/">Docs</a>`
+
+    expect(aliasHostHrefs(html, ALIAS_ORIGINS)).toEqual([
+      'https://www.comfy.org/cloud/',
+      'https://www.comfy.org',
+      'https://www.comfy.org?ref=x'
     ])
   })
 })

@@ -23,10 +23,10 @@ type Model = (typeof models)[number]
 export const GET: APIRoute = ({ props, site }) => {
   const model = props.model as Model
   const base = site ?? 'https://comfy.org'
-  const pageUrl = new URL(`/p/supported-models/${model.slug}`, base).href
+  const pageUrl = new URL(`/p/supported-models/${model.slug}/`, base).href
   const workflowsUrl = model.hubSlug
-    ? `https://www.comfy.org/workflows/model/${model.hubSlug}/`
-    : 'https://www.comfy.org/workflows/'
+    ? `https://comfy.org/workflows/model/${model.hubSlug}/`
+    : 'https://comfy.org/workflows/'
 
   const description = buildWhatIsDescription(model)
   const summary = description.split('. ')[0]

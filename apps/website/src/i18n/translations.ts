@@ -3587,9 +3587,9 @@ Enterprise`
     'zh-CN': '需要付费吗？'
   },
   'mcp.faq.6.a': {
-    en: "On the local connection, runs on your own hardware are free, and the server is open source. Partner models are the exception: they run on partner infrastructure and spend Comfy credits from your account, so you sign in before using them. On the cloud connection, connecting and searching are free, and running a generation uses Comfy Cloud credits — you need a [subscription of any tier](https://comfy.org/cloud/pricing/); a credit top-up alone isn't enough. Either way, your agent confirms with you before it spends.",
+    en: "On the local connection, runs on your own hardware are free, and the server is open source. Partner models are the exception: they run on partner infrastructure and spend Comfy credits from your account, so you sign in before using them. On the cloud connection, connecting and searching are free, and running a generation uses Comfy Cloud credits — you need a [subscription of any tier](https://comfy.org/pricing/); a credit top-up alone isn't enough. Either way, your agent confirms with you before it spends.",
     'zh-CN':
-      '本地连接方面，在你自己硬件上的生成是免费的，服务器也是开源的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗你 Comfy 账户中的积分，因此使用前需要登录。云端连接方面，连接和搜索免费，运行生成会使用 Comfy Cloud 积分——你需要[任意套餐的订阅](https://comfy.org/cloud/pricing/)，仅充值积分是不够的。无论哪种方式，智能体在消费前都会先与你确认。'
+      '本地连接方面，在你自己硬件上的生成是免费的，服务器也是开源的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗你 Comfy 账户中的积分，因此使用前需要登录。云端连接方面，连接和搜索免费，运行生成会使用 Comfy Cloud 积分——你需要[任意套餐的订阅](https://comfy.org/pricing/)，仅充值积分是不够的。无论哪种方式，智能体在消费前都会先与你确认。'
   },
   'mcp.faq.7.q': {
     en: 'Is Comfy MCP open source?',
@@ -4133,9 +4133,9 @@ Enterprise`
     'zh-CN': '需要付费吗？'
   },
   'cli.faq.3.a': {
-    en: 'The CLI is free and open source. With a Comfy account you can browse templates, models, and nodes at no cost, and runs on your own hardware are free. Partner models are the exception: they run on partner infrastructure and spend Comfy credits. Cloud runs spend credits too, either added directly or through an existing [Comfy Cloud subscription](https://comfy.org/cloud/pricing/).',
+    en: 'The CLI is free and open source. With a Comfy account you can browse templates, models, and nodes at no cost, and runs on your own hardware are free. Partner models are the exception: they run on partner infrastructure and spend Comfy credits. Cloud runs spend credits too, either added directly or through an existing [Comfy Cloud subscription](https://comfy.org/pricing/).',
     'zh-CN':
-      'CLI 免费且开源。有 Comfy 账户即可免费浏览模板、模型和节点，在你自己硬件上的运行也是免费的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗 Comfy 积分。云端运行同样消耗积分，可以直接添加，也可以使用现有的 [Comfy Cloud 订阅](https://comfy.org/cloud/pricing/)。'
+      'CLI 免费且开源。有 Comfy 账户即可免费浏览模板、模型和节点，在你自己硬件上的运行也是免费的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗 Comfy 积分。云端运行同样消耗积分，可以直接添加，也可以使用现有的 [Comfy Cloud 订阅](https://comfy.org/pricing/)。'
   },
   'cli.faq.4.q': {
     en: 'How does cloud vs local routing work?',
@@ -4382,9 +4382,9 @@ Enterprise`
   // ── Privacy Policy ────────────────────────────────────────────────
   'privacy.intro.label': { en: 'INTRO', 'zh-CN': '简介' },
   'privacy.intro.block.0': {
-    en: 'Your privacy is important to us. It is Comfy Organization Inc\'s policy to respect your privacy and comply with any applicable law and regulation regarding any personal information we may collect about you, including across our website, <a href="https://www.comfy.org" class="text-white underline">https://www.comfy.org</a>, and other sites we own and operate.',
+    en: 'Your privacy is important to us. It is Comfy Organization Inc\'s policy to respect your privacy and comply with any applicable law and regulation regarding any personal information we may collect about you, including across our website, <a href="https://comfy.org/" class="text-white underline">https://www.comfy.org</a>, and other sites we own and operate.',
     'zh-CN':
-      '您的隐私对我们非常重要。Comfy Organization Inc 的政策是尊重您的隐私，并遵守有关我们可能收集的您的个人信息的任何适用法律和法规，包括在我们的网站 <a href="https://www.comfy.org" class="text-white underline">https://www.comfy.org</a> 以及我们拥有和运营的其他网站上。'
+      '您的隐私对我们非常重要。Comfy Organization Inc 的政策是尊重您的隐私，并遵守有关我们可能收集的您的个人信息的任何适用法律和法规，包括在我们的网站 <a href="https://comfy.org/" class="text-white underline">https://www.comfy.org</a> 以及我们拥有和运营的其他网站上。'
   },
   'privacy.intro.block.1': {
     en: 'Personal information is any information about you which can be used to identify you. This includes information about you as a person (such as name, address, and date of birth), your devices, payment details, and even information about how you use a website or online service.',
@@ -6404,9 +6404,9 @@ Enterprise`
       'ComfyUI 是免费且开源的。{name} 的权重文件可从 Hugging Face 下载。仅在 Comfy Cloud 上运行时才需要为算力付费；在您自己的硬件上进行本地推理始终是免费的。'
   },
   'models.faq.isFree.cloudAnswer': {
-    en: 'This model runs exclusively on Comfy Cloud. Pay-per-compute pricing applies - see comfy.org/cloud/pricing',
+    en: 'This model runs exclusively on Comfy Cloud. Pay-per-compute pricing applies - see comfy.org/pricing',
     'zh-CN':
-      '此模型仅在 Comfy Cloud 上运行。按算力用量付费，详情请参阅 comfy.org/cloud/pricing。'
+      '此模型仅在 Comfy Cloud 上运行。按算力用量付费，详情请参阅 comfy.org/pricing。'
   },
   'models.dirDescription.diffusion_models': {
     en: 'a diffusion model that generates images or video from text and image prompts',
