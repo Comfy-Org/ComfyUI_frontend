@@ -312,6 +312,38 @@ test('433-6840: a team link without its commit stop is an invalid link, and View
   )
 })
 
+test('433-6840: a checkout link that names no plan is Plan not available for a signed-in customer on the flag, and View plans opens the pricing table', async ({
+  page,
+  signIn
+}) => {
+  const planless = entryPath('checkout', {})
+  await signIn(CHECKOUT)
+  await page.goto(planless)
+
+  await expect(heading(page, "This plan isn't available")).toBeVisible()
+  await expect(code(page)).toHaveText('CHECKOUT_LINK_INVALID')
+  await expect(page).toHaveURL(planless)
+  await expect(payButton(page)).toBeHidden()
+
+  await page.getByRole('button', { name: 'View plans' }).click()
+
+  await expect(heading(page, 'Host app')).toBeVisible()
+  await expect(page).toHaveURL(
+    'https://testcloud.comfy.org/?pricing=1&workspace=ws_e2e'
+  )
+})
+
+test('a signed-out visitor on the flag still goes back to the host for a checkout link that names no plan', async ({
+  page
+}) => {
+  await page.goto(entryPath('checkout', { workspace: 'ws_team_e2e' }))
+
+  await expect(page).toHaveURL(
+    'https://testcloud.comfy.org/?workspace=ws_team_e2e'
+  )
+  await expect(heading(page, 'Host app')).toBeVisible()
+})
+
 test("433-6840: a checkout link the contract cannot read is the checkout's 404 on the full page, and still the entry error on the embedded one", async ({
   page,
   cloud,

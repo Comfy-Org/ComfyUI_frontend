@@ -427,6 +427,17 @@ test('a checkout link that names no plan goes back to the host to choose one', a
   await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
 })
 
+test('a signed-in customer without the flag also goes back to the host for a checkout link that names no plan', async ({
+  page,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+  await page.goto(entryPath('checkout', { workspace: 'ws_e2e' }))
+
+  await expect(page).toHaveURL('https://testcloud.comfy.org/?workspace=ws_e2e')
+  await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
+})
+
 test('Close on a checkout tab the product opened closes that tab', async ({
   page,
   context,

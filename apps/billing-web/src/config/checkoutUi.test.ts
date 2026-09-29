@@ -264,6 +264,26 @@ describe('awaitCheckoutUiVariant', () => {
   })
 })
 
+describe('planlessCheckoutRoute', () => {
+  it.for<{ phase: Phase; flag?: string; route: string }>([
+    { phase: 'signed-out', route: 'host' },
+    { phase: 'error', route: 'host' },
+    { phase: 'minting', route: 'sign_in' },
+    { phase: 'authenticated', flag: 'full_page', route: 'full_page' },
+    { phase: 'authenticated', flag: 'embedded', route: 'host' }
+  ])(
+    '$phase, flag $flag: the link goes to $route',
+    async ({ phase, flag, route }) => {
+      h.phase = phase
+      fetchMock.mockResolvedValue(answerFlag(flag))
+      const { planlessCheckoutRoute } = await freshCheckoutUi()
+
+      expect(await planlessCheckoutRoute(async () => phase)).toBe(route)
+      if (flag === undefined) expect(fetchMock).not.toHaveBeenCalled()
+    }
+  )
+})
+
 describe('settleCheckoutUi', () => {
   it.for<{ variant: 'embedded' | 'full_page' }>([
     { variant: 'embedded' },
