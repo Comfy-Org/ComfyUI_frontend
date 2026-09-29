@@ -24,7 +24,7 @@ describe('HeaderMainDesktop', () => {
   })
 
   it('marks the leaf link active on its own page', async () => {
-    const link = await modelsLink('/models/')
+    const link = await modelsLink('/models')
     expect(link.getAttribute('data-active')).not.toBeNull()
   })
 
