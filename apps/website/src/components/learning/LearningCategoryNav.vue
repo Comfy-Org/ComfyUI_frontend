@@ -31,7 +31,7 @@ interface NavOption {
 
 const navOptions: readonly NavOption[] = [
   {
-    labelKey: 'learning.categories.all',
+    labelKey: 'learning.categories.all.label',
     blurbKey: 'learning.categories.all.blurb',
     href: '/learning'
   },

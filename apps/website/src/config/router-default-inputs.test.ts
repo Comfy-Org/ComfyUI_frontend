@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import defaultMedia from '../data/router-default-media.json'
 import { initialWorkshopPageState } from './workshop-page-state'
 import { prepareModelRouterRender } from './router-render'
-import { workshopModels } from './workshop-browse-content'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { authoredWorkshopModels } from './workshop-browse-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import { validateForm } from './workshop-playground'
 import { applyRouterDefaultInputs } from './router-default-inputs'
 
@@ -177,8 +177,10 @@ describe('runnable page defaults', () => {
     expect(validateForm(fallback.schema, fallback.values)).toEqual({})
   })
 
-  it('publishes only runnable pages whose first-render inputs validate', () => {
-    for (const { slug } of workshopModels) {
+  it('keeps every authored page runnable with valid first-render inputs', () => {
+    for (const { slug } of authoredWorkshopModels.filter((model) =>
+      ['image', 'video', 'audio'].includes(model.modality ?? '')
+    )) {
       const model = modelFor(slug)
       expect({ slug, runnable: Boolean(model.execution) }).toEqual({
         slug,

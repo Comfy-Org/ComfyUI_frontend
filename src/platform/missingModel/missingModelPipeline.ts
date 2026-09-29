@@ -44,6 +44,7 @@ interface RunMissingModelPipelineOptions {
   graphData: MissingModelWorkflowData
   missingModelStore: MissingModelPipelineStore
   missingNodeTypes?: MissingNodeType[]
+  onVerified?: (candidates: MissingModelCandidate[]) => void
   silent?: boolean
 }
 
@@ -108,7 +109,8 @@ export async function runMissingModelPipeline({
   graphData,
   missingModelStore,
   missingNodeTypes,
-  silent = false
+  silent = false,
+  onVerified
 }: RunMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
   const controller = missingModelStore.createVerificationAbortController()
 
@@ -151,6 +153,7 @@ export async function runMissingModelPipeline({
 
   if (!enrichedCandidates.length) {
     clearMissingModels(activeWf, silent)
+    onVerified?.([])
     return { missingModels, confirmedCandidates }
   }
 
@@ -160,7 +163,7 @@ export async function runMissingModelPipeline({
     if (candidate.nodeId == null) return true
     const node = getNodeByExecutionId(graph, String(candidate.nodeId))
     const widget = node?.widgets?.find((w) => w.name === candidate.widgetName)
-    return !widget || widget.value === candidate.name
+    return widget?.value === candidate.name
   }
   const surfaceActiveCandidates = () => {
     const confirmed = enrichedCandidates.filter(
@@ -168,6 +171,11 @@ export async function runMissingModelPipeline({
     )
     useExecutionErrorStore().surfaceMissingModels(confirmed, { silent })
     cacheModelCandidates(activeWf, confirmed)
+    onVerified?.(
+      enrichedCandidates.filter(
+        (c) => isCandidateScopeActive(graph, c) && isStillSelected(c)
+      )
+    )
   }
   const reportVerificationFailure = (err: unknown) => {
     if (controller.signal.aborted) return
@@ -197,7 +205,7 @@ export async function runMissingModelPipeline({
   }
 
   if (!confirmedCandidates.length && !hasDeferredCandidates) {
-    clearMissingModels(activeWf, silent)
+    surfaceActiveCandidates()
     return { missingModels, confirmedCandidates }
   }
 
@@ -211,7 +219,7 @@ export async function runMissingModelPipeline({
         isMissingCandidateActive(graph, c)
       )
       if (!hasActiveMissing) {
-        clearMissingModels(activeWf, silent)
+        surfaceActiveCandidates()
         return
       }
       const verifiedDownloadableCandidates = enrichedCandidates

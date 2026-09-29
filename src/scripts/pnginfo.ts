@@ -31,18 +31,10 @@ function parseExifData(exifData: Uint8Array) {
     length: 2 | 4
   ): number {
     const arr = exifData.slice(offset, offset + length)
-    if (length === 2) {
-      return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint16(
-        0,
-        isLittleEndian
-      )
-    } else if (length === 4) {
-      return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint32(
-        0,
-        isLittleEndian
-      )
-    }
-    return 0
+    const view = new DataView(arr.buffer, arr.byteOffset, arr.byteLength)
+    return length === 2
+      ? view.getUint16(0, isLittleEndian)
+      : view.getUint32(0, isLittleEndian)
   }
 
   // Read the offset to the first IFD (Image File Directory)
@@ -217,7 +209,7 @@ export async function importA1111(
       )
     if (!matchResult) return 'not-a1111'
 
-    const opts: Record<string, string> = matchResult.reduce(
+    const opts: Partial<Record<string, string>> = matchResult.reduce(
       (acc: Record<string, string>, n: string) => {
         const s = n.split(':')
         if (s[1].endsWith(',')) {
@@ -258,8 +250,9 @@ export async function importA1111(
         return 'core-nodes-unavailable'
       }
 
-      let hrSamplerNode: LGraphNode | null = null
-      let hrSteps: string | null = null
+      const hires: { samplerNode: LGraphNode | null; steps?: string } = {
+        samplerNode: null
+      }
 
       const ceil64 = (v: number) => Math.ceil(v / 64) * 64
 
@@ -327,8 +320,8 @@ export async function importA1111(
 
         prevClip.node.connect(1, clipNode, 0)
         prevModel.node.connect(0, targetSamplerNode, 0)
-        if (hrSamplerNode) {
-          prevModel.node.connect(0, hrSamplerNode, 0)
+        if (hires.samplerNode) {
+          prevModel.node.connect(0, hires.samplerNode, 0)
         }
 
         return { text, prevModel, prevClip }
@@ -385,7 +378,7 @@ export async function importA1111(
       samplerNode.connect(0, vaeNode, 0)
       ckptNode.connect(2, vaeNode, 1)
 
-      const handlers: Record<string, (v: string) => void> = {
+      const handlers: Partial<Record<string, (v: string) => void>> = {
         model(v: string) {
           setWidgetValue(ckptNode, 'ckpt_name', v, true)
         },
@@ -417,7 +410,7 @@ export async function importA1111(
           const h = ceil64(+wxh[1])
           const hrUp = popOpt('hires upscale')
           const hrSz = popOpt('hires resize')
-          hrSteps = popOpt('hires steps') ?? null
+          hires.steps = popOpt('hires steps')
           let hrMethod = popOpt('hires upscaler')
 
           setWidgetValue(imageNode, 'width', w)
@@ -493,8 +486,9 @@ export async function importA1111(
             setWidgetValue(upscaleNode, 'width', ceil64(uw))
             setWidgetValue(upscaleNode, 'height', ceil64(uh))
 
-            hrSamplerNode = LiteGraph.createNode('KSampler')
+            const hrSamplerNode = LiteGraph.createNode('KSampler')
             if (!hrSamplerNode || !latentNode) return
+            hires.samplerNode = hrSamplerNode
             graph.add(hrSamplerNode)
             ckptNode.connect(0, hrSamplerNode, 0)
             positiveNode.connect(0, hrSamplerNode, 1)
@@ -519,6 +513,7 @@ export async function importA1111(
         }
       }
 
+      const { samplerNode: hrSamplerNode, steps: hrSteps } = hires
       if (hrSamplerNode) {
         setWidgetValue(
           hrSamplerNode,

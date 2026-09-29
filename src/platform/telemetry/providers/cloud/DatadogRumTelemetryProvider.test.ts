@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -34,20 +34,13 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   }
 }))
 
-vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: vi.fn()
-}))
-
-const onUserLogout = vi.fn<(callback: () => void) => void>()
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 beforeEach(() => {
-  vi.mocked(useCurrentUser).mockReturnValue(
-    fromPartial({
-      resolvedUserInfo: { value: { id: 'restored-user' } },
-      userEmail: { value: 'restored@example.com' },
-      onUserLogout
-    })
-  )
+  useCurrentUser().resolvedUserInfo = computed(() => ({
+    id: 'restored-user'
+  }))
+  useCurrentUser().userEmail = computed(() => 'restored@example.com')
 })
 
 const workflowExecutionIntent = {
@@ -70,26 +63,66 @@ describe('DatadogRumTelemetryProvider', () => {
       email: 'new@example.com'
     })
     expect(setUser).toHaveBeenNthCalledWith(3, { id: 'user-without-email' })
-    expect(onUserLogout).toHaveBeenCalledOnce()
-    onUserLogout.mock.calls[0][0]()
+    expect(useCurrentUser().onUserLogout).toHaveBeenCalledOnce()
+    vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]()
     expect(clearUser).toHaveBeenCalledOnce()
   })
 
   it('does not identify an unresolved user or send email without an account ID', () => {
-    vi.mocked(useCurrentUser).mockReturnValue(
-      fromPartial({
-        resolvedUserInfo: { value: null },
-        userEmail: { value: null },
-        onUserLogout
-      })
-    )
+    useCurrentUser().resolvedUserInfo = computed(() => null)
+    useCurrentUser().userEmail = computed(() => null)
     const provider = new DatadogRumTelemetryProvider()
     provider.trackUserLoggedIn()
     provider.trackAuth({ email: 'unresolved@example.com' })
 
     expect(setUser).not.toHaveBeenCalled()
-    expect(onUserLogout).not.toHaveBeenCalled()
+    expect(useCurrentUser().onUserLogout).not.toHaveBeenCalled()
   })
+  it.for(['subscription_checkout', 'topup'] as const)(
+    'emits %s phase and terminal events as RUM actions',
+    (operation) => {
+      const provider = new DatadogRumTelemetryProvider()
+      const events: BillingTelemetryEvent[] = [
+        { operation, stage: 'intent', outcome: 'pending' },
+        { operation, stage: 'request_sent', outcome: 'pending' },
+        operation === 'topup'
+          ? {
+              operation,
+              stage: 'checkout_received',
+              outcome: 'pending',
+              billing_op_id: 'op-1',
+              checkout_status: 'pending'
+            }
+          : {
+              operation,
+              stage: 'checkout_received',
+              outcome: 'pending',
+              billing_op_id: 'op-1',
+              checkout_status: 'pending_payment'
+            },
+        {
+          operation,
+          stage: 'succeeded',
+          outcome: 'success',
+          billing_op_id: 'op-1'
+        },
+        {
+          operation,
+          stage: 'failed',
+          outcome: 'failure',
+          billing_op_id: 'op-2',
+          failure_category: 'provider_decline'
+        }
+      ]
+      for (const event of events) provider.trackBillingEvent(event)
+      expect(addAction.mock.calls).toEqual(
+        events.map((event) => [
+          `billing.${event.operation}.${event.stage}`,
+          event
+        ])
+      )
+    }
+  )
 
   it('records fetch timeouts as RUM actions', () => {
     new DatadogRumTelemetryProvider().trackFetchTimeout({

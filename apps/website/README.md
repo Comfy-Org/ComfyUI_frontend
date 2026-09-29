@@ -4,14 +4,15 @@ Marketing/brand website built with Astro + Vue.
 
 ## Linting
 
-From the repository root, run `pnpm lint:website` to check website Astro,
-JavaScript, TypeScript, and Vue files, or `pnpm lint:website:fix` to apply
-automatic fixes. Astro uses the recommended Astro ESLint rules and the shared
-Tailwind rules with the website's theme.
+From the repository root, `pnpm lint` checks website Astro, JavaScript,
+TypeScript, and Vue files along with the rest of the repository, and
+`pnpm lint:fix` applies automatic fixes. To lint only this folder, run
+`pnpm exec eslint apps/website`. Astro uses the recommended Astro ESLint rules
+and the shared Tailwind rules with the website's theme.
 
-Root `pnpm lint` includes this command, so the shared lint CI checks it on
-pull requests and in the merge queue. Pre-commit checks staged Astro files
-with ESLint and runs the website typecheck. `astro check` remains part of
+The shared lint CI runs `pnpm lint` on pull requests and in the merge queue.
+Pre-commit checks staged Astro files with ESLint and runs the website
+typecheck. `astro check` remains part of
 `pnpm typecheck:website` for compiler and type diagnostics.
 
 ## Model-page generation tests
@@ -20,6 +21,18 @@ See [MODEL_TESTING.md](MODEL_TESTING.md) for setup, maximum account concurrency,
 parallel image/audio/video sweeps, targeted retests and result commits.
 [MODELS_TEST_RESULTS.md](MODELS_TEST_RESULTS.md) records every published page's
 latest check and last successful generation.
+
+## Formatting
+
+Run `pnpm format:astro` from the repository root to format Astro files, or
+`pnpm format:astro:check` to check them. Both are included in the root format
+commands and shared CI checks. Pre-commit formats staged Astro files after
+ESLint fixes.
+
+Astro files use Prettier with the official Astro plugin; other formats continue
+to use Oxfmt. The website's `.prettierrc.json` matches the repository's style
+and preserves whitespace around inline HTML elements. The Astro editor
+extension also reads this configuration.
 
 ## Ashby careers integration
 
@@ -243,6 +256,58 @@ PUBLIC_WORKSHOP_ENABLED=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 PUBLIC_WORKSHOP_ROUTER_RUN
 previews and production always use PostHog. This is a frontend visibility
 control; the APIs continue to enforce authentication and billing.
 
+### Cloud workflow pages
+
+`workshop-display.json` owns the page and INPUT widgets. The matching record in
+`workshop-workflows.jsonl` supplies the prepared execution graph, input mappings,
+defaults and selected outputs. Add both records when introducing a workflow;
+unmatched entries stay hidden. Prepare metadata offline when content changes.
+The website does not extract editor APP selections or execute widget serializers.
+
+Workflow pages reuse the Models form, validation and output components. The
+`workshop-workflows-enabled` PostHog flag gates new visits and runs. A caller's
+saved run remains recoverable after that flag is disabled; sign-out or workspace
+switching detaches its controller and hides its results. Backend authorization and
+admission controls remain authoritative. Local development also accepts
+`PUBLIC_WORKSHOP_WORKFLOWS_ENABLED=1`.
+
+Workshop apps (Cinematic Studio and Re-shoot) are gated separately by the
+`workshop-apps-enabled` PostHog flag: their pages at `/models/apps/<slug>/`, the
+catalogue's Apps tab, the featured slide on `/models` and a model page's Open in
+Studio link. `/cinematic-studio` redirects to the app pages. Local
+development also accepts `PUBLIC_WORKSHOP_APPS_ENABLED=1`.
+
+`src/config/workflow-render.ts` implements the shared workflow request and polling
+helper. Node scripts import `workflow_render` and `workflow_for_model` from
+`scripts/workflow-render.ts`; `COMFY_API_KEY` supplies the credential unless a
+token option is given. File inputs use the form's `{ file, name, size, type }`
+shape and are uploaded through Cloud's existing `/api/inputs/upload-url` grant
+and raw PUT. HTTPS inputs are downloaded within the file limit, then uploaded
+the same way; browser URL inputs require source CORS permission. The returned
+asset name is mapped into the prepared graph for `POST /api/prompt`.
+
+Persist `onAdmitted`'s job ID and resume with `{ runId }`. Do not automatically
+retry an uncertain submission: the existing prompt endpoint does not promise
+idempotency. Aborting the helper stops observation. Explicit cancel calls the
+job-scoped endpoint and is presented as requested, without claiming confirmed
+execution shutdown. Polling `/api/jobs/{id}?short_link=ephemeral_tool_chain`
+returns temporary output links; rereading that job refreshes delivery without
+submitting inference. The API tab shows the native request and upload steps.
+
+Prepare graph previews separately with
+`pnpm --filter @comfyorg/website exec tsx scripts/prepare-workflow-previews.ts`.
+This reads `source.uiWorkflowPath` at the pinned commit from the local checkout
+and writes static SVG plus original workflow JSON into
+`public/workflow-graphs/`. `source.path` identifies the executable API graph;
+the UI workflow path is declared separately in the same JSONL record. New source
+repositories require offline preparation; neither the website build nor run
+admission invokes this tool.
+
+The shared helper completed a real production background-removal run through
+upload, generation and PNG download on 2026-09-23. Staging browser execution,
+the other prepared workflows and caller billing still need acceptance checks.
+Additional backend infrastructure is deferred and requires Cloud team agreement.
+
 ### Models analytics
 
 Product analytics use the website's existing PostHog project, following the
@@ -259,6 +324,7 @@ All event names below have the prefix `website:workshop_`:
 | `run_validation_failed`   | Local form validation rejects a Run action.                                    |
 | `run_started`             | A validated Run action begins, including uploads and credential refresh.       |
 | `run_finished`            | The attempt succeeds, fails, or is cancelled, with `status` and `duration_ms`. |
+| `checkout_failed`         | A top-up attempt fails during balance, credential, or checkout setup.          |
 | `output_download_clicked` | The user requests an output download.                                          |
 
 The basic funnel is catalogue view → model view → run started → run finished
@@ -266,7 +332,9 @@ with `status=succeeded` → output download clicked. Model events include slug,
 Router ID, provider, and modality. Run events also retain the initiating
 `user_id`, `workspace_id`, and a unique `attempt_id` across their start and
 finish. Finished requests include `request_id` when available; success counts
-returned artifacts, and failures include only a bounded reason code.
+returned artifacts, and failures include a bounded reason plus allowlisted HTTP
+status and Router error type when available. Checkout failures include their
+stage and bounded SDK error code, plus a real HTTP status when one exists.
 
 Retries get new attempt IDs even when they reuse a Router idempotency key.
 Cancellation describes the browser stopping its wait, not a billing outcome.

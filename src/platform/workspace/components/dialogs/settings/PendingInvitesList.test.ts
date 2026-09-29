@@ -21,7 +21,11 @@ vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} },
+  messages: {
+    en: {
+      workspacePanel: { members: { expiredOn: 'Expired {date}' } }
+    }
+  },
   missingWarn: false,
   fallbackWarn: false
 })
@@ -118,6 +122,27 @@ describe('PendingInvitesList', () => {
         name: 'workspacePanel.members.actions.copyInviteLink'
       })
     ).not.toBeInTheDocument()
+  })
+
+  it('marks token-less invites as expired and leaves live ones with a plain date', () => {
+    renderComponent([
+      createInvite({
+        id: 'inv-expired',
+        email: 'stale@example.com',
+        expiryDate: new Date('2025-04-01T12:00:00Z')
+      }),
+      createInvite({
+        id: 'inv-live',
+        email: 'fresh@example.com',
+        token: 'tok-live',
+        expiryDate: new Date('2025-06-15T12:00:00Z')
+      })
+    ])
+
+    expect(screen.getByText(/^Expired Apr 1, 2025$/)).toBeInTheDocument()
+    expect(screen.queryByText(/Expired Jun 15, 2025/)).toBeNull()
+    expect(screen.getByText('stale@example.com')).toBeInTheDocument()
+    expect(screen.getByText('fresh@example.com')).toBeInTheDocument()
   })
 
   it('reports a rejected clipboard write with an error toast and keeps the copy item usable', async () => {

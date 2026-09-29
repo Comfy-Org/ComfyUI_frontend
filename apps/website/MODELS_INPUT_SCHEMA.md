@@ -375,7 +375,7 @@ and upload failure preventing generation. This does not replace live CORS tests.
 This separate draft remains uncommitted and is not included in the preview.
 Its local `e2e-models/README.md` contains the repeatable commands.
 `test:e2e:models` runs isolated browser regressions; `test:e2e:models:live`
-explicitly opts into up to two paid requests using `COMFY_KEY`, with the real
+explicitly opts into up to two paid requests using `COMFY_API_KEY`, with the real
 Router and real storage CORS. It requires a generated output that actually
 decodes, not just HTTP 200 or the example already on the page. Normal website
 CI remains network-isolated and never runs these paid tests.

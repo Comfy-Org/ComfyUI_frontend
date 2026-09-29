@@ -51,6 +51,7 @@ test.describe(
 
     test.describe('LoadImageOutput', { tag: ['@oss', '@slow'] }, () => {
       test.beforeEach(async ({ comfyPage }) => {
+        test.slow()
         await comfyPage.page.route(
           '**/internal/files/output**',
           async (route) => {

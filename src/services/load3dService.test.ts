@@ -442,7 +442,7 @@ describe('load3dService', () => {
             remove: sceneRemove
           } as unknown as THREE.Scene
         }),
-        loadModel: vi.fn().mockResolvedValue(undefined),
+        loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
         setMaterialMode: vi.fn(),
         setUpDirection: vi.fn(),
         applyGizmoTransform: vi.fn(),
@@ -501,6 +501,26 @@ describe('load3dService', () => {
         'http://example.com/scan.splat'
       )
       expect(skeletonCloneMock).not.toHaveBeenCalled()
+    })
+
+    it('does not apply stale scene state after a rejected splat load', async () => {
+      const source = makeSource({
+        currentModel: makeModel(),
+        isSplat: true,
+        originalURL: 'http://example.com/scan.splat'
+      })
+      const { target } = makeTarget()
+      vi.mocked(target.loadModel).mockResolvedValue(false)
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.toggleCamera).not.toHaveBeenCalled()
+      expect(target.setCameraState).not.toHaveBeenCalled()
+      expect(target.setBackgroundColor).not.toHaveBeenCalled()
+      expect(target.toggleGrid).not.toHaveBeenCalled()
+      expect(target.setBackgroundImage).not.toHaveBeenCalled()
+      expect(target.setLightIntensity).not.toHaveBeenCalled()
+      expect(target.setFOV).not.toHaveBeenCalled()
     })
 
     it('skips loadModel for splat models when originalURL is null', async () => {

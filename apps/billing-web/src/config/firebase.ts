@@ -1,16 +1,26 @@
 /**
- * This origin's Firebase identity: the package-owned entry bound to the
- * deployment's project. Nothing here touches the Firebase SDK until a sign-in
- * action runs, so a deployment without configuration boots and offers the
- * sign-in page in its unavailable state rather than failing at import.
+ * This origin's Firebase identity, resolved once from the Cloud app's own
+ * `/api/features`. No build-time fallback: a usable billing session only
+ * ever comes from token exchange at that same Cloud origin, so an outage
+ * there leaves nothing for a stale build-time project to buy, while a stale
+ * config that outlives a project rotation is a real, silent failure mode.
+ * Account-core owns the fetch, construction, and failure handling; this
+ * origin only names the Cloud origin and its own app name.
  */
-import type { FirebaseIdentity } from '@comfyorg/account/firebase'
-import { createFirebaseIdentity } from '@comfyorg/account/firebase'
+import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import { resolveFirebaseIdentity } from '@comfyorg/account-core/firebase'
 
-import { FIREBASE_OPTIONS } from '@/config/env'
+import { CLOUD_BASE_URL } from '@/config/env'
 
 const APP_NAME = 'billing-web'
+const CONFIG_FETCH_TIMEOUT_MS = 4000
 
-export const billingWebIdentity: FirebaseIdentity | undefined = FIREBASE_OPTIONS
-  ? createFirebaseIdentity({ options: FIREBASE_OPTIONS, appName: APP_NAME })
-  : undefined
+export function resolveBillingWebIdentity(): Promise<
+  FirebaseIdentity | undefined
+> {
+  return resolveFirebaseIdentity({
+    cloudBaseUrl: CLOUD_BASE_URL,
+    appName: APP_NAME,
+    timeoutMs: CONFIG_FETCH_TIMEOUT_MS
+  })
+}

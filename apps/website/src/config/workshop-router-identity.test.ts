@@ -338,15 +338,22 @@ describe('legacy content identity repairs', () => {
     })
   })
 
-  it('quarantines the incorrect Starfish media without deleting Rob’s source record', () => {
+  it('keeps the withheld HeyGen video-translate media off the Starfish page while showing its own speech example', () => {
     const original = display.find(
       (entry) => entry.modelId === 'heygen/starfish-tts'
     )
-    expect(original?.withheldContent?.media.thumbnail).toBeDefined()
+    // The legacy video-translate thumbnail and example stay quarantined in
+    // withheldContent; the page renders the speech example authored for it.
+    expect(original?.withheldContent?.media.thumbnail?.url).toContain(
+      'api_heygen_video_translate'
+    )
     expect(original?.withheldContent?.examples.length).toBeGreaterThan(0)
     const model = getRouterWorkshopModelDetail('heygen--starfish-tts')
     expect(model?.execution?.id).toBe('heygen/starfish')
-    expect(model?.thumbnail).toBeUndefined()
-    expect(model?.examples).toEqual([])
+    expect(model?.thumbnail?.url).toBe(original?.media.thumbnail?.url)
+    expect(model?.thumbnail?.url).not.toContain('api_heygen_video_translate')
+    expect(model?.examples.map((example) => example.title)).toEqual(
+      original?.examples.map((example) => example.title)
+    )
   })
 })

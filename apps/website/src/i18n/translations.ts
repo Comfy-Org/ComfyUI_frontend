@@ -1,4 +1,7 @@
-type Locale = 'en' | 'zh-CN' | 'ja'
+import type { Locale } from '../config/locales'
+
+import type { NamedValues } from './interpolate'
+import { interpolate } from './interpolate'
 
 const translations = {
   'home.workshop.heading': {
@@ -23,14 +26,53 @@ const translations = {
     'zh-CN': '在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。'
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.catalogue.apps': { en: 'Apps', 'zh-CN': '应用' },
+  'workshop.catalogue.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
+  'workshop.catalogue.categories': { en: 'Categories', 'zh-CN': '分类' },
+  'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
+  'workshop.catalogue.workflowsSubtitle': {
+    en: 'Turn your ideas into finished results with multi-step workflows powered by AI models.',
+    'zh-CN': '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
+  },
+  'workshop.catalogue.appsSubtitle': {
+    en: 'Take on bigger ideas with apps that bring multiple workflows together.',
+    'zh-CN': '用整合多个工作流的应用，挑战更大的创意。'
+  },
+  'workshop.catalogue.noWorkflows': {
+    en: 'No workflows match your search and filters.',
+    'zh-CN': '没有符合搜索和筛选条件的工作流。'
+  },
+  'workshop.catalogue.backToWorkflows': {
+    en: 'Back to workflows',
+    'zh-CN': '返回工作流'
+  },
+  'workshop.catalogue.allWorkflows': {
+    en: 'All workflows',
+    'zh-CN': '全部工作流'
+  },
+  'workshop.sort.recommended': {
+    en: 'Recommended',
+    'zh-CN': '推荐顺序'
+  },
+  'workshop.catalogue.browseAllWorkflows': {
+    en: 'Browse all workflows',
+    'zh-CN': '浏览全部工作流'
+  },
+  'workshop.catalogue.searchWorkflows': {
+    en: 'Search workflows…',
+    'zh-CN': '搜索工作流…'
+  },
+  'workshop.catalogue.showWorkflows': {
+    en: 'Show {n} workflows',
+    'zh-CN': '显示 {n} 个工作流'
+  },
   'workshop.hero.heading': {
     en: 'What will you make next?',
     'zh-CN': '接下来你想创造什么？'
   },
   'workshop.hero.subtitle': {
-    en: 'Try the latest AI models with your own ideas. Nothing to install: they run on Comfy Cloud.',
-    'zh-CN':
-      '用你自己的创意试用最新的 AI 模型。无需安装，模型在 Comfy Cloud 上运行。'
+    en: 'Try the latest AI models with your own ideas, right in your browser.',
+    'zh-CN': '用你自己的创意试用最新的 AI 模型，就在浏览器中。'
   },
   'workshop.search.label': {
     en: 'Search models, providers, and categories',
@@ -61,7 +103,7 @@ const translations = {
     en: '{count} models',
     'zh-CN': '{count} 个模型'
   },
-  'workshop.empty': {
+  'workshop.empty.message': {
     en: 'No models match your filters.',
     'zh-CN': '没有符合这些筛选条件的模型。'
   },
@@ -350,6 +392,111 @@ const translations = {
   'auth.signIn.retry': {
     en: 'Retry session',
     'zh-CN': '重试会话'
+  },
+  // Auth-failure copy this host owns. config/auth-sign-in-state.ts resolves a
+  // classified failure to one of these; the account package ships the rules,
+  // never the strings.
+  'auth.errors.auth/invalid-email': {
+    en: 'Please enter a valid email address.',
+    'zh-CN': '请输入有效的电子邮件地址。',
+    ja: '有効なメールアドレスを入力してください。'
+  },
+  'auth.errors.auth/user-disabled': {
+    en: 'This account has been disabled. Please contact support.',
+    'zh-CN': '此账户已被禁用。请联系客服。',
+    ja: 'このアカウントは無効化されています。サポートまでご連絡ください。'
+  },
+  'auth.errors.auth/email-already-in-use': {
+    en: "We couldn't create an account with this email. Try signing in or resetting your password instead.",
+    'zh-CN': '无法使用此电子邮件创建账户。请尝试登录或重置密码。',
+    ja: 'このメールアドレスではアカウントを作成できませんでした。代わりにサインインするか、パスワードをリセットしてください。'
+  },
+  'auth.errors.auth/weak-password': {
+    en: 'Password is too weak. Please use a stronger password with at least 6 characters.',
+    'zh-CN': '密码强度太弱。请使用至少6个字符的更强密码。',
+    ja: 'パスワードが弱すぎます。6文字以上のより強力なパスワードを使用してください。'
+  },
+  'auth.errors.auth/too-many-requests': {
+    en: 'Too many login attempts. Please wait a moment and try again.',
+    'zh-CN': '登录尝试次数过多。请稍等片刻再试。',
+    ja: 'ログイン試行回数が多すぎます。しばらく待ってからもう一度お試しください。'
+  },
+  'auth.errors.auth/operation-not-allowed': {
+    en: 'This sign-in method is not currently supported.',
+    'zh-CN': '此登录方法目前不受支持。',
+    ja: 'このサインイン方法は現在サポートされていません。'
+  },
+  'auth.errors.auth/invalid-credential': {
+    en: 'Invalid login credentials. Please check your email and password.',
+    'zh-CN': '登录凭据无效。请检查您的邮箱和密码。',
+    ja: 'ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。'
+  },
+  'auth.errors.auth/network-request-failed': {
+    en: 'Network error. Please check your connection and try again.',
+    'zh-CN': '网络错误。请检查您的连接并重试。',
+    ja: 'ネットワークエラー。接続を確認してからもう一度お試しください。'
+  },
+  'auth.errors.auth/popup-closed-by-user': {
+    en: 'The sign-in window closed before sign-in finished. Please try again.',
+    'zh-CN': '登录完成前登录窗口已关闭。请重试。',
+    ja: 'サインインが完了する前にサインインウィンドウが閉じられました。もう一度お試しください。'
+  },
+  'auth.errors.auth/cancelled-popup-request': {
+    en: 'Another sign-in window was already open, so this one was cancelled. Please try again.',
+    'zh-CN': '另一个登录窗口已打开，因此此窗口已取消。请重试。',
+    ja: '別のサインインウィンドウがすでに開いていたため、このリクエストはキャンセルされました。もう一度お試しください。'
+  },
+  'auth.errors.auth/popup-blocked': {
+    en: 'Your browser blocked the sign-in window. Please allow pop-ups for this site and try again.',
+    'zh-CN': '您的浏览器阻止了登录窗口。请允许此网站的弹出窗口后重试。',
+    ja: 'ブラウザによってサインインウィンドウがブロックされました。このサイトのポップアップを許可して、もう一度お試しください。'
+  },
+  'auth.errors.auth/account-exists-with-different-credential': {
+    en: "We couldn't sign you in with this method. Try another sign-in option, or reset your password to continue.",
+    'zh-CN': '无法使用此方式登录。请尝试其他登录方式，或重置密码后继续。',
+    ja: 'この方法ではサインインできませんでした。別のサインイン方法をお試しいただくか、パスワードをリセットしてください。'
+  },
+  'auth.errors.generic': {
+    en: 'Something went wrong while signing you in. Please try again.',
+    'zh-CN': '登录时出现问题，请重试。',
+    ja: 'サインイン中に問題が発生しました。もう一度お試しください。'
+  },
+  'auth.errors.signupBlocked': {
+    en: "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org.",
+    'zh-CN':
+      '我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。',
+    ja: '現在アカウントを作成できません。しばらくしてから再度お試しください。繰り返し発生する場合は support@comfy.org までご連絡ください。'
+  },
+  'auth.turnstile.expired': {
+    en: 'Verification expired. Please complete the challenge again.',
+    'zh-CN': '验证已过期。请重新完成验证。',
+    ja: '認証の有効期限が切れました。再度チャレンジを完了してください。'
+  },
+  'auth.turnstile.failed': {
+    en: 'Verification failed. Please try again.',
+    'zh-CN': '验证失败。请重试。',
+    ja: '認証に失敗しました。もう一度お試しください。'
+  },
+  'auth.turnstile.submitBlockedHint': {
+    en: 'Complete the verification challenge above to enable sign up.',
+    'zh-CN': '请先完成上方的验证挑战以启用注册。',
+    ja: '上記の認証チャレンジを完了すると、サインアップが有効になります。'
+  },
+  'toastMessages.unauthorizedDomain': {
+    en: 'Your domain {domain} is not authorized to use this service. Please contact {email} to add your domain to the whitelist.',
+    'zh-CN':
+      '您的域名 {domain} 未被授权使用此服务。请联系 {email} 将您的域名添加到白名单。',
+    ja: 'あなたのドメイン {domain} はこのサービスを利用する権限がありません。ご利用のドメインをホワイトリストに追加するには、{email} までご連絡ください。'
+  },
+  'g.error': {
+    en: 'Error',
+    'zh-CN': '错误',
+    ja: 'エラー'
+  },
+  'g.warning': {
+    en: 'Warning',
+    'zh-CN': '警告',
+    ja: '警告'
   },
   // Auth validation copy, matching the platform app's messages. The {length}
   // and {prefix} tokens are interpolated by config/auth-schemas.ts.
@@ -752,18 +899,22 @@ const translations = {
     en: 'Next featured workflow',
     'zh-CN': '下一个精选工作流'
   },
-  'modelDiscovery.label': { en: 'MODELS', 'zh-CN': '模型' },
+  'modelDiscovery.label': { en: 'HUB', 'zh-CN': 'HUB' },
   'modelDiscovery.heading': {
-    en: 'All the latest models,\nready to run',
+    en: 'The latest,\nready to run',
     'zh-CN': '最新模型，\n即刻运行'
   },
   'modelDiscovery.subtitle': {
-    en: 'Models from Google, ByteDance, Black Forest Labs, Kling and more, on Comfy Router. Pick one, set your inputs, hit Run.',
-    'zh-CN':
-      '来自 Google、ByteDance、Black Forest Labs、Kling 等提供商的模型，均由 Comfy Router 提供。选一个，设置输入，点击运行。'
+    en: 'Right in your browser. Nothing to install, nothing to set up.',
+    'zh-CN': '直接在浏览器中运行。无需安装，无需配置。'
   },
   'modelDiscovery.rowLabel': { en: 'Model providers', 'zh-CN': '模型提供商' },
   'modelDiscovery.browse': { en: 'Browse all models', 'zh-CN': '浏览全部模型' },
+  'modelDiscovery.workflowRowLabel': { en: 'Workflows', 'zh-CN': '工作流' },
+  'modelDiscovery.browseWorkflows': {
+    en: 'Browse all workflows',
+    'zh-CN': '浏览全部工作流'
+  },
 
   // Model release carousel (home page)
   'modelRelease.eyebrow': {
@@ -994,12 +1145,12 @@ Desktop`
   },
   'products.local.cta': {
     en: 'SEE DESKTOP FEATURES',
-    'zh-CN': '查看桌面版属性',
+    'zh-CN': '查看桌面版功能',
     ja: 'デスクトップ機能を見る'
   },
   'products.ctaShort': {
     en: 'SEE FEATURES',
-    'zh-CN': '查看属性'
+    'zh-CN': '查看功能'
   },
   'products.cloud.title': {
     en: 'Comfy\nCloud',
@@ -1014,7 +1165,7 @@ Cloud`
   },
   'products.cloud.cta': {
     en: 'SEE CLOUD FEATURES',
-    'zh-CN': '查看云端属性',
+    'zh-CN': '查看云端功能',
     ja: 'クラウド機能を見る'
   },
   'products.platform.title': {
@@ -1042,7 +1193,7 @@ Enterprise`
   },
   'products.enterprise.cta': {
     en: 'SEE ENTERPRISE FEATURES',
-    'zh-CN': '查看企业版属性',
+    'zh-CN': '查看企业版功能',
     ja: 'エンタープライズ機能を見る'
   },
 
@@ -1887,6 +2038,18 @@ Enterprise`
     en: 'GPT Image 2',
     'zh-CN': 'GPT Image 2'
   },
+  'cloud.aiModels.card.chatgptImages25': {
+    en: 'ChatGPT Images 2.5',
+    'zh-CN': 'ChatGPT Images 2.5'
+  },
+  'cloud.aiModels.card.klingAi30': {
+    en: 'KlingAI 3.0',
+    'zh-CN': 'KlingAI 3.0'
+  },
+  'cloud.aiModels.card.flux3': {
+    en: 'Flux 3',
+    'zh-CN': 'Flux 3'
+  },
   'cloud.aiModels.ctaDesktop': {
     en: 'EXPLORE WORKFLOWS WITH THE LATEST MODELS',
     'zh-CN': '探索最新模型工作流'
@@ -2129,6 +2292,22 @@ Enterprise`
   'pricing.feature.shortRuntime': {
     en: '30 minute max workflow runtime',
     'zh-CN': '单个工作流最长运行 30 分钟'
+  },
+  'pricing.feature.apiConcurrency1': {
+    en: 'Run up to 1 concurrent workflow via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 1 个工作流'
+  },
+  'pricing.feature.apiConcurrency3': {
+    en: 'Run up to 3 concurrent workflows via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 3 个工作流'
+  },
+  'pricing.feature.apiConcurrency5': {
+    en: 'Run up to 5 concurrent workflows via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 5 个工作流'
+  },
+  'pricing.feature.apiConcurrency25': {
+    en: 'Run up to 25 concurrent workflows via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 25 个工作流'
   },
   'pricing.feature.addCredits': {
     en: 'Add more credits anytime',
@@ -2451,27 +2630,27 @@ Enterprise`
   },
   'learning.categoryNav': { en: 'Category filter', 'zh-CN': '分类筛选' },
   'learning.featuredBadge': { en: 'Featured', 'zh-CN': '精选' },
-  'learning.categories.all': { en: 'All', 'zh-CN': '全部' },
+  'learning.categories.all.label': { en: 'All', 'zh-CN': '全部' },
   'learning.categories.all.blurb': {
     en: 'Every tutorial and workflow',
     'zh-CN': '所有教程与工作流'
   },
-  'learning.categories.basics': { en: 'Basics', 'zh-CN': '基础' },
+  'learning.categories.basics.label': { en: 'Basics', 'zh-CN': '基础' },
   'learning.categories.basics.blurb': {
     en: 'Fundamentals and getting started',
     'zh-CN': '基础入门与上手指南'
   },
-  'learning.categories.vfx': { en: 'VFX', 'zh-CN': 'VFX' },
+  'learning.categories.vfx.label': { en: 'VFX', 'zh-CN': 'VFX' },
   'learning.categories.vfx.blurb': {
     en: 'Compositing, cleanup and shot work',
     'zh-CN': '合成、清理与镜头处理'
   },
-  'learning.categories.animations': { en: 'Animations', 'zh-CN': '动画' },
+  'learning.categories.animations.label': { en: 'Animations', 'zh-CN': '动画' },
   'learning.categories.animations.blurb': {
     en: 'Motion, retiming and character',
     'zh-CN': '运动、变速与角色'
   },
-  'learning.categories.ads': { en: 'Ads', 'zh-CN': '广告' },
+  'learning.categories.ads.label': { en: 'Ads', 'zh-CN': '广告' },
   'learning.categories.ads.blurb': {
     en: 'Product shots and campaign assets',
     'zh-CN': '产品展示与广告素材'
@@ -2567,9 +2746,9 @@ Enterprise`
 
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
-  'gallery.heroTitle.before': {
-    en: 'Built, Tweaked, and Dreamed in',
-    'zh-CN': '在 ComfyUI 中构建、调整与创想'
+  'gallery.heroTitle': {
+    en: 'Built, Tweaked, and Dreamed in {brand}',
+    'zh-CN': '在 {brand} 中构建、调整与创想'
   },
   'gallery.heroSubtitle': {
     en: 'A small glimpse of what\u2019s being created with ComfyUI by the community.',
@@ -2756,6 +2935,10 @@ Enterprise`
   'careers.hero.body4': {
     en: 'If you want to shape the future of creativity, come build with us.',
     'zh-CN': '如果你想塑造创意的未来，来和我们一起构建。'
+  },
+  'careers.hero.videoLabel': {
+    en: 'Comfy recruiting video',
+    'zh-CN': 'Comfy 招聘视频'
   },
 
   // CareersWhyJoinSection
@@ -4182,6 +4365,13 @@ Enterprise`
   'nav.ctaDesktopCore': { en: 'DESKTOP', 'zh-CN': '桌面版' },
   'nav.ctaCloudCore': { en: 'TRY FREE', 'zh-CN': '免费试用' },
   'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
+  'nav.copyLogoSvg': { en: 'Copy logo as SVG', 'zh-CN': '复制 SVG 标志' },
+  'nav.copyLogomarkSvg': {
+    en: 'Copy logomark as SVG',
+    'zh-CN': '复制 SVG 标志符号'
+  },
+  'nav.brandAssets': { en: 'Brand assets', 'zh-CN': '品牌素材' },
+  'nav.copied': { en: 'Copied', 'zh-CN': '已复制' },
   'breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
   'breadcrumb.about': { en: 'About Us', 'zh-CN': '关于我们' },
   'breadcrumb.contact': { en: 'Contact', 'zh-CN': '联系我们' },
@@ -4222,32 +4412,32 @@ Enterprise`
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW RELEASE: MINIMAX H3',
-    'zh-CN': '全新发布：MiniMax H3'
+    en: 'GEMINI OMNI 1.1 FLASH',
+    'zh-CN': 'Gemini Omni 1.1 Flash'
   },
   'nav.featuredProductsAlt': {
-    en: 'MiniMax H3 feature image',
-    'zh-CN': 'MiniMax H3 精选图片'
+    en: 'Gemini Omni 1.1 Flash video: cavemen meet the future',
+    'zh-CN': 'Gemini Omni 1.1 Flash 视频：穴居人遇见未来'
   },
   'nav.featuredProductsCta': {
     en: 'EXPLORE NOW',
     'zh-CN': '立即探索'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Explore the MiniMax H3 release',
-    'zh-CN': '探索 MiniMax H3 版本'
+    en: 'Explore the Gemini Omni 1.1 Flash release',
+    'zh-CN': '探索 Gemini Omni 1.1 Flash 版本'
   },
   'nav.featuredCommunityTitle': {
-    en: 'Sky Replacement',
-    'zh-CN': '天空替换'
+    en: 'Product Photography',
+    'zh-CN': '产品摄影'
   },
   'nav.featuredCommunityAlt': {
-    en: 'Sky Replacement workflow demo image',
-    'zh-CN': '天空替换工作流演示图片'
+    en: 'Product Photography workflow demo image',
+    'zh-CN': '产品摄影工作流演示图片'
   },
   'nav.featuredCommunityCtaAria': {
-    en: 'Watch the Sky Replacement demo',
-    'zh-CN': '观看天空替换演示'
+    en: 'Watch the Product Photography demo',
+    'zh-CN': '观看产品摄影演示'
   },
   'nav.featuredCompanyTitle': {
     en: 'Customer story: Black Math',
@@ -4264,10 +4454,11 @@ Enterprise`
 
   // SiteFooter
   'footer.tagline': {
-    en: 'The open standard for visual AI.',
-    'zh-CN': '视觉 AI 的开放标准。'
+    en: 'The open standard for visual AI',
+    'zh-CN': '视觉 AI 的开放标准'
   },
   'footer.products': { en: 'Products', 'zh-CN': '产品' },
+  'footer.models': { en: 'Models', 'zh-CN': '模型' },
   'footer.resources': { en: 'Resources', 'zh-CN': '资源' },
   'footer.company': { en: 'Company', 'zh-CN': '公司' },
   'footer.contact': { en: 'Contact', 'zh-CN': '联系我们' },
@@ -6044,9 +6235,9 @@ Enterprise`
     'zh-CN': 'Comfy 企业版包含什么？'
   },
   'contact.faq.a3': {
-    en: 'Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/cloud/enterprise), or request a demo through this form.',
+    en: 'Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/enterprise/), or request a demo through this form.',
     'zh-CN':
-      '云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/cloud/enterprise)，或通过此表单预约演示。'
+      '云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/enterprise/)，或通过此表单预约演示。'
   },
   'contact.faq.q4': {
     en: 'Is Comfy SOC 2 compliant?',
@@ -6116,7 +6307,7 @@ Enterprise`
     en: 'Loading interactive demo…',
     'zh-CN': '正在加载互动演示…'
   },
-  'demos.noscript': {
+  'demos.noscript.text': {
     en: 'This interactive demo requires JavaScript.',
     'zh-CN': '此互动演示需要 JavaScript。'
   },
@@ -6434,13 +6625,9 @@ Enterprise`
     en: 'Explore Workflows',
     'zh-CN': '探索工作流'
   },
-  'models.list.heroTitle.before': {
-    en: '{name} in',
-    'zh-CN': ''
-  },
-  'models.list.heroTitle.after': {
-    en: '',
-    'zh-CN': ' 中的 {name}'
+  'models.list.heroTitle': {
+    en: '{name} in {brand}',
+    'zh-CN': '{brand} 中的 {name}'
   },
   'models.list.heroSubtitle': {
     en: 'From open-source diffusion checkpoints to partner APIs — every major model, with community workflow templates ready to run.',
@@ -6683,12 +6870,12 @@ Enterprise`
   // Launches page (/launches) — subscribe banner
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'launches.banner.text': {
-    en: 'Now turn your agent into a creative technologist.',
-    'zh-CN': '现在，让你的智能体成为创意技术专家。'
+    en: 'One API for frontier media models.',
+    'zh-CN': '一个 API，调用前沿媒体模型。'
   },
   'launches.banner.cta': {
-    en: 'Start Comfy MCP',
-    'zh-CN': '启动 Comfy MCP'
+    en: 'Try Comfy Router',
+    'zh-CN': '试用 Comfy Router'
   },
 
   // Launches page (/launches) — closing CTA
@@ -7746,6 +7933,130 @@ Enterprise`
     en: 'ChatGPT Images 2.5',
     'zh-CN': 'ChatGPT Images 2.5'
   },
+  // Qwen-Image 2.1 model page (/qwen-image-2.1)
+  'qwenImage21.meta.title': {
+    en: 'Qwen-Image 2.1 on Comfy: Open-Weight Image Generation and Editing',
+    'zh-CN': 'Comfy 上的 Qwen-Image 2.1：开源权重图像生成与编辑'
+  },
+  'qwenImage21.meta.description': {
+    en: 'Run Qwen-Image 2.1 in ComfyUI. Generate high-resolution images with accurate text, edit existing visuals with plain instructions, and keep every step in a repeatable workflow.',
+    'zh-CN':
+      '在 ComfyUI 中运行 Qwen-Image 2.1。生成文字精准的高分辨率图像，用自然语言指令编辑现有视觉内容，并让每一步都留在可复用的工作流中。'
+  },
+  'qwenImage21.breadcrumb.model': {
+    en: 'Qwen-Image 2.1',
+    'zh-CN': 'Qwen-Image 2.1'
+  },
+  'qwenImage21.breadcrumb.updated': {
+    en: 'Updated September 2026',
+    'zh-CN': '更新于 2026 年 9 月'
+  },
+  'qwenImage21.hero.title': {
+    en: 'Qwen-Image 2.1\nis here',
+    'zh-CN': 'Qwen-Image 2.1 已上线'
+  },
+  'qwenImage21.hero.description': {
+    en: 'Generate posters, infographics, portraits, and scenes with the words exactly where you wrote them, then edit any image with a sentence. Qwen-Image 2.1 brings generation and editing into one open-weight model that runs natively in ComfyUI.',
+    'zh-CN':
+      '生成海报、信息图、人像与场景，文字精准出现在你写下的位置，再用一句话编辑任意图像。Qwen-Image 2.1 将生成与编辑合而为一，以开源权重模型在 ComfyUI 中原生运行。'
+  },
+  'qwenImage21.hero.tagOpenWeights': {
+    en: 'Open Weights',
+    'zh-CN': '开源权重'
+  },
+  'qwenImage21.hero.tagTextToImage': {
+    en: 'Text to Image',
+    'zh-CN': '文生图'
+  },
+  'qwenImage21.hero.tagImageEditing': {
+    en: 'Image Editing',
+    'zh-CN': '图像编辑'
+  },
+  'qwenImage21.hero.primaryCta': {
+    en: 'RUN QWEN-IMAGE 2.1',
+    'zh-CN': '运行 Qwen-Image 2.1'
+  },
+  'qwenImage21.hero.secondaryCta': {
+    en: 'READ THE GUIDE',
+    'zh-CN': '查看教程'
+  },
+  'qwenImage21.gallery.heading': {
+    en: 'Made with Qwen-Image 2.1',
+    'zh-CN': '由 Qwen-Image 2.1 创作'
+  },
+  'qwenImage21.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'qwenImage21.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'qwenImage21.pricing.banner.cta': {
+    en: 'TRY FREE',
+    'zh-CN': '免费试用'
+  },
+  'qwenImage21.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'qwenImage21.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'qwenImage21.runOptions.subtitle': {
+    en: 'Build workflows in the browser today, run the open weights on your own GPU, or batch campaigns with the API and connect image generation to the rest of your creative pipeline.',
+    'zh-CN':
+      '今天就在浏览器中搭建工作流，在自己的 GPU 上运行开源权重，或用 API 批量制作，将图像生成接入完整创意流程。'
+  },
+  'qwenImage21.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'qwenImage21.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'qwenImage21.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'qwenImage21.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'qwenImage21.reviews.highlightCta': {
+    en: 'GET STARTED',
+    'zh-CN': '开始使用'
+  },
+  'qwenImage21.announcement.meta.title': {
+    en: 'Qwen-Image 2.1 on Comfy: Coming Soon',
+    'zh-CN': 'Comfy 上的 Qwen-Image 2.1：即将上线'
+  },
+  'qwenImage21.announcement.meta.description': {
+    en: 'Qwen-Image 2.1 is coming to ComfyUI and Comfy Cloud. Generation and editing in one open-weight model, with accurate text rendering, ready to run the day it ships.',
+    'zh-CN':
+      'Qwen-Image 2.1 即将登陆 ComfyUI 与 Comfy Cloud。生成与编辑合一的开源权重模型，文字渲染精准，发布当天即可运行。'
+  },
+  'qwenImage21.announcement.breadcrumb.updated': {
+    en: 'Announced September 2026',
+    'zh-CN': '2026 年 9 月发布预告'
+  },
+  'qwenImage21.announcement.hero.eyebrow': {
+    en: 'Coming soon',
+    'zh-CN': '即将上线'
+  },
+  'qwenImage21.announcement.hero.description': {
+    en: 'Introducing Qwen-Image 2.1, the latest open-weight version of the Qwen-Image models series: image generation and editing in one single model, native 2k resolution, professional typography and support for alpha channel. Coming to ComfyUI and Comfy Cloud the day it ships.',
+    'zh-CN':
+      '隆重推出 Qwen-Image 2.1，Qwen 团队新一代开源权重图像模型：生成与编辑合一，文字精准落在你写下的位置。发布当天即登陆 ComfyUI 与 Comfy Cloud。'
+  },
+  'qwenImage21.announcement.hero.primaryCta': {
+    en: 'GET NOTIFIED',
+    'zh-CN': '获取通知'
+  },
+  'footer.qwenImage21': {
+    en: 'Qwen-Image 2.1',
+    'zh-CN': 'Qwen-Image 2.1'
+  },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy: Open-Weight Video Model',
     'zh-CN': 'Comfy 上的 MiniMax H3：开源权重视频模型'
@@ -8733,12 +9044,17 @@ Enterprise`
       '在一个 API 中使用数千个最新模型。调用 Seedance、Minimax H3、Nano Banana 和 GPT-Image。'
   },
   'platform.modelsHero.heading': {
-    en: '1000+ media AI models in one API.',
-    'zh-CN': '1000+ 媒体 AI 模型，尽在一个 API。'
+    en: 'One API for frontier media models.',
+    'zh-CN': '一个 API，接入所有前沿媒体模型。'
   },
   'platform.modelsHero.subtitle': {
-    en: 'Use state-of-the-art models for image, video, 3D, and audio. Ready for production.',
-    'zh-CN': '使用最先进的图像、视频、3D 和音频模型。生产环境就绪。'
+    en: 'Integrate frontier image, video, 3D and audio models once. Then choose the provider for each job for better availability and prices.',
+    'zh-CN':
+      '一次集成前沿的图像、视频、3D 和音频模型，然后为每个任务选择供应商，获得更好的可用性和价格。'
+  },
+  'platform.modelsHero.getApiKey': {
+    en: 'Get your API key',
+    'zh-CN': '获取 API 密钥'
   },
   'platform.builderHero.heading': {
     en: 'Package ComfyUI Builds for your team',
@@ -9030,8 +9346,9 @@ Enterprise`
     'zh-CN': '按 GPU 秒计费'
   },
   'platform.pricing.storageExample': {
-    en: 'Worked example: 500 GB of models on standard network storage = $45.50/mo + GPU time.',
-    'zh-CN': '示例：500 GB 模型存放在标准网络存储上 = 每月 $45.50 + GPU 时间。'
+    en: 'Worked example: 500 GB of models on standard network storage = {amount}/mo + GPU time.',
+    'zh-CN':
+      '示例：500 GB 模型存放在标准网络存储上 = 每月 {amount} + GPU 时间。'
   },
   'platform.pricing.modelsNote': {
     en: 'Comfy Router usage shows per-output prices on each model card and draws from the same credit pool.',
@@ -9263,6 +9580,7 @@ Enterprise`
   // Workshop – header account + nav
   'nav.workshop': { en: 'Models', 'zh-CN': '模型' },
   'nav.comfyWorkshop': { en: 'Browse Models', 'zh-CN': '浏览模型' },
+  'nav.cinematicStudio': { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
   'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
   'nav.signOut': { en: 'Log out', 'zh-CN': '退出登录' },
   'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },
@@ -9318,7 +9636,7 @@ Enterprise`
   'workshop.task.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.task.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.models.heading': { en: 'Models', 'zh-CN': '模型' },
-  'workshop.proto.version': { en: 'Version', 'zh-CN': '版本' },
+  'workshop.proto.version.label': { en: 'Version', 'zh-CN': '版本' },
   'workshop.proto.version.v1': {
     en: 'Discarded · Categories in tabs',
     'zh-CN': '已弃用 · 标签页分类'
@@ -9416,6 +9734,15 @@ Enterprise`
   'workshop.filter.noMatches': { en: 'No matches', 'zh-CN': '没有匹配项' },
   'workshop.filter.clearAll': { en: 'Clear filters', 'zh-CN': '清除筛选' },
   'workshop.filter.applied': { en: '{n} selected', 'zh-CN': '已选 {n} 项' },
+  'workshop.filter.clear': { en: 'Clear', 'zh-CN': '清除' },
+  'workshop.filter.remove': {
+    en: 'Remove {filter}',
+    'zh-CN': '移除{filter}'
+  },
+  'workshop.filter.runsOn': {
+    en: 'Runs on {model}',
+    'zh-CN': '运行于 {model}'
+  },
   'workshop.launch.label': {
     en: 'Use cases',
     'zh-CN': '用例'
@@ -9511,6 +9838,7 @@ Enterprise`
     'zh-CN': '原型：此页面复刻 Cloud 登录页。真实账户请在此登录：'
   },
   'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
+  'workshop.card.comfyApp': { en: 'Comfy app', 'zh-CN': 'Comfy 应用' },
   'workshop.card.runs': { en: '{n} runs', 'zh-CN': '{n} 次运行' },
   'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
   'workshop.card.from': { en: 'from', 'zh-CN': '起' },
@@ -9736,9 +10064,14 @@ Enterprise`
     en: 'Select or drop up to {count} files',
     'zh-CN': '选择或拖入最多 {count} 个文件'
   },
-  'workshop.field.selectOrDropReplacement': {
-    en: 'Select or drop to replace',
-    'zh-CN': '选择或拖入以替换'
+  'workshop.field.frameRatioMismatchTitle': {
+    en: 'The frames are different shapes',
+    'zh-CN': '两帧比例不同'
+  },
+  'workshop.field.frameRatioMismatch': {
+    en: 'The video has one shape, so a frame that does not match it will be stretched to fit. Run it as is, or upload frames with the same proportions.',
+    'zh-CN':
+      '视频只有一个宽高比，比例不符的那一帧会被拉伸以适应。可以直接生成，或上传比例相同的两帧。'
   },
   'workshop.field.file': { en: 'File', 'zh-CN': '文件' },
   'workshop.field.replaceFile': {
@@ -9781,7 +10114,10 @@ Enterprise`
     en: 'How this price is estimated',
     'zh-CN': '此估算的计算方式'
   },
-  'workshop.field.uploadLimit': { en: 'up to 25 MB', 'zh-CN': '最大 25 MB' },
+  'workshop.field.uploadLimit': {
+    en: 'up to {limit}',
+    'zh-CN': '最大 {limit}'
+  },
   'workshop.field.remove': { en: 'Remove file', 'zh-CN': '移除文件' },
   'workshop.field.providerDefault': {
     en: 'Provider default',
@@ -9799,27 +10135,67 @@ Enterprise`
     en: 'Default: {value}',
     'zh-CN': '默认值：{value}'
   },
+  'workshop.field.exactValue': {
+    en: '{label} value',
+    'zh-CN': '{label}数值'
+  },
   'workshop.field.off': { en: 'Off', 'zh-CN': '关闭' },
   'workshop.form.required': {
     en: 'This field is required',
     'zh-CN': '此字段为必填项'
   },
   'workshop.form.tooLarge': {
-    en: 'File is over 25 MB',
-    'zh-CN': '文件超过 25 MB'
+    en: 'File is over {limit}',
+    'zh-CN': '文件超过 {limit}'
   },
   'workshop.form.uploadFailed': {
     en: 'Upload failed. Try again, or paste a public link instead.',
     'zh-CN': '上传失败。请重试或粘贴可访问的网址。'
+  },
+  'workshop.form.fileUnreadable': {
+    en: 'This file can no longer be read. Select it again.',
+    'zh-CN': '无法再读取此文件。请重新选择。'
+  },
+  'workshop.form.incompatible': {
+    en: 'This input is incompatible with the other settings.',
+    'zh-CN': '此输入与其他设置不兼容。'
+  },
+  'workshop.form.imageAspectRatioOutOfRange': {
+    en: 'Use an image with an aspect ratio between {minimum} and {maximum}.',
+    'zh-CN': '请使用宽高比在 {minimum} 到 {maximum} 之间的图片。'
+  },
+  'workshop.form.imageLayerDecompositionUnsupported': {
+    en: 'This image is too complex to separate into layers. Choose a simpler image.',
+    'zh-CN': '此图片过于复杂，无法分离图层。请选择更简单的图片。'
+  },
+  'workshop.form.imageUnreadable': {
+    en: 'Could not read the image dimensions. Select a readable image or use an accessible image link.',
+    'zh-CN': '无法读取图片尺寸。请选择可读取的图片或使用可访问的图片链接。'
+  },
+  'workshop.form.videoTooLong': {
+    en: 'Use a video that is {seconds} seconds or shorter.',
+    'zh-CN': '请使用时长不超过 {seconds} 秒的视频。'
+  },
+  'workshop.form.videoWidthOutOfRange': {
+    en: 'Use a video between {minimum} and {maximum} pixels wide.',
+    'zh-CN': '请使用宽度在 {minimum} 到 {maximum} 像素之间的视频。'
+  },
+  'workshop.form.videoHdrUnsupported': {
+    en: 'HDR video is not supported. Convert this video to SDR and try again.',
+    'zh-CN': '不支持 HDR 视频。请将此视频转换为 SDR 后重试。'
+  },
+  'workshop.form.videoUnreadable': {
+    en: 'Could not read the video details. Select a playable video or use an accessible video link.',
+    'zh-CN': '无法读取视频详情。请选择可播放的视频或使用可访问的视频链接。'
   },
   'workshop.form.draftRestoreFailed': {
     en: 'We could not restore all of your saved inputs. Check the form and pick your files again.',
     'zh-CN': '部分已保存的输入无法恢复。请检查输入并重新选择文件。'
   },
   'workshop.form.requestTooLarge': {
-    en: 'Your images and prompt add up to more than 10 MB. Use smaller images, or a shorter prompt.',
+    en: 'Your files and prompt exceed the 10 MiB request limit after encoding. Encoding makes files about one-third larger. Use smaller files or a shorter prompt.',
     'zh-CN':
-      '图片和提示词的总大小超过 Comfy Router 的 10 MiB 请求限制。请使用更小的图片或缩短提示词。'
+      '文件和提示词编码后超过 10 MiB 请求限制。编码会使文件增大约三分之一。请使用更小的文件或缩短提示词。'
   },
   'workshop.form.badType': {
     en: 'File type not supported',
@@ -9886,6 +10262,37 @@ Enterprise`
   },
   'workshop.run.leaveStay': { en: 'Stay on this page', 'zh-CN': '留在此页面' },
   'workshop.run.leaveAnyway': { en: 'Leave and cancel', 'zh-CN': '离开并取消' },
+  'workshop.run.switchBody': {
+    en: 'If you switch workspace, the run is cancelled and you will not get back the credits it has already used.',
+    'zh-CN': '切换工作区会取消生成，已消耗的积分不会退回。'
+  },
+  'workshop.run.switchStay': {
+    en: 'Stay in this workspace',
+    'zh-CN': '留在此工作区'
+  },
+  'workshop.run.savedTitle': {
+    en: 'Leave and stop the generation?',
+    'zh-CN': '离开并停止这次生成？'
+  },
+  'workshop.run.savedBody': {
+    en: 'You will not see the result on this page. Left running, it keeps spending credits until it finishes, and lands in your assets.',
+    'zh-CN':
+      '你不会在这个页面看到结果。若让它继续，它会一直消耗积分直到完成，结果会保存到你的素材中。'
+  },
+  'workshop.run.savedAssets': {
+    en: 'Open your assets',
+    'zh-CN': '打开你的素材'
+  },
+  'workshop.run.savedStay': { en: 'Stay on this page', 'zh-CN': '留在此页面' },
+  'workshop.run.savedLeave': { en: 'Leave and stop', 'zh-CN': '离开并停止' },
+  'workshop.run.savedKeep': {
+    en: 'Leave it running',
+    'zh-CN': '让它继续运行'
+  },
+  'workshop.run.switchAnyway': {
+    en: 'Switch and cancel',
+    'zh-CN': '切换并取消'
+  },
   'workshop.examples.replaceTitle': {
     en: 'Replace your inputs?',
     'zh-CN': '要替换你的输入吗？'
@@ -9967,8 +10374,8 @@ Enterprise`
   'workshop.output.download': { en: 'Download', 'zh-CN': '下载' },
   'workshop.output.openOriginal': { en: 'Open output', 'zh-CN': '打开输出' },
   'workshop.output.downloadFallback': {
-    en: 'Automatic download failed. Open the output to save it.',
-    'zh-CN': '自动下载失败。请打开输出文件后保存。'
+    en: 'If your download did not start, open the output to save a copy.',
+    'zh-CN': '如果下载未开始，请打开输出文件并保存副本。'
   },
   'workshop.output.useInCode': {
     en: 'Use these settings in code',
@@ -9999,16 +10406,48 @@ Enterprise`
   },
   'workshop.output.runAgain': { en: 'Run again', 'zh-CN': '再次运行' },
   'workshop.error.provider': {
-    en: 'We could not fetch your result. Try again without changing anything, so you are not charged for a second run.',
-    'zh-CN': '未能获取结果。请重试未更改的请求，以免提交新的运行。'
+    en: 'The run failed. Keep your inputs unchanged when retrying. If credits were deducted without a result, contact support with the request ID.',
+    'zh-CN':
+      '运行失败。重试时请保持输入不变。若已扣费但未获得结果，请提供请求 ID 联系支持。'
+  },
+  'workshop.error.upload': {
+    en: 'Your file could not be uploaded. The model has not run. Try again or paste a public link.',
+    'zh-CN': '文件上传失败，模型尚未运行。请重试或粘贴可访问的网址。'
+  },
+  'workshop.error.network': {
+    en: 'The connection was interrupted. The run may still complete and be billed. Keep your inputs unchanged when retrying.',
+    'zh-CN': '连接中断，运行仍可能完成并扣费。重试时请保持输入不变。'
+  },
+  'workshop.error.response': {
+    en: 'Comfy returned a response, but we could not read the result. Keep your inputs unchanged when retrying. If this persists, contact support with the request ID.',
+    'zh-CN':
+      'Comfy 已返回响应，但无法读取结果。重试时请保持输入不变。若问题持续，请提供请求 ID 联系支持。'
+  },
+  'workshop.error.client': {
+    en: 'The page could not complete this request. Keep your inputs unchanged and contact support if this persists.',
+    'zh-CN': '页面未能完成此请求。请保持输入不变，若问题持续请联系支持。'
+  },
+  'workshop.error.fileUnreadable': {
+    en: 'The page could not read a selected file. Select it again in the highlighted field. The model has not run.',
+    'zh-CN': '页面无法读取所选文件。请在高亮字段中重新选择。模型尚未运行。'
+  },
+  'workshop.error.concurrency': {
+    en: 'This workspace has reached its simultaneous run limit. Wait for an active run to finish, then retry.',
+    'zh-CN': '此工作区已达到同时运行数量上限。请等待正在进行的运行完成后重试。'
+  },
+  'workshop.error.conflict': {
+    en: 'Comfy could not return this request’s result yet. Keep your inputs unchanged when retrying. If this persists, contact support with the request ID.',
+    'zh-CN':
+      'Comfy 暂时无法返回此请求的结果。重试时请保持输入不变。若问题持续，请提供请求 ID 联系支持。'
   },
   'workshop.error.rateLimit': {
     en: 'Too many runs right now. Wait a moment and try again.',
     'zh-CN': '当前运行过多。请稍后重试。'
   },
   'workshop.error.policy': {
-    en: 'A content or workspace policy blocked this request.',
-    'zh-CN': '内容或工作区策略阻止了此请求。'
+    en: 'The model provider blocked the input or generated output under its content policy. Review your prompt and reference files before running again.',
+    'zh-CN':
+      '模型提供商因内容政策阻止了输入或生成的输出。请检查提示词和参考文件后再运行。'
   },
   'workshop.error.noCredits': {
     en: 'Not enough credits. Add credits to continue.',
@@ -10022,11 +10461,16 @@ Enterprise`
     en: 'Check the highlighted fields.',
     'zh-CN': '请检查高亮的字段。'
   },
+  'workshop.error.inputRejected': {
+    en: 'The model rejected these inputs without identifying a field. Check the model’s input requirements or contact support with the request ID.',
+    'zh-CN':
+      '模型拒绝了这些输入，但未指出具体字段。请检查模型的输入要求，或提供请求 ID 联系支持。'
+  },
   'workshop.error.retry': { en: 'Try again', 'zh-CN': '重试' },
   'workshop.error.timeout': {
-    en: 'The provider took too long to answer. A run that finishes later is still billed, so retry the unchanged request rather than starting a new one.',
+    en: 'We stopped waiting for the result. A run that finishes later is still billed, so retry the unchanged request rather than starting a new one.',
     'zh-CN':
-      '提供方响应超时。若该运行随后完成仍会扣费，请重试未更改的请求，而不要开始新的运行。'
+      '等待结果已超时。若该运行随后完成仍会扣费，请重试未更改的请求，而不要开始新的运行。'
   },
   'workshop.error.lowCredits': {
     en: 'You have {credits} credits and this run needs {n}. Add credits to continue; your inputs stay here.',
@@ -10116,6 +10560,26 @@ Enterprise`
   'workshop.api.copied': { en: 'Copied', 'zh-CN': '已复制' },
   'workshop.api.getKey': { en: 'Get API key', 'zh-CN': '获取 API 密钥' },
   'workshop.api.docs': { en: 'Router docs', 'zh-CN': 'Router 文档' },
+  'workshop.api.needs': { en: 'What you need', 'zh-CN': '你需要准备的' },
+  'workshop.api.needsEndpoint': { en: 'Endpoint', 'zh-CN': '接口地址' },
+  'workshop.api.needsKey': { en: 'Key', 'zh-CN': '密钥' },
+  'workshop.api.needsFiles': { en: 'Your files', 'zh-CN': '你的文件' },
+  'workshop.api.runsOnRouter': {
+    en: 'Comfy Router runs it',
+    'zh-CN': '由 Comfy Router 运行'
+  },
+  'workshop.api.runsOnCloud': {
+    en: 'Comfy Cloud runs it',
+    'zh-CN': '由 Comfy Cloud 运行'
+  },
+  'workshop.api.filesRead': {
+    en: 'Read from the paths in the code when it runs',
+    'zh-CN': '代码运行时从代码中的路径读取'
+  },
+  'workshop.api.filesUploaded': {
+    en: 'Uploaded before the call, then read from their urls',
+    'zh-CN': '调用前先上传，再通过链接读取'
+  },
 
   // Workshop – examples
   'workshop.examples.start': {
@@ -10177,6 +10641,218 @@ Enterprise`
   'workshop.hub.io.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.hub.io.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.hub.io.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.workflow.templateBy': {
+    en: 'Template by {author}',
+    'zh-CN': '模板作者：{author}'
+  },
+  'workshop.workflow.sections': {
+    en: 'Workflow sections',
+    'zh-CN': '工作流栏目'
+  },
+  'workshop.workflow.graphAlt': {
+    en: 'The nodes of this workflow and the links between them',
+    'zh-CN': '此工作流的节点及其连接'
+  },
+  'workshop.workflow.graphHint': {
+    en: 'Read-only \u00b7 drag to pan',
+    'zh-CN': '仅供查看 \u00b7 拖动平移'
+  },
+  'workshop.workflow.graphLoading': {
+    en: 'Loading the graph',
+    'zh-CN': '正在加载节点图'
+  },
+  'workshop.workflow.graphFailed': {
+    en: 'The graph could not be loaded. The download still works.',
+    'zh-CN': '节点图加载失败，下载仍然可用。'
+  },
+  'workshop.workflow.zoomIn': { en: 'Zoom in', 'zh-CN': '放大' },
+  'workshop.workflow.zoomOut': { en: 'Zoom out', 'zh-CN': '缩小' },
+  'workshop.workflow.zoomReset': { en: 'Reset', 'zh-CN': '重置' },
+  'workshop.workflow.factWhere': { en: 'Where', 'zh-CN': '运行位置' },
+  'workshop.workflow.factOutput': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.workflow.factAuthor': { en: 'Author', 'zh-CN': '作者' },
+  'workshop.workflow.runsCloud': {
+    en: 'Runs on Comfy Cloud',
+    'zh-CN': '在 Comfy Cloud 上运行'
+  },
+  'workshop.workflow.runsOwn': {
+    en: 'Runs on a deployment of your own',
+    'zh-CN': '在你自己的部署上运行'
+  },
+  'workshop.workflow.perRun': {
+    en: '{count} per run',
+    'zh-CN': '每次运行 {count} 个'
+  },
+  'workshop.workflow.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
+  'workshop.workflow.inside': {
+    en: 'Inside the workflow',
+    'zh-CN': '查看工作流内部'
+  },
+  'workshop.workflow.previewHint': {
+    en: 'A read-only preview of the source template. Open it in Cloud to explore the nodes and make changes.',
+    'zh-CN': '源模板的只读预览。在 Cloud 中打开，即可查看节点并进行修改。'
+  },
+  'workshop.workflow.fullPreview': {
+    en: 'Open full-size workflow preview',
+    'zh-CN': '打开完整尺寸的工作流预览'
+  },
+  'workshop.workflow.apiHint': {
+    en: 'The request below uses the same prepared graph and settings as the Playground. Each submission can start a paid run; do not automatically retry a submission whose outcome is unknown.',
+    'zh-CN':
+      '以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。'
+  },
+  'workshop.workflow.apiNote': {
+    en: 'Needs a paid Cloud plan and available credits.',
+    'zh-CN': '需要付费的 Cloud 方案和可用额度。'
+  },
+  'workshop.workflow.apiDocs': {
+    en: 'API documentation',
+    'zh-CN': 'API 文档'
+  },
+  'workshop.workflow.apiUploads': {
+    en: 'Upload media first',
+    'zh-CN': '先上传媒体'
+  },
+  'workshop.workflow.apiUploadGrant': {
+    en: 'POST /api/inputs/upload-url with {"content_type":"image/png"} on the Cloud origin, using your workspace credential.',
+    'zh-CN':
+      '使用工作区凭证向 Cloud 的 POST /api/inputs/upload-url 发送 {"content_type":"image/png"}。'
+  },
+  'workshop.workflow.apiUploadPut': {
+    en: 'PUT the raw file bytes to the returned upload_path on the same Cloud origin. Do not send an account credential with this PUT.',
+    'zh-CN':
+      '将文件原始字节 PUT 到同一 Cloud 地址返回的 upload_path。此 PUT 不要携带账号凭证。'
+  },
+  'workshop.workflow.apiUploadFinalize': {
+    en: 'The PUT response contains name. Replace the corresponding UPLOADED_*_FILENAME value below with that name.',
+    'zh-CN': 'PUT 响应包含 name。用此名称替换下方对应的 UPLOADED_*_FILENAME。'
+  },
+  'workshop.workflow.apiPoll': {
+    en: 'POST /api/prompt returns prompt_id. Poll GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain with your credential. Selected outputs contain temporary short_url links; read the job again to refresh them.',
+    'zh-CN':
+      'POST /api/prompt 返回 prompt_id。使用凭证轮询 GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain。选定输出包含临时 short_url 链接；再次读取运行即可刷新链接。'
+  },
+  'workshop.workflow.exampleHint': {
+    en: 'An example from this template.',
+    'zh-CN': '此模板的示例。'
+  },
+  'workshop.output.refreshLink': {
+    en: 'Refresh download link',
+    'zh-CN': '刷新下载链接'
+  },
+  'workshop.workflow.preparing': {
+    en: 'Preparing inputs…',
+    'zh-CN': '正在准备输入…'
+  },
+  'workshop.workflow.submitting': {
+    en: 'Handing the workflow over',
+    'zh-CN': '正在提交工作流'
+  },
+  'workshop.workflow.queued': { en: 'Waiting its turn', 'zh-CN': '排队中' },
+  'workshop.workflow.cancelled': {
+    en: 'This run was cancelled before it finished.',
+    'zh-CN': '这次运行在完成前已取消。'
+  },
+  'workshop.workflow.cancelling': {
+    en: 'Waiting for cancellation…',
+    'zh-CN': '正在等待取消确认…'
+  },
+  'workshop.workflow.delivering': {
+    en: 'Preparing outputs…',
+    'zh-CN': '正在准备输出…'
+  },
+  'workshop.workflow.failed': {
+    en: 'This run failed. Review your inputs before running again.',
+    'zh-CN': '运行失败。请检查输入后重试。'
+  },
+  'workshop.workflow.interrupted': {
+    en: 'Connection interrupted',
+    'zh-CN': '连接中断'
+  },
+  'workshop.workflow.resume': {
+    en: 'Reconnect to this run',
+    'zh-CN': '重新连接此运行'
+  },
+  'workshop.workflow.resumeHint': {
+    en: 'Once Cloud returns a job ID, this tab can reconnect to it after a refresh. Leaving the page does not cancel the job.',
+    'zh-CN':
+      'Cloud 返回运行 ID 后，此标签页可在刷新后重新连接。离开页面不会取消运行。'
+  },
+  'workshop.workflow.inputSize': {
+    en: 'Use files up to 25 MiB each, with at most 50 MiB of inputs per run.',
+    'zh-CN': '单个文件不得超过 25 MiB，每次运行的输入总大小不得超过 50 MiB。'
+  },
+  'workshop.workflow.submissionUnknown': {
+    en: 'Cloud may have accepted this run, but its response was lost. Check your Cloud history before starting another run.',
+    'zh-CN':
+      'Cloud 可能已接受运行，但响应丢失。开始新运行前请检查 Cloud 历史记录。'
+  },
+  'workshop.workflow.checkCloud': { en: 'Check Cloud', 'zh-CN': '查看 Cloud' },
+  'workshop.workflow.dismissUnknown': {
+    en: 'Return to inputs',
+    'zh-CN': '返回输入'
+  },
+  'workshop.workflow.cancelRequested': {
+    en: 'Cancellation requested. Check Cloud for the final job status.',
+    'zh-CN': '已请求取消。请在 Cloud 中查看最终运行状态。'
+  },
+  'workshop.workflow.signInAgain': {
+    en: 'Sign in again to reconnect to this run.',
+    'zh-CN': '请重新登录以连接此运行。'
+  },
+  'workshop.workflow.accessDenied': {
+    en: 'This account no longer has access to this workspace. Check your workspace selection.',
+    'zh-CN': '此账号已无法访问该工作区。请检查所选工作区。'
+  },
+  'workshop.workflow.definitionChanged': {
+    en: 'This workflow has changed. Reload the page before starting a new run.',
+    'zh-CN': '工作流已更新。开始新运行前请重新加载页面。'
+  },
+  'workshop.workflow.runMissing': {
+    en: 'This run is not available in the current account and workspace.',
+    'zh-CN': '当前账号和工作区无法访问此运行。'
+  },
+  'workshop.workflow.paused': {
+    en: 'New workflow runs are temporarily paused. Existing runs can still be followed or cancelled.',
+    'zh-CN': '新工作流运行已暂时停用。你仍可查看或取消已有运行。'
+  },
+  'workshop.workflow.mediaUnavailable': {
+    en: 'An input upload is incomplete or no longer available. Check your files and try again.',
+    'zh-CN': '输入文件尚未上传完成或已不可用。请检查文件后重试。'
+  },
+  'workshop.workflow.deliveryFailed': {
+    en: 'The run finished, but some outputs could not be delivered. Retry delivery to retrieve them from this run.',
+    'zh-CN': '运行已完成，但部分输出未能送达。重试获取此运行的输出即可。'
+  },
+  'workshop.workflow.retryDelivery': {
+    en: 'Retry output delivery',
+    'zh-CN': '重试获取输出'
+  },
+  'workshop.workflow.storageFailed': {
+    en: 'Your browser could not save this run for recovery. Allow site storage, then try again.',
+    'zh-CN': '浏览器无法保存运行恢复信息。请允许此网站使用存储，然后重试。'
+  },
+  'workshop.workflow.connectionLost': {
+    en: 'The run could not be checked. Reconnect to recover its current status.',
+    'zh-CN': '无法查看运行状态。请重新连接以获取最新状态。'
+  },
+  'workshop.workflow.lostContact': {
+    en: 'This page lost contact with the run. It may still be running on Cloud and using credits. Reconnect to see its current status.',
+    'zh-CN':
+      '此页面与运行失去了联系。它可能仍在 Cloud 上运行并消耗积分。请重新连接以查看最新状态。'
+  },
+  'workshop.workflow.browserUnavailable': {
+    en: 'Running workflows from this page is not available yet.',
+    'zh-CN': '暂不支持从此页面运行工作流。'
+  },
+  'workshop.workflow.tryCloud': {
+    en: 'Try in Cloud',
+    'zh-CN': '在 Cloud 中体验'
+  },
+  'workshop.workflow.explore': {
+    en: 'Explore the possibilities',
+    'zh-CN': '探索更多可能'
+  },
   'workshop.workflow.by': { en: 'by {author}', 'zh-CN': '作者 {author}' },
   'workshop.workflow.nodeGraph': { en: 'Node Graph', 'zh-CN': '节点图' },
   'workshop.workflow.comfyApp': { en: 'Comfy App', 'zh-CN': 'Comfy 应用' },
@@ -10246,6 +10922,36 @@ Enterprise`
   'workshop.hub.models': { en: 'Model', 'zh-CN': '模型' },
   'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
   'workshop.hub.docs': { en: 'Read docs', 'zh-CN': '阅读文档' },
+
+  'workshop.assets.title': { en: 'Your assets', 'zh-CN': '你的素材' },
+  'workshop.assets.seeAll': {
+    en: 'See all in Cloud',
+    'zh-CN': '在云端查看全部'
+  },
+  'workshop.assets.open': {
+    en: 'Open saved asset',
+    'zh-CN': '打开已保存的素材'
+  },
+  'workshop.assets.generating': { en: 'Generating…', 'zh-CN': '正在生成…' },
+  'workshop.assets.loadingMedia': {
+    en: 'Loading asset…',
+    'zh-CN': '正在加载素材…'
+  },
+  'workshop.assets.loadError': {
+    en: 'Could not load your assets.',
+    'zh-CN': '无法加载你的素材。'
+  },
+  'workshop.assets.previous': { en: 'Previous asset', 'zh-CN': '上一个素材' },
+  'workshop.assets.next': { en: 'Next asset', 'zh-CN': '下一个素材' },
+  'workshop.assets.go': { en: 'Show asset {n}', 'zh-CN': '显示第 {n} 个素材' },
+  'workshop.assets.notSaved': {
+    en: 'This generation could not be saved to your assets. The result is still on the page until it expires.',
+    'zh-CN': '这次生成未能保存到你的素材。结果在过期前仍然留在页面上。'
+  },
+  'workshop.assets.cancelError': {
+    en: 'Could not request cancellation. Your generation may still be running.',
+    'zh-CN': '无法请求取消。生成可能仍在进行。'
+  },
   'workshop.error.creditsTitle': {
     en: 'Not enough credits',
     'zh-CN': '积分不足'
@@ -10263,6 +10969,17 @@ Enterprise`
     'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
+  'workshop.cinematic.badge': { en: 'New · Beta', 'zh-CN': '新 · 测试版' },
+  'workshop.cinematic.summary': {
+    en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
+    'zh-CN':
+      '用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。'
+  },
+  'workshop.cinematic.cta': { en: 'Open studio', 'zh-CN': '打开工作室' },
+  'workshop.cinematic.openInStudio': {
+    en: 'Open in Cinematic Studio',
+    'zh-CN': '在 Cinematic Studio 中打开'
+  },
   'workshop.hub.tag.partnerNodes': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'
@@ -10270,7 +10987,7 @@ Enterprise`
   'workshop.hub.loadMore': { en: 'Load more', 'zh-CN': '加载更多' },
   'workshop.hub.empty': {
     en: 'No workflows match your filters',
-    'zh-CN': '没有符合筛选条件的模板'
+    'zh-CN': '没有符合筛选条件的工作流'
   },
   'workshop.hub.emptyHint': {
     en: 'Try removing some filters',
@@ -10278,13 +10995,13 @@ Enterprise`
   },
   'workshop.hub.showing': {
     en: 'Showing {shown} of {total} workflows',
-    'zh-CN': '显示 {shown} / {total} 个模板'
+    'zh-CN': '显示 {shown} / {total} 个工作流'
   },
   'workshop.proto.featured': {
     en: 'Show the featured row',
     'zh-CN': '显示精选行'
   },
-  'workshop.proto.session': { en: 'Session', 'zh-CN': '会话' },
+  'workshop.proto.session.label': { en: 'Session', 'zh-CN': '会话' },
   'workshop.proto.session.signedOut': { en: 'Signed out', 'zh-CN': '未登录' },
   'workshop.proto.session.new': {
     en: 'New account (no credits yet)',
@@ -10296,7 +11013,7 @@ Enterprise`
   },
   'workshop.proto.subscribed': { en: 'Subscribed', 'zh-CN': '已订阅' },
   'workshop.proto.zeroBalance': { en: 'Zero balance', 'zh-CN': '零余额' },
-  'workshop.proto.outcome': {
+  'workshop.proto.outcome.label': {
     en: 'Simulate run outcome',
     'zh-CN': '模拟运行结果'
   },
@@ -10317,7 +11034,7 @@ Enterprise`
     en: 'Rate limit (429)',
     'zh-CN': '限流 (429)'
   },
-  'workshop.proto.gate': {
+  'workshop.proto.gate.label': {
     en: 'Simulate model state',
     'zh-CN': '模拟模型状态'
   },
@@ -10637,8 +11354,37 @@ function resolve(key: TranslationKey, locale: Locale): [string, Locale] {
   return message === undefined ? [entry.en, 'en'] : [message, locale]
 }
 
-export function t(key: TranslationKey, locale: Locale = 'en'): string {
-  return resolve(key, locale)[0]
+export function t(
+  key: TranslationKey,
+  locale: Locale = 'en',
+  named: NamedValues = {}
+): string {
+  return interpolate(resolve(key, locale)[0], named)
+}
+
+/**
+ * Resolves a message and splits it around one named slot, so a component can
+ * wrap that slot in markup while the locale decides the word order.
+ */
+export function tAround(
+  key: TranslationKey,
+  locale: Locale,
+  slot: string,
+  named: NamedValues = {}
+): [string, string] {
+  const marker = `{${slot}}`
+  const [message] = resolve(key, locale)
+  const markerIndex = message.indexOf(marker)
+  if (markerIndex === -1) {
+    throw new Error(`Translation ${key} is missing slot ${marker}`)
+  }
+  if (message.indexOf(marker, markerIndex + marker.length) !== -1) {
+    throw new Error(`Translation ${key} repeats slot ${marker}`)
+  }
+  return [
+    interpolate(message.slice(0, markerIndex), named),
+    interpolate(message.slice(markerIndex + marker.length), named)
+  ]
 }
 
 export function tPlural(
@@ -10652,7 +11398,7 @@ export function tPlural(
     new Intl.PluralRules(messageLocale).select(count) === 'one'
       ? forms[0]
       : forms[forms.length - 1]
-  return form.trim().replace('{count}', String(count))
+  return interpolate(form.trim(), { count })
 }
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]

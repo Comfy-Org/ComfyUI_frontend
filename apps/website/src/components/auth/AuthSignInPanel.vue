@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 
-import SocialAuthButtons from '@comfyorg/account/vue/SocialAuthButtons'
+import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
@@ -136,7 +136,7 @@ const {
             )
           "
           :button-class="`${AUTH_BRAND_GHOST_BUTTON_CLASS} w-full gap-3`"
-          label-class="relative top-[0.15em] inline-block"
+          label-class="inline-block"
           :disabled="busy"
           @google="signInWith('google')"
           @github="signInWith('github')"

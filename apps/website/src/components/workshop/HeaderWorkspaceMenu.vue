@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ArrowLeftRight, Check } from '@lucide/vue'
-import { onMounted, ref, useTemplateRef } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { ref, useTemplateRef, watch } from 'vue'
 import {
   DropdownMenuItem,
   DropdownMenuPortal,
@@ -15,6 +16,7 @@ import type { WorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { workspaceInitialsOf } from '../../lib/workshop/initials'
+import { submenuOffset } from '../../lib/workshop/submenu-offset'
 import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
 
 const {
@@ -50,14 +52,28 @@ const trigger = useTemplateRef<{ $el: HTMLElement }>('trigger')
 const sideOffset = ref(GAP)
 
 // The switcher is a button inside the menu, so a submenu placed beside it lands
-// on top of the menu. It is offset to the menu's own left edge instead.
-onMounted(() => {
+// on top of the menu. It is offset to the menu's own left edge instead, and
+// measured each time the list opens, since the menu has a maximum width the
+// viewport constrains and its left edge moves when the window does.
+function measure() {
   const el = trigger.value?.$el
-  const panel = el?.closest('[data-testid="header-account-menu"]')
-  if (!el || !panel) return
-  sideOffset.value =
-    el.getBoundingClientRect().left - panel.getBoundingClientRect().left + GAP
+  if (!el) return
+  const panel = el.closest('[data-testid="header-account-menu"]')
+  sideOffset.value = submenuOffset(
+    el.getBoundingClientRect(),
+    panel?.getBoundingClientRect(),
+    GAP
+  )
+}
+
+watch(open, (isOpen) => {
+  if (isOpen) measure()
 })
+useEventListener(
+  () => (open.value ? globalThis.window : undefined),
+  'resize',
+  measure
+)
 
 const itemClass =
   'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-sm text-primary-comfy-canvas outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4'

@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, watch } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 const hoisted = vi.hoisted(() => {
   const analytics = {
@@ -50,14 +53,7 @@ vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   InAppPlugin: hoisted.inAppPlugin
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    userEmail: hoisted.userEmail,
-    resolvedUserInfo: hoisted.resolvedUserInfo,
-    onUserResolved: hoisted.onUserResolved,
-    onUserLogout: hoisted.onUserLogout
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 import { i18n } from '@/i18n'
 
@@ -89,13 +85,31 @@ function createDeferred() {
 
 describe('CustomerIoTelemetryProvider', () => {
   beforeEach(() => {
+    const currentUser = vi.mocked(useCurrentUser())
+    currentUser.userEmail = computed(() => hoisted.userEmail.value)
+    currentUser.resolvedUserInfo = computed(
+      () => hoisted.resolvedUserInfo.value
+    )
+    currentUser.onUserResolved.mockImplementation((callback) => {
+      hoisted.onUserResolved(callback)
+      return watch(
+        () => false,
+        () => {}
+      )
+    })
+    currentUser.onUserLogout.mockImplementation((callback) => {
+      hoisted.onUserLogout(callback)
+      return watch(
+        () => false,
+        () => {}
+      )
+    })
     hoisted.resetCallbacks()
     hoisted.load.mockReturnValue(hoisted.analytics)
     hoisted.analytics.identify.mockResolvedValue(undefined)
     hoisted.analytics.track.mockResolvedValue(undefined)
-    hoisted.analytics.reset.mockReset().mockResolvedValue(undefined)
+    hoisted.analytics.reset.mockResolvedValue(undefined)
     hoisted.analytics.register.mockResolvedValue(undefined)
-    hoisted.reportError.mockClear()
     hoisted.userEmail.value = null
     i18n.global.locale.value = 'en'
     window.__CONFIG__ = {}

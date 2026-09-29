@@ -7,6 +7,7 @@ import {
   useFocusWithin,
   useFullscreen,
   useMediaControls,
+  useMediaQuery,
   useMouseInElement,
   whenever
 } from '@vueuse/core'
@@ -79,6 +80,11 @@ const {
   class?: HTMLAttributes['class']
 }>()
 
+const emit = defineEmits<{
+  loaded: [src: string]
+  failed: [src: string]
+}>()
+
 const playerEl = useTemplateRef<HTMLDivElement>('playerEl')
 const videoEl = useTemplateRef<HTMLVideoElement>('videoEl')
 const scrubberEl = useTemplateRef<HTMLDivElement>('scrubberEl')
@@ -114,7 +120,12 @@ watch(
 // Controls fade
 const hovering = useElementHover(playerEl)
 const { focused } = useFocusWithin(playerEl)
-const recentActivity = refAutoReset(false, 800)
+// A pointer that hovers keeps the bar up for as long as it rests here, so the
+// window after it moves can be short. A finger cannot hover: the tap that
+// summoned the bar is the whole of its visit, and 800ms was long enough to see
+// the controls and too short to hit one.
+const canHover = useMediaQuery('(hover: hover)')
+const recentActivity = refAutoReset(false, () => (canHover.value ? 800 : 4000))
 
 const controlsVisible = computed(
   () =>
@@ -151,7 +162,9 @@ useEventListener(videoEl, 'durationchange', syncNativeDuration)
 // rejects with NotAllowedError when the browser lacks engagement-based
 // autoplay permission, and playback retries muted. flush: 'post'
 // guarantees this runs after useMediaControls' internal muted watcher
-// on the same source.
+// on the same source. `el.muted` is set directly so play() sees it
+// synchronously; `muted.value` is set alongside it (rather than left to the
+// volumechange round-trip) so the mute button reflects reality immediately.
 watch(
   [videoEl, () => src],
   async ([el]) => {
@@ -163,6 +176,7 @@ watch(
     if (autoplayUnmuted) {
       el.pause()
       el.muted = false
+      muted.value = false
       try {
         await el.play()
         return
@@ -171,6 +185,7 @@ watch(
       }
     }
     el.muted = true
+    muted.value = true
     el.play().catch((error: unknown) => {
       if (error instanceof Error && error.name === 'AbortError') return
       console.warn('VideoPlayer autoplay failed', error)
@@ -304,7 +319,9 @@ function toggleFullscreen() {
       playsinline
       :autoplay="autoplay && !lazyAutoplay"
       :loop
-      :muted="autoplay"
+      :muted="autoplay && !lazyAutoplay"
+      @loadeddata="emit('loaded', src)"
+      @error="emit('failed', src)"
       @click="hideControls || muteOnly ? undefined : (playing = !playing)"
     >
       <track
@@ -368,6 +385,7 @@ function toggleFullscreen() {
     <!-- Bottom control bar -->
     <div
       v-if="src && !minimal && !hideControls && !muteOnly"
+      data-testid="player-control-bar"
       :class="
         cn(
           'absolute inset-x-0 bottom-0 flex items-center gap-3 p-4 transition-opacity duration-300 lg:px-6 lg:py-5',

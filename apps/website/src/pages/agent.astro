@@ -36,19 +36,21 @@ const agentCards = getAgentCards(locale)
     </div>
 
     <div class="grid grid-cols-2 gap-6 max-[820px]:grid-cols-1">
-      {
-        agentCards.map((card) => (
-          <div class="rounded-3xl bg-primary-comfy-ink-light p-8.5 pb-9.5">
-            <p class="mb-4 text-xs font-bold tracking-[0.14em] text-primary-comfy-yellow uppercase">
-              {card.tag}
-            </p>
-            <h3 class="mb-3 text-xl/tight font-medium tracking-[-0.01em] text-primary-comfy-canvas">
-              {card.title}
-            </h3>
-            <p class="text-sm/[1.62] text-primary-warm-white/66">{card.body}</p>
-          </div>
-        ))
-      }
+      {agentCards.map((card) => <div
+        class="rounded-3xl bg-primary-comfy-ink-light p-8.5 pb-9.5"
+      >
+        <p
+          class="mb-4 text-xs font-bold tracking-[0.14em] text-primary-comfy-yellow uppercase"
+        >
+          {card.tag}
+        </p>
+        <h3
+          class="mb-3 text-xl/tight font-medium tracking-[-0.01em] text-primary-comfy-canvas"
+        >
+          {card.title}
+        </h3>
+        <p class="text-sm/[1.62] text-primary-warm-white/66">{card.body}</p>
+      </div>)}
     </div>
   </section>
 </BaseLayout>

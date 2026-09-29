@@ -47,7 +47,8 @@ export const workshopCreatorFormSchema = z
           'kling-avatar',
           'kling-lip-sync',
           'kling-omni-video',
-          'veo'
+          'veo',
+          'gpt-image'
         ]),
         options: jsonObject.default({})
       })
