@@ -144,6 +144,27 @@ describe('searchTemplates', () => {
     expect(searchTemplates(index, 'h3')).toEqual(['h3'])
   })
 
+  it('keeps searching when two templates share a key', () => {
+    const index = buildIndex([
+      buildTemplate({
+        name: 'decimate',
+        title: 'Alpha Mesh',
+        sourceModule: 'pack-a',
+        templateKey: 'pack-a/decimate'
+      }),
+      buildTemplate({
+        name: 'decimate',
+        title: 'Beta Mesh',
+        sourceModule: 'pack-a',
+        templateKey: 'pack-a/decimate'
+      }),
+      buildTemplate({ name: 'h3', title: 'MiniMax H3 Video' })
+    ])
+    expect(searchTemplates(index, 'alpha')).toEqual(['pack-a/decimate'])
+    expect(searchTemplates(index, 'beta')).toEqual([])
+    expect(searchTemplates(index, 'h3')).toEqual(['h3'])
+  })
+
   it('returns an empty array for a blank query without touching the index', () => {
     const index = buildIndex([buildTemplate({ name: 'a', title: 'Alpha' })])
     expect(searchTemplates(index, '   ')).toEqual([])

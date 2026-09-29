@@ -215,5 +215,14 @@ describe('custom templates that share a filename', () => {
         screen.getByTestId('template-workflow-pack-a/decimate')
       ).queryByRole('progressbar')
     ).toBeNull()
+
+    // Settle the load so no async work outlives the test (dialog closes).
+    templateFetch.resolve(Response.json({ nodes: [] }))
+    await waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('template-workflow-pack-b/decimate')
+      ).toBeNull()
+    )
   })
 })

@@ -1,3 +1,4 @@
+import { uniqBy } from 'es-toolkit'
 import MiniSearch from 'minisearch'
 import type { SearchResult } from 'minisearch'
 
@@ -158,7 +159,9 @@ export function createTemplateSearchIndex(
     tokenize,
     searchOptions: searchOptions('AND')
   })
-  index.addAll(templates)
+  // A pack can ship the same filename in two example folders, giving two
+  // templates one key; MiniSearch throws on duplicate IDs.
+  index.addAll(uniqBy(templates, getTemplateKey))
   return index
 }
 
