@@ -8,6 +8,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { EndingKind, EndingScreen } from '@/checkout/endingScreen'
 import { longDate } from '@/checkout/longDate'
 import { supportLinkWithCode } from '@/checkout/payVerdict'
+import { namedPlan } from '@/checkout/summaryLedger'
 import EndingCodeCard from '@/components/fullPage/EndingCodeCard.vue'
 import SuccessCloseFooter from '@/components/fullPage/SuccessCloseFooter.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
@@ -68,7 +69,7 @@ const {
 const emit = defineEmits<{ close: []; retry: []; viewPlans: [] }>()
 
 const { t, locale } = useI18n()
-const { planName } = useHostedCopy()
+const { coded } = useHostedCopy()
 
 const ending = computed(() => ENDINGS[screen.kind])
 const copyKey = computed(() => `checkout.fullPage.ending.${screen.kind}`)
@@ -81,7 +82,11 @@ const bodyParams = computed(() =>
   screen.kind === 'refused' && screen.copy === 'change_scheduled'
     ? {
         workspace,
-        plan: planName(screen.scheduled.plan),
+        plan: namedPlan(
+          { t, tierName: (tier) => coded('tier', tier) },
+          screen.scheduled.plan,
+          screen.scheduled.plan.duration === 'ANNUAL'
+        ),
         date: longDate(screen.scheduled.effectiveAt, locale.value)
       }
     : { workspace }

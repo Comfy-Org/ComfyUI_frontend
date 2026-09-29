@@ -488,7 +488,7 @@ describe('FullPageCheckoutView', () => {
     duration: 'ANNUAL'
   })
   const CHANGE_NAMED =
-    'Your plan is set to change to Pro · Yearly on October 28, 2026. Cancel that change in your billing settings to make a different one.'
+    'Your plan is set to change to Pro Yearly on October 28, 2026. Cancel that change in your billing settings to make a different one.'
   const CHANGE_UNNAMED =
     'Your plan already has a change scheduled. Cancel it in your billing settings to make a different one.'
 

@@ -81,27 +81,33 @@ describe('CheckoutEnding', () => {
     }
   )
 
-  it('a refusal for a change already scheduled names the plan and the date it takes effect', () => {
-    const ending = endingOf({
-      kind: 'refused',
-      reason: 'subscription_change_in_progress',
-      scheduled: {
-        plan: { tier: 'PRO', duration: 'ANNUAL' },
-        effectiveAt: '2026-10-28T00:00:00.000Z'
-      }
-    })
-    if (ending === undefined) throw new Error('a refusal is an ending')
-    renderEnding(ending)
+  it.for([
+    { duration: 'MONTHLY', plan: 'Pro' },
+    { duration: 'ANNUAL', plan: 'Pro Yearly' }
+  ] as const)(
+    'a refusal for a change already scheduled to $duration names it $plan and the full date it takes effect',
+    ({ duration, plan }) => {
+      const ending = endingOf({
+        kind: 'refused',
+        reason: 'subscription_change_in_progress',
+        scheduled: {
+          plan: { tier: 'PRO', duration },
+          effectiveAt: '2026-10-28T00:00:00.000Z'
+        }
+      })
+      if (ending === undefined) throw new Error('a refusal is an ending')
+      renderEnding(ending)
 
-    expect(
-      screen.getByText(
-        'Your plan is set to change to Pro · Yearly on October 28, 2026. Cancel that change in your billing settings to make a different one.'
+      expect(
+        screen.getByText(
+          `Your plan is set to change to ${plan} on October 28, 2026. Cancel that change in your billing settings to make a different one.`
+        )
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'SUBSCRIPTION_CHANGE_IN_PROGRESS'
       )
-    ).toBeInTheDocument()
-    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
-      'SUBSCRIPTION_CHANGE_IN_PROGRESS'
-    )
-  })
+    }
+  )
 
   it.for<{
     ending: EndingScreen

@@ -181,7 +181,7 @@ test('643-14654: a change already scheduled is named from the server, and withou
   await expect(heading(page, 'Checkout not available')).toBeVisible()
   await expect(
     page.getByText(
-      'Your plan is set to change to Pro · Monthly on October 28, 2026. Cancel that change in your billing settings to make a different one.'
+      'Your plan is set to change to Pro on October 28, 2026. Cancel that change in your billing settings to make a different one.'
     )
   ).toBeVisible()
   await expect(code(page)).toHaveText('SUBSCRIPTION_CHANGE_IN_PROGRESS')
