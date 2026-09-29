@@ -177,24 +177,29 @@ test('the Details graph waits for its tab, names its subgraphs, and zooms from i
   expect(graphRequests).toHaveLength(1)
   await expect(drawing).toContainText('Image to Video (LTX-2.3)')
 
+  // Fitting the whole drawing into the panel renders its titles at a few
+  // pixels, so it opens zoomed onto the node the workflow starts from.
+  const zoom = () =>
+    graph
+      .getByText('%')
+      .evaluate((el) => Number(el.textContent.replace('%', '')))
+  const opening = await zoom()
+  expect(opening).toBeGreaterThan(100)
+
   // The controls sit inside the draggable frame; a press on them has to reach
   // them rather than the frame.
   await graph.getByRole('button', { name: 'Zoom in' }).click()
-  await expect(graph).toContainText('120%')
+  await expect.poll(zoom).toBeGreaterThan(opening)
   const frame = await graph.boundingBox()
   const drawn = await drawing.locator('g').first().boundingBox()
-  const centre = {
-    x: drawn!.x + drawn!.width / 2,
-    y: drawn!.y + drawn!.height / 2
-  }
-  // Zooming keeps the drawing where it was rather than carrying it off-frame.
-  expect(centre.x).toBeGreaterThan(frame!.x)
-  expect(centre.x).toBeLessThan(frame!.x + frame!.width)
-  expect(centre.y).toBeGreaterThan(frame!.y)
-  expect(centre.y).toBeLessThan(frame!.y + frame!.height)
+  // Zooming keeps the drawing under the frame rather than carrying it off.
+  expect(drawn!.x).toBeLessThan(frame!.x + frame!.width)
+  expect(drawn!.x + drawn!.width).toBeGreaterThan(frame!.x)
+  expect(drawn!.y).toBeLessThan(frame!.y + frame!.height)
+  expect(drawn!.y + drawn!.height).toBeGreaterThan(frame!.y)
 
   await graph.getByRole('button', { name: 'Reset' }).click()
-  await expect(graph).toContainText('100%')
+  await expect.poll(zoom).toBe(opening)
 })
 
 test('withholds workflow discovery and direct pages when the workflow flag is off', async ({
