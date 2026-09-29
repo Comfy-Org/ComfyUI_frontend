@@ -35,7 +35,6 @@ describe('PlaygroundOutput', () => {
   it('reserves a minimum height only until there is media to size the panel', async () => {
     const { rerender } = render(PlaygroundOutput, {
       props: {
-        modelName: 'Workflow',
         now: 3000,
         state: { status: 'running', startedAt: 1000, label: 'Queued' }
       }
