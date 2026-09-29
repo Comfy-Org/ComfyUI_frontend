@@ -533,3 +533,20 @@ test('@mobile keeps the catalogue tabs in place when a tab changes the hero subt
   await expect(models).toHaveAttribute('aria-pressed', 'true')
   expect((await models.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
 })
+
+test('@mobile stretches the catalogue tabs across the toolbar on a phone', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/models/')
+  const toolbar = page.getByTestId('workshop-toolbar')
+  const tabs = toolbar.getByTestId('catalogue-tabs')
+  await expect(tabs).toBeVisible()
+
+  const [bar, group] = await Promise.all([
+    toolbar.boundingBox(),
+    tabs.boundingBox()
+  ])
+  expect((bar?.width ?? 0) - (group?.width ?? 0)).toBeLessThan(12)
+})
