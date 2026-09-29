@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
-import { hubModelSlugs } from '../src/config/hub-models'
 import { modelAliasUrls, modelPageUrls } from '../src/config/model-urls'
 import { astroRedirects } from '../src/config/redirects'
 import {
@@ -69,7 +68,7 @@ describe('model URL map', () => {
     const map = compileModelUrlMap(
       workshopModels,
       routerModelSlugAliases,
-      hubModelSlugs
+      modelPageUrls
     )
     expect(readFileSync(MODEL_URLS_MODULE, 'utf8')).toBe(
       renderModelUrlsModule(map)
@@ -85,7 +84,7 @@ describe('model URL map', () => {
       name: `${model.name} Renamed`
     }))
     expect(
-      compileModelUrlMap(renamed, routerModelSlugAliases, hubModelSlugs)
+      compileModelUrlMap(renamed, routerModelSlugAliases, modelPageUrls)
     ).toEqual({ pages: modelPageUrls, aliases: modelAliasUrls })
   })
 
@@ -207,44 +206,62 @@ describe('compileModelUrlMap', () => {
     expect(modelUrlSlug(name)).toBe(slug)
   })
 
-  it('keeps a published slug when the display name changes', () => {
+  it('keeps a published slug and its recorded name when the display name changes', () => {
     const models = [
       { slug: 'google--veo-3--generate-videos', name: 'Veo 3.1 Text-to-Video' },
       { slug: 'google--veo-4--generate-videos', name: 'Veo 4 Text-to-Video' }
     ]
-    const frozen = new Map([
-      ['google--veo-3--generate-videos', 'veo-3-text-to-video']
-    ])
-    expect(compileModelUrlMap(models, new Map(), frozen).pages).toEqual([
+    const frozen = [
       {
         oldSlug: 'google--veo-3--generate-videos',
-        newSlug: 'veo-3-text-to-video'
-      },
+        newSlug: 'veo-3-text-to-video',
+        name: 'Veo 3 Text-to-Video'
+      }
+    ]
+    expect(compileModelUrlMap(models, new Map(), frozen).pages).toEqual([
+      ...frozen,
       {
         oldSlug: 'google--veo-4--generate-videos',
-        newSlug: 'veo-4-text-to-video'
+        newSlug: 'veo-4-text-to-video',
+        name: 'Veo 4 Text-to-Video'
       }
     ])
   })
 
-  it('flags a frozen slug whose display name now suggests another', () => {
+  it.for([
+    [
+      'flags a rename',
+      'veo-3-text-to-video',
+      'Veo 3.1 Text-to-Video',
+      [
+        '| `veo-3-text-to-video` | Veo 3.1 Text-to-Video | frozen at `veo-3-text-to-video` for "Veo 3 Text-to-Video", name now suggests `veo-3-1-text-to-video` |'
+      ]
+    ],
+    [
+      'ignores a deliberate slug edit',
+      'google-veo-3-text-to-video',
+      'Veo 3 Text-to-Video',
+      []
+    ],
+    [
+      'ignores a rename that keeps the same slug',
+      'veo-3-text-to-video',
+      'Veo 3: text to video',
+      []
+    ]
+  ] as const)('%s', ([, newSlug, name, rows]) => {
     const model = {
       slug: 'google--veo-3--generate-videos',
-      name: 'Veo 3.1 Text-to-Video',
+      name,
       provider: 'Google',
-      routerId: 'veo/veo-3.1-generate-001'
+      routerId: 'veo/veo-3.0-generate-001'
     }
-    const map = compileModelUrlMap(
-      [model],
-      new Map(),
-      new Map([[model.slug, 'veo-3-text-to-video']])
-    )
-    expect(map.pages).toEqual([
-      { oldSlug: model.slug, newSlug: 'veo-3-text-to-video' }
+    const map = compileModelUrlMap([model], new Map(), [
+      { oldSlug: model.slug, newSlug, name: 'Veo 3 Text-to-Video' }
     ])
-    expect(renderModelUrlTable([model], map)).toContain(
-      '| `veo-3-text-to-video` | Veo 3.1 Text-to-Video | frozen at `veo-3-text-to-video`, name now suggests `veo-3-1-text-to-video` |'
-    )
+    const table = renderModelUrlTable([model], map)
+    expect(table).toContain(`## Check these first (${rows.length})`)
+    for (const row of rows) expect(table).toContain(row)
   })
 
   it('rejects a new page that takes a published slug', () => {
@@ -255,7 +272,13 @@ describe('compileModelUrlMap', () => {
           { slug: 'b--veo-3--generate-videos', name: 'Veo 3 Text-to-Video' }
         ],
         new Map(),
-        new Map([['a--veo-3--generate-videos', 'veo-3-text-to-video']])
+        [
+          {
+            oldSlug: 'a--veo-3--generate-videos',
+            newSlug: 'veo-3-text-to-video',
+            name: 'Veo 3 Text-to-Video'
+          }
+        ]
       )
     ).toThrow('both map to veo-3-text-to-video')
   })
