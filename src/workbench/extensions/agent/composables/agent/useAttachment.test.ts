@@ -1,7 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComposerAttachment } from './useComposer'
-import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
+import {
+  MAX_ATTACHMENT_BATCH_SIZE,
+  MAX_ATTACHMENT_BYTES,
+  useAttachment
+} from './useAttachment'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 function fileOfSize(name: string, size: number, type = 'image/png'): File {
   const file = new File(['x'], name, { type })
@@ -56,7 +65,26 @@ describe('useAttachment', () => {
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
     expect(onError).toHaveBeenCalledOnce()
-    expect(onError).toHaveBeenCalledWith('huge.png is larger than 20MB')
+    expect(onError).toHaveBeenCalledWith('huge.png is larger than 20 MB')
+  })
+
+  it('aggregates oversized selections into one warning', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles([
+      fileOfSize('huge-a.png', MAX_ATTACHMENT_BYTES + 1),
+      fileOfSize('huge-b.png', MAX_ATTACHMENT_BYTES + 1)
+    ])
+
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledOnce()
+    expect(onError).toHaveBeenCalledWith(
+      '2 files exceed the upload size limit.'
+    )
   })
 
   it('uses the resolved limit for each file', async () => {
@@ -71,7 +99,79 @@ describe('useAttachment', () => {
     await addFiles([movie])
 
     expect(maxBytes).toHaveBeenCalledWith(movie)
-    expect(upload).toHaveBeenCalledWith(movie)
+    expect(upload).toHaveBeenCalledWith(movie, expect.any(AbortSignal))
+  })
+
+  it('stages a whole batch before uploading it concurrently', async () => {
+    const resolvers: Array<(result: { ref: string }) => void> = []
+    const upload = vi.fn(
+      () =>
+        new Promise<{ ref: string }>((resolve) => {
+          resolvers.push(resolve)
+        })
+    )
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    const pending = addFiles([
+      fileOfSize('a.png', 1),
+      fileOfSize('b.png', 1),
+      fileOfSize('c.png', 1)
+    ])
+
+    expect(registry.chips.map(({ name }) => name)).toEqual([
+      'a.png',
+      'b.png',
+      'c.png'
+    ])
+    expect(upload).toHaveBeenCalledTimes(3)
+
+    resolvers[2]({ ref: 'c.png' })
+    resolvers[0]({ ref: 'a.png' })
+    resolvers[1]({ ref: 'b.png' })
+    await pending
+    expect(registry.chips.map(({ ref }) => ref)).toEqual([
+      'a.png',
+      'b.png',
+      'c.png'
+    ])
+  })
+
+  it('aborts and removes an upload that exceeds the configured timeout', async () => {
+    vi.useFakeTimers()
+    try {
+      let signal: AbortSignal | undefined
+      const upload = vi.fn((_file: File, uploadSignal?: AbortSignal) => {
+        signal = uploadSignal
+        return new Promise<{ ref: string }>((_resolve, reject) => {
+          uploadSignal?.addEventListener('abort', () =>
+            reject(uploadSignal.reason)
+          )
+        })
+      })
+      const onError = vi.fn()
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({
+        upload,
+        uploadTimeoutMs: 1000,
+        onError,
+        ...registry
+      })
+
+      const pending = addFiles([fileOfSize('stuck.png', 1)])
+      await vi.advanceTimersByTimeAsync(1000)
+      await pending
+
+      expect(signal?.aborted).toBe(true)
+      expect(registry.chips).toEqual([])
+      expect(onError).toHaveBeenCalledWith('stuck.png could not be uploaded')
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_attachment_upload_failed',
+        tags: expect.objectContaining({ failure_reason: 'timeout' })
+      })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('rejects against the resolved limit and warns with that limit', async () => {
@@ -89,7 +189,7 @@ describe('useAttachment', () => {
 
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
-    expect(onError).toHaveBeenCalledWith('huge.mp4 is larger than 30MB')
+    expect(onError).toHaveBeenCalledWith('huge.mp4 is larger than 30 MB')
   })
 
   it('stages an uploading chip immediately, then settles it with the server ref', async () => {
@@ -141,7 +241,7 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
 
     resolveFile(fileOfSize('dropped.mp4', 1024, 'video/mp4'))
-    await expect(pending).resolves.toMatchObject({ name: 'dropped.mp4' })
+    await expect(pending).resolves.toBe('uploaded')
     expect(upload).toHaveBeenCalledOnce()
     expect(registry.chips[0]).toMatchObject({
       ref: 'dropped.mp4',
@@ -156,7 +256,7 @@ describe('useAttachment', () => {
 
     await expect(
       addDeferredFile('missing.mp4', async () => undefined)
-    ).resolves.toBeUndefined()
+    ).resolves.toBe('unsupported')
 
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
@@ -176,11 +276,11 @@ describe('useAttachment', () => {
 
     await expect(
       addDeferredFile('large.mp4', async () => oversized)
-    ).resolves.toBe(oversized)
+    ).resolves.toBe('failed')
 
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
-    expect(onError).toHaveBeenCalledWith('large.mp4 is larger than 30MB')
+    expect(onError).toHaveBeenCalledWith('large.mp4 is larger than 30 MB')
   })
 
   it('removes the chip and surfaces the error when the upload fails', async () => {
@@ -214,5 +314,437 @@ describe('useAttachment', () => {
     expect(registry.chips.map((chip) => chip.ref)).toEqual(['a.png', 'c.png'])
     expect(registry.chips.every((chip) => chip.uploading === false)).toBe(true)
     expect(onError).toHaveBeenCalledWith('b.png could not be uploaded')
+  })
+
+  it('keeps a dropped folder from saturating the connection pool', async () => {
+    const resolvers: Array<(result: { ref: string }) => void> = []
+    const upload = vi.fn(() => {
+      return new Promise<{ ref: string }>((resolve) => {
+        resolvers.push(resolve)
+      })
+    })
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    const pending = addFiles(
+      Array.from({ length: 8 }, (_unused, index) =>
+        fileOfSize(`${index}.png`, 1)
+      )
+    )
+
+    expect(registry.chips).toHaveLength(8)
+    expect(upload).toHaveBeenCalledTimes(3)
+
+    resolvers[0]({ ref: '0.png' })
+    await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(4))
+
+    await vi.waitFor(() => {
+      for (const resolve of resolvers) resolve({ ref: 'done' })
+      expect(upload).toHaveBeenCalledTimes(8)
+    })
+    await pending
+  })
+
+  it('shares three upload slots across overlapping selections and deferred assets', async () => {
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    let active = 0
+    let peak = 0
+    const upload = vi.fn(async (file: File) => {
+      active += 1
+      peak = Math.max(peak, active)
+      await gate
+      active -= 1
+      return { ref: file.name }
+    })
+    const registry = chipRegistry()
+    const { addFiles, addDeferredFile } = useAttachment({ upload, ...registry })
+
+    const first = addFiles(['a', 'b', 'c'].map((name) => fileOfSize(name, 1)))
+    const second = addFiles(['d', 'e', 'f'].map((name) => fileOfSize(name, 1)))
+    const deferred = addDeferredFile('g', async () => fileOfSize('g', 1))
+    await Promise.resolve()
+    const startedBeforeRelease = upload.mock.calls.length
+    release()
+    await Promise.all([first, second, deferred])
+
+    expect(startedBeforeRelease).toBe(3)
+    expect(peak).toBe(3)
+    expect(registry.chips.map(({ ref }) => ref)).toEqual([
+      'a',
+      'b',
+      'c',
+      'd',
+      'e',
+      'f',
+      'g'
+    ])
+  })
+
+  it('scales the upload deadline to the file size', async () => {
+    vi.useFakeTimers()
+    try {
+      let signal: AbortSignal | undefined
+      const upload = vi.fn((_file: File, uploadSignal: AbortSignal) => {
+        signal = uploadSignal
+        return new Promise<{ ref: string }>(() => {})
+      })
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({
+        upload,
+        maxBytes: () => 200 * 1024 * 1024,
+        ...registry
+      })
+
+      const pending = addFiles([fileOfSize('big.png', 100 * 1024 * 1024)])
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000)
+
+      expect(signal?.aborted).toBe(false)
+
+      await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+      await pending
+      expect(signal?.aborted).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('aborts a cancelled upload without reporting it as a failure', async () => {
+    let signal: AbortSignal | undefined
+    const upload = vi.fn((_file: File, uploadSignal: AbortSignal) => {
+      signal = uploadSignal
+      return new Promise<{ ref: string }>((_resolve, reject) => {
+        uploadSignal.addEventListener('abort', () =>
+          reject(uploadSignal.reason)
+        )
+      })
+    })
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles, cancelUpload } = useAttachment({
+      upload,
+      onError,
+      ...registry
+    })
+
+    const pending = addFiles([fileOfSize('cat.png', 1024)])
+    cancelUpload(registry.chips[0].id)
+    expect(registry.chips).toEqual([])
+    await pending
+
+    expect(signal?.aborted).toBe(true)
+    expect(registry.chips).toEqual([])
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('never starts an upload cancelled while it waited in the queue', async () => {
+    const resolvers: Array<() => void> = []
+    const upload = vi.fn((file: File) => {
+      return new Promise<{ ref: string }>((resolve) => {
+        resolvers.push(() => resolve({ ref: file.name }))
+      })
+    })
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles, cancelUpload } = useAttachment({
+      upload,
+      onError,
+      ...registry
+    })
+
+    const pending = addFiles(
+      Array.from({ length: 4 }, (_unused, index) =>
+        fileOfSize(`${index}.png`, 1)
+      )
+    )
+    const queued = registry.chips[3]
+    cancelUpload(queued.id)
+    expect(registry.chips.map(({ name }) => name)).toEqual([
+      '0.png',
+      '1.png',
+      '2.png'
+    ])
+
+    await vi.waitFor(() => {
+      for (const resolve of resolvers) resolve()
+      expect(upload).toHaveBeenCalledTimes(3)
+    })
+    await pending
+
+    expect(upload).toHaveBeenCalledTimes(3)
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('suppresses a failure after its attachment was dismissed', async () => {
+    let rejectUpload: (error: Error) => void = () => {}
+    const upload = vi.fn(
+      () =>
+        new Promise<{ ref: string }>((_resolve, reject) => {
+          rejectUpload = reject
+        })
+    )
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const remove = vi.fn(registry.remove)
+    const pending = useAttachment({
+      upload,
+      onError,
+      isPresent: (id) => registry.chips.some((chip) => chip.id === id),
+      ...registry,
+      remove
+    }).addFiles([fileOfSize('dismissed.png', 1)])
+
+    const dismissedId = registry.chips[0].id
+    registry.chips.splice(0)
+    rejectUpload(new Error('upload failed'))
+    await pending
+
+    expect(onError).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(remove).toHaveBeenCalledWith(dismissedId)
+  })
+
+  it('never resolves a deferred source cancelled while it waited in the queue', async () => {
+    const sourceResolvers: Array<(file: File | undefined) => void> = []
+    const resolveSource = vi.fn(
+      () =>
+        new Promise<File | undefined>((resolve) => {
+          sourceResolvers.push(resolve)
+        })
+    )
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const registry = chipRegistry()
+    const { addDeferredFile, cancelUpload } = useAttachment({
+      upload,
+      ...registry
+    })
+
+    const pending = ['a', 'b', 'c', 'queued'].map((name) =>
+      addDeferredFile(`${name}.png`, resolveSource)
+    )
+    cancelUpload(registry.chips[3].id)
+    for (const resolve of sourceResolvers) resolve(undefined)
+
+    await Promise.all(pending)
+
+    expect(resolveSource).toHaveBeenCalledTimes(3)
+    expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('keeps deferred fetch bytes within the upload-slot bound', async () => {
+    const uploadResolvers: Array<(value: { ref: string }) => void> = []
+    const upload = vi.fn(
+      (_file: File, signal: AbortSignal) =>
+        new Promise<{ ref: string }>((resolve, reject) => {
+          uploadResolvers.push(resolve)
+          signal.addEventListener('abort', () => reject(signal.reason), {
+            once: true
+          })
+        })
+    )
+    const fourthSource = vi.fn(async () => undefined)
+    const registry = chipRegistry()
+    const { addDeferredFile, cancelAllUploads } = useAttachment({
+      upload,
+      ...registry
+    })
+
+    for (const name of ['a', 'b', 'c'])
+      void addDeferredFile(name, async () => fileOfSize(name, 1))
+    void addDeferredFile('fourth', fourthSource)
+
+    await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(3))
+    expect(fourthSource).not.toHaveBeenCalled()
+    uploadResolvers[0]({ ref: 'a' })
+    await vi.waitFor(() => expect(fourthSource).toHaveBeenCalledOnce())
+    cancelAllUploads()
+  })
+
+  it('removes active and queued uploads synchronously when the panel goes away', async () => {
+    const signals: AbortSignal[] = []
+    const upload = vi.fn((_file: File, uploadSignal: AbortSignal) => {
+      signals.push(uploadSignal)
+      return new Promise<{ ref: string }>((_resolve, reject) => {
+        uploadSignal.addEventListener('abort', () =>
+          reject(uploadSignal.reason)
+        )
+      })
+    })
+    const registry = chipRegistry()
+    const { addFiles, cancelAllUploads } = useAttachment({
+      upload,
+      ...registry
+    })
+
+    const pending = addFiles(
+      ['a.png', 'b.png', 'c.png', 'queued.png'].map((name) =>
+        fileOfSize(name, 1)
+      )
+    )
+    cancelAllUploads()
+    expect(registry.chips).toEqual([])
+    await pending
+
+    expect(signals.map(({ aborted }) => aborted)).toEqual([true, true, true])
+    expect(registry.chips).toEqual([])
+  })
+
+  it('scales a deferred source deadline to the largest accepted file', async () => {
+    vi.useFakeTimers()
+    try {
+      const upload = vi.fn()
+      const onError = vi.fn()
+      const registry = chipRegistry()
+      const { addDeferredFile } = useAttachment({
+        upload,
+        maxBytes: () => 30 * 1024 * 1024,
+        onError,
+        ...registry
+      })
+
+      const pending = addDeferredFile(
+        'stuck.mp4',
+        () => new Promise<File | undefined>(() => {})
+      )
+      // The default 20 MB budget would expire after 380 seconds. A 30 MB
+      // accepted file gets 60 seconds of handshake time plus 480 seconds at
+      // the 64 KB/s transfer floor.
+      await vi.advanceTimersByTimeAsync(380 * 1000)
+      expect(registry.chips).toHaveLength(1)
+
+      await vi.advanceTimersByTimeAsync(160 * 1000)
+
+      await expect(pending).resolves.toBe('failed')
+      expect(registry.chips).toEqual([])
+      expect(upload).not.toHaveBeenCalled()
+      expect(onError).toHaveBeenCalledWith('stuck.mp4 could not be uploaded')
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_attachment_fetch_failed',
+        tags: expect.objectContaining({
+          feature_area: 'agent',
+          integration_target: 'assets',
+          outcome: 'failed',
+          failure_reason: 'timeout'
+        })
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it.for(['rejected', 'oversized', 'unsupported'] as const)(
+    'ignores a %s deferred source after cancellation',
+    async (outcome) => {
+      let resolveSource: (file: File | undefined) => void = () => {}
+      let rejectSource: (cause: Error) => void = () => {}
+      const source = new Promise<File | undefined>((resolve, reject) => {
+        resolveSource = resolve
+        rejectSource = reject
+      })
+      const upload = vi.fn()
+      const onError = vi.fn()
+      const registry = chipRegistry()
+      const { addDeferredFile, cancelAllUploads } = useAttachment({
+        upload,
+        onError,
+        ...registry
+      })
+      const pending = addDeferredFile('cancelled.png', () => source)
+      cancelAllUploads()
+      const finish = {
+        rejected: () => rejectSource(new Error('source failed')),
+        oversized: () =>
+          resolveSource(fileOfSize('cancelled.png', MAX_ATTACHMENT_BYTES + 1)),
+        unsupported: () => resolveSource(undefined)
+      }
+      finish[outcome]()
+
+      await expect(pending).resolves.toBe('cancelled')
+      expect(registry.chips).toEqual([])
+      expect(upload).not.toHaveBeenCalled()
+      expect(onError).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
+
+  it('aborts deferred source resolution when the attachment is cancelled', async () => {
+    let sourceSignal: AbortSignal | undefined
+    const upload = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile, cancelAllUploads } = useAttachment({
+      upload,
+      ...registry
+    })
+    const pending = addDeferredFile('remote.png', (signal) => {
+      sourceSignal = signal
+      return new Promise<File | undefined>((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(signal.reason), {
+          once: true
+        })
+      })
+    })
+
+    cancelAllUploads()
+
+    await expect(pending).resolves.toBe('cancelled')
+    expect(sourceSignal?.aborted).toBe(true)
+    expect(upload).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('signals each settled upload so assets become available immediately', async () => {
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onUploaded = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onUploaded, ...registry })
+
+    await addFiles([
+      fileOfSize('a.png', 1),
+      fileOfSize('b.png', 1),
+      fileOfSize('c.png', 1)
+    ])
+
+    expect(onUploaded).toHaveBeenCalledTimes(3)
+  })
+
+  it('bounds a single selection before staging upload work', async () => {
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles(
+      Array.from({ length: MAX_ATTACHMENT_BATCH_SIZE + 5 }, (_, index) =>
+        fileOfSize(`${index}.png`, 1)
+      )
+    )
+
+    expect(upload).toHaveBeenCalledTimes(MAX_ATTACHMENT_BATCH_SIZE)
+    expect(registry.chips).toHaveLength(MAX_ATTACHMENT_BATCH_SIZE)
+    expect(onError).toHaveBeenCalledWith(
+      '5 files were not added because the upload queue limit is 100.'
+    )
+  })
+
+  it('filters oversized files before applying the pending-work cap', async () => {
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles([
+      ...Array.from({ length: MAX_ATTACHMENT_BATCH_SIZE }, (_, index) =>
+        fileOfSize(`oversized-${index}.png`, MAX_ATTACHMENT_BYTES + 1)
+      ),
+      fileOfSize('valid.png', 1)
+    ])
+
+    expect(upload).toHaveBeenCalledOnce()
+    expect(upload).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'valid.png' }),
+      expect.any(AbortSignal)
+    )
   })
 })

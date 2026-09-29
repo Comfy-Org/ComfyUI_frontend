@@ -1,7 +1,96 @@
-import { extractFilesFromDragEvent, getDroppedAsset } from '@/utils/eventUtils'
+import {
+  extractFilesFromDragEvent,
+  fetchDroppedAsset,
+  fetchTrustedDroppedAsset,
+  getDroppedAsset
+} from '@/utils/eventUtils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('eventUtils', () => {
+  it('rejects a declared oversized dropped asset before buffering its body', async () => {
+    const blob = vi.fn()
+    const cancel = vi.fn(async () => undefined)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        headers: new Headers({ 'Content-Length': '101' }),
+        body: { cancel },
+        blob
+      }))
+    )
+
+    await expect(
+      fetchDroppedAsset(
+        { name: 'large.png', uri: '/api/view?filename=large.png' },
+        undefined,
+        100
+      )
+    ).rejects.toThrow('Dropped asset exceeds 100 bytes')
+    expect(blob).not.toHaveBeenCalled()
+    expect(cancel).toHaveBeenCalledOnce()
+  })
+
+  it('cancels an unsuccessful dropped-asset response', async () => {
+    const cancel = vi.fn(async () => undefined)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 503,
+        body: { cancel }
+      }))
+    )
+
+    await expect(
+      fetchDroppedAsset({
+        name: 'asset.png',
+        uri: '/api/view?filename=asset.png'
+      })
+    ).rejects.toThrow('Dropped asset fetch failed with HTTP 503')
+    expect(cancel).toHaveBeenCalledOnce()
+  })
+
+  it.for([
+    'https://example.com/api/view?filename=private.png',
+    '/api/settings',
+    'data:text/plain,private'
+  ])('rejects an untrusted dropped-asset URI: %s', async (uri) => {
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+
+    await expect(
+      fetchTrustedDroppedAsset({ name: 'asset.png', uri })
+    ).resolves.toBeUndefined()
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('cancels an unknown-length stream once its byte limit is crossed', async () => {
+    let cancelled = false
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array(60))
+        controller.enqueue(new Uint8Array(50))
+      },
+      cancel() {
+        cancelled = true
+      }
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(body, { status: 200 }))
+    )
+
+    await expect(
+      fetchDroppedAsset(
+        { name: 'streamed.png', uri: '/api/view?filename=streamed.png' },
+        undefined,
+        100
+      )
+    ).rejects.toThrow('Dropped asset exceeds 100 bytes')
+    expect(cancelled).toBe(true)
+  })
+
   describe('extractFilesFromDragEvent', () => {
     let fetchSpy: ReturnType<typeof vi.fn>
 
@@ -106,7 +195,7 @@ describe('eventUtils', () => {
     })
 
     it('should fetch URI and return as File when text/uri-list is present', async () => {
-      const uri = 'https://example.com/api/view?filename=test.png&type=input'
+      const uri = '/api/view?filename=test.png&type=input'
       const imageBlob = new Blob([new Uint8Array([0x89, 0x50])], {
         type: 'image/png'
       })
@@ -126,7 +215,7 @@ describe('eventUtils', () => {
     })
 
     it('should handle text/x-moz-url type', async () => {
-      const uri = 'https://example.com/api/view?filename=test.png&type=input'
+      const uri = '/api/view?filename=test.png&type=input'
       const imageBlob = new Blob([new Uint8Array([0x89, 0x50])], {
         type: 'image/png'
       })
@@ -188,7 +277,7 @@ describe('eventUtils', () => {
     )
 
     it('should return empty array when URI fetch fails', async () => {
-      const uri = 'https://example.com/api/view?filename=test.png&type=input'
+      const uri = '/api/view?filename=test.png&type=input'
       fetchSpy.mockRejectedValue(new TypeError('Failed to fetch'))
 
       const dataTransfer = new DataTransfer()
@@ -219,6 +308,7 @@ describe('eventUtils', () => {
 
       expect(getDroppedAsset(dataTransfer)).toEqual({
         name: 'My asset',
+        filename: 'asset.png',
         uri: 'http://localhost/api/view?x=1',
         ref: 'stored-asset.png',
         kind: 'image',
@@ -239,6 +329,7 @@ describe('eventUtils', () => {
 
       expect(getDroppedAsset(dataTransfer)).toEqual({
         name: 'asset.mp4',
+        filename: 'asset.mp4',
         uri: undefined,
         ref: 'stored-asset.mp4',
         kind: 'video',

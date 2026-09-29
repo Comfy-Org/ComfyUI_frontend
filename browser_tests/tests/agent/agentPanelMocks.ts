@@ -145,6 +145,7 @@ async function mockAgentBoot(
     agentConsentReads,
     agentConsentSave,
     agentConsentWrites,
+    agentAutoShownReadProbe,
     agentFlagEnabled,
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
@@ -161,7 +162,23 @@ async function mockAgentBoot(
   let consentAccepted = agentConsentAccepted
 
   await page.addInitScript(
-    ({ initiallyOpen, onboardingCompleted, debugEnabled }) => {
+    ({
+      initiallyOpen,
+      onboardingCompleted,
+      debugEnabled,
+      autoShownReadProbe
+    }) => {
+      if (autoShownReadProbe) {
+        const autoShownKey =
+          'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
+        const originalGetItem = Storage.prototype.getItem
+        window.__autoShownReads = 0
+        Storage.prototype.getItem = function (candidate: string) {
+          if (candidate === autoShownKey)
+            window.__autoShownReads = (window.__autoShownReads ?? 0) + 1
+          return originalGetItem.call(this, candidate)
+        }
+      }
       if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
         localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
       }
@@ -179,7 +196,8 @@ async function mockAgentBoot(
     {
       initiallyOpen: agentPanelInitiallyOpen,
       onboardingCompleted: agentOnboardingCompleted,
-      debugEnabled: crdtDebugEnabled
+      debugEnabled: crdtDebugEnabled,
+      autoShownReadProbe: agentAutoShownReadProbe
     }
   )
 
@@ -376,6 +394,7 @@ export async function selectAgentWorkflow(page: Page): Promise<void> {
 }
 
 type AgentFixtures = {
+  agentAutoShownReadProbe: boolean
   agentConsentAccepted: boolean
   agentConsentReads: boolean[]
   agentConsentSave: { status: number; pending?: Promise<void> }
@@ -391,6 +410,7 @@ type AgentFixtures = {
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
+  agentAutoShownReadProbe: [false, { option: true }],
   agentConsentAccepted: [true, { option: true }],
   agentConsentReads: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
@@ -411,6 +431,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   objectInfo: [undefined, { option: true }],
   page: async (
     {
+      agentAutoShownReadProbe,
       agentConsentAccepted,
       agentConsentReads,
       agentConsentSave,
@@ -428,6 +449,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     use
   ) => {
     await mockAgentBoot(page, {
+      agentAutoShownReadProbe,
       agentConsentAccepted,
       agentConsentReads,
       agentConsentSave,

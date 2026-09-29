@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Seedance 2.5 초안의 1080p 최종 비디오를 렌더링합니다. 최종본은 초안의 장면과 움직임을 유지하며 프롬프트, 참조, 길이, 종횡비 및 오디오 설정을 재사용합니다.",
+    "display_name": "ByteDance Seedance 2.5 초안에서 최종 비디오로",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 모델로 실행한 Seedance 2.5 노드의 draft_task_id 출력 또는 붙여넣은 초안 작업 ID입니다. 검토한 초안을 재사용하지 않고 다음 실행에서 새 초안을 생성하게 되므로, 해당 노드의 시드 제어를 고정으로 설정하세요. 초안은 생성 후 7일 동안 렌더링할 수 있습니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "비디오에 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0을 사용하여 첫 프레임 이미지와 선택적인 마지막 프레임 이미지로 비디오를 생성합니다.",
     "display_name": "ByteDance Seedance 2.0 첫-마지막 프레임에서 비디오 생성",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 최고 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델, 최대 30초 비디오 및 mp4/mov 출력을 위한 Seedance 2.5, draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링할 수 있는 빠른 480p 미리보기용 Seedance 2.5 Draft, 최고 품질 및 4k용 Seedance 2.0, 속도 최적화용 Fast, 가장 빠르고 비용이 가장 낮은 생성을 위한 Mini."
       },
       "model_duration": {
         "name": "duration"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 실행의 작업 ID입니다. 1080p 최종본을 렌더링하려면 Seedance 2.5 Draft to Final Video 노드에 연결하세요."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 최고 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델, 최대 30초 비디오 및 mp4/mov 출력을 위한 Seedance 2.5, draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링할 수 있는 빠른 480p 미리보기용 Seedance 2.5 Draft, 최고 품질 및 4k용 Seedance 2.0, 속도 최적화용 Fast, 가장 빠르고 비용이 가장 낮은 생성을 위한 Mini."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "모델",
-        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 최고 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델, 최대 30초 비디오 및 mp4/mov 출력을 위한 Seedance 2.5, draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링할 수 있는 빠른 480p 미리보기용 Seedance 2.5 Draft, 최고 품질 및 4k용 Seedance 2.0, 속도 최적화용 Fast, 가장 빠르고 비용이 가장 낮은 생성을 위한 Mini."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 실행의 작업 ID입니다. 1080p 최종본을 렌더링하려면 Seedance 2.5 Draft to Final Video 노드에 연결하세요."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5는 최신 모델, 최대 30초 동영상 및 mp4/mov 출력을 지원합니다. Seedance 2.0은 최고 품질 및 4K용입니다. Fast는 속도 최적화용이며, Mini는 가장 빠르고 비용이 가장 낮은 생성용입니다."
+        "tooltip": "최신 모델, 최대 30초 비디오 및 mp4/mov 출력을 위한 Seedance 2.5, draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링할 수 있는 빠른 480p 미리보기용 Seedance 2.5 Draft, 최고 품질 및 4k용 Seedance 2.0, 속도 최적화용 Fast, 가장 빠르고 비용이 가장 낮은 생성을 위한 Mini."
       },
       "model_duration": {
         "name": "duration"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 실행의 작업 ID입니다. 1080p 최종본을 렌더링하려면 Seedance 2.5 Draft to Final Video 노드에 연결하세요."
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "이미지를 배경 플레이트와 최대 16개의 재배치 가능한 투명 레이어로 분해합니다. 각 레이어는 쌓이는 순서, 바운딩 박스, 이름, 설명을 가집니다.",
-    "display_name": "ByteDance Seedream 5.0 Pro 레이어 분리",
+    "display_name": "ByteDance Seedream 5.0 Pro 레이어 분리(레거시)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Create Layered Image에서 편집 가능한 레이어 문서: 기본 플레이트와 각 요소가 이름이 지정된 타이트 크롭 레이어로, 실제 위치와 쌓이는 순서로 포함됩니다. 바로 연결하거나 Add Layer로 확장할 수 있습니다."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "이미지를 배경 플레이트와 최대 16개의 위치 조정 가능한 투명 레이어로 분해합니다. 각 레이어에는 쌓임 순서, 경계 상자, 이름 및 설명이 포함됩니다.",
+    "display_name": "ByteDance Seedream 5.0 레이어 분리",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "레이어가 쌓이는 기본 이미지(배경 플레이트)입니다."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "기본 이미지의 투명도입니다(1 = 투명, LoadImage 규칙). 현재는 항상 완전히 불투명합니다."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "아래에서 위 순서로 정렬된 투명 레이어입니다. 전체 캔버스 모드: 경계 상자 위치에 맞춰 기본 이미지 크기의 검은색 캔버스에 배치됩니다. 최소 크기 모드: 경계 상자로 자르고, 왼쪽 위를 기준으로 정렬하며, 가장 큰 레이어 크기에 맞춰 패딩됩니다."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "레이어 배치와 인덱스가 일치하는 레이어별 투명도입니다(1 = 투명, LoadImage 규칙). ImageCompositeMasked 스타일 합성에는 먼저 InvertMask를 추가하세요."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "레이어별 배치 상자이며 레이어 배치와 인덱스가 일치합니다(레이어별 배치를 다시 구성하려면 둘 다와 masks를 Layers From Bounding Boxes에 입력): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height]는 자체 프레임 내 레이어 콘텐츠 영역이며, 상자 위치에 해당 오프셋을 더한 캔버스 위치에 배치됩니다."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Create Layered Image용으로 바로 편집 가능한 레이어 문서입니다. 기본 플레이트와 각 요소가 실제 위치 및 쌓임 순서에 따라 이름이 지정된 개별 밀착 크롭 레이어로 포함됩니다. 직접 연결하거나 Add Layer로 확장하세요."
       }
     }
   },
@@ -8491,12 +8578,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB, 선형 Rec.709, HDR(Rec.2020 HLG) 및 HDR PQ(Rec.2020 PQ)로 변환합니다. 선형 1.0은 sRGB와 동일한 203니트 기준 흰색을 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형 출력 및 선형-HDR 변환은 톤 매핑 없이 확장 값을 유지합니다. SDR 출력 및 PQ-HLG 변환은 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 device와 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
+    "description": "sRGB, 선형 Rec.709, HDR(Rec.2020 HLG), HDR PQ(Rec.2020 PQ), HDR LogC3 및 HDR ACEScct를 변환합니다. LogC3는 Rec.709 원색과 [0, 1]로 제한된 코드를 사용하는 EI 800 곡선을 사용합니다. ACEScct는 AP1 원색과 D60 백색점을 사용하며 Bradford 적응을 통해 D65로 변환합니다. EXR 저장 시 LogC3 또는 ACEScct를 선형으로 변환하세요. 선형 1.0은 sRGB와 동일한 203니트 기준 백색을 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형 및 ACEScct 출력은 확장 값을 유지합니다. 선형에서 HDR로의 변환은 톤 매핑 없이 하이라이트를 유지하며, HLG 및 PQ 출력은 음수 채널을 잘라냅니다. SDR 출력 및 PQ에서 HLG로의 변환은 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖 색상을 압축합니다. 변환은 float32로 계산되며 중간 장치와 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
     "display_name": "이미지 색 공간 변환",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드도 동일한 색 공간으로 설정하세요."
+        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드를 이와 동일한 색 공간으로 설정하세요. EXR로 저장하기 전에 LogC3 또는 ACEScct를 선형으로 변환하고, 비디오로 저장하기 전에 sRGB/HDR/HDR PQ로 변환하세요."
       },
       "image": {
         "name": "image"
@@ -16893,7 +16980,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "모델이 답변하기 전에 수행하는 추론의 정도입니다. 'default'는 모델이 선택하도록 둡니다. 지원되는 수준은 모델별로 다릅니다: GPT-6 Astra는 low-max, GPT-5.6은 none-max (minimal 없음), GPT-5.5는 none-xhigh, GPT-5.5 Pro는 medium-xhigh, GPT-5는 minimal-high, o-series는 low-high; GPT-4.1은 추론을 지원하지 않습니다. 지원되지 않는 수준은 요청이 전송되기 전에 거부됩니다."
+        "tooltip": "모델이 답변하기 전에 얼마나 추론할지 설정합니다. 'default'는 선택을 모델에 맡깁니다. 지원 수준은 모델마다 다릅니다: GPT-6 Astra low-max, GPT-6 Sol/Luna 및 GPT-5.6 none-max(최소 수준 없음), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1에는 추론 기능이 없습니다. 지원되지 않는 수준은 요청이 전송되기 전에 거부됩니다."
       },
       "truncation": {
         "name": "트렁케이션",
@@ -17053,40 +17140,6 @@
       "file": {
         "name": "파일",
         "tooltip": "모델의 컨텍스트로 포함할 입력 파일. 현재는 텍스트(.txt) 및 PDF(.pdf) 파일만 허용됩니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIVideoSora2": {
-    "description": "OpenAI 비디오 및 오디오 생성.",
-    "display_name": "OpenAI Sora - 비디오",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration": {
-        "name": "지속 시간"
-      },
-      "image": {
-        "name": "이미지"
-      },
-      "model": {
-        "name": "모델"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "안내 텍스트; 입력 이미지가 있을 경우 비워둘 수 있습니다."
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "노드 재실행 여부를 결정하는 시드; 실제 결과는 시드와 관계없이 비결정적입니다."
-      },
-      "size": {
-        "name": "크기"
       }
     },
     "outputs": {
@@ -18447,6 +18500,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "모델이 그리기 전에 사용하는 추론량입니다. 수준이 높을수록 세부 묘사가 향상되고 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
@@ -18485,6 +18542,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "원하는 SVG 출력에 대한 텍스트 설명입니다."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "모델이 그리기 전에 사용하는 추론량입니다. 수준이 높을수록 세부 묘사가 향상되고 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
       },
       "reference_images": {
         "name": "reference_images",
@@ -18526,6 +18587,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "이미지"
       },
@@ -18537,6 +18601,9 @@
       },
       "model_patch": {
         "name": "모델 패치"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "강도"
@@ -19156,7 +19223,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다."
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 스타일 일관성 생성을 위해 만들어졌으며 항상 style_id 또는 style_references가 필요합니다. recraftv4_1_flash는 가장 빠르고 저렴한 모델이며 스타일을 전혀 지원하지 않습니다."
       },
       "model_size": {
         "name": "size"
@@ -23876,6 +23943,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Ming 이미지 편집 텍스트 인코딩",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "선택적 참조 이미지입니다. 텍스트 인코더에서 인식되며 깨끗한 프레임으로 latent 시퀀스에 추가됩니다. 이후 이미지는 첫 번째 이미지 크기에 맞게 조정되며, 샘플링된 latent는 그 크기와 일치해야 합니다."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE가 없으면 이미지는 비전 타워를 통해서만 텍스트 인코더에 조건을 제공합니다."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -28725,6 +28816,10 @@
       "positive": {
         "name": "긍정 조건"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "이미지 조건화의 패딩 프레임을 회색 대신 이 이미지로 채워 프레임을 고정하지 않고 정체성을 유지합니다(SVI 스타일 드리프트 방지 패딩, ID-V2V와 같은 모델에서 사용)."
+      },
       "start_image": {
         "name": "시작 이미지"
       },
@@ -29705,8 +29800,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "Load Model Patch로 로드한 Z-Image 또는 Qwen Image 2.1 Fun ControlNet을 적용합니다.",
+    "display_name": "Fun ControlNet 적용",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "이미지"
       },
@@ -29721,6 +29820,9 @@
       },
       "model_patch": {
         "name": "모델 패치"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "강도"
