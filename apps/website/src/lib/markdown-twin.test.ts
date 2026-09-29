@@ -1,12 +1,19 @@
 import { mkdtemp, readFile, mkdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  routerModelSlugAliases,
+  workshopModels
+} from '../config/workshop-browse-content'
 import { writeMarkdownTwins } from '../integrations/markdown-twins'
 import { writeSectionIndexes } from './section-index'
 import { htmlToTwin, renderTwin } from './markdown-twin'
 import { markdownTwinPath } from './markdown-twin-path'
+
+const launch = vi.hoisted(() => ({ MODEL_PAGES_INDEXABLE: false }))
+vi.mock(import('../config/model-page-launch'), () => launch)
 
 const PAGE = `<!doctype html>
 <html lang="en">
@@ -257,5 +264,56 @@ describe('writeMarkdownTwins', () => {
     expect(indexes).toEqual(['/learning/llms.txt'])
     const index = await readFile(join(root, 'learning', 'llms.txt'), 'utf8')
     expect(index).toContain('[Learning](https://comfy.org/learning.md)')
+  })
+
+  describe('model pages', () => {
+    const [modelSlug] = workshopModels.map(({ slug }) => slug)
+    const [[aliasSlug]] = routerModelSlugAliases
+    const modelPages = [
+      `models/${modelSlug}/`,
+      `models/${aliasSlug}/`,
+      'models/showcase/'
+    ]
+
+    async function buildModelPages() {
+      const root = await mkdtemp(join(tmpdir(), 'twins-'))
+      for (const pathname of modelPages) {
+        await mkdir(join(root, pathname), { recursive: true })
+        await writeFile(
+          join(root, pathname, 'index.html'),
+          `<html lang="en"><head><title>${pathname}</title><link rel="canonical" href="https://comfy.org/${pathname}"></head><body><main><h1>${pathname}</h1></main></body></html>`
+        )
+      }
+      return root
+    }
+
+    afterEach(() => {
+      launch.MODEL_PAGES_INDEXABLE = false
+    })
+
+    it('writes no model twin until model pages are indexable', async () => {
+      const report = await writeMarkdownTwins(
+        await buildModelPages(),
+        modelPages
+      )
+
+      expect(report.written).toEqual([])
+    })
+
+    it('twins only canonical model pages once they are indexable', async () => {
+      launch.MODEL_PAGES_INDEXABLE = true
+      const root = await buildModelPages()
+
+      const report = await writeMarkdownTwins(root, modelPages)
+
+      expect(report.written).toEqual([`/models/${modelSlug}.md`])
+      expect(report.skipped).toEqual([
+        `/models/${aliasSlug}.md`,
+        '/models/showcase.md'
+      ])
+      expect(
+        await readFile(join(root, 'models', `${modelSlug}.md`), 'utf8')
+      ).toContain(`canonical: https://comfy.org/models/${modelSlug}/\n`)
+    })
   })
 })
