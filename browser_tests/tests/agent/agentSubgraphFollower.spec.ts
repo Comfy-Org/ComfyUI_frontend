@@ -1,7 +1,5 @@
 import { expect, mergeTests } from '@playwright/test'
 
-import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
-
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
@@ -160,24 +158,22 @@ test.describe(
 
       await test.step('route the promoted seed edit without changing text', async () => {
         const outboundBeforeRemoteEdit = outboundFrames.length
-        await page.evaluate(async () => {
-          const graphIntentsUrl = '/src/lib/litegraph/src/graphIntents.ts'
-          const { onGraphIntent } = await import(
-            /* @vite-ignore */ graphIntentsUrl
+        await page.evaluate((hostId) => {
+          const host = window.app!.graph.nodes.find(
+            ({ id }) => String(id) === String(hostId)
           )
-          onGraphIntent((event: GraphIntentEvent) => {
-            if (
-              event.type === 'set_widget' &&
-              String(event.nodeId) === '11' &&
-              event.name === 'seed'
-            ) {
-              localStorage.setItem(
-                'agent-subgraph-follower-seed-source',
-                event.source
-              )
-            }
-          })
-        })
+          const seed = host?.widgets?.find(({ name }) => name === 'seed')
+          if (!seed)
+            throw new Error('Promoted seed widget was not materialized')
+          const callback = seed.callback
+          seed.callback = function (...args) {
+            localStorage.setItem(
+              'agent-subgraph-follower-seed-callback',
+              String(args[0])
+            )
+            return callback?.apply(this, args)
+          }
+        }, AGENT_SUBGRAPH_HOST_ID)
         socket.send(JSON.stringify(frames.followUp))
 
         await expect
@@ -219,10 +215,10 @@ test.describe(
         await expect
           .poll(() =>
             page.evaluate(() =>
-              localStorage.getItem('agent-subgraph-follower-seed-source')
+              localStorage.getItem('agent-subgraph-follower-seed-callback')
             )
           )
-          .toBe('agent-remote')
+          .toBe(String(AGENT_SUBGRAPH_EDITED_SEED))
         await page.screenshot({
           path: test.info().outputPath('subgraph-edited.png')
         })
