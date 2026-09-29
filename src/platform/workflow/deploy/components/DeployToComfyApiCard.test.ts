@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -39,11 +39,13 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function renderCard() {
+function renderCard(
+  media: { videoSrc?: string; videoSrcMp4?: string; posterSrc?: string } = {}
+) {
   const onDone = vi.fn()
   const onDismiss = vi.fn()
   render(DeployToComfyApiCard, {
-    props: { onDone, onDismiss },
+    props: { onDone, onDismiss, ...media },
     global: { plugins: [i18n] }
   })
   return { onDone, onDismiss, user: userEvent.setup() }
@@ -123,5 +125,31 @@ describe('DeployToComfyApiCard', () => {
     await user.click(screen.getByTestId('deploy-to-comfy-api-platform'))
 
     expect(onDone).not.toHaveBeenCalled()
+  })
+
+  it('plays the video over its poster', () => {
+    renderCard({
+      videoSrc: 'https://example.test/a.webm',
+      videoSrcMp4: 'https://example.test/a.mp4',
+      posterSrc: 'https://example.test/a.jpg'
+    })
+
+    expect(screen.getByTestId('deploy-to-comfy-api-video')).toHaveAttribute(
+      'poster',
+      'https://example.test/a.jpg'
+    )
+    expect(
+      screen.queryByTestId('deploy-to-comfy-api-video-placeholder')
+    ).not.toBeInTheDocument()
+  })
+
+  it('falls back to the placeholder when the video fails to load', async () => {
+    renderCard({ videoSrc: 'https://example.test/a.webm' })
+
+    await fireEvent.error(screen.getByTestId('deploy-to-comfy-api-video'))
+
+    expect(
+      screen.getByTestId('deploy-to-comfy-api-video-placeholder')
+    ).toBeInTheDocument()
   })
 })

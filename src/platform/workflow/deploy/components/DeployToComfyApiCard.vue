@@ -32,15 +32,27 @@
       <div class="p-2">
         <video
           v-if="videoSrc && !videoFailed"
-          :src="videoSrc"
           data-testid="deploy-to-comfy-api-video"
           class="aspect-video w-full rounded-lg object-cover"
+          :poster="posterSrc || undefined"
           autoplay
           muted
           loop
           playsinline
           @error="videoFailed = true"
-        />
+        >
+          <source
+            :src="videoSrc"
+            type="video/webm"
+            @error="videoFailed = !videoSrcMp4"
+          />
+          <source
+            v-if="videoSrcMp4"
+            :src="videoSrcMp4"
+            type="video/mp4"
+            @error="videoFailed = true"
+          />
+        </video>
         <div
           v-else
           data-testid="deploy-to-comfy-api-video-placeholder"
@@ -98,9 +110,15 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { usePlatformBuildHandoff } from '@/platform/workflow/deploy/composables/usePlatformBuildHandoff'
 
-const { videoSrc = '' } = defineProps<{
+const {
+  videoSrc = '',
+  videoSrcMp4 = '',
+  posterSrc = ''
+} = defineProps<{
   titleId?: string
   videoSrc?: string
+  videoSrcMp4?: string
+  posterSrc?: string
 }>()
 
 const emit = defineEmits<{
