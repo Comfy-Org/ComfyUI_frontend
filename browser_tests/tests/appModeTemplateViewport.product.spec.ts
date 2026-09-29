@@ -54,7 +54,7 @@ test.describe('App mode template viewport', { tag: ['@canvas'] }, () => {
       expect(scale).toBeGreaterThan(0)
       expect(Number.isFinite(scale)).toBe(true)
       expect(offset.every(Number.isFinite)).toBe(true)
-      expect(await canvasOps.getVisibleNodeCount()).toBeGreaterThan(0)
+      expect(await canvasOps.getVisibleNodeCount()).toBe(7)
     })
   })
 })
