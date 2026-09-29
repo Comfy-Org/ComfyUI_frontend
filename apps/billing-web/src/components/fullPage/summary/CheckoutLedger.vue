@@ -36,8 +36,8 @@ const { t } = useI18n()
     <hr class="mt-8 mb-0 border-border-default" />
     <ul class="m-0 flex list-none flex-col gap-4 p-0 pt-6">
       <li
-        v-for="row in ledger.items"
-        :key="row.label"
+        v-for="(row, index) in ledger.items"
+        :key="`item-${index}`"
         class="flex flex-col gap-1"
       >
         <div class="flex items-baseline justify-between gap-4">
@@ -57,8 +57,8 @@ const { t } = useI18n()
         </span>
       </li>
       <li
-        v-for="row in ledger.adjustments"
-        :key="row.label"
+        v-for="(row, index) in ledger.adjustments"
+        :key="`adjustment-${index}`"
         class="flex items-baseline justify-between gap-4"
       >
         <span class="text-sm font-semibold text-base-foreground">
