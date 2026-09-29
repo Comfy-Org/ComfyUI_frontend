@@ -6,9 +6,9 @@ import SiteFooter from './SiteFooter.vue'
 
 describe('SiteFooter', () => {
   it.for([
-    ['en', 'ComfyUI Models', '/models/'],
+    ['en', 'ComfyUI Models', '/hub/models/'],
     ['zh-CN', 'ComfyUI 模型', '/zh-CN/models/'],
-    ['ja', 'ComfyUI Models', '/models/']
+    ['ja', 'ComfyUI Models', '/hub/models/']
   ] as const)(
     'links the model catalogue in the active locale when it has one (%s)',
     ([locale, name, href]) => {

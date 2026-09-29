@@ -30,8 +30,8 @@ test.describe('server HTML', () => {
 
   test('links the model catalogue from every locale', async ({ page }) => {
     for (const [path, href] of [
-      ['/', '/models/'],
-      ['/pricing/', '/models/'],
+      ['/', '/hub/models/'],
+      ['/pricing/', '/hub/models/'],
       ['/zh-CN/', '/zh-CN/models/'],
       ['/zh-CN/pricing/', '/zh-CN/models/']
     ]) {
@@ -143,19 +143,25 @@ test('/hub/models/ keeps its heading and model links when the catalogue fails', 
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false })
 
-  test('/hub/models/ shows its heading and every model link', async ({ page }) => {
+  test('/hub/models/ shows its heading and every model link', async ({
+    page
+  }) => {
     await page.goto('/hub/models/')
     await expectHubHeadingAndDirectory(page)
   })
 
-  test('a /hub/models/ directory link opens its model page', async ({ page }) => {
+  test('a /hub/models/ directory link opens its model page', async ({
+    page
+  }) => {
     await page.goto('/hub/models/')
     const link = page
       .getByTestId('models-directory')
       .getByRole('link', { name: MODEL_NAME, exact: true })
     await link.click()
     await expect(page).toHaveURL(MODEL_PATH)
-    await expect(page).toHaveTitle(new RegExp(`^${MODEL_NAME} API & Playground - Comfy$`))
+    await expect(page).toHaveTitle(
+      new RegExp(`^${MODEL_NAME} API & Playground - Comfy$`)
+    )
   })
 
   for (const path of ['/hub/models/']) {

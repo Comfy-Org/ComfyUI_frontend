@@ -11,10 +11,8 @@ import type { FooterLink } from './FooterLinkColumn.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const routes = getRoutes(locale)
-const localesWithModelsPage = new Set<Locale>(['en', 'zh-CN'])
-const modelCatalogueHref = localesWithModelsPage.has(locale)
-  ? `${LOCALES[locale].prefix}${routes.workshop}`
-  : routes.workshop
+const modelCatalogueHref =
+  locale === 'zh-CN' ? `${LOCALES[locale].prefix}/models/` : routes.workshop
 
 const footerRef = ref<HTMLElement>()
 const canvasRef = ref<HTMLCanvasElement>()
