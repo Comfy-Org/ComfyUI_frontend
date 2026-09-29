@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed } from 'vue'
 
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 
@@ -24,10 +24,6 @@ const {
 const value = defineModel<number>({ required: true })
 
 const fill = computed(() => ((value.value - min) / (max - min)) * 100)
-
-// The tooltip's text is portalled away from the bar, so the slider keeps its
-// own copy to point `aria-describedby` at.
-const hintId = useId()
 </script>
 
 <template>
@@ -65,9 +61,7 @@ const hintId = useId()
       :disabled
       :aria-label="label"
       :aria-valuetext="display"
-      :aria-describedby="hint ? hintId : undefined"
       class="absolute inset-0 cursor-ew-resize opacity-0 disabled:cursor-not-allowed"
     />
-    <span v-if="hint" :id="hintId" class="sr-only">{{ hint }}</span>
   </div>
 </template>

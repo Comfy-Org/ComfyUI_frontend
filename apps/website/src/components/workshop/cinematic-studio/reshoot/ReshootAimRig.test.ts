@@ -21,13 +21,9 @@ describe('ReshootAimRig', () => {
       })
       const help = rc(key)
 
-      // The slider keeps a screen-reader copy of its hint, so only the copies
-      // a sighted reader could see count as the help being shown.
-      const onScreen = { ignore: 'script, style, .sr-only' }
-
-      expect(screen.queryByText(help, onScreen)).toBeNull()
+      expect(screen.queryByText(help)).toBeNull()
       await userEvent.click(screen.getByRole('button', { name: help }))
-      const [shownHelp] = await screen.findAllByText(help, onScreen)
+      const [shownHelp] = await screen.findAllByText(help)
       expect(shownHelp).toBeVisible()
     }
   )
