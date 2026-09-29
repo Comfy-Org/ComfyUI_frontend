@@ -1,5 +1,7 @@
 import type {
+  BillingDeclineReason,
   BillingOperationState,
+  FailedBillingOperation,
   SubscriptionCommandResult,
   TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
@@ -140,6 +142,21 @@ describe('payVerdictOf', () => {
   })
 })
 
+/** A failure as the server reports it, with the remedy it names. */
+function failedWith(
+  declineReason: BillingDeclineReason,
+  remedy: Pick<FailedBillingOperation, 'recoveryAction'> &
+    Partial<Pick<FailedBillingOperation, 'retryable'>>
+): FailedBillingOperation {
+  return {
+    ...failedOperation(declineReason, 'op_x'),
+    phase: 'failed',
+    declineReason,
+    retryable: true,
+    ...remedy
+  }
+}
+
 describe('operationOutcomeOf', () => {
   it.for<{
     name: string
@@ -157,8 +174,57 @@ describe('operationOutcomeOf', () => {
       outcome: { kind: 'not_completed', operationId: 'op_x' }
     },
     {
+      name: 'a bank that asked for authentication nobody gave',
+      operation: failedOperation('authentication_required', 'op_x'),
+      outcome: { kind: 'not_completed', operationId: 'op_x' }
+    },
+    {
+      name: 'an Alipay payment the customer backed out of, still pending',
+      operation: {
+        ...pendingOperation('op_x'),
+        authenticationState: 'failed_retryable',
+        declineReason: 'authentication_failed'
+      },
+      outcome: { kind: 'not_completed', operationId: 'op_x' }
+    },
+    {
+      name: 'a pending payment the bank refused for missing authentication',
+      operation: {
+        ...pendingOperation('op_x'),
+        authenticationState: 'failed_retryable',
+        declineReason: 'authentication_required'
+      },
+      outcome: { kind: 'not_completed', operationId: 'op_x' }
+    },
+    {
+      name: 'an attempt the server ended unpaid and marks a plain retry',
+      operation: failedWith('generic', { recoveryAction: 'retry' }),
+      outcome: { kind: 'not_completed', operationId: 'op_x' }
+    },
+    {
+      name: 'a failure the server gives no reason or remedy for',
+      operation: failedWith('generic', { retryable: false }),
+      outcome: { kind: 'processing_error', operationId: 'op_x' }
+    },
+    {
+      name: 'a card decline the server marks for a new card',
+      operation: failedWith('card_declined', {
+        recoveryAction: 'replace_payment_method'
+      }),
+      outcome: {
+        kind: 'declined',
+        reason: 'card_declined',
+        operationId: 'op_x'
+      }
+    },
+    {
       name: 'a processing fault',
       operation: failedOperation('processing_error', 'op_x'),
+      outcome: { kind: 'processing_error', operationId: 'op_x' }
+    },
+    {
+      name: 'a processing fault the server marks for a plain retry',
+      operation: failedWith('processing_error', { recoveryAction: 'retry' }),
       outcome: { kind: 'processing_error', operationId: 'op_x' }
     },
     {

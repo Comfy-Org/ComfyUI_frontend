@@ -96,10 +96,12 @@ type Attribution = 'started' | 'followed' | 'settled'
  * reached so the capture it resolves into opens on that card. `waiting` is
  * money in flight that this page did not start: no fresh form until it
  * settles. `unconfirmed` is money whose outcome the page could not learn, so
- * it neither offers a form nor claims a charge. `recheck_failed` is a re-read
- * of what the workspace is waiting on that failed before any form showed, so
- * the page cannot say whether money is moving. `terminal` is a payment that
- * went through.
+ * it neither offers a form nor claims a charge. `sibling` on either marks
+ * money another tab sent while this one had its form open, whose verdict and
+ * challenge belong to that tab. `recheck_failed` is a re-read of what the
+ * workspace is waiting on that failed before any form showed, so the page
+ * cannot say whether money is moving. `terminal` is a payment that went
+ * through.
  */
 export type CheckoutPage =
   | { readonly kind: 'resolving'; readonly outcome?: InlineOutcome }
@@ -111,8 +113,16 @@ export type CheckoutPage =
       readonly reason: PlanUnavailableReason
     }
   | Capture
-  | { readonly kind: 'waiting'; readonly operation: PendingBillingOperation }
-  | { readonly kind: 'unconfirmed'; readonly operationId: string }
+  | {
+      readonly kind: 'waiting'
+      readonly operation: PendingBillingOperation
+      readonly sibling?: true
+    }
+  | {
+      readonly kind: 'unconfirmed'
+      readonly operationId: string
+      readonly sibling?: true
+    }
   | {
       readonly kind: 'terminal'
       readonly operation?: TerminalBillingOperation
@@ -542,10 +552,34 @@ export function waitingOn(operation: PendingBillingOperation): WaitingOn {
 const outcomeUnknown = (operation: BillingOperationState) =>
   operation.phase === 'reconciliation_needed'
 
-const unconfirmed = (operation: { readonly id: string }): CheckoutPage => ({
+type Watching = Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>
+
+/** Whether money another tab sent is what a watching page is looking at. */
+const siblingOf = (page: { readonly sibling?: true }) =>
+  page.sibling === true ? { sibling: true as const } : {}
+
+const unconfirmed = (
+  operation: { readonly id: string },
+  from: { readonly sibling?: true } = {}
+): CheckoutPage => ({
   kind: 'unconfirmed',
-  operationId: operation.id
+  operationId: operation.id,
+  ...siblingOf(from)
 })
+
+/**
+ * A verdict is shown only by the tab that sent the payment, so a decline in
+ * another tab sends this one back to a plain form. A tab that arrived on the
+ * money (a reload, or the return from a provider's page) counts as the one
+ * that sent it, and so does one that re-opened the challenge and saw it
+ * refused.
+ */
+function ownsVerdict(page: Watching, operation: BillingOperationState) {
+  if (page.sibling !== true) return true
+  return (
+    operation.phase === 'pending' && operation.challenge?.status === 'failed'
+  )
+}
 
 /**
  * Where an operation the lifecycle follows puts the page. Money in flight
@@ -599,12 +633,11 @@ function arrivedOn(
 }
 
 /**
- * Money this page is watching but did not send. A watch that lapses while
- * the page was still verifying becomes "we couldn't confirm"; one over a
- * charge it knows is settling or received keeps its screen while the page
- * re-reads. An unconfirmed page holds until a verdict arrives. A verdict on
- * a still-pending operation (a challenge the bank refused) is a card, not
- * money in flight.
+ * Money this page is watching. A watch that lapses while the page was still
+ * verifying becomes "we couldn't confirm"; one over a charge it knows is
+ * settling or received keeps its screen while the page re-reads. An
+ * unconfirmed page holds until a verdict arrives. A verdict resolves a fresh
+ * capture, on its card only when this tab owns it.
  */
 function watched(
   page: Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>,
@@ -613,8 +646,11 @@ function watched(
 ): CheckoutPage {
   if (operation.phase === 'succeeded')
     return { kind: 'terminal', operation, attribution: attributionOf(page) }
-  if (outcomeUnknown(operation)) return unconfirmed(operation)
-  if (outcome !== undefined) return { kind: 'resolving', outcome }
+  if (outcomeUnknown(operation)) return unconfirmed(operation, page)
+  if (outcome !== undefined)
+    return ownsVerdict(page, operation)
+      ? { kind: 'resolving', outcome }
+      : RESOLVING
   return page.kind === 'unconfirmed'
     ? watchedUnconfirmed(page, operation)
     : watchedWaiting(page, operation)
@@ -635,9 +671,11 @@ function watchedWaiting(
 ): CheckoutPage {
   if (operation.phase === 'timed_out')
     return waitingOn(page.operation) === 'verifying'
-      ? unconfirmed(operation)
+      ? unconfirmed(operation, page)
       : page
-  return isInFlight(operation) ? { kind: 'waiting', operation } : RESOLVING
+  return isInFlight(operation)
+    ? { kind: 'waiting', operation, ...siblingOf(page) }
+    : RESOLVING
 }
 
 /**
@@ -658,8 +696,9 @@ function attributionOf(
  * the challenge, until a verdict: the Pay's own once it settles, or the
  * operation's while it is still pending (a challenge the bank refused never
  * settles the Pay). A success is attributed to it. An operation nobody here
- * sent takes the form away while in flight, or lands its verdict above Pay;
- * one parked on a card releases a Pay held for the re-read.
+ * sent takes the form away while in flight; its verdict belongs to the tab
+ * that sent it, so this form stays plain, and one parked on a card releases
+ * a Pay held for the re-read.
  */
 function followedInCapture(
   page: Capture,
@@ -673,12 +712,12 @@ function followedInCapture(
       operation,
       attribution: started ? 'started' : 'settled'
     }
-  if (outcomeUnknown(operation)) return unconfirmed(operation)
+  if (outcomeUnknown(operation))
+    return unconfirmed(operation, started ? {} : { sibling: true })
   if (page.attempt.kind === 'sent')
     return followedOwn(page, page.attempt, operation, outcome)
-  if (outcome !== undefined) return { ...page, attempt: IDLE, outcome }
-  return isInFlight(operation)
-    ? { kind: 'waiting', operation }
+  return isInFlight(operation) && outcome === undefined
+    ? { kind: 'waiting', operation, sibling: true }
     : nothingPending(page)
 }
 
@@ -712,12 +751,15 @@ function isChallengePending(operation: PendingBillingOperation): boolean {
 /**
  * The submit area's phase. `challenge` (Phase A): the bank is waiting on
  * the customer, nothing charged, the challenge re-openable. `processing`
- * (Phase B): the charge is in flight and cannot be called back.
- * `redirecting`: the chosen method pays on its own site, so the page is
- * about to unload with nothing charged. `capture` is Pay at rest.
+ * (Phase B): the server says the charge is in flight and cannot be called
+ * back. `unknown`: sent, but the server has not said which of the two it
+ * is, so the page claims neither. `redirecting`: the chosen method pays on
+ * its own site, so the page is about to unload with nothing charged.
+ * `capture` is Pay at rest.
  */
 export type SubmitPhase =
   | { readonly kind: 'capture' }
+  | { readonly kind: 'unknown' }
   | { readonly kind: 'processing' }
   | { readonly kind: 'challenge'; readonly operation: PendingBillingOperation }
   | { readonly kind: 'redirecting'; readonly method: string }
@@ -731,13 +773,20 @@ export function submitPhaseOf(
   const { redirectMethod, operation } = page.attempt
   if (redirectMethod !== undefined)
     return { kind: 'redirecting', method: redirectMethod }
-  return operation === undefined ? { kind: 'processing' } : phaseOver(operation)
+  return operation === undefined ? { kind: 'unknown' } : phaseOver(operation)
 }
 
 function phaseOver(operation: PendingBillingOperation): SubmitPhase {
-  return isChallengePending(operation)
-    ? { kind: 'challenge', operation }
-    : { kind: 'processing' }
+  if (isChallengePending(operation)) return { kind: 'challenge', operation }
+  return isProcessing(operation) ? { kind: 'processing' } : { kind: 'unknown' }
+}
+
+/** Past the bank's challenge on the server's word, so it can no longer be called back. */
+function isProcessing(operation: PendingBillingOperation): boolean {
+  return (
+    operation.authenticationState === 'processing' ||
+    operation.authenticationState === 'succeeded'
+  )
 }
 
 /**
@@ -762,6 +811,21 @@ export function isChallengeReopenable(
   if (operation.presentation === 'hosted')
     return operation.actionUrl !== undefined
   return operation.challenge?.status === 'required'
+}
+
+/**
+ * The in-page challenge a page that arrived on it re-opens without a click,
+ * by its client secret. A hosted page is never opened unasked: it would
+ * take a customer who just came back from it straight out again.
+ */
+export function challengeToReopen(page: CheckoutPage): string | undefined {
+  if (page.kind !== 'waiting' || page.sibling === true) return undefined
+  const { operation } = page
+  if (!isChallengePending(operation) || operation.presentation !== 'embedded')
+    return undefined
+  return operation.challenge?.status === 'required'
+    ? operation.challenge.clientSecret
+    : undefined
 }
 
 /**

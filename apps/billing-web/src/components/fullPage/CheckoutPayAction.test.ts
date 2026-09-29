@@ -33,11 +33,8 @@ function renderPayAction(
 }
 
 const footnote = () => screen.getByTestId('checkout-phase-footnote')
-const ghostButtons = () =>
-  screen
-    .getAllByRole('button')
-    .map((button) => button.textContent.trim())
-    .filter((name) => name !== 'Pay and subscribe')
+const buttonNames = () =>
+  screen.getAllByRole('button').map((button) => button.textContent.trim())
 
 describe('CheckoutPayAction', () => {
   it.for<{
@@ -52,59 +49,91 @@ describe('CheckoutPayAction', () => {
       phase: { kind: 'capture' },
       canCancel: true,
       line: '',
-      buttons: []
+      buttons: ['Pay and subscribe']
+    },
+    {
+      name: 'a Pay the bank has not answered yet',
+      phase: { kind: 'unknown' },
+      canCancel: true,
+      line: '',
+      buttons: ['Pay and subscribe']
     },
     {
       name: 'a charge processing',
       phase: { kind: 'processing' },
       canCancel: true,
       line: "This payment is already processing and can't be canceled.",
-      buttons: []
+      buttons: ['Pay and subscribe']
     },
     {
       name: 'a challenge the customer can reopen',
       phase: { kind: 'challenge', operation: challenge('required') },
       canCancel: false,
       line: 'Nothing has been charged yet.',
-      buttons: ['Continue verification']
+      buttons: ['Complete verification']
     },
     {
       name: 'a challenge this tab is showing',
       phase: { kind: 'challenge', operation: challenge('in_progress') },
       canCancel: false,
       line: 'Nothing has been charged yet.',
-      buttons: []
+      buttons: ['Pay and subscribe']
     },
     {
-      name: 'a challenge once the server can cancel it',
+      name: 'a reopenable challenge once the server can cancel it',
       phase: { kind: 'challenge', operation: challenge('required') },
       canCancel: true,
       line: 'Nothing has been charged yet.',
-      buttons: ['Continue verification', 'Cancel payment']
+      buttons: ['Complete verification', 'Cancel payment']
+    },
+    {
+      name: 'a challenge on screen once the server can cancel it',
+      phase: { kind: 'challenge', operation: challenge('in_progress') },
+      canCancel: true,
+      line: 'Nothing has been charged yet.',
+      buttons: ['Pay and subscribe', 'Cancel payment']
     },
     {
       name: 'an Alipay redirect',
       phase: { kind: 'redirecting', method: 'alipay' },
       canCancel: true,
       line: 'Taking you to Alipay to finish paying. Nothing has been charged yet.',
-      buttons: []
+      buttons: ['Pay and subscribe']
     },
     {
       name: 'a redirect to a method with no name',
       phase: { kind: 'redirecting', method: 'klarna' },
       canCancel: true,
       line: 'Taking you to your payment provider to finish paying. Nothing has been charged yet.',
-      buttons: []
+      buttons: ['Pay and subscribe']
     }
   ])(
-    'shows $name with its line and ghost buttons',
+    'shows $name with its line and buttons',
     ({ phase, canCancel, line, buttons }) => {
       renderPayAction({ phase, canCancel })
 
       expect(footnote().textContent.trim()).toBe(line)
-      expect(ghostButtons()).toEqual(buttons)
+      expect(buttonNames()).toEqual(buttons)
     }
   )
+
+  it('keeps Complete verification live while the page is locked', async () => {
+    const onContinueVerification = vi.fn()
+    renderPayAction({
+      phase: { kind: 'challenge', operation: challenge('required') },
+      disabled: true,
+      loading: true,
+      onContinueVerification
+    })
+
+    const complete = screen.getByRole('button', {
+      name: 'Complete verification'
+    })
+    expect(complete).toBeEnabled()
+    await userEvent.click(complete)
+
+    expect(onContinueVerification).toHaveBeenCalledOnce()
+  })
 
   it('keeps an empty polite status region mounted at rest', () => {
     renderPayAction({ phase: { kind: 'capture' } })
@@ -134,20 +163,6 @@ describe('CheckoutPayAction', () => {
     )
 
     expect(onCancel).toHaveBeenCalledOnce()
-  })
-
-  it('emits continueVerification from Continue verification', async () => {
-    const onContinueVerification = vi.fn()
-    renderPayAction({
-      phase: { kind: 'challenge', operation: challenge('required') },
-      onContinueVerification
-    })
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Continue verification' })
-    )
-
-    expect(onContinueVerification).toHaveBeenCalledOnce()
   })
 
   it.for<{ name: string; loading: boolean; disabled: boolean; busy: string }>([

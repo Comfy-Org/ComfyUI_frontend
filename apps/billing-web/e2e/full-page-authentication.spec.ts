@@ -11,6 +11,7 @@ import type { MockCloud } from './fixtures/cloud'
 import { PORTAL_URL } from './fixtures/env'
 import {
   challengeRequiredOperation,
+  pendingOperation,
   succeededOperation
 } from './fixtures/scenario'
 import { installFakeStripe } from './fixtures/stripe'
@@ -43,6 +44,8 @@ const payButton = (page: Page) =>
   page.getByRole('button', { name: 'Pay and subscribe' })
 const footnote = (page: Page) => page.getByTestId('checkout-phase-footnote')
 const backArrow = (page: Page) => page.getByRole('button', { name: 'Back' })
+const completeVerification = (page: Page) =>
+  page.getByRole('button', { name: 'Complete verification' })
 const cancelPayment = (page: Page) =>
   page.getByRole('button', { name: 'Cancel payment' })
 
@@ -115,6 +118,27 @@ test('145-4584 → 342-4767: Pay walks Phase A, locked with nothing charged, int
     page.getByRole('heading', { name: "You're all set" })
   ).toBeVisible()
   expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+test('a card Pay shows only the spinner until the server says which phase it is in', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  const moveOperation = scriptOperation(cloud)
+  moveOperation(pendingOperation(OPERATION))
+  await signIn(CHECKOUT)
+
+  await payButton(page).click()
+
+  await expect(payButton(page)).toHaveAttribute('aria-busy', 'true')
+  await expect(backArrow(page)).toBeHidden()
+  await expect(footnote(page)).toHaveText('')
+
+  moveOperation(processing())
+
+  await expect(footnote(page)).toHaveText(PHASE_B)
 })
 
 test('a saved-method Pay keeps the tabs and the list inert through Phase A', async ({
@@ -196,6 +220,66 @@ test('a reload during Phase A renders the verify state and re-opens the challeng
   await expect(
     page.getByRole('heading', { name: 'Already completed' })
   ).toBeVisible()
+})
+
+test('312-9930: coming back from Alipay without paying stays on the checkout and offers Complete verification instead of sending the customer straight back', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    pending_billing_op_id: OPERATION,
+    pending_billing_op_type: 'subscription',
+    payment_intent_client_secret: CLIENT_SECRET
+  }
+  scriptOperation(cloud)
+  await page.addInitScript((redirectTo) => {
+    Object.assign(window, { __e2eStripeRedirectTo: redirectTo })
+  }, PORTAL_URL)
+  await signIn(CHECKOUT)
+
+  await expect(completeVerification(page)).toBeEnabled()
+  await expect(footnote(page)).toHaveText(PHASE_A)
+  await expect(backArrow(page)).toBeHidden()
+  await expect(page).toHaveURL(/\/v1\/checkout\?/)
+  expect(await nextActionCalls(page)).toEqual([])
+
+  await completeVerification(page).click()
+
+  await expect(page).toHaveURL(PORTAL_URL)
+  expect(subscribeRequests(cloud)).toHaveLength(0)
+})
+
+test('340-13834: coming back from an Alipay payment the server ended unpaid opens capture on Payment not completed, never a decline', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    pending_billing_op_id: OPERATION,
+    pending_billing_op_type: 'subscription'
+  }
+  const moveOperation = scriptOperation(cloud)
+  const now = new Date().toISOString()
+  moveOperation({
+    id: OPERATION,
+    status: 'failed',
+    retryable: true,
+    recovery_action: 'retry',
+    started_at: now,
+    completed_at: now
+  })
+  await signIn(CHECKOUT)
+
+  const card = page.getByRole('alert')
+  await expect(card).toContainText('Payment not completed')
+  await expect(card).not.toContainText('Payment declined')
+  await expect(payButton(page)).toBeEnabled()
+  expect(subscribeRequests(cloud)).toHaveLength(0)
 })
 
 test('447-6886: a redirect method shows the pre-money line, never Phase B, and leaves for the provider with the checkout as its return', async ({

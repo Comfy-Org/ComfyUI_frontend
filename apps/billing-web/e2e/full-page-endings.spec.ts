@@ -110,7 +110,7 @@ test('FE-2856: a capture the bank is still settling renders Payment in progress,
 
   await expect(heading(page, 'Payment in progress')).toBeVisible()
   await expect(
-    page.getByText(/don't pay again: you could be charged twice/)
+    page.getByText("Don't pay again, you could be charged twice.")
   ).toBeVisible()
   await expect(code(page)).toHaveText('op_bank')
   await expect(contactSupport(page)).toBeVisible()

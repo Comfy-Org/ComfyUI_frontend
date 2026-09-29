@@ -64,7 +64,12 @@ function guardConsent(event: Event) {
 
 /** The line above Pay for a phase in flight; empty at rest so the live region stays mounted. */
 const footnote = computed(() => {
-  if (phase === undefined || phase.kind === 'capture') return ''
+  if (
+    phase === undefined ||
+    phase.kind === 'capture' ||
+    phase.kind === 'unknown'
+  )
+    return ''
   if (phase.kind === 'challenge') return t('checkout.fullPage.phase.challenge')
   if (phase.kind === 'processing')
     return t('checkout.fullPage.phase.processing')
@@ -78,8 +83,16 @@ const challenge = computed(() =>
   phase?.kind === 'challenge' ? phase.operation : undefined
 )
 
-const GHOST_BUTTON =
-  'flex h-10 w-full cursor-pointer items-center justify-center rounded-lg px-4 text-sm font-semibold text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none'
+/** A challenge the page is not showing turns Pay into the one way back to it. */
+const reopenable = computed(
+  () => challenge.value !== undefined && isChallengeReopenable(challenge.value)
+)
+
+const PRIMARY_BUTTON =
+  'flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-base-foreground px-4 text-sm font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40'
+
+const SECONDARY_BUTTON =
+  'flex h-10 w-full cursor-pointer items-center justify-center rounded-lg bg-tertiary-background px-4 text-sm font-semibold text-base-foreground hover:bg-tertiary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none'
 </script>
 
 <template>
@@ -117,10 +130,19 @@ const GHOST_BUTTON =
         {{ footnote }}
       </p>
       <button
+        v-if="reopenable"
+        type="button"
+        :class="PRIMARY_BUTTON"
+        @click="emit('continueVerification')"
+      >
+        {{ t('checkout.fullPage.phase.completeVerification') }}
+      </button>
+      <button
+        v-else
         type="submit"
         :disabled="disabled || loading"
         :aria-busy="loading"
-        class="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-base-foreground px-4 text-sm font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+        :class="PRIMARY_BUTTON"
         @click="guardConsent"
       >
         <i
@@ -133,17 +155,9 @@ const GHOST_BUTTON =
         </span>
       </button>
       <button
-        v-if="challenge && isChallengeReopenable(challenge)"
-        type="button"
-        :class="GHOST_BUTTON"
-        @click="emit('continueVerification')"
-      >
-        {{ t('checkout.fullPage.phase.continueVerification') }}
-      </button>
-      <button
         v-if="challenge && canCancel"
         type="button"
-        :class="GHOST_BUTTON"
+        :class="SECONDARY_BUTTON"
         @click="emit('cancel')"
       >
         {{ t('checkout.fullPage.phase.cancel') }}

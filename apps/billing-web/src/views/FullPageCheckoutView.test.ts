@@ -30,11 +30,18 @@ import type {
 import {
   createFakeBillingClient,
   failedOperation,
+  hostedPendingOperation,
   pendingOperation,
   previewOf,
   succeededOperation
 } from '@/test/fakeBillingClient'
 import FullPageCheckoutView from '@/views/FullPageCheckoutView.vue'
+
+/** Money the bank is capturing: the phase that can no longer be called back. */
+const processingOperation = (id = 'op_1'): PendingBillingOperation => ({
+  ...pendingOperation(id),
+  authenticationState: 'processing'
+})
 
 const CHECKOUT_PATH =
   '/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator_monthly'
@@ -54,9 +61,19 @@ vi.mock(import('@/config/stripeKey'), () => ({
   useBillingWebStripeKey: () => ref(stripeKey.value)
 }))
 
+/** Where Stripe says the intent's next step runs; a test flips it to play a redirect method. */
+const nextStep = vi.hoisted(() => ({
+  leavesPage: false as boolean | Promise<boolean>,
+  asked: 0
+}))
+
 vi.mock(import('@/session/stripeChallengePort'), () => ({
   createDeferredStripeChallengePort: () => ({
-    handleNextAction: async () => ({})
+    handleNextAction: async () => ({}),
+    leavesPage: async () => {
+      nextStep.asked += 1
+      return nextStep.leavesPage
+    }
   })
 }))
 
@@ -392,7 +409,7 @@ describe('FullPageCheckoutView', () => {
     await screen.findByText('Upgrade to Creator Plan · Acme Team')
     expect(payButton()).toBeEnabled()
 
-    fake.publishOperation(pendingOperation())
+    fake.publishOperation(processingOperation())
 
     await screen.findByTestId('checkout-waiting')
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -866,7 +883,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     {
       name: 'an operation already pending, still in flight',
       code: 'OPERATION_ALREADY_PENDING',
-      found: pendingOperation('op_elsewhere'),
+      found: processingOperation('op_elsewhere'),
       lands: "This payment is already processing and can't be canceled.",
       pay: 'disabled'
     },
@@ -1284,7 +1301,7 @@ describe('FullPageCheckoutView mount reconciliation', () => {
 
   it('renders the waiting state, never a form, for money already in flight, and follows it to Already completed', async () => {
     const fake = await renderCheckout({
-      recover: { status: 'ok', value: pendingOperation('op_reloaded') }
+      recover: { status: 'ok', value: processingOperation('op_reloaded') }
     })
 
     await waitingStatus()
@@ -1383,7 +1400,7 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     expect(form.mounts).toBe(0)
   })
 
-  it('resolves a fresh capture, on its card, when the awaited operation declines', async () => {
+  it('resolves a fresh capture, on its card, when the money it arrived on declines', async () => {
     const fake = await renderCheckout({
       recover: { status: 'ok', value: pendingOperation('op_awaited') }
     })
@@ -1394,6 +1411,17 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     const card = await screen.findByRole('alert')
     expect(card).toHaveTextContent('Payment declined')
     expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(form.mounts).toBe(1)
+  })
+
+  it("keeps a form left open plain when another tab's payment declines", async () => {
+    const fake = await payReady()
+
+    fake.publishOperation(failedOperation('card_declined', 'op_sibling'))
+    await nextTick()
+
+    expect(screen.queryByText('Payment declined')).not.toBeInTheDocument()
+    expect(payButton()).toBeEnabled()
     expect(form.mounts).toBe(1)
   })
 
@@ -1657,6 +1685,8 @@ async function payHeld(methodType?: string) {
 describe('FullPageCheckoutView payment authentication', () => {
   beforeEach(() => {
     form.mounts = 0
+    nextStep.leavesPage = false
+    nextStep.asked = 0
   })
 
   it('locks its own Pay through a challenge, then processing, then lands on the success', async () => {
@@ -1705,8 +1735,9 @@ describe('FullPageCheckoutView payment authentication', () => {
 
     await userEvent.click(payButton())
 
-    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_B))
-    expect(screen.getByRole('tablist')).toHaveAttribute('inert')
+    await waitFor(() =>
+      expect(screen.getByRole('tablist')).toHaveAttribute('inert')
+    )
   })
 
   it('puts a challenge the bank refused on its card and frees Pay for the retry, on the same form', async () => {
@@ -1749,22 +1780,36 @@ describe('FullPageCheckoutView payment authentication', () => {
       challenged: ALIPAY
     },
     {
-      name: 'a card Pay is processing until the bank asks for a challenge',
+      name: 'a card Pay claims no phase until the bank asks for a challenge',
       methodType: 'card',
-      sent: PHASE_B,
+      sent: '',
       challenged: PHASE_A
     }
   ])('$name', async ({ methodType, sent, challenged }) => {
     const fake = await payHeld(methodType)
 
-    await waitFor(() => expect(footnote()).toHaveTextContent(sent))
+    await waitFor(() => expect(footnote().textContent.trim()).toBe(sent))
+    expect(payButton()).toHaveAttribute('aria-busy', 'true')
 
     fake.publishOperation(challengedOperation('op_3ds', 'in_progress'))
 
-    await waitFor(() => expect(footnote()).toHaveTextContent(challenged))
+    await waitFor(() => expect(footnote().textContent.trim()).toBe(challenged))
   })
 
-  it('offers Continue verification after a reload mid-challenge, and drives the challenge again on click', async () => {
+  it('claims no phase for an operation the bank has not answered for, then Phase B once it is processing', async () => {
+    const fake = await payHeld()
+    fake.publishOperation(pendingOperation('op_card'))
+    await nextTick()
+
+    expect(footnote()).toBeEmptyDOMElement()
+    expect(payButton()).toHaveAttribute('aria-busy', 'true')
+
+    fake.publishOperation(processingOperation('op_card'))
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_B))
+  })
+
+  it('re-opens an in-page challenge on a reload mid-challenge, and again from Complete verification', async () => {
     const fake = await renderCheckout({
       recover: {
         status: 'ok',
@@ -1773,7 +1818,11 @@ describe('FullPageCheckoutView payment authentication', () => {
     })
 
     await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_A))
-    expect(payButton()).toBeDisabled()
+    await waitFor(() =>
+      expect(fake.reportChallengeStarted).toHaveBeenCalledExactlyOnceWith(
+        'op_reload'
+      )
+    )
     expect(
       screen.queryByRole('button', { name: 'Back' })
     ).not.toBeInTheDocument()
@@ -1785,7 +1834,7 @@ describe('FullPageCheckoutView payment authentication', () => {
     fake.reportChallengeSettled.mockClear()
 
     await userEvent.click(
-      screen.getByRole('button', { name: 'Continue verification' })
+      screen.getByRole('button', { name: 'Complete verification' })
     )
 
     expect(fake.reportChallengeStarted).toHaveBeenCalledExactlyOnceWith(
@@ -1797,6 +1846,98 @@ describe('FullPageCheckoutView payment authentication', () => {
         'completed'
       )
     )
+    expect(fake.subscribe).not.toHaveBeenCalled()
+  })
+
+  it.for<{
+    name: string
+    operation: PendingBillingOperation
+    opens: 'challenge' | 'page'
+  }>([
+    {
+      name: 'a challenge Stripe finishes on another site, such as Alipay',
+      operation: challengedOperation('op_away', 'required'),
+      opens: 'challenge'
+    },
+    {
+      name: "a bank's hosted page",
+      operation: {
+        ...hostedPendingOperation('https://pay.test/3ds', 'op_away'),
+        authenticationState: 'requires_action'
+      },
+      opens: 'page'
+    }
+  ])(
+    'never sends a customer back to $name on arrival: Complete verification does, on a click',
+    async ({ operation, opens }) => {
+      nextStep.leavesPage = true
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      const fake = await renderCheckout({
+        recover: { status: 'ok', value: operation }
+      })
+
+      const complete = await screen.findByRole('button', {
+        name: 'Complete verification'
+      })
+      await capturePromisesFlushed()
+      expect(footnote()).toHaveTextContent(PHASE_A)
+      expect(fake.reportChallengeStarted).not.toHaveBeenCalled()
+      expect(assign).not.toHaveBeenCalled()
+
+      await userEvent.click(complete)
+
+      if (opens === 'challenge')
+        expect(fake.reportChallengeStarted).toHaveBeenCalledExactlyOnceWith(
+          'op_away'
+        )
+      else
+        expect(assign).toHaveBeenCalledExactlyOnceWith('https://pay.test/3ds')
+      expect(fake.subscribe).not.toHaveBeenCalled()
+    }
+  )
+
+  it('opens nothing when reconciliation replaces the challenge while Stripe is still saying where it runs', async () => {
+    let answer: (leavesPage: boolean) => void = () => {}
+    nextStep.leavesPage = new Promise((resolve) => {
+      answer = resolve
+    })
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const fake = await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: challengedOperation('op_embedded', 'required')
+      }
+    })
+    await waitFor(() => expect(nextStep.asked).toBe(1))
+
+    const hosted: PendingBillingOperation = {
+      ...hostedPendingOperation('https://pay.test/3ds', 'op_hosted'),
+      authenticationState: 'requires_action'
+    }
+    fake.recover.mockImplementationOnce(async () => {
+      fake.publishOperation(hosted)
+      return { status: 'ok', value: hosted }
+    })
+    siblings.nudge({
+      workspaceId: 'ws-team',
+      operationId: 'op_hosted',
+      kind: 'started'
+    })
+    await waitFor(() => expect(fake.recover).toHaveBeenCalledTimes(2))
+    await capturePromisesFlushed()
+
+    answer(false)
+    await capturePromisesFlushed()
+
+    expect(assign).not.toHaveBeenCalled()
+    expect(fake.reportChallengeStarted).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', { name: 'Complete verification' })
+    ).toBeInTheDocument()
   })
 
   it('returns a challenge to this checkout, not the result page', async () => {
@@ -2135,9 +2276,11 @@ describe('FullPageCheckoutView promo codes', () => {
 
     fake.publishOperation(failedOperation('card_declined', 'op_watched'))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Payment declined'
+    await waitFor(() =>
+      expect(screen.queryByTestId('checkout-waiting')).not.toBeInTheDocument()
     )
+    await screen.findByRole('button', { name: 'Remove LAUNCH20' })
+    expect(screen.queryByText('Payment declined')).not.toBeInTheDocument()
     expect(fake.previewSubscribe).toHaveBeenLastCalledWith(
       expect.objectContaining({ promotionCode: 'LAUNCH20' }),
       expect.anything()

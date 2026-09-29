@@ -16,6 +16,7 @@ import type {
 } from '@/checkout/checkoutPage'
 import {
   RESOLVING,
+  challengeToReopen,
   isChallengeReopenable,
   isLocked,
   isParked,
@@ -683,12 +684,42 @@ describe('reduceCheckoutPage reconciliation', () => {
       expected: { kind: 'terminal', attribution: 'settled' }
     },
     {
-      name: 'waiting that declines resolves a fresh capture on that card',
+      name: 'waiting it arrived on (a reload, or the return from a provider) declines onto its card',
       events: [
         reconciled(pendingOperation()),
         changed(failedOperation('card_declined'), declinedElsewhere)
       ],
       expected: { kind: 'resolving', outcome: declinedElsewhere }
+    },
+    {
+      name: 'a form that watched another tab start paying is waiting on a sibling',
+      events: [...live, reconciled(pendingOperation())],
+      expected: { kind: 'waiting', sibling: true }
+    },
+    {
+      name: 'waiting on money another tab sent that declines resolves a plain capture',
+      events: [
+        ...live,
+        reconciled(pendingOperation()),
+        changed(failedOperation('card_declined'), declinedElsewhere)
+      ],
+      expected: { kind: 'resolving' },
+      without: 'outcome'
+    },
+    {
+      name: 'a form left open while another tab is declined stays a plain form',
+      events: [
+        ...live,
+        changed(failedOperation('card_declined'), declinedElsewhere)
+      ],
+      expected: collect('ready'),
+      without: 'outcome'
+    },
+    {
+      name: 'a re-read that finds another tab parked on a decline leaves the form plain',
+      events: [...live, reconciled(parkedOperation(), declinedElsewhere)],
+      expected: collect('ready'),
+      without: 'outcome'
     },
     {
       name: 'waiting whose operation turns out parked on a card resolves a capture (rule 4)',
@@ -761,8 +792,13 @@ describe('reduceCheckoutPage reconciliation', () => {
       ],
       expected: { kind: 'terminal', attribution: 'settled' }
     }
-  ])('$name', ({ events, expected }) => {
-    expect(replay(events)).toMatchObject(expected)
+  ])('$name', ({ events, expected, without }) => {
+    const page = replay(events)
+
+    expect(page).toMatchObject(expected)
+    expect(
+      without === undefined ? undefined : Reflect.get(page, without)
+    ).toBeUndefined()
   })
 
   it.for<{ name: string; operation: BillingOperationState | undefined }>([
@@ -968,6 +1004,25 @@ describe('reduceCheckoutPage endings', () => {
       expected: { kind: 'resolving', outcome: declinedElsewhere }
     },
     {
+      name: 'unconfirmed money another tab sent that declines resolves a plain capture',
+      events: [
+        ...live,
+        reconciled(parkedForAHuman()),
+        changed(failedOperation('card_declined'), declinedElsewhere)
+      ],
+      expected: RESOLVING
+    },
+    {
+      name: "this page's own Pay, unconfirmed and then declined, resolves on its card",
+      events: [
+        ...live,
+        submitted,
+        changed(parkedForAHuman()),
+        changed(failedOperation('card_declined'), declinedElsewhere)
+      ],
+      expected: { kind: 'resolving', outcome: declinedElsewhere }
+    },
+    {
       name: 'unconfirmed whose operation vanishes resolves again',
       events: [reconciled(parkedForAHuman()), reconciled(undefined)],
       expected: RESOLVING
@@ -980,7 +1035,7 @@ describe('reduceCheckoutPage endings', () => {
     {
       name: 'a collided Pay re-read as parked for a human is unconfirmed',
       events: [...live, submitted, collided, reconciled(parkedForAHuman())],
-      expected: UNCONFIRMED
+      expected: { ...UNCONFIRMED, sibling: true }
     }
   ])('$name', ({ events, expected }) => {
     expect(replay(events)).toEqual(expected)
@@ -1102,7 +1157,12 @@ describe('submitPhaseOf', () => {
     {
       name: 'a Pay sent with no operation yet',
       page: capturing({ kind: 'sent' }),
-      phase: { kind: 'processing' }
+      phase: { kind: 'unknown' }
+    },
+    {
+      name: 'a Pay whose operation the bank has not answered yet',
+      page: capturing({ kind: 'sent', operation: pendingOperation() }),
+      phase: { kind: 'unknown' }
     },
     {
       name: 'a Pay whose operation asks for a challenge',
@@ -1132,8 +1192,16 @@ describe('submitPhaseOf', () => {
       phase: { kind: 'challenge', operation: challengedOperation() }
     },
     {
-      name: 'waiting over plain pending money',
+      name: 'waiting over money the bank has not answered for',
       page: { kind: 'waiting', operation: pendingOperation() },
+      phase: { kind: 'unknown' }
+    },
+    {
+      name: 'waiting over money the bank is processing',
+      page: {
+        kind: 'waiting',
+        operation: { ...pendingOperation(), authenticationState: 'processing' }
+      },
       phase: { kind: 'processing' }
     }
   ])('$name is $phase.kind', ({ page, phase }) => {
@@ -1238,6 +1306,61 @@ describe('isChallengeReopenable', () => {
   })
 })
 
+describe('challengeToReopen', () => {
+  const embedded = (
+    status: 'required' | 'in_progress' | 'failed'
+  ): PendingBillingOperation => ({
+    ...challengedOperation(),
+    challenge: { clientSecret: 'cs_reload', status }
+  })
+
+  it.for<{ name: string; page: CheckoutPage; secret?: string }>([
+    {
+      name: 'waiting on an in-page challenge nobody has opened',
+      page: { kind: 'waiting', operation: embedded('required') },
+      secret: 'cs_reload'
+    },
+    {
+      name: 'waiting on a challenge already on screen',
+      page: { kind: 'waiting', operation: embedded('in_progress') }
+    },
+    {
+      name: 'waiting on a challenge the bank refused',
+      page: { kind: 'waiting', operation: embedded('failed') }
+    },
+    {
+      name: 'waiting on a hosted page, which would leave the checkout',
+      page: {
+        kind: 'waiting',
+        operation: {
+          ...hostedPendingOperation('https://pay.test/3ds'),
+          authenticationState: 'requires_action'
+        }
+      }
+    },
+    {
+      name: 'waiting on money the bank is processing',
+      page: {
+        kind: 'waiting',
+        operation: {
+          ...embedded('required'),
+          authenticationState: 'processing'
+        }
+      }
+    },
+    {
+      name: "another tab's challenge, which that tab re-opens",
+      page: { kind: 'waiting', operation: embedded('required'), sibling: true }
+    },
+    {
+      name: "this page's own Pay, which the lifecycle already drives",
+      page: capturing({ kind: 'sent', operation: embedded('required') })
+    }
+  ])('$name: $secret', ({ page, secret }) => {
+    expect(challengeToReopen(page)).toBe(secret)
+  })
+})
+
 describe('reduceCheckoutPage through a challenge', () => {
   it.for<{
     name: string
@@ -1275,6 +1398,30 @@ describe('reduceCheckoutPage through a challenge', () => {
         changed(refusedChallenge(), notCompleted)
       ],
       expected: { kind: 'resolving', outcome: notCompleted }
+    },
+    {
+      name: "a sibling's challenge this tab re-opened and the bank refused resolves on its card",
+      events: [
+        ...live,
+        reconciled(challengedOperation()),
+        changed(
+          {
+            ...refusedChallenge(),
+            challenge: { clientSecret: 'cs', status: 'failed' }
+          },
+          notCompleted
+        )
+      ],
+      expected: { kind: 'resolving', outcome: notCompleted }
+    },
+    {
+      name: 'waiting over a challenge another tab let the bank refuse resolves a plain capture',
+      events: [
+        ...live,
+        reconciled(challengedOperation()),
+        changed(refusedChallenge(), notCompleted)
+      ],
+      expected: RESOLVING
     },
     {
       name: 'a challenge already refused on arrival resolves on its card',

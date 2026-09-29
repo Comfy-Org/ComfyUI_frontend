@@ -104,6 +104,18 @@ function act() {
         <p class="m-0 text-sm/5 text-muted-foreground">
           {{ t(bodyKey, { workspace }) }}
         </p>
+        <i18n-t
+          v-if="screen.kind === 'in_progress'"
+          keypath="checkout.fullPage.ending.in_progress.warning"
+          tag="p"
+          class="m-0 text-sm/5 text-muted-foreground"
+        >
+          <template #dontPayAgain>
+            <strong class="font-bold">
+              {{ t('checkout.fullPage.ending.in_progress.dontPayAgain') }}
+            </strong>
+          </template>
+        </i18n-t>
       </div>
 
       <div

@@ -10,7 +10,7 @@
 import type { Page } from '@playwright/test'
 
 import type { MockCloud } from './fixtures/cloud'
-import { pendingOperation } from './fixtures/scenario'
+import { declinedOperation, processingOperation } from './fixtures/scenario'
 import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
 
@@ -59,7 +59,7 @@ test('a Pay in one tab takes a sibling tab on the same checkout to the waiting s
 }) => {
   cloud.scenario.paymentMethods = []
   pendingAfterSubscribe(cloud, 'op_subscribe')
-  cloud.scenario.operations.op_subscribe = pendingOperation('op_subscribe')
+  cloud.scenario.operations.op_subscribe = processingOperation('op_subscribe')
   await signIn(CHECKOUT)
   // The same signed-in identity, so the sibling lands on the checkout directly.
   const sibling = await context.newPage()
@@ -83,6 +83,31 @@ test('a Pay in one tab takes a sibling tab on the same checkout to the waiting s
   ).toHaveLength(1)
 })
 
+test('a decline shows its card only in the tab that paid; a sibling goes back to the plain payment form', async ({
+  page,
+  context,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  pendingAfterSubscribe(cloud, 'op_subscribe')
+  cloud.scenario.operations.op_subscribe = processingOperation('op_subscribe')
+  await signIn(CHECKOUT)
+  const sibling = await context.newPage()
+  await sibling.goto(CHECKOUT)
+  await expect(payButton(sibling)).toBeEnabled()
+
+  await payButton(page).click()
+  await expect(waiting(sibling)).toHaveText(WAITING)
+
+  cloud.scenario.operations.op_subscribe = declinedOperation('op_subscribe')
+
+  await expect(page.getByRole('alert')).toContainText('Payment declined')
+  await expect(payButton(sibling)).toBeEnabled()
+  await expect(sibling.getByText('Payment declined')).toBeHidden()
+  await expect(waiting(sibling)).toHaveText('')
+})
+
 test('a page restored from the back-forward cache re-reads the operation instead of showing the form it left with', async ({
   page,
   cloud,
@@ -97,7 +122,7 @@ test('a page restored from the back-forward cache re-reads the operation instead
     pending_billing_op_id: 'op_meanwhile',
     pending_billing_op_type: 'subscription'
   }
-  cloud.scenario.operations.op_meanwhile = pendingOperation('op_meanwhile')
+  cloud.scenario.operations.op_meanwhile = processingOperation('op_meanwhile')
   await page.evaluate(() => {
     const event = new Event('pageshow')
     Object.defineProperty(event, 'persisted', { value: true })

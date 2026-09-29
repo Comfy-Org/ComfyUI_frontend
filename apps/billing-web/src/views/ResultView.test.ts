@@ -21,7 +21,8 @@ const RESULT_PATH = `/v1/result?${RESULT_QUERY}&plan=creator_monthly`
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
   createDeferredStripeChallengePort: () => ({
-    handleNextAction: () => Promise.resolve({})
+    handleNextAction: () => Promise.resolve({}),
+    leavesPage: () => Promise.resolve(true)
   })
 }))
 
