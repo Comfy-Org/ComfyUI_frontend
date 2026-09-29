@@ -30,18 +30,22 @@ interface DynamicControl {
 
 const none = () => []
 
-const reportedSpecDrift = new WeakMap<InputSpecV2, Set<number | undefined>>()
+const MAX_SPEC_DRIFT_REPORTS = 10
+const reportedSpecDrift = new Set<string>()
 
 function warnSpecDrift(
   spec: InputSpecV2,
   error: ZodError,
   optionIndex?: number
 ): void {
-  const reportedLocations = reportedSpecDrift.get(spec) ?? new Set()
-  if (reportedLocations.has(optionIndex)) return
+  const location = JSON.stringify([spec.name, spec.type, optionIndex])
+  if (
+    reportedSpecDrift.has(location) ||
+    reportedSpecDrift.size >= MAX_SPEC_DRIFT_REPORTS
+  )
+    return
 
-  reportedLocations.add(optionIndex)
-  reportedSpecDrift.set(spec, reportedLocations)
+  reportedSpecDrift.add(location)
 
   reportError(new Error('Unable to parse dynamic node input specification'), {
     errorType: 'error_parsing_node_input_spec',

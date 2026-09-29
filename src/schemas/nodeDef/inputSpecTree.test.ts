@@ -48,7 +48,9 @@ const malformedControls: BadSpecScenario[] = [
 
 describe('input specification diagnostics', () => {
   it.for(malformedControls)('reports a malformed $name', (testCase) => {
-    const spec = transformInputSpecV1ToV2(testCase.spec, { name: 'input' })
+    const spec = transformInputSpecV1ToV2(testCase.spec, {
+      name: testCase.name
+    })
 
     testCase.resolve(spec)
 
@@ -84,7 +86,7 @@ describe('input specification diagnostics', () => {
           ]
         }
       ],
-      { name: 'input' }
+      { name: 'multi-option-input' }
     )
 
     inputSpecTree(spec)
@@ -97,5 +99,28 @@ describe('input specification diagnostics', () => {
       { controlType: spec.type, optionIndex: 1, issueCount: 1 },
       { controlType: spec.type, optionIndex: 2, issueCount: 1 }
     ])
+  })
+
+  it('deduplicates a nested specification rematerialized by traversal', () => {
+    const spec = transformInputSpecV1ToV2(
+      [
+        'COMFY_AUTOGROW_V3',
+        {
+          template: {
+            input: {
+              required: {
+                nested: ['COMFY_AUTOGROW_V3', { template: {} }]
+              }
+            }
+          }
+        }
+      ],
+      { name: 'nested-owner' }
+    )
+
+    inputSpecTree(spec)
+    inputSpecTree(spec)
+
+    expect(reportError).toHaveBeenCalledOnce()
   })
 })
