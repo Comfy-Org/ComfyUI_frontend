@@ -275,7 +275,7 @@
                       default-position="right-2 bottom-2"
                     />
                     <Spinner
-                      v-if="loadingTemplateId === template.name"
+                      v-if="loadingTemplateId === getTemplateKey(template)"
                       class="absolute inset-0 z-10 m-auto size-12"
                     />
                   </div>

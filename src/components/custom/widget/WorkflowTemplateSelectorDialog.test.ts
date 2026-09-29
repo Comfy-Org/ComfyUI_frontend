@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
@@ -158,8 +158,7 @@ describe('template picker close lifecycle', () => {
 })
 
 describe('custom templates that share a filename', () => {
-  it('renders each pack and loads the clicked one from its own pack', async () => {
-    const store = useWorkflowTemplatesStore()
+  function renderDuplicates() {
     const duplicate = (pack: string) => ({
       name: 'decimate',
       sourceModule: pack,
@@ -169,10 +168,14 @@ describe('custom templates that share a filename', () => {
       mediaType: 'image',
       mediaSubtype: 'jpg'
     })
-    Object.assign(store, {
+    Object.assign(useWorkflowTemplatesStore(), {
       enhancedTemplates: [duplicate('pack-a'), duplicate('pack-b')]
     })
     renderPicker()
+  }
+
+  it('renders each pack and loads the clicked one from its own pack', async () => {
+    renderDuplicates()
 
     expect(
       await screen.findByTestId('template-workflow-pack-a/decimate')
@@ -187,5 +190,30 @@ describe('custom templates that share a filename', () => {
         expect.anything()
       )
     )
+  })
+
+  it('shows the loading spinner only on the card being loaded', async () => {
+    const templateFetch = deferred<Response>()
+    vi.mocked(fetch).mockImplementation(async (url) =>
+      String(url).endsWith('/decimate.json')
+        ? templateFetch.promise
+        : Response.json({ nodes: [] })
+    )
+    renderDuplicates()
+
+    await userEvent.click(
+      await screen.findByTestId('template-workflow-pack-b/decimate')
+    )
+
+    expect(
+      within(screen.getByTestId('template-workflow-pack-b/decimate')).getByRole(
+        'progressbar'
+      )
+    ).toBeInTheDocument()
+    expect(
+      within(
+        screen.getByTestId('template-workflow-pack-a/decimate')
+      ).queryByRole('progressbar')
+    ).toBeNull()
   })
 })

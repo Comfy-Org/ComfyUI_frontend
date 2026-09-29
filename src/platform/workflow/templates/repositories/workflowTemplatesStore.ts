@@ -5,6 +5,7 @@ import { i18n, st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
+import { templateKeyFor } from '@/platform/workflow/templates/utils/templateDisplay'
 import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
@@ -268,7 +269,7 @@ export const useWorkflowTemplatesStore = defineStore(
               mediaSubtype: 'jpg',
               sourceModule: moduleName,
               // Custom templates are named by filename, so two packs can collide.
-              templateKey: `${moduleName}/${name}`,
+              templateKey: templateKeyFor(name, moduleName),
               category: 'Extensions',
               categoryType: 'extension',
               searchableText: `${name} ${moduleName} extension`

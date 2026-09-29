@@ -1233,7 +1233,8 @@
     "error": {
       "preparingMedia": "Some example media couldn't be prepared. The workflow will open; choose your own files for any missing inputs.",
       "loading": "Couldn't open the template. Please try again.",
-      "templateNotFound": "Template \"{templateName}\" not found"
+      "templateNotFound": "Template \"{templateName}\" not found",
+      "templateAmbiguous": "Template \"{templateName}\" is provided by several extensions ({sources}). Add source=<extension> to the link to choose one."
     }
   },
   "templateWidgets": {
