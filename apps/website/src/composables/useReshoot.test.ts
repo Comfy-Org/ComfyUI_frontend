@@ -265,8 +265,9 @@ describe('useReshoot', () => {
     const submits = vi.mocked(transport.submit).mock.calls.length
 
     void reshoot.generate()
-    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(2_500)
 
     expect(transport.submit).toHaveBeenCalledTimes(submits + 1)
+    expect(reshoot.current.value?.status).toBe('done')
   })
 })
