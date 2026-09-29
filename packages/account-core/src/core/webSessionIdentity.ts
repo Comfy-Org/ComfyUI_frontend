@@ -453,6 +453,11 @@ const zSharedResult = z.discriminatedUnion('status', [
   })
 ])
 
+/**
+ * Every tab of a site reads the same host-only cookie, so a sibling's answer
+ * is this tab's own session observed elsewhere; that is what makes adopting
+ * it safe. A per-tab session scope would break this assumption.
+ */
 const zSharedMessage = z.object({
   from: z.enum(['heartbeat', 'sign_in', 'sign_out']),
   result: zSharedResult
@@ -512,6 +517,9 @@ function createAccountIdentity(
   const listeners = new Set<(state: WebSessionIdentityState) => void>()
   let state: WebSessionIdentityState = { phase: 'idle' }
   let epoch = 0
+  let signOuts = 0
+  let signIns = 0
+  let liveSignIn = 0
   let cancelRetry: (() => void) | undefined
   let cancelBeat: (() => void) | undefined
   let releaseLeadership: (() => void) | undefined
@@ -545,8 +553,16 @@ function createAccountIdentity(
       () => undefined
     )
     if (started !== epoch) return
-    if (remembered === undefined) return dispatch({ type: 'login_errored' })
-    dispatch({ ...answered, result, rememberedUserId: remembered.value })
+    // A failed lookup matters only without a live session to adopt: with one,
+    // it can skip nothing but the different-user sign-out.
+    if (remembered === undefined && result.status !== 'ok') {
+      return dispatch({ type: 'login_errored' })
+    }
+    dispatch({
+      ...answered,
+      result,
+      rememberedUserId: remembered?.value ?? null
+    })
   }
 
   function beat(): void {
@@ -560,10 +576,16 @@ function createAccountIdentity(
     })
   }
 
+  function invalidatePendingSignIns(): void {
+    signOuts += 1
+    liveSignIn = 0
+  }
+
   function adopt(message: unknown): void {
     const parsed = zSharedMessage.safeParse(message)
     if (!parsed.success) return
     const { from, result } = parsed.data
+    if (from === 'sign_out') invalidatePendingSignIns()
     const observed = {
       type: 'session_observed',
       from: `sibling_${from}`
@@ -702,13 +724,23 @@ function createAccountIdentity(
       dispatch({ type: 'boot' })
     },
     signedIn: async (getProof) => {
+      const signOutsAtStart = signOuts
+      const signIn = ++signIns
       const result = await createWebSession(options.session, getProof)
       if (result.status !== 'ok') return result
+      if (signOuts !== signOutsAtStart) {
+        // A later sign-in owns the cookie now; deleting would end its session.
+        if (liveSignIn > signIn) return revoked
+        const cleanup = await deleteWebSession(options.session)
+        return cleanup.status === 'ok' ? revoked : cleanup
+      }
+      liveSignIn = signIn
       dispatch({ type: 'session_created', session: result.session })
       publish('sign_in', result)
       return result
     },
     signOut: async () => {
+      invalidatePendingSignIns()
       dispatch({ type: 'sign_out_requested' })
       const result = await deleteWebSession(options.session)
       if (result.status === 'ok') publish('sign_out', revoked)

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { api } from '@/scripts/api'
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -20,7 +21,16 @@ function useConsentedAgentPanelStore() {
 describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
     localStorage.clear()
-    vi.useFakeTimers()
+    api.serverFeatureFlagsSettled.value = false
+  })
+
+  it('derives flag settlement directly from the API state', async () => {
+    const store = useAgentPanelStore()
+
+    expect(store.flagsSettled).toBe(false)
+    api.serverFeatureFlagsSettled.value = true
+    await nextTick()
+    expect(store.flagsSettled).toBe(true)
   })
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {

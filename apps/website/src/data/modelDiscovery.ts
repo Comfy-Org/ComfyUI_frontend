@@ -1,4 +1,5 @@
 import { workshopModels } from '../config/workshop-browse-content'
+import { workflowModels } from '../config/workshop-workflow-content'
 
 export interface DiscoveryProvider {
   readonly name: string
@@ -46,3 +47,22 @@ export const discoveryProviders: readonly DiscoveryProvider[] = LINEUP.flatMap(
       : []
   }
 )
+
+export interface DiscoveryWorkflow {
+  readonly name: string
+  readonly href: string
+  readonly thumbnailUrl: string
+}
+
+// A provider card stands for a body of work and says so with its mark; a
+// workflow card stands for one finished job, so it shows the job.
+const WORKFLOW_ROW_LENGTH = 15
+
+export const discoveryWorkflows: readonly DiscoveryWorkflow[] = workflowModels
+  .toSorted(
+    (a, b) => (a.recommendedRank ?? Infinity) - (b.recommendedRank ?? Infinity)
+  )
+  .flatMap(({ name, href, thumbnailUrl }) =>
+    thumbnailUrl ? [{ name, href, thumbnailUrl }] : []
+  )
+  .slice(0, WORKFLOW_ROW_LENGTH)

@@ -37,6 +37,7 @@ import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import { createRejectedOpNotifier } from './rejectedOpNotice'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
@@ -127,6 +128,36 @@ function emitPendingMaterializations(
   events.onMaterialized?.({ workflowId, actor, nodeIds })
 }
 
+interface SubscribeRefusalOutcome {
+  shouldNotify: boolean
+  message?: string
+  code?: string
+}
+
+// PM-1604 / BE-11437: a subscribe refusal carries a `code` that is either
+// retryable (the lifecycle keeps retrying on its own) or one of
+// `PERMANENT_SUBSCRIBE_REFUSAL_CODES`, which the lifecycle won't recover
+// from by itself — surface those to the person via `onSyncError`, except
+// `unsupported`, which the lifecycle already declines to notify (a
+// deployment with the doc surface off shouldn't toast every user). The
+// caller notifies only after its own held-ops cleanup, matching
+// `onDocReset`'s cleanup-before-notify order, so a throw from consumer code
+// reaching into the toast store can't strand an in-flight op batch. `code`
+// rides along so the presentation layer can pick accurate copy instead of
+// collapsing every permanent code to the same message.
+function handleSubscribeRefusal(
+  detail: { code?: unknown; message?: unknown } | null,
+  lifecycle: AgentCrdtDocLifecycle
+): SubscribeRefusalOutcome {
+  const code = typeof detail?.code === 'string' ? detail.code : undefined
+  if (!lifecycle.onSubscribeRefused(code)) return { shouldNotify: false }
+  return {
+    shouldNotify: true,
+    message: typeof detail?.message === 'string' ? detail.message : undefined,
+    code
+  }
+}
+
 function notifyAgentMaterialization(
   update: ClassifiedDocUpdate,
   added: readonly string[],
@@ -183,6 +214,20 @@ export interface AgentCrdtFollowerEvents {
     nodeIds: readonly NodeId[]
   }) => void
   onReset?: (workflowId: string) => void
+  /**
+   * PM-1604 / BE-11437: the doc-host classified a resync refusal as
+   * permanent (one of `PERMANENT_SUBSCRIBE_REFUSAL_CODES`) — the lifecycle
+   * has already stopped retrying it, so this is the one chance to tell the
+   * person their canvas is out of sync instead of leaving them to notice a
+   * channel that silently stopped updating. Not fired for `unsupported`
+   * (the doc surface is off for this deployment; every user hits it, so it
+   * latches silently) or for a refusal that repeats on reconnect for a
+   * workflow already notified. `code` is the doc-host's permanent refusal
+   * code (e.g. `schema_version_mismatch`, `catalog_mismatch`) so the
+   * presentation layer can choose accurate localized copy instead of a
+   * single message for every permanent reason.
+   */
+  onSyncError?: (message?: string, code?: string) => void
 }
 
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
@@ -358,21 +403,15 @@ function startAgentCrdtFollower(
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
   const confirmedDeletes = new Set<string>()
+  const rejectedOpNotifier = createRejectedOpNotifier()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
-        if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as OpsResultView & { failed?: unknown }
-        listener({
-          workflowId: detail.workflowId,
-          ok: detail.ok,
-          applied: detail.applied,
-          skipped: detail.skipped,
-          ...(detail.failed && typeof detail.failed === 'object'
-            ? { failure: detail.failed }
-            : {})
-        })
+        // `docFrameClient` already validated this into a DocOpsResult, which
+        // OpsResultView is derived from, so it travels whole.
+        if (event instanceof CustomEvent)
+          listener(event.detail as OpsResultView)
       }
       bridge.addEventListener('doc_ops_result', handler)
       return () => bridge.removeEventListener('doc_ops_result', handler)
@@ -390,6 +429,7 @@ function startAgentCrdtFollower(
           if (op.op === 'delete_node' && applied.has(op.op_id))
             confirmedDeletes.add(String(op.node_id))
         }
+        rejectedOpNotifier.notify(outcome.ops, outcome.result)
       }
       recordDevEvent('human_ops_settled', outcome)
     }
@@ -471,7 +511,12 @@ function startAgentCrdtFollower(
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
-    const ok = event.detail?.ok === true
+    const detail = event.detail as {
+      ok?: unknown
+      code?: unknown
+      message?: unknown
+    } | null
+    const ok = detail?.ok === true
     connected.value = ok
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
@@ -479,12 +524,14 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      lifecycle.onSubscribeRefused()
+      const refusal = handleSubscribeRefusal(detail, lifecycle)
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
       releaseHeldOps()
       sender.abortIfUnbound()
+      if (refusal.shouldNotify)
+        events.onSyncError?.(refusal.message, refusal.code)
     }
   }
   const onUpdate: EventListener = (event) => {
@@ -571,6 +618,7 @@ function startAgentCrdtFollower(
         updatesApplied.value = 0
         lastFrameType.value = event.type
         lifecycle.clearStaleProbe()
+        lifecycle.resetNotifiedGiveUp()
         knownDocNodeIds = new Set()
         pendingLiveNodeIds.clear()
         confirmedDeletes.clear()
@@ -841,6 +889,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => sender.detach(),
+      () => rejectedOpNotifier.cancel(),
       () => coalescer.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),

@@ -51,6 +51,27 @@ function polled(
 }
 
 describe('reduceBillingOperation', () => {
+  it.for([
+    {
+      phase: 'awaiting_payment_method',
+      expected: 'https://checkout.example/resumed'
+    },
+    { phase: 'awaiting_invoice_payment', expected: undefined }
+  ] as const)(
+    'keeps a reissued checkout link through a poll that omits it only while it waits on a card ($phase)',
+    ({ phase, expected }) => {
+      const reissued = reduceBillingOperation(pending(), {
+        type: 'action_reissued',
+        actionUrl: 'https://checkout.example/resumed'
+      })
+
+      const next = polled(reissued, { phase })
+
+      expect(next).toMatchObject({ phase: 'pending' })
+      expect((next as PendingBillingOperation).actionUrl).toBe(expected)
+    }
+  )
+
   it('terminalizes on the server verdict and keeps the coded reason only', () => {
     const failed = polled(pending(), {
       status: 'failed',

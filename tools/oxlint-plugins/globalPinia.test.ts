@@ -182,7 +182,7 @@ vi.spyOn(pinia, 'defineStore')`,
   ]
 })
 
-describe.sequential('failed module resolution freshness', () => {
+describe('failed module resolution freshness', { concurrent: false }, () => {
   ruleTester.run('caches a failed module resolution', useGlobalPinia, {
     valid: [{ filename, code: `vi.mock('./createdStore')` }],
     invalid: []
@@ -202,27 +202,35 @@ export const useCreatedStore = defineStore('created', () => ({}))`
   })
 })
 
-describe.sequential('failed barrel dependency resolution freshness', () => {
-  ruleTester.run('caches a barrel with a missing dependency', useGlobalPinia, {
-    valid: [{ filename, code: `vi.mock('./restoredBarrel')` }],
-    invalid: []
-  })
-
-  it('restores the missing dependency', () => {
-    writeFileSync(
-      restoredStore,
-      `import { defineStore } from 'pinia'
-export const useRestoredStore = defineStore('restored', () => ({}))`
+describe(
+  'failed barrel dependency resolution freshness',
+  { concurrent: false },
+  () => {
+    ruleTester.run(
+      'caches a barrel with a missing dependency',
+      useGlobalPinia,
+      {
+        valid: [{ filename, code: `vi.mock('./restoredBarrel')` }],
+        invalid: []
+      }
     )
-  })
 
-  ruleTester.run('refreshes the unchanged barrel', useGlobalPinia, {
-    valid: [],
-    invalid: [invalid(`vi.mock('./restoredBarrel')`, /Do not mock Pinia/)]
-  })
-})
+    it('restores the missing dependency', () => {
+      writeFileSync(
+        restoredStore,
+        `import { defineStore } from 'pinia'
+export const useRestoredStore = defineStore('restored', () => ({}))`
+      )
+    })
 
-describe.sequential('module cache freshness', () => {
+    ruleTester.run('refreshes the unchanged barrel', useGlobalPinia, {
+      valid: [],
+      invalid: [invalid(`vi.mock('./restoredBarrel')`, /Do not mock Pinia/)]
+    })
+  }
+)
+
+describe('module cache freshness', { concurrent: false }, () => {
   ruleTester.run('warms module caches', useGlobalPinia, {
     valid: [],
     invalid: [
