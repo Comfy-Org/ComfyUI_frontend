@@ -15,6 +15,7 @@ import { t } from '../../i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import FeaturedBannerPagination from './FeaturedBannerPagination.vue'
+import FeaturedCarousel from './FeaturedCarousel.vue'
 import FeaturedNowShowing from './FeaturedNowShowing.vue'
 import FeaturedSlideCopy from './FeaturedSlideCopy.vue'
 
@@ -41,8 +42,8 @@ const AUTOPLAY_MS = 7000
 
 /**
  * What the tab is for, in the tab's own words. Given one, the banner keeps the
- * pitch on its own half and the slide becomes the picture beside it, named in
- * a strip along the bottom.
+ * pitch above the row and the slides become pictures under it, the middle one
+ * open and its neighbours waiting either side.
  */
 interface FeaturedPitch {
   readonly heading: string
@@ -123,24 +124,10 @@ const { pause, resume } = useRafFn(
 watch(rotating, (on) => (on ? resume() : pause()), { immediate: true })
 watch(activeIndex, () => (elapsed.value = 0))
 
-const strip = computed(() => active.value !== undefined && pitch !== undefined)
-
-// The picture keeps its own panel inside the frame, so the seam between what
-// the tab says and what it shows is an edge rather than a fade.
-const picture = computed(() =>
-  pitch
-    ? 'pointer-events-none relative min-h-52 w-full shrink-0 overflow-hidden rounded-3xl border border-transparency-white-t8 lg:min-h-0 lg:w-1/2 lg:shrink'
-    : 'pointer-events-none absolute inset-0'
-)
-
-// A pitch gives the picture only half the width, so the frame takes back the
-// height a short window would otherwise trim.
 const frame = computed(() =>
-  pitch
-    ? 'gap-3 p-3 min-h-84 short:min-h-80'
-    : compact
-      ? 'min-h-68 short:min-h-48 sm:short:min-h-50'
-      : 'min-h-84 short:min-h-57 sm:short:min-h-60'
+  compact
+    ? 'min-h-68 short:min-h-48 sm:short:min-h-50'
+    : 'min-h-84 short:min-h-57 sm:short:min-h-60'
 )
 
 const fill = computed(() =>
@@ -155,55 +142,43 @@ const fill = computed(() =>
     v-if="active || pitch"
     ref="banner"
     :aria-label="t('workshop.sections.featured', locale)"
-    class="relative isolate overflow-hidden rounded-4.5xl border border-transparency-white-t8"
+    :class="
+      cn(
+        'relative isolate',
+        !pitch &&
+          'overflow-hidden rounded-4.5xl border border-transparency-white-t8'
+      )
+    "
     data-testid="section-featured"
   >
-    <div
-      :class="cn('group relative flex', frame, pitch && 'flex-col lg:flex-row')"
-      data-testid="featured-slide"
-    >
-      <a
-        v-if="active"
-        :href="active.href"
-        tabindex="-1"
-        aria-hidden="true"
-        class="absolute inset-0"
-        data-testid="featured-slide-link"
-      ></a>
-
-      <div
-        :class="
-          cn(
-            'pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14',
-            pitch && 'justify-center pb-8 max-sm:pb-6 lg:w-1/2 lg:pb-12',
-            compact &&
-              'gap-3 p-7 pt-7 pb-12 max-sm:p-5 max-sm:pb-11 lg:p-9 lg:pt-8 lg:pb-12'
-          )
-        "
-      >
-        <template v-if="pitch">
-          <h1
-            class="text-3xl/tight font-light text-balance text-primary-warm-white lg:text-4xl/tight"
-            data-testid="catalogue-pitch"
-          >
-            {{ pitch.heading }}
-          </h1>
-          <p class="max-w-prose text-content-secondary">
-            {{ pitch.body }}
-          </p>
-        </template>
-
-        <FeaturedSlideCopy v-else-if="active" :slide="active" :locale />
+    <template v-if="pitch">
+      <div class="flex flex-col items-center gap-2 text-center">
+        <h1
+          class="text-3xl/tight font-light text-balance text-primary-warm-white lg:text-4xl/tight"
+          data-testid="catalogue-pitch"
+        >
+          {{ pitch.heading }}
+        </h1>
+        <p class="max-w-prose text-content-secondary">{{ pitch.body }}</p>
       </div>
 
-      <div :class="picture">
-        <template v-if="active">
+      <div
+        v-if="active"
+        class="mt-5 flex flex-col items-center gap-3"
+        data-testid="featured-slide"
+      >
+        <FeaturedCarousel
+          class="w-full"
+          :slides
+          :active-index="activeIndex"
+          @go="goTo"
+        >
           <video
             v-if="active.media?.kind === 'video'"
             :key="active.key"
             ref="video"
             :src="previewSrc"
-            class="pointer-events-none absolute inset-0 size-full object-cover"
+            class="pointer-events-none size-full object-cover"
             aria-hidden="true"
             muted
             loop
@@ -216,22 +191,15 @@ const fill = computed(() =>
             :key="active.key"
             :src="active.media.url"
             alt=""
-            class="pointer-events-none absolute inset-0 size-full object-cover"
+            class="pointer-events-none size-full object-cover"
             decoding="async"
           />
-        </template>
-        <div
-          v-if="!pitch"
-          class="pointer-events-none absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20 sm:bg-linear-to-r sm:via-page/75 sm:to-transparent"
-          aria-hidden="true"
-        />
+        </FeaturedCarousel>
 
         <FeaturedNowShowing
-          v-if="active && pitch"
           :title="active.title"
           :kind="active.kind"
           :href="active.href"
-          :locale
         >
           <FeaturedBannerPagination
             v-if="slides.length > 1"
@@ -243,14 +211,70 @@ const fill = computed(() =>
           />
         </FeaturedNowShowing>
       </div>
-    </div>
+    </template>
 
-    <FeaturedBannerPagination
-      v-if="slides.length > 1 && !strip"
-      :slides
-      :active-index="activeIndex"
-      :fill
-      @go="goTo"
-    />
+    <template v-else>
+      <div
+        :class="cn('group relative flex', frame)"
+        data-testid="featured-slide"
+      >
+        <template v-if="active">
+          <a
+            :href="active.href"
+            tabindex="-1"
+            aria-hidden="true"
+            class="absolute inset-0"
+            data-testid="featured-slide-link"
+          ></a>
+          <div class="pointer-events-none absolute inset-0">
+            <video
+              v-if="active.media?.kind === 'video'"
+              :key="active.key"
+              ref="video"
+              :src="previewSrc"
+              class="absolute inset-0 size-full object-cover"
+              aria-hidden="true"
+              muted
+              loop
+              playsinline
+              preload="metadata"
+              data-testid="featured-video"
+            />
+            <img
+              v-else-if="active.media"
+              :key="active.key"
+              :src="active.media.url"
+              alt=""
+              class="absolute inset-0 size-full object-cover"
+              decoding="async"
+            />
+            <div
+              class="absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20 sm:bg-linear-to-r sm:via-page/75 sm:to-transparent"
+              aria-hidden="true"
+            />
+          </div>
+        </template>
+
+        <div
+          :class="
+            cn(
+              'pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14',
+              compact &&
+                'gap-3 p-7 pt-7 pb-12 max-sm:p-5 max-sm:pb-11 lg:p-9 lg:pt-8 lg:pb-12'
+            )
+          "
+        >
+          <FeaturedSlideCopy v-if="active" :slide="active" :locale />
+        </div>
+      </div>
+
+      <FeaturedBannerPagination
+        v-if="slides.length > 1"
+        :slides
+        :active-index="activeIndex"
+        :fill
+        @go="goTo"
+      />
+    </template>
   </section>
 </template>

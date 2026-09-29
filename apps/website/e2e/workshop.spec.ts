@@ -31,18 +31,13 @@ test.describe('Retired prototype routes', () => {
 })
 
 test.describe('Models catalog', () => {
-  test('opens the featured model from the full banner surface', async ({
-    page
-  }) => {
+  test('opens the featured model from its picture', async ({ page }) => {
     await page.goto('/models/')
-    const slide = page.getByTestId('featured-slide')
-    const href = await page
-      .getByTestId('featured-slide-link')
-      .getAttribute('href')
-    const bounds = await slide.boundingBox()
-    if (!href || !bounds) throw new Error('Featured slide is not clickable')
+    const picture = page.getByTestId('featured-slide-link')
+    const href = await picture.getAttribute('href')
+    if (!href) throw new Error('Featured slide is not clickable')
 
-    await slide.click({ position: { x: bounds.width - 24, y: 24 } })
+    await picture.click()
 
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
@@ -74,11 +69,14 @@ test.describe('Models catalog', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/models/')
     const strip = page.getByTestId('featured-pagination')
-    const card = page.getByTestId('featured-slide')
-    const [bars, card_] = [await strip.boundingBox(), await card.boundingBox()]
-    if (!bars || !card_) throw new Error('Featured banner is not laid out')
-    expect(bars.x + bars.width).toBeLessThanOrEqual(card_.x + card_.width)
-    expect(bars.x).toBeGreaterThanOrEqual(card_.x)
+    const banner = page.getByTestId('section-featured')
+    const [bars, frame] = [
+      await strip.boundingBox(),
+      await banner.boundingBox()
+    ]
+    if (!bars || !frame) throw new Error('Featured banner is not laid out')
+    expect(bars.x + bars.width).toBeLessThanOrEqual(frame.x + frame.width)
+    expect(bars.x).toBeGreaterThanOrEqual(frame.x)
   })
 
   test('switches between the curated recommendation and alphabetical order', async ({

@@ -87,18 +87,18 @@ const launchModels: WorkshopModel[] = [
 ]
 
 describe('ModelsCatalogue', () => {
+  // One line speaks for the whole Hub now; Apps has no banner yet, so its
+  // stacked hero still speaks for that tab alone.
   it.for([
     {
       locale: 'en',
       tab: 'models',
-      subtitle:
-        'Try the latest AI models with your own ideas, right in your browser.'
+      subtitle: 'Try models, workflows and apps, right in your browser.'
     },
     {
       locale: 'en',
       tab: 'workflows',
-      subtitle:
-        'Turn your ideas into finished results with multi-step workflows powered by AI models.'
+      subtitle: 'Try models, workflows and apps, right in your browser.'
     },
     {
       locale: 'en',
@@ -109,12 +109,12 @@ describe('ModelsCatalogue', () => {
     {
       locale: 'zh-CN',
       tab: 'models',
-      subtitle: '用你自己的创意试用最新的 AI 模型，就在浏览器中。'
+      subtitle: '在浏览器中直接试用模型、工作流和应用。'
     },
     {
       locale: 'zh-CN',
       tab: 'workflows',
-      subtitle: '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
+      subtitle: '在浏览器中直接试用模型、工作流和应用。'
     },
     {
       locale: 'zh-CN',
@@ -122,7 +122,7 @@ describe('ModelsCatalogue', () => {
       subtitle: '用整合多个工作流的应用，挑战更大的创意。'
     }
   ] as const)(
-    'introduces the $tab tab in its own words ($locale)',
+    'says what the $tab tab is for ($locale)',
     async ({ locale, tab, subtitle }) => {
       const user = userEvent.setup()
       render(ModelsCatalogue, { props: { models: launchModels, locale } })

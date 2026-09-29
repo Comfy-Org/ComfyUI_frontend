@@ -10517,6 +10517,10 @@ Enterprise`
   'workshop.hub.title': { en: 'Browse models', 'zh-CN': '浏览模型' },
   'workshop.hub.nowShowing': { en: 'Now showing', 'zh-CN': '正在展示' },
   'workshop.hub.heading': { en: 'Hub', 'zh-CN': 'Hub' },
+  'workshop.hub.subtitle': {
+    en: 'Try models, workflows and apps, right in your browser.',
+    'zh-CN': '在浏览器中直接试用模型、工作流和应用。'
+  },
   'workshop.hub.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
   'workshop.hub.search': {
     en: 'Search workflows, models, creators...',

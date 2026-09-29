@@ -219,7 +219,7 @@ watch(browseAll, (on) => on && resetFilters())
 
 const pitch = computed(() => ({
   heading: t('workshop.hub.heading', locale),
-  body: t('workshop.hero.subtitle', locale)
+  body: t('workshop.hub.subtitle', locale)
 }))
 </script>
 
@@ -248,6 +248,14 @@ const pitch = computed(() => ({
           {{ visible.length }}
         </span>
       </h1>
+
+      <FeaturedBanner
+        v-if="browsing"
+        :slides="featuredSlides"
+        :locale
+        :pitch
+        class="mb-10 short:mb-6"
+      />
 
       <div
         ref="toolbar"
@@ -280,14 +288,6 @@ const pitch = computed(() => ({
           </div>
         </div>
       </div>
-
-      <FeaturedBanner
-        v-if="browsing"
-        :slides="featuredSlides"
-        :locale
-        :pitch
-        class="mb-10 short:mb-6"
-      />
 
       <WorkshopFilterChips
         :chips

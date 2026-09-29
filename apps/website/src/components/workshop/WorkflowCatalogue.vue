@@ -162,7 +162,7 @@ function leaveSection() {
 
 const pitch = computed(() => ({
   heading: t('workshop.hub.heading', locale),
-  body: t('workshop.catalogue.workflowsSubtitle', locale)
+  body: t('workshop.hub.subtitle', locale)
 }))
 </script>
 
@@ -188,6 +188,16 @@ const pitch = computed(() => ({
         >
       </h1>
     </template>
+    <FeaturedBanner
+      v-if="browsing"
+      :slides="featuredSlides"
+      :locale
+      :pitch
+      :autoplay="false"
+      compact
+      class="mb-10 short:mb-6"
+    />
+
     <div
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       data-testid="workshop-toolbar"
@@ -222,16 +232,6 @@ const pitch = computed(() => ({
         />
       </div>
     </div>
-
-    <FeaturedBanner
-      v-if="browsing"
-      :slides="featuredSlides"
-      :locale
-      :pitch
-      :autoplay="false"
-      compact
-      class="mb-10 short:mb-6"
-    />
 
     <WorkshopFilterChips
       :chips
