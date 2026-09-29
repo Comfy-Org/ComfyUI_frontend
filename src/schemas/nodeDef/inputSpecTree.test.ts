@@ -72,15 +72,30 @@ describe('input specification diagnostics', () => {
     )
   })
 
-  it('reports each malformed specification only once', () => {
+  it('reports each malformed option once without merging indexes', () => {
     const spec = transformInputSpecV1ToV2(
-      ['COMFY_AUTOGROW_V3', { template: {} }],
+      [
+        'COMFY_DYNAMICCOMBO_V3',
+        {
+          options: [
+            { key: 'good', inputs: { required: {} } },
+            { key: 'bad-1' },
+            { key: 'bad-2' }
+          ]
+        }
+      ],
       { name: 'input' }
     )
 
     inputSpecTree(spec)
     inputSpecTree(spec)
 
-    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledTimes(2)
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options.context)
+    ).toEqual([
+      { controlType: spec.type, optionIndex: 1, issueCount: 1 },
+      { controlType: spec.type, optionIndex: 2, issueCount: 1 }
+    ])
   })
 })
