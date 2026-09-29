@@ -6694,7 +6694,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.canvas.width === viewport.physicalWidth &&
       this.canvas.height === viewport.physicalHeight &&
       this.bgcanvas.width === viewport.physicalWidth &&
-      this.bgcanvas.height === viewport.physicalHeight
+      this.bgcanvas.height === viewport.physicalHeight &&
+      this.dpr === viewport.dpr
     )
       return
 
