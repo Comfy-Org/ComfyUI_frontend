@@ -49,6 +49,7 @@ export type EndingScreen =
     }
   | { readonly kind: 'plan_unavailable'; readonly code: string }
   | { readonly kind: 'load_failed'; readonly code: string }
+  | { readonly kind: 'recheck_failed'; readonly code: string }
 
 export type EndingKind = EndingScreen['kind']
 
@@ -63,6 +64,8 @@ export function endingOf(page: CheckoutPage): EndingScreen | undefined {
       }
     case 'unavailable':
       return { kind: 'load_failed', code: page.code }
+    case 'recheck_failed':
+      return { kind: 'recheck_failed', code: page.code }
     case 'plan_unavailable':
       return {
         kind: 'plan_unavailable',

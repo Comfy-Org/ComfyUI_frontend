@@ -38,6 +38,7 @@ const {
   payFailure,
   returnLink,
   viewPlansLink,
+  openedByScript,
   close,
   retryLoad,
   onPaymentPhase,
@@ -149,6 +150,7 @@ function viewPlans() {
       session?.workspace.name ?? t('checkout.fullPage.ending.thisWorkspace')
     "
     :plan="endingPlan"
+    :closes-itself="openedByScript"
     @close="close"
     @retry="retryLoad"
     @view-plans="viewPlans"

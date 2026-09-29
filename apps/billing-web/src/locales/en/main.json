@@ -220,7 +220,7 @@
         },
         "price_updated": {
           "title": "The price has updated",
-          "body": "Your quote expired, so the numbers were refreshed. Review the new total before paying — you have not been charged."
+          "body": "Your quote expired, so the numbers were refreshed. Review the new total before paying. You have not been charged."
         },
         "reportedIssue": "Reported issue: {reason}",
         "reasons": {
@@ -268,6 +268,8 @@
         "perYear": "{currency} / yr",
         "copy": "Copy code",
         "copied": "Copied",
+        "closeTab": "You can close this tab now.",
+        "closingIn": "Closing in {seconds}…",
         "closeLine": "You can close this page. We'll email your invoice once this goes through and this page will automatically update.",
         "actions": {
           "close": "Close",
@@ -321,6 +323,11 @@
         "load_failed": {
           "title": "Couldn't load your checkout",
           "body": "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
+          "codeLabel": "If this keeps happening, contact support with this code:"
+        },
+        "recheck_failed": {
+          "title": "Couldn't load your checkout",
+          "body": "We couldn't check this workspace's payments, so we can't show your checkout yet. Try again, or contact support if this keeps happening.",
           "codeLabel": "If this keeps happening, contact support with this code:"
         }
       },

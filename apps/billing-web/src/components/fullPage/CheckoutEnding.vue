@@ -3,10 +3,12 @@ import { useClipboard } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { EndingKind, EndingScreen } from '@/checkout/endingScreen'
 import { supportLinkWithCode } from '@/checkout/payVerdict'
+import SuccessCloseFooter from '@/components/fullPage/SuccessCloseFooter.vue'
 
 export interface EndingPlan {
   readonly name: string
@@ -39,7 +41,8 @@ const ENDINGS: Readonly<
   unconfirmed: { tone: 'waiting', support: true },
   refused: { tone: 'refused', support: true },
   plan_unavailable: { tone: 'refused', primary: 'view_plans', support: true },
-  load_failed: { tone: 'refused', primary: 'retry', support: true }
+  load_failed: { tone: 'refused', primary: 'retry', support: true },
+  recheck_failed: { tone: 'refused', primary: 'retry', support: true }
 }
 
 const ICON: Readonly<Record<Tone, string>> = {
@@ -48,10 +51,16 @@ const ICON: Readonly<Record<Tone, string>> = {
   refused: 'icon-[lucide--circle-alert] text-muted-foreground'
 }
 
-const { screen, workspace, plan } = defineProps<{
+const {
+  screen,
+  workspace,
+  plan,
+  closesItself = false
+} = defineProps<{
   screen: EndingScreen
   workspace: string
   plan?: EndingPlan
+  closesItself?: boolean
 }>()
 
 const emit = defineEmits<{ close: []; retry: []; viewPlans: [] }>()
@@ -87,7 +96,9 @@ function act() {
     >
       <div class="flex flex-col items-center gap-3">
         <i :class="cn(ICON[ending.tone], 'size-10')" aria-hidden="true" />
-        <h1 class="m-0 text-2xl font-semibold text-base-foreground">
+        <h1
+          class="m-0 text-2xl font-semibold text-base-foreground sm:whitespace-nowrap"
+        >
           {{ t(`${copyKey}.title`) }}
         </h1>
         <p class="m-0 text-sm/5 text-muted-foreground">
@@ -100,11 +111,11 @@ function act() {
         class="flex w-full flex-col gap-2 rounded-lg bg-secondary-background p-6 text-left"
         data-testid="checkout-ending-plan"
       >
-        <p class="m-0 text-sm font-semibold text-base-foreground">
+        <p class="m-0 text-base font-bold text-base-foreground">
           {{ plan.name }}
         </p>
         <p class="m-0 text-base-foreground tabular-nums">
-          <span class="text-3xl font-semibold">{{ plan.price }}</span>
+          <span class="text-[2rem] font-semibold">{{ plan.price }}</span>
           {{ plan.period }}
         </p>
       </div>
@@ -118,7 +129,7 @@ function act() {
         </p>
         <div class="flex items-center justify-between gap-4">
           <code
-            class="font-mono text-sm break-all text-base-foreground"
+            class="font-mono text-base font-normal break-all text-base-foreground"
             data-testid="checkout-ending-code"
           >
             {{ code }}
@@ -168,10 +179,20 @@ function act() {
         >
           {{ t(`checkout.fullPage.ending.actions.${primary}`) }}
         </button>
+        <SuccessCloseFooter
+          v-if="screen.kind === 'success'"
+          :closes-itself
+          @close="emit('close')"
+        />
         <a
           v-if="ending.support"
           :href="supportLink"
-          class="text-sm font-semibold text-base-foreground no-underline hover:underline focus-visible:underline focus-visible:outline-none"
+          :class="
+            cn(
+              buttonVariants({ variant: 'textonly', size: 'lg' }),
+              'w-full font-semibold no-underline'
+            )
+          "
         >
           {{ t('checkout.fullPage.outcome.contactSupport') }}
         </a>

@@ -436,6 +436,7 @@ describe('FullPageCheckoutView', () => {
       expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
         'REQUEST_FAILED'
       )
+      expect(screen.getByText(/Nothing has been charged/)).toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: 'Pay and subscribe' })
       ).not.toBeInTheDocument()
@@ -1026,6 +1027,26 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       expect(close).toHaveBeenCalledOnce()
       expect(assign).not.toHaveBeenCalled()
     })
+
+    it.for<{ name: string; opened: boolean; footer: string }>([
+      { name: 'a tab a script opened', opened: true, footer: 'Closing in 5…' },
+      {
+        name: 'any other tab',
+        opened: false,
+        footer: 'You can close this tab now.'
+      }
+    ])('ends Success on $name with "$footer"', async ({ opened, footer }) => {
+      if (opened)
+        Object.defineProperty(window, 'opener', {
+          value: {},
+          configurable: true
+        })
+      vi.spyOn(window, 'close').mockImplementation(() => {})
+      await payReady(SETTLED)
+      form.emit('confirm', 'ctoken_1')
+
+      expect(await screen.findByText(footer)).toBeInTheDocument()
+    })
   })
 
   it('lands on the terminal for a plan the server activated with no operation to follow', async () => {
@@ -1064,8 +1085,10 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
 
     form.emit('confirm', 'ctoken_1')
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'The price has updated'
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent('The price has updated')
+    expect(card).toHaveTextContent(
+      'Your quote expired, so the numbers were refreshed. Review the new total before paying. You have not been charged.'
     )
     expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
     expect(form.mounts).toBe(1)
@@ -1374,7 +1397,7 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     expect(form.mounts).toBe(1)
   })
 
-  it('says so instead of a form when the recovery itself fails, and Try again resolves again in place', async () => {
+  it('says so instead of a form when the recovery itself fails, without claiming nothing was charged, and Try again resolves again in place', async () => {
     const fake = await renderCheckout({
       recover: { status: 'error', code: 'REQUEST_FAILED' }
     })
@@ -1384,6 +1407,9 @@ describe('FullPageCheckoutView mount reconciliation', () => {
         name: "Couldn't load your checkout"
       })
     ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/Nothing has been charged/)
+    ).not.toBeInTheDocument()
     expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
       'REQUEST_FAILED'
     )

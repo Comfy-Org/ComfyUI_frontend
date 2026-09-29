@@ -54,6 +54,10 @@ const unavailable: CheckoutPageEvent = {
   type: 'unavailable',
   code: 'REQUEST_FAILED'
 }
+const recheckFailed: CheckoutPageEvent = {
+  type: 'recheckFailed',
+  code: 'REQUEST_FAILED'
+}
 const ready: CheckoutPageEvent = { type: 'elementReady' }
 const failed: CheckoutPageEvent = { type: 'elementFailed' }
 const retried: CheckoutPageEvent = { type: 'elementRetried' }
@@ -224,6 +228,11 @@ describe('reduceCheckoutPage', () => {
       name: 'a late failure after capture',
       from: collect('loading'),
       event: unavailable
+    },
+    {
+      name: 'a failed re-read after capture',
+      from: collect('ready'),
+      event: recheckFailed
     },
     {
       name: 'a second quote during capture',
@@ -866,6 +875,16 @@ describe('reduceCheckoutPage endings', () => {
     {
       name: 'Try again after a failed load resolves again',
       events: [unavailable, tryAgain],
+      expected: RESOLVING
+    },
+    {
+      name: "a re-read of the workspace's payments that fails is its own ending, not a failed load",
+      events: [recheckFailed],
+      expected: { kind: 'recheck_failed', code: 'REQUEST_FAILED' }
+    },
+    {
+      name: 'Try again after a failed re-read resolves again',
+      events: [recheckFailed, tryAgain],
       expected: RESOLVING
     },
     {

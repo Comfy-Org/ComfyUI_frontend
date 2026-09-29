@@ -95,6 +95,11 @@ describe('endingOf', () => {
       screen: { kind: 'load_failed', code: 'REQUEST_FAILED' }
     },
     {
+      name: "a re-read of the workspace's payments that failed",
+      page: { kind: 'recheck_failed', code: 'REQUEST_FAILED' },
+      screen: { kind: 'recheck_failed', code: 'REQUEST_FAILED' }
+    },
+    {
       name: 'a plan the catalog lacks',
       page: { kind: 'plan_unavailable', reason: 'retired' },
       screen: { kind: 'plan_unavailable', code: 'PLAN_NOT_FOUND' }
