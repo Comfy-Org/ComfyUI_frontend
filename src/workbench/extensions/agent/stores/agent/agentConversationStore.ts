@@ -883,7 +883,6 @@ export const useAgentConversationStore = defineStore(
       )
         return false
       kept.pop()
-      moveUserRecord(last.id, entry.message.id)
       return true
     }
 
