@@ -107,8 +107,15 @@ export async function signInOnCloud(
     .getByRole('textbox', { name: 'Email', exact: true })
     .fill(account.email)
   await page.getByLabel('Password', { exact: true }).fill(account.password)
+  const firebaseSignIn = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === '/v1/accounts:signInWithPassword'
+  )
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await expect(page, 'Cloud accepts the sign-in').not.toHaveURL(/\/login/)
+  expect((await firebaseSignIn).ok(), 'Firebase accepts the credentials').toBe(
+    true
+  )
+  await expect(page, 'Cloud leaves the login page').not.toHaveURL(/\/login/)
 }
 
 export const crossOriginSessionFixture = base.extend<
