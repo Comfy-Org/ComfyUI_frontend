@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../i18n/translations'
+import { computed } from 'vue'
 
 import SectionHeader from '../common/SectionHeader.vue'
+import { getRoutes } from '../../config/routes'
 import { comfyApiPlanLimits } from '../../data/comfyApiPlanLimits'
 import { t } from '../../i18n/translations'
 import PricingPlanLabel from './PricingPlanLabel.vue'
@@ -11,6 +13,8 @@ const { locale = 'en', bare = false } = defineProps<{
   /** Render the table alone, with no section wrapper or heading — for embedding inside another section. */
   bare?: boolean
 }>()
+
+const contactHref = computed(() => getRoutes(locale).contact)
 
 interface MetricRow {
   key: 'totalReleasesLimit' | 'totalDeploymentsLimit' | 'maxWorkerConcurrency'
@@ -109,5 +113,15 @@ const metricRows: MetricRow[] = [
         </table>
       </div>
     </div>
+
+    <p class="mt-4 px-2 text-xs text-primary-warm-gray">
+      {{ t('pricing.comfyApi.enterpriseNote', locale) }}
+      <a
+        :href="contactHref"
+        class="rounded-sm underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+      >
+        {{ t('pricing.enterprise.cta', locale) }}
+      </a>
+    </p>
   </component>
 </template>

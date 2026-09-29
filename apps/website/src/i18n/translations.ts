@@ -9140,6 +9140,10 @@ Enterprise`
     en: 'Max worker concurrency (per deployment)',
     'zh-CN': '最大工作节点并发数（每个部署）'
   },
+  'pricing.comfyApi.enterpriseNote': {
+    en: 'Enterprise limits are determined by your contract.',
+    'zh-CN': '企业版的限制由合同约定。'
+  },
   'pricing.minimaxLicense.heading': {
     en: 'MiniMax license pricing',
     'zh-CN': 'MiniMax 许可定价'
