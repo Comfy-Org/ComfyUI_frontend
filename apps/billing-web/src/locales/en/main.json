@@ -220,7 +220,7 @@
         },
         "price_updated": {
           "title": "The price has updated",
-          "body": "Your quote expired, so the numbers were refreshed. Review the new total before paying — you have not been charged."
+          "body": "Your quote expired, so the numbers were refreshed. Review the new total before paying. You have not been charged."
         },
         "reportedIssue": "Reported issue: {reason}",
         "reasons": {

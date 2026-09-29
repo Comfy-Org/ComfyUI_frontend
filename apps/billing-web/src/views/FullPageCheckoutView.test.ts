@@ -1085,8 +1085,10 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
 
     form.emit('confirm', 'ctoken_1')
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'The price has updated'
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent('The price has updated')
+    expect(card).toHaveTextContent(
+      'Your quote expired, so the numbers were refreshed. Review the new total before paying. You have not been charged.'
     )
     expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
     expect(form.mounts).toBe(1)
