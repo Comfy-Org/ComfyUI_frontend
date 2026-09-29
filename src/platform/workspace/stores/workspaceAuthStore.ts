@@ -35,6 +35,7 @@ import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthErr
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAuthStore } from '@/stores/authStore'
+import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
@@ -120,8 +121,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     initializeFromSession,
     switchLegacyWorkspace,
     refreshToken,
-    ensureWorkspaceToken,
-    ensureWorkspaceAuthHeader,
+    ensureWorkspaceToken: ensureLegacyWorkspaceToken,
+    ensureWorkspaceAuthHeader: ensureLegacyWorkspaceAuthHeader,
     getWorkspaceAuthHeader,
     getWorkspaceToken,
     hasValidWorkspaceToken,
@@ -137,7 +138,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     getIdToken: () => useAuthStore().getIdToken(),
     hasSignedInUser: () => useAuthStore().currentUser !== null,
     activeWorkspaceId: () => useTeamWorkspaceStore().activeWorkspaceId,
-    switchWorkspace,
+    switchWorkspace: switchTokenWorkspace,
     endWorkspaceSession,
     persistWorkspaceIdentity,
     clearSessionStorage,
@@ -190,6 +191,27 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     unifiedSessionClient.dispose()
     clearUnifiedContext()
     stopUnifiedSnapshot()
+  }
+
+  function ensureWorkspaceToken(
+    preferredWorkspaceId?: string
+  ): Promise<string | null> {
+    return onWebSession(() => ensureLegacyWorkspaceToken(preferredWorkspaceId))
+  }
+
+  function ensureWorkspaceAuthHeader(
+    preferredWorkspaceId?: string
+  ): Promise<AuthHeader | null> {
+    return onWebSession(() =>
+      ensureLegacyWorkspaceAuthHeader(preferredWorkspaceId)
+    )
+  }
+
+  /** The session carries no workspace token, so a token read is null there. */
+  function onWebSession<T>(legacy: () => Promise<T>): Promise<T | null> {
+    const requests = webSessionRequests()
+    if (!requests) return legacy()
+    return requests.scope().then((scope) => (scope ? null : legacy()))
   }
 
   function switchWorkspace(workspaceId: string): Promise<void> {

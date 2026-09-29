@@ -5,6 +5,12 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
+import { fromPartial } from '@total-typescript/shoehorn'
+import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import type {
+  WebSessionRequestScope,
+  WebSessionRequests
+} from '@/platform/auth/session/webSessionFetch'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from './agentConsentStore'
 
@@ -108,6 +114,32 @@ describe('agentConsentStore', () => {
     expect(accountApi.set).toHaveBeenCalledWith(
       { key: 'Comfy.AgentPanel.ConsentAccepted', value: true },
       { Authorization: 'Bearer account-a-token' }
+    )
+  })
+
+  it('sends on the web session in place of a workspace auth header', async () => {
+    const send = vi.fn<WebSessionRequests['send']>()
+    const release = provideWebSessionRequests({
+      scope: async () => fromPartial<WebSessionRequestScope>({}),
+      workspaceId: () => undefined,
+      send
+    })
+    const store = useAgentConsentStore()
+
+    await store.load()
+    await store.accept()
+    release()
+
+    expect(
+      vi.mocked(useAuthStore().getWorkspaceAuthHeader)
+    ).not.toHaveBeenCalled()
+    expect(accountApi.get).toHaveBeenCalledWith(
+      'Comfy.AgentPanel.ConsentAccepted',
+      expect.any(Function)
+    )
+    expect(accountApi.set).toHaveBeenCalledWith(
+      { key: 'Comfy.AgentPanel.ConsentAccepted', value: true },
+      expect.any(Function)
     )
   })
 
