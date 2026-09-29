@@ -5,6 +5,28 @@ import { nextTick } from 'vue'
 import VideoPlayer from './VideoPlayer.vue'
 
 describe('VideoPlayer', () => {
+  it.for([true, false])(
+    'keeps the playback controls visible only when requested (persistentControls: %s)',
+    async (persistentControls) => {
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(
+        false
+      )
+      vi.spyOn(HTMLMediaElement.prototype, 'muted', 'get').mockReturnValue(true)
+
+      render(VideoPlayer, {
+        props: { src: 'https://example.com/clip.mp4', persistentControls }
+      })
+
+      const pause = await screen.findByRole('button', { name: 'Pause' })
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(pause.parentElement?.classList.contains('opacity-0')).toBe(
+        !persistentControls
+      )
+      expect(screen.getByRole('button', { name: 'Unmute' })).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Fullscreen' })).toBeTruthy()
+    }
+  )
+
   it('shows Unmute once a lazily-autoplaying video is forced muted to start playback', async () => {
     vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(false)
     vi.spyOn(HTMLMediaElement.prototype, 'muted', 'get').mockReturnValue(false)

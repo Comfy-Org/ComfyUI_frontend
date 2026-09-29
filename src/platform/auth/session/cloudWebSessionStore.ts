@@ -12,6 +12,9 @@ import type {
   WebSession,
   WebSessionOptions
 } from '@comfyorg/account-core/webSession'
+import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import { createSessionTokenMint } from '@comfyorg/account-core/sessionTokenMint'
 import { readWebSession } from '@comfyorg/account-core/webSession'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import {
@@ -162,10 +165,24 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       signedInUserId.value =
         state.phase === 'signed_in' ? state.session.user.id : undefined
     })
+    const mint = createSessionTokenMint({
+      ...sessionOptions(),
+      getSession: currentSession
+    })
+    const authorize = createRequestAuthorizer({
+      getWorkspaceToken: mint.getWorkspaceToken
+    })
     releaseRequests = provideWebSessionRequests({
       scope: requestScope,
       workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
-      send
+      send: (url, init, scope) => send(url, init, scope, authorize),
+      authorizeResource: async ({ session }) =>
+        (
+          await authorize(
+            { kind: 'session', session },
+            { target: 'resource', method: 'POST' }
+          )
+        ).headers
     })
     ready = whenSettled(session)
     void bootAfter(session, pendingSignIn)
@@ -223,9 +240,11 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   function send(
     url: string,
     init: RequestInit,
-    scope: WebSessionRequestScope
+    scope: WebSessionRequestScope,
+    authorize: RequestAuthorizer
   ): Promise<Response> {
     return fetchOnWebSession(url, init, scope, {
+      authorize,
       reread: rereadFor,
       workspaceDenied: (workspaceId) =>
         useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId)
