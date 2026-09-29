@@ -202,6 +202,30 @@ describe('UserMessage', () => {
     ])
   })
 
+  it('classifies a renamed attachment from the storage filename used by the lightbox', () => {
+    renderMessage({
+      text: '',
+      attachments: [
+        {
+          name: 'renamed-video.mp4',
+          ref: 'stored-image.png',
+          kind: 'video'
+        }
+      ]
+    })
+
+    expect(stubbedAssets()).toEqual([
+      {
+        url: expect.stringContaining(
+          '/view?filename=stored-image.png&type=input'
+        ),
+        filename: 'stored-image.png',
+        kind: 'image',
+        label: 'renamed-video.mp4'
+      }
+    ])
+  })
+
   /**
    * PM-1643 / PM-717 item 3. Dragging a library asset in attaches it under
    * `getAssetUrlFilename`, i.e. `asset.hash` (assetDragUtil.ts,
