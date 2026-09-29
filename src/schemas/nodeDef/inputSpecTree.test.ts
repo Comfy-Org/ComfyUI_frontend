@@ -25,9 +25,14 @@ const malformedControls: BadSpecScenario[] = [
   },
   {
     name: 'DynamicCombo option',
-    spec: ['COMFY_DYNAMICCOMBO_V3', { options: [{ key: 'bad' }] }],
+    spec: [
+      'COMFY_DYNAMICCOMBO_V3',
+      {
+        options: [{ key: 'good', inputs: { required: {} } }, { key: 'bad' }]
+      }
+    ],
     resolve: inputSpecTree,
-    optionIndex: 0
+    optionIndex: 1
   },
   {
     name: 'Autogrow specification',
@@ -65,5 +70,17 @@ describe('input specification diagnostics', () => {
         level: 'warning'
       }
     )
+  })
+
+  it('reports each malformed specification only once', () => {
+    const spec = transformInputSpecV1ToV2(
+      ['COMFY_AUTOGROW_V3', { template: {} }],
+      { name: 'input' }
+    )
+
+    inputSpecTree(spec)
+    inputSpecTree(spec)
+
+    expect(reportError).toHaveBeenCalledOnce()
   })
 })
