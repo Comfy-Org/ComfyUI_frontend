@@ -114,12 +114,12 @@ describe('ModelsCatalogue', () => {
     {
       locale: 'zh-CN',
       tab: 'workflows',
-      subtitle: '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
+      subtitle: '用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。'
     },
     {
       locale: 'zh-CN',
       tab: 'apps',
-      subtitle: '用整合多个工作流的应用，挑战更大的创意。'
+      subtitle: '用把多个工作流组合在一起的应用，挑战更大的想法。'
     }
   ] as const)(
     'introduces the $tab tab in its own words ($locale)',
