@@ -22,3 +22,24 @@ it('keeps the audio transport separate from the preset action', async () => {
   await user.click(preset)
   expect(emitted().open).toEqual([[example]])
 })
+
+it('asks a video example for a frame it can paint before playback', () => {
+  render(ExamplesTab, {
+    props: {
+      examples: [
+        {
+          id: 'clip',
+          title: 'Sci-fi pilot',
+          specs: [],
+          values: {},
+          outputUrl: 'https://media.example/clip.mp4',
+          mediaKind: 'video' as const
+        }
+      ]
+    }
+  })
+  expect(screen.getByTestId('example-video')).toHaveAttribute(
+    'src',
+    'https://media.example/clip.mp4#t=0.1'
+  )
+})

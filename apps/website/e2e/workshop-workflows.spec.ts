@@ -80,7 +80,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await page.getByTestId('sort-name').click()
   await expect(
     page.getByTestId('workflow-search-results').getByRole('link').first()
-  ).toHaveAttribute('href', '/models/workflows/animate-reference-sheet/')
+  ).toHaveAttribute('href', '/models/workflows/connect-images-with-motion/')
   await page.getByTestId('section-back').click()
   await expect(page.getByTestId('workshop-hero')).toBeVisible()
   await page.getByTestId('workshop-search').fill('Change a material')
@@ -103,7 +103,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   ).toBeVisible()
   const prompt = page.getByRole('textbox', { name: 'What should change?' })
   await expect(prompt).toHaveValue(
-    'Change the furniture leather difference in image 1 to the fur material in image 2.'
+    'Give the sofa the fur texture from the material reference instead of its leather.'
   )
   await prompt.fill('Use the material from the second image.')
   await page
@@ -177,24 +177,29 @@ test('the Details graph waits for its tab, names its subgraphs, and zooms from i
   expect(graphRequests).toHaveLength(1)
   await expect(drawing).toContainText('Image to Video (LTX-2.3)')
 
+  // Fitting the whole drawing into the panel renders its titles at a few
+  // pixels, so it opens zoomed onto the node the workflow starts from.
+  const zoom = () =>
+    graph
+      .getByText('%')
+      .evaluate((el) => Number(el.textContent.replace('%', '')))
+  const opening = await zoom()
+  expect(opening).toBeGreaterThan(100)
+
   // The controls sit inside the draggable frame; a press on them has to reach
   // them rather than the frame.
   await graph.getByRole('button', { name: 'Zoom in' }).click()
-  await expect(graph).toContainText('120%')
+  await expect.poll(zoom).toBeGreaterThan(opening)
   const frame = await graph.boundingBox()
   const drawn = await drawing.locator('g').first().boundingBox()
-  const centre = {
-    x: drawn!.x + drawn!.width / 2,
-    y: drawn!.y + drawn!.height / 2
-  }
-  // Zooming keeps the drawing where it was rather than carrying it off-frame.
-  expect(centre.x).toBeGreaterThan(frame!.x)
-  expect(centre.x).toBeLessThan(frame!.x + frame!.width)
-  expect(centre.y).toBeGreaterThan(frame!.y)
-  expect(centre.y).toBeLessThan(frame!.y + frame!.height)
+  // Zooming keeps the drawing under the frame rather than carrying it off.
+  expect(drawn!.x).toBeLessThan(frame!.x + frame!.width)
+  expect(drawn!.x + drawn!.width).toBeGreaterThan(frame!.x)
+  expect(drawn!.y).toBeLessThan(frame!.y + frame!.height)
+  expect(drawn!.y + drawn!.height).toBeGreaterThan(frame!.y)
 
   await graph.getByRole('button', { name: 'Reset' }).click()
-  await expect(graph).toContainText('100%')
+  await expect.poll(zoom).toBe(opening)
 })
 
 test('withholds workflow discovery and direct pages when the workflow flag is off', async ({
@@ -512,4 +517,59 @@ test('keeps the workflow form inside a phone screen @mobile', async ({
   ).toBeLessThanOrEqual(viewportWidth)
   const box = await footer.boundingBox()
   expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewportWidth)
+})
+
+test('@mobile keeps the catalogue tabs in place when a tab changes the hero subtitle', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/models/')
+  const models = page.getByTestId('catalogue-tab-models')
+  const workflows = page.getByTestId('catalogue-tab-workflows')
+  await expect(workflows).toBeVisible()
+  const before = await workflows.boundingBox()
+
+  await workflows.click()
+  await expect(workflows).toHaveAttribute('aria-pressed', 'true')
+  expect((await workflows.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
+
+  await models.click()
+  await expect(models).toHaveAttribute('aria-pressed', 'true')
+  expect((await models.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
+})
+
+test('@mobile stretches the catalogue tabs across the toolbar on a phone', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/models/')
+  const toolbar = page.getByTestId('workshop-toolbar')
+  const tabs = toolbar.getByTestId('catalogue-tabs')
+  await expect(tabs).toBeVisible()
+
+  const [bar, group] = await Promise.all([
+    toolbar.boundingBox(),
+    tabs.boundingBox()
+  ])
+  expect(Math.abs((bar?.width ?? 0) - (group?.width ?? 0))).toBeLessThan(12)
+})
+
+test('the examples below the form read and mark themselves like a model page', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/models/workflows/change-material/')
+
+  await expect(
+    page.getByRole('heading', { name: 'Try an example' })
+  ).toBeVisible()
+
+  const example = page.getByRole('button', {
+    name: /A softer finish for a leather sofa/
+  })
+  await expect(example).toHaveAttribute('aria-current', 'true')
+  await expect(page.getByTestId('workflow-example-chosen')).toHaveCount(1)
 })

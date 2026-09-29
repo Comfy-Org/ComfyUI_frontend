@@ -32,11 +32,11 @@ const translations = {
   'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
   'workshop.catalogue.workflowsSubtitle': {
     en: 'Turn your ideas into finished results with multi-step workflows powered by AI models.',
-    'zh-CN': '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
+    'zh-CN': '用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。'
   },
   'workshop.catalogue.appsSubtitle': {
     en: 'Take on bigger ideas with apps that bring multiple workflows together.',
-    'zh-CN': '用整合多个工作流的应用，挑战更大的创意。'
+    'zh-CN': '用把多个工作流组合在一起的应用，挑战更大的想法。'
   },
   'workshop.catalogue.noWorkflows': {
     en: 'No workflows match your search and filters.',
@@ -9467,7 +9467,7 @@ Enterprise`
   },
 
   // Workshop – header account + nav
-  'nav.workshop': { en: 'Models', 'zh-CN': '模型' },
+  'nav.workshop': { en: 'Hub', 'zh-CN': 'Hub' },
   'nav.comfyWorkshop': { en: 'Browse Models', 'zh-CN': '浏览模型' },
   'nav.cinematicStudio': { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
   'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
@@ -9728,6 +9728,7 @@ Enterprise`
   },
   'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
   'workshop.card.comfyApp': { en: 'Comfy app', 'zh-CN': 'Comfy 应用' },
+  'workshop.card.comfyApi': { en: 'Comfy API', 'zh-CN': 'Comfy API' },
   'workshop.card.runs': { en: '{n} runs', 'zh-CN': '{n} 次运行' },
   'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
   'workshop.card.from': { en: 'from', 'zh-CN': '起' },
@@ -9967,6 +9968,14 @@ Enterprise`
     en: 'Replace {name}',
     'zh-CN': '替换 {name}'
   },
+  'workshop.field.removedFile': {
+    en: '{name} removed',
+    'zh-CN': '已移除 {name}'
+  },
+  'workshop.field.undoRemove': {
+    en: 'Put it back',
+    'zh-CN': '撤销移除'
+  },
   'workshop.field.removeNamedFile': {
     en: 'Remove {name}',
     'zh-CN': '移除 {name}'
@@ -10183,20 +10192,20 @@ Enterprise`
     'zh-CN': '切换并取消'
   },
   'workshop.examples.replaceTitle': {
-    en: 'Replace your inputs?',
-    'zh-CN': '要替换你的输入吗？'
+    en: 'Load this example?',
+    'zh-CN': '要载入这个示例吗？'
   },
   'workshop.examples.replaceBody': {
-    en: 'This example comes with its own inputs. What you wrote will be replaced.',
-    'zh-CN': '该示例自带输入内容，你填写的内容将被替换。'
+    en: 'It comes with its own inputs, so what you filled in will be replaced.',
+    'zh-CN': '它自带输入内容，你填写的内容会被替换。'
   },
   'workshop.examples.replaceKeep': {
-    en: 'Keep mine',
-    'zh-CN': '保留我的内容'
+    en: 'Cancel',
+    'zh-CN': '取消'
   },
   'workshop.examples.replaceConfirm': {
-    en: 'Use the example',
-    'zh-CN': '使用该示例'
+    en: 'Load example',
+    'zh-CN': '载入示例'
   },
   'workshop.run.policy': {
     en: 'Disabled by your workspace policy',
@@ -10238,10 +10247,6 @@ Enterprise`
     'zh-CN': '预览已缩短。请在下方下载完整响应。'
   },
   'workshop.output.example': { en: 'Example', 'zh-CN': '示例' },
-  'workshop.output.exampleHint': {
-    en: 'Run {model} to make your own.',
-    'zh-CN': '运行 {model} 以生成你自己的结果。'
-  },
   'workshop.run.preparingSession': {
     en: 'Checking your session…',
     'zh-CN': '正在检查登录状态…',
@@ -10448,6 +10453,10 @@ Enterprise`
   },
   'workshop.api.copied': { en: 'Copied', 'zh-CN': '已复制' },
   'workshop.api.getKey': { en: 'Get API key', 'zh-CN': '获取 API 密钥' },
+  'workshop.api.downloadGraph': {
+    en: 'Download the API graph',
+    'zh-CN': '下载 API 节点图'
+  },
   'workshop.api.docs': { en: 'Router docs', 'zh-CN': 'Router 文档' },
   'workshop.api.needs': { en: 'What you need', 'zh-CN': '你需要准备的' },
   'workshop.api.needsEndpoint': { en: 'Endpoint', 'zh-CN': '接口地址' },
@@ -10598,6 +10607,10 @@ Enterprise`
     en: 'API documentation',
     'zh-CN': 'API 文档'
   },
+  'workshop.workflow.apiSteps': {
+    en: 'The whole call, step by step',
+    'zh-CN': '完整调用步骤'
+  },
   'workshop.workflow.apiUploads': {
     en: 'Upload media first',
     'zh-CN': '先上传媒体'
@@ -10620,10 +10633,6 @@ Enterprise`
     en: 'POST /api/prompt returns prompt_id. Poll GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain with your credential. Selected outputs contain temporary short_url links; read the job again to refresh them.',
     'zh-CN':
       'POST /api/prompt 返回 prompt_id。使用凭证轮询 GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain。选定输出包含临时 short_url 链接；再次读取运行即可刷新链接。'
-  },
-  'workshop.workflow.exampleHint': {
-    en: 'An example from this template.',
-    'zh-CN': '此模板的示例。'
   },
   'workshop.output.refreshLink': {
     en: 'Refresh download link',
@@ -10858,13 +10867,6 @@ Enterprise`
     'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
-  'workshop.cinematic.badge': { en: 'New · Beta', 'zh-CN': '新 · 测试版' },
-  'workshop.cinematic.summary': {
-    en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
-    'zh-CN':
-      '用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。'
-  },
-  'workshop.cinematic.cta': { en: 'Open studio', 'zh-CN': '打开工作室' },
   'workshop.cinematic.openInStudio': {
     en: 'Open in Cinematic Studio',
     'zh-CN': '在 Cinematic Studio 中打开'

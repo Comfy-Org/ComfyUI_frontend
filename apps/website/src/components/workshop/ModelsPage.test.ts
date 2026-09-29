@@ -66,7 +66,7 @@ describe('Models page entry', () => {
     expect(
       screen.getByRole('group', { name: 'Your original image' })
     ).toBeVisible()
-    expect(screen.getByText('An example from this template.')).toBeVisible()
+    expect(screen.getByTestId('output-example')).toBeVisible()
     workflowsEnabled.value = false
     await nextTick()
     expect(screen.getByRole('heading', { name: 'Public Models' })).toBeVisible()

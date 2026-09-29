@@ -209,7 +209,6 @@ function captureDownload(kind: RunOutput['kind']) {
     :state="outputState"
     :attachments="outputs.slice(1)"
     :now="now.getTime()"
-    :model-name="model.name"
     :modality="model.modality"
     :retry-disabled="!canStart"
     :cancelled-message="t('workshop.workflow.cancelled')"
@@ -221,7 +220,6 @@ function captureDownload(kind: RunOutput['kind']) {
     @playback-started="delivery.beginPlayback"
     @download="captureDownload"
   >
-    <template #example-hint>{{ t('workshop.workflow.exampleHint') }}</template>
   </PlaygroundOutput>
   <div
     v-if="retryableDelivery || failedMedia.size"
