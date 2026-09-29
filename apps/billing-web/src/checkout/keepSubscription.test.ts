@@ -75,4 +75,30 @@ describe('keepSubscriptionCopy', () => {
       'Your plan was set to end'
     )
   })
+
+  describe('from a zone west of UTC', () => {
+    beforeAll(() => {
+      process.env.TZ = 'America/Los_Angeles'
+    })
+    afterAll(() => {
+      process.env.TZ = 'UTC'
+    })
+
+    it('keeps a midnight-UTC cancel date and renewal on their own day', () => {
+      expect(
+        keepSubscriptionCopy(
+          previewOf({
+            transition_type: 'duration_change',
+            new_plan: { ...previewOf().new_plan, duration: 'ANNUAL' },
+            renewal_at: '2027-07-28T00:00:00.000Z'
+          }),
+          CANCEL_AT,
+          context
+        )
+      ).toEqual({
+        title: 'Your plan was set to end on July 28, 2026',
+        body: 'Switching to yearly keeps your subscription. It renews on July 28, 2027 at $28.00.'
+      })
+    })
+  })
 })
