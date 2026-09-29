@@ -1,6 +1,13 @@
 import { computed, onMounted, ref } from 'vue'
 
-export const downloadUrl = 'https://dl.comfy.org'
+import { externalLinks } from '@/config/routes'
+
+export const downloadUrls = {
+  windows: 'https://comfy.org/download/windows/nsis/x64',
+  windowsArm: 'https://comfy.org/download/windows/nsis/arm64',
+  macArm: 'https://download.comfy.org/mac/dmg/arm64',
+  any: 'https://dl.comfy.org'
+} as const
 
 export type Platform = 'windows' | 'mac' | 'linux'
 
@@ -27,19 +34,73 @@ export function detectDevice(
   return { platform: null, isMobileUa }
 }
 
+// Windows on ARM browsers still send an x64 UA string, so the CPU is only
+// visible through User-Agent Client Hints (Chromium-based browsers).
+async function isArmCpu(
+  userAgentData: NavigatorUAData | undefined
+): Promise<boolean> {
+  if (!userAgentData) return false
+  try {
+    const { architecture } = await userAgentData.getHighEntropyValues([
+      'architecture'
+    ])
+    return architecture === 'arm'
+  } catch {
+    return false
+  }
+}
+
+function hasNvidiaGpu(): boolean {
+  try {
+    const gl = document.createElement('canvas').getContext('webgl')
+    if (!gl) return false
+    try {
+      const info = gl.getExtension('WEBGL_debug_renderer_info')
+      const renderer = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : ''
+      return /nvidia/i.test(String(renderer))
+    } finally {
+      gl.getExtension('WEBGL_lose_context')?.loseContext()
+    }
+  } catch {
+    return false
+  }
+}
+
+// The arm64 desktop build only ships an NVIDIA runtime; other ARM PCs
+// (Snapdragon) need the x64 build, which runs emulated on a CPU runtime.
+async function needsArmInstaller(): Promise<boolean> {
+  return (await isArmCpu(navigator.userAgentData)) && hasNvidiaGpu()
+}
+
+// TODO: macOS arm64 is the only mac build, so Intel Macs get the arm64 dmg.
 export function useDownloadUrl() {
   const platform = ref<Platform | null>(null)
   const detected = ref(false)
   const isMobileUa = ref(false)
+  const armInstaller = ref(false)
 
-  const showDownload = computed(() => detected.value && !isMobileUa.value)
+  const downloadUrl = computed(() => {
+    if (platform.value === 'windows') {
+      return armInstaller.value ? downloadUrls.windowsArm : downloadUrls.windows
+    }
+    if (platform.value === 'mac') return downloadUrls.macArm
+    if (platform.value === 'linux') return downloadUrls.any
+    return externalLinks.github
+  })
 
-  onMounted(() => {
+  const showFallback = computed(
+    () => detected.value && !platform.value && !isMobileUa.value
+  )
+
+  onMounted(async () => {
     const device = detectDevice(navigator.userAgent, navigator.maxTouchPoints)
+    if (device.platform === 'windows') {
+      armInstaller.value = await needsArmInstaller()
+    }
     isMobileUa.value = device.isMobileUa
     platform.value = device.platform
     detected.value = true
   })
 
-  return { platform, showDownload, isMobileUa }
+  return { downloadUrl, platform, showFallback, isMobileUa }
 }

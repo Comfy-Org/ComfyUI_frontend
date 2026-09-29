@@ -5,7 +5,7 @@ import type { HTMLAttributes } from 'vue'
 
 import type { Platform } from '../../../composables/useDownloadUrl'
 import {
-  downloadUrl,
+  downloadUrls,
   useDownloadUrl
 } from '../../../composables/useDownloadUrl'
 import { t } from '../../../i18n/translations'
@@ -17,7 +17,7 @@ const { locale = 'en', class: customClass = '' } = defineProps<{
   class?: HTMLAttributes['class']
 }>()
 
-const { platform, showDownload } = useDownloadUrl()
+const { downloadUrl, platform, showFallback } = useDownloadUrl()
 
 const label = computed(() => t('download.hero.downloadLocal', locale))
 
@@ -27,20 +27,42 @@ const ICONS: Record<Platform, string> = {
   linux: '/icons/os/linux.svg'
 }
 
-const icon = computed(() => (platform.value ? ICONS[platform.value] : null))
+interface ButtonSpec {
+  key: Platform | 'any'
+  href: string
+  icon?: string
+}
+
+const buttons = computed<ButtonSpec[]>(() => {
+  if (platform.value) {
+    return [
+      {
+        key: platform.value,
+        href: downloadUrl.value,
+        icon: ICONS[platform.value]
+      }
+    ]
+  }
+  if (showFallback.value) {
+    return [{ key: 'any', href: downloadUrls.any }]
+  }
+  return []
+})
 </script>
 
 <template>
   <BrandButton
-    v-if="showDownload"
-    :href="downloadUrl"
+    v-for="btn in buttons"
+    :key="btn.key"
+    :href="btn.href"
     target="_blank"
     size="lg"
     :class="customClass"
-    @click="captureDownloadClick(platform ?? 'any')"
+    :data-astro-prefetch="btn.key === 'windows' ? 'false' : undefined"
+    @click="captureDownloadClick(btn.key)"
   >
     <span class="inline-flex items-center gap-2">
-      <img v-if="icon" :src="icon" alt="" class="inline-block size-5" />
+      <img v-if="btn.icon" :src="btn.icon" alt="" class="inline-block size-5" />
       <span class="inline-block">{{ label }}</span>
     </span>
   </BrandButton>

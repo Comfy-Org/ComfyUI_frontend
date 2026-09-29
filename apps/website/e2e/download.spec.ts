@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
+import { emulateWindowsOnArm } from './fixtures/windowsOnArm'
 
 const WINDOWS_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
@@ -12,6 +13,8 @@ const FREEBSD_UA =
   'Mozilla/5.0 (X11; FreeBSD amd64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 const IPHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+const NVIDIA_RENDERER =
+  'ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 (0x00002B85) Direct3D11 vs_5_0 ps_5_0, D3D11)'
 
 // Customer.io CDP request/response shapes (external API — no generated types).
 interface CdpEventBody {
@@ -113,11 +116,11 @@ test.describe('Download page @smoke', () => {
       const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
       await expect(downloadBtn).toBeVisible()
       await expect(downloadBtn).toHaveAttribute('target', '_blank')
-      await expect(downloadBtn).toHaveAttribute('href', 'https://dl.comfy.org')
-      await expect(downloadBtn.locator('img')).toHaveAttribute(
-        'src',
-        '/icons/os/windows.svg'
+      await expect(downloadBtn).toHaveAttribute(
+        'href',
+        'https://comfy.org/download/windows/nsis/x64'
       )
+      await expect(downloadBtn).toHaveAttribute('data-astro-prefetch', 'false')
 
       const githubBtn = hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
       await expect(githubBtn).toBeVisible()
@@ -131,18 +134,31 @@ test.describe('Download page @smoke', () => {
       await page.waitForLoadState('networkidle')
       expect(captured).toHaveLength(0)
     })
+
+    test('HeroSection links an ARM PC with an NVIDIA GPU to the arm64 installer', async ({
+      page
+    }) => {
+      await emulateWindowsOnArm(page, { gpuRenderer: NVIDIA_RENDERER })
+      await page.goto('/download')
+
+      await expect(
+        heroLocator(page).getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+      ).toHaveAttribute('href', 'https://comfy.org/download/windows/nsis/arm64')
+    })
   })
 
   test.describe('Linux desktop', () => {
     test.use({ userAgent: LINUX_UA })
 
-    test('HeroSection offers Linux the download with a Linux logo', async ({
+    test('HeroSection offers Linux one download with a Linux logo', async ({
       page
     }) => {
       await page.goto('/download')
 
       const hero = heroLocator(page)
       const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+
+      await expect(downloadBtn).toHaveCount(1)
       await expect(downloadBtn).toBeVisible()
       await expect(downloadBtn).toHaveAttribute('href', 'https://dl.comfy.org')
       await expect(downloadBtn.locator('img')).toHaveAttribute(
@@ -157,7 +173,7 @@ test.describe('Download page @smoke', () => {
   test.describe('unrecognized desktop', () => {
     test.use({ userAgent: FREEBSD_UA })
 
-    test('HeroSection falls back to a single unbranded download when UA is unrecognized', async ({
+    test('HeroSection falls back to one unbranded download when UA is unrecognized', async ({
       page
     }) => {
       await page.goto('/download')
