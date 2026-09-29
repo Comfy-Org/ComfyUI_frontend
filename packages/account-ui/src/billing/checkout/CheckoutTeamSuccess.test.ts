@@ -90,6 +90,43 @@ describe('CheckoutTeamSuccess', () => {
     expect(screen.queryByRole('button', { name: 'Send invites' })).toBeNull()
   })
 
+  it('sends nothing when the pending list arriving after Send already holds every address', async () => {
+    let releasePending: (value: WorkspaceInvite[]) => void = () => {}
+    const invites: WorkspaceInviteCommands = {
+      listPendingInvites: vi.fn(
+        () =>
+          new Promise<
+            Awaited<ReturnType<WorkspaceInviteCommands['listPendingInvites']>>
+          >((resolve) => {
+            releasePending = (value) => resolve({ status: 'ok', value })
+          })
+      ),
+      createInvite: vi.fn(async (email: string) => ({
+        status: 'ok' as const,
+        value: invite(email)
+      }))
+    }
+    const onInvited = vi.fn()
+    renderSuccess({ invites, onInvited })
+
+    await typeEmails('ada@example.com')
+    await userEvent.click(screen.getByRole('button', { name: 'Send invites' }))
+    releasePending([invite('ada@example.com')])
+
+    expect(
+      await screen.findByText('This person already has a pending invite')
+    ).toBeTruthy()
+    await waitFor(() =>
+      expect(
+        screen.getByRole<HTMLButtonElement>('button', { name: 'Send invites' })
+          .disabled
+      ).toBe(true)
+    )
+    expect(invites.createInvite).not.toHaveBeenCalled()
+    expect(onInvited).not.toHaveBeenCalled()
+    expect(screen.queryByText(/Invites were sent to/)).toBeNull()
+  })
+
   it('keeps the addresses that failed and reports them', async () => {
     const onInvitesFailed = vi.fn()
     renderSuccess({
