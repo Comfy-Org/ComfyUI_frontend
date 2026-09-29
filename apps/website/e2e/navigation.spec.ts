@@ -40,7 +40,11 @@ const RETIRED_BADGE_PANELS = [
   {
     section: 'Products',
     badged: 'Comfy Agent',
-    bare: [{ label: 'Comfy CLI', href: '/cli' }]
+    bare: [
+      { label: 'Comfy CLI', href: '/cli' },
+      { label: 'Developer Platform', href: '/platform' },
+      { label: 'Managed Builds', href: '/enterprise/managed-builds' }
+    ]
   },
   {
     section: 'Community',
@@ -53,12 +57,6 @@ const RETIRED_BADGE_PANELS = [
 ] as const
 
 const BADGE_PALETTES = [
-  {
-    link: 'Developer Platform',
-    label: 'BETA',
-    text: '--color-primary-warm-white',
-    fill: '--color-primary-comfy-plum'
-  },
   {
     link: 'Comfy Agent',
     label: 'NEW',
@@ -78,7 +76,7 @@ async function expectRetiredBadges(
     const link = panel.getByRole('link', { name: label })
     await expect(link).toBeVisible()
     await expect(link).toHaveAttribute('href', href)
-    await expect(link.getByText('NEW', { exact: true })).toHaveCount(0)
+    await expect(link.locator('[data-slot="badge"]')).toHaveCount(0)
   }
 }
 
@@ -229,9 +227,7 @@ test.describe('Desktop dropdown @interaction', () => {
     })
   }
 
-  test('BETA badges paint plum behind warm-white while NEW stays ink on yellow', async ({
-    page
-  }) => {
+  test('NEW badges paint ink on yellow', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
     await desktopLinks.getByRole('button', { name: 'Products' }).hover()

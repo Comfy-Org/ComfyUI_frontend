@@ -90,8 +90,7 @@ export function getMainNavigation(
             { label: t('nav.comfyCloud', locale), href: routes.cloud },
             {
               label: t('nav.developerPlatform', locale),
-              href: routes.platform,
-              badge: 'beta'
+              href: routes.platform
             },
             {
               label: t('nav.comfyEnterprise', locale),
@@ -99,8 +98,7 @@ export function getMainNavigation(
             },
             {
               label: t('nav.managedBuilds', locale),
-              href: routes.managedBuilds,
-              badge: 'beta'
+              href: routes.managedBuilds
             }
           ]
         },

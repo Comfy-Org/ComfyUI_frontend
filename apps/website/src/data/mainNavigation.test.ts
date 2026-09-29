@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { getRoutes } from '../config/routes'
+import { t } from '../i18n/translations'
 import { getMainNavigation } from './mainNavigation'
 
 describe('getMainNavigation', () => {
@@ -33,6 +34,22 @@ describe('getMainNavigation', () => {
       href: '/enterprise/managed-builds'
     })
   })
+
+  it.for(['en', 'zh-CN', 'ja'] as const)(
+    'lists the generally available developer products without a badge for %s',
+    (locale) => {
+      const routes = getRoutes(locale)
+      const products = getMainNavigation(locale).find(
+        (item) => item.label === t('nav.products', locale)
+      )?.columns?.[0].items
+
+      for (const href of [routes.platform, routes.managedBuilds]) {
+        const entry = products?.find((item) => item.href === href)
+        expect(entry).toBeDefined()
+        expect(entry?.badge).toBeUndefined()
+      }
+    }
+  )
 
   const featuredCards = [
     {
