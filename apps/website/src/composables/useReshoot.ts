@@ -265,6 +265,18 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     return readGeometry(await bytes.arrayBuffer())
   }
 
+  /** The chosen clip, uploaded once, and its scene, read once per settings. */
+  async function clipScene(via: ReshootTransport, signal: AbortSignal) {
+    const file = upload.value ?? (await exampleFile())
+    const video = uploads.get(file) ?? (await via.upload(file, signal))
+    uploads.set(file, video)
+    const clip = { video, aspect: aspect.value, size: size.value }
+    const key = `${video}|${clip.aspect}|${clip.size}`
+    const geometry = reads.get(key) ?? (await readScene(via, clip, signal))
+    reads.set(key, geometry)
+    return { clip, geometry }
+  }
+
   let analysis: AbortController | undefined
   async function analyze() {
     analysis?.abort()
@@ -278,16 +290,9 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     const { signal } = controller
     scene.value = { phase: 'analyzing' }
     try {
-      const file = upload.value ?? (await exampleFile())
-      const video = uploads.get(file) ?? (await transport.upload(file, signal))
-      uploads.set(file, video)
-      const settings = { video, aspect: aspect.value, size: size.value }
-      const readKey = `${video}|${settings.aspect}|${settings.size}`
-      const geometry =
-        reads.get(readKey) ?? (await readScene(transport, settings, signal))
-      reads.set(readKey, geometry)
+      const { clip, geometry } = await clipScene(transport, signal)
       if (signal.aborted) return
-      scene.value = { phase: 'ready', clip: settings, geometry }
+      scene.value = { phase: 'ready', clip, geometry }
       frame.value = Math.min(frame.value, geometry.frames - 1)
       step.value = 2
     } catch (error) {
