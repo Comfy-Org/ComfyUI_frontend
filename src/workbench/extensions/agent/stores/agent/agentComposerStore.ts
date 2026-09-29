@@ -17,6 +17,8 @@ import type {
   WorkflowReference
 } from '../../types/workflowReference'
 import { insertComposerReference } from '../../utils/composerPrompt'
+import type { AgentStarterPromptSource } from '../../utils/starterPrompts'
+import type { AgentInputMethod } from '@/platform/telemetry/types'
 
 interface ComposerDraft extends PromptSnapshot {
   attachments: ComposerAttachment[]
@@ -65,6 +67,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   )
   const nodeScope = ref<string | null>(null)
   const promptEpoch = ref(0)
+  const promptOrigin = ref<AgentInputMethod>('typed')
+  const starterPrompt = ref<AgentStarterPromptSource | null>(null)
   const insertionPoint = shallowRef<ComposerInsertionPoint>({
     textOffset: 0,
     referenceIndex: 0
@@ -77,6 +81,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     phase: 'pending' | 'failed'
     stopRequested: boolean
     revision: number
+    origin: AgentInputMethod
+    starterPrompt: AgentStarterPromptSource | null
     snapshot: SubmittedDraft
   } | null>(null)
   let revision = 0
@@ -108,6 +114,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       textOffset: text.length,
       referenceIndex: prompt.value.references.length
     }
+  }
+
+  function markSuggestedPrompt(source?: AgentStarterPromptSource): void {
+    promptOrigin.value = 'suggestion'
+    starterPrompt.value = source ?? null
   }
 
   function applyEditorPrompt(next: ComposerPrompt): void {
@@ -334,6 +345,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function startSubmission(snapshot: SubmittedDraft): number {
     resetPromptHistory()
+    const origin = promptOrigin.value
+    const chip = starterPrompt.value
+    promptOrigin.value = 'typed'
+    starterPrompt.value = null
     updateDraft({ text: '', references: [] })
     insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
     const id = ++nextSubmissionId
@@ -342,6 +357,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       phase: 'pending',
       stopRequested: false,
       revision,
+      origin,
+      starterPrompt: chip,
       snapshot
     }
     return id
@@ -368,7 +385,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     const failed = submission.value
     if (failed?.phase !== 'failed') return
     submission.value = null
-    if (failed.revision === revision) return failed.snapshot
+    if (failed.revision === revision) {
+      promptOrigin.value = failed.origin
+      starterPrompt.value = failed.starterPrompt
+      return failed.snapshot
+    }
   }
 
   function invalidateSubmission(): void {
@@ -384,11 +405,14 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     nodes,
     nodeScope,
     promptEpoch,
+    promptOrigin,
+    starterPrompt,
     insertionPoint,
     submission,
     setText,
     setInsertionPoint,
     resetPromptHistory,
+    markSuggestedPrompt,
     applyEditorPrompt,
     replacePrompt,
     restorePrompt,

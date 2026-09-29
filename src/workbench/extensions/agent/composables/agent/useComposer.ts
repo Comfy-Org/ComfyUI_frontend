@@ -1,7 +1,11 @@
 import { storeToRefs } from 'pinia'
 import { computed, getCurrentScope, onScopeDispose } from 'vue'
+import { v4 as uuidv4 } from 'uuid'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { composerPromptForSend } from '../../utils/composerPrompt'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 
 export interface ComposerAttachment {
@@ -20,8 +24,15 @@ export interface UseComposerOptions {
 
 export function useComposer(options: UseComposerOptions) {
   const store = useAgentComposerStore()
-  const { draft, attachments, prompt, workflowReferences, promptEpoch } =
-    storeToRefs(store)
+  const {
+    draft,
+    attachments,
+    prompt,
+    workflowReferences,
+    promptEpoch,
+    promptOrigin,
+    starterPrompt
+  } = storeToRefs(store)
   if (getCurrentScope()) onScopeDispose(store.releaseUnusedAssets)
 
   const canSend = computed(
@@ -42,8 +53,28 @@ export function useComposer(options: UseComposerOptions) {
     )
   }
 
-  function insert(text: string): void {
+  function insert(
+    text: string,
+    attribution?: AgentStarterPromptAttribution
+  ): void {
+    const draftWasEmpty =
+      !draft.value.trim() && prompt.value.references.length === 0
     store.setText(draft.value ? `${draft.value} ${text}` : text)
+    if (!attribution) {
+      store.markSuggestedPrompt()
+      return
+    }
+    const clickId = uuidv4()
+    store.markSuggestedPrompt({ id: attribution.promptId, clickId })
+    useTelemetry()?.trackAgentStarterPromptClicked({
+      prompt_id: attribution.promptId,
+      prompt_index: attribution.promptIndex,
+      prompt_count: attribution.promptCount,
+      prompt_text_hash: attribution.promptTextHash,
+      locale: attribution.locale,
+      click_id: clickId,
+      draft_was_empty: draftWasEmpty
+    })
   }
 
   return {
@@ -51,6 +82,8 @@ export function useComposer(options: UseComposerOptions) {
     attachments,
     prompt,
     promptEpoch,
+    promptOrigin,
+    starterPrompt,
     applyEditorPrompt: store.applyEditorPrompt,
     setInsertionPoint: store.setInsertionPoint,
     removeReference: store.removeReference,
