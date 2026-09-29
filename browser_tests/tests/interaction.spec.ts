@@ -1,4 +1,3 @@
-import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { Position } from '@vueuse/core'
 
@@ -1178,21 +1177,18 @@ test.describe('Viewport settings', () => {
       offset: await comfyPage.canvasOps.getOffset()
     })
 
-    const changeTab = async (tab: Locator, workflowName: string) => {
-      await tab.click()
+    const changeTab = async (workflowName: string) => {
+      await comfyPage.menu.topbar.getWorkflowTab(workflowName).click()
       await expect
         .poll(() => comfyPage.workflow.getActiveWorkflowPath())
-        .toContain(workflowName)
+        .toBe(`workflows/${workflowName}.json`)
+      await comfyPage.canvasOps.waitForViewToSettle()
       await comfyMouse.move(DefaultGraphPositions.emptySpace)
 
       await expect(
         comfyPage.page.locator('.workflow-popover-fade')
       ).toHaveCount(0)
-      await comfyPage.idleFrames(2)
     }
-
-    const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
-    const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
 
     await test.step('Save two workflow tabs', async () => {
       await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
@@ -1209,12 +1205,13 @@ test.describe('Viewport settings', () => {
 
     const { viewportA, viewportB } =
       await test.step('Give each workflow a distinct viewport', async () => {
-        await changeTab(tabA, 'Workflow A')
+        await changeTab('Workflow A')
         const viewportA = await getViewport()
 
-        await changeTab(tabB, 'Workflow B')
+        await changeTab('Workflow B')
         await comfyMouse.wheel(0, 60)
-        await comfyPage.nextFrame()
+        await expect.poll(getViewport).not.toEqual(viewportA)
+        await comfyPage.canvasOps.waitForViewToSettle()
 
         const viewportB = await getViewport()
         expect(viewportB).not.toEqual(viewportA)
@@ -1222,12 +1219,12 @@ test.describe('Viewport settings', () => {
       })
 
     await test.step('Restore Workflow A viewport', async () => {
-      await changeTab(tabA, 'Workflow A')
+      await changeTab('Workflow A')
       await expect.poll(getViewport).toEqual(viewportA)
     })
 
     await test.step('Restore Workflow B viewport', async () => {
-      await changeTab(tabB, 'Workflow B')
+      await changeTab('Workflow B')
       await expect.poll(getViewport).toEqual(viewportB)
     })
   })
