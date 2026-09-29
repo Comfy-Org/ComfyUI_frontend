@@ -72,13 +72,16 @@ test.describe(
           })
           await expect(images).toHaveCount(2)
 
-          await expect(agentConversation.panel).toHaveScreenshot(
-            'asset-grid-fragmentation.png',
-            {
-              // The CRDT diagnostics chip is mounted asynchronously. Mask
-              // only that optional instrument so the reply stays pixel-exact.
-              mask: [page.getByTestId('crdt-dev-panel-chip')]
+          // The optional CRDT diagnostics chip mounts asynchronously. Hide it
+          // when present so the oracle covers the reply in either environment.
+          await page.getByTestId('crdt-dev-panel-chip').evaluateAll((chips) => {
+            for (const chip of chips) {
+              ;(chip as HTMLElement).style.visibility = 'hidden'
             }
+          })
+
+          await expect(agentConversation.panel).toHaveScreenshot(
+            'asset-grid-fragmentation.png'
           )
         }
       )
