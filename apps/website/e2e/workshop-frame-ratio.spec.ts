@@ -92,6 +92,7 @@ test('Seedance first/last frame warns about the stretch only while the shapes di
   // Changing only the last frame raises the notice against the example's own
   // first frame, which is what makes the silence above an answer about two
   // measured frames rather than about one that had not loaded yet.
+  await expect(last).toBeEnabled()
   await last.setInputFiles(frame('last.png', PORTRAIT_9_16))
   await expect(notice).toContainText('The frames are different shapes')
 

@@ -1,9 +1,9 @@
 ---
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import ModelPage from '../../components/workshop/ModelPage.vue'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
-import { isWorkflowSlug } from '../../config/models-catalogue'
 import { workshopPagePaths } from '../../config/workshop-page-content'
 import { modelDeveloper } from '../../config/model-vendors'
 import { modelMetaDescription } from '../../lib/workshop/model-meta-description'
@@ -47,14 +47,19 @@ const ogImage = modelOgImage(model)
   mainEntityId={jsonLd.mainEntityId}
   extraJsonLd={jsonLd.extraJsonLd}
 >
-  {isWorkflowSlug(model.slug) ? (
-    <ModelsPage slug={model.slug} workflowId={model.workflowId} client:load>
-      <ModelsShowcase slot="fallback" />
-    </ModelsPage>
+  {model.routerId === undefined ? (
+    <>
+      <ModelsPage slug={model.slug} workflowId={model.workflowId} client:load>
+        <ModelsShowcase slot="fallback" />
+      </ModelsPage>
+      <noscript>
+        <ModelsShowcase />
+      </noscript>
+    </>
   ) : (
-    <ModelsPage slug={model.slug} client:load />
+    <ModelPage
+      page={{ ...page, model: { ...model, form: undefined } }}
+      client:load
+    />
   )}
-  <noscript>
-    <ModelsShowcase />
-  </noscript>
 </BaseLayout>

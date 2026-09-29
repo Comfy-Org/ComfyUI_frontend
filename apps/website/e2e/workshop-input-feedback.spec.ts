@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/modelsAccount'
+import { waitForIsland } from './fixtures/islands'
 
 test('a single supported resolution stays visible but cannot be changed', async ({
   page
@@ -118,6 +119,7 @@ test('Magnific Skin Enhancer uploads a source image instead of asking for a URL'
   await expect(source.getByRole('textbox')).toHaveCount(0)
   const input = source.getByLabel('Source image', { exact: true })
   await expect(input).toHaveAttribute('type', 'file')
+  await expect(input).toBeEnabled()
   await input.setInputFiles({
     name: 'portrait.png',
     mimeType: 'image/png',
@@ -160,7 +162,9 @@ test('FLUX Pro 1.1 Ultra keeps a dragged blend readable in its box', async ({
   page
 }) => {
   await page.goto('/models/bfl--flux-pro-1.1-ultra--generate-images/')
-  await page.getByTestId('playground-advanced').locator('summary').click()
+  const advanced = page.getByTestId('playground-advanced')
+  await waitForIsland(page, advanced)
+  await advanced.locator('summary').click()
 
   const slider = page.getByRole('slider', {
     name: 'Image influence',

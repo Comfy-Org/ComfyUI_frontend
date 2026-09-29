@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
+import { waitForIsland } from './fixtures/islands'
 
 test.describe('Retired prototype routes', () => {
   test.beforeEach(async ({ page }) => {
@@ -536,7 +537,7 @@ test.describe('Model playground', () => {
   }) => {
     await page.goto(MODEL_PATH)
     const advanced = page.getByTestId('playground-advanced')
-    await expect(advanced).toBeVisible()
+    await waitForIsland(page, advanced)
     await expect(page.getByTestId('field-prompt_upsampling')).not.toBeVisible()
     await advanced.locator('summary').click()
     await expect(page.getByTestId('field-prompt_upsampling')).toBeVisible()
@@ -547,7 +548,9 @@ test.describe('Model playground', () => {
     page
   }) => {
     await page.goto(MODEL_PATH)
-    await page.getByTestId('playground-advanced').locator('summary').click()
+    const advanced = page.getByTestId('playground-advanced')
+    await waitForIsland(page, advanced)
+    await advanced.locator('summary').click()
 
     await expect(page.getByTestId('field-safety_tolerance')).toHaveCount(0)
     await expect(

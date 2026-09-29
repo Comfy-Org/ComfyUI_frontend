@@ -4,7 +4,7 @@ import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 import { MODEL_PATH } from './fixtures/modelsAccount'
 
-for (const path of ['/models/', MODEL_PATH]) {
+for (const path of ['/models/']) {
   test(`static HTML at ${path} paints only the loading frame`, async ({
     request
   }) => {
@@ -23,6 +23,44 @@ for (const path of ['/models/', MODEL_PATH]) {
     expect(liveDom).not.toContain('data-testid="workshop-search"')
   })
 }
+
+test('static HTML of a model page paints the model, not a loader', async ({
+  request
+}) => {
+  const html = await (await request.get(MODEL_PATH)).text()
+  const liveDom = html.replace(
+    /<(template|noscript|script|style)\b[\s\S]*?<\/\1>/g,
+    ''
+  )
+  expect(liveDom).toContain('data-testid="model-hero"')
+  expect(liveDom).toContain('data-testid="model-detail"')
+  expect(liveDom).not.toContain('data-testid="workshop-loading"')
+  expect(html).not.toMatch(/Grok Imagine in/i)
+})
+
+test('the server-rendered prompt takes no input until the island hydrates', async ({
+  page
+}) => {
+  const hydrate = Promise.withResolvers<void>()
+  await page.route('**/_website/ModelPage.*.js', async (route) => {
+    await hydrate.promise
+    await route.fallback()
+  })
+  await page.goto(MODEL_PATH, { waitUntil: 'domcontentloaded' })
+  const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true })
+  const serverValue = await prompt.inputValue()
+
+  await expect(prompt).toBeDisabled()
+  await prompt.click({ force: true })
+  await page.keyboard.type('typed before hydration')
+  await expect(prompt).toHaveValue(serverValue)
+
+  hydrate.resolve()
+  await waitForIsland(page, prompt)
+  await expect(prompt).toBeEnabled()
+  await prompt.fill('typed after hydration')
+  await expect(prompt).toHaveValue('typed after hydration')
+})
 
 test.describe('enabled workshop', () => {
   test.beforeEach(async ({ context }) => {

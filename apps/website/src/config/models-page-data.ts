@@ -42,7 +42,6 @@ const modelsPageDataSchema = z.object({
   model: detailSchema,
   related: z.array(modelSchema),
   relatedHeading: z.string(),
-  relatedHeadingShort: z.string(),
   successor: modelSchema.optional(),
   priceEstimate: z.string().optional(),
   useCaseLabel: z.string().optional(),
