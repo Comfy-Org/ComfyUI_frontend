@@ -85,9 +85,6 @@ export const useAgentConversationStore = defineStore(
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedMessageIds = new Set<string>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
-    const reportedPaywallImpressions = new Set<TurnId>()
-    const approvalShownAtByAsk = new Map<string, number>()
-    const shownApprovalIds = new Set<string>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
     const activeIndex = ref(-1)
@@ -506,7 +503,6 @@ export const useAgentConversationStore = defineStore(
       threadId.value = null
       hydratedMessageIds = new Set()
       hydratedAssistantTurnIds = new Set()
-      reportedPaywallImpressions.clear()
       undeliverableAskReporter.reset()
       departedTurns.clear()
       clearActive()

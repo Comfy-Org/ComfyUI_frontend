@@ -323,7 +323,6 @@ export function createAgentEventTransport(
       )
       return false
     }
-    dropDraft()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
