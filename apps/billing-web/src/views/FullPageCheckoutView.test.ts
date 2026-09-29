@@ -62,12 +62,18 @@ vi.mock(import('@/config/stripeKey'), () => ({
 }))
 
 /** Where Stripe says the intent's next step runs; a test flips it to play a redirect method. */
-const nextStep = vi.hoisted(() => ({ leavesPage: false }))
+const nextStep = vi.hoisted(() => ({
+  leavesPage: false as boolean | Promise<boolean>,
+  asked: 0
+}))
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
   createDeferredStripeChallengePort: () => ({
     handleNextAction: async () => ({}),
-    leavesPage: async () => nextStep.leavesPage
+    leavesPage: async () => {
+      nextStep.asked += 1
+      return nextStep.leavesPage
+    }
   })
 }))
 
@@ -1680,6 +1686,7 @@ describe('FullPageCheckoutView payment authentication', () => {
   beforeEach(() => {
     form.mounts = 0
     nextStep.leavesPage = false
+    nextStep.asked = 0
   })
 
   it('locks its own Pay through a challenge, then processing, then lands on the success', async () => {
@@ -1890,6 +1897,48 @@ describe('FullPageCheckoutView payment authentication', () => {
       expect(fake.subscribe).not.toHaveBeenCalled()
     }
   )
+
+  it('opens nothing when reconciliation replaces the challenge while Stripe is still saying where it runs', async () => {
+    let answer: (leavesPage: boolean) => void = () => {}
+    nextStep.leavesPage = new Promise((resolve) => {
+      answer = resolve
+    })
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const fake = await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: challengedOperation('op_embedded', 'required')
+      }
+    })
+    await waitFor(() => expect(nextStep.asked).toBe(1))
+
+    const hosted: PendingBillingOperation = {
+      ...hostedPendingOperation('https://pay.test/3ds', 'op_hosted'),
+      authenticationState: 'requires_action'
+    }
+    fake.recover.mockImplementationOnce(async () => {
+      fake.publishOperation(hosted)
+      return { status: 'ok', value: hosted }
+    })
+    siblings.nudge({
+      workspaceId: 'ws-team',
+      operationId: 'op_hosted',
+      kind: 'started'
+    })
+    await waitFor(() => expect(fake.recover).toHaveBeenCalledTimes(2))
+    await capturePromisesFlushed()
+
+    answer(false)
+    await capturePromisesFlushed()
+
+    expect(assign).not.toHaveBeenCalled()
+    expect(fake.reportChallengeStarted).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', { name: 'Complete verification' })
+    ).toBeInTheDocument()
+  })
 
   it('returns a challenge to this checkout, not the result page', async () => {
     const fake = await payHeld()
