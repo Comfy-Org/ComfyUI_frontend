@@ -168,7 +168,7 @@ describe('launchCancellationFlow', () => {
     expect(mocks.prepare).not.toHaveBeenCalled()
   })
 
-  it('does not adopt a workspace that initializes while the legacy dialog loads', async () => {
+  it('keeps legacy cancellation available while workspace state initializes', async () => {
     mocks.billingType.value = 'legacy'
     mocks.activeWorkspaceId = null
     const openDialog = vi.fn()
@@ -184,10 +184,10 @@ describe('launchCancellationFlow', () => {
       })
     })
 
-    expect(openDialog).not.toHaveBeenCalled()
-    expect(scopeCurrent?.()).toBe(false)
+    expect(openDialog).toHaveBeenCalledOnce()
+    expect(scopeCurrent?.()).toBe(true)
     mocks.activeWorkspaceId = 'workspace-2'
-    expect(scopeCurrent?.()).toBe(false)
+    expect(scopeCurrent?.()).toBe(true)
   })
 
   it('contains a failed native dialog for legacy billing', async () => {
@@ -284,7 +284,7 @@ describe('launchCancellationFlow', () => {
   it('falls back when preparation or the provider fails', async () => {
     const preparationError = new Error('blocked by browser')
     mocks.prepare.mockRejectedValueOnce(preparationError)
-    const preparationFallback = vi.fn()
+    const preparationFallback = vi.fn(() => true)
 
     await launchCancellationFlow({ showFallback: preparationFallback })
 

@@ -11,6 +11,7 @@ import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { t } from '@/i18n'
 
 const plans = ref<Plan[]>([])
 const currentPlanSlug = ref<string | null>(null)
@@ -70,6 +71,10 @@ function ensureScopeWatcher(): void {
     watch(billingScopeKey, (scopeKey) => {
       if (adoptedScopeKey !== null && adoptedScopeKey !== scopeKey)
         clearCatalog()
+      else if (errorScopeKey !== null && errorScopeKey !== scopeKey) {
+        error.value = null
+        errorScopeKey = null
+      }
     })
   )
 }
@@ -99,6 +104,9 @@ export function useBillingPlans() {
     if (fetchPromise && fetchPromiseScopeKey === scopeKey) return fetchPromise
     if (adoptedScopeKey !== null && adoptedScopeKey !== scopeKey) {
       clearCatalog()
+    } else if (errorScopeKey !== null && errorScopeKey !== scopeKey) {
+      error.value = null
+      errorScopeKey = null
     }
     const rail = useBillingReadRail()
     // A superseded read publishes nothing, so whatever the last read left
@@ -113,9 +121,14 @@ export function useBillingPlans() {
       const currentScope = billingScopeKey()
       if (errorScopeKey === currentScope) error.value = priorError
       if (isAnonymousScope(currentScope)) return
+      if (currentScope === scopeKey) return
       if (reissueCount >= MAX_SCOPE_REISSUES) {
-        error.value ??= 'Failed to fetch plans'
+        const exhaustion = new Error(t('subscription.plansLoadFailed'), {
+          cause: { reissueCount, scopeKey: currentScope }
+        })
+        error.value ??= t('subscription.plansLoadFailed')
         errorScopeKey = currentScope
+        reportCatalogFallback(exhaustion, hasCatalogForScope(currentScope))
         return
       }
       if (fetchPromise === request) {

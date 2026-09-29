@@ -7,6 +7,8 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { CancellationScopeChangedError } from '@/platform/workspace/composables/useWorkspaceBilling'
+import type { DialogInstance } from '@/stores/dialogStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
 interface CancellationFallbackOptions {
@@ -62,7 +64,7 @@ async function showCancellationFallback(
   if (!isScopeCurrent()) return 'declined'
   try {
     const opened = await showFallback({ ...options, isScopeCurrent })
-    return opened === false ? 'declined' : 'shown'
+    return opened ? 'shown' : 'declined'
   } catch (fallbackError) {
     const workspaceStillCurrent = isScopeCurrent()
     reportFallbackFailure(fallbackError, vendorFailure, workspaceStillCurrent)
@@ -72,9 +74,14 @@ async function showCancellationFallback(
 
 interface LaunchCancellationFlowOptions {
   cancelAt?: string
+  launchWorkspaceId?: string | null
   showFallback: (
     options?: CancellationFallbackOptions
-  ) => unknown | Promise<unknown>
+  ) =>
+    | boolean
+    | void
+    | DialogInstance
+    | Promise<boolean | void | DialogInstance>
 }
 
 async function prepareCancellationSession(
@@ -134,11 +141,15 @@ async function prepareCancellationSession(
 
 export async function launchCancellationFlow({
   cancelAt,
+  launchWorkspaceId: capturedWorkspaceId,
   showFallback
 }: LaunchCancellationFlowOptions): Promise<void> {
   const billing = useBillingContext()
   const workspaceStore = useTeamWorkspaceStore()
-  const launchWorkspaceId = workspaceStore.activeWorkspaceId
+  const launchWorkspaceId =
+    capturedWorkspaceId === undefined
+      ? workspaceStore.activeWorkspaceId
+      : capturedWorkspaceId
   const isLaunchWorkspaceCurrent = () =>
     workspaceStore.activeWorkspaceId === launchWorkspaceId
   if (
@@ -146,7 +157,7 @@ export async function launchCancellationFlow({
     !launchWorkspaceId ||
     workspaceStore.activeWorkspaceBillingRail !== 'stripe'
   ) {
-    await showCancellationFallback(showFallback, isLaunchWorkspaceCurrent)
+    await showCancellationFallback(showFallback, () => true)
     return
   }
 
@@ -171,7 +182,9 @@ export async function launchCancellationFlow({
     const results = await session.show({
       handleCancel: async () => {
         if (!isLaunchWorkspaceCurrent()) {
-          throw new Error(t('subscription.cancelDialog.workspaceChanged'))
+          throw new CancellationScopeChangedError(
+            t('subscription.cancelDialog.workspaceChanged')
+          )
         }
         telemetry?.trackSubscriptionCancellation('confirmed', metadata)
         try {

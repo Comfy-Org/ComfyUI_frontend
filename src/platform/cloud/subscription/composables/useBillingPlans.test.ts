@@ -552,7 +552,7 @@ describe('useBillingPlans', () => {
       expect(currentPlanSlug.value).toBe('standard-monthly')
     })
 
-    it('reissues a superseded SDK read and adopts its replacement', async () => {
+    it('does not spin on a superseded SDK read in the same scope', async () => {
       railState.rail = {
         readPlans: vi
           .fn()
@@ -570,10 +570,10 @@ describe('useBillingPlans', () => {
       const { fetchPlans, plans, error, isLoading } = useBillingPlans()
       await fetchPlans()
 
-      expect(plans.value).toEqual([buildPlan({ slug: 'replacement' })])
+      expect(plans.value).toEqual([])
       expect(error.value).toBeNull()
       expect(isLoading.value).toBe(false)
-      expect(railState.rail.readPlans).toHaveBeenCalledTimes(2)
+      expect(railState.rail.readPlans).toHaveBeenCalledOnce()
     })
 
     it('leaves a reported failure standing when the next read is superseded', async () => {
@@ -607,7 +607,7 @@ describe('useBillingPlans', () => {
       // explanation for the empty one already on screen.
       expect(plans.value).toEqual([])
       expect(error.value).toBe(reported)
-      expect(railState.rail.readPlans).toHaveBeenCalledTimes(6)
+      expect(railState.rail.readPlans).toHaveBeenCalledTimes(2)
     })
 
     it('surfaces a failed SDK read the way a failed client read is surfaced', async () => {
