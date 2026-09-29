@@ -7,7 +7,7 @@ import { z } from 'zod'
 
 import { hubModelSlugs } from '../src/config/hub-models'
 import { modelAliasUrls, modelPageUrls } from '../src/config/model-urls'
-import { redirects } from '../src/config/redirects'
+import { astroRedirects } from '../src/config/redirects'
 import {
   PROVIDER_NAMES,
   routerModelSlugAliases,
@@ -45,7 +45,7 @@ function sitePathPatterns(): string[] {
   return [
     ...pages,
     ...modelsBuildRoutes(true).map((route) => route.pattern),
-    ...Object.keys(redirects),
+    ...Object.keys(astroRedirects),
     ...vercel.redirects.map((redirect) => redirect.source)
   ]
 }
