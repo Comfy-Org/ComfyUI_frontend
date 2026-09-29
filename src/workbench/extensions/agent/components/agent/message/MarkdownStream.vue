@@ -7,7 +7,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
 import {
   renderMarkdownToHtml,
   resolveMarkdownUrl
@@ -16,7 +16,7 @@ import {
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import {
   classifyAssetUrl,
-  replyAssetResultItem,
+  replyAssetLightboxItem,
   tokenReplyAssets
 } from '../../../utils/replyAssets'
 import CodeBlock from './CodeBlock.vue'
@@ -99,11 +99,11 @@ const segments = computed<Segment[]>(() => {
 })
 
 const MediaLightbox = defineAsyncComponent(
-  () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
+  () => import('@/components/common/MediaLightbox.vue')
 )
 
-const proseItems = ref<AugmentedResultItem[]>([])
-const proseIndex = ref(-1)
+const proseItems = ref<LightboxItem[]>([])
+const proseIndex = ref<number | null>(null)
 
 function onProseClick(event: MouseEvent): void {
   const image = event.target
@@ -113,7 +113,10 @@ function onProseClick(event: MouseEvent): void {
     filename: image.alt || 'image',
     kind: 'image' as const
   }
-  proseItems.value = [replyAssetResultItem({ ...asset, kind: 'image' })]
+  const item = replyAssetLightboxItem({ ...asset, kind: 'image' })
+  if (!item) return
+
+  proseItems.value = [item]
   proseIndex.value = 0
 }
 
@@ -154,10 +157,9 @@ const proseClass = cn(
       />
     </template>
     <MediaLightbox
-      v-if="proseIndex !== -1"
-      :all-gallery-items="proseItems"
-      :active-index="proseIndex"
-      @update:active-index="proseIndex = $event"
+      v-if="proseIndex !== null"
+      v-model:active-index="proseIndex"
+      :items="proseItems"
     />
   </div>
 </template>

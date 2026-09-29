@@ -338,7 +338,7 @@ function normalizeFilePathSeparators(filepath: string): string {
  * @param filepath The filepath to parse
  * @returns Object containing filename and subfolder
  */
-export function parseFilePath(filepath: string): {
+export function parseFilePath(filepath: string | null | undefined): {
   filename: string
   subfolder: string
 } {
@@ -733,6 +733,20 @@ export function getMediaTypeFromFilename(
 
 export function isPreviewableMediaType(mediaType: MediaType): boolean {
   return mediaType !== 'other'
+}
+
+const HTML_VIDEO_TYPES: Readonly<Record<string, string>> = {
+  webm: 'video/webm',
+  mp4: 'video/mp4',
+  mov: 'video/quicktime'
+}
+
+export function htmlVideoTypeForFilename(filename: string): string | undefined {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  // Plain-object index, so guard against inherited members: a file ending in
+  // ".constructor" would otherwise resolve to a function, not a MIME type.
+  if (!ext || !Object.hasOwn(HTML_VIDEO_TYPES, ext)) return undefined
+  return HTML_VIDEO_TYPES[ext]
 }
 
 export function formatTime(seconds: number): string {
