@@ -230,6 +230,7 @@
     "uploadFailed": "Upload failed: {reason}",
     "capture": "capture",
     "nodes": "Nodes",
+    "jobs": "Jobs",
     "nodesCount": "{count} node | {count} nodes",
     "addNode": "Add a node...",
     "filterBy": "Filter by:",

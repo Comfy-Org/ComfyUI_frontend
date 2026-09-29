@@ -92,7 +92,7 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
-    this.searchInput = page.getByPlaceholder('Search...')
+    this.searchInput = page.getByPlaceholder('Search Nodes...')
     this.sidebarContent = page.locator('.sidebar-content-container')
     this.allTab = this.getTab('All nodes')
     this.essentialsTab = this.getTab('Essentials')

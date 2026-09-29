@@ -3,32 +3,31 @@
     data-testid="job-history-sidebar"
     :title="$t('queue.jobHistory')"
   >
-    <template #alt-title>
-      <div class="ml-auto flex shrink-0 items-center">
-        <JobHistoryActionsMenu @clear-history="onClearHistory" />
-      </div>
+    <template #tool-buttons>
+      <JobHistoryActionsMenu @clear-history="onClearHistory" />
     </template>
     <template #header>
-      <div class="flex flex-col gap-2 pb-1">
-        <div class="px-3 py-2">
-          <JobFilterTabs
-            :selected-job-tab="selectedJobTab"
-            :has-failed-jobs="hasFailedJobs"
-            @update:selected-job-tab="onUpdateSelectedJobTab"
-          />
-        </div>
-        <JobFilterActions
-          v-model:selected-workflow-filter="selectedWorkflowFilter"
-          v-model:selected-sort-mode="selectedSortMode"
-          v-model:search-query="searchQuery"
-          class="px-3"
-          :hide-show-assets-action="true"
-          :show-search="true"
-          :search-placeholder="t('sideToolbar.queueProgressOverlay.searchJobs')"
-        />
+      <div class="px-4 pt-2">
+        <TabList
+          :model-value="selectedJobTab"
+          @update:model-value="onUpdateSelectedJobTab"
+        >
+          <Tab v-for="tab in visibleJobTabs" :key="tab" :value="tab">
+            {{ jobTabLabel(tab) }}
+          </Tab>
+        </TabList>
       </div>
+      <JobFilterActions
+        v-model:selected-workflow-filter="selectedWorkflowFilter"
+        v-model:selected-sort-mode="selectedSortMode"
+        v-model:search-query="searchQuery"
+        class="px-4 py-2"
+        :hide-show-assets-action="true"
+        :show-search="true"
+        :search-placeholder="t('g.searchPlaceholder', { subject: t('g.jobs') })"
+      />
       <div
-        class="flex items-center justify-between px-3 pb-1 text-xs leading-none text-text-primary"
+        class="flex items-center justify-between px-4 pb-2 text-xs leading-none text-text-primary"
       >
         <span class="text-text-secondary">{{ activeQueueSummary }}</span>
         <div class="flex items-center gap-2">
@@ -52,7 +51,7 @@
     <template #body>
       <div class="flex h-full min-h-0 flex-col">
         <JobAssetsList
-          class="min-h-0 flex-1"
+          class="scrollbar-custom min-h-0 flex-1"
           :displayed-job-groups="displayedJobGroups"
           @cancel-item="onCancelItem"
           @delete-item="onDeleteItem"
@@ -78,19 +77,20 @@ import { computed, defineAsyncComponent, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
-import JobFilterTabs from '@/components/queue/job/JobFilterTabs.vue'
 import JobAssetsList from '@/components/queue/job/JobAssetsList.vue'
 import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
-import { useJobList } from '@/composables/queue/useJobList'
+import { jobTabs, useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem, JobTab } from '@/composables/queue/useJobList'
 import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHistoryDialog'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
+import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useCommandStore } from '@/stores/commandStore'
@@ -130,6 +130,15 @@ const {
   filteredTasks,
   groupedJobItems
 } = useJobList()
+
+const visibleJobTabs = computed(() =>
+  hasFailedJobs.value ? jobTabs : jobTabs.filter((tab) => tab !== 'Failed')
+)
+const jobTabLabel = (tab: JobTab) => {
+  if (tab === 'All') return t('g.all')
+  if (tab === 'Completed') return t('g.completed')
+  return t('g.failed')
+}
 
 const displayedJobGroups = computed(() => groupedJobItems.value)
 const runningCount = computed(() => queueStore.runningTasks.length)
