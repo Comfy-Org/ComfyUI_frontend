@@ -245,7 +245,7 @@
           "upgrade": "Upgrading keeps your subscription, and it renews that day at {amount}.",
           "downgrade": "Switching to {plan} keeps your subscription, and it renews that day at {amount}.",
           "to_yearly": "Switching to yearly keeps your subscription. It renews on {date} at {amount}.",
-          "to_yearly_undated": "Switching to yearly keeps your subscription. It renews at {amount}.",
+          "to_yearly_undated": "Switching to yearly keeps your subscription, and it renews a year from today at {amount}.",
           "to_monthly": "Switching to monthly keeps your subscription, and it renews that day at {amount}.",
           "commitment": "Changing your commitment keeps your subscription, and it renews that day at {amount}.",
           "other": "This change keeps your subscription, and it renews that day at {amount}."
