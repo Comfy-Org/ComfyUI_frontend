@@ -182,12 +182,12 @@ function choose(event: Event) {
           </div>
         </ReshootDisclosure>
       </div>
+      <ReshootFormat v-model:aspect="aspect" v-model:size="size" :locale />
     </div>
 
     <footer
       class="flex flex-col gap-3 rounded-b-2xl border-t border-transparency-white-t8 p-4"
     >
-      <ReshootFormat v-model:aspect="aspect" v-model:size="size" :locale />
       <p class="text-center text-[11px] text-primary-warm-gray">
         {{
           rc(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait', locale)

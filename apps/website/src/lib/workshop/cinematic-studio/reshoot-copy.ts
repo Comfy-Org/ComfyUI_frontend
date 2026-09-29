@@ -83,9 +83,8 @@ const copy = {
     'zh-CN': '需要 1.5 到 5 分钟，生成期间可以继续调整机位。'
   },
   'reshoot.generate.wait': {
-    en: 'MoGe estimates depth for every frame, about 20 to 40 seconds. The first run after a quiet spell also starts a server.',
-    'zh-CN':
-      'MoGe 会估算每一帧的深度，约 20 到 40 秒。闲置一段时间后的首次运行还需要启动服务器。'
+    en: 'Reading the scene · 20 to 40 seconds',
+    'zh-CN': '正在读取场景 · 约 20 到 40 秒'
   },
   'reshoot.expand': { en: 'Full screen', 'zh-CN': '全屏' },
   'reshoot.collapse': { en: 'Exit full screen', 'zh-CN': '退出全屏' },

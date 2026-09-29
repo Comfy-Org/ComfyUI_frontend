@@ -8,6 +8,7 @@ import type {
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
+import { FORMAT_TRIGGER_CLASS } from './cinematic-menu-trigger'
 import CinematicMenu from './CinematicMenu.vue'
 import { useFormatMenus } from './useFormatMenus'
 
@@ -27,9 +28,6 @@ const {
   resolutionValue,
   takesValue
 } = useFormatMenus(aspect, resolution, takes, () => locale)
-
-const triggerClass =
-  'h-10 w-full gap-2 border border-transparency-white-t8 px-3 text-sm text-primary-warm-white hover:border-transparency-white-t20'
 </script>
 
 <template>
@@ -44,7 +42,7 @@ const triggerClass =
       :heading="tc('cinematic.output.aspect', locale)"
       side="bottom"
       tooltip
-      :trigger-class="triggerClass"
+      :trigger-class="FORMAT_TRIGGER_CLASS"
     >
       <span class="grid size-4 place-items-center" aria-hidden="true">
         <span
@@ -61,7 +59,7 @@ const triggerClass =
       :heading="tc('cinematic.output.resolution', locale)"
       side="bottom"
       tooltip
-      :trigger-class="triggerClass"
+      :trigger-class="FORMAT_TRIGGER_CLASS"
     >
       <Maximize class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
       <span class="flex-1 text-left">{{ resolution }}</span>
@@ -73,7 +71,7 @@ const triggerClass =
       :heading="tc('cinematic.output.takes', locale)"
       side="bottom"
       tooltip
-      :trigger-class="triggerClass"
+      :trigger-class="FORMAT_TRIGGER_CLASS"
     >
       <Layers class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
       <span class="flex-1 text-left tabular-nums">×{{ takes }}</span>

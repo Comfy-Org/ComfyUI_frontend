@@ -115,6 +115,20 @@ describe('Re-shoot on one screen', () => {
     expect(
       screen.getByRole('button', { name: 'Aim', current: true })
     ).toBeInTheDocument()
-    expect(screen.queryByText('Aim')).toBeNull()
+  })
+
+  it('captions the selected take and clears the caption back on Aim', async () => {
+    const user = setup()
+    await pickExample(user)
+    await user.click(screen.getByTestId('reshoot-action'))
+    await vi.advanceTimersByTimeAsync(6500)
+    const take = 'Take 1 · az -30° el 15°'
+
+    await user.click(screen.getByRole('button', { name: take }))
+    const caption = screen.getByTestId('reshoot-take-caption')
+    expect(caption).toHaveTextContent(take)
+
+    await user.click(screen.getByRole('button', { name: 'Aim' }))
+    expect(caption).toHaveTextContent(/^$/)
   })
 })

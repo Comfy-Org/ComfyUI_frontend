@@ -12,6 +12,7 @@ import {
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
+import { FORMAT_TRIGGER_CLASS } from '../cinematic-menu-trigger'
 import CinematicMenu from '../CinematicMenu.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -44,9 +45,6 @@ const sizeValue = computed({
     size.value = RESHOOT_SIZES.find((option) => option === id) ?? size.value
   }
 })
-
-const triggerClass =
-  'h-10 w-full gap-2 border border-transparency-white-t8 px-3 text-sm text-primary-warm-white hover:border-transparency-white-t20'
 </script>
 
 <template>
@@ -60,7 +58,7 @@ const triggerClass =
       :options="aspectOptions"
       :heading="rc('reshoot.aspect', locale)"
       tooltip
-      :trigger-class="triggerClass"
+      :trigger-class="FORMAT_TRIGGER_CLASS"
     >
       <RectangleHorizontal
         class="size-3.5 text-primary-warm-gray"
@@ -74,7 +72,7 @@ const triggerClass =
       :options="sizeOptions"
       :heading="rc('reshoot.size', locale)"
       tooltip
-      :trigger-class="triggerClass"
+      :trigger-class="FORMAT_TRIGGER_CLASS"
     >
       <Maximize class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
       <span class="flex-1 text-left">{{ size }}</span>
