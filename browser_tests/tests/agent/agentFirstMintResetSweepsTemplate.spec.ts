@@ -2,6 +2,7 @@ import type { WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type { DocResetFrame } from '@comfyorg/ingest-types'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
@@ -203,8 +204,14 @@ test.describe(
 
       send({
         type: 'doc_reset',
-        data: { v: 1, workflow_id: WORKFLOW_ID, seq: 1, actor: 'system:mint' }
-      })
+        data: {
+          v: 1,
+          workflow_id: WORKFLOW_ID,
+          seq: 1,
+          lineage_seq: 1,
+          actor: 'system:mint'
+        }
+      } satisfies DocResetFrame)
 
       // The bridge resubscribes once it has dispatched the reset, so the
       // second subscribe proves the reset was processed.
