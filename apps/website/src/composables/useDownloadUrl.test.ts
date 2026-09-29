@@ -20,7 +20,11 @@ const UA = {
   windows:
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   linux:
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+  chromeOs:
+    'Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+  freeBsd:
+    'Mozilla/5.0 (X11; FreeBSD amd64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
 } as const
 
 describe('detectDevice', () => {
@@ -57,8 +61,18 @@ describe('detectDevice', () => {
     })
   })
 
-  it('treats desktop Linux as an unknown desktop platform', () => {
+  it('treats desktop Linux as a linux desktop', () => {
     expect(detectDevice(UA.linux, 0)).toEqual({
+      platform: 'linux',
+      isMobileUa: false
+    })
+  })
+
+  it.for([
+    { label: 'Chrome OS', ua: UA.chromeOs },
+    { label: 'FreeBSD', ua: UA.freeBsd }
+  ])('treats $label as an unknown desktop platform', ({ ua }) => {
+    expect(detectDevice(ua, 0)).toEqual({
       platform: null,
       isMobileUa: false
     })
@@ -188,7 +202,7 @@ describe('useDownloadUrl on Windows', () => {
 
       expect(await screen.findByRole('link')).toHaveAttribute(
         'href',
-        `https://comfy.org/download/windows/nsis/${installer}`
+        `https://dl.comfy.org/windows/nsis/${installer}`
       )
     }
   )
@@ -212,7 +226,7 @@ describe('useDownloadUrl on Windows', () => {
     reportArchitecture({ architecture: 'arm' })
     expect(await screen.findByRole('link')).toHaveAttribute(
       'href',
-      'https://comfy.org/download/windows/nsis/arm64'
+      'https://dl.comfy.org/windows/nsis/arm64'
     )
   })
 
@@ -245,4 +259,39 @@ describe('useDownloadUrl on Windows', () => {
       expect(loseContext).toHaveBeenCalledOnce()
     }
   )
+})
+
+describe('useDownloadUrl on Linux', () => {
+  it.for([
+    { label: 'an ARM machine', cpu: reportingCpu('arm'), build: 'arm64' },
+    { label: 'an x86 machine', cpu: reportingCpu('x86'), build: 'x64' },
+    { label: 'a browser without client hints', cpu: undefined, build: 'x64' }
+  ])('links $label to the $build AppImage', async ({ cpu, build }) => {
+    vi.stubGlobal('navigator', {
+      userAgent: UA.linux,
+      maxTouchPoints: 0,
+      userAgentData: cpu
+    } satisfies Partial<Navigator>)
+
+    render(DownloadLink)
+
+    expect(await screen.findByRole('link')).toHaveAttribute(
+      'href',
+      `https://dl.comfy.org/linux/appimage/${build}`
+    )
+  })
+
+  it('never probes the GPU of a Linux machine', async () => {
+    vi.stubGlobal('navigator', {
+      userAgent: UA.linux,
+      maxTouchPoints: 0,
+      userAgentData: reportingCpu('arm')
+    } satisfies Partial<Navigator>)
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext')
+
+    render(DownloadLink)
+    await screen.findByRole('link')
+
+    expect(HTMLCanvasElement.prototype.getContext).not.toHaveBeenCalled()
+  })
 })

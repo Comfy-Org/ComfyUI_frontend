@@ -23,7 +23,8 @@ const label = computed(() => t('download.hero.downloadLocal', locale))
 
 const ICONS: Record<Platform, string> = {
   windows: '/icons/os/windows.svg',
-  mac: '/icons/os/apple.svg'
+  mac: '/icons/os/apple.svg',
+  linux: '/icons/os/linux.svg'
 }
 
 interface ButtonSpec {
@@ -49,13 +50,19 @@ const buttons = computed<ButtonSpec[]>(() => {
         key: 'windows',
         href: downloadUrls.windows,
         icon: ICONS.windows,
-        ariaLabel: `${label.value} — Windows`
+        ariaLabel: `${label.value}: Windows`
       },
       {
         key: 'mac',
         href: downloadUrls.macArm,
         icon: ICONS.mac,
-        ariaLabel: `${label.value} — macOS`
+        ariaLabel: `${label.value}: macOS`
+      },
+      {
+        key: 'linux',
+        href: downloadUrls.linux,
+        icon: ICONS.linux,
+        ariaLabel: `${label.value}: Linux`
       }
     ]
   }

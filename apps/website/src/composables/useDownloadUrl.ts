@@ -3,12 +3,14 @@ import { computed, onMounted, ref } from 'vue'
 import { externalLinks } from '@/config/routes'
 
 export const downloadUrls = {
-  windows: 'https://comfy.org/download/windows/nsis/x64',
-  windowsArm: 'https://comfy.org/download/windows/nsis/arm64',
-  macArm: 'https://download.comfy.org/mac/dmg/arm64'
+  windows: 'https://dl.comfy.org/windows/nsis/x64',
+  windowsArm: 'https://dl.comfy.org/windows/nsis/arm64',
+  macArm: 'https://dl.comfy.org/mac/dmg/arm64',
+  linux: 'https://dl.comfy.org/linux/appimage/x64',
+  linuxArm: 'https://dl.comfy.org/linux/appimage/arm64'
 } as const
 
-export type Platform = 'windows' | 'mac'
+export type Platform = 'windows' | 'mac' | 'linux'
 
 export interface DetectedDevice {
   platform: Platform | null
@@ -29,6 +31,8 @@ export function detectDevice(
   if (lowerUa.includes('macintosh') || lowerUa.includes('mac os x')) {
     return { platform: 'mac', isMobileUa }
   }
+  // Android is already out above, and ChromeOS reports "CrOS", never "Linux".
+  if (lowerUa.includes('linux')) return { platform: 'linux', isMobileUa }
   return { platform: null, isMobileUa }
 }
 
@@ -70,8 +74,7 @@ async function needsArmInstaller(): Promise<boolean> {
   return (await isArmCpu(navigator.userAgentData)) && hasNvidiaGpu()
 }
 
-// TODO: Only Windows x64/arm64 and macOS arm64 are available today.
-// When Linux and/or macIntel builds are added, extend detection and URLs here.
+// TODO: macOS has no x64 build, so Intel Macs are handed the arm64 dmg.
 export function useDownloadUrl() {
   const platform = ref<Platform | null>(null)
   const detected = ref(false)
@@ -83,6 +86,9 @@ export function useDownloadUrl() {
       return armInstaller.value ? downloadUrls.windowsArm : downloadUrls.windows
     }
     if (platform.value === 'mac') return downloadUrls.macArm
+    if (platform.value === 'linux') {
+      return armInstaller.value ? downloadUrls.linuxArm : downloadUrls.linux
+    }
     return externalLinks.github
   })
 
@@ -94,6 +100,9 @@ export function useDownloadUrl() {
     const device = detectDevice(navigator.userAgent, navigator.maxTouchPoints)
     if (device.platform === 'windows') {
       armInstaller.value = await needsArmInstaller()
+    } else if (device.platform === 'linux') {
+      // Linux ships a plain arm64 AppImage, so no GPU runtime caveat applies.
+      armInstaller.value = await isArmCpu(navigator.userAgentData)
     }
     isMobileUa.value = device.isMobileUa
     platform.value = device.platform

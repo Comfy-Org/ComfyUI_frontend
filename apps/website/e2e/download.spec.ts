@@ -9,6 +9,8 @@ const WINDOWS_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 const LINUX_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+const FREEBSD_UA =
+  'Mozilla/5.0 (X11; FreeBSD amd64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 const IPHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 const NVIDIA_RENDERER =
@@ -116,7 +118,7 @@ test.describe('Download page @smoke', () => {
       await expect(downloadBtn).toHaveAttribute('target', '_blank')
       await expect(downloadBtn).toHaveAttribute(
         'href',
-        'https://comfy.org/download/windows/nsis/x64'
+        'https://dl.comfy.org/windows/nsis/x64'
       )
       await expect(downloadBtn).toHaveAttribute('data-astro-prefetch', 'false')
 
@@ -141,35 +143,51 @@ test.describe('Download page @smoke', () => {
 
       await expect(
         heroLocator(page).getByRole('link', { name: /DOWNLOAD DESKTOP/i })
-      ).toHaveAttribute('href', 'https://comfy.org/download/windows/nsis/arm64')
+      ).toHaveAttribute('href', 'https://dl.comfy.org/windows/nsis/arm64')
+    })
+  })
+
+  test.describe('Linux desktop', () => {
+    test.use({ userAgent: LINUX_UA })
+
+    test('HeroSection links Linux to the x64 AppImage', async ({ page }) => {
+      await page.goto('/download')
+
+      const hero = heroLocator(page)
+      const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+      await expect(downloadBtn).toBeVisible()
+      await expect(downloadBtn).toHaveAttribute(
+        'href',
+        'https://dl.comfy.org/linux/appimage/x64'
+      )
+
+      await expect(hero.getByRole('textbox')).toHaveCount(0)
     })
   })
 
   test.describe('unrecognized desktop', () => {
-    test.use({ userAgent: LINUX_UA })
+    test.use({ userAgent: FREEBSD_UA })
 
-    test('HeroSection falls back to both Windows + Mac when UA is unrecognized', async ({
+    test('HeroSection falls back to Windows + Mac + Linux when UA is unrecognized', async ({
       page
     }) => {
       await page.goto('/download')
 
       const hero = heroLocator(page)
 
-      const windowsBtn = hero.locator(
-        'a[href="https://comfy.org/download/windows/nsis/x64"]'
-      )
-      await expect(windowsBtn).toBeVisible()
-      await expect(windowsBtn).toHaveText(/DOWNLOAD DESKTOP/i)
-
-      const macBtn = hero.locator(
-        'a[href="https://download.comfy.org/mac/dmg/arm64"]'
-      )
-      await expect(macBtn).toBeVisible()
-      await expect(macBtn).toHaveText(/DOWNLOAD DESKTOP/i)
+      for (const href of [
+        'https://dl.comfy.org/windows/nsis/x64',
+        'https://dl.comfy.org/mac/dmg/arm64',
+        'https://dl.comfy.org/linux/appimage/x64'
+      ]) {
+        const btn = hero.locator(`a[href="${href}"]`)
+        await expect(btn).toBeVisible()
+        await expect(btn).toHaveText(/DOWNLOAD DESKTOP/i)
+      }
 
       await expect(
         hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
-      ).toHaveCount(2)
+      ).toHaveCount(3)
 
       await expect(hero.getByRole('textbox')).toHaveCount(0)
     })
