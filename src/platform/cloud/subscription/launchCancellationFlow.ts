@@ -45,6 +45,13 @@ async function showCancellationFallback(
       },
       level: workspaceStillCurrent ? 'error' : 'warning'
     })
+    if (workspaceStillCurrent) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('subscription.cancelDialog.failed'),
+        life: 8000
+      })
+    }
     return false
   }
 }

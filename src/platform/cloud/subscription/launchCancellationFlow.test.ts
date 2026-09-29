@@ -302,6 +302,12 @@ describe('launchCancellationFlow', () => {
         error_message: 'provider unavailable'
       })
     )
+    expect(useToastStore().add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'subscription.cancelDialog.failed'
+      })
+    )
   })
 
   it('keeps an unconfigured Churnkey environment silent', async () => {
