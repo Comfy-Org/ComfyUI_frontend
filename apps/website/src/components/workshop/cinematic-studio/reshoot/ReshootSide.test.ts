@@ -51,6 +51,7 @@ describe('ReshootSide', () => {
     )
 
     expect(size.value).toBe('768p')
+    expect(screen.queryByText(rc('reshoot.section.video'))).toBeNull()
     expect(
       screen.getByRole('button', { name: `${rc('reshoot.size')}: 768p` })
     ).toBeInTheDocument()

@@ -243,11 +243,7 @@ const copy = {
     'zh-CN': '第 {n} 条 · 运镜，{keys} 个关键帧'
   },
   'reshoot.take.cancelled': { en: 'Cancelled', 'zh-CN': '已取消' },
-  'reshoot.download': { en: 'Download', 'zh-CN': '下载' },
-  'reshoot.demoNote': {
-    en: 'Design prototype: no jobs run. Takes show the example result.',
-    'zh-CN': '设计原型：不会运行任务，镜头显示示例结果。'
-  }
+  'reshoot.download': { en: 'Download', 'zh-CN': '下载' }
 } as const satisfies Record<string, LocalizedText>
 
 export type ReshootCopyKey = keyof typeof copy

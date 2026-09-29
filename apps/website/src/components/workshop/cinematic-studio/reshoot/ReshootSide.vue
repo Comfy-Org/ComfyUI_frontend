@@ -75,49 +75,42 @@ function choose(event: Event) {
     class="flex min-w-0 flex-col rounded-2xl bg-primary-comfy-ink-light lg:sticky lg:top-24 lg:max-h-[calc(100svh-7rem)]"
   >
     <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
-      <section class="flex flex-col gap-2">
-        <h2 class="text-xs font-medium text-primary-warm-gray">
-          {{ rc('reshoot.section.video', locale) }}
-        </h2>
-        <div
-          class="flex items-center gap-3 rounded-2xl border border-transparency-white-t8 p-2.5"
-        >
-          <video
-            :src="clip"
-            muted
-            playsinline
-            preload="metadata"
-            class="aspect-video w-14 shrink-0 rounded-md bg-primary-comfy-ink object-cover"
-          />
-          <span class="flex min-w-0 flex-1 flex-col">
-            <span
-              class="truncate text-sm font-semibold text-primary-warm-white"
-            >
-              {{
-                isExample ? rc('reshoot.pick.exampleTitle', locale) : clipName
-              }}
-            </span>
-            <span class="truncate text-[11px] text-primary-warm-gray">
-              {{
-                ready
-                  ? `${rc('reshoot.clip.ready', locale)} · ${frames}`
-                  : rc('reshoot.aim.reading', locale)
-              }}
-            </span>
+      <div
+        :aria-label="rc('reshoot.section.video', locale)"
+        role="group"
+        class="flex items-center gap-3 rounded-2xl border border-transparency-white-t8 p-2.5"
+      >
+        <video
+          :src="clip"
+          muted
+          playsinline
+          preload="metadata"
+          class="aspect-video w-14 shrink-0 rounded-md bg-primary-comfy-ink object-cover"
+        />
+        <span class="flex min-w-0 flex-1 flex-col">
+          <span class="truncate text-sm font-semibold text-primary-warm-white">
+            {{ isExample ? rc('reshoot.pick.exampleTitle', locale) : clipName }}
           </span>
-          <label
-            class="flex h-7 shrink-0 cursor-pointer items-center rounded-full bg-transparency-white-t8 px-3 text-[11px] text-primary-comfy-canvas focus-within:ring-2 focus-within:ring-primary-comfy-yellow/50 hover:text-primary-warm-white"
-          >
-            {{ rc('reshoot.clip.change', locale) }}
-            <input
-              type="file"
-              accept="video/*"
-              class="sr-only"
-              @change="choose"
-            />
-          </label>
-        </div>
-      </section>
+          <span class="truncate text-[11px] text-primary-warm-gray">
+            {{
+              ready
+                ? `${rc('reshoot.clip.ready', locale)} · ${frames}`
+                : rc('reshoot.aim.reading', locale)
+            }}
+          </span>
+        </span>
+        <label
+          class="flex h-7 shrink-0 cursor-pointer items-center rounded-full bg-transparency-white-t8 px-3 text-[11px] text-primary-comfy-canvas focus-within:ring-2 focus-within:ring-primary-comfy-yellow/50 hover:text-primary-warm-white"
+        >
+          {{ rc('reshoot.clip.change', locale) }}
+          <input
+            type="file"
+            accept="video/*"
+            class="sr-only"
+            @change="choose"
+          />
+        </label>
+      </div>
       <ReshootAimRig
         v-model:keep-aim="keepAim"
         :clip
