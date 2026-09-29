@@ -21,10 +21,27 @@ describe('educationOffers', () => {
 })
 
 describe('pricingOffers', () => {
-  it('points every JSON-LD offer at the cloud pricing-table deep link', () => {
+  it.for(['en', 'zh-CN'] as const)(
+    'offers each %s plan monthly and yearly at the prices the page shows',
+    (locale) => {
+      const offers = pricingOffers(locale)
+      expect(offers.map(({ cycle, price }) => [cycle, price])).toEqual([
+        ['monthly', '20'],
+        ['yearly', '192'],
+        ['monthly', '35'],
+        ['yearly', '336'],
+        ['monthly', '100'],
+        ['yearly', '960']
+      ])
+    }
+  )
+
+  it('points every offer at the cloud pricing-table deep link for its cycle', () => {
     for (const offer of pricingOffers('en')) {
       expect(offer.url).toMatch(
-        /^https:\/\/cloud\.comfy\.org\/\?pricing=[a-z]+&cycle=monthly$/
+        new RegExp(
+          `^https://cloud\\.comfy\\.org/\\?pricing=[a-z]+&cycle=${offer.cycle}$`
+        )
       )
     }
   })

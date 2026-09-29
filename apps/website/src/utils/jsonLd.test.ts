@@ -218,7 +218,7 @@ describe('productNode', () => {
       url: 'https://comfy.org/pricing/',
       image: 'https://media.comfy.org/website/comfy.webp',
       description: 'Comfy Cloud plans and credits.',
-      offers: [{ name: 'Standard', price: '20' }]
+      offers: [{ name: 'Standard', price: '20', cycle: 'monthly' }]
     })
     const offers = node.offers as Record<string, unknown>[]
     expect(offers[0].price).toBe('20')
@@ -234,13 +234,35 @@ describe('productNode', () => {
       url: 'https://comfy.org/pricing/',
       image: 'https://media.comfy.org/website/comfy.webp',
       description: 'Comfy Cloud plans and credits.',
-      offers: [{ name: 'Standard', price: '20' }]
+      offers: [{ name: 'Standard', price: '20', cycle: 'monthly' }]
     })
     expect(node.image).toBe('https://media.comfy.org/website/comfy.webp')
     expect(node.description).toBe('Comfy Cloud plans and credits.')
     expect(node.brand).toEqual({ '@id': organizationId(siteUrl) })
     const offers = node.offers as Record<string, unknown>[]
     expect(offers[0].availability).toBe('https://schema.org/InStock')
+  })
+
+  it('prices each offer per its own billing period', () => {
+    const node = productNode({
+      siteUrl,
+      id: 'https://comfy.org/pricing/#product',
+      name: 'Comfy Cloud',
+      url: 'https://comfy.org/pricing/',
+      image: 'https://media.comfy.org/website/comfy.webp',
+      description: 'Comfy Cloud plans and credits.',
+      offers: [
+        { name: 'Standard (monthly)', price: '20', cycle: 'monthly' },
+        { name: 'Standard (yearly)', price: '192', cycle: 'yearly' }
+      ]
+    })
+    const specs = (node.offers as Record<string, unknown>[]).map(
+      (offer) => offer.priceSpecification
+    )
+    expect(specs).toEqual([
+      expect.objectContaining({ price: '20', unitCode: 'MON' }),
+      expect.objectContaining({ price: '192', unitCode: 'ANN' })
+    ])
   })
 })
 

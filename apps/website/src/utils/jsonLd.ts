@@ -339,8 +339,14 @@ export function comfyUiSourceCodeNode(siteUrl: string): JsonLdNode {
 interface OfferInput {
   name: string
   price: string | number
+  cycle: 'monthly' | 'yearly'
   url?: string
 }
+
+const billingPeriod = {
+  monthly: { unitCode: 'MON', billingDuration: 'P1M' },
+  yearly: { unitCode: 'ANN', billingDuration: 'P1Y' }
+} as const
 
 export interface ProductInput {
   siteUrl: string
@@ -373,7 +379,7 @@ export function productNode(input: ProductInput): JsonLdNode {
         '@type': 'UnitPriceSpecification',
         price: offer.price,
         priceCurrency: 'USD',
-        unitText: 'MONTH'
+        ...billingPeriod[offer.cycle]
       }
     }))
   }
