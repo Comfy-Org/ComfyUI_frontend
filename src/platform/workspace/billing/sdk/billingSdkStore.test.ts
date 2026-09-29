@@ -591,6 +591,24 @@ describe('useBillingSdkStore subscription commands', () => {
     })
   }
 
+  it('opens no payment page for a subscribe it reattached to, leaving it to the customer', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
+    )
+
+    expect(openPage).not.toHaveBeenCalled()
+    expect(
+      useToastStore().messagesToAdd.filter(
+        (message) => message.group !== 'billing-operation'
+      )
+    ).toEqual([])
+    expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
+  })
+
   it('finishes a reattached subscribe the way the poller did', async () => {
     useBillingSdkStore()
 
@@ -701,6 +719,44 @@ describe('useBillingSdkStore subscription commands', () => {
       )
     ).toEqual([expect.objectContaining({ severity: 'warn' })])
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
+  })
+
+  it('opens no payment page while this tab drives the in-page challenge', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({
+        presentation: 'embedded',
+        actionUrl: 'https://pay.example/invoice',
+        challenge: { clientSecret: 'pi_secret', status: 'required' }
+      })
+    )
+
+    expect(harness.sdk.driveChallenge).toHaveBeenCalledExactlyOnceWith('op-1')
+    expect(openPage).not.toHaveBeenCalled()
+    expect(
+      useToastStore().messagesToAdd.filter(
+        (message) => message.group !== 'billing-operation'
+      )
+    ).toEqual([])
+  })
+
+  it('opens the hosted page for an embedded operation that carries no in-page challenge', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+    useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({
+        presentation: 'embedded',
+        actionUrl: 'https://pay.example/invoice'
+      })
+    )
+
+    expect(openPage).toHaveBeenCalledExactlyOnceWith(
+      'https://pay.example/invoice',
+      '_blank'
+    )
   })
 
   it('offers the next hosted page the same subscribe moves to', () => {
@@ -823,6 +879,31 @@ describe('useBillingSdkStore operation projections', () => {
   beforeEach(() => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
   })
+
+  it.for([
+    {
+      name: 'an adopted operation',
+      result: { status: 'ok', value: pendingSubscription() },
+      adopted: true
+    },
+    {
+      name: 'nothing pending',
+      result: { status: 'ok', value: undefined },
+      adopted: false
+    },
+    {
+      name: 'a failed recovery read',
+      result: { status: 'error', code: 'REQUEST_FAILED' },
+      adopted: false
+    }
+  ] as const)(
+    'recover reports $name as adopted: $adopted',
+    async ({ result, adopted }) => {
+      vi.mocked(harness.sdk.lifecycle.recover).mockResolvedValue(result)
+
+      await expect(useBillingSdkStore().recover()).resolves.toBe(adopted)
+    }
+  )
 
   describe('recoverPendingOperation', () => {
     it('resolves with the operation once the lifecycle settles it', async () => {

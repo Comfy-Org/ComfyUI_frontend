@@ -62,6 +62,10 @@ const siblings = computed(() =>
       <template v-if="current">
         <CinematicTakeFrame
           :current
+          :video="
+            models.find((model) => model.slug === current?.modelSlug)?.mode ===
+            'video'
+          "
           :member-workspace="memberWorkspace"
           :locale
           @retry="emit('retry', current.id)"
@@ -84,7 +88,7 @@ const siblings = computed(() =>
 
       <div
         v-else
-        class="flex max-w-3xl flex-col items-center justify-center gap-2 rounded-md bg-transparency-white-t4 p-6 text-center transition-[aspect-ratio] duration-300"
+        class="flex max-w-3xl flex-col items-center justify-center gap-2 rounded-xl p-6 text-center transition-[aspect-ratio] duration-300"
         :style="framedStyle(aspect, '60vh')"
         data-testid="cinematic-frame-preview"
       >

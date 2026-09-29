@@ -47,6 +47,12 @@ export type RunState =
       readonly status: 'running'
       readonly startedAt: number
       readonly label?: string
+      /**
+       * The page has lost touch with the run, not the run stopped: it may still
+       * be going on Cloud. The panel holds still rather than animate a progress
+       * nobody is watching.
+       */
+      readonly stalled?: boolean
     }
   | { readonly status: 'cancelled' }
   | {

@@ -14,9 +14,6 @@ test('every PP Formula face centres its caps inside the line box', async ({
   page
 }) => {
   await page.goto('/')
-  await expect(page.locator('html')).not.toHaveClass(
-    /(?:^|\s)ppformula-metric-fallback(?:\s|$)/
-  )
 
   const faces = await page.evaluate(async (size) => {
     const rulesOf = (sheet: CSSStyleSheet) => {
@@ -38,8 +35,11 @@ test('every PP Formula face centres its caps inside the line box', async ({
           .replaceAll(/['"]/g, ''),
         weight: rule.style.getPropertyValue('font-weight'),
         source: rule.style.getPropertyValue('src'),
-        ascentOverride: rule.style.getPropertyValue('ascent-override'),
-        descentOverride: rule.style.getPropertyValue('descent-override')
+        overrides: [
+          rule.style.getPropertyValue('ascent-override'),
+          rule.style.getPropertyValue('descent-override'),
+          rule.style.getPropertyValue('line-gap-override')
+        ].filter(Boolean)
       }))
       .filter((declaration) => declaration.family.startsWith('PP Formula'))
 
@@ -51,12 +51,7 @@ test('every PP Formula face centres its caps inside the line box', async ({
         }
 
         const probe = `probe-${index}`
-        document.fonts.add(
-          await new FontFace(probe, `url("${url}")`, {
-            ascentOverride: declaration.ascentOverride,
-            descentOverride: declaration.descentOverride
-          }).load()
-        )
+        document.fonts.add(await new FontFace(probe, `url("${url}")`).load())
 
         const context = document.createElement('canvas').getContext('2d')
         if (!context) throw new Error('no canvas context')
@@ -65,6 +60,7 @@ test('every PP Formula face centres its caps inside the line box', async ({
         return {
           family: declaration.family,
           name: `${declaration.family} ${declaration.weight}`,
+          overrides: declaration.overrides,
           ascent: caps.fontBoundingBoxAscent,
           descent: caps.fontBoundingBoxDescent,
           capHeight: caps.actualBoundingBoxAscent
@@ -79,31 +75,14 @@ test('every PP Formula face centres its caps inside the line box', async ({
   ])
 
   for (const face of faces) {
+    // Measured from the file, so an override would hide a regression here
+    // rather than fix it — and Safari through 26.6 ignores overrides anyway.
+    expect(face.overrides, face.name).toEqual([])
+
     const aboveTheCaps = face.ascent - face.capHeight
     expect(
       Math.abs(aboveTheCaps - face.descent),
       face.name
     ).toBeLessThanOrEqual(SIZE / 100)
   }
-})
-
-test('keeps the component fallback when metric overrides are unsupported', async ({
-  page
-}) => {
-  await page.addInitScript(() => {
-    Object.defineProperty(FontFace.prototype, 'ascentOverride', {
-      configurable: true,
-      get: () => ''
-    })
-  })
-  await page.goto('/')
-
-  await expect(page.locator('html')).toHaveClass(
-    /(?:^|\s)ppformula-metric-fallback(?:\s|$)/
-  )
-  const marker = page.locator('.ppformula-text-center').first()
-  await expect(marker).toBeVisible()
-  expect(
-    await marker.evaluate((element) => getComputedStyle(element).top)
-  ).not.toBe('auto')
 })

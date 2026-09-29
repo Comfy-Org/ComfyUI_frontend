@@ -9,6 +9,8 @@ import { isUnpaid } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { studioAnalytics } from '../../../lib/workshop/cinematic-studio/analytics'
+import { captureWorkshopEvent } from '../../../scripts/posthog'
 
 const {
   current,
@@ -23,6 +25,17 @@ const {
 }>()
 
 const emit = defineEmits<{ select: [id: string] }>()
+
+function captureDownload() {
+  if (current.status !== 'done') return
+  captureWorkshopEvent({
+    name: 'output_download_clicked',
+    properties: {
+      ...studioAnalytics(current.modelSlug),
+      output_kind: current.output.kind
+    }
+  })
+}
 
 const STEPS: Readonly<Record<string, number>> = {
   ArrowRight: 1,
@@ -47,12 +60,7 @@ async function onKeydown(event: KeyboardEvent) {
 <template>
   <div class="flex max-w-full min-w-0 items-center gap-2.5">
     <span class="text-[15px] font-semibold text-primary-warm-white">
-      {{
-        tc('cinematic.stage.shot', locale).replace(
-          '{number}',
-          String(current.shot)
-        )
-      }}
+      {{ tc('cinematic.stage.shot', locale, { number: current.shot }) }}
     </span>
     <div
       v-if="siblings.length > 1"
@@ -97,6 +105,7 @@ async function onKeydown(event: KeyboardEvent) {
       class="grid size-9 place-items-center rounded-lg text-primary-comfy-canvas hover:bg-transparency-white-t8"
       :aria-label="tc('cinematic.stage.download', locale)"
       :title="t('workshop.output.expires', locale)"
+      @click="captureDownload"
     >
       <Download class="size-4" aria-hidden="true" />
     </a>

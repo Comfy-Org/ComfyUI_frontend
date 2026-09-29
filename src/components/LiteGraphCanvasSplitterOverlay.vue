@@ -152,7 +152,7 @@ import { storeToRefs } from 'pinia'
 import Splitter from 'primevue/splitter'
 import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -160,7 +160,9 @@ import {
   BUILDER_MIN_SIZE,
   CENTER_PANEL_SIZE,
   SIDEBAR_MIN_SIZE,
-  SIDE_PANEL_SIZE
+  SIDEBAR_MIN_WIDTH,
+  SIDE_PANEL_SIZE,
+  SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -224,6 +226,23 @@ const graphMeetsAgentPanel = computed(
 const sidebarPanelVisible = computed(
   () => activeSidebarTab.value !== null && !isBuilderMode.value
 )
+
+/**
+ * The sidebar can never be squeezed past `min-w-78`, so it and the toolbar
+ * rail are the floor the agent panel has to respect. Feeding the floor rather
+ * than the sidebar's live width keeps this one-way: a panel that shrank would
+ * otherwise widen the sidebar and shrink itself again.
+ */
+watchEffect(() => {
+  agentPanelStore.setReservedWorkspaceWidth(
+    SIDE_TOOLBAR_WIDTH +
+      (sidebarPanelVisible.value &&
+      !focusMode.value &&
+      !agentNodeSelectionActive.value
+        ? SIDEBAR_MIN_WIDTH
+        : 0)
+  )
+})
 
 const firstPanelVisible = computed(
   () => sidebarLocation.value === 'left' || showOffsideSplitter.value
