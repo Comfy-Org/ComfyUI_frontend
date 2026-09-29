@@ -98,24 +98,17 @@ const selectedEventId = computed(() =>
 
 // Names a cluster badge for screen readers: the count plus what a click does.
 const clusterLabel = (labels: string[]) =>
-  t('events.directory.clusterLabel', locale).replace(
-    '{count}',
-    String(labels.length)
-  )
+  t('events.directory.clusterLabel', locale, { count: labels.length })
 
 // Heading of the popup a still-coincident cluster opens on the map.
 const clusterPopupTitle = (count: number) =>
-  t('events.directory.clusterPopupTitle', locale).replace(
-    '{count}',
-    String(count)
-  )
+  t('events.directory.clusterPopupTitle', locale, { count })
 
-// `t()` has neither interpolation nor plurals, so both are resolved here.
 const countLabel = computed(() => {
   const count = visibleEvents.value.length
   const key =
     count === 1 ? 'events.directory.countOne' : 'events.directory.count'
-  return t(key, locale).replace('{count}', String(count))
+  return t(key, locale, { count })
 })
 
 // Switching tabs leaves `filters` untouched, so search and both filters carry
@@ -130,7 +123,7 @@ const VIEWS: ReadonlyArray<{
 ]
 
 const controlClass =
-  'bg-transparency-white-t5 h-11 rounded-full border border-white/15 text-sm text-primary-comfy-canvas'
+  'bg-transparency-white-t4 h-11 rounded-full border border-white/15 text-sm text-primary-comfy-canvas'
 
 // `appearance-none` drops the native arrow, so each select is wrapped and gets
 // a ChevronDown overlaid, the same icon the rest of the site uses.

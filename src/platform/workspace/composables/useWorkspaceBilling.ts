@@ -7,16 +7,15 @@ import {
   watch
 } from 'vue'
 
-import type {
-  PreviewSubscribeInput,
-  SubscribeInput
-} from '@comfyorg/account-core/billing'
+import type { PreviewSubscribeInput } from '@comfyorg/account-core/billing'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
@@ -31,7 +30,8 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
-import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
+import { openHostedBillingTabOutcome } from '@/platform/workspace/billing/openHostedBillingTab'
+import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import type {
   SettledSubscribeResponse,
@@ -43,6 +43,7 @@ import type { BillingReadRail } from '@/platform/workspace/composables/useBillin
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { subscribeInputFrom } from '@/platform/workspace/billing/subscribeInput'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
@@ -125,36 +126,6 @@ async function resyncQuietly(refresh: () => Promise<unknown>): Promise<void> {
 
 /** The SDK rail refusing an action, distinct from any value it could return. */
 const DECLINED = Symbol('subscription rail declined')
-
-/**
- * The host's options as the generated request body, field for field, including
- * the two the workspace client drops when they arrive empty: JSON keeps `''`,
- * so an empty credential would reach the server as present but meaningless.
- *
- * `SubscribeOptions` carries nothing the generated body lacks. `SubscribeInput`
- * also has `checkout_attempt_id` and `idempotency_key`, which no host caller
- * sets: the SDK mints the key itself, and the checkout attempt is carried on
- * the quote rather than the subscribe.
- */
-function subscribeInputFrom(
-  planSlug: string,
-  options: SubscribeOptions = {}
-): SubscribeInput {
-  return {
-    plan_slug: planSlug,
-    confirmation_token: options.confirmationToken || undefined,
-    saved_payment_method_id: options.savedPaymentMethodId || undefined,
-    promotion_code: options.promotionCode,
-    quote_id: options.quoteId,
-    quote_version: options.quoteVersion,
-    return_url: options.returnUrl,
-    cancel_url: options.cancelUrl,
-    team_credit_stop_id: options.teamCreditStopId,
-    billing_cycle: options.billingCycle,
-    confirm_reactivation: options.confirmReactivation,
-    proration_at: options.prorationAt
-  }
-}
 
 function previewSubscribeInputFrom(
   planSlug: string,
@@ -301,6 +272,24 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
+  /**
+   * Whether the rail that issues this kind of operation is the one that owns a
+   * pending one at load. Adopting on the other rail is what makes a mid-session
+   * flag flip ambiguous: the operation's writes went one way and its poller the
+   * other.
+   *
+   * A server predating `pending_billing_op_type` only ever had subscriptions to
+   * hand back, so it follows the subscription rail — the same reading
+   * `resumeModeFor` takes of an absent field.
+   */
+  function railOwnsResume(
+    type: BillingStatusResponse['pending_billing_op_type']
+  ): boolean {
+    return type === 'topup'
+      ? flags.billingSdkTopupRailEnabled
+      : flags.billingSdkSubscriptionRailEnabled
+  }
+
   function resumePendingOperation(status: BillingStatusResponse): void {
     if (
       !status.pending_billing_op_id ||
@@ -308,10 +297,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     ) {
       return
     }
-    if (
-      flags.billingSdkTopupRailEnabled &&
-      status.pending_billing_op_type === 'topup'
-    ) {
+    if (railOwnsResume(status.pending_billing_op_type)) {
       useBillingSdkStore().recover()
       return
     }
@@ -484,36 +470,20 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  // A cancellation or card change made in the portal tab or window never
-  // pushes back to this one — status has no return refetch and capability
-  // reads are paced — so the next return to the app re-reads everything the
+  // A cancellation or card change made in the portal window never pushes
+  // back to this one — status has no return refetch and capability reads
+  // are paced — so the next return to the app re-reads everything the
   // portal could have changed.
   let stopPortalReturnRefresh: (() => void) | null = null
   function refreshOnPortalReturn() {
     stopPortalReturnRefresh?.()
-
-    const stopListening = () => {
-      document.removeEventListener('visibilitychange', onReturn)
-      window.removeEventListener('focus', onReturn)
-      stopPortalReturnRefresh = null
-    }
-    const onReturn = (event: Event) => {
-      if (
-        event.type === 'visibilitychange' &&
-        document.visibilityState !== 'visible'
-      ) {
-        return
-      }
-      stopListening()
-      void Promise.allSettled([
+    stopPortalReturnRefresh = registerRefreshOnReturn(() =>
+      Promise.allSettled([
         fetchStatus(),
         fetchBalance(),
         useBillingCapabilities().refresh()
       ])
-    }
-    stopPortalReturnRefresh = stopListening
-    document.addEventListener('visibilitychange', onReturn)
-    window.addEventListener('focus', onReturn)
+    )
   }
 
   if (getCurrentScope()) {
@@ -545,34 +515,22 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  function openPortalWindow(url: string): boolean {
-    // The handle arms the return refresh, so adding `noopener` here (which
-    // nulls it) silently stops billing state from re-reading on return.
-    const portalWindow = window.open(url, '_blank')
-    if (!portalWindow) return false
-    refreshOnPortalReturn()
-    return true
+  function reportBillingTabBlocked(): void {
+    useToastStore().add({
+      severity: 'warn',
+      summary: t('g.warning'),
+      detail: t('subscription.billingTabBlocked')
+    })
   }
 
-  // Layer C first; the rail, and then the legacy client, only when the tab
-  // before them was refused. Each step opens a different destination, so a
-  // block on one says nothing about the next.
-  async function manageSubscription(): Promise<void> {
-    const hosted = hostedBillingRoute(
-      flags.hostedBillingDestination,
-      'payment-methods'
-    )
-    if (hosted.kind === 'billing_web') {
-      error.value = null
-      if (openPortalWindow(hosted.url.href)) return
-    }
-
+  /** The rail's portal URL, or the legacy client's when the rail declines. */
+  async function requestPortalUrl(): Promise<string | undefined> {
     const rail = useSubscriptionRail()
     if (rail) {
       const url = await onSubscriptionRail(() =>
         rail.openPaymentPortal(window.location.href)
       )
-      if (url !== DECLINED && openPortalWindow(url)) return
+      if (url !== DECLINED) return url
     }
 
     isLoading.value = true
@@ -580,13 +538,38 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     try {
       const returnUrl = window.location.href
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
-      if (response.url) openPortalWindow(response.url)
+      return response.url || undefined
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to open billing portal'
       throw err
     } finally {
       isLoading.value = false
+    }
+  }
+
+  // Layer C first; the rail, and then the legacy client, only when the one
+  // before them doesn't serve this workspace. The portal tab is reserved
+  // before the first request: one opened after it resolves has lost the
+  // click's activation, and a refused reservation mints no portal session.
+  async function manageSubscription(): Promise<void> {
+    error.value = null
+    const hosted = openHostedBillingTabOutcome('payment-methods')
+    if (hosted === 'opened') return
+    if (hosted === 'blocked') return reportBillingTabBlocked()
+
+    // The handle arms the return refresh, so adding `noopener` here (which
+    // nulls it) silently stops billing state from re-reading on return.
+    const portalTab = window.open('', '_blank')
+    if (!portalTab) return reportBillingTabBlocked()
+    try {
+      const url = await requestPortalUrl()
+      if (!url) return portalTab.close()
+      portalTab.location.href = url
+      refreshOnPortalReturn()
+    } catch (err) {
+      portalTab.close()
+      throw err
     }
   }
 

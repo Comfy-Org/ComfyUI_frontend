@@ -5,7 +5,15 @@ import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import type { MenuItem } from 'primevue/menuitem'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -26,8 +34,8 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const mockData = vi.hoisted(() => ({
   setShowConflictRedDot: (_value: boolean) => {}
@@ -60,21 +68,24 @@ vi.mock<unknown>(
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/composables/useManagerState'),
 
-  () => ({
-    useManagerState: () => ({
-      shouldShowManagerButtons: computed(() => true),
+  () => {
+    const managerState = {
+      shouldShowExtensionsButton: computed(() => true),
       openManager: vi.fn()
-    })
-  })
-)
+    }
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    menu: {
-      element: document.createElement('div')
+    return {
+      useManagerState: vi.fn(() => {
+        onTestFinished(() => {
+          managerState.shouldShowExtensionsButton = computed(() => true)
+        })
+        return managerState
+      })
     }
   }
-}))
+)
+
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -387,6 +398,20 @@ describe('TopMenuSection', () => {
       ).toBeNull()
     })
 
+    it('does not render inline progress summary while action bars are hidden', async () => {
+      const pinia = getActivePinia()!
+      configureSettings(pinia, true)
+      useAgentNodeSelectionStore(pinia).isActionBarsHidden = true
+
+      const { container } = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        container.querySelector('queue-inline-progress-summary-stub')
+      ).toBeNull()
+    })
+
     it('teleports inline progress summary when actionbar is floating', async () => {
       localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
       const actionbarTarget = document.createElement('div')
@@ -441,6 +466,48 @@ describe('TopMenuSection', () => {
         container.querySelector('queue-notification-banner-host-stub')
       ).not.toBeNull()
     })
+
+    it.for([
+      { isActionBarsHidden: false, rendered: true },
+      { isActionBarsHidden: true, rendered: false }
+    ])(
+      'renders the queue progress overlay: $rendered when action bars hidden is $isActionBarsHidden',
+      async ({ isActionBarsHidden, rendered }) => {
+        const pinia = getActivePinia()!
+        configureSettings(pinia, false)
+        useAgentNodeSelectionStore(pinia).isActionBarsHidden =
+          isActionBarsHidden
+
+        const { container } = createWrapper({ pinia })
+        await nextTick()
+
+        expect(
+          container.querySelector('queue-progress-overlay-stub') !== null
+        ).toBe(rendered)
+      }
+    )
+
+    it.for([
+      { isActionBarsHidden: false, hidden: false },
+      { isActionBarsHidden: true, hidden: true }
+    ])(
+      'keeps the queue notification banner host mounted and hidden=$hidden when action bars hidden is $isActionBarsHidden',
+      async ({ isActionBarsHidden, hidden }) => {
+        const pinia = getActivePinia()!
+        configureSettings(pinia, false)
+        useAgentNodeSelectionStore(pinia).isActionBarsHidden =
+          isActionBarsHidden
+
+        const { container } = createWrapper({ pinia })
+        await nextTick()
+
+        const host = container.querySelector(
+          'queue-notification-banner-host-stub'
+        )
+        if (!host) throw new Error('banner host is not mounted')
+        expect(host.classList.contains('hidden')).toBe(hidden)
+      }
+    )
 
     it('renders queue notification banners when QPO V2 is disabled', async () => {
       const pinia = getActivePinia()!
@@ -547,8 +614,33 @@ describe('TopMenuSection', () => {
     expect(container.querySelector('span.bg-red-500')).not.toBeNull()
   })
 
+  it('keeps the floating actionbar container open for the extensions button', async () => {
+    localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+
+    const pinia = getActivePinia()
+    assert.exists(pinia)
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) => {
+      if (key === 'Comfy.UseNewMenu') return 'Top'
+      if (key === 'Comfy.UI.TabBarLayout') return 'Integrated'
+      if (key === 'Comfy.RightSidePanel.IsOpen') return true
+      return undefined
+    })
+
+    const { container } = createWrapper({ pinia })
+    await nextTick()
+
+    expect(
+      screen.getByRole('button', { name: 'menu.manageExtensions' })
+    ).toBeInTheDocument()
+    expect(container.querySelector('.actionbar-container')).not.toHaveClass(
+      'w-0'
+    )
+  })
+
   it('coalesces legacy topbar mutation scans to one check per frame', async () => {
     localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+    useManagerState().shouldShowExtensionsButton = computed(() => false)
 
     const rafCallbacks: FrameRequestCallback[] = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {

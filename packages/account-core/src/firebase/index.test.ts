@@ -8,13 +8,19 @@ const sdk = vi.hoisted(() => {
   const unsubscribe = vi.fn()
   const listeners: Array<(user: unknown) => void> = []
   const tokenListeners: Array<(user: unknown) => void> = []
-  const resolvedAuth: { currentUser: unknown } = { currentUser: null }
+  const resolvedAuth: {
+    currentUser: unknown
+    authStateReady: () => Promise<void>
+  } = { currentUser: null, authStateReady: async () => {} }
   return {
     unsubscribe,
     listeners,
     tokenListeners,
     resolvedAuth,
-    browserPopupRedirectResolver: { resolver: 'popup' },
+    browserPopupRedirectResolver: class BrowserPopupRedirectResolver {},
+    indexedDBLocalPersistence: { persistence: 'indexedDB' },
+    browserLocalPersistence: { persistence: 'local' },
+    browserSessionPersistence: { persistence: 'session' },
     getAuth: vi.fn(() => resolvedAuth),
     initializeAuth: vi.fn(() => resolvedAuth),
     onAuthStateChanged: vi.fn(
@@ -42,8 +48,54 @@ const app = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(import('firebase/app'), () => ({
+  FirebaseError: class FirebaseError extends Error {
+    constructor(
+      readonly code: string,
+      message: string
+    ) {
+      super(message)
+    }
+  },
   getApps: () => app.existing,
   initializeApp: app.initializeApp
+}))
+
+/**
+ * A stand-in for the popup watch (tested on its own in popupWatch.test.ts):
+ * it records the rules the identity hands over, so a test can play the popup
+ * closing and a result arriving late in any order.
+ */
+const watch = vi.hoisted(() => {
+  const state: {
+    options?: {
+      onAbandoned?: () => void
+      onResumed?: () => void
+      discardLateResult?: () => boolean
+    }
+  } = {}
+  return {
+    state,
+    resolver: class WatchingResolver {},
+    abandon: () => state.options?.onAbandoned?.(),
+    /** The watch's rule for a late result: discard, or resume and deliver. */
+    lateResult(): 'discarded' | 'kept' {
+      if (state.options?.discardLateResult?.()) return 'discarded'
+      state.options?.onResumed?.()
+      return 'kept'
+    }
+  }
+})
+
+vi.mock<unknown>(import('./popupWatch.js'), () => ({
+  watchedPopupRedirectResolver: watch.resolver,
+  runWatchedPopup: (
+    _provider: object,
+    signIn: () => Promise<unknown>,
+    callbacks: typeof watch.state.options
+  ) => {
+    watch.state.options = callbacks
+    return signIn()
+  }
 }))
 
 vi.mock<unknown>(import('firebase/auth'), () => ({
@@ -56,6 +108,9 @@ vi.mock<unknown>(import('firebase/auth'), () => ({
     setCustomParameters() {}
   },
   browserPopupRedirectResolver: sdk.browserPopupRedirectResolver,
+  indexedDBLocalPersistence: sdk.indexedDBLocalPersistence,
+  browserLocalPersistence: sdk.browserLocalPersistence,
+  browserSessionPersistence: sdk.browserSessionPersistence,
   getAuth: sdk.getAuth,
   initializeAuth: sdk.initializeAuth,
   onAuthStateChanged: sdk.onAuthStateChanged,
@@ -73,7 +128,10 @@ async function makeIdentity() {
   return createFirebaseIdentity({ options: { apiKey: 'test' } })
 }
 
-const hostAuth = { name: 'host-auth' } as Partial<Auth> as Auth
+const hostAuth = {
+  name: 'host-auth',
+  authStateReady: async () => {}
+} as Partial<Auth> as Auth
 
 const localStore = { type: 'LOCAL', store: 'localStorage' } as const
 const indexedDbStore = { type: 'LOCAL', store: 'indexedDB' } as const
@@ -106,9 +164,11 @@ function deferred<T>(): Deferred<T> {
 }
 
 beforeEach(() => {
+  vi.resetModules()
   sdk.listeners.length = 0
   sdk.tokenListeners.length = 0
   sdk.resolvedAuth.currentUser = null
+  sdk.resolvedAuth.authStateReady = async () => {}
   app.existing.length = 0
   app.initializeApp.mockClear()
   vi.useFakeTimers()
@@ -256,6 +316,302 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
 
     expect(app.initializeApp).toHaveBeenCalledOnce()
     expect(sdk.getAuth).toHaveBeenCalledOnce()
+  })
+})
+
+describe('popup sign-in with the popup watched', () => {
+  const otherUser = { uid: 'user-2' } as Partial<User> as User
+
+  /** The Firebase popup call, settled by the test. */
+  function pendingPopup() {
+    const popup = deferred<UserCredential>()
+    sdk.signInWithPopup.mockReturnValueOnce(popup.promise)
+    return popup
+  }
+
+  async function watchedIdentity() {
+    const { createFirebaseIdentity } = await import('./index.js')
+    return createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      watchPopupSignIn: true
+    })
+  }
+
+  beforeEach(() => {
+    watch.state.options = undefined
+    sdk.initializeAuth.mockImplementation(() => sdk.resolvedAuth)
+    sdk.signInWithEmailAndPassword.mockResolvedValue(testCredential)
+  })
+
+  it('creates Auth with the watching resolver and the persistence getAuth would pick', async () => {
+    const identity = await watchedIdentity()
+
+    identity.initialize()
+
+    expect(sdk.getAuth).not.toHaveBeenCalled()
+    expect(sdk.initializeAuth).toHaveBeenCalledWith(
+      { name: 'comfy-account' },
+      {
+        persistence: [
+          sdk.indexedDBLocalPersistence,
+          sdk.browserLocalPersistence,
+          sdk.browserSessionPersistence
+        ],
+        popupRedirectResolver: watch.resolver
+      }
+    )
+  })
+
+  it('keeps the host persistence when it chose one', async () => {
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      persistence: [localStore],
+      watchPopupSignIn: true
+    })
+
+    identity.initialize()
+
+    expect(sdk.initializeAuth).toHaveBeenCalledWith(
+      { name: 'comfy-account' },
+      { persistence: [localStore], popupRedirectResolver: watch.resolver }
+    )
+  })
+
+  it('reuses an Auth that already exists for the app instead of failing, when it only asked for the watch', async () => {
+    sdk.initializeAuth.mockImplementation(() => {
+      throw Object.assign(new Error('already'), {
+        code: 'auth/already-initialized'
+      })
+    })
+    sdk.getAuth.mockImplementation(() => sdk.resolvedAuth)
+    const identity = await watchedIdentity()
+
+    expect(() => identity.initialize()).not.toThrow()
+    expect(sdk.getAuth).toHaveBeenCalledWith({ name: 'comfy-account' })
+  })
+
+  it('still refuses an existing Auth when the host chose its own persistence', async () => {
+    sdk.initializeAuth.mockImplementation(() => {
+      throw Object.assign(new Error('already'), {
+        code: 'auth/already-initialized'
+      })
+    })
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      persistence: [localStore],
+      watchPopupSignIn: true
+    })
+
+    expect(() => identity.initialize()).toThrow('already')
+  })
+
+  it('still signs in, discarding late results, on an Auth that cannot say when its session restored', async () => {
+    sdk.resolvedAuth.authStateReady = undefined as never
+    pendingPopup()
+    const identity = await watchedIdentity()
+    const outcome = identity.signInWithGoogle({ onResumed: vi.fn() })
+    await vi.advanceTimersByTimeAsync(0)
+
+    watch.abandon()
+
+    await expect(outcome).rejects.toMatchObject({
+      code: 'auth/popup-closed-by-user'
+    })
+    expect(watch.lateResult()).toBe('discarded')
+  })
+
+  it('keeps a late result when the only change since the popup opened is the session restoring', async () => {
+    let restored!: () => void
+    sdk.resolvedAuth.authStateReady = () =>
+      new Promise<void>((resolve) => {
+        restored = resolve
+      })
+    pendingPopup()
+    const identity = await watchedIdentity()
+    void identity.signInWithGoogle({ onResumed: vi.fn() }).catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+
+    sdk.resolvedAuth.currentUser = { uid: 'restored-user' }
+    restored()
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+
+    expect(watch.lateResult()).toBe('kept')
+  })
+
+  it('rejects with Firebase’s own dismissal the moment the popup closes with no result', async () => {
+    pendingPopup()
+    const identity = await watchedIdentity()
+    const outcome = identity.signInWithGoogle()
+    await vi.advanceTimersByTimeAsync(0)
+
+    watch.abandon()
+
+    await expect(outcome).rejects.toMatchObject({
+      code: 'auth/popup-closed-by-user'
+    })
+  })
+
+  it('resolves with the credential when the popup completes', async () => {
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const outcome = identity.signInWithGitHub()
+
+    popup.resolve(testCredential)
+
+    await expect(outcome).resolves.toBe(testCredential)
+  })
+
+  it('swallows Firebase’s own rejection of a popup it already reported as closed', async () => {
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const outcome = identity.signInWithGoogle()
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+    await expect(outcome).rejects.toMatchObject({
+      code: 'auth/popup-closed-by-user'
+    })
+
+    // Settling Firebase's own call afterwards must not surface anywhere; an
+    // unhandled rejection would fail this run.
+    popup.reject({ code: 'auth/popup-closed-by-user' })
+    await vi.advanceTimersByTimeAsync(10_000)
+  })
+
+  it('rejects with Firebase’s own error when a watched popup fails for another reason', async () => {
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const outcome = identity.signInWithGoogle({ onResumed: vi.fn() })
+
+    popup.reject({ code: 'auth/popup-blocked' })
+
+    await expect(outcome).rejects.toMatchObject({ code: 'auth/popup-blocked' })
+  })
+
+  it('hands a late result to the host to finish when nothing else happened', async () => {
+    const popup = pendingPopup()
+    const onResumed = vi.fn()
+    const identity = await watchedIdentity()
+    void identity.signInWithGoogle({ onResumed }).catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+
+    expect(watch.lateResult()).toBe('kept')
+    popup.resolve(testCredential)
+
+    expect(onResumed).toHaveBeenCalledOnce()
+    await expect(onResumed.mock.calls[0][0]).resolves.toBe(testCredential)
+  })
+
+  it('discards a late result no host asked to finish', async () => {
+    pendingPopup()
+    const identity = await watchedIdentity()
+    void identity.signInWithGoogle().catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+
+    expect(watch.lateResult()).toBe('discarded')
+  })
+
+  it.for([
+    [
+      'an email sign-in',
+      (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
+        identity.signInWithEmail('a@b.co', 'pw')
+    ],
+    [
+      'an account creation',
+      (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
+        identity.createUserWithEmail('a@b.co', 'pw')
+    ],
+    [
+      'another popup',
+      (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
+        identity.signInWithGitHub()
+    ]
+  ] as const)(
+    'discards a late result once %s has started since',
+    async ([, startAnother]) => {
+      pendingPopup()
+      const onResumed = vi.fn()
+      const identity = await watchedIdentity()
+      void identity.signInWithGoogle({ onResumed }).catch(() => {})
+      await vi.advanceTimersByTimeAsync(0)
+      watch.abandon()
+      const lateResultRules = watch.state.options
+
+      void startAnother(identity).catch(() => {})
+      watch.state.options = lateResultRules
+
+      expect(watch.lateResult()).toBe('discarded')
+      expect(onResumed).not.toHaveBeenCalled()
+    }
+  )
+
+  it('discards a late result once somebody else is signed in, such as from another tab', async () => {
+    pendingPopup()
+    const onResumed = vi.fn()
+    const identity = await watchedIdentity()
+    void identity.signInWithGoogle({ onResumed }).catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+
+    sdk.resolvedAuth.currentUser = otherUser
+
+    expect(watch.lateResult()).toBe('discarded')
+  })
+
+  it('keeps a late result that replaces the account being switched away from', async () => {
+    sdk.resolvedAuth.currentUser = otherUser
+    pendingPopup()
+    const onResumed = vi.fn()
+    const identity = await watchedIdentity()
+    void identity.signInWithGoogle({ onResumed }).catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+
+    expect(watch.lateResult()).toBe('kept')
+  })
+
+  it('discards a late result the host no longer wants', async () => {
+    pendingPopup()
+    const identity = await watchedIdentity()
+    void identity
+      .signInWithGoogle({ onResumed: vi.fn(), keepLateResult: () => false })
+      .catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+
+    expect(watch.lateResult()).toBe('discarded')
+  })
+
+  it('watches popups on a host-owned Auth the host created with the watched resolver', async () => {
+    const { createFirebaseIdentity, watchedPopupRedirectResolver } =
+      await import('./index.js')
+    expect(watchedPopupRedirectResolver).toBe(watch.resolver)
+    pendingPopup()
+    const identity = createFirebaseIdentity({
+      auth: hostAuth,
+      watchPopupSignIn: true
+    })
+    const outcome = identity.signInWithGoogle()
+    await vi.advanceTimersByTimeAsync(0)
+
+    watch.abandon()
+
+    await expect(outcome).rejects.toMatchObject({
+      code: 'auth/popup-closed-by-user'
+    })
+  })
+
+  it('leaves popups unwatched on an identity that did not ask', async () => {
+    sdk.signInWithPopup.mockResolvedValueOnce(testCredential)
+    const identity = await makeIdentity()
+
+    await expect(identity.signInWithGoogle()).resolves.toBe(testCredential)
+    expect(watch.state.options).toBeUndefined()
   })
 })
 
@@ -553,6 +909,394 @@ describe('identity listener', () => {
       identity.initialize()
 
       expect(identity.currentUser()).toBe(user)
+    }
+  )
+})
+
+describe('resolveFirebaseIdentity', () => {
+  const VALID_CONFIG = {
+    apiKey: 'api-key',
+    authDomain: 'cloud.firebaseapp.com',
+    projectId: 'cloud',
+    appId: '1:1:web:1'
+  }
+
+  function jsonFetch(body: unknown, status = 200): typeof fetch {
+    return vi.fn(async () => new Response(JSON.stringify(body), { status }))
+  }
+
+  it('resolves a ready, initialized identity from a well-formed /api/features response', async () => {
+    vi.stubGlobal('fetch', jsonFetch({ firebase_config: VALID_CONFIG }))
+    const { resolveFirebaseIdentity } = await import('./index.js')
+
+    const identity = await resolveFirebaseIdentity({
+      cloudBaseUrl: 'https://cloud.example',
+      appName: 'well-formed'
+    })
+
+    expect(identity).toBeDefined()
+    expect(app.initializeApp).toHaveBeenCalledWith(VALID_CONFIG, 'well-formed')
+    expect(sdk.getAuth).toHaveBeenCalledOnce()
+  })
+
+  it.for([
+    [
+      'a non-OK response',
+      () => jsonFetch({ firebase_config: VALID_CONFIG }, 500)
+    ],
+    [
+      'a malformed body',
+      () => vi.fn(async () => new Response('not json', { status: 200 }))
+    ],
+    [
+      'a missing required field',
+      () =>
+        jsonFetch({
+          firebase_config: { ...VALID_CONFIG, apiKey: undefined }
+        })
+    ],
+    [
+      'a network failure',
+      () =>
+        vi.fn(async () => {
+          throw new TypeError('Failed to fetch')
+        })
+    ]
+  ] as const)(
+    'settles no identity, never a rejection, on %s',
+    async ([label, makeFetch]) => {
+      vi.stubGlobal('fetch', makeFetch())
+      const { resolveFirebaseIdentity } = await import('./index.js')
+
+      await expect(
+        resolveFirebaseIdentity({
+          cloudBaseUrl: 'https://cloud.example',
+          appName: label.replace(/\s+/g, '-')
+        })
+      ).resolves.toBeUndefined()
+    }
+  )
+
+  it('settles no identity when the fetch outruns the timeout', async () => {
+    const fetchImpl = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted', 'AbortError'))
+          })
+        })
+    )
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveFirebaseIdentity } = await import('./index.js')
+
+    const result = resolveFirebaseIdentity({
+      cloudBaseUrl: 'https://cloud.example',
+      appName: 'slow',
+      timeoutMs: 5
+    })
+    await vi.advanceTimersByTimeAsync(5)
+
+    await expect(result).resolves.toBeUndefined()
+  })
+
+  it('settles no identity, not a throw, when a well-formed config fails the SDK’s own checks', async () => {
+    // Same app name already registered for a different project: initialize()
+    // throws from assertSameProject instead of resolving Auth.
+    app.existing.push({
+      name: 'bad-init',
+      options: { apiKey: 'other', projectId: 'other-project' }
+    })
+    vi.stubGlobal('fetch', jsonFetch({ firebase_config: VALID_CONFIG }))
+    const { resolveFirebaseIdentity } = await import('./index.js')
+
+    await expect(
+      resolveFirebaseIdentity({
+        cloudBaseUrl: 'https://cloud.example',
+        appName: 'bad-init'
+      })
+    ).resolves.toBeUndefined()
+  })
+
+  it('fetches once and shares the resolved identity across concurrent callers with the same pair', async () => {
+    const fetchImpl = jsonFetch({ firebase_config: VALID_CONFIG })
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveFirebaseIdentity } = await import('./index.js')
+    const options = {
+      cloudBaseUrl: 'https://cloud.example',
+      appName: 'memo-app'
+    }
+
+    const [first, second] = await Promise.all([
+      resolveFirebaseIdentity(options),
+      resolveFirebaseIdentity(options)
+    ])
+
+    expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(first).toBe(second)
+  })
+
+  it('keys memoization by cloudBaseUrl: two origins under the same app name do not share a result', async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      const projectId = new URL(url).hostname
+      return new Response(
+        JSON.stringify({
+          firebase_config: { ...VALID_CONFIG, projectId }
+        }),
+        { status: 200 }
+      )
+    })
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveFirebaseIdentity } = await import('./index.js')
+
+    const [fromOne, fromTwo] = await Promise.all([
+      resolveFirebaseIdentity({
+        cloudBaseUrl: 'https://one.example',
+        appName: 'shared-app-name'
+      }),
+      resolveFirebaseIdentity({
+        cloudBaseUrl: 'https://two.example',
+        appName: 'shared-app-name'
+      })
+    ])
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(fromOne).not.toBe(fromTwo)
+  })
+
+  it('does not cache a failed resolution: a later call re-fetches and can succeed', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response('not json', { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ firebase_config: VALID_CONFIG }), {
+          status: 200
+        })
+      )
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveFirebaseIdentity } = await import('./index.js')
+    const options = {
+      cloudBaseUrl: 'https://cloud.example',
+      appName: 'evict-on-failure'
+    }
+
+    const first = await resolveFirebaseIdentity(options)
+    expect(first).toBeUndefined()
+    const second = await resolveFirebaseIdentity(options)
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(second).toBeDefined()
+  })
+
+  it('shares one in-flight fetch even when it will end in failure', async () => {
+    const response = deferred<Response>()
+    const fetchImpl = vi.fn<typeof fetch>(() => response.promise)
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveFirebaseIdentity } = await import('./index.js')
+    const options = {
+      cloudBaseUrl: 'https://cloud.example',
+      appName: 'concurrent-failure'
+    }
+
+    const callA = resolveFirebaseIdentity(options)
+    const callB = resolveFirebaseIdentity(options)
+    response.resolve(new Response('not json', { status: 200 }))
+
+    const [a, b] = await Promise.all([callA, callB])
+    expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(a).toBeUndefined()
+    expect(b).toBeUndefined()
+  })
+
+  it('keeps a successful resolution cached: a later call does not re-fetch', async () => {
+    const fetchImpl = jsonFetch({ firebase_config: VALID_CONFIG })
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveFirebaseIdentity } = await import('./index.js')
+    const options = {
+      cloudBaseUrl: 'https://cloud.example',
+      appName: 'stays-cached'
+    }
+
+    const first = await resolveFirebaseIdentity(options)
+    const second = await resolveFirebaseIdentity(options)
+
+    expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(first).toBe(second)
+  })
+})
+
+describe('resolveStripePublishableKey', () => {
+  function jsonFetch(body: unknown, status = 200): typeof fetch {
+    return vi.fn(async () => new Response(JSON.stringify(body), { status }))
+  }
+
+  it('resolves the key from a well-formed /api/features response', async () => {
+    vi.stubGlobal('fetch', jsonFetch({ stripe_publishable_key: 'pk_live_123' }))
+    const { resolveStripePublishableKey } = await import('./index.js')
+
+    await expect(
+      resolveStripePublishableKey({ cloudBaseUrl: 'https://cloud.example' })
+    ).resolves.toBe('pk_live_123')
+  })
+
+  it('settles undefined, never a rejection, when the server has no key configured', async () => {
+    vi.stubGlobal('fetch', jsonFetch({}))
+    const { resolveStripePublishableKey } = await import('./index.js')
+
+    await expect(
+      resolveStripePublishableKey({ cloudBaseUrl: 'https://cloud.example' })
+    ).resolves.toBeUndefined()
+  })
+
+  it('shares one /api/features fetch with resolveFirebaseIdentity on the same cloudBaseUrl and timeoutMs', async () => {
+    const fetchImpl = jsonFetch({
+      firebase_config: {
+        apiKey: 'api-key',
+        authDomain: 'cloud.firebaseapp.com',
+        projectId: 'cloud',
+        appId: '1:1:web:1'
+      },
+      stripe_publishable_key: 'pk_live_123'
+    })
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveFirebaseIdentity, resolveStripePublishableKey } =
+      await import('./index.js')
+    const options = {
+      cloudBaseUrl: 'https://shared.example',
+      timeoutMs: 4000
+    }
+
+    const [identity, key] = await Promise.all([
+      resolveFirebaseIdentity({ ...options, appName: 'shared-fetch-app' }),
+      resolveStripePublishableKey(options)
+    ])
+
+    expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(identity).toBeDefined()
+    expect(key).toBe('pk_live_123')
+  })
+
+  it('does not cache a failed features fetch across consumers: a later call on the same pair re-fetches and succeeds', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response('not json', { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            firebase_config: {
+              apiKey: 'api-key',
+              authDomain: 'cloud.firebaseapp.com',
+              projectId: 'cloud',
+              appId: '1:1:web:1'
+            }
+          }),
+          { status: 200 }
+        )
+      )
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveFirebaseIdentity, resolveStripePublishableKey } =
+      await import('./index.js')
+    const options = { cloudBaseUrl: 'https://cloud.example' }
+
+    const failedKey = await resolveStripePublishableKey(options)
+    expect(failedKey).toBeUndefined()
+    const identity = await resolveFirebaseIdentity({
+      ...options,
+      appName: 'evict-across-consumers'
+    })
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(identity).toBeDefined()
+  })
+
+  it('recovers the Stripe key the same way: a failed fetch, then a later resolution yields the server key', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response('not json', { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ stripe_publishable_key: 'pk_live_123' }),
+          { status: 200 }
+        )
+      )
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveStripePublishableKey } = await import('./index.js')
+    const options = { cloudBaseUrl: 'https://cloud.example' }
+
+    const first = await resolveStripePublishableKey(options)
+    expect(first).toBeUndefined()
+    const second = await resolveStripePublishableKey(options)
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(second).toBe('pk_live_123')
+  })
+
+  it('shares one in-flight fetch across concurrent callers on the same pair', async () => {
+    const response = deferred<Response>()
+    const fetchImpl = vi.fn<typeof fetch>(() => response.promise)
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveStripePublishableKey } = await import('./index.js')
+    const options = { cloudBaseUrl: 'https://cloud.example' }
+
+    const callA = resolveStripePublishableKey(options)
+    const callB = resolveStripePublishableKey(options)
+    response.resolve(
+      new Response(JSON.stringify({ stripe_publishable_key: 'pk_live_123' }), {
+        status: 200
+      })
+    )
+
+    const [a, b] = await Promise.all([callA, callB])
+    expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(a).toBe('pk_live_123')
+    expect(b).toBe('pk_live_123')
+  })
+
+  it('keeps a successful features fetch cached: a later call does not re-fetch', async () => {
+    const fetchImpl = jsonFetch({ stripe_publishable_key: 'pk_live_123' })
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveStripePublishableKey } = await import('./index.js')
+    const options = { cloudBaseUrl: 'https://cloud.example' }
+
+    const first = await resolveStripePublishableKey(options)
+    const second = await resolveStripePublishableKey(options)
+
+    expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(first).toBe('pk_live_123')
+    expect(second).toBe('pk_live_123')
+  })
+})
+
+describe('resolveWebSessionProbe', () => {
+  function jsonFetch(body: unknown): typeof fetch {
+    return vi.fn(async () => new Response(JSON.stringify(body)))
+  }
+
+  it.for([
+    { body: { stripe_publishable_key: 'pk' }, expected: false },
+    {
+      body: { stripe_publishable_key: 'pk', web_session_probe: false },
+      expected: false
+    },
+    {
+      body: { stripe_publishable_key: 'pk', web_session_probe: true },
+      expected: true
+    }
+  ])(
+    'reads $body from the fetch resolveStripePublishableKey already shares',
+    async ({ body, expected }) => {
+      const fetchImpl = jsonFetch(body)
+      vi.stubGlobal('fetch', fetchImpl)
+      const { resolveStripePublishableKey, resolveWebSessionProbe } =
+        await import('./index.js')
+      const options = { cloudBaseUrl: 'https://probe.example', timeoutMs: 4000 }
+
+      const [, probe] = await Promise.all([
+        resolveStripePublishableKey(options),
+        resolveWebSessionProbe(options)
+      ])
+
+      expect(probe).toBe(expected)
+      expect(fetchImpl).toHaveBeenCalledOnce()
     }
   )
 })

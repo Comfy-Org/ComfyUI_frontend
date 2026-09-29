@@ -73,7 +73,9 @@ export const useNodeDragAndDrop = <T>(
     try {
       const resp = await fetch(uri)
       const fileName =
-        uri.searchParams.get('filename') ?? baseUri.split('/').at(-1)
+        asset?.filename ??
+        uri.searchParams.get('filename') ??
+        baseUri.split('/').at(-1)
       if (!fileName || !resp.ok) return false
 
       const blob = await resp.blob()

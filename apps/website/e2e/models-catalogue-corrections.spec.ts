@@ -1,6 +1,46 @@
+import { readFileSync } from 'node:fs'
 import { expect } from '@playwright/test'
 
+import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
 import { test } from './fixtures/modelsAccount'
+
+const availability = workshopModelAvailabilitySchema.parse(
+  JSON.parse(
+    readFileSync(
+      new URL('../src/data/workshop-model-availability.json', import.meta.url),
+      'utf8'
+    )
+  )
+)
+const disabledModelSlugs = Object.entries(availability).flatMap(
+  ([slug, state]) => (state.disabled ? [slug] : [])
+)
+
+test('availability manifest withholds disabled models from catalogue and routes', async ({
+  request
+}) => {
+  const catalogueResponse = await request.get('/models/catalogue.json')
+  expect(catalogueResponse.ok()).toBe(true)
+  const catalogue: unknown = await catalogueResponse.json()
+  if (!Array.isArray(catalogue)) throw new Error('Invalid models catalogue')
+  const publishedSlugs = new Set(
+    catalogue.flatMap((entry) =>
+      typeof entry === 'object' &&
+      entry !== null &&
+      'slug' in entry &&
+      typeof entry.slug === 'string'
+        ? [entry.slug]
+        : []
+    )
+  )
+
+  expect(disabledModelSlugs.length).toBeGreaterThan(0)
+  for (const slug of disabledModelSlugs) {
+    expect(publishedSlugs.has(slug), `${slug} is in the catalogue`).toBe(false)
+    const response = await request.get(`/models/${slug}/`)
+    expect(response.status(), `${slug} has a public route`).toBe(404)
+  }
+})
 
 test('GPT Image generation pages remain discoverable while disabled edit pages are withheld', async ({
   page
@@ -29,6 +69,9 @@ test('GPT Image generation pages remain discoverable while disabled edit pages a
     .getByTestId('workshop-models-grid')
     .getByTestId('workshop-model-card')
   await expect(cards).toHaveCount(5)
+  const card = cards.first()
+  await expect(card).toHaveAccessibleName(/GPT Image/)
+  await expect(card.getByRole('img', { name: /GPT Image/ })).toHaveCount(0)
   await page.getByRole('link', { name: /GPT Image 1\.5/ }).click()
   await expect(page).toHaveURL(
     /\/models\/openai--gpt-image-1\.5--edit-images\/$/

@@ -5,13 +5,37 @@ export type WorkshopFailureStage =
   | 'upload_grant'
   | 'upload_put'
   | 'example_download'
+  | 'input_preparation'
+  | 'file_read'
   | 'request'
   | 'response'
 
+export type WorkshopRequestSettlement = 'pending' | 'terminal'
+
+interface WorkshopRouterErrorOptions extends ErrorOptions {
+  readonly requestSettlement?: WorkshopRequestSettlement
+}
+
+function bodyErrorType(body: string): string | null {
+  if (!body.trim().startsWith('{')) return null
+  try {
+    const payload: unknown = JSON.parse(body)
+    const errorType =
+      payload !== null && typeof payload === 'object'
+        ? Reflect.get(payload, 'error_type')
+        : undefined
+    return typeof errorType === 'string' && errorType ? errorType : null
+  } catch {
+    return null
+  }
+}
+
+/** The Router's error bucket, from its header or, failing that, the body. */
 export function workshopResponseDetails(response: Response, body = '') {
   return {
     status: response.status,
-    errorType: response.headers.get('X-Comfy-Error-Type'),
+    errorType:
+      response.headers.get('X-Comfy-Error-Type') ?? bodyErrorType(body),
     retryAfter: response.headers.get('Retry-After'),
     concurrencyLimit: response.headers.get('X-Concurrency-Limit'),
     concurrencyCurrent: response.headers.get('X-Concurrency-Current'),
@@ -21,6 +45,8 @@ export function workshopResponseDetails(response: Response, body = '') {
 }
 
 export class WorkshopRouterError extends Error {
+  readonly requestSettlement?: WorkshopRequestSettlement
+
   constructor(
     readonly reason: RunFailure,
     readonly requestId: string | null = null,
@@ -35,8 +61,20 @@ export class WorkshopRouterError extends Error {
       readonly body: string
     },
     readonly stage?: WorkshopFailureStage,
-    options?: ErrorOptions
+    options?: WorkshopRouterErrorOptions
   ) {
     super(`Router request failed: ${reason}`, options)
+    this.requestSettlement = options?.requestSettlement
   }
+}
+
+export function workshopRunMayStillSettle(
+  failure: WorkshopRouterError
+): boolean {
+  if (failure.requestSettlement) return failure.requestSettlement === 'pending'
+  if (['network', 'response', 'conflict'].includes(failure.reason)) return true
+  return (
+    failure.reason === 'timeout' &&
+    (!failure.response || failure.stage === 'response')
+  )
 }

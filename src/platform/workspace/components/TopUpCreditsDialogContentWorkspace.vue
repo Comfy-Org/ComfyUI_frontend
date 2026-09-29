@@ -28,7 +28,7 @@
         </h2>
       </div>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="() => handleClose(!topupIsParkedWithoutLink)"
       >
@@ -117,7 +117,7 @@
           size="lg"
           :class="
             cn(
-              'focus-visible:ring-secondary-foreground h-10 w-full text-base font-medium',
+              'h-10 w-full text-base font-medium focus-visible:ring-border-default',
               selectedPreset === amount && 'bg-secondary-background-selected'
             )
           "
@@ -302,7 +302,10 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
-import type { CheckoutJourneyPhaseEvent } from '@/platform/telemetry/types'
+import type {
+  CheckoutJourneyPhaseEvent,
+  PaymentIntentSource
+} from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -311,7 +314,6 @@ import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerA
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   bindOperationToCheckoutJourney,
@@ -319,6 +321,7 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
+  resolveEntrySource,
   toCheckoutJourneyContext
 } from '@/platform/workspace/utils/checkoutJourney'
 import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
@@ -327,8 +330,9 @@ import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { isInsufficientCredits = false } = defineProps<{
+const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
+  source?: PaymentIntentSource
 }>()
 
 const { n, t } = useI18n()
@@ -340,7 +344,6 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 const { fetchBalance, fetchStatus, manageSubscription } = useBillingContext()
 const { canTopUp } = useBillingCapabilities()
 
-const billingOperationStore = useBillingOperationStore()
 const workspaceStore = useTeamWorkspaceStore()
 
 function emitTopupJourneyPhase(
@@ -358,11 +361,13 @@ function enterTopupJourney(): void {
   const ownerUid = useAuthStore().userId
   if (!workspaceId || !ownerUid) return
 
+  const entrySource = resolveEntrySource(source, 'settings_billing')
   const resolved = resolveCheckoutJourney({
     actorUid: ownerUid,
     workspaceId,
     entryFlow: 'topup',
-    entrySource: 'settings_billing',
+    entrySource,
+    intent: entrySource,
     assignment: resolveCheckoutAssignment(api.getServerFeatures())
   })
   if (resolved.status === 'blocked' || resolved.resumed) return
@@ -376,7 +381,8 @@ const {
   topupOperation,
   topup,
   retryPaymentAuthentication,
-  dismissOperation
+  dismissOperation,
+  adoptPendingOperation
 } = useTopupOperation()
 // Start over invalidates the attempt in flight: on the SDK rail the purchase
 // call resolves only at settlement, so a superseded attempt must not unlock
@@ -530,6 +536,12 @@ function handlePresetClick(amount: number) {
 
 function handlePrimaryAction() {
   if (step.value === 'amount') {
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'intent',
+      outcome: 'pending',
+      payment_intent_source: source
+    })
     step.value = 'confirm'
     return
   }
@@ -589,7 +601,8 @@ async function handleBuy() {
     telemetry?.trackBillingEvent({
       operation: 'topup',
       stage: 'started',
-      outcome: 'pending'
+      outcome: 'pending',
+      payment_intent_source: source
     })
     telemetry?.trackBillingEvent({
       operation: 'operation',
@@ -611,6 +624,7 @@ async function handleBuy() {
         operation: 'topup',
         stage: 'failed',
         outcome: 'failure',
+        payment_intent_source: source,
         failure_category: 'unknown',
         duration_ms: Date.now() - attemptStartedAt
       })
@@ -654,6 +668,7 @@ async function handleBuy() {
         stage: 'succeeded',
         outcome: 'success',
         billing_op_id: response.billing_op_id,
+        payment_intent_source: source,
         duration_ms: Date.now() - attemptStartedAt
       })
       telemetry?.trackBillingEvent({
@@ -674,11 +689,10 @@ async function handleBuy() {
       handleClose(false)
       settingsDialog.show(isCloud ? 'workspace' : 'credits')
     } else if (response.status === 'pending') {
-      void billingOperationStore
-        .startOperation(response.billing_op_id, 'topup', {
-          attemptStartedAt,
-          autoHandleRequiresAction: true
-        })
+      void adoptPendingOperation(response.billing_op_id, {
+        attemptStartedAt,
+        paymentIntentSource: source
+      })
         .then(() => {
           if (isCurrentAttempt()) paymentSubmitted.value = false
         })
@@ -698,6 +712,7 @@ async function handleBuy() {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: response.billing_op_id,
+        payment_intent_source: source,
         failure_category: 'provider_decline',
         duration_ms: Date.now() - attemptStartedAt
       })
@@ -737,6 +752,7 @@ function reportPurchaseError(
     stage: 'failed',
     outcome: 'failure',
     ...(billingOpId ? { billing_op_id: billingOpId } : {}),
+    payment_intent_source: source,
     failure_category:
       error === undefined ? 'unknown' : categorizeBillingApiError(error),
     duration_ms: Date.now() - attemptStartedAt

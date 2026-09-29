@@ -134,8 +134,9 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
     {{
       t(
         visibleModels.length === 1 ? 'workshop.result' : 'workshop.results',
-        locale
-      ).replace('{count}', String(visibleModels.length))
+        locale,
+        { count: visibleModels.length }
+      )
     }}
   </p>
 
@@ -198,7 +199,7 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
     class="rounded-2xl border border-primary-comfy-canvas/10 p-12"
   >
     <p class="text-center text-primary-comfy-canvas/60">
-      {{ t('workshop.empty', locale) }}
+      {{ t('workshop.empty.message', locale) }}
     </p>
   </div>
 </template>

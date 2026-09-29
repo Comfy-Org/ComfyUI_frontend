@@ -1,4 +1,5 @@
 import type {
+  BillingEventsReadOptions,
   BillingResult,
   CapabilitiesReadOptions
 } from '@comfyorg/account-core/billing'
@@ -7,6 +8,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
+  BillingEventsResponse,
   BillingPlansResponse,
   BillingStatusResponse,
   SavedPaymentMethod
@@ -22,11 +24,16 @@ export interface BillingReadRail {
     options: CapabilitiesReadOptions
   ) => Promise<BillingResult<BillingCapabilitiesResponse>>
   readPaymentMethods: () => Promise<BillingResult<SavedPaymentMethod[]>>
+  /** The only read whose request varies per call: it asks for one page. */
+  readEvents: (
+    options?: BillingEventsReadOptions
+  ) => Promise<BillingResult<BillingEventsResponse>>
 }
 
 /**
- * Which rail the billing reads — status, balance, plans, capabilities and
- * saved payment methods — are served on. Null is the legacy client. Either write rail turns the reads on: a status the SDK's lifecycle
+ * Which rail the billing reads — status, balance, plans, capabilities, saved
+ * payment methods and the history feed — are served on. Null is the legacy
+ * client. Either write rail turns the reads on: a status the SDK's lifecycle
  * recovers from, or a balance its top-up refreshes, should come from the same
  * readers those commands already refreshed, or the panels read one thing and
  * the rail settled another.

@@ -101,6 +101,11 @@ describe('file source selection', () => {
         const preview = within(trigger).getByTestId('video-source-thumbnail')
         expect(preview).toBeInstanceOf(HTMLVideoElement)
         expect(preview.getAttribute('src')).toMatch(/^blob:/)
+      } else if (type.startsWith('audio/')) {
+        // A recording is played where another kind of file shows its type.
+        expect(
+          screen.getByRole('button', { name: `Play ${name}` })
+        ).toBeTruthy()
       } else {
         expect(screen.getByText(label)).toBeTruthy()
       }
@@ -271,14 +276,31 @@ describe('file source selection', () => {
     expect(screen.getAllByRole('img')).toHaveLength(1)
   })
 
-  it('promises one image where a second would replace the first', async () => {
+  // The drop zone is the whole group, not the prompt, so a field that is full
+  // still takes a replacement by drop even with nothing left inviting one.
+  it('takes the drop zone away once the one image it holds is chosen', async () => {
     const single = { ...field, multiple: false, maxItems: 1 }
     const value = mountInput(false, single)
     expect(screen.getByText('Select or drop an image')).toBeTruthy()
+
     await drop([new File(['one'], 'one.png', { type: 'image/png' })])
-    expect(screen.getByText('Select or drop to replace')).toBeTruthy()
+    expect(screen.queryByText(/select or drop/i)).toBeNull()
+
     await drop([new File(['two'], 'two.png', { type: 'image/png' })])
     expect(value.value).toMatchObject({ name: 'two.png' })
+    expect(screen.queryByText(/select or drop/i)).toBeNull()
+  })
+
+  // Room left is what the prompt is for, so it stays until the last slot goes.
+  it('keeps the drop zone while a multi-image field has room', async () => {
+    const two = { ...field, multiple: true, maxItems: 2 }
+    mountInput(false, two)
+
+    await drop([new File(['one'], 'one.png', { type: 'image/png' })])
+    expect(screen.getByText('Select or drop up to 2 images')).toBeTruthy()
+
+    await drop([new File(['two'], 'two.png', { type: 'image/png' })])
+    expect(screen.queryByText(/select or drop/i)).toBeNull()
   })
 
   it('ignores file drops while disabled', async () => {

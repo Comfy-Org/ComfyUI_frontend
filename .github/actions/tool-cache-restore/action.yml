@@ -2,14 +2,16 @@ name: 'Restore tool caches'
 description: >
   Restores ESLint, Stylelint or TypeScript incremental caches from the most
   recent run on the same configuration, falling back to any run for the same
-  lockfile.
+  lockfile. Lint scripts run with --cache-strategy content and tsbuildinfo
+  stores content hashes, so entries stay valid across checkouts with different
+  mtimes. Pair with tool-cache-save using the returned key.
 
 inputs:
   scope:
     description: Cache namespace; use one per job so jobs do not overwrite each other
     required: true
   path:
-    description: Newline-separated cache paths
+    description: Newline-separated cache paths (same value for tool-cache-save)
     required: true
 
 outputs:

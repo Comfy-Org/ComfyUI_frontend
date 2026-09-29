@@ -44,6 +44,109 @@ function mountField(
 }
 
 describe('PlaygroundField', () => {
+  it('shows the localized video duration limit in its validation error', () => {
+    mountField(
+      {
+        kind: 'text',
+        name: 'video',
+        label: 'Video',
+        required: false,
+        multiline: false,
+        presentation: {
+          label: 'Video',
+          help: '',
+          hidden: false,
+          advanced: false,
+          control: 'media',
+          urlUpload: 'video',
+          maxVideoDurationSeconds: 15
+        }
+      },
+      {},
+      'zh-CN',
+      { video: 'videoTooLong' }
+    )
+
+    expect(screen.getByTestId('error-video')).toHaveTextContent(
+      '请使用时长不超过 15 秒的视频。'
+    )
+  })
+
+  it('shows a multiline default in its editor without repeating it as help text', () => {
+    const field: FieldSchema = {
+      kind: 'text',
+      name: 'prompt',
+      label: 'Prompt',
+      required: true,
+      multiline: true,
+      defaultValue:
+        'A continuous shot following the character through a forest.'
+    }
+    mountField(field, defaultValues([field]))
+    expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue(
+      field.defaultValue
+    )
+    expect(screen.queryByText(`Default: ${field.defaultValue}`)).toBeNull()
+  })
+
+  it('preserves a provider rejection when the input passes its form constraint', () => {
+    mountField(
+      {
+        kind: 'select',
+        name: 'size',
+        label: 'Image size',
+        options: ['2K'],
+        presentation: {
+          label: 'Image size',
+          help: 'Choose a supported size.',
+          hidden: false,
+          advanced: false,
+          control: 'dropdown',
+          formConstraint: {
+            schema: { properties: { size: { const: '2K' } } },
+            error: 'incompatible'
+          }
+        }
+      },
+      { size: '2K' },
+      'en',
+      { size: 'rejected' }
+    )
+    expect(screen.getByTestId('error-size')).toHaveTextContent(
+      'The model rejected this value'
+    )
+    expect(
+      screen.getByRole('combobox', { name: 'Image size' })
+    ).toHaveAttribute('aria-invalid', 'true')
+  })
+
+  it('shows the declared video-width bounds on the affected field', () => {
+    mountField(
+      {
+        kind: 'text',
+        name: 'video_url',
+        label: 'Source video',
+        required: true,
+        multiline: false,
+        presentation: {
+          label: 'Source video',
+          help: '',
+          hidden: false,
+          advanced: false,
+          control: 'media',
+          urlUpload: 'video',
+          videoWidthPixels: { minimum: 700, maximum: 4553 }
+        }
+      },
+      { video_url: 'https://media.example/source.mp4' },
+      'en',
+      { video_url: 'videoWidthOutOfRange' }
+    )
+
+    expect(screen.getByTestId('error-video_url')).toHaveTextContent(
+      'Use a video between 700 and 4553 pixels wide.'
+    )
+  })
   it('disables a fixed single option while keeping its native value', () => {
     const field: FieldSchema = {
       kind: 'select',
@@ -558,6 +661,245 @@ describe('PlaygroundField', () => {
     const input = screen.getByRole('spinbutton', { name: 'Count' })
     await userEvent.setup().type(input, '27')
     expect(number.value.count).toBe(27)
+  })
+
+  // The three shapes in the catalogue whose span is wider than the track has
+  // pixels. Dragging lands on a neighbour of the value the reader wants, so
+  // the exact value has to be reachable some other way.
+  it.for([
+    {
+      name: 'height',
+      label: 'Height',
+      min: 256,
+      max: 2048,
+      defaultValue: 1024,
+      reachable: '1023',
+      wanted: 1024
+    },
+    {
+      name: 'seed',
+      label: 'Seed',
+      min: -1,
+      max: 2147483647,
+      defaultValue: -1,
+      reachable: '1258291200',
+      wanted: 1234567890
+    },
+    {
+      name: 'target_polycount',
+      label: 'Target polycount',
+      min: 100,
+      max: 300000,
+      defaultValue: 30000,
+      reachable: '29873',
+      wanted: 30000
+    }
+  ])(
+    'reaches $wanted on $name, which dragging cannot land on',
+    async ({ name, label, min, max, defaultValue, reachable, wanted }) => {
+      const field: FieldSchema = {
+        kind: 'number',
+        name,
+        label,
+        min,
+        max,
+        step: 1,
+        defaultValue
+      }
+      const values = mountField(field, defaultValues([field]))
+      const slider = screen.getByRole('slider', { name: label })
+      await fireEvent.update(slider, reachable)
+      expect(values.value[name]).toBe(Number(reachable))
+
+      const box = screen.getByRole('spinbutton', { name: `${label} value` })
+      await fireEvent.update(box, String(wanted))
+      expect(values.value[name]).toBe(wanted)
+      expect((slider as HTMLInputElement).value).toBe(String(wanted))
+      expect(screen.queryByRole('alert')).toBeNull()
+    }
+  )
+
+  // A seed shows ten characters and a resolution four, so one width either
+  // wastes the row or scrolls most of the number out of sight. The pixels are
+  // checked in the browser; here the rule is that a wider range gets a wider
+  // box and never the reverse.
+  it('widens the value box with the widest value its field accepts', () => {
+    const width = (name: string, min: number, max: number) => {
+      const field: FieldSchema = {
+        kind: 'number',
+        name,
+        label: name,
+        min,
+        max,
+        step: 1,
+        defaultValue: min
+      }
+      mountField(field, defaultValues([field]))
+      const size = screen
+        .getByTestId(`field-${name}-value`)
+        .className.match(/\bw-(\d+)\b/)
+      expect(size).not.toBeNull()
+      return Number(size![1])
+    }
+    const height = width('height', 256, 2048)
+    const polycount = width('target_polycount', 100, 300000)
+    const seed = width('seed', -1, 2147483647)
+    expect(height).toBeLessThan(polycount)
+    expect(polycount).toBeLessThan(seed)
+  })
+
+  // A range with no declared step reports the thumb's pixel position in full
+  // double precision, so Image influence handed back 0.367299194177281 and the
+  // box could show a third of it. The grid is a thousandth of the span, which
+  // is finer than the control can be aimed.
+  it.for([
+    { span: 1, min: 0, max: 1, step: '0.001' },
+    { span: 100, min: 0, max: 100, step: '0.1' },
+    { span: 10000, min: 0, max: 10000, step: '1' }
+  ])(
+    'drags a $span-wide continuous field in steps of $step',
+    ({ min, max, step }) => {
+      const field: FieldSchema = {
+        kind: 'number',
+        name: 'image_prompt_strength',
+        label: 'Image influence',
+        min,
+        max,
+        step: 'any',
+        defaultValue: min
+      }
+      mountField(field, defaultValues([field]))
+
+      const slider: HTMLInputElement = screen.getByRole('slider', {
+        name: 'Image influence'
+      })
+      expect(slider.step).toBe(step)
+    }
+  )
+
+  it('leaves the box free of the slider grid and no wider than a seed needs', () => {
+    const influence: FieldSchema = {
+      kind: 'number',
+      name: 'image_prompt_strength',
+      label: 'Image influence',
+      min: 0,
+      max: 1,
+      step: 'any',
+      defaultValue: 0.1
+    }
+    mountField(influence, defaultValues([influence]))
+    const box: HTMLInputElement = screen.getByRole('spinbutton', {
+      name: 'Image influence value'
+    })
+    expect(box.step).toBe('any')
+    const influenceWidth = Number(box.className.match(/\bw-(\d+)\b/)?.[1] ?? 0)
+
+    const seed: FieldSchema = {
+      kind: 'number',
+      name: 'seed',
+      label: 'Seed',
+      min: -1,
+      max: 2147483647,
+      step: 1,
+      defaultValue: -1
+    }
+    mountField(seed, defaultValues([seed]))
+    const seedWidth = Number(
+      screen
+        .getByTestId('field-seed-value')
+        .className.match(/\bw-(\d+)\b/)?.[1] ?? 0
+    )
+
+    expect(influenceWidth).toBeGreaterThan(0)
+    expect(influenceWidth).toBeLessThan(seedWidth)
+  })
+
+  it('moves the value box with the slider and carries the slider bounds', async () => {
+    const field: FieldSchema = {
+      kind: 'number',
+      name: 'height',
+      label: 'Height',
+      min: 256,
+      max: 2048,
+      step: 1,
+      defaultValue: 1024
+    }
+    mountField(field, defaultValues([field]))
+    const box = screen.getByRole('spinbutton', {
+      name: 'Height value'
+    }) as HTMLInputElement
+    expect(box.value).toBe('1024')
+    await fireEvent.update(
+      screen.getByRole('slider', { name: 'Height' }),
+      '512'
+    )
+    expect(box.value).toBe('512')
+    expect(box.min).toBe('256')
+    expect(box.max).toBe('2048')
+    expect(box.step).toBe('1')
+  })
+
+  it('empties the value box when the field is cleared rather than showing the default', async () => {
+    const field: FieldSchema = {
+      kind: 'number',
+      name: 'height',
+      label: 'Height',
+      min: 256,
+      max: 2048,
+      step: 1,
+      defaultValue: 1024
+    }
+    const values = mountField(field, defaultValues([field]))
+    const box = screen.getByRole('spinbutton', {
+      name: 'Height value'
+    }) as HTMLInputElement
+    await fireEvent.update(box, '')
+    expect(values.value.height).toBeUndefined()
+    expect(box.value).toBe('')
+  })
+
+  // The box is the half of the pair that can hold nothing, so it is the half
+  // that has to say the field is required.
+  it('exposes the required state on the value box', () => {
+    const field: FieldSchema = {
+      kind: 'number',
+      name: 'height',
+      label: 'Height',
+      min: 256,
+      max: 2048,
+      step: 1,
+      defaultValue: 1024,
+      required: true
+    }
+    mountField(field, defaultValues([field]))
+    expect(
+      screen
+        .getByRole('spinbutton', { name: 'Height value' })
+        .getAttribute('aria-required')
+    ).toBe('true')
+  })
+
+  it('marks a typed value outside the field bounds invalid', async () => {
+    const field: FieldSchema = {
+      kind: 'number',
+      name: 'height',
+      label: 'Height',
+      min: 256,
+      max: 2048,
+      step: 1,
+      defaultValue: 1024
+    }
+    mountField(field, defaultValues([field]))
+    const box = screen.getByRole('spinbutton', { name: 'Height value' })
+    await fireEvent.update(box, '9999')
+    expect(box.getAttribute('aria-invalid')).toBe('true')
+    expect(screen.getByRole('alert').textContent).not.toBe('')
+  })
+
+  it('leaves a field without slider bounds with the one control it already had', () => {
+    mountField({ kind: 'number', name: 'count', label: 'Count', step: 1 })
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(1)
+    expect(screen.queryByRole('slider')).toBeNull()
   })
 
   it('discloses zero and false defaults, localized, without treating them as missing', async () => {

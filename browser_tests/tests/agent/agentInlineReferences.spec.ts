@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   inlineReferencesTest as test,
   referenceNode,
@@ -23,10 +24,9 @@ test(
       mimeType: 'application/json',
       buffer: Buffer.from(JSON.stringify(referenceWorkflow))
     })
-    await page
-      .getByRole('button', { name: enMessages.agent.askComfyAgent })
-      .click()
-    const panel = page.locator('#agent-panel-root')
+    const agentPanel = new AgentPanel(page)
+    await agentPanel.open()
+    const panel = agentPanel.root
     const editor = panel.getByRole('textbox')
     await panel
       .getByRole('button', { name: enMessages.agent.switchWorkflow })

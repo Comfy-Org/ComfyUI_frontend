@@ -256,6 +256,36 @@ describe('NodeSlots.vue', () => {
     ).toEqual({ x: 0, y: 50 - LiteGraph.NODE_TITLE_HEIGHT })
   })
 
+  it('measures slot offsets again after the layout store clears the graph', async () => {
+    const pinia = getActivePinia()!
+    const graph = new LGraph()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
+    canvasStore.currentGraph = graph
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(100, 200, 200, 100)
+    )
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
+    const nodeData = makeNodeData({
+      inputs: [createMockNodeInputSlot({ name: 'model', type: 'MODEL' })]
+    })
+    renderSlots(nodeData, defaultSlotStubs, pinia)
+    await nextTick()
+
+    layoutStore.clearGraph(graph.rootGraph.id)
+    await nextTick()
+
+    expect(
+      layoutStore.getSlotOffset(
+        graph.rootGraph.id,
+        nodeData.id,
+        0,
+        'input',
+        'expanded'
+      )
+    ).toEqual({ x: 0, y: 50 - LiteGraph.NODE_TITLE_HEIGHT })
+  })
+
   it('does not store slot offsets when layout synchronization is disabled', async () => {
     const pinia = getActivePinia()!
     const graph = new LGraph()

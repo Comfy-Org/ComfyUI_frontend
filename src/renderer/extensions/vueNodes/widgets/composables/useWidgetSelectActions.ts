@@ -2,6 +2,8 @@ import { toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -9,6 +11,25 @@ import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+
+const BYTES_PER_MB = 1024 * 1024
+
+function buildUploadErrorMessage(resp: Response) {
+  if (resp.status === 413) {
+    const maxUploadSize = api.getServerFeature<number>(
+      ServerFeatureFlag.MAX_UPLOAD_SIZE
+    )
+    return typeof maxUploadSize === 'number' && maxUploadSize > 0
+      ? t('g.uploadFileTooLargeWithLimit', {
+          limit: Math.round(maxUploadSize / BYTES_PER_MB)
+        })
+      : t('g.uploadFileTooLarge')
+  }
+
+  return t('g.uploadFailed', {
+    reason: resp.statusText || `HTTP ${resp.status}`
+  })
+}
 
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
@@ -55,7 +76,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     })
 
     if (resp.status !== 200) {
-      toastStore.addAlert(resp.status + ' - ' + resp.statusText)
+      toastStore.addAlert(buildUploadErrorMessage(resp))
       return null
     }
 

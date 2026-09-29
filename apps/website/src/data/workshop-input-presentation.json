@@ -474,57 +474,21 @@
       "defaultCandidates": ["disabled", "auto"]
     },
     {
-      "names": ["safety_tolerance"],
-      "label": "Safety tolerance",
-      "help": "Adjust the provider's content-filtering tolerance within its allowed limits.",
-      "advanced": true,
-      "defaultCandidates": [2]
-    },
-    {
-      "names": ["enable_safety_checker"],
-      "label": "Content checks",
-      "help": "Apply the provider's safety or copyright checks.",
-      "advanced": true,
-      "defaultCandidates": [true]
-    },
-    {
-      "names": ["prompt_content_moderation"],
-      "label": "Check prompt content",
-      "help": "Apply the provider's content checks to the prompt.",
-      "advanced": true,
-      "defaultCandidates": [true],
-      "control": "toggle"
-    },
-    {
-      "names": ["visual_input_content_moderation"],
-      "label": "Check input media",
-      "help": "Apply the provider's content checks to input images and masks.",
-      "advanced": true,
-      "defaultCandidates": [true],
-      "control": "toggle"
-    },
-    {
-      "names": ["visual_output_content_moderation"],
-      "label": "Check output media",
-      "help": "Apply the provider's content checks to generated images.",
-      "advanced": true,
-      "defaultCandidates": [true],
-      "control": "toggle"
-    },
-    {
-      "names": ["enable_copyright_detection"],
-      "label": "Copyright checks",
-      "help": "Check generated images for potential likeness or logo matches.",
-      "advanced": true,
-      "defaultCandidates": [true],
-      "control": "toggle"
-    },
-    {
-      "names": ["moderation"],
+      "names": [
+        "contentModeration",
+        "enable_copyright_detection",
+        "enable_safety_checker",
+        "ip_signal",
+        "moderation",
+        "prompt_content_moderation",
+        "safetySettings",
+        "safety_tolerance",
+        "visual_input_content_moderation",
+        "visual_output_content_moderation"
+      ],
       "label": "Content moderation",
-      "help": "Choose the provider's content moderation mode.",
-      "advanced": true,
-      "defaultCandidates": ["auto"]
+      "hidden": true,
+      "advanced": false
     },
     {
       "names": ["background"],
@@ -787,13 +751,6 @@
       "control": "slider"
     },
     {
-      "names": ["ip_signal"],
-      "label": "IP warnings",
-      "help": "Flag possible intellectual property references in the edit instructions.",
-      "advanced": true,
-      "control": "toggle"
-    },
-    {
       "names": ["target_polycount"],
       "label": "Target polygon count",
       "help": "",
@@ -811,13 +768,6 @@
       "names": ["generationConfig"],
       "label": "Generation settings",
       "help": "Set output limits, sampling, or image settings supported by this model.",
-      "advanced": true,
-      "control": "text-area"
-    },
-    {
-      "names": ["safetySettings"],
-      "label": "Content filters",
-      "help": "Set category-specific thresholds for filtering generated content.",
       "advanced": true,
       "control": "text-area"
     },
@@ -868,11 +818,6 @@
       },
       "mask": {
         "help": "Provide a same-size mask: white removes, black keeps."
-      }
-    },
-    "bfl/flux-2-pro": {
-      "safety_tolerance": {
-        "hidden": true
       }
     },
     "bfl/flux-3-video": {
@@ -1085,6 +1030,12 @@
         "advanced": true,
         "options": ["manual", "automatic"],
         "default": "manual"
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/image-edit-expand": {
@@ -1112,11 +1063,29 @@
         "label": "Source image",
         "help": "Choose the image to expand.",
         "urlUpload": "image"
+      },
+      "prompt_content_moderation": {
+        "fixed": true
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/image-edit-gen-fill": {
       "mask": {
         "help": "Provide a mask: white fills, black keeps."
+      },
+      "prompt_content_moderation": {
+        "fixed": true
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/image-edit-increase-resolution": {
@@ -1127,6 +1096,12 @@
       },
       "desired_increase": {
         "options": [2, 4]
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/image-edit-remove-background": {
@@ -1134,6 +1109,12 @@
         "label": "Source image",
         "help": "",
         "urlUpload": "image"
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/structured-instruction": {
@@ -1573,7 +1554,7 @@
       },
       "size": {
         "label": "Image size",
-        "help": "",
+        "help": "Separate layers supports Auto, 1K, 1.5K or 2K. For other images, use 1K, 2K or a pixel size.",
         "advanced": false,
         "options": [
           "1024x1024",
@@ -1581,9 +1562,42 @@
           "1024x1536",
           "1920x1080",
           "1080x1920",
-          "2048x2048"
+          "2048x2048",
+          "auto",
+          "1K",
+          "1.5K",
+          "2K"
         ],
-        "default": "1024x1024"
+        "default": "1024x1024",
+        "formConstraint": {
+          "schema": {
+            "if": {
+              "properties": {
+                "layer_decomposition": {
+                  "const": true
+                }
+              },
+              "required": ["layer_decomposition"]
+            },
+            "then": {
+              "properties": {
+                "size": {
+                  "enum": ["auto", "1K", "1.5K", "2K"]
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "size": {
+                  "not": {
+                    "enum": ["auto", "1.5K"]
+                  }
+                }
+              }
+            }
+          },
+          "error": "incompatible"
+        }
       }
     },
     "elevenlabs/eleven_sfx_v2": {
@@ -1799,7 +1813,7 @@
           "pt-PT": "Portuguese (Portugal)",
           "es-ES": "Spanish (Spain)",
           "es-MX": "Spanish (Mexico)",
-          "tr-TR": "Turkish (T\u00fcrkiye)",
+          "tr-TR": "Turkish (Türkiye)",
           "vi-VN": "Vietnamese (Vietnam)"
         }
       },
@@ -1885,6 +1899,9 @@
       },
       "text_prompt": {
         "help": "Describe the image, or leave empty when using Structured prompt."
+      },
+      "enable_copyright_detection": {
+        "fixed": true
       }
     },
     "ideogram/p-image-ideogram": {
@@ -1919,6 +1936,9 @@
       "resolution": {
         "options": ["1K", "2K"],
         "default": "1K"
+      },
+      "enable_copyright_detection": {
+        "fixed": true
       }
     },
     "kling/kling-3.0-turbo": {
@@ -2428,6 +2448,9 @@
         "advanced": false,
         "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/gpt-image-1.5": {
@@ -2443,6 +2466,9 @@
         "advanced": false,
         "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/gpt-image-2": {
@@ -2468,6 +2494,9 @@
           "2160x3840"
         ],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/gpt-image-2.5-flare": {
@@ -2490,6 +2519,9 @@
           "2160x3840"
         ],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/gpt-image-2.5-sunburst": {
@@ -2512,6 +2544,9 @@
           "2160x3840"
         ],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/o1": {
@@ -3059,12 +3094,6 @@
       }
     },
     "runway/aleph2": {
-      "contentModeration": {
-        "label": "Content checks",
-        "help": "Set how strictly recognizable public figures are filtered.",
-        "advanced": true,
-        "control": "text-area"
-      },
       "keyframes": {
         "label": "Timed guidance images",
         "help": "Provide image URIs with seconds timestamps or relative positions from 0 to 1."

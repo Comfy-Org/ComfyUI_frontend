@@ -2,7 +2,11 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 import { toTurnId } from '../schemas/agentApiSchema'
-import type { MessagePart, ToolPart } from '../services/agent/agentMessageParts'
+import type {
+  AssistantMessage,
+  MessagePart,
+  ToolPart
+} from '../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../services/agent/agentMessageParts'
 
 const { getSystemStats, getLogs, getSettings } = vi.hoisted(() => ({
@@ -53,6 +57,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
     outcomes: {
       received: 3,
       applied: 3,
+      appliedLive: 3,
       skipped: 0,
       errored: 0,
       gap: 0,
@@ -324,45 +329,46 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('correlates tool outcomes and backend durations without conversation content', async () => {
+    const agentMessages: AssistantMessage[] = [
+      {
+        ...createAssistantMessage(toTurnId('turn-21')),
+        parts: [
+          { type: 'text', text: 'private assistant response', state: 'done' },
+          {
+            type: 'tool',
+            callId: 'call-success',
+            name: 'inspect_workflow',
+            state: 'done',
+            ok: true,
+            durationMs: 137
+          }
+        ]
+      },
+      {
+        ...createAssistantMessage(toTurnId('turn-43')),
+        parts: [
+          { type: 'thinking', text: 'private reasoning', state: 'done' },
+          {
+            type: 'tool',
+            callId: 'call-error',
+            name: 'edit_workflow',
+            state: 'done',
+            ok: false,
+            durationMs: 294
+          },
+          {
+            type: 'tool',
+            callId: 'call-unsettled',
+            name: 'run_workflow',
+            state: 'streaming'
+          }
+        ]
+      }
+    ]
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
       events: [],
-      agentMessages: [
-        {
-          ...createAssistantMessage(toTurnId('turn-21')),
-          parts: [
-            { type: 'text', text: 'private assistant response', state: 'done' },
-            {
-              type: 'tool',
-              callId: 'call-success',
-              name: 'inspect_workflow',
-              state: 'done',
-              ok: true,
-              durationMs: 137
-            }
-          ]
-        },
-        {
-          ...createAssistantMessage(toTurnId('turn-43')),
-          parts: [
-            { type: 'thinking', text: 'private reasoning', state: 'done' },
-            {
-              type: 'tool',
-              callId: 'call-error',
-              name: 'edit_workflow',
-              state: 'done',
-              ok: false,
-              durationMs: 294
-            },
-            {
-              type: 'tool',
-              callId: 'call-unsettled',
-              name: 'run_workflow',
-              state: 'streaming'
-            }
-          ]
-        }
-      ]
+      agentMessages
     })
 
     expect(report).toContain(
@@ -399,6 +405,13 @@ describe('collectCrdtDebugReport', () => {
     ])
     expect(report).not.toContain('private assistant response')
     expect(report).not.toContain('private reasoning')
+    expect(agentMessages.map(({ id }) => id)).toEqual(['turn-21', 'turn-43'])
+    expect(
+      agentMessages.map(({ parts }) => parts.map(({ type }) => type))
+    ).toEqual([
+      ['text', 'tool'],
+      ['thinking', 'tool', 'tool']
+    ])
   })
 
   it.for([

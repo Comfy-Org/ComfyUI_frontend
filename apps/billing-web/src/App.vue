@@ -1,18 +1,34 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import BillingShell from '@/components/BillingShell.vue'
 import { useBillingEntry } from '@/entry/billingEntry'
-import { useBillingWebSession } from '@/session/billingWebSession'
+import { SIGN_IN_PATH } from '@/router'
+import { billedScope, billingWebLivePhase } from '@/session/billingWebAuth'
 import EntryErrorView from '@/views/EntryErrorView.vue'
 
 const { error } = useBillingEntry()
-const { session } = useBillingWebSession()
+const route = useRoute()
+const router = useRouter()
+
+/**
+ * The router guard only runs on navigation, so a session refused after the
+ * page rendered (a restored credential for a workspace that has since been
+ * deleted) is sent to sign-in here, where the refusal is explained.
+ */
+watch(billingWebLivePhase, (next) => {
+  if (next !== 'error' || route.path === SIGN_IN_PATH) return
+  void router.replace({
+    path: SIGN_IN_PATH,
+    query: { returnTo: route.fullPath }
+  })
+})
 
 /** A new key is a new scope, so the shell remounts with a fresh client. */
 const scopeKey = computed(() =>
-  session.value
-    ? `${session.value.uid}:${session.value.workspace.id}`
+  billedScope.value
+    ? `${billedScope.value.uid}:${billedScope.value.workspace.id}`
     : undefined
 )
 </script>

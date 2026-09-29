@@ -58,7 +58,7 @@ declare module '@/lib/litegraph/src/types/widgets' {
     onRemove?(): void
     beforeQueued?(options?: WidgetCallbackOptions): unknown
     afterQueued?(options?: WidgetCallbackOptions): unknown
-    serializeValue?(node: LGraphNode, index: number): Promise<unknown> | unknown
+    serializeValue?(node: LGraphNode, index: number): unknown
 
     /**
      * Refreshes the widget's value or options from its remote source.
@@ -90,7 +90,7 @@ declare module '@/lib/litegraph/src/litegraph' {
   interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
     type?: string
     comfyClass: string
-    title: string
+    title?: string
     nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2 & { [key: symbol]: unknown }
     category?: string
     new (): T

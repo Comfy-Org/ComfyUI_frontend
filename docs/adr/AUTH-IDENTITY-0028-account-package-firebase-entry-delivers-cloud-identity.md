@@ -12,6 +12,11 @@ construction (FE-2196).
 Amended 2026-09-16: rule 5 follows the package initializing the cloud app's
 Firebase, replacing vuefire (FE-2196, C4).
 
+The original transitional text (the Pinia identity adapter and the
+`attachIdentity` seam) is superseded by
+[AUTH-IDENTITY-0033](AUTH-IDENTITY-0033-account-package-owns-identity-taken-at-construction.md);
+rules 1 to 5 as amended still stand.
+
 ## Context
 
 The cloud app holds two consumers of Firebase identity:

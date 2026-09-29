@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "空Latent视频（Cosmos）",
+    "display_name": "空 Cosmos 潜空间视频",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "空Latent图像（Hunyuan）",
+    "display_name": "空 Hunyuan 图像潜空间",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "空Latent视频（Hunyuan）",
+    "display_name": "空 Hunyuan Video 1.0 潜空间",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "空Latent视频（Hunyuan1.5）",
+    "display_name": "空 Hunyuan Video 1.5 潜空间",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "空Latent视频（LTXV）",
+    "display_name": "空 LTXV 潜空间视频",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "空Latent图像（Hunyuan3Dv2）",
+    "display_name": "空 Hunyuan 3D v2 潜空间",
     "inputs": {
       "batch_size": {
         "name": "批次大小",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "空 Trellis2 潜空间结构",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "使用腾讯 Hunyuan Image 模型，根据文本提示词编辑或组合最多 5 张参考图像。",
+    "display_name": "腾讯 HY 图像：编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_reference_detail": {
+        "name": "参考细节"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_watermark": {
+        "name": "水印"
+      },
+      "model_width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "使用腾讯 Hunyuan Image 模型根据文本提示词生成图像。",
+    "display_name": "腾讯 HY 图像：文生图",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_watermark": {
+        "name": "水印"
+      },
+      "model_width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "图像到视频（Hunyuan）",
     "inputs": {
@@ -8072,7 +8153,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent 使用模型放大",
+    "display_name": "使用模型放大 Hunyuan Video 1.5 潜空间",
     "inputs": {
       "crop": {
         "name": "裁剪"
@@ -9137,6 +9218,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "从文本中第一个有效的 JSON 对象提取键的值，包括 Markdown 代码块。",
     "display_name": "从JSON提取字符串",
     "inputs": {
       "json_string": {
@@ -10514,7 +10596,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV 空音频潜空间",
+    "display_name": "空 LTXV 潜空间音频",
     "inputs": {
       "audio_vae": {
         "name": "音频VAE",
@@ -13234,6 +13316,10 @@
       "ultra_mode": {
         "name": "超精细模式",
         "tooltip": "运行额外的细化步骤，以获得保真度更高、表面细节更精细的几何体。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "超高精度处理的分辨率：2k 以 2048³ 运行，4k 以 4096³ 运行，以获得最精细的表面细节。4k 需要 meshy-7.1 或更高版本。仅在启用 ultra_mode 时使用。"
       }
     },
     "outputs": {
@@ -13300,6 +13386,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "以 2048³ 运行额外的精修处理，以获得保真度更高的几何结构和更精细的表面细节。"
       }
     },
     "outputs": {
@@ -13441,6 +13531,10 @@
       "ultra_mode": {
         "name": "超精细模式",
         "tooltip": "运行额外的细化步骤，以获得保真度更高、表面细节更精细的几何体。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "超高精度处理的分辨率：2k 以 2048³ 运行，4k 以 4096³ 运行，以获得最精细的表面细节。4k 需要 meshy-7.1 或更高版本。仅在启用 ultra_mode 时使用。"
       }
     },
     "outputs": {
@@ -14199,6 +14293,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "仅限 MoGe-3：在预测深度上执行稀疏体积细化迭代。更多迭代能以大致线性的成本增强精细细节和边缘。0 会禁用细化。MoGe-1 / MoGe-2 会忽略此项。"
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = 速度最快，9 = 细节最多。"
@@ -14229,6 +14327,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "仅限 MoGe-3：在预测深度上执行稀疏体积细化迭代。更多迭代能以大致线性的成本增强精细细节和边缘。0 会禁用细化。MoGe-1 / MoGe-2 会忽略此项。"
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17524,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Pixal3D 条件",
     "inputs": {
       "camera_angle_x": {
         "name": "相机水平视场角",
@@ -18345,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "推理强度",
+        "tooltip": "模型在绘制前投入的推理量。较高等级可提升细节，但会消耗更多词元。仅 Arrow 2 模型使用此项。"
+      },
       "seed": {
         "name": "seed",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
@@ -18384,6 +18490,10 @@
         "name": "prompt",
         "tooltip": "对期望SVG输出的文本描述。"
       },
+      "reasoning_effort": {
+        "name": "推理强度",
+        "tooltip": "模型在绘制前投入的推理量。较高等级可提升细节，但会消耗更多词元。仅 Arrow 2 模型使用此项。"
+      },
       "reference_images": {
         "name": "reference_images",
         "tooltip": "最多可提供4张参考图像以辅助生成。"
@@ -18391,6 +18501,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "可设置 KV 缓存设备和量化方式，默认模型使用 auto 选项。内存不足时，量化可能会加快编辑流程。",
+    "display_name": "Qwen Image 2.1 缓存",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto 会使用剩余 VRAM，然后使用 RAM。cpu (RAM) 会在计算期间预取，速度损失很小。off 会在每一步重新计算前缀，速度更慢，但这是排除缓存影响的唯一方法。"
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "存储精度。default 为无损。int8 可将缓存减半，精度约为 bf16；int4 可将其缩减至四分之一，但每步误差约翻倍。"
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -19032,7 +19164,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用于生成的模型。recraftv4_styles 模型专为保持样式一致的生成而设计，且始终需要 style_id 或 style_references。"
+        "tooltip": "用于生成的模型。recraftv4_styles 模型专为风格一致的生成而构建，并且始终需要 style_id 或 style_references；recraftv4_1_flash 是最快且最便宜的模型，完全不支持任何风格。"
       },
       "model_size": {
         "name": "size"
@@ -22751,7 +22883,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "空Latent图像（Stable Cascade）",
+    "display_name": "空 Stable Cascade 潜空间图像",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -22794,7 +22926,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "Stable Cascade_C阶段_VAE编码",
+    "display_name": "Stable Cascade 阶段 C VAE 编码",
     "inputs": {
       "compression": {
         "name": "压缩"
@@ -23756,8 +23888,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "文本编码 Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "参考图像会被文本编码器读取，并作为 VAE 潜空间拼接到序列中。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "参考图像会在保持宽高比的情况下，调整为约 resolution × resolution 像素，并对齐至 32 的倍数。0 会使每张参考图像保持各自尺寸，并四舍五入到 32 的倍数。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "以第一张参考图像的尺寸创建空 latent 以匹配采样，因为任何其他尺寸都会导致编辑偏移。"
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "文本编码（QwenImageEdit）",
+    "display_name": "文本编码 Qwen Image 编辑",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23950,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "文本编码（QwenImageEditPlus）",
+    "display_name": "文本编码 Qwen Image 编辑 Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +24026,10 @@
       "max_length": {
         "name": "最大长度"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "使用检查点的多词元预测头进行推测解码。没有 MTP 权重时无效。auto 会自适应草稿深度；2-5 会将其固定。采样输出仍保持正确分布，但对于相同种子会与非 MTP 输出不同。"
+      },
       "prompt": {
         "name": "提示词"
       },
@@ -23882,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "Top P"
       },
+      "system_prompt": {
+        "name": "系统提示词",
+        "tooltip": "替换模型聊天模板中的系统提示词。未使用默认模板时将被忽略。"
+      },
       "thinking": {
         "name": "思考模式",
         "tooltip": "如果模型支持，则以思考模式运行。"
@@ -23898,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "生成文本",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -23917,6 +24100,10 @@
       "max_length": {
         "name": "最大长度"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "使用检查点的多词元预测头进行推测解码。没有 MTP 权重时无效。auto 会自适应草稿深度；2-5 会将其固定。采样输出仍保持正确分布，但对于相同种子会与非 MTP 输出不同。"
+      },
       "prompt": {
         "name": "提示词"
       },
@@ -23944,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "Top P"
       },
+      "system_prompt": {
+        "name": "系统提示词",
+        "tooltip": "替换模型聊天模板中的系统提示词。未使用默认模板时将被忽略。"
+      },
       "thinking": {
         "name": "思考模式",
         "tooltip": "如果模型支持，则以思考模式运行。"
@@ -23960,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "生成文本",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -24432,7 +24627,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Trellis2 条件",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24649,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Trellis2 形状阶段",
     "inputs": {
       "negative": {
         "name": "负面"
@@ -24482,7 +24677,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Trellis2 纹理阶段",
     "inputs": {
       "negative": {
         "name": "负面"
@@ -26162,7 +26357,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAE解码（Hunyuan3D）",
+    "display_name": "Hunyuan 3D VAE 解码",
     "inputs": {
       "num_chunks": {
         "name": "块数"
@@ -26470,7 +26665,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Trellis2 VAE 解码形状",
     "inputs": {
       "samples": {
         "name": "样本"
@@ -26491,7 +26686,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Trellis2 VAE 解码结构",
     "inputs": {
       "resolution": {
         "name": "分辨率"
@@ -26511,7 +26706,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Trellis2 VAE 解码纹理",
     "inputs": {
       "samples": {
         "name": "样本"
@@ -29466,6 +29661,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "连接 ABC 生成器或提供编辑后的乐谱。留空将自动使用关闭模式。"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "用于风格和歌词的自回归引导。1.0 会禁用 CFG，与 ABC 工作流一致。使用 1.01 以匹配原始关闭模式引导。"
       },
       "clip": {
         "name": "clip"

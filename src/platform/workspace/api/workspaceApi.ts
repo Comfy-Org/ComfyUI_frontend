@@ -40,6 +40,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import {
@@ -118,6 +119,7 @@ export type { BillingStatusResponse }
 export type { ScheduledPlanChange }
 
 export type { BillingBalanceResponse }
+export type { BillingEventsResponse }
 export type { BillingCapabilitiesResponse }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
@@ -558,6 +560,11 @@ export const workspaceApi = {
     const savedPaymentMethodId = options.savedPaymentMethodId || undefined
     const headers = await getAuthHeaderOrThrow()
     try {
+      useTelemetry()?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'request_sent',
+        outcome: 'pending'
+      })
       const response = await workspaceApiClient.post<SubscribeResponse>(
         workspaceApiUrl('/billing/subscribe'),
         {
@@ -576,6 +583,13 @@ export const workspaceApi = {
         } satisfies SubscribeRequest,
         { headers }
       )
+      useTelemetry()?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'checkout_received',
+        outcome: 'pending',
+        billing_op_id: response.data.billing_op_id,
+        checkout_status: response.data.status
+      })
       return response.data
     } catch (err) {
       handleAxiosError(err)
@@ -666,6 +680,11 @@ export const workspaceApi = {
   ): Promise<CreateTopupResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
+      useTelemetry()?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'request_sent',
+        outcome: 'pending'
+      })
       const response = await workspaceApiClient.post<CreateTopupResponse>(
         workspaceApiUrl('/billing/topup'),
         {
@@ -674,6 +693,13 @@ export const workspaceApi = {
         } satisfies CreateTopupRequest,
         { headers }
       )
+      useTelemetry()?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'checkout_received',
+        outcome: 'pending',
+        billing_op_id: response.data.billing_op_id,
+        checkout_status: response.data.status
+      })
       return response.data
     } catch (err) {
       handleAxiosError(err)

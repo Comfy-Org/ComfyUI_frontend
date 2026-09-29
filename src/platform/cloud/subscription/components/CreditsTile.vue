@@ -179,7 +179,7 @@
           </span>
         </div>
         <span class="text-sm">
-          {{ $t('subscription.reactivateToUseCredits') }}
+          {{ inactiveCreditsNote }}
         </span>
       </div>
     </template>
@@ -291,14 +291,21 @@ const creditPoolTotalCredits = computed<number | null>(() => {
   return isAnnualBilling.value ? monthlyCredits * 12 : monthlyCredits
 })
 
-// The reactivate-to-use-credits treatment sells a self-serve reactivation, so
-// it applies only where one exists. Tier decides that, as it does for the
-// credit pool above: can_top_up is a rollout-defaulted capability that also
-// fails open for owners on an unreadable snapshot, which would drop a lapsed
-// self-serve team out of this state during a capabilities outage.
-const showsInactivePlanState = computed(
-  () => inactivePlan === true && !isSalesManagedTier(subscription.value?.tier)
-)
+// Tier decides the note, not the state: a lapsed sales-managed plan gets the
+// same disabled shape as self-serve (cloud#8001 closed its can_top_up, so the
+// old exclusion left a bare balance with no explanation) — only the route
+// back differs, the account manager rather than a Reactivate button. The
+// state keys on the prop rather than can_top_up because that capability is
+// rollout-defaulted and fails open for owners on an unreadable snapshot.
+const showsInactivePlanState = computed(() => inactivePlan === true)
+
+const inactiveCreditsNote = computed(() => {
+  if (!isSalesManagedTier(subscription.value?.tier))
+    return t('subscription.reactivateToUseCredits')
+  return prepaidCreditsValue.value > 0
+    ? t('subscription.salesManagedInactiveCreditsNote')
+    : t('subscription.salesManagedCreditsEndedNote')
+})
 
 const usage = computed(() =>
   computeMonthlyUsage(
@@ -369,11 +376,19 @@ const displayTotal = computed(() =>
     ? formatCreditCount(0)
     : totalCredits.value
 )
-const displayPrepaid = computed(() =>
-  zeroState || showsInactivePlanState.value
-    ? formatCreditCount(0)
-    : prepaidCredits.value
+// An ended sales-managed plan retains its prepaid balance: the note beside
+// this number says the credits become spendable once the plan is restored,
+// so the amount must survive the inactive state rather than read 0.
+const retainsPrepaidWhileInactive = computed(() =>
+  isSalesManagedTier(subscription.value?.tier)
 )
+const displayPrepaid = computed(() => {
+  if (zeroState) return formatCreditCount(0)
+  if (showsInactivePlanState.value && !retainsPrepaidWhileInactive.value) {
+    return formatCreditCount(0)
+  }
+  return prepaidCredits.value
+})
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
 )

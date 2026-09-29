@@ -37,15 +37,6 @@ vi.mock(import('@/composables/maskeditor/useMaskEditorSaver'), () => ({
   useMaskEditorSaver: () => mockSaver
 }))
 
-vi.mock<unknown>(import('@/components/ui/button/Button.vue'), () => ({
-  default: {
-    name: 'ButtonStub',
-    props: ['variant', 'disabled'],
-    template:
-      '<button :data-variant="variant" :disabled="disabled"><slot /></button>'
-  }
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
