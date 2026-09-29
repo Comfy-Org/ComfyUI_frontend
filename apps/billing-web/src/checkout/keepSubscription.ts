@@ -22,6 +22,7 @@ type Change =
   | 'upgrade'
   | 'downgrade'
   | 'to_yearly'
+  | 'to_yearly_undated'
   | 'to_monthly'
   | 'commitment'
   | 'other'
@@ -37,16 +38,18 @@ const CHANGE_OF_TRANSITION = {
   Change
 >
 
-/** The renewal after a switch to yearly starts a new year, so its date is spelled out. */
+/**
+ * The renewal after a switch to yearly starts a new year, so its date is
+ * spelled out when the quote names one, and left out when it does not.
+ */
 function changeOf(quote: SubscriptionPreview): Change {
   const next = quote.new_plan
   if (next.tier === 'TEAM' && quote.current_plan?.tier === 'TEAM')
     return 'commitment'
   if (quote.transition_type !== 'duration_change')
     return CHANGE_OF_TRANSITION[quote.transition_type]
-  return next.duration === 'ANNUAL' && quote.renewal_at !== undefined
-    ? 'to_yearly'
-    : 'to_monthly'
+  if (next.duration !== 'ANNUAL') return 'to_monthly'
+  return quote.renewal_at === undefined ? 'to_yearly_undated' : 'to_yearly'
 }
 
 function longDate(iso: string, locale: string): string {

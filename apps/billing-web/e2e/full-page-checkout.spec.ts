@@ -24,6 +24,9 @@ const EYEBROW = 'Subscribe to Pro Plan · Personal'
 const FORM_FAILED = "The payment form couldn't load"
 const SAVED_FAILED = "Your saved payment methods couldn't load"
 
+/** 553-9853's destructive red, the nearest palette step to Figma's #f87171. */
+const INVALID_RED = 'rgb(247, 89, 81)'
+
 const payButton = (page: Page) =>
   page.getByRole('button', { name: 'Pay and subscribe' })
 const tab = (page: Page, name: 'Saved' | 'Add new payment') =>
@@ -53,6 +56,32 @@ test('names the plan and the workspace, and enables Pay once the form is ready',
     cloud.requests.some((request) => request.path === '/billing/capabilities')
   ).toBe(true)
 })
+
+for (const { name, query } of [
+  { name: 'no return_to', query: 'product=comfyui&plan=pro_monthly' },
+  {
+    name: 'an unapproved return_to',
+    query: 'product=comfyui&return_to=elsewhere&plan=pro_monthly'
+  }
+]) {
+  test(`a link with ${name} still checks out, and the back arrow goes to Plan & Credits`, async ({
+    page,
+    cloud,
+    signIn
+  }) => {
+    cloud.scenario.paymentMethods = []
+    await signIn(`/v1/checkout?${query}`)
+
+    await expect(page.getByText(EYEBROW)).toBeVisible()
+    await expect(payButton(page)).toBeEnabled()
+
+    await page.getByRole('button', { name: 'Back' }).click()
+
+    await expect(page).toHaveURL(
+      'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws_e2e'
+    )
+  })
+}
 
 test('360-4874: with no saved method a failed form takes the column, and Try again remounts it', async ({
   page,
@@ -206,14 +235,32 @@ test('553-9297: a plan change on a plan set to end needs the keep-subscription t
     name: 'Keep my subscription and renew it'
   })
   await expect(payButton(page)).toBeEnabled()
+  const noticeBox = await notice.boundingBox()
+  const payBox = await payButton(page).boundingBox()
+  expect(
+    payBox && noticeBox && payBox.y - (noticeBox.y + noticeBox.height)
+  ).toBe(24)
 
   await payButton(page).click()
 
   await expect(box).toHaveAttribute('aria-invalid', 'true')
   await expect(box).toBeFocused()
-  await expect(
-    notice.getByText('Check the box to keep your subscription, then pay.')
-  ).toBeVisible()
+  const error = notice.getByText(
+    'Check the box to keep your subscription, then pay.'
+  )
+  await expect(error).toBeVisible()
+  await expect(box).toHaveAccessibleDescription(
+    'Check the box to keep your subscription, then pay.'
+  )
+  await expect(notice.getByTestId('keep-subscription-box')).toHaveCSS(
+    'border-color',
+    INVALID_RED
+  )
+  await expect(notice.getByText('Keep my subscription and renew it')).toHaveCSS(
+    'color',
+    INVALID_RED
+  )
+  await expect(error).toHaveCSS('color', INVALID_RED)
   await expect(payButton(page)).toBeEnabled()
   expect(
     cloud.requests.some((request) => request.path === '/billing/subscribe')

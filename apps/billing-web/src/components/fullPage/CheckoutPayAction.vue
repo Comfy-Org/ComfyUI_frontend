@@ -82,7 +82,7 @@ const GHOST_BUTTON =
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="flex flex-col gap-6">
     <InlineOutcomeCard
       v-if="outcome"
       :key="`${outcome.kind}:${'operationId' in outcome ? outcome.operationId : ''}`"
@@ -100,64 +100,66 @@ const GHOST_BUTTON =
       :consent
       @confirm="emit('confirmReactivation', $event)"
     />
-    <p
-      v-if="phase"
-      role="status"
-      aria-live="polite"
-      :class="
-        cn(
-          'm-0 text-center text-xs/4 text-muted-foreground',
-          footnote === '' && 'sr-only'
-        )
-      "
-      data-testid="checkout-phase-footnote"
-    >
-      {{ footnote }}
-    </p>
-    <button
-      type="submit"
-      :disabled="disabled || loading"
-      :aria-busy="loading"
-      class="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-base-foreground px-4 text-sm font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
-      @click="guardConsent"
-    >
-      <i
-        v-if="loading"
-        class="icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
-        aria-hidden="true"
+    <div class="flex flex-col gap-4">
+      <p
+        v-if="phase"
+        role="status"
+        aria-live="polite"
+        :class="
+          cn(
+            'm-0 text-center text-xs/4 text-muted-foreground',
+            footnote === '' && 'sr-only'
+          )
+        "
+        data-testid="checkout-phase-footnote"
+      >
+        {{ footnote }}
+      </p>
+      <button
+        type="submit"
+        :disabled="disabled || loading"
+        :aria-busy="loading"
+        class="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-base-foreground px-4 text-sm font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+        @click="guardConsent"
+      >
+        <i
+          v-if="loading"
+          class="icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
+          aria-hidden="true"
+        />
+        <span :class="cn(loading && 'sr-only')">
+          {{ t('checkout.payAndSubscribe') }}
+        </span>
+      </button>
+      <button
+        v-if="challenge && isChallengeReopenable(challenge)"
+        type="button"
+        :class="GHOST_BUTTON"
+        @click="emit('continueVerification')"
+      >
+        {{ t('checkout.fullPage.phase.continueVerification') }}
+      </button>
+      <button
+        v-if="challenge && canCancel"
+        type="button"
+        :class="GHOST_BUTTON"
+        @click="emit('cancel')"
+      >
+        {{ t('checkout.fullPage.phase.cancel') }}
+      </button>
+      <a v-if="supportLink" :href="supportLink" :class="GHOST_BUTTON">
+        {{ t('checkout.fullPage.outcome.contactSupport') }}
+      </a>
+      <CheckoutTermsNote
+        :copy="{
+          agreement: t('checkout.fullPage.terms.agreement', {
+            terms: '{terms}',
+            privacy: '{privacy}'
+          }),
+          terms: t('checkout.fullPage.terms.terms'),
+          privacyPolicy: t('checkout.fullPage.terms.privacyPolicy')
+        }"
       />
-      <span :class="cn(loading && 'sr-only')">
-        {{ t('checkout.payAndSubscribe') }}
-      </span>
-    </button>
-    <button
-      v-if="challenge && isChallengeReopenable(challenge)"
-      type="button"
-      :class="GHOST_BUTTON"
-      @click="emit('continueVerification')"
-    >
-      {{ t('checkout.fullPage.phase.continueVerification') }}
-    </button>
-    <button
-      v-if="challenge && canCancel"
-      type="button"
-      :class="GHOST_BUTTON"
-      @click="emit('cancel')"
-    >
-      {{ t('checkout.fullPage.phase.cancel') }}
-    </button>
-    <a v-if="supportLink" :href="supportLink" :class="GHOST_BUTTON">
-      {{ t('checkout.fullPage.outcome.contactSupport') }}
-    </a>
-    <CheckoutTermsNote
-      :copy="{
-        agreement: t('checkout.fullPage.terms.agreement', {
-          terms: '{terms}',
-          privacy: '{privacy}'
-        }),
-        terms: t('checkout.fullPage.terms.terms'),
-        privacyPolicy: t('checkout.fullPage.terms.privacyPolicy')
-      }"
-    />
+    </div>
   </div>
 </template>

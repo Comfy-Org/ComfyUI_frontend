@@ -556,6 +556,13 @@ describe('FullPageCheckoutView', () => {
       options: {},
       code: 'CHECKOUT_LINK_INVALID',
       plans: 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+    },
+    {
+      name: 'a link that names no plan',
+      path: '/v1/checkout?product=comfyui&return_to=comfyui_workspace',
+      options: {},
+      code: 'CHECKOUT_LINK_INVALID',
+      plans: 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
     }
   ])(
     '$name is Plan not available, coded for support, and View plans opens the live catalog',
@@ -869,6 +876,23 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       ).not.toBeInTheDocument()
     }
   )
+
+  it('says why a refused Pay was refused and frees Pay for another try', async () => {
+    const fake = await payReady({
+      subscribe: { status: 'error', code: 'REQUEST_FAILED' }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "We couldn't reach the billing service. Please try again."
+    )
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_2')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
+  })
 
   it('frees Pay again when the collision re-reads as nothing pending', async () => {
     const fake = await payReady({

@@ -63,15 +63,16 @@ watch(
             'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-sm border border-border-default text-transparent transition-colors',
             'peer-focus-visible:ring-2 peer-focus-visible:ring-base-foreground peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-tertiary-background',
             'peer-checked:border-base-foreground peer-checked:bg-base-foreground peer-checked:text-base-background',
-            'peer-aria-invalid:border-destructive-background peer-aria-invalid:ring-3 peer-aria-invalid:ring-destructive-background/20'
+            'peer-aria-invalid:border-coral-500 peer-aria-invalid:ring-3 peer-aria-invalid:ring-coral-500/40'
           )
         "
         aria-hidden="true"
+        data-testid="keep-subscription-box"
       >
         <i class="icon-[lucide--check] size-3.5" />
       </span>
       <span
-        class="text-sm/5 text-base-foreground peer-aria-invalid:text-destructive-background"
+        class="text-sm/5 text-base-foreground peer-aria-invalid:text-coral-500"
       >
         {{ t('checkout.fullPage.keepSubscription.checkbox') }}
       </span>
@@ -80,7 +81,7 @@ watch(
       v-if="consent.state === 'invalid'"
       :id="errorId"
       role="alert"
-      class="m-0 text-sm/5 text-destructive-background"
+      class="m-0 pl-6 text-sm/5 text-coral-500"
     >
       {{ t('checkout.fullPage.keepSubscription.required') }}
     </p>

@@ -61,6 +61,11 @@ const { copy, copied } = useClipboard({ legacy: true })
 
 const ending = computed(() => ENDINGS[screen.kind])
 const copyKey = computed(() => `checkout.fullPage.ending.${screen.kind}`)
+const bodyKey = computed(() =>
+  screen.kind === 'refused'
+    ? `${copyKey.value}.body.${screen.copy}`
+    : `${copyKey.value}.body`
+)
 const code = computed(() => ('code' in screen ? screen.code : undefined))
 const supportLink = computed(() => supportLinkWithCode(code.value))
 const primary = computed(() => ending.value.primary)
@@ -86,7 +91,7 @@ function act() {
           {{ t(`${copyKey}.title`) }}
         </h1>
         <p class="m-0 text-sm/5 text-muted-foreground">
-          {{ t(`${copyKey}.body`, { workspace }) }}
+          {{ t(bodyKey, { workspace }) }}
         </p>
       </div>
 

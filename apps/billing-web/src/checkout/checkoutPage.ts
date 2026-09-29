@@ -144,9 +144,10 @@ export type CheckoutPageEvent =
   | { readonly type: 'consentMissing' }
   /** `redirectMethod` is the chosen method's type when it pays on its own site. */
   | { readonly type: 'paySubmitted'; readonly redirectMethod?: string }
+  /** No `outcome` is a coded refusal, which the page words beside Pay instead of a card. */
   | {
       readonly type: 'payFailed'
-      readonly outcome: Exclude<InlineOutcome, { kind: 'reconciling' }>
+      readonly outcome?: Exclude<InlineOutcome, { kind: 'reconciling' }>
     }
   | { readonly type: 'payRejectedAsPending' }
   /** The server activated the plan on the spot, issuing no operation to follow. */
@@ -421,7 +422,7 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
       return withCapture(page, (capture) => ({
         ...capture,
         attempt: IDLE,
-        outcome: event.outcome
+        ...(event.outcome === undefined ? {} : { outcome: event.outcome })
       }))
     case 'payRejectedAsPending':
       return withCapture(page, (capture) => ({

@@ -247,6 +247,7 @@
           "upgrade": "Upgrading keeps your subscription, and it renews that day at {amount}.",
           "downgrade": "Switching to {plan} keeps your subscription, and it renews that day at {amount}.",
           "to_yearly": "Switching to yearly keeps your subscription. It renews on {date} at {amount}.",
+          "to_yearly_undated": "Switching to yearly keeps your subscription. It renews at {amount}.",
           "to_monthly": "Switching to monthly keeps your subscription, and it renews that day at {amount}.",
           "commitment": "Changing your commitment keeps your subscription, and it renews that day at {amount}.",
           "other": "This change keeps your subscription, and it renews that day at {amount}."
@@ -306,7 +307,12 @@
         },
         "refused": {
           "title": "Checkout not available",
-          "body": "Billing for this workspace is managed by its owner. Ask them to make this change.",
+          "body": {
+            "owner": "Billing for this workspace is managed by its owner. Ask them to make this change.",
+            "sales_managed": "Your plan is managed by our team. Contact your account manager to make changes.",
+            "unfinished": "A previous payment didn’t finish. Finish or cancel it in your billing settings.",
+            "unknown": "Checkout isn’t available for this workspace right now. Contact support with the code below."
+          },
           "codeLabel": "If this is an error, contact support with this code:"
         },
         "plan_unavailable": {
