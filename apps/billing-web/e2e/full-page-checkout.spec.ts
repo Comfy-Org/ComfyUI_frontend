@@ -209,6 +209,11 @@ test('553-9297: a plan change on a plan set to end needs the keep-subscription t
     name: 'Keep my subscription and renew it'
   })
   await expect(payButton(page)).toBeEnabled()
+  const noticeBox = await notice.boundingBox()
+  const payBox = await payButton(page).boundingBox()
+  expect(
+    payBox && noticeBox && payBox.y - (noticeBox.y + noticeBox.height)
+  ).toBe(24)
 
   await payButton(page).click()
 
