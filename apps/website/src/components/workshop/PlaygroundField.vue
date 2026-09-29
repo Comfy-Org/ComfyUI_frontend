@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown } from '@lucide/vue'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -247,6 +247,19 @@ function stringValue(): string {
   return typeof value === 'string' ? value : ''
 }
 
+const promptBox = useTemplateRef<HTMLTextAreaElement>('promptBox')
+
+function fitPromptBox() {
+  const box = promptBox.value
+  if (!box) return
+  box.style.height = 'auto'
+  // `height` is the border box here; `scrollHeight` leaves the borders out.
+  const borders = box.offsetHeight - box.clientHeight
+  box.style.height = `${box.scrollHeight + borders}px`
+}
+
+watch([promptBox, stringValue], fitPromptBox, { flush: 'post' })
+
 // Painting the filled part ourselves keeps the track identical across browsers,
 // which accent-color does not.
 function sliderFill(field: {
@@ -411,6 +424,7 @@ function booleanValue(fallback = false): boolean {
     <textarea
       v-else-if="field.kind === 'text' && field.multiline"
       :id="`field-${field.name}`"
+      ref="promptBox"
       :value="stringValue()"
       :placeholder="field.placeholder"
       :minlength="field.minLength"
@@ -420,7 +434,7 @@ function booleanValue(fallback = false): boolean {
       :aria-describedby="describedBy"
       :data-testid="`field-${field.name}`"
       rows="5"
-      :class="cn(inputClass, 'min-h-32 resize-y py-3')"
+      :class="cn(inputClass, 'min-h-32 resize-none py-3')"
       @input="onText"
     />
     <input
