@@ -1,9 +1,10 @@
-import { appModels } from './workshop-app-content'
+import displayJson from '../content/workshop-display.json'
+import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
+import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
 import {
   routerModelSlugAliases,
   workshopModels
 } from './workshop-browse-content'
-import { workflowModels } from './workshop-workflow-content'
 
 export const MODELS_BASE_PATH = '/models'
 
@@ -74,11 +75,17 @@ export function buildModelsUrlRegistry(
   return registry
 }
 
+const displayEntries = workshopDisplayEntriesSchema.parse(displayJson)
+const displaySlugs = (types: readonly WorkshopDisplayEntry['type'][]) =>
+  displayEntries
+    .filter((entry) => types.includes(entry.type))
+    .map(({ slug }) => slug)
+
 export const modelsUrlRegistry = buildModelsUrlRegistry(
   modelsUrlEntries({
     models: workshopModels.map(({ slug }) => slug),
-    workflows: workflowModels.map(({ slug }) => slug),
-    apps: appModels.map(({ slug }) => slug),
+    workflows: displaySlugs(['CLOUD', 'SERVERLESS']),
+    apps: displaySlugs(['APP']),
     aliases: routerModelSlugAliases
   })
 )

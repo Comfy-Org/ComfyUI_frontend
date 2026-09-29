@@ -100,10 +100,11 @@ describe('models URL registry', () => {
     ).toEqual(['/models/local'])
   })
 
-  it('builds the real registry with a page behind every alias', () => {
+  it('builds the real registry from the Models content', () => {
     expect(modelsUrlKind('/models/bfl--flux-2-max--generate-images/')).toBe(
       'model'
     )
     expect(modelsUrlKind('/models/apps/cinematic-studio/')).toBe('app')
+    expect(modelsUrlKind('/models/workflows/change-material/')).toBe('workflow')
   })
 })
