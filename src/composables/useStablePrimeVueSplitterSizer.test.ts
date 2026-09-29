@@ -1,8 +1,11 @@
-import type { SplitterResizeEndEvent } from 'primevue/splitter'
+import type {
+  SplitterResizeEndEvent,
+  SplitterResizeStartEvent
+} from 'primevue/splitter'
 import { useStorage } from '@vueuse/core'
 
 import { computed, nextTick, reactive, ref, toValue } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useStablePrimeVueSplitterSizer } from './useStablePrimeVueSplitterSizer'
 
@@ -12,22 +15,14 @@ beforeEach(() => {
     ref(defaultValue)
   )
 })
+afterEach(() => {
+  document.body.replaceChildren()
+})
 
-const SPLITTER_BASIS = 'calc(20% - 8px)'
-
-function createPanel(width: number | (() => number)) {
+function createPanel(width: number) {
   const el = document.createElement('div')
-  el.style.flexBasis = SPLITTER_BASIS
-  Object.defineProperty(
-    el,
-    'offsetWidth',
-    typeof width === 'number' ? { value: width } : { get: width }
-  )
+  Object.defineProperty(el, 'offsetWidth', { value: width })
   return ref(el)
-}
-
-function resizeEndEvent(): SplitterResizeEndEvent {
-  return { originalEvent: new Event('mouseup'), sizes: [] }
 }
 
 function useKeyedStorage(initial: Record<string, number>) {
@@ -41,6 +36,16 @@ function useKeyedStorage(initial: Record<string, number>) {
     })
   )
   return stored
+}
+
+function resizeStartEvent(target: Element): SplitterResizeStartEvent {
+  const event = new MouseEvent('mousedown')
+  Object.defineProperty(event, 'target', { value: target })
+  return { originalEvent: event, sizes: [] }
+}
+
+function resizeEndEvent(): SplitterResizeEndEvent {
+  return { originalEvent: new Event('mouseup'), sizes: [] }
 }
 
 async function flushWatcher() {
@@ -60,7 +65,7 @@ describe('useStablePrimeVueSplitterSizer', () => {
     await flushWatcher()
 
     onResizeEnd(resizeEndEvent())
-
+    panelRef.value.style.flexBasis = ''
     trigger.value++
     await flushWatcher()
 
@@ -69,41 +74,16 @@ describe('useStablePrimeVueSplitterSizer', () => {
     expect(panelRef.value.style.flexShrink).toBe('0')
   })
 
-  it('does not apply styles when no stored width exists', async () => {
+  it('does not apply styles when no stored or default width exists', async () => {
     const panelRef = createPanel(300)
-    const trigger = ref(0)
 
     useStablePrimeVueSplitterSizer(
       [{ ref: panelRef, storageKey: 'test-no-stored' }],
-      [trigger]
+      [ref(0)]
     )
     await flushWatcher()
 
-    expect(panelRef.value.style.flexBasis).toBe(SPLITTER_BASIS)
-  })
-
-  it('re-applies stored widths when watch sources change', async () => {
-    const panelRef = createPanel(500)
-    const trigger = ref(0)
-
-    const { onResizeEnd } = useStablePrimeVueSplitterSizer(
-      [{ ref: panelRef, storageKey: 'test-reapply' }],
-      [trigger]
-    )
-    await flushWatcher()
-
-    onResizeEnd(resizeEndEvent())
-
-    panelRef.value.style.flexBasis = ''
-    panelRef.value.style.flexGrow = ''
-    panelRef.value.style.flexShrink = ''
-
-    trigger.value++
-    await flushWatcher()
-
-    expect(panelRef.value.style.flexBasis).toBe('500px')
-    expect(panelRef.value.style.flexGrow).toBe('0')
-    expect(panelRef.value.style.flexShrink).toBe('0')
+    expect(panelRef.value.style.flexBasis).toBe('')
   })
 
   it('handles multiple panels independently', async () => {
@@ -121,7 +101,6 @@ describe('useStablePrimeVueSplitterSizer', () => {
     await flushWatcher()
 
     onResizeEnd(resizeEndEvent())
-
     trigger.value++
     await flushWatcher()
 
@@ -144,7 +123,6 @@ describe('useStablePrimeVueSplitterSizer', () => {
     await flushWatcher()
 
     onResizeEnd(resizeEndEvent())
-
     trigger.value++
     await flushWatcher()
 
@@ -152,86 +130,86 @@ describe('useStablePrimeVueSplitterSizer', () => {
   })
 
   it('does not overwrite a stored width from a hidden panel on resize end', async () => {
+    const stored = useKeyedStorage({ hidden: 350 })
     const panelRef = createPanel(0)
-    const trigger = ref(0)
-    vi.mocked(useStorage).mockImplementation(() => ref(350))
 
     const { onResizeEnd } = useStablePrimeVueSplitterSizer(
-      [{ ref: panelRef, storageKey: 'test-hidden' }],
-      [trigger]
+      [{ ref: panelRef, storageKey: 'hidden' }],
+      [ref(0)]
     )
     await flushWatcher()
-
     onResizeEnd(resizeEndEvent())
-    trigger.value++
-    await flushWatcher()
 
+    expect(stored.get('hidden')).toBe(350)
     expect(panelRef.value.style.flexBasis).toBe('350px')
   })
 
   it.for([
-    { rendered: 280, captureInitialWidth: true, expected: '280px' },
-    { rendered: 280, captureInitialWidth: false, expected: SPLITTER_BASIS },
-    { rendered: 0, captureInitialWidth: true, expected: SPLITTER_BASIS }
+    { case: 'nothing is stored', storedWidth: undefined, expected: '280px' },
+    { case: 'a width is stored', storedWidth: 350, expected: '350px' },
+    { case: 'a zero width is stored', storedWidth: 0, expected: '280px' },
+    { case: 'a negative width is stored', storedWidth: -40, expected: '280px' },
+    {
+      case: 'a non-finite width is stored',
+      storedWidth: Number.NaN,
+      expected: '280px'
+    }
   ])(
-    'pins a panel with no stored width at its rendered width only when opted in and visible ($rendered px, capture $captureInitialWidth)',
-    async ({ rendered, captureInitialWidth, expected }) => {
-      const panelRef = createPanel(rendered)
+    'pins the stored width, or the default when $case',
+    async ({ storedWidth, expected }) => {
+      const stored = useKeyedStorage(
+        storedWidth === undefined ? {} : { panel: storedWidth }
+      )
+      const panelRef = createPanel(500)
 
       useStablePrimeVueSplitterSizer(
-        [{ ref: panelRef, storageKey: 'test-capture-initial' }],
-        [ref(0)],
-        { captureInitialWidth }
+        [{ ref: panelRef, storageKey: 'panel', defaultWidth: () => 280 }],
+        [ref(0)]
       )
       await flushWatcher()
 
       expect(panelRef.value.style.flexBasis).toBe(expected)
+      expect(stored.get('panel')).toBe(storedWidth)
     }
   )
 
-  it('keeps the captured initial width after the panel is resized by its container', async () => {
-    let offsetWidth = 280
-    const panelRef = createPanel(() => offsetWidth)
-    const trigger = ref(0)
-
-    useStablePrimeVueSplitterSizer(
-      [{ ref: panelRef, storageKey: 'test-capture-once' }],
-      [trigger],
-      { captureInitialWidth: true }
-    )
-    await flushWatcher()
-
-    offsetWidth = 600
-    trigger.value++
-    await flushWatcher()
-
-    expect(panelRef.value.style.flexBasis).toBe('280px')
-  })
-
-  it('does not capture a width from a panel pinned under another key', async () => {
+  it('pins a new storage key at its own default, not the previous key width', async () => {
     const stored = useKeyedStorage({ 'tab-a': 350 })
     const panelRef = createPanel(350)
     const storageKey = ref('tab-a')
 
     useStablePrimeVueSplitterSizer(
-      [{ ref: panelRef, storageKey }],
-      [storageKey],
-      { captureInitialWidth: true }
+      [{ ref: panelRef, storageKey, defaultWidth: () => 280 }],
+      [storageKey]
     )
     await flushWatcher()
     storageKey.value = 'tab-b'
     await flushWatcher()
 
-    expect(stored.get('tab-b')).toBeUndefined()
-    expect(panelRef.value.style.flexBasis).toBe('350px')
+    expect(panelRef.value.style.flexBasis).toBe('280px')
+    expect(stored.has('tab-b')).toBe(false)
   })
 
-  it('saves and re-pins only the panels a drag resized', async () => {
+  it('saves and re-pins only the panels beside the dragged gutter', async () => {
     const stored = useKeyedStorage({ sidebar: 800, offside: 250 })
     const sidebarRef = createPanel(480)
     const offsideRef = createPanel(300)
+    const center = document.createElement('div')
+    const sidebarGutter = document.createElement('div')
+    const offsideGutter = document.createElement('div')
+    sidebarGutter.className = 'p-splitter-gutter'
+    offsideGutter.className = 'p-splitter-gutter'
+    const handle = document.createElement('div')
+    offsideGutter.append(handle)
+    document.body.append(
+      sidebarRef.value,
+      sidebarGutter,
+      center,
+      offsideGutter,
+      offsideRef.value
+    )
 
-    const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+    const { onResizeStart, onResizeEnd } = useStablePrimeVueSplitterSizer(
       [
         { ref: sidebarRef, storageKey: 'sidebar' },
         { ref: offsideRef, storageKey: 'offside' }
@@ -239,15 +217,14 @@ describe('useStablePrimeVueSplitterSizer', () => {
       [ref(0)]
     )
     await flushWatcher()
-    expect(offsideRef.value.style.flexBasis).toBe('250px')
-    offsideRef.value.style.flexBasis = 'calc(25% - 8px)'
 
+    onResizeStart(resizeStartEvent(handle))
     onResizeEnd(resizeEndEvent())
 
     expect(stored.get('sidebar')).toBe(800)
+    expect(sidebarRef.value.style.flexBasis).toBe('800px')
     expect(stored.get('offside')).toBe(300)
     expect(offsideRef.value.style.flexBasis).toBe('300px')
-    expect(offsideRef.value.style.flexGrow).toBe('0')
   })
 
   it('reads a width persisted by a previous session', async () => {
@@ -256,74 +233,18 @@ describe('useStablePrimeVueSplitterSizer', () => {
     const panelRef = createPanel(280)
 
     useStablePrimeVueSplitterSizer(
-      [{ ref: panelRef, storageKey: 'test-persisted-width' }],
-      [ref(0)],
-      { captureInitialWidth: true }
+      [
+        {
+          ref: panelRef,
+          storageKey: 'test-persisted-width',
+          defaultWidth: () => 200
+        }
+      ],
+      [ref(0)]
     )
     await flushWatcher()
 
     expect(panelRef.value.style.flexBasis).toBe('350px')
     expect(localStorage.getItem('test-persisted-width')).toBe('350')
-  })
-
-  it.for([0, -40, Number.NaN])(
-    'treats a stored width of %s as unset and re-captures the rendered width',
-    async (storedWidth) => {
-      vi.mocked(useStorage).mockImplementation(() => ref(storedWidth))
-      const panelRef = createPanel(280)
-
-      useStablePrimeVueSplitterSizer(
-        [{ ref: panelRef, storageKey: 'test-unusable' }],
-        [ref(0)],
-        { captureInitialWidth: true }
-      )
-      await flushWatcher()
-
-      expect(panelRef.value.style.flexBasis).toBe('280px')
-    }
-  )
-
-  it.for([
-    { case: 'held at its min-width', minWidth: '280px', basis: SPLITTER_BASIS },
-    { case: 'without a splitter-authored basis', minWidth: '', basis: '' }
-  ])(
-    'does not capture a width from a panel $case',
-    async ({ minWidth, basis }) => {
-      const stored = useKeyedStorage({})
-      const panelRef = createPanel(280)
-      panelRef.value.style.minWidth = minWidth
-      panelRef.value.style.flexBasis = basis
-      document.body.append(panelRef.value)
-
-      useStablePrimeVueSplitterSizer(
-        [{ ref: panelRef, storageKey: 'sidebar' }],
-        [ref(0)],
-        { captureInitialWidth: true }
-      )
-      await flushWatcher()
-
-      expect(stored.get('sidebar')).toBeUndefined()
-      expect(panelRef.value.style.flexGrow).toBe('')
-    }
-  )
-
-  it('measures every panel before pinning any of them', async () => {
-    const stored = useKeyedStorage({ sidebar: 800 })
-    const sidebarRef = createPanel(800)
-    const offsideRef = createPanel(() =>
-      sidebarRef.value.style.flexBasis === '800px' ? 200 : 300
-    )
-
-    useStablePrimeVueSplitterSizer(
-      [
-        { ref: sidebarRef, storageKey: 'sidebar' },
-        { ref: offsideRef, storageKey: 'offside' }
-      ],
-      [ref(0)],
-      { captureInitialWidth: true }
-    )
-    await flushWatcher()
-
-    expect(stored.get('offside')).toBe(300)
   })
 })

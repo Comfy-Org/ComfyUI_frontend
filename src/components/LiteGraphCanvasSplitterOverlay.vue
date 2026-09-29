@@ -29,7 +29,7 @@
               : sidebarStateKey
           "
           state-storage="local"
-          @resizestart="onResizestart"
+          @resizestart="onSplitterResizeStart"
           @resizeend="onSplitterResizeEnd"
         >
           <!-- First panel: sidebar when left, properties when right -->
@@ -185,6 +185,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { savedSidebarPercent } from '@/utils/splitterWidthUtil'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const workspaceStore = useWorkspaceStore()
@@ -392,20 +393,49 @@ const sidebarWidthKey = computed(() => {
   return unifiedWidth.value ? base : `${base}.${sidebarTabKey.value}`
 })
 
-const { onResizeEnd: savePanelWidths } = useStablePrimeVueSplitterSizer(
-  [
-    { ref: sidebarPanelRef, storageKey: sidebarWidthKey },
-    { ref: offsidePanelRef, storageKey: 'Comfy.RightSidePanel.Width' }
-  ],
-  [
-    splitterRefreshKey,
-    sidebarWidthKey,
-    sidebarPanelVisible,
-    focusMode,
-    agentNodeSelectionActive
-  ],
-  { captureInitialWidth: true }
-)
+function workspaceWidthAt(percent: number) {
+  return Math.round((percent / 100) * (window.innerWidth - SIDE_TOOLBAR_WIDTH))
+}
+
+function defaultSidebarWidth() {
+  const legacyStateKey =
+    sidebarLocation.value === 'left'
+      ? sidebarTabKey.value
+      : `${sidebarTabKey.value}-right`
+  const percent = savedSidebarPercent(
+    localStorage.getItem(legacyStateKey),
+    sidebarLocation.value
+  )
+  return Math.max(SIDEBAR_MIN_WIDTH, workspaceWidthAt(percent))
+}
+
+const { onResizeStart: markResizedPanels, onResizeEnd: savePanelWidths } =
+  useStablePrimeVueSplitterSizer(
+    [
+      {
+        ref: sidebarPanelRef,
+        storageKey: sidebarWidthKey,
+        defaultWidth: defaultSidebarWidth
+      },
+      {
+        ref: offsidePanelRef,
+        storageKey: 'Comfy.RightSidePanel.Width',
+        defaultWidth: () => workspaceWidthAt(SIDE_PANEL_SIZE)
+      }
+    ],
+    [
+      splitterRefreshKey,
+      sidebarWidthKey,
+      sidebarPanelVisible,
+      focusMode,
+      agentNodeSelectionActive
+    ]
+  )
+
+function onSplitterResizeStart(event: SplitterResizeStartEvent) {
+  onResizestart(event)
+  markResizedPanels(event)
+}
 
 function onSplitterResizeEnd(event: SplitterResizeEndEvent) {
   savePanelWidths(event)
