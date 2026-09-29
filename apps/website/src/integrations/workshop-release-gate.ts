@@ -97,6 +97,7 @@ export function workshopReleaseGate(): AstroIntegration {
         assertWorkshopCloudEnvForBuild()
       },
       'astro:build:done': async ({ dir, pages, logger }) => {
+        // The sitemap and .md twins read these same pages; extend if either walks dist/
         const unregistered = unregisteredModelsPaths(
           pages.map((page) => page.pathname)
         )

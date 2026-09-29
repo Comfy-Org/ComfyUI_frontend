@@ -7,6 +7,12 @@ import {
   modelsUrlKind,
   unregisteredModelsPaths
 } from './models-url-registry'
+import {
+  workshopDisplayEntries,
+  workshopModels
+} from './workshop-browse-content'
+
+const hub: ModelsUrlEntry = { path: '/models', kind: 'hub' }
 
 const sources = {
   models: ['acme--image--generate-images'],
@@ -33,7 +39,7 @@ describe('models URL registry', () => {
 
   it('points each alias at the page it redirects to', () => {
     const registry = buildModelsUrlRegistry(modelsUrlEntries(sources))
-    expect(registry.get('/models/acme--image')).toEqual({
+    expect(registry.entries.get('/models/acme--image')).toEqual({
       path: '/models/acme--image',
       kind: 'alias',
       destination: '/models/acme--image--generate-images'
@@ -67,14 +73,26 @@ describe('models URL registry', () => {
   it.for<[string, ModelsUrlEntry[]]>([
     [
       'an unregistered page',
-      [{ path: '/models/old', kind: 'alias', destination: '/models/missing' }]
+      [
+        hub,
+        { path: '/models/old', kind: 'alias', destination: '/models/missing' }
+      ]
     ],
     [
       'another alias',
       [
+        hub,
         { path: '/models/new', kind: 'model' },
         { path: '/models/older', kind: 'alias', destination: '/models/old' },
         { path: '/models/old', kind: 'alias', destination: '/models/new' }
+      ]
+    ],
+    [
+      'a reserved address',
+      [
+        hub,
+        { path: '/models/showcase', kind: 'reserved' },
+        { path: '/models/old', kind: 'alias', destination: '/models/showcase' }
       ]
     ]
   ])('rejects an alias that redirects to %s', ([, entries]) => {
@@ -83,18 +101,37 @@ describe('models URL registry', () => {
     )
   })
 
+  it.for<[string, ModelsUrlEntry[], string]>([
+    ['no hub', [{ path: '/models/new', kind: 'model' }], 'exactly one hub'],
+    [
+      'two hubs',
+      [hub, { path: '/hub/models', kind: 'hub' }],
+      'exactly one hub'
+    ],
+    [
+      'an address outside its hub',
+      [hub, { path: '/hub/models/new', kind: 'model' }],
+      'outside the /models hub'
+    ]
+  ])('rejects a registry with %s', ([, entries, message]) => {
+    expect(() => buildModelsUrlRegistry(entries)).toThrow(message)
+  })
+
   it('treats a trailing slash as the same address', () => {
     expect(() =>
       buildModelsUrlRegistry([
+        hub,
         { path: '/models/new/', kind: 'model' },
         { path: '/models/new', kind: 'workflow' }
       ])
     ).toThrow('/models/new is registered twice')
     const registry = buildModelsUrlRegistry([
+      hub,
       { path: '/models/new/', kind: 'model' },
       { path: '/models/old/', kind: 'alias', destination: '/models/new/' }
     ])
-    expect(registry.get('/models/old')).toEqual({
+    expect(modelsUrlKind('/models/old/', registry)).toBe('alias')
+    expect(registry.entries.get('/models/old')).toEqual({
       path: '/models/old',
       kind: 'alias',
       destination: '/models/new'
@@ -118,11 +155,32 @@ describe('models URL registry', () => {
     ).toEqual(['/models/local'])
   })
 
-  it('builds the real registry from the Models content', () => {
-    expect(modelsUrlKind('/models/bfl--flux-2-max--generate-images/')).toBe(
-      'model'
+  it('checks built pages against the base the registry was built for', () => {
+    const registry = buildModelsUrlRegistry(
+      modelsUrlEntries(sources, '/hub/models')
     )
-    expect(modelsUrlKind('/models/apps/cinematic-studio/')).toBe('app')
-    expect(modelsUrlKind('/models/workflows/change-material/')).toBe('workflow')
+    expect(
+      unregisteredModelsPaths(
+        [
+          'hub/models/',
+          'hub/models/acme--image--generate-images/',
+          'hub/models/local/',
+          'models/local/'
+        ],
+        registry
+      )
+    ).toEqual(['/hub/models/local'])
+  })
+
+  it('builds the real registry from the Models content', () => {
+    const [{ slug: model }] = workshopModels
+    const slugOf = (...types: string[]) =>
+      workshopDisplayEntries.find(({ type }) => type && types.includes(type))
+        ?.slug
+    expect(modelsUrlKind(`/models/${model}/`)).toBe('model')
+    expect(modelsUrlKind(`/models/${slugOf('APP')}/`)).toBe('app')
+    expect(modelsUrlKind(`/models/${slugOf('CLOUD', 'SERVERLESS')}/`)).toBe(
+      'workflow'
+    )
   })
 })
