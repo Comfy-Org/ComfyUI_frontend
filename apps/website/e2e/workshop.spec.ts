@@ -608,7 +608,7 @@ test.describe('Model playground', () => {
 
     await page
       .getByRole('navigation', { name: 'Main navigation', exact: true })
-      .getByRole('link', { name: 'Models', exact: true })
+      .getByRole('link', { name: 'Hub', exact: true })
       .click()
     await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
     await page.getByRole('link', { name: /Seedream 4\.5 Image Edit/ }).click()
