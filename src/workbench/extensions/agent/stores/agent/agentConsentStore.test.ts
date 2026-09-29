@@ -2,7 +2,7 @@ vi.mock(import('firebase/auth'))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -119,16 +119,17 @@ describe('agentConsentStore', () => {
 
   it('sends on the web session in place of a workspace auth header', async () => {
     const send = vi.fn<WebSessionRequests['send']>()
-    const release = provideWebSessionRequests({
-      scope: async () => fromPartial<WebSessionRequestScope>({}),
-      workspaceId: () => undefined,
-      send
-    })
+    onTestFinished(
+      provideWebSessionRequests({
+        scope: async () => fromPartial<WebSessionRequestScope>({}),
+        workspaceId: () => undefined,
+        send
+      })
+    )
     const store = useAgentConsentStore()
 
     await store.load()
     await store.accept()
-    release()
 
     expect(
       vi.mocked(useAuthStore().getWorkspaceAuthHeader)
