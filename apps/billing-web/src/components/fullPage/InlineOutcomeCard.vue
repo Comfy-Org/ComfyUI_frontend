@@ -35,7 +35,11 @@ onMounted(() => {
       {{ t(`checkout.fullPage.outcome.${outcome.kind}.title`) }}
     </p>
     <p class="m-0 text-sm/5 text-muted-foreground">
-      {{ t(`checkout.fullPage.outcome.${outcome.kind}.body`) }}
+      {{
+        t(`checkout.fullPage.outcome.${outcome.kind}.body`, {
+          code: outcome.kind === 'promo_expired' ? outcome.code : ''
+        })
+      }}
     </p>
     <p
       v-if="outcome.kind === 'declined' && outcome.reason"

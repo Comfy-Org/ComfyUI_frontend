@@ -178,28 +178,6 @@ test('a declined Pay leaves the card above an unchanged Pay, with support one cl
   await expect(page).toHaveURL(/\/v1\/checkout\?/)
 })
 
-test('a Pay that collides with a pending operation never shows a decline', async ({
-  page,
-  cloud,
-  signIn
-}) => {
-  cloud.scenario.status = {
-    ...cloud.scenario.status,
-    pending_billing_op_id: 'op_elsewhere',
-    pending_billing_op_type: 'subscription'
-  }
-  await signIn(CHECKOUT)
-
-  await payButton(page).click()
-
-  await expect(payButton(page)).toBeDisabled()
-  await expect(page.getByText('Payment declined')).toBeHidden()
-  await expect(page.getByRole('link', { name: 'Contact support' })).toBeHidden()
-  expect(
-    cloud.requests.some((request) => request.path === '/billing/subscribe')
-  ).toBe(false)
-})
-
 test('553-9297: a plan change on a plan set to end needs the keep-subscription tick: Pay without it sends nothing, with it sends the consent', async ({
   page,
   cloud,

@@ -10,7 +10,8 @@ import type { PayVerdict } from '@/checkout/payVerdict'
 import {
   operationOutcomeOf,
   payVerdictOf,
-  supportLinkFor
+  supportLinkFor,
+  supportLinkWithCode
 } from '@/checkout/payVerdict'
 import {
   failedOperation,
@@ -92,15 +93,12 @@ describe('payVerdictOf', () => {
       }
     },
     {
-      name: 'an operation that needs a human',
+      name: 'an operation parked for a human, an unknown outcome and never a card',
       result: settledAs({
         ...succeededOperation('op_5'),
         phase: 'reconciliation_needed'
       }),
-      expected: {
-        kind: 'outcome',
-        outcome: { kind: 'processing_error', operationId: 'op_5' }
-      }
+      expected: reconciling
     },
     {
       name: 'a poll budget that ran out, an unknown outcome',
@@ -195,6 +193,14 @@ describe('operationOutcomeOf', () => {
       name: 'a superseded operation says nothing',
       operation: { ...succeededOperation('op_x'), phase: 'superseded' },
       outcome: undefined
+    },
+    {
+      name: 'an operation parked for a human is unknown, never a card',
+      operation: {
+        ...succeededOperation('op_x'),
+        phase: 'reconciliation_needed'
+      },
+      outcome: undefined
     }
   ])('$name', ({ operation, outcome }) => {
     expect(operationOutcomeOf(operation)).toEqual(outcome)
@@ -222,5 +228,17 @@ describe('supportLinkFor', () => {
     const link = new URL(supportLinkFor({ kind: 'processing_error' }))
 
     expect(link.searchParams.has('body')).toBe(false)
+  })
+})
+
+describe('supportLinkWithCode', () => {
+  it.for<{ code: string | undefined; body: string | null }>([
+    { code: 'PLAN_NOT_FOUND', body: 'Reference: PLAN_NOT_FOUND' },
+    { code: undefined, body: null }
+  ])('quotes $code', ({ code, body }) => {
+    const link = new URL(supportLinkWithCode(code))
+
+    expect(link.pathname).toBe('support@comfy.org')
+    expect(link.searchParams.get('body')).toBe(body)
   })
 })
