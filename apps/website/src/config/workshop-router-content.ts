@@ -41,6 +41,7 @@ function examplesFor(
             ...workshopExampleValues(model.execution, example.values)
           }
         : {}
+    const prompt = sample.prompt ?? example?.values.prompt
     return {
       name: `${display.slug}-example-${index + 1}`,
       title: example?.title ?? `Sample ${index + 1}`,
@@ -49,7 +50,8 @@ function examplesFor(
       thumbnailUrl: sample.url,
       mediaKind: sample.kind,
       sampleOnly: Object.keys(values).length === 0,
-      values
+      values,
+      ...(typeof prompt === 'string' && prompt.trim() ? { prompt } : {})
     }
   })
 }

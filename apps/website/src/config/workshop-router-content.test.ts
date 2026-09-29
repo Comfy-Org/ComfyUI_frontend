@@ -27,6 +27,10 @@ import {
 } from './router-render'
 import { initialWorkshopPageState } from './workshop-page-state'
 
+type Overlay = NonNullable<
+  ReturnType<(typeof authoredRouterContentBySlug)['get']>
+>['overlay']
+
 describe('Router catalog form projection', () => {
   it.for([
     'byteplus/seed-2-0-lite-260228',
@@ -361,5 +365,31 @@ describe('authored Router task defaults', () => {
       style: 'digital_illustration'
     })
     expect(prepared.body).toHaveProperty('style', 'digital_illustration')
+  })
+})
+
+describe('example prompts', () => {
+  it.for([
+    {
+      slug: 'bfl--flux-2-max--generate-images',
+      from: 'the sample',
+      prompt: (overlay: Overlay) => overlay.media.samples?.[0]?.prompt
+    },
+    {
+      slug: 'runway--aleph2-video-to-video--edit-videos',
+      from: 'the example values',
+      prompt: (overlay: Overlay) => overlay.examples[0]?.values.prompt
+    },
+    {
+      slug: 'bria--remove-image-background--edit-images',
+      from: 'nowhere',
+      prompt: () => undefined
+    }
+  ])('takes the prompt from $from', ({ slug, from, prompt }) => {
+    const overlay = authoredRouterContentBySlug.get(slug)?.overlay
+    const example = getRouterWorkshopModelDetail(slug)?.examples.at(0)
+    if (!overlay || !example) throw new Error(`Missing example: ${slug}`)
+    expect(example.prompt).toBe(prompt(overlay))
+    expect(example.prompt === undefined).toBe(from === 'nowhere')
   })
 })

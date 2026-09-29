@@ -29,6 +29,7 @@ import type {
   PlaygroundExample
 } from '../../config/workshop-playground'
 import {
+  exampleAlt,
   isVideoUrl,
   schemaForModel,
   validateForm
@@ -156,7 +157,8 @@ function exampleOutput(example: PlaygroundExample): RunOutput {
   return {
     kind,
     url: example.outputUrl,
-    fileName: `${model.slug}-${example.id}.${extension}`
+    fileName: `${model.slug}-${example.id}.${extension}`,
+    alt: exampleAlt(model.name, example.title, locale)
   }
 }
 
@@ -1052,6 +1054,7 @@ function useInCode() {
     >
       <ExamplesTab
         :examples
+        :model-name="model.name"
         :active-id="activeExampleId"
         :locale
         @open="openExample"

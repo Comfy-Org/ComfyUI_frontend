@@ -102,6 +102,7 @@ export interface GeneratedExample {
   readonly node?: { readonly id: string; readonly displayName: string }
   readonly fields?: readonly GeneratedField[]
   readonly values: WorkshopExampleValues
+  readonly prompt?: string
 }
 
 export interface GeneratedModel {

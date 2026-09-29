@@ -10552,6 +10552,10 @@ Enterprise`
     en: 'Loaded',
     'zh-CN': '已填入表单'
   },
+  'workshop.examples.sampleAlt': {
+    en: '{name} example output {n}',
+    'zh-CN': '{name} 示例输出 {n}'
+  },
   'workshop.examples.empty': {
     en: 'No examples yet for this model.',
     'zh-CN': '该模型暂无示例。'

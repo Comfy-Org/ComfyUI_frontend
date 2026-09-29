@@ -488,7 +488,7 @@ const earlierClass = (active: boolean) =>
           <img
             v-else-if="currentUrl && shown.kind === 'image' && !blurred"
             :src="currentUrl"
-            :alt="t('workshop.output.title', locale)"
+            :alt="shown.alt ?? t('workshop.output.title', locale)"
             class="size-full object-contain"
             @load="emit('delivery', currentUrl, 'succeeded')"
             @error="emit('delivery', currentUrl, 'failed')"
