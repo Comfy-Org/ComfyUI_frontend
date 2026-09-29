@@ -38,3 +38,30 @@ export function auditModelPage(html: string, modelName: string): string[] {
     errors.push('paints a loader in place of the model')
   return errors
 }
+
+const PLACEHOLDER_LABEL = /^(?:Output|Sample \d+)$/
+
+function attributeOf(tag: string, name: string): string | undefined {
+  const quoted = new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1]
+  if (quoted !== undefined) return quoted
+  return new RegExp(`\\s${name}(?=[\\s/>])`).test(tag) ? '' : undefined
+}
+
+export function auditMediaLabels(html: string): string[] {
+  const live = withoutHiddenMarkup(html)
+  const images = [...live.matchAll(/<img\b[^>]*>/g)].flatMap(([tag]) => {
+    const alt = attributeOf(tag, 'alt')
+    const src = attributeOf(tag, 'src')
+    if (alt === undefined) return [`has an image without alt: ${src}`]
+    return PLACEHOLDER_LABEL.test(alt)
+      ? [`has an image with alt "${alt}": ${src}`]
+      : []
+  })
+  const videos = [...live.matchAll(/<video\b[^>]*>/g)].flatMap(([tag]) => {
+    const label = attributeOf(tag, 'aria-label')
+    return label !== undefined && PLACEHOLDER_LABEL.test(label)
+      ? [`has a video labelled "${label}": ${attributeOf(tag, 'src')}`]
+      : []
+  })
+  return [...images, ...videos]
+}

@@ -68,18 +68,6 @@ describe(auditExampleGallery, () => {
         'renders 0 example cards, expected 1',
         'captions "fox" 0 times, expected 1'
       ]
-    },
-    {
-      name: 'placeholder and missing alts',
-      html:
-        gallery(figure('Sample 1') + figure('Output')) +
-        '<img data-alt="Logo" src="y.webp"><img src="z.webp" alt class="card">',
-      examples: [{}, {}],
-      errors: [
-        'has an image with alt "Sample 1": x.webp',
-        'has an image with alt "Output": x.webp',
-        'has an image without alt: y.webp'
-      ]
     }
   ])('$name', ({ html, examples, errors }) => {
     expect(auditExampleGallery(html, examples)).toEqual(errors)

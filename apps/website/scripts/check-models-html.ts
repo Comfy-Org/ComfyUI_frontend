@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { workshopModels } from '../src/config/workshop-browse-content'
 import { getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
 import { auditExampleGallery } from './models-gallery-audit'
-import { auditModelPage } from './models-html-audit'
+import { auditMediaLabels, auditModelPage } from './models-html-audit'
 
 const DIST = join(process.cwd(), 'dist')
 
@@ -21,6 +21,7 @@ const errors = workshopModels.flatMap((model) => {
   )
   return [
     ...auditModelPage(html, model.name),
+    ...auditMediaLabels(html),
     ...auditExampleGallery(html, examplesOf(model.slug))
   ].map((error) => `/models/${model.slug}/: ${error}`)
 })

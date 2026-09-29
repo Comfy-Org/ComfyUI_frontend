@@ -29,14 +29,5 @@ export function auditExampleGallery(
         `captions "${prompt.slice(0, 40)}" ${found} times, expected ${expected}`
       )
   }
-  for (const [tag] of live.matchAll(/<img\b[^>]*>/g)) {
-    const alt =
-      /\salt(?:="([^"]*)")?(?=[\s/>])/.exec(tag)?.[1] ??
-      (/\salt[\s/>]/.test(tag) ? '' : undefined)
-    const src = /\ssrc="([^"]*)"/.exec(tag)?.[1]
-    if (alt === undefined) errors.push(`has an image without alt: ${src}`)
-    else if (alt === 'Output' || /^Sample \d+$/.test(alt))
-      errors.push(`has an image with alt "${alt}": ${src}`)
-  }
   return errors
 }

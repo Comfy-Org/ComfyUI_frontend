@@ -461,7 +461,7 @@ const earlierClass = (active: boolean) =>
             v-if="currentUrl && shown.kind === 'video' && !blurred"
             :src="currentUrl"
             :locale
-            :aria-label="t('workshop.output.title', locale)"
+            :aria-label="shown.alt ?? t('workshop.output.title', locale)"
             class="size-full rounded-none border-0"
             fit="contain"
             controls-on-hover
@@ -712,7 +712,7 @@ const earlierClass = (active: boolean) =>
           </button>
           <img
             :src="currentUrl"
-            :alt="t('workshop.output.title', locale)"
+            :alt="shown?.alt ?? t('workshop.output.title', locale)"
             class="max-h-full max-w-full rounded-2xl object-contain"
           />
         </DialogContent>
