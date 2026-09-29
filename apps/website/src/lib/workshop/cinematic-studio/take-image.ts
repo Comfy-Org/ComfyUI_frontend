@@ -19,7 +19,7 @@ import {
  * Long term the Router should keep every output and accept it back by asset
  * id; then this becomes that id and nothing here downloads anything.
  */
-export interface TakeImage {
+interface TakeImage {
   readonly url: string
   readonly name: string
   /** The picture, when the page could read it. */
@@ -29,9 +29,7 @@ export interface TakeImage {
 /** An input image: one the visitor added, or a take reused. */
 export type StudioImage = File | TakeImage
 
-export function isTakeImage(
-  image: StudioImage | undefined
-): image is TakeImage {
+function isTakeImage(image: StudioImage | undefined): image is TakeImage {
   return !!image && !(image instanceof File)
 }
 
