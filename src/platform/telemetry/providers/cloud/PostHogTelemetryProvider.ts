@@ -19,6 +19,7 @@ import type {
   AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageSentMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
@@ -723,6 +724,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
+  }
+
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {

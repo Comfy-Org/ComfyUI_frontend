@@ -1,9 +1,13 @@
 import { watch } from 'vue'
+import { v4 as uuidv4 } from 'uuid'
+
+import type { AgentInputMethod } from '@/platform/telemetry/types'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import type { WorkflowReference } from '../../types/workflowReference'
+import type { AgentStarterPromptSource } from '../../utils/starterPrompts'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
 import type { ComposerAttachment } from './useComposer'
@@ -23,9 +27,16 @@ interface UseAgentDraftSubmissionOptions {
     text: string,
     attachments: ComposerAttachment[],
     nodes: SelectedNode[],
-    references: WorkflowReference[]
+    references: WorkflowReference[],
+    meta: SubmissionMeta
   ) => Promise<boolean>
   stop: () => Promise<void>
+}
+
+interface SubmissionMeta {
+  clientMessageId: string
+  inputMethod: AgentInputMethod
+  starterPrompt: AgentStarterPromptSource | null
 }
 
 export function useAgentDraftSubmission(
@@ -78,6 +89,8 @@ export function useAgentDraftSubmission(
       return
 
     const prompt = composer.prompt
+    const inputMethod = composer.promptOrigin
+    const starterPrompt = composer.starterPrompt
     const sentAttachments = [...attachments]
     const sentReferences = [...references]
     selection.exit()
@@ -96,7 +109,8 @@ export function useAgentDraftSubmission(
       text,
       sentAttachments,
       nodes,
-      sentReferences
+      sentReferences,
+      { clientMessageId: uuidv4(), inputMethod, starterPrompt }
     )
     const stopRequested =
       composer.submission?.id === submissionId &&

@@ -1,7 +1,24 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
+import { useTelemetry } from '@/platform/telemetry'
+
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import type { ComposerAttachment } from './useComposer'
 import { useComposer } from './useComposer'
+
+vi.mock(import('@/platform/telemetry'))
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
+
+const CHIP: AgentStarterPromptAttribution = {
+  promptId: 'list_workflows',
+  promptIndex: 1,
+  promptCount: 5,
+  promptTextHash: 'deadbeef',
+  locale: 'en'
+}
 
 function setup(running = false) {
   const onSend =
@@ -121,6 +138,40 @@ describe('useComposer', () => {
 
     expect(composer.draft.value).toBe('first second')
     expect(onSend).not.toHaveBeenCalled()
+  })
+
+  it('reports and retains starter-prompt attribution for the eventual send', () => {
+    const { composer } = setup()
+    const store = useAgentComposerStore()
+
+    composer.insert('List my saved workflows', CHIP)
+
+    expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledWith({
+      prompt_id: 'list_workflows',
+      prompt_index: 1,
+      prompt_count: 5,
+      prompt_text_hash: 'deadbeef',
+      locale: 'en',
+      click_id: expect.any(String),
+      draft_was_empty: true
+    })
+    const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
+    expect(store.promptOrigin).toBe('suggestion')
+    expect(store.starterPrompt).toEqual({
+      id: 'list_workflows',
+      clickId: event.click_id
+    })
+  })
+
+  it('does not report an unidentified suggestion insert', () => {
+    const { composer } = setup()
+    const store = useAgentComposerStore()
+
+    composer.insert('Try a different workflow')
+
+    expect(store.promptOrigin).toBe('suggestion')
+    expect(store.starterPrompt).toBeNull()
+    expect(telemetry.trackAgentStarterPromptClicked).not.toHaveBeenCalled()
   })
 
   it('a recreated composer rehydrates the pending draft and attachments', () => {
