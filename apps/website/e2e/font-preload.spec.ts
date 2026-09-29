@@ -31,7 +31,7 @@ for (const path of PAGES) {
       )
     }
     await page.goto(path)
-    if (path === '/models/') await page.getByTestId('workshop-hero').waitFor()
+    if (path === '/models/') await page.getByTestId('catalogue-pitch').waitFor()
     await page.evaluate(() => document.fonts.ready)
 
     const gaps = await page.evaluate(() => {
