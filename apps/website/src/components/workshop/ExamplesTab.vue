@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Check, Music2 } from '@lucide/vue'
-import { useElementVisibility } from '@vueuse/core'
-import { computed, useTemplateRef } from 'vue'
+import { useElementVisibility, useSupported, whenever } from '@vueuse/core'
+import { computed, ref, useTemplateRef } from 'vue'
 
 import type { PlaygroundExample } from '../../config/workshop-playground'
 import { exampleAlt, isVideoUrl } from '../../config/workshop-playground'
@@ -33,6 +33,12 @@ const galleryNear = useElementVisibility(gallery, {
   initialValue: false,
   rootMargin: '20% 0px'
 })
+const galleryReached = ref(false)
+whenever(galleryNear, () => (galleryReached.value = true), { once: true })
+const observable = useSupported(() => 'IntersectionObserver' in window)
+const videoPreload = computed(() =>
+  galleryReached.value || !observable.value ? 'metadata' : 'none'
+)
 const samplesOnly = computed(
   () => examples.length > 0 && examples.every((example) => example.sampleOnly)
 )
@@ -134,7 +140,7 @@ function actionFor(example: PlaygroundExample, active = false) {
                 class="size-full object-cover"
                 muted
                 playsinline
-                :preload="galleryNear ? 'metadata' : 'none'"
+                :preload="videoPreload"
               />
               <Music2
                 v-else-if="example.mediaKind === 'audio'"

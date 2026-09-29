@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { expect, it } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { PlaygroundExample } from '../../config/workshop-playground'
 import {
@@ -79,5 +80,26 @@ it('loads no video until the gallery nears the screen, and plays none', async ()
   expect(video.getAttribute('preload')).toBe('none')
   await setAllIntersecting(true)
   expect(video.getAttribute('preload')).toBe('metadata')
+  await setAllIntersecting(false)
+  expect(video.getAttribute('preload')).toBe('metadata')
   expect(video.hasAttribute('autoplay')).toBe(false)
+})
+
+it('loads the first frame at once where nothing can watch the screen', async () => {
+  const observer = window.IntersectionObserver
+  Reflect.deleteProperty(window, 'IntersectionObserver')
+  try {
+    render(ExamplesTab, {
+      props: {
+        modelName: 'Seedance',
+        examples: [example({ title: 'Racer', mediaKind: 'video' })]
+      }
+    })
+    await nextTick()
+    expect(
+      screen.getByLabelText('Seedance: Racer').getAttribute('preload')
+    ).toBe('metadata')
+  } finally {
+    window.IntersectionObserver = observer
+  }
 })
