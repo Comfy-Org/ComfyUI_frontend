@@ -51,6 +51,7 @@ async function load() {
     // Nothing to draw reads to the reader exactly as a refusal does.
     if (drawn.nodes.length === 0) throw new Error('empty')
     picture.value = drawn
+    openOnFirstNode(drawn)
   } catch {
     failed.value = true
   }
@@ -66,11 +67,54 @@ const transform = computed(() => {
   return `translate(${panX.value} ${panY.value}) translate(${cx} ${cy}) scale(${scale.value}) translate(${-cx} ${-cy})`
 })
 
+// A published graph is thousands of units wide, so fitting all of it into the
+// panel renders a 14-unit node title at three or four pixels. The drawing opens
+// at the zoom that makes those titles readable, on the node the workflow starts
+// from, and the reader drags and zooms out from there.
+const TITLE_UNITS = 14
+const READABLE_TITLE_PX = 11
+const OPENING_MARGIN = 40
+
+function readableScale(viewBox: string) {
+  const panel = frame.value?.clientWidth
+  const width = Number(viewBox.split(' ')[2])
+  if (!panel || !Number.isFinite(width) || width <= 0) return 1
+  const fitted = TITLE_UNITS * (panel / width)
+  return Math.min(3, Math.max(1, READABLE_TITLE_PX / fitted))
+}
+
+function openOnFirstNode(drawn: GraphPicture) {
+  const [x, y, width, height] = drawn.viewBox.split(' ').map(Number)
+  const next = readableScale(drawn.viewBox)
+  scale.value = next
+  if (next === 1) {
+    panX.value = 0
+    panY.value = 0
+    return
+  }
+  // A template often opens with a note holding install links, which is the
+  // last thing worth landing on: the workflow starts at the first node that
+  // takes something in or hands something on.
+  const order = [...drawn.nodes].sort((a, b) => a.x - b.x || a.y - b.y)
+  const wired = (node: (typeof order)[number]) =>
+    node.inputs.length > 0 || node.outputs.length > 0
+  const first = order.find(wired) ?? order[0]
+
+  // The zoom is about the drawing's middle, so panning to a node means undoing
+  // where that middle carried it.
+
+  const centreX = x + width / 2
+  const centreY = y + height / 2
+  panX.value = x + OPENING_MARGIN - centreX - next * (first.x - centreX)
+  panY.value = y + OPENING_MARGIN - centreY - next * (first.y - centreY)
+}
+
 function zoomBy(factor: number) {
   scale.value = Math.min(3, Math.max(0.2, scale.value * factor))
 }
 
 function reset() {
+  if (picture.value) return openOnFirstNode(picture.value)
   scale.value = 1
   panX.value = 0
   panY.value = 0
