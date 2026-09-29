@@ -92,6 +92,17 @@ describe('relatedModels', () => {
       2
     ],
     [
+      'still ends with the next model when the other tasks fill the row',
+      [
+        model('a-3', { routerId: 'x/a' }),
+        model('a', { routerId: 'x/a' }),
+        model('a-2', { routerId: 'x/a' }),
+        model('b')
+      ],
+      ['a', 'a-2', 'b'],
+      2
+    ],
+    [
       'shows one page per other model',
       [
         model('m'),

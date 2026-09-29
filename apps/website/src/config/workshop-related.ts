@@ -1,12 +1,14 @@
 import type { WorkshopModel } from './models-catalogue'
 import { workshopExecutionId } from './models-catalogue'
 
+const collator = new Intl.Collator('en')
+
 function byCatalogueOrder(a: WorkshopModel, b: WorkshopModel) {
   return (
-    (a.modality ?? '').localeCompare(b.modality ?? '') ||
-    (a.provider ?? '').localeCompare(b.provider ?? '') ||
-    a.name.localeCompare(b.name) ||
-    a.slug.localeCompare(b.slug)
+    collator.compare(a.modality ?? '', b.modality ?? '') ||
+    collator.compare(a.provider ?? '', b.provider ?? '') ||
+    collator.compare(a.name, b.name) ||
+    collator.compare(a.slug, b.slug)
   )
 }
 
@@ -19,7 +21,8 @@ function nextInCatalogue(model: WorkshopModel, list: readonly WorkshopModel[]) {
 // Most visitors land on a model page from search or from the home page, so the
 // rest of the catalog is surfaced there. The model's other tasks come first,
 // then the same provider, topped up with the nearest category. The last card
-// is the next model in catalogue order, so every page is linked from another.
+// is the next model in catalogue order, even past the limit, so every page is
+// linked from another.
 export function relatedModels(
   model: WorkshopModel,
   list: readonly WorkshopModel[],
