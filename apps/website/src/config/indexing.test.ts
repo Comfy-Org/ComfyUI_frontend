@@ -131,15 +131,15 @@ describe('model page launch', () => {
 
   it('rolls back to only the model pages of the Router ids it keeps', () => {
     const kept = new Set(['krea/krea-2-large'])
+    const expected = workshopModels
+      .filter(({ routerId }) => kept.has(routerId))
+      .map(({ slug }) => slug)
+    expect(expected).not.toHaveLength(0)
     expect(
       workshopModels
         .filter(({ href }) => isIndexableModelPage(href, kept))
         .map(({ slug }) => slug)
-    ).toEqual(
-      workshopModels
-        .filter(({ routerId }) => kept.has(routerId))
-        .map(({ slug }) => slug)
-    )
+    ).toEqual(expected)
     expect(
       workshopModels.some(({ href }) => isIndexableModelPage(href, new Set()))
     ).toBe(false)
