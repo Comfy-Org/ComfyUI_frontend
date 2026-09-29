@@ -10446,6 +10446,10 @@ Enterprise`
   },
   'workshop.api.copied': { en: 'Copied', 'zh-CN': '已复制' },
   'workshop.api.getKey': { en: 'Get API key', 'zh-CN': '获取 API 密钥' },
+  'workshop.api.downloadGraph': {
+    en: 'Download the API graph',
+    'zh-CN': '下载 API 节点图'
+  },
   'workshop.api.docs': { en: 'Router docs', 'zh-CN': 'Router 文档' },
   'workshop.api.needs': { en: 'What you need', 'zh-CN': '你需要准备的' },
   'workshop.api.needsEndpoint': { en: 'Endpoint', 'zh-CN': '接口地址' },
