@@ -1,9 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   clearPendingSubscriptionCheckoutAttempt,
   consumePendingSubscriptionCheckoutSuccess,
   getPendingSubscriptionCheckoutAttempt,
+  hasReportedMissingCheckoutCompletion,
+  markMissingCheckoutCompletionReported,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
   recordPendingSubscriptionCheckoutAttempt
 } from './subscriptionCheckoutTracker'
@@ -83,5 +85,17 @@ describe('subscriptionCheckoutTracker', () => {
     )
 
     expect(getPendingSubscriptionCheckoutAttempt()).toBeNull()
+  })
+
+  it('deduplicates reports in memory when storage writes fail', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('storage unavailable')
+    })
+
+    markMissingCheckoutCompletionReported('attempt-without-storage')
+
+    expect(
+      hasReportedMissingCheckoutCompletion('attempt-without-storage')
+    ).toBe(true)
   })
 })

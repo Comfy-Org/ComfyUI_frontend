@@ -52,6 +52,7 @@ export const PENDING_SUBSCRIPTION_CHECKOUT_EVENT =
  */
 const REPORTED_MISSING_COMPLETION_STORAGE_KEY =
   'comfy.subscription.missing_completion_reported'
+let reportedMissingCompletionAttemptId: string | null = null
 
 interface SubscriptionStatusSnapshot {
   is_active?: boolean
@@ -235,6 +236,7 @@ const isPaymentIntentSource = (value: unknown): value is PaymentIntentSource =>
   Object.hasOwn(VALID_PAYMENT_INTENT_SOURCES, value)
 
 export const clearPendingSubscriptionCheckoutAttempt = (): void => {
+  reportedMissingCompletionAttemptId = null
   const storage = getStorage()
   if (!storage) {
     return
@@ -287,6 +289,8 @@ export const getPendingSubscriptionCheckoutAttempt =
 export const hasReportedMissingCheckoutCompletion = (
   attemptId: string
 ): boolean => {
+  if (reportedMissingCompletionAttemptId === attemptId) return true
+
   const storage = getStorage()
   if (!storage) {
     return false
@@ -304,6 +308,7 @@ export const hasReportedMissingCheckoutCompletion = (
 export const markMissingCheckoutCompletionReported = (
   attemptId: string
 ): void => {
+  reportedMissingCompletionAttemptId = attemptId
   const storage = getStorage()
   if (!storage) {
     return
