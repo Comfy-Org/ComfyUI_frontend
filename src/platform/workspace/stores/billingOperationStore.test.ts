@@ -14,6 +14,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type {
   BillingAuthenticationState,
   BillingOpStatusResponse
@@ -76,6 +77,7 @@ describe('billingOperationStore', () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
     vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_3ds')
+    remoteConfig.value = {}
     mockHandleNextAction.mockResolvedValue({})
     mockLoadStripe.mockResolvedValue({
       handleNextAction: mockHandleNextAction
@@ -359,6 +361,80 @@ describe('billingOperationStore', () => {
         severity: 'info',
         summary: 'billingOperation.topupProcessing',
         group: 'billing-operation'
+      })
+    })
+
+    describe('a resumed operation', () => {
+      function serveFirstRead() {
+        let serve: (status: BillingOpStatusResponse) => void = () => {}
+        vi.mocked(workspaceApi.getBillingOpStatus).mockReturnValueOnce(
+          new Promise((resolve) => {
+            serve = resolve
+          })
+        )
+        return (phase?: 'in_progress' | 'awaiting_payment_method') => {
+          const status: BillingOpStatusResponse = {
+            id: 'op-resumed',
+            status: 'pending',
+            started_at: new Date().toISOString(),
+            ...(phase ? { phase } : {})
+          }
+          vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue(status)
+          serve(status)
+        }
+      }
+
+      it('announces nothing for a checkout parked on a payment method', async () => {
+        const serve = serveFirstRead()
+        const store = useBillingOperationStore()
+        void store.startOperation('op-resumed', 'subscription', {
+          resumed: true
+        })
+
+        expect(useToastStore().add).not.toHaveBeenCalled()
+        serve('awaiting_payment_method')
+        await vi.advanceTimersByTimeAsync(31_000)
+
+        expect(useToastStore().add).not.toHaveBeenCalled()
+      })
+
+      it.for([['in_progress'], [undefined]] as const)(
+        'announces processing once its first read (phase %s) shows it in flight',
+        async ([phase]) => {
+          const serve = serveFirstRead()
+          const store = useBillingOperationStore()
+          void store.startOperation('op-resumed', 'subscription', {
+            resumed: true
+          })
+
+          expect(useToastStore().add).not.toHaveBeenCalled()
+          serve(phase)
+          await vi.advanceTimersByTimeAsync(0)
+
+          expect(useToastStore().add).toHaveBeenCalledOnce()
+          expect(useToastStore().add).toHaveBeenCalledWith({
+            severity: 'info',
+            summary: 'billingOperation.subscriptionProcessing',
+            group: 'billing-operation'
+          })
+        }
+      )
+
+      it('announces a served verification link at once', () => {
+        serveFirstRead()
+        const store = useBillingOperationStore()
+        void store.startOperation(
+          'op-resumed',
+          'subscription',
+          { resumed: true },
+          'https://invoice.stripe.com/sensitive-token'
+        )
+
+        expect(useToastStore().add).toHaveBeenCalledWith({
+          severity: 'warn',
+          summary: 'billingOperation.subscriptionActionRequired',
+          group: 'billing-operation'
+        })
       })
     })
   })
@@ -1404,6 +1480,18 @@ describe('billingOperationStore', () => {
         errorMessage: 'card_declined',
         summary: 'billingOperation.topupFailed',
         detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'authentication_failed',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.authenticationFailedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'authentication_required',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.authenticationFailedDetail'
       }
     ])(
       'shows an actionable $errorMessage message for $type failures',
@@ -1597,6 +1685,37 @@ describe('billingOperationStore', () => {
           polledAfterChallenge + 1
         )
       })
+    })
+
+    it.for([
+      {
+        source: 'the server key over the build-time one',
+        server: 'pk_server',
+        expected: 'pk_server'
+      },
+      {
+        source: 'the build-time key when the server has none',
+        server: undefined,
+        expected: 'pk_test_3ds'
+      }
+    ])('loads the challenge with $source', async ({ server, expected }) => {
+      remoteConfig.value = { stripe_publishable_key: server }
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-3ds',
+        status: 'pending',
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: new Date().toISOString()
+      })
+      mockHandleNextAction.mockReturnValue(new Promise(() => {}))
+
+      void useBillingOperationStore().startOperation('op-3ds', 'subscription', {
+        autoHandleRequiresAction: true,
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockLoadStripe).toHaveBeenCalledWith(expected)
     })
 
     it('recovers when Stripe.js fails to load', async () => {

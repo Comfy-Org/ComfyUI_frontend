@@ -166,12 +166,12 @@ const layout = computed(() => {
   const split = captureMode.value
   return {
     root: cn(
-      'mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2',
+      'mx-auto flex h-full min-h-0 max-w-[400px] flex-col items-stretch justify-between overflow-y-auto text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2',
       // Edge-to-edge Stripe-checkout split on desktop: the summary is a
       // flush full-height sidebar on base-background, payment beside it on
       // the shell. Mobile keeps the stacked flow.
       split &&
-        'xl:min-h-0 xl:w-full xl:max-w-none xl:flex-1 xl:flex-row xl:items-stretch xl:gap-0'
+        'xl:min-h-0 xl:w-full xl:max-w-none xl:flex-1 xl:flex-row xl:items-stretch xl:gap-0 xl:overflow-visible'
     ),
     summary: cn(
       split &&

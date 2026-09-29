@@ -255,6 +255,14 @@ async function returnToTab(page: Page) {
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
 }
 
+/**
+ * Both rails arm the next read of an operation only after applying the last
+ * one, so the read after the first proves the first was handled.
+ */
+function operationRead(page: Page) {
+  return page.waitForRequest(`**/api/billing/ops/${OPERATION_ID}`)
+}
+
 async function confirmCreatorUpgrade(page: Page) {
   await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
   await cloudAppExpect(
@@ -317,12 +325,11 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
           }
         })
 
-        const adopted = page.waitForResponse(
-          `**/api/billing/ops/${OPERATION_ID}`
-        )
+        const firstRead = operationRead(page)
         await page.goto(APP_URL)
         await waitForCloudApp(page)
-        await adopted
+        await firstRead
+        await operationRead(page)
 
         await expect(page.getByText(SUBSCRIPTION_PROCESSING)).toHaveCount(0)
         await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(

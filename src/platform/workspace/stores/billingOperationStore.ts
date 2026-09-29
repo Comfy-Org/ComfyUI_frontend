@@ -37,6 +37,7 @@ import {
   needsCustomerAttention,
   progressToastKind
 } from '@/platform/workspace/billing/customerAttention'
+import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -84,6 +85,12 @@ export interface StartOperationMetadata {
   checkoutType?: SubscriptionCheckoutType
   paymentIntentSource?: PaymentIntentSource
   suppressProcessingToast?: boolean
+  /**
+   * Adopted from a status read rather than started by the customer here. The
+   * read names the operation but not what it waits on, so without a served
+   * link it is announced by its first status, never before it.
+   */
+  resumed?: boolean
   autoHandleRequiresAction?: boolean
   downgradeToPersonal?: {
     memberRemovalCount: number
@@ -159,6 +166,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     string,
     { kind: ProgressToastKind; message: ToastMessageOptions }
   >()
+  const progressToastsAwaitingFirstRead = new Set<string>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const autoHandledPaymentActions = new Set<string>()
@@ -255,6 +263,38 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     toastStore.add(message)
   }
 
+  function announceStart(
+    operation: BillingOperation,
+    metadata: StartOperationMetadata | undefined
+  ) {
+    if (operation.type === 'cancel' || metadata?.suppressProcessingToast) return
+    if (metadata?.resumed && operation.actionUrl === null) {
+      progressToastsAwaitingFirstRead.add(operation.opId)
+      return
+    }
+    syncProgressToast(
+      operation.opId,
+      operation.type,
+      progressToastKind(operation)
+    )
+  }
+
+  // The action URL is the last field a read applies, so an operation awaiting
+  // its first read is announced here by what that read found.
+  function syncProgressToastAfterRead(
+    before: BillingOperation,
+    after: BillingOperation
+  ) {
+    if (
+      after.type !== 'cancel' &&
+      progressToastsAwaitingFirstRead.delete(after.opId)
+    ) {
+      syncProgressToast(after.opId, after.type, progressToastKind(after))
+      return
+    }
+    syncProgressToastOnChange(before, after)
+  }
+
   function syncProgressToastOnChange(
     before: BillingOperation,
     after: BillingOperation
@@ -317,9 +357,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (type !== 'cancel' && !metadata?.suppressProcessingToast) {
-      syncProgressToast(opId, type, progressToastKind(operation))
-    }
+    announceStart(operation, metadata)
 
     const terminal = new Promise<BillingOperation>((resolve) => {
       terminalResolvers.set(opId, resolve)
@@ -621,7 +659,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     })
 
     try {
-      const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+      const publishableKey = resolveStripePublishableKey()
       const stripe = publishableKey ? await loadStripe(publishableKey) : null
       if (!stripe) {
         setAuthenticationFailed(
@@ -755,7 +793,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // exactly while the operation cannot proceed without the customer — so the
     // toast never outlives the verification action it points at. Swapped only
     // when that answer changes, or a dismissed toast would return every poll.
-    syncProgressToastOnChange(operation, updated)
+    syncProgressToastAfterRead(operation, updated)
   }
 
   async function handleSuccess(opId: string) {
@@ -1270,6 +1308,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     waitingWithoutActionSince.delete(opId)
     autoHandledPaymentActions.delete(opId)
     paymentIntentClientSecrets.delete(opId)
+    progressToastsAwaitingFirstRead.delete(opId)
 
     const progressToast = progressToasts.get(opId)
     if (progressToast) {

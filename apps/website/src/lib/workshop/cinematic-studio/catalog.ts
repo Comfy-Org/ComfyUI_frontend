@@ -152,7 +152,7 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
         id: 'medium',
         label: 'cinematic.option.medium',
         phrase: 'medium shot',
-        preview: frame('bus-stop')
+        preview: frame('red-coat')
       },
       {
         id: 'close',
@@ -244,7 +244,7 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
         id: 't500',
         label: 'cinematic.option.tungsten500',
         phrase: 'tungsten 500T film',
-        preview: frame('bus-stop')
+        preview: frame('diner')
       },
       {
         id: 'd250',
@@ -262,7 +262,7 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
         id: 'slide',
         label: 'cinematic.option.reversal',
         phrase: 'reversal slide film',
-        preview: frame('diner')
+        preview: frame('neon-street')
       },
       {
         id: 'expired',
@@ -329,7 +329,7 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
   }
 ]
 
-export const gradeGroup: DirectionGroup = {
+export const gradeGroup: DirectionGroup<'grade'> = {
   part: 'grade',
   title: 'cinematic.part.grade',
   options: [
@@ -422,6 +422,8 @@ export const ASPECT_RATIOS = [
   { id: '21:9', label: 'cinematic.aspect.scope' },
   { id: '16:9', label: 'cinematic.aspect.widescreen' },
   { id: '4:3', label: 'cinematic.aspect.academy' },
+  { id: '3:2', label: 'cinematic.aspect.landscapePhoto' },
+  { id: '2:3', label: 'cinematic.aspect.portraitPhoto' },
   { id: '1:1', label: 'cinematic.aspect.square' },
   { id: '9:16', label: 'cinematic.aspect.vertical' }
 ] as const satisfies readonly { id: string; label: CinematicCopyKey }[]

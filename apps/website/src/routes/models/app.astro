@@ -6,7 +6,7 @@ import { getRouterWorkshopModelDetail } from '../../config/workshop-router-conte
 import { runnableCinematicModels } from '../../lib/workshop/cinematic-studio/models'
 import { priceCinematicModels } from '../../lib/workshop/cinematic-studio/pricing'
 import { tc } from '../../lib/workshop/cinematic-studio/copy'
-import { appPagePaths } from '../../config/workshop-app-content'
+import { appModels, appPagePaths } from '../../config/workshop-app-content'
 import type { AppWorkshopModel } from '../../config/models-catalogue'
 
 export const getStaticPaths: GetStaticPaths = () => appPagePaths()
@@ -31,7 +31,12 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
   ogImage={model.thumbnailUrl}
   noindex
 >
-  <CinematicStudioPage models={models} initialApp={app} client:load />
+  <CinematicStudioPage
+    apps={appModels}
+    models={models}
+    initialApp={app}
+    client:load
+  />
   <noscript>
     <p class="p-8 text-center">{tc('cinematic.unavailable.title')}</p>
   </noscript>
