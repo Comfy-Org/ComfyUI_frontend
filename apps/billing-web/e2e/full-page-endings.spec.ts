@@ -313,13 +313,15 @@ test('433-6840: a team link without its commit stop is an invalid link, and View
   )
 })
 
-test('433-6840: a checkout link that names no plan is Plan not available for a signed-in customer on the flag, and View plans opens the pricing table', async ({
+test('433-6840: a checkout link that names no plan, routed once the tab is signed in on the flag, is Plan not available, and View plans opens the pricing table', async ({
   page,
   signIn
 }) => {
   const planless = entryPath('checkout', {})
   await signIn(CHECKOUT)
-  await page.goto(planless)
+  await expect(payButton(page)).toBeVisible()
+
+  await page.goto(`/sign-in?returnTo=${encodeURIComponent(planless)}`)
 
   await expect(heading(page, "This plan isn't available")).toBeVisible()
   await expect(code(page)).toHaveText('CHECKOUT_LINK_INVALID')
@@ -335,20 +337,18 @@ test('433-6840: a checkout link that names no plan is Plan not available for a s
 })
 
 test('a signed-out visitor on the flag still goes back to the host for a checkout link that names no plan', async ({
-  page,
-  cloud
+  page
 }) => {
-  await expectStraightToHost(page, cloud, 'ws_team_e2e')
+  await expectStraightToHost(page, 'ws_team_e2e')
 })
 
-test('a checkout link that names no plan, opened in a tab with no session yet, goes back to the host even on the flag', async ({
+test('a checkout link that names no plan, opened by the host in a new tab, goes back to the host even for a signed-in customer on the flag', async ({
   context,
-  cloud,
   signIn
 }) => {
   await signIn(CHECKOUT)
 
-  await expectStraightToHost(await context.newPage(), cloud, 'ws_e2e')
+  await expectStraightToHost(await context.newPage(), 'ws_e2e')
 })
 
 test("433-6840: a checkout link the contract cannot read is the checkout's 404 on the full page, and still the entry error on the embedded one", async ({

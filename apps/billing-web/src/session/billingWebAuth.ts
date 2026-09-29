@@ -9,7 +9,6 @@
  * which this page load stays on the session client.
  */
 import type { ComputedRef } from 'vue'
-import { until } from '@vueuse/core'
 import { computed, shallowRef } from 'vue'
 
 import type { SignInPort } from '@/auth/useSignInController'
@@ -77,19 +76,6 @@ export function billingWebPhase():
   void decideMode()
   if (mode.value === 'web-session') return unifiedSession().settledPhase()
   return mode.value === 'session-client' ? billingWebSessionPhase() : 'pending'
-}
-
-/**
- * The decided side's phase once its identity has answered, never `pending`:
- * for a decision the router cannot leave to the sign-in page. The identity
- * always settles, bounded by its config fetch's own timeout.
- */
-export async function billingWebSettledPhase(): Promise<BillingWebSessionPhase> {
-  if ((await decideMode()) === 'web-session')
-    return unifiedSession().settledPhase()
-  const { phase } = sessionClientState()
-  await until(phase).not.toBe('pending')
-  return phase.value
 }
 
 /**

@@ -205,25 +205,6 @@ describe('billing-web with unified_web_session off', () => {
   )
 })
 
-describe('billingWebSettledPhase with unified_web_session off', () => {
-  it('waits out pending for the restored identity, then answers the minted session', async () => {
-    const { fetchImpl } = recordingFetch(
-      { firebase_config: FIREBASE_CONFIG },
-      {}
-    )
-    vi.stubGlobal('fetch', fetchImpl)
-
-    await signInThenCallBilling(async ({ auth, signIn }) => {
-      expect(auth.billingWebPhase()).toBe('pending')
-      expect(await auth.billingWebSettledPhase()).toBe('minting')
-
-      await signIn(auth.billingWebSignInPort())
-
-      expect(await auth.billingWebSettledPhase()).toBe('authenticated')
-    })
-  })
-})
-
 const ENTRY = '/v1/subscription?product=comfyui&return_to=comfyui_workspace'
 const UNAVAILABLE = 'Sign-in is unavailable right now.'
 

@@ -3,8 +3,6 @@
  * it once, and a remount (a workspace switch) must settle to the same answer
  * rather than risk showing the customer the other checkout.
  */
-import type { SessionSnapshot } from '@comfyorg/account-core/session'
-
 import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebSessionClient } from '@/session/billingWebSession'
 
@@ -95,25 +93,6 @@ async function resolveVariant(workspaceId: string): Promise<CheckoutUiVariant> {
 let memo:
   | { readonly uid: string; readonly resolution: Promise<CheckoutUiVariant> }
   | undefined
-
-/**
- * Where a checkout link that names no plan goes: back to its host to choose
- * one, or to the full page, which explains it. Only a signed-in customer's
- * flag can keep it here. A visitor with no identity, or one whose sign-in
- * failed, goes back as the embedded checkout always sent them; one whose
- * identity has not minted yet signs in first, and the route guard asks again
- * on the way back.
- */
-export type PlanlessCheckoutRoute = 'host' | 'sign_in' | 'full_page'
-
-export async function planlessCheckoutRoute(
-  settledPhase: () => Promise<SessionSnapshot['phase']>
-): Promise<PlanlessCheckoutRoute> {
-  const phase = await settledPhase()
-  if (phase === 'minting') return 'sign_in'
-  if (phase !== 'authenticated') return 'host'
-  return (await awaitCheckoutUiVariant()) === 'full_page' ? 'full_page' : 'host'
-}
 
 /** Never rejects. An anonymous visitor is answered without memoizing, so a later signed-in mount still asks. */
 export function awaitCheckoutUiVariant(): Promise<CheckoutUiVariant> {

@@ -418,28 +418,29 @@ test('a checkout link naming a team credit stop quotes it along with the plan', 
 })
 
 test.describe('a checkout link that names no plan goes back to the host to choose one', () => {
-  test('for a signed-out visitor', async ({ page, cloud }) => {
-    await expectStraightToHost(page, cloud, 'ws_team_e2e')
+  test('for a signed-out visitor', async ({ page }) => {
+    await expectStraightToHost(page, 'ws_team_e2e')
   })
 
   test('for a signed-in customer, in the tab they signed in on', async ({
     page,
-    cloud,
     signIn
   }) => {
     await signIn(CHECKOUT)
+    await expect(
+      page.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeVisible()
 
-    await expectStraightToHost(page, cloud, 'ws_e2e')
+    await expectStraightToHost(page, 'ws_e2e')
   })
 
   test('for a signed-in customer the host opens a new tab for, before that tab has a session', async ({
     context,
-    cloud,
     signIn
   }) => {
     await signIn(CHECKOUT)
 
-    await expectStraightToHost(await context.newPage(), cloud, 'ws_e2e')
+    await expectStraightToHost(await context.newPage(), 'ws_e2e')
   })
 
   test('for a signed-in customer whose link names a workspace they cannot manage, never the refusal', async ({
@@ -454,7 +455,7 @@ test.describe('a checkout link that names no plan goes back to the host to choos
     }))
     const tab = await context.newPage()
 
-    await expectStraightToHost(tab, cloud, 'ws_not_a_member')
+    await expectStraightToHost(tab, 'ws_not_a_member')
     await expect(tab.getByRole('alert')).toHaveCount(0)
   })
 })

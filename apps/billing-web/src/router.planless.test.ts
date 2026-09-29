@@ -4,7 +4,6 @@ import type { BillingWebSessionPhase } from '@/router'
 
 const h = vi.hoisted(() => ({
   livePhase: undefined as BillingWebSessionPhase | undefined,
-  settledPhase: new Promise<BillingWebSessionPhase>(() => {}),
   bind: vi.fn<(workspaceId: string) => void>()
 }))
 
@@ -15,7 +14,6 @@ vi.mock<unknown>(import('@/session/billingWebAuth'), () => ({
       return h.livePhase
     }
   },
-  billingWebSettledPhase: () => h.settledPhase,
   onBillingWebEntryWorkspace: h.bind
 }))
 
@@ -39,6 +37,10 @@ vi.mock<unknown>(import('@/session/billingWebSession'), () => ({
 const fetchMock = vi.fn<typeof fetch>()
 
 function flagAnswers(variant: string) {
+  if (variant === 'unreachable') {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    return
+  }
   fetchMock.mockResolvedValue(
     new Response(JSON.stringify({ billing_web_checkout_ui: variant }))
   )
@@ -57,14 +59,9 @@ beforeEach(() => {
 
 async function openPlanless(visitor: {
   livePhase: BillingWebSessionPhase | undefined
-  settledPhase?: BillingWebSessionPhase
   flag: string
 }) {
   h.livePhase = visitor.livePhase
-  h.settledPhase =
-    visitor.settledPhase === undefined
-      ? new Promise(() => {})
-      : Promise.resolve(visitor.settledPhase)
   flagAnswers(visitor.flag)
   const { createBillingRouter } = await import('@/router')
   const { useBillingEntry } = await import('@/entry/billingEntry')
@@ -83,19 +80,16 @@ describe('a checkout link that names no plan', () => {
   it.for<{
     name: string
     livePhase: BillingWebSessionPhase | undefined
-    settledPhase?: BillingWebSessionPhase
     flag: string
   }>([
     {
       name: 'a signed-out visitor',
       livePhase: 'signed-out',
-      settledPhase: 'signed-out',
       flag: 'embedded'
     },
     {
       name: 'a signed-out visitor on the flag',
       livePhase: 'signed-out',
-      settledPhase: 'signed-out',
       flag: 'full_page'
     },
     {
@@ -106,19 +100,16 @@ describe('a checkout link that names no plan', () => {
     {
       name: 'a restored identity with no session minted yet',
       livePhase: 'pending',
-      settledPhase: 'minting',
       flag: 'full_page'
     },
     {
       name: 'an identity still minting',
       livePhase: 'minting',
-      settledPhase: 'minting',
       flag: 'full_page'
     },
     {
       name: 'a sign-in that failed',
       livePhase: 'error',
-      settledPhase: 'error',
       flag: 'full_page'
     }
   ])(
@@ -133,22 +124,23 @@ describe('a checkout link that names no plan', () => {
     }
   )
 
-  it('sends a signed-in customer off the flag back to the host', async () => {
-    const { router, leave } = await openPlanless({
-      livePhase: 'authenticated',
-      settledPhase: 'authenticated',
-      flag: 'embedded'
-    })
+  it.for(['embedded', 'unreachable'])(
+    'sends a signed-in customer whose flag reads %s back to the host',
+    async (flag) => {
+      const { router, leave } = await openPlanless({
+        livePhase: 'authenticated',
+        flag
+      })
 
-    expect(leave).toHaveBeenCalledExactlyOnceWith(HOST)
-    expect(router.currentRoute.value.path).not.toBe('/sign-in')
-    expect(h.bind).not.toHaveBeenCalled()
-  })
+      expect(leave).toHaveBeenCalledExactlyOnceWith(HOST)
+      expect(router.currentRoute.value.path).not.toBe('/sign-in')
+      expect(h.bind).not.toHaveBeenCalled()
+    }
+  )
 
   it('keeps it for the full page when a signed-in customer is on the flag', async () => {
     const { router, leave, entry, error } = await openPlanless({
       livePhase: 'authenticated',
-      settledPhase: 'authenticated',
       flag: 'full_page'
     })
 

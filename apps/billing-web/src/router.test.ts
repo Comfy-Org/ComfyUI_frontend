@@ -10,7 +10,6 @@ import { recordBillingEntry, useBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import { createBillingRouter } from '@/router'
 import type { BillingWebSessionPhase } from '@/router'
-import type { PlanlessCheckoutRoute } from '@/config/checkoutUi'
 import { createFakeBillingClient } from '@/test/fakeBillingClient'
 
 const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
@@ -81,18 +80,14 @@ describe('entry workspace binding', () => {
 })
 
 describe('plan selection, which the host app owns', () => {
-  function hostBoundRouter(
-    phase: BillingWebSessionPhase = 'signed-out',
-    planless: PlanlessCheckoutRoute = 'host'
-  ) {
+  function hostBoundRouter(phase: BillingWebSessionPhase = 'signed-out') {
     const onEntryWorkspace = vi.fn()
     const leave = vi.fn()
     const router = createBillingRouter(
       createMemoryHistory(),
       () => phase,
       onEntryWorkspace,
-      leave,
-      async () => planless
+      leave
     )
     return { router, onEntryWorkspace, leave }
   }
@@ -110,41 +105,6 @@ describe('plan selection, which the host app owns', () => {
     )
     expect(onEntryWorkspace).not.toHaveBeenCalled()
     expect(router.currentRoute.value.path).not.toBe('/sign-in')
-  })
-
-  it('keeps a planless checkout the flag leaves for the full page', async () => {
-    const { router, onEntryWorkspace, leave } = hostBoundRouter(
-      'authenticated',
-      'full_page'
-    )
-
-    await router.push(`/v1/checkout?${ENTRY_QUERY}&workspace=ws-team`)
-
-    expect(leave).not.toHaveBeenCalled()
-    expect(onEntryWorkspace).toHaveBeenCalledExactlyOnceWith('ws-team')
-    expect(router.currentRoute.value.path).toBe('/v1/checkout')
-    const { entry, error } = useBillingEntry()
-    expect(entry.value).toMatchObject({
-      intent: 'checkout',
-      workspaceId: 'ws-team'
-    })
-    expect(entry.value?.plan).toBeUndefined()
-    expect(error.value).toBeUndefined()
-  })
-
-  it('signs in an identity that has not minted before deciding a planless checkout, without rebinding the tab', async () => {
-    const path = `/v1/checkout?${ENTRY_QUERY}&workspace=ws-team`
-    const { router, onEntryWorkspace, leave } = hostBoundRouter(
-      'authenticated',
-      'sign_in'
-    )
-
-    await router.push(path)
-
-    expect(leave).not.toHaveBeenCalled()
-    expect(onEntryWorkspace).not.toHaveBeenCalled()
-    expect(router.currentRoute.value.path).toBe('/sign-in')
-    expect(router.currentRoute.value.query.returnTo).toBe(path)
   })
 
   it('keeps a checkout that names a plan', async () => {

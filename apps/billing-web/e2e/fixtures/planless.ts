@@ -1,13 +1,9 @@
 import type { Page } from '@playwright/test'
 
-import type { MockCloud } from './cloud'
 import { entryPath, expect } from './test'
 
-export const planlessCheckout = (workspace: string) =>
+const planlessCheckout = (workspace: string) =>
   entryPath('checkout', { workspace })
-
-const mints = (cloud: MockCloud) =>
-  cloud.requests.filter((request) => request.path === '/auth/token').length
 
 /**
  * Opens a checkout link that names no plan and expects what the embedded
@@ -16,13 +12,16 @@ const mints = (cloud: MockCloud) =>
  */
 export async function expectStraightToHost(
   tab: Page,
-  cloud: MockCloud,
   workspace: string
 ): Promise<void> {
-  const mintsBefore = mints(cloud)
   const shown: string[] = []
+  const mints: string[] = []
   tab.on('framenavigated', (frame) => {
     if (frame === tab.mainFrame()) shown.push(new URL(frame.url()).pathname)
+  })
+  tab.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/auth/token')
+      mints.push(request.url())
   })
 
   await tab.goto(planlessCheckout(workspace))
@@ -32,7 +31,5 @@ export async function expectStraightToHost(
   )
   await expect(tab.getByRole('heading', { name: 'Host app' })).toBeVisible()
   expect(shown).not.toContain('/sign-in')
-  expect(mints(cloud), 'a link that goes back mints no session').toBe(
-    mintsBefore
-  )
+  expect(mints, 'a link that goes back mints no session').toEqual([])
 }
