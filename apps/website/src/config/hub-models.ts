@@ -1,6 +1,18 @@
+import hubWorkflowNames from './hub-workflow-names.json'
 import { modelAliasUrls, modelPageUrls } from './model-urls'
 
 export const HUB_MODELS_PATH = '/hub/models'
+export const HUB_WORKFLOWS_PATH = '/hub/workflows'
+const WORKFLOW_SLUG_PREFIX = 'workflows/'
+
+/** A workflow page id (`workflows/<name>`) → its name under /hub/workflows. */
+export const hubWorkflowName = (slug: string) =>
+  slug.startsWith(WORKFLOW_SLUG_PREFIX)
+    ? slug.slice(WORKFLOW_SLUG_PREFIX.length)
+    : slug
+
+export const hubWorkflowHref = (slug: string) =>
+  `${HUB_WORKFLOWS_PATH}/${hubWorkflowName(slug)}/`
 
 export const hubModelPath = (newSlug: string) =>
   `${HUB_MODELS_PATH}/${newSlug}/`
@@ -20,12 +32,14 @@ export const hubModelHref = (oldSlug: string) =>
   hubModelPath(hubModelSlugs.get(oldSlug) ?? oldSlug)
 
 const oldModelPaths = new Set(
-  [...hubModelSlugs.keys(), ...hubModelAliases.keys()].map(
-    (slug) => `/models/${slug}`
-  )
+  [
+    ...hubModelSlugs.keys(),
+    ...hubModelAliases.keys(),
+    ...hubWorkflowNames.map((name) => `workflows/${name}`)
+  ].map((slug) => `/models/${slug}`)
 )
 
-/** Links in a page that still point at an old, redirecting model address. */
+/** Links in a page that still point at an old, redirecting Models address. */
 export function oldModelLinks(html: string): string[] {
   return Array.from(html.matchAll(/href="(\/models\/[^"?#]*)/g), ([, path]) =>
     path.replace(/\/$/, '')

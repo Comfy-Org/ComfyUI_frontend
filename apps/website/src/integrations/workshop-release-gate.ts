@@ -10,7 +10,11 @@ import { join } from 'node:path'
 
 import { workshopClientBoundary } from './workshop-client-boundary'
 
-import { HUB_MODELS_PATH, oldModelLinks } from '../config/hub-models'
+import {
+  HUB_MODELS_PATH,
+  HUB_WORKFLOWS_PATH,
+  oldModelLinks
+} from '../config/hub-models'
 import { unregisteredModelsPaths } from '../config/models-url-registry'
 
 import {
@@ -39,7 +43,10 @@ export function modelsBuildRoutes(enabled: boolean) {
   return [
     { pattern: HUB_MODELS_PATH, entrypoint: entry('index.astro') },
     { pattern: `${HUB_MODELS_PATH}/[slug]`, entrypoint: entry('[slug].astro') },
-    { pattern: '/models/[...slug]', entrypoint: entry('[slug].astro') },
+    {
+      pattern: `${HUB_WORKFLOWS_PATH}/[slug]`,
+      entrypoint: entry('[slug].astro')
+    },
     { pattern: '/models/showcase', entrypoint: entry('showcase.astro') },
     { pattern: '/models/apps/[app]', entrypoint: entry('app.astro') },
     {

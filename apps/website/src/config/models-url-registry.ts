@@ -1,7 +1,13 @@
 import displayJson from '../content/workshop-display.json'
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
 import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
-import { HUB_MODELS_PATH, hubModelAliases, hubModelSlugs } from './hub-models'
+import {
+  HUB_MODELS_PATH,
+  HUB_WORKFLOWS_PATH,
+  hubModelAliases,
+  hubModelSlugs,
+  hubWorkflowName
+} from './hub-models'
 
 const MODELS_BASE_PATH = '/models'
 
@@ -54,7 +60,15 @@ export function modelsUrlEntries({
       path: atHub(slug),
       kind: 'model' as const
     })),
-    ...workflows.map(page('workflow')),
+    ...workflows.map((slug) => ({
+      path: `${HUB_WORKFLOWS_PATH}/${hubWorkflowName(slug)}`,
+      kind: 'workflow' as const
+    })),
+    ...workflows.map((slug) => ({
+      path: at(slug),
+      kind: 'alias' as const,
+      destination: `${HUB_WORKFLOWS_PATH}/${hubWorkflowName(slug)}`
+    })),
     ...apps.map(page('app')),
     ...[...models.keys(), ...workflows].map((slug) =>
       page('reserved')(`${slug}/page.json`)
@@ -122,7 +136,7 @@ export function modelsUrlKind(
 }
 
 const isUnderModels = (pathname: string) =>
-  [MODELS_BASE_PATH, HUB_MODELS_PATH].some(
+  [MODELS_BASE_PATH, HUB_MODELS_PATH, HUB_WORKFLOWS_PATH].some(
     (base) => pathname === base || pathname.startsWith(`${base}/`)
   )
 
