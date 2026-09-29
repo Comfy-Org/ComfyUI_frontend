@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LoaderCircle, Move3d } from '@lucide/vue'
+import { LoaderCircle, Minus, Move3d, Plus } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -70,12 +70,21 @@ function drag(event: PointerEvent) {
   })
 }
 
+function dolly(step: number) {
+  const next = camera.distance + step * 0.05
+  emit('aim', { distance: Number(clampAxis('distance', next).toFixed(2)) })
+}
+
 function zoom(event: WheelEvent) {
   if (!ready.value) return
   event.preventDefault()
-  const next = camera.distance + Math.sign(event.deltaY) * 0.05
-  emit('aim', { distance: Number(clampAxis('distance', next).toFixed(2)) })
+  dolly(Math.sign(event.deltaY))
 }
+
+const DOLLY_BUTTONS = [
+  { step: -1, label: 'reshoot.dolly.in', icon: Plus },
+  { step: 1, label: 'reshoot.dolly.out', icon: Minus }
+] as const
 </script>
 
 <template>
@@ -144,6 +153,22 @@ function zoom(event: WheelEvent) {
         <ReshootZone :zone="cameraZone(camera)" dot-only />
         {{ camera.azimuth }}° · {{ camera.elevation }}°
       </span>
+    </div>
+    <div
+      v-if="ready"
+      class="absolute top-3 left-3 hidden flex-col gap-2 pointer-coarse:flex"
+    >
+      <button
+        v-for="{ step, label, icon } in DOLLY_BUTTONS"
+        :key="label"
+        type="button"
+        :aria-label="rc(label, locale)"
+        class="grid size-9 place-items-center rounded-full bg-primary-comfy-ink/80 text-primary-warm-white"
+        @pointerdown.stop
+        @click="dolly(step)"
+      >
+        <component :is="icon" class="size-4" aria-hidden="true" />
+      </button>
     </div>
   </div>
 </template>

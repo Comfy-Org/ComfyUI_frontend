@@ -96,3 +96,25 @@ test('@mobile keeps the Re-shoot aim badges to one line on a phone', async ({
     expect(box?.height).toBeLessThan(40)
   }
 })
+
+test('@mobile pins the Re-shoot preview while the camera controls scroll under it', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/reshoot/')
+  await page.getByText('Sci-fi pilot').first().click()
+
+  const frame = page.getByTestId('reshoot-frame')
+  const distance = page.getByRole('slider', { name: /Distance/ })
+  await page.getByTestId('reshoot-action').scrollIntoViewIfNeeded()
+  const pinned = await frame.boundingBox()
+  expect(pinned?.y).toBeGreaterThanOrEqual(0)
+  expect(pinned?.y).toBeLessThan(120)
+
+  const before = Number(await distance.inputValue())
+  await page.getByRole('button', { name: 'Move the camera closer' }).tap()
+  await expect
+    .poll(async () => Number(await distance.inputValue()))
+    .toBeLessThan(before)
+})
