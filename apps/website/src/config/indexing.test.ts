@@ -118,28 +118,36 @@ describe('indexing policy', () => {
       indexableBuild: true,
       robotsNoindex: false,
       emitCanonical: true,
-      emitAlternates: true
+      emitAlternates: true,
+      emitStructuredData: true,
+      emitMarkdownTwinLink: true
     },
     {
       pageNoindex: true,
       indexableBuild: true,
       robotsNoindex: true,
       emitCanonical: true,
-      emitAlternates: false
+      emitAlternates: false,
+      emitStructuredData: false,
+      emitMarkdownTwinLink: false
     },
     {
       pageNoindex: false,
       indexableBuild: false,
       robotsNoindex: true,
       emitCanonical: false,
-      emitAlternates: false
+      emitAlternates: false,
+      emitStructuredData: true,
+      emitMarkdownTwinLink: true
     },
     {
       pageNoindex: true,
       indexableBuild: false,
       robotsNoindex: true,
       emitCanonical: false,
-      emitAlternates: false
+      emitAlternates: false,
+      emitStructuredData: false,
+      emitMarkdownTwinLink: false
     }
   ])(
     'head for pageNoindex=$pageNoindex indexableBuild=$indexableBuild',

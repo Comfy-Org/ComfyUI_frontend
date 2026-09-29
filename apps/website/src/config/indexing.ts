@@ -67,7 +67,9 @@ export function headIndexing({
   return {
     robotsNoindex,
     emitCanonical: indexableBuild,
-    emitAlternates: !robotsNoindex
+    emitAlternates: !robotsNoindex,
+    emitStructuredData: !pageNoindex,
+    emitMarkdownTwinLink: !pageNoindex
   }
 }
 
