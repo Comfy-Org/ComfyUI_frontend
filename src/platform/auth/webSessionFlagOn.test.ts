@@ -7,8 +7,13 @@ import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { t } from '@/i18n'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
+import {
+  WebSessionTokenError,
+  webSessionResourceHeader
+} from '@/platform/auth/session/webSessionFetch'
+import { reportError } from '@/platform/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -833,6 +838,90 @@ describe('comfy-api calls on the shared web session', () => {
       failure: { code: 'SESSION_REVOKED' }
     })
   })
+
+  it.for([
+    {
+      name: 'a revoked session',
+      status: 401,
+      code: 'session_revoked',
+      failure: 'SESSION_REVOKED',
+      copy: 'auth.webSession.token.ended'
+    },
+    {
+      name: 'no session',
+      status: 401,
+      code: undefined,
+      failure: 'NO_SESSION',
+      copy: 'auth.webSession.token.ended'
+    },
+    {
+      name: 'a stale CSRF token',
+      status: 403,
+      code: 'csrf_invalid',
+      failure: 'CSRF_STALE',
+      copy: 'auth.webSession.token.refused'
+    },
+    {
+      name: 'a refused request',
+      status: 403,
+      code: undefined,
+      failure: 'SESSION_REQUEST_REFUSED',
+      copy: 'auth.webSession.token.refused'
+    },
+    {
+      name: 'a server error',
+      status: 500,
+      code: undefined,
+      failure: 'SESSION_UNAVAILABLE',
+      copy: 'auth.webSession.token.unavailable'
+    }
+  ])(
+    'a mint refused by $name rejects with the localized copy',
+    async ({ status, code, failure, copy }) => {
+      const ingest = await bootOnSession()
+      ingest.mintRefusal = () =>
+        jsonResponse(code ? { code, message: 'refused' } : {}, status)
+
+      const rejection = await webSessionResourceHeader().catch(
+        (error: unknown) => error
+      )
+
+      assert(rejection instanceof WebSessionTokenError)
+      expect(rejection.failure.code).toBe(failure)
+      expect(rejection.message).toBe(t(copy))
+      expect(rejection.message).not.toContain(failure)
+    }
+  )
+
+  it.for([
+    { status: 401, reported: false },
+    { status: 403, reported: true },
+    { status: 429, reported: true },
+    { status: 500, reported: true }
+  ])(
+    'a $status mint refusal reports: $reported',
+    async ({ status, reported }) => {
+      const ingest = await bootOnSession()
+      ingest.mintRefusal = () => jsonResponse({}, status)
+      vi.mocked(reportError).mockClear()
+
+      await webSessionResourceHeader().catch(() => undefined)
+
+      expect(vi.mocked(reportError).mock.calls).toEqual(
+        reported
+          ? [
+              [
+                expect.any(Error),
+                expect.objectContaining({
+                  errorType: 'auth_session_token_mint_failure',
+                  level: 'warning'
+                })
+              ]
+            ]
+          : []
+      )
+    }
+  )
 
   it('mints again once the cached token is within a minute of expiry', async () => {
     const ingest = await bootOnSession()

@@ -10,11 +10,15 @@ import type {
 } from '@comfyorg/account-core/webSessionIdentity'
 import type {
   WebSession,
+  WebSessionErrorCode,
   WebSessionOptions
 } from '@comfyorg/account-core/webSession'
 import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
-import { createSessionTokenMint } from '@comfyorg/account-core/sessionTokenMint'
+import {
+  createSessionTokenMint,
+  SessionTokenError
+} from '@comfyorg/account-core/sessionTokenMint'
 import { readWebSession } from '@comfyorg/account-core/webSession'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import {
@@ -28,7 +32,8 @@ import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import type { WebSessionRequestScope } from '@/platform/auth/session/webSessionFetch'
 import {
   fetchOnWebSession,
-  provideWebSessionRequests
+  provideWebSessionRequests,
+  WebSessionTokenError
 } from '@/platform/auth/session/webSessionFetch'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -44,6 +49,30 @@ interface InteractiveSignIn {
 const UNSETTLED_PHASES: ReadonlySet<WebSessionIdentityState['phase']> = new Set(
   ['idle', 'reading', 'restoring']
 )
+
+const TOKEN_FAILURE_COPY: Readonly<Record<WebSessionErrorCode, string>> = {
+  NO_SESSION: 'auth.webSession.token.ended',
+  SESSION_EXPIRED: 'auth.webSession.token.ended',
+  SESSION_REVOKED: 'auth.webSession.token.ended',
+  IDENTITY_CHANGED: 'auth.webSession.token.ended',
+  SESSION_UNAVAILABLE: 'auth.webSession.token.unavailable',
+  CSRF_STALE: 'auth.webSession.token.refused',
+  WORKSPACE_ACCESS_DENIED: 'auth.webSession.token.refused',
+  SESSION_REQUEST_REFUSED: 'auth.webSession.token.refused'
+}
+
+function localizeTokenFailure(error: unknown): unknown {
+  if (!(error instanceof SessionTokenError)) return error
+  const { failure } = error
+  if (failure.httpStatus !== 401) {
+    reportError(error, {
+      errorType: 'auth_session_token_mint_failure',
+      level: 'warning',
+      tags: { code: failure.code, http_status: failure.httpStatus }
+    })
+  }
+  return new WebSessionTokenError(failure, t(TOKEN_FAILURE_COPY[failure.code]))
+}
 
 async function whenSettled(identity: WebSessionIdentity): Promise<void> {
   let stop = () => {}
@@ -176,13 +205,17 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       scope: requestScope,
       workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),
-      authorizeResource: async ({ session }) =>
-        (
-          await authorize(
+      authorizeResource: async ({ session }) => {
+        try {
+          const { headers } = await authorize(
             { kind: 'session', session },
             { target: 'resource', method: 'POST' }
           )
-        ).headers
+          return headers
+        } catch (error) {
+          throw localizeTokenFailure(error)
+        }
+      }
     })
     ready = whenSettled(session)
     void bootAfter(session, pendingSignIn)

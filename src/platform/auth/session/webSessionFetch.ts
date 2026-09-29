@@ -1,6 +1,18 @@
 import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import type { SessionTokenFailure } from '@comfyorg/account-core/sessionTokenMint'
 import type { WebSession } from '@comfyorg/account-core/webSession'
+
+/** A refused mint, with the message already localized for the person. */
+export class WebSessionTokenError extends Error {
+  constructor(
+    readonly failure: SessionTokenFailure,
+    message: string
+  ) {
+    super(message)
+    this.name = 'WebSessionTokenError'
+  }
+}
 
 /** The user, session epoch and workspace one request was started for. */
 export interface WebSessionRequestScope {
@@ -77,7 +89,7 @@ export interface WebSessionRequests {
     init: RequestInit,
     scope: WebSessionRequestScope
   ) => Promise<Response>
-  /** Bearer headers for a service other than ingest; mints on first use. Rejects with SessionTokenError. */
+  /** Bearer headers for a service other than ingest; mints on first use. Rejects with WebSessionTokenError. */
   readonly authorizeResource: (
     scope: WebSessionRequestScope
   ) => Promise<Readonly<Record<string, string>>>
