@@ -187,6 +187,7 @@ describe('compileModelUrlMap', () => {
 
   it.for([
     ['a shared old slug', ['veo--veo-3', 'veo--veo-3'], 'share an old slug'],
+    ['a dot-only old slug', ['..', 'veo--veo-4'], 'Invalid old slug'],
     [
       'a quote in an old slug',
       ["veo--veo-3'", 'veo--veo-4'],
