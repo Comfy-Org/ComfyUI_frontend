@@ -20,6 +20,14 @@ import {
   workshopModels
 } from './workshop-browse-content'
 
+function promptOf(
+  sample: { readonly prompt?: string },
+  example: { readonly values: Readonly<Record<string, unknown>> } | undefined
+): { prompt?: string } {
+  const prompt = sample.prompt ?? example?.values.prompt
+  return typeof prompt === 'string' && prompt.trim() ? { prompt } : {}
+}
+
 function examplesFor(
   model: RouterWorkshopModelDetail,
   display: WorkshopDisplayEntry
@@ -41,7 +49,6 @@ function examplesFor(
             ...workshopExampleValues(model.execution, example.values)
           }
         : {}
-    const prompt = sample.prompt ?? example?.values.prompt
     return {
       name: `${display.slug}-example-${index + 1}`,
       title: example?.title ?? `Sample ${index + 1}`,
@@ -51,7 +58,7 @@ function examplesFor(
       mediaKind: sample.kind,
       sampleOnly: Object.keys(values).length === 0,
       values,
-      ...(typeof prompt === 'string' && prompt.trim() ? { prompt } : {})
+      ...promptOf(sample, example)
     }
   })
 }
