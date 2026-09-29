@@ -20,6 +20,8 @@ const {
   locale = 'en'
 } = defineProps<{
   current: Take
+  /** The take is a clip, so the progress says "Generating video". */
+  video?: boolean
   otherModel?: { slug: string; name: string }
   memberWorkspace?: string
   height?: string
@@ -35,7 +37,7 @@ const emit = defineEmits<{
 const revealed = ref(false)
 // A finished take keeps its frame until the picture has loaded: without it
 // the frame has no size for a moment and the whole stage jumps.
-const loaded = ref(false)
+const loaded = defineModel<boolean>('loaded', { default: false })
 watch(
   () => current.id,
   () => {
@@ -93,6 +95,7 @@ function frameTone(take: Take): string | undefined {
     <CinematicTakeProgress
       v-else-if="current.status === 'rendering'"
       :take="current"
+      :video
       :locale
     />
     <CinematicTakeNotice

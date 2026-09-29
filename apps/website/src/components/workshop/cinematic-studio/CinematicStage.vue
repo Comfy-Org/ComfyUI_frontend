@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Reel } from '../../../lib/workshop/cinematic-studio/reel'
@@ -53,6 +53,13 @@ const current = computed(() => selectedTake(reel))
 const siblings = computed(() =>
   current.value ? takesOfShot(reel, current.value.shot) : []
 )
+// The column keeps the frame's width until the finished media has loaded.
+const frameLoaded = ref(false)
+const currentIsVideo = computed(
+  () =>
+    models.find((model) => model.slug === current.value?.modelSlug)?.mode ===
+    'video'
+)
 const modelName = computed(
   () =>
     models.find((model) => model.slug === current.value?.modelSlug)?.name ?? ''
@@ -76,16 +83,19 @@ const otherModel = computed(() => {
     <template v-if="current">
       <h1 class="sr-only">{{ tc('cinematic.title', locale) }}</h1>
       <div
+        data-testid="cinematic-take-column"
         class="flex max-w-5xl flex-col gap-3"
         :style="{
           width:
-            current.status === 'done'
+            current.status === 'done' && frameLoaded
               ? 'fit-content'
               : framedStyle(current.aspect, FRAME_HEIGHT).width
         }"
       >
         <CinematicTakeFrame
+          v-model:loaded="frameLoaded"
           :current
+          :video="currentIsVideo"
           :other-model="otherModel"
           :member-workspace="memberWorkspace"
           :height="FRAME_HEIGHT"

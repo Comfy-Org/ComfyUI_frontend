@@ -134,6 +134,14 @@ const copy = {
     en: 'Slow now',
     'zh-CN': '当前较慢'
   },
+  'cinematic.stage.generatingImage': {
+    en: 'Generating image',
+    'zh-CN': '正在生成图像'
+  },
+  'cinematic.stage.generatingVideo': {
+    en: 'Generating video',
+    'zh-CN': '正在生成视频'
+  },
   'cinematic.stage.loadingTake': {
     en: 'Loading the take',
     'zh-CN': '正在加载镜头'

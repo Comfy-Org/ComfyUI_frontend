@@ -2,7 +2,10 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
+import CinematicSequence from './CinematicSequence.vue'
+import CinematicStage from './CinematicStage.vue'
 import CinematicTakeFrame from './CinematicTakeFrame.vue'
+import CinematicTakeProgress from './CinematicTakeProgress.vue'
 
 const done: Take = {
   id: 'a',
@@ -27,5 +30,56 @@ describe('CinematicTakeFrame', () => {
 
     expect(figure.getAttribute('style') ?? '').not.toContain('aspect-ratio')
     expect(screen.queryByLabelText('Loading the take')).toBeNull()
+  })
+})
+
+describe('CinematicStage', () => {
+  it('keeps the frame width until a finished video has loaded', async () => {
+    const clip: Take = {
+      ...done,
+      output: { kind: 'video', url: 'blob:clip', fileName: 'clip.mp4' }
+    }
+    render(CinematicStage, {
+      props: { reel: { takes: [clip] }, models: [] }
+    })
+    const column = screen.getByTestId('cinematic-take-column')
+    expect(column.style.width).not.toBe('fit-content')
+
+    await fireEvent(
+      screen.getByLabelText('Generated video'),
+      new Event('loadeddata')
+    )
+
+    expect(column.style.width).toBe('fit-content')
+  })
+})
+
+describe('CinematicTakeProgress', () => {
+  const rendering: Take = { ...done, status: 'rendering' }
+
+  it('says what is being generated', () => {
+    const { unmount } = render(CinematicTakeProgress, {
+      props: { take: rendering }
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('Generating image')
+    unmount()
+    render(CinematicTakeProgress, { props: { take: rendering, video: true } })
+    expect(screen.getByRole('status')).toHaveTextContent('Generating video')
+  })
+})
+
+describe('CinematicSequence', () => {
+  it('gives every thumbnail the same shape whatever the frame', () => {
+    render(CinematicSequence, {
+      props: {
+        takes: [
+          { ...done, id: 'a', letter: 'A', aspect: '21:9' },
+          { ...done, id: 'b', letter: 'B', aspect: '9:16' }
+        ]
+      }
+    })
+    const thumbs = screen.getAllByRole('button')
+    expect(thumbs.every((thumb) => !thumb.style.aspectRatio)).toBe(true)
+    expect(new Set(thumbs.map((thumb) => thumb.className)).size).toBe(1)
   })
 })
