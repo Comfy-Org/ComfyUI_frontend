@@ -5,6 +5,7 @@ import { defineComponent, nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
+import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
@@ -88,6 +89,26 @@ describe('DockedAgentPanel', () => {
         timeout: 5000
       })
     ).toBeTruthy()
+  })
+
+  it('keeps the panel usable as an overlay when the dock cannot fit', async () => {
+    vi.stubGlobal('innerWidth', 1024)
+    const store = openPanel()
+    renderPanel()
+
+    const root = await screen.findByTestId('agent-panel-root-stub')
+    vi.stubGlobal('innerWidth', 400)
+    window.dispatchEvent(new Event('resize'))
+    await nextTick()
+
+    const container = screen.getByTestId('docked-agent-panel')
+    expect(store.isVisible).toBe(true)
+    expect(container.style.width).toBe('400px')
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe('0px')
+    expect(screen.getByTestId('agent-panel-root-stub')).toBe(root)
+    expect(rootLiveness.maxLive).toBe(1)
   })
 
   it('restores the server run mode when the panel initializes', async () => {

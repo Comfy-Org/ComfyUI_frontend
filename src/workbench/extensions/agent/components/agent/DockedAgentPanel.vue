@@ -1,36 +1,46 @@
 <template>
-  <div
-    v-if="isDockVisible"
-    data-testid="docked-agent-panel"
-    role="complementary"
-    aria-labelledby="agent-panel-title"
-    class="docked-agent-panel pointer-events-auto relative h-full shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]"
-    :style="{ width: `${width}px` }"
-  >
+  <Teleport to="body" :disabled="!isOverlay">
     <div
-      data-testid="agent-panel-resize-handle"
-      class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
-      :data-resizing="isResizing"
-      @pointerdown="onResizeStart"
-      @lostpointercapture="isResizing = false"
-    />
-    <div
-      data-testid="docked-agent-panel-shell"
+      v-if="docked"
+      data-testid="docked-agent-panel"
+      role="complementary"
+      aria-labelledby="agent-panel-title"
       :class="
         cn(
-          'size-full p-2',
-          hasOpaqueNeighbor &&
-            'border-l border-interface-stroke bg-base-background'
+          'docked-agent-panel pointer-events-auto shrink-0 overflow-hidden bg-base-background [anchor-name:--docked-agent-panel]',
+          isOverlay
+            ? 'fixed top-(--workflow-tabs-height) right-0 bottom-0 z-1100 max-w-full shadow-lg'
+            : 'relative h-full'
         )
       "
+      :style="{ width: `${panelWidth}px` }"
     >
       <div
-        class="size-full overflow-hidden rounded-lg border border-interface-stroke"
+        v-if="!isOverlay"
+        data-testid="agent-panel-resize-handle"
+        class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
+        :data-resizing="isResizing"
+        @pointerdown="onResizeStart"
+        @lostpointercapture="isResizing = false"
+      />
+      <div
+        data-testid="docked-agent-panel-shell"
+        :class="
+          cn(
+            'size-full p-2',
+            hasOpaqueNeighbor &&
+              'border-l border-interface-stroke bg-base-background'
+          )
+        "
       >
-        <AgentPanelRoot />
+        <div
+          class="size-full overflow-hidden rounded-lg border border-interface-stroke"
+        >
+          <AgentPanelRoot />
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -80,10 +90,11 @@ const { hasOpaqueNeighbor = false } = defineProps<{
 const agentPanelStore = useAgentPanelStore()
 const { isVisible: docked, width } = storeToRefs(agentPanelStore)
 const { width: viewportWidth } = useWindowSize()
-const isDockVisible = computed(
-  () => docked.value && viewportWidth.value > width.value + 16
+const isOverlay = computed(() => viewportWidth.value <= width.value + 16)
+const panelWidth = computed(() => Math.min(width.value, viewportWidth.value))
+useWorkspaceInsetRight(() =>
+  docked.value && !isOverlay.value ? width.value : 0
 )
-useWorkspaceInsetRight(() => (isDockVisible.value ? width.value : 0))
 const agentRunModeStore = useAgentRunModeStore()
 
 void agentRunModeStore.load().catch((error: unknown) => {

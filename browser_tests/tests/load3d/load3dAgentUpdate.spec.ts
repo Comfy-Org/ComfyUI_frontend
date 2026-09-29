@@ -88,15 +88,25 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
     }).toPass({ timeout: 5000 })
 
     await page.setViewportSize({ width: 400, height: 800 })
-    await expect(page.getByTestId('docked-agent-panel')).toBeHidden()
+    const panel = page.getByTestId('docked-agent-panel')
+    await expect(panel).toBeVisible()
     await expect(async () => {
       const dialogBox = await viewer.dialog.boundingBox()
+      const panelBox = await panel.boundingBox()
       expect(dialogBox).not.toBeNull()
-      if (!dialogBox) return
+      expect(panelBox).not.toBeNull()
+      if (!dialogBox || !panelBox) return
 
       expect(dialogBox.width).toBeGreaterThan(0)
       expect(dialogBox.x).toBeGreaterThanOrEqual(0)
       expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(401)
+      expect(panelBox.width).toBeGreaterThan(0)
+      expect(panelBox.x).toBeGreaterThanOrEqual(0)
+      expect(panelBox.x + panelBox.width).toBeLessThanOrEqual(401)
     }).toPass({ timeout: 5000 })
+
+    await viewer.cancelButton.click()
+    await viewer.waitForClosed()
+    await expect(page.locator('#agent-panel-root')).toBeVisible()
   })
 })
