@@ -47,12 +47,7 @@ async function onKeydown(event: KeyboardEvent) {
 <template>
   <div class="flex max-w-full min-w-0 items-center gap-2.5">
     <span class="text-[15px] font-semibold text-primary-warm-white">
-      {{
-        tc('cinematic.stage.shot', locale).replace(
-          '{number}',
-          String(current.shot)
-        )
-      }}
+      {{ tc('cinematic.stage.shot', locale, { number: current.shot }) }}
     </span>
     <div
       v-if="siblings.length > 1"

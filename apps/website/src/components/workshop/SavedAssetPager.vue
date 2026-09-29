@@ -36,7 +36,7 @@ const dotClass = (active: boolean) =>
       v-for="dot in total"
       :key="dot"
       type="button"
-      :aria-label="t('workshop.assets.go', locale).replace('{n}', String(dot))"
+      :aria-label="t('workshop.assets.go', locale, { n: dot })"
       :aria-current="dot - 1 === index"
       :class="dotClass(dot - 1 === index)"
       @click="emit('step', dot - 1 - index)"

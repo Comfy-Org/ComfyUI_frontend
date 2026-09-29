@@ -50,7 +50,7 @@ const emit = defineEmits<{ choose: [id: string] }>()
       <CinematicOptionIcon
         :part="group.part"
         :option="option.id"
-        class="h-8 w-12 shrink-0"
+        :class="cn('h-8 w-13 shrink-0', selected !== option.id && 'opacity-60')"
       />
     </button>
   </div>
