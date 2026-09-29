@@ -750,4 +750,44 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     expect(payButton()).toBeEnabled()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
+
+  it.for<{ name: string; subscribe: FakeBillingClientOptions['subscribe'] }>([
+    {
+      name: 'an expired quote',
+      subscribe: {
+        status: 'error',
+        code: 'CONFLICT',
+        serverCode: readBillingErrorCode({
+          code: 'PRORATION_QUOTE_EXPIRED',
+          message: 'expired'
+        })
+      }
+    },
+    {
+      name: 'a consent the server wants',
+      subscribe: { status: 'error', code: 'REACTIVATION_CONFIRMATION_REQUIRED' }
+    }
+  ])(
+    'leaves no Pay over the refused price when re-quoting $name fails',
+    async ({ subscribe }) => {
+      const fake = await payReady({ subscribe })
+      fake.previewSubscribe.mockResolvedValueOnce({
+        status: 'error',
+        code: 'REQUEST_FAILED'
+      })
+
+      form.emit('confirm', 'ctoken_1')
+
+      expect(
+        await screen.findByText(
+          "We couldn't reach the billing service. Please try again."
+        )
+      ).toBeInTheDocument()
+      expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+      expect(fake.subscribe).toHaveBeenCalledOnce()
+      expect(
+        screen.queryByRole('button', { name: 'Pay and subscribe' })
+      ).not.toBeInTheDocument()
+    }
+  )
 })

@@ -473,10 +473,30 @@ describe('reduceCheckoutPage after Pay', () => {
     expect(reduceCheckoutPage(reconciling, event)).toBe(reconciling)
   })
 
-  it.for<CheckoutPageEvent>([submitted, declined, collided, tick(true)])(
-    'ignores $type outside capture',
-    (event) => {
-      expect(reduceCheckoutPage(RESOLVING, event)).toBe(RESOLVING)
+  it.for<{ name: string; events: CheckoutPageEvent[] }>([
+    { name: 'a live capture', events: live },
+    { name: 'an unticked consent', events: [quoted(0, true), ready] }
+  ])(
+    'a failed re-quote takes $name to unavailable with no Pay',
+    ({ events }) => {
+      const page = replay([
+        ...events,
+        submitted,
+        { type: 'requoteFailed', code: 'REQUEST_FAILED' }
+      ])
+
+      expect(page).toEqual({ kind: 'unavailable', code: 'REQUEST_FAILED' })
+      expect(railAcceptsPay(page)).toBe(false)
     }
   )
+
+  it.for<CheckoutPageEvent>([
+    submitted,
+    declined,
+    collided,
+    tick(true),
+    { type: 'requoteFailed', code: 'REQUEST_FAILED' }
+  ])('ignores $type outside capture', (event) => {
+    expect(reduceCheckoutPage(RESOLVING, event)).toBe(RESOLVING)
+  })
 })

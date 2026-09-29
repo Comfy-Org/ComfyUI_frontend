@@ -96,6 +96,8 @@ export type CheckoutPageEvent =
       readonly reactivation: boolean
       readonly priceUpdated: boolean
     }
+  /** The mandatory re-quote failed, so the refused price cannot be paid again. */
+  | { readonly type: 'requoteFailed'; readonly code: string }
 
 export const RESOLVING: CheckoutPage = { kind: 'resolving' }
 
@@ -127,6 +129,11 @@ function withCapture(
   return change(page) ?? page
 }
 
+/** A page-level move that only a live capture can make. */
+function leavingCapture(page: CheckoutPage, next: CheckoutPage): CheckoutPage {
+  return page.kind === 'capture' ? next : page
+}
+
 const reactivationOf = (required: boolean): Reactivation =>
   required ? 'required' : 'not_required'
 
@@ -156,6 +163,8 @@ export function reduceCheckoutPage(
       return page.kind === 'resolving'
         ? { kind: 'unavailable', code: event.code }
         : page
+    case 'requoteFailed':
+      return leavingCapture(page, { kind: 'unavailable', code: event.code })
     case 'quoted':
       if (page.kind !== 'resolving') return page
       return {

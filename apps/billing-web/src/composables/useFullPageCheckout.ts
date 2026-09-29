@@ -237,17 +237,27 @@ export function useFullPageCheckout() {
       checkout.reset()
       dispatch({ type: 'payFailed', outcome: verdict.outcome })
     } else if (verdict.kind === 'requote') {
-      const requoted = await quoteArrival(arrival)
-      if (requoted.status !== 'ok') return
-      dispatch({
-        type: 'requoted',
-        reactivation: consentAsked(
-          verdict.because === 'reactivation_required' ||
-            asksReactivation(requoted.value)
-        ),
-        priceUpdated: verdict.because === 'quote_expired'
-      })
+      await requote(verdict.because, arrival)
     }
+  }
+
+  /** A refused quote is never paid again, so a failed re-quote leaves capture. */
+  async function requote(
+    because: Extract<PayVerdict, { kind: 'requote' }>['because'],
+    arrival: BillingEntry & { plan: string }
+  ) {
+    const requoted = await quoteArrival(arrival)
+    if (requoted.status !== 'ok') {
+      dispatch({ type: 'requoteFailed', code: requoted.code })
+      return
+    }
+    dispatch({
+      type: 'requoted',
+      reactivation: consentAsked(
+        because === 'reactivation_required' || asksReactivation(requoted.value)
+      ),
+      priceUpdated: because === 'quote_expired'
+    })
   }
 
   /** Pay stays live over an unticked consent; the click marks it invalid and sends nothing. */
