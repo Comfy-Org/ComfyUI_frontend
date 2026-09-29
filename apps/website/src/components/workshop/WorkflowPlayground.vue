@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { Check } from '@lucide/vue'
 import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, ref, useTemplateRef, watch } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
 import {
@@ -48,7 +45,7 @@ import WorkflowCreditsGuard from './WorkflowCreditsGuard.vue'
 import WorkflowRunControls from './WorkflowRunControls.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
-import WorkflowExamplePreview from './WorkflowExamplePreview.vue'
+import WorkflowExampleCard from './WorkflowExampleCard.vue'
 
 const { model, scope, cloudHref } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -363,34 +360,15 @@ function start() {
       {{ t('workshop.examples.start') }}
     </h2>
     <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      <button
+      <WorkflowExampleCard
         v-for="(example, index) in model.examples"
         :key="example.name"
-        type="button"
-        :aria-current="selectedExample === index ? 'true' : undefined"
-        :class="
-          cn(
-            'group relative cursor-pointer overflow-hidden rounded-2xl text-left ring-1 transition-all focus-visible:outline-primary-comfy-yellow disabled:cursor-not-allowed disabled:opacity-50',
-            selectedExample === index
-              ? 'ring-2 ring-primary-comfy-yellow'
-              : 'ring-transparency-white-t8 hover:ring-transparency-white-t20 hover:brightness-110'
-          )
-        "
+        :example
+        :chosen="selectedExample === index"
+        :poster="model.thumbnailUrl"
         :disabled="formDisabled"
-        @click="selectExample(index)"
-      >
-        <WorkflowExamplePreview :example :poster="model.thumbnailUrl" />
-        <span
-          v-if="selectedExample === index"
-          class="absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
-          data-testid="workflow-example-chosen"
-        >
-          <Check class="size-3" :stroke-width="3" aria-hidden="true" />
-        </span>
-        <span class="block p-4 text-sm text-primary-warm-gray">
-          {{ example.title }}
-        </span>
-      </button>
+        @open="selectExample(index)"
+      />
     </div>
   </section>
   <ExampleReplaceDialog
