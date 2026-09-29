@@ -108,6 +108,7 @@ const emit = defineEmits<{
   ]
   stop: [method: AgentStopMethod]
   attach: []
+  attachFiles: [files: File[]]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -362,6 +363,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <ConversationView
           v-else
           :entries
+          :conversation-id="sessionId"
           :editable-turn-id
           :answering-ask-ids
           :paywall-presentation
@@ -414,6 +416,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @send="onComposerSend"
             @stop="emit('stop', $event)"
             @attach="emit('attach')"
+            @attach-files="emit('attachFiles', $event)"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"
