@@ -38,6 +38,9 @@ function decideAccountSource(): Promise<WorkshopAccountSource> {
         if (!boot || capped) return
         stop = boot(decide)
       })
+      .catch(() => {
+        if (!capped) decide('firebase')
+      })
   })
 }
 
