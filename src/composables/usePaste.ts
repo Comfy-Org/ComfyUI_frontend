@@ -71,7 +71,11 @@ function pasteClipboardItems(data: DataTransfer): boolean {
 function hasStaleNodeMetadata(rawHtml: string): boolean {
   if (decodeNodeMetadata(rawHtml) === null) return false
   const copyId = rawHtml.match(/data-copy-id="([^"]+)"/)?.[1]
-  return !copyId || copyId !== localStorage.getItem(LAST_COPY_ID_KEY)
+  try {
+    return !copyId || copyId !== localStorage.getItem(LAST_COPY_ID_KEY)
+  } catch {
+    return false
+  }
 }
 
 function isWorkflow(

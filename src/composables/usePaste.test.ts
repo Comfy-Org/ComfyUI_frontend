@@ -772,10 +772,35 @@ describe('usePaste', () => {
       const menuCopy = JSON.stringify({ nodes: [{ type: 'CLIPTextEncode' }] })
       localStorage.setItem(LAST_COPY_ID_KEY, 'copy-1')
       localStorage.setItem('litegrapheditor_clipboard', menuCopy)
+      let pastedClipboard: string | null = null
+      vi.mocked(mockCanvas.pasteFromClipboard).mockImplementationOnce(() => {
+        pastedClipboard = localStorage.getItem('litegrapheditor_clipboard')
+      })
       dispatchMetadataPaste(ctrlCCopy, 'copy-1')
 
       await vi.waitFor(() => {
         expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+        expect(pastedClipboard).toBe(menuCopy)
+      })
+    })
+
+    it('still pastes when the last copy id cannot be read', async () => {
+      setupMediaNodeSelected()
+      const readItem = localStorage.getItem.bind(localStorage)
+      const getItem = vi
+        .spyOn(localStorage, 'getItem')
+        .mockImplementation((key) => {
+          if (key === LAST_COPY_ID_KEY)
+            throw new DOMException('Storage is disabled', 'SecurityError')
+          return readItem(key)
+        })
+      onTestFinished(() => getItem.mockRestore())
+      dispatchMetadataPaste(
+        JSON.stringify({ nodes: [{ type: 'KSampler' }] }),
+        'copy-1'
+      )
+
+      await vi.waitFor(() => {
         expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
       })
     })
