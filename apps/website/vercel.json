@@ -140,12 +140,12 @@
     {
       "source": "/minimax",
       "destination": "/minimax-h3/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/minimax/",
       "destination": "/minimax-h3/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/zh-CN/minimax",
