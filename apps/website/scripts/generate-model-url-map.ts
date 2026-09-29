@@ -141,11 +141,19 @@ export function modelUrlFlags(
   ]
 }
 
+const countOf = (text: string, char: string) => text.split(char).length - 1
+
+function stringLiteral(text: string): string {
+  const quote = countOf(text, "'") > countOf(text, '"') ? '"' : "'"
+  const body = JSON.stringify(text).slice(1, -1).replace(/\\"/g, '"')
+  return `${quote}${body.replaceAll(quote, `\\${quote}`)}${quote}`
+}
+
 const entryLines = (fields: Record<string, string>) =>
   [
     '  {',
     Object.entries(fields)
-      .map(([k, v]) => `    ${k}: '${v.replace(/[\\']/g, '\\$&')}'`)
+      .map(([k, v]) => `    ${k}: ${stringLiteral(v)}`)
       .join(',\n'),
     '  }'
   ].join('\n')
