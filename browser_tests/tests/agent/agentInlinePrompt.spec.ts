@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 
 test.use({ connectWebSocketToServer: false })
 

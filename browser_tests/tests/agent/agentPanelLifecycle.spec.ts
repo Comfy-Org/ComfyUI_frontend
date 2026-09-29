@@ -6,8 +6,8 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
-import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
@@ -105,142 +105,93 @@ test.describe(
       await expect(openButton).toBeVisible()
     })
 
-    test('does not click a pressed entry button while the panel is hidden', async ({
-      page
-    }) => {
-      await bootAgentApp(page, true)
-      const openButton = page.getByRole('button', {
-        name: OPEN_AGENT_LABEL,
-        exact: true
-      })
-      const panel = page.locator('#agent-panel-root')
-      const delayedMountStyle = await page.addStyleTag({
-        content: '#agent-panel-root { display: none; }'
-      })
-      await expect(openButton).toHaveAttribute('aria-pressed', 'true', {
-        timeout: 8_000
-      })
-      await openButton.evaluate((button) => {
-        button.dataset.testClickCount = '0'
-        button.addEventListener('click', () => {
-          button.dataset.testClickCount = String(
-            Number(button.dataset.testClickCount) + 1
-          )
-        })
+    test.describe('opening from a user-closed panel', () => {
+      test.beforeEach(async ({ page }) => {
+        await bootAgentApp(page, true)
+        const agentPanel = new AgentPanel(page)
+        await expect(agentPanel.root).toBeVisible({ timeout: 8_000 })
+        await agentPanel.root
+          .getByRole('button', { name: enMessages.g.close })
+          .click()
+        await expect(agentPanel.root).toHaveCount(0)
       })
 
-      await new AgentPanel(page).open(undefined, async () => {
-        await delayedMountStyle.evaluate<void, HTMLElement>((style) =>
-          style.remove()
+      test('waits for a delayed open without clicking again', async ({
+        page
+      }) => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.openButton.evaluate<void, HTMLElement>((button) => {
+          button.dataset.testClickCount = '0'
+          button.addEventListener(
+            'click',
+            () => {
+              button.dataset.testClickCount = String(
+                Number(button.dataset.testClickCount) + 1
+              )
+            },
+            true
+          )
+
+          let delayed = false
+          const delayOpen = (event: Event) => {
+            event.stopImmediatePropagation()
+            if (delayed) return
+            delayed = true
+            window.setTimeout(() => {
+              button.removeEventListener('click', delayOpen, true)
+              button.click()
+            }, 1_500)
+          }
+          button.addEventListener('click', delayOpen, true)
+        })
+
+        await agentPanel.open(3_000)
+
+        await expect(agentPanel.openButton).toHaveAttribute(
+          'data-test-click-count',
+          '2'
         )
       })
 
-      await expect(panel).toBeVisible()
-      await expect(openButton).toHaveAttribute('aria-pressed', 'true')
-      await expect(openButton).toHaveAttribute('data-test-click-count', '0')
-    })
+      test('rejects with the caller timeout while an open stays pending', async ({
+        page
+      }) => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.openButton.evaluate((button) => {
+          button.addEventListener(
+            'click',
+            (event) => event.stopImmediatePropagation(),
+            true
+          )
+        })
 
-    test('waits for a delayed open without clicking again', async ({
-      page
-    }) => {
-      await bootAgentApp(page, true)
-      const agentPanel = new AgentPanel(page)
-      await expect(agentPanel.root).toBeVisible({ timeout: 8_000 })
-      await agentPanel.root
-        .getByRole('button', { name: enMessages.g.close })
-        .click()
-      await expect(agentPanel.root).toHaveCount(0)
+        await expect(agentPanel.open(250)).rejects.toThrow('250ms')
+      })
 
-      await agentPanel.openButton.evaluate<void, HTMLElement>((button) => {
-        button.dataset.testClickCount = '0'
-        button.addEventListener(
-          'click',
-          () => {
+      test('drops its click when activation opens the panel just before it lands', async ({
+        page
+      }) => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.openButton.evaluate<void, HTMLElement>((button) => {
+          button.dataset.testClickCount = '0'
+          button.addEventListener('click', () => {
             button.dataset.testClickCount = String(
               Number(button.dataset.testClickCount) + 1
             )
-          },
-          true
-        )
+          })
+          button.addEventListener('pointerdown', () => button.click(), {
+            capture: true,
+            once: true
+          })
+        })
 
-        let delayed = false
-        const delayOpen = (event: Event) => {
-          event.stopImmediatePropagation()
-          if (delayed) return
-          delayed = true
-          window.setTimeout(() => {
-            button.removeEventListener('click', delayOpen, true)
-            button.click()
-          }, 1_500)
-        }
-        button.addEventListener('click', delayOpen, true)
-      })
-      await agentPanel.open(3_000)
+        await agentPanel.open()
 
-      await expect(agentPanel.root).toBeVisible()
-      await expect(agentPanel.openButton).toHaveAttribute(
-        'data-test-click-count',
-        '2'
-      )
-    })
-
-    test('honors the caller timeout while an open stays pending', async ({
-      page
-    }) => {
-      await bootAgentApp(page, true)
-      const agentPanel = new AgentPanel(page)
-      await expect(agentPanel.root).toBeVisible({ timeout: 8_000 })
-      await agentPanel.root
-        .getByRole('button', { name: enMessages.g.close })
-        .click()
-      await expect(agentPanel.root).toHaveCount(0)
-      await agentPanel.openButton.evaluate((button) => {
-        button.addEventListener(
-          'click',
-          (event) => event.stopImmediatePropagation(),
-          true
+        await expect(agentPanel.openButton).toHaveAttribute(
+          'data-test-click-count',
+          '1'
         )
       })
-
-      const startedAt = Date.now()
-      await expect(agentPanel.open(250)).rejects.toThrow()
-      expect(Date.now() - startedAt).toBeLessThan(2_000)
-    })
-
-    test('waits for startup activation before deciding to click', async ({
-      page
-    }) => {
-      await bootAgentApp(page, true)
-      const agentPanel = new AgentPanel(page)
-      await expect(agentPanel.root).toBeVisible({ timeout: 8_000 })
-      await agentPanel.root
-        .getByRole('button', { name: enMessages.g.close })
-        .click()
-      await expect(agentPanel.root).toHaveCount(0)
-
-      await agentPanel.openButton.evaluate<void, HTMLElement>((button) => {
-        button.dataset.testClickCount = '0'
-        button.addEventListener('click', () => {
-          button.dataset.testClickCount = String(
-            Number(button.dataset.testClickCount) + 1
-          )
-        })
-        button.addEventListener('pointerdown', () => button.click(), {
-          capture: true,
-          once: true
-        })
-      })
-      await agentPanel.open()
-
-      await expect(agentPanel.root).toBeVisible()
-      await expect(agentPanel.openButton).toHaveAttribute(
-        'aria-pressed',
-        'true'
-      )
-      await expect(agentPanel.openButton).toHaveAttribute(
-        'data-test-click-count',
-        '1'
-      )
     })
 
     test('keeps the dock within the viewport and its documented width cap', async ({

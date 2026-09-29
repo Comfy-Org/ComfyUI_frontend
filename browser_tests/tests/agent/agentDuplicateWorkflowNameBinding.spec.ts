@@ -14,8 +14,8 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
-import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { WorkspaceStore } from '@e2e/types/globals'
 

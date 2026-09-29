@@ -74,43 +74,33 @@ export class AgentPanel {
     )
   }
 
-  async open(
-    timeout?: number,
-    onPanelHidden?: () => void | Promise<void>
-  ): Promise<Locator> {
+  async open(timeout?: number): Promise<Locator> {
     if (await this.root.isVisible()) return this.root
-    await onPanelHidden?.()
 
-    // Keep Playwright's actionability checks, but decide whether the click is
-    // still safe when it is dispatched. Startup activation can open after the
-    // visibility read (even after the feature gate settles) and before the
-    // pointer sequence reaches `click`; in that case the guard consumes only
-    // the now-stale click instead of closing the panel again.
-    const guard = await this.openButton.evaluateHandle<
-      EventListener,
-      HTMLElement
-    >((button) => {
-      const listener: EventListener = (event) => {
-        if (button.getAttribute('aria-pressed') !== 'true') return
-        event.preventDefault()
-        event.stopImmediatePropagation()
+    const dropClickIfAlreadyOpen = await this.openButton.evaluateHandle(
+      (button) => {
+        const listener = (event: Event) => {
+          if (button.getAttribute('aria-pressed') === 'true')
+            event.stopImmediatePropagation()
+        }
+        button.addEventListener('click', listener, true)
+        return listener
       }
-      button.addEventListener('click', listener, true)
-      return listener
-    })
+    )
     try {
-      await this.openButton.click({ timeout })
+      await expect(async () => {
+        if (await this.root.isVisible()) return
+        await this.openButton.click({ timeout: 1_000 })
+      }).toPass({ timeout })
     } finally {
       await this.openButton.evaluate(
         (button, listener) =>
           button.removeEventListener('click', listener, true),
-        guard
+        dropClickIfAlreadyOpen
       )
-      await guard.dispose()
+      await dropClickIfAlreadyOpen.dispose()
     }
 
-    // A click may be waiting on consent while aria-pressed remains false.
-    // Waiting on the caller's contract avoids an unsafe second toggle.
     await expect(this.root).toBeVisible({ timeout })
     return this.root
   }
