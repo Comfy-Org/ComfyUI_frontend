@@ -19,6 +19,9 @@ interface VercelRedirect {
   readonly permanent: boolean
 }
 
+const MINIMAX_TEMPORARY_BECAUSE =
+  '/minimax/ is a live namespace (the license pages sit under it); the page owner signs off before both locales go permanent together'
+
 const modelAliasRedirects = models.flatMap(({ slug, canonicalSlug }) =>
   canonicalSlug
     ? [
@@ -65,10 +68,13 @@ export const siteRedirects: readonly SiteRedirect[] = [
   {
     source: '/minimax',
     destination: '/minimax-h3/',
-    temporaryBecause:
-      '/minimax/ is a live namespace (the license pages sit under it); the page owner signs off before this goes permanent'
+    temporaryBecause: MINIMAX_TEMPORARY_BECAUSE
   },
-  { source: '/zh-CN/minimax', destination: '/zh-CN/minimax-h3/' },
+  {
+    source: '/zh-CN/minimax',
+    destination: '/zh-CN/minimax-h3/',
+    temporaryBecause: MINIMAX_TEMPORARY_BECAUSE
+  },
   { source: '/cloud/enterprise', destination: '/enterprise/' },
   { source: '/zh-CN/cloud/enterprise', destination: '/zh-CN/enterprise/' },
   {

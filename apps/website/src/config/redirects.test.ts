@@ -129,7 +129,6 @@ describe('generated Vercel rules', () => {
     vercelRedirects.find((redirect) => redirect.source === source)
 
   it.for([
-    { source: '/zh-CN/minimax', destination: `${zh.minimax}/` },
     { source: '/cloud/enterprise', destination: `${en.enterprise}/` },
     { source: '/zh-CN/affiliates', destination: '/affiliates/' },
     {
@@ -163,7 +162,9 @@ describe('generated Vercel rules', () => {
       '/share-news-pleaseeee',
       '/share-news-pleaseeee/',
       '/minimax',
-      '/minimax/'
+      '/minimax/',
+      '/zh-CN/minimax',
+      '/zh-CN/minimax/'
     ])
   })
 
@@ -188,6 +189,10 @@ describe('Astro redirects', () => {
     expect(astroRedirects['/minimax']).toEqual({
       status: 307,
       destination: '/minimax-h3/'
+    })
+    expect(astroRedirects['/zh-CN/minimax']).toEqual({
+      status: 307,
+      destination: '/zh-CN/minimax-h3/'
     })
     expect(astroRedirects['/career']).toEqual({
       status: 308,
