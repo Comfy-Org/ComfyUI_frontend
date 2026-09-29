@@ -167,8 +167,8 @@ describe('curated workflow pages', () => {
         return { name, label, kind }
       })
     ).toEqual([
-      { name: 'image1', label: 'Image 1: your object', kind: 'file' },
-      { name: 'image2', label: 'Image 2: material', kind: 'file' },
+      { name: 'image1', label: 'Your original image', kind: 'file' },
+      { name: 'image2', label: 'Material reference', kind: 'file' },
       { name: 'prompt', label: 'What should change?', kind: 'text' },
       { name: 'negative_prompt', label: 'Avoid', kind: 'text' },
       { name: 'fast_mode', label: 'Fast mode', kind: 'toggle' },

@@ -64,7 +64,7 @@ describe('Models page entry', () => {
       screen.getByRole('textbox', { name: 'What should change?' })
     ).toBeVisible()
     expect(
-      screen.getByRole('group', { name: 'Image 1: your object' })
+      screen.getByRole('group', { name: 'Your original image' })
     ).toBeVisible()
     expect(screen.getByText('An example from this template.')).toBeVisible()
     workflowsEnabled.value = false
