@@ -1,4 +1,8 @@
-import type { CheckoutCopy, CheckoutSuccessCopy } from '../checkoutCopy'
+import type {
+  CheckoutCopy,
+  CheckoutInviteCopy,
+  CheckoutSuccessCopy
+} from '../checkoutCopy'
 import type { CheckoutPlan } from '../checkoutQuote'
 
 export const checkoutCopy: CheckoutCopy = {
@@ -111,4 +115,22 @@ export const teamPlan: CheckoutPlan = {
   monthlyPriceUsd: { monthly: 1330, yearly: 1330 },
   monthlyCredits: 147_700,
   pricedByQuote: false
+}
+
+export const inviteCopy: CheckoutInviteCopy = {
+  title: 'Invite your team',
+  subtext: 'You can also invite people later from Settings',
+  placeholder: 'Enter emails separated by commas',
+  sendInvites: 'Send invites',
+  removeTag: 'Remove tag',
+  invalidEmailCount: (count) => `${count} invalid email address(es)`,
+  pendingInviteSingle: 'This person already has a pending invite',
+  pendingInviteCount: (count) => `${count} already invited`,
+  seatLimitExceeded: (max, overage) =>
+    `This workspace is capped at ${max} members. Remove ${overage} to continue.`,
+  invitedMessage: (emails, count) =>
+    count === 1
+      ? `An invite was sent to ${emails}`
+      : `Invites were sent to ${emails}`,
+  failedCount: (count) => `Couldn't send ${count} invite(s). Try again.`
 }
