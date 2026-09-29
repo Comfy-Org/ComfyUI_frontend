@@ -1681,9 +1681,15 @@ describe('AgentPanelRoot attach flow', () => {
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
+    let rejectFirstRefresh!: (error: Error) => void
     const refresh = vi
       .spyOn(useAssetsStore().inputAssets, 'loadNew')
-      .mockRejectedValueOnce(new Error('asset fetch failed'))
+      .mockImplementationOnce(
+        () =>
+          new Promise<undefined>((_resolve, reject) => {
+            rejectFirstRefresh = reject
+          })
+      )
       .mockResolvedValue(undefined)
 
     const textbox = screen.getByRole('textbox')
@@ -1696,10 +1702,13 @@ describe('AgentPanelRoot attach flow', () => {
       files: [new File(['x'], 'b.png', { type: 'image/png' })]
     })
     await vi.waitFor(() => expect(uploaded).toEqual(['a.png', 'b.png']))
+    expect(refresh).toHaveBeenCalledOnce()
+
+    rejectFirstRefresh(new Error('asset fetch failed'))
     await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
   })
 
-  it('cancels a removed upload without reporting a hidden failure', async () => {
+  it('gives Undo a grace period before cancelling a removed upload', async () => {
     const signals: AbortSignal[] = []
     vi.stubGlobal(
       'fetch',
@@ -1725,16 +1734,25 @@ describe('AgentPanelRoot attach flow', () => {
     })
     await vi.waitFor(() => expect(signals).toHaveLength(1))
     const composer = useAgentComposerStore()
-    await userEvent.click(
-      await screen.findByRole('button', { name: i18n.global.t('agent.remove') })
-    )
+    const removeButton = await screen.findByRole('button', {
+      name: i18n.global.t('agent.remove')
+    })
+    vi.useFakeTimers()
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      await user.click(removeButton)
 
-    expect(signals[0].aborted).toBe(true)
-    expect(composer.attachments).toEqual([])
-    expect(refresh).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).not.toContainEqual(
-      expect.objectContaining({ detail: 'cat.png could not be uploaded' })
-    )
+      expect(signals[0].aborted).toBe(false)
+      expect(composer.attachments).toEqual([])
+      await vi.advanceTimersByTimeAsync(5_000)
+      expect(signals[0].aborted).toBe(true)
+      expect(refresh).not.toHaveBeenCalled()
+      expect(useToastStore().messagesToAdd).not.toContainEqual(
+        expect.objectContaining({ detail: 'cat.png could not be uploaded' })
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('uses the server limit for audio rejection copy', async () => {

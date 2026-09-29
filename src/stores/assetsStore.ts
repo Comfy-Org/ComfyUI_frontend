@@ -289,13 +289,25 @@ export const useAssetsStore = defineStore('assets', () => {
   function refreshInputAssets(): Promise<void> {
     inputRefreshDirty = true
     inputRefresh ??= (async () => {
-      while (inputRefreshDirty) {
+      for (;;) {
         inputRefreshDirty = false
-        await inputAssets.value.loadNew()
+        try {
+          await inputAssets.value.loadNew()
+        } catch {
+          // A coalesced request still owns a trailing pass even when the
+          // current refresh fails.
+        }
+        // The flag can change while the awaited refresh is in flight.
+        // oxlint-disable-next-line typescript/no-unnecessary-condition
+        if (inputRefreshDirty) continue
+
+        inputRefresh = undefined
+        // A caller can arrive after the check above and before ownership is
+        // released; loop again instead of dropping that request.
+        // oxlint-disable-next-line typescript/no-unnecessary-condition
+        if (!inputRefreshDirty) return
       }
-    })().finally(() => {
-      inputRefresh = undefined
-    })
+    })()
     return inputRefresh
   }
   let assetsScope: EffectScope | undefined

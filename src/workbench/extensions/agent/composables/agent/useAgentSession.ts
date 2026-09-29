@@ -35,6 +35,8 @@ interface SentAttachment {
   ref: string
   name: string
   previewUrl?: string
+  subfolder?: string
+  uploadType?: string
 }
 
 interface SentTag {
@@ -344,11 +346,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.recordUser(
         turnId,
         text,
-        attachments?.map(({ name, previewUrl, ref }) => ({
-          name,
-          previewUrl,
-          ref
-        })),
+        attachments?.map(
+          ({ name, previewUrl, ref, subfolder, uploadType }) => ({
+            name,
+            previewUrl,
+            ref,
+            subfolder,
+            uploadType
+          })
+        ),
         tags?.map((tag) => `${tag.title} #${tag.id}`),
         workflowReferences
       )

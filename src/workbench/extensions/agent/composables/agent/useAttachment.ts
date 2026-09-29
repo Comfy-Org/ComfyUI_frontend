@@ -1,6 +1,6 @@
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
-import { hasImageType } from '@/utils/eventUtils'
+import { DroppedAssetTooLargeError, hasImageType } from '@/utils/eventUtils'
 import { formatSize } from '@/utils/formatUtil'
 import type { ComposerAttachment } from './useComposer'
 
@@ -20,6 +20,8 @@ class AttachmentDeadlineError extends Error {
 interface UploadResult {
   ref: string
   url?: string
+  subfolder?: string
+  uploadType?: string
 }
 
 export interface UseAttachmentOptions {
@@ -128,13 +130,25 @@ export function useAttachment(options: UseAttachmentOptions) {
     }
   }
 
+  function acquireUploadSlot(): Promise<void> | undefined {
+    if (activeUploads === MAX_CONCURRENT_UPLOADS)
+      return new Promise<void>((resolve) => waiting.push(resolve))
+    activeUploads += 1
+  }
+
+  function releaseUploadSlot(): void {
+    const next = waiting.shift()
+    if (next) next()
+    else activeUploads -= 1
+  }
+
   async function uploadStagedFile(
     id: string,
-    file: File
+    file: File,
+    ownsUploadSlot = false
   ): Promise<'uploaded' | 'cancelled' | 'failed'> {
-    if (activeUploads === MAX_CONCURRENT_UPLOADS)
-      await new Promise<void>((resolve) => waiting.push(resolve))
-    else activeUploads += 1
+    const slot = ownsUploadSlot ? undefined : acquireUploadSlot()
+    if (slot) await slot
     try {
       if (cancelled.has(id)) return 'cancelled'
       options.update(id, {
@@ -151,6 +165,8 @@ export function useAttachment(options: UseAttachmentOptions) {
       options.update(id, {
         ref: result.ref,
         ...(result.url ? { previewUrl: result.url } : {}),
+        ...(result.subfolder ? { subfolder: result.subfolder } : {}),
+        ...(result.uploadType ? { uploadType: result.uploadType } : {}),
         uploading: false
       })
       return 'uploaded'
@@ -160,9 +176,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       return 'failed'
     } finally {
       settle(id)
-      const next = waiting.shift()
-      if (next) next()
-      else activeUploads -= 1
+      if (!ownsUploadSlot) releaseUploadSlot()
     }
   }
 
@@ -184,7 +198,18 @@ export function useAttachment(options: UseAttachmentOptions) {
       maxBytes: number
     ) => Promise<File | undefined>
   ): Promise<'uploaded' | 'unsupported' | 'cancelled' | 'failed'> {
+    if (pending.size >= MAX_ATTACHMENT_BATCH_SIZE) {
+      options.onError?.(
+        i18n.global.t('agent.attachmentBatchLimit', {
+          count: 1,
+          limit: MAX_ATTACHMENT_BATCH_SIZE
+        })
+      )
+      return 'failed'
+    }
     const id = stage(name)
+    const slot = acquireUploadSlot()
+    if (slot) await slot
     try {
       const controller = new AbortController()
       inFlight.set(id, controller)
@@ -207,21 +232,56 @@ export function useAttachment(options: UseAttachmentOptions) {
         options.remove(id)
         return 'failed'
       }
-      const outcome = await uploadStagedFile(id, file)
+      const outcome = await uploadStagedFile(id, file, true)
       if (outcome !== 'uploaded') return outcome
       options.onUploaded?.()
       return 'uploaded'
     } catch (error) {
       if (cancelled.has(id)) return 'cancelled'
+      if (error instanceof DroppedAssetTooLargeError) {
+        options.onError?.(
+          i18n.global.t('agent.attachmentTooLarge', {
+            name,
+            limit: formatSize(error.maxBytes)
+          })
+        )
+        options.remove(id)
+        return 'failed'
+      }
       failAttachment(id, name, 'agent_attachment_fetch_failed', error)()
       return 'failed'
     } finally {
       settle(id)
+      releaseUploadSlot()
     }
   }
 
   async function addFiles(files: Iterable<File>): Promise<void> {
-    const accepted = [...files].filter((file) => !isTooLarge(file))
+    const candidates = [...files]
+    const accepted: File[] = []
+    let oversized = 0
+    for (const file of candidates) {
+      const maxBytes = options.maxBytes?.(file) ?? MAX_ATTACHMENT_BYTES
+      if (file.size > maxBytes) oversized += 1
+      else accepted.push(file)
+    }
+    if (oversized === 1) {
+      const oversizedFile = candidates.find((file) => {
+        const maxBytes = options.maxBytes?.(file) ?? MAX_ATTACHMENT_BYTES
+        return file.size > maxBytes
+      })!
+      const maxBytes = options.maxBytes?.(oversizedFile) ?? MAX_ATTACHMENT_BYTES
+      options.onError?.(
+        i18n.global.t('agent.attachmentTooLarge', {
+          name: oversizedFile.name,
+          limit: formatSize(maxBytes)
+        })
+      )
+    } else if (oversized > 1) {
+      options.onError?.(
+        i18n.global.t('agent.attachmentsTooLarge', { count: oversized })
+      )
+    }
     const availableSlots = Math.max(0, MAX_ATTACHMENT_BATCH_SIZE - pending.size)
     const staged = accepted
       .slice(0, availableSlots)

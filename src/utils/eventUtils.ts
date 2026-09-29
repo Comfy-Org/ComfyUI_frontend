@@ -16,6 +16,13 @@ class DroppedAssetFetchError extends Error {
   }
 }
 
+export class DroppedAssetTooLargeError extends RangeError {
+  constructor(readonly maxBytes: number) {
+    super(`Dropped asset exceeds ${maxBytes} bytes`)
+    this.name = 'DroppedAssetTooLargeError'
+  }
+}
+
 export function getDroppedAsset(
   dataTransfer: DataTransfer
 ): DroppedAsset | undefined {
@@ -47,14 +54,44 @@ export async function fetchDroppedAsset(
   if (!uri) return undefined
   const response = await fetch(uri, { signal })
   if (!response.ok) throw new DroppedAssetFetchError(response.status)
-  const contentLength = Number(response.headers.get('Content-Length'))
+  const contentLengthHeader = response.headers.get('Content-Length')
+  const contentLength =
+    contentLengthHeader === null ? undefined : Number(contentLengthHeader)
   if (
     maxBytes !== undefined &&
+    contentLength !== undefined &&
     Number.isFinite(contentLength) &&
     contentLength > maxBytes
   )
-    throw new RangeError(`Dropped asset exceeds ${maxBytes} bytes`)
-  const blob = await response.blob()
+    throw new DroppedAssetTooLargeError(maxBytes)
+
+  if (maxBytes === undefined || !response.body) {
+    const blob = await response.blob()
+    if (maxBytes !== undefined && blob.size > maxBytes)
+      throw new DroppedAssetTooLargeError(maxBytes)
+    return new File([blob], name, { type: blob.type })
+  }
+
+  const reader = response.body.getReader()
+  const chunks: ArrayBuffer[] = []
+  let bytesRead = 0
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      bytesRead += value.byteLength
+      if (bytesRead > maxBytes) {
+        await reader.cancel()
+        throw new DroppedAssetTooLargeError(maxBytes)
+      }
+      chunks.push(value.slice().buffer)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+  const blob = new Blob(chunks, {
+    type: response.headers.get('Content-Type') ?? undefined
+  })
   return new File([blob], name, { type: blob.type })
 }
 

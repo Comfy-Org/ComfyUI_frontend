@@ -1165,7 +1165,9 @@ const attachment = useAttachment({
     })
     if (uploaded.subfolder) params.set('subfolder', uploaded.subfolder)
     return {
-      ref: uploaded.subfolder ? `${uploaded.subfolder}/${filename}` : filename,
+      ref: filename,
+      subfolder: uploaded.subfolder || undefined,
+      uploadType: uploaded.type || 'input',
       url: api.apiURL(`/view?${params.toString()}`)
     }
   },
@@ -1198,17 +1200,39 @@ const attachment = useAttachment({
   remove: composerStore.removeAttachment
 })
 
+const removedUploadCancellationTimers = new Map<string, number>()
+
 watch(
   () => composerStore.attachments.map(({ id }) => id),
   (ids, previousIds = []) => {
     const retained = new Set(ids)
-    for (const id of previousIds)
-      if (!retained.has(id)) attachment.cancelUpload(id)
+    for (const id of ids) {
+      const timer = removedUploadCancellationTimers.get(id)
+      if (timer !== undefined) {
+        window.clearTimeout(timer)
+        removedUploadCancellationTimers.delete(id)
+      }
+    }
+    for (const id of previousIds) {
+      if (retained.has(id) || removedUploadCancellationTimers.has(id)) continue
+      removedUploadCancellationTimers.set(
+        id,
+        window.setTimeout(() => {
+          removedUploadCancellationTimers.delete(id)
+          attachment.cancelUpload(id)
+        }, 5_000)
+      )
+    }
   },
   { flush: 'sync' }
 )
 
-onBeforeUnmount(() => attachment.cancelAllUploads())
+onBeforeUnmount(() => {
+  for (const timer of removedUploadCancellationTimers.values())
+    window.clearTimeout(timer)
+  removedUploadCancellationTimers.clear()
+  attachment.cancelAllUploads()
+})
 
 function onAttach(): void {
   exitNodeSelectionMode()
@@ -1292,6 +1316,11 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     return
   }
 
+  if (!isAgentAttachable(new File([], asset.name))) {
+    toast.add({ severity: 'warn', detail: t('agent.assetNotAttachable') })
+    return
+  }
+
   if (asset.ref && asset.kind !== 'other') {
     panelRef.value?.addAttachment({
       id: `asset:${asset.ref}`,
@@ -1306,7 +1335,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     asset.name,
     async (signal, maxBytes) => {
       const file = await fetchDroppedAsset(asset, signal, maxBytes)
-      return file && isAgentAttachable(file) ? file : undefined
+      return file
     }
   )
   if (result === 'unsupported')

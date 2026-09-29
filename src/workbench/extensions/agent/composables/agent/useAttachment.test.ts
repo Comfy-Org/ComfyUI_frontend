@@ -68,6 +68,25 @@ describe('useAttachment', () => {
     expect(onError).toHaveBeenCalledWith('huge.png is larger than 20 MB')
   })
 
+  it('aggregates oversized selections into one warning', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles([
+      fileOfSize('huge-a.png', MAX_ATTACHMENT_BYTES + 1),
+      fileOfSize('huge-b.png', MAX_ATTACHMENT_BYTES + 1)
+    ])
+
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledOnce()
+    expect(onError).toHaveBeenCalledWith(
+      '2 files exceed the upload size limit.'
+    )
+  })
+
   it('uses the resolved limit for each file', async () => {
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
     const maxBytes = vi.fn((file: File) =>
@@ -620,7 +639,7 @@ describe('useAttachment', () => {
     expect(upload).toHaveBeenCalledTimes(MAX_ATTACHMENT_BATCH_SIZE)
     expect(registry.chips).toHaveLength(MAX_ATTACHMENT_BATCH_SIZE)
     expect(onError).toHaveBeenCalledWith(
-      '5 files were not added. You can upload up to 100 files at a time.'
+      '5 files were not added because the upload queue limit is 100.'
     )
   })
 

@@ -14,6 +14,8 @@ export interface UserAttachment {
   name: string
   previewUrl?: string
   ref?: string
+  subfolder?: string
+  uploadType?: string
 }
 
 export interface NormalizedAgentTranscript {

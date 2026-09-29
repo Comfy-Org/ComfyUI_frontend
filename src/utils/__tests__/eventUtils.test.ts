@@ -27,6 +27,32 @@ describe('eventUtils', () => {
     expect(blob).not.toHaveBeenCalled()
   })
 
+  it('cancels an unknown-length stream once its byte limit is crossed', async () => {
+    let cancelled = false
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array(60))
+        controller.enqueue(new Uint8Array(50))
+      },
+      cancel() {
+        cancelled = true
+      }
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(body, { status: 200 }))
+    )
+
+    await expect(
+      fetchDroppedAsset(
+        { name: 'streamed.png', uri: 'https://example.com' },
+        undefined,
+        100
+      )
+    ).rejects.toThrow('Dropped asset exceeds 100 bytes')
+    expect(cancelled).toBe(true)
+  })
+
   describe('extractFilesFromDragEvent', () => {
     let fetchSpy: ReturnType<typeof vi.fn>
 
