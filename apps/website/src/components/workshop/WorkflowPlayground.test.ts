@@ -1,9 +1,9 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
-import { assert, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, markRaw, readonly, ref } from 'vue'
 
-import { useWorkshopCredits } from '../../config/workshop-credits'
+import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
 import type { WorkshopSession } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
@@ -16,7 +16,16 @@ import WorkflowPlayground from './WorkflowPlayground.vue'
 
 vi.mock(import('../../config/workshop-session-state'))
 vi.mock(import('../../config/workshop-credits'))
+vi.mock(import('../../config/workshop-model-balance'), () => ({
+  useWorkshopModelBalance: vi.fn()
+}))
 vi.mock(import('../../scripts/posthog'))
+
+beforeEach(() => {
+  vi.mocked(useWorkshopModelBalance).mockReturnValue(
+    computed(() => ({ status: 'unknown' }))
+  )
+})
 
 describe('WorkflowPlayground analytics', () => {
   it('reports page and API visits under Models event names with workflow attribution after access is enabled', async () => {
@@ -169,9 +178,9 @@ describe('WorkflowPlayground primary action', () => {
         permissions: []
       }
       useWorkshopSession().session = computed(() => owner)
-      const balance = useWorkshopCredits()
-      balance.balance = computed(() => ({ status: 'ok', credits }))
-      balance.session = computed(() => owner)
+      vi.mocked(useWorkshopModelBalance).mockReturnValue(
+        computed(() => ({ status: 'ok', credits }))
+      )
 
       render(WorkflowPlayground, {
         props: { model, scope: JSON.stringify(['alice', 'studio']) }

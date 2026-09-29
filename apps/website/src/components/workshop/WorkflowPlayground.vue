@@ -17,10 +17,9 @@ import {
   workflowNoticeKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
-import {
-  refreshWorkshopCredits,
-  useWorkshopCredits
-} from '../../config/workshop-credits'
+import { refreshWorkshopCredits } from '../../config/workshop-credits'
+import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
+import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { WorkflowCreditsRefusal } from '../../lib/workshop/workflow-credits-gate'
 import {
   withRefusalBaseline,
@@ -159,7 +158,8 @@ const refusalSaidHere = computed(() =>
     ? t(workflowNoticeKey(state.value, error.value))
     : undefined
 )
-const { balance, session } = useWorkshopCredits()
+const { session } = useWorkshopSession()
+const balance = useWorkshopModelBalance(session)
 const credits = computed(() =>
   balance.value.status === 'ok' ? balance.value.credits : undefined
 )

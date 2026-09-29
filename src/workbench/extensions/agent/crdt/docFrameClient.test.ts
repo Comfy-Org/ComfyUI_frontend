@@ -202,11 +202,22 @@ describe('doc frame client', () => {
     expect(
       parseServerDocFrame({
         type: 'doc_reset',
-        data: { v: 1, workflow_id: 'wf-1', seq: 43, actor: 'agent:th-1:turn-2' }
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          seq: 43,
+          lineage_seq: 7,
+          actor: 'agent:th-1:turn-2'
+        }
       })
     ).toEqual({
       type: 'doc_reset',
-      data: { workflowId: 'wf-1', seq: 43, actor: 'agent:th-1:turn-2' }
+      data: {
+        workflowId: 'wf-1',
+        seq: 43,
+        lineageSeq: 7,
+        actor: 'agent:th-1:turn-2'
+      }
     })
     expect(
       parseServerDocFrame({

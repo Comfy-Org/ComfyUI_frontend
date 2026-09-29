@@ -8,6 +8,7 @@ import type {
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentErrorMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
@@ -18,6 +19,7 @@ import type {
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -420,6 +422,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAgentMessageSent?.(metadata))
   }
 
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentStarterPromptClicked?.(metadata)
+    )
+  }
+
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.dispatch((provider) => provider.trackAgentNodeTagged?.(metadata))
   }
@@ -434,6 +444,11 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.dispatch((provider) => provider.trackAgentWorkflowApplied?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentError(metadata: AgentErrorMetadata): void {
+    this.dispatch((provider) => provider.trackAgentError?.(metadata))
   }
 
   trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {
