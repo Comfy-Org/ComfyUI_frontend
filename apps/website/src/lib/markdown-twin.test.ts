@@ -29,6 +29,7 @@ const PAGE = `<!doctype html>
       <svg><title>icon</title></svg>
       <video src="/clip.mp4"></video>
       <button>Copy</button>
+      <div role="status"><p>Loading</p></div>
     </section>
     <section>
       <h2>Set up Comfy CLI</h2>
@@ -84,6 +85,7 @@ describe('htmlToTwin', () => {
     expect(page.body).not.toContain('icon')
     expect(page.body).not.toContain('Copy')
     expect(page.body).not.toContain('clip.mp4')
+    expect(page.body).not.toContain('Loading')
   })
 
   it('makes links absolute, drops anchor links, and keeps emphasis', () => {

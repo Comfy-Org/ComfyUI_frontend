@@ -89,7 +89,8 @@ function tag(element: Element): string {
 function isDropped(element: Element): boolean {
   return (
     DROPPED_TAGS.has(tag(element)) ||
-    element.getAttribute('aria-hidden') === 'true'
+    element.getAttribute('aria-hidden') === 'true' ||
+    element.getAttribute('role') === 'status'
   )
 }
 
