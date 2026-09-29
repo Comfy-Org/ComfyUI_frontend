@@ -11,6 +11,34 @@ import { getErrorMessage } from '@/utils/errorUtil'
 
 interface CancellationFallbackOptions {
   flowAlreadyOpened?: boolean
+  isScopeCurrent?: () => boolean
+}
+
+async function showCancellationFallback(
+  showFallback: LaunchCancellationFlowOptions['showFallback'],
+  isScopeCurrent: () => boolean,
+  options?: CancellationFallbackOptions,
+  vendorError?: unknown
+): Promise<boolean> {
+  if (!isScopeCurrent()) return false
+  try {
+    await showFallback({ ...options, isScopeCurrent })
+    return true
+  } catch (fallbackError) {
+    reportError(fallbackError, {
+      errorType: 'cloud_cancellation_vendor_fallback',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'billing',
+        operation: 'load',
+        outcome: 'failed',
+        vendor_preparation_failed: vendorError !== undefined,
+        workspace_still_current: isScopeCurrent()
+      },
+      level: 'error'
+    })
+    return false
+  }
 }
 
 interface LaunchCancellationFlowOptions {
@@ -47,42 +75,24 @@ async function prepareCancellationSession(
     return null
   }
 
-  try {
-    await showFallback()
-    if (preparation.threw) {
-      const workspaceStillCurrent = isLaunchWorkspaceCurrent()
-      reportError(preparation.error, {
-        errorType: 'cloud_cancellation_vendor_fallback',
-        tags: {
-          failure_kind: 'degraded',
-          feature_area: 'billing',
-          operation: 'load',
-          outcome: workspaceStillCurrent ? 'recovered' : 'aborted',
-          workspace_still_current: workspaceStillCurrent
-        },
-        level: 'warning'
-      })
-    }
-  } catch (fallbackError) {
-    const reportedError = preparation.threw
-      ? new Error(
-          getErrorMessage(fallbackError) ?? 'Cancellation fallback failed',
-          {
-            cause: preparation.error
-          }
-        )
-      : fallbackError
-    reportError(reportedError, {
+  const fallbackShown = await showCancellationFallback(
+    showFallback,
+    isLaunchWorkspaceCurrent,
+    undefined,
+    preparation.threw ? preparation.error : undefined
+  )
+  if (preparation.threw && fallbackShown) {
+    const workspaceStillCurrent = isLaunchWorkspaceCurrent()
+    reportError(preparation.error, {
       errorType: 'cloud_cancellation_vendor_fallback',
       tags: {
-        failure_kind: 'caught_unexpected',
+        failure_kind: 'degraded',
         feature_area: 'billing',
         operation: 'load',
-        outcome: 'failed',
-        vendor_preparation_failed: preparation.threw,
-        workspace_still_current: isLaunchWorkspaceCurrent()
+        outcome: workspaceStillCurrent ? 'recovered' : 'aborted',
+        workspace_still_current: workspaceStillCurrent
       },
-      level: 'error'
+      level: 'warning'
     })
   }
   return null
@@ -95,17 +105,15 @@ export async function launchCancellationFlow({
   const billing = useBillingContext()
   const workspaceStore = useTeamWorkspaceStore()
   const launchWorkspaceId = workspaceStore.activeWorkspaceId
+  const isLaunchWorkspaceCurrent = () =>
+    workspaceStore.activeWorkspaceId === launchWorkspaceId
   if (
     billing.type.value !== 'workspace' ||
     !launchWorkspaceId ||
     workspaceStore.activeWorkspaceBillingRail !== 'stripe'
   ) {
-    await showFallback()
+    await showCancellationFallback(showFallback, isLaunchWorkspaceCurrent)
     return
-  }
-
-  function isLaunchWorkspaceCurrent() {
-    return workspaceStore.activeWorkspaceId === launchWorkspaceId
   }
 
   const session = await prepareCancellationSession(
@@ -174,6 +182,8 @@ export async function launchCancellationFlow({
       ...metadata,
       error_message: getErrorMessage(error) ?? t('g.unknownError')
     })
-    await showFallback({ flowAlreadyOpened: true })
+    await showCancellationFallback(showFallback, isLaunchWorkspaceCurrent, {
+      flowAlreadyOpened: true
+    })
   }
 }

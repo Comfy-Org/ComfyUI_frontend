@@ -168,6 +168,22 @@ describe('launchCancellationFlow', () => {
     expect(mocks.prepare).not.toHaveBeenCalled()
   })
 
+  it('contains a failed native dialog for legacy billing', async () => {
+    mocks.billingType.value = 'legacy'
+    const fallbackError = new Error('dialog chunk unavailable')
+
+    await expect(
+      launchCancellationFlow({
+        showFallback: vi.fn().mockRejectedValue(fallbackError)
+      })
+    ).resolves.toBeUndefined()
+
+    expect(reportError).toHaveBeenCalledWith(
+      fallbackError,
+      expect.objectContaining({ level: 'error' })
+    )
+  })
+
   it('uses the native dialog for Metronome billing', async () => {
     mocks.billingRail = 'metronome'
     const showFallback = vi.fn()
@@ -250,7 +266,9 @@ describe('launchCancellationFlow', () => {
 
     await launchCancellationFlow({ showFallback: preparationFallback })
 
-    expect(preparationFallback).toHaveBeenCalledWith()
+    expect(preparationFallback).toHaveBeenCalledWith(
+      expect.objectContaining({ isScopeCurrent: expect.any(Function) })
+    )
     expect(useTelemetry()?.trackSubscriptionCancellation).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(preparationError, {
       errorType: 'cloud_cancellation_vendor_fallback',
