@@ -1,11 +1,10 @@
-import { readFile } from 'node:fs/promises'
-
 import type { FeaturesResponse } from './featureFlags.schema'
 import type { FeatureFlagsSnapshot } from '../data/feature-flags'
 
 import { FeaturesResponseSchema } from './featureFlags.schema'
 
 import bundledSnapshot from '../data/feature-flags.snapshot.json' with { type: 'json' }
+import { fetchWithRetry, readSnapshot, requestJson } from './snapshotFetch'
 
 const DEFAULT_BASE_URL = 'https://api.comfy.org'
 const DEFAULT_TIMEOUT_MS = 10_000
@@ -59,7 +58,11 @@ async function fallback(
   reason: string,
   snapshotUrl: URL | undefined
 ): Promise<FetchOutcome> {
-  const snapshot = await readSnapshot(snapshotUrl)
+  const snapshot = await readSnapshot(
+    snapshotUrl,
+    bundledSnapshot,
+    isFeatureFlagsSnapshot
+  )
   if (snapshot) return { status: 'stale', snapshot, reason }
   return { status: 'failed', reason }
 }
@@ -81,73 +84,28 @@ async function tryFetchAndParse(
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const retryDelaysMs = options.retryDelaysMs ?? RETRY_DELAYS_MS
   const fetchImpl = options.fetchImpl ?? fetch
-  const sleep = options.sleep ?? defaultSleep
-
   const url = `${baseUrl.replace(/\/+$/, '')}/features`
+  const result = await fetchWithRetry({
+    retryDelaysMs,
+    sleep: options.sleep,
+    attempt: async () => {
+      const response = await requestJson({ fetchImpl, url, timeoutMs })
+      if (response.kind === 'err') return response
 
-  let lastReason = 'unknown error'
-  for (let attempt = 0; attempt <= retryDelaysMs.length; attempt++) {
-    if (attempt > 0) await sleep(retryDelaysMs[attempt - 1])
-
-    const response = await callOnce(fetchImpl, url, timeoutMs)
-    if (response.kind === 'err') {
-      lastReason = response.reason
-      if (!response.retryable) return response
-      continue
-    }
-
-    const parsed = FeaturesResponseSchema.safeParse(response.body)
-    if (!parsed.success) {
+      const parsed = FeaturesResponseSchema.safeParse(response.value)
+      if (parsed.success) {
+        return { kind: 'ok' as const, value: parsed.data }
+      }
       return {
-        kind: 'err',
+        kind: 'err' as const,
         reason: `schema validation failed: ${parsed.error.issues
           .map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`)
-          .join('; ')}`
+          .join('; ')}`,
+        retryable: false
       }
     }
-
-    return { kind: 'ok', features: parsed.data }
-  }
-
-  return { kind: 'err', reason: lastReason }
-}
-
-type CallResponse =
-  | { kind: 'ok'; body: unknown }
-  | { kind: 'err'; reason: string; retryable: boolean }
-
-async function callOnce(
-  fetchImpl: typeof fetch,
-  url: string,
-  timeoutMs: number
-): Promise<CallResponse> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    const res = await fetchImpl(url, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-      signal: controller.signal
-    })
-    if (res.ok) {
-      return { kind: 'ok', body: await res.json() }
-    }
-    const retryable =
-      res.status === 429 || (res.status >= 500 && res.status < 600)
-    return {
-      kind: 'err',
-      reason: `HTTP ${res.status} ${res.statusText || ''}`.trim(),
-      retryable
-    }
-  } catch (error) {
-    const reason =
-      error instanceof Error
-        ? `network error: ${error.message}`
-        : 'network error'
-    return { kind: 'err', reason, retryable: true }
-  } finally {
-    clearTimeout(timer)
-  }
+  })
+  return result.kind === 'ok' ? { kind: 'ok', features: result.value } : result
 }
 
 function deriveFlags(
@@ -156,21 +114,6 @@ function deriveFlags(
   return {
     cloudFreeTier: features.new_free_tier_subscriptions ?? false
   }
-}
-
-async function readSnapshot(
-  snapshotUrl: URL | undefined
-): Promise<FeatureFlagsSnapshot | null> {
-  if (snapshotUrl) {
-    try {
-      const text = await readFile(snapshotUrl, 'utf8')
-      const parsed: unknown = JSON.parse(text)
-      if (isFeatureFlagsSnapshot(parsed)) return parsed
-    } catch {
-      // Fall through to the bundled snapshot if the override is unreadable.
-    }
-  }
-  return isFeatureFlagsSnapshot(bundledSnapshot) ? bundledSnapshot : null
 }
 
 function isFeatureFlagsSnapshot(value: unknown): value is FeatureFlagsSnapshot {
@@ -182,8 +125,4 @@ function isFeatureFlagsSnapshot(value: unknown): value is FeatureFlagsSnapshot {
   }
   const flags = candidate.flags as { cloudFreeTier?: unknown }
   return typeof flags.cloudFreeTier === 'boolean'
-}
-
-function defaultSleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
