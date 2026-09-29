@@ -73,7 +73,7 @@ describe('measureViewportFromElement', () => {
     const canvas = {
       width: 800,
       height: 600,
-      getBoundingClientRect() {
+      getBoundingClientRect(this: { width: number; height: number }) {
         return { width: this.width, height: this.height }
       }
     } as HTMLCanvasElement
@@ -84,6 +84,54 @@ describe('measureViewportFromElement', () => {
     expect(viewport.cssHeight).toBe(600)
     expect(canvas.width).toBe(800)
     expect(canvas.height).toBe(600)
+  })
+
+  it('does not multiply backing dimensions across repeated measurements', () => {
+    const canvas = {
+      width: 800,
+      height: 600,
+      getBoundingClientRect(this: { width: number; height: number }) {
+        return { width: this.width, height: this.height }
+      },
+      getContext: () => ({ scale: vi.fn() })
+    } as unknown as HTMLCanvasElement
+
+    const first = measureViewportFromElement(canvas, 2, 0)
+    applyViewport(first, canvas, canvas)
+    const second = measureViewportFromElement(canvas, 2, first.generation)
+
+    expect(second.cssWidth).toBe(800)
+    expect(second.cssHeight).toBe(600)
+    expect(second.physicalWidth).toBe(1600)
+    expect(second.physicalHeight).toBe(1200)
+  })
+
+  it('measures CSS dimensions independently of backing dimensions', () => {
+    const canvas = {
+      width: 1600,
+      height: 1200,
+      getBoundingClientRect() {
+        return { width: 800, height: 600 }
+      }
+    } as HTMLCanvasElement
+
+    const viewport = measureViewportFromElement(canvas, 2, 0)
+
+    expect(viewport.cssWidth).toBe(800)
+    expect(viewport.cssHeight).toBe(600)
+  })
+
+  it('preserves a hidden canvas measurement', () => {
+    const canvas = {
+      width: 1600,
+      height: 1200,
+      getBoundingClientRect: () => ({ width: 0, height: 0 })
+    } as HTMLCanvasElement
+
+    const viewport = measureViewportFromElement(canvas, 2, 0)
+
+    expect(viewport.cssWidth).toBe(0)
+    expect(viewport.cssHeight).toBe(0)
   })
 })
 
