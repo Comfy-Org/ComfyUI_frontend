@@ -11,6 +11,7 @@ import type {
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
+  AgentWsEvent,
   AgentTurnAccepted,
   TurnId
 } from '../../schemas/agentApiSchema'
@@ -767,62 +768,82 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
   }
 
+  function handleMalformedEvent(
+    raw: object,
+    type: string,
+    error: ZodError
+  ): void {
+    const messageId = (raw as { data?: { message_id?: unknown } }).data
+      ?.message_id
+    let reportedTurnId =
+      typeof messageId === 'string'
+        ? (messageId as TurnId)
+        : conversationStore.activeTurnId
+    let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
+    if (type === 'agent_message_done') {
+      if (
+        typeof messageId !== 'string' ||
+        messageId === conversationStore.activeTurnId
+      ) {
+        conversationStore.abortActiveTurn()
+        pushError(i18n.global.t('agent.malformedEvent'))
+        uiTreatment = 'error_overlay'
+      } else {
+        reportedTurnId =
+          conversationStore.settleBackgroundTurn(messageId) ?? reportedTurnId
+      }
+    }
+    trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment)
+    console.warn('[agent] dropping malformed agent event', error)
+  }
+
   function onRaw(raw: unknown): void {
     if (typeof raw !== 'object' || raw === null) return
     const type = (raw as { type?: unknown }).type
     if (typeof type !== 'string' || !isAgentEvent(type)) return
     const parsed = parseAgentWsEvent(raw)
     if (!parsed.success) {
-      const messageId = (raw as { data?: { message_id?: unknown } }).data
-        ?.message_id
-      let reportedTurnId =
-        typeof messageId === 'string'
-          ? (messageId as TurnId)
-          : conversationStore.activeTurnId
-      let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
-      if (type === 'agent_message_done') {
-        if (
-          typeof messageId !== 'string' ||
-          messageId === conversationStore.activeTurnId
-        ) {
-          conversationStore.abortActiveTurn()
-          pushError(i18n.global.t('agent.malformedEvent'))
-          uiTreatment = 'error_overlay'
-        } else {
-          reportedTurnId =
-            conversationStore.settleBackgroundTurn(messageId) ?? reportedTurnId
-        }
-      }
-      trackMalformedStreamEvent(parsed.error, type, reportedTurnId, uiTreatment)
-      console.warn('[agent] dropping malformed agent event', parsed.error)
+      handleMalformedEvent(raw, type, parsed.error)
       return
     }
-    const event = parsed.data
+    ingestAgentEvent(parsed.data)
+  }
+
+  function ingestAgentEvent(event: AgentWsEvent): void {
     if (event.type === 'agent_ask_resolved')
       setAskAnswering(event.data.ask_id, false)
-    switch (event.type) {
-      case 'agent_active_tab':
-        // Every thread records the link in its own transcript; only the thread
-        // on screen is allowed to move the user's tabs.
-        conversationStore.ingest(event)
-        if (
-          event.data.thread_id === undefined ||
-          event.data.thread_id === conversationStore.threadId
-        )
-          workflow?.activeTab?.(event.data)
-        return
-      default:
-        conversationStore.ingest(event)
-        if (
-          event.type === 'agent_message_done' &&
-          promptEditState.value.phase === 'stopping' &&
-          event.data.message_id === promptEditState.value.turnId &&
-          event.data.thread_id === conversationStore.threadId
-        )
-          promptEditState.value = {
-            phase: 'ready',
-            turnId: promptEditState.value.turnId
-          }
+    conversationStore.ingest(event)
+    if (event.type === 'agent_active_tab') {
+      applyActiveTabEvent(event)
+      return
+    }
+    if (event.type === 'agent_message_done') settleStoppedTurn(event)
+  }
+
+  function applyActiveTabEvent(
+    event: Extract<AgentWsEvent, { type: 'agent_active_tab' }>
+  ): void {
+    // Every thread records the link in its own transcript; only the thread on
+    // screen is allowed to move the user's tabs.
+    if (
+      event.data.thread_id === undefined ||
+      event.data.thread_id === conversationStore.threadId
+    )
+      workflow?.activeTab?.(event.data)
+  }
+
+  function settleStoppedTurn(
+    event: Extract<AgentWsEvent, { type: 'agent_message_done' }>
+  ): void {
+    if (
+      promptEditState.value.phase !== 'stopping' ||
+      event.data.message_id !== promptEditState.value.turnId ||
+      event.data.thread_id !== conversationStore.threadId
+    )
+      return
+    promptEditState.value = {
+      phase: 'ready',
+      turnId: promptEditState.value.turnId
     }
   }
 
