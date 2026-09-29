@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import Button from '@/components/ui/button/Button.vue'
 import { groupModels } from '../../config/model-family'
@@ -22,6 +23,8 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+import type { FilterChip } from './WorkshopFilterChips.vue'
+import WorkshopFilterChips from './WorkshopFilterChips.vue'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
@@ -60,6 +63,8 @@ onMounted(() => {
 
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
+const filterMenu =
+  useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
 const sortOrders = sortOrdersFor(models)
 
 const useCaseOptions = computed<FacetMenuOption[]>(() => {
@@ -153,6 +158,31 @@ const featuredSlides = computed(() => [
   ...modelSlides(featured.value, locale)
 ])
 
+// What narrowed the list stays legible next to it, so a reader can take one
+// choice off without reopening the menu that made it.
+const chips = computed<FilterChip[]>(() => [
+  ...(useCase.value === 'all'
+    ? []
+    : [
+        {
+          key: 'shelf',
+          label: t(sectionTitleKey.value, locale)
+        }
+      ]),
+  ...selectedUseCases.value.map((value) => ({
+    key: `use:${value}`,
+    label: t(useCaseLabelKey[value], locale)
+  }))
+])
+
+function removeChip(key: string) {
+  if (key === 'shelf') useCase.value = 'all'
+  else
+    selectedUseCases.value = selectedUseCases.value.filter(
+      (value) => `use:${value}` !== key
+    )
+}
+
 function openSection(value: UseCase | 'other') {
   useCase.value = value
 }
@@ -224,18 +254,19 @@ watch(browseAll, (on) => on && resetFilters())
       >
         <slot name="tabs" />
         <div
-          class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
+          class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit sm:justify-end"
         >
           <WorkshopSearchField
             v-model="query"
             :models
             :locale
             compact
-            class="min-w-0 flex-1 sm:mr-auto sm:max-w-xl sm:min-w-32"
+            class="min-w-0 flex-1 sm:max-w-120"
           />
 
           <div class="flex items-center gap-2" data-testid="workshop-filters">
             <WorkshopFilterMenu
+              ref="filterMenu"
               :use-cases="selectedUseCases"
               :use-case-options="useCaseOptions"
               :result-count="visible.length"
@@ -253,6 +284,14 @@ watch(browseAll, (on) => on && resetFilters())
         :slides="featuredSlides"
         :locale
         class="mb-10 short:mb-6"
+      />
+
+      <WorkshopFilterChips
+        :chips
+        :locale
+        @remove="removeChip"
+        @clear="resetFilters"
+        @emptied="filterMenu?.focus()"
       />
 
       <template v-if="browsing">
@@ -284,7 +323,7 @@ watch(browseAll, (on) => on && resetFilters())
             {{ t('workshop.models.heading', locale) }}
           </h2>
           <ul
-            class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
+            class="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
             aria-labelledby="workshop-models-heading"
             data-testid="workshop-models-grid"
           >

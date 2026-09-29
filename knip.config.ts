@@ -72,6 +72,12 @@ const config: KnipConfig = {
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
+    // Config for a CLI invoked by file path, not import; generated output
+    // includes operation types unused until this fronts a real API client
+    'apps/website/openapi-ts.rate-card.config.ts',
+    'apps/website/src/types/rate-card/index.ts',
+    'apps/website/src/types/rate-card/types.gen.ts',
+    'apps/website/src/types/rate-card/zod.gen.ts',
     // Marketing media tooling — adopted by pages in a follow-up PR
     'apps/website/src/components/common/SiteVideo.vue',
     // Animated pill button — retained for reuse after the learning directory

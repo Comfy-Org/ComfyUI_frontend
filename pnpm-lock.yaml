@@ -1005,6 +1005,12 @@ importers:
       firebase:
         specifier: 'catalog:'
         version: 11.10.0
+      primeicons:
+        specifier: 'catalog:'
+        version: 7.0.0
+      reka-ui:
+        specifier: 'catalog:'
+        version: 2.6.2(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@6.0.3)
@@ -1175,6 +1181,9 @@ importers:
       '@comfyorg/sdk':
         specifier: 'catalog:'
         version: 0.2.0
+      '@hey-api/openapi-ts':
+        specifier: 0.97.3
+        version: 0.97.3(magicast@0.5.4)(typescript@6.0.3)
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.61.1
@@ -1275,7 +1284,16 @@ importers:
       '@comfyorg/account-core':
         specifier: workspace:^
         version: link:../account-core
+      primeicons:
+        specifier: ^7.0.0
+        version: 7.0.0
     devDependencies:
+      '@comfyorg/design-system':
+        specifier: workspace:^
+        version: link:../design-system
+      '@comfyorg/tailwind-utils':
+        specifier: workspace:^
+        version: link:../tailwind-utils
       '@stripe/stripe-js':
         specifier: 'catalog:'
         version: 9.12.1
@@ -1300,6 +1318,9 @@ importers:
       happy-dom:
         specifier: 'catalog:'
         version: 20.14.5
+      reka-ui:
+        specifier: 'catalog:'
+        version: 2.6.2(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1348,6 +1369,9 @@ importers:
       '@iconify/utils':
         specifier: 'catalog:'
         version: 3.1.4
+      cva:
+        specifier: 'catalog:'
+        version: 1.0.0-beta.4(typescript@6.0.3)
       tailwindcss-primeui:
         specifier: 'catalog:'
         version: 0.6.1(tailwindcss@4.3.2)

@@ -63,10 +63,11 @@ const announcement = ref('')
 const announceCurrentSlide = () => {
   const slide = slides[activeIndex.value]
   if (!slide) return
-  announcement.value = t('auth.hero.slideStatus', locale)
-    .replace('{title}', slide.title)
-    .replace('{current}', String(activeIndex.value + 1))
-    .replace('{total}', String(slides.length))
+  announcement.value = t('auth.hero.slideStatus', locale, {
+    title: slide.title,
+    current: activeIndex.value + 1,
+    total: slides.length
+  })
 }
 
 const goToNext = () => {
