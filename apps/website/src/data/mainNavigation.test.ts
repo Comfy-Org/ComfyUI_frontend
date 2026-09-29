@@ -5,7 +5,7 @@ import { getMainNavigation } from './mainNavigation'
 
 describe('getMainNavigation', () => {
   it.for(['en', 'zh-CN', 'ja'] as const)(
-    'gates both Models navigation entries for %s',
+    'gates both catalogue navigation entries for %s',
     (locale) => {
       const links = (enabled: boolean) =>
         getMainNavigation(locale, enabled).flatMap((item) =>
@@ -15,8 +15,10 @@ describe('getMainNavigation', () => {
               )
             : [item.href]
         )
-      expect(links(false)).not.toContain('/models')
-      expect(links(true).filter((href) => href === '/models')).toHaveLength(2)
+      const catalogue = getRoutes(locale).workshop
+      expect(catalogue).toBe('/models/')
+      expect(links(false)).not.toContain(catalogue)
+      expect(links(true).filter((href) => href === catalogue)).toHaveLength(2)
     }
   )
   it('includes a Products entry linking to Enterprise Managed Builds', () => {
