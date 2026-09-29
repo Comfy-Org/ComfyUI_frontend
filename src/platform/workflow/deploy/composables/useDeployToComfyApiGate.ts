@@ -24,8 +24,12 @@ interface GateSources {
  * keeps it.
  */
 export type DeployGateState =
-  | { status: 'awaiting' }
-  | { status: 'answered'; generation: number; enabled: boolean }
+  | { readonly status: 'awaiting' }
+  | {
+      readonly status: 'answered'
+      readonly generation: number
+      readonly enabled: boolean
+    }
 
 interface DeployToComfyApiGate {
   state: Readonly<Ref<DeployGateState>>
