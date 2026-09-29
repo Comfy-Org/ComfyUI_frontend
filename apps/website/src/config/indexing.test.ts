@@ -107,11 +107,10 @@ describe('indexing policy', () => {
 
 describe('model page launch', () => {
   it.for(MODELS_PAGES_BY_KIND)(
-    'lists only the hub, canonical model pages and workflow pages (%s)',
+    'lists only the hub and canonical model pages (%s)',
     ([kind, pathname]) => {
-      const launched = kind === 'model' || kind === 'workflow'
-      expect(isIndexableModelPage(pathname)).toBe(launched)
-      expect(inSitemap(pathname)).toBe(kind === 'hub' || launched)
+      expect(isIndexableModelPage(pathname)).toBe(kind === 'model')
+      expect(inSitemap(pathname)).toBe(kind === 'hub' || kind === 'model')
     }
   )
 
@@ -138,12 +137,13 @@ describe('model page launch', () => {
     ).toBe(false)
   })
 
-  it('indexes every workflow page until its switch rolls them back', () => {
+  it('keeps workflow pages hidden until their switch launches them', () => {
     const workflowPaths = workflowModels.map(({ slug }) => `/models/${slug}/`)
-    expect(workflowPaths.every((path) => isIndexableModelPage(path))).toBe(true)
+    expect(workflowPaths.length).toBeGreaterThan(0)
+    expect(workflowPaths.some((path) => isIndexableModelPage(path))).toBe(false)
     expect(
-      workflowPaths.some((path) => isIndexableModelPage(path, 'all', false))
-    ).toBe(false)
+      workflowPaths.every((path) => isIndexableModelPage(path, 'all', true))
+    ).toBe(true)
     expect(
       workshopModels.every(({ href }) =>
         isIndexableModelPage(href, 'all', false)
