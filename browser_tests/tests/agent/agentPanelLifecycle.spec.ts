@@ -207,7 +207,7 @@ test.describe(
       expect(Date.now() - startedAt).toBeLessThan(2_000)
     })
 
-    test('does not close startup activation that wins before the click', async ({
+    test('waits for startup activation before deciding to click', async ({
       page
     }) => {
       await bootAgentApp(page, true)
@@ -217,6 +217,10 @@ test.describe(
         .getByRole('button', { name: enMessages.g.close })
         .click()
       await expect(agentPanel.root).toHaveCount(0)
+      const actions = page.getByTestId('integrated-tab-bar-actions')
+      await actions.evaluate((element) =>
+        element.removeAttribute('data-agent-gate-settled')
+      )
 
       await agentPanel.open(undefined, async () => {
         await agentPanel.openButton.evaluate<void, HTMLElement>((button) => {
@@ -226,11 +230,13 @@ test.describe(
               Number(button.dataset.testClickCount) + 1
             )
           })
-          button.click()
+          window.setTimeout(() => button.click(), 100)
         })
-        await expect(agentPanel.openButton).toHaveAttribute(
-          'aria-pressed',
-          'true'
+        await actions.evaluate((element) =>
+          window.setTimeout(
+            () => element.setAttribute('data-agent-gate-settled', 'true'),
+            100
+          )
         )
       })
 

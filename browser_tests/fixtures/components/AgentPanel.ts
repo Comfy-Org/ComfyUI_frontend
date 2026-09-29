@@ -81,13 +81,15 @@ export class AgentPanel {
     if (await this.root.isVisible()) return this.root
     await onPanelHidden?.()
 
-    await this.openButton.evaluate((button) => {
-      // Keep the state check and click in one browser task. Startup activation
-      // can otherwise open after a Playwright attribute read but before its
-      // later click lands, turning that click into an unintended close.
-      if (button.getAttribute('aria-pressed') !== 'true')
-        (button as HTMLElement).click()
-    })
+    // Startup activation owns the panel until the feature gate settles. Wait
+    // for that decision before using an actionable click so activation cannot
+    // open between a stale state read and the click and turn it into a close.
+    await expect(
+      this.page.getByTestId('integrated-tab-bar-actions')
+    ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout })
+    if (await this.root.isVisible()) return this.root
+    if ((await this.openButton.getAttribute('aria-pressed')) !== 'true')
+      await this.openButton.click({ timeout })
 
     // A click may be waiting on consent while aria-pressed remains false.
     // Waiting on the caller's contract avoids an unsafe second toggle.
