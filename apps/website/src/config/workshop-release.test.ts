@@ -77,18 +77,6 @@ describe('assertWorkshopCloudEnvForBuild', () => {
     { name: 'a local build needs no family' },
     { name: 'a local build may name one', family: 'test' },
     {
-      name: 'a disabled production build ignores an invalid family',
-      vercelEnv: 'production',
-      inBuild: '0',
-      family: 'production'
-    },
-    {
-      name: 'a preview without Workshop ignores the family',
-      vercelEnv: 'preview',
-      inBuild: '0',
-      family: 'prod'
-    },
-    {
       name: 'a production build with Workshop targets prod',
       vercelEnv: 'production',
       inBuild: '1',
@@ -154,6 +142,19 @@ describe('assertWorkshopCloudEnvForBuild', () => {
       inBuild: '1',
       family: '',
       message: /PUBLIC_WORKSHOP_CLOUD_ENV is unset/
+    },
+    {
+      name: 'a production build without Workshop must still name its family for sign-in',
+      vercelEnv: 'production',
+      inBuild: '0',
+      message: /PUBLIC_WORKSHOP_CLOUD_ENV is unset/
+    },
+    {
+      name: 'a preview without Workshop may not reach prod',
+      vercelEnv: 'preview',
+      inBuild: '0',
+      family: 'prod',
+      message: /may only reach staging or test Cloud/
     },
     {
       name: 'a preview may not reach prod',

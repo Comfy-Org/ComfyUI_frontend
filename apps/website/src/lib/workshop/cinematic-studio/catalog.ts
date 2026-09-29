@@ -422,6 +422,8 @@ export const ASPECT_RATIOS = [
   { id: '21:9', label: 'cinematic.aspect.scope' },
   { id: '16:9', label: 'cinematic.aspect.widescreen' },
   { id: '4:3', label: 'cinematic.aspect.academy' },
+  { id: '3:2', label: 'cinematic.aspect.landscapePhoto' },
+  { id: '2:3', label: 'cinematic.aspect.portraitPhoto' },
   { id: '1:1', label: 'cinematic.aspect.square' },
   { id: '9:16', label: 'cinematic.aspect.vertical' }
 ] as const satisfies readonly { id: string; label: CinematicCopyKey }[]

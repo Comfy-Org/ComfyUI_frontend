@@ -13,6 +13,8 @@ import {
 import { isNoindexPathname } from './indexing'
 import { getRoutes } from './routes'
 import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
+import { appPagePaths } from './workshop-app-content'
+import { workshopPagePaths } from './workshop-page-content'
 
 const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
@@ -92,18 +94,6 @@ const WORKFLOW_APP_ROUTES = [
 ]
 
 /** Turn `src/pages/learning/[category]/[slug].astro` into a matcher for `/learning/x/y`. */
-function routeMatcher(route: string): RegExp {
-  const pattern = route
-    .split('/')
-    .map((segment) =>
-      segment.startsWith('[')
-        ? '[^/]+'
-        : segment.replace(/[.*+?^${}()|\\]/g, '\\$&')
-    )
-    .join('/')
-  return new RegExp(`^${pattern}$`)
-}
-
 function pageMatchers(root: string): {
   static: Set<string>
   dynamic: RegExp[]
@@ -121,8 +111,19 @@ function pageMatchers(root: string): {
       .replace(/\.(astro|ts)$/, '')
     if (root === pagesDir && relative.startsWith('/zh-CN/')) continue
     const route = relative.replace(/\/index$/, '') || '/'
-    if (route.includes('[')) dynamic.push(routeMatcher(route))
-    else staticPages.add(route)
+    if (route.includes('[')) {
+      const pattern = route
+        .split('/')
+        .map((segment) =>
+          segment.startsWith('[')
+            ? '[^/]+'
+            : segment.replace(/[.*+?^${}()|\\]/g, '\\$&')
+        )
+        .join('/')
+      dynamic.push(new RegExp(`^${pattern}$`))
+    } else {
+      staticPages.add(route)
+    }
   }
   return { static: staticPages, dynamic }
 }
@@ -131,10 +132,12 @@ describe('llms.txt', () => {
   const links = parseLlmsTxtLinks(llmsTxt)
   const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
-  for (const { pattern } of modelsBuildRoutes(false)) {
-    if (pattern.includes('[')) dynamic.push(routeMatcher(pattern))
-    else staticPages.add(pattern)
-  }
+  for (const { pattern } of modelsBuildRoutes(false))
+    if (!pattern.includes('[')) staticPages.add(pattern)
+  const modelsPages = new Set([
+    ...workshopPagePaths.map((slug) => `/models/${slug}`),
+    ...appPagePaths().map(({ params }) => `/models/apps/${params.app}`)
+  ])
   const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
 
   it('follows the llms.txt shape: one H1, a summary blockquote, Optional last', () => {
@@ -164,7 +167,7 @@ describe('llms.txt', () => {
 
   it('only links comfy.org paths that this site (or the workflows app) serves', () => {
     const unknown = internalPaths.filter((path) => {
-      if (BUILD_ARTIFACTS.has(path)) return false
+      if (BUILD_ARTIFACTS.has(path) || modelsPages.has(path)) return false
       if (path.includes('/workflows')) {
         return !WORKFLOW_APP_ROUTES.some((route) => route.test(path))
       }

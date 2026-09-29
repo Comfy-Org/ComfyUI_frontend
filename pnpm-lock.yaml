@@ -981,6 +981,9 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-frontend-utils
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:../../packages/tailwind-utils
