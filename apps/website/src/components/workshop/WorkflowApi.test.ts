@@ -97,6 +97,22 @@ describe('WorkflowApi', () => {
     ).toBe('https://docs.comfy.org/development/cloud/overview#quick-start')
     expect(screen.getByRole('link', { name: /API key/i })).toBeTruthy()
   })
+
+  it('shows the manual upload and polling steps only for cURL', async () => {
+    render(WorkflowApi, { props: { model, values } })
+    const visitor = userEvent.setup()
+
+    expect(screen.queryByTestId('workflow-api-steps')).toBeNull()
+
+    await visitor.click(screen.getByRole('tab', { name: 'cURL' }))
+    expect(screen.getByTestId('workflow-api-steps')).toHaveTextContent(
+      'POST /api/inputs/upload-url'
+    )
+
+    await visitor.click(screen.getByRole('tab', { name: 'TypeScript' }))
+    expect(screen.queryByTestId('workflow-api-steps')).toBeNull()
+  })
+
   describe('downloading the API graph', () => {
     const { createObjectURL, revokeObjectURL } = URL
     afterEach(() => {

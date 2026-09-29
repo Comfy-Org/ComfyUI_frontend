@@ -19,18 +19,32 @@ const MARGIN = 40
 
 const RESTING: OpeningView = { scale: 1, panX: 0, panY: 0 }
 
-export function readableScale(viewBox: string, panelWidth: number): number {
-  const width = Number(viewBox.split(' ')[2])
-  if (!panelWidth || !Number.isFinite(width) || width <= 0) return 1
-  const fitted = TITLE_UNITS * (panelWidth / width)
+export function readableScale(
+  viewBox: string,
+  panelWidth: number,
+  panelHeight: number
+): number {
+  const [, , width, height] = viewBox.split(' ').map(Number)
+  if (
+    !panelWidth ||
+    !panelHeight ||
+    !Number.isFinite(width) ||
+    !Number.isFinite(height) ||
+    width <= 0 ||
+    height <= 0
+  )
+    return 1
+  const fitted =
+    TITLE_UNITS * Math.min(panelWidth / width, panelHeight / height)
   return Math.min(MAX_SCALE, Math.max(1, READABLE_TITLE_PX / fitted))
 }
 
 export function openingView(
   picture: GraphPicture,
-  panelWidth: number
+  panelWidth: number,
+  panelHeight: number
 ): OpeningView {
-  const scale = readableScale(picture.viewBox, panelWidth)
+  const scale = readableScale(picture.viewBox, panelWidth, panelHeight)
   if (scale === 1 || picture.nodes.length === 0) return RESTING
 
   // A template often opens with a note holding install links, which is the

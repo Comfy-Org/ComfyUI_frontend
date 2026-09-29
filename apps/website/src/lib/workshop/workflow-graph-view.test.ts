@@ -31,25 +31,29 @@ function picture(nodes: readonly GraphNode[]): GraphPicture {
 describe('where a graph opens', () => {
   it('zooms a wide drawing until its node titles can be read', () => {
     // 14-unit titles fitted into 800px of an 2800-unit drawing land at 4px.
-    expect(readableScale('0 0 2800 1300', 800)).toBeCloseTo(2.75, 2)
+    expect(readableScale('0 0 2800 1300', 800, 512)).toBeCloseTo(2.75, 2)
   })
 
   it('leaves a drawing that already fits at its resting size', () => {
-    expect(readableScale('0 0 600 400', 800)).toBe(1)
+    expect(readableScale('0 0 600 400', 800, 512)).toBe(1)
+  })
+
+  it('accounts for a drawing constrained by the panel height', () => {
+    expect(readableScale('0 0 600 2400', 800, 512)).toBe(3)
   })
 
   it.for([
     ['no panel to measure against', '0 0 2800 1300', 0],
     ['a viewBox it cannot read', 'not a viewbox', 800]
   ] as const)('rests when there is %s', ([, viewBox, panel]) => {
-    expect(readableScale(viewBox, panel)).toBe(1)
+    expect(readableScale(viewBox, panel, 512)).toBe(1)
   })
 
   it('opens on the first node that takes something in', () => {
     // The note of install links a template leads with has no slots at all.
     const notes = node('notes', 0, false)
     const load = node('load', 900, true)
-    const view = openingView(picture([load, notes]), 800)
+    const view = openingView(picture([load, notes]), 800, 512)
 
     // Where the drawing's transform carries a node's left edge.
     const centre = 2800 / 2
@@ -63,11 +67,15 @@ describe('where a graph opens', () => {
       ...picture([node('a', 0, true)]),
       viewBox: '0 0 600 400'
     }
-    expect(openingView(small, 800)).toEqual({ scale: 1, panX: 0, panY: 0 })
+    expect(openingView(small, 800, 512)).toEqual({
+      scale: 1,
+      panX: 0,
+      panY: 0
+    })
   })
 
   it('rests when the drawing has no nodes', () => {
-    expect(openingView(picture([]), 800)).toEqual({
+    expect(openingView(picture([]), 800, 512)).toEqual({
       scale: 1,
       panX: 0,
       panY: 0

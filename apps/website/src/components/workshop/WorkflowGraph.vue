@@ -91,7 +91,11 @@ function reset() {
 }
 
 function applyOpeningView(drawn: GraphPicture) {
-  const view = openingView(drawn, frame.value?.clientWidth ?? 0)
+  const view = openingView(
+    drawn,
+    frame.value?.clientWidth ?? 0,
+    frame.value?.clientHeight ?? 0
+  )
   scale.value = view.scale
   panX.value = view.panX
   panY.value = view.panY
