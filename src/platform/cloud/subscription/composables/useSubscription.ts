@@ -486,10 +486,15 @@ function useSubscriptionInternal() {
       () => undefined,
       () => undefined
     )
-    return withTimeout(
-      statusFetch,
-      PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS
-    )
+    try {
+      return await withTimeout(
+        statusFetch,
+        PENDING_CHECKOUT_DEADLINE_REFRESH_TIMEOUT_MS
+      )
+    } catch (error) {
+      clearInFlightStatusFetch(statusFetch)
+      throw error
+    }
   }
 
   const recoverPendingSubscriptionCheckout = async (
@@ -515,7 +520,17 @@ function useSubscriptionInternal() {
   let inFlightStatusOwnerId: string | null = null
   let inFlightStatusWorkspaceId: string | null = null
 
-  async function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
+  const clearInFlightStatusFetch = (
+    fetchPromise: Promise<BillingStatusResponse | null>
+  ) => {
+    if (inFlightStatusFetch !== fetchPromise) return
+
+    inFlightStatusFetch = null
+    inFlightStatusOwnerId = null
+    inFlightStatusWorkspaceId = null
+  }
+
+  function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
     const ownerId = authStore.userId ?? null
     const workspaceId = workspaceStore.activeWorkspaceId
     if (
@@ -533,11 +548,7 @@ function useSubscriptionInternal() {
     void fetchPromise
       .catch(() => undefined)
       .finally(() => {
-        if (inFlightStatusFetch === fetchPromise) {
-          inFlightStatusFetch = null
-          inFlightStatusOwnerId = null
-          inFlightStatusWorkspaceId = null
-        }
+        clearInFlightStatusFetch(fetchPromise)
       })
     return fetchPromise
   }
