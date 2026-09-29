@@ -1859,7 +1859,6 @@
     "imageDoesNotExist": "画像が存在しません",
     "imageFailedToLoad": "画像の読み込みに失敗しました",
     "imageGallery": "画像ギャラリー",
-    "imageLightbox": "画像プレビュー",
     "imagePreview": "画像プレビュー - 矢印キーで画像を切り替え",
     "imageUrl": "画像URL",
     "import": "インポート",

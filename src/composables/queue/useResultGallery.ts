@@ -1,17 +1,18 @@
 import { ref, shallowRef } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
-import { findActiveIndex, getOutputsForTask } from '@/services/jobOutputCache'
+import { getOutputsForTask } from '@/services/jobOutputCache'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
+import { resultLightboxEntries } from '@/utils/lightboxItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 
 /**
  * Manages result gallery state and activation for queue items.
  */
 export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
-  const galleryActiveIndex = ref(-1)
-  const galleryItems = shallowRef<AugmentedResultItem[]>([])
+  const galleryActiveIndex = ref<number | null>(null)
+  const galleryItems = shallowRef<LightboxItem[]>([])
 
   async function onViewItem(item: JobListItem) {
     const tasks = getFilteredTasks()
@@ -26,18 +27,34 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     if (targetOutputs === null && targetTask) return
 
     // Use target's outputs if available, otherwise fall back to all previews
-    const items = targetOutputs?.length
-      ? targetOutputs
-      : tasks.map((t) => t.previewOutput).filter((o) => !!o)
+    const { entries, fromClickedJob } = targetOutputs?.length
+      ? { entries: resultLightboxEntries(targetOutputs), fromClickedJob: true }
+      : {
+          entries: resultLightboxEntries(
+            tasks.map((t) => t.previewOutput).filter((o) => !!o)
+          ),
+          fromClickedJob: false
+        }
 
-    if (!items.length) return
+    if (!entries.length) return
 
-    galleryItems.value = items
     const previewOutput = item.taskRef?.previewOutput
-    galleryActiveIndex.value = findActiveIndex(
-      items,
-      previewOutput ? resultItemUrl(previewOutput) : undefined
-    )
+    const previewUrl = previewOutput ? resultItemUrl(previewOutput) : undefined
+    // The cache can return a different object for the same output, so URL is
+    // the fallback identity; records sharing one are interchangeable here.
+    const requestedIndex = previewOutput
+      ? entries.findIndex(
+          ({ source }) =>
+            source === previewOutput || resultItemUrl(source) === previewUrl
+        )
+      : -1
+
+    // Falling back to the first item is only right within the clicked job;
+    // across jobs it would open a different job's media.
+    if (requestedIndex === -1 && previewOutput && !fromClickedJob) return
+
+    galleryItems.value = entries.map(({ item: lightboxItem }) => lightboxItem)
+    galleryActiveIndex.value = requestedIndex === -1 ? 0 : requestedIndex
   }
 
   return {

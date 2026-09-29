@@ -36,8 +36,22 @@ export function useNodePointerInteractions(
   }
 
   let hasDraggingStarted = false
+  let nodePointerSequenceId: number | null = null
 
   const dragGuard = useClickDragGuard(3)
+
+  function endPointerSequence() {
+    nodePointerSequenceId = null
+    dragGuard.reset()
+  }
+
+  /** No open sequence means an alt+clone drag, which bypasses onPointerdown. */
+  function ownsSequence(event: PointerEvent) {
+    return (
+      nodePointerSequenceId === null ||
+      nodePointerSequenceId === event.pointerId
+    )
+  }
 
   function onPointerdown(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event, isMiddlePointerInput)) return
@@ -51,6 +65,10 @@ export function useNodePointerInteractions(
       return
     }
 
+    if (!ownsSequence(event)) return
+
+    nodePointerSequenceId = event.pointerId
+
     if (isPinned()) return
 
     const nodeId = toValue(nodeStateRef).id
@@ -62,6 +80,8 @@ export function useNodePointerInteractions(
 
   function onPointermove(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event, isMiddleButtonHeld)) return
+
+    if (!ownsSequence(event)) return
 
     // Don't activate drag while resizing
     if (layoutStore.isResizingVueNodes.value) return
@@ -122,15 +142,24 @@ export function useNodePointerInteractions(
 
   function onPointerup(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event, isMiddleButtonEvent)) return
+    const isOwner = ownsSequence(event)
+    const shouldToggleSelection = nodePointerSequenceId === event.pointerId
+    if (shouldToggleSelection) endPointerSequence()
     // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
     const canHandlePointer = shouldHandleNodePointerEvents.value
     if (!canHandlePointer) {
       forwardEventToCanvas(event)
-      if (hasDraggingStarted || layoutStore.isDraggingVueNodes.value) {
+      if (
+        isOwner &&
+        (hasDraggingStarted || layoutStore.isDraggingVueNodes.value)
+      ) {
         safeDragEnd(event)
       }
       return
     }
+
+    if (!isOwner) return
+
     const wasDragging = layoutStore.isDraggingVueNodes.value
 
     if (hasDraggingStarted || wasDragging) {
@@ -143,6 +172,7 @@ export function useNodePointerInteractions(
 
     // Skip selection handling for right-click (button 2) - context menu handles its own selection
     if (event.button === 2) return
+    if (!shouldToggleSelection) return
 
     const multiSelect = isMultiSelectKey(event)
 
@@ -150,6 +180,8 @@ export function useNodePointerInteractions(
   }
 
   function onPointercancel(event: PointerEvent) {
+    if (!ownsSequence(event)) return
+    if (nodePointerSequenceId === event.pointerId) endPointerSequence()
     if (!layoutStore.isDraggingVueNodes.value) return
     safeDragEnd(event)
   }

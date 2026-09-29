@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ImageLightbox from '@/components/common/ImageLightbox.vue'
+import MediaLightbox from '@/components/common/MediaLightbox.vue'
+import type { LightboxImageItem } from '@/types/lightboxItem'
 
 const { mediaUrl, label, onMaskEdit } = defineProps<{
   mediaUrl: string
@@ -11,7 +12,10 @@ const { mediaUrl, label, onMaskEdit } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const lightboxOpen = ref(false)
+const lightboxIndex = ref<number | null>(null)
+const lightboxItems = computed<LightboxImageItem[]>(() => [
+  { kind: 'image', url: mediaUrl, alt: label ?? '' }
+])
 </script>
 <template>
   <div
@@ -32,10 +36,10 @@ const lightboxOpen = ref(false)
       :aria-label="t('mediaAsset.actions.zoom')"
       :title="t('mediaAsset.actions.zoom')"
       class="flex cursor-pointer items-center justify-center rounded-lg bg-base-foreground p-2 text-base-background transition-colors hover:bg-base-foreground/90"
-      @click.stop="lightboxOpen = true"
+      @click.stop="lightboxIndex = 0"
     >
       <i class="icon-[lucide--zoom-in] size-4" />
     </button>
   </div>
-  <ImageLightbox v-model="lightboxOpen" :src="mediaUrl" :alt="label ?? ''" />
+  <MediaLightbox v-model:active-index="lightboxIndex" :items="lightboxItems" />
 </template>

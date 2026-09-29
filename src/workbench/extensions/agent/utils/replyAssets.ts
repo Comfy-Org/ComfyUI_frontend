@@ -1,10 +1,20 @@
 import type { Token } from 'marked'
 
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
 import type { MediaType } from '@/utils/formatUtil'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  getMediaTypeFromFilename,
+  htmlVideoTypeForFilename
+} from '@/utils/formatUtil'
 
-type ReplyAssetKind = Extract<MediaType, 'image' | 'video' | 'audio' | '3D'>
+const ASSET_KINDS = [
+  'image',
+  'video',
+  'audio',
+  '3D'
+] as const satisfies readonly MediaType[]
+
+type ReplyAssetKind = (typeof ASSET_KINDS)[number]
 
 export interface ReplyAsset {
   url: string
@@ -13,7 +23,9 @@ export interface ReplyAsset {
   label?: string
 }
 
-const ASSET_KINDS = new Set<MediaType>(['image', 'video', 'audio', '3D'])
+function isReplyAssetKind(kind: MediaType): kind is ReplyAssetKind {
+  return ASSET_KINDS.some((assetKind) => assetKind === kind)
+}
 
 export function classifyAssetUrl(
   href: string,
@@ -33,8 +45,8 @@ export function classifyAssetUrl(
   }
   if (!filename) return null
   const kind = getMediaTypeFromFilename(filename)
-  if (!ASSET_KINDS.has(kind)) return null
-  return { url: href, filename, kind: kind as ReplyAssetKind }
+  if (!isReplyAssetKind(kind)) return null
+  return { url: href, filename, kind }
 }
 
 type InlineToken = { type: string; href?: string; text?: string }
@@ -111,13 +123,30 @@ export function htmlReplyAssets(html: string): ReplyAsset[] {
   return out
 }
 
-export function replyAssetResultItem(asset: ReplyAsset): AugmentedResultItem {
-  return {
-    filename: asset.filename,
-    subfolder: '',
-    type: 'output',
-    nodeId: '',
-    mediaType: asset.kind === 'image' ? 'images' : asset.kind,
-    url: asset.url
+/**
+ * Videos deliberately omit `advancedPreviewUrl`: that URL needs a subfolder
+ * and type, and a reply asset only ever knows its href and filename.
+ */
+export function replyAssetLightboxItem(
+  asset: ReplyAsset
+): LightboxItem | undefined {
+  const { kind, url, filename } = asset
+  switch (kind) {
+    case 'image':
+      return { kind: 'image', url, alt: filename }
+    case 'video':
+      return {
+        kind: 'video',
+        url,
+        mimeType: htmlVideoTypeForFilename(filename)
+      }
+    case 'audio':
+      return { kind: 'audio', url }
+    case '3D':
+      return undefined
+    default: {
+      const unhandledKind: never = kind
+      return unhandledKind
+    }
   }
 }

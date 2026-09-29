@@ -1,12 +1,12 @@
 import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
 
-import MediaLightbox from './MediaLightbox.vue'
+import MediaLightbox from '@/components/common/MediaLightbox.vue'
 
 const i18n = createI18n({
   legacy: false,
@@ -25,60 +25,21 @@ const i18n = createI18n({
   }
 })
 
-type MockResultItem = AugmentedResultItem & {
-  id?: string
-}
-
 describe('MediaLightbox', () => {
-  const mockComfyImage = {
-    name: 'ComfyImage',
-    template: '<div class="mock-comfy-image" data-testid="comfy-image"></div>',
-    props: ['src', 'contain', 'alt']
-  }
-
-  const mockResultVideo = {
-    name: 'ResultVideo',
-    template:
-      '<div class="mock-result-video" data-testid="result-video"></div>',
-    props: ['result']
-  }
-
-  const mockResultAudio = {
-    name: 'ResultAudio',
-    template:
-      '<div class="mock-result-audio" data-testid="result-audio"></div>',
-    props: ['result']
-  }
-
-  const mockGalleryItems: MockResultItem[] = [
-    {
-      filename: 'image1.jpg',
-      subfolder: 'outputs',
-      type: 'output',
-      nodeId: '123',
-      mediaType: 'images',
-      url: 'image1.jpg',
-      id: '1'
-    },
-    {
-      filename: 'image2.jpg',
-      subfolder: 'outputs',
-      type: 'output',
-      nodeId: '456',
-      mediaType: 'images',
-      url: 'image2.jpg',
-      id: '2'
-    },
-    {
-      filename: 'image3.jpg',
-      subfolder: 'outputs',
-      type: 'output',
-      nodeId: '789',
-      mediaType: 'images',
-      url: 'image3.jpg',
-      id: '3'
-    }
+  const mockGalleryItems: LightboxItem[] = [
+    { kind: 'image', url: 'image1.jpg', alt: 'image1.jpg' },
+    { kind: 'image', url: 'image2.jpg', alt: 'image2.jpg' },
+    { kind: 'image', url: 'image3.jpg', alt: 'image3.jpg' }
   ]
+
+  const createOpener = () => {
+    const opener = document.createElement('button')
+    opener.textContent = 'Open gallery'
+    document.body.append(opener)
+    onTestFinished(() => opener.remove())
+    opener.focus()
+    return opener
+  }
 
   const renderGallery = (props = {}, stubs = {}) => {
     const onUpdateActiveIndex = vi.fn()
@@ -86,18 +47,10 @@ describe('MediaLightbox', () => {
     const { rerender, container } = render(MediaLightbox, {
       global: {
         plugins: [i18n],
-        components: {
-          ComfyImage: mockComfyImage,
-          ResultVideo: mockResultVideo,
-          ResultAudio: mockResultAudio
-        },
-        stubs: {
-          teleport: true,
-          ...stubs
-        }
+        stubs
       },
       props: {
-        allGalleryItems: mockGalleryItems,
+        items: mockGalleryItems,
         activeIndex: 0,
         'onUpdate:activeIndex': onUpdateActiveIndex,
         ...props
@@ -124,9 +77,23 @@ describe('MediaLightbox', () => {
     expect(screen.getByLabelText('Next')).toBeInTheDocument()
   })
 
+  it('navigates and wraps from the buttons', async () => {
+    const { user, onUpdateActiveIndex, rerender } = renderGallery({
+      activeIndex: 2
+    })
+    await nextTick()
+
+    await user.click(screen.getByLabelText('Next'))
+    expect(onUpdateActiveIndex).toHaveBeenLastCalledWith(0)
+
+    await rerender({ activeIndex: 0 })
+    await user.click(screen.getByLabelText('Previous'))
+    expect(onUpdateActiveIndex).toHaveBeenLastCalledWith(2)
+  })
+
   it('hides navigation buttons for single item', async () => {
     renderGallery({
-      allGalleryItems: [mockGalleryItems[0]]
+      items: [mockGalleryItems[0]]
     })
     await nextTick()
 
@@ -134,32 +101,93 @@ describe('MediaLightbox', () => {
     expect(screen.queryByLabelText('Next')).not.toBeInTheDocument()
   })
 
-  it('shows gallery when activeIndex changes from -1', async () => {
-    const { rerender, container } = renderGallery({ activeIndex: -1 })
+  it('shows gallery when activeIndex changes from null', async () => {
+    const { rerender } = renderGallery({ activeIndex: null })
 
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-    expect(container.querySelector('[data-mask]')).not.toBeInTheDocument()
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    expect(
+      screen.queryByRole('dialog', { name: 'Gallery' })
+    ).not.toBeInTheDocument()
 
     await rerender({
-      allGalleryItems: mockGalleryItems,
+      items: mockGalleryItems,
       activeIndex: 0
     })
     await nextTick()
 
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-    expect(container.querySelector('[data-mask]')).toBeInTheDocument()
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    expect(screen.getByRole('dialog', { name: 'Gallery' })).toBeInTheDocument()
   })
 
-  it('emits update:activeIndex with -1 when close button clicked', async () => {
+  it('closes instead of rendering an invalid selection', async () => {
+    const { onUpdateActiveIndex } = renderGallery({ activeIndex: 99 })
+    await nextTick()
+
+    expect(onUpdateActiveIndex).toHaveBeenCalledWith(null)
+    expect(
+      screen.queryByRole('dialog', { name: 'Gallery' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('emits update:activeIndex with null when close button clicked', async () => {
     const { user, onUpdateActiveIndex } = renderGallery()
     await nextTick()
 
     await user.click(screen.getByLabelText('Close'))
     await nextTick()
 
-    expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
+    expect(onUpdateActiveIndex).toHaveBeenCalledWith(null)
+  })
+
+  it('closes when a backdrop press and release stay on the backdrop', async () => {
+    const { user, onUpdateActiveIndex } = renderGallery()
+    await nextTick()
+
+    await user.click(screen.getByRole('dialog', { name: 'Gallery' }))
+
+    expect(onUpdateActiveIndex).toHaveBeenCalledWith(null)
+  })
+
+  it('stays open when a press starts on the media', async () => {
+    const { user, onUpdateActiveIndex } = renderGallery()
+    await nextTick()
+
+    await user.pointer([
+      {
+        keys: '[MouseLeft>]',
+        target: screen.getByRole('img', { name: 'image1.jpg' })
+      },
+      {
+        keys: '[/MouseLeft]',
+        target: screen.getByRole('dialog', { name: 'Gallery' })
+      }
+    ])
+
+    expect(onUpdateActiveIndex).not.toHaveBeenCalledWith(null)
+  })
+
+  it('returns focus to the opener after navigating and closing', async () => {
+    const opener = createOpener()
+
+    const { rerender } = renderGallery({ activeIndex: null })
+    await rerender({ activeIndex: 0 })
+    await nextTick()
+    await rerender({ activeIndex: 1 })
+    await nextTick()
+    await rerender({ activeIndex: null })
+    await nextTick()
+
+    expect(opener).toHaveFocus()
+  })
+
+  it('returns focus to the opener when the gallery is closed externally', async () => {
+    const opener = createOpener()
+
+    const { rerender } = renderGallery({ activeIndex: null })
+    await rerender({ activeIndex: 0 })
+    await nextTick()
+    await rerender({ activeIndex: null })
+    await nextTick()
+
+    expect(opener).toHaveFocus()
   })
 
   it('keeps failed text media actionable until the viewer closes', async () => {
@@ -168,103 +196,83 @@ describe('MediaLightbox', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    const { user } = renderGallery(
+    const { user, rerender } = renderGallery(
       {
-        allGalleryItems: [
-          {
-            ...mockGalleryItems[0],
-            filename: 'failed.txt',
-            mediaType: 'text',
-            url: '/api/view?filename=failed.txt'
-          }
-        ]
+        items: [{ kind: 'text', url: '/api/view?filename=failed.txt' }]
       },
-      { ResultText: false }
+      { LightboxText: false }
     )
 
     expect(await screen.findByText('Text failed to load')).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith('/api/view?filename=failed.txt')
 
     await user.click(screen.getByLabelText('Close'))
+    await rerender({ activeIndex: null })
 
     expect(screen.queryByText('Text failed to load')).not.toBeInTheDocument()
   })
 
-  /* eslint-disable testing-library/prefer-user-event -- keyDown on dialog element for navigation, not text input */
   describe('keyboard navigation', () => {
     it('navigates to next item on ArrowRight', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'ArrowRight'
-      })
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(1)
     })
 
     it('navigates to previous item on ArrowLeft', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 1 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 1 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'ArrowLeft'
-      })
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(0)
     })
 
     it('wraps to last item on ArrowLeft from first', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'ArrowLeft'
-      })
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(2)
     })
 
     it('closes gallery on Escape', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'Escape'
-      })
+      await user.keyboard('{Escape}')
       await nextTick()
 
-      expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
+      expect(onUpdateActiveIndex).toHaveBeenCalledWith(null)
     })
   })
-  /* eslint-enable testing-library/prefer-user-event */
 
   /* eslint-disable testing-library/no-node-access -- element identity is the behavior under test: the browser only keeps a video's buffer if the same node survives navigation. The real Teleport must render (the test-utils teleport stub remounts its subtree and would defeat KeepAlive), so queries go through document.body. */
   describe('video retention across navigation', () => {
-    const videoItem = (n: number): MockResultItem => ({
-      filename: `v${n}.mp4`,
-      subfolder: '',
-      type: 'output',
-      nodeId: `${n}`,
-      mediaType: 'video',
+    const videoItem = (n: number): LightboxItem => ({
+      kind: 'video',
       url: `http://assets.test/v${n}.mp4`,
-      id: `v${n}`
+      mimeType: 'video/mp4'
     })
 
-    const renderTeleported = (items: MockResultItem[]) => {
+    const renderTeleported = (items: LightboxItem[]) => {
       const { rerender } = render(MediaLightbox, {
         global: { plugins: [i18n] },
         props: {
-          allGalleryItems: items,
+          items,
           activeIndex: 0
         }
       })
-      const show = async (activeIndex: number) => {
+      const show = async (activeIndex: number | null) => {
         await rerender({
-          allGalleryItems: items,
+          items,
           activeIndex
         })
         await nextTick()
@@ -331,7 +339,7 @@ describe('MediaLightbox', () => {
       await nextTick()
       const first = video()
 
-      await show(-1)
+      await show(null)
       await show(0)
 
       const reopened = video()

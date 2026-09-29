@@ -3,6 +3,7 @@ import { computed, toValue } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { NodeImage, NodeMedia } from '@/types/nodeMedia'
 import type { UUID } from '@/utils/uuid'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
@@ -16,12 +17,12 @@ import {
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 
-interface PromotedPreview {
+interface PromotedPreviewBase {
   sourceNodeId: NodeId
   sourceWidgetName: string
-  type: 'image' | 'video' | 'audio'
-  urls: string[]
 }
+
+type PromotedPreview = PromotedPreviewBase & NodeMedia
 
 const PREVIEW_TYPES_BY_MEDIA = {
   video: 'video',
@@ -42,13 +43,12 @@ export function usePromotedPreviews(
   const previewExposureStore = usePreviewExposureStore()
   const nodeOutputStore = useNodeOutputStore()
 
-  /** Touches reactive sources for Vue tracking; `getNodeImageUrls` reads non-reactive app state. */
-  function readReactivePreviewUrls(
+  function readReactivePreview(
     leafHost: SubgraphNode,
     leafSourceNodeId: NodeId,
     leafExecutionId: NodeExecutionId,
     interiorNode: LGraphNode
-  ): string[] | undefined {
+  ): NodeImage[] | undefined {
     const locatorId = createNodeLocatorId(
       leafHost.subgraph.id,
       leafSourceNodeId
@@ -67,12 +67,14 @@ export function usePromotedPreviews(
       reactiveExecutionOutputs?.images?.length ||
       reactiveExecutionPreviews?.length
     if (!hasAnySource) return undefined
-    return (
-      nodeOutputStore.getNodeImageUrlsByExecutionId(
-        leafExecutionId,
-        interiorNode
-      ) ?? nodeOutputStore.getNodeImageUrls(interiorNode)
+
+    const byExecution = nodeOutputStore.getNodeImagesByExecutionId(
+      leafExecutionId,
+      interiorNode
     )
+    if (byExecution?.length) return byExecution
+
+    return nodeOutputStore.getNodeImages(interiorNode)
   }
 
   const promotedPreviews = computed((): PromotedPreview[] => {
@@ -142,20 +144,25 @@ export function usePromotedPreviews(
       )
       if (!leafExecutionId) return []
 
-      const urls = readReactivePreviewUrls(
+      const preview = readReactivePreview(
         leafHost,
         leaf.sourceNodeId,
         leafExecutionId,
         interiorNode
       )
-      if (!urls?.length) return []
+      if (!preview?.length) return []
+
+      const type = getPreviewMediaType(interiorNode)
+      const media =
+        type === 'image'
+          ? { type, images: preview }
+          : { type, urls: preview.map(({ url }) => url) }
 
       return [
         {
           sourceNodeId: leaf.sourceNodeId,
           sourceWidgetName: leaf.sourcePreviewName,
-          type: getPreviewMediaType(interiorNode),
-          urls
+          ...media
         }
       ]
     })

@@ -306,6 +306,7 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeMedia } from '@/types/nodeMedia'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
   stripGraphPrefix,
@@ -506,7 +507,11 @@ const handleResizePointerDown = (
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
   if (promotedPreviews.value.length > 0) return true
-  return !!nodeMedia.value && nodeMedia.value.urls.length > 0
+  const media = nodeMedia.value
+  if (!media) return false
+  return media.type === 'image'
+    ? media.images.length > 0
+    : media.urls.length > 0
 })
 
 // Computed classes and conditions for better reusability
@@ -726,7 +731,7 @@ const hasVideoEditWidget = computed(() =>
   )
 )
 
-const nodeMedia = computed(() => {
+const nodeMedia = computed<NodeMedia | undefined>(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
 
@@ -741,8 +746,8 @@ const nodeMedia = computed(() => {
   if (node instanceof SubgraphNode) return undefined
   if (shouldHideLinkedCoreMediaInputPreview(node, newOutputs)) return undefined
 
-  const urls = nodeOutputs.getNodeImageUrls(node)
-  if (!urls?.length) return undefined
+  const images = nodeOutputs.getNodeImages(node)
+  if (!images?.length) return undefined
 
   const type =
     isVideoOutput(newOutputs) ||
@@ -753,7 +758,9 @@ const nodeMedia = computed(() => {
 
   if (type === 'video' && hasVideoEditWidget.value) return undefined
 
-  return { type, urls } as const
+  return type === 'image'
+    ? { type: 'image', images }
+    : { type: 'video', urls: images.map(({ url }) => url) }
 })
 
 // Drag and drop support

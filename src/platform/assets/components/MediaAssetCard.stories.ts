@@ -1,11 +1,12 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { ref, shallowRef } from 'vue'
 
-import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import MediaLightbox from '@/components/common/MediaLightbox.vue'
+import type { LightboxItem } from '@/types/lightboxItem'
+import { fileLightboxItem } from '@/utils/lightboxItem'
 
-import { useMediaAssetGalleryStore } from '../composables/useMediaAssetGalleryStore'
 import type { AssetItem } from '../schemas/assetSchema'
 import MediaAssetCard from './MediaAssetCard.vue'
 
@@ -16,26 +17,26 @@ const meta: Meta<typeof MediaAssetCard> = {
     (_story, context) => ({
       components: { MediaLightbox },
       setup() {
-        const galleryStore = useMediaAssetGalleryStore()
+        const galleryItems = shallowRef<LightboxItem[]>([])
+        const galleryIndex = ref<number | null>(null)
         const args = context.args as {
           onZoom?: (asset: AssetItem) => void
         }
         args.onZoom = (asset: AssetItem) => {
-          const kind = getMediaTypeFromFilename(asset.name)
-          galleryStore.openSingle({
-            ...asset,
-            kind,
-            src: asset.preview_url || ''
-          })
+          const item = fileLightboxItem(asset.preview_url || '', asset.name)
+          if (!item) return
+
+          galleryItems.value = [item]
+          galleryIndex.value = 0
         }
-        return { galleryStore }
+        return { galleryIndex, galleryItems }
       },
       template: `
         <div>
           <story />
           <MediaLightbox
-            v-model:active-index="galleryStore.activeIndex"
-            :all-gallery-items="galleryStore.items"
+            v-model:active-index="galleryIndex"
+            :items="galleryItems"
           />
         </div>
       `

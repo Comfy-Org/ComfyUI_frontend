@@ -239,8 +239,9 @@ describe('useNodePointerInteractions', () => {
     expect(handleNodeSelect).toHaveBeenCalledTimes(1)
   })
 
-  it('should not start drag on shift+move when pointerdown was stopped by a child', async () => {
-    const { handleNodeSelect } = useNodeEventHandlers()
+  it('does not drag or select when pointerdown was stopped by a child', async () => {
+    const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
+      useNodeEventHandlers()
     const { startDrag } = useNodeDrag()
 
     const { pointerHandlers } = useNodePointerInteractions(testNodeState)
@@ -258,6 +259,182 @@ describe('useNodePointerInteractions', () => {
     expect(layoutStore.isDraggingVueNodes.value).toBe(false)
     expect(startDrag).not.toHaveBeenCalled()
     expect(handleNodeSelect).not.toHaveBeenCalled()
+
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { clientX: 200, clientY: 200 })
+    )
+    expect(toggleNodeSelectionAfterPointerUp).not.toHaveBeenCalled()
+  })
+
+  it('does not toggle selection when a different pointer releases over the node', () => {
+    const { pointerHandlers } = useNodePointerInteractions(testNodeState)
+    const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
+
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { pointerId: 1 })
+    )
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { pointerId: 2 })
+    )
+
+    expect(toggleNodeSelectionAfterPointerUp).not.toHaveBeenCalled()
+
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { pointerId: 1 })
+    )
+
+    expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores a bubbling move whose pointerdown a child stopped', () => {
+    const { pointerHandlers } = useNodePointerInteractions(testNodeState)
+    const { handleNodeSelect } = useNodeEventHandlers()
+
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
+    )
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { clientX: 100, clientY: 100 })
+    )
+    vi.mocked(handleNodeSelect).mockClear()
+
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        clientX: 200,
+        clientY: 200,
+        buttons: 1
+      })
+    )
+
+    expect(handleNodeSelect).not.toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+  })
+
+  it('denies a second contact any control over the active drag', () => {
+    const { pointerHandlers } = useNodePointerInteractions(testNodeState)
+    const { startDrag, handleDrag, endDrag } = useNodeDrag()
+
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { pointerId: 1 })
+    )
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        pointerId: 1,
+        clientX: 140,
+        clientY: 140,
+        buttons: 1
+      })
+    )
+    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+
+    vi.mocked(startDrag).mockClear()
+    vi.mocked(handleDrag).mockClear()
+    vi.mocked(endDrag).mockClear()
+
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { pointerId: 2 })
+    )
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        pointerId: 2,
+        clientX: 300,
+        clientY: 300,
+        buttons: 1
+      })
+    )
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { pointerId: 2 })
+    )
+
+    expect(startDrag).not.toHaveBeenCalled()
+    expect(handleDrag).not.toHaveBeenCalled()
+    expect(endDrag).not.toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        pointerId: 1,
+        clientX: 180,
+        clientY: 180,
+        buttons: 1
+      })
+    )
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { pointerId: 1 })
+    )
+
+    expect(handleDrag).toHaveBeenCalled()
+    expect(endDrag).toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+  })
+
+  it('ignores a cancel from a contact that never owned the drag', () => {
+    const { pointerHandlers } = useNodePointerInteractions(testNodeState)
+    const { handleDrag, endDrag } = useNodeDrag()
+    const { handleNodeSelect } = useNodeEventHandlers()
+
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { pointerId: 1 })
+    )
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        pointerId: 1,
+        clientX: 140,
+        clientY: 140,
+        buttons: 1
+      })
+    )
+
+    pointerHandlers.onPointercancel(
+      createPointerEvent('pointercancel', { pointerId: 2 })
+    )
+    vi.mocked(handleNodeSelect).mockClear()
+    vi.mocked(handleDrag).mockClear()
+
+    expect(endDrag).not.toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        pointerId: 1,
+        clientX: 180,
+        clientY: 180,
+        buttons: 1
+      })
+    )
+
+    expect(handleDrag).toHaveBeenCalled()
+    expect(handleNodeSelect).not.toHaveBeenCalled()
+
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { pointerId: 1 })
+    )
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+  })
+
+  it('carries a drag that was started without a pointerdown, as alt+clone does', () => {
+    const { pointerHandlers } = useNodePointerInteractions(testNodeState)
+    const { handleDrag, endDrag } = useNodeDrag()
+
+    vi.mocked(handleDrag).mockClear()
+    vi.mocked(endDrag).mockClear()
+    layoutStore.isDraggingVueNodes.value = true
+
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        pointerId: 7,
+        clientX: 120,
+        clientY: 120,
+        buttons: 1
+      })
+    )
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { pointerId: 7 })
+    )
+
+    expect(handleDrag).toHaveBeenCalled()
+    expect(endDrag).toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
   })
 
   it('on ctrl+click: calls toggleNodeSelectionAfterPointerUp on pointer up (not pointer down)', async () => {
