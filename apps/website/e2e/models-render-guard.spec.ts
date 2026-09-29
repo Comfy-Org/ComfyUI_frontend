@@ -1,12 +1,9 @@
-import { readFileSync } from 'node:fs'
-
 import type { APIRequestContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 
 import { test } from './fixtures/blockExternalMedia'
-import { waitForIsland } from './fixtures/islands'
-import { MODEL_PATH } from './fixtures/modelsAccount'
+import { expectIslandHydrated } from './fixtures/islands'
 import { stubWorkshopFlags } from './fixtures/workshopFlags'
 import { VIEWPORTS } from './viewports'
 
@@ -22,67 +19,41 @@ const CLS_BUDGET = 0.1
 const LOADER_GRACE_MS = 1_000
 
 const catalogueSchema = z.array(
-  z.object({
-    slug: z.string(),
-    href: z.string(),
-    useCases: z.array(z.string()).optional()
-  })
-)
-type CatalogueEntry = z.infer<typeof catalogueSchema>[number]
-
-const displayEntries = z
-  .array(
-    z.object({
-      slug: z.string(),
-      examples: z.array(
-        z.object({ values: z.record(z.string(), z.unknown()).optional() })
-      )
-    })
-  )
-  .parse(
-    JSON.parse(
-      readFileSync(
-        new URL('../src/content/workshop-display.json', import.meta.url),
-        'utf8'
-      )
-    )
-  )
-const slugsWithoutExampleValues = new Set(
-  displayEntries.flatMap(({ slug, examples }) =>
-    examples.length > 0 &&
-    examples.every(({ values = {} }) => Object.keys(values).length === 0)
-      ? [slug]
-      : []
-  )
+  z.object({ slug: z.string(), name: z.string(), href: z.string() })
 )
 
-type GuardedPage = {
-  label: string
-  kind: 'model' | 'catalogue'
-} & ({ path: string } | { pick: (entry: CatalogueEntry) => boolean })
+const MODEL_SLUGS = [
+  'bfl--flux-2-max--generate-images',
+  'byteplus--seedance-2-5-text-to-video--generate-videos',
+  'bria--eraser--edit-images'
+] as const
+
+type GuardedPage =
+  | { kind: 'model'; slug: string }
+  | { kind: 'catalogue'; path: string }
 
 const PAGES: readonly GuardedPage[] = [
-  { label: 'the shared image model', kind: 'model', path: MODEL_PATH },
-  {
-    label: 'the first video generation model',
-    kind: 'model',
-    pick: (entry) => entry.useCases?.includes('generate-videos') ?? false
-  },
-  {
-    label: 'the first model with empty example values',
-    kind: 'model',
-    pick: (entry) => slugsWithoutExampleValues.has(entry.slug)
-  },
-  { label: 'the catalogue', kind: 'catalogue', path: '/models/' }
+  ...MODEL_SLUGS.map((slug) => ({ kind: 'model' as const, slug })),
+  { kind: 'catalogue', path: '/models/' }
 ]
 
-async function resolvePath(request: APIRequestContext, page: GuardedPage) {
-  if ('path' in page) return page.path
+const pageTitle = (page: GuardedPage) =>
+  page.kind === 'model' ? page.slug : page.path
+
+async function publishedModel(request: APIRequestContext, slug: string) {
   const response = await request.get('/models/catalogue.json')
   expect(response.ok()).toBe(true)
-  const entry = catalogueSchema.parse(await response.json()).find(page.pick)
-  if (!entry) throw new Error(`The catalogue has no ${page.label}`)
-  return entry.href
+  const entry = catalogueSchema
+    .parse(await response.json())
+    .find((candidate) => candidate.slug === slug)
+  if (!entry) throw new Error(`The catalogue no longer publishes ${slug}`)
+  return entry
+}
+
+async function resolvePage(request: APIRequestContext, page: GuardedPage) {
+  if (page.kind === 'catalogue') return { path: page.path }
+  const { href, name } = await publishedModel(request, page.slug)
+  return { path: href, name }
 }
 
 const GUARD_VIEWPORTS = VIEWPORTS.filter(
@@ -131,7 +102,7 @@ async function waitUntilSettled(
   enabled: boolean
 ) {
   if (kind === 'model') {
-    await waitForIsland(page, page.getByTestId('model-detail'))
+    await expectIslandHydrated(page, page.getByTestId('model-detail'))
     await expect(
       enabled
         ? page.locator(
@@ -140,7 +111,10 @@ async function waitUntilSettled(
         : page.getByTestId('run-rollout-note')
     ).toBeVisible()
   } else {
-    await waitForIsland(page, page.getByTestId('workshop-model-card').first())
+    await expectIslandHydrated(
+      page,
+      page.getByTestId('workshop-model-card').first()
+    )
   }
   await page.waitForFunction(
     (graceMs) => performance.now() > graceMs,
@@ -150,6 +124,21 @@ async function waitUntilSettled(
 
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false })
+
+  for (const slug of MODEL_SLUGS) {
+    test(`${slug} shows its name as the only h1, with no loader or showcase`, async ({
+      page,
+      request
+    }) => {
+      const { href, name } = await publishedModel(request, slug)
+      await page.goto(href)
+      const h1 = page.getByRole('heading', { level: 1 })
+      await expect(h1).toHaveCount(1)
+      await expect(h1).toHaveText(name)
+      await expect(page.getByTestId('workshop-loading')).toBeHidden()
+      await expect(page.getByText(/Grok Imagine in ComfyUI/)).toHaveCount(0)
+    })
+  }
 
   test('/models/ shows the catalogue, not the showcase', async ({ page }) => {
     test.fail(
@@ -173,12 +162,12 @@ for (const { width, height } of GUARD_VIEWPORTS) {
 
     for (const enabled of [true, false]) {
       for (const guarded of PAGES) {
-        test(`${guarded.label} with the flag ${enabled ? 'on' : 'off'} settles without a loader or layout jump`, async ({
+        test(`${pageTitle(guarded)} with the flag ${enabled ? 'on' : 'off'} settles without a loader or layout jump`, async ({
           context,
           page,
           request
         }) => {
-          const path = await resolvePath(request, guarded)
+          const { path, name } = await resolvePage(request, guarded)
           await stubWorkshopFlags(context, { 'workshop-enabled': enabled })
           await recordLoaderAndLayoutShift(page)
           const flagAnswered = page.waitForResponse((response) =>
@@ -187,6 +176,10 @@ for (const { width, height } of GUARD_VIEWPORTS) {
           await page.goto(path)
           await flagAnswered
           await waitUntilSettled(page, guarded.kind, enabled)
+          if (name)
+            await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+              name
+            )
 
           const guard = await page.evaluate(() => {
             const state = (window as RenderGuardWindow).__renderGuard
