@@ -182,8 +182,8 @@ test.describe(
       await expect(tabs).toHaveCount(2)
       await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
 
-      // Returning re-subscribes the follower, which replays the bound
-      // document over the tab's own snapshot.
+      // Returning re-subscribes the follower, which applies the collected
+      // catch-up frame to the tab's graph.
       const subscribes = agentConversation.subscribeCount()
       const appliedFrames = await appliedFrameCount(page)
       await topbar.getTab(0).click()
@@ -200,8 +200,8 @@ test.describe(
       // browser-side counter rises only after the frame is applied and the
       // live graph is committed, so the emptiness check cannot resolve
       // against the pre-catch-up canvas. Assert before sending the marker:
-      // its full-reconcile path can itself remove a stale node and hide the
-      // regression this case exists to catch.
+      // applying that later incremental frame can itself remove a stale node
+      // and hide the regression this case exists to catch.
       await expect
         .poll(() => appliedFrameCount(page))
         .toBeGreaterThanOrEqual(appliedFrames + 1)

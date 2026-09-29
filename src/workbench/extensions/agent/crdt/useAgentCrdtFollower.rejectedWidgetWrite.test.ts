@@ -137,7 +137,10 @@ function mountFollower() {
     return first
   }
 
-  return { submit, submitBatch }
+  const sentDocOpsFrameCount = (): number =>
+    docOpsFrames(send.mock.calls.map(([frame]) => frame)).length
+
+  return { submit, submitBatch, sentDocOpsFrameCount }
 }
 
 function rejection(opId: string, code: string): Record<string, unknown> {
@@ -193,13 +196,20 @@ describe('a human edit the doc host rejects', () => {
   ])(
     'tells the user their widget edit was not saved when the host answers %s',
     async (code) => {
-      const { submit } = mountFollower()
+      const { submit, sentDocOpsFrameCount } = mountFollower()
 
-      answerWithOpsResult(rejection(await submit(WIDGET_EDIT), code))
+      const opId = await submit(WIDGET_EDIT)
+      const framesBeforeRejection = sentDocOpsFrameCount()
+      answerWithOpsResult(rejection(opId, code))
+      // A rejected write is restored through the graph API under remote
+      // provenance. Give the command-site coalescer its microtask, then prove
+      // that restoration did not mint a compensating operation.
+      await Promise.resolve()
 
       expect(toastDetails()).toEqual([
         expect.stringContaining(WIDGET_REJECTION_TEXT)
       ])
+      expect(sentDocOpsFrameCount()).toBe(framesBeforeRejection)
     }
   )
 

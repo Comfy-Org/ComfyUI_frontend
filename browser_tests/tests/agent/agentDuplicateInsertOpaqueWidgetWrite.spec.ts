@@ -38,13 +38,12 @@ const test = mergeTests(agentTest, webSocketFixture)
  * stored opaquely (schema §1.2) and is not name-addressable`). The follower
  * now puts the refused register back from the document
  * (`AgentCrdtProjection.revertRejected`), so the widget no longer keeps
- * showing a value the shared document never took. The rejection notifier
- * also tells the human that the write was refused.
+ * showing a value the shared document never took.
  *
  * PM-1716 made that divergence VISIBLE rather than silent: `rejectedOpNotice`
  * matches the host's `code` against the applier's rejection vocabulary and
- * raises a toast. The divergence itself is unchanged and is still pinned
- * below -- a rejected write is not rolled back on the canvas.
+ * raises a toast. The test below pins both halves: the rejected write is
+ * rolled back on the canvas and the human is told why it did not stick.
  *
  * `opaque_widgets` is a cloud doc-host error code the frontend never
  * produces, so this repro injects the host's raw wire response directly
@@ -462,7 +461,7 @@ test.describe(
       expect(boxB).toEqual(boxA)
     })
 
-    test('a rejected widget edit is reported and rolled back to the value the shared document kept', async ({
+    test('a rejected widget edit is rolled back and reported to the human', async ({
       page,
       getWebSocket
     }) => {
@@ -471,7 +470,7 @@ test.describe(
 
       // The refused register is put back from the document, so the widget
       // the human is looking at and the document a subsequent run would read
-      // from agree again.
+      // from agree again. The notifier below also makes the refusal visible.
       await expect(seedInput).toHaveValue(String(SEED_VALUE))
 
       const projected = host.projection()

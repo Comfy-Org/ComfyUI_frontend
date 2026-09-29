@@ -38,7 +38,7 @@ import type { LiveGraphApplierDeps } from './liveGraphApplier'
 import { readDocSlotNames } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
-import type { BatchOutcome, OpsResultView } from './opSender'
+import type { OpsResultView } from './opSender'
 import { createRejectedOpNotifier } from './rejectedOpNotice'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
@@ -253,7 +253,7 @@ function reportRejectedHumanOps(
       context: {
         workflowId,
         opId: failed?.op_id ?? rejected[0]?.op_id,
-        code: failed?.code,
+        code: failed?.code ?? result.code,
         rejectedOps: rejected.map((op) => op.op)
       }
     }
@@ -368,47 +368,7 @@ function startAgentCrdtFollower(
   )
   const tabId = createUuidv4()
   const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
-  // Doc node ids whose human delete the host has applied but whose effect
-  // frame has not yet removed them from the doc. Kept pending for the
-  // reconcile so the result-to-effect window cannot resurrect them.
-  const confirmedDeletes = new Set<string>()
   const rejectedOpNotifier = createRejectedOpNotifier()
-  const projection = new AgentCrdtProjection(getGraph, applierDeps)
-
-  const trackAcknowledgedDeletes = (
-    outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
-  ) => {
-    const applied = new Set(outcome.result.applied)
-    for (const op of outcome.ops) {
-      if (op.op === 'delete_node' && applied.has(op.op_id))
-        confirmedDeletes.add(String(op.node_id))
-    }
-    rejectedOpNotifier.notify(outcome.ops, outcome.result)
-  }
-
-  const revertRejectedOps = (
-    outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
-  ) => {
-    const workflowId = outcome.result.workflowId ?? bridge.subscribedWorkflowId
-    if (outcome.result.failed)
-      reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
-    if (workflowId === null) return
-
-    const applied = new Set(outcome.result.applied)
-    const rejected = outcome.ops.filter((op) => !applied.has(op.op_id))
-    reportMaterialized(
-      workflowId,
-      projection.revertRejected(workflowId, rejected)
-    )
-  }
-
-  const settleHumanOps = (outcome: BatchOutcome) => {
-    if (outcome.state === 'acknowledged') trackAcknowledgedDeletes(outcome)
-    recordDevEvent('human_ops_settled', outcome)
-    projection.settleLocalWrites(outcome.ops)
-    if (outcome.state === 'acknowledged' && !outcome.result.ok)
-      revertRejectedOps(outcome)
-  }
 
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
@@ -428,8 +388,30 @@ function startAgentCrdtFollower(
     tab: tabId,
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
-    onBatchSettled: settleHumanOps
+    onBatchSettled: (outcome) => {
+      if (outcome.state === 'acknowledged') {
+        rejectedOpNotifier.notify(outcome.ops, outcome.result)
+      }
+      recordDevEvent('human_ops_settled', outcome)
+      projection.settleLocalWrites(outcome.ops)
+      if (outcome.state !== 'acknowledged' || outcome.result.ok) return
+      const workflowId =
+        outcome.result.workflowId ?? bridge.subscribedWorkflowId
+      // The notifier owns batch-level refusal telemetry and deduplication.
+      // Keep the rewrite's per-op diagnostic only when the host identifies a
+      // failed operation; otherwise both paths would report the same refusal.
+      if (outcome.result.failed)
+        reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
+      if (workflowId === null) return
+      const applied = new Set(outcome.result.applied)
+      const rejected = outcome.ops.filter((op) => !applied.has(op.op_id))
+      reportMaterialized(
+        workflowId,
+        projection.revertRejected(workflowId, rejected)
+      )
+    }
   })
+  const projection = new AgentCrdtProjection(getGraph, applierDeps)
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   const pendingLiveNodeIds = new Set<NodeId>()
