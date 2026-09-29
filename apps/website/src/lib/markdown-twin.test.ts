@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
+import ModelPage from '../components/workshop/ModelPage.vue'
 import WorkshopLoading from '../components/workshop/WorkshopLoading.vue'
 import { hubModelSlugs } from '../config/hub-models'
 import { isExcludedFromSitemap } from '../config/indexing'
@@ -14,6 +15,7 @@ import {
   workshopModels
 } from '../config/workshop-browse-content'
 import { writeMarkdownTwins } from '../integrations/markdown-twins'
+import { prepareModelPage } from '../routes/models/model-page'
 import { writeSectionIndexes } from './section-index'
 import { htmlToTwin, renderTwin } from './markdown-twin'
 import { markdownTwinPath } from './markdown-twin-path'
@@ -422,6 +424,28 @@ describe('writeMarkdownTwins', () => {
       await expect(writeMarkdownTwins(root, [route])).rejects.toThrow(
         join(root, route, 'index.html')
       )
+    })
+
+    it('twins the real server-rendered model page with its name as the heading', async () => {
+      const page = await prepareModelPage(modelSlug)
+      if (page.kind !== 'page' || page.model.routerId === undefined)
+        throw new Error(`${modelSlug} is not a model page`)
+      const root = await buildModelPage(
+        await renderToString(
+          h(ModelPage, {
+            page: { ...page, model: { ...page.model, form: undefined } }
+          })
+        )
+      )
+
+      const report = await writeMarkdownTwins(root, [route])
+
+      expect(report.written).toEqual([twinPath])
+      const twin = await readFile(join(root, twinPath), 'utf8')
+      const body = twin.slice(twin.indexOf('\n---\n') + 5).trim()
+      expect(body).toContain(`# ${page.model.name}`)
+      expect(body).not.toContain('Loading')
+      expect(body).not.toContain('Grok Imagine in ComfyUI')
     })
 
     it('twins the server-rendered hero and drops the spinner (post-FE-2942 (#18899) shape)', async () => {
