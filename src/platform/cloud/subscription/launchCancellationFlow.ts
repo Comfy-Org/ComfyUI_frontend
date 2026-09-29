@@ -25,7 +25,14 @@ async function showCancellationFallback(
     await showFallback({ ...options, isScopeCurrent })
     return true
   } catch (fallbackError) {
-    reportError(fallbackError, {
+    const reportedError =
+      vendorError === undefined
+        ? fallbackError
+        : new AggregateError(
+            [fallbackError, vendorError],
+            'Cancellation vendor and fallback failed'
+          )
+    reportError(reportedError, {
       errorType: 'cloud_cancellation_vendor_fallback',
       tags: {
         failure_kind: 'caught_unexpected',

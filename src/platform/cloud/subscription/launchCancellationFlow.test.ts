@@ -389,8 +389,8 @@ describe('launchCancellationFlow', () => {
 
     expect(reportError).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        message: 'dialog chunk unavailable',
-        cause: expect.objectContaining({ message: 'blocked by browser' })
+        message: 'Cancellation vendor and fallback failed',
+        errors: [fallbackError, expect.objectContaining({ message: 'blocked by browser' })]
       }),
       {
         errorType: 'cloud_cancellation_vendor_fallback',
