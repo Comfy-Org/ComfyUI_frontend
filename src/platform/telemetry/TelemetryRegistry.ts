@@ -1,6 +1,9 @@
 import type {
   AddCreditsClickMetadata,
   AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
@@ -377,6 +380,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAgentCloseButtonClicked?.())
   }
 
+  trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
+    this.dispatch((provider) => provider.trackAgentConsentShown?.(metadata))
+  }
+
+  trackAgentConsentResolved(metadata: AgentConsentResolvedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentConsentResolved?.(metadata))
+  }
+
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
     this.dispatch((provider) => provider.trackAgentMessageSent?.(metadata))
   }
@@ -396,6 +407,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
     this.dispatch((provider) =>
       provider.trackAgentConsentNotOffered?.(metadata)
+    )
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentConsentOfferExited?.(metadata)
     )
   }
 
