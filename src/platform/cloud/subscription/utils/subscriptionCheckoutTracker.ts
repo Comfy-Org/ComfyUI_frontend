@@ -17,7 +17,6 @@ import type {
 } from '@/platform/telemetry/types'
 
 const PENDING_SUBSCRIPTION_CHECKOUT_MAX_AGE_MS = 6 * 60 * 60 * 1000
-const PENDING_SUBSCRIPTION_CHECKOUT_CLOCK_SKEW_MS = 5 * 60 * 1000
 const VALID_TIER_KEYS: ReadonlySet<string> = new Set([
   'free',
   'standard',
@@ -187,8 +186,6 @@ const isCheckoutAttemptCore = (
   typeof value.attempt_id === 'string' &&
   typeof value.started_at_ms === 'number' &&
   Number.isFinite(value.started_at_ms) &&
-  value.started_at_ms <=
-    Date.now() + PENDING_SUBSCRIPTION_CHECKOUT_CLOCK_SKEW_MS &&
   isTierKey(value.tier) &&
   (value.cycle === 'monthly' || value.cycle === 'yearly') &&
   (value.checkout_type === 'new' || value.checkout_type === 'change')
@@ -222,7 +219,7 @@ const normalizeAttempt = (
 
   return {
     attempt_id: value.attempt_id,
-    started_at_ms: value.started_at_ms,
+    started_at_ms: Math.min(value.started_at_ms, Date.now()),
     tier: value.tier,
     cycle: value.cycle,
     checkout_type: value.checkout_type,
@@ -403,13 +400,9 @@ export const consumePendingSubscriptionCheckoutSuccess = (
     return null
   }
 
-  // A client timeout is terminal for this attempt. A later billing refresh may
-  // observe eventual activation, but it must not emit a contradictory success.
-  if (hasReportedMissingCheckoutCompletion(attempt.attempt_id)) {
-    clearPendingSubscriptionCheckoutAttempt()
-    return null
-  }
-
+  const wasReportedMissingCompletion = hasReportedMissingCheckoutCompletion(
+    attempt.attempt_id
+  )
   clearPendingSubscriptionCheckoutAttempt()
 
   const value = getCheckoutValue(attempt.tier, attempt.cycle)
@@ -426,6 +419,9 @@ export const consumePendingSubscriptionCheckoutSuccess = (
     ...(attempt.operation ? { operation: attempt.operation } : {}),
     ...(attempt.resubscribe_source
       ? { resubscribe_source: attempt.resubscribe_source }
+      : {}),
+    ...(wasReportedMissingCompletion
+      ? { recovery_outcome: 'late_success' as const }
       : {}),
     value,
     currency: 'USD',

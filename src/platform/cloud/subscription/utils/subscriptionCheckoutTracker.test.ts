@@ -89,7 +89,8 @@ describe('subscriptionCheckoutTracker', () => {
     )
   })
 
-  it('rejects an implausibly future checkout attempt', () => {
+  it('clamps an implausibly future checkout attempt without discarding it', () => {
+    const now = Date.now()
     localStorage.setItem(
       PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
       JSON.stringify({
@@ -101,7 +102,15 @@ describe('subscriptionCheckoutTracker', () => {
       })
     )
 
-    expect(getPendingSubscriptionCheckoutAttempt()).toBeNull()
+    expect(getPendingSubscriptionCheckoutAttempt()).toEqual(
+      expect.objectContaining({
+        attempt_id: 'far-future-attempt',
+        started_at_ms: now
+      })
+    )
+    expect(
+      localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+    ).not.toBeNull()
   })
 
   it('deduplicates reports in memory when storage writes fail', () => {
