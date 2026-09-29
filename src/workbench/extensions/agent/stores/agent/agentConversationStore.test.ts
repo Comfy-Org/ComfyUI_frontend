@@ -515,6 +515,7 @@ describe('useAgentConversationStore', () => {
 
     store.ingest(done('assistant-message-1'))
     expect(store.isStreaming).toBe(false)
+    expect(store.activeTurnId).toBeNull()
   })
 
   it('recordFailedSend renders [user, assistant(notice)] and leaves the turn idle', () => {
@@ -919,6 +920,10 @@ describe('useAgentConversationStore', () => {
       'assistant'
     ])
     expect(store.isStreaming).toBe(false)
+    expect(store.activeTurnId).toBeNull()
+
+    store.ingest(delta('server-turn', 'late stale frame'))
+    expect(partTexts(store)).toEqual(['All done.'])
   })
 
   it('keeps the persisted reply when the resumed stash holds only half of it', () => {

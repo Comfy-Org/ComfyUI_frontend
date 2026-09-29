@@ -507,6 +507,8 @@ export const useAgentConversationStore = defineStore(
         )
       ) {
         rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
+        transport?.dispose()
+        clearActive()
         // The persisted, authoritative copy is already on screen (kept, via
         // the filter above) -- this entry's transport is now discarded for
         // good, so flush anything it is still holding rather than leaving it
