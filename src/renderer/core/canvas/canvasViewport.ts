@@ -8,6 +8,7 @@ interface CanvasViewport {
 }
 
 let currentGeneration = 0
+const appliedViewportByCanvas = new WeakMap<HTMLCanvasElement, CanvasViewport>()
 
 function normalizeDpr(rawDpr: number): number {
   return rawDpr > 0 && Number.isFinite(rawDpr) ? rawDpr : 1
@@ -37,7 +38,31 @@ function measureViewportFromElement(
   rawDpr?: number,
   prevGeneration?: number
 ): CanvasViewport {
-  const { width, height } = element.getBoundingClientRect()
+  const initialRect = element.getBoundingClientRect()
+  if (initialRect.width === 0 || initialRect.height === 0) {
+    return measureViewport(
+      initialRect.width,
+      initialRect.height,
+      rawDpr ?? window.devicePixelRatio,
+      prevGeneration
+    )
+  }
+
+  const savedWidth = element.width
+  const savedHeight = element.height
+  let cssRect: DOMRect
+  try {
+    element.width = 0
+    element.height = 0
+    cssRect = element.getBoundingClientRect()
+  } finally {
+    element.width = savedWidth
+    element.height = savedHeight
+  }
+  const previousViewport = appliedViewportByCanvas.get(element)
+  const width = cssRect.width || previousViewport?.cssWidth || initialRect.width
+  const height =
+    cssRect.height || previousViewport?.cssHeight || initialRect.height
   return measureViewport(
     width,
     height,
@@ -59,6 +84,9 @@ function applyViewport(
     bg.height = viewport.physicalHeight
     bg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
   }
+
+  appliedViewportByCanvas.set(fg, viewport)
+  appliedViewportByCanvas.set(bg, viewport)
 
   currentGeneration = viewport.generation
   return viewport
