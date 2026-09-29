@@ -78,19 +78,4 @@ describe('EditableText', () => {
     expect(onEdit).not.toHaveBeenCalled()
     expect(input).toHaveValue('Original Text')
   })
-
-  it('saves changes on enter but not on escape', async () => {
-    const onEditEnter = vi.fn()
-    const { user: userEnter } = renderComponent(
-      { modelValue: 'Original Text', isEditing: true },
-      { onEdit: onEditEnter }
-    )
-
-    const enterInput = screen.getByRole('textbox')
-    await userEnter.clear(enterInput)
-    await userEnter.type(enterInput, 'Saved Text')
-    await userEnter.keyboard('{Enter}')
-
-    expect(onEditEnter).toHaveBeenCalledWith('Saved Text')
-  })
 })

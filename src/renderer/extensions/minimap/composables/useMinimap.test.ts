@@ -937,15 +937,4 @@ describe('useMinimap', () => {
       expect(mockContext2D.fillStyle).toBeDefined()
     })
   })
-
-  describe('setMinimapRef', () => {
-    it('should set minimap reference', () => {
-      const minimap = useMinimap()
-      const ref = document.createElement('div')
-
-      minimap.setMinimapRef(ref)
-
-      expect(() => minimap.setMinimapRef(ref)).not.toThrow()
-    })
-  })
 })

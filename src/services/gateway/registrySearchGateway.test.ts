@@ -145,7 +145,7 @@ describe('useRegistrySearchGateway', () => {
     })
   })
 
-  describe('Circuit breaker functionality', () => {
+  describe('provider fallback', () => {
     it('should switch to fallback provider after failure and log warnings', async () => {
       const registryResult = {
         nodePacks: [{ id: 'registry-1', name: 'Registry Pack' }],
@@ -179,9 +179,6 @@ describe('useRegistrySearchGateway', () => {
       expect(mockAlgoliaProvider.searchPacks).toHaveBeenCalledTimes(1)
       expect(mockRegistryProvider.searchPacks).toHaveBeenCalledTimes(1)
       expect(result.nodePacks[0].name).toBe('Registry Pack')
-
-      // Circuit breaker behavior is internal implementation detail
-      // We only test the observable behavior (fallback works)
     })
   })
 
