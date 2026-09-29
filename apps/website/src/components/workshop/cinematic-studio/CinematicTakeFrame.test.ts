@@ -75,19 +75,16 @@ describe('CinematicStage', () => {
 describe('CinematicTakeProgress', () => {
   const rendering: Take = { ...done, status: 'rendering' }
 
-  it('says what is being generated', () => {
-    const { unmount } = render(CinematicTakeProgress, {
+  it('names the take being generated', () => {
+    render(CinematicTakeProgress, {
       props: { take: rendering }
     })
-    expect(screen.getByRole('status')).toHaveTextContent('Generating image')
-    unmount()
-    render(CinematicTakeProgress, { props: { take: rendering, video: true } })
-    expect(screen.getByRole('status')).toHaveTextContent('Generating video')
+    expect(screen.getByRole('status')).toHaveTextContent('Shot 1, take A')
   })
 })
 
 describe('CinematicSequence', () => {
-  it('gives every thumbnail the same shape whatever the frame', () => {
+  it('keeps each thumbnail in its take frame', () => {
     render(CinematicSequence, {
       props: {
         takes: [
@@ -97,8 +94,10 @@ describe('CinematicSequence', () => {
       }
     })
     const thumbs = screen.getAllByRole('button')
-    expect(thumbs.every((thumb) => !thumb.style.aspectRatio)).toBe(true)
-    expect(new Set(thumbs.map((thumb) => thumb.className)).size).toBe(1)
+    expect(thumbs.map((thumb) => thumb.style.aspectRatio)).toEqual([
+      '21 / 9',
+      '9 / 16'
+    ])
   })
 })
 

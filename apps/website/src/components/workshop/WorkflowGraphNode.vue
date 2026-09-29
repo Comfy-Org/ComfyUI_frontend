@@ -120,7 +120,7 @@ const header = (n: GraphNode) =>
         :y="node.y + node.picture.y"
         :width="node.width - WIDGET_INSET * 2"
         :height="node.picture.height"
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio="xMidYMid meet"
         :clip-path="`url(#sample-${node.id})`"
       />
     </g>

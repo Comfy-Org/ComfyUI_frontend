@@ -54,10 +54,6 @@ const copy = {
     en: 'Video · MiniMax H3',
     'zh-CN': '视频 · MiniMax H3'
   },
-  'cinematic.stage.renderingTake': {
-    en: 'Rendering take {take}',
-    'zh-CN': '正在渲染第 {take} 条'
-  },
   'cinematic.stage.longWait': {
     en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
     'zh-CN': '仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。'
@@ -203,6 +199,14 @@ const copy = {
   'cinematic.beta': {
     en: 'Beta',
     'zh-CN': '测试版'
+  },
+  'cinematic.repo.view': {
+    en: 'View on GitHub',
+    'zh-CN': '在 GitHub 上查看'
+  },
+  'cinematic.repo.soon': {
+    en: 'GitHub · Coming soon',
+    'zh-CN': 'GitHub · 即将推出'
   },
   'cinematic.meta.description': {
     en: 'Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router.',
@@ -765,9 +769,13 @@ const copy = {
     en: 'Sequence',
     'zh-CN': '序列'
   },
-  'cinematic.stage.thumb': {
+  'cinematic.stage.takeName': {
     en: 'Shot {shot}, take {take}',
     'zh-CN': '镜头 {shot}，第 {take} 条'
+  },
+  'cinematic.stage.renderingTakeName': {
+    en: 'Rendering Shot {shot}, take {take}',
+    'zh-CN': '正在渲染镜头 {shot}，第 {take} 条'
   }
 } as const satisfies Record<string, LocalizedText>
 

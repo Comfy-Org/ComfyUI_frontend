@@ -262,7 +262,7 @@ describe('a refused request', () => {
     expect(
       screen.getAllByText('Not enough credits. Add credits to continue.').length
     ).toBeGreaterThan(0)
-    expect(screen.queryByText('An example from this template.')).toBeNull()
+    expect(screen.queryByTestId('output-example')).toBeNull()
   })
 
   // The panel already knows how to send a reader to buy credits; it was never
@@ -285,7 +285,7 @@ describe('a refused request', () => {
   it('shows nothing rather than the example for a refusal it cannot word', () => {
     mountRefused('access_denied')
 
-    expect(screen.queryByText('An example from this template.')).toBeNull()
+    expect(screen.queryByTestId('output-example')).toBeNull()
     expect(screen.getByText('Your output will appear here.')).toBeTruthy()
   })
 })

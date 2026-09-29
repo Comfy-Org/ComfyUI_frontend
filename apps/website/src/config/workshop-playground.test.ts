@@ -8,6 +8,7 @@ import {
   groupPlaygroundFields,
   schemaForModel,
   isVideoUrl,
+  videoPosterUrl,
   restoreFormValues,
   urlUploadField,
   validateForm
@@ -464,6 +465,19 @@ describe('isVideoUrl', () => {
     expect(isVideoUrl('https://cdn.example/output.mp4?sig=abc')).toBe(true)
     expect(isVideoUrl('https://cdn.example/output.mp4#t=0')).toBe(true)
     expect(isVideoUrl('https://cdn.example/output.png')).toBe(false)
+  })
+})
+
+describe('videoPosterUrl', () => {
+  it.for([
+    ['https://cdn.example/clip.mp4', 'https://cdn.example/clip.mp4#t=0.1'],
+    [
+      'https://cdn.example/clip.mp4?sig=abc',
+      'https://cdn.example/clip.mp4?sig=abc#t=0.1'
+    ],
+    ['https://cdn.example/clip.mp4#t=2', 'https://cdn.example/clip.mp4#t=2']
+  ])('points %s at a frame to paint', ([url, expected]) => {
+    expect(videoPosterUrl(url)).toBe(expected)
   })
 })
 
