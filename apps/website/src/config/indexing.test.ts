@@ -1,23 +1,30 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   isExcludedFromSitemap,
   isIndexableModelPage,
   isNoindexPathname
 } from './indexing'
-
-const launch = vi.hoisted(() => ({ MODEL_PAGES_INDEXABLE: false }))
-vi.mock(import('./model-page-launch'), () => launch)
+import { WAVE_1_ROUTER_IDS_BY_FAMILY } from './model-page-launch'
+import {
+  routerModelSlugAliases,
+  workshopModels
+} from './workshop-browse-content'
 
 const MODELS_PAGES_BY_KIND = [
   ['hub', '/models/'],
-  ['model', '/models/bfl--flux-2-max--generate-images/'],
-  ['alias', '/models/bfl--flux-2-max/'],
+  ['wave 1 model', '/models/krea--krea-2-large--generate-images/'],
+  ['later model', '/models/recraft--v4-text-to-image--generate-images/'],
+  ['alias', '/models/krea--krea-2-large/'],
   ['workflow', '/models/workflows/change-material/'],
   ['app', '/models/apps/cinematic-studio/'],
   ['showcase', '/models/showcase/'],
   ['catalogue', '/models/catalogue.json'],
-  ['page data', '/models/bfl--flux-2-max--generate-images/page.json']
+  ['page data', '/models/krea--krea-2-large--generate-images/page.json']
 ] as const
+
+const wave1RouterIds = new Set<string>(
+  Object.values(WAVE_1_ROUTER_IDS_BY_FAMILY).flat()
+)
 
 const inSitemap = (pathname: string) =>
   !isExcludedFromSitemap(`https://comfy.org${pathname}`)
@@ -28,7 +35,7 @@ describe('indexing policy', () => {
     expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
     expect(
       isExcludedFromSitemap(
-        'https://comfy.org/models/bfl--flux-2-max--generate-images/'
+        'https://comfy.org/models/recraft--v4-text-to-image--generate-images/'
       )
     ).toBe(true)
     expect(isExcludedFromSitemap('https://comfy.org/models/local/')).toBe(false)
@@ -106,29 +113,55 @@ describe('indexing policy', () => {
       )
     ).toBe(true)
   })
-
-  it.for(MODELS_PAGES_BY_KIND)(
-    'keeps every Models page but the hub out of the sitemap before launch (%s)',
-    ([kind, pathname]) => {
-      expect(isIndexableModelPage(pathname)).toBe(false)
-      expect(inSitemap(pathname)).toBe(kind === 'hub')
-    }
-  )
 })
 
-describe('indexing policy once model pages launch', () => {
-  beforeEach(() => {
-    launch.MODEL_PAGES_INDEXABLE = true
+describe('model page launch waves', () => {
+  it.for(MODELS_PAGES_BY_KIND)(
+    'lists only the hub and wave 1 model pages (%s)',
+    ([kind, pathname]) => {
+      expect(isIndexableModelPage(pathname)).toBe(kind === 'wave 1 model')
+      expect(inSitemap(pathname)).toBe(
+        kind === 'hub' || kind === 'wave 1 model'
+      )
+    }
+  )
+
+  it('names only published Router models in wave 1', () => {
+    const published = new Set(workshopModels.map(({ routerId }) => routerId))
+    expect([...wave1RouterIds].filter((id) => !published.has(id))).toEqual([])
   })
-  afterEach(() => {
-    launch.MODEL_PAGES_INDEXABLE = false
+
+  it('indexes every page of a wave 1 model and no other model page', () => {
+    expect(
+      workshopModels.filter(({ href }) => isIndexableModelPage(href))
+    ).toEqual(
+      workshopModels.filter(({ routerId }) => wave1RouterIds.has(routerId))
+    )
+  })
+
+  it('indexes every canonical model page once all waves launch', () => {
+    expect(
+      workshopModels.every(({ href }) => isIndexableModelPage(href, 'all'))
+    ).toBe(true)
+    expect(
+      [...routerModelSlugAliases.keys()].some((alias) =>
+        isIndexableModelPage(`/models/${alias}/`, 'all')
+      )
+    ).toBe(false)
   })
 
   it.for(MODELS_PAGES_BY_KIND)(
-    'lists only the hub and canonical model pages (%s)',
+    'never indexes a Models page that is not a canonical model page (%s)',
     ([kind, pathname]) => {
-      expect(isIndexableModelPage(pathname)).toBe(kind === 'model')
-      expect(inSitemap(pathname)).toBe(kind === 'hub' || kind === 'model')
+      expect(isIndexableModelPage(pathname, 'all')).toBe(
+        kind === 'wave 1 model' || kind === 'later model'
+      )
     }
   )
+
+  it('indexes no model page when every wave is rolled back', () => {
+    expect(
+      workshopModels.some(({ href }) => isIndexableModelPage(href, new Set()))
+    ).toBe(false)
+  })
 })

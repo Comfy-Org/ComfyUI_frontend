@@ -1,7 +1,9 @@
 import { LOCALE_CODES, LOCALES } from './locales'
-import { MODEL_PAGES_INDEXABLE } from './model-page-launch'
+import type { ModelPageLaunch } from './model-page-launch'
+import { launchedModelPages } from './model-page-launch'
 import { models } from './models'
 import { modelsUrlKind } from './models-url-registry'
+import { workshopModels } from './workshop-browse-content'
 import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
 
 const PAYMENT_STATUSES = ['success', 'failed'] as const
@@ -52,8 +54,22 @@ export function isNoindexPathname(pathname: string): boolean {
   return NOINDEX_PATHNAMES.has(normalizePathname(pathname))
 }
 
-export function isIndexableModelPage(pathname: string): boolean {
-  return MODEL_PAGES_INDEXABLE && modelsUrlKind(pathname) === 'model'
+const routerIdByModelPage = new Map(
+  workshopModels.map(({ href, routerId }) => [
+    normalizePathname(href),
+    routerId
+  ])
+)
+
+export function isIndexableModelPage(
+  pathname: string,
+  launched: ModelPageLaunch = launchedModelPages
+): boolean {
+  if (modelsUrlKind(pathname) !== 'model') return false
+  const routerId = routerIdByModelPage.get(normalizePathname(pathname))
+  return (
+    routerId !== undefined && (launched === 'all' || launched.has(routerId))
+  )
 }
 
 export function isExcludedFromSitemap(page: string): boolean {
