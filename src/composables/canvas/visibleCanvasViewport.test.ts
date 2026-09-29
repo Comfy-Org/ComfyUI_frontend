@@ -1,7 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { visibleCanvasViewport } from './visibleCanvasViewport'
+
+vi.mock(import('@/platform/telemetry'))
 
 function rect(left: number, right: number, height = 450, top = 0): DOMRect {
   return {
@@ -26,8 +29,8 @@ function createCanvas(canvasRect: DOMRect): LGraphCanvas {
 }
 
 describe('visibleCanvasViewport', () => {
-  afterEach(() => {
-    document.querySelector('.graph-canvas-panel')?.remove()
+  beforeEach(() => {
+    localStorage.clear()
   })
 
   it('uses the full CSS-pixel canvas when the panel is absent', () => {
@@ -42,38 +45,15 @@ describe('visibleCanvasViewport', () => {
     ])
   })
 
-  it('returns the panel span relative to the canvas', () => {
-    const panel = document.createElement('div')
-    panel.className = 'graph-canvas-panel'
-    vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue(rect(200, 700))
-    document.body.appendChild(panel)
-
-    expect(visibleCanvasViewport(createCanvas(rect(100, 900)))).toEqual([
-      100, 0, 500, 450
-    ])
-  })
-
-  it('accounts for top and bottom panels in the usable viewport', () => {
-    const panel = document.createElement('div')
-    panel.className = 'graph-canvas-panel'
-    vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue(
-      rect(200, 700, 350, 50)
-    )
-    document.body.appendChild(panel)
-
-    expect(visibleCanvasViewport(createCanvas(rect(100, 900)))).toEqual([
-      100, 50, 500, 350
-    ])
-  })
-
-  it('uses the full canvas when the panel does not overlap it', () => {
-    const panel = document.createElement('div')
-    panel.className = 'graph-canvas-panel'
-    vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue(rect(800, 1000))
-    document.body.appendChild(panel)
+  it('subtracts the visible agent panel from the CSS-pixel canvas', () => {
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    panel.consentAccepted = true
+    panel.isOpen = true
+    panel.setWidth(500)
 
     expect(visibleCanvasViewport(createCanvas(rect(0, 800)))).toEqual([
-      0, 0, 800, 450
+      0, 0, 300, 450
     ])
   })
 })
