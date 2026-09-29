@@ -362,18 +362,28 @@ function currentWorkspaceResponse(workspaceId: string | undefined): Response {
   })
 }
 
-function installIngest() {
+function mintBodyWorkspace(body: unknown): string {
+  const parsed: unknown = typeof body === 'string' ? JSON.parse(body) : {}
+  const workspaceId =
+    typeof parsed === 'object' && parsed !== null && 'workspace_id' in parsed
+      ? parsed.workspace_id
+      : undefined
+  return typeof workspaceId === 'string' ? workspaceId : 'personal'
+}
+
+function installIngest(features: Record<string, boolean> = {}) {
   const ingest = {
     userId: 'user-a',
     csrfToken: 'csrf-1',
     refusals: [] as string[],
     mintRefusal: undefined as (() => Response) | undefined,
     mints: 0,
+    mintedFor: [] as string[],
     requests: [] as ApiRequest[],
     currentWorkspaceDown: undefined as (() => Response) | undefined
   }
 
-  const respond = ({ path, headers }: ApiRequest): Response => {
+  const respond = ({ path, headers }: ApiRequest, body: unknown): Response => {
     if (path === '/api/auth/session') {
       return jsonResponse({
         ...sessionBody(ingest.userId),
@@ -383,6 +393,7 @@ function installIngest() {
     if (path === '/api/auth/token') {
       if (ingest.mintRefusal) return ingest.mintRefusal()
       ingest.mints += 1
+      ingest.mintedFor.push(mintBodyWorkspace(body))
       return jsonResponse({
         token: `session-jwt-${ingest.mints}`,
         expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
@@ -408,17 +419,17 @@ function installIngest() {
     vi.fn<typeof fetch>(async (input, init) => {
       const request = recordApiRequest(input, init)
       if (request.path === '/api/features') {
-        return jsonResponse({ unified_web_session: true })
+        return jsonResponse({ unified_web_session: true, ...features })
       }
       ingest.requests.push(request)
-      return respond(request)
+      return respond(request, init?.body)
     })
   )
   return ingest
 }
 
-async function bootOnSession() {
-  const ingest = installIngest()
+async function bootOnSession(features: Record<string, boolean> = {}) {
+  const ingest = installIngest(features)
   await refreshRemoteConfig({ useAuth: false })
   useAuthStore()
   identity.signIn(USER_A)
@@ -960,6 +971,7 @@ describe('comfy-api calls on the shared web session', () => {
 
   it('mints nothing for pages that only call ingest', async () => {
     const ingest = await bootOnSession()
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
 
     await api.fetchApi('/queue')
     await postPrompt()
@@ -990,3 +1002,136 @@ describe('comfy-api calls on the shared web session', () => {
     expect(mintRequests(ingest)).toHaveLength(2)
   })
 })
+
+describe.for([{ unified: false }, { unified: true }])(
+  'the Run token on the shared web session (unified_cloud_auth $unified)',
+  ({ unified }) => {
+    const boot = async () => {
+      const ingest = await bootOnSession({ unified_cloud_auth: unified })
+      ingest.mints = 0
+      ingest.mintedFor.length = 0
+      return ingest
+    }
+
+    beforeEach(() => {
+      identity.reset()
+      firebaseSignOut.mockReset()
+      firebaseSignOut.mockImplementation(async () => identity.signOut())
+      vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+      localStorage.clear()
+    })
+
+    it.for([
+      { workspace: 'personal', expected: ['personal'] },
+      { workspace: 'ws-team', expected: ['ws-team'] }
+    ])(
+      'mints the $workspace workspace token from the session',
+      async ({ workspace, expected }) => {
+        const ingest = await boot()
+        if (workspace !== 'personal') {
+          await useWorkspaceAuthStore().switchWorkspace(workspace)
+        }
+
+        const token = await useAuthStore().getWorkspaceAuthToken()
+
+        expect(token).toBe('session-jwt-1')
+        expect(ingest.mintedFor).toEqual(expected)
+        expect(
+          ingest.requests
+            .filter(({ path }) => path === '/api/auth/token')
+            .map(({ headers }) => headers.authorization)
+        ).toEqual(expected.map(() => undefined))
+      }
+    )
+
+    it('reuses one mint across Runs and re-mints once it nears expiry', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+
+      const first = await authStore.getWorkspaceAuthToken()
+      const second = await authStore.getWorkspaceAuthToken()
+      await vi.advanceTimersByTimeAsync(14 * 60_000)
+      const third = await authStore.getWorkspaceAuthToken()
+
+      expect([first, second]).toEqual(['session-jwt-1', 'session-jwt-1'])
+      expect(third).not.toBe(first)
+      expect(
+        ingest.requests.filter(
+          ({ path, headers }) =>
+            path === '/api/auth/token' && !('authorization' in headers)
+        )
+      ).toHaveLength(2)
+    })
+
+    it('keeps each workspace token cached across a switch and back', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+      const workspaceAuth = useWorkspaceAuthStore()
+
+      const personal = await authStore.getWorkspaceAuthToken()
+      await workspaceAuth.switchWorkspace('ws-team')
+      const team = await authStore.getWorkspaceAuthToken()
+      await workspaceAuth.switchWorkspace('ws-personal')
+      const personalAgain = await authStore.getWorkspaceAuthToken()
+
+      expect([personal, team, personalAgain]).toEqual([
+        'session-jwt-1',
+        'session-jwt-2',
+        'session-jwt-1'
+      ])
+      expect(ingest.mintedFor).toEqual(['personal', 'ws-team'])
+    })
+
+    it('resolves undefined for a revoked session and mints again once it recovers', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+      ingest.mintRefusal = () =>
+        jsonResponse({ code: 'session_revoked', message: 'revoked' }, 401)
+
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
+
+      ingest.mintRefusal = undefined
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBe(
+        'session-jwt-1'
+      )
+    })
+
+    it('resolves undefined while rate limited and sends no mint until Retry-After passes', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+      ingest.mintRefusal = () =>
+        new Response(
+          JSON.stringify({ code: 'rate_limited', message: 'slow' }),
+          {
+            status: 429,
+            headers: { 'Content-Type': 'application/json', 'Retry-After': '60' }
+          }
+        )
+
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
+
+      ingest.mintRefusal = undefined
+      await vi.advanceTimersByTimeAsync(30_000)
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      expect(ingest.mints).toBe(0)
+
+      await vi.advanceTimersByTimeAsync(30_000)
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBe(
+        'session-jwt-1'
+      )
+    })
+
+    it('resolves undefined and mints nothing after sign-out', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+      await authStore.logout()
+
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      expect(ingest.mints).toBe(0)
+    })
+  }
+)
