@@ -107,6 +107,26 @@ describe('CheckoutSummaryColumn', () => {
     ])
   })
 
+  it('renders a $0 due quote as the headline and the total, with no row between', () => {
+    renderColumn({
+      family: 'charge_now',
+      eyebrow: 'Subscribe to Team Plan · Comfy Studios',
+      headline: { amount: '$0', currency: 'USD' },
+      credits: { count: '1,772,400', qualifier: 'credits per year' },
+      items: [],
+      adjustments: [],
+      total: '$0.00',
+      trailing: ['Renews at $100.00 on July 28, 2026']
+    })
+
+    expect(ledgerOutline()).toEqual([
+      '---',
+      'Total due today',
+      'Renews at $100.00 on July 28, 2026'
+    ])
+    expect(screen.getByText('$0.00')).toBeInTheDocument()
+  })
+
   it('shows a scheduled rate beside the currency', () => {
     renderColumn({
       ...UPGRADE,
