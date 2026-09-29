@@ -16,4 +16,6 @@ export const hubModelAliases: ReadonlyMap<string, string> = new Map(
 
 /** Disabled models have no row; their pages are never built. */
 export const hubModelHref = (oldSlug: string) =>
-  hubModelPath(hubModelSlugs.get(oldSlug) ?? oldSlug)
+  hubModelPath(
+    hubModelSlugs.get(oldSlug) ?? hubModelAliases.get(oldSlug) ?? oldSlug
+  )
