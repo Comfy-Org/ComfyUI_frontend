@@ -2054,6 +2054,33 @@ describe('FullPageCheckoutView promo codes', () => {
     ).toBeEnabled()
   })
 
+  it('a code that lapsed while the page re-read on its own: the expired card, not a silent price change', async () => {
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await enterCode('LAUNCH20')
+    await screen.findByText('−$5.60')
+    fake.recover.mockImplementationOnce(async () => ({
+      status: 'ok',
+      value: pendingOperation('op_watched')
+    }))
+    window.dispatchEvent(pageShow(true))
+    await screen.findByTestId('checkout-waiting')
+    quotesByCode(fake, refusedWith('PROMOTION_CODE_INVALID'))
+
+    fake.recover.mockResolvedValueOnce({ status: 'ok', value: undefined })
+    window.dispatchEvent(pageShow(true))
+
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent('Your promo code expired')
+    expect(card).toHaveTextContent(
+      'The LAUNCH20 code expired, so the total was updated.'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Remove LAUNCH20' })
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByText('$28.00')).toHaveLength(2)
+  })
+
   it('offers no promo entry on a change that charges nothing today', async () => {
     await renderCheckout({
       preview: {
