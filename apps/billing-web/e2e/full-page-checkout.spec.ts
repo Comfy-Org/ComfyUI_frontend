@@ -24,6 +24,9 @@ const EYEBROW = 'Subscribe to Pro Plan · Personal'
 const FORM_FAILED = "The payment form couldn't load"
 const SAVED_FAILED = "Your saved payment methods couldn't load"
 
+/** 553-9853's destructive red, the nearest palette step to Figma's #f87171. */
+const INVALID_RED = 'rgb(247, 89, 81)'
+
 const payButton = (page: Page) =>
   page.getByRole('button', { name: 'Pay and subscribe' })
 const tab = (page: Page, name: 'Saved' | 'Add new payment') =>
@@ -211,9 +214,22 @@ test('553-9297: a plan change on a plan set to end needs the keep-subscription t
 
   await expect(box).toHaveAttribute('aria-invalid', 'true')
   await expect(box).toBeFocused()
-  await expect(
-    notice.getByText('Check the box to keep your subscription, then pay.')
-  ).toBeVisible()
+  const error = notice.getByText(
+    'Check the box to keep your subscription, then pay.'
+  )
+  await expect(error).toBeVisible()
+  await expect(box).toHaveAccessibleDescription(
+    'Check the box to keep your subscription, then pay.'
+  )
+  await expect(notice.getByTestId('keep-subscription-box')).toHaveCSS(
+    'border-color',
+    INVALID_RED
+  )
+  await expect(notice.getByText('Keep my subscription and renew it')).toHaveCSS(
+    'color',
+    INVALID_RED
+  )
+  await expect(error).toHaveCSS('color', INVALID_RED)
   await expect(payButton(page)).toBeEnabled()
   expect(
     cloud.requests.some((request) => request.path === '/billing/subscribe')
