@@ -412,7 +412,7 @@ export function buildSummaryLedger(
 ): SummaryLedger {
   const reading = readQuote(quote, context)
   const ledger = familyLedger(reading)
-  return { ...ledger, ...discountSlots(reading, ledger) }
+  return { ...ledger, ...discountSlots(reading) }
 }
 
 function familyLedger(r: QuoteReading): FamilyLedger {
@@ -427,12 +427,9 @@ function familyLedger(r: QuoteReading): FamilyLedger {
 }
 
 /** The server refuses a code on a change that charges nothing today. */
-const ACCEPTS_PROMO = {
-  charge_now: true,
-  prorated_change: true,
-  scheduled: false,
-  top_up: false
-} as const satisfies Record<SummaryFamily, boolean>
+export function acceptsPromoCode(quote: SubscriptionPreview): boolean {
+  return quote.is_immediate
+}
 
 type Discount = NonNullable<SubscriptionPreview['discounts']>[number]
 
@@ -444,7 +441,7 @@ type Discount = NonNullable<SubscriptionPreview['discounts']>[number]
  * one as today's charge plus what the code took would be a frontend guess
  * at a number the server is supposed to report.
  */
-function discountSlots(r: QuoteReading, ledger: FamilyLedger): DiscountSlots {
+function discountSlots(r: QuoteReading): DiscountSlots {
   const enteredCode = r.quote.promotion_code
   const entered = r.promotions.find(
     (discount) => discount.code.toUpperCase() === enteredCode?.toUpperCase()
@@ -469,6 +466,6 @@ function discountSlots(r: QuoteReading, ledger: FamilyLedger): DiscountSlots {
         ? []
         : [{ code: enteredCode, removable: true }])
     ],
-    acceptsPromo: ACCEPTS_PROMO[ledger.family]
+    acceptsPromo: acceptsPromoCode(r.quote)
   }
 }
