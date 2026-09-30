@@ -286,7 +286,7 @@ describe("creator-owned Lamport counter", () => {
     await expect(persistLamportTick(new DocDerivedLamportClockStore(doc), identity, [], { requireSeed: true })).resolves.toBe(1);
   });
 
-  it.each([undefined, 1, 2, 3, 5])("refuses unsupported schema %s without migration or reservation", async (version) => {
+  it.each([undefined, 1, 2, 3, 4, 6])("refuses unsupported schema %s without migration or reservation", async (version) => {
     const doc = new Y.Doc();
     if (version !== undefined) doc.getMap("meta").set("schema_version", version);
     const before = Y.encodeStateAsUpdate(doc);
@@ -294,7 +294,7 @@ describe("creator-owned Lamport counter", () => {
     expect(() => observedDocCounter(doc)).toThrow(/schema/);
     await expect(persistLamportTick(new DocDerivedLamportClockStore(doc), identity, [])).rejects.toThrow(/schema/);
     expect(() => project(doc, catalog)).toThrow(/schema/);
-    expect(() => migrate(doc, version ?? 4)).toThrow(/schema/);
+    expect(() => migrate(doc, version ?? 5)).toThrow(/schema/);
     if (version !== undefined) expect(() => readStamps(doc)).toThrow(/schema/);
     expect(Y.encodeStateAsUpdate(doc)).toEqual(before);
     expect([...doc.share.keys()]).toEqual(roots);

@@ -1,6 +1,6 @@
-# Multiplayer workflow-document schema — v4
+# Multiplayer workflow-document schema — v5
 
-`SCHEMA_VERSION = 4`
+`SCHEMA_VERSION = 5`
 
 > **State: DRAFT — awaiting FE sign-off (FE-1330).**
 >
@@ -113,7 +113,7 @@ Keyed in `nodes` by `String(node.id)`. Fields:
 | `flags` | nested Y.Map | |
 | `order`, `mode` | plain | execution order is node state and IS preserved (§7) |
 | `properties` | plain object | passthrough |
-| `widgets` | **name-keyed Y.Map** | widget name → value. See §1.2 — this is the load-bearing decision |
+| `widgets` | **identity-keyed Y.Map** | occurrence 0 uses the widget name; later same-name occurrences use the schema-v5 reserved identity key. See §1.2 |
 | `__incarnation` | plain string | internal node lifetime token; never projected. Imported nodes use `"0"`; modern adds carry a creator token (normally their `op_id`), while legacy adds map to `"0"` |
 | `inputs` | Y.Array\<Y.Map\> | slot records `{name, type, link, widget?, grow_id?}`; autogrow appends carry `grow_id` (§8.3) |
 | `outputs` | Y.Array\<Y.Map\> | slot records; `links` is a Y.Array of link ids, or `null` preserved verbatim (§7) |
@@ -130,7 +130,13 @@ corruption is silent and total for the node. Different-index concurrent writes
 were safe; same-index was not, and same-index is exactly the LWW case the op
 model must support.
 
-Therefore v1 stores widgets as a Y.Map keyed by **widget name**:
+Therefore widgets are stored as a Y.Map keyed by semantic **widget identity**.
+Schema v5 defines that identity as `(name, occurrence)`, where occurrence is
+the zero-based position among serializable widgets with the same name. The
+first occurrence retains the legacy name key; later occurrences use a
+doc-internal encoded key. This preserves the structural safety of one scalar
+register per widget while making reachable duplicate names independently
+addressable.
 
 - A `set_widget` apply is one map `set` (plus one `__stamps` set): bounded,
   structurally safe under any concurrency, and needs **no catalog at apply
@@ -140,7 +146,7 @@ Therefore v1 stores widgets as a Y.Map keyed by **widget name**:
   it is assembled from the name-keyed map using the widget order of the
   pinned catalog.
 - Consequence, pinned: **the op model is not self-contained.** Widget
-  name↔index resolution requires `object_info` (including dynamic-combo
+  `(name, occurrence)`↔index resolution requires `object_info` (including dynamic-combo
   expansion driven by the node's current widget values, and autogrow
   element-naming templates). A consumer with a different catalog resolves
   different positions. Hence `meta.catalog_version` (§1.4): every document
@@ -861,7 +867,7 @@ the epoch; cross-epoch struct updates never merge.
 
 ## 10. Versioning and `migrate()`
 
-- `SCHEMA_VERSION = 4`, stored in `meta.schema_version` at mint.
+- `SCHEMA_VERSION = 5`, stored in `meta.schema_version` at mint.
 - Private-alpha policy keeps one current format: old layouts are re-minted at
   their source and compatibility readers/migrations are not provided.
 - `migrate(doc, fromVersion)` contract: exact no-op when
@@ -2212,4 +2218,24 @@ This operation is package-local and provisional. comfy-cli's pinned
 field-write operation. A language-neutral hand-authored session in
 `fixtures/golden-vectors/session-node-fields.session.jsonl` covers all four fields in the
 shared conformance manifest meanwhile. No root or per-node reserved key is
-added, so `SCHEMA_VERSION` remains 4.
+added, so that amendment did not itself change the then-current schema v4.
+
+## Amendment A22 — 2026-09-30 — occurrence-addressed widgets (schema v5)
+
+Reachable workflows may contain multiple serializable widgets with the same
+name. A name-only `widgets` map collapsed those positions during mint, and a
+name-only `set_widget` could never address the later instances. Schema v5 adds
+`widget_occurrence` to `set_widget`; absence and zero both mean the first
+occurrence. The catalog's ordered `widget_order` validates the pair and maps it
+to projection position. Each pair owns a distinct `__stamps` target and widget
+map key, so arrival-order convergence and retry dedupe retain their existing
+creator-owned `[counter, actor, op_id]` semantics.
+
+When the frontend's duplicate-only `widgets_values_ordered` passthrough field
+is present, apply updates the matching entry's `value` while preserving all
+other entry keys and nested value keys. No ordered field is invented for
+legacy nodes. Older readers would either drop or reject later-occurrence keys,
+so this is a layout break: v1–v4 documents are refused and must be re-minted
+from source by the host. `migrate()` remains validation-only; followers never
+rewrite a shared document. Coordinated consumer adoption and frontend sign-off
+are required before release.

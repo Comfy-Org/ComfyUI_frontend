@@ -99,6 +99,10 @@ clock admission is not a follower's empty snapshot read. `test/clock.test.ts`
 holds refusal of v1–v3, absent and future schemas without writes or relabelling,
 and restart recovery from current-layout winning stamps and reservations.
 
+Schema v5 adds occurrence-aware widget keys and LWW targets (schema A22). An
+older reader would collapse or reject later same-name occurrences, so v1–v4
+remain fail-closed and the host re-mints from source; followers do not migrate.
+
 ### KA-12 — Catalog pinned at mint
 **Rule:** `meta.catalog_version` cites the catalog by SHA, not branch; reject NAMED widget writes to uncatalogued classes loudly. A subgraph instance's `type` is a definition UUID that no catalog describes, and its promoted widget values are POSITIONAL by frontend contract (ADR 0009), so a promoted host write (schema Amendment A15) is not a widget-name resolution and needs no catalog entry for the instance — it still needs A CATALOG (`catalog_required` without one) to tell an instance from an unseen class, and still refuses (`uncatalogued_widget_write`) to lay a positional array over named values the catalog cannot describe.  
 **Why:** Replay semantics must not drift with a moving vocabulary.  

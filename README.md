@@ -190,10 +190,11 @@ the accept path.
 ### `migrate(doc, fromVersion): void`
 
 Document-layout version validation for the private-alpha current format.
-`SCHEMA_VERSION` is `4`: the call validates and no-ops only at v4, and throws
+`SCHEMA_VERSION` is `5`: the call validates and no-ops only at v5, and throws
 `SchemaVersionError` for every older or newer layout without relabelling it.
 Old layouts must be re-minted at their source; there is no compatibility reader.
-Schema v4 separates Lamport reservations into `__clock_reservations`;
+Schema v5 adds `(name, occurrence)` widget identity; schema v4 separated
+Lamport reservations into `__clock_reservations`;
 `readStamps()` contains only winning write-target stamps. Clock admissions
 require a current-schema caller document and recover their floor from both
 ledgers, including after snapshot restart (ADR-021, Amendment CLK-3).

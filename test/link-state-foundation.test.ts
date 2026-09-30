@@ -25,10 +25,10 @@ function workflow(): WorkflowJSON {
   };
 }
 
-describe("schema v4 retains first-class imported link state", () => {
+describe("schema v5 retains first-class imported link state", () => {
   it("stores complete concrete, full-name promoted, and grown descriptors", () => {
     const doc = mint(workflow(), catalog);
-    expect(SCHEMA_VERSION).toBe(4);
+    expect(SCHEMA_VERSION).toBe(5);
     expect(readLinkState(doc)).toEqual({
       "10": { version: 1, authority: "imported", tuple: [10, 1, 0, 2, 0, "IMAGE"], destination: { kind: "concrete", to_slot: 0, slot: { name: "images", type: "IMAGE", link: 10 } } },
       "11": { version: 1, authority: "imported", tuple: [11, 1, 0, 3, 0, "IMAGE"], destination: { kind: "promoted", to_slot: 0, name: "nested.dynamic.image", slot: { name: "nested.dynamic.image", type: "IMAGE", link: 11, widget: { name: "image" } } } },

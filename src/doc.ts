@@ -31,6 +31,7 @@ import {
   type WidgetCatalog,
   type WorkflowNode,
 } from "./types.js";
+import { widgetOccurrenceAt, widgetStorageKey } from "./widget-identity.js";
 
 // ---------------------------------------------------------------------------
 // Opaque widgets (schema §1.2 — unknown classes)
@@ -755,7 +756,7 @@ function slotToYMap(slot: unknown, what: string): Y.Map<unknown> | unknown {
 }
 
 /**
- * Build the name-keyed widgets Y.Map (schema §1.2) from a node's
+ * Build the identity-keyed widgets Y.Map (schema §1.2) from a node's
  * `widgets_values`. A positional array requires the pinned catalog's
  * `widget_order` for the node's type; an already name-keyed record does not.
  * Anything else (comfy-cli `_widgets_as_list`: non-list, non-object) reads as
@@ -776,7 +777,8 @@ function widgetsToYMap(wv: unknown, widgetOrder: readonly string[] | undefined):
     const order = widgetOrder ?? [];
     wv.forEach((v, i) => {
       const name = order[i] ?? overflowWidgetName(i);
-      widgets.set(name, cloneForMap(v, `widgets_values[${String(i)}]`));
+      const occurrence = i < order.length ? widgetOccurrenceAt(order, i) : 0;
+      widgets.set(widgetStorageKey(name, occurrence), cloneForMap(v, `widgets_values[${String(i)}]`));
     });
   } else if (isPlainObject(wv)) {
     for (const [k, v] of Object.entries(wv)) widgets.set(k, cloneForMap(v, `widgets_values.${k}`));
@@ -789,7 +791,7 @@ function widgetsToYMap(wv: unknown, widgetOrder: readonly string[] | undefined):
  * key present on the source node (and only those) is stored, so projection
  * reproduces the node without inventing defaults. Special-cased per schema §1.1:
  *
- * - `widgets_values` → the NAME-KEYED `widgets` Y.Map (schema §1.2 — the spike
+ * - `widgets_values` → the IDENTITY-KEYED `widgets` Y.Map (schema §1.2 — the spike
  *   proved positional Y.Array widgets corrupt under same-index concurrency).
  *   The key is stored even when empty, so key presence round-trips.
  *   EXCEPTION: a non-empty positional array for a class absent from the pinned

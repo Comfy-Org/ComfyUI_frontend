@@ -189,7 +189,7 @@ describe("read-only surface — it actually reads the document", () => {
 
   it("readMeta returns schema/catalog version and the §6 passthrough keys", () => {
     const meta = readMeta(fixtureDoc());
-    expect(meta["schema_version"]).toBe(4);
+    expect(meta["schema_version"]).toBe(5);
     expect(meta["catalog_version"]).toBe(CATALOG_SHA);
     expect(meta["groups"]).toEqual([{ title: "g", bounding: [0, 0, 10, 10] }]);
     expect(meta["extra"]).toEqual({ ds: { scale: 1, offset: [0, 0] } });
@@ -473,7 +473,7 @@ describe("read-only surface — the KA-11 read gate (#38)", () => {
   }
 
   const UNREADABLE: [string, () => Y.Doc][] = [
-    ["newer than this package", () => docWithSchemaVersion(5)],
+    ["newer than this package", () => docWithSchemaVersion(6)],
     ["older than this package", () => docWithSchemaVersion(1)],
     ["not an integer version", () => docWithSchemaVersion("1")],
     ["a zero version", () => docWithSchemaVersion(0)],
@@ -529,7 +529,7 @@ describe("read-only surface — the KA-11 read gate (#38)", () => {
     // The positive control: without it every assertion above passes for a
     // surface that refused unconditionally.
     const doc = fixtureDoc();
-    expect(readMeta(doc)["schema_version"]).toBe(4);
+    expect(readMeta(doc)["schema_version"]).toBe(5);
     expect(Object.keys(readGraph(doc).nodes).sort()).toEqual([
       String(KSAMPLER_ID),
       String(NOTE_ID),
@@ -709,7 +709,7 @@ describe("read-only surface — the KA-11 read gate (#38)", () => {
     // an untypable root as content instead, so the refusal type matches.
     const doc = new Y.Doc();
     doc.getArray<unknown>("nodes").push([1]);
-    metaMap(doc).set("schema_version", 5);
+    metaMap(doc).set("schema_version", 6);
     expect(() => project(doc, catalog)).toThrow(SchemaVersionError);
     expect(() => readGraph(doc)).toThrow(SchemaVersionError);
     expect(() => readStamps(doc)).toThrow(SchemaVersionError);

@@ -19,6 +19,7 @@ import { compareText } from "./helpers.js"
 const catalog: WidgetCatalog = {
   types: {
     Inner: { widget_order: ["value"] },
+    DuplicateWidgets: { widget_order: ["same", "same"] },
     Other: { widget_order: [] },
   },
 }
@@ -40,6 +41,15 @@ const definition = (id = subgraphId, value = 1) => ({
   inputs: [],
   outputs: [],
   nodes: [{ id: 10, type: "Inner", inputs: [], outputs: [], widgets_values: [value] }],
+  links: [],
+})
+
+const duplicateWidgetDefinition = (first: unknown, second: unknown): SubgraphDefinition => ({
+  id: subgraphId,
+  name: "Duplicates",
+  inputs: [],
+  outputs: [],
+  nodes: [{ id: 10, type: "DuplicateWidgets", inputs: [], outputs: [], widgets_values: [first, second] }],
   links: [],
 })
 
@@ -196,6 +206,37 @@ describe("define_subgraph application", () => {
     expect(Y.encodeStateAsUpdate(doc)).not.toEqual(before) // the new op_id is consumed
     const projected = (project(doc, catalog).definitions as { subgraphs: Array<{ nodes: Array<{ widgets_values: unknown[] }> }> }).subgraphs[0]!
     expect(projected.nodes[0]!.widgets_values).toEqual([2])
+  })
+
+  it("restores an occurrence-1 interior edit to the same occurrence after definition replacement", () => {
+    const doc = empty()
+    const incumbent = duplicateWidgetDefinition("old-first", "old-second")
+    const replacement = winningReplacement(
+      incumbent,
+      duplicateWidgetDefinition("new-first", "new-second"),
+    )
+    const initial = { ...define(), subgraph_definition: incumbent }
+    const redefine = { ...define(), subgraph_definition: replacement }
+    const edit = {
+      op: "set_widget",
+      ...envelope(),
+      node_id: 10,
+      path: [subgraphId, "10"] as [string, ...string[]],
+      inner_widget: "same",
+      widget: "same",
+      widget_occurrence: 1,
+      value: "edited-second",
+    } as const
+
+    expect(applyOps(doc, [initial, edit, redefine], catalog).outcomes.map(({ outcome }) => outcome)).toEqual([
+      "applied",
+      "applied",
+      "applied",
+    ])
+    const projected = (project(doc, catalog).definitions as {
+      subgraphs: Array<{ nodes: Array<{ widgets_values: unknown[] }> }>
+    }).subgraphs[0]!
+    expect(projected.nodes[0]!.widgets_values).toEqual(["new-first", "edited-second"])
   })
 
   it("replays an identical definition imported without a private digest and continues the batch", () => {

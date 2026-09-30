@@ -5,7 +5,7 @@
  * identical JSON. Canonicalization rules:
  *   1. node and link arrays sorted by id (Y.Map is unordered; sorted-by-id IS
  *      the canonical order — execution `order` is node state and preserved);
- *   2. the name-keyed `widgets` map is emitted as the positional
+ *   2. the identity-keyed `widgets` map is emitted as the positional
  *      `widgets_values` array via the pinned catalog's `widget_order`;
  *      missing interior names project as null (Python pads with None), and
  *      the array length is 1 + the highest widget index present. A node stored
@@ -48,6 +48,7 @@ import { projectInteriorLinkOrder } from "./interior-link-order.js";
 import { assertReadableSchema } from "./schema-version.js";
 import { NODE_INCARNATION_KEY, type WidgetCatalog, type WorkflowJSON, type WorkflowNode } from "./types.js";
 import { hasDynamicCombos, optionOwnedWidgets, projectedLength, widgetLayoutForWidgets } from "./dynamic-combos.js";
+import { widgetIdentityFromStorageKey, widgetOccurrenceAt, widgetStorageKey, widgetIndexOf } from "./widget-identity.js";
 
 /** Sorted-by-id comparator: numeric when both ids are numbers, else string order. */
 function idCompare(a: unknown, b: unknown): number {
@@ -109,7 +110,7 @@ function positionalIndexOf(order: readonly string[], name: string): number {
   return overflow !== null && overflow >= order.length ? overflow : -1;
 }
 
-/** Name-keyed widgets map → positional widgets_values (§7 rule 2). */
+/** Identity-keyed widgets map → positional widgets_values (§7 rule 2). */
 function widgetsToPositional(
   nodeType: string,
   widgets: Y.Map<unknown>,
@@ -129,8 +130,9 @@ function widgetsToPositional(
   const inactive = optionOwnedWidgets(entry);
   const selectionDependent = hasDynamicCombos(entry);
   let max = -1;
-  widgets.forEach((_v, name) => {
-    const i = positionalIndexOf(order, name);
+  widgets.forEach((_v, storageKey) => {
+    const { name, occurrence } = widgetIdentityFromStorageKey(storageKey);
+    const i = occurrence === 0 ? positionalIndexOf(order, name) : widgetIndexOf(order, name, occurrence);
     // A sub-widget of an option the node does not select owns no slot; its
     // value is kept for when that option is selected again.
     if (i < 0 && inactive.has(name)) return;
@@ -150,7 +152,8 @@ function widgetsToPositional(
   const out: unknown[] = [];
   for (let i = 0; i <= max; i++) {
     const name = order[i] ?? overflowWidgetName(i);
-    if (widgets.has(name)) out.push(structuredClone(widgets.get(name)));
+    const key = widgetStorageKey(name, i < order.length ? widgetOccurrenceAt(order, i) : 0);
+    if (widgets.has(key)) out.push(structuredClone(widgets.get(key)));
     else if (layout.defaults.has(name)) out.push(structuredClone(layout.defaults.get(name)));
     else out.push(null);
   }

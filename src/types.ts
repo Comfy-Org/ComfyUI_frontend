@@ -20,7 +20,7 @@
  * Version of the Y.Doc layout. Bump requires FE sign-off and an explicit old-layout disposition.
  * The authoritative layout + op-semantics reference is docs/multiplayer-schema.md.
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /** Version of an imported destination reconstruction descriptor in `__link_state`. */
 export const LINK_STATE_DESCRIPTOR_VERSION = 1;
@@ -381,6 +381,8 @@ interface SetWidgetOpBase extends OpBase {
    * `test/invalid-op-states.test.ts`.
    */
   widget: string;
+  /** Zero-based occurrence among serializable widgets with this name; absent means 0. */
+  widget_occurrence?: number;
   value: unknown;
   /** Creator-carried lifetime of the addressed node; absent means legacy life 0. */
   node_incarnation?: string;
@@ -622,11 +624,11 @@ export type OpKind = Checked<
 // Widget catalog (pinned object_info projection)
 //
 // The op model is deliberately name-addressed and therefore NOT self-contained:
-// projecting the name-keyed `widgets` map back to the positional
+// projecting the identity-keyed `widgets` map back to the positional
 // `widgets_values` array requires the widget order of the object_info catalog
 // the document pins (`meta.catalog_version`). At apply time the catalog is
 // needed to decompose an `add_node` payload's positional `widgets_values`
-// into the name-keyed map, for autogrow collision renames
+// into the identity-keyed map, for autogrow collision renames
 // (`autogrow_templates`), and to reject unknown widget names.
 // See docs/multiplayer-schema.md §1.2 / §7; fixtures/catalog.json is the shape.
 // ---------------------------------------------------------------------------

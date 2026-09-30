@@ -23,6 +23,7 @@
 import * as Y from "yjs";
 
 import type { DynamicComboEntry, WidgetCatalogEntry } from "./types.js";
+import { widgetOccurrenceAt, widgetStorageKey } from "./widget-identity.js";
 
 type Combos = Record<string, DynamicComboEntry>;
 
@@ -71,7 +72,7 @@ export interface WidgetLayout {
 function expand(
   entry: WidgetCatalogEntry,
   combos: Combos,
-  valueAt: (name: string, index: number) => unknown,
+  valueAt: (name: string, index: number, occurrence: number) => unknown,
 ): WidgetLayout {
   const owned = optionOwnedWidgets(entry);
   const order: string[] = [];
@@ -80,7 +81,8 @@ function expand(
     for (const name of names) {
       order.push(name);
       if (depth > 32 || !Object.hasOwn(combos, name)) continue;
-      const stored = valueAt(name, order.length - 1);
+      const index = order.length - 1;
+      const stored = valueAt(name, index, widgetOccurrenceAt(order, index));
       const option = selectedOption(combos[name]!, stored === undefined ? defaults.get(name) : stored);
       if (!option) continue;
       for (const [child, value] of Object.entries(option.defaults)) defaults.set(child, value);
@@ -108,7 +110,9 @@ export function widgetOrderForValues(entry: WidgetCatalogEntry | undefined, wv: 
 export function widgetLayoutForWidgets(entry: WidgetCatalogEntry, widgets: Y.Map<unknown> | undefined): WidgetLayout {
   const combos = combosOf(entry);
   if (!combos) return { order: entry.widget_order, defaults: new Map() };
-  return expand(entry, combos, (name) => widgets?.get(name));
+  return expand(entry, combos, (name, _index, occurrence) =>
+    widgets?.get(widgetStorageKey(name, occurrence)),
+  );
 }
 
 /** The order for a document node's name-keyed widgets map. */
@@ -126,7 +130,10 @@ export function widgetOrderForWidgets(
 export function projectedLength(layout: WidgetLayout, widgets: Y.Map<unknown> | undefined): number {
   let max = -1;
   layout.order.forEach((name, index) => {
-    if (widgets?.has(name) || layout.defaults.has(name)) max = Math.max(max, index);
+    if (
+      widgets?.has(widgetStorageKey(name, widgetOccurrenceAt(layout.order, index))) ||
+      layout.defaults.has(name)
+    ) max = Math.max(max, index);
   });
   return max + 1;
 }

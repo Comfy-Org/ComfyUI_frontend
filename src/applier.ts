@@ -114,6 +114,7 @@ import {
   opBoundsRefusal,
 } from "./limits.js";
 import { codePointCompare, compareStampKeys, stampKey, stampTargetKey, widgetTargetKey } from "./stamps.js";
+import { widgetIndexOf, widgetStorageKey } from "./widget-identity.js";
 import {
   DEFERRED_OPS,
   FROZEN_OPS,
@@ -685,7 +686,7 @@ type DefinitionWidgetEdit = {
   targetKey: string;
   definitionId: string;
   nodeId: string;
-  widget: string;
+  storageKey: string;
   value: unknown;
 };
 
@@ -704,17 +705,24 @@ function definitionWidgetEdits(
     if (!Array.isArray(target) || target[0] !== "widget" || !Array.isArray(target[1])) continue;
     const path = target[1].map(String);
     const widget = target[3];
-    if (path.length < 2 || typeof widget !== "string") continue;
+    const occurrence = target[4] === undefined ? 0 : target[4];
+    if (
+      path.length < 2 ||
+      typeof widget !== "string" ||
+      !Number.isInteger(occurrence) ||
+      (occurrence as number) < 0
+    ) continue;
     const resolved = definitionNodeAtPath(doc, existing, path);
     if (!resolved) continue;
     const oldWidgets = resolved.node.get("widgets");
-    if (oldWidgets instanceof Y.Map && oldWidgets.has(widget)) {
+    const storageKey = widgetStorageKey(widget, occurrence as number);
+    if (oldWidgets instanceof Y.Map && oldWidgets.has(storageKey)) {
       edits.push({
         targetKey,
         definitionId: resolved.definitionId,
         nodeId: path.at(-1)!,
-        widget,
-        value: structuredClone(oldWidgets.get(widget)),
+        storageKey,
+        value: structuredClone(oldWidgets.get(storageKey)),
       });
     }
   }
@@ -755,7 +763,7 @@ function restoreDefinitionWidgetEdits(
       mdel(stampsMap(doc), edit.targetKey);
       continue;
     }
-    mset(newWidgets, edit.widget, edit.value);
+    mset(newWidgets, edit.storageKey, edit.value);
   }
 }
 
@@ -1414,6 +1422,7 @@ function validateWidgetName(
   nodeType: string,
   widget: string,
   node?: Y.Map<unknown>,
+  occurrence = 0,
 ): void {
   if (!catalog) return;
   const entry = catalogEntry(catalog, nodeType);
@@ -1429,7 +1438,7 @@ function validateWidgetName(
   // stored and not projected until that option is selected.
   const widgets = node?.get("widgets");
   const order = widgetOrderForWidgets(entry, widgets instanceof Y.Map ? widgets : undefined);
-  if (!order.includes(widget) && !optionOwnedWidgets(entry).has(widget)) {
+  if (widgetIndexOf(order, widget, occurrence) < 0 && !(occurrence === 0 && optionOwnedWidgets(entry).has(widget))) {
     throw new OpRejectedError(
       "unknown_widget",
       `widget '${widget}' not found on ${nodeType}; available: ${order.join(", ") || "(none — all inputs are links)"}`,
@@ -1490,6 +1499,28 @@ function widgetsOf(node: Y.Map<unknown>): Y.Map<unknown> {
     mset(node, "widgets", widgets);
   }
   return widgets as Y.Map<unknown>;
+}
+
+/** Keep the frontend's duplicate-only lossless serialization field coherent. */
+function updateOrderedWidgetValue(
+  node: Y.Map<unknown>,
+  name: string,
+  occurrence: number,
+  value: unknown,
+): void {
+  const stored = node.get("widgets_values_ordered");
+  if (!Array.isArray(stored)) return;
+  const index = stored.findIndex((entry) =>
+    typeof entry === "object" &&
+    entry !== null &&
+    !Array.isArray(entry) &&
+    (entry as Record<string, unknown>)["name"] === name &&
+    (entry as Record<string, unknown>)["occurrence"] === occurrence,
+  );
+  if (index < 0) return;
+  const next = structuredClone(stored) as Array<Record<string, unknown>>;
+  next[index] = { ...next[index], value: structuredClone(value) };
+  mset(node, "widgets_values_ordered", next);
 }
 
 /**
@@ -1681,8 +1712,12 @@ function applyPromotedHostWrite(
   const storage = hostWriteStorage(target, catalog);
   switch (storage) {
     case "named":
-      validateWidgetName(catalog, String(target.get("type") ?? ""), op.widget, target);
-      mset(widgetsOf(target), op.widget, structuredClone(op.value));
+      {
+        const occurrence = op.widget_occurrence ?? 0;
+        validateWidgetName(catalog, String(target.get("type") ?? ""), op.widget, target, occurrence);
+        mset(widgetsOf(target), widgetStorageKey(op.widget, occurrence), structuredClone(op.value));
+        updateOrderedWidgetValue(target, op.widget, occurrence, op.value);
+      }
       mset(stamps, targetKey, key);
       return "applied";
     case "positional": {
@@ -1719,6 +1754,9 @@ function validateWidgetOp(op: SetWidgetOp) {
   if (op.node_incarnation !== undefined && (typeof op.node_incarnation !== "string" || op.node_incarnation.length === 0)) {
     throw new OpRejectedError("malformed_op", "set_widget: node_incarnation must be a non-empty string");
   }
+  if (op.widget_occurrence !== undefined && (!Number.isInteger(op.widget_occurrence) || op.widget_occurrence < 0)) {
+    throw new OpRejectedError("malformed_op", "set_widget: widget_occurrence must be a non-negative integer");
+  }
   assertWritableValue(op.value, "set_widget");
   // Op-only, like the checks above it (A6): the payload's shape is settled
   // before any document read, and a host write that also carries an interior
@@ -1753,7 +1791,13 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
   const stamps = stampsMap(doc);
   const targetKey = interiorResolution === null
     ? stampTargetKey(op)
-    : JSON.stringify(["widget", interiorResolution.canonicalPath, op.node_incarnation ?? LEGACY_NODE_INCARNATION, interior!.inner_widget]);
+    : JSON.stringify([
+      "widget",
+      interiorResolution.canonicalPath,
+      op.node_incarnation ?? LEGACY_NODE_INCARNATION,
+      interior!.inner_widget,
+      ...((op.widget_occurrence ?? 0) === 0 ? [] : [op.widget_occurrence]),
+    ]);
   const prior = stamps.get(targetKey) as StampKey | undefined;
   const key = stampKey(op);
   if (prior != null && compareStampKeys(key, prior) <= 0) return "lww-dropped";
@@ -1773,7 +1817,8 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
     // makes the WHOLE document unprojectable exactly as it would at top level.
     // Runs BEFORE the range check so an uncatalogued class is refused rather
     // than falling through the `if (entry)` block as an accepted write (#13).
-    validateWidgetName(catalog, nodeType, widget, target);
+    const occurrence = op.widget_occurrence ?? 0;
+    validateWidgetName(catalog, nodeType, widget, target, occurrence);
     // OWN-property lookup (#13): an inherited key such as `__proto__` must read
     // as "absent from the catalog", not resolve to a prototype object.
     const entry = catalogEntry(catalog, nodeType);
@@ -1781,7 +1826,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
       const current = target.get("widgets");
       const stored = current instanceof Y.Map ? current : undefined;
       const layout = widgetLayoutForWidgets(entry, stored);
-      const idx = layout.order.indexOf(widget);
+      const idx = widgetIndexOf(layout.order, widget, occurrence);
       // Interior writes never pad (comfy-cli `_write_widget` extend=False):
       // the projected positional index must already be inside the node's
       // current widgets_values length — which counts a selected option's
@@ -1794,7 +1839,8 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
         );
       }
     }
-    mset(widgetsOf(target), widget, structuredClone(op.value));
+    mset(widgetsOf(target), widgetStorageKey(widget, occurrence), structuredClone(op.value));
+    updateOrderedWidgetValue(target, widget, occurrence, op.value);
     mset(stamps, targetKey, key);
     return "applied";
   }
@@ -1804,10 +1850,12 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
   if (!node) return "no-op"; // target concurrently deleted → no-op (delete wins)
   if (nodeIncarnation(node) !== (op.node_incarnation ?? LEGACY_NODE_INCARNATION)) return "no-op";
   rejectIfOpaqueWidgets(node, op.widget);
-  validateWidgetName(catalog, String(node.get("type") ?? ""), op.widget, node);
+  const occurrence = op.widget_occurrence ?? 0;
+  validateWidgetName(catalog, String(node.get("type") ?? ""), op.widget, node, occurrence);
   // Top-level writes may extend past the current positional length — comfy-cli
   // pads with None; here the name-keyed map makes padding a projection concern.
-  mset(widgetsOf(node), op.widget, structuredClone(op.value));
+  mset(widgetsOf(node), widgetStorageKey(op.widget, occurrence), structuredClone(op.value));
+  updateOrderedWidgetValue(node, op.widget, occurrence, op.value);
   mset(stamps, targetKey, key);
   return "applied";
 }

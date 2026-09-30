@@ -100,9 +100,15 @@ export function writeTarget(op: WireOp): unknown[] {
   switch (op.op) {
     case "set_widget":
       if (op.path && op.path.length > 0) {
-        return ["widget", op.path.map(String), incarnation, op.inner_widget];
+        return occurrenceTarget(
+          ["widget", op.path.map(String), incarnation, op.inner_widget],
+          op.widget_occurrence,
+        );
       }
-      return ["widget", String(op.node_id), incarnation, op.widget];
+      return occurrenceTarget(
+        ["widget", String(op.node_id), incarnation, op.widget],
+        op.widget_occurrence,
+      );
     case "add_node":
       return nodeTarget(op.node_id, op.path);
     case "delete_node":
@@ -163,6 +169,10 @@ export function writeTarget(op: WireOp): unknown[] {
       checkExhaustive(op);
       return [(op as WireOp).op];
   }
+}
+
+function occurrenceTarget(target: unknown[], occurrence: number | undefined): unknown[] {
+  return (occurrence ?? 0) === 0 ? target : [...target, occurrence];
 }
 
 function nodeTarget(nodeId: unknown, path?: readonly string[] | null): unknown[] {
