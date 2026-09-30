@@ -8,8 +8,9 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
-import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
+
+import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
 
 import {
   zAgentAnswerAccepted,
@@ -122,12 +123,14 @@ function getErrorMessage(body: unknown, fallback: string): string {
   // A refused attachment type is the user's to fix, so it is answered in their
   // language from the names the server refused — not with the server's English
   // `error` string, which is what a plain AgentError parse would surface.
+  //
+  // rejected_count, not rejected.length: the array is capped server-side, so
+  // counting it would tell the user fewer files were refused than actually were.
   const refused = zAgentAttachmentRejected.safeParse(body)
   if (refused.success) {
-    return i18n.global.t(
-      'agent.attachmentTypeNotAccepted',
-      { name: refused.data.rejected.join(', ') },
-      refused.data.rejected.length
+    return refusedAttachmentsMessage(
+      refused.data.rejected,
+      refused.data.rejected_count
     )
   }
 

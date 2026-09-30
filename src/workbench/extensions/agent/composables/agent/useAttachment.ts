@@ -3,6 +3,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { hasImageType } from '@/utils/eventUtils'
 import { formatSize } from '@/utils/formatUtil'
 import { partitionAttachableFiles } from '../../utils/attachableFiles'
+import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
 import type { ComposerAttachment } from './useComposer'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
@@ -53,19 +54,6 @@ async function withDeadline<T>(
   } finally {
     clearTimeout(timer)
   }
-}
-
-const MAX_NAMED_REJECTIONS = 3
-
-function rejectedNames(rejected: File[]): string {
-  const named = rejected.slice(0, MAX_NAMED_REJECTIONS).map(({ name }) => name)
-  const remaining = rejected.length - named.length
-  return remaining > 0
-    ? i18n.global.t('agent.attachmentNamesOverflow', {
-        names: named.join(', '),
-        count: remaining
-      })
-    : named.join(', ')
 }
 
 let stagedCount = 0
@@ -205,16 +193,10 @@ export function useAttachment(options: UseAttachmentOptions) {
   async function addFiles(files: Iterable<File>): Promise<boolean> {
     const { attachable, rejected } = partitionAttachableFiles(files)
     // One message for the whole batch: dropping a folder of unsupported files
-    // would otherwise stack that many simultaneous 5-second toasts. The names
-    // are capped for the same reason the toast was collapsed — the unbounded
-    // list would just move from the screen into the message body.
+    // would otherwise stack that many simultaneous 5-second toasts.
     if (rejected.length > 0) {
       options.onError?.(
-        i18n.global.t(
-          'agent.attachmentTypeNotAccepted',
-          { name: rejectedNames(rejected) },
-          rejected.length
-        )
+        refusedAttachmentsMessage(rejected.map(({ name }) => name))
       )
     }
     const staged = attachable
