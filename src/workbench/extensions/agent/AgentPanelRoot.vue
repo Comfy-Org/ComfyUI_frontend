@@ -1688,17 +1688,13 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
     return false
   }
 
-  // Only a ref the policy actually ACCEPTED skips the upload. An opaque ref —
-  // a bare digest or the blake3: wire form — yields `unknown`, and staging on
-  // that is how a file the server will later refuse gets a chip and no warning:
-  // the docblock's "leaves the decision to the deferred fetch" only holds if
-  // this path declines it. `asset.kind !== 'other'` cannot stand in for the
-  // check, since it reads the shared taxonomy rather than the accept list.
-  if (
-    asset.ref &&
-    asset.kind !== 'other' &&
-    agentAttachRefVerdict(asset.ref) === 'accepted'
-  ) {
+  // A ref with a judgeable extension reached this point only if the policy
+  // accepted it. An opaque ref (a bare digest or blake3: value) must also stay
+  // intact: the cloud contract deliberately admits it and rechecks the stored
+  // filename after resolution. Asset-card payloads do not necessarily carry a
+  // fetch URI, so routing an opaque ref through the deferred fetch would drop a
+  // valid attachment before the server can adjudicate it.
+  if (asset.ref && asset.kind !== 'other') {
     return (
       panelRef.value?.addAttachment({
         id: `asset:${asset.ref}`,
