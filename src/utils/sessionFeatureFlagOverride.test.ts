@@ -1,9 +1,14 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { Auth } from 'firebase/auth'
 import { initializeAuth } from 'firebase/auth'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { fakeHostAuthBridge } from '@/platform/auth/host/__tests__/fakeHostAuthBridge'
+import {
+  startHostIdentity,
+  stopHostIdentity
+} from '@/platform/auth/host/hostIdentity'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 const mockDistribution = vi.hoisted(() => ({
@@ -231,6 +236,41 @@ describe('getSessionOverride', () => {
 
       expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
       expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull()
+    })
+  })
+
+  describe('with the Desktop host identity', () => {
+    afterEach(() => stopHostIdentity())
+
+    it.for([
+      [true, true],
+      [undefined, false],
+      [false, false]
+    ])(
+      'treats a host @comfy.org account with emailVerified=%s as staff: %s',
+      async ([emailVerified, applies]) => {
+        mockCurrentUser.value = null
+        await startHostIdentity(
+          fakeHostAuthBridge({
+            status: 'signed_in',
+            userId: 'comfy-user-1',
+            email: 'dev@comfy.org',
+            ...(emailVerified === undefined ? {} : { emailVerified })
+          }).bridge
+        )
+        visit('/?ff=onboarding_tour_enabled')
+
+        expect(getSessionOverride('onboarding_tour_enabled')).toBe(
+          applies ? true : undefined
+        )
+      }
+    )
+
+    it('ignores a leftover Firebase employee once the host owns identity', async () => {
+      await startHostIdentity(fakeHostAuthBridge().bridge)
+      visit('/?ff=onboarding_tour_enabled')
+
+      expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
     })
   })
 })

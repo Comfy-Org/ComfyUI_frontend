@@ -31,6 +31,12 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { fakeHostAuthBridge } from '@/platform/auth/host/__tests__/fakeHostAuthBridge'
+import type { HostAuthBridge } from '@/platform/auth/host/hostAuthBridge'
+import {
+  startHostIdentity,
+  stopHostIdentity
+} from '@/platform/auth/host/hostIdentity'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -286,6 +292,76 @@ describe('useAuthStore', () => {
 
       expect(await pending).toBeNull()
       expect(store.balance).toBeNull()
+    })
+  })
+
+  describe('with the Desktop host identity', () => {
+    afterEach(() => stopHostIdentity())
+
+    const HOST_HEADER = { Authorization: 'Bearer host-access-token' }
+
+    it('authenticates every rail with the host token, never Firebase', async () => {
+      await startHostIdentity(fakeHostAuthBridge().bridge)
+
+      await expect(store.getAuthHeader()).resolves.toEqual(HOST_HEADER)
+      await expect(store.getUserAuthHeader()).resolves.toEqual(HOST_HEADER)
+      await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(HOST_HEADER)
+      await expect(store.getAuthToken()).resolves.toBe('host-access-token')
+      await expect(store.getWorkspaceAuthToken()).resolves.toBe(
+        'host-access-token'
+      )
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+      expect(store.userId).toBe('comfy-user-1')
+      expect(store.userEmail).toBe('ada@example.com')
+      expect(store.isAuthenticated).toBe(true)
+    })
+
+    it.for<{ label: string; bridge?: HostAuthBridge }>([
+      { label: 'absent' },
+      {
+        label: 'disabled',
+        bridge: fakeHostAuthBridge({ status: 'disabled' }).bridge
+      }
+    ])('uses Firebase when the host bridge is $label', async ({ bridge }) => {
+      if (bridge) await startHostIdentity(bridge)
+
+      await expect(store.getUserAuthHeader()).resolves.toEqual({
+        Authorization: 'Bearer mock-id-token'
+      })
+      expect(store.userId).toBe('test-user-id')
+    })
+
+    it('signs out when the host does', async () => {
+      const { bridge, push } = fakeHostAuthBridge()
+      await startHostIdentity(bridge)
+
+      push({ status: 'signed_out' })
+
+      expect(store.isAuthenticated).toBe(false)
+      expect(store.userId).toBeUndefined()
+      await expect(store.getAuthHeader()).resolves.toBeNull()
+    })
+
+    it('hands an sso_required refusal from comfy-api back to the host', async () => {
+      const { bridge } = fakeHostAuthBridge()
+      await startHostIdentity(bridge)
+      mockFetch.mockImplementation(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ message: 'sso_required: use SSO' }), {
+            status: 403
+          })
+        )
+      )
+
+      await store.fetchBalance().catch(() => undefined)
+
+      await vi.waitFor(() =>
+        expect(bridge.reportRefusal).toHaveBeenCalledWith(
+          'host-access-token',
+          'sso_required'
+        )
+      )
+      expect(store.isAuthenticated).toBe(false)
     })
   })
 

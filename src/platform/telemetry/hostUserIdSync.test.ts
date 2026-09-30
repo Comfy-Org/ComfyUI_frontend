@@ -12,6 +12,11 @@ beforeEach(() => {
 
 import { syncHostUserIdWithFirebaseAuth } from './hostUserIdSync'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+import { fakeHostAuthBridge } from '@/platform/auth/host/__tests__/fakeHostAuthBridge'
+import {
+  startHostIdentity,
+  stopHostIdentity
+} from '@/platform/auth/host/hostIdentity'
 
 const stopHandles: Array<() => void> = []
 
@@ -40,6 +45,7 @@ describe('host user ID sync', () => {
 
   afterEach(() => {
     while (stopHandles.length) stopHandles.pop()?.()
+    stopHostIdentity()
     delete window.__comfyDesktop2
   })
 
@@ -169,5 +175,23 @@ describe('host user ID sync', () => {
       status: 'signed_in',
       userId: 'firebase-user-a'
     })
+  })
+
+  it('reports the host account id instead of a Firebase uid', async () => {
+    const { reportFirebaseAuthState } = installTelemetryBridge()
+    useAuthStore().currentUser = fromPartial({ uid: 'firebase-user-a' })
+    useAuthStore().isInitialized = true
+    const { bridge, push } = fakeHostAuthBridge()
+    await startHostIdentity(bridge)
+
+    startSync()
+    push({ status: 'signed_out' })
+    await nextTick()
+
+    expect(reportFirebaseAuthState.mock.calls).toEqual([
+      [{ status: 'pending' }],
+      [{ status: 'signed_in', userId: 'comfy-user-1' }],
+      [{ status: 'signed_out' }]
+    ])
   })
 })
