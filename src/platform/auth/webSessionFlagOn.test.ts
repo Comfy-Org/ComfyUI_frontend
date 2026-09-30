@@ -208,7 +208,7 @@ function installServer(
 
   const answerSession = (method: string): Response => {
     if (method === 'POST' && server.session === 'restore_token_revoked') {
-      return jsonResponse({ code: 'token_revoked', message: 'revoked' }, 401)
+      return jsonResponse({ code: 'TOKEN_REVOKED', message: 'revoked' }, 401)
     }
     if (method === 'POST') {
       server.session = { userId: 'user-a' }
