@@ -70,9 +70,24 @@ through `createTranslator`: the Cinematic Studio (`cinematic.json`), its
 re-shoot app (`reshoot.json`) and the Router page (`router.json`).
 
 Add new English copy to the English catalog; translated copy lives in the
-matching file under each locale. Legal and content pages render their sections
+matching file under each locale. Every English message requires a Chinese
+entry; the catalog tests check completeness without using English fallback.
+Catalog files use two-space JSON indentation and a final newline. Their raw
+text must round-trip through parsing and serialization without losing entries,
+which also rejects duplicate keys. Legal and content pages render their sections
 in the order they appear in the catalog, so keep `en/main.json` in document
 order and never sort its keys.
+
+### English-only copy
+
+Affiliate terms and the Enterprise MSA are legal-reviewed English documents.
+Do not translate or publish localized versions until legal approves them;
+an unreviewed translation can diverge from the governing English text.
+Their Chinese catalog entries intentionally repeat English, except the two
+translated affiliate page labels. The MiniMax professional license intake
+embeds an English-only HubSpot form and also intentionally repeats English.
+These entries must remain exempt from automatic translation. The page headers
+and `LOCALE_INVARIANT_ROUTE_KEYS` document the corresponding route policies.
 
 ## Ashby careers integration
 
