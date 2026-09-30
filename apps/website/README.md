@@ -80,14 +80,20 @@ order and never sort its keys.
 
 ### English-only copy
 
-Affiliate terms and the Enterprise MSA are legal-reviewed English documents.
+Affiliate terms, Terms of Service (`tos`), and the Enterprise MSA are
+legal-reviewed English documents on English-only routes.
 Do not translate or publish localized versions until legal approves them;
 an unreviewed translation can diverge from the governing English text.
 Their Chinese catalog entries intentionally repeat English, except the two
 translated affiliate page labels. The MiniMax professional license intake
 embeds an English-only HubSpot form and also intentionally repeats English.
-These entries must remain exempt from automatic translation. The page headers
-and `LOCALE_INVARIANT_ROUTE_KEYS` document the corresponding route policies.
+Desktop privacy (`desktop_privacy`) also intentionally repeats the governing
+English copy in its Chinese catalog. This is a catalog exemption: the
+`/zh-CN/privacy/desktop` route exists and renders those English entries.
+All these ranges must remain exempt from automatic translation until an
+approved translation is available. The page headers and
+`LOCALE_INVARIANT_ROUTE_KEYS` document the English-only route policies;
+desktop privacy retains its localized route.
 
 ## Ashby careers integration
 
