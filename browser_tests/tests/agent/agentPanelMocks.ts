@@ -121,16 +121,6 @@ class AgentBillingFixture {
   }
 }
 
-export const FUNDS_UNAVAILABLE_MESSAGE =
-  'Billing status is temporarily unavailable; please retry.'
-const FUNDS_UNAVAILABLE = zAgentAdmissionError.parse({
-  error: {
-    message: FUNDS_UNAVAILABLE_MESSAGE,
-    reason: 'funds_unavailable',
-    type: 'SERVICE_UNAVAILABLE'
-  }
-})
-
 export const THINKING_TEXT =
   "I'll set the positive prompt to your red fox scene."
 
@@ -243,7 +233,6 @@ async function mockAgentBoot(
     agentFlagEnabled,
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
-    agentRetryAfter,
     agentBilling,
     acceptedTurns,
     crdtDebugEnabled,
@@ -548,7 +537,6 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentFlagEnabled,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
-      agentRetryAfter,
       agentBilling,
       acceptedTurns,
       crdtDebugEnabled,
@@ -569,7 +557,6 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentFlagEnabled,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
-      agentRetryAfter,
       agentBilling,
       acceptedTurns,
       crdtDebugEnabled,

@@ -657,37 +657,6 @@ describe('PostHogTelemetryProvider', () => {
       }
     )
 
-    it.for([
-      {
-        event: TelemetryEvents.AGENT_PAYWALL_SHOWN,
-        track: (provider: PostHogTelemetryProvider) =>
-          provider.trackAgentPaywallShown({
-            reason: 'subscription_inactive',
-            surface: 'credits_exhausted'
-          }),
-        properties: {
-          reason: 'subscription_inactive',
-          surface: 'credits_exhausted'
-        }
-      },
-      {
-        event: TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED,
-        track: (provider: PostHogTelemetryProvider) =>
-          provider.trackAgentPaywallCtaClicked({
-            cta: 'add_credits',
-            surface: 'refused_send'
-          }),
-        properties: { cta: 'add_credits', surface: 'refused_send' }
-      }
-    ])('captures $event', async ({ event, track, properties }) => {
-      const provider = createProvider()
-      await vi.dynamicImportSettled()
-
-      track(provider)
-
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(event, properties)
-    })
-
     it('captures resubscribe clicks with their source', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

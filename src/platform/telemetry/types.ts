@@ -1532,6 +1532,8 @@ export interface TelemetryProvider {
   ): void
   trackResubscribeClicked?(metadata: ResubscribeClickMetadata): void
   trackAddApiCreditButtonClicked?(metadata?: AddCreditsClickMetadata): void
+  trackAgentPaywallShown?(metadata: AgentPaywallShownMetadata): void
+  trackAgentPaywallCtaClicked?(metadata: AgentPaywallCtaMetadata): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void
   trackWorkspaceInviteSent?(metadata: WorkspaceInviteMetadata): void
@@ -1814,6 +1816,8 @@ export const TelemetryEvents = {
   AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',
   AGENT_CONSENT_OFFER_EXITED: 'app:agent_consent_offer_exited',
   AGENT_ONBOARDING_NOT_SHOWN: 'app:agent_onboarding_not_shown',
+  AGENT_PAYWALL_SHOWN: 'app:agent_paywall_shown',
+  AGENT_PAYWALL_CTA_CLICKED: 'app:agent_paywall_cta_clicked',
 
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
@@ -1924,6 +1928,8 @@ export type TelemetryEventProperties =
   | SubscriptionMetadata
   | SubscriptionSuccessMetadata
   | WorkspaceInviteFailedMetadata
+  | AgentPaywallShownMetadata
+  | AgentPaywallCtaMetadata
   | BillingTelemetryEvent
   | CheckoutJourneyTelemetryEventPayload
   | FetchTimeoutMetadata

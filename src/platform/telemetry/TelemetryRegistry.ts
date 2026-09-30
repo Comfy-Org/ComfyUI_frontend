@@ -1,5 +1,7 @@
 import type {
   AddCreditsClickMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
   AgentConsentNotOfferedMetadata,
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
@@ -176,6 +178,16 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {
     this.dispatch((provider) =>
       provider.trackAddApiCreditButtonClicked?.(metadata)
+    )
+  }
+
+  trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {
+    this.dispatch((provider) => provider.trackAgentPaywallShown?.(metadata))
+  }
+
+  trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackAgentPaywallCtaClicked?.(metadata)
     )
   }
 

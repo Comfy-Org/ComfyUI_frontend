@@ -13,10 +13,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
-import type {
-  AgentPaywallSurface,
-  AgentStopMethod
-} from '@/platform/telemetry/types'
+import type { AgentPaywallSurface } from '@/platform/telemetry/types'
 
 import type { ActiveTab } from '../../types/activeTab'
 import type {

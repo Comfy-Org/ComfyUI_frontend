@@ -59,23 +59,14 @@ const mockCanCancel = vi.hoisted(() => ({ value: true }))
 const mockCanManageSubscriptionLifecycle = vi.hoisted(() => ({ value: true }))
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
-function subscription(
-  overrides: Partial<SubscriptionInfo> = {}
-): SubscriptionInfo {
-  return {
-    isActive: true,
-    tier: 'STANDARD',
-    duration: null,
-    planSlug: null,
-    scheduledChange: null,
-    renewalDate: null,
-    endDate: null,
-    isCancelled: false,
-    hasFunds: true,
-    agentHasFunds: true,
-    ...overrides
-  }
-}
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: vi.fn(() => ({
+    cancelSubscription: mockCancelSubscription,
+    fetchStatus: mockFetchStatus,
+    subscription: mockSubscription,
+    tier: mockTier
+  }))
+}))
 
 vi.mock('@/composables/billing/useBillingRouting', () => ({
   useBillingRouting: () => ({

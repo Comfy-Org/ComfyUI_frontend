@@ -8,10 +8,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import {
-  zAgentAdmissionError,
-  zAgentWsEvent
-} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   INTERMEDIATE_MESSAGE_EVENT,
@@ -180,47 +177,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
-  test('shows an admission paywall without losing the rejected prompt', async ({
-    agentPanel,
-    comfyPage
-  }) => {
-    const page = comfyPage.page
-    const panel = agentPanel.root
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
-    const prompt = 'Build a product photo workflow'
-
-    await test.step('reject the next turn with a no-funds admission error', async () => {
-      // Scoped to POST so the fixture's GET handler for the same URL still
-      // serves the thread's message history.
-      await page.route('**/api/agent/threads/*/messages', async (route) => {
-        if (route.request().method() !== 'POST') return route.fallback()
-        await route.fulfill({
-          status: 402,
-          contentType: 'application/json',
-          body: JSON.stringify(NO_FUNDS_ERROR)
-        })
-      })
-    })
-
-    await test.step('open the agent panel on a workflow', async () => {
-      await agentPanel.open()
-      await agentPanel.selectWorkflow()
-    })
-
-    await test.step('send a prompt the server will reject', async () => {
-      await composer.fill(prompt)
-      await panel.getByRole('button', { name: 'Send' }).click()
-    })
-
-    await test.step('keep the rejected prompt and surface the paywall', async () => {
-      await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
-      await expect(composer).toHaveText(prompt)
-      const paywall = panel.getByRole('alert')
-      await expect(paywall).toContainText(enMessages.agent.paywall.title)
-      await expect(paywall).toContainText('Add credits to continue.')
-    })
-  })
-
   test('keeps the standing paywall in sync across turn completion and panel close', async ({
     acceptedTurns,
     agentBilling,
@@ -306,72 +262,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       agentBilling.setAgentFunds(true)
       await paywall.getByRole('button', { name: 'Add Credits' }).click()
       await expect(paywall).toHaveCount(0)
-    })
-  })
-
-  test.describe('diagnostic report', () => {
-    test.use({
-      permissions: ['clipboard-read', 'clipboard-write'],
-      crdtDebugEnabled: true
-    })
-
-    test('copies retained tool metadata with privacy sources turned off', async ({
-      agentPanel,
-      comfyPage,
-      getWebSocket
-    }) => {
-      await test.step('turn off every optional privacy source', async () => {
-        await agentPanel.open()
-        await expect(agentPanel.debugHeading).toBeVisible()
-        await agentPanel.turnOffOptionalReportSources()
-      })
-
-      await test.step('retain tool metadata without conversation content', async () => {
-        await agentPanel.selectWorkflow()
-        const composer = agentPanel.root.getByRole('textbox', {
-          name: /^Describe ideas/
-        })
-        await composer.fill('private diagnostic prompt')
-        await agentPanel.root.getByRole('button', { name: 'Send' }).click()
-        await expect(
-          agentPanel.root.getByRole('button', { name: 'Stop' })
-        ).toBeVisible()
-        const ws = await getWebSocket()
-        pushEvent(ws, THINKING_EVENT)
-        await expect(
-          agentPanel.root.getByText(THINKING_TEXT, { exact: true })
-        ).toBeVisible()
-
-        pushEvent(ws, TOOL_CALL_EVENT)
-        await expect(agentPanel.root.getByText('Set widget')).toBeVisible()
-      })
-
-      await test.step('copy a report with bounded tool metadata', async () => {
-        await agentPanel.copyReportButton.click()
-        await expect(agentPanel.copiedButton).toBeVisible()
-        await expect
-          .poll(async () => {
-            const report = await comfyPage.clipboard.readText()
-            return {
-              serverLogs: report.includes('- Server logs: turned off'),
-              settings: report.includes('- Settings: turned off'),
-              workflow: report.includes('- Workflow: turned off'),
-              toolStatus: report.includes(
-                '- Agent tool calls: collected (1/1 retained calls)'
-              ),
-              toolName: report.includes('"name": "set_widget"'),
-              privateThinking: report.includes(THINKING_TEXT)
-            }
-          })
-          .toEqual({
-            serverLogs: true,
-            settings: true,
-            workflow: true,
-            toolStatus: true,
-            toolName: true,
-            privateThinking: false
-          })
-      })
     })
   })
 

@@ -215,52 +215,6 @@ function createDeferred() {
 
 describe('CreditsTile', () => {
   beforeEach(() => {
-    const errorHandling = useErrorHandling()
-    errorHandling.wrapWithErrorHandlingAsync =
-      (action, errorHandler) =>
-      async (...args) => {
-        try {
-          return await action(...args)
-        } catch (error) {
-          ;(errorHandler ?? errorHandling.toastErrorHandler)(error)
-        }
-      }
-    const billing = useBillingContext()
-    vi.mocked(useBillingContext).mockReturnValue(billing)
-    billing.balance = computed(() =>
-      state.balance ? { currency: 'USD', ...state.balance } : null
-    )
-    billing.subscription = computed(() =>
-      state.subscription
-        ? {
-            isActive: state.canAccessSubscriptionFeatures,
-            planSlug: null,
-            scheduledChange: null,
-            endDate: null,
-            isCancelled: false,
-            hasFunds: true,
-            agentHasFunds: true,
-            ...state.subscription
-          }
-        : null
-    )
-    billing.canAccessSubscriptionFeatures = computed(
-      () => state.canAccessSubscriptionFeatures
-    )
-    billing.isFreeTier = computed(() => state.isFreeTier)
-    billing.isTeamPlan = computed(() => state.isTeamPlan)
-    billing.tier = computed(() => state.tier)
-    billing.currentTeamCreditStop = computed(() => state.currentTeamCreditStop)
-    billing.isLoading = computed(() => state.isLoading)
-    billing.type = computed(() => state.type)
-    useSubscription().isYearlySubscription = computed(
-      () => state.personalIsYearly
-    )
-    const telemetry = useTelemetry()
-    if (!telemetry) throw new Error('Expected telemetry mock')
-    vi.mocked(useTelemetry).mockImplementation(() =>
-      state.telemetryUnavailable ? null : telemetry
-    )
     state.balance = null
     state.subscription = null
     state.personalIsYearly = false

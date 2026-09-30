@@ -239,48 +239,6 @@ function renderComponent() {
 
 const onChooseTeamWorkspace = vi.fn()
 
-beforeEach(() => {
-  useErrorHandling().wrapWithErrorHandlingAsync =
-    (action, errorHandler) =>
-    async (...args) => {
-      try {
-        return await action(...args)
-      } catch (error) {
-        errorHandler?.(error)
-      }
-    }
-  const billing = useBillingContext()
-  billing.canAccessSubscriptionFeatures = computed(
-    () => mockCanAccessSubscriptionFeatures.value
-  )
-  billing.isFreeTier = computed(() => mockSubscriptionTier.value === 'FREE')
-  billing.tier = computed(() => mockSubscriptionTier.value)
-  billing.subscription = computed(() =>
-    mockSubscriptionTier.value
-      ? {
-          isActive: mockCanAccessSubscriptionFeatures.value,
-          tier: mockSubscriptionTier.value,
-          duration: mockSubscriptionDuration.value,
-          planSlug: null,
-          scheduledChange: null,
-          renewalDate: null,
-          endDate: null,
-          isCancelled: false,
-          hasFunds: true,
-          agentHasFunds: true
-        }
-      : null
-  )
-  vi.mocked(useBillingContext).mockReturnValue(billing)
-  Object.assign(useAuthStore(), { userId: 'user-123' })
-  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockResolvedValue({
-    Authorization: 'Bearer test-token' as const
-  })
-  vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
-    (input, init) => fetch(input, init)
-  )
-})
-
 describe('PricingTable', () => {
   beforeEach(() => {
     mockCanAccessSubscriptionFeatures.value = false

@@ -21,11 +21,8 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentMessageSentMetadata,
-  AgentPaywallSurface,
-  AgentRunApprovalDecision,
-  AgentStopMethod
+  AgentPaywallSurface
 } from '@/platform/telemetry/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -106,7 +103,11 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
-import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
+import {
+  resolveAgentPaywallPresentation,
+  toAgentPaywallCta,
+  toAgentPaywallReason
+} from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
@@ -154,6 +155,8 @@ const {
   canSubscribeSelfServe,
   isReady: billingCapabilitiesReady
 } = useBillingCapabilities()
+const capabilityReadSettled = billingCapabilitiesReady
+const snapshotAuthoritative = billingCapabilitiesReady
 const paywallPresentation = computed(() =>
   resolveAgentPaywallPresentation({
     role: workspaceRole.value,
@@ -195,10 +198,10 @@ function onPaywallAction(
         source: 'agent_paywall'
       })
     }
-    openAccountPrecondition('credits', { source: 'agent_paywall' })
+    openAccountPrecondition('credits')
     return
   }
-  openAccountPrecondition('subscription', { source: 'agent_paywall' })
+  openAccountPrecondition('subscription')
 }
 
 const { messages: conversationMessages, entries: conversationEntries } =

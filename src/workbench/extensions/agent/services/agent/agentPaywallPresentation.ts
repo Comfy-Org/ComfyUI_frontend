@@ -41,3 +41,29 @@ export function resolveAgentPaywallPresentation({
       canSubscribeSelfServe && (tier === 'STANDARD' || tier === 'CREATOR')
   }
 }
+
+export function toAgentPaywallCta(
+  action: AgentPaywallAction
+): 'subscribe' | 'add_credits' | 'upgrade' {
+  return action === 'addCredits' ? 'add_credits' : action
+}
+
+export function toAgentPaywallReason(
+  presentation: AgentPaywallPresentation
+):
+  | 'no_funds'
+  | 'subscription_inactive'
+  | 'member_cannot_pay'
+  | 'sales_managed' {
+  switch (presentation.kind) {
+    case 'subscribed':
+    case 'local':
+      return 'no_funds'
+    case 'subscriptionRequired':
+      return 'subscription_inactive'
+    case 'member':
+      return 'member_cannot_pay'
+    case 'salesManaged':
+      return 'sales_managed'
+  }
+}

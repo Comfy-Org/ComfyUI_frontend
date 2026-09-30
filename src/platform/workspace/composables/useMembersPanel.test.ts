@@ -418,69 +418,16 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
-
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
-
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
-
-vi.mock(import('@/composables/auth/useCurrentUser'))
-
-vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
-)
-
-vi.mock(import('@/composables/billing/useBillingContext'))
-
-vi.mock(import('@/services/dialogService'))
-
-vi.mock(import('@/composables/useFeatureFlags'))
-describe('useMembersPanel', () => {
-  const apps: App<Element>[] = []
-  let pinia: Pinia
-
-  beforeEach(() => {
-    const workspaceUI = vi.mocked(useWorkspaceUI())
-    const defaultPermissions = workspaceUI.permissions.value
-    workspaceUI.permissions = computed(() => ({
-      ...defaultPermissions,
-      ...mockPermissions.value
-    }))
-    const defaultUiConfig = workspaceUI.uiConfig.value
-    workspaceUI.uiConfig = computed(() => ({
-      ...defaultUiConfig,
-      ...mockUiConfig.value,
-      workspaceMenuAction:
-        mockUiConfig.value.workspaceMenuAction === 'delete' ? 'delete' : null
-    }))
-    workspaceUI.workspaceRole = computed(() => mockWorkspaceRole.value)
-    const billingContext = useBillingContext()
-    billingContext.canAccessSubscriptionFeatures = computed(
-      () => mockCanAccessSubscriptionFeatures.value
-    )
-    billingContext.isInitialized = mockIsInitialized
-    billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
-    billingContext.subscription = computed(() =>
-      mockSubscription.value
-        ? {
-            isActive: true,
-            duration: null,
-            planSlug: null,
-            scheduledChange: null,
-            renewalDate: null,
-            endDate: null,
-            hasFunds: true,
-            agentHasFunds: true,
-            ...mockSubscription.value
-          }
-        : null
-    )
-    billingContext.subscriptionStatus = computed(
-      () => mockSubscriptionStatus.value
-    )
-    billingContext.maxSeats = computed(() => mockMaxSeats.value)
-    billingContext.occupiedSeats = computed(() => mockOccupiedSeats.value)
-    vi.mocked(billingContext.getMaxSeats).mockImplementation((tierKey) => {
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
+    isInitialized: mockIsInitialized,
+    isTeamPlan: mockIsTeamPlan,
+    subscription: mockSubscription,
+    subscriptionStatus: mockSubscriptionStatus,
+    maxSeats: mockMaxSeats,
+    occupiedSeats: mockOccupiedSeats,
+    getMaxSeats: (tierKey: string) => {
       const seats: Record<string, number> = {
         free: 1,
         standard: 1,
