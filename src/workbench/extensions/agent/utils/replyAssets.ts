@@ -13,10 +13,13 @@ export interface ReplyAsset {
   label?: string
 }
 
-const ASSET_KINDS = new Set<MediaType>(['image', 'video', 'audio', '3D'])
-
 export function isReplyAssetKind(value: MediaType): value is ReplyAssetKind {
-  return ASSET_KINDS.has(value)
+  return (
+    value === 'image' ||
+    value === 'video' ||
+    value === 'audio' ||
+    value === '3D'
+  )
 }
 
 export function classifyAssetUrl(
