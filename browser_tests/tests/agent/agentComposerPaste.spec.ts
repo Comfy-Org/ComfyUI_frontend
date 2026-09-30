@@ -1,6 +1,5 @@
 import { expect } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
@@ -78,9 +77,7 @@ test(
     await canvas.click()
     await canvas.press('Control+c')
 
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton })
-      .click()
+    await new AgentPanel(page).open()
     const agentPanel = new AgentPanel(page)
     await expect(agentPanel.root).toBeVisible()
 
