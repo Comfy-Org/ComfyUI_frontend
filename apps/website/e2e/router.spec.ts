@@ -38,7 +38,7 @@ test.describe('Router page @smoke', () => {
       table.getByRole('link', { name: 'Nano Banana Pro' })
     ).toHaveAttribute('href', /\/models\/google\/nano-banana-pro\/code$/)
     await expect(
-      coverage.getByRole('link', { name: /^Browse all \d+ models$/ })
+      coverage.getByRole('link', { name: 'Browse all models' })
     ).toHaveAttribute('href', '/hub/models/')
   })
 

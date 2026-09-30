@@ -2,16 +2,10 @@ import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import {
-  ROUTER_CATALOG_MODEL_COUNT,
   ROUTER_COMFY_ONLY_PREVIEW,
   ROUTER_PROVIDER_COVERAGE
 } from '../../config/router-providers'
 import RouterProviderCoverageSection from './RouterProviderCoverageSection.vue'
-
-const remaining =
-  ROUTER_CATALOG_MODEL_COUNT -
-  ROUTER_PROVIDER_COVERAGE.length -
-  ROUTER_COMFY_ONLY_PREVIEW.length
 
 function servedBy(name: string): boolean[] {
   return within(screen.getByRole('row', { name: new RegExp(name) }))
@@ -81,11 +75,9 @@ describe('RouterProviderCoverageSection', () => {
   it('sends the rest of the catalog to the models page', () => {
     render(RouterProviderCoverageSection, { props: { locale: 'en' } })
 
-    expect(screen.getByText(`+${remaining} more models`)).toBeInTheDocument()
+    expect(screen.getByText('More models')).toBeInTheDocument()
     expect(
-      screen.getByRole('link', {
-        name: `Browse all ${ROUTER_CATALOG_MODEL_COUNT} models`
-      })
+      screen.getByRole('link', { name: 'Browse all models' })
     ).toHaveAttribute('href', '/hub/models/')
   })
 
@@ -101,11 +93,9 @@ describe('RouterProviderCoverageSection', () => {
     expect(
       screen.getByRole('link', { name: 'Nano Banana Pro' })
     ).toBeInTheDocument()
-    expect(screen.getByText(`另有 ${remaining} 个模型`)).toBeInTheDocument()
+    expect(screen.getByText('更多模型')).toBeInTheDocument()
     expect(
-      screen.getByRole('link', {
-        name: new RegExp(String(ROUTER_CATALOG_MODEL_COUNT))
-      })
+      screen.getByRole('link', { name: '浏览全部模型' })
     ).toHaveAttribute('href', '/hub/models/')
   })
 })

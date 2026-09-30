@@ -93,16 +93,16 @@ const copy = {
     'zh-CN': '模型'
   },
   'platform.router.coverage.moreModels': {
-    en: '+{count} more models',
-    'zh-CN': '另有 {count} 个模型'
+    en: 'More models',
+    'zh-CN': '更多模型'
   },
   'platform.router.coverage.moreModelsSuffix': {
     en: 'run on Comfy',
     'zh-CN': '在 Comfy 上运行'
   },
   'platform.router.coverage.browseAll': {
-    en: 'Browse all {count} models',
-    'zh-CN': '浏览全部 {count} 个模型'
+    en: 'Browse all models',
+    'zh-CN': '浏览全部模型'
   },
   'platform.router.coverage.served': {
     en: 'Served',

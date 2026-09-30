@@ -8,7 +8,6 @@ import InlineCodeText from '../../components/common/InlineCodeText.vue'
 import Button from '../../components/ui/button/Button.vue'
 import { getRoutes } from '../../config/routes'
 import {
-  ROUTER_CATALOG_MODEL_COUNT,
   ROUTER_COMFY_ONLY_PREVIEW,
   ROUTER_PROVIDER_COVERAGE,
   ROUTER_SERVING_PROVIDERS
@@ -78,15 +77,8 @@ const linkedDocs = new Map(
   ])
 )
 
-const moreModels = routerT('platform.router.coverage.moreModels', locale, {
-  count:
-    ROUTER_CATALOG_MODEL_COUNT -
-    ROUTER_PROVIDER_COVERAGE.length -
-    ROUTER_COMFY_ONLY_PREVIEW.length
-})
-const browseAll = routerT('platform.router.coverage.browseAll', locale, {
-  count: ROUTER_CATALOG_MODEL_COUNT
-})
+const moreModels = routerT('platform.router.coverage.moreModels', locale)
+const browseAll = routerT('platform.router.coverage.browseAll', locale)
 </script>
 
 <template>
