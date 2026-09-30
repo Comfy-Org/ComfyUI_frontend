@@ -4441,7 +4441,7 @@
       "subtitle": "Builder packages your ComfyUI workflow and environment into a reproducible build. Deploy that build to Comfy API and scale it on demand.",
       "tabInstall": "Start with your environment",
       "tabWorkflow": "Start with your workflow",
-      "copy": "Copy commands",
+      "copy": "Copy prompt",
       "copied": "Copied"
     },
     "howItWorks": {

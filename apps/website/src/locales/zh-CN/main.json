@@ -3256,7 +3256,7 @@
       "subtitle": "Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Comfy API，并按需扩展。",
       "tabInstall": "从你的环境开始",
       "tabWorkflow": "从你的工作流开始",
-      "copy": "复制命令",
+      "copy": "复制提示词",
       "copied": "已复制"
     },
     "serverlessHero": {

@@ -29,10 +29,13 @@ import type {
   BillingDeclineReason,
   BillingRecoveryAction
 } from '@/platform/workspace/api/workspaceApi'
+import type { ProgressToastKind } from '@/platform/workspace/billing/customerAttention'
 import {
   isBlockedOnCustomerPhase,
+  isParkedCheckout,
   legacyOperationActionHold,
-  needsCustomerAttention
+  needsCustomerAttention,
+  progressToastKind
 } from '@/platform/workspace/billing/customerAttention'
 import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -82,6 +85,12 @@ export interface StartOperationMetadata {
   checkoutType?: SubscriptionCheckoutType
   paymentIntentSource?: PaymentIntentSource
   suppressProcessingToast?: boolean
+  /**
+   * Adopted from a status read rather than started by the customer here. The
+   * read names the operation but not what it waits on, so without a served
+   * link it is announced by its first status, never before it.
+   */
+  resumed?: boolean
   autoHandleRequiresAction?: boolean
   downgradeToPersonal?: {
     memberRemovalCount: number
@@ -153,7 +162,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
   const intervals = new Map<string, number>()
   const waitingWithoutActionSince = new Map<string, number>()
-  const receivedToasts = new Map<string, ToastMessageOptions>()
+  const progressToasts = new Map<
+    string,
+    { kind: ProgressToastKind; message: ToastMessageOptions }
+  >()
+  const progressToastsAwaitingFirstRead = new Set<string>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const autoHandledPaymentActions = new Set<string>()
@@ -174,6 +187,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         op.status === 'pending' &&
         op.authenticationState !== 'requires_action' &&
         op.authenticationState !== 'failed_retryable' &&
+        !isParkedCheckout(op) &&
         op.type === 'subscription' &&
         op.workspaceId === workspaceStore.activeWorkspaceId
     )
@@ -216,32 +230,80 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   // An operation parked on a bank challenge is waiting on the customer, not on
   // us, so it must not keep announcing "processing" — that reads as "nothing to
   // do here" next to the verification prompt the same state renders.
-  function showProgressToast(
+  function syncProgressToast(
     opId: string,
     type: Exclude<OperationType, 'cancel'>,
-    actionRequired: boolean
+    kind: ProgressToastKind | undefined
   ) {
     const toastStore = useToastStore()
-    const previous = receivedToasts.get(opId)
-    if (previous) toastStore.remove(previous)
+    const previous = progressToasts.get(opId)
+    if (previous?.kind === kind) return
+    if (previous) {
+      toastStore.remove(previous.message)
+      progressToasts.delete(opId)
+    }
+    if (kind === undefined) return
 
     const messageKey =
       type === 'subscription'
-        ? actionRequired
+        ? kind === 'action'
           ? 'billingOperation.subscriptionActionRequired'
           : 'billingOperation.subscriptionProcessing'
-        : actionRequired
+        : kind === 'action'
           ? 'billingOperation.topupActionRequired'
           : 'billingOperation.topupProcessing'
 
-    const toastMessage: ToastMessageOptions = {
+    const message: ToastMessageOptions = {
       // 'warn' selects the prompt icon over the spinner in GlobalToast.
-      severity: actionRequired ? 'warn' : 'info',
+      severity: kind === 'action' ? 'warn' : 'info',
       summary: t(messageKey),
       group: 'billing-operation'
     }
-    receivedToasts.set(opId, toastMessage)
-    toastStore.add(toastMessage)
+    progressToasts.set(opId, { kind, message })
+    toastStore.add(message)
+  }
+
+  function announceStart(
+    operation: BillingOperation,
+    metadata: StartOperationMetadata | undefined
+  ) {
+    if (operation.type === 'cancel' || metadata?.suppressProcessingToast) return
+    if (metadata?.resumed && operation.actionUrl === null) {
+      progressToastsAwaitingFirstRead.add(operation.opId)
+      return
+    }
+    syncProgressToast(
+      operation.opId,
+      operation.type,
+      progressToastKind(operation)
+    )
+  }
+
+  // The action URL is the last field a read applies, so an operation awaiting
+  // its first read is announced here by what that read found.
+  function syncProgressToastAfterRead(
+    before: BillingOperation,
+    after: BillingOperation
+  ) {
+    if (
+      after.type !== 'cancel' &&
+      progressToastsAwaitingFirstRead.delete(after.opId)
+    ) {
+      syncProgressToast(after.opId, after.type, progressToastKind(after))
+      return
+    }
+    syncProgressToastOnChange(before, after)
+  }
+
+  function syncProgressToastOnChange(
+    before: BillingOperation,
+    after: BillingOperation
+  ) {
+    if (after.type === 'cancel') return
+    const kind = progressToastKind(after)
+    if (kind !== progressToastKind(before)) {
+      syncProgressToast(after.opId, after.type, kind)
+    }
   }
 
   function startOperation(
@@ -295,9 +357,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (type !== 'cancel' && !metadata?.suppressProcessingToast) {
-      showProgressToast(opId, type, operation.actionUrl !== null)
-    }
+    announceStart(operation, metadata)
 
     const terminal = new Promise<BillingOperation>((resolve) => {
       terminalResolvers.set(opId, resolve)
@@ -699,12 +759,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     ) {
       return
     }
-    operations.value = new Map(operations.value).set(opId, {
+    const updated: BillingOperation = {
       ...operation,
       phase,
       blockedOnCustomerSeen:
         operation.blockedOnCustomerSeen || isBlockedOnCustomerPhase(phase)
-    })
+    }
+    operations.value = new Map(operations.value).set(opId, updated)
+    syncProgressToastOnChange(operation, updated)
   }
 
   function updateOperationActionUrl(opId: string, actionUrl: string | null) {
@@ -720,21 +782,18 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     ) {
       return
     }
-    operations.value = new Map(operations.value).set(opId, {
+    const updated: BillingOperation = {
       ...operation,
       actionUrl,
       authenticationRequiredSeen:
         operation.authenticationRequiredSeen || actionUrl !== null
-    })
+    }
+    operations.value = new Map(operations.value).set(opId, updated)
     // Tracks the CURRENT action_url, which the contract defines as present
     // exactly while the operation cannot proceed without the customer — so the
     // toast never outlives the verification action it points at. Swapped only
     // when that answer changes, or a dismissed toast would return every poll.
-    const wasActionRequired = operation.actionUrl !== null
-    const isActionRequired = actionUrl !== null
-    if (operation.type !== 'cancel' && wasActionRequired !== isActionRequired) {
-      showProgressToast(opId, operation.type, isActionRequired)
-    }
+    syncProgressToastAfterRead(operation, updated)
   }
 
   async function handleSuccess(opId: string) {
@@ -1266,12 +1325,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     waitingWithoutActionSince.delete(opId)
     autoHandledPaymentActions.delete(opId)
     paymentIntentClientSecrets.delete(opId)
+    progressToastsAwaitingFirstRead.delete(opId)
 
-    // Remove the "received" toast
-    const receivedToast = receivedToasts.get(opId)
-    if (receivedToast) {
-      useToastStore().remove(receivedToast)
-      receivedToasts.delete(opId)
+    const progressToast = progressToasts.get(opId)
+    if (progressToast) {
+      useToastStore().remove(progressToast.message)
+      progressToasts.delete(opId)
     }
   }
 
