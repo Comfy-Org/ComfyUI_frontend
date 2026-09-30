@@ -47,6 +47,30 @@ describe('projectSubscriptionResult', () => {
         'This payment method has insufficient funds. Try another payment method or contact your bank.'
     },
     {
+      phase: 'failed',
+      operation: {
+        ...failedOperation(),
+        declineReason: 'authentication_failed'
+      },
+      detail: "We couldn't complete payment verification. Please try again."
+    },
+    {
+      phase: 'failed',
+      operation: {
+        ...failedOperation(),
+        declineReason: 'authentication_required'
+      },
+      detail: "We couldn't complete payment verification. Please try again."
+    },
+    {
+      phase: 'failed',
+      operation: {
+        ...failedOperation(),
+        declineReason: 'payment_not_completed'
+      },
+      detail: "We couldn't complete payment verification. Please try again."
+    },
+    {
       phase: 'timed_out',
       operation: settledOperation('timed_out'),
       detail: "We couldn't update your subscription. Please try again."

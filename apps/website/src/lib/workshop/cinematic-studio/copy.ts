@@ -54,10 +54,6 @@ const copy = {
     en: 'Video · MiniMax H3',
     'zh-CN': '视频 · MiniMax H3'
   },
-  'cinematic.stage.renderingTake': {
-    en: 'Rendering take {take}',
-    'zh-CN': '正在渲染第 {take} 条'
-  },
   'cinematic.stage.longWait': {
     en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
     'zh-CN': '仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。'
@@ -134,6 +130,18 @@ const copy = {
     en: 'Slow now',
     'zh-CN': '当前较慢'
   },
+  'cinematic.stage.generatingImage': {
+    en: 'Generating image',
+    'zh-CN': '正在生成图像'
+  },
+  'cinematic.stage.generatingVideo': {
+    en: 'Generating video',
+    'zh-CN': '正在生成视频'
+  },
+  'cinematic.stage.loadingTake': {
+    en: 'Loading the take',
+    'zh-CN': '正在加载镜头'
+  },
   'cinematic.stage.again': {
     en: 'Generate again',
     'zh-CN': '再生成一次'
@@ -192,6 +200,14 @@ const copy = {
     en: 'Beta',
     'zh-CN': '测试版'
   },
+  'cinematic.repo.view': {
+    en: 'View on GitHub',
+    'zh-CN': '在 GitHub 上查看'
+  },
+  'cinematic.repo.soon': {
+    en: 'GitHub · Coming soon',
+    'zh-CN': 'GitHub · 即将推出'
+  },
   'cinematic.meta.description': {
     en: 'Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router.',
     'zh-CN':
@@ -224,6 +240,11 @@ const copy = {
   'cinematic.firstRun.body': {
     en: 'Describe the moment. Pick the camera, the light and the look. Switch models any time.',
     'zh-CN': '描述这一刻。选择摄影机、光线与风格。随时切换模型。'
+  },
+  'cinematic.lead': {
+    en: 'Direct every shot. Pick the camera, lens, light and grade, and get film-grade frames from any model.',
+    'zh-CN':
+      '执导每一个镜头。选择摄影机、镜头、光线与调色，用任意模型生成电影级画面。'
   },
   'cinematic.firstRun.desert': {
     en: 'Lone rider crossing dunes at dawn',
@@ -278,7 +299,7 @@ const copy = {
     'zh-CN': '光圈'
   },
   'cinematic.part.shot': {
-    en: 'Shot',
+    en: 'Framing',
     'zh-CN': '景别'
   },
   'cinematic.part.light': {
@@ -537,6 +558,14 @@ const copy = {
     en: 'Academy',
     'zh-CN': '学院比例'
   },
+  'cinematic.aspect.landscapePhoto': {
+    en: 'Landscape photo',
+    'zh-CN': '横向照片'
+  },
+  'cinematic.aspect.portraitPhoto': {
+    en: 'Portrait photo',
+    'zh-CN': '纵向照片'
+  },
   'cinematic.aspect.square': {
     en: 'Square',
     'zh-CN': '方形'
@@ -553,17 +582,141 @@ const copy = {
     en: 'Add a character reference',
     'zh-CN': '添加角色参考'
   },
-  'cinematic.reference.palette': {
-    en: 'Palette',
-    'zh-CN': '色板'
+  'cinematic.grade.fromImage': {
+    en: 'From an image',
+    'zh-CN': '来自图片'
   },
-  'cinematic.reference.paletteAction': {
-    en: 'Add a palette reference',
-    'zh-CN': '添加色板参考'
+  'cinematic.grade.fromImageAction': {
+    en: 'Match the colors of an image',
+    'zh-CN': '匹配图片的色彩'
+  },
+  'cinematic.grade.yourPalette': {
+    en: 'Your palette',
+    'zh-CN': '你的色板'
+  },
+  'cinematic.grade.edit': {
+    en: 'Edit palette',
+    'zh-CN': '编辑色板'
+  },
+  'cinematic.grade.done': {
+    en: 'Done',
+    'zh-CN': '完成'
   },
   'cinematic.reference.remove': {
     en: 'Remove reference',
     'zh-CN': '移除参考'
+  },
+  'cinematic.video.audioOn': { en: 'On', 'zh-CN': '开启' },
+  'cinematic.video.audioOff': { en: 'Off', 'zh-CN': '关闭' },
+  'cinematic.video.enhanceHint': {
+    en: 'Adds cinematic motion and continuous action to the prompt',
+    'zh-CN': '在提示词中添加电影运镜和连续动作'
+  },
+  'cinematic.video.mode': { en: 'Creation type', 'zh-CN': '创作类型' },
+  'cinematic.video.image': { en: 'Image', 'zh-CN': '图像' },
+  'cinematic.video.video': { en: 'Video', 'zh-CN': '视频' },
+  'cinematic.video.animate': { en: 'Animate image', 'zh-CN': '将图像转为视频' },
+  'cinematic.video.preview': { en: 'Generated video', 'zh-CN': '生成的视频' },
+  'cinematic.video.duration': { en: 'Duration', 'zh-CN': '时长' },
+  'cinematic.video.audio': { en: 'Generate audio', 'zh-CN': '生成音频' },
+  'cinematic.video.firstFrame': { en: 'Starting frame', 'zh-CN': '起始帧' },
+  'cinematic.video.lastFrame': { en: 'Ending frame', 'zh-CN': '结束帧' },
+  'cinematic.video.addFirstFrame': {
+    en: 'Add a starting frame',
+    'zh-CN': '添加起始帧'
+  },
+  'cinematic.video.addLastFrame': {
+    en: 'Add an ending frame',
+    'zh-CN': '添加结束帧'
+  },
+  'cinematic.video.uploadFrame': { en: 'Upload an image', 'zh-CN': '上传图像' },
+  'cinematic.video.needFrame': {
+    en: 'Add a starting frame for this model.',
+    'zh-CN': '请为此模型添加起始帧。'
+  },
+  'cinematic.video.oneClip': {
+    en: 'One clip per request. Describe the action and camera movement in your scene.',
+    'zh-CN': '每次请求生成一个片段。请在场景中描述动作和镜头运动。'
+  },
+  'cinematic.video.start': {
+    en: 'Describe the movement. Choose a video model, or animate one of your stills.',
+    'zh-CN': '描述运动，选择视频模型，或将你的静帧转为视频。'
+  },
+  'cinematic.video.frameError': {
+    en: 'Could not load that starting frame. Download the image and upload it in the video settings.',
+    'zh-CN': '无法加载起始帧。请下载图像并在视频设置中上传。'
+  },
+  'cinematic.video.frameLoading': {
+    en: 'Preparing starting frame…',
+    'zh-CN': '正在准备起始帧…'
+  },
+  'cinematic.video.sourceVideo': {
+    en: 'Video to edit',
+    'zh-CN': '要编辑的视频'
+  },
+  'cinematic.video.addSourceVideo': {
+    en: 'Add the video to edit',
+    'zh-CN': '添加要编辑的视频'
+  },
+  'cinematic.references.needsPicture': {
+    en: "{model} needs the picture itself, and this image can't be read here. Download it and add it with +, or pick another model.",
+    'zh-CN':
+      '{model} 需要图片本身，但此处无法读取该图片。请下载后通过 + 添加，或选择其他模型。'
+  },
+  'cinematic.references.unreadable': {
+    en: "Couldn't use this image. Download it and add it with +.",
+    'zh-CN': '无法使用此图片。请下载后通过 + 添加。'
+  },
+  'cinematic.video.noFirstFrame': {
+    en: "{model} can't start from an image. Remove the frame or pick another model.",
+    'zh-CN': '{model} 无法从图像开始。请移除该帧或选择其他模型。'
+  },
+  'cinematic.video.needSourceVideo': {
+    en: 'Add the video to edit first.',
+    'zh-CN': '请先添加要编辑的视频。'
+  },
+  'cinematic.video.audioTag': { en: 'Audio', 'zh-CN': '音频' },
+  'cinematic.video.resolution': { en: 'Resolution', 'zh-CN': '分辨率' },
+  'cinematic.video.aspect': { en: 'Frame', 'zh-CN': '画幅' },
+  'cinematic.video.modelDecides': {
+    en: 'This model sets the length and resolution itself.',
+    'zh-CN': '此模型自行决定时长和分辨率。'
+  },
+  'cinematic.colors.title': {
+    en: 'Colors',
+    'zh-CN': '颜色'
+  },
+  'cinematic.colors.hint': {
+    en: 'Sent as words, so every model can follow them',
+    'zh-CN': '以文字发送，所有模型都能使用'
+  },
+  'cinematic.colors.color': {
+    en: 'Color',
+    'zh-CN': '颜色'
+  },
+  'cinematic.colors.add': {
+    en: 'Add a color',
+    'zh-CN': '添加颜色'
+  },
+  'cinematic.colors.remove': {
+    en: 'Remove color',
+    'zh-CN': '移除颜色'
+  },
+  'cinematic.colors.makeMain': {
+    en: 'Make main color',
+    'zh-CN': '设为主色'
+  },
+  'cinematic.colors.main': {
+    en: 'Main color',
+    'zh-CN': '主色'
+  },
+  'cinematic.colors.sampleError': {
+    en: "Couldn't read colors from that image.",
+    'zh-CN': '无法从该图片读取颜色。'
+  },
+  'cinematic.colors.clear': {
+    en: 'Clear colors',
+    'zh-CN': '清除颜色'
   },
   'cinematic.picker.close': {
     en: 'Close',
@@ -629,9 +782,13 @@ const copy = {
     en: 'Sequence',
     'zh-CN': '序列'
   },
-  'cinematic.stage.thumb': {
+  'cinematic.stage.takeName': {
     en: 'Shot {shot}, take {take}',
     'zh-CN': '镜头 {shot}，第 {take} 条'
+  },
+  'cinematic.stage.renderingTakeName': {
+    en: 'Rendering Shot {shot}, take {take}',
+    'zh-CN': '正在渲染镜头 {shot}，第 {take} 条'
   }
 } as const satisfies Record<string, LocalizedText>
 

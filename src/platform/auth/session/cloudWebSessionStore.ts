@@ -1,6 +1,6 @@
 import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
-import { onScopeDispose } from 'vue'
+import { onScopeDispose, shallowRef, watch } from 'vue'
 
 import type {
   WebSessionAccountChange,
@@ -10,8 +10,15 @@ import type {
 } from '@comfyorg/account-core/webSessionIdentity'
 import type {
   WebSession,
+  WebSessionErrorCode,
   WebSessionOptions
 } from '@comfyorg/account-core/webSession'
+import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import {
+  createSessionTokenMint,
+  SessionTokenError
+} from '@comfyorg/account-core/sessionTokenMint'
 import { readWebSession } from '@comfyorg/account-core/webSession'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import {
@@ -19,13 +26,15 @@ import {
   createWebVisibilityPort
 } from '@comfyorg/account-core/web'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import type { WebSessionRequestScope } from '@/platform/auth/session/webSessionFetch'
 import {
   fetchOnWebSession,
-  provideWebSessionRequests
+  provideWebSessionRequests,
+  WebSessionTokenError
 } from '@/platform/auth/session/webSessionFetch'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -41,6 +50,27 @@ interface InteractiveSignIn {
 const UNSETTLED_PHASES: ReadonlySet<WebSessionIdentityState['phase']> = new Set(
   ['idle', 'reading', 'restoring']
 )
+
+type TokenFailureMessageKey =
+  `auth.webSession.token.${keyof (typeof enMessages)['auth']['webSession']['token']}`
+
+const TOKEN_FAILURE_COPY: Readonly<
+  Record<WebSessionErrorCode, TokenFailureMessageKey>
+> = {
+  NO_SESSION: 'auth.webSession.token.ended',
+  SESSION_EXPIRED: 'auth.webSession.token.ended',
+  SESSION_REVOKED: 'auth.webSession.token.ended',
+  IDENTITY_CHANGED: 'auth.webSession.token.identityChanged',
+  SESSION_UNAVAILABLE: 'auth.webSession.token.unavailable',
+  CSRF_STALE: 'auth.webSession.token.refused',
+  WORKSPACE_ACCESS_DENIED: 'auth.webSession.token.workspaceDenied',
+  SESSION_REQUEST_REFUSED: 'auth.webSession.token.refused'
+}
+
+const LIFECYCLE_RACES: ReadonlySet<WebSessionErrorCode> = new Set([
+  'NO_SESSION',
+  'IDENTITY_CHANGED'
+])
 
 async function whenSettled(identity: WebSessionIdentity): Promise<void> {
   let stop = () => {}
@@ -65,6 +95,11 @@ function resetForAccountChange(change: WebSessionAccountChange): void {
     }),
     life: 8000
   })
+}
+
+function teamWorkspaceId(): string | undefined {
+  const workspace = useWorkspaceAuthStore().currentWorkspace
+  return workspace?.type === 'team' ? workspace.id : undefined
 }
 
 function sessionOptions(): WebSessionOptions {
@@ -107,6 +142,16 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   let pendingSignIn: InteractiveSignIn | null = null
   let reread: WebSession | null = null
   let releaseRequests = () => {}
+  const signedInUserId = shallowRef<string>()
+
+  watch(
+    () =>
+      signedInUserId.value &&
+      JSON.stringify([signedInUserId.value, teamWorkspaceId()]),
+    (socketScope) => {
+      if (socketScope) void api.reconnectSocket()
+    }
+  )
 
   onScopeDispose(() => {
     releaseRequests()
@@ -142,10 +187,50 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     if (!useFeatureFlags().flags.unifiedWebSessionEnabled) return false
     const session = createCloudIdentity()
     identity = session
-    session.subscribe(() => {
+    session.subscribe((state) => {
       reread = null
+      signedInUserId.value =
+        state.phase === 'signed_in' ? state.session.user.id : undefined
     })
-    releaseRequests = provideWebSessionRequests({ scope: requestScope, send })
+    const mint = createSessionTokenMint({
+      ...sessionOptions(),
+      getSession: currentSession
+    })
+    const authorize = createRequestAuthorizer({
+      getWorkspaceToken: mint.getWorkspaceToken
+    })
+    releaseRequests = provideWebSessionRequests({
+      scope: requestScope,
+      workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
+      send: (url, init, scope) => send(url, init, scope, authorize),
+      workspaceToken: ({ workspaceId }) => mint.mint(workspaceId),
+      authorizeResource: async ({ session }) => {
+        try {
+          const { headers } = await authorize(
+            { kind: 'session', session },
+            { target: 'resource', method: 'POST' }
+          )
+          return headers
+        } catch (error) {
+          if (!(error instanceof SessionTokenError)) throw error
+          const { failure } = error
+          if (
+            failure.httpStatus !== 401 &&
+            !LIFECYCLE_RACES.has(failure.code)
+          ) {
+            reportError(error, {
+              errorType: 'auth_session_token_mint_failure',
+              level: 'warning',
+              tags: { code: failure.code, http_status: failure.httpStatus }
+            })
+          }
+          throw new WebSessionTokenError(
+            error,
+            t(TOKEN_FAILURE_COPY[failure.code])
+          )
+        }
+      }
+    })
     ready = whenSettled(session)
     void bootAfter(session, pendingSignIn)
     pendingSignIn = null
@@ -180,11 +265,11 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     await ready
     const session = currentSession()
     if (!identity || !session) return undefined
-    const workspace = useWorkspaceAuthStore().currentWorkspace
+    const workspaceId = teamWorkspaceId()
     return {
       session,
       epoch: identity.getEpoch(),
-      ...(workspace?.type === 'team' && { workspaceId: workspace.id })
+      ...(workspaceId && { workspaceId })
     }
   }
 
@@ -202,9 +287,11 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   function send(
     url: string,
     init: RequestInit,
-    scope: WebSessionRequestScope
+    scope: WebSessionRequestScope,
+    authorize: RequestAuthorizer
   ): Promise<Response> {
     return fetchOnWebSession(url, init, scope, {
+      authorize,
       reread: rereadFor,
       workspaceDenied: (workspaceId) =>
         useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId)

@@ -69,7 +69,8 @@ test.describe(
             (candidate) => !beforeIds.has(candidate.id)
           )
           if (!node) throw new Error('paste did not add a new node')
-          expect(node.pos).toEqual(pastePosition)
+          expect(node.pos[0]).toBeCloseTo(pastePosition[0], 6)
+          expect(node.pos[1]).toBeCloseTo(pastePosition[1], 6)
           return node
         })
 

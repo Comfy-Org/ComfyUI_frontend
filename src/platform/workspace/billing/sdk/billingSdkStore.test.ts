@@ -609,6 +609,25 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
 
+  it('drives no in-page challenge for a subscribe it reattached to', async () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(
+      pendingSubscription({
+        presentation: 'embedded',
+        actionUrl: 'https://pay.example/invoice',
+        challenge: { clientSecret: 'pi_secret', status: 'required' }
+      })
+    )
+    await nextTick()
+
+    expect(harness.sdk.driveChallenge).not.toHaveBeenCalled()
+    expect(openPage).not.toHaveBeenCalled()
+    expect(store.subscriptionActionUrl).toBe('https://pay.example/invoice')
+  })
+
   it('finishes a reattached subscribe the way the poller did', async () => {
     useBillingSdkStore()
 
@@ -879,6 +898,31 @@ describe('useBillingSdkStore operation projections', () => {
   beforeEach(() => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
   })
+
+  it.for([
+    {
+      name: 'an adopted operation',
+      result: { status: 'ok', value: pendingSubscription() },
+      adopted: true
+    },
+    {
+      name: 'nothing pending',
+      result: { status: 'ok', value: undefined },
+      adopted: false
+    },
+    {
+      name: 'a failed recovery read',
+      result: { status: 'error', code: 'REQUEST_FAILED' },
+      adopted: false
+    }
+  ] as const)(
+    'recover reports $name as adopted: $adopted',
+    async ({ result, adopted }) => {
+      vi.mocked(harness.sdk.lifecycle.recover).mockResolvedValue(result)
+
+      await expect(useBillingSdkStore().recover()).resolves.toBe(adopted)
+    }
+  )
 
   describe('recoverPendingOperation', () => {
     it('resolves with the operation once the lifecycle settles it', async () => {
