@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "ویدیوی نهایی ۱۰۸۰p یک پیش‌نویس Seedance 2.5 را رندر می‌کند. نسخهٔ نهایی صحنه و حرکت پیش‌نویس را حفظ می‌کند و از prompt، مراجع، مدت‌زمان، نسبت تصویر و تنظیم صوتی آن دوباره استفاده می‌کند.",
+    "display_name": "ByteDance Seedance 2.5 پیش‌نویس به ویدیوی نهایی",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "خروجی draft_task_id از اجرای یک node‏ Seedance 2.5 با مدل Seedance 2.5 Draft، یا شناسهٔ وظیفهٔ پیش‌نویسِ جای‌گذاری‌شده. کنترل seed آن node را روی ثابت تنظیم کنید؛ در غیر این صورت، اجرای بعدی به‌جای استفادهٔ مجدد از پیش‌نویس بررسی‌شده، پیش‌نویس جدیدی تولید می‌کند. یک پیش‌نویس تا ۷ روز پس از ایجاد قابل رندر است."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "این‌که آیا به ویدیو واترمارک اضافه شود یا نه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "تولید ویدیو با استفاده از Seedance 2.0 از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم.",
     "display_name": "ByteDance Seedance 2.0 تبدیل اولین-آخرین فریم به ویدیو",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن نسخهٔ نهایی ۱۰۸۰p را در node‏ Seedance 2.5 Draft to Final Video رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "شناسهٔ وظیفهٔ یک اجرای Seedance 2.5 Draft. آن را به node‏ Seedance 2.5 Draft to Final Video متصل کنید تا نسخهٔ نهایی ۱۰۸۰p رندر شود."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن نسخهٔ نهایی ۱۰۸۰p را در node‏ Seedance 2.5 Draft to Final Video رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن نسخهٔ نهایی ۱۰۸۰p را در node‏ Seedance 2.5 Draft to Final Video رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "شناسهٔ وظیفهٔ یک اجرای Seedance 2.5 Draft. آن را به node‏ Seedance 2.5 Draft to Final Video متصل کنید تا نسخهٔ نهایی ۱۰۸۰p رندر شود."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدئوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای بیشترین کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن نسخهٔ نهایی ۱۰۸۰p را در node‏ Seedance 2.5 Draft to Final Video رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "شناسهٔ وظیفهٔ یک اجرای Seedance 2.5 Draft. آن را به node‏ Seedance 2.5 Draft to Final Video متصل کنید تا نسخهٔ نهایی ۱۰۸۰p رندر شود."
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "تجزیه یک تصویر به یک پس‌زمینه به‌علاوه حداکثر ۱۶ لایه شفاف قابل جابجایی، هرکدام با ترتیب چیدمان، جعبه مرزی (bounding box)، نام و توضیح.",
-    "display_name": "ByteDance Seedream ۵.۰ Pro جداسازی لایه",
+    "display_name": "ByteDance Seedream 5.0 Pro جداسازی لایه‌ها (قدیمی)",
     "inputs": {
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "پشته لایه",
         "tooltip": "سند لایه‌بندی آماده ویرایش برای Create Layered Image: صفحه پایه به‌علاوه هر عنصر به عنوان یک لایه نام‌گذاری شده و فشرده در موقعیت و ترتیب واقعی خود. مستقیماً متصل کنید یا با Add Layer گسترش دهید."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "یک تصویر را به یک لایهٔ زمینه به‌همراه حداکثر ۱۶ لایهٔ شفافِ قابل‌جابه‌جایی تجزیه می‌کند که هرکدام ترتیب چیدمان، کادر مرزی، نام و توضیحات دارند.",
+    "display_name": "ByteDance Seedream 5.0 جداسازی لایه‌ها",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "تصویر پایه (لایهٔ زمینه) که لایه‌ها روی آن چیده می‌شوند."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "شفافیت تصویر پایه (1 = شفاف، طبق قرارداد LoadImage)؛ در حال حاضر همیشه کاملاً مات است."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "لایه‌های شفاف، مرتب‌شده از پایین به بالا. حالت بوم کامل: در موقعیت کادر مرزی خود روی یک بوم سیاه هم‌اندازهٔ پایه قرار می‌گیرند. حالت اندازهٔ حداقلی: به کادر مرزی خود برش می‌خورند، در بالا-چپ لنگر می‌شوند و تا اندازهٔ بزرگ‌ترین لایه پد می‌شوند."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "شفافیت هر لایه، هم‌راستا از نظر اندیس با batch لایه‌ها (1 = شفاف، طبق قرارداد LoadImage). برای ترکیب‌بندی به سبک ImageCompositeMasked، ابتدا InvertMask را اضافه کنید."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "یک کادر جای‌گذاری برای هر لایه، هم‌راستا از نظر اندیس با batch لایه‌ها (هر دو را، به‌همراه masks، به Layers From Bounding Boxes بدهید تا جای‌گذاری هر لایه بازسازی شود): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] ناحیهٔ محتوای لایه درون قاب خودش است؛ این ناحیه روی بوم در موقعیت کادر به‌علاوهٔ آن افست قرار می‌گیرد."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "سند لایه‌ای آمادهٔ ویرایش برای Create Layered Image: لایهٔ پایه به‌همراه هر عنصر به‌صورت لایه‌ای مجزا، نام‌دار و با برش فشرده در موقعیت و ترتیب چیدمان واقعی آن. مستقیماً متصل کنید یا با Add Layer گسترش دهید."
       }
     }
   },
@@ -8491,12 +8578,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB، Rec.709 خطی، HDR (Rec.2020 HLG) و HDR PQ (Rec.2020 PQ) را تبدیل می‌کند. Linear ۱٫۰ از همان سفید مرجع ۲۰۳ نیتِ sRGB استفاده می‌کند؛ HLG از نمایشگر مرجع ۱۰۰۰ نیت استفاده می‌کند. خروجی خطی و تبدیل‌های خطی‌به-HDR مقادیر توسعه‌یافته را بدون نگاشت تُن حفظ می‌کنند. خروجی SDR و تبدیل PQ‌به-HLG روشنایی اضافی را در سراسر batch نگاشت تُن می‌کنند و رنگ‌های خارج از gamut را فشرده می‌کنند. تبدیل‌ها با float32 محاسبه می‌شوند و device و dtype میانی را بازمی‌گردانند. آلفای مستقیم تبدیل رنگ نمی‌شود.",
+    "description": "sRGB، Rec.709 خطی، HDR (Rec.2020 HLG)، HDR PQ (Rec.2020 PQ)، HDR LogC3 و HDR ACEScct را تبدیل می‌کند. LogC3 از منحنی EI 800 با رنگ‌های اصلی Rec.709 و کدهای محدودشده به [0, 1] استفاده می‌کند. ACEScct از رنگ‌های اصلی AP1 و نقطهٔ سفید D60، با تطبیق Bradford به D65 استفاده می‌کند. برای ذخیره‌سازی EXR، LogC3 یا ACEScct را به خطی تبدیل کنید. Linear 1.0 از همان سفید مرجع 203-nit مانند sRGB استفاده می‌کند؛ HLG از نمایشگر مرجع 1000-nit استفاده می‌کند. خروجی‌های Linear و ACEScct مقادیر گسترده را حفظ می‌کنند. تبدیل‌های Linear به HDR، هایلایت‌ها را بدون tone mapping حفظ می‌کنند؛ خروجی‌های HLG و PQ کانال‌های منفی را برش می‌دهند. خروجی SDR و تبدیل PQ به HLG، روشنایی اضافی را در سراسر batch tone-map می‌کنند و رنگ‌های خارج از gamut را فشرده می‌کنند. تبدیل‌ها با float32 محاسبه می‌شوند و device و dtype میانی را بازمی‌گردانند. آلفای مستقیم تبدیل رنگی نمی‌شود.",
     "display_name": "تبدیل فضای رنگ تصویر",
     "inputs": {
       "destination": {
         "name": "مقصد",
-        "tooltip": "فضای رنگ پیکسل‌های خروجی. node ذخیره‌سازی را روی همین فضای رنگ تنظیم کنید."
+        "tooltip": "فضای رنگی پیکسل‌های خروجی. node ذخیره را روی همین فضای رنگی تنظیم کنید. پیش از ذخیره‌سازی EXR، LogC3 یا ACEScct را به خطی تبدیل کنید، یا پیش از ذخیره ویدیو آن‌ها را به sRGB/HDR/HDR PQ تبدیل کنید."
       },
       "image": {
         "name": "image"
@@ -16893,7 +16980,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "میزان استدلال مدل پیش از پاسخ‌دادن. «default» انتخاب را به مدل واگذار می‌کند. سطوح پشتیبانی‌شده برای هر مدل متفاوت‌اند: GPT-6 Astra از low تا max، GPT-5.6 از none تا max (بدون minimal)، GPT-5.5 از none تا xhigh، GPT-5.5 Pro از medium تا xhigh، GPT-5 از minimal تا high، و o-series از low تا high؛ GPT-4.1 قابلیت استدلال ندارد. سطوح پشتیبانی‌نشده پیش از ارسال درخواست رد می‌شوند."
+        "tooltip": "میزان استدلال مدل پیش از پاسخ‌گویی. 'default' انتخاب را به مدل واگذار می‌کند. سطوح پشتیبانی‌شده برای هر مدل متفاوت‌اند: GPT-6 Astra low-max، GPT-6 Sol/Luna و GPT-5.6 none-max (بدون minimal)، GPT-5.5 none-xhigh، GPT-5.5 Pro medium-xhigh، GPT-5 minimal-high، o-series low-high؛ GPT-4.1 استدلال ندارد. سطوح پشتیبانی‌نشده پیش از ارسال درخواست رد می‌شوند."
       },
       "truncation": {
         "name": "truncation",
@@ -17053,40 +17140,6 @@
       "file": {
         "name": "file",
         "tooltip": "فایل‌های ورودی برای استفاده به عنوان زمینه برای مدل. در حال حاضر فقط فایل‌های متنی (.txt) و PDF (.pdf) پذیرفته می‌شوند."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIVideoSora2": {
-    "description": "تولید ویدیو و صوت توسط OpenAI.",
-    "display_name": "OpenAI Sora - ویدیو",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image": {
-        "name": "image"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "متن راهنما؛ در صورت وجود تصویر ورودی می‌تواند خالی باشد."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed برای تعیین اینکه node باید مجدداً اجرا شود یا خیر؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
-      },
-      "size": {
-        "name": "size"
       }
     },
     "outputs": {
@@ -18447,6 +18500,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "میزان استدلالی که مدل پیش از ترسیم انجام می‌دهد. سطوح بالاتر جزئیات را بهبود می‌دهند و token بیشتری هزینه دارند. فقط توسط مدل‌های Arrow 2 استفاده می‌شود."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "Seed برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
@@ -18485,6 +18542,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "توضیح متنی برای خروجی SVG مورد نظر."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "میزان استدلالی که مدل پیش از ترسیم انجام می‌دهد. سطوح بالاتر جزئیات را بهبود می‌دهند و token بیشتری هزینه دارند. فقط توسط مدل‌های Arrow 2 استفاده می‌شود."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19156,7 +19217,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکپارچه ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند."
+        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سازگاری سبکی ساخته شده‌اند و همواره به style_id یا style_references نیاز دارند؛ recraftv4_1_flash سریع‌ترین و ارزان‌ترین مدل است و اصلاً از هیچ سبکی پشتیبانی نمی‌کند."
       },
       "model_size": {
         "name": "اندازه"
@@ -23876,6 +23937,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "رمزگذاری متن برای ویرایش تصویر Ming",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "تصاویر مرجع اختیاری که توسط رمزگذار متن دیده می‌شوند و به‌صورت فریم‌های بدون نویز به دنباله latent افزوده می‌شوند. اندازه تصاویر بعدی به اندازه تصویر نخست تغییر داده می‌شود و latent نمونه‌برداری‌شده باید با اندازه آن مطابقت داشته باشد."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "بدون VAE، تصاویر فقط از طریق vision tower رمزگذار متن را شرطی می‌کنند."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -28724,6 +28809,10 @@
       },
       "positive": {
         "name": "مثبت"
+      },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "فریم‌های padding مربوط به شرطی‌سازی تصویر را به‌جای خاکستری با این تصویر پر می‌کند و بدون قفل کردن فریم‌ها، هویت را تثبیت می‌کند (padding ضد رانش به سبک SVI که توسط مدل‌هایی مانند ID-V2V استفاده می‌شود)."
       },
       "start_image": {
         "name": "تصویر شروع"
