@@ -4,44 +4,36 @@ import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope } from 'vue'
 
+import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
+
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
+import { useTelemetry } from '@/platform/telemetry'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 const {
-  mockGetAuthHeader,
   mockGetCheckoutAttribution,
-  mockTelemetry,
 
   mockIsCloud,
 
   mockGetBillingStatus,
 
-  mockSetWorkspaceBillingRail,
   mockLocalStorage
 } = vi.hoisted(() => ({
   mockIsCloud: { value: true },
 
   mockGetBillingStatus: vi.fn(),
 
-  mockSetWorkspaceBillingRail: vi.fn(),
-  mockGetAuthHeader: vi.fn(() =>
-    Promise.resolve({ Authorization: 'Bearer test-token' as const })
-  ),
   mockGetCheckoutAttribution: vi.fn(() => ({
     im_ref: 'impact-click-001',
     utm_source: 'impact'
   })),
-  mockTelemetry: {
-    trackSubscription: vi.fn(),
-    trackMonthlySubscriptionSucceeded: vi.fn(),
-    trackMonthlySubscriptionCancelled: vi.fn(),
-    trackBillingEvent: vi.fn()
-  },
-
   mockLocalStorage: (() => {
     const store = new Map<string, string>()
 
@@ -97,29 +89,11 @@ Object.defineProperty(globalThis, 'localStorage', {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => mockTelemetry)
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: vi.fn(() => ({
-    wrapWithErrorHandlingAsync: vi.fn(
-      (fn, errorHandler) =>
-        async (...args: Parameters<typeof fn>) => {
-          try {
-            return await fn(...args)
-          } catch (error) {
-            if (errorHandler) {
-              errorHandler(error)
-            }
-            throw error
-          }
-        }
-    )
-  }))
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -134,13 +108,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: {
-    getBillingStatus: mockGetBillingStatus
-  },
-  // What a failed rail read throws; only its message reaches the wrapper.
-  WorkspaceApiError: class extends Error {}
-}))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 /** Null is the legacy client; a rail is what the SDK store would hand back. */
 const railState = vi.hoisted(() => ({
@@ -152,6 +120,8 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/services/dialogService'))
+
+vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
 
 const mockReadStatus = vi.fn<BillingReadRail['readStatus']>()
 
@@ -212,16 +182,27 @@ const statusReadPaths = [
 global.fetch = vi.fn()
 
 beforeEach(() => {
-  Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
-  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
-    mockGetAuthHeader
+  vi.mocked(webSessionResourceHeader).mockReset()
+  vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
+  useErrorHandling().wrapWithErrorHandlingAsync =
+    (action, errorHandler) =>
+    async (...args) => {
+      try {
+        return await action(...args)
+      } catch (error) {
+        errorHandler?.(error)
+        throw error
+      }
+    }
+  vi.mocked(workspaceApi.getBillingStatus).mockImplementation(
+    mockGetBillingStatus
   )
+  Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
+  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockResolvedValue({
+    Authorization: 'Bearer test-token' as const
+  })
   vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
     (input, init) => fetch(input, init)
-  )
-
-  vi.mocked(useTeamWorkspaceStore().setWorkspaceBillingRail).mockImplementation(
-    mockSetWorkspaceBillingRail
   )
 })
 
@@ -376,10 +357,9 @@ describe('useSubscription', () => {
         await fetchStatus()
 
         expect(subscriptionStatus.value).toEqual(status)
-        expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
-          'workspace-123',
-          'stripe'
-        )
+        expect(
+          useTeamWorkspaceStore().setWorkspaceBillingRail
+        ).toHaveBeenCalledWith('workspace-123', 'stripe')
         // One transport per read: the rail a read is on is the only client it
         // asks, or the panels read one thing and the rail settled another.
         expect(path.idleReader()).not.toHaveBeenCalled()
@@ -457,11 +437,12 @@ describe('useSubscription', () => {
         has_funds: false,
         billing_rail: 'legacy_stripe'
       })
-      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledOnce()
-      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
-        'workspace-456',
-        'legacy_stripe'
-      )
+      expect(
+        useTeamWorkspaceStore().setWorkspaceBillingRail
+      ).toHaveBeenCalledOnce()
+      expect(
+        useTeamWorkspaceStore().setWorkspaceBillingRail
+      ).toHaveBeenCalledWith('workspace-456', 'legacy_stripe')
     })
 
     it('coalesces concurrent callers into one fetch', async () => {
@@ -594,6 +575,67 @@ describe('useSubscription', () => {
       expect(useAuthActions().reportError).not.toHaveBeenCalled()
     })
 
+    it.for([
+      {
+        name: 'no web session sends the Firebase header',
+        session: undefined,
+        authorization: 'Bearer test-token',
+        firebaseCalls: 1
+      },
+      {
+        name: 'a web session sends its own header instead',
+        session: { Authorization: 'Bearer session-jwt' },
+        authorization: 'Bearer session-jwt',
+        firebaseCalls: 0
+      }
+    ])(
+      'authorizes the checkout: $name',
+      async ({ session, authorization, firebaseCalls }) => {
+        vi.mocked(webSessionResourceHeader).mockResolvedValue(session)
+        vi.mocked(global.fetch).mockResolvedValue(
+          new Response(
+            JSON.stringify({ checkout_url: 'https://checkout.stripe.com/x' })
+          )
+        )
+        const windowOpenSpy = vi
+          .spyOn(window, 'open')
+          .mockImplementation(() => window)
+
+        await useSubscriptionWithScope().subscribeDirect()
+
+        expect(global.fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/customers/cloud-subscription-checkout'),
+          expect.objectContaining({
+            headers: {
+              Authorization: authorization,
+              'Content-Type': 'application/json'
+            }
+          })
+        )
+        expect(useAuthStore().getFirebaseAuthHeader).toHaveBeenCalledTimes(
+          firebaseCalls
+        )
+        windowOpenSpy.mockRestore()
+      }
+    )
+
+    it('rejects with the mint failure and sends no checkout request', async () => {
+      vi.mocked(webSessionResourceHeader).mockRejectedValue(
+        new SessionTokenError({
+          status: 'error',
+          code: 'SESSION_REVOKED',
+          retryable: false
+        })
+      )
+
+      await expect(
+        useSubscriptionWithScope().subscribeDirect()
+      ).rejects.toMatchObject({
+        failure: { code: 'SESSION_REVOKED' }
+      })
+      expect(global.fetch).not.toHaveBeenCalled()
+    })
+
     it('tags the pending attempt as a resubscribe when called with operation/source', async () => {
       const checkoutUrl = 'https://checkout.stripe.com/direct'
       vi.mocked(global.fetch).mockResolvedValue({
@@ -647,7 +689,7 @@ describe('useSubscription', () => {
 
       await vi.waitFor(() => {
         expect(
-          mockTelemetry.trackMonthlySubscriptionSucceeded
+          useTelemetry()?.trackMonthlySubscriptionSucceeded
         ).toHaveBeenCalledWith(
           expect.objectContaining({
             user_id: 'user-123',
@@ -692,7 +734,7 @@ describe('useSubscription', () => {
 
       await vi.waitFor(() => {
         expect(
-          mockTelemetry.trackMonthlySubscriptionSucceeded
+          useTelemetry()?.trackMonthlySubscriptionSucceeded
         ).toHaveBeenCalledWith(
           expect.objectContaining({
             checkout_attempt_id: 'attempt-456',
@@ -732,7 +774,7 @@ describe('useSubscription', () => {
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
-        expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+        expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
           operation: 'resubscribe',
           stage: 'succeeded',
           outcome: 'success',
@@ -766,10 +808,10 @@ describe('useSubscription', () => {
 
       await vi.waitFor(() => {
         expect(
-          mockTelemetry.trackMonthlySubscriptionSucceeded
+          useTelemetry()?.trackMonthlySubscriptionSucceeded
         ).toHaveBeenCalled()
       })
-      expect(mockTelemetry.trackBillingEvent).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('rechecks pending checkout attempts when the document becomes visible', async () => {
@@ -950,16 +992,19 @@ describe('useSubscription', () => {
   })
 
   describe('action handlers', () => {
-    it('should open usage history URL', () => {
+    it('should open usage history URL in the active workspace', () => {
       const windowOpenSpy = vi
         .spyOn(window, 'open')
         .mockImplementation(() => null)
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'ws-team-1'
+      })
 
       const { handleViewUsageHistory } = useSubscriptionWithScope()
       handleViewUsageHistory()
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        'https://stagingplatform.comfy.org/profile/usage',
+        'https://stagingplatform.comfy.org/profile/usage?workspace=ws-team-1',
         '_blank'
       )
 
@@ -1020,7 +1065,7 @@ describe('useSubscription', () => {
 
       expect(mockGetBillingStatus).not.toHaveBeenCalled()
       expect(
-        mockTelemetry.trackMonthlySubscriptionCancelled
+        useTelemetry()?.trackMonthlySubscriptionCancelled
       ).not.toHaveBeenCalled()
     })
 
@@ -1052,7 +1097,7 @@ describe('useSubscription', () => {
       await vi.advanceTimersByTimeAsync(5000)
 
       expect(
-        mockTelemetry.trackMonthlySubscriptionCancelled
+        useTelemetry()?.trackMonthlySubscriptionCancelled
       ).toHaveBeenCalledTimes(1)
     })
 
@@ -1084,7 +1129,7 @@ describe('useSubscription', () => {
       window.dispatchEvent(new Event('focus'))
       await vi.waitFor(() => {
         expect(
-          mockTelemetry.trackMonthlySubscriptionCancelled
+          useTelemetry()?.trackMonthlySubscriptionCancelled
         ).toHaveBeenCalledTimes(1)
       })
     })

@@ -9,8 +9,9 @@ import {
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -23,6 +24,7 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -212,7 +214,8 @@ function useSubscriptionInternal() {
   }
 
   const buildAuthHeaders = async (): Promise<Record<string, string>> => {
-    const authHeader = await getFirebaseAuthHeader()
+    const authHeader =
+      (await webSessionResourceHeader()) ?? (await getFirebaseAuthHeader())
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -312,7 +315,7 @@ function useSubscriptionInternal() {
   }
 
   const handleViewUsageHistory = () => {
-    window.open(`${getComfyPlatformBaseUrl()}/profile/usage`, '_blank')
+    window.open(platformLink('/profile/usage'), '_blank')
   }
 
   const handleLearnMore = () => {

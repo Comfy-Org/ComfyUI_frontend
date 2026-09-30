@@ -5,7 +5,9 @@ import type {
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -20,9 +22,13 @@ import type {
 } from '../../schemas/agentApiSchema'
 import {
   zAgentAdmissionError,
+  zAgentTurnAccepted,
   zAgentWsEvent
 } from '../../schemas/agentApiSchema'
-import { AgentApiError } from '../../services/agent/agentRestClient'
+import {
+  AgentApiError,
+  AgentResponseUnreadableError
+} from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
   PostMessageInput
@@ -37,6 +43,11 @@ import { useAgentSession } from './useAgentSession'
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock(import('@/platform/telemetry'))
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
@@ -212,7 +223,22 @@ function admissionError(
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
     vi.mocked(reportError).mockClear()
+    telemetry.trackAgentStopClicked.mockClear()
+  })
+
+  it('initializes when legacy storage cleanup fails', () => {
+    vi.spyOn(localStorage, 'removeItem').mockImplementationOnce(() => {
+      throw new DOMException('Storage unavailable', 'SecurityError')
+    })
+
+    expect(() =>
+      useAgentSession({
+        rest: fakeRest(),
+        events: fakeEvents().source
+      })
+    ).not.toThrow()
   })
 
   it('(a) posts to new, adopts ids, records the user turn, and renders a settled reply', async () => {
@@ -243,6 +269,27 @@ describe('useAgentSession (v1 composition root)', () => {
       streaming: false
     })
     expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('tracks each durable thread start once with its initiating source', async () => {
+    const onThreadStarted = vi.fn()
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: source,
+      onThreadStarted
+    })
+    session.start()
+
+    await session.sendMessage('first')
+    expect(onThreadStarted).toHaveBeenCalledExactlyOnceWith('first_open')
+
+    session.newChat('new_chat_button')
+    await session.sendMessage('second')
+    expect(onThreadStarted.mock.calls).toEqual([
+      ['first_open'],
+      ['new_chat_button']
+    ])
   })
 
   it('(b) a second send posts to the adopted threadId, not new', async () => {
@@ -321,6 +368,29 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBeNull()
   })
 
+  it('does not persist a send that resolves after the session stops', async () => {
+    let resolvePost: (value: AgentTurnAccepted) => void = () => {}
+    const postMessage = vi.fn(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    const send = session.sendMessage('late reply')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+    session.stop()
+    resolvePost({ thread_id: 'th-late', message_id: 'msg-late' })
+
+    await expect(send).resolves.toBe(false)
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
+  })
+
   it('(b5) a stop followed by a successor start in the same microtask window skips the abort', async () => {
     const rest = fakeRest()
     const conversation = useAgentConversationStore()
@@ -380,7 +450,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(b8) a stale boot hydrate cannot kill a turn started after a remount', async () => {
     const conversation = useAgentConversationStore()
-    localStorage.setItem('Comfy.Agent.ThreadId', 'th-9')
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-9')
     const resolvers: Array<(rows: []) => void> = []
     const getMessages = vi.fn(
       () =>
@@ -466,7 +536,10 @@ describe('useAgentSession (v1 composition root)', () => {
     const duplicate = session.answerAsk('turn-1:call-1', 'run')
 
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
-    await Promise.all([first, duplicate])
+    await expect(Promise.all([first, duplicate])).resolves.toEqual([
+      true,
+      false
+    ])
     expect(answerAsk).toHaveBeenCalledTimes(1)
     expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
@@ -640,7 +713,7 @@ describe('useAgentSession (v1 composition root)', () => {
       workflow: {
         current: () => undefined,
         adopted: () => {},
-        draft: () => ({ content: { nodes: [] }, version: 1 })
+        draft: () => ({ content: { nodes: [] } })
       }
     })
     session.start()
@@ -790,6 +863,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toHaveLength(0)
     expect(session.isStreaming.value).toBe(true)
     expect(session.editableTurnId.value).toBeNull()
+    expect(telemetry.trackAgentStopClicked).not.toHaveBeenCalled()
 
     emit(delta('msg-1', ' Stopped at your request.'))
     emit(done('msg-1'))
@@ -806,6 +880,144 @@ describe('useAgentSession (v1 composition root)', () => {
 
     session.newChat()
     expect(session.editableTurnId.value).toBeNull()
+  })
+
+  it('tracks one committed stop with its method, turn, and elapsed time', async () => {
+    let currentTime = 1_000
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
+    const cancelMessage = vi.fn(
+      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    )
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ cancelMessage }),
+      events: source
+    })
+    session.start()
+
+    await session.sendMessage('go')
+    currentTime = 1_450
+    await session.stopTurn('escape')
+
+    expect(telemetry.trackAgentStopClicked).toHaveBeenCalledExactlyOnceWith({
+      method: 'escape',
+      turn_id: 'msg-1',
+      turn_elapsed_ms: 450
+    })
+    now.mockRestore()
+  })
+
+  it('tracks a stop when completion arrives before cancellation responds', async () => {
+    let currentTime = 2_000
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
+    let resolveCancellation!: (accepted: AgentCancelAccepted) => void
+    const cancelMessage = vi.fn(
+      () =>
+        new Promise<AgentCancelAccepted>((resolve) => {
+          resolveCancellation = resolve
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ cancelMessage }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('go')
+
+    currentTime = 2_300
+    const stopping = session.stopTurn('button')
+    emit(done('msg-1'))
+    currentTime = 2_900
+    resolveCancellation({ status: 'cancelling' })
+    await stopping
+
+    expect(telemetry.trackAgentStopClicked).toHaveBeenCalledExactlyOnceWith({
+      method: 'button',
+      turn_id: 'msg-1',
+      turn_elapsed_ms: 300
+    })
+    now.mockRestore()
+  })
+
+  it.for(['button', 'escape'] as const)(
+    'tracks a %s stop after restoring a pending approval without a start time',
+    async (method) => {
+      const history: AgentMessages = [
+        historyRow(1, 'user', 'restored-turn', 'Run it'),
+        {
+          ...historyRow(
+            2,
+            'assistant',
+            'restored-turn',
+            '',
+            'restored-approval'
+          ),
+          status: 'streaming',
+          pending_ask: {
+            message_id: 'restored-approval',
+            ask_id: 'restored-turn:call-1',
+            kind: 'run_approval',
+            context: { workflow_id: 'wf-1' },
+            prompt: 'Run it?',
+            options: [
+              { id: 'run', label: 'Run' },
+              { id: 'cancel', label: 'Cancel' }
+            ],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ]
+      const rest = fakeRest({ getMessages: vi.fn(async () => history) })
+      const session = useAgentSession({ rest, events: fakeEvents().source })
+      session.start()
+
+      await session.loadThread('th-1')
+      expect(session.isStreaming.value).toBe(true)
+      await session.stopTurn(method)
+
+      expect(rest.cancelMessage).toHaveBeenCalledExactlyOnceWith(
+        'th-1',
+        'restored-approval'
+      )
+      expect(telemetry.trackAgentStopClicked).toHaveBeenCalledExactlyOnceWith({
+        method,
+        turn_id: 'restored-turn',
+        turn_elapsed_ms: null
+      })
+    }
+  )
+
+  it('tracks one stop while cancellation is already in flight', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(3_000)
+    let resolveCancellation!: (accepted: AgentCancelAccepted) => void
+    const cancelMessage = vi.fn(
+      () =>
+        new Promise<AgentCancelAccepted>((resolve) => {
+          resolveCancellation = resolve
+        })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ cancelMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.sendMessage('go')
+
+    const firstStop = session.stopTurn('button')
+    await session.stopTurn('escape')
+    resolveCancellation({ status: 'cancelling' })
+    await firstStop
+
+    expect(cancelMessage).toHaveBeenCalledExactlyOnceWith('th-1', 'msg-1')
+    expect(telemetry.trackAgentStopClicked).toHaveBeenCalledExactlyOnceWith({
+      method: 'button',
+      turn_id: 'msg-1',
+      turn_elapsed_ms: 0
+    })
+    now.mockRestore()
   })
 
   it('(d1) a normally completed turn is not editable', async () => {
@@ -843,31 +1055,52 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.editableTurnId.value).toBeNull()
   })
 
-  it('(d3) stopTurn before the POST acknowledgement cancels the acknowledged turn once', async () => {
-    let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
-    const postMessage = vi.fn(
-      () =>
-        new Promise<AgentTurnAccepted>((resolve) => {
-          resolvePost = resolve
-        })
-    )
-    const cancelMessage = vi.fn<
-      (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
-    >(async () => ({ status: 'cancelling' }))
-    const rest = fakeRest({ postMessage, cancelMessage })
-    const session = useAgentSession({ rest, events: fakeEvents().source })
-    session.start()
+  it.for([
+    { method: undefined, expectedStops: [] },
+    {
+      method: 'button' as const,
+      expectedStops: [
+        { method: 'button', turn_id: 'msg-1', turn_elapsed_ms: 0 }
+      ]
+    },
+    {
+      method: 'escape' as const,
+      expectedStops: [
+        { method: 'escape', turn_id: 'msg-1', turn_elapsed_ms: 0 }
+      ]
+    }
+  ])(
+    '(d3) preserves a $method stop before the POST acknowledgement',
+    async ({ method, expectedStops }) => {
+      vi.spyOn(Date, 'now').mockReturnValue(1_000)
+      let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
+      const postMessage = vi.fn(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve) => {
+            resolvePost = resolve
+          })
+      )
+      const cancelMessage = vi.fn<
+        (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
+      >(async () => ({ status: 'cancelling' }))
+      const rest = fakeRest({ postMessage, cancelMessage })
+      const session = useAgentSession({ rest, events: fakeEvents().source })
+      session.start()
 
-    const sending = session.sendMessage('go')
-    await session.stopTurn()
-    expect(cancelMessage).not.toHaveBeenCalled()
+      const sending = session.sendMessage('go')
+      await session.stopTurn(method)
+      expect(cancelMessage).not.toHaveBeenCalled()
 
-    resolvePost?.({ thread_id: 'th-1', message_id: 'msg-1' })
-    await sending
+      resolvePost?.({ thread_id: 'th-1', message_id: 'msg-1' })
+      await sending
 
-    expect(cancelMessage).toHaveBeenCalledTimes(1)
-    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
-  })
+      expect(cancelMessage).toHaveBeenCalledTimes(1)
+      expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+      expect(
+        telemetry.trackAgentStopClicked.mock.calls.map(([metadata]) => metadata)
+      ).toEqual(expectedStops)
+    }
+  )
 
   it('(g) onStatus(false) aborts the active turn; onStatus(true) is inert', async () => {
     const rest = fakeRest()
@@ -943,59 +1176,67 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     })
 
-  it.fails('(g3) KNOWN BUG: a reconnect leaves the turn running instead of settling it', async () => {
-    const rest = streamingTurnRest()
-    const { source, emit, status } = fakeEvents()
-    const session = useAgentSession({ rest, events: source })
-    session.start()
-    status(true)
+  it.fails(
+    '(g3) KNOWN BUG: a reconnect leaves the turn running instead of settling it',
+    { retry: 0 },
+    async () => {
+      const rest = streamingTurnRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
 
-    await session.sendMessage('go')
-    emit(delta('msg-1', 'partial'))
-    expect(session.isStreaming.value).toBe(true)
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+      expect(session.isStreaming.value).toBe(true)
 
-    status(false)
-    status(true)
+      status(false)
+      status(true)
 
-    // Generous on purpose, and matched in (g4). Under it.fails a waitFor that
-    // runs out its budget THROWS, and a throw is what marks the case green — so
-    // a tight budget here would quietly disarm the tripwire against any repair
-    // that debounces recovery after the socket flaps.
-    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true), {
-      timeout: 2000
-    })
-  })
+      // Generous on purpose, and matched in (g4). Under it.fails a waitFor that
+      // runs out its budget THROWS, and a throw is what marks the case green — so
+      // a tight budget here would quietly disarm the tripwire against any repair
+      // that debounces recovery after the socket flaps.
+      await vi.waitFor(() => expect(session.isStreaming.value).toBe(true), {
+        timeout: 2000
+      })
+    }
+  )
 
-  it.fails('(g4) KNOWN BUG: deltas that arrive after a reconnect still reach the turn', async () => {
-    const rest = streamingTurnRest()
-    const { source, emit, status } = fakeEvents()
-    const session = useAgentSession({ rest, events: source })
-    session.start()
-    status(true)
+  it.fails(
+    '(g4) KNOWN BUG: deltas that arrive after a reconnect still reach the turn',
+    { retry: 0 },
+    async () => {
+      const rest = streamingTurnRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
 
-    await session.sendMessage('go')
-    emit(delta('msg-1', 'partial'))
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
 
-    status(false)
-    status(true)
-    emit(delta('msg-1', ' and the rest'))
+      status(false)
+      status(true)
+      emit(delta('msg-1', ' and the rest'))
 
-    // Retried, because a re-hydrate repair reaches the reply through an async
-    // getMessages. Joined rather than part-by-part: a re-attach that opens a
-    // fresh text part on reconnect still shows the user the whole reply, and
-    // must count as fixed.
-    await vi.waitFor(
-      () => {
-        const assistant = session.entries.value.at(-1)
-        assert(assistant !== undefined && 'parts' in assistant)
-        const replyText = assistant.parts
-          .flatMap((part) => (part.type === 'text' ? [part.text] : []))
-          .join('')
-        expect(replyText).toBe('partial and the rest')
-      },
-      { timeout: 2000 }
-    )
-  })
+      // Retried, because a re-hydrate repair reaches the reply through an async
+      // getMessages. Joined rather than part-by-part: a re-attach that opens a
+      // fresh text part on reconnect still shows the user the whole reply, and
+      // must count as fixed.
+      await vi.waitFor(
+        () => {
+          const assistant = session.entries.value.at(-1)
+          assert(assistant !== undefined && 'parts' in assistant)
+          const replyText = assistant.parts
+            .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+            .join('')
+          expect(replyText).toBe('partial and the rest')
+        },
+        { timeout: 2000 }
+      )
+    }
+  )
 
   it('(h) attachments pass through to the postMessage wire body', async () => {
     const rest = fakeRest()
@@ -1135,7 +1376,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('hello')
 
     expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
-    expect(adopted).toHaveBeenCalledWith('wf-1', undefined)
+    expect(adopted).toHaveBeenCalledWith('wf-1', undefined, null)
     expect(session.boundWorkflowId.value).toBe('wf-1')
   })
 
@@ -1357,10 +1598,14 @@ describe('useAgentSession (v1 composition root)', () => {
     releasePrepare()
     await sendPromise
 
-    expect(adopted).toHaveBeenCalledWith('wf-1', {
-      id: 'wf-a',
-      tabPath: 'tab-a'
-    })
+    expect(adopted).toHaveBeenCalledWith(
+      'wf-1',
+      {
+        id: 'wf-a',
+        tabPath: 'tab-a'
+      },
+      null
+    )
     expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
       workflowId: 'wf-a',
       tabs: { current_tab: 'wf-a' }
@@ -1487,7 +1732,7 @@ describe('useAgentSession (v1 composition root)', () => {
       { workflow_id: 'wf-b', name: 'tab-b' }
     ])
     // The ack echoes wf-b; with no origin tab there is nothing to bind it to.
-    expect(adopted).toHaveBeenCalledWith('wf-b', undefined)
+    expect(adopted).toHaveBeenCalledWith('wf-b', undefined, null)
   })
 
   it('(h6) a bind landing in the prepare()/POST window makes an echoed id read as an echo', async () => {
@@ -1538,7 +1783,7 @@ describe('useAgentSession (v1 composition root)', () => {
     )
     await nextTick()
     useAgentWorkflowTabBindingStore().$dispose()
-    localStorage.setItem('Comfy.Agent.ThreadId', 'th-existing')
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-existing')
 
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-existing',
@@ -1692,7 +1937,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
     session.start()
     session.bindWorkflow('wf-dead')
-    abandon = () => void session.newChat()
+    abandon = () => session.newChat()
 
     expect(await session.sendMessage('run it')).toBe(false)
 
@@ -2472,7 +2717,7 @@ describe('thread resume (B17)', () => {
   })
 
   it('restores the persisted thread and hydrates its transcript on start', async () => {
-    localStorage.setItem('Comfy.Agent.ThreadId', 'th-9')
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-9')
     const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
     const session = useAgentSession({
       rest: fakeRest({ getMessages }),
@@ -2490,7 +2735,7 @@ describe('thread resume (B17)', () => {
   })
 
   it('forgets a stale persisted thread on 404 without surfacing an error', async () => {
-    localStorage.setItem('Comfy.Agent.ThreadId', 'th-gone')
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-gone')
     const getMessages = vi.fn(async (): Promise<AgentMessages> => {
       throw new AgentApiError('not found', 404, null)
     })
@@ -2500,7 +2745,9 @@ describe('thread resume (B17)', () => {
     })
     session.start()
     await vi.waitFor(() =>
-      expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+      expect(
+        localStorage.getItem(StorageKeys.agentThread('personal'))
+      ).toBeNull()
     )
     expect(session.threadId.value).toBeNull()
     expect(session.entries.value).toHaveLength(0)
@@ -2514,10 +2761,12 @@ describe('thread resume (B17)', () => {
     })
     session.start()
     await session.sendMessage('hello')
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-1')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-1'
+    )
 
     session.newChat()
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
     expect(useAgentConversationStore().threadId).toBeNull()
   })
 
@@ -2565,12 +2814,51 @@ describe('thread resume (B17)', () => {
 
     expect(getMessages).toHaveBeenCalledWith('th-9')
     expect(session.threadId.value).toBe('th-9')
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-9')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-9'
+    )
     await vi.waitFor(() => expect(session.entries.value).toHaveLength(2))
     expect(session.entries.value[0]).toMatchObject({
       role: 'user',
       text: 'build a duck'
     })
+  })
+
+  it('ignores an unscoped thread from an unknown account', () => {
+    localStorage.setItem('Comfy.Agent.ThreadId', 'th-other-account')
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+
+    session.start()
+
+    expect(getMessages).not.toHaveBeenCalled()
+    expect(session.threadId.value).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+  })
+
+  it('restores only the active team workspace thread', async () => {
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'team', id: 'workspace-b' })
+    )
+    localStorage.setItem(StorageKeys.agentThread('workspace-a'), 'th-a')
+    localStorage.setItem(StorageKeys.agentThread('workspace-b'), 'th-b')
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+
+    session.start()
+
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledWith('th-b'))
+    expect(session.threadId.value).toBe('th-b')
+    expect(localStorage.getItem(StorageKeys.agentThread('workspace-a'))).toBe(
+      'th-a'
+    )
   })
 
   it('invalidates an in-flight workflow restoration when starting a new chat', async () => {
@@ -2688,5 +2976,528 @@ describe('thread resume (B17)', () => {
     const threads = await session.listThreads()
     expect(threads).toHaveLength(1)
     expect(threads[0]).toMatchObject({ id: 'th-9', title: 'build a duck' })
+  })
+})
+
+describe('app:agent_error telemetry (TEL-8)', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(reportError).mockClear()
+  })
+
+  it('reports unexpected agent failures to the unified error sinks', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(async () => {
+          throw new Error('history boom')
+        }),
+        cancelMessage: vi.fn(async () => {
+          throw new AgentApiError('cancel boom', 500, null)
+        })
+      }),
+      events: source
+    })
+    session.start()
+    await session.loadThread('th-9')
+    await session.sendMessage('go')
+    await session.stopTurn()
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    const errorTypes = vi
+      .mocked(reportError)
+      .mock.calls.map(([, options]) => options.errorType)
+    expect(errorTypes).toEqual([
+      'agent_history_load_failed',
+      'agent_cancel_turn_failed',
+      'agent_malformed_stream_event'
+    ])
+  })
+
+  it('dedupes interleaved malformed frames per turn in A-B-A order', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('first')
+    await session.loadThread('th-2')
+    await session.sendMessage('second')
+    telemetry.trackAgentError.mockClear()
+
+    emit({ type: 'agent_message_delta', data: { message_id: 'msg-2' } })
+    emit({ type: 'agent_message_delta', data: { message_id: 'msg-1' } })
+    emit({ type: 'agent_message_delta', data: { message_id: 'msg-2' } })
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports idle malformed frames again after switching threads', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+    await session.loadThread('th-2')
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-2' } })
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledTimes(2)
+  })
+
+  it('groups malformed frames under one Sentry issue, detail in context', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    const [error, options] = vi.mocked(reportError).mock.calls[0]
+    expect((error as Error).message).toBe('Malformed agent stream event')
+    expect(options.tags?.event_type).toBe('agent_message_done')
+    expect(options.context?.issues).toEqual(expect.any(Array))
+  })
+
+  it('reports a rejected send to the unified error sinks', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        throw new AgentApiError('boom', 500, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.sendMessage('make me a cat')
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      errorType: 'agent_send_message_failed'
+    })
+  })
+
+  it('keeps the expected 404 history and 409 cancel races out of the sinks', async () => {
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(async () => {
+          throw new AgentApiError('gone', 404, null)
+        }),
+        cancelMessage: vi.fn(async () => {
+          throw new AgentApiError('already done', 409, null)
+        })
+      }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.loadThread('th-gone')
+    await session.sendMessage('go')
+    await session.stopTurn()
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('tracks a pre-acceptance request failure from a rejected postMessage', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        throw new AgentApiError('boom', 500, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    const ok = await session.sendMessage('make me a cat')
+
+    expect(ok).toBe(false)
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: true,
+      turn_accepted: false,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('marks a deterministic send rejection unretryable', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        throw new AgentApiError('unprocessable', 422, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.sendMessage('make me a cat')
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: false,
+      turn_accepted: false,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('classifies a failure after the ack as post-acceptance and unretryable', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+    const setItem = vi
+      .spyOn(globalThis.localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('quota', 'QuotaExceededError')
+      })
+
+    try {
+      const ok = await session.sendMessage('make me a cat')
+      expect(ok).toBe(false)
+    } finally {
+      setItem.mockRestore()
+    }
+
+    expect(rest.postMessage).toHaveBeenCalledTimes(1)
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('treats an unreadable ack body as an accepted turn', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        // What a 2xx with an unexpected body raises past `response.ok`.
+        return zAgentTurnAccepted.parse({ thread_id: 'th-1' })
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.sendMessage('make me a cat')
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('treats an ack body the client could not read as an accepted turn', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        throw new AgentResponseUnreadableError(
+          '/agent/threads/new/messages',
+          new SyntaxError('Unexpected end of JSON input')
+        )
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.sendMessage('make me a cat')
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('reports a stashed live turn when the resume history load fails', async () => {
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockRejectedValue(new Error('history boom'))
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.sendMessage('go')
+    expect(useAgentConversationStore().activeTurnId).not.toBeNull()
+
+    await session.loadThread('th-other')
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'history_load_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: true,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('does not count a busy-state double-submit as an agent error', async () => {
+    let resolvePost: (value: AgentTurnAccepted) => void = () => undefined
+    const rest = fakeRest({
+      postMessage: vi.fn(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve) => {
+            resolvePost = resolve
+          })
+      )
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    const first = session.sendMessage('first')
+    const ok = await session.sendMessage('second')
+
+    expect(ok).toBe(false)
+    expect(telemetry.trackAgentError).not.toHaveBeenCalled()
+    resolvePost({ thread_id: 'th-1', message_id: 'msg-1' })
+    await first
+  })
+
+  it('tracks a post-acceptance cancel failure', async () => {
+    const rest = fakeRest({
+      cancelMessage: vi.fn(async () => {
+        throw new AgentApiError('cancel boom', 500, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+    await session.sendMessage('go')
+
+    await session.stopTurn()
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'cancel_failed',
+      failure_stage: 'post_acceptance',
+      retryable: true,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('does not track a 409 cancel race as an error', async () => {
+    const rest = fakeRest({
+      cancelMessage: vi.fn(async () => {
+        throw new AgentApiError('already done', 409, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+    await session.sendMessage('go')
+
+    await session.stopTurn()
+
+    expect(telemetry.trackAgentError).not.toHaveBeenCalled()
+  })
+
+  it('tracks a post-acceptance malformed stream event for the active turn', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    await session.sendMessage('go')
+
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'malformed_stream_event',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('does not claim an accepted turn for a malformed frame on an idle session', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'malformed_stream_event',
+      failure_stage: 'pre_acceptance',
+      retryable: false,
+      turn_accepted: false,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('bounds a repeating malformed stream to one report per turn', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    await session.sendMessage('go')
+
+    for (let i = 0; i < 20; i++)
+      emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    // The aborted turn, then the idle session the other nineteen arrived into.
+    expect(telemetry.trackAgentError).toHaveBeenCalledTimes(2)
+  })
+
+  it('tracks malformed frames of event types that never reach the user', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    await session.sendMessage('go')
+
+    emit({ type: 'agent_message_delta', data: { thread_id: 'th-1' } })
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'malformed_stream_event',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'none'
+    })
+    expect(session.notices.value).toEqual([])
+  })
+
+  it('still reports the frame that escalates to the user after a silent one', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    await session.sendMessage('go')
+
+    emit({ type: 'agent_message_delta', data: { thread_id: 'th-1' } })
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledTimes(2)
+    expect(telemetry.trackAgentError).toHaveBeenLastCalledWith({
+      error_class: 'malformed_stream_event',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('tracks a pre-acceptance thread-history load failure', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new Error('history boom')
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'history_load_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: true,
+      turn_accepted: false,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('tracks a failed ask answer, which leaves the running turn blocked', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('ask boom', 500, null))
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+    telemetry.trackAgentError.mockClear()
+
+    await session.answerAsk('turn-1:call-1', 'run')
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'ask_answer_failed',
+      failure_stage: 'post_acceptance',
+      retryable: true,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('does not track a 409 stale ask answer as an error', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+    telemetry.trackAgentError.mockClear()
+
+    await session.answerAsk('turn-1:call-1', 'cancel')
+
+    expect(telemetry.trackAgentError).not.toHaveBeenCalled()
+  })
+
+  it('marks a 403 ask-answer failure as non-retryable', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('forbidden', 403, undefined))
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+    telemetry.trackAgentError.mockClear()
+
+    await session.answerAsk('turn-1:call-1', 'run')
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'ask_answer_failed',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('derives history-load retryability from the status, as request_failed does', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new AgentApiError('access denied', 403, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'history_load_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: false,
+      turn_accepted: false,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('does not track a 404 thread-not-found history load as an error', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new AgentApiError('gone', 404, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-gone')
+
+    expect(telemetry.trackAgentError).not.toHaveBeenCalled()
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
   })
 })

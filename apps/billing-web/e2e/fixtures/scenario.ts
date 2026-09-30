@@ -19,6 +19,8 @@ export interface CloudScenario {
   paymentMethods: SavedPaymentMethod[]
   preview: PreviewSubscribeResponse
   operations: Record<string, BillingOpStatusResponse>
+  /** `billing_web_checkout_ui`, answered only to an authenticated `/features` read, as the real Cloud does. */
+  checkoutUi?: string
 }
 
 const HOUR_MS = 60 * 60 * 1000
@@ -65,6 +67,11 @@ export function pendingOperation(id: string): BillingOpStatusResponse {
   return { id, status: 'pending', started_at: new Date().toISOString() }
 }
 
+/** In flight past the bank's challenge: the charge can no longer be called back. */
+export function processingOperation(id: string): BillingOpStatusResponse {
+  return { ...pendingOperation(id), authentication_state: 'processing' }
+}
+
 export function declinedOperation(id: string): BillingOpStatusResponse {
   const now = new Date().toISOString()
   return {
@@ -72,6 +79,20 @@ export function declinedOperation(id: string): BillingOpStatusResponse {
     status: 'failed',
     decline_reason: 'card_declined',
     retryable: true,
+    started_at: now,
+    completed_at: now
+  }
+}
+
+/** The live failure a misconfigured charge settles as: no retry, support only. */
+export function contactSupportOperation(id: string): BillingOpStatusResponse {
+  const now = new Date().toISOString()
+  return {
+    id,
+    status: 'failed',
+    error_message: 'parameter_missing',
+    recovery_action: 'contact_support',
+    retryable: false,
     started_at: now,
     completed_at: now
   }
@@ -155,7 +176,7 @@ export function defaultScenario(): CloudScenario {
     ],
     preview: {
       allowed: true,
-      transition_type: 'upgrade',
+      transition_type: 'new_subscription',
       is_immediate: true,
       effective_at: new Date().toISOString(),
       renewal_at: inAnHour(),

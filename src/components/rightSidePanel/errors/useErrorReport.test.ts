@@ -8,6 +8,7 @@ import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 import type { ErrorCardData } from './types'
 import { useErrorReport } from './useErrorReport'
+import { app } from '@/scripts/app'
 
 async function flushPromises() {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -30,13 +31,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: {
-      serialize: mocks.serialize
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/errorReportUtil'), () => ({
   generateErrorReport: mocks.generateErrorReport
@@ -70,6 +65,7 @@ describe('useErrorReport', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(async () => {
+    vi.spyOn(app.rootGraph, 'serialize').mockImplementation(mocks.serialize)
     const store = useSystemStatsStore()
     await until(() => store.isInitialized).toBe(true)
     store.systemStats = null
@@ -199,9 +195,7 @@ describe('useErrorReport', () => {
     useErrorReport(card)
     await flushPromises()
 
-    expect(
-      vi.mocked(useSystemStatsStore().refetchSystemStats)
-    ).toHaveBeenCalledTimes(1)
+    expect(useSystemStatsStore().refetchSystemStats).toHaveBeenCalledTimes(1)
     expect(mocks.generateErrorReport).toHaveBeenCalledTimes(1)
   })
 
@@ -218,9 +212,7 @@ describe('useErrorReport', () => {
     useErrorReport(card)
     await flushPromises()
 
-    expect(
-      vi.mocked(useSystemStatsStore().refetchSystemStats)
-    ).toHaveBeenCalledTimes(1)
+    expect(useSystemStatsStore().refetchSystemStats).toHaveBeenCalledTimes(1)
     expect(mocks.getLogs).not.toHaveBeenCalled()
     expect(mocks.generateErrorReport).not.toHaveBeenCalled()
     expect(warnSpy).toHaveBeenCalled()

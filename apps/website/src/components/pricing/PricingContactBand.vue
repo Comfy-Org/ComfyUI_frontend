@@ -36,6 +36,7 @@ const isExternalHref = computed(() => Boolean(href?.startsWith('http')))
         </p>
       </div>
       <Button
+        data-testid="enterprise-cta"
         :href="ctaHref"
         :target="isExternalHref ? '_blank' : undefined"
         :rel="isExternalHref ? 'noopener noreferrer' : undefined"

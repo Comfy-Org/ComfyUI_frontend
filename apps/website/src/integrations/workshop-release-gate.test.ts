@@ -118,13 +118,15 @@ describe('Workshop release output', () => {
     const enabled = modelsBuildRoutes(true)
     expect(enabled.map((route) => route.pattern)).toEqual([
       '/models',
-      '/models/[slug]',
+      '/models/[...slug]',
       '/models/showcase',
+      '/models/apps/[app]',
+      '/cinematic-studio',
       '/checkout-opening',
       '/zh-CN/checkout-opening',
       '/checkout-return',
       '/zh-CN/checkout-return',
-      '/models/[slug]/page.json',
+      '/models/[...slug]/page.json',
       '/models/catalogue.json'
     ])
     expect(enabled[0].entrypoint).toContain('/routes/models/index.astro')

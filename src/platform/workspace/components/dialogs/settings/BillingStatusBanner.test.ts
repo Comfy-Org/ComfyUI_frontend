@@ -10,6 +10,7 @@ import { createI18n } from 'vue-i18n'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   BillingStatus,
+  RenewalInvoice,
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
@@ -18,7 +19,8 @@ interface Subscription {
   hasFunds: boolean
   isCancelled: boolean
   endDate: string | null
-  scheduledChange: SubscriptionInfo['scheduledChange']
+  tier?: SubscriptionInfo['tier']
+  scheduledChange?: SubscriptionInfo['scheduledChange']
 }
 
 const state = vi.hoisted(() => ({
@@ -32,6 +34,7 @@ const state = vi.hoisted(() => ({
     scheduledChange: null
   } as Subscription | null,
   renewalDate: null as string | null,
+  renewalInvoice: null as RenewalInvoice | null,
   workspaceType: 'team' as WorkspaceType,
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
@@ -63,6 +66,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
       { slug: 'pro-annual', tier: 'PRO', duration: 'ANNUAL' }
     ]),
     renewalDate: computed(() => state.renewalDate),
+    renewalInvoice: computed(() => state.renewalInvoice),
     manageSubscription: state.manageSubscription,
     fetchStatus: vi.fn(),
     fetchBalance: vi.fn()
@@ -104,7 +108,9 @@ const i18n = createI18n({
           warning: {
             title: 'Payment failed',
             bodyNoDate:
-              'Your payment failed to process. Update payment to avoid a pause.'
+              'Your payment failed to process. Update payment to avoid a pause.',
+            bodyWithAmount:
+              'Your payment of {amount} failed to process. Pay the invoice or update payment to avoid a pause.'
           },
           paused: {
             title: 'Subscription paused',
@@ -127,13 +133,17 @@ const i18n = createI18n({
           ending: {
             title: 'Your team plan ends on {date}',
             body: 'Members keep full access until then. Resume your subscription to keep your shared credits and seats.',
+            enterpriseTitle: 'Your Enterprise plan ends on {date}',
+            enterpriseBody:
+              'Members keep full access until then. Reach out to our sales team to extend.',
             reactivate: 'Resume subscription'
           },
           planChange: {
             title: 'Your plan changes to {plan} on {date}',
             body: 'Your current plan stays active until then.'
           },
-          updatePayment: 'Update payment'
+          updatePayment: 'Update payment',
+          payInvoice: 'Pay invoice'
         }
       },
       subscription: {
@@ -205,6 +215,7 @@ describe('BillingStatusBanner', () => {
       scheduledChange: null
     }
     state.renewalDate = null
+    state.renewalInvoice = null
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
@@ -331,6 +342,114 @@ describe('BillingStatusBanner', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
+  describe('renewal invoice', () => {
+    const invoice: RenewalInvoice = {
+      hosted_invoice_url: 'https://invoice.stripe.com/i/acct_1/test_123',
+      amount_due: 5000,
+      currency: 'usd'
+    }
+
+    it('offers Pay invoice next to Update payment and shows the amount', () => {
+      paymentFailedState()
+      state.renewalInvoice = invoice
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your payment of $50.00 failed'
+      )
+      expect(
+        screen.getByRole('button', { name: 'Pay invoice' })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Update payment' })
+      ).toBeInTheDocument()
+    })
+
+    it('omits Pay invoice when there is no renewal invoice', () => {
+      paymentFailedState()
+      renderBanner()
+
+      expect(
+        screen.queryByRole('button', { name: 'Pay invoice' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Update payment' })
+      ).toBeInTheDocument()
+    })
+
+    it('opens the hosted invoice URL in a new tab with noopener and noreferrer', async () => {
+      paymentFailedState()
+      state.renewalInvoice = invoice
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
+      renderBanner()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Pay invoice' }))
+
+      expect(open).toHaveBeenCalledWith(
+        invoice.hosted_invoice_url,
+        '_blank',
+        'noopener,noreferrer'
+      )
+      open.mockRestore()
+    })
+
+    it('does not divide zero-decimal currencies by 100', () => {
+      paymentFailedState()
+      state.renewalInvoice = { ...invoice, amount_due: 5000, currency: 'jpy' }
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent('¥5,000')
+    })
+
+    it.for([
+      ['isk', 50000, /ISK\s?500\b/],
+      ['ugx', 50000, /UGX\s?500\b/],
+      ['huf', 17500, /HUF\s?175\b/],
+      ['kwd', 5000, /KWD\s?5\.000/]
+    ] as const)(
+      'reads %s with the decimals Stripe charges in',
+      ([currency, amount_due, expected]) => {
+        paymentFailedState()
+        state.renewalInvoice = { ...invoice, amount_due, currency }
+        renderBanner()
+
+        expect(screen.getByRole('status')).toHaveTextContent(expected)
+      }
+    )
+
+    it('hides Pay invoice for a non-https invoice URL', () => {
+      paymentFailedState()
+      state.renewalInvoice = {
+        ...invoice,
+        hosted_invoice_url: 'javascript:alert(1)'
+      }
+      renderBanner()
+
+      expect(
+        screen.queryByRole('button', { name: 'Pay invoice' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Update payment' })
+      ).toBeInTheDocument()
+    })
+
+    it.for(['not-a-code', 'zzz'])(
+      'falls back to the plain copy on unknown currency %s',
+      (currency) => {
+        paymentFailedState()
+        state.renewalInvoice = { ...invoice, currency }
+        renderBanner()
+
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'Update payment to avoid a pause'
+        )
+        expect(
+          screen.getByRole('button', { name: 'Pay invoice' })
+        ).toBeInTheDocument()
+      }
+    )
+  })
+
   it('shows immediate payment-failed copy with Update payment for owners', () => {
     paymentFailedState()
     state.renewalDate = '2026-08-01T00:00:00Z'
@@ -350,6 +469,8 @@ describe('BillingStatusBanner', () => {
     paymentFailedState()
     state.isTeamPlan = false
     state.workspaceType = 'personal'
+    // A known personal tier: an unrecognized one is denied recovery outright.
+    state.subscription = { ...state.subscription!, tier: 'PRO' }
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent('Payment failed')
@@ -482,5 +603,51 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  describe('enterprise ending notice', () => {
+    const NOW = new Date('2026-09-03T12:00:00Z')
+    const DAY = 24 * 60 * 60 * 1000
+
+    // The project vitest setup fakes timers for every test, so pinning the
+    // clock is just a setSystemTime away.
+    beforeEach(() => {
+      vi.setSystemTime(NOW)
+    })
+
+    function enterpriseEndingIn(days: number) {
+      state.isTeamPlan = false
+      state.subscription = {
+        hasFunds: true,
+        isCancelled: true,
+        endDate: new Date(NOW.getTime() + days * DAY).toISOString(),
+        tier: 'ENTERPRISE'
+      }
+    }
+
+    it('shows no banner while the end date is beyond the notice window', () => {
+      enterpriseEndingIn(30)
+      renderBanner()
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it('shows enterprise copy without a Reactivate action inside the window', () => {
+      enterpriseEndingIn(10)
+      // Pin the gate itself: even a rail that resolves reactivation true for
+      // an Enterprise plan must not surface the action.
+      state.canReactivatePlan = true
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your Enterprise plan ends on'
+      )
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Reach out to our sales team to extend'
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Resume subscription' })
+      ).not.toBeInTheDocument()
+    })
   })
 })

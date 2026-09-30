@@ -2,6 +2,7 @@ import { z } from 'astro/zod'
 
 import type { components, operations } from '@comfyorg/registry-types'
 
+import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { MAX_URL_UPLOAD_BYTES } from './workshop-limits'
 import {
@@ -65,7 +66,10 @@ export function createWorkshopUrlUploader() {
     const previous = completed.get(file)
     if (previous?.scope === scope && previous.expiresAt > Date.now())
       return previous.url
-    const signal = AbortSignal.any([callerSignal, AbortSignal.timeout(120_000)])
+    const signal = combineAbortSignals([
+      callerSignal,
+      createTimeoutSignal(120_000)
+    ])
     const contentType = file.type || 'application/octet-stream'
     const basename = (file.name.split(/[\\/]/).at(-1) || 'input')
       .replace(/[^a-zA-Z0-9._-]/g, '_')

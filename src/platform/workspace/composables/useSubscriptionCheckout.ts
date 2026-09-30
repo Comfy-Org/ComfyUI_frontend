@@ -1,13 +1,13 @@
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
-import { useEventListener } from '@vueuse/core'
+import type { ToastMessageOptions } from 'primevue/toast'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { paymentReturnUrl } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
-import { amountDueTodayChanged } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
+import { amountDueTodayChanged } from '@comfyorg/account-ui/billing/checkout'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -32,6 +32,8 @@ import type {
   SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
+import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -45,6 +47,7 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
+  resolveEntrySource,
   toCheckoutJourneyContext
 } from '@/platform/workspace/utils/checkoutJourney'
 import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
@@ -109,6 +112,15 @@ function parseBillingPortalUrl(url: unknown): URL | null {
   } catch {
     return null
   }
+}
+
+// Module-scoped so closing checkout while Stripe is open doesn't drop the return refresh.
+let stopPaymentRecoveryReturnRefresh: (() => void) | null = null
+
+function armPaymentRecoveryReturnRefresh(): void {
+  stopPaymentRecoveryReturnRefresh?.()
+  const { fetchStatus } = useBillingContext()
+  stopPaymentRecoveryReturnRefresh = registerRefreshOnReturn(fetchStatus)
 }
 
 /** Thrown by `assertReactivationAmountUnchanged` when a fresh preview no
@@ -177,14 +189,11 @@ export function useSubscriptionCheckout(
   let promotionPreviewRequestId = 0
   let checkoutMutationOwner = 0
   let checkoutMutationSeq = 0
-  let refreshStatusOnFocus = false
   let activeCheckoutAttemptStartedAt: number | undefined
   let lastEmittedPreviewRevision: string | undefined
-  useEventListener(window, 'focus', () => {
-    if (!refreshStatusOnFocus) return
-    refreshStatusOnFocus = false
-    void fetchStatus()
-  })
+  // The payment-recovery toast is sticky and can outlive this checkout;
+  // drop it with the checkout rather than leave a button for a dead context.
+  onScopeDispose(() => toast.removeGroup('payment-recovery'))
   // Some legacy-rail status reads cannot expose a scheduled cancellation even
   // though the subscribe authority can see it in Stripe. Once that authority
   // rejects an unconfirmed change, keep the consent screen in reactivation
@@ -606,14 +615,28 @@ export function useSubscriptionCheckout(
       }
       const paymentWindow = window.open(portalUrl.href, '_blank')
       if (!paymentWindow) {
+        // The open above ran after an await, so it had no user gesture behind
+        // it and got blocked. The toast's own button click is a gesture, so
+        // retrying from there isn't blocked.
         toast.add({
+          group: 'payment-recovery',
           severity: 'warn',
           summary: t('g.warning'),
-          detail: t('subscription.preview.paymentPopupBlocked')
+          detail: {
+            text: t('subscription.preview.paymentPopupBlocked'),
+            actionLabel: t('subscription.planLoadErrorRetry'),
+            // The toast can outlive this attempt (a newer one started, or the
+            // checkout reset); a stale click must not reopen its captured URL.
+            onAction: () => {
+              if (!isCurrent()) return
+              window.open(portalUrl.href, '_blank')
+              armPaymentRecoveryReturnRefresh()
+            }
+          }
         })
         return 'blocked'
       }
-      refreshStatusOnFocus = true
+      armPaymentRecoveryReturnRefresh()
       return 'opened'
     } catch (portalError) {
       if (!isCurrent()) return null
@@ -747,18 +770,23 @@ export function useSubscriptionCheckout(
       : canSubscribeSelfServe.value
   }
 
+  // Synchronous so the caller can branch before any await: a hosted-tab
+  // open right after this needs the click's transient user activation,
+  // which an await can drop in stricter browsers (Safari).
+  function needsTeamToPersonalDowngrade(): boolean {
+    return tierPlanType !== 'team' && isTeamPlan.value
+  }
+
   async function showTeamToPersonalDowngrade(
     planSlug: string,
     tierKey: CheckoutTierKey
-  ): Promise<boolean> {
-    if (tierPlanType === 'team' || !isTeamPlan.value) return false
-
+  ): Promise<void> {
     const { useDialogService } = await import('@/services/dialogService')
     const result = await useDialogService().showDowngradeToPersonalDialog({
       planName: t(`subscription.tiers.${tierKey}.name`),
       planSlug
     })
-    if (!result) return true
+    if (!result) return
 
     previewData.value = result.preview
     trackWorkspaceCheckoutStarted({
@@ -777,7 +805,6 @@ export function useSubscriptionCheckout(
       },
       false
     )
-    return true
   }
 
   const previewVariant = computed<PreviewVariant>(() => {
@@ -819,6 +846,14 @@ export function useSubscriptionCheckout(
       return
     }
 
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'intent',
+      outcome: 'pending',
+      tier: payload.tierKey,
+      cycle: payload.billingCycle,
+      payment_intent_source: paymentIntentSource
+    })
     const { tierKey, billingCycle } = payload
     promotionPreviewRequestId += 1
 
@@ -843,7 +878,14 @@ export function useSubscriptionCheckout(
         })
         return
       }
-      if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
+      if (needsTeamToPersonalDowngrade()) {
+        await showTeamToPersonalDowngrade(planSlug, tierKey)
+        return
+      }
+      if (openHostedBillingTab('checkout', { plan: planSlug })) {
+        emit('close', false)
+        return
+      }
       const response = embeddedCheckoutEnabled
         ? (
             await Promise.all([
@@ -913,6 +955,15 @@ export function useSubscriptionCheckout(
     const checkoutType = payload.isChange ? 'change' : 'new'
     if (isSubscribing.value || !canPerformCheckout(checkoutType)) return
 
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'intent',
+      outcome: 'pending',
+      tier: 'team',
+      cycle: payload.billingCycle,
+      checkout_type: checkoutType,
+      payment_intent_source: paymentIntentSource
+    })
     const previewRequestId = ++teamPreviewRequestId
     promotionPreviewRequestId += 1
     reactivationRequired.value = false
@@ -925,6 +976,17 @@ export function useSubscriptionCheckout(
     previewData.value = null
     quoteIsCurrent.value = false
     enterCheckoutJourney(`team:${payload.stop.id}:${payload.billingCycle}`)
+
+    if (
+      payload.stop.id &&
+      openHostedBillingTab('checkout', {
+        plan: getTeamPlanSlug(payload.billingCycle),
+        teamCreditStopId: payload.stop.id
+      })
+    ) {
+      emit('close', false)
+      return
+    }
 
     if (!embeddedCheckoutEnabled) {
       const teamCreditStopId = payload.stop.id
@@ -1046,6 +1108,7 @@ export function useSubscriptionCheckout(
     selectedTeamCheckout.value = null
     activeCheckoutOperationId.value = null
     activeCheckoutAttemptStartedAt = undefined
+    toast.removeGroup('payment-recovery')
   }
 
   function handleBackToPricing() {
@@ -1090,7 +1153,10 @@ export function useSubscriptionCheckout(
 
     isSubscribing.value = true
     try {
-      if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
+      if (needsTeamToPersonalDowngrade()) {
+        await showTeamToPersonalDowngrade(planSlug, tierKey)
+        return
+      }
       await fetchStatus()
       if (!confirmReactivation && requiresReactivationConfirmation()) {
         if (await refreshPreviewOnReactivationBlock(planSlug)) return
@@ -1176,16 +1242,27 @@ export function useSubscriptionCheckout(
     }
   }
 
+  // A refused attempt's toast stays until dismissed; a later attempt that
+  // succeeds takes them down rather than leaving a decline over the success.
+  const attemptErrorToasts: ToastMessageOptions[] = []
+
   function showSubscribeError(error: unknown) {
-    toast.add({
+    const message: ToastMessageOptions = {
       severity: 'error',
       summary: t('g.error'),
       detail:
         error instanceof Error
           ? error.message
           : t('subscription.subscribeFailed')
-    })
+    }
+    attemptErrorToasts.push(message)
+    toast.add(message)
   }
+
+  watch(checkoutStep, (step) => {
+    if (step !== 'success') return
+    for (const message of attemptErrorToasts.splice(0)) toast.remove(message)
+  })
 
   async function recoverStaleQuote(error: unknown): Promise<boolean> {
     if (!hasErrorCode(error, 'SUBSCRIPTION_QUOTE_STALE')) return false
@@ -1302,12 +1379,20 @@ export function useSubscriptionCheckout(
     const ownerUid = useAuthStore().userId
     if (!workspaceId || !ownerUid) return null
 
+    const entrySource = resolveEntrySource(paymentIntentSource, 'pricing')
     const resolved = resolveCheckoutJourney({
       actorUid: ownerUid,
       workspaceId,
       entryFlow: currentSubscriptionEntryFlow(),
-      entrySource: 'pricing',
-      intent,
+      entrySource,
+      // Keyed by source as well as tier/cycle, the way the top-up rail keys by
+      // source alone. Resume matches on actor, workspace, flow and intent but
+      // not source, so without this an abandoned `pricing` preview for a plan
+      // would be resumed by an agent-paywall entry for that same plan and keep
+      // reporting `pricing` for the rest of the journey. A journey already
+      // bound to an operation still wins the slot: a non-match falls through
+      // to the bound-journey check below rather than evicting it.
+      intent: `${entrySource}:${intent}`,
       uiMode: embeddedCheckoutEnabled ? 'embedded' : 'hosted',
       assignment: resolveCheckoutAssignment(api.getServerFeatures())
     })
@@ -1491,13 +1576,25 @@ export function useSubscriptionCheckout(
       }
       initialActionUrl = response.payment_method_url
       // The open runs after `await subscribe(...)`, so it's not a direct user
-      // gesture and can be popup-blocked; warn instead of failing silently.
+      // gesture and can be popup-blocked; offer a button click as a retry
+      // gesture instead of failing silently.
       const paymentWindow = window.open(initialActionUrl, '_blank')
       if (!paymentWindow) {
+        const paymentMethodUrl = initialActionUrl
+        const opId = response.billing_op_id
         toast.add({
+          group: 'payment-recovery',
           severity: 'warn',
           summary: t('g.warning'),
-          detail: t('subscription.preview.paymentPopupBlocked')
+          detail: {
+            text: t('subscription.preview.paymentPopupBlocked'),
+            actionLabel: t('subscription.planLoadErrorRetry'),
+            // Not the mutation lock, which is released once the op is adopted.
+            onAction: () => {
+              if (activeCheckoutOperationId.value !== opId) return
+              window.open(paymentMethodUrl, '_blank')
+            }
+          }
         })
       }
     }
@@ -1734,6 +1831,11 @@ export function useSubscriptionCheckout(
 
   async function handleResubscribe() {
     if (!canReactivatePlan.value) return
+
+    if (openHostedBillingTab('subscription')) {
+      emit('close', false)
+      return
+    }
 
     const source = 'pricing_dialog' as const
 

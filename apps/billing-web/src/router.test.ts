@@ -22,8 +22,10 @@ function routerAt(phase: BillingWebSessionPhase) {
   return createBillingRouter(createMemoryHistory(), () => phase)
 }
 
-async function arriveAt(path: string): Promise<Router> {
-  const router = routerAt('authenticated')
+async function arriveAt(
+  path: string,
+  router: Router = routerAt('authenticated')
+): Promise<Router> {
   await router.push(path)
   await router.isReady()
   const { client } = createFakeBillingClient()
@@ -35,6 +37,104 @@ async function arriveAt(path: string): Promise<Router> {
   })
   return router
 }
+
+describe('entry workspace binding', () => {
+  it('binds the workspace an entry link names', async () => {
+    const onEntryWorkspace = vi.fn()
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => 'authenticated',
+      onEntryWorkspace
+    )
+
+    await router.push(`/v1/subscription?${ENTRY_QUERY}&workspace=ws-team`)
+
+    expect(onEntryWorkspace).toHaveBeenCalledExactlyOnceWith('ws-team')
+  })
+
+  it('does not bind when the link names no workspace', async () => {
+    const onEntryWorkspace = vi.fn()
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => 'authenticated',
+      onEntryWorkspace
+    )
+
+    await router.push(`/v1/subscription?${ENTRY_QUERY}`)
+
+    expect(onEntryWorkspace).not.toHaveBeenCalled()
+  })
+
+  it('does not bind on a link the contract rejects', async () => {
+    const onEntryWorkspace = vi.fn()
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => 'authenticated',
+      onEntryWorkspace
+    )
+
+    await router.push(`/v1/subscription?${ENTRY_QUERY}&workspace=ws/1`)
+
+    expect(onEntryWorkspace).not.toHaveBeenCalled()
+  })
+})
+
+describe('plan selection, which the host app owns', () => {
+  function hostBoundRouter(phase: BillingWebSessionPhase = 'signed-out') {
+    const onEntryWorkspace = vi.fn()
+    const leave = vi.fn()
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => phase,
+      onEntryWorkspace,
+      leave
+    )
+    return { router, onEntryWorkspace, leave }
+  }
+
+  it.for([
+    `/v1/pricing?${ENTRY_QUERY}&workspace=ws-team`,
+    `/v1/checkout?${ENTRY_QUERY}&workspace=ws-team`
+  ])('sends %s back to the host without rebinding the tab', async (path) => {
+    const { router, onEntryWorkspace, leave } = hostBoundRouter()
+
+    await router.push(path)
+
+    expect(leave).toHaveBeenCalledExactlyOnceWith(
+      'https://testcloud.comfy.org/?workspace=ws-team'
+    )
+    expect(onEntryWorkspace).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).not.toBe('/sign-in')
+  })
+
+  it('keeps a checkout that names a plan', async () => {
+    const { router, leave } = hostBoundRouter('authenticated')
+
+    await router.push(`/v1/checkout?${ENTRY_QUERY}&plan=creator_monthly`)
+
+    expect(leave).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/v1/checkout')
+  })
+
+  it.for(['/v1/pricing?product=platform&return_to=platform_account'])(
+    'explains %s, which has nowhere to go back to',
+    async (path) => {
+      const { router, onEntryWorkspace, leave } =
+        hostBoundRouter('authenticated')
+
+      await arriveAt(path, router)
+
+      expect(
+        await screen.findByText(
+          "That link doesn't name a place we can send you back to."
+        )
+      ).toBeInTheDocument()
+      expect(leave).not.toHaveBeenCalled()
+      expect(onEntryWorkspace).not.toHaveBeenCalled()
+      expect(useBillingEntry().entry.value).toBeUndefined()
+    }
+  )
+})
 
 describe('the billing route guard', () => {
   it.for(['pending', 'signed-out', 'minting', 'error'] as const)(
@@ -86,6 +186,53 @@ describe('the billing route guard', () => {
   })
 })
 
+describe("a checkout's return_to, which is optional", () => {
+  it.for([
+    {
+      name: 'none at all',
+      path: '/v1/checkout?product=comfyui&plan=creator_monthly'
+    },
+    {
+      name: 'one outside the registry',
+      path: '/v1/checkout?product=comfyui&return_to=https://evil.test&plan=creator_monthly'
+    },
+    {
+      name: 'one this family has no destination for',
+      path: '/v1/checkout?product=platform&return_to=platform_account&plan=creator_monthly'
+    }
+  ])(
+    'checks out a link with $name and returns to Plan & Credits',
+    async ({ path }) => {
+      const leave = vi.fn()
+      const router = createBillingRouter(
+        createMemoryHistory(),
+        () => 'authenticated',
+        vi.fn(),
+        leave
+      )
+
+      await router.push(path)
+
+      expect(router.currentRoute.value.path).toBe('/v1/checkout')
+      expect(useBillingEntry().error.value).toBeUndefined()
+      expect(useBillingEntry().entry.value).toMatchObject({
+        intent: 'checkout',
+        plan: 'creator_monthly',
+        returnTo: 'comfyui_credits'
+      })
+      expect(leave).not.toHaveBeenCalled()
+    }
+  )
+
+  it('keeps a return_to this family can follow', async () => {
+    await routerAt('authenticated').push(
+      `/v1/checkout?${ENTRY_QUERY}&plan=creator_monthly`
+    )
+
+    expect(useBillingEntry().entry.value?.returnTo).toBe('comfyui_workspace')
+  })
+})
+
 describe('the return destination', () => {
   it.for([
     ['/', '/'],
@@ -107,11 +254,9 @@ describe('the return destination', () => {
 describe('hosted billing entry routing', () => {
   it.for([
     { intent: 'subscription', surface: 'Your subscription' },
-    { intent: 'pricing', surface: 'Plans' },
     { intent: 'payment-methods', surface: 'Payment methods' },
     { intent: 'invoices', surface: 'Invoices' },
-    { intent: 'result', surface: 'Billing result' },
-    { intent: 'checkout', surface: 'Checkout' }
+    { intent: 'result', surface: 'Billing result' }
   ])('opens $intent on the $surface surface', async ({ intent, surface }) => {
     await arriveAt(`/v1/${intent}?${ENTRY_QUERY}`)
 
@@ -168,7 +313,7 @@ describe('hosted billing entry routing', () => {
     },
     {
       code: 'INVALID_WORKSPACE_ID',
-      path: `/v1/subscription?${ENTRY_QUERY}&workspace_id=ws/1`,
+      path: `/v1/subscription?${ENTRY_QUERY}&workspace=ws/1`,
       message: "That link names a workspace we can't read."
     }
   ])('explains $code in our own words', async ({ path, message }) => {

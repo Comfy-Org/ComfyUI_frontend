@@ -15,6 +15,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { serializeNodeId } from '@/types/nodeId'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
@@ -31,6 +32,13 @@ function withoutExecutionOrder(nodes: ComfyWorkflowJSON['nodes']) {
 
 function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
+}
+
+function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey) return
+  const key = e.key.toUpperCase()
+  if (key === 'Y' && !e.shiftKey) return 'redo'
+  if (key === 'Z') return e.shiftKey ? 'redo' : 'undo'
 }
 
 function isAutoQueueOnChange(): boolean {
@@ -487,18 +495,13 @@ export class ChangeTracker {
     await this.updateState(this.redoQueue, this.undoQueue)
   }
 
-  async undoRedo(e: KeyboardEvent) {
-    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
-      const key = e.key.toUpperCase()
-      // Redo: Ctrl + Y, or Ctrl + Shift + Z
-      if ((key === 'Y' && !e.shiftKey) || (key == 'Z' && e.shiftKey)) {
-        await this.redo()
-        return true
-      } else if (key === 'Z' && !e.shiftKey) {
-        await this.undo()
-        return true
-      }
+  async undoRedo(e: KeyboardEvent, selectOnly = isSelectOnly(app.canvas)) {
+    const shortcut = historyShortcut(e)
+    if (!shortcut) return
+    if (!selectOnly) {
+      await (shortcut === 'redo' ? this.redo() : this.undo())
     }
+    return true
   }
 
   beforeChange() {
@@ -528,38 +531,43 @@ export class ChangeTracker {
         // If the mask editor is opened, we don't want to trigger on key events
         const comfyApp = app.constructor as typeof ComfyApp
         if (comfyApp.maskeditor_is_opended?.()) return
+
+        const activeEl = document.activeElement
+        if (
+          !isAutoQueueOnChange() &&
+          (activeEl?.tagName === 'INPUT' ||
+            activeEl?.tagName === 'TEXTAREA' ||
+            (activeEl instanceof HTMLElement && activeEl.isContentEditable))
+        ) {
+          // Text editors own their history. Bail out before the document-wide
+          // modal probes, whose cost otherwise scales with transcript size.
+          return
+        }
         if (isModalOpen(dialogStore.dialogStack.length)) return
 
         // The layer editor has its own session-local undo history
         if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
-        const activeEl = document.activeElement
+        keyIgnored =
+          e.key === 'Control' ||
+          e.key === 'Shift' ||
+          e.key === 'Alt' ||
+          e.key === 'Meta'
+        if (keyIgnored) return
+
+        const selectOnlyAtKeydown = isSelectOnly(app.canvas)
         requestAnimationFrame(async () => {
           let bindInputEl: Element | null = null
           // If we are auto queue in change mode then we do want to trigger on inputs
-          if (!app.ui.autoQueueEnabled || app.ui.autoQueueMode === 'instant') {
-            if (
-              activeEl?.tagName === 'INPUT' ||
-              (activeEl && 'type' in activeEl && activeEl.type === 'textarea')
-            ) {
-              // Ignore events on inputs, they have their native history
-              return
-            }
+          if (!isAutoQueueOnChange()) {
             bindInputEl = activeEl
           }
-
-          keyIgnored =
-            e.key === 'Control' ||
-            e.key === 'Shift' ||
-            e.key === 'Alt' ||
-            e.key === 'Meta'
-          if (keyIgnored) return
 
           const changeTracker = getCurrentChangeTracker()
           if (!changeTracker) return
 
           // Check if this is a ctrl+z ctrl+y
-          if (await changeTracker.undoRedo(e)) return
+          if (await changeTracker.undoRedo(e, selectOnlyAtKeydown)) return
 
           // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(bindInputEl)) return
