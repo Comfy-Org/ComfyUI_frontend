@@ -16,7 +16,10 @@ async function requestConsentFromOpenPanel(page: Page): Promise<void> {
 
   await expect(panel).toBeVisible()
   await expect(openButton).toHaveAttribute('aria-pressed', 'true')
-  await openButton.click()
+  await page
+    .getByTestId('docked-agent-panel')
+    .getByRole('button', { name: /^(Close|Fermer)$/ })
+    .click()
   await expect(panel).toHaveCount(0)
   await openButton.click()
 }

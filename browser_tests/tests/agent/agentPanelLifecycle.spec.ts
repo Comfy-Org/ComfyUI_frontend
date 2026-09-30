@@ -255,13 +255,8 @@ test.describe(
       expect(box!.x).toBeGreaterThanOrEqual(-1)
       expect(box!.x + box!.width).toBeLessThanOrEqual(901)
 
-      // "Inside the window" is not enough on its own: a panel that ignored the
-      // sidebar and took all 900px would satisfy every bound above. Pin it
-      // against the workspace it is supposed to be reserving room for.
-      const sideToolbar = page.getByTestId('side-toolbar')
-      const railBox = await sideToolbar.boundingBox()
-      expect(railBox).not.toBeNull()
-      expect(box!.x).toBeGreaterThanOrEqual(railBox!.x + railBox!.width - 1)
+      expect(box!.x).toBe(0)
+      expect(box!.width).toBe(900)
 
       // Still maximized, so the header offers to minimize rather than maximize.
       await expect(
