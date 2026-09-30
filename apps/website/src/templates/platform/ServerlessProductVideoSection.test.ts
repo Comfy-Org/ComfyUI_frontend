@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { t } from '../../i18n/translations'
 import ServerlessProductVideoSection from './ServerlessProductVideoSection.vue'
 
 describe('ServerlessProductVideoSection', () => {
@@ -13,7 +12,7 @@ describe('ServerlessProductVideoSection', () => {
     render(ServerlessProductVideoSection, { props: { locale: 'en' } })
 
     const video = screen.getByLabelText<HTMLVideoElement>(
-      t('platform.serverlessVideo.label', 'en'),
+      'Comfy API product demo',
       { selector: 'video' }
     )
 
