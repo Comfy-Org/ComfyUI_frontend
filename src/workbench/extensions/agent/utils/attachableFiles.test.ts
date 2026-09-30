@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   AGENT_ATTACH_ACCEPT,
   agentAttachCapability,
+  agentAttachVerdict,
   isAgentAttachable,
   partitionAttachableFiles
 } from './attachableFiles'
@@ -101,6 +102,24 @@ describe('agentAttachCapability', () => {
 
   it('reports nothing for a type outside the accepted list', () => {
     expect(agentAttachCapability('doc.pdf')).toBeUndefined()
+  })
+})
+
+describe('agentAttachVerdict', () => {
+  /* A caller weighing several strings of unequal authority needs "refused" and
+     "nothing to judge" kept apart: collapsing them is what made the asset-card
+     gate both too strict (a renamed but valid file refused) and too loose (a
+     rejected type admitted because the other operand said nothing). */
+  it.for([
+    ['photo.png', 'accepted'],
+    ['notes.md', 'accepted'],
+    ['scene.usdz', 'rejected'],
+    ['doc.pdf', 'rejected'],
+    ['blake3:abcdef0123456789', 'unknown'],
+    ['abcdef0123456789', 'unknown'],
+    ['My renamed asset', 'unknown']
+  ] as const)('reports %s as %s', ([filename, verdict]) => {
+    expect(agentAttachVerdict(filename)).toBe(verdict)
   })
 })
 

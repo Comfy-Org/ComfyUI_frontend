@@ -70,6 +70,21 @@ export function isAgentAttachable(file: File): boolean {
 }
 
 /**
+ * Three-valued because `undefined` from agentAttachCapability conflates two
+ * different answers: "this type is refused" and "there is no extension to
+ * judge". A caller holding several strings of unequal authority — an asset
+ * card's display name, which a user can rename to anything, and the stored ref
+ * the server will actually resolve — must refuse on a REJECTED verdict from
+ * either, and only fall back when every one of them is UNKNOWN.
+ */
+export type AgentAttachVerdict = 'accepted' | 'rejected' | 'unknown'
+
+export function agentAttachVerdict(filename: string): AgentAttachVerdict {
+  if (agentAttachCapability(filename)) return 'accepted'
+  return extensionOf(filename) === '' ? 'unknown' : 'rejected'
+}
+
+/**
  * Splits a batch into what can be attached and what cannot, so a caller can
  * attach the one and report the other in a single pass. Every upload path funnels
  * through this, which is what keeps the paperclip, a drop and a paste agreeing.

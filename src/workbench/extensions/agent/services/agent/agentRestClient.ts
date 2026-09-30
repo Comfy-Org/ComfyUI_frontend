@@ -124,9 +124,11 @@ function getErrorMessage(body: unknown, fallback: string): string {
   // `error` string, which is what a plain AgentError parse would surface.
   const refused = zAgentAttachmentRejected.safeParse(body)
   if (refused.success) {
-    return refused.data.rejected
-      .map((name) => i18n.global.t('agent.attachmentTypeNotAccepted', { name }))
-      .join(' ')
+    return i18n.global.t(
+      'agent.attachmentTypeNotAccepted',
+      { name: refused.data.rejected.join(', ') },
+      refused.data.rejected.length
+    )
   }
 
   const plain = zAgentError.safeParse(body)

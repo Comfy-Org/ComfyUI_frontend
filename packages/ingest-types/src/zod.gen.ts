@@ -2817,8 +2817,9 @@ export const zAgentRetainedAttachmentExtension = z.enum([
 ])
 
 /**
- * Attachment extensions the agent can name and wire into a graph but cannot read — every
- * format Load3D opens EXCEPT .usdz, which the accepted list rejects.
+ * Attachment extensions the agent can name and wire into a graph but cannot read. Exactly the
+ * set Load3D accepts (comfy_extras/nodes_load_3d.py); .usdz is absent from both, so it is not
+ * an exclusion this tier makes.
  *
  */
 export const zAgentReferenceAttachmentExtension = z.enum([

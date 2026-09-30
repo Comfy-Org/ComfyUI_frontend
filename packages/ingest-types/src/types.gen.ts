@@ -4679,8 +4679,9 @@ export type AgentRetainedAttachmentExtension =
   | '.avif'
 
 /**
- * Attachment extensions the agent can name and wire into a graph but cannot read — every
- * format Load3D opens EXCEPT .usdz, which the accepted list rejects.
+ * Attachment extensions the agent can name and wire into a graph but cannot read. Exactly the
+ * set Load3D accepts (comfy_extras/nodes_load_3d.py); .usdz is absent from both, so it is not
+ * an exclusion this tier makes.
  *
  */
 export type AgentReferenceAttachmentExtension =
@@ -4725,7 +4726,10 @@ export type AgentPostMessageRequest = {
    * attachment's contents through its own asset tools when a request depends on them.
    *
    * Each entry's extension must appear in AgentAttachmentPolicy; a reference outside it is
-   * rejected with 422 (AgentAttachmentRejected). Which tier of that policy an extension lands
+   * rejected with 422 (AgentAttachmentRejected). A reference with NO extension is the one
+   * exception: not every reference is a filename — an asset hash may be a bare hex digest or
+   * "blake3:<hex>" — so one with nothing to judge is admitted here and checked again once it
+   * resolves to a stored name, where a refusal drops the attachment rather than the turn. Which tier of that policy an extension lands
    * in says what the agent can do with it, and the tiers differ sharply — a client that
    * presents them as one flat list misleads the user.
    *

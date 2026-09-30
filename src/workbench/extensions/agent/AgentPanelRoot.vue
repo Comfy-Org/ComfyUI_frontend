@@ -38,7 +38,7 @@ import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   AGENT_ATTACH_ACCEPT,
-  agentAttachCapability,
+  agentAttachVerdict,
   isAgentAttachable
 } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -1652,18 +1652,20 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   // shared media taxonomy, which files .usdz as 3D while the accepted list
   // rejects it, so a .usdz card used to stage silently here and then fail the
   // turn at submit.
-  // `asset.name` is the card's DISPLAY name, which a user can rename to
-  // anything — including something with no extension to judge — while `ref` is
-  // the stored filename the server will resolve. Judge the display name first
-  // (it is what the user sees) and fall back to the ref, so a renamed but valid
-  // asset is not refused for the rename.
-  if (
-    !agentAttachCapability(asset.name) &&
-    !(asset.ref && agentAttachCapability(asset.ref))
-  ) {
+  // Two strings of unequal authority: `asset.name` is the card's DISPLAY name,
+  // which a user can rename to anything (including something with no extension
+  // to judge), while `ref` is the stored filename the server will resolve and
+  // re-check. A REJECTED verdict from either refuses — otherwise a rename talks
+  // a .usdz past this gate and the turn 422s later, defeating the gate's whole
+  // purpose. Only when both are UNKNOWN does the drop fall through to the
+  // deferred fetch below, which judges the real File.
+  const verdicts = [asset.name, asset.ref]
+    .filter((candidate): candidate is string => Boolean(candidate))
+    .map(agentAttachVerdict)
+  if (verdicts.includes('rejected')) {
     toast.add({
       severity: 'warn',
-      detail: t('agent.attachmentTypeNotAccepted', { name: asset.name }),
+      detail: t('agent.attachmentTypeNotAccepted', { name: asset.name }, 1),
       life: 5000
     })
     return false
