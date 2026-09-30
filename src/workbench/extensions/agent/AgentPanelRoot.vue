@@ -1227,7 +1227,7 @@ onBeforeUnmount(() => {
   ++activeTabGeneration
   releaseCoachCompletionWaiters()
   if (
-    coachDeferredBy.value === null &&
+    (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
     composerStore.submission?.id === consentHeldSubmissionId
   )
     composerStore.invalidateSubmission()
