@@ -186,6 +186,7 @@ watch(step, (value) => {
 })
 
 onMounted(() => {
+  if (open.value) prepareOpenDialog()
   unsubscribeFromTopUpReturns = subscribeToTopUpReturns(onTopUpReturn)
   document.addEventListener('visibilitychange', onVisibilityChange)
   document.addEventListener('pointerdown', cancelAutoClose)

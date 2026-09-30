@@ -25,9 +25,11 @@ function renderHeader(workshopInBuild = false) {
         BuyCreditsDialog: defineComponent({
           props: { open: { type: Boolean, required: true } },
           setup: (props) => () =>
-            props.open
-              ? h('div', { 'data-testid': 'buy-credits-dialog' })
-              : null
+            h('div', { 'data-testid': 'credits-checkout' }, [
+              props.open
+                ? h('div', { 'data-testid': 'buy-credits-dialog' })
+                : null
+            ])
         })
       }
     }
@@ -107,6 +109,7 @@ describe('HeaderMain workshop gating', () => {
     await waitFor(() =>
       expect(screen.getAllByTestId('header-account')).toHaveLength(2)
     )
+    expect(screen.queryByTestId('credits-checkout')).toBeNull()
 
     requestWorkshopBuyCredits()
 
