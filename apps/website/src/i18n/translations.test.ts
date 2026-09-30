@@ -158,7 +158,9 @@ describe('t()', () => {
   it('refuses a key the catalog does not have', () => {
     const builtKey = 'cloud.faq.99.q' as TranslationKey
 
-    expect(() => t(builtKey)).toThrow('Unknown translation key cloud.faq.99.q')
+    expect(() => t(builtKey, 'ja')).toThrow(
+      'Unknown translation key cloud.faq.99.q in ja'
+    )
   })
 
   it('refuses a plural message', () => {
