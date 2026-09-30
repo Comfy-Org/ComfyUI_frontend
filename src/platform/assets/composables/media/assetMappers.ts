@@ -1,3 +1,5 @@
+import { groupBy } from 'es-toolkit'
+
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -65,8 +67,6 @@ const byCreatedAtAsc = (a: AssetItem, b: AssetItem): number =>
   new Date(a.created_at).getTime() - new Date(b.created_at).getTime() ||
   a.name.localeCompare(b.name)
 
-const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
-  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
 const byIsTemp = (a: AssetItem, b: AssetItem): number =>
   Number(b.tags.includes('temp')) - Number(a.tags.includes('temp'))
 
@@ -91,49 +91,39 @@ function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
  * Group flat per-file output assets into one asset per job, mirroring the
  * grouped shape produced from the history API: the group id is the job id and
  * user_metadata carries outputCount/allOutputs. Assets without output job
- * metadata pass through ungrouped.
+ * metadata pass through ungrouped. Each group takes the position of its first
+ * asset, so the source order (e.g. the server's sort) is preserved.
  */
 export function unflattenOutputAssets(
   flatAssets: readonly AssetItem[]
 ): AssetItem[] {
-  const assetsByJob = new Map<string, AssetItem[]>()
-  const ungrouped: AssetItem[] = []
+  const groups = groupBy(flatAssets, (asset) => asset.job_id || asset.id)
+  return Object.entries(groups).map(([key, assets]) =>
+    assets[0].job_id ? groupJobAssets(key, assets) : assets[0]
+  )
+}
 
-  for (const asset of flatAssets) {
-    const { job_id } = asset
-    if (!job_id) {
-      ungrouped.push(asset)
-      continue
+function groupJobAssets(job_id: string, assets: AssetItem[]): AssetItem {
+  const ordered = [...assets].sort(byCreatedAtAsc)
+  const representative =
+    ordered
+      .toSorted(byIsTemp)
+      .findLast((asset) =>
+        isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+      ) ?? ordered.at(-1)!
+  return {
+    ...representative,
+    id: job_id,
+    created_at: ordered.at(-1)!.created_at,
+    user_metadata: {
+      jobId: job_id,
+      subfolder: '',
+      ...representative.user_metadata,
+      assetId: representative.id,
+      outputCount: ordered.length,
+      allOutputs: ordered.map(flatAssetToResultItem)
     }
-    const group = assetsByJob.get(job_id)
-    if (group) group.push(asset)
-    else assetsByJob.set(job_id, [asset])
   }
-
-  const grouped = [...assetsByJob.entries()].map(([job_id, assets]) => {
-    const ordered = [...assets].sort(byCreatedAtAsc)
-    const representative =
-      ordered
-        .toSorted(byIsTemp)
-        .findLast((asset) =>
-          isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
-        ) ?? ordered.at(-1)!
-    return {
-      ...representative,
-      id: job_id,
-      created_at: ordered.at(-1)!.created_at,
-      user_metadata: {
-        jobId: job_id,
-        subfolder: '',
-        ...representative.user_metadata,
-        assetId: representative.id,
-        outputCount: ordered.length,
-        allOutputs: ordered.map(flatAssetToResultItem)
-      }
-    }
-  })
-
-  return [...grouped, ...ungrouped].sort(byCreatedAtDesc)
 }
 
 /**

@@ -11,7 +11,7 @@
       />
       <template #actions>
         <MediaAssetFilterButton
-          v-if="isCloud"
+          v-if="flags.assetsEnabled"
           v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
           :active="hasActiveFilters"
         >
@@ -29,8 +29,7 @@
             <MediaAssetSettingsMenu
               v-model:view-mode="viewMode"
               v-model:sort-by="sortBy"
-              :show-sort-options="isCloud"
-              :show-generation-time-sort
+              :show-sort-options="flags.assetsEnabled"
             />
           </template>
         </MediaAssetSettingsButton>
@@ -81,30 +80,29 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import { isCloud } from '@/platform/distribution/types'
 import {
   dateFilterOptions,
   mediaTypeFilterOptions
 } from '@/platform/assets/mediaAssetFilterOptions'
 import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
+import type { MediaAssetSort } from '@/platform/assets/mediaAssetSortOptions'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
 import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'
 import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
-import type { SortBy } from './MediaAssetSettingsMenu.vue'
 import type { MediaAssetViewMode } from './mediaAssetViewOptions'
 
-const { showGenerationTimeSort = false, bottomDivider = false } = defineProps<{
-  showGenerationTimeSort?: boolean
+const { bottomDivider = false } = defineProps<{
   bottomDivider?: boolean
 }>()
 
 const searchQuery = defineModel<string>('searchQuery', { required: true })
-const sortBy = defineModel<SortBy>('sortBy', { required: true })
+const sortBy = defineModel<MediaAssetSort>('sortBy', { required: true })
 const viewMode = defineModel<MediaAssetViewMode>('viewMode', { required: true })
 const dateFilter = defineModel<MediaAssetDateFilter>('dateFilter', {
   required: true
@@ -114,6 +112,7 @@ const mediaTypeFilters = defineModel<string[]>('mediaTypeFilters', {
 })
 
 const { t } = useI18n()
+const { flags } = useFeatureFlags()
 
 function labelFor(options: { value: string; label: string }[], value: string) {
   return t(options.find((option) => option.value === value)?.label ?? value)

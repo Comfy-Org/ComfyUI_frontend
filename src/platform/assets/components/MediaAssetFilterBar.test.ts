@@ -8,6 +8,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { MEDIA_ASSET_VIEW_MODE } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
+import { DEFAULT_MEDIA_ASSET_SORT } from '@/platform/assets/mediaAssetSortOptions'
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
@@ -31,7 +32,7 @@ function renderFilterBar({
     setup() {
       return {
         searchQuery: ref(''),
-        sortBy: ref('newest'),
+        sortBy: ref(DEFAULT_MEDIA_ASSET_SORT),
         viewMode: ref(MEDIA_ASSET_VIEW_MODE.grid),
         dateFilter: ref(dateFilter),
         mediaTypeFilters: ref(mediaTypeFilters)

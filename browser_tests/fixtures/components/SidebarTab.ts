@@ -309,13 +309,11 @@ export class AssetsSidebarTab extends SidebarTab {
   public readonly gridLargeOption: Locator
   public readonly gridItems: Locator
 
-  // --- Sort options (cloud-only, shown inside settings popover) ---
+  // --- Sort options (assets API only, shown inside settings popover) ---
   public readonly sortNewestFirst: Locator
   public readonly sortOldestFirst: Locator
   public readonly sortAToZ: Locator
   public readonly sortZToA: Locator
-  public readonly sortLongestFirst: Locator
-  public readonly sortFastestFirst: Locator
 
   // --- Asset cards ---
   public readonly assetCards: Locator
@@ -373,8 +371,6 @@ export class AssetsSidebarTab extends SidebarTab {
     this.sortOldestFirst = page.getByText('Oldest first')
     this.sortAToZ = page.getByText('Name (A → Z)')
     this.sortZToA = page.getByText('Name (Z → A)')
-    this.sortLongestFirst = page.getByText('Generation time (longest first)')
-    this.sortFastestFirst = page.getByText('Generation time (fastest first)')
     this.assetCards = page.locator(
       '.sidebar-content-container [data-asset-id][data-selected]'
     )

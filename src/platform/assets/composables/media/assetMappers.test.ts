@@ -117,4 +117,25 @@ describe('unflattenOutputAssets', () => {
       'later-id'
     ])
   })
+
+  it('keeps each group at the position of its first asset in source order', () => {
+    const asset = {
+      size: 1,
+      tags: ['output'],
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z'
+    }
+    const assets = [
+      { ...asset, id: 'b-1', name: 'b.png', job_id: 'job-b' },
+      { ...asset, id: 'loose', name: 'loose.png' },
+      { ...asset, id: 'a-1', name: 'a.png', job_id: 'job-a' },
+      { ...asset, id: 'b-2', name: 'b2.png', job_id: 'job-b' }
+    ] satisfies AssetItem[]
+
+    expect(unflattenOutputAssets(assets).map(({ id }) => id)).toEqual([
+      'job-b',
+      'loose',
+      'job-a'
+    ])
+  })
 })

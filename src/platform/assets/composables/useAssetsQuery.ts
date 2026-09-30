@@ -16,6 +16,7 @@ interface QueryOptions {
 
 const BASE_PARAMS: ListAssetsData['query'] = {
   sort: 'created_at',
+  order: 'desc',
   tags_none: ['missing']
 }
 
@@ -137,7 +138,7 @@ function assetsQueryInternal(
 const sharedState: SharedPagedListState<ListAssetsData['query'], AssetItem> = {
   cache: new Map(),
   factory: assetsQueryInternal,
-  paramKeyFn: encodeParams,
+  paramKeyFn: (params) => encodeParams({ ...BASE_PARAMS, ...params }),
   itemKeyFn: (item) => item.id
 }
 
