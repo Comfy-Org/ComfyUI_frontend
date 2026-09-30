@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { expect } from '@playwright/test'
 
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
@@ -29,6 +30,42 @@ test.describe('Retired prototype routes', () => {
     expect(workshop?.status()).toBe(404)
     await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
   })
+})
+
+test.describe('Hub pages', () => {
+  for (const { path, title, heading, noindex } of [
+    {
+      path: 'hub/models',
+      title: 'ComfyUI Models: Run AI Image, Video &amp; Audio Models - Comfy',
+      heading: 'ComfyUI models',
+      noindex: false
+    },
+    {
+      path: 'hub/workflows',
+      title:
+        'ComfyUI Workflows: Multi-Step AI Image &amp; Video Workflows - Comfy',
+      heading: 'ComfyUI workflows',
+      noindex: true
+    },
+    {
+      path: 'hub/apps',
+      title: 'ComfyUI Apps: Creative Tools Built from Workflows - Comfy',
+      heading: 'ComfyUI apps',
+      noindex: true
+    }
+  ])
+    test(`builds /${path}/ with its own title, heading and canonical`, () => {
+      const html = readFileSync(`dist/${path}/index.html`, 'utf8')
+
+      expect(html).toContain(`<title>${title}</title>`)
+      expect(html).toMatch(new RegExp(`<h1[^>]*>\\s*${heading}\\s*</h1>`))
+      expect(html).toContain(
+        `rel="canonical" href="https://comfy.org/${path}/"`
+      )
+      expect(html.includes('<meta name="robots" content="noindex')).toBe(
+        noindex
+      )
+    })
 })
 
 test.describe('Models catalog', () => {

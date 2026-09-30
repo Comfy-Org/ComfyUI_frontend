@@ -3,6 +3,8 @@ import type { RedirectConfig } from 'astro'
 import { models } from './models'
 import {
   HUB_MODELS_PATH,
+  hubAppHref,
+  hubAppSlugs,
   hubModelAliases,
   hubModelPath,
   hubModelSlugs,
@@ -44,6 +46,9 @@ const modelAliasRedirects = models.flatMap(({ slug, canonicalSlug }) =>
 const HUB_ROUTER_PENDING =
   'switch to permanent once comfy-router#46 is confirmed live on prod; a 308 is cached by browsers and cannot be retracted'
 
+const HUB_APPS_ROUTER_PENDING =
+  'switch to permanent once comfy-router sends /hub/apps/ to this site on prod; a 308 is cached by browsers and cannot be retracted'
+
 // Literal rows only: hub pages fetch /models/<slug>/page.json, so a /models/:path* catch-all would break them.
 const hubModelRedirects: readonly SiteRedirect[] = [
   {
@@ -60,6 +65,11 @@ const hubModelRedirects: readonly SiteRedirect[] = [
     source: `/models/${slug}` as const,
     destination: hubWorkflowHref(slug),
     temporaryBecause: HUB_ROUTER_PENDING
+  })),
+  ...hubAppSlugs.map((slug) => ({
+    source: `/models/${slug}` as const,
+    destination: hubAppHref(slug),
+    temporaryBecause: HUB_APPS_ROUTER_PENDING
   }))
 ]
 
