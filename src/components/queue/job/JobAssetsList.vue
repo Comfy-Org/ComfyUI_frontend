@@ -3,6 +3,7 @@
     ref="scrollContainer"
     v-bind="$attrs"
     data-testid="job-assets-list"
+    tabindex="0"
     class="h-full overflow-y-auto pb-4"
     @scroll="onListScroll"
   >

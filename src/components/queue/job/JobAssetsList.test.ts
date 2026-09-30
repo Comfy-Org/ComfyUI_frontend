@@ -174,6 +174,16 @@ describe('JobAssetsList', () => {
     expect(container.querySelector('[data-job-id="job-2"]')).not.toBeNull()
   })
 
+  it('lets keyboard users focus the scroll container', async () => {
+    const { user } = renderJobAssetsList({
+      jobs: [buildJob({ id: 'job-1' })]
+    })
+
+    await user.tab()
+
+    expect(screen.getByTestId('job-assets-list')).toHaveFocus()
+  })
+
   it('forwards parent attrs to the scroll container', () => {
     renderJobAssetsList({
       attrs: {
