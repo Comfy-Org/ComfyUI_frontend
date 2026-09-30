@@ -492,6 +492,12 @@ export function useCinematicStudioRun(
         request: ready.get(take.request) ?? take.request
       }))
       plansReady.forEach((take) => plans.set(take.id, take))
+      // Sibling takes of the same shot reuse this rewrite, so retrying one
+      // later does not enhance again.
+      for (const [id, plan] of plans) {
+        const resolved = ready.get(plan.request)
+        if (resolved) plans.set(id, { ...plan, request: resolved })
+      }
       return plansReady
     } catch {
       return undefined
