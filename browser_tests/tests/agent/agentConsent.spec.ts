@@ -5,6 +5,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 async function requestConsentFromOpenPanel(page: Page): Promise<void> {
   const openButton = page.getByRole('button', {
@@ -15,8 +16,7 @@ async function requestConsentFromOpenPanel(page: Page): Promise<void> {
 
   await expect(panel).toBeVisible()
   await expect(openButton).toHaveAttribute('aria-pressed', 'true')
-  await openButton.click()
-  await expect(panel).toHaveCount(0)
+  await new AgentPanel(page).close()
   await openButton.click()
 }
 
