@@ -163,11 +163,16 @@ describe('SignInForm', () => {
   })
 
   describe('Forgot Password with valid email', () => {
-    it('calls sendPasswordReset when email is valid', async () => {
+    it('sends a password reset from the keyboard when email is valid', async () => {
       const { user } = renderComponent()
 
       await user.type(getEmailInput(), 'test@example.com')
-      await user.click(screen.getByText(forgotPasswordText))
+      await user.tab()
+
+      expect(
+        screen.getByRole('button', { name: forgotPasswordText })
+      ).toHaveFocus()
+      await user.keyboard('{Enter}')
 
       expect(useAuthActions().sendPasswordReset).toHaveBeenCalledWith(
         'test@example.com'

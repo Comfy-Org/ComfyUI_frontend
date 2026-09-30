@@ -53,20 +53,48 @@ describe('FormItem', () => {
     expect(screen.getByRole('radio', { name: 'Disabled' })).toBeInTheDocument()
   })
 
-  it.for(['slider', 'knob'] as const)(
-    'updates the parent value through both controls in a %s field',
-    async (type) => {
+  it.for([
+    {
+      type: 'slider',
+      min: 2,
+      max: 256,
+      step: 2,
+      input: '7',
+      expected: '8',
+      commit: '{Enter}'
+    },
+    {
+      type: 'knob',
+      min: 0,
+      max: 6,
+      step: 1,
+      input: '3.7',
+      expected: '4',
+      commit: '{Tab}'
+    },
+    {
+      type: 'slider',
+      min: 100,
+      max: 1000,
+      step: 50,
+      input: '326',
+      expected: '350',
+      commit: '{Tab}'
+    }
+  ])(
+    'commits $input as $expected for a $type with step $step',
+    async ({ type, min, max, step, input, expected, commit }) => {
       const user = userEvent.setup()
       render(
         defineComponent({
           components: { FormItem },
           setup() {
-            return { value: ref(5), type }
+            return { value: ref(min), type, attrs: { min, max, step } }
           },
           template: `
             <FormItem
               v-model:form-value="value"
-              :item="{ name: 'Volume', type }"
+              :item="{ name: 'Volume', type, attrs }"
               :id="type"
             />
             <output>{{ value }}</output>
@@ -89,9 +117,10 @@ describe('FormItem', () => {
       expect(screen.getAllByLabelText('Volume')).toHaveLength(2)
       const numberInput = screen.getByRole('spinbutton', { name: 'Volume' })
       await user.clear(numberInput)
-      await user.type(numberInput, '8')
-      await user.tab()
-      expect(screen.getByRole('status')).toHaveTextContent('8')
+      await user.type(numberInput, input)
+      await user.keyboard(commit)
+      expect(screen.getByRole('status').textContent).toBe(expected)
+      expect(numberInput).toHaveValue(expected)
     }
   )
 

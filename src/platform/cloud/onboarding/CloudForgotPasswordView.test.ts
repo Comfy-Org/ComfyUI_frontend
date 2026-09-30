@@ -82,6 +82,9 @@ describe('CloudForgotPasswordView', () => {
       screen.getByText('cloudForgotPassword_passwordResetError')
     ).toBeInTheDocument()
     expect(
+      screen.getByLabelText('cloudForgotPassword_emailLabel')
+    ).toHaveAttribute('aria-invalid', 'true')
+    expect(
       screen.queryByText('cloudForgotPassword_passwordResetSent')
     ).not.toBeInTheDocument()
     expect(
