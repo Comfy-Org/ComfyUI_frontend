@@ -56,7 +56,7 @@ export function modelsBuildRoutes(enabled: boolean) {
       entrypoint: entry('hub-workflows-manifest.json.ts')
     },
     { pattern: '/models/showcase', entrypoint: entry('showcase.astro') },
-    { pattern: '/models/apps/[app]', entrypoint: entry('app.astro') },
+    { pattern: `${HUB_APPS_PATH}/[app]`, entrypoint: entry('app.astro') },
     {
       pattern: '/cinematic-studio',
       entrypoint: entry('cinematic-studio.astro')

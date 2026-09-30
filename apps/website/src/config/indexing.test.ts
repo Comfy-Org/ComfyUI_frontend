@@ -38,7 +38,7 @@ const MODELS_PAGES_BY_KIND = [
   ['alias', `/models/${modelSlug}/`],
   ['alias', `/models/${aliasSlug}/`],
   ['workflow', '/hub/workflows/change-material/'],
-  ['app', '/models/apps/cinematic-studio/'],
+  ['app', '/hub/apps/cinematic-studio/'],
   ['showcase', '/models/showcase/'],
   ['catalogue', '/models/catalogue.json'],
   ['page data', `/models/${modelSlug}/page.json`]

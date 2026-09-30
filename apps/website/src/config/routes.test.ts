@@ -59,7 +59,7 @@ describe('localizeHref', () => {
     '/models/',
     '/hub/workflows/?category=product',
     '/hub/apps/',
-    '/models/apps/reshoot/'
+    '/hub/apps/reshoot/'
   ])('never prefixes the locale-invariant route %s', (href) => {
     expect(localizeHref(href, 'zh-CN')).toBe(href)
   })

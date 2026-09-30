@@ -1,14 +1,14 @@
-import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
 import {
   HUB_APPS_PATH,
   HUB_MODELS_PATH,
   HUB_WORKFLOWS_PATH,
+  hubAppHref,
+  hubAppSlugs,
   hubModelAliases,
   hubModelSlugs,
   hubWorkflowHref,
   hubWorkflowSlugs
 } from './hub-models'
-import { workshopDisplayEntries } from './workshop-browse-content'
 
 const MODELS_BASE_PATH = '/models'
 
@@ -86,7 +86,12 @@ export function modelsUrlEntries({
       kind: 'alias' as const,
       destination: hubWorkflowHref(slug)
     })),
-    ...apps.map(page('app')),
+    ...apps.map((slug) => ({ path: hubAppHref(slug), kind: 'app' as const })),
+    ...apps.map((slug) => ({
+      path: at(slug),
+      kind: 'alias' as const,
+      destination: hubAppHref(slug)
+    })),
     ...[...models.keys(), ...workflows].map((slug) =>
       page('reserved')(`${slug}/page.json`)
     ),
@@ -142,16 +147,11 @@ export function buildModelsUrlRegistry(
   return { roots: normalizedRoots, entries: registry }
 }
 
-const slugsOfType = (types: readonly WorkshopDisplayEntry['type'][]) =>
-  workshopDisplayEntries
-    .filter((entry) => types.includes(entry.type))
-    .map(({ slug }) => slug)
-
 const modelsUrlRegistry = buildModelsUrlRegistry(
   modelsUrlEntries({
     models: hubModelSlugs,
     workflows: hubWorkflowSlugs,
-    apps: slugsOfType(['APP']),
+    apps: hubAppSlugs,
     aliases: hubModelAliases
   }),
   [MODELS_BASE_PATH, HUB_MODELS_PATH, HUB_WORKFLOWS_PATH, HUB_APPS_PATH]

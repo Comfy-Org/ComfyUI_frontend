@@ -75,7 +75,7 @@ const launchModels: WorkshopModel[] = [
     appId: 'studio',
     slug: 'apps/cinematic-studio',
     name: 'Cinematic Studio',
-    href: '/models/apps/cinematic-studio/',
+    href: '/hub/apps/cinematic-studio/',
     workflowCount: 0,
     capabilities: [],
     modality: 'image'
@@ -86,7 +86,7 @@ const launchModels: WorkshopModel[] = [
     slug: 'apps/reshoot',
     flag: 'workshop-reshoot-app-enabled',
     name: 'Re-shoot a video',
-    href: '/models/apps/reshoot/',
+    href: '/hub/apps/reshoot/',
     workflowCount: 0,
     capabilities: [],
     modality: 'video'
@@ -245,7 +245,7 @@ describe('ModelsCatalogue', () => {
       within(shelf)
         .getAllByRole('link')
         .map((link) => link.getAttribute('href'))
-    ).toEqual(['/models/apps/cinematic-studio/', '/models/apps/reshoot/'])
+    ).toEqual(['/hub/apps/cinematic-studio/', '/hub/apps/reshoot/'])
     expect(
       within(screen.getByTestId('workshop-toolbar')).getByTestId(
         'catalogue-tabs'
@@ -265,14 +265,14 @@ describe('ModelsCatalogue', () => {
         .map((link) => link.getAttribute('href'))
 
     await waitFor(() =>
-      expect(hrefs()).toEqual(['/models/apps/cinematic-studio/'])
+      expect(hrefs()).toEqual(['/hub/apps/cinematic-studio/'])
     )
 
     reshootFlag.value = true
     await waitFor(() =>
       expect(hrefs()).toEqual([
-        '/models/apps/cinematic-studio/',
-        '/models/apps/reshoot/'
+        '/hub/apps/cinematic-studio/',
+        '/hub/apps/reshoot/'
       ])
     )
   })

@@ -53,14 +53,13 @@ const baseRoutes = {
   chatgptImage25: '/chatgpt-image-2.5/',
   qwenImage21: '/qwen-image-2.1/',
   brand: '/brand/',
-  // The catalogue answers to /models now. The keys keep their old names while
-  // the pull requests stacked on this branch are still open against them.
+  // The hub catalogue. `workshop` keeps its old name.
   workshop: '/hub/models/',
   hubWorkflows: '/hub/workflows/',
   hubApps: '/hub/apps/',
   workshopSignIn: '/login/',
-  cinematicStudio: '/models/apps/cinematic-studio/',
-  reshoot: '/models/apps/reshoot/'
+  cinematicStudio: '/hub/apps/cinematic-studio/',
+  reshoot: '/hub/apps/reshoot/'
 } as const
 
 type RouteKey = keyof typeof baseRoutes

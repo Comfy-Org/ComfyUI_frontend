@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { hubModelSlugs, hubWorkflowHref, hubWorkflowSlugs } from './hub-models'
+import {
+  hubAppHref,
+  hubAppSlugs,
+  hubModelSlugs,
+  hubWorkflowHref,
+  hubWorkflowSlugs
+} from './hub-models'
 import type { ModelsUrlEntry } from './models-url-registry'
 import {
   buildModelsUrlRegistry,
@@ -8,7 +14,6 @@ import {
   modelsUrlKind,
   unregisteredModelsPaths
 } from './models-url-registry'
-import { workshopDisplayEntries } from './workshop-browse-content'
 
 const hub: ModelsUrlEntry = { path: '/models', kind: 'hub' }
 const roots = ['/models', '/hub/models', '/hub/workflows', '/hub/apps']
@@ -32,7 +37,8 @@ describe('models URL registry', () => {
     ['/hub/workflows/relight/', 'workflow'],
     ['/models/workflows/relight', 'alias'],
     ['/hub/workflows/manifest.json', 'reserved'],
-    ['/models/apps/studio/', 'app'],
+    ['/hub/apps/studio/', 'app'],
+    ['/models/apps/studio/', 'alias'],
     ['/models/acme--image', 'alias'],
     ['/models/showcase/', 'reserved'],
     ['/models/catalogue.json', 'reserved'],
@@ -46,7 +52,8 @@ describe('models URL registry', () => {
   it.for([
     ['/models', '/hub/models'],
     ['/models/acme--image--generate-images', '/hub/models/acme-image'],
-    ['/models/acme--image', '/hub/models/acme-image']
+    ['/models/acme--image', '/hub/models/acme-image'],
+    ['/models/apps/studio', '/hub/apps/studio']
   ])('points %s straight at %s', ([path, destination]) => {
     const registry = buildModelsUrlRegistry(modelsUrlEntries(sources), roots)
     expect(registry.entries.get(path)).toEqual({
@@ -218,12 +225,11 @@ describe('models URL registry', () => {
   it('builds the real registry from the Models content', () => {
     const [[oldModelId, hubSlug]] = hubModelSlugs
     const [workflow] = hubWorkflowSlugs
-    const slugOf = (...types: string[]) =>
-      workshopDisplayEntries.find(({ type }) => type && types.includes(type))
-        ?.slug
+    const [app] = hubAppSlugs
     expect(modelsUrlKind(`/hub/models/${hubSlug}/`)).toBe('model')
     expect(modelsUrlKind(`/models/${oldModelId}/`)).toBe('alias')
-    expect(modelsUrlKind(`/models/${slugOf('APP')}/`)).toBe('app')
+    expect(modelsUrlKind(hubAppHref(app))).toBe('app')
+    expect(modelsUrlKind(`/models/${app}/`)).toBe('alias')
     expect(modelsUrlKind(hubWorkflowHref(workflow))).toBe('workflow')
     expect(modelsUrlKind(`/models/${workflow}/`)).toBe('alias')
   })

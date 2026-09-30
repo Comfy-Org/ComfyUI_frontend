@@ -15,7 +15,7 @@ describe('hub model addresses', () => {
     )
   })
 
-  it('finds links to old model, alias and catalogue addresses, relative or absolute', () => {
+  it('finds links to old model, alias, workflow, app and catalogue addresses, relative or absolute', () => {
     const html = [
       '<a href="/models/bfl--flux-2-max--generate-images/">',
       '<a href="/models/vertexai--gemini-3-pro-image?x=1">',
@@ -25,6 +25,8 @@ describe('hub model addresses', () => {
       '<a href="/hub/models/flux-2-max-text-to-image/">',
       '<a href="/models/workflows/change-material/">',
       '<a href="/hub/workflows/change-material/">',
+      '<a href="/models/apps/reshoot/">',
+      '<a href="/hub/apps/reshoot/">',
       '<a href="/models/showcase/">',
       '<a href="/modelsfoo/">'
     ].join('')
@@ -34,7 +36,8 @@ describe('hub model addresses', () => {
       '/models/bfl--flux-2-pro--generate-images',
       '/models',
       '/models',
-      '/models/workflows/change-material'
+      '/models/workflows/change-material',
+      '/models/apps/reshoot'
     ])
   })
 

@@ -137,7 +137,7 @@ describe('llms.txt', () => {
     if (!pattern.includes('[')) staticPages.add(pattern)
   const modelsPages = new Set([
     ...workshopPagePaths.map((slug) => `/models/${slug}`),
-    ...appPagePaths().map(({ params }) => `/models/apps/${params.app}`)
+    ...appPagePaths().map(({ params }) => `/hub/apps/${params.app}`)
   ])
   const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
 

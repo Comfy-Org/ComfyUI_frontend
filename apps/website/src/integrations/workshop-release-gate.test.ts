@@ -137,7 +137,7 @@ describe('Workshop release output', () => {
       '/hub/workflows/[slug]',
       '/hub/workflows/manifest.json',
       '/models/showcase',
-      '/models/apps/[app]',
+      '/hub/apps/[app]',
       '/cinematic-studio',
       '/models/[...slug]/page.json',
       '/models/catalogue.json'

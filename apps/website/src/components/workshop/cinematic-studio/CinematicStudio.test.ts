@@ -159,7 +159,7 @@ describe('CinematicStudio', () => {
       .mockRejectedValue(new WorkshopRouterError('client'))
     vi.stubGlobal('fetch', fetchData)
     fetchData.mockImplementation(servePageData)
-    window.history.replaceState(null, '', '/models/apps/cinematic-studio/')
+    window.history.replaceState(null, '', '/hub/apps/cinematic-studio/')
   })
 
   it('waits for a scene before it can generate', async () => {
@@ -1036,11 +1036,7 @@ describe('CinematicStudio', () => {
   })
 
   it('renders sample frames in demo mode without calling the Router', async () => {
-    window.history.replaceState(
-      null,
-      '',
-      '/models/apps/cinematic-studio/?demo=1'
-    )
+    window.history.replaceState(null, '', '/hub/apps/cinematic-studio/?demo=1')
     signedIn.value = undefined
     const user = renderStudio()
 
@@ -1671,7 +1667,7 @@ describe('CinematicStudio', () => {
       }
 
       await pick('Re-shoot a video')
-      expect(window.location.pathname).toBe('/models/apps/reshoot/')
+      expect(window.location.pathname).toBe('/hub/apps/reshoot/')
       expect(window.location.search).toBe('?ux=d')
       await pick('Cinematic Studio')
 
@@ -1679,11 +1675,7 @@ describe('CinematicStudio', () => {
     })
 
     it('swaps to the Re-shoot app, which has a single layout', async () => {
-      window.history.replaceState(
-        null,
-        '',
-        '/models/apps/cinematic-studio/?ux=d'
-      )
+      window.history.replaceState(null, '', '/hub/apps/cinematic-studio/?ux=d')
       render(CinematicStudioPage, { props: { apps: appModels, models } })
       const user = userEvent.setup()
 
@@ -1698,7 +1690,7 @@ describe('CinematicStudio', () => {
         screen.getByRole('complementary', { name: 'Your clip' })
       ).toBeInTheDocument()
       expect(panel()).toBeNull()
-      expect(window.location.pathname).toBe('/models/apps/reshoot/')
+      expect(window.location.pathname).toBe('/hub/apps/reshoot/')
       expect(window.location.search).toBe('?ux=d')
       expect(document.title).toBe('Re-shoot a video - Comfy')
     })
@@ -1707,7 +1699,7 @@ describe('CinematicStudio', () => {
       window.history.replaceState(
         null,
         '',
-        '/models/apps/cinematic-studio/?ux=hub'
+        '/hub/apps/cinematic-studio/?ux=hub'
       )
       render(CinematicStudioPage, { props: { apps: appModels, models } })
 
@@ -1718,18 +1710,14 @@ describe('CinematicStudio', () => {
       const [firstApp, secondApp] = apps
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
-      ).toHaveAttribute('href', '/models/apps/cinematic-studio/')
+      ).toHaveAttribute('href', '/hub/apps/cinematic-studio/')
       expect(
         within(secondApp).getByRole('link', { name: 'Re-shoot a video' })
-      ).toHaveAttribute('href', '/models/apps/reshoot/')
+      ).toHaveAttribute('href', '/hub/apps/reshoot/')
     })
 
     it('runs a shot from the side panel on the model picked there', async () => {
-      window.history.replaceState(
-        null,
-        '',
-        '/models/apps/cinematic-studio/?ux=d'
-      )
+      window.history.replaceState(null, '', '/hub/apps/cinematic-studio/?ux=d')
       vi.mocked(router_render).mockImplementation(async (slug) =>
         rendered(slug)
       )
