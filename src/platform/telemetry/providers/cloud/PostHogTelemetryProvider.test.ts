@@ -473,7 +473,7 @@ describe('PostHogTelemetryProvider', () => {
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
         input_method: 'suggestion',
-        starter_prompt_id: 'list_workflows',
+        starter_prompt_id: 'slot_2',
         starter_prompt_click_id: 'click-1'
       })
 
@@ -486,7 +486,7 @@ describe('PostHogTelemetryProvider', () => {
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
           input_method: 'suggestion',
-          starter_prompt_id: 'list_workflows',
+          starter_prompt_id: 'slot_2',
           starter_prompt_click_id: 'click-1'
         }
       )
@@ -497,7 +497,7 @@ describe('PostHogTelemetryProvider', () => {
       await vi.dynamicImportSettled()
 
       provider.trackAgentStarterPromptClicked({
-        prompt_id: 'find_workflow',
+        prompt_id: 'slot_3',
         prompt_index: 2,
         prompt_count: 5,
         prompt_text_hash: 'deadbeef',
@@ -509,7 +509,7 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED,
         {
-          prompt_id: 'find_workflow',
+          prompt_id: 'slot_3',
           prompt_index: 2,
           prompt_count: 5,
           prompt_text_hash: 'deadbeef',

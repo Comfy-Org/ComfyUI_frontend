@@ -5229,13 +5229,22 @@
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
     "placeholder": "Describe ideas, {'@'} to reference workflows, drag in media asset and files, or\nmention nodes",
-    "suggestedPrompts": [
-      "Generate a yellow duck with a hockey mask",
-      "List my saved workflows",
-      "Find the best workflow for skin upscaling",
-      "Explain the selected node",
-      "Build a workflow for image to video with 3 models"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Generate a character sheet of an astronaut",
+        "Turn the product image into a short ad",
+        "Explain the selected nodes",
+        "Best image upscale workflow for 4K",
+        "Fix the errors in this workflow"
+      ],
+      "local": [
+        "Generate a realistic portrait of an astronaut",
+        "An image-to-video workflow that fits my GPU",
+        "Explain the selected nodes",
+        "Help me install the missing nodes for this workflow",
+        "Fix the errors in this workflow"
+      ]
+    },
     "attach": "Attach a file",
     "attachFiles": "Upload images or files",
     "addToPrompt": "Add to prompt",
