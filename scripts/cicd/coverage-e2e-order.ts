@@ -96,9 +96,12 @@ export async function orderE2eCoverage(
     }
   }
 
-  const toCurrent =
-    baseline === current ? 'identical' : await compare(baseline, current)
-  if (toCurrent !== 'ahead') {
+  // Re-reporting the same measurement is the steady state between E2E runs,
+  // not an anomaly: the delta is zero, and re-saving it leaves the baseline
+  // exactly where it was.
+  if (baseline === current) return { usable: true, withheld: [] }
+
+  if ((await compare(baseline, current)) !== 'ahead') {
     return {
       usable: false,
       withheld: [

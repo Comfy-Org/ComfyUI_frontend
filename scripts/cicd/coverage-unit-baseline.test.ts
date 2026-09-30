@@ -121,7 +121,12 @@ describe('resolveUnitBaseline', () => {
       'head'
     )
 
-    expect(baseline).toEqual({ ancestor: null, runId: null, spanned: false })
+    expect(baseline).toEqual({
+      ancestor: null,
+      runId: null,
+      spanned: false,
+      lastChecked: null
+    })
   })
 
   it(`still finds a baseline ${MAX_HOPS} commits back`, async () => {
@@ -133,12 +138,19 @@ describe('resolveUnitBaseline', () => {
     expect(baseline).toEqual({ ancestor: 'oldest', runId: 71, spanned: true })
   })
 
-  it(`gives up once the walk passes ${MAX_HOPS} commits`, async () => {
+  // Naming the last candidate is what lets a reader tell whether the walk ran
+  // out of budget or ran out of history, and so whether a re-run would help.
+  it(`gives up past ${MAX_HOPS} commits, naming how far it got`, async () => {
     const baseline = await resolveUnitBaseline(
       historyWithGaps(MAX_HOPS),
       'head'
     )
 
-    expect(baseline).toEqual({ ancestor: null, runId: null, spanned: false })
+    expect(baseline).toEqual({
+      ancestor: null,
+      runId: null,
+      spanned: false,
+      lastChecked: `gap-${MAX_HOPS - 1}`
+    })
   })
 })
