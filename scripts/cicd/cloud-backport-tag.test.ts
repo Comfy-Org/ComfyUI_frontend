@@ -69,7 +69,12 @@ fi
 
 function runTagScript(
   scenario: string,
-  options: { containment?: string; event?: string; sha?: string } = {}
+  options: {
+    containment?: string
+    event?: string
+    sha?: string
+    token?: string
+  } = {}
 ) {
   const directory = mkdtempSync(join(tmpdir(), 'cloud-backport-tag-'))
   const binary = join(directory, 'gh')
@@ -86,6 +91,7 @@ function runTagScript(
       ...process.env,
       BRANCH: 'cloud/1.54',
       EVENT_NAME: options.event ?? 'workflow_dispatch',
+      GH_TOKEN: options.token ?? 'test-token',
       FAKE_CONTAINMENT: options.containment ?? 'behind',
       FAKE_GH_COUNT_FILE: count,
       FAKE_SCENARIO: scenario,
@@ -118,6 +124,15 @@ describe('cloud backport tag workflow', () => {
       '${{ github.event.repository.default_branch }}'
     )
     expect(tagStep?.env?.GH_TOKEN).toBe('${{ secrets.PR_GH_TOKEN }}')
+  })
+
+  it('fails closed when the release token is absent', () => {
+    const result = runTagScript('same', { token: '' })
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain(
+      'PR_GH_TOKEN is required for cloud tag reconciliation'
+    )
   })
 
   it('accepts existing same, different, and annotated tags without moving them', () => {
