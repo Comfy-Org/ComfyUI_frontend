@@ -1,5 +1,5 @@
 import { z } from 'astro/zod'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   compileWorkshopContracts,
@@ -365,6 +365,12 @@ describe('schema-driven Router coverage', () => {
     async (contract) => {
       if (contract.output.format === 'binary')
         throw new Error('Expected JSON fixture')
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn<typeof fetch>()
+          .mockResolvedValue(new Response(null, { status: 404 }))
+      )
       const outputs = await parseRouterResponse(
         contract,
         Response.json(contract.output.schema?.example)
