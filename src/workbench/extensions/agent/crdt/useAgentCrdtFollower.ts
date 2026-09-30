@@ -511,9 +511,16 @@ function startAgentCrdtFollower(
   const reseedTarget = (detail: {
     workflowId?: unknown
     code?: unknown
+    expectedSeq?: unknown
   }): string | null => {
     const target = subscribedWorkflowId.value
     if (detail.code !== STALE_SCHEMA_RESEED_REQUIRED || target === null)
+      return null
+    if (
+      typeof detail.expectedSeq !== 'number' ||
+      !Number.isSafeInteger(detail.expectedSeq) ||
+      detail.expectedSeq <= 0
+    )
       return null
     if (detail.workflowId !== undefined && detail.workflowId !== target)
       return null
@@ -567,6 +574,7 @@ function startAgentCrdtFollower(
       ok?: unknown
       code?: unknown
       message?: unknown
+      expectedSeq?: unknown
     } | null
     const ok = detail?.ok === true
     connected.value = ok
