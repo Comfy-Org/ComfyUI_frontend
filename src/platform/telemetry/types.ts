@@ -17,6 +17,10 @@ import {
   SESSION_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
 import type {
+  BillingDeclineReason,
+  BillingPresentation
+} from '@comfyorg/account-core/billing'
+import type {
   AgentRunMode,
   CreateTopupResponse,
   SubscribeResponse
@@ -685,6 +689,8 @@ export type AgentConsentOfferExit =
   | 'offer_in_flight'
   /** The card has already been on screen for this scope this page load. */
   | 'card_already_seen'
+  /** Panel activation owns consent timing, so the automatic offer is dropped. */
+  | 'activation_opened_panel'
   /** The one-shot auto-show key for this scope is already burned. */
   | 'already_offered'
   /** The first-run startup probe rejected. */
@@ -861,6 +867,53 @@ export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
  * then reworded stays `suggestion`, because the chip is still what it came from.
  */
 export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
+/**
+ * A starter prompt by the slot it occupies in the empty state, not by the text
+ * it shows: the copy is owned elsewhere and changes without the funnel
+ * changing. `unregistered` means the rendered set is larger than this union —
+ * a prompt was appended to either English distribution list without a matching
+ * entry in `starterPrompts.ts`, so that extra chip reads as an unmapped slot.
+ */
+export type AgentStarterPromptId =
+  | 'slot_1'
+  | 'slot_2'
+  | 'slot_3'
+  | 'slot_4'
+  | 'slot_5'
+  | 'unregistered'
+export interface AgentStarterPromptClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  prompt_id: AgentStarterPromptId
+  /** Slot position, so a reorder is visible rather than silently re-labelling. */
+  prompt_index: number
+  /** Size of the rendered set, so a set that grew or shrank is visible too. */
+  prompt_count: number
+  /**
+   * FNV-1a of the *displayed* text, 8 hex chars. Here so a copy change under a
+   * stable `prompt_id` is detectable — without it, a before/after read cannot
+   * tell a better slot from a rewritten one. Not the text itself (job `Don't`
+   * #3), and not reversible.
+   */
+  prompt_text_hash: string
+  /** The i18n locale that produced `prompt_text_hash`; two locales are two hashes of one prompt. */
+  locale: string
+  /**
+   * Minted per click. Carried onto every `app:agent_message_sent` attempt
+   * attributable to this click as `starter_prompt_click_id`. Retries mint a
+   * new `client_message_id` but retain this id, so click conversion must count
+   * distinct `starter_prompt_click_id` values rather than send events. A click
+   * with no matching send attempt never converted.
+   */
+  click_id: string
+  /**
+   * Whether the composer was empty when the chip was clicked. Inserting
+   * appends, so `false` means the submitted text is a mix of this prompt and
+   * something else — do not read those as a clean per-prompt outcome.
+   */
+  draft_was_empty: boolean
+}
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
@@ -881,6 +934,15 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
    */
   client_message_id: string
   input_method: AgentInputMethod
+  /**
+   * Which starter prompt supplied this draft, `null` when none did. The last
+   * chip clicked before the send wins, because inserting appends and the send
+   * is one message. Starter-prompt suggestions always carry a non-null ID and
+   * use `input_method: 'suggestion'`.
+   */
+  starter_prompt_id: AgentStarterPromptId | null
+  /** `click_id` of the `app:agent_starter_prompt_clicked` this send came from, `null` when typed. */
+  starter_prompt_click_id: string | null
 }
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
@@ -935,6 +997,23 @@ export type AgentThreadStartSource =
   | 'history_delete'
 export interface AgentThreadStartedMetadata extends Record<string, unknown> {
   source: AgentThreadStartSource
+}
+
+export type AgentErrorClass =
+  | 'request_failed'
+  | 'malformed_stream_event'
+  | 'cancel_failed'
+  | 'history_load_failed'
+  | 'ask_answer_failed'
+  | 'thread_list_load_failed'
+  | 'workflow_open_failed'
+export interface AgentErrorMetadata extends Record<string, unknown> {
+  error_class: AgentErrorClass
+  failure_stage: 'pre_acceptance' | 'post_acceptance'
+  retryable: boolean
+  turn_accepted: boolean
+  /** `none` is a failure the user was never shown. */
+  ui_treatment: 'inline_notice' | 'error_overlay' | 'toast' | 'none'
 }
 
 /**
@@ -1083,14 +1162,33 @@ export type AgentPaywallReason =
   | 'sales_managed'
   | 'unknown'
 
+/**
+ * Which moment put the paywall in front of the user. The two are not
+ * interchangeable and collapsing them made the funnel unreadable:
+ *
+ * - `refused_send` is reactive — a turn POST came back 402/`no_funds`, so the
+ *   user had to compose and send a message to discover they could not.
+ * - `credits_exhausted` is standing — the client already knows the workspace
+ *   has no funds and says so beside the composer, without a refusal first.
+ *
+ * Reported because `app:agent_paywall_shown` alone cannot tell a rise in
+ * impressions caused by the standing surface from one caused by more users
+ * being refused. Without the split, "the paywall is showing more" is
+ * ambiguous between the fix working and the product getting worse.
+ */
+export type AgentPaywallSurface = 'refused_send' | 'credits_exhausted'
+
 export interface AgentPaywallShownMetadata {
   reason: AgentPaywallReason
+  surface: AgentPaywallSurface
 }
 
 export type AgentPaywallCta = 'subscribe' | 'add_credits' | 'upgrade'
 
 export interface AgentPaywallCtaMetadata {
   cta: AgentPaywallCta
+  /** The surface whose impression this click follows. */
+  surface: AgentPaywallSurface
 }
 
 export interface SubscriptionCancellationMetadata {
@@ -1162,6 +1260,7 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   operation?: 'resubscribe'
   /** The click-time source, carried through so the terminal event can report it. */
   resubscribe_source?: ResubscribeClickMetadata['source']
+  recovery_outcome?: 'late_success'
 }
 
 export interface WorkspaceInviteMetadata extends Record<string, unknown> {
@@ -1228,6 +1327,10 @@ type BillingSucceeded = {
   outcome: 'success'
 }
 
+type BillingRecoveredSucceeded = BillingSucceeded & {
+  recovery_outcome?: 'late_success'
+}
+
 type BillingFailed = BillingFailure & {
   stage: 'failed'
   outcome: 'failure'
@@ -1239,9 +1342,16 @@ type BillingTimedOut = {
   failure_category: 'poll_timeout'
 }
 
+/** The stage one attempt at a billing operation settled on. */
+export type BillingOperationTerminal =
+  | BillingSucceeded
+  | (BillingFailed & { decline_reason?: BillingDeclineReason })
+  | BillingTimedOut
+
 type SubscriptionCheckoutBillingEvent = {
   operation: 'subscription_checkout'
   billing_op_id?: string
+  checkout_attempt_id?: string
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
@@ -1256,8 +1366,9 @@ type SubscriptionCheckoutBillingEvent = {
   | BillingCheckoutReceived<SubscribeResponse['status']>
   | BillingRequestSent
   | BillingStarted
-  | BillingSucceeded
+  | BillingRecoveredSucceeded
   | BillingFailed
+  | BillingTimedOut
 )
 
 type BillingOperationBillingEvent = {
@@ -1265,6 +1376,10 @@ type BillingOperationBillingEvent = {
   /** Absent when the initiating call itself failed, before the backend returned one to poll. */
   billing_op_id?: string
   operation_type: 'subscription' | 'topup' | 'cancel'
+  /** Set by the billing SDK rail, as is `resumed`; the poller never sets either. */
+  presentation?: BillingPresentation
+  /** True when this tab reattached to an operation it did not issue. */
+  resumed?: boolean
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
@@ -1277,13 +1392,14 @@ type BillingOperationBillingEvent = {
    * true duration.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed | BillingTimedOut)
+} & (BillingStarted | BillingOperationTerminal)
 
 type ResubscribeBillingEvent = {
   operation: 'resubscribe'
   source: ResubscribeClickMetadata['source']
+  checkout_attempt_id?: string
   payment_intent_source?: PaymentIntentSource
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (BillingStarted | BillingRecoveredSucceeded | BillingFailed)
 
 type TopupBillingEvent = {
   operation: 'topup'
@@ -1347,47 +1463,68 @@ export function getBillingTelemetryEventName(
   return `billing.${event.operation}.${event.stage}` as BillingTelemetryEventName
 }
 
+type BillingTelemetryPayload = Record<string, unknown>
+
+type KeysOfUnion<T> = T extends unknown ? keyof T : never
+
+type BillingPayloadField = Exclude<
+  KeysOfUnion<BillingTelemetryEvent>,
+  'operation' | 'stage' | 'outcome'
+>
+
+const BILLING_PAYLOAD_FIELD_HANDLING = {
+  checkout_status: 'required',
+  failure_category: 'required',
+  member_removal_count: 'required',
+  member_removal_failures: 'required',
+  operation_type: 'required',
+  source: 'required',
+  billing_op_id: 'optional',
+  checkout_attempt_id: 'optional',
+  checkout_type: 'optional',
+  cycle: 'optional',
+  decline_reason: 'optional',
+  duration_ms: 'optional',
+  error_code: 'optional',
+  payment_intent_source: 'optional',
+  presentation: 'optional',
+  recovery_outcome: 'optional',
+  resumed: 'optional',
+  target_tier: 'optional',
+  tier: 'optional'
+} as const satisfies Record<BillingPayloadField, 'optional' | 'required'>
+
+const OPTIONAL_BILLING_PAYLOAD_FIELDS = Object.entries(
+  BILLING_PAYLOAD_FIELD_HANDLING
+).flatMap(([field, handling]) => (handling === 'optional' ? [field] : []))
+
+const REQUIRED_BILLING_PAYLOAD_FIELDS = Object.entries(
+  BILLING_PAYLOAD_FIELD_HANDLING
+).flatMap(([field, handling]) => (handling === 'required' ? [field] : []))
+
+const optionalBillingPayloadFields: ReadonlySet<string> = new Set(
+  OPTIONAL_BILLING_PAYLOAD_FIELDS
+)
+const requiredBillingPayloadFields: ReadonlySet<string> = new Set(
+  REQUIRED_BILLING_PAYLOAD_FIELDS
+)
+
 export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
-  return {
+  const payload: BillingTelemetryPayload = {
     operation: event.operation,
     stage: event.stage,
-    outcome: event.outcome,
-    ...('billing_op_id' in event &&
-      event.billing_op_id !== undefined && {
-        billing_op_id: event.billing_op_id
-      }),
-    ...('checkout_status' in event && {
-      checkout_status: event.checkout_status
-    }),
-    ...('operation_type' in event && {
-      operation_type: event.operation_type
-    }),
-    ...('tier' in event && event.tier !== undefined && { tier: event.tier }),
-    ...('cycle' in event &&
-      event.cycle !== undefined && { cycle: event.cycle }),
-    ...('checkout_type' in event &&
-      event.checkout_type !== undefined && {
-        checkout_type: event.checkout_type
-      }),
-    ...('payment_intent_source' in event &&
-      event.payment_intent_source !== undefined && {
-        payment_intent_source: event.payment_intent_source
-      }),
-    ...('source' in event && { source: event.source }),
-    ...('failure_category' in event && {
-      failure_category: event.failure_category
-    }),
-    ...('error_code' in event &&
-      event.error_code !== undefined && { error_code: event.error_code }),
-    ...('member_removal_count' in event && {
-      member_removal_count: event.member_removal_count,
-      member_removal_failures: event.member_removal_failures
-    }),
-    ...('target_tier' in event &&
-      event.target_tier !== undefined && { target_tier: event.target_tier }),
-    ...('duration_ms' in event &&
-      event.duration_ms !== undefined && { duration_ms: event.duration_ms })
+    outcome: event.outcome
   }
+
+  for (const [field, value] of Object.entries(event)) {
+    if (requiredBillingPayloadFields.has(field)) {
+      payload[field] = value
+    } else if (optionalBillingPayloadFields.has(field) && value !== undefined) {
+      payload[field] = value
+    }
+  }
+
+  return payload
 }
 
 /**
@@ -1701,11 +1838,15 @@ export interface TelemetryProvider {
   trackAgentOnboardingShown?(): void
   trackAgentOnboardingStep?(metadata: AgentOnboardingStepMetadata): void
   trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
+  trackAgentStarterPromptClicked?(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
   ): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
   trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
   trackAgentRunApprovalShown?(metadata: AgentRunApprovalShownMetadata): void
@@ -1802,6 +1943,8 @@ export const TelemetryEvents = {
   BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
     'billing.subscription_checkout.succeeded',
   BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
+  BILLING_SUBSCRIPTION_CHECKOUT_TIMEOUT:
+    'billing.subscription_checkout.timeout',
   BILLING_OPERATION_STARTED: 'billing.operation.started',
   BILLING_CAPABILITY_READ_SUCCEEDED: 'billing.capability_read.succeeded',
   BILLING_CAPABILITY_READ_FAILED: 'billing.capability_read.failed',
@@ -1901,9 +2044,11 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_SHOWN: 'app:agent_onboarding_shown',
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
+  AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_ERROR: 'app:agent_error',
   AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
   AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
   AGENT_RUN_APPROVAL_SHOWN: 'app:agent_run_approval_shown',

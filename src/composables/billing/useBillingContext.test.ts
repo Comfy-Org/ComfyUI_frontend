@@ -18,6 +18,8 @@ import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import { launchCancellationFlow } from '@/platform/cloud/subscription/launchCancellationFlow'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
@@ -218,8 +220,37 @@ describe('useBillingContext', () => {
       renewalDate: '2025-01-01T00:00:00Z',
       endDate: null,
       isCancelled: false,
-      hasFunds: true
+      hasFunds: true,
+      agentHasFunds: true
     })
+  })
+
+  it('re-arms the exhaustion impression after workspace-scoped Agent funds recover while the dock is closed', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    mockBillingRail.value = 'stripe'
+    mockBillingStatus.value = {
+      ...DEFAULT_BILLING_STATUS,
+      has_funds: false,
+      scoped_effective_has_funds: { agent: false }
+    }
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const billing = scope.run(useSharedBillingContext)
+    assert.exists(billing)
+    const dock = scope.run(useAgentDockMount)
+    assert.exists(dock)
+    const agentPanelStore = useAgentPanelStore()
+    agentPanelStore.isOpen = false
+    agentPanelStore.reportedExhaustionIdentity = 'account-a:workspace-a'
+
+    await billing.fetchStatus()
+    expect(dock.docked.value).toBe(false)
+
+    mockBillingStatus.value.scoped_effective_has_funds = { agent: true }
+    await billing.fetchStatus()
+    await nextTick()
+
+    expect(agentPanelStore.reportedExhaustionIdentity).toBeNull()
   })
 
   describe('canRunWorkflows', () => {
@@ -299,6 +330,21 @@ describe('useBillingContext', () => {
     })
   })
 
+  it('forwards the renewal invoice from workspace billing', async () => {
+    const invoice = {
+      hosted_invoice_url: 'https://invoice.stripe.com/i/test',
+      amount_due: 5000,
+      currency: 'usd'
+    }
+    mockBillingRail.value = 'stripe'
+    mockBillingStatus.value.renewal_invoice = invoice
+
+    const context = useBillingContext()
+    await context.initialize()
+
+    expect(context.renewalInvoice.value).toStrictEqual(invoice)
+  })
+
   it('provides balance info from legacy billing', () => {
     mockBillingRail.value = 'legacy_stripe'
     const { balance } = useBillingContext()
@@ -369,6 +415,7 @@ describe('useBillingContext', () => {
     await scope.run(() => launchCancellationFlow({ showFallback }))
 
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'billing',
       errorType: 'error_refreshing_billing_after_churnkey_discount'
     })
     expect(useSubscription().fetchStatus).not.toHaveBeenCalled()

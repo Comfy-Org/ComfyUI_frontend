@@ -34,6 +34,7 @@ const { model, values } = defineProps<{
   model: WorkflowWorkshopModelDetail
   values: FormValues
 }>()
+const emit = defineEmits<{ copy: [language: SnippetLanguage]; getKey: [] }>()
 const { session } = useWorkshopSession()
 const keyHref = computed(() =>
   workspaceLinkedHref(
@@ -91,40 +92,31 @@ const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
   urlUploadField(field)
 )
 const endpoint = `${WORKSHOP_CLOUD_BASE_URL}/api/prompt`
-const sdkFacts = {
-  python: {
-    key: 'Comfy(api_key=…) + run(workflow, api_key=…)',
-    files: 'client.assets.from_url(url)'
-  },
-  typescript: {
-    key: 'new Comfy({ apiKey }) + run(workflow, { apiKey })',
-    files: 'client.assets.fromUrl(url)'
-  }
-} as const
 const facts = computed(() => {
-  const current = language.value
-  const sdk = current === 'curl' ? undefined : sdkFacts[current]
+  const sdk = language.value !== 'curl'
   return [
-    ...(sdk === undefined
-      ? [
+    ...(sdk
+      ? []
+      : [
           {
             label: t('workshop.api.needsEndpoint'),
             value: `POST ${endpoint}`,
-            mono: true
+            mono: true,
+            copyLabel: t('workshop.api.copyEndpoint')
           }
-        ]
-      : []),
+        ]),
     {
       label: t('workshop.api.needsKey'),
-      value: sdk?.key ?? 'X-API-Key + extra_data.api_key_comfy_org',
+      value: sdk ? 'COMFY_API_KEY' : 'X-API-Key + extra_data.api_key_comfy_org',
       mono: true
     },
     ...(hasMedia
       ? [
           {
             label: t('workshop.api.needsFiles'),
-            value: sdk?.files ?? t('workshop.api.filesUploaded'),
-            mono: Boolean(sdk)
+            value: sdk
+              ? t('workshop.api.filesSdk')
+              : t('workshop.api.filesUploaded')
           }
         ]
       : [])
@@ -150,6 +142,7 @@ const facts = computed(() => {
           rel="noopener"
           class="w-full justify-between"
           data-testid="api-get-key"
+          @click="emit('getKey')"
         >
           <template #prepend>
             <span
@@ -226,6 +219,7 @@ const facts = computed(() => {
               :value="code"
               :label="t('workshop.api.copy')"
               :copied-label="t('workshop.api.copied')"
+              @click="emit('copy', language)"
             />
           </div>
           <pre

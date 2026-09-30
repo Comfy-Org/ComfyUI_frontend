@@ -17,6 +17,7 @@ import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { groupModels } from '../../config/model-family'
+import { SHELF_CARD } from '../../lib/workshop/card-layout'
 import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
 import CardRow from './CardRow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
@@ -48,9 +49,6 @@ const titleClass =
 // heading, which opens the shelf for anyone who wants it on its own.
 const seeAllClass =
   'group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3'
-
-const cardClass =
-  'w-60 shrink-0 snap-start sm:w-[calc((100cqw-2*1.25rem)/2.5)] md:w-[calc((100cqw-3*1.25rem)/3.5)] lg:w-[calc((100cqw-4*1.25rem)/4.5)] xl:w-[calc((100cqw-5*1.25rem)/5.5)]'
 
 const sections = computed(() =>
   USE_CASES.filter((useCase) => !GROUPED.includes(useCase))
@@ -89,7 +87,7 @@ function rememberModel(
   model: WorkshopModel,
   event: MouseEvent
 ) {
-  rememberShelfOnClick(shelf, model.href, event)
+  if (model.href) rememberShelfOnClick(shelf, model.href, event)
 }
 </script>
 
@@ -136,7 +134,7 @@ function rememberModel(
         <li
           v-for="family in section.shown"
           :key="family.key"
-          :class="cardClass"
+          :class="SHELF_CARD"
         >
           <WorkshopModelCard
             :model="family.latest"
@@ -191,7 +189,7 @@ function rememberModel(
         <li
           v-for="family in otherFormats.slice(0, ROW_LIMIT)"
           :key="family.key"
-          :class="cardClass"
+          :class="SHELF_CARD"
         >
           <WorkshopModelCard
             :model="family.latest"

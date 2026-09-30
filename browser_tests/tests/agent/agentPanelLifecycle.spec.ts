@@ -105,6 +105,105 @@ test.describe(
       await expect(openButton).toBeVisible()
     })
 
+    test.describe('opening from a user-closed panel', () => {
+      test.beforeEach(async ({ page }) => {
+        await bootAgentApp(page, true)
+        const agentPanel = new AgentPanel(page)
+        await expect(agentPanel.root).toBeVisible({ timeout: 8_000 })
+        await agentPanel.root
+          .getByRole('button', { name: enMessages.g.close })
+          .click()
+        await expect(agentPanel.root).toHaveCount(0)
+      })
+
+      test('waits for a delayed open without clicking again', async ({
+        page
+      }) => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.openButton.evaluate((button: HTMLElement) => {
+          button.dataset.testClickCount = '0'
+          button.addEventListener(
+            'click',
+            () => {
+              button.dataset.testClickCount = String(
+                Number(button.dataset.testClickCount) + 1
+              )
+            },
+            true
+          )
+
+          let delayed = false
+          const delayOpen = (event: Event) => {
+            event.stopImmediatePropagation()
+            if (delayed) return
+            delayed = true
+            window.setTimeout(() => {
+              button.removeEventListener('click', delayOpen, true)
+              button.click()
+            }, 1_500)
+          }
+          button.addEventListener('click', delayOpen, true)
+        })
+
+        await agentPanel.open(3_000)
+
+        await expect(agentPanel.openButton).toHaveAttribute(
+          'data-test-click-count',
+          '2'
+        )
+      })
+
+      test('rejects with the caller timeout while an open stays pending', async ({
+        page
+      }) => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.openButton.evaluate((button) => {
+          button.addEventListener(
+            'click',
+            (event) => event.stopImmediatePropagation(),
+            true
+          )
+        })
+
+        await expect(agentPanel.open(250)).rejects.toThrow('250ms')
+      })
+
+      test('drops its click when activation opens the panel just before it lands', async ({
+        page
+      }) => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.openButton.evaluate((button: HTMLElement) => {
+          button.dataset.testClickCount = '0'
+          button.dataset.testActivationClickCount = '0'
+          button.addEventListener('click', (event) => {
+            button.dataset.testClickCount = String(
+              Number(button.dataset.testClickCount) + 1
+            )
+            if (!event.isTrusted) {
+              button.dataset.testActivationClickCount = String(
+                Number(button.dataset.testActivationClickCount) + 1
+              )
+            }
+          })
+          button.addEventListener('pointerdown', () => button.click(), {
+            capture: true,
+            once: true
+          })
+        })
+
+        await agentPanel.open()
+
+        await expect(agentPanel.openButton).toHaveAttribute(
+          'data-test-click-count',
+          '1'
+        )
+        await expect(agentPanel.openButton).toHaveAttribute(
+          'data-test-activation-click-count',
+          '1'
+        )
+      })
+    })
+
     test('keeps the dock within the viewport and its documented width cap', async ({
       page
     }) => {

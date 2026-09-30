@@ -1,15 +1,12 @@
 import type { Pack } from '../data/cloudNodes'
 
+import { isProductionBuild } from '../config/build-env'
 import { fetchCloudNodesForBuild } from './cloudNodes'
 import { reportCloudNodesOutcome } from './cloudNodes.ci'
 
 const REFRESH_HINT =
   'Run `pnpm --filter @comfyorg/website cloud-nodes:refresh-snapshot` locally and commit the snapshot, ' +
   'or re-run the `Release: Website` workflow with a valid WEBSITE_CLOUD_API_KEY.'
-
-function isProductionBuild(): boolean {
-  return process.env.VERCEL_ENV === 'production'
-}
 
 /**
  * Resolve the list of packs to render at build time.

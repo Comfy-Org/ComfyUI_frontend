@@ -37,6 +37,7 @@ import type {
   SettledSubscribeResponse,
   SubscriptionRailOutcome
 } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { SettledOperationError } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
@@ -52,6 +53,20 @@ import type {
   BillingState,
   SubscriptionInfo
 } from '../../../composables/billing/types'
+
+export class CancellationScopeChangedError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'CancellationScopeChangedError'
+  }
+}
+
+function assertCancellationScopeCurrent(isScopeCurrent: () => boolean): void {
+  if (isScopeCurrent()) return
+  throw new CancellationScopeChangedError(
+    t('subscription.cancelDialog.workspaceChanged')
+  )
+}
 
 /**
  * Which client path resumes a recovered operation. Exhaustive on purpose: the
@@ -80,7 +95,10 @@ function resumeModeFor(
         new Error(
           `Unknown pending billing op type: ${JSON.stringify(unexpected)}`
         ),
-        { errorType: 'billing_unknown_resume_mode' }
+        {
+          surface: 'workspace',
+          errorType: 'billing_unknown_resume_mode'
+        }
       )
       // Reachable only against a newer server. Dropping recovery strands a
       // customer who cannot reach the payment page; a wrong panel clears on
@@ -216,7 +234,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
       isCancelled: status.subscription_status === 'canceled',
-      hasFunds: status.has_funds
+      hasFunds: status.has_funds,
+      agentHasFunds:
+        status.scoped_effective_has_funds?.agent ?? status.has_funds
     }
   })
 
@@ -240,6 +260,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   )
   const tier = computed(() => statusData.value?.subscription_tier ?? null)
   const renewalDate = computed(() => statusData.value?.renewal_date ?? null)
+  const renewalInvoice = computed(
+    () => statusData.value?.renewal_invoice ?? null
+  )
 
   const plans = computed(() => billingPlans.plans.value)
   const currentPlanSlug = computed(
@@ -315,7 +338,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     void billingOperationStore.startOperation(
       status.pending_billing_op_id,
       resumeModeFor(status.pending_billing_op_type),
-      undefined,
+      { resumed: true },
       status.action_url
     )
     return true
@@ -442,7 +465,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     const rail = useSubscriptionRail()
     if (rail) {
       const response = await onSubscriptionRail(() =>
-        rail.subscribe(subscribeInputFrom(planSlug, options))
+        rail.subscribe(subscribeInputFrom(planSlug, options), {
+          callerStarted: options?.attemptStartedAt !== undefined
+        })
       )
       // The SDK waited for the operation, so the refresh the legacy path fires
       // and forgets has already run on the rail.
@@ -591,7 +616,10 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     }
   }
 
-  async function cancelSubscription(): Promise<void> {
+  async function cancelSubscription(
+    isScopeCurrent: () => boolean = () => true
+  ): Promise<void> {
+    assertCancellationScopeCurrent(isScopeCurrent)
     const attemptStartedAt = Date.now()
     const trackCancelSucceeded = () =>
       telemetry?.trackBillingEvent({
@@ -623,14 +651,16 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       const settled = await onSubscriptionRail(() =>
         rail.cancelSubscription()
       ).catch((err: unknown) => {
-        trackCancelFailed(err)
+        if (!(err instanceof SettledOperationError)) trackCancelFailed(err)
         throw err
       })
       if (settled !== DECLINED) {
-        trackCancelSucceeded()
+        if (!settled.operationObserved) trackCancelSucceeded()
         return
       }
     }
+
+    assertCancellationScopeCurrent(isScopeCurrent)
 
     isLoading.value = true
     error.value = null
@@ -782,6 +812,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     subscriptionStatus,
     tier,
     renewalDate,
+    renewalInvoice,
     readAndAdoptPendingOperation,
 
     // Actions

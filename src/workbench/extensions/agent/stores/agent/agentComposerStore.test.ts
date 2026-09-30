@@ -170,6 +170,92 @@ describe('composer prompt origin (PM-1474 F11)', () => {
     expect(store.promptOrigin).toBe('suggestion')
   })
 
+  it('carries the clicked chip beside the origin, and drops it at the same moment', () => {
+    const store = useAgentComposerStore()
+    expect(store.starterPrompt).toBeNull()
+    store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
+    expect(store.starterPrompt).toEqual({
+      id: 'slot_3',
+      clickId: 'click-1'
+    })
+
+    // A reword is still that chip's message.
+    store.setText('find me an upscaler, but for hands')
+    expect(store.starterPrompt).toEqual({
+      id: 'slot_3',
+      clickId: 'click-1'
+    })
+
+    store.startSubmission({
+      prompt: store.prompt,
+      attachments: [],
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+
+    expect(store.promptOrigin).toBe('typed')
+    expect(store.starterPrompt).toBeNull()
+  })
+
+  it('drops click attribution when an editor update fully removes the prompt', () => {
+    const store = useAgentComposerStore()
+    store.setText('Find an upscaling workflow')
+    store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
+
+    store.applyEditorPrompt({ text: '', references: [] })
+
+    expect(store.promptOrigin).toBe('typed')
+    expect(store.starterPrompt).toBeNull()
+  })
+
+  it('keeps click attribution when an editor update rewords the prompt', () => {
+    const store = useAgentComposerStore()
+    store.setText('Find an upscaling workflow')
+    store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
+
+    store.applyEditorPrompt({
+      text: 'Find an upscaling workflow for portraits',
+      references: []
+    })
+
+    expect(store.promptOrigin).toBe('suggestion')
+    expect(store.starterPrompt).toEqual({
+      id: 'slot_3',
+      clickId: 'click-1'
+    })
+  })
+
+  it('gives the chip back with the origin when a failed send returns the draft', () => {
+    const store = useAgentComposerStore()
+    store.setText('Find the best workflow for skin upscaling')
+    store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
+    const id = store.startSubmission({
+      prompt: store.prompt,
+      attachments: [],
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+    store.settleSubmission(id, false)
+
+    expect(store.takeFailedSubmission()).toBeDefined()
+
+    expect(store.promptOrigin).toBe('suggestion')
+    expect(store.starterPrompt).toEqual({
+      id: 'slot_3',
+      clickId: 'click-1'
+    })
+  })
+
+  it('drops the chip when the prompt is reopened through the edit action instead', () => {
+    const store = useAgentComposerStore()
+    store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
+
+    store.replacePrompt({ text: 'the earlier prompt', workflowReferences: [] })
+
+    expect(store.promptOrigin).toBe('edited')
+    expect(store.starterPrompt).toBeNull()
+  })
+
   it('leaves the origin alone when the failed draft is too stale to restore', () => {
     const store = useAgentComposerStore()
     store.markSuggestedPrompt()

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
@@ -102,6 +103,40 @@ describe('Agent target tracking policy', () => {
     expect(panel.followsVisibleWorkflow).toBe(false)
     panel.startFollowingVisibleWorkflow()
     expect(panel.selectedWorkflow?.path).toBe(other.path)
+  })
+
+  it.for([
+    {
+      event: 'choosing a workflow',
+      act: (
+        panel: ReturnType<typeof useAgentPanelStore>,
+        other: ComfyWorkflow
+      ) => panel.setWorkflowTarget(other),
+      selected: 'workflows/b.json'
+    },
+    {
+      event: 'starting a new chat',
+      act: (panel: ReturnType<typeof useAgentPanelStore>) =>
+        panel.startFollowingVisibleWorkflow(),
+      selected: 'workflows/a.json'
+    },
+    {
+      event: 'restoring another chat',
+      act: (panel: ReturnType<typeof useAgentPanelStore>) =>
+        panel.beginWorkflowRestoration(),
+      selected: undefined
+    }
+  ])('clears an unavailable target after $event', async ({ act, selected }) => {
+    const { workflows, panel, target, other } = await setup()
+    workflows.activeWorkflow = target
+    panel.markWorkflowTargetUnavailable()
+    expect(panel.targetUnavailable).toBe(true)
+    expect(panel.selectedWorkflow).toBeNull()
+
+    act(panel, other)
+
+    expect(panel.targetUnavailable).toBe(false)
+    expect(panel.selectedWorkflow?.path).toBe(selected)
   })
 
   it('separates history restoration from an explicitly cleared target', async () => {

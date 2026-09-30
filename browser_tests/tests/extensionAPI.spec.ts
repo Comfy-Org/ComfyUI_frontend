@@ -158,8 +158,11 @@ test.describe('Topbar commands', () => {
 
     test.describe('Passing through attrs to setting components', () => {
       const testCases: Array<{
-        config: Pick<SettingParams, 'type' | 'defaultValue'> &
-          Partial<Omit<SettingParams, 'id' | 'type' | 'defaultValue'>>
+        config: {
+          type: Extract<SettingParams['type'], string>
+          defaultValue: string | number | boolean
+          options?: string[]
+        }
         selector: string
       }> = [
         {

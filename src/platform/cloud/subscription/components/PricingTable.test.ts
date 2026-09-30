@@ -9,6 +9,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useTelemetry } from '@/platform/telemetry'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -176,7 +177,8 @@ beforeEach(() => {
           renewalDate: null,
           endDate: null,
           isCancelled: false,
-          hasFunds: true
+          hasFunds: true,
+          agentHasFunds: true
         }
       : null
   )
@@ -196,6 +198,9 @@ describe('PricingTable', () => {
     mockSubscriptionTier.value = null
     mockSubscriptionDuration.value = 'MONTHLY'
     Object.assign(useAuthStore(), { userId: 'user-123' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-123'
+    })
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -292,6 +297,46 @@ describe('PricingTable', () => {
         checkout_type: 'change',
         previous_tier: 'standard',
         previous_cycle: 'monthly'
+      })
+    })
+
+    it('keeps the initiating account and workspace while the portal opens', async () => {
+      mockCanAccessSubscriptionFeatures.value = true
+      mockSubscriptionTier.value = 'STANDARD'
+      Object.assign(useAuthStore(), { userId: 'user-early' })
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-early'
+      })
+      const portalOpen = createDeferredPromise<boolean>()
+      vi.mocked(useAuthActions().accessBillingPortal).mockReturnValueOnce(
+        portalOpen.promise
+      )
+
+      renderComponent()
+      await flushPromises()
+
+      const creatorButton = screen
+        .getAllByRole('button')
+        .find((button) => button.textContent.includes('Creator'))
+      await userEvent.click(creatorButton!)
+      await flushPromises()
+
+      Object.assign(useAuthStore(), { userId: 'user-late' })
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-late'
+      })
+      portalOpen.resolve(true)
+      await flushPromises()
+
+      expect(
+        JSON.parse(
+          window.localStorage.getItem(
+            PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+          ) ?? '{}'
+        )
+      ).toMatchObject({
+        owner_id: 'user-early',
+        workspace_id: 'workspace-early'
       })
     })
 
@@ -439,7 +484,9 @@ describe('PricingTable', () => {
         cycle: 'yearly',
         checkout_type: 'new',
         payment_intent_source: undefined,
-        failure_category: 'api_rejected'
+        checkout_attempt_id: expect.any(String),
+        failure_category: 'api_rejected',
+        duration_ms: expect.any(Number)
       })
       expect(useAuthActions().reportError).toHaveBeenCalled()
     })

@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -248,6 +248,47 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       failure_category: 'network'
     })
   })
+
+  it.for([
+    {
+      name: 'a checkout that opens stays pending',
+      purchase: () => Promise.resolve(),
+      expectedEvents: [
+        [{ operation: 'topup', stage: 'started', outcome: 'pending' }]
+      ]
+    },
+    {
+      name: 'a rejected purchase closes as failed',
+      purchase: () => Promise.reject(new Error('declined')),
+      expectedEvents: [
+        [{ operation: 'topup', stage: 'started', outcome: 'pending' }],
+        [
+          {
+            operation: 'topup',
+            stage: 'failed',
+            outcome: 'failure',
+            failure_category: 'unknown'
+          }
+        ]
+      ]
+    }
+  ])(
+    'opens every purchase attempt with one started event: $name',
+    async ({ purchase, expectedEvents }) => {
+      vi.mocked(useAuthActions().purchaseCreditsDirect).mockImplementation(
+        purchase
+      )
+
+      renderDialog()
+      await clickBuyCredits()
+
+      const telemetry = useTelemetry()
+      assert.exists(telemetry)
+      expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual(
+        expectedEvents
+      )
+    }
+  )
 
   it('uses the same bounded category when the rejection is not an Error', async () => {
     vi.mocked(useAuthActions().purchaseCreditsDirect).mockRejectedValue('boom')

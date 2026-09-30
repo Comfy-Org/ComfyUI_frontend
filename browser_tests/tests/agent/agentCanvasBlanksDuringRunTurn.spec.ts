@@ -4,7 +4,10 @@ import { expect } from '@playwright/test'
 import { createI18n } from 'vue-i18n'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { WorkflowListResponse } from '@comfyorg/ingest-types'
+import type {
+  DocResetFrame,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -240,8 +243,7 @@ async function driveThroughDocReset(
   await loadSeedIntoActiveTab(page, SEED)
 
   const panel = page.locator('#agent-panel-root')
-  await new AgentPanel(page).open()
-  await expect(panel).toBeVisible({ timeout: 30_000 })
+  await new AgentPanel(page).open(30_000)
 
   let savedName: string | undefined
   await page.route('**/api/userdata/*', (route) => {
@@ -357,9 +359,10 @@ async function driveThroughDocReset(
       v: 1,
       workflow_id: WORKFLOW_ID,
       seq: 2,
+      lineage_seq: 2,
       actor: 'system:mint'
     }
-  })
+  } satisfies DocResetFrame)
   host.apply([
     {
       op: 'add_node',

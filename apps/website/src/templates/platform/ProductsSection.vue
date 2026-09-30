@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
 import { brandButtonVariants } from '../../components/common/brandButton.variants'
-import Badge from '../../components/ui/badge/Badge.vue'
 import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BuilderVisual from './BuilderVisual.vue'
 import CodeTabs from './CodeTabs.vue'
 import { modelsApiCodeTabs } from './codeSamples'
-import ServerlessIsometricStudy from './ServerlessIsometricStudy.vue'
+import ServerlessJsonApiGpuAnimation from './ServerlessJsonApiGpuAnimation.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -42,9 +41,6 @@ const modelsTabs = modelsApiCodeTabs
             :show-connector="false"
             aria-hidden="true"
           />
-          <Badge variant="accent" size="xs">
-            {{ t('nav.badgeBeta', locale) }}
-          </Badge>
         </h3>
         <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
           {{ t('platform.products.serverless.description', locale) }}
@@ -57,9 +53,10 @@ const modelsTabs = modelsApiCodeTabs
           </span>
         </div>
       </div>
-      <ServerlessIsometricStudy
+      <ServerlessJsonApiGpuAnimation
         class="pointer-events-none relative z-10"
         :locale
+        compact
       />
     </article>
 
@@ -82,8 +79,8 @@ const modelsTabs = modelsApiCodeTabs
           aria-hidden="true"
         >
           <ProductHeroBadge
-            :text="t('platform.products.models.title', locale).toUpperCase()"
-            :show-logo="false"
+            :text="t('platform.products.models.badgeLabel', locale)"
+            :show-connector="false"
             compact
           />
         </div>

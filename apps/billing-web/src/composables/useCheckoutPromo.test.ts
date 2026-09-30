@@ -24,7 +24,8 @@ describe('useCheckoutPromo', () => {
     const promo = useCheckoutPromo({
       prefill: { promotionCode: 'LAUNCH20' },
       live: () => true,
-      requote
+      requote,
+      memory: { recall: () => undefined, keep: () => {} }
     })
 
     const first = promo.apply()

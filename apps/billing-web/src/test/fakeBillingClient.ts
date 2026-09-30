@@ -59,6 +59,7 @@ export interface FakeBillingClientOptions {
   readonly recover?: BillingResult<BillingOperationState | undefined>
   /** Every capability is denied unless named here. */
   readonly capabilities?: Partial<BillingCapabilities>
+  readonly denials?: CapabilitiesSnapshot['denials']
   readonly status?: BillingStatusData
 }
 
@@ -117,6 +118,7 @@ export function createFakeBillingClient(
     },
     recover: recoverOutcome = { status: 'ok', value: undefined },
     capabilities: granted = {},
+    denials = {},
     status = {
       is_active: true,
       has_funds: true,
@@ -193,7 +195,7 @@ export function createFakeBillingClient(
       can_top_up: false,
       ...granted
     },
-    denials: {},
+    denials,
     rolloutDefaultsApplied: {
       can_downgrade_to_personal: false,
       can_subscribe_self_serve: false,

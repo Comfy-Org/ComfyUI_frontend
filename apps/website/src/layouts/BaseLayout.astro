@@ -8,7 +8,11 @@ import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
 import { getRoutes } from '../config/routes'
-import { isNoindexPathname } from '../config/indexing'
+import {
+  headIndexing,
+  isIndexableBuild,
+  isNoindexPathname
+} from '../config/indexing'
 import { isWorkshopInBuild } from '../config/workshop-release'
 import {
   hreflangAlternates,
@@ -24,7 +28,12 @@ import {
   evaluateBannerVisibility
 } from '../utils/banner'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
-import { buildPageGraph, pageContext } from '../utils/jsonLd'
+import {
+  DEFAULT_OG_IMAGE,
+  buildPageGraph,
+  pageContext,
+  webPageName
+} from '../utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
 import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
@@ -33,10 +42,14 @@ type PPFormulaFace =
 
 interface Props {
   title: string
+  pageName?: string
   description?: string
   keywords?: string[]
   ogImage?: string
+  ogImageAlt?: string
   noindex?: boolean
+  /** Set on a page that duplicates another address, e.g. an old model URL. */
+  canonicalPath?: string
   pageType?: WebPageType
   breadcrumbs?: Crumb[]
   mainEntityId?: string
@@ -49,10 +62,13 @@ interface Props {
 
 const {
   title,
+  pageName = webPageName(title),
   description = 'Comfy is the AI creation engine for visual professionals who demand control.',
   keywords,
-  ogImage = 'https://media.comfy.org/website/comfy.webp',
+  ogImage = DEFAULT_OG_IMAGE,
+  ogImageAlt = ogImage === DEFAULT_OG_IMAGE ? 'Comfy' : pageName,
   noindex = false,
+  canonicalPath,
   pageType,
   breadcrumbs,
   mainEntityId,
@@ -67,14 +83,18 @@ const keywordsContent =
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  canonicalPath ?? Astro.url.pathname,
   Astro.currentLocale
 )
 const canonicalURL = new URL(url)
 const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
-const alternates = shouldNoindex
-  ? []
-  : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
+const head = headIndexing({
+  pageNoindex: shouldNoindex,
+  indexableBuild: isIndexableBuild()
+})
+const alternates = head.emitAlternates
+  ? hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
+  : []
 const openGraphLocale = ogLocale(locale)
 const openGraphLocaleAlternates = ogLocaleAlternates(locale, alternates)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
@@ -95,13 +115,12 @@ const bannerVisible =
   !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
 
-const structuredData = shouldNoindex
-  ? undefined
-  : buildPageGraph(
+const structuredData = head.emitStructuredData
+  ? buildPageGraph(
       { siteUrl, locale },
       {
         url,
-        name: title,
+        name: pageName,
         description,
         imageUrl: ogImageURL.href,
         type: pageType,
@@ -110,19 +129,23 @@ const structuredData = shouldNoindex
       },
       ...(extraJsonLd ?? [])
     )
+  : undefined
 ---
 
 <!doctype html>
 {/* <html> must stay overflow: visible — body's overflow (incl. reka-ui's
      dialog scroll lock) only propagates to the viewport when the root is
      visible. The horizontal clip lives on <body>. */}
-<html lang={locale}>
+<html
+  lang={locale}
+  data-banner-version={bannerVisible ? bannerVersion : undefined}
+>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     {keywordsContent && <meta name="keywords" content={keywordsContent} />}
-    {shouldNoindex && <meta name="robots" content="noindex, nofollow" />}
+    {head.robotsNoindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -130,7 +153,7 @@ const structuredData = shouldNoindex
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
-    <link rel="canonical" href={canonicalURL.href} />
+    {head.emitCanonical && <link rel="canonical" href={canonicalURL.href} />}
 
     <!-- Every PP Formula face that renders above the fold. `font-display:
          optional` drops a face that misses its short block period for the
@@ -181,7 +204,7 @@ const structuredData = shouldNoindex
         crossorigin
       />
     ))}
-    {!shouldNoindex && (
+    {head.emitMarkdownTwinLink && (
       <link
         rel="alternate"
         type="text/markdown"
@@ -207,8 +230,13 @@ const structuredData = shouldNoindex
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImageURL.href} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    {ogImage === DEFAULT_OG_IMAGE && (
+      <>
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+      </>
+    )}
+    <meta property="og:image:alt" content={ogImageAlt} />
     <meta property="og:url" content={canonicalURL.href} />
     <meta property="og:locale" content={openGraphLocale} />
     {openGraphLocaleAlternates.map((alternate) => (
@@ -218,10 +246,11 @@ const structuredData = shouldNoindex
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@comaboratory" />
+    <meta name="twitter:site" content="@ComfyUI" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageURL.href} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
 
     <!-- Structured Data -->
     {structuredData && <JsonLdGraph graph={structuredData} />}
@@ -298,7 +327,9 @@ const structuredData = shouldNoindex
     <main class="overflow-x-clip">
       <slot />
     </main>
-    {!minimal && <SiteFooter locale={locale} client:load />}
+    {!minimal && (
+      <SiteFooter locale={locale} client:visible={{ rootMargin: '200px' }} />
+    )}
 
     <Analytics />
 
@@ -307,6 +338,11 @@ const structuredData = shouldNoindex
       import { ScrollTrigger } from '../scripts/gsapSetup'
       import { initPostHog, capturePageview } from '../scripts/posthog'
       import { reifyMediaElements } from '../scripts/reifyMediaElements'
+      import {
+        BANNER_DISMISS_ATTR,
+        BANNER_STORAGE_KEY,
+        toClosedBanners
+      } from '../utils/banner'
 
       initSmoothScroll()
 
@@ -321,6 +357,19 @@ const structuredData = shouldNoindex
 
       document.addEventListener('astro:before-preparation', () => {
         cancelScroll()
+      })
+
+      document.addEventListener('astro:before-swap', ({ newDocument }) => {
+        try {
+          const closed = toClosedBanners(
+            JSON.parse(localStorage.getItem(BANNER_STORAGE_KEY) || '{}')
+          )
+          const version = newDocument.documentElement.dataset.bannerVersion
+          newDocument.documentElement.toggleAttribute(
+            BANNER_DISMISS_ATTR,
+            version !== undefined && closed[version] === true
+          )
+        } catch {}
       })
 
       // Synchronous, so it runs before island hydration touches the DOM.

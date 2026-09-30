@@ -5,10 +5,8 @@ import type { WorkshopModelDetail } from '../config/models-catalogue'
 import { fetchModelsPage } from '../config/models-page-data'
 import type { PreparedRouterRender } from '../config/router-render'
 import { router_render } from '../config/router-render'
-import {
-  refreshWorkshopCredits,
-  useWorkshopCredits
-} from '../config/workshop-credits'
+import { refreshWorkshopCredits } from '../config/workshop-credits'
+import { useWorkshopModelBalance } from '../config/workshop-model-balance'
 import { releaseRouterOutputs } from '../config/workshop-response'
 import {
   WorkshopRouterError,
@@ -135,15 +133,16 @@ function shotParameters(request: ShotRequest, model: WorkshopModelDetail) {
   }
 }
 
-function takeFailure(id: string, error: unknown): ReelEvent {
+function takeFailure(id: string, runSlug: string, error: unknown): ReelEvent {
   return error instanceof WorkshopRouterError
     ? {
         type: 'takeFailed',
         id,
         reason: error.reason,
-        requestId: error.requestId ?? undefined
+        requestId: error.requestId ?? undefined,
+        runSlug
       }
-    : { type: 'takeFailed', id, reason: 'client' }
+    : { type: 'takeFailed', id, reason: 'client', runSlug }
 }
 
 function mayStillSettle(error: unknown): boolean {
@@ -164,7 +163,7 @@ export function useCinematicStudioRun(
 ) {
   const { user, session, sessionFailure, settled, ensureFresh } =
     useWorkshopSession()
-  const { balance } = useWorkshopCredits()
+  const balance = useWorkshopModelBalance(session)
   const workshopEnabled = useWorkshopEnabled()
   const authEnabled = useWorkshopAuthFlag()
   const mounted = useMounted()
@@ -334,7 +333,7 @@ export function useCinematicStudioRun(
         return
       }
       if (!mayStillSettle(error)) unsettledTakes.delete(fingerprint)
-      dispatch(takeFailure(id, error))
+      dispatch(takeFailure(id, model.slug, error))
       captureWorkshopEvent({
         name: 'run_finished',
         properties: {

@@ -4,6 +4,7 @@ import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 import type { Attempt, CheckoutPage } from '@/checkout/checkoutPage'
 import type { PromoEntry, PromoEntryEvent } from '@/checkout/promoEntry'
 import {
+  hasUnappliedDraft,
   initialPromoEntry,
   promoEntryLive,
   promoRejectionOf,
@@ -36,6 +37,21 @@ describe('reducePromoEntry', () => {
       start: initialPromoEntry({ promotionCode: 'LAUNCH20' }),
       events: [],
       expected: editing('LAUNCH20')
+    },
+    {
+      name: 'a code this page applied before a reload comes back applied',
+      start: initialPromoEntry(undefined, 'LAUNCH20'),
+      events: [],
+      expected: applied('LAUNCH20')
+    },
+    {
+      name: 'a code this page applied outranks the link code, typed or unreadable',
+      start: initialPromoEntry(
+        { promotionCode: 'OTHER', unreadablePromotionCode: 'SAVE 20' },
+        'LAUNCH20'
+      ),
+      events: [],
+      expected: applied('LAUNCH20')
     },
     {
       name: 'no URL code starts collapsed',
@@ -171,6 +187,26 @@ describe('promoRejectionOf', () => {
     expect(promoRejectionOf({ status: 'error', code: 'REQUEST_FAILED' })).toBe(
       'unchecked'
     )
+  })
+})
+
+describe('hasUnappliedDraft', () => {
+  it.for<{ name: string; entry: PromoEntry; unapplied: boolean }>([
+    { name: 'a typed code', entry: editing('LAUNCH20'), unapplied: true },
+    { name: 'a blank field', entry: editing('  '), unapplied: false },
+    {
+      name: 'a code the server refused',
+      entry: rejected('NOPE'),
+      unapplied: false
+    },
+    {
+      name: 'a code the quote could not check',
+      entry: { kind: 'rejected', draft: 'LAUNCH20', reason: 'unchecked' },
+      unapplied: true
+    },
+    { name: 'an applied code', entry: applied('LAUNCH20'), unapplied: false }
+  ])('$name: $unapplied', ({ entry, unapplied }) => {
+    expect(hasUnappliedDraft(entry)).toBe(unapplied)
   })
 })
 

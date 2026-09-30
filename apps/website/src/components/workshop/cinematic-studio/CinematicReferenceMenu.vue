@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import {
-  Clapperboard,
-  Film,
-  Palette,
-  Plus,
-  SwatchBook,
-  UserRound,
-  X
-} from '@lucide/vue'
+import { Clapperboard, Film, Plus, UserRound, X } from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -29,35 +21,25 @@ import type { ReferenceKind } from './reference-kind'
 import { useImagePreview } from './useImagePreview'
 import { REFERENCE_SLOTS } from './reference-kind'
 
-const {
-  shown = ['cast', 'palette'],
-  colorCount = 0,
-  locale = 'en'
-} = defineProps<{
+const { shown = ['cast'], locale = 'en' } = defineProps<{
   /** The slots this shot can fill: references for a still, frames for a clip. */
   shown?: readonly ReferenceKind[]
-  /** Colours set in the Colors panel, which this menu opens. */
-  colorCount?: number
   locale?: Locale
 }>()
-const emit = defineEmits<{ colors: [] }>()
 
 const cast = defineModel<StudioImage | undefined>('cast')
-const palette = defineModel<StudioImage | undefined>('palette')
 const firstFrame = defineModel<StudioImage | undefined>('firstFrame')
 const lastFrame = defineModel<StudioImage | undefined>('lastFrame')
 const sourceVideo = defineModel<StudioImage | undefined>('sourceVideo')
-const files = { cast, palette, firstFrame, lastFrame, video: sourceVideo }
+const files = { cast, firstFrame, lastFrame, video: sourceVideo }
 const previews = {
   cast: useImagePreview(() => cast.value),
-  palette: useImagePreview(() => palette.value),
   firstFrame: useImagePreview(() => firstFrame.value),
   lastFrame: useImagePreview(() => lastFrame.value)
 }
 
 const ICONS: Readonly<Record<ReferenceKind, typeof Plus>> = {
   cast: UserRound,
-  palette: Palette,
   firstFrame: Clapperboard,
   lastFrame: Clapperboard,
   video: Film
@@ -72,11 +54,6 @@ const kinds = computed(() =>
     detail: files[kind].value?.name ?? tc(REFERENCE_SLOTS[kind].action, locale),
     preview: kind === 'video' ? undefined : previews[kind].value
   }))
-)
-const colorsDetail = computed(() =>
-  colorCount
-    ? `${colorCount} · ${tc('cinematic.colors.hint', locale)}`
-    : tc('cinematic.colors.hint', locale)
 )
 const attached = computed(() => kinds.value.filter((entry) => entry.file))
 const cover = computed(
@@ -180,22 +157,6 @@ const itemClass =
                 class="size-4 shrink-0 text-primary-warm-gray"
                 aria-hidden="true"
               />
-            </DropdownMenuItem>
-            <DropdownMenuItem :class="itemClass" @select="emit('colors')">
-              <span
-                class="grid size-7 shrink-0 place-items-center rounded-lg bg-transparency-white-t8"
-                aria-hidden="true"
-              >
-                <SwatchBook class="size-3.5" />
-              </span>
-              <span class="flex min-w-0 flex-1 flex-col">
-                <span class="text-content-bright">
-                  {{ tc('cinematic.colors.title', locale) }}
-                </span>
-                <span class="truncate text-xs text-primary-warm-gray">
-                  {{ colorsDetail }}
-                </span>
-              </span>
             </DropdownMenuItem>
             <template v-if="attached.length">
               <DropdownMenuSeparator

@@ -16,17 +16,12 @@ const keys = [
 
 describe('ReshootMoveControls', () => {
   it.for([true, false])(
-    'lets keys be removed or cleared only while not disabled: %s',
+    'lets keys be removed or jumped to only while not disabled: %s',
     (disabled) => {
       render(
         defineComponent({
           setup: () => () =>
-            h(ReshootMoveControls, {
-              keys,
-              disabled,
-              frame: 0,
-              motion: 'linear'
-            })
+            h(ReshootMoveControls, { keys, disabled, frame: 0 })
         })
       )
       const edits = [
@@ -37,9 +32,14 @@ describe('ReshootMoveControls', () => {
             })
           })
         ),
-        screen.getByRole('button', { name: rc('reshoot.move.clear') })
+        ...keys.map((key) =>
+          screen.getByRole('button', {
+            name: rc('reshoot.move.goTo', 'en', { time: frameTime(key.frame) })
+          })
+        )
       ]
 
+      expect(edits).toHaveLength(4)
       for (const edit of edits)
         expect(edit.hasAttribute('disabled')).toBe(disabled)
     }

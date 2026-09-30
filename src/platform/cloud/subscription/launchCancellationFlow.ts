@@ -1,52 +1,180 @@
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
+import type { ChurnkeySession } from '@/platform/cloud/churnkey/churnkeyClient'
 import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { CancellationScopeChangedError } from '@/platform/workspace/composables/useWorkspaceBilling'
+import type { DialogInstance } from '@/stores/dialogStore'
+import { getErrorMessage, toError } from '@/utils/errorUtil'
 
 interface CancellationFallbackOptions {
   flowAlreadyOpened?: boolean
+  isScopeCurrent?: () => boolean
+}
+
+type VendorFailure = {
+  stage: 'preparation' | 'session'
+  error: unknown
+}
+
+function fallbackReportedError(
+  fallbackError: unknown,
+  vendorFailure: VendorFailure | undefined
+): Error {
+  const fallback = toError(fallbackError)
+  if (!vendorFailure) return fallback
+
+  const reported = new Error(fallback.message, {
+    cause: toError(vendorFailure.error)
+  })
+  reported.name = fallback.name
+  reported.stack = fallback.stack
+  return reported
+}
+
+function reportFallbackFailure(
+  fallbackError: unknown,
+  vendorFailure: VendorFailure | undefined,
+  workspaceStillCurrent: boolean
+): void {
+  reportError(fallbackReportedError(fallbackError, vendorFailure), {
+    surface: 'billing',
+    errorType: 'cloud_cancellation_vendor_fallback',
+    tags: {
+      failure_kind: workspaceStillCurrent ? 'caught_unexpected' : 'degraded',
+      feature_area: 'billing',
+      operation: 'load',
+      outcome: workspaceStillCurrent ? 'failed' : 'aborted',
+      vendor_stage: vendorFailure?.stage ?? 'none',
+      vendor_preparation_failed: vendorFailure?.stage === 'preparation',
+      workspace_still_current: workspaceStillCurrent
+    },
+    level: workspaceStillCurrent ? 'error' : 'warning'
+  })
+  if (!workspaceStillCurrent) return
+  useToastStore().add({
+    severity: 'error',
+    summary: t('subscription.cancelDialog.failed'),
+    life: 8000
+  })
+}
+
+async function showCancellationFallback(
+  showFallback: LaunchCancellationFlowOptions['showFallback'],
+  isScopeCurrent: () => boolean,
+  options?: CancellationFallbackOptions,
+  vendorFailure?: VendorFailure
+): Promise<'shown' | 'declined' | 'failed'> {
+  if (!isScopeCurrent()) return 'declined'
+  try {
+    const opened = await showFallback({ ...options, isScopeCurrent })
+    return opened ? 'shown' : 'declined'
+  } catch (fallbackError) {
+    const workspaceStillCurrent = isScopeCurrent()
+    reportFallbackFailure(fallbackError, vendorFailure, workspaceStillCurrent)
+    return 'failed'
+  }
 }
 
 interface LaunchCancellationFlowOptions {
   cancelAt?: string
+  launchWorkspaceId?: string | null
   showFallback: (
     options?: CancellationFallbackOptions
-  ) => void | Promise<unknown>
+  ) => boolean | DialogInstance | Promise<boolean | DialogInstance>
+}
+
+async function prepareCancellationSession(
+  isLaunchWorkspaceCurrent: () => boolean,
+  showFallback: LaunchCancellationFlowOptions['showFallback']
+): Promise<ChurnkeySession | null> {
+  const preparation = await prepareChurnkey().then(
+    (session) => ({ session, threw: false as const }),
+    (error: unknown) => ({ session: null, threw: true as const, error })
+  )
+  if (preparation.session) return preparation.session
+
+  if (!isLaunchWorkspaceCurrent()) {
+    if (preparation.threw) {
+      reportError(preparation.error, {
+        surface: 'billing',
+        errorType: 'cloud_cancellation_vendor_fallback',
+        tags: {
+          failure_kind: 'degraded',
+          feature_area: 'billing',
+          operation: 'load',
+          outcome: 'aborted',
+          workspace_still_current: false
+        },
+        level: 'warning'
+      })
+    }
+    return null
+  }
+
+  const fallbackOutcome = await showCancellationFallback(
+    showFallback,
+    isLaunchWorkspaceCurrent,
+    undefined,
+    preparation.threw
+      ? { stage: 'preparation', error: preparation.error }
+      : undefined
+  )
+  if (preparation.threw && fallbackOutcome !== 'failed') {
+    const workspaceStillCurrent = isLaunchWorkspaceCurrent()
+    reportError(preparation.error, {
+      surface: 'billing',
+      errorType: 'cloud_cancellation_vendor_fallback',
+      tags: {
+        failure_kind: 'degraded',
+        feature_area: 'billing',
+        operation: 'load',
+        outcome:
+          fallbackOutcome === 'shown' && workspaceStillCurrent
+            ? 'recovered'
+            : 'aborted',
+        workspace_still_current: workspaceStillCurrent
+      },
+      level: 'warning'
+    })
+  }
+  return null
 }
 
 export async function launchCancellationFlow({
   cancelAt,
+  launchWorkspaceId: capturedWorkspaceId,
   showFallback
 }: LaunchCancellationFlowOptions): Promise<void> {
   const billing = useBillingContext()
   const workspaceStore = useTeamWorkspaceStore()
-  const launchWorkspaceId = workspaceStore.activeWorkspaceId
+  const launchWorkspaceId =
+    capturedWorkspaceId === undefined
+      ? workspaceStore.activeWorkspaceId
+      : capturedWorkspaceId
+  const isLaunchWorkspaceCurrent = () =>
+    workspaceStore.activeWorkspaceId === launchWorkspaceId
   if (
     billing.type.value !== 'workspace' ||
     !launchWorkspaceId ||
     workspaceStore.activeWorkspaceBillingRail !== 'stripe'
   ) {
-    await showFallback()
+    await showCancellationFallback(
+      showFallback,
+      launchWorkspaceId ? isLaunchWorkspaceCurrent : () => true
+    )
     return
   }
 
-  function isLaunchWorkspaceCurrent() {
-    return workspaceStore.activeWorkspaceId === launchWorkspaceId
-  }
-
-  const session = await prepareChurnkey().catch((error) => {
-    console.warn('Failed to prepare Churnkey cancellation flow:', error)
-    return null
-  })
-  if (!session) {
-    if (isLaunchWorkspaceCurrent()) await showFallback()
-    return
-  }
+  const session = await prepareCancellationSession(
+    isLaunchWorkspaceCurrent,
+    showFallback
+  )
+  if (!session) return
   if (!isLaunchWorkspaceCurrent()) return
 
   const telemetry = useTelemetry()
@@ -63,11 +191,13 @@ export async function launchCancellationFlow({
     const results = await session.show({
       handleCancel: async () => {
         if (!isLaunchWorkspaceCurrent()) {
-          throw new Error(t('subscription.cancelDialog.workspaceChanged'))
+          throw new CancellationScopeChangedError(
+            t('subscription.cancelDialog.workspaceChanged')
+          )
         }
         telemetry?.trackSubscriptionCancellation('confirmed', metadata)
         try {
-          await billing.cancelSubscription()
+          await billing.cancelSubscription(isLaunchWorkspaceCurrent)
           return { message: t('subscription.cancelSuccess') }
         } catch (error) {
           throw new Error(
@@ -83,6 +213,7 @@ export async function launchCancellationFlow({
         if (!isLaunchWorkspaceCurrent()) return
         await billing.fetchStatus().catch((error) => {
           reportError(error, {
+            surface: 'billing',
             errorType: 'error_refreshing_billing_after_churnkey_discount'
           })
           useToastStore().add({
@@ -108,6 +239,11 @@ export async function launchCancellationFlow({
       ...metadata,
       error_message: getErrorMessage(error) ?? t('g.unknownError')
     })
-    await showFallback({ flowAlreadyOpened: true })
+    await showCancellationFallback(
+      showFallback,
+      isLaunchWorkspaceCurrent,
+      { flowAlreadyOpened: true },
+      { stage: 'session', error }
+    )
   }
 }
