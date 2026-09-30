@@ -9,7 +9,6 @@
       "signInCaption": "צומתי שותפים מחייבים חשבון",
       "signInToRun": "התחברות להפעלה"
     },
-    "share": "שיתוף",
     "shareTooltip": "שיתוף תהליך העבודה"
   },
   "agent": {
@@ -35,8 +34,8 @@
     "coachHistoryTitle": "המשיכו מהמקום שבו הפסקתם",
     "coachProgress": "{current} מתוך {total}",
     "coachTitle": "הכירו את Comfy Agent שלכם",
-    "coachWorkflowBody": "הסוכן עורך רק את תהליך העבודה שתבחרו. ניתן גם להעלות קובצי ייחוס או להזכיר תהליכי עבודה אחרים.",
-    "coachWorkflowTitle": "בחרו תהליך עבודה לעריכה בידי הסוכן שלכם",
+    "coachWorkflowBody": "הוא עובר יחד עם הלשוניות שלך עד לשליחת הודעה, בחירת תהליך עבודה או הוספת הפניה לצומת.",
+    "coachWorkflowTitle": "הסוכן שלך עורך את תהליך העבודה שבו אתה צופה",
     "consent": {
       "accept": "התחלת השימוש ב-Comfy Agent",
       "body1": "Comfy Agent מסייע לכם לתכנן, לבנות, להריץ ולשפר תהליכי עבודה. תארו מה ברצונכם ליצור, ו-Comfy Agent יעבוד כעמית רב-עוצמה שלכם.",
@@ -65,6 +64,12 @@
     "dismiss": "סגור",
     "downloadAssets": "הורדת נכסים",
     "dragAndDropAssets": "גרור ושחרר נכסים כאן",
+    "editRejected": {
+      "generic": "העריכה שלך נדחתה ולא נשמרה. ייתכן שתהליך העבודה אינו תואם עוד את הקנבס שלו — טען מחדש את תהליך העבודה כדי לראות מה נשמר.",
+      "genericPartial": "העריכה שלך נדחתה ולא נשמרה, אף שחלק מהעריכות הקודמות נשמרו. ייתכן שתהליך העבודה אינו תואם עוד את הקנבס שלו — טען מחדש את תהליך העבודה כדי לראות מה נשמר.",
+      "widgetWrite": "עריכת הפקד נדחתה ולא נשמרה. הערך שהקלדת קיים בקנבס בלבד — טען מחדש את תהליך העבודה כדי לראות את הערך שנשמר.",
+      "widgetWritePartial": "עריכת הפקד נדחתה ולא נשמרה, אף שחלק מהעריכות הקודמות נשמרו. הערך שהקלדת קיים בקנבס בלבד — טען מחדש את תהליך העבודה כדי לראות את הערכים שנשמרו."
+    },
     "editWhileWorking": "אפשר להמשיך לערוך בזמן שהוא פועל",
     "entryButton": "סוכן",
     "feedbackCaption": "שיתוף משוב",
@@ -159,18 +164,31 @@
     "showChatHistory": "הצג היסטוריית צ'אטים",
     "showLess": "הצג פחות",
     "showMore": "הצג עוד",
+    "showTarget": "הצגת היעד",
+    "showTargetWorkflow": "הצגת תהליך העבודה היעד: {workflowName}",
     "skip": "דלג",
     "stop": "עצור",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "צור ברווז צהוב עם מסכת הוקי",
-      "הצג את תהליכי העבודה השמורים שלי",
-      "מצא את תהליך העבודה הטוב ביותר להגדלת רזולוציה של עור",
-      "הסבר את הצומת שנבחר",
-      "בנה תהליך עבודה להמרת תמונה לווידאו עם 3 מודלים"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "צור גיליון דמות של אסטרונאוט",
+        "הפוך את תמונת המוצר לפרסומת קצרה",
+        "הסבר את הצמתים שנבחרו",
+        "תהליך העבודה הטוב ביותר להגדלת תמונה ל-4K",
+        "תקן את השגיאות בתהליך העבודה הזה"
+      ],
+      "local": [
+        "צור דיוקן מציאותי של אסטרונאוט",
+        "תהליך עבודה של תמונה-לווידאו שמתאים ל-GPU שלי",
+        "הסבר את הצמתים שנבחרו",
+        "עזור לי להתקין את הצמתים החסרים עבור תהליך עבודה זה",
+        "תקן את השגיאות בתהליך עבודה זה"
+      ]
+    },
     "switchWorkflow": "החלף תהליך עבודה",
     "switchWorkflowForNodes": "עברו אל {workflowName} כדי להוסיף צמתים.",
+    "takeTour": "התחלת הסיור",
+    "targetFollowsVisibleWorkflow": "תהליך העבודה היעד תואם ללשונית הגלויה עד שתבחרו יעד, צומתי הפניה או תשלחו הודעה.",
     "targetForThisChat": "יעד הסוכן עבור שיחה זו",
     "targetNavigationUnavailable": "יעד זה של תהליך העבודה אינו זמין עוד.",
     "thinking": "חושב...",
@@ -189,6 +207,7 @@
     "updatingGraph": "הסוכן מעדכן את הגרף",
     "uploading": "מעלה",
     "viewAddedNodes": "הצג צומת | הצג צמתים",
+    "viewingDifferentWorkflow": "אתם צופים בתהליך עבודה שונה מהיעד.",
     "worked": "בוצע",
     "workedForMinutes": "עבד במשך {minutes}m {seconds}s",
     "workedForSeconds": "עבד במשך {seconds} שניות",
@@ -722,6 +741,8 @@
         "selectAtLeastOne": "אנא בחר לפחות אפשרות אחת."
       },
       "intro": "עזרו לנו להתאים את חוויית ה-ComfyUI שלך.",
+      "navigationFailed": "הסקר נשמר, אך לא ניתן היה להמשיך בתהליך ההצטרפות",
+      "navigationFailedDetail": "נסו שוב.",
       "options": {
         "experience": {
           "new": "חדש/ה ב-ComfyUI",
@@ -762,6 +783,8 @@
       },
       "otherPlaceholder": "ספרו לנו עוד",
       "placeholder": "מציין מיקום לשאלות הסקר",
+      "submitFailed": "לא ניתן היה לשלוח את הסקר",
+      "submitFailedDetail": "התשובות שלכם לא נשמרו. נסו שוב.",
       "title": "סקר ענן"
     }
   },
@@ -2105,6 +2128,9 @@
     "updating": "מעדכן את {id}",
     "upload": "העלאה",
     "uploadAlreadyInProgress": "העלאה כבר מתבצעת",
+    "uploadFailed": "ההעלאה נכשלה: {reason}",
+    "uploadFileTooLarge": "הקובץ גדול מדי להעלאה.",
+    "uploadFileTooLargeWithLimit": "הקובץ גדול מדי להעלאה (מגבלה: {limit} MB).",
     "uploadTimedOut": "תם הזמן הקצוב להעלאה. נסה שוב.",
     "usageHint": "רמז שימוש",
     "use": "שימוש",
@@ -3548,6 +3574,12 @@
     "skip": "דלג",
     "stepLabel": "שלב {current} מתוך {total}"
   },
+  "onboardingReplay": {
+    "confirmMessage": "פעולה זו טוענת מחדש את ComfyUI ומאפסת את שלבי תהליך ההצטרפות הזמינים בסביבה זו. תהליכי העבודה שלכם לא יושפעו.",
+    "confirmTitle": "להפעיל מחדש את תהליך ההצטרפות?",
+    "failedDetail": "לא ניתן היה לאפס את מצב תהליך ההצטרפות. נסו שוב.",
+    "failedSummary": "לא ניתן היה להפעיל מחדש את תהליך ההצטרפות"
+  },
   "openSharedWorkflow": {
     "author": "יוצר:",
     "copyAssetsAndOpen": "ייבוא נכסים ופתיחת תהליך העבודה",
@@ -4472,6 +4504,7 @@
       "memberTitle": "המנוי של מרחב עבודה זה אינו פעיל",
       "runLabel": "הרץ"
     },
+    "inactiveEnterpriseDescription": "לא ניתן להפעיל תהליכי עבודה או להוסיף חברים חדשים. פנו למחלקת המכירות כדי לשחזר את הגישה.",
     "inactiveTeamDescription": "הפעילו מחדש את תוכנית הצוות כדי להוסיף חברים ולהריץ תהליכי עבודה",
     "inactiveTeamPlanIncludes": "תוכנית פעילה כוללת את כל מה שיש ב-{plan}, בנוסף ל:",
     "inactiveTeamTitle": "מנוי צוות לא פעיל",
@@ -4608,7 +4641,13 @@
         "title": "מחדש את המנוי שלך",
         "titleAnnual": "מחדש את המנוי שלך — שנה מלאה מחויבת היום",
         "unavailable": "לא ניתן לאשר את החידוש כעת — נא בחר את התוכנית שלך מחדש",
-        "upgradeBody": "המנוי שלך ({plan}) היה אמור להסתיים בתאריך {date}. שדרוג כעת מחדש אותו — תחויב {amount} היום, והוא יתחדש אוטומטית בתאריך {nextDate} במקום להסתיים."
+        "upgradeBody": "המנוי שלך ({plan}) היה אמור להסתיים בתאריך {date}. שדרוג כעת מחדש אותו — תחויב {amount} היום, והוא יתחדש אוטומטית בתאריך {nextDate} במקום להסתיים.",
+        "withoutRenewalDate": {
+          "downgradeBody": "התוכנית שלכם, {plan}, הייתה אמורה להסתיים ב-{date}. מעבר אל {newPlan} מפעיל אותה מחדש — לא תחויבו היום, אך היא תתחדש כעת אוטומטית במחיר החדש במקום להסתיים.",
+          "durationChangeBody": "התוכנית שלכם, {plan}, הייתה אמורה להסתיים ב-{date}. מעבר לחיוב שנתי מפעיל אותה מחדש ומחייב היום את מלוא הסכום השנתי, {amount}. לאחר מכן היא תתחדש מדי שנה במקום להסתיים.",
+          "durationChangeBodyMonthly": "התוכנית שלכם, {plan}, הייתה אמורה להסתיים ב-{date}. מעבר לחיוב חודשי מפעיל אותה מחדש — תחויבו ב-{amount} היום, והיא תתחדש אוטומטית במקום להסתיים.",
+          "upgradeBody": "התוכנית שלכם, {plan}, הייתה אמורה להסתיים ב-{date}. שדרוג כעת מפעיל אותה מחדש — תחויבו ב-{amount} היום, והיא תתחדש אוטומטית במקום להסתיים."
+        }
       },
       "refillReplacesNote": "מחליף את המילוי החודשי שלך. היתרה הקיימת נשמרת.",
       "renewsAt": "מתחדש בסך {amount} בתאריך {date}. ניתן לבטל בכל עת.",
@@ -4655,6 +4694,8 @@
     "resubscribeFailed": "נכשל ניסיון להפעיל מחדש את המנוי",
     "resubscribeSuccess": "המנוי הופעל מחדש בהצלחה",
     "resubscribeTo": "חידוש {plan}",
+    "salesManagedCreditsEndedNote": "נקודות הזכות של התוכנית הסתיימו עם המינוי שלכם.",
+    "salesManagedInactiveCreditsNote": "ניתן לשימוש לאחר שחידוש התוכנית יושלם.",
     "salesManagedRunBlockedDetail": "התוכנית של סביבת עבודה זו אינה פעילה עוד. פנו למנהל החשבון שלכם ב-Comfy כדי לשחזר את הגישה.",
     "salesManagedRunBlockedTitle": "התוכנית אינה פעילה",
     "saveYearly": "חסוך 20%",
@@ -4665,7 +4706,7 @@
     "subscribe": "הירשם",
     "subscribeFailed": "ההרשמה נכשלה",
     "subscribeForMore": "שדרוג",
-    "subscribeNow": "הירשם עכשיו",
+    "subscribeNow": "הצטרפות למינוי",
     "subscribeTo": "הירשם ל-{plan}",
     "subscribeToComfyCloud": "הירשם ל-Comfy Cloud",
     "subscribeToRun": "הרשמה",
@@ -4821,6 +4862,7 @@
     "clearAllFilters": "נקה את כל המסננים",
     "error": {
       "loading": "לא ניתן היה לפתוח את התבנית. נסו שוב.",
+      "preparingMedia": "לא ניתן היה להכין חלק מקובצי המדיה לדוגמה. תהליך העבודה ייפתח; בחרו קבצים משלכם עבור כל קלט חסר.",
       "templateNotFound": "התבנית \"{templateName}\" לא נמצאה"
     },
     "filtersApplied": "{count} מסנן הופעל | {count} מסננים הופעלו",
@@ -4837,6 +4879,7 @@
       "credits": "הרצה באמצעות קרדיטים",
       "title": "תבנית פרימיום"
     },
+    "preparingMedia": "מכין מדיה לדוגמה...",
     "resultsCount": "מציג {count} מתוך {total} תבניות",
     "runsOnFilter": "פועל על",
     "runsOnSelected": "{count} פועל על",
@@ -5140,6 +5183,8 @@
     "billingStatus": {
       "ending": {
         "body": "החברים ישמרו על גישה מלאה עד אז. חדשו את המנוי כדי לשמור על הקרדיטים והמושבים המשותפים שלכם.",
+        "enterpriseBody": "החברים ישמרו על גישה מלאה עד אז. פנו לצוות המכירות שלנו כדי להאריך אותה.",
+        "enterpriseTitle": "תוכנית Enterprise שלכם מסתיימת ב-{date}",
         "reactivate": "חידוש המנוי",
         "title": "תוכנית הצוות שלך מסתיימת ב-{date}"
       },
@@ -5253,6 +5298,7 @@
         "inviteDate": "תאריך ההזמנה",
         "role": "תפקיד"
       },
+      "contactSales": "יצירת קשר עם מחלקת המכירות",
       "contactUs": "צור קשר",
       "creditLimitDialog": {
         "description": "כאשר יגיעו למגבלה זו, לא יוכלו להריץ תהליכי עבודה.",
@@ -5263,6 +5309,9 @@
         "update": "עדכן מגבלה",
         "warning": "משתמש זה כבר ניצל {credits} קרדיטים. הגדרת מגבלה השווה או נמוכה מהשימוש הנוכחי תמנע הרצות נוספות עד לחודש הבא."
       },
+      "endedEnterpriseTitle": "תוכנית Enterprise שלכם הסתיימה",
+      "endedPlanTitle": "התוכנית שלכם הסתיימה",
+      "endedTeamTitle": "תוכנית הצוות שלכם הסתיימה",
       "header": "חברים",
       "membersCount": "{count}/{maxSeats} חברים",
       "needMoreMembers": "צריך עוד חברים?",
@@ -5270,6 +5319,7 @@
       "noMembers": "אין חברים",
       "pendingInvitesCount": "{count} הזמנה ממתינה | {count} הזמנות ממתינות",
       "reactivateTeam": "הפעל מחדש את ה-Team",
+      "resubscribe": "הצטרפות מחדש למינוי",
       "searchPlaceholder": "חיפוש...",
       "tabs": {
         "active": "פעילים",
@@ -5277,6 +5327,8 @@
       },
       "upgradeToTeam": "שדרג ל-Team",
       "upsellBanner": "להוספת חברי צוות, שדרג את התוכנית שלך.",
+      "upsellBannerEnterpriseEnded": "פנו למחלקת המכירות כדי להפעיל מחדש את תוכנית Enterprise שלכם.",
+      "upsellBannerPlanEnded": "פנו למחלקת המכירות כדי להפעיל מחדש את התוכנית שלכם.",
       "upsellBannerReactivate": "להוספת חברי צוות נוספים, הפעל מחדש את התוכנית שלך."
     },
     "menu": {

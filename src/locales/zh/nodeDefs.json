@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "使用 HeyGen Video 1.0 将图像制作成带有同步对白和声音的视频。该图像将用作第一帧。",
+    "display_name": "HeyGen Video 1.0 图像转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "使用 HeyGen Video 1.0 根据文本提示词生成带有同步对白和声音的视频。可选连接最多 12 个参考图像、视频和音频片段，并在提示词中将其标注为 {'@'}Image1、{'@'}Video1、{'@'}Audio1。",
+    "display_name": "HeyGen Video 1.0 参考转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "将任意人物图像动画化为口型同步的说话视频（HeyGen Avatar IV）。可通过文本脚本或自定义音频驱动。",
     "display_name": "HeyGen 说话照片",
@@ -8376,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "使用 Ideogram 4.5 根据文本提示词编辑或合并最多 5 张图像。会重新渲染整张图像，并且可以更改其尺寸或宽高比；若要保持未修改的像素不变，请使用 Ideogram 4.5 精确编辑。",
+    "display_name": "Ideogram 4.5 编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_quality": {
+        "name": "质量"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_size": {
+        "name": "尺寸"
+      },
+      "model_width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "使用 P-Image（Ideogram 的快速文本生成图像模型）生成图像。具备强大的字体排版和照片级真实感；支持 Ideogram 4.0 结构化 JSON 标注，实现精确文本、颜色和布局。",
     "display_name": "Ideogram 与 Pruna P-Image",
@@ -8415,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "实际用于生成图像的提示（如启用 prompt_upsampling，则为重写后的结构化标注，否则为原始提示）。如需复现该图像，请用 prompt_upsampling 设为 OFF 及相同种子回传。"
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "使用 Ideogram 4.5 精确编辑功能，根据文本提示词编辑图像：仅更改提示词要求的内容，未修改的像素保持完全一致，输出将保留图像 1 的尺寸（超过约 4 MP 的图像会先缩小）。最多接受 4 张参考图像。",
+    "display_name": "Ideogram 4.5 精确编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_quality": {
+        "name": "质量"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "使用 Ideogram 4.5 根据文本提示词生成图像。",
+    "display_name": "Ideogram 4.5 文本生成图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_quality": {
+        "name": "质量"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_size": {
+        "name": "尺寸"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "生成图像时所使用的结构化描述。将其回传，并将 magic_prompt 设为 'off'，同时使用相同的种子，即可复现该图像。"
       }
     }
   },
