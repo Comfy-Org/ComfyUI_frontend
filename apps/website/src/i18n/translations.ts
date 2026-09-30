@@ -93,6 +93,7 @@ export function createTranslator<T extends MessageTree>(catalogs: Catalogs<T>) {
   const keys = leafPaths(catalogs.en) as Key[]
   const keySet: ReadonlySet<string> = new Set(keys)
   for (const locale of LOCALE_CODES) {
+    if (locale === DEFAULT_LOCALE) continue
     const orphans = leafPaths(catalogs[locale] ?? {}).filter(
       (key) => !keySet.has(key)
     )

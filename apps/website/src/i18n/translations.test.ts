@@ -12,16 +12,24 @@ import routerJa from '../locales/ja/router.json' with { type: 'json' }
 import cinematicZhCN from '../locales/zh-CN/cinematic.json' with { type: 'json' }
 import reshootZhCN from '../locales/zh-CN/reshoot.json' with { type: 'json' }
 import routerZhCN from '../locales/zh-CN/router.json' with { type: 'json' }
+import mainZhCN from '../locales/zh-CN/main.json' with { type: 'json' }
 import type { TranslationKey } from './translations'
 import {
   createTranslator,
   hasKey,
   t,
   tAround,
+  tPlural,
   translationKeys
 } from './translations'
 
 const pluralKeys: readonly string[] = ['cloudNodesLaunch.models.nodeCount']
+
+const catalogSources = import.meta.glob<string>('../locales/*/*.json', {
+  eager: true,
+  query: '?raw',
+  import: 'default'
+})
 
 type Catalog = { [key: string]: string | Catalog }
 
@@ -44,35 +52,42 @@ function unrenderable<Key extends string>(
   translator: {
     keys: readonly Key[]
     t: (key: Key, locale: Locale, named: Record<string, string>) => string
+    tPlural: (key: Key, count: number, locale: Locale) => string
   },
   english: Catalog,
   locale: Locale
 ): Key[] {
   const englishMessages = new Map(leafMessages(english))
-  return translator.keys
-    .filter((key) => !pluralKeys.includes(key))
-    .filter((key) => {
-      try {
+  return translator.keys.filter((key) => {
+    try {
+      if (pluralKeys.includes(key)) {
+        translator.tPlural(key, 2, locale)
+      } else {
         translator.t(
           key,
           locale,
           valuesForPlaceholders(englishMessages.get(key) ?? '')
         )
-        return false
-      } catch {
-        return true
       }
-    })
+      return false
+    } catch {
+      return true
+    }
+  })
 }
 
 const catalogs = [
   {
     file: 'main.json',
+    english: mainEn,
+    chinese: mainZhCN,
     unrenderable: (locale: Locale) =>
-      unrenderable({ keys: translationKeys, t }, mainEn, locale)
+      unrenderable({ keys: translationKeys, t, tPlural }, mainEn, locale)
   },
   {
     file: 'cinematic.json',
+    english: cinematicEn,
+    chinese: cinematicZhCN,
     unrenderable: (locale: Locale) =>
       unrenderable(
         createTranslator({
@@ -86,6 +101,8 @@ const catalogs = [
   },
   {
     file: 'reshoot.json',
+    english: reshootEn,
+    chinese: reshootZhCN,
     unrenderable: (locale: Locale) =>
       unrenderable(
         createTranslator({
@@ -99,6 +116,8 @@ const catalogs = [
   },
   {
     file: 'router.json',
+    english: routerEn,
+    chinese: routerZhCN,
     unrenderable: (locale: Locale) =>
       unrenderable(
         createTranslator({ en: routerEn, 'zh-CN': routerZhCN, ja: routerJa }),
@@ -108,18 +127,13 @@ const catalogs = [
   }
 ]
 
-describe('translation keys', () => {
-  it('never uses a key as the prefix of another key', () => {
-    const keys = new Set<string>(translationKeys)
-    const collisions = translationKeys.filter((key) => {
-      const segments = key.split('.')
-      return segments
-        .slice(1)
-        .some((_, index) => keys.has(segments.slice(0, index + 1).join('.')))
-    })
-    expect(collisions).toEqual([])
-  })
-})
+it.for(Object.entries(catalogSources))(
+  'preserves every entry when parsing %s',
+  ([, source]) => {
+    const parsed: unknown = JSON.parse(source)
+    expect(source).toBe(`${JSON.stringify(parsed, null, 2)}\n`)
+  }
+)
 
 describe('t()', () => {
   it('returns Japanese copy when it exists', () => {
@@ -186,7 +200,16 @@ describe('t()', () => {
   })
 })
 
-describe.for(catalogs)('$file', ({ unrenderable }) => {
+describe.for(catalogs)('$file', ({ english, chinese, unrenderable }) => {
+  it('includes Chinese copy for every English message', () => {
+    const chineseKeys = new Set(leafMessages(chinese).map(([key]) => key))
+    const missing = leafMessages(english)
+      .map(([key]) => key)
+      .filter((key) => !chineseKeys.has(key))
+
+    expect(missing).toEqual([])
+  })
+
   it.for(LOCALE_CODES)('renders every %s message', (locale) => {
     expect(unrenderable(locale)).toEqual([])
   })
