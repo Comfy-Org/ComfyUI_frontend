@@ -8875,17 +8875,17 @@ Enterprise`
     'zh-CN': '由 Comfy API 驱动的创意应用'
   },
   'platform.serverlessCaseStudy.quote': {
-    en: 'We build creative systems that have to hold up at brand scale. Comfy API lets us package a ComfyUI workflow once and deploy it as an endpoint our team and tools can call, so our time goes into the creative, not the infrastructure.',
+    en: 'At Silverside, Comfy workflows are where our creative expertise becomes infrastructure. We build production pipelines then serve them through Comfy API so our clients can run the same proven workflows at scale. It lets a small team deliver enterprise-grade creative output.',
     'zh-CN':
-      '我们构建的创意系统必须能够支撑品牌级规模。Comfy API 让我们一次打包 ComfyUI 工作流，并将其部署为团队和工具都能调用的端点，让我们把时间投入创意，而不是基础设施。'
+      '在 Silverside，Comfy 工作流将我们的创意专长转化为基础设施。我们构建生产流水线，再通过 Comfy API 提供服务，让客户能够大规模运行同样经过验证的工作流。这让小团队也能交付企业级创意成果。'
   },
   'platform.serverlessCaseStudy.name': {
-    en: 'PJ Pereira',
-    'zh-CN': 'PJ Pereira'
+    en: 'Allie Wrubel',
+    'zh-CN': 'Allie Wrubel'
   },
   'platform.serverlessCaseStudy.role': {
-    en: 'Co-founder of Silverside AI',
-    'zh-CN': 'Silverside AI 联合创始人'
+    en: 'Head of Technology at Silverside AI',
+    'zh-CN': 'Silverside AI 技术负责人'
   },
   'platform.serverlessCaseStudy.linkLabel': {
     en: 'Read the Silverside AI customer story',
@@ -8970,6 +8970,14 @@ Enterprise`
   'platform.products.models.badgeLabel': {
     en: 'ROUTER',
     'zh-CN': 'ROUTER'
+  },
+  'platform.serverlessDeploy.copy': {
+    en: 'Copy commands',
+    'zh-CN': '复制命令'
+  },
+  'platform.serverlessDeploy.copied': {
+    en: 'Copied',
+    'zh-CN': '已复制'
   },
   'platform.products.models.description': {
     en: 'Use thousands of the latest models in one API. Call Seedance, Minimax H3, Nano Banana, and GPT-Image.',
