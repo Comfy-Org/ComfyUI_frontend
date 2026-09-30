@@ -15,6 +15,7 @@ import type {
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import {
   referenceCatalog,
@@ -145,13 +146,9 @@ export const minimaxAutogrowTest = agentTest.extend<{
       return route.fulfill(jsonRoute(response))
     })
 
-    await page
-      .getByRole('button', {
-        name: enMessages.agent.entryButton,
-        exact: true
-      })
-      .click()
-    const panel = page.locator('#agent-panel-root')
+    const agentPanel = new AgentPanel(page)
+    await agentPanel.open()
+    const panel = agentPanel.root
     await expect(panel).toBeVisible()
     await panel
       .getByRole('button', { name: enMessages.agent.switchWorkflow })

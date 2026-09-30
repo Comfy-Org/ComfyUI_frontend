@@ -4,6 +4,7 @@ import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import {
   agentTest as diagnosticTest,
@@ -64,11 +65,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     const page = comfyPage.page
 
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
-    await expect(openButton).toBeVisible()
-    await openButton.click()
-
-    const panel = page.locator('#agent-panel-root')
+    const agentPanel = new AgentPanel(page)
+    await agentPanel.open()
+    const panel = agentPanel.root
     await expect(panel).toBeVisible()
     await selectAgentWorkflow(page)
 
@@ -348,7 +347,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       comfyPage
     }) => {
       const page = comfyPage.page
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+      await new AgentPanel(page).open()
 
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
@@ -417,7 +416,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await new AgentPanel(page).open()
 
     const scrollContainer = page
       .locator('#agent-panel-root div.overflow-y-auto')
@@ -441,7 +440,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await new AgentPanel(page).open()
 
     const panel = page.locator('#agent-panel-root')
     await panel
@@ -538,7 +537,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await new AgentPanel(page).open()
 
     await selectAgentWorkflow(page)
 
@@ -561,7 +560,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     getWebSocket
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await new AgentPanel(page).open()
 
     await selectAgentWorkflow(page)
 
@@ -621,7 +620,7 @@ diagnosticTest.describe(
     diagnosticTest(
       'copies cloud logs and all optional sources by default',
       async ({ page }) => {
-        await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+        await new AgentPanel(page).open()
         const panel = page.locator('#agent-panel-root')
 
         for (const name of ['Server logs', 'Settings', 'Workflow JSON']) {
@@ -641,7 +640,7 @@ diagnosticTest.describe(
     diagnosticTest(
       'copies with privacy sources turned off',
       async ({ page }) => {
-        await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+        await new AgentPanel(page).open()
         const panel = page.locator('#agent-panel-root')
 
         for (const name of ['Server logs', 'Settings', 'Workflow JSON']) {
@@ -676,7 +675,7 @@ diagnosticTest.describe(
             logsRequests++
           }
         })
-        await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+        await new AgentPanel(page).open()
         const panel = page.locator('#agent-panel-root')
         await page.evaluate(() => {
           const clipboard = navigator.clipboard

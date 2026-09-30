@@ -69,7 +69,7 @@ describe('agentPanelStore engagement telemetry', () => {
     })
   })
 
-  it('starts a new visible interval after consent hides and restores the panel', async () => {
+  it('keeps the panel visible while consent changes', async () => {
     const store = useConsentedAgentPanelStore()
     store.enabled = true
     store.open()
@@ -79,6 +79,7 @@ describe('agentPanelStore engagement telemetry', () => {
     store.consentAccepted = false
     await nextTick()
     expect(store.isOpen).toBe(true)
+    expect(store.isVisible).toBe(true)
     vi.advanceTimersByTime(10000)
     store.consentAccepted = true
     await nextTick()
@@ -87,12 +88,9 @@ describe('agentPanelStore engagement telemetry', () => {
 
     expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
-      open_duration_ms: 3000
+      open_duration_ms: 15000
     })
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledTimes(2)
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenLastCalledWith({
-      source: 'restored'
-    })
+    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledOnce()
   })
 
   it('attributes automatic consent to its own source without duplicate opens', async () => {
@@ -117,18 +115,20 @@ describe('agentPanelStore engagement telemetry', () => {
     expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
   })
 
-  it('suppresses a restored open intent that has no consent', async () => {
+  it('shows a restored open intent before consent', async () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
     const store = useAgentPanelStore()
     store.enabled = true
     await nextTick()
 
     expect(store.isOpen).toBe(true)
-    expect(store.isVisible).toBe(false)
-    expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
+    expect(store.isVisible).toBe(true)
+    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledWith({
+      source: 'restored'
+    })
 
     store.suppressRestoredOpen()
-    expect(store.isOpen).toBe(false)
+    expect(store.isOpen).toBe(true)
   })
 
   it('emits opened on toggle-open and closed with the open duration', () => {
@@ -297,14 +297,17 @@ describe('agentPanelStore pagehide teardown', () => {
     expect(telemetry.trackAgentPanelClosed).not.toHaveBeenCalled()
   })
 
-  it('does not report a pagehide close for an open panel gated behind consent', () => {
+  it('reports a pagehide close for an open pre-consent panel', () => {
     const store = useAgentPanelStore()
     store.enabled = true
     store.open()
 
     window.dispatchEvent(new Event('pagehide'))
 
-    expect(telemetry.trackAgentPanelClosed).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+      source: 'pagehide',
+      open_duration_ms: 0
+    })
   })
 
   it('can report again for a fresh open session after a prior pagehide report', () => {
