@@ -205,6 +205,7 @@ import {
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
+import { setNodeLocatorResolver } from '@/stores/nodeImageStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -560,6 +561,8 @@ onMounted(async () => {
         i18nError.value
       )
     }
+
+    setNodeLocatorResolver(workflowStore.nodeToNodeLocatorId)
 
     // @ts-expect-error fixme ts strict error
     await comfyApp.setup(canvasRef.value)

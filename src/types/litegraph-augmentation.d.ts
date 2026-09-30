@@ -185,7 +185,7 @@ declare module '@/lib/litegraph/src/litegraph' {
     preview: string[]
     /** Index of the currently selected image on a multi-image node such as Preview Image */
     imageIndex?: number | null
-    imageRects: Rect[]
+    imageRects?: Rect[]
     overIndex?: number | null
     pointerDown?: { index: number | null; pos: Point } | null
     /**
