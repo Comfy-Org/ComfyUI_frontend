@@ -6,6 +6,7 @@ import { useCinematicPopover } from '../../../composables/useCinematicPopover'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
+import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -115,6 +116,7 @@ function generate() {
       </span>
       <AppRepoLink
         :repo="workshopAppRepo('studio')"
+        :app-slug="CINEMATIC_STUDIO_APP_SLUG"
         :locale
         class="sm:ml-auto"
       />

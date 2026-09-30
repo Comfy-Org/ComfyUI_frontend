@@ -5,11 +5,26 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { captureWorkshopEvent } from '../../../scripts/posthog'
 
-const { repo, locale = 'en' } = defineProps<{
+const {
+  repo,
+  locale = 'en',
+  appSlug
+} = defineProps<{
   repo?: string
   locale?: Locale
+  /** The app this link belongs to, for the click's analytics. */
+  appSlug?: string
 }>()
+
+function captureClick() {
+  if (!repo || !appSlug) return
+  captureWorkshopEvent({
+    name: 'github_clicked',
+    properties: { app_slug: appSlug, page_type: 'app' }
+  })
+}
 </script>
 
 <template>
@@ -26,6 +41,7 @@ const { repo, locale = 'en' } = defineProps<{
           : 'border-transparency-white-t8 text-primary-warm-gray'
       )
     "
+    @click="captureClick"
   >
     <span
       class="size-4 icon-mask mask-[url('/icons/social/github.svg')]"

@@ -6,6 +6,12 @@ import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
 import type { TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import {
+  captureWorkshopEvent,
+  useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled
+} from '../../scripts/posthog'
+import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
 import SectionHeading from './SectionHeading.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
 
@@ -19,6 +25,26 @@ const {
   /** Whether this tab is showing; the graph waits until it first is. */
   active?: boolean
 }>()
+
+const enabled = useWorkshopEnabled()
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const modelAnalytics = workshopModelAnalytics(model)
+
+function captureTryInCloud() {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'try_in_cloud_clicked',
+      properties: modelAnalytics
+    })
+}
+
+function captureWorkflowDownload() {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'workflow_download_clicked',
+      properties: modelAnalytics
+    })
+}
 
 const template = computed(() => model.workflow.template)
 // What the workflow makes, hung in the node that hands it back. The samples
@@ -122,6 +148,7 @@ const facts = computed(() => {
               target="_blank"
               rel="noopener"
               class="h-auto min-h-11 max-w-full whitespace-normal"
+              @click="captureTryInCloud"
               >{{ t('workshop.workflow.tryCloud') }}</Button
             >
             <Button
@@ -131,6 +158,7 @@ const facts = computed(() => {
               download
               variant="outline"
               class="h-auto min-h-11 max-w-full whitespace-normal"
+              @click="captureWorkflowDownload"
               >{{ t('workshop.workflow.download') }}</Button
             >
           </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { workshopAppRepo } from '../../../../lib/workshop/apps'
+import { RESHOOT_APP_SLUG } from '../../../../lib/workshop/cinematic-studio/analytics'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import AppRepoLink from '../AppRepoLink.vue'
@@ -17,6 +18,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       </h1>
       <AppRepoLink
         :repo="workshopAppRepo('reshoot')"
+        :app-slug="RESHOOT_APP_SLUG"
         :locale
         class="sm:ml-auto"
       />

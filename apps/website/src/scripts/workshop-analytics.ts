@@ -15,6 +15,14 @@ import { workshopExceptionAnalytics } from './workshop-exception'
 
 export type WorkshopPageType = 'model' | 'workflow' | 'app'
 
+/** The tab or mode a reader switched to, on a workflow page or in an app. */
+export type WorkshopTabName =
+  | 'playground'
+  | 'workflow'
+  | 'api'
+  | 'image'
+  | 'video'
+
 interface WorkshopModelAnalytics {
   model_slug: string
   page_type?: WorkshopPageType
@@ -148,6 +156,18 @@ export type WorkshopAnalyticsEvent =
   | {
       name: 'output_download_clicked'
       properties: WorkshopModelAnalytics & { output_kind: RunOutput['kind'] }
+    }
+  | {
+      name: 'try_in_cloud_clicked' | 'workflow_download_clicked'
+      properties: WorkshopModelAnalytics
+    }
+  | {
+      name: 'tab_switched'
+      properties: WorkshopModelAnalytics & { tab: WorkshopTabName }
+    }
+  | {
+      name: 'github_clicked'
+      properties: { app_slug: string; page_type: 'app' }
     }
 
 export function workshopModelAnalytics(
