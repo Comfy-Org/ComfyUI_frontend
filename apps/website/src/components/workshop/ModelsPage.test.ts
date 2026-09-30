@@ -10,6 +10,7 @@ import './ModelPage.vue'
 import './ModelsCatalogue.vue'
 import { prepareModelPage } from '../../routes/models/model-page'
 import {
+  useWorkshopAppsEnabled,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopWorkflowsEnabled,
@@ -22,6 +23,7 @@ vi.mock(import('../../scripts/posthog'))
 let enabled: Ref<boolean>
 let settled: Ref<boolean>
 let workflowsEnabled: Ref<boolean>
+let appsEnabled: Ref<boolean>
 
 beforeEach(() => {
   enabled = ref(false)
@@ -33,6 +35,8 @@ beforeEach(() => {
   vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
     readonly(workflowsEnabled)
   )
+  appsEnabled = ref(false)
+  vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(appsEnabled))
 })
 
 const modelSlug = 'bfl--flux-2-max--generate-images'
@@ -86,6 +90,69 @@ describe('Models page entry', () => {
       expect(html).not.toContain('workshop-search')
       expect(html).not.toContain('model-hero')
       expect(html).not.toContain('model-detail')
+    }
+  )
+
+  it('server-renders a section heading over the loading state', async () => {
+    const html = await renderToString(
+      createSSRApp({
+        render: () =>
+          h(
+            ModelsPage,
+            { section: 'workflows' },
+            { heading: () => h('h1', 'ComfyUI workflows') }
+          )
+      })
+    )
+    expect(html).toContain('<h1>ComfyUI workflows</h1>')
+    expect(html).toContain('workshop-loading')
+  })
+
+  it.for([
+    {
+      section: 'workflows',
+      catalogue: 'workflow-catalogue',
+      turnOn: () => {
+        workflowsEnabled.value = true
+      }
+    },
+    {
+      section: 'apps',
+      catalogue: 'apps-catalogue',
+      turnOn: () => {
+        appsEnabled.value = true
+      }
+    }
+  ] as const)(
+    'keeps the $section section and its heading behind its flag',
+    async ({ section, catalogue, turnOn }) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
+      )
+      enabled.value = true
+      render(ModelsPage, {
+        props: { section },
+        slots: {
+          heading: '<h1>Section heading</h1>',
+          fallback: '<h1>Public Models</h1>'
+        }
+      })
+      expect(
+        await screen.findByRole('heading', { name: 'Public Models' })
+      ).toBeVisible()
+      expect(
+        screen.queryByRole('heading', { name: 'Section heading' })
+      ).toBeNull()
+
+      turnOn()
+      expect(await screen.findByTestId(catalogue)).toBeVisible()
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Section heading' })
+      ).toBeVisible()
+      expect(
+        screen.queryByRole('heading', { name: 'Public Models' })
+      ).toBeNull()
     }
   )
 
