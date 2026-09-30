@@ -36,10 +36,10 @@ export interface RouterProviderCoverageRow {
 const DOCS_MODELS_URL = 'https://docs.comfy.org/development/comfy-router/models'
 
 /** The day the rows and the catalog size were last checked against the docs. */
-export const ROUTER_PROVIDER_COVERAGE_VERIFIED_AT = '2026-09-25'
+export const ROUTER_PROVIDER_COVERAGE_VERIFIED_AT = '2026-09-29'
 
 /** How many models the Router catalog lists, all served by Comfy. */
-export const ROUTER_CATALOG_MODEL_COUNT = 212
+export const ROUTER_CATALOG_MODEL_COUNT = 213
 
 /** In the order the page shows them: alphabetical by `name`. */
 export const ROUTER_PROVIDER_COVERAGE: readonly RouterProviderCoverageRow[] = [
