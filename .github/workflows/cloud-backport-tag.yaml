@@ -53,14 +53,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.event.pull_request.base.ref }}
+          # The privileged runner must never come from an operator-selected ref.
+          ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
 
       - name: Create tag for cloud backport
         id: tag
         env:
-          # Repository policy keeps GITHUB_TOKEN read-only for tag creation.
-          GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GITHUB_TOKEN }}
+          # The refs API returned HTTP 403 with GITHUB_TOKEN in live recovery.
+          GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
           EVENT_NAME: ${{ github.event_name }}
           BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.event.pull_request.base.ref }}
           SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.commit || github.event.pull_request.merge_commit_sha }}
