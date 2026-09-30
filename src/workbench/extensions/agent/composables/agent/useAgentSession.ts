@@ -530,31 +530,34 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function recordSendError(
-    error: unknown,
-    text: string,
-    accepted: boolean
-  ): boolean {
+  function recordAdmissionSendError(error: unknown, text: string): boolean {
     const admission = parseAdmissionError(error)
-    if (admission?.reason === 'no_funds') {
+    if (admission === undefined) return false
+    if (admission.reason === 'no_funds') {
       conversationStore.recordPaywall(
         nextLocalErrorId(),
         text,
         admission.message
       )
-      return false
+      return true
     }
-    if (admission !== undefined) {
-      conversationStore.recordFailedSend(
-        nextLocalErrorId(),
-        text,
-        admission.message,
-        admission.reason === 'funds_unavailable'
-          ? admission.retryAfterSeconds
-          : undefined
-      )
-      return false
-    }
+    conversationStore.recordFailedSend(
+      nextLocalErrorId(),
+      text,
+      admission.message,
+      admission.reason === 'funds_unavailable'
+        ? admission.retryAfterSeconds
+        : undefined
+    )
+    return true
+  }
+
+  function recordSendError(
+    error: unknown,
+    text: string,
+    accepted: boolean
+  ): boolean {
+    if (recordAdmissionSendError(error, text)) return false
     const message =
       error instanceof AgentApiError
         ? error.message
@@ -604,6 +607,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (rememberedWorkflowId === sent.id) rememberedWorkflowId = null
   }
 
+  function handleSendFailure(
+    error: unknown,
+    text: string,
+    generation: number,
+    sentContext: WorkflowTurnContext | undefined,
+    accepted: boolean,
+    requestStarted: boolean
+  ): boolean {
+    releaseDisownedWorkflow(sentContext, error)
+    if (generation !== loadGeneration) return false
+    return recordSendError(
+      error,
+      text,
+      accepted || (requestStarted && isUnreadableAckFailure(error))
+    )
+  }
+
   async function performSend(
     text: string,
     attachments?: SentAttachment[],
@@ -647,12 +667,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // Before the generation guard: the binding store is page-global and
       // persisted, so a refusal that lands after newChat()/loadThread() has
       // moved on still has to release, or the dead id survives the reload.
-      releaseDisownedWorkflow(sentContext, error)
-      if (generation !== loadGeneration) return false
-      return recordSendError(
+      return handleSendFailure(
         error,
         text,
-        accepted || (requestStarted && isUnreadableAckFailure(error))
+        generation,
+        sentContext,
+        accepted,
+        requestStarted
       )
     }
   }
