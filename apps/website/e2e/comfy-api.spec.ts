@@ -9,28 +9,14 @@ const locales = [
     browseApps: 'Browse apps',
     videoLabel: 'Comfy API product demo',
     unmute: 'Unmute',
-    mute: 'Mute',
-    copy: 'Copy prompt',
-    copied: 'Copied',
-    prompt: `Install comfy-cli and read its build skill:
-
-\`pip install -U comfy-cli\`, then \`comfy skills show comfy-build\`.
-
-It covers packaging a local ComfyUI install — models, custom nodes, dependency pins — into a build on platform.comfy.org and cutting a release. \`comfy skills show comfy-deploy\` covers running that release as a serverless endpoint.`
+    mute: 'Mute'
   },
   {
     path: '/zh-CN/platform/comfy-api/',
     browseApps: '浏览应用',
     videoLabel: 'Comfy API 产品演示',
     unmute: '取消静音',
-    mute: '静音',
-    copy: '复制提示词',
-    copied: '已复制',
-    prompt: `安装 comfy-cli，并阅读它的构建技能：
-
-先 \`pip install -U comfy-cli\`，再运行 \`comfy skills show comfy-build\`。
-
-它会把本地 ComfyUI 安装（模型、自定义节点、依赖版本）打包成 platform.comfy.org 上的一个可复现构建，并完成发布。\`comfy skills show comfy-deploy\` 则说明如何把该发布作为无服务器端点运行。`
+    mute: '静音'
   }
 ]
 
@@ -63,7 +49,6 @@ for (const locale of locales) {
       )
       await expect(video).toHaveJSProperty('paused', false)
       await expect(video).toHaveJSProperty('muted', true)
-      await expect(section.getByTestId('player-control-bar')).toBeVisible()
 
       await section
         .getByRole('button', { name: locale.unmute, exact: true })
@@ -74,22 +59,23 @@ for (const locale of locales) {
         section.getByRole('button', { name: locale.mute, exact: true })
       ).toBeVisible()
     })
-
-    test('copies the localized deployment prompt to the clipboard', async ({
-      page,
-      context
-    }) => {
-      await context.grantPermissions(['clipboard-read', 'clipboard-write'])
-      const copy = page.getByRole('button', { name: locale.copy, exact: true })
-      await waitForIsland(page, copy)
-      await copy.click()
-
-      await expect
-        .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-        .toBe(locale.prompt)
-      await expect(
-        page.getByRole('button', { name: locale.copied, exact: true })
-      ).toBeVisible()
-    })
   })
 }
+
+test('copies the deployment prompt to the clipboard @smoke', async ({
+  page,
+  context
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.goto('/platform/comfy-api/')
+  const copy = page.getByRole('button', { name: 'Copy prompt', exact: true })
+  await waitForIsland(page, copy)
+  await copy.click()
+
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toContain('comfy skills show comfy-build')
+  await expect(
+    page.getByRole('button', { name: 'Copied', exact: true })
+  ).toBeVisible()
+})

@@ -3,20 +3,14 @@ import Button from '../../components/ui/button/Button.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const {
-  locale = 'en',
-  showCreativeApps = false,
-  showCustomerProof = false
-} = defineProps<{
+const { locale = 'en', showCustomerProof = false } = defineProps<{
   locale?: Locale
-  showCreativeApps?: boolean
   showCustomerProof?: boolean
 }>()
 </script>
 
 <template>
   <section
-    v-if="showCreativeApps"
     class="mx-auto grid max-w-9xl grid-cols-1 items-center gap-8 px-6 py-10 lg:grid-cols-2 lg:gap-14 lg:py-14"
   >
     <div>

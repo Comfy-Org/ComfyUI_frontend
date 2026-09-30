@@ -24,4 +24,15 @@ describe('ServerlessProductVideoSection', () => {
     expect(screen.getByTestId('player-control-bar')).toBeTruthy()
     expect(await screen.findByRole('button', { name: 'Unmute' })).toBeTruthy()
   })
+
+  it('uses the English label for Japanese', () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+    render(ServerlessProductVideoSection, { props: { locale: 'ja' } })
+
+    expect(
+      screen.getByLabelText<HTMLVideoElement>('Comfy API product demo', {
+        selector: 'video'
+      })
+    ).toBeTruthy()
+  })
 })

@@ -5,26 +5,17 @@ import { t } from '../../i18n/translations'
 import ServerlessCustomerProofSection from './ServerlessCustomerProofSection.vue'
 
 describe('ServerlessCustomerProofSection', () => {
-  it('hides customer proof and creative apps by default', () => {
+  it('hides customer proof by default', () => {
     render(ServerlessCustomerProofSection, { props: { locale: 'en' } })
 
     expect(
       screen.queryByText(t('platform.serverlessCaseStudy.quote', 'en'))
     ).toBeNull()
-    expect(
-      screen.queryByRole('heading', {
-        name: t('platform.serverlessApps.heading', 'en')
-      })
-    ).toBeNull()
   })
 
-  it('can reveal the staged sections', () => {
+  it('shows creative apps and can reveal customer proof', () => {
     render(ServerlessCustomerProofSection, {
-      props: {
-        locale: 'en',
-        showCreativeApps: true,
-        showCustomerProof: true
-      }
+      props: { locale: 'en', showCustomerProof: true }
     })
 
     expect(
