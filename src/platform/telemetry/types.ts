@@ -793,9 +793,35 @@ export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
    */
   save_error_shown: boolean
 }
+export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
+export type AgentStarterPromptId =
+  | 'generate_image'
+  | 'list_workflows'
+  | 'find_workflow'
+  | 'explain_selected_node'
+  | 'build_video_workflow'
+  | 'unregistered'
+export interface AgentStarterPromptClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  prompt_id: AgentStarterPromptId
+  prompt_index: number
+  prompt_count: number
+  prompt_text_hash: string
+  locale: string
+  click_id: string
+  draft_was_empty: boolean
+}
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
+  thread_id: string | null
+  workflow_id: string | null
+  client_message_id: string
+  input_method: AgentInputMethod
+  starter_prompt_id: AgentStarterPromptId | null
+  starter_prompt_click_id: string | null
 }
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
@@ -803,6 +829,21 @@ export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
 export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
   target: 'active_tab_switch' | 'active_tab_open'
+}
+export type AgentErrorClass =
+  | 'request_failed'
+  | 'malformed_stream_event'
+  | 'cancel_failed'
+  | 'history_load_failed'
+  | 'ask_answer_failed'
+  | 'thread_list_load_failed'
+  | 'workflow_open_failed'
+export interface AgentErrorMetadata extends Record<string, unknown> {
+  error_class: AgentErrorClass
+  failure_stage: 'pre_acceptance' | 'post_acceptance'
+  retryable: boolean
+  turn_accepted: boolean
+  ui_treatment: 'inline_notice' | 'error_overlay' | 'toast' | 'none'
 }
 
 /**
@@ -1499,9 +1540,13 @@ export interface TelemetryProvider {
   trackAgentConsentShown?(metadata: AgentConsentShownMetadata): void
   trackAgentConsentResolved?(metadata: AgentConsentResolvedMetadata): void
   trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
+  trackAgentStarterPromptClicked?(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void
   trackAgentConsentOfferExited?(metadata: AgentConsentOfferExitedMetadata): void
   trackAgentOnboardingNotShown?(metadata: AgentOnboardingNotShownMetadata): void
@@ -1674,9 +1719,11 @@ export const TelemetryEvents = {
   AGENT_CONSENT_SHOWN: 'app:agent_consent_shown',
   AGENT_CONSENT_RESOLVED: 'app:agent_consent_resolved',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
+  AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_ERROR: 'app:agent_error',
   AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',
   AGENT_CONSENT_OFFER_EXITED: 'app:agent_consent_offer_exited',
   AGENT_ONBOARDING_NOT_SHOWN: 'app:agent_onboarding_not_shown',
