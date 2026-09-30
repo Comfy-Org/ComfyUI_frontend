@@ -9,9 +9,9 @@ describe('ProductsSection', () => {
     render(ProductsSection, { props: { locale: 'en' } })
 
     const cardLinks = [
-      ['platform.products.serverless.title', '/platform/comfy-api'],
-      ['platform.products.models.title', '/platform/router'],
-      ['platform.products.builder.title', '/platform/builder']
+      ['platform.products.serverless.title', '/platform/comfy-api/'],
+      ['platform.products.models.title', '/platform/router/'],
+      ['platform.products.builder.title', '/platform/builder/']
     ] as const
     for (const [key, href] of cardLinks) {
       expect(
