@@ -35,7 +35,6 @@ const {
   preview,
   canPay,
   submitting,
-  payFailure,
   returnLink,
   viewPlansLink,
   openedByScript,
@@ -99,12 +98,6 @@ const keepSubscription = computed(() => {
     locale: locale.value
   })
 })
-
-const payFailureCopy = computed(() =>
-  payFailure.value === undefined
-    ? undefined
-    : coded('failure', payFailure.value)
-)
 
 const ending = computed(() => endingOf(page.value))
 
@@ -192,7 +185,6 @@ function viewPlans() {
         :can-pay="canPay"
         :submitting
         :can-cancel="PENDING_PAYMENT_CANCEL_AVAILABLE"
-        :failure="payFailureCopy"
         :keep-subscription="keepSubscription"
         :saved-methods="savedMethods"
         @phase="onPaymentPhase"

@@ -31,7 +31,6 @@ const {
   canPay,
   submitting,
   canCancel = false,
-  failure,
   keepSubscription,
   savedMethods = []
 } = defineProps<{
@@ -41,7 +40,6 @@ const {
   canPay: boolean
   submitting: boolean
   canCancel?: boolean
-  failure?: string
   /** The notice a plan set to end shows above Pay, worded for this quote. */
   keepSubscription?: KeepSubscriptionCopy
   savedMethods?: readonly SavedPaymentMethod[]
@@ -79,7 +77,6 @@ const payContext = computed<PayContext>(() => {
   if (page.kind !== 'capture') return {}
   const { outcome, reactivation } = page
   return {
-    failure,
     ...(outcome === undefined || outcome.kind === 'reconciling'
       ? {}
       : { outcome }),

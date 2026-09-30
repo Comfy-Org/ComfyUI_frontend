@@ -136,8 +136,9 @@ export function reducePromoEntry(
   }
 }
 
-/** A typed code Apply has not judged yet, which a Pay prices before it charges. */
+/** A typed code the server has not judged yet, which a Pay prices before it charges. */
 export function hasUnappliedDraft(entry: PromoEntry): boolean {
+  if (entry.kind === 'rejected') return entry.reason === 'unchecked'
   return entry.kind === 'editing' && entry.draft.trim() !== ''
 }
 

@@ -27,8 +27,8 @@ const copy = {
     'zh-CN': '基于 Cseti 的 CrossView-Warp LoRA 与节点'
   },
   'reshoot.pick.lead': {
-    en: 'Aim a new camera at your clip and get the same moment from another angle.',
-    'zh-CN': '为片段设置新机位，从另一个角度得到同一时刻。'
+    en: 'Re-shoot any video from any angle. Move the camera anywhere, no reshoot day needed.',
+    'zh-CN': '从任意角度重拍任意视频。机位随心移动，无需补拍。'
   },
   'reshoot.pick.drop': { en: 'Drop a video here', 'zh-CN': '将视频拖到这里' },
   'reshoot.pick.upload': { en: 'Upload a video', 'zh-CN': '上传视频' },
