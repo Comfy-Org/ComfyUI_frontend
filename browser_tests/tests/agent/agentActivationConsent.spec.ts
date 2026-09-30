@@ -156,6 +156,34 @@ test.describe(
         await expect.poll(() => postedMessages).toHaveLength(1)
       })
     }
+
+    test('resumes the held send when App Mode defers the active tour', async ({
+      agentPanel,
+      comfyPage,
+      postedMessages
+    }) => {
+      const page = comfyPage.page
+      const consent = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+      const coach = page.getByRole('dialog', {
+        name: enMessages.agent.coachTitle
+      })
+
+      await agentPanel.selectWorkflow()
+      await agentPanel.composer.fill('Build a product photo workflow')
+      await agentPanel.sendButton.click()
+      await consent
+        .getByRole('button', { name: enMessages.agent.consent.accept })
+        .click()
+
+      await expect(coach).toBeVisible()
+      expect(postedMessages).toHaveLength(0)
+      await comfyPage.command.executeCommand('Comfy.ToggleLinear')
+
+      await expect(coach).toHaveCount(0)
+      await expect.poll(() => postedMessages).toHaveLength(1)
+    })
   }
 )
 

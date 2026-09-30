@@ -465,6 +465,7 @@ watch(
   [consentAccepted, onboardingKey, coachDeferredBy],
   ([accepted, key, reason]) => {
     if (accepted && key && !hasSeenCoach(key)) trackCoachDeferral(key, reason)
+    if (reason !== null) releaseCoachCompletionWaiters()
   },
   { immediate: true }
 )
@@ -479,7 +480,7 @@ async function waitForCoachCompletion(): Promise<void> {
   const key = onboardingKey.value
   if (!key || hasSeenCoach(key)) return
   await nextTick()
-  if (!coachRef.value) return
+  if (coachDeferredBy.value !== null || !coachRef.value) return
   await new Promise<void>((resolve) => coachCompletionWaiters.add(resolve))
 }
 
@@ -1225,7 +1226,10 @@ void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
   releaseCoachCompletionWaiters()
-  if (composerStore.submission?.id === consentHeldSubmissionId)
+  if (
+    coachDeferredBy.value === null &&
+    composerStore.submission?.id === consentHeldSubmissionId
+  )
     composerStore.invalidateSubmission()
   docOpMinter.detach()
   restoreOpMinter.detach()
