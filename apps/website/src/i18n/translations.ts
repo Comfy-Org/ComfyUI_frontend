@@ -8917,6 +8917,10 @@ Enterprise`
     en: 'Creative app powered by Comfy API',
     'zh-CN': '由 Comfy API 驱动的创意应用'
   },
+  'platform.serverlessVideo.label': {
+    en: 'Comfy API product demo',
+    'zh-CN': 'Comfy API 产品演示'
+  },
   'platform.serverlessCaseStudy.quote': {
     en: 'At Silverside, Comfy workflows are where our creative expertise becomes infrastructure. We build production pipelines then serve them through Comfy API so our clients can run the same proven workflows at scale. It lets a small team deliver enterprise-grade creative output.',
     'zh-CN':

@@ -33,6 +33,21 @@ describe('ServerlessCustomerProofSection', () => {
       })
     ).toBeTruthy()
     expect(
+      screen.getByLabelText(t('platform.serverlessApps.videoLabel', 'en'), {
+        selector: 'video'
+      })
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('link', {
+        name: t('platform.serverlessApps.browseApps', 'en')
+      })
+    ).toHaveAttribute('data-variant', 'default')
+    expect(
+      screen.getByRole('link', {
+        name: t('platform.serverlessApps.browseApps', 'en')
+      })
+    ).toHaveAttribute('href', '/hub/apps/')
+    expect(
       screen.getByText(t('platform.serverlessCaseStudy.quote', 'en'))
     ).toBeTruthy()
     expect(

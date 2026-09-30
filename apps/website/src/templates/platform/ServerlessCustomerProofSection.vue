@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight } from '@lucide/vue'
-
-import BrandButton from '../../components/common/BrandButton.vue'
+import Button from '../../components/ui/button/Button.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -35,17 +33,28 @@ const {
       <p class="mt-4 max-w-xl text-sm/relaxed text-smoke-700">
         {{ t('platform.serverlessApps.body', locale) }}
       </p>
-      <BrandButton
-        href="/workflows/?type=apps"
-        variant="outline"
-        size="sm"
-        class="mt-7 font-bold"
+      <Button as="a" href="/hub/apps/" variant="default" class="mt-7 font-bold">
+        {{ t('platform.serverlessApps.browseApps', locale) }}
+      </Button>
+    </div>
+
+    <div
+      class="overflow-hidden rounded-4xl border border-white/10 bg-primary-comfy-ink-light shadow-2xl shadow-black/20"
+    >
+      <video
+        :aria-label="t('platform.serverlessApps.videoLabel', locale)"
+        class="block size-full object-cover"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="metadata"
       >
-        <span class="inline-flex items-center gap-2 uppercase">
-          {{ t('platform.serverlessApps.browseApps', locale) }}
-          <ArrowRight class="size-4" aria-hidden="true" />
-        </span>
-      </BrandButton>
+        <source
+          src="https://media.comfy.org/website/comfy-api/app-serverless.mp4"
+          type="video/mp4"
+        />
+      </video>
     </div>
   </section>
 
