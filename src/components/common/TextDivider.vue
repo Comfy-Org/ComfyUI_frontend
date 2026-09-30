@@ -4,7 +4,7 @@
     <div
       :class="
         cn(
-          'grow border-t border-interface-stroke',
+          'grow border-0 border-t border-interface-stroke',
           type === 'dashed' && 'border-dashed',
           type === 'dotted' && 'border-dotted'
         )

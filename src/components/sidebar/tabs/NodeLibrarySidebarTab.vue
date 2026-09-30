@@ -135,7 +135,7 @@
           />
           <div
             v-show="nodeBookmarkStore.bookmarks.length > 0"
-            class="m-2 border-t border-dashed border-interface-stroke"
+            class="m-2 border-0 border-t border-dashed border-interface-stroke"
           />
           <TreeExplorer
             v-model:expanded-keys="expandedKeys"
