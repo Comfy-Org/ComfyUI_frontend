@@ -26,10 +26,10 @@ describe('ServerlessHero', () => {
     expect(screen.queryByText(t('nav.badgeBeta', 'en'))).toBeNull()
   })
 
-  it('loads the JSON API GPU animation', () => {
+  it('loads the JSON API GPU animation after mounting', async () => {
     render(ServerlessHero, { props: { locale: 'en' } })
 
-    const animation = screen.getByTitle(
+    const animation = await screen.findByTitle(
       t('platform.serverlessHero.animationTitle', 'en')
     )
     expect(animation).toHaveAttribute(

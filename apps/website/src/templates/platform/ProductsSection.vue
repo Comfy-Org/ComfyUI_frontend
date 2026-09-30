@@ -78,8 +78,8 @@ const modelsTabs = modelsApiCodeTabs
           aria-hidden="true"
         >
           <ProductHeroBadge
-            :text="t('platform.products.models.title', locale).toUpperCase()"
-            :show-logo="false"
+            :text="t('platform.products.models.badgeLabel', locale)"
+            :show-connector="false"
             compact
           />
         </div>
