@@ -98,6 +98,7 @@
     "vitest/expect-expect": "off",
     "vitest/no-conditional-expect": "off",
     "vitest/no-disabled-tests": "error",
+    "vitest/warn-todo": "error",
     "vitest/no-standalone-expect": "off",
     "vitest/valid-title": "off",
     "vitest/require-to-throw-message": "off",
@@ -181,6 +182,7 @@
       ],
       "rules": {
         "comfy/no-import-actual": "error",
+        "comfy/no-statically-disabled-test": "error",
         "comfy/use-global-pinia": "error"
       }
     },

@@ -219,8 +219,9 @@ Playwright tests verify the whole app. See [browser_tests/README.md](browser_tes
 ### Temporarily Disabled Tests
 
 Do not commit disabled tests or suites. Delete retired tests, and fix temporarily
-failing tests before merging. The lint rules reject Vitest `skip`, `skipIf`,
-`runIf`, and `todo` declarations and Playwright `skip` declarations.
+failing tests before merging. The lint rules reject Vitest `skip` and `todo`
+declarations, `skipIf` and `runIf` with a literal condition that disables the
+test, and Playwright `skip` declarations.
 
 ### Running All Tests
 
