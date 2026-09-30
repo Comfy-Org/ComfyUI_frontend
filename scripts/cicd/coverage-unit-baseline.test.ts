@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { History, WorkflowRun } from './coverage-unit-baseline'
-import { MAX_HOPS, resolveUnitBaseline } from './coverage-unit-baseline'
+import {
+  MAX_HOPS,
+  liveArtifactNamesOf,
+  resolveUnitBaseline
+} from './coverage-unit-baseline'
 
 const UNIT_COVERAGE = 'unit-coverage'
 
@@ -152,5 +156,30 @@ describe('resolveUnitBaseline', () => {
       spanned: false,
       lastChecked: `gap-${MAX_HOPS - 1}`
     })
+  })
+})
+
+// The listing endpoint returns expired artifacts too. Selecting a run on the
+// strength of one leaves the ancestor download empty, and unit silently drops
+// out of that report.
+describe('liveArtifactNamesOf', () => {
+  it('keeps a live artifact and drops an expired one of the same name', () => {
+    const names = liveArtifactNamesOf({
+      artifacts: [
+        { name: UNIT_COVERAGE, expired: true },
+        { name: UNIT_COVERAGE, expired: false }
+      ]
+    })
+
+    expect(names).toEqual([UNIT_COVERAGE])
+  })
+
+  it.for<[shape: string, page: unknown]>([
+    ['a page that is not an object', 'nope'],
+    ['a page with no artifacts key', {}],
+    ['artifacts that are not a list', { artifacts: 'nope' }],
+    ['an entry with no name', { artifacts: [{ expired: false }] }]
+  ])('reads no names from %s', ([, page]) => {
+    expect(liveArtifactNamesOf(page)).toEqual([])
   })
 })

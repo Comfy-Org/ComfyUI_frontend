@@ -115,7 +115,10 @@ describe('orderE2eCoverage', () => {
     const order = await orderE2eCoverage(
       { current: 'measured', baseline: 'measured' },
       HEAD,
-      relating({ 'measured->head-sha': 'ahead' })
+      relating({
+        'measured->head-sha': 'ahead',
+        'measured->measured': 'identical'
+      })
     )
 
     expect(order).toEqual({ usable: true, withheld: [] })
