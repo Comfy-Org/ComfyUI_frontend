@@ -2650,6 +2650,15 @@
       "expired": "Verification expired. Please complete the challenge again.",
       "submitBlockedHint": "Complete the verification challenge above to enable sign up."
     },
+    "webSession": {
+      "token": {
+        "ended": "Your session ended. Sign in again to continue.",
+        "identityChanged": "Your session changed. Reload to continue.",
+        "unavailable": "We couldn't reach your account. Try again in a moment.",
+        "workspaceDenied": "You don't have access to this workspace. Contact support if this keeps happening.",
+        "refused": "Your request was refused. Reload the page and try again."
+      }
+    },
     "signOut": {
       "signOut": "Log Out",
       "success": "Signed out successfully",
