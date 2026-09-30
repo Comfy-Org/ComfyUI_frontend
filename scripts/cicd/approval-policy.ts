@@ -8,6 +8,12 @@ const fileSchema = z.object({
   filename: z.string(),
   previous_filename: z.string().optional()
 })
+const commentSchema = z.object({
+  id: z.number(),
+  user: userSchema.nullable(),
+  body: z.string(),
+  updated_at: z.string()
+})
 const reviewSchema = z.object({
   id: z.number(),
   user: userSchema.nullable(),
@@ -203,13 +209,20 @@ export async function runApprovalPolicy(
     if (expectedHead && pull.head.sha !== expectedHead) {
       throw new Error('PR head changed before evaluation')
     }
-    const [files, reviews] = await Promise.all([
+    const [files, reviews, comments] = await Promise.all([
       paginate(`${repoPath}/pulls/${number}/files`, fileSchema),
-      paginate(`${repoPath}/pulls/${number}/reviews`, reviewSchema)
+      paginate(`${repoPath}/pulls/${number}/reviews`, reviewSchema),
+      paginate(`${repoPath}/issues/${number}/comments`, commentSchema)
     ])
     if (files.length !== pull.changed_files) {
       throw new Error(`PR #${number}: incomplete changed-file list`)
     }
+    const override = comments.find(
+      (comment) =>
+        comment.user?.type === 'User' &&
+        comment.user.login.toLowerCase() === pull.user.login.toLowerCase() &&
+        comment.body.trim() === 'To Be Reviewed'
+    )
     const failure = approvalFailure({
       files,
       reviews,
@@ -217,8 +230,8 @@ export async function runApprovalPolicy(
       author: pull.user.login,
       ...teams
     })
-    if (failure) throw new Error(`PR #${number}: ${failure}`)
-    return { pull, reviews }
+    if (failure && !override) throw new Error(`PR #${number}: ${failure}`)
+    return { pull, reviews, comments, override }
   }
 
   async function verifyGroup(sha: string, pullNumbers: number[]) {
@@ -265,21 +278,29 @@ export async function runApprovalPolicy(
           })
         )
       )
-      for (const { pull, reviews } of snapshots) {
-        const [live, liveReviews] = await Promise.all([
+      for (const { pull, reviews, comments } of snapshots) {
+        const [live, liveReviews, liveComments] = await Promise.all([
           request(`${repoPath}/pulls/${pull.number}`, prSchema),
-          paginate(`${repoPath}/pulls/${pull.number}/reviews`, reviewSchema)
+          paginate(`${repoPath}/pulls/${pull.number}/reviews`, reviewSchema),
+          paginate(`${repoPath}/issues/${pull.number}/comments`, commentSchema)
         ])
         if (
           JSON.stringify(live) !== JSON.stringify(pull) ||
-          JSON.stringify(liveReviews) !== JSON.stringify(reviews)
+          JSON.stringify(liveReviews) !== JSON.stringify(reviews) ||
+          JSON.stringify(liveComments) !== JSON.stringify(comments)
         ) {
           throw new Error('PR changed during evaluation; re-run the policy')
         }
       }
       if (mergeGroup) await verifyGroup(sha, pullNumbers)
       conclusion = 'success'
-      summary = `Eligible current-head approval for PRs: ${pullNumbers.join(', ')}.`
+      summary = snapshots
+        .map(({ pull, override }) =>
+          override
+            ? `PR #${pull.number}: author bypassed approval with [To Be Reviewed](https://github.com/${repository}/pull/${pull.number}#issuecomment-${override.id}).`
+            : `PR #${pull.number}: eligible current-head approval.`
+        )
+        .join('\n')
     } catch (error) {
       summary = error instanceof Error ? error.message : String(error)
     }

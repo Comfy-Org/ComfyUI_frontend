@@ -20,6 +20,14 @@ function review(overrides: Partial<Review> = {}): Review {
   }
 }
 
+function comment({
+  user = { login: 'author', type: 'User' },
+  body = 'To Be Reviewed',
+  id = 31
+}: { user?: Review['user']; body?: string; id?: number } = {}) {
+  return { id, user, body, updated_at: '2026-09-30T00:00:00Z' }
+}
+
 function policy(overrides: Partial<Policy> = {}): Policy {
   return {
     files: [{ filename: 'apps/website/page.astro' }],
@@ -176,6 +184,10 @@ function githubFixture() {
       [review({ commit_id: 'head-12', user: { login: 'front', type: 'User' } })]
     ]
   ])
+  const comments = new Map<number, ReturnType<typeof comment>[]>([
+    [7, []],
+    [12, []]
+  ])
   const members = new Map([
     ['comfy_frontend_devs', [{ login: 'front', type: 'User' }]],
     ['comfy_website_devs', [{ login: 'web', type: 'User' }]]
@@ -207,12 +219,16 @@ function githubFixture() {
         }
       }
     if (path.endsWith('/pulls')) return [{ number: 7 }]
-    const match = path.match(/\/pulls\/(\d+)(?:\/(files|reviews))?$/)
+    const match = path.match(
+      /\/(?:pulls|issues)\/(\d+)(?:\/(files|reviews|comments))?$/
+    )
     if (match) {
       const number = Number(match[1])
       if (!match[2]) return pulls.get(number)
-      const rows =
-        match[2] === 'files' ? files.get(number) : reviews.get(number)
+      const collection = z
+        .enum(['files', 'reviews', 'comments'])
+        .parse(match[2])
+      const rows = { files, reviews, comments }[collection].get(number)
       return rows?.slice((page - 1) * 100, page * 100)
     }
     const team = path.match(/\/teams\/([^/]+)\/members$/)?.[1]
@@ -257,7 +273,17 @@ function githubFixture() {
     }
     return Response.json(readData(url))
   })
-  return { pulls, files, reviews, members, entries, writes, failures, onRead }
+  return {
+    pulls,
+    files,
+    reviews,
+    comments,
+    members,
+    entries,
+    writes,
+    failures,
+    onRead
+  }
 }
 
 describe('GitHub approval check', () => {
@@ -290,7 +316,7 @@ describe('GitHub approval check', () => {
       {
         sha: 'head-7',
         conclusion: 'success',
-        summary: 'Eligible current-head approval for PRs: 7.'
+        summary: 'PR #7: eligible current-head approval.'
       }
     ])
   })
@@ -365,8 +391,132 @@ describe('GitHub approval check', () => {
       {
         sha: 'head-7',
         conclusion: 'success',
-        summary: 'Eligible current-head approval for PRs: 7.'
+        summary: 'PR #7: eligible current-head approval.'
       }
+    ])
+  })
+
+  it.for([
+    { name: 'author', entry: comment(), conclusion: 'success' },
+    {
+      name: 'surrounding whitespace and login case',
+      entry: comment({
+        body: '\nTo Be Reviewed\n',
+        user: { login: 'AuThOr', type: 'User' }
+      }),
+      conclusion: 'success'
+    },
+    {
+      name: 'another person',
+      entry: comment({ user: { login: 'front', type: 'User' } }),
+      conclusion: 'failure'
+    },
+    {
+      name: 'bot author',
+      entry: comment({ user: { login: 'author', type: 'Bot' } }),
+      conclusion: 'failure'
+    },
+    {
+      name: 'deleted commenter',
+      entry: comment({ user: null }),
+      conclusion: 'failure'
+    },
+    {
+      name: 'quoted phrase',
+      entry: comment({ body: '> To Be Reviewed' }),
+      conclusion: 'failure'
+    },
+    {
+      name: 'phrase inside prose',
+      entry: comment({ body: 'Do not use To Be Reviewed here.' }),
+      conclusion: 'failure'
+    }
+  ])('author override: $name', async ({ entry, conclusion }) => {
+    const fixture = githubFixture()
+    fixture.reviews.set(12, [])
+    fixture.comments.set(12, [entry])
+
+    await runApprovalPolicy({}, 'token', '12')
+
+    expect(fixture.writes).toMatchObject([{ sha: 'head-12', conclusion }])
+  })
+
+  it('finds a paginated author override and links it in the check', async () => {
+    const fixture = githubFixture()
+    fixture.reviews.set(7, [])
+    fixture.comments.set(7, [
+      ...Array.from({ length: 100 }, (_, id) =>
+        comment({ id, body: 'Discussion' })
+      ),
+      comment({ id: 101 })
+    ])
+
+    await runApprovalPolicy({}, 'token', '7')
+
+    expect(fixture.writes).toEqual([
+      {
+        sha: 'head-7',
+        conclusion: 'success',
+        summary:
+          'PR #7: author bypassed approval with [To Be Reviewed](https://github.com/Comfy-Org/ComfyUI_frontend/pull/7#issuecomment-101).'
+      }
+    ])
+  })
+
+  it.for([
+    { name: 'deleted', remaining: [] },
+    { name: 'edited', remaining: [comment({ body: 'Please review first' })] }
+  ])('rejects an override $name during evaluation', async ({ remaining }) => {
+    const fixture = githubFixture()
+    fixture.reviews.set(7, [])
+    fixture.comments.set(7, [comment()])
+    fixture.onRead.mockImplementation((path, count) => {
+      if (path.endsWith('/7/comments') && count === 2)
+        fixture.comments.set(7, remaining)
+    })
+
+    await runApprovalPolicy({}, 'token', '7')
+
+    expect(fixture.writes).toEqual([
+      {
+        sha: 'head-7',
+        conclusion: 'failure',
+        summary: 'PR changed during evaluation; re-run the policy'
+      }
+    ])
+  })
+
+  it('revokes bypass on its PR and group without bypassing other queued PRs', async () => {
+    const fixture = githubFixture()
+    fixture.reviews.set(7, [])
+    fixture.reviews.set(12, [])
+    fixture.comments.set(7, [comment()])
+    fixture.entries.push(
+      {
+        position: 1,
+        headCommit: { oid: 'group-7' },
+        pullRequest: { number: 7 }
+      },
+      {
+        position: 2,
+        headCommit: { oid: 'group-12' },
+        pullRequest: { number: 12 }
+      }
+    )
+
+    await runApprovalPolicy({}, 'token', '7')
+    fixture.comments.set(7, [])
+    await runApprovalPolicy({}, 'token', '7')
+
+    expect(
+      fixture.writes.map(({ sha, conclusion }) => ({ sha, conclusion }))
+    ).toEqual([
+      { sha: 'head-7', conclusion: 'success' },
+      { sha: 'group-7', conclusion: 'success' },
+      { sha: 'group-12', conclusion: 'failure' },
+      { sha: 'head-7', conclusion: 'failure' },
+      { sha: 'group-7', conclusion: 'failure' },
+      { sha: 'group-12', conclusion: 'failure' }
     ])
   })
 
@@ -423,6 +573,15 @@ describe('GitHub approval check', () => {
 it('keeps privileged execution on main behind an environment and a dedicated App', () => {
   const workflow = z
     .object({
+      on: z.object({
+        issue_comment: z.object({
+          types: z.tuple([
+            z.literal('created'),
+            z.literal('edited'),
+            z.literal('deleted')
+          ])
+        })
+      }),
       permissions: z.object({ contents: z.literal('read') }).strict(),
       jobs: z.object({
         evaluate: z.object({
@@ -430,7 +589,9 @@ it('keeps privileged execution on main behind an environment and a dedicated App
           steps: z.array(
             z.object({
               uses: z.string().optional(),
-              with: z.record(z.unknown()).optional()
+              with: z.record(z.unknown()).optional(),
+              run: z.string().optional(),
+              env: z.record(z.string()).optional()
             })
           )
         })
@@ -457,5 +618,12 @@ it('keeps privileged execution on main behind an environment and a dedicated App
     'permission-checks': 'write',
     'permission-members': 'read',
     'private-key': '${{ secrets.APPROVAL_POLICY_APP_PRIVATE_KEY }}'
+  })
+  expect(workflow.jobs.evaluate.steps.find((step) => step.run)).toMatchObject({
+    run: 'pnpm exec tsx scripts/cicd/approval-policy.ts',
+    env: {
+      APPROVAL_POLICY_PR:
+        '${{ inputs.pull-request || github.event.issue.number }}'
+    }
   })
 })

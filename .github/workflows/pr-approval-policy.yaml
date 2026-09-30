@@ -4,6 +4,8 @@ on:
   workflow_run:
     workflows: ['CI: Approval Policy Signal']
     types: [completed]
+  issue_comment:
+    types: [created, edited, deleted]
   workflow_dispatch:
     inputs:
       pull-request:
@@ -15,12 +17,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: approval-policy-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch || inputs.pull-request }}
+  group: approval-policy-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch || inputs.pull-request || github.event.issue.number }}
   cancel-in-progress: false
 
 jobs:
   evaluate:
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.ref == 'refs/heads/main'
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name != 'issue_comment' || github.event.issue.pull_request)
     environment: approval-policy
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -49,5 +54,5 @@ jobs:
       - name: Evaluate live approvals
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
-          APPROVAL_POLICY_PR: ${{ inputs.pull-request }}
+          APPROVAL_POLICY_PR: ${{ inputs.pull-request || github.event.issue.number }}
         run: pnpm exec tsx scripts/cicd/approval-policy.ts
