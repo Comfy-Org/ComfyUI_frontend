@@ -16,7 +16,6 @@
  * wiring onto the scope source, the scope tracker, and the generated
  * contract is new.
  */
-import { zBillingOpStatusResponse } from '@comfyorg/ingest-types/zod'
 
 import { BILLING_OPERATION_TELEMETRY_EVENT } from '../../telemetry.js'
 import type {
@@ -56,6 +55,7 @@ import type {
   PendingBillingOperation
 } from './operationState.js'
 import {
+  BillingOpStatusSchema,
   isTerminal,
   reduceBillingOperation,
   validateActionUrl
@@ -444,7 +444,7 @@ export function createBillingOperationLifecycle(
     return readValidatedBillingResponse(
       transport,
       { method: 'GET', route: operationRoute(operationId) },
-      (body) => zBillingOpStatusResponse.safeParse(body)
+      (body) => BillingOpStatusSchema.safeParse(body)
     )
   }
 
