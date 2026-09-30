@@ -135,6 +135,7 @@
           />
           <div
             v-show="nodeBookmarkStore.bookmarks.length > 0"
+            role="separator"
             class="m-2 border-0 border-t border-dashed border-interface-stroke"
           />
           <TreeExplorer

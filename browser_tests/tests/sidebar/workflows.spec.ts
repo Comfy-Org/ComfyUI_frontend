@@ -25,20 +25,24 @@ test.describe('Workflows sidebar', () => {
     comfyPage
   }) => {
     const separators = comfyPage.menu.workflowsTab.root.getByRole('separator')
-    await expect(separators.first()).toBeVisible()
+    await expect(separators).toHaveCount(2)
 
-    for (const separator of await separators.all()) {
-      const borderWidths = await separator.evaluate((element) => {
-        const style = getComputedStyle(element)
-        return [
-          style.borderTopWidth,
-          style.borderRightWidth,
-          style.borderBottomWidth,
-          style.borderLeftWidth
-        ]
-      })
-      expect(borderWidths).toEqual(['1px', '0px', '0px', '0px'])
-    }
+    const borderWidths = await Promise.all(
+      (await separators.all()).map((separator) =>
+        separator.evaluate((element) => {
+          const style = getComputedStyle(element)
+          return [
+            style.borderTopWidth,
+            style.borderRightWidth,
+            style.borderBottomWidth,
+            style.borderLeftWidth
+          ]
+        })
+      )
+    )
+
+    const singleTopLine = ['1px', '0px', '0px', '0px']
+    expect(borderWidths).toEqual([singleTopLine, singleTopLine])
   })
 
   test('Can create new blank workflow', async ({ comfyPage }) => {
