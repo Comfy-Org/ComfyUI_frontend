@@ -17,13 +17,13 @@
     "addNodesFromGraph": "Grafikteki düğümlerden bahset",
     "addPromptToSend": "Göndermek için istem ekle",
     "addToPrompt": "İsteme ekle",
-    "alpha": "ALFA",
     "assetNotAttachable": "Görüntüler, videolar, sesler, 3D modeller ve metin dosyaları eklenebilir",
     "attach": "Dosya ekle",
     "attachFiles": "Görselleri veya dosyaları yükleyin",
     "attachmentTooLarge": "{name}, {limit} değerinden daha büyük",
     "attachmentUploadFailed": "{name} yüklenemedi",
     "backToPreviousChat": "Önceki sohbete dön",
+    "beta": "BETA",
     "caption": "Yapay zekâ aracısı hata yapabilir",
     "captionExpanded": "Yapay zekâ aracısı hata yapabilir. Yanıtınızı iki kez kontrol edin.",
     "changeWorkflowForChat": "Aracının düzenleyebileceği iş akışını değiştirin",
@@ -38,8 +38,8 @@
     "coachHistoryTitle": "Kaldığınız yerden devam edin",
     "coachProgress": "{total} içinde {current}",
     "coachTitle": "Comfy Agent'inizle tanışın",
-    "coachWorkflowBody": "Aracı yalnızca seçtiğiniz iş akışını düzenler. Ayrıca referans dosyaları yükleyebilir veya diğer iş akışlarından bahsedebilirsiniz.",
-    "coachWorkflowTitle": "Aracınızın düzenleyeceği bir iş akışı seçin",
+    "coachWorkflowBody": "Mesaj gönderene, bir iş akışı seçene veya düğüm referansı ekleyene kadar sekmelerinizle birlikte değişir.",
+    "coachWorkflowTitle": "Ajanınız, görüntülediğiniz iş akışını düzenler",
     "consent": {
       "accept": "Comfy Agent'i kullanmaya başla",
       "body1": "Comfy Agent, iş akışlarını planlamanıza, oluşturmanıza, çalıştırmanıza ve geliştirmenize yardımcı olur. Ne oluşturmak istediğinizi açıklayın; Comfy Agent güçlü bir ekip arkadaşınız olarak çalışacaktır.",
@@ -129,6 +129,7 @@
     "runApproval": {
       "cancel": "İptal",
       "lead": "Bu araç iş akışını yürütmek istiyor:",
+      "leadBound": "Bu araç, bu iş akışını çalıştırmak istiyor.",
       "question": "Onaylıyor musunuz?",
       "run": "Çalıştır",
       "thisWorkflow": "bu iş akışını"
@@ -161,18 +162,31 @@
     "showChatHistory": "Sohbet geçmişini göster",
     "showLess": "Daha az göster",
     "showMore": "Daha fazlasını göster",
+    "showTarget": "Hedefi göster",
+    "showTargetWorkflow": "Hedef iş akışını göster: {workflowName}",
     "skip": "Atla",
     "stop": "Durdur",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "Hokey maskeli sarı bir ördek oluştur",
-      "Kaydedilmiş iş akışlarımı listele",
-      "Cilt büyütme için en iyi iş akışını bul",
-      "Seçili düğümü açıkla",
-      "3 modelle görüntüden videoya iş akışı oluştur"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Astronot karakter sayfası oluştur",
+        "Ürün görselini kısa bir reklama dönüştür",
+        "Seçili düğümleri açıkla",
+        "4K için en iyi görüntü yükseltme iş akışı",
+        "Bu iş akışındaki hataları düzelt"
+      ],
+      "local": [
+        "Astronotun gerçekçi portresini oluştur",
+        "GPU'ma uygun görüntüden videoya iş akışı",
+        "Seçili düğümleri açıkla",
+        "Bu iş akışı için eksik düğümleri yüklememe yardım et",
+        "Bu iş akışındaki hataları düzelt"
+      ]
+    },
     "switchWorkflow": "İş akışını değiştir",
     "switchWorkflowForNodes": "Düğüm eklemek için {workflowName} iş akışına geçin.",
+    "takeTour": "Turu başlat",
+    "targetFollowsVisibleWorkflow": "Hedef iş akışı, bir hedef seçene, düğüm referansları ekleyene veya mesaj gönderene kadar görünür sekmeyi takip eder.",
     "targetForThisChat": "Bu sohbet için ajan hedefi",
     "targetNavigationUnavailable": "Bu iş akışı hedefi artık kullanılamıyor.",
     "thinking": "Düşünüyor...",
@@ -191,6 +205,7 @@
     "updatingGraph": "Aracı grafiği güncelliyor",
     "uploading": "Yükleniyor",
     "viewAddedNodes": "Düğümü görüntüle | Düğümleri görüntüle",
+    "viewingDifferentWorkflow": "Hedef iş akışından farklı bir iş akışını görüntülüyorsunuz.",
     "worked": "Tamamlandı",
     "workedForMinutes": "{minutes} dk. {seconds} sn. çalıştı",
     "workedForSeconds": "{seconds} saniye çalıştı",
@@ -3195,7 +3210,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",

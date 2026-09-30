@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "اعرض الفيديو النهائي بدقة 1080p لمسودة Seedance 2.5. يحتفظ الفيديو النهائي بمشهد المسودة وحركتها، ويعيد استخدام المطالبة والمراجع والمدة ونسبة العرض إلى الارتفاع وإعداد الصوت الخاص بها.",
+    "display_name": "ByteDance Seedance 2.5 من المسودة إلى الفيديو النهائي",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "مخرج draft_task_id من تشغيل عقدة Seedance 2.5 باستخدام نموذج Seedance 2.5 Draft، أو معرّف مهمة مسودة ملصق. اضبط التحكم بالبذرة لتلك العقدة على ثابت، وإلا فسيؤدي التشغيل التالي إلى إنشاء مسودة جديدة بدلاً من إعادة استخدام المسودة التي راجعتها. يمكن عرض المسودة لمدة 7 أيام بعد إنشائها."
+      },
+      "watermark": {
+        "name": "العلامة المائية",
+        "tooltip": "ما إذا كان يجب إضافة علامة مائية إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "إنشاء فيديو باستخدام Seedance 2.0 من صورة الإطار الأول وصورة الإطار الأخير (اختياري).",
     "display_name": "ByteDance Seedance 2.0 من الإطار الأول/الأخير إلى فيديو",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 للنموذج الأحدث، ومقاطع فيديو تصل إلى 30 ثانية وإخراج mp4/mov؛ Seedance 2.0 لأقصى جودة و4k؛ Fast لتحسين السرعة؛ Mini لأسرع توليد وأقل تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، ومقاطع فيديو تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id الفيديو النهائي بدقة 1080p في عقدة Seedance 2.5 من المسودة إلى الفيديو النهائي؛ وSeedance 2.0 لأقصى جودة ودقة 4k؛ وFast لتحسين السرعة؛ وMini لأسرع توليد بأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "معرّف مهمة لتشغيل Seedance 2.5 Draft. وصّله بعقدة Seedance 2.5 من المسودة إلى الفيديو النهائي لعرض الفيديو النهائي بدقة 1080p."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 للنموذج الأحدث، ومقاطع فيديو تصل إلى 30 ثانية وإخراج mp4/mov؛ Seedance 2.0 لأقصى جودة و4k؛ Fast لتحسين السرعة؛ Mini لأسرع توليد وأقل تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، ومقاطع فيديو تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id الفيديو النهائي بدقة 1080p في عقدة Seedance 2.5 من المسودة إلى الفيديو النهائي؛ وSeedance 2.0 لأقصى جودة ودقة 4k؛ وFast لتحسين السرعة؛ وMini لأسرع توليد بأقل تكلفة."
       },
       "model_auto_downscale": {
         "name": "التقليل التلقائي للحجم"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 للنموذج الأحدث، ومقاطع فيديو تصل إلى 30 ثانية وإخراج mp4/mov؛ Seedance 2.0 لأقصى جودة و4k؛ Fast لتحسين السرعة؛ Mini لأسرع توليد وأقل تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، ومقاطع فيديو تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id الفيديو النهائي بدقة 1080p في عقدة Seedance 2.5 من المسودة إلى الفيديو النهائي؛ وSeedance 2.0 لأقصى جودة ودقة 4k؛ وFast لتحسين السرعة؛ وMini لأسرع توليد بأقل تكلفة."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "معرّف مهمة لتشغيل Seedance 2.5 Draft. وصّله بعقدة Seedance 2.5 من المسودة إلى الفيديو النهائي لعرض الفيديو النهائي بدقة 1080p."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 لأحدث طراز، وفيديوهات تصل إلى 30 ثانية وإخراج mp4/mov؛ وSeedance 2.0 لأقصى جودة و4K؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، ومقاطع فيديو تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id الفيديو النهائي بدقة 1080p في عقدة Seedance 2.5 من المسودة إلى الفيديو النهائي؛ وSeedance 2.0 لأقصى جودة ودقة 4k؛ وFast لتحسين السرعة؛ وMini لأسرع توليد بأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "معرّف مهمة لتشغيل Seedance 2.5 Draft. وصّله بعقدة Seedance 2.5 من المسودة إلى الفيديو النهائي لعرض الفيديو النهائي بدقة 1080p."
       }
     }
   },
@@ -7732,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "حوّل صورة إلى فيديو بحوار وصوت متزامنين باستخدام HeyGen Video 1.0. تُستخدم الصورة كالإطار الأول.",
+    "display_name": "HeyGen Video 1.0 من صورة إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "أنشئ فيديو بحوار وصوت متزامنين من موجّه نصي باستخدام HeyGen Video 1.0. يمكنك اختياريًا توصيل ما يصل إلى 12 صورة مرجعية ومقاطع فيديو ومقاطع صوتية والإشارة إليها في الموجّه بصيغة {'@'}Image1 و{'@'}Video1 و{'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0 من مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "حوّل أي صورة لشخص إلى فيديو متكلم متزامن مع حركة الشفاه (HeyGen Avatar IV). يمكنك تحريكها بنص مكتوب أو صوتك الخاص.",
     "display_name": "HeyGen صورة متحركة ناطقة",
@@ -8345,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "يحرر أو يدمج ما يصل إلى 5 صور بتوجيه من مطالبة نصية باستخدام Ideogram 4.5. يعيد عرض الصورة بأكملها ويمكنه تغيير حجمها أو نسبة عرضها إلى ارتفاعها؛ استخدم Ideogram 4.5 Precise Edit للحفاظ على البكسلات غير المعدلة دون تغيير.",
+    "display_name": "Ideogram 4.5 تحرير",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_quality": {
+        "name": "الجودة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_size": {
+        "name": "الحجم"
+      },
+      "model_width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "يولّد صورًا باستخدام P-Image، نموذج Ideogram السريع لتحويل النص إلى صورة. يتميز بقوة في الطباعة والواقعية الفوتوغرافية؛ يدعم تسميات JSON المنظمة لإصدار Ideogram 4.0 من أجل نصوص دقيقة، ألوان وتخطيط محدد.",
     "display_name": "Ideogram وPruna P-Image",
@@ -8384,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "الوصف الذي تم توليد الصورة بناءً عليه فعليًا (التسمية المنظمة المعاد كتابتها عند تشغيل prompt_upsampling، أو وصفك الأصلي). أعد استخدامه مع prompt_upsampling على إيقاف OFF ونفس البذرة لإعادة إنتاج هذه الصورة."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "يحرر صورة بتوجيه من مطالبة نصية باستخدام التحرير الدقيق في Ideogram 4.5: لا يتغير إلا ما تطلبه المطالبة، وتبقى البكسلات غير المعدلة مطابقة، ويحافظ الإخراج على حجم الصورة 1 (تُصغّر الصور التي تزيد عن ~4 MP أولاً). يقبل ما يصل إلى 4 صور مرجعية.",
+    "display_name": "Ideogram 4.5 تحرير دقيق",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_quality": {
+        "name": "الجودة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "يولّد صوراً من مطالبة نصية باستخدام Ideogram 4.5.",
+    "display_name": "Ideogram 4.5 من النص إلى الصورة",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "الوصف المنظّم الذي تم توليد الصورة منه. أعد تمريره مع تعيين magic_prompt إلى 'off' واستخدام seed نفسه لإعادة إنتاج الصورة."
       }
     }
   },
@@ -8547,12 +8739,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "تحويل sRGB وRec.709 الخطي وHDR ‏(Rec.2020 HLG) وHDR PQ ‏(Rec.2020 PQ). يستخدم Linear 1.0 نفس الأبيض المرجعي البالغ 203 نت مثل sRGB؛ ويستخدم HLG شاشة مرجعية بسطوع 1000 نت. يحافظ الإخراج الخطي والتحويلات من الخطي إلى HDR على القيم الموسعة دون تعيين درجات لونية. يعيّن إخراج SDR والتحويل من PQ إلى HLG درجات سطوع الإضاءة الزائدة عبر الدفعة ويضغط الألوان خارج التدرج اللوني. تُحسب التحويلات باستخدام float32 وتُرجع الجهاز الوسيط ونوع البيانات. لا يخضع ألفا المستقيم لتحويل الألوان.",
+    "description": "يحوّل بين sRGB وRec.709 الخطي وHDR (Rec.2020 HLG) وHDR PQ (Rec.2020 PQ) وHDR LogC3 وHDR ACEScct. يستخدم LogC3 منحنى EI 800 مع الألوان الأولية Rec.709 والقيم البرمجية المقيّدة ضمن [0, 1]. يستخدم ACEScct الألوان الأولية AP1 والنقطة البيضاء D60، مع تكييف Bradford إلى D65. حوّل LogC3 أو ACEScct إلى خطي لحفظ EXR. يستخدم Linear 1.0 نفس الأبيض المرجعي البالغ 203 نت مثل sRGB؛ ويستخدم HLG شاشة مرجعية بقيمة 1000 نت. تحافظ مخرجات Linear وACEScct على القيم الممتدة. تحافظ التحويلات من Linear إلى HDR على الإضاءات العالية دون تعيين الدرجات اللونية؛ وتقص مخرجات HLG وPQ القنوات السالبة. يطبّق خرج SDR والتحويل من PQ إلى HLG تعيين الدرجات اللونية على السطوع الزائد عبر الدفعة ويضغط الألوان خارج النطاق اللوني. تُجرى التحويلات باستخدام float32 وتُرجع الجهاز الوسيط وdtype. لا يُحوَّل ألفا المستقيم لونيًا.",
     "display_name": "تحويل مساحة ألوان الصورة",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "مساحة ألوان بكسلات الإخراج. اضبط عقدة الحفظ على مساحة الألوان نفسها."
+        "tooltip": "مساحة الألوان لبكسلات الإخراج. اضبط عقدة الحفظ على مساحة الألوان نفسها. حوّل LogC3 أو ACEScct إلى خطي قبل حفظ EXR، أو إلى sRGB/HDR/HDR PQ قبل حفظ الفيديو."
       },
       "image": {
         "name": "image"
@@ -17117,40 +17309,6 @@
       }
     }
   },
-  "OpenAIVideoSora2": {
-    "description": "إنشاء فيديو وصوت من OpenAI.",
-    "display_name": "OpenAI Sora - Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "التحكم بعد التوليد"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image": {
-        "name": "image"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "نص توجيهي؛ قد يكون فارغًا إذا كانت هناك صورة إدخال موجودة."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "بذرة لتحديد ما إذا كانت العقدة يجب أن تعيد التشغيل؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
-      },
-      "size": {
-        "name": "size"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "OpenRouterImageNode": {
     "description": "أنشئ الصور أو حرّرها عبر OpenRouter باستخدام نماذج MAI-Image-2.6 من Microsoft: من نص إلى صورة، أو تحرير موجّه بالصور باستخدام ما يصل إلى خمس صور مرجعية، ضمن سبع نسب عرض إلى ارتفاع وبدقة 1K أو 1.5K.",
     "display_name": "صورة OpenRouter",
@@ -18590,6 +18748,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "الصورة"
       },
@@ -18601,6 +18762,9 @@
       },
       "model_patch": {
         "name": "تصحيح النموذج"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "القوة"
@@ -28813,6 +28977,10 @@
       "positive": {
         "name": "إيجابي"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "يملأ إطارات الحشو الخاصة بتكييف الصورة بهذه الصورة بدلًا من الرمادي، مما يثبت الهوية دون تثبيت الإطارات (حشو مضاد للانجراف بأسلوب SVI، تستخدمه نماذج مثل ID-V2V)."
+      },
       "start_image": {
         "name": "صورة البداية"
       },
@@ -29793,8 +29961,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "يطبّق Z-Image أو Qwen Image 2.1 Fun ControlNet المحمّل باستخدام Load Model Patch.",
+    "display_name": "تطبيق Fun ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "الصورة"
       },
@@ -29809,6 +29981,9 @@
       },
       "model_patch": {
         "name": "تصحيح النموذج"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "القوة"

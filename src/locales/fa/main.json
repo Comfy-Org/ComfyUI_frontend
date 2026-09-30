@@ -17,13 +17,13 @@
     "addNodesFromGraph": "اشاره به گره‌های گراف",
     "addPromptToSend": "افزودن یک prompt برای ارسال",
     "addToPrompt": "افزودن به پرامپت",
-    "alpha": "آلفا",
     "assetNotAttachable": "می‌توان تصاویر، ویدیو، صدا، مدل‌های سه‌بعدی و فایل‌های متنی را پیوست کرد",
     "attach": "پیوست کردن فایل",
     "attachFiles": "آپلود تصویر یا فایل",
     "attachmentTooLarge": "{name} بزرگ‌تر از {limit} است",
     "attachmentUploadFailed": "{name} بارگذاری نشد",
     "backToPreviousChat": "بازگشت به گفتگوی قبلی",
+    "beta": "بتا",
     "caption": "عامل هوش مصنوعی ممکن است اشتباه کند",
     "captionExpanded": "عامل هوش مصنوعی ممکن است اشتباه کند. پاسخ خود را دوباره بررسی کنید.",
     "changeWorkflowForChat": "workflowی را که agent می‌تواند ویرایش کند تغییر دهید",
@@ -38,8 +38,8 @@
     "coachHistoryTitle": "از همان‌جا که رها کردید ادامه دهید",
     "coachProgress": "{current} از {total}",
     "coachTitle": "با Comfy Agent آشنا شوید",
-    "coachWorkflowBody": "agent فقط workflow انتخابی شما را ویرایش می‌کند. همچنین می‌توانید فایل‌های مرجع آپلود کنید یا به workflowهای دیگر اشاره کنید.",
-    "coachWorkflowTitle": "یک workflow برای ویرایش توسط agent خود انتخاب کنید",
+    "coachWorkflowBody": "تا زمانی که پیامی بفرستید، گردش کاری انتخاب کنید یا ارجاعی به node اضافه کنید، با تب‌های شما جابه‌جا می‌شود.",
+    "coachWorkflowTitle": "عامل شما گردش کاری را که مشاهده می‌کنید ویرایش می‌کند",
     "consent": {
       "accept": "شروع استفاده از Comfy Agent",
       "body1": "Comfy Agent به شما کمک می‌کند workflowها را برنامه‌ریزی، ایجاد، اجرا و تکرار کنید. آنچه می‌خواهید بسازید شرح دهید تا Comfy Agent به‌عنوان هم‌تیمی قدرتمند شما کار کند.",
@@ -129,6 +129,7 @@
     "runApproval": {
       "cancel": "لغو",
       "lead": "این ابزار می‌خواهد workflow را اجرا کند:",
+      "leadBound": "این ابزار می‌خواهد این گردش کار را اجرا کند.",
       "question": "آیا تأیید می‌کنید؟",
       "run": "اجرا",
       "thisWorkflow": "این workflow"
@@ -161,18 +162,31 @@
     "showChatHistory": "نمایش تاریخچهٔ گفتگو",
     "showLess": "نمایش کمتر",
     "showMore": "نمایش بیشتر",
+    "showTarget": "نمایش هدف",
+    "showTargetWorkflow": "نمایش گردش کار هدف: {workflowName}",
     "skip": "رد کردن",
     "stop": "توقف",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "یک اردک زرد با ماسک هاکی تولید کن",
-      "workflowهای ذخیره‌شدهٔ من را فهرست کن",
-      "بهترین workflow برای ارتقای کیفیت پوست را پیدا کن",
-      "گره انتخاب‌شده را توضیح بده",
-      "یک workflow برای تبدیل تصویر به ویدیو با ۳ مدل بساز"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "یک شیت شخصیت از یک فضانورد تولید کن",
+        "تصویر محصول را به یک تبلیغ کوتاه تبدیل کن",
+        "nodeهای انتخاب‌شده را توضیح بده",
+        "بهترین گردش کار ارتقای وضوح تصویر برای ۴K",
+        "خطاهای این گردش کار را برطرف کن"
+      ],
+      "local": [
+        "یک پرترهٔ واقع‌گرایانه از یک فضانورد تولید کن",
+        "یک گردش کار تصویر به ویدئو که با GPU من سازگار باشد",
+        "nodeهای انتخاب‌شده را توضیح بده",
+        "برای نصب nodeهای مفقود این گردش کار کمکم کن",
+        "خطاهای این گردش کار را برطرف کن"
+      ]
+    },
     "switchWorkflow": "تغییر workflow",
     "switchWorkflowForNodes": "برای افزودن گره‌ها به {workflowName} بروید.",
+    "takeTour": "شروع راهنما",
+    "targetFollowsVisibleWorkflow": "گردش کار هدف از تبِ قابل‌مشاهده پیروی می‌کند تا زمانی که هدفی انتخاب کنید، به nodeها ارجاع دهید یا پیامی بفرستید.",
     "targetForThisChat": "هدف عامل برای این گفت‌وگو",
     "targetNavigationUnavailable": "این مقصد workflow دیگر در دسترس نیست.",
     "thinking": "در حال فکر کردن...",
@@ -191,6 +205,7 @@
     "updatingGraph": "عامل در حال به‌روزرسانی گراف است",
     "uploading": "در حال بارگذاری",
     "viewAddedNodes": "مشاهدهٔ node | مشاهدهٔ nodeها",
+    "viewingDifferentWorkflow": "شما در حال مشاهدهٔ گردش کاری متفاوت از هدف هستید.",
     "worked": "انجام شد",
     "workedForMinutes": "به‌مدت {minutes}m {seconds}s کار کرد",
     "workedForSeconds": "به‌مدت {seconds} ثانیه کار کرد",
@@ -3195,7 +3210,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",

@@ -17,13 +17,13 @@
     "addNodesFromGraph": "Mencionar nós do grafo",
     "addPromptToSend": "Adicionar um prompt para enviar",
     "addToPrompt": "Adicionar ao prompt",
-    "alpha": "ALFA",
     "assetNotAttachable": "Imagens, vídeos, áudios, modelos 3D e arquivos de texto podem ser anexados",
     "attach": "Anexar um arquivo",
     "attachFiles": "Enviar imagens ou arquivos",
     "attachmentTooLarge": "{name} é maior que {limit}",
     "attachmentUploadFailed": "Não foi possível enviar {name}",
     "backToPreviousChat": "Voltar à conversa anterior",
+    "beta": "BETA",
     "caption": "O agente de IA pode cometer erros",
     "captionExpanded": "O agente de IA pode cometer erros. Verifique sua resposta novamente.",
     "changeWorkflowForChat": "Alterar o fluxo de trabalho que o agente pode editar",
@@ -38,8 +38,8 @@
     "coachHistoryTitle": "Continue de onde parou",
     "coachProgress": "{current} de {total}",
     "coachTitle": "Conheça seu Comfy Agent",
-    "coachWorkflowBody": "O agente edita apenas o fluxo de trabalho que você escolher. Você também pode enviar arquivos de referência ou mencionar outros fluxos de trabalho.",
-    "coachWorkflowTitle": "Selecione um fluxo de trabalho para seu agente editar",
+    "coachWorkflowBody": "Ele muda conforme suas abas até que você envie uma mensagem, escolha um fluxo de trabalho ou adicione uma referência a nó.",
+    "coachWorkflowTitle": "Seu agente edita o fluxo de trabalho que você está visualizando",
     "consent": {
       "accept": "Começar a usar o Comfy Agent",
       "body1": "O Comfy Agent ajuda você a planejar, criar, executar e iterar fluxos de trabalho. Descreva o que deseja criar, e o Comfy Agent trabalhará como seu poderoso colega de equipe.",
@@ -129,6 +129,7 @@
     "runApproval": {
       "cancel": "Cancelar",
       "lead": "Esta ferramenta deseja executar o fluxo de trabalho:",
+      "leadBound": "Esta ferramenta quer executar este fluxo de trabalho.",
       "question": "Você aprova?",
       "run": "Executar",
       "thisWorkflow": "este fluxo de trabalho"
@@ -161,18 +162,31 @@
     "showChatHistory": "Mostrar histórico de conversas",
     "showLess": "Mostrar menos",
     "showMore": "Mostrar mais",
+    "showTarget": "Mostrar destino",
+    "showTargetWorkflow": "Mostrar fluxo de trabalho de destino: {workflowName}",
     "skip": "Pular",
     "stop": "Parar",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "Gere um pato amarelo com uma máscara de hóquei",
-      "Liste meus fluxos de trabalho salvos",
-      "Encontre o melhor fluxo de trabalho para ampliação de pele",
-      "Explique o nó selecionado",
-      "Crie um fluxo de trabalho de imagem para vídeo com 3 modelos"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Gere uma ficha de personagem de um astronauta",
+        "Transforme a imagem do produto em um anúncio curto",
+        "Explique os nós selecionados",
+        "Melhor fluxo de trabalho de ampliação de imagem para 4K",
+        "Corrija os erros neste fluxo de trabalho"
+      ],
+      "local": [
+        "Gere um retrato realista de um astronauta",
+        "Um fluxo de trabalho de imagem para vídeo compatível com minha GPU",
+        "Explique os nós selecionados",
+        "Ajude-me a instalar os nós ausentes deste fluxo de trabalho",
+        "Corrija os erros neste fluxo de trabalho"
+      ]
+    },
     "switchWorkflow": "Alternar fluxo de trabalho",
     "switchWorkflowForNodes": "Alterne para {workflowName} para adicionar nós.",
+    "takeTour": "Fazer o tour",
+    "targetFollowsVisibleWorkflow": "O fluxo de trabalho de destino acompanha a aba visível até que você escolha um destino, faça referência a nós ou envie uma mensagem.",
     "targetForThisChat": "Destino do agente para este chat",
     "targetNavigationUnavailable": "Este destino do fluxo de trabalho não está mais disponível.",
     "thinking": "Pensando...",
@@ -191,6 +205,7 @@
     "updatingGraph": "O agente está atualizando o grafo",
     "uploading": "Enviando",
     "viewAddedNodes": "Ver nó | Ver nós",
+    "viewingDifferentWorkflow": "Você está visualizando um fluxo de trabalho diferente do destino.",
     "worked": "Concluído",
     "workedForMinutes": "Trabalhou por {minutes}m {seconds}s",
     "workedForSeconds": "Trabalhou por {seconds} segundos",
@@ -3195,7 +3210,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
