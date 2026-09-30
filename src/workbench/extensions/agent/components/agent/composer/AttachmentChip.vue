@@ -57,8 +57,8 @@ const capabilityLabel = computed(() =>
   t(
     CAPABILITY_MESSAGE[
       capability ??
-        agentAttachCapability(name) ??
         agentAttachCapability(refName ?? '') ??
+        agentAttachCapability(name) ??
         'unknown'
     ]
   )

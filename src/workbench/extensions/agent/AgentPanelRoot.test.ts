@@ -43,7 +43,10 @@ import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { MAX_TURN_ATTACHMENTS,MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
+import {
+  MAX_TURN_ATTACHMENTS,
+  MAX_ATTACHMENT_BYTES
+} from './composables/agent/useAttachment'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getFilenameDetails } from '@/utils/formatUtil'
@@ -3264,13 +3267,13 @@ describe('AgentPanelRoot attach flow', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('lets the fetched file adjudicate an opaque asset ref, not its display label', async () => {
-    // An opaque ref cannot be judged, so the drop must reach the deferred fetch
-    // and be decided by the REAL file — a valid .png must attach even though the
-    // card is labelled report.pdf, because the label is user-editable and the
-    // bytes are not. The previous version of this test supplied no uri-list, so
-    // the fetch returned undefined immediately and it asserted a transient chip
-    // that was already being removed.
+  it('preserves an opaque asset ref instead of uploading it', async () => {
+    // An opaque ref (a bare digest or blake3: value) cannot be judged on the
+    // client, and that is not a reason to drop it: the cloud contract
+    // deliberately admits an extensionless reference and rechecks the stored
+    // filename after resolution. An asset card need not carry a fetch URI at
+    // all, so routing it through the deferred fetch would lose a valid
+    // attachment before the server ever saw it. It must stage as-is, unuploaded.
     const uploads: File[] = []
     vi.stubGlobal(
       'fetch',
@@ -3279,11 +3282,10 @@ describe('AgentPanelRoot attach flow', () => {
         if (url.includes('/api/view'))
           return new Response(new Blob(['x'], { type: 'image/png' }))
         if (url.endsWith('/api/upload/image')) {
-          if (!(init?.body instanceof FormData))
-            throw new Error('Expected upload form data')
-          const image = init.body.get('image')
-          if (!(image instanceof File)) throw new Error('Expected upload file')
-          uploads.push(image)
+          if (init?.body instanceof FormData) {
+            const image = init.body.get('image')
+            if (image instanceof File) uploads.push(image)
+          }
           return json(200, { name: 'uploaded.png' })
         }
         return json(200, agentThreadList())
@@ -3305,8 +3307,10 @@ describe('AgentPanelRoot attach flow', () => {
           : 'http://localhost/api/view?filename=real.png'
     })
 
-    await vi.waitFor(() => expect(uploads).toHaveLength(1))
-    expect(uploads[0].name).toBe('real.png')
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('agent-attachment-chip')).toBeInTheDocument()
+    )
+    expect(uploads).toHaveLength(0)
     expect(
       useToastStore().messagesToAdd.some(({ detail }) =>
         String(detail).includes('not a file type')

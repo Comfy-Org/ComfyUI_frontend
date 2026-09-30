@@ -41,18 +41,18 @@ export async function fetchDroppedAsset(
     const response = await fetch(uri, { signal })
     if (!response.ok) return undefined
     const blob = await response.blob()
-    // Each candidate is taken only if it carries an extension, then the next
-    // one answers. /api/assets/<id>/content 302s to a signed storage URL keyed
-    // by hash and with no `filename` parameter, so the basename is often a bare
-    // digest: preferring it unconditionally produced an extensionless File, and
-    // a valid PNG dragged from the assets panel was then refused as an
-    // unaccepted type. A dotted key (`<hex>.png`) judged fine but relabelled
-    // the chip with the 64-character hash.
+    // Each candidate is taken only if it carries an extension. `ref` outranks
+    // the storage basename because /api/assets/<id>/content 302s to a signed
+    // URL keyed by hash: that basename is either extensionless (yielding a File
+    // the accept list then refuses) or a dotted digest like `<hex>.png`, which
+    // passes the extension test and relabels the chip — and, since this File's
+    // name is what uploadImage posts, becomes the uploaded ref and the name the
+    // seed shows the model.
     const resolvedUrl = new URL(response.url || uri, 'http://localhost')
     const named = [
       resolvedUrl.searchParams.get('filename'),
-      decodeURIComponent(resolvedUrl.pathname.split('/').pop() || ''),
       ref,
+      decodeURIComponent(resolvedUrl.pathname.split('/').pop() || ''),
       name
     ].find((candidate) => candidate && /\.[a-z0-9]{1,8}$/i.test(candidate))
     return new File([blob], named || name, { type: blob.type })

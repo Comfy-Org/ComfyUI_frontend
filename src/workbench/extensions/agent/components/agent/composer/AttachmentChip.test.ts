@@ -10,7 +10,7 @@ function renderChip(props: {
   refName?: string
   previewUrl?: string
   uploading?: boolean
-  capability?: 'view' | 'probe' | 'reference' | 'retain' | 'unknown'
+  capability?: 'view' | 'probe' | 'read' | 'reference' | 'retain' | 'unknown'
 }) {
   return render(AttachmentChip, {
     props,
@@ -93,6 +93,18 @@ describe('AttachmentChip', () => {
       expect(screen.getByTestId('agent-attachment-chip')).toHaveAttribute(
         'title',
         expect.stringContaining('can see this image')
+      )
+    })
+
+    // With no admitted capability the STORED ref decides, not the display
+    // label: a card's label is free text a user can rename to anything, while
+    // the ref is the identity the server judges. The two disagreed here, and
+    // the label was winning.
+    it('falls back to the stored ref before the display label', () => {
+      renderChip({ name: 'cat.png', refName: 'notes.md' })
+      expect(screen.getByTestId('agent-attachment-chip')).toHaveAttribute(
+        'title',
+        expect.stringContaining("read this file's contents")
       )
     })
 
