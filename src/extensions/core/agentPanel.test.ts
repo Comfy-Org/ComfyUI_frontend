@@ -223,6 +223,7 @@ describe('AgentPanel extension flag gate', () => {
     )
     mocks.registerTracker.mockClear()
     localStorage.clear()
+    sessionStorage.clear()
     canvasStore.updateSelectedItems.mockClear()
     mocks.getNodeByLocatorId.mockReset()
     nodeSelectionStore.beginWorkflowLoad.mockClear()
@@ -268,6 +269,37 @@ describe('AgentPanel extension flag gate', () => {
     expect(trackAgentPanelOpened).toHaveBeenCalledExactlyOnceWith({
       source: 'restored'
     })
+  })
+
+  it('preserves activation ownership across an app remount', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    const trackAgentConsentOfferExited = vi.fn()
+    const { useTelemetry: useCurrentTelemetry } =
+      await import('@/platform/telemetry')
+    vi.mocked(useCurrentTelemetry).mockReturnValue(
+      fromPartial<NonNullable<ReturnType<typeof useTelemetry>>>({
+        trackAgentConsentOfferExited,
+        trackAgentPanelOpened: vi.fn()
+      })
+    )
+    sessionStorage.setItem(
+      'Comfy.AgentPanel.ActivationOpened.account-a.workspace-a',
+      'true'
+    )
+
+    await loadEntryAndSetup()
+    await flush()
+
+    expect(agentStore.isOpen).toBe(true)
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    await vi.waitFor(() =>
+      expect(trackAgentConsentOfferExited).toHaveBeenCalledExactlyOnceWith({
+        exit: 'activation_opened_panel',
+        stage: 'offer',
+        retry_armed: false
+      })
+    )
   })
 
   it('keeps the panel closed if the feature is disabled before acceptance', async () => {

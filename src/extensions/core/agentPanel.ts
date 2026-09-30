@@ -38,6 +38,42 @@ import {
 export const GATE_SETTLE_TIMEOUT_MS = 5_000
 
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
+const ACTIVATION_OPENED_PANEL_PREFIX = 'Comfy.AgentPanel.ActivationOpened'
+
+function activationOpenedPanelKey(
+  userId: string | undefined,
+  workspaceId: string | null
+): string | null {
+  return userId && workspaceId
+    ? `${ACTIVATION_OPENED_PANEL_PREFIX}.${userId}.${workspaceId}`
+    : null
+}
+
+function persistActivationOpenedPanel(
+  userId: string | undefined,
+  workspaceId: string | null
+): void {
+  const key = activationOpenedPanelKey(userId, workspaceId)
+  if (!key) return
+  try {
+    sessionStorage.setItem(key, 'true')
+  } catch {
+    // The in-memory marker still preserves ownership until the next remount.
+  }
+}
+
+function wasActivationOpenedPanel(
+  userId: string | undefined,
+  workspaceId: string | null
+): boolean {
+  const key = activationOpenedPanelKey(userId, workspaceId)
+  if (!key) return false
+  try {
+    return sessionStorage.getItem(key) === 'true'
+  } catch {
+    return false
+  }
+}
 
 function automaticConsentOfferScope(
   {
@@ -290,12 +326,15 @@ export function registerAgentPanelExtension(): void {
         }
 
         const candidateUserId = resolvedUserInfo.value?.id
+        const candidateWorkspaceId = workspaceStore.activeWorkspaceId
         const offerScope = automaticConsentOfferScope(
           {
-            activationOpenedPanel,
+            activationOpenedPanel:
+              activationOpenedPanel ||
+              wasActivationOpenedPanel(candidateUserId, candidateWorkspaceId),
             panelOpen: agentPanelStore.isOpen,
             userId: candidateUserId,
-            workspaceId: workspaceStore.activeWorkspaceId,
+            workspaceId: candidateWorkspaceId,
             workspaceSwitching: workspaceStore.isSwitching
           },
           () => {
@@ -367,6 +406,10 @@ export function registerAgentPanelExtension(): void {
               if (!agentPanelStore.isOpen) {
                 agentPanelStore.open('activation')
                 activationOpenedPanel = true
+                persistActivationOpenedPanel(
+                  resolvedUserInfo.value?.id,
+                  workspaceStore.activeWorkspaceId
+                )
               }
             }
           })
