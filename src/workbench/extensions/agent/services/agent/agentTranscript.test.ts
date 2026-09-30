@@ -290,12 +290,7 @@ describe('normalizeAgentTranscript', () => {
     )
   })
 
-  /**
-   * PM-1643 / PM-717 item 3. What a rehydrated turn can say about its files
-   * beyond their stored names, held to what the service's own reader of these
-   * rows already does — `contentAttachments` in cloud's
-   * services/agent/internal/persist/threads.go.
-   */
+  /** PM-1643 / PM-717: metadata preserved in persisted attachment refs. */
   describe('persisted attachment resolution', () => {
     it('keeps the resolved asset id and media kind the server persisted on a ref', () => {
       const bareDigest = 'a'.repeat(64)
