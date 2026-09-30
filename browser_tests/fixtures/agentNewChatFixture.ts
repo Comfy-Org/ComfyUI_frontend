@@ -16,6 +16,8 @@ const NEW_CHAT_THREAD_ID = '4b8e2c6a-1d3f-4e57-9a80-2c7d5e9f1b33'
 const NEW_CHAT_TURN_ID = '9f1d3b5c-7a2e-4c68-8d41-6e0a2b4c8d55'
 const FRESH_WORKFLOW_ID = 'c2d4e6f8-0a1b-4c3d-9e5f-7a8b9c0d1e2f'
 const MESSAGES_PATH = /\/api\/agent\/threads\/([^/]+)\/messages$/
+/** Each pass drains the acks in flight; a later one can only be a turn they triggered. */
+const SETTLE_PASSES = 10
 
 interface PostedTurn {
   threadId: string
@@ -36,12 +38,24 @@ function tryPostDataJson(request: Request): unknown {
   }
 }
 
+function isTurnAck(response: Response): boolean {
+  return (
+    response.request().method() === 'POST' &&
+    MESSAGES_PATH.test(new URL(response.url()).pathname)
+  )
+}
+
 async function readAck(
   response: Response
 ): Promise<{ thread: AcceptedThread } | { failure: string }> {
-  const accepted = zAgentTurnAccepted.safeParse(
-    await response.json().catch(() => undefined)
-  )
+  let body: unknown
+  try {
+    body = await response.json()
+  } catch (error) {
+    // Unreadable is not malformed; say which so the failure names itself.
+    return { failure: `${response.url()}: body unreadable — ${String(error)}` }
+  }
+  const accepted = zAgentTurnAccepted.safeParse(body)
   // postDataJSON() throws on a non-JSON body, inside an unawaited listener.
   const posted = zAgentPostMessageRequest.safeParse(
     tryPostDataJson(response.request())
@@ -86,15 +100,19 @@ class AgentNewChatServer {
 
   async install(): Promise<void> {
     this.page.on('response', (response) => {
+      if (!isTurnAck(response)) return
       const record = this.recordAccepted(response).catch((error: unknown) => {
         this.ackFailures.push(`${response.url()}: ${String(error)}`)
       })
       this.recording.add(record)
       void record.finally(() => this.recording.delete(record))
     })
-    await this.page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute(this.threadList()))
-    )
+    await this.page.route('**/api/agent/threads', async (route) => {
+      // The list is built from acks recorded off the response event, so a
+      // turn still being read would otherwise be missing a row.
+      await this.settled()
+      await route.fulfill(jsonRoute(this.threadList()))
+    })
     await this.page.route('**/api/agent/threads/*/messages', (route) =>
       this.answerPost(route)
     )
@@ -110,16 +128,16 @@ class AgentNewChatServer {
 
   /** `response` fires on headers, so a body read can still be in flight. */
   async settled(): Promise<void> {
-    while (this.recording.size > 0) await Promise.all(this.recording)
+    for (let pass = 0; pass < SETTLE_PASSES; pass++) {
+      if (this.recording.size === 0) return
+      await Promise.all(this.recording)
+    }
+    throw new Error(
+      `Agent turn acks still recording after ${SETTLE_PASSES} passes`
+    )
   }
 
   private async recordAccepted(response: Response): Promise<void> {
-    const request = response.request()
-    if (
-      request.method() !== 'POST' ||
-      !MESSAGES_PATH.test(new URL(response.url()).pathname)
-    )
-      return
     if (!response.ok()) {
       this.ackFailures.push(`${response.status()} ${response.url()}`)
       return
