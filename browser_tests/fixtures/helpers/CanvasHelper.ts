@@ -181,6 +181,31 @@ export class CanvasHelper {
     )
   }
 
+  async waitForViewToSettle(): Promise<void> {
+    await this.page.waitForFunction(
+      () =>
+        new Promise<boolean>((resolve) => {
+          const { ds } = window.app!.canvas
+          let previous = [ds.scale, ds.offset[0], ds.offset[1]]
+          let stableFrames = 0
+
+          const check = () => {
+            const current = [ds.scale, ds.offset[0], ds.offset[1]]
+            stableFrames = current.every(
+              (value, index) => value === previous[index]
+            )
+              ? stableFrames + 1
+              : 0
+            previous = current
+            if (stableFrames === 5) resolve(true)
+            else requestAnimationFrame(check)
+          }
+
+          requestAnimationFrame(check)
+        })
+    )
+  }
+
   async getNodeTitleHeight(): Promise<number> {
     return this.page.evaluate(() => window.LiteGraph!.NODE_TITLE_HEIGHT)
   }

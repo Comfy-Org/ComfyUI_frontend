@@ -1,10 +1,17 @@
+import assert from 'node:assert/strict'
+
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
+import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  zAgentAdmissionError,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   INTERMEDIATE_MESSAGE_EVENT,
@@ -16,17 +23,24 @@ import {
   THINKING_EVENT,
   THINKING_TEXT,
   TOOL_CALL_EVENT,
-  agentTest,
-  selectAgentWorkflow
+  agentTest
 } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
-
 function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
+
+// Parsed through the generated admission contract so a server-side rename of a
+// `reason` or `type` breaks this fixture instead of silently passing.
+const NO_FUNDS_ERROR = zAgentAdmissionError.parse({
+  error: {
+    message: 'Add credits to continue.',
+    reason: 'no_funds',
+    type: 'PAYMENT_REQUIRED'
+  }
+})
 
 test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
@@ -34,34 +48,26 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test.describe('flag off', () => {
     test.use({ agentFlagEnabled: false })
 
-    test('does not expose the Ask Comfy Agent button', async ({
-      comfyPage,
+    test('does not expose the Agent button', async ({
+      agentPanel,
       postedMessages
     }) => {
       expect(postedMessages).toHaveLength(0)
 
-      await expect(
-        comfyPage.page.getByRole('button', { name: OPEN_AGENT_LABEL })
-      ).toHaveCount(0)
+      await expect(agentPanel.openButton).toHaveCount(0)
     })
   })
 
   test('shows the greeting, inserts a suggested prompt, and completes a chat turn', async ({
-    comfyPage,
+    agentPanel,
     postedMessages,
     getWebSocket
   }) => {
     test.setTimeout(30_000)
 
-    const page = comfyPage.page
-
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
-    await expect(openButton).toBeVisible()
-    await openButton.click()
-
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel).toBeVisible()
-    await selectAgentWorkflow(page)
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
 
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
@@ -90,7 +96,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText(THINKING_TEXT)).toBeVisible()
 
     pushEvent(ws, TOOL_CALL_EVENT)
-    const summary = panel.getByRole('button', { name: /^Worked for / })
+    const summary = panel.getByRole('button', {
+      name: enMessages.agent.worked,
+      exact: true
+    })
     await expect(summary).toHaveCount(0)
     await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText(THINKING_TEXT, { exact: true })).toBeVisible()
@@ -131,12 +140,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const activityRows = panel.getByRole('listitem')
     await expect(activityRows).toHaveCount(5)
     await expect(activityRows.filter({ hasText: 'Set widget' })).toBeVisible()
-    await expect(
-      activityRows.filter({ hasText: 'Opened a new tab' }).getByText('0.5s')
-    ).toBeVisible()
-    await expect(
-      activityRows.filter({ hasText: 'Resize image node' }).getByText('0.2s')
-    ).toBeVisible()
+    await expect(panel.getByText('0.5s', { exact: true })).toHaveCount(0)
+    await expect(panel.getByText('0.2s', { exact: true })).toHaveCount(0)
 
     pushEvent(ws, MESSAGE_DELTA_EVENT)
     await expect(
@@ -174,6 +179,236 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
+  test('shows an admission paywall without losing the rejected prompt', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    const panel = agentPanel.root
+    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const prompt = 'Build a product photo workflow'
+
+    await test.step('reject the next turn with a no-funds admission error', async () => {
+      // Scoped to POST so the fixture's GET handler for the same URL still
+      // serves the thread's message history.
+      await page.route('**/api/agent/threads/*/messages', async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        await route.fulfill({
+          status: 402,
+          contentType: 'application/json',
+          body: JSON.stringify(NO_FUNDS_ERROR)
+        })
+      })
+    })
+
+    await test.step('open the agent panel on a workflow', async () => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+    })
+
+    await test.step('send a prompt the server will reject', async () => {
+      await composer.fill(prompt)
+      await panel.getByRole('button', { name: 'Send' }).click()
+    })
+
+    await test.step('keep the rejected prompt and surface the paywall', async () => {
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
+      await expect(composer).toHaveText(prompt)
+      const paywall = panel.getByRole('alert')
+      await expect(paywall).toContainText(enMessages.agent.paywall.title)
+      await expect(paywall).toContainText('Add credits to continue.')
+    })
+  })
+
+  test('keeps the standing paywall in sync across turn completion and panel close', async ({
+    acceptedTurns,
+    agentBilling,
+    agentPanel,
+    comfyPage,
+    getWebSocket,
+    postedMessages
+  }) => {
+    test.setTimeout(30_000)
+    const page = comfyPage.page
+    const paywall = page.getByTestId('agent-credits-exhausted-paywall')
+    const ws = await getWebSocket()
+
+    await test.step('show the standing paywall after an accepted turn exhausts credits', async () => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+      agentBilling.setAgentFunds(false)
+      await agentPanel.sendMessage('Complete this workflow without a refusal')
+      await expect.poll(() => postedMessages.length).toBe(1)
+      pushEvent(ws, THINKING_EVENT)
+      await expect(
+        agentPanel.root.getByRole('button', { name: 'Stop' })
+      ).toBeVisible()
+      await expect(paywall).toHaveCount(0)
+      pushEvent(ws, MESSAGE_DONE_EVENT)
+      await expect(paywall).toBeVisible()
+    })
+
+    await test.step('finish the funded recovery while the panel is closed', async () => {
+      agentBilling.setAgentFunds(true)
+      const recovery = agentBilling.holdNextFundedRefresh()
+      await paywall.getByRole('button', { name: 'Add Credits' }).click()
+      const topUpDialog = new TopUpCreditsDialog(page)
+      await topUpDialog.waitForVisible()
+      await recovery.entered
+      await topUpDialog.close()
+      await agentPanel.root
+        .getByRole('button', { name: enMessages.g.close })
+        .click()
+      await expect(agentPanel.root).toHaveCount(0)
+      recovery.release()
+      await recovery.completed
+    })
+
+    await test.step('reopen without the stale paywall', async () => {
+      await agentPanel.open()
+      await expect(paywall).toHaveCount(0)
+    })
+
+    await test.step('show the standing paywall after a second exhaustion', async () => {
+      agentBilling.setAgentFunds(false)
+      await agentPanel.sendMessage(
+        'Complete another workflow without a refusal'
+      )
+      await expect.poll(() => postedMessages.length).toBe(2)
+      expect(acceptedTurns).toHaveLength(2)
+      const secondTurn = acceptedTurns.at(-1)
+      assert(secondTurn)
+      pushEvent(
+        ws,
+        zAgentWsEvent.parse({
+          ...THINKING_EVENT,
+          data: { ...THINKING_EVENT.data, message_id: secondTurn.message_id }
+        })
+      )
+      await expect(
+        agentPanel.root.getByRole('button', { name: 'Stop' })
+      ).toBeVisible()
+      pushEvent(
+        ws,
+        zAgentWsEvent.parse({
+          ...MESSAGE_DONE_EVENT,
+          data: {
+            ...MESSAGE_DONE_EVENT.data,
+            message_id: secondTurn.message_id
+          }
+        })
+      )
+      await expect(paywall).toBeVisible()
+    })
+
+    await test.step('remove the standing paywall after the final funded refresh', async () => {
+      agentBilling.setAgentFunds(true)
+      await paywall.getByRole('button', { name: 'Add Credits' }).click()
+      await expect(paywall).toHaveCount(0)
+    })
+  })
+
+  test('keeps a failed prompt available to retry', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    // Regression: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16628
+    await comfyPage.page.route(
+      '**/api/agent/threads/*/messages',
+      async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        await route.fulfill({
+          status: 500,
+          body: 'Agent temporarily unavailable'
+        })
+      }
+    )
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+
+    const prompt = 'Build a product photo workflow'
+    await agentPanel.composer.fill(prompt)
+    await agentPanel.sendButton.click()
+
+    await expect(agentPanel.root.getByTestId('user-message-bubble')).toHaveText(
+      prompt
+    )
+    await expect(
+      agentPanel.root.getByText(enMessages.agent.sendFailed)
+    ).toBeVisible()
+    await expect(agentPanel.composer).toHaveText(prompt)
+    await expect(agentPanel.sendButton).toBeEnabled()
+  })
+
+  test.describe('diagnostic report', () => {
+    test.use({
+      permissions: ['clipboard-read', 'clipboard-write'],
+      crdtDebugEnabled: true
+    })
+
+    test('copies retained tool metadata with privacy sources turned off', async ({
+      agentPanel,
+      comfyPage,
+      getWebSocket
+    }) => {
+      await test.step('turn off every optional privacy source', async () => {
+        await agentPanel.open()
+        await expect(agentPanel.debugHeading).toBeVisible()
+        await agentPanel.turnOffOptionalReportSources()
+      })
+
+      await test.step('retain tool metadata without conversation content', async () => {
+        await agentPanel.selectWorkflow()
+        const composer = agentPanel.root.getByRole('textbox', {
+          name: /^Describe ideas/
+        })
+        await composer.fill('private diagnostic prompt')
+        await agentPanel.root.getByRole('button', { name: 'Send' }).click()
+        await expect(
+          agentPanel.root.getByRole('button', { name: 'Stop' })
+        ).toBeVisible()
+        await expect(
+          agentPanel.root.getByTestId('user-message-bubble')
+        ).toHaveText('private diagnostic prompt')
+        const ws = await getWebSocket()
+        pushEvent(ws, THINKING_EVENT)
+        await expect(
+          agentPanel.root.getByText(THINKING_TEXT, { exact: true })
+        ).toBeVisible()
+
+        pushEvent(ws, TOOL_CALL_EVENT)
+        await expect(agentPanel.root.getByText('Set widget')).toBeVisible()
+      })
+
+      await test.step('copy a report with bounded tool metadata', async () => {
+        await agentPanel.copyReportButton.click()
+        await expect(agentPanel.copiedButton).toBeVisible()
+        await expect
+          .poll(async () => {
+            const report = await comfyPage.clipboard.readText()
+            return {
+              serverLogs: report.includes('- Server logs: turned off'),
+              settings: report.includes('- Settings: turned off'),
+              workflow: report.includes('- Workflow: turned off'),
+              toolStatus: report.includes(
+                '- Agent tool calls: collected (1/1 retained calls)'
+              ),
+              toolName: report.includes('"name": "set_widget"'),
+              privateThinking: report.includes(THINKING_TEXT)
+            }
+          })
+          .toEqual({
+            serverLogs: true,
+            settings: true,
+            workflow: true,
+            toolStatus: true,
+            toolName: true,
+            privateThinking: false
+          })
+      })
+    })
+  })
+
   test.describe('composer sizing', () => {
     test.use({
       viewport: { width: 1920, height: 1080 },
@@ -181,18 +416,16 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
 
     test('caps long text at 400px and scrolls internally', async ({
+      agentPanel,
       comfyPage
     }) => {
-      const page = comfyPage.page
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+      await agentPanel.open()
 
-      const panel = page.locator('#agent-panel-root')
+      const panel = agentPanel.root
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
       const input = panel.getByTestId('composer-inline-input')
 
-      await page.evaluate(() =>
-        navigator.clipboard.writeText('A growing prompt line\n'.repeat(14))
-      )
+      await comfyPage.clipboard.writeText('A growing prompt line\n'.repeat(14))
       await composer.press('ControlOrMeta+v')
       await expect
         .poll(() =>
@@ -202,8 +435,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         )
         .toBeGreaterThan(200)
 
-      await page.evaluate(() =>
-        navigator.clipboard.writeText('An overflowing prompt line\n'.repeat(60))
+      await comfyPage.clipboard.writeText(
+        'An overflowing prompt line\n'.repeat(60)
       )
       await composer.press('ControlOrMeta+a')
       await composer.press('ControlOrMeta+v')
@@ -237,13 +470,12 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test('T-28 / PM-677 / FE-1320 keeps the Agent scrollbar track transparent', async ({
-    comfyPage
+    agentPanel
   }) => {
-    const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await agentPanel.open()
 
-    const scrollContainer = page
-      .locator('#agent-panel-root div.overflow-y-auto')
+    const scrollContainer = agentPanel.root
+      .locator('div.overflow-y-auto')
       .first()
     await expect(scrollContainer).toBeVisible()
 
@@ -261,12 +493,13 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test('sizes the add-to-prompt menu around its longest item', async ({
+    agentPanel,
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await agentPanel.open()
 
-    const panel = page.locator('#agent-panel-root')
+    const panel = agentPanel.root
     await panel
       .getByRole('button', { name: enMessages.agent.addToPrompt })
       .click()
@@ -301,15 +534,71 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       .toBeLessThanOrEqual(1)
   })
 
+  test('uses the server upload limit for Agent file attachments', async ({
+    comfyPage,
+    agentPanel
+  }) => {
+    test.setTimeout(60_000)
+    const page = comfyPage.page
+    let uploadCount = 0
+    await page.route('**/api/upload/image', async (route) => {
+      uploadCount += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          name: 'uploaded_movie.mp4',
+          subfolder: '',
+          type: 'input'
+        })
+      })
+    })
+    await page.evaluate(() => {
+      window.app!.api.serverFeatureFlags.value = {
+        ...window.app!.api.serverFeatureFlags.value,
+        max_upload_size: 24 * 1024 * 1024
+      }
+    })
+
+    await agentPanel.open()
+    const panel = page.locator('#agent-panel-root')
+    const fileInput = panel.getByTestId('agent-file-input')
+
+    const uploadResponse = page.waitForResponse('**/api/upload/image')
+    await fileInput.setInputFiles({
+      name: 'movie.mp4',
+      mimeType: 'video/mp4',
+      buffer: Buffer.alloc(21 * 1024 * 1024)
+    })
+    expect((await uploadResponse).ok()).toBe(true)
+    await expect(
+      panel.getByTestId('composer-asset-section').getByText('movie.mp4')
+    ).toBeVisible()
+    await expect.poll(() => uploadCount).toBe(1)
+
+    await fileInput.setInputFiles({
+      name: 'too-large.mp4',
+      mimeType: 'video/mp4',
+      buffer: Buffer.alloc(25 * 1024 * 1024)
+    })
+    await expect(
+      page.getByText('too-large.mp4 is larger than 24 MB')
+    ).toBeVisible()
+    await expect(panel.getByText('too-large.mp4', { exact: true })).toHaveCount(
+      0
+    )
+    await expect.poll(() => uploadCount).toBe(1)
+  })
+
   test('exits node selection when the active workflow changes', async ({
+    agentPanel,
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
 
-    await selectAgentWorkflow(page)
-
-    const panel = page.locator('#agent-panel-root')
+    const panel = agentPanel.root
     await panel
       .getByRole('button', { name: enMessages.agent.addToPrompt })
       .click()
@@ -323,16 +612,14 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test('edits and resubmits the last prompt after stopping its turn', async ({
-    comfyPage,
+    agentPanel,
     postedMessages,
     getWebSocket
   }) => {
-    const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
 
-    await selectAgentWorkflow(page)
-
-    const panel = page.locator('#agent-panel-root')
+    const panel = agentPanel.root
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     const originalPrompt = 'Build a rainy city at night'
     const revisedPrompt = 'Build a rainy city at sunrise'

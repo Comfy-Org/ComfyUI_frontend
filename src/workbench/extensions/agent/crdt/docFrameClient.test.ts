@@ -202,11 +202,22 @@ describe('doc frame client', () => {
     expect(
       parseServerDocFrame({
         type: 'doc_reset',
-        data: { v: 1, workflow_id: 'wf-1', seq: 43, actor: 'agent:th-1:turn-2' }
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          seq: 43,
+          lineage_seq: 7,
+          actor: 'agent:th-1:turn-2'
+        }
       })
     ).toEqual({
       type: 'doc_reset',
-      data: { workflowId: 'wf-1', seq: 43, actor: 'agent:th-1:turn-2' }
+      data: {
+        workflowId: 'wf-1',
+        seq: 43,
+        lineageSeq: 7,
+        actor: 'agent:th-1:turn-2'
+      }
     })
     expect(
       parseServerDocFrame({
@@ -281,6 +292,27 @@ describe('doc frame client', () => {
       errorType: 'agent_crdt_invalid_server_frame',
       tags: { frame_type: 'awareness' },
       level: 'warning'
+    })
+  })
+
+  // The subscribe-ack side of this domain is pinned by 'keeps a seq-0 or
+  // absent-seq doc_subscribed ok ack as a valid baseline' above. Both frame
+  // types share `isSequence`, so pin the update side too: a seq-0 `doc_update`
+  // must survive parsing rather than being read as "no seq".
+  it('keeps seq zero on a doc update', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_update',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          seq: 0,
+          update_b64: encodeBase64(new Uint8Array([1]))
+        }
+      })
+    ).toEqual({
+      type: 'doc_update',
+      data: { workflowId: 'wf-1', seq: 0, update: new Uint8Array([1]) }
     })
   })
 })

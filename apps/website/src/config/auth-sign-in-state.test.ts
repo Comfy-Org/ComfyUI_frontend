@@ -1,10 +1,7 @@
+import { ENUMERATION_ORACLE } from '@comfyorg/account-core/testing'
 import { describe, expect, it } from 'vitest'
 
-import {
-  AUTH_ERROR_COPY,
-  AUTH_ERROR_MESSAGES
-} from '@comfyorg/account/firebaseAuthError'
-
+import { t } from '../i18n/translations'
 import type { AuthSignInState } from './auth-sign-in-state'
 import { authSignInTransition, signInErrorMessage } from './auth-sign-in-state'
 
@@ -149,65 +146,115 @@ describe('signInErrorMessage', () => {
     [
       'a dismissed popup',
       { code: 'auth/popup-closed-by-user', message: 'x' },
-      AUTH_ERROR_MESSAGES['auth/popup-closed-by-user']
+      t('auth.errors.auth/popup-closed-by-user', 'en')
+    ],
+    [
+      'a cancelled second popup',
+      { code: 'auth/cancelled-popup-request', message: 'x' },
+      t('auth.errors.auth/cancelled-popup-request', 'en')
     ],
     [
       'a blocked signup',
       { code: 'auth/internal-error', message: 'SIGNUP_BLOCKED' },
-      AUTH_ERROR_MESSAGES.signupBlocked
+      t('auth.errors.signupBlocked', 'en')
     ],
     [
       'wrong email credentials',
       { code: 'auth/invalid-credential', message: 'x' },
-      AUTH_ERROR_MESSAGES['auth/invalid-credential']
+      t('auth.errors.auth/invalid-credential', 'en')
     ],
     [
       'an address already registered',
       { code: 'auth/email-already-in-use', message: 'x' },
-      AUTH_ERROR_MESSAGES['auth/email-already-in-use']
+      t('auth.errors.auth/email-already-in-use', 'en')
     ],
     [
       'a throttled visitor',
       { code: 'auth/too-many-requests', message: 'x' },
-      AUTH_ERROR_MESSAGES['auth/too-many-requests']
+      t('auth.errors.auth/too-many-requests', 'en')
     ],
     [
-      'an unknown address, worded as the cloud app words it',
+      'an unknown address, collapsed to the neutral invalid-credential line',
       { code: 'auth/user-not-found', message: 'x' },
-      AUTH_ERROR_MESSAGES['auth/user-not-found']
+      t('auth.errors.auth/invalid-credential', 'en')
     ],
     [
-      'a wrong password',
+      'a wrong password, collapsed to the neutral invalid-credential line',
       { code: 'auth/wrong-password', message: 'x' },
-      AUTH_ERROR_MESSAGES['auth/wrong-password']
+      t('auth.errors.auth/invalid-credential', 'en')
     ],
     [
       'a malformed address',
       { code: 'auth/invalid-email', message: 'x' },
-      AUTH_ERROR_MESSAGES['auth/invalid-email']
+      t('auth.errors.auth/invalid-email', 'en')
     ],
     [
-      'a network failure, which the cloud app names',
+      'a network failure',
       { code: 'auth/network-request-failed', message: 'x' },
-      AUTH_ERROR_MESSAGES['auth/network-request-failed']
+      t('auth.errors.auth/network-request-failed', 'en')
     ],
     [
       'an unknown auth code',
       { code: 'auth/some-new-code', message: 'x' },
-      AUTH_ERROR_MESSAGES.generic
+      t('auth.errors.generic', 'en')
     ],
     [
       'a non-Firebase failure',
       new Error('customers 500'),
-      AUTH_ERROR_MESSAGES.generic
+      t('auth.errors.generic', 'en')
     ],
     [
-      'a non-auth Firebase failure, which the cloud app also reads as generic',
+      'a non-auth Firebase failure, read as generic',
       { code: 'app/no-app', message: 'x' },
-      AUTH_ERROR_MESSAGES.generic
+      t('auth.errors.generic', 'en')
     ]
-  ] as const)("speaks the cloud app's line for %s", ([, error, copy]) => {
-    expect(signInErrorMessage(failed(error), 'en', 'comfy.org')).toBe(copy)
+  ] as const)('resolves %s from this host i18n', ([, error, copy]) => {
+    expect(
+      signInErrorMessage(failed(error), 'en', 'comfy.org'),
+      'the account package ships the resolution rules; this host owns the copy'
+    ).toBe(copy)
+  })
+
+  it.for([
+    [
+      'auth/email-already-in-use',
+      'sign-up rejects an already-registered email'
+    ],
+    [
+      'auth/account-exists-with-different-credential',
+      'a provider collision only happens for an already-registered email'
+    ]
+  ] as const)(
+    'gives %s recovery guidance that never confirms the account exists',
+    ([code, why]) => {
+      const message = signInErrorMessage(
+        failed({ code, message: 'x' }),
+        'en',
+        'comfy.org'
+      )
+      expect(
+        message,
+        `${why}; copy that confirms the account exists is an enumeration oracle`
+      ).not.toMatch(ENUMERATION_ORACLE)
+      expect(
+        message,
+        `${why}; the neutral copy must still offer a password reset`
+      ).toMatch(/reset(?:ting)? your password/i)
+    }
+  )
+
+  it('catches account-existence synonyms the shipped neutral copy avoids', () => {
+    // A re-worded leak like "This email is already registered" carries neither
+    // "exists" nor "different sign-in method", so the first-draft oracle waved
+    // it through; the broadened oracle rejects it while the shipped line passes.
+    expect('This email is already registered').toMatch(ENUMERATION_ORACLE)
+    expect(
+      signInErrorMessage(
+        failed({ code: 'auth/email-already-in-use', message: 'x' }),
+        'en',
+        'comfy.org'
+      )
+    ).not.toMatch(ENUMERATION_ORACLE)
   })
 
   it('names this host in the unauthorized-domain line', () => {
@@ -229,6 +276,6 @@ describe('signInErrorMessage', () => {
         'ja',
         'comfy.org'
       )
-    ).toBe(AUTH_ERROR_COPY.ja['auth/popup-blocked'])
+    ).toBe(t('auth.errors.auth/popup-blocked', 'ja'))
   })
 })

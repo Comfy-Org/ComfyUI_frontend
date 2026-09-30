@@ -140,9 +140,7 @@ export class SceneManager implements SceneManagerInterface {
   }
 
   toggleGrid(showGrid: boolean): void {
-    if (this.gridHelper) {
-      this.gridHelper.visible = showGrid
-    }
+    this.gridHelper.visible = showGrid
 
     this.eventManager.emitEvent('showGridChange', showGrid)
   }

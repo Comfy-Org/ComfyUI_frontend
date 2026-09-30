@@ -13,6 +13,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { useTelemetry } from '@/platform/telemetry'
 
 import {
   conflictingOriginLinksRoot,
@@ -20,13 +21,7 @@ import {
 } from './__fixtures__/duplicateLinks'
 import { normalizeConfiguredTopology } from './linkDeduplication'
 
-const trackLinkDedupDrop = vi.fn()
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackLinkDedupDrop
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 class DupTestNode extends LGraphNode {
   constructor(title?: string) {
@@ -107,8 +102,8 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
   it('fires LinkDedupDrop exactly once with the dropped/survivor ids and target when origins differ', () => {
     configureConflictingOrigins()
 
-    expect(trackLinkDedupDrop).toHaveBeenCalledOnce()
-    expect(trackLinkDedupDrop).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackLinkDedupDrop).toHaveBeenCalledOnce()
+    expect(useTelemetry()?.trackLinkDedupDrop).toHaveBeenCalledWith({
       droppedLinkId: 1,
       survivorLinkId: 2,
       target: '3:0'
@@ -141,7 +136,7 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
     const graph = new LGraph()
     graph.configure(structuredClone(duplicateLinksRoot))
 
-    expect(trackLinkDedupDrop).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackLinkDedupDrop).not.toHaveBeenCalled()
   })
 })
 

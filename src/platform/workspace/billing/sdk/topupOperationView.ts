@@ -9,11 +9,16 @@ import type {
   BillingOperationState,
   TopupFailure,
   TopupResult
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
+import {
+  declineDetailKey,
+  unwrapServerCode
+} from '@comfyorg/account-core/billing'
 
 import { t } from '@/i18n'
 import type {
   BillingAuthenticationState,
+  BillingOperationPhase,
   CreateTopupResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
@@ -22,6 +27,7 @@ export interface TopupOperationView {
   readonly opId: string
   readonly status: 'pending' | 'reconciliation_needed'
   readonly actionUrl: string | null
+  readonly phase: BillingOperationPhase | null
   readonly authenticationState: BillingAuthenticationState | null
   readonly isAuthenticating: boolean
   readonly canRetryAuthentication: boolean
@@ -29,22 +35,7 @@ export interface TopupOperationView {
 }
 
 export function declineDetail(reason: BillingDeclineReason): string {
-  switch (reason) {
-    case 'insufficient_funds':
-      return t('billingOperation.insufficientFundsDetail')
-    case 'expired_card':
-      return t('billingOperation.expiredCardDetail')
-    case 'incorrect_cvc':
-      return t('billingOperation.incorrectCvcDetail')
-    case 'authentication_required':
-    case 'authentication_failed':
-      return t('billingOperation.authenticationFailedDetail')
-    case 'processing_error':
-      return t('billingOperation.processingErrorDetail')
-    case 'card_declined':
-    case 'generic':
-      return t('billingOperation.paymentDeclinedDetail')
-  }
+  return t(`billingOperation.${declineDetailKey(reason)}`)
 }
 
 export function projectTopupOperation(
@@ -56,6 +47,7 @@ export function projectTopupOperation(
       opId: state.id,
       status: 'reconciliation_needed',
       actionUrl: null,
+      phase: null,
       authenticationState: 'reconciliation_needed',
       isAuthenticating: false,
       canRetryAuthentication: false,
@@ -69,6 +61,7 @@ export function projectTopupOperation(
     opId: state.id,
     status: 'pending',
     actionUrl: state.actionUrl ?? null,
+    phase: state.serverPhase ?? null,
     authenticationState,
     isAuthenticating: state.challenge?.status === 'in_progress',
     canRetryAuthentication: state.challenge?.status === 'required',
@@ -79,21 +72,12 @@ export function projectTopupOperation(
   }
 }
 
-/** The poller's rule for which top-up the dialog must show instead of the amount step. */
-export function needsCustomerAttention(view: TopupOperationView): boolean {
-  return (
-    view.status === 'reconciliation_needed' ||
-    view.actionUrl !== null ||
-    view.authenticationState === 'requires_action' ||
-    view.authenticationState === 'failed_retryable'
-  )
-}
-
 function topupFailureError(failure: TopupFailure): WorkspaceApiError {
+  const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
   return new WorkspaceApiError(
     t('credits.topUp.unknownError'),
     'httpStatus' in failure ? failure.httpStatus : undefined,
-    'serverCode' in failure ? failure.serverCode : failure.code
+    serverCode === undefined ? failure.code : unwrapServerCode(serverCode)
   )
 }
 

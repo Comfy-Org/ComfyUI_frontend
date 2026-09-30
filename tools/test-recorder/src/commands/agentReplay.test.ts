@@ -11,7 +11,8 @@ import {
   agentReplayInvocation,
   listReplayCases,
   promptAgentReplayOptions,
-  runAgentReplay
+  runAgentReplay,
+  specExists
 } from './agentReplay'
 
 describe('agentReplayInvocation', () => {
@@ -51,6 +52,59 @@ describe('agentReplayInvocation', () => {
     expect(grep.test(title('agent-rec-add-set-delete-2'))).toBe(false)
     expect(env.PLAYWRIGHT_TEST_URL).toBe('http://127.0.0.1:6207')
     expect(env.RECORD_VIDEO).toBe('true')
+  })
+
+  it('replays one recording through another spec', () => {
+    const { args } = agentReplayInvocation({
+      caseId: 'agent-rec-batched-ops',
+      spec: 'browser_tests/tests/agent/agentLayoutReplay.spec.ts'
+    })
+    expect(args).toEqual([
+      'exec',
+      'playwright',
+      'test',
+      'browser_tests/tests/agent/agentLayoutReplay.spec.ts',
+      '--project=cloud',
+      '-g',
+      '(^|\\s)recorded agent-rec-batched-ops(\\s|$)'
+    ])
+  })
+})
+
+describe('specExists', () => {
+  it('accepts a file-name fragment, which is a Playwright filter, not a path', () => {
+    expect(specExists('agentConversation', '/nowhere')).toBe(true)
+  })
+
+  it('accepts a spec path that is on disk and rejects one that is not', () => {
+    const root = mkdtempSync(join(tmpdir(), 'agent-replay-spec-'))
+    try {
+      mkdirSync(join(root, 'browser_tests/tests/agent'), { recursive: true })
+      writeFileSync(join(root, 'browser_tests/tests/agent/a.spec.ts'), '')
+      expect(specExists('browser_tests/tests/agent/a.spec.ts', root)).toBe(true)
+      expect(specExists('browser_tests/tests/agent/b.spec.ts', root)).toBe(
+        false
+      )
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('checks an absolute spec against itself, not under the root', () => {
+    const root = mkdtempSync(join(tmpdir(), 'agent-replay-spec-'))
+    try {
+      writeFileSync(join(root, 'a.spec.ts'), '')
+      expect(specExists(join(root, 'a.spec.ts'), '/nowhere')).toBe(true)
+      expect(specExists(join(root, 'b.spec.ts'), '/nowhere')).toBe(false)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects a backslash path on no disk, the separator Windows writes', () => {
+    expect(
+      specExists('browser_tests\\tests\\agent\\gone.spec.ts', '/nowhere')
+    ).toBe(false)
   })
 })
 
@@ -125,7 +179,7 @@ describe('agentReplayCli', () => {
     expect(out).toHaveBeenCalledWith(AGENT_REPLAY_USAGE)
   })
 
-  it.for([['--case'], ['--url'], ['--case', '--headed']])(
+  it.for([['--case'], ['--spec'], ['--url'], ['--case', '--headed']])(
     'refuses %s without a value before spawning',
     async (argv) => {
       const run = vi.fn(() => ({ status: 0 }))
@@ -198,6 +252,46 @@ describe('agentReplayCli', () => {
       )
     }
   )
+
+  it('refuses a --spec path that is on no disk before spawning', async () => {
+    const run = vi.fn(() => ({ status: 0 }))
+    const err = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    await expect(
+      agentReplayCli(['--spec', 'browser_tests/tests/agent/gone.spec.ts'], {
+        run,
+        specExists: () => false,
+        cases: () => ['agent-rec-a']
+      })
+    ).resolves.toBe(1)
+    expect(run).not.toHaveBeenCalled()
+    expect(err).toHaveBeenCalledWith(
+      'no spec at browser_tests/tests/agent/gone.spec.ts\n'
+    )
+  })
+
+  it('sends --case through the --spec it is given', async () => {
+    const run = vi.fn(() => ({ status: 0 }))
+    await expect(
+      agentReplayCli(
+        [
+          '--case',
+          'agent-rec-a',
+          '--spec',
+          'browser_tests/tests/agent/agentLayoutReplay.spec.ts'
+        ],
+        { run, specExists: () => true, cases: () => ['agent-rec-a'] }
+      )
+    ).resolves.toBe(0)
+    expect(run).toHaveBeenCalledWith(
+      'pnpm',
+      expect.arrayContaining([
+        'browser_tests/tests/agent/agentLayoutReplay.spec.ts',
+        '-g',
+        '(^|\\s)recorded agent-rec-a(\\s|$)'
+      ]),
+      expect.anything()
+    )
+  })
 
   it('runs the flags without prompting, even on a terminal', async () => {
     const run = vi.fn(() => ({ status: 2 }))

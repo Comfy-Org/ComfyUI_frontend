@@ -199,10 +199,8 @@ test.describe('Seedance 2.5 page — interactions', () => {
           'script[type="application/ld+json"]'
         )
       )
-      const match = scripts.find((s) =>
-        (s.textContent ?? '').includes('FAQPage')
-      )
-      return match?.textContent ?? null
+      const match = scripts.find((s) => s.text.includes('FAQPage'))
+      return match?.text ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
     const graph = JSON.parse(faqJsonLd!)['@graph'] as {

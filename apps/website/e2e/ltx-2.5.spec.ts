@@ -190,10 +190,7 @@ test.describe('LTX 2.5 Q&A', () => {
           'script[type="application/ld+json"]'
         )
       )
-      return (
-        scripts.find((s) => (s.textContent ?? '').includes('FAQPage'))
-          ?.textContent ?? null
-      )
+      return scripts.find((s) => s.text.includes('FAQPage'))?.text ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
     const graph = JSON.parse(faqJsonLd!)['@graph'] as {

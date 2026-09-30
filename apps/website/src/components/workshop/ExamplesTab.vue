@@ -3,7 +3,7 @@ import { Check, Music2 } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { PlaygroundExample } from '../../config/workshop-playground'
-import { isVideoUrl } from '../../config/workshop-playground'
+import { isVideoUrl, videoPosterUrl } from '../../config/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -24,6 +24,13 @@ const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
 const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
 const samplesOnly = computed(
   () => examples.length > 0 && examples.every((example) => example.sampleOnly)
+)
+// A sample exists to be judged, and on a phone it was 144px wide: an 81px
+// preview of a generated image decides nothing. A lone sample takes the row,
+// and several take four fifths of it, so the next one peeks in at every width
+// the phone layout covers, up to the 18rem past which a card gains nothing.
+const phoneWidth = computed(() =>
+  examples.length === 1 ? 'w-full' : 'w-4/5 max-sm:max-w-72'
 )
 const desktopGridColumns = computed(() =>
   examples.length === 3
@@ -76,7 +83,8 @@ function actionFor(example: PlaygroundExample, active = false) {
       <li
         v-for="example in examples"
         :key="example.id"
-        class="w-36 shrink-0 snap-start sm:w-auto"
+        :class="cn('shrink-0 snap-start sm:w-auto', phoneWidth)"
+        data-testid="example-item"
       >
         <button
           type="button"
@@ -108,11 +116,12 @@ function actionFor(example: PlaygroundExample, active = false) {
               v-if="
                 example.mediaKind === 'video' || isVideoUrl(example.outputUrl)
               "
-              :src="example.outputUrl"
+              :src="videoPosterUrl(example.outputUrl)"
               class="size-full object-cover"
               muted
               playsinline
               preload="metadata"
+              data-testid="example-video"
             />
             <Music2
               v-else-if="example.mediaKind === 'audio'"

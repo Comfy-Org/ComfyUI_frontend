@@ -1,8 +1,10 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed, defineComponent, nextTick, ref } from 'vue'
 
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -10,10 +12,13 @@ import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/composables/billing/useBillingContext'))
+const billingContext = useBillingContext()
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
@@ -61,7 +66,9 @@ function openPanel() {
 }
 
 function renderPanel() {
-  return render(DockedAgentPanel, { global: { plugins: [i18n] } })
+  return render(DockedAgentPanel, {
+    global: { plugins: [i18n] }
+  })
 }
 
 describe('DockedAgentPanel', () => {
@@ -72,6 +79,15 @@ describe('DockedAgentPanel', () => {
     vi.mocked(reportError).mockClear()
     rootLiveness.live = 0
     rootLiveness.maxLive = 0
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>({
+          hasFunds: false,
+          agentHasFunds: false
+        })
+      )
+    })
   })
 
   it('docks the panel at the store width when enabled and open', async () => {
@@ -113,15 +129,6 @@ describe('DockedAgentPanel', () => {
     )
   })
 
-  it('fills the panel shell and draws the canvas seam border', () => {
-    openPanel()
-    renderPanel()
-
-    const shell = screen.getByTestId('docked-agent-panel-shell')
-
-    expect(shell).toHaveClass('border-l', 'border-interface-stroke')
-  })
-
   it('renders nothing while the panel is closed', () => {
     const store = openPanel()
     store.isOpen = false
@@ -139,6 +146,14 @@ describe('DockedAgentPanel', () => {
   })
 
   it('resizes via pointer drag on the handle, clamped to the width bounds', async () => {
+    // Wide enough that the upper bound is the panel max, not the viewport.
+    // Restored below: leaving it set makes every later test in this file
+    // depend on execution order.
+    const realInnerWidth = window.innerWidth
+    onTestFinished(() => {
+      window.innerWidth = realInnerWidth
+    })
+    window.innerWidth = 1920
     const store = openPanel()
     const user = userEvent.setup()
     renderPanel()

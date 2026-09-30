@@ -14,13 +14,14 @@ import type {
   BillingOperationState,
   EmbeddedChallengePort,
   HostPaymentStep,
-  PaymentProjection
-} from '@comfyorg/account/billing'
+  PaymentProjection,
+  PendingBillingOperation
+} from '@comfyorg/account-core/billing'
 import {
   driveEmbeddedChallenge,
   isTerminal,
   projectPaymentStep
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 
 import type { BillingClient } from './billingClient'
 import { useBillingOperation } from './useBillingOperation'
@@ -37,6 +38,11 @@ export interface PaymentNavigation {
   readonly navigationMode?: OpenUrlMode
   /** Absent leaves an embedded challenge parked until the host switches it hosted. */
   readonly challengePort?: EmbeddedChallengePort
+  /**
+   * Whether a continuation the server offers runs without a click. A host
+   * that declines one runs it later through `continueVerification`.
+   */
+  readonly autoContinue?: (state: PendingBillingOperation) => boolean
 }
 
 export interface PaymentAttempt {
@@ -70,7 +76,12 @@ export function usePaymentAttempt(
   client: Pick<BillingClient, 'lifecycle'>,
   navigation: PaymentNavigation
 ): PaymentAttempt {
-  const { openUrl, navigationMode = 'new_tab', challengePort } = navigation
+  const {
+    openUrl,
+    navigationMode = 'new_tab',
+    challengePort,
+    autoContinue = () => true
+  } = navigation
   const tracked = useBillingOperation({ kind }, client)
   const dismissedId = ref<string>()
   const hostStep = ref<HostPaymentStep>('select')
@@ -104,7 +115,13 @@ export function usePaymentAttempt(
   watch(
     () => continuationKey(operation.value),
     (key) => {
-      if (key !== undefined) continueVerification()
+      const state = operation.value
+      if (
+        key !== undefined &&
+        state?.phase === 'pending' &&
+        autoContinue(state)
+      )
+        continueVerification()
     }
   )
 

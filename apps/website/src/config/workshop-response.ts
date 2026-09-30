@@ -1,6 +1,11 @@
 import type { WorkshopContract } from './workshop-contract'
+import { workshopContentPolicyPayload } from './workshop-content-policy'
 import { validateWorkshopInput } from './workshop-json-schema'
 import { valuesAtPointer } from './workshop-json-pointer'
+import {
+  WorkshopRouterError,
+  workshopResponseDetails
+} from './workshop-router-errors'
 import type { RunOutput } from './workshop-run'
 import type { WorkshopSvgRasterizer } from './workshop-svg-output'
 import { svgOutputs } from './workshop-svg-output'
@@ -47,6 +52,48 @@ interface OutputContext {
 type JsonOutput = Extract<WorkshopContract['output'], { format: 'json' }>
 type OutputSelector = JsonOutput['selectors'][number]
 
+const NON_OUTPUT_ENVELOPE_KEYS = new Set([
+  'detail',
+  'error',
+  'failure',
+  'input',
+  'inputs',
+  'prompt',
+  'prompts',
+  'request',
+  'requestbody'
+])
+
+function isNonOutputEnvelope(key: string): boolean {
+  return NON_OUTPUT_ENVELOPE_KEYS.has(
+    key.toLowerCase().replaceAll(/[^a-z]/g, '')
+  )
+}
+
+function hasTextOutput(
+  value: unknown,
+  key = '',
+  depth = 0,
+  insideNonOutput = false
+): boolean {
+  if (depth > 64 || insideNonOutput) return false
+  if (typeof value === 'string')
+    return (key === 'text' || key === 'output_text') && value.trim().length > 0
+  if (value === null || typeof value !== 'object') return false
+  return Object.entries(value).some(([childKey, child]) =>
+    hasTextOutput(child, childKey, depth + 1, isNonOutputEnvelope(childKey))
+  )
+}
+
+function assertAutomaticOutput(
+  data: unknown,
+  outputCount: number,
+  hasText: boolean
+): void {
+  if (!outputCount && !hasText && workshopContentPolicyPayload(data))
+    throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
+}
+
 async function automaticOutputs(
   data: unknown,
   context: OutputContext
@@ -79,8 +126,13 @@ async function automaticOutputs(
     })
     seen.add(value)
   }
-  function visit(value: unknown, depth: number, mimeHint?: string) {
-    if (depth > 64 || outputs.length >= 256) return
+  function visit(
+    value: unknown,
+    depth: number,
+    mimeHint?: string,
+    insideNonOutput = false
+  ) {
+    if (depth > 64 || outputs.length >= 256 || insideNonOutput) return
     if (typeof value === 'string') {
       if (!seen.has(value)) collectString(value, mimeHint)
       return
@@ -94,11 +146,13 @@ async function automaticOutputs(
       visit(
         child,
         depth + 1,
-        key === 'data' && typeof hint === 'string' ? hint : undefined
+        key === 'data' && typeof hint === 'string' ? hint : undefined,
+        isNonOutputEnvelope(key)
       )
   }
   try {
     visit(data, 0)
+    assertAutomaticOutput(data, outputs.length, hasTextOutput(data))
     const discovered = await discoverOutputMimes(
       outputs.map(({ url }) => url),
       signal
@@ -157,6 +211,14 @@ async function responseBytes(
     }
   } catch (error) {
     await reader.cancel().catch(() => {})
+    if (error instanceof TypeError)
+      throw new WorkshopRouterError(
+        'network',
+        response.headers.get('X-Comfy-Request-Id'),
+        {},
+        workshopResponseDetails(response),
+        'response'
+      )
     throw error
   } finally {
     reader.releaseLock()
@@ -202,6 +264,18 @@ function jsonResponse(
   if (schema && !validateWorkshopInput(data, schema))
     throw new Error('Invalid Router response')
   return data
+}
+
+function validatedJsonResponse(
+  bytes: Uint8Array,
+  contentType: string,
+  schema: JsonOutput['schema']
+): unknown {
+  const data = jsonResponse(bytes, contentType)
+  if (validateWorkshopInput(data, schema)) return data
+  if (workshopContentPolicyPayload(data))
+    throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
+  throw new Error('Invalid Router response')
 }
 
 async function binaryOutputs(
@@ -302,8 +376,11 @@ function assertTerminalSuccess(
   if (
     status.length !== 1 ||
     !success.values.some((value) => normalize(value) === normalize(status[0]))
-  )
+  ) {
+    if (workshopContentPolicyPayload(data))
+      throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
     throw new Error('Router did not return terminal success')
+  }
 }
 
 function selectorMime(selector: OutputSelector, value: unknown): string {
@@ -384,7 +461,7 @@ async function selectedResponse(
   contentType: string,
   context: OutputContext
 ): Promise<RunOutput[]> {
-  const data = jsonResponse(bytes, contentType, output.schema)
+  const data = validatedJsonResponse(bytes, contentType, output.schema)
   assertTerminalSuccess(data, output.success)
   const nsfw = output.nsfwPath
     ? valuesAtPointer(data, output.nsfwPath).some((value) => value === true)
@@ -399,12 +476,22 @@ async function selectedResponse(
             nsfw
           }))
         )
-    if (!outputs.length) throw new Error('Router returned no output')
+    assertSelectedOutputs(data, outputs)
     return outputs
   } catch (error) {
     releaseRouterOutputs(outputs)
     throw error
   }
+}
+
+function assertSelectedOutputs(
+  data: unknown,
+  outputs: readonly RunOutput[]
+): void {
+  if (outputs.length) return
+  if (workshopContentPolicyPayload(data))
+    throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
+  throw new Error('Router returned no output')
 }
 
 export async function parseRouterResponse(

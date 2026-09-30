@@ -10,6 +10,7 @@ import { i18n } from '@/i18n'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as LoaderNodeUtil from '@/utils/loaderNodeUtil'
+import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
@@ -34,18 +35,7 @@ vi.mock(import('@/utils/loaderNodeUtil'), () => ({
   detectNodeTypeFromFilename
 }))
 
-const mediaAssetActions = {
-  addWorkflow: vi.fn(),
-  downloadAssets: vi.fn(),
-  openWorkflow: vi.fn(),
-  exportWorkflow: vi.fn(),
-  copyJobId: vi.fn(),
-  deleteAssets: vi.fn().mockResolvedValue(false)
-}
-
-vi.mock<unknown>(import('../composables/useMediaAssetActions'), () => ({
-  useMediaAssetActions: () => mediaAssetActions
-}))
+vi.mock(import('../composables/useMediaAssetActions'))
 
 const capturedMenu = vi.hoisted(() => ({ model: [] as MenuItem[] }))
 
@@ -100,10 +90,6 @@ const asset: AssetItem = fromPartial({
   user_metadata: {}
 })
 
-const buttonStub = {
-  template: '<div class="button-stub"><slot /></div>'
-}
-
 interface MediaAssetContextMenuExposed {
   show: (event: MouseEvent) => void
 }
@@ -129,8 +115,7 @@ function mountComponent(targetAsset: AssetItem = asset) {
       global: {
         plugins: [i18n],
         stubs: {
-          ContextMenu: contextMenuStub,
-          Button: buttonStub
+          ContextMenu: contextMenuStub
         }
       }
     }
@@ -231,7 +216,7 @@ describe('MediaAssetContextMenu', () => {
       item: downloadItem
     })
 
-    expect(mediaAssetActions.downloadAssets).toHaveBeenCalledWith([asset])
+    expect(useMediaAssetActions().downloadAssets).toHaveBeenCalledWith([asset])
 
     unmount()
   })

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { buildSnippet } from '../../config/models-snippets'
 import { workshopContract } from '../../config/workshop-contract-catalog'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
 import ApiTab from './ApiTab.vue'
 
@@ -111,6 +111,50 @@ describe('ApiTab', () => {
     expect(screen.queryByRole('button', { name: 'Copy snippet' })).toBeNull()
   })
 
+  it('names the endpoint and the key beside the snippet, and the files only when the code reads them locally', async () => {
+    const file = new File(['pixels'], 'reference.webp', { type: 'image/webp' })
+    const { rerender } = render(ApiTab, {
+      props: { contract, values }
+    })
+    const facts = screen.getByTestId('api-facts')
+    expect(facts.textContent).toContain(`POST /v2/models/${routerId}`)
+    expect(facts.textContent).toContain('COMFY_API_KEY')
+    expect(facts.textContent).not.toContain('Your files')
+
+    const model = getRouterWorkshopModelDetail(
+      'byteplus--seedream-4-5--edit-images'
+    )
+    if (!model) throw new Error('Missing model')
+    await rerender({
+      contract: model.execution,
+      values: {
+        ...initialWorkshopPageState(model).values,
+        images: [{ file, name: file.name, type: file.type, size: file.size }]
+      }
+    })
+    await waitFor(() => expect(facts.textContent).toContain('Your files'))
+
+    await userEvent.click(screen.getByTestId('snippet-curl'))
+    expect(facts.textContent).not.toContain('Your files')
+    await userEvent.click(screen.getByTestId('snippet-typescript'))
+    expect(facts.textContent).toContain('Your files')
+
+    const fromUrl = getRouterWorkshopModelDetail(
+      'bfl--flux-2-max--generate-images'
+    )
+    if (!fromUrl) throw new Error('Missing model')
+    await rerender({
+      contract: fromUrl.execution,
+      values: initialWorkshopPageState(fromUrl).values
+    })
+    await waitFor(() =>
+      expect(screen.getByTestId('snippet').textContent).toContain(
+        'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@'
+      )
+    )
+    expect(facts.textContent).not.toContain('Your files')
+  })
+
   it('uses local file examples for Base64 inputs without exposing embedded bytes', async () => {
     const visitor = userEvent.setup()
     const encoded = btoa('private pixels')
@@ -154,11 +198,17 @@ describe('ApiTab', () => {
   })
 
   it.for([
-    'vertexai--gemini-3-pro-image--edit-images',
-    'bfl--flux-2-max--generate-images'
+    {
+      slug: 'vertexai--gemini-3-pro-image--edit-images',
+      source: 'gemini-3-pro-image-input-1.1.png'
+    },
+    {
+      slug: 'bfl--flux-2-max--generate-images',
+      source: 'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@'
+    }
   ])(
-    'uses default source URLs without fetching media to show the API example: %s',
-    async (slug) => {
+    'uses default source URLs without fetching media to show the API example: $slug',
+    async ({ slug, source }) => {
       const model = getRouterWorkshopModelDetail(slug)
       if (!model) throw new Error('Missing model')
       const network = vi.fn(() =>
@@ -172,11 +222,47 @@ describe('ApiTab', () => {
         }
       })
       const snippet = await screen.findByTestId('snippet')
-      expect(snippet.textContent).toContain(
-        'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@'
-      )
+      expect(snippet.textContent).toContain(source)
       expect(snippet.textContent).not.toContain('Path(')
       expect(network).not.toHaveBeenCalled()
     }
   )
+
+  describe('API key link', () => {
+    it.for([
+      {
+        modelSlug: 'bfl--flux-2-pro',
+        href: 'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-2-pro'
+      },
+      {
+        modelSlug: undefined,
+        href: 'https://platform.comfy.org/profile/api-keys?onboarding=models'
+      }
+    ])(
+      'sends the get-key link as a models onboarding arrival, naming the model page when given one: $modelSlug',
+      async ({ modelSlug, href }) => {
+        render(ApiTab, { props: { contract, values, modelSlug } })
+        expect(
+          (await screen.findByTestId('api-get-key')).getAttribute('href')
+        ).toBe(href)
+      }
+    )
+
+    it('carries the given workspace alongside the onboarding params', async () => {
+      render(ApiTab, {
+        props: {
+          contract,
+          values,
+          modelSlug: 'bfl--flux-2-pro',
+          workspaceId: 'ws-team'
+        }
+      })
+
+      expect(
+        (await screen.findByTestId('api-get-key')).getAttribute('href')
+      ).toBe(
+        'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-2-pro&workspace=ws-team'
+      )
+    })
+  })
 })
