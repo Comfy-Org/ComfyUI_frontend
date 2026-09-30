@@ -1,3 +1,7 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
+import type { WebSession } from '@comfyorg/account-core/webSession'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -375,6 +379,35 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+    })
+  })
+
+  describe('cloud builds - session-only user', () => {
+    beforeEach(() => {
+      Object.assign(useAuthStore(), { isInitialized: true })
+      Object.assign(useCloudWebSessionStore(), {
+        state: {
+          phase: 'signed_in',
+          session: fromPartial<WebSession>({ user: { id: 'user-a' } })
+        }
+      })
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+      vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
+        undefined
+      )
+    })
+
+    it('initializes the workspace without a unified token', async () => {
+      mountComponent()
+      await flushPromises()
+
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledWith({
+        useAuth: true,
+        signal: expect.any(AbortSignal)
+      })
+      expect(useWorkspaceAuthStore().mintAtLogin).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalled()
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
   })

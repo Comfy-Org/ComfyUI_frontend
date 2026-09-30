@@ -8,6 +8,8 @@ import {
 import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { cloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -147,9 +149,12 @@ if (isCloud) {
       }
     }
 
-    // Pass authenticated users
-    const authHeader = await authStore.getAuthHeader()
-    const isLoggedIn = !!authHeader
+    let signIn = await cloudSignIn()
+    if (signIn === 'pending' && !isPublicRoute(to)) {
+      await useCloudWebSessionStore().whenDecided()
+      signIn = await cloudSignIn()
+    }
+    const isLoggedIn = signIn === 'signed_in'
     preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 
     // Allow public routes

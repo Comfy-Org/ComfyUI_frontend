@@ -1,13 +1,17 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User, UserCredential } from 'firebase/auth'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope } from 'vue'
+import { defineComponent, effectScope } from 'vue'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import {
+  bootCloudIdentity,
+  cloudSignIn
+} from '@/platform/auth/session/cloudIdentityBoot'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
@@ -53,6 +57,10 @@ const identity = vi.hoisted(() => {
       userObservers.clear()
       tokenObservers.clear()
       state.user = null
+    },
+    resolve(user: User | null) {
+      state.user = user
+      userObservers.forEach((observer) => observer(user))
     },
     signIn(user: User) {
       state.user = user
@@ -108,6 +116,14 @@ vi.mock(import('@/services/extensionService'), () => ({
     })
 }))
 
+vi.mock(import('@/views/layouts/LayoutDefault.vue'), async () => ({
+  default: defineComponent({ render: () => null })
+}))
+
+vi.mock(import('@/views/UserSelectView.vue'), async () => ({
+  default: defineComponent({ render: () => null })
+}))
+
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -115,6 +131,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 await import('@/extensions/core/cloudSessionCookie')
+const { default: router } = await import('@/router')
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
 
@@ -132,7 +149,7 @@ const USER_B = fromPartial<User>({
   getIdToken: async () => 'firebase-id-token-b'
 })
 
-type ServerSession = 'none' | 'revoked' | { userId: string }
+type ServerSession = 'none' | 'revoked' | 'network' | { userId: string }
 
 interface SessionRequest {
   method: string
@@ -177,6 +194,9 @@ function installServer(
       return jsonResponse({ success: true })
     }
     const { session } = server
+    if (session === 'network') {
+      return jsonResponse({ code: 'unavailable', message: 'down' }, 503)
+    }
     if (typeof session === 'object')
       return jsonResponse(sessionBody(session.userId))
     const code = session === 'revoked' ? 'session_revoked' : 'no_session'
@@ -1416,6 +1436,171 @@ describe.for([{ unified: false }, { unified: true }])(
       expect(firebaseSignOut).not.toHaveBeenCalled()
       expect(useCurrentUser().isLoggedIn.value).toBe(false)
       expect(authStore.isAuthenticated).toBe(false)
+    })
+  }
+)
+
+describe.for([{ unified: false }, { unified: true }])(
+  'booting the cloud identity from the session (unified_cloud_auth $unified)',
+  ({ unified }) => {
+    const install = async (session: ServerSession) => {
+      const server = installServer(session, { unified_cloud_auth: unified })
+      await refreshRemoteConfig({ useAuth: false })
+      const authStore = useAuthStore()
+      return { server, authStore }
+    }
+    const methodsOfServer = (server: ReturnType<typeof installServer>) =>
+      methodsOf(server.requests)
+
+    beforeEach(() => {
+      identity.reset()
+      firebaseSignOut.mockReset()
+      firebaseSignOut.mockImplementation(async () => identity.signOut())
+      vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('signs in on the session alone', async () => {
+      const { server, authStore } = await install({ userId: 'user-a' })
+      identity.resolve(null)
+
+      await expect(cloudSignIn()).resolves.toBe('signed_in')
+
+      expect(methodsOfServer(server)).toEqual(['GET'])
+      expect(authStore.userId).toBe('user-a')
+      expect(useCurrentUser().resolvedUserInfo.value).toEqual({ id: 'user-a' })
+      expect(firebaseSignOut).not.toHaveBeenCalled()
+    })
+
+    it('boots once however many callers ask', async () => {
+      const { server } = await install({ userId: 'user-a' })
+      identity.resolve(null)
+
+      await Promise.all([bootCloudIdentity(), cloudSignIn(), cloudSignIn()])
+
+      expect(methodsOfServer(server)).toEqual(['GET'])
+    })
+
+    it.for([
+      {
+        name: 'a remembered login',
+        remembered: USER_A,
+        signOutTakesEffect: true,
+        signOuts: 1
+      },
+      {
+        name: 'a remembered login that outlives the local sign-out',
+        remembered: USER_A,
+        signOutTakesEffect: false,
+        signOuts: 1
+      },
+      {
+        name: 'no remembered login',
+        remembered: null,
+        signOutTakesEffect: true,
+        signOuts: 0
+      }
+    ])(
+      'a revoked session is signed out with $name',
+      async ({ remembered, signOutTakesEffect, signOuts }) => {
+        const { server } = await install('revoked')
+        if (!signOutTakesEffect) firebaseSignOut.mockResolvedValue()
+        identity.resolve(remembered)
+
+        await expect(cloudSignIn()).resolves.toBe('signed_out')
+
+        expect(methodsOfServer(server)).toEqual(['GET'])
+        expect(firebaseSignOut).toHaveBeenCalledTimes(signOuts)
+      }
+    )
+
+    it('stays pending through an outage without signing anyone out, then signs in', async () => {
+      const { server } = await install('network')
+      identity.resolve(null)
+
+      await expect(cloudSignIn()).resolves.toBe('pending')
+      let decided: string | undefined
+      void useCloudWebSessionStore()
+        .whenDecided()
+        .then((outcome) => (decided = outcome))
+      await vi.advanceTimersByTimeAsync(3_000)
+
+      expect(decided).toBeUndefined()
+      expect(new Set(methodsOfServer(server))).toEqual(new Set(['GET']))
+      expect(firebaseSignOut).not.toHaveBeenCalled()
+
+      server.session = { userId: 'user-a' }
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(decided).toBe('signed_in')
+      await expect(cloudSignIn()).resolves.toBe('signed_in')
+    })
+
+    it('does not decide until the login of a different user is gone', async () => {
+      const { authStore } = await install({ userId: 'user-a' })
+      firebaseSignOut.mockImplementation(
+        () =>
+          new Promise<void>((resolve) =>
+            setTimeout(() => {
+              identity.signOut()
+              resolve()
+            }, 1_000)
+          )
+      )
+      identity.resolve(USER_B)
+      let outcome: string | undefined
+      void cloudSignIn().then((result) => (outcome = result))
+
+      await vi.advanceTimersByTimeAsync(500)
+      expect(outcome).toBeUndefined()
+      expect(authStore.currentUser).toEqual(USER_B)
+
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(outcome).toBe('signed_in')
+      expect(authStore.currentUser).toBeNull()
+      expect(authStore.userId).toBe('user-a')
+    })
+
+    describe('the router', () => {
+      const enterApp = async () => {
+        await router.push('/cloud/login')
+        await router.push('/user-select')
+        return router.currentRoute.value.path
+      }
+
+      it('lets a session-only tab in without a login page', async () => {
+        await install({ userId: 'user-a' })
+        identity.resolve(null)
+
+        await expect(enterApp()).resolves.toBe('/user-select')
+      })
+
+      it('sends a revoked session to the login page', async () => {
+        await install('revoked')
+        identity.resolve(null)
+
+        await expect(enterApp()).resolves.toBe('/cloud/login')
+      })
+
+      it('waits out an outage instead of sending the tab to the login page', async () => {
+        const { server } = await install('network')
+        identity.resolve(null)
+        await router.push('/cloud/login')
+
+        let path: string | undefined
+        void router.push('/user-select').then(() => {
+          path = router.currentRoute.value.path
+        })
+        await vi.advanceTimersByTimeAsync(3_000)
+        expect(path).toBeUndefined()
+
+        server.session = { userId: 'user-a' }
+        await vi.advanceTimersByTimeAsync(60_000)
+        expect(path).toBe('/user-select')
+      })
     })
   }
 )
