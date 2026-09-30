@@ -548,10 +548,9 @@ describe('useAgentConversationStore', () => {
     expect(messageTexts(store, T2)).toEqual(['newer'])
   })
 
-  // Sorting the same-prompt projection below gave up the only hold on the
-  // other arm of that index: with nothing to replace, the stash appends. Read
-  // where the ordering is not in dispute -- a finished turn the resume returns
-  // to -- so restoring it does not re-freeze the stash-vs-stash order.
+  // With no hydrated copy to replace, a resumed stash appends after the
+  // existing transcript. Tested separately from two-stash ordering, which is
+  // disputed, so asserting this one does not freeze that one.
   it('appends a resumed stash below the transcript it returns to', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
