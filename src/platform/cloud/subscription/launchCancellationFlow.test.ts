@@ -70,6 +70,7 @@ beforeEach(() => {
           renewalDate: null,
           isCancelled: false,
           hasFunds: true,
+          agentHasFunds: true,
           ...mocks.subscription.value
         }
       : null
@@ -133,6 +134,7 @@ describe('launchCancellationFlow', () => {
 
     expect(showFallback).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'billing',
       errorType: 'error_refreshing_billing_after_churnkey_discount'
     })
     expect(useToastStore().add).toHaveBeenCalledExactlyOnceWith(
@@ -309,6 +311,7 @@ describe('launchCancellationFlow', () => {
     )
     expect(useTelemetry()?.trackSubscriptionCancellation).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(preparationError, {
+      surface: 'billing',
       errorType: 'cloud_cancellation_vendor_fallback',
       tags: {
         failure_kind: 'degraded',
@@ -501,6 +504,7 @@ describe('launchCancellationFlow', () => {
         cause: expect.objectContaining({ message: 'blocked by browser' })
       }),
       {
+        surface: 'billing',
         errorType: 'cloud_cancellation_vendor_fallback',
         tags: {
           failure_kind: 'caught_unexpected',

@@ -1,7 +1,6 @@
 <script setup lang="ts">
+import { ChevronDown, Maximize, RectangleHorizontal } from '@lucide/vue'
 import { computed } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
   ReshootAspect,
@@ -13,6 +12,7 @@ import {
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
+import { FORMAT_TRIGGER_CLASS } from '../cinematic-menu-trigger'
 import CinematicMenu from '../CinematicMenu.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -25,6 +25,13 @@ const aspectLabel = (id: ReshootAspect) =>
 const aspectOptions = computed(() =>
   RESHOOT_ASPECTS.map((id) => ({ id, label: aspectLabel(id) }))
 )
+const sizeOptions = computed(() =>
+  RESHOOT_SIZES.map((id) => ({
+    id,
+    label: id,
+    meta: rc(`reshoot.size.${id}`, locale)
+  }))
+)
 const aspectValue = computed({
   get: () => aspect.value,
   set: (id: string) => {
@@ -32,46 +39,44 @@ const aspectValue = computed({
       RESHOOT_ASPECTS.find((option) => option === id) ?? aspect.value
   }
 })
+const sizeValue = computed({
+  get: () => size.value,
+  set: (id: string) => {
+    size.value = RESHOOT_SIZES.find((option) => option === id) ?? size.value
+  }
+})
 </script>
 
 <template>
-  <div class="flex flex-col gap-1.5">
-    <div class="grid grid-cols-2 gap-2">
-      <CinematicMenu
-        v-model="aspectValue"
-        :options="aspectOptions"
-        :heading="rc('reshoot.aspect', locale)"
-        trigger-class="h-10 justify-center border border-transparency-white-t20 text-sm text-primary-warm-white hover:border-primary-warm-white/50"
-      >
-        {{ aspectLabel(aspect) }}
-      </CinematicMenu>
-      <div
-        class="grid grid-cols-2 rounded-xl border border-transparency-white-t20 p-0.5"
-        role="radiogroup"
-        :aria-label="rc('reshoot.size', locale)"
-      >
-        <button
-          v-for="option in RESHOOT_SIZES"
-          :key="option"
-          type="button"
-          role="radio"
-          :aria-checked="size === option"
-          :class="
-            cn(
-              'rounded-lg text-sm transition-colors',
-              size === option
-                ? 'bg-primary-warm-white text-page'
-                : 'text-primary-comfy-canvas hover:text-primary-warm-white'
-            )
-          "
-          @click="size = option"
-        >
-          {{ option }}
-        </button>
-      </div>
-    </div>
-    <p class="text-right text-[11px] text-primary-warm-gray">
-      {{ rc(`reshoot.size.${size}`, locale) }}
-    </p>
+  <div
+    role="group"
+    :aria-label="rc('reshoot.section.format', locale)"
+    class="grid grid-cols-2 gap-2"
+  >
+    <CinematicMenu
+      v-model="aspectValue"
+      :options="aspectOptions"
+      :heading="rc('reshoot.aspect', locale)"
+      tooltip
+      :trigger-class="FORMAT_TRIGGER_CLASS"
+    >
+      <RectangleHorizontal
+        class="size-3.5 text-primary-warm-gray"
+        aria-hidden="true"
+      />
+      <span class="flex-1 truncate text-left">{{ aspectLabel(aspect) }}</span>
+      <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
+    </CinematicMenu>
+    <CinematicMenu
+      v-model="sizeValue"
+      :options="sizeOptions"
+      :heading="rc('reshoot.size', locale)"
+      tooltip
+      :trigger-class="FORMAT_TRIGGER_CLASS"
+    >
+      <Maximize class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
+      <span class="flex-1 text-left">{{ size }}</span>
+      <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
+    </CinematicMenu>
   </div>
 </template>

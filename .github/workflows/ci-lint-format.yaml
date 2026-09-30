@@ -47,7 +47,7 @@ jobs:
           path: ${{ env.LINT_CACHE_PATHS }}
 
       - name: Run ESLint with auto-fix
-        run: pnpm lint:fix
+        run: pnpm lint:fix:ci
 
       - name: Run Stylelint with auto-fix
         run: pnpm stylelint:fix

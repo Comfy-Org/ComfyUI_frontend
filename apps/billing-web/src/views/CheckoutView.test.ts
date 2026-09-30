@@ -710,6 +710,10 @@ describe('CheckoutView', () => {
     [
       'authentication_required',
       "We couldn't complete payment verification. Please try again."
+    ],
+    [
+      'payment_not_completed',
+      "We couldn't complete payment verification. Please try again."
     ]
   ] as const)(
     'reports a %s decline as the app does and keeps the confirm usable',

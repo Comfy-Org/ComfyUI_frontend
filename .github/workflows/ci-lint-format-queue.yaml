@@ -49,7 +49,7 @@ jobs:
           path: ${{ env.LINT_CACHE_PATHS }}
 
       - name: Verify lint
-        run: pnpm lint
+        run: pnpm lint:ci
 
       - name: Verify format
         run: pnpm format:check

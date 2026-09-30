@@ -42,6 +42,7 @@ function reportFallbackFailure(
   workspaceStillCurrent: boolean
 ): void {
   reportError(fallbackReportedError(fallbackError, vendorFailure), {
+    surface: 'billing',
     errorType: 'cloud_cancellation_vendor_fallback',
     tags: {
       failure_kind: workspaceStillCurrent ? 'caught_unexpected' : 'degraded',
@@ -100,6 +101,7 @@ async function prepareCancellationSession(
   if (!isLaunchWorkspaceCurrent()) {
     if (preparation.threw) {
       reportError(preparation.error, {
+        surface: 'billing',
         errorType: 'cloud_cancellation_vendor_fallback',
         tags: {
           failure_kind: 'degraded',
@@ -125,6 +127,7 @@ async function prepareCancellationSession(
   if (preparation.threw && fallbackOutcome !== 'failed') {
     const workspaceStillCurrent = isLaunchWorkspaceCurrent()
     reportError(preparation.error, {
+      surface: 'billing',
       errorType: 'cloud_cancellation_vendor_fallback',
       tags: {
         failure_kind: 'degraded',
@@ -210,6 +213,7 @@ export async function launchCancellationFlow({
         if (!isLaunchWorkspaceCurrent()) return
         await billing.fetchStatus().catch((error) => {
           reportError(error, {
+            surface: 'billing',
             errorType: 'error_refreshing_billing_after_churnkey_discount'
           })
           useToastStore().add({

@@ -757,6 +757,7 @@ export class ComfyApp {
         if (files.length === 0) {
           if (event.dataTransfer?.types.includes(MIME_ASSET_INFO)) {
             reportError(new Error('Dropped asset card yielded no file'), {
+              surface: 'graph',
               errorType: 'asset_drop_load_failure'
             })
             useToastStore().addAlert(t('toastMessages.assetDropFailed'))
@@ -2205,7 +2206,10 @@ export class ComfyApp {
             })
           } catch (err) {
             console.error('Failed to load API prompt:', err)
-            reportError(err, { errorType: 'api_prompt_load_failure' })
+            reportError(err, {
+              surface: 'graph',
+              errorType: 'api_prompt_load_failure'
+            })
             this.showErrorOnFileLoad(file)
           }
           return

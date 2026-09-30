@@ -99,7 +99,10 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
   } catch (error) {
     if (replaying && useAuthStore().userId === replayOwner)
       restoreSurveyReplayRequest(replayOwner)
-    reportError(error, { errorType: 'error_navigating_from_onboarding_survey' })
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'error_navigating_from_onboarding_survey'
+    })
     useToastStore().add({
       severity: 'error',
       summary: t('cloudOnboarding.survey.navigationFailed'),
@@ -113,6 +116,7 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
 
 function reportSurveySubmissionFailure(cause: unknown) {
   reportError(cause, {
+    surface: 'platform',
     errorType: 'error_submitting_onboarding_survey'
   })
   useToastStore().add({

@@ -25,8 +25,8 @@ async function badgePlacement(row: Locator, label: string) {
 
 const minimaxLabel = 'MiniMax H3'
 const minimaxLabelZh = 'MiniMax H3'
-const minimaxRoute = '/minimax-h3'
-const minimaxRouteZh = '/zh-CN/minimax-h3'
+const minimaxRoute = '/minimax-h3/'
+const minimaxRouteZh = '/zh-CN/minimax-h3/'
 
 const TOP_LEVEL_LABELS = [
   'Hub',
@@ -40,21 +40,21 @@ const RETIRED_BADGE_PANELS = [
   {
     section: 'Products',
     badged: [
-      { label: 'Comfy Agent', href: '/agent' },
-      { label: 'Developer Platform', href: '/platform' },
-      { label: 'Comfy Router', href: '/platform/router' }
+      { label: 'Comfy Agent', href: '/agent/' },
+      { label: 'Developer Platform', href: '/platform/' },
+      { label: 'Comfy Router', href: '/platform/router/' }
     ],
     bare: [
-      { label: 'Comfy CLI', href: '/cli' },
-      { label: 'Managed Builds', href: '/enterprise/managed-builds' }
+      { label: 'Comfy CLI', href: '/cli/' },
+      { label: 'Managed Builds', href: '/enterprise/managed-builds/' }
     ]
   },
   {
     section: 'Community',
-    badged: [{ label: 'Events', href: '/events' }],
+    badged: [{ label: 'Events', href: '/events/' }],
     bare: [
-      { label: 'Affiliates', href: '/affiliates' },
-      { label: 'Learning', href: '/learning' }
+      { label: 'Affiliates', href: '/affiliates/' },
+      { label: 'Learning', href: '/learning/' }
     ]
   }
 ] as const
@@ -188,7 +188,7 @@ test.describe('Desktop dropdown @interaction', () => {
       const card = nav.getByTestId('nav-dropdown').getByRole('link', {
         name: 'Explore the Gemini Omni 1.1 Flash release'
       })
-      await expect(card).toHaveAttribute('href', '/gemini-omni')
+      await expect(card).toHaveAttribute('href', '/gemini-omni/')
       const video = card.locator('video')
       await expect(video).toHaveAttribute(
         'src',
@@ -213,7 +213,7 @@ test.describe('Desktop dropdown @interaction', () => {
       .getByRole('link', { name: 'Watch the Product Photography demo' })
     await expect(card).toHaveAttribute(
       'href',
-      '/learning/ads/product-photography'
+      '/learning/ads/product-photography/'
     )
     await expect(
       card.getByRole('img', { name: 'Product Photography workflow demo image' })

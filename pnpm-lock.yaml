@@ -665,6 +665,9 @@ importers:
       minisearch:
         specifier: 'catalog:'
         version: 7.2.0
+      mixpanel-browser:
+        specifier: 'catalog:'
+        version: 2.81.0
       pinia:
         specifier: 'catalog:'
         version: 4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
@@ -695,6 +698,9 @@ importers:
       typegpu:
         specifier: 'catalog:'
         version: 0.8.2
+      uuid:
+        specifier: 'catalog:'
+        version: 11.1.1
       vee-validate:
         specifier: 'catalog:'
         version: 4.15.1(vue@3.5.42(typescript@6.0.3))
@@ -867,9 +873,6 @@ importers:
       markdown-table:
         specifier: 'catalog:'
         version: 3.0.4
-      mixpanel-browser:
-        specifier: 'catalog:'
-        version: 2.81.0
       monocart-coverage-reports:
         specifier: 'catalog:'
         version: 2.12.12
@@ -930,9 +933,6 @@ importers:
       unplugin-vue-components:
         specifier: 'catalog:'
         version: 32.1.0(esbuild@0.28.1)(rolldown@1.2.6)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
-      uuid:
-        specifier: 'catalog:'
-        version: 11.1.1
       vite:
         specifier: ^8.2.2
         version: 8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)
@@ -1120,6 +1120,9 @@ importers:
       cva:
         specifier: 'catalog:'
         version: 1.0.0-beta.4(typescript@6.0.3)
+      es-toolkit:
+        specifier: ^1.39.9
+        version: 1.49.0
       firebase:
         specifier: 'catalog:'
         version: 11.10.0

@@ -2,13 +2,14 @@
 set -euo pipefail
 
 : "${EVENT_NAME:?EVENT_NAME is required}"
+: "${GH_TOKEN:?PR_GH_TOKEN is required for cloud tag reconciliation}"
 : "${BRANCH:?BRANCH is required}"
 : "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
 : "${GITHUB_OUTPUT:?GITHUB_OUTPUT is required}"
 : "${GITHUB_STEP_SUMMARY:?GITHUB_STEP_SUMMARY is required}"
 
 if [[ ! "$BRANCH" =~ ^cloud/([0-9]+)\.([0-9]+)$ ]]; then
-  echo "::error::Base branch '$BRANCH' is not a cloud/x.y branch"
+  echo "::error::Base branch is not a cloud/x.y branch"
   exit 1
 fi
 
@@ -31,7 +32,10 @@ if [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
   exit 1
 fi
 
-CONTAINMENT=$(gh api "repos/${GITHUB_REPOSITORY}/compare/${BRANCH}...${SHA}" --jq '.status')
+if ! CONTAINMENT=$(gh api "repos/${GITHUB_REPOSITORY}/compare/${BRANCH}...${SHA}" --jq '.status'); then
+  echo "::error::Failed to verify that commit ${SHA} belongs to ${BRANCH}"
+  exit 1
+fi
 if [[ "$CONTAINMENT" != "behind" && "$CONTAINMENT" != "identical" ]]; then
   echo "::error::Commit ${SHA} is not contained in ${BRANCH} (compare status: ${CONTAINMENT})"
   exit 1
@@ -39,8 +43,8 @@ fi
 
 VERSION=$(gh api "repos/${GITHUB_REPOSITORY}/contents/package.json?ref=${SHA}" \
   -H 'Accept: application/vnd.github.raw+json' | jq -r '.version')
-if [[ ! "$VERSION" =~ ^${MAJOR}\.${MINOR}\.([0-9]+)(-[0-9A-Za-z.-]+)?$ ]]; then
-  echo "::error::Version '${VERSION}' does not match cloud branch '${BRANCH}'"
+if [[ ! "$VERSION" =~ ^${MAJOR}\.${MINOR}\.([0-9]+)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+  echo "::error::Package version does not match the selected cloud branch"
   exit 1
 fi
 
@@ -57,11 +61,11 @@ read_tag_object() {
     printf '%s\n' "$output"
     return 0
   fi
-  cat "$error_file" >&2
   if grep -Eq 'HTTP 404' "$error_file"; then
     rm -f "$error_file"
     return 1
   fi
+  cat "$error_file" >&2
   rm -f "$error_file"
   return 2
 }
@@ -75,7 +79,7 @@ resolve_tag_commit() {
     depth=$((depth + 1))
   done
   if [[ "$object_type" != "commit" ]]; then
-    echo "::error::Tag ${TAG} does not resolve to a commit"
+    echo "::error::Tag ${TAG} does not resolve to a commit" >&2
     return 1
   fi
   printf '%s\n' "$object_sha"
@@ -87,8 +91,19 @@ handle_existing_tag() {
   existing_commit=$(resolve_tag_commit "$object_type" "$object_sha")
   if [[ "$existing_commit" == "$SHA" ]]; then
     echo "::notice::Tag ${TAG} already exists at ${existing_commit}; skipping"
+    echo "Tag ${TAG} already exists at ${existing_commit}; no change required." >> "$GITHUB_STEP_SUMMARY"
   else
-    echo "::notice::Tag ${TAG} already exists at ${existing_commit}; ${SHA} is another backport for the same version, skipping"
+    local existing_containment
+    if ! existing_containment=$(gh api "repos/${GITHUB_REPOSITORY}/compare/${BRANCH}...${existing_commit}" --jq '.status'); then
+      echo "::error::Failed to verify existing tag ${TAG} against ${BRANCH}"
+      return 1
+    fi
+    if [[ "$existing_containment" != "behind" && "$existing_containment" != "identical" ]]; then
+      echo "::error::Existing tag ${TAG} is not contained in ${BRANCH}"
+      return 1
+    fi
+    echo "::warning::Tag ${TAG} already marks ${existing_commit}; ${SHA} is another backport for the same package version, so the first release marker is preserved"
+    echo "Tag ${TAG} remains at ${existing_commit}; ${SHA} is another backport for the same package version." >> "$GITHUB_STEP_SUMMARY"
   fi
   echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 }
