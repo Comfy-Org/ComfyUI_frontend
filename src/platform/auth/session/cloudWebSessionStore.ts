@@ -1,3 +1,4 @@
+import { until } from '@vueuse/core'
 import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
@@ -333,12 +334,21 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     })
   }
 
+  async function whenDecided(): Promise<'signed_in' | 'signed_out'> {
+    await until(state).toMatch(
+      ({ phase }) => phase === 'signed_in' || phase === 'signed_out'
+    )
+    return state.value.phase === 'signed_in' ? 'signed_in' : 'signed_out'
+  }
+
   return {
     start,
+    state,
     signedInUser,
     reconnecting,
     isActive: () => identity !== null,
     whenReady: () => ready,
+    whenDecided,
     signedInInteractively,
     signOut
   }
