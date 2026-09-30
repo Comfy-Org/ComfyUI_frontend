@@ -67,8 +67,8 @@ describe('AttachmentChip', () => {
     it.for([
       ['cat.png', 'can see this image'],
       ['clip.mp4', 'format and length, but not what it contains'],
-      ['mesh.glb', "use this file in the graph, but can't read"],
-      ['notes.md', "use this file in the graph, but can't read"]
+      ['mesh.glb', "load this file in the graph, but can't read"],
+      ['notes.md', 'reference only']
     ])('tells the user what the agent can do with %s', ([name, phrase]) => {
       renderChip({ name })
       const chip = screen.getByTestId('agent-attachment-chip')

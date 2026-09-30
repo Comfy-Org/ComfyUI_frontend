@@ -36,7 +36,11 @@ import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
+import {
+  AGENT_ATTACH_ACCEPT,
+  agentAttachCapability,
+  isAgentAttachable
+} from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -1637,6 +1641,21 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
     toast.add({
       severity: 'warn',
       detail: t('agent.assetNotAttachable'),
+      life: 5000
+    })
+    return false
+  }
+
+  // An asset card is the fourth way a file reaches the composer, and the only
+  // one that can skip the upload — so it has to consult the same policy the
+  // other three do. `asset.kind !== 'other'` is NOT that check: it reads the
+  // shared media taxonomy, which files .usdz as 3D while the accepted list
+  // rejects it, so a .usdz card used to stage silently here and then fail the
+  // turn at submit.
+  if (!agentAttachCapability(asset.name)) {
+    toast.add({
+      severity: 'warn',
+      detail: t('agent.attachmentTypeNotAccepted', { name: asset.name }),
       life: 5000
     })
     return false

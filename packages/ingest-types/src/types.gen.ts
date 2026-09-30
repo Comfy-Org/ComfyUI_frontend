@@ -4658,11 +4658,26 @@ export type AgentRunMode = {
 }
 
 /**
- * Attachment extensions the agent can name and wire into a graph but cannot read.
+ * Attachment extensions that are accepted so a user can keep them beside a workflow, and
+ * nothing more. No upload-backed node input takes a text file, so unlike the reference tier
+ * these cannot be wired into a graph either.
  *
- * 3D covers every format Load3D opens EXCEPT .usdz, which the accepted list rejects. Text
- * formats are accepted so a user can attach and keep them beside a workflow; the agent is told
- * the kind and the id, and the composer must not imply the model has read them.
+ */
+export type AgentRetainedAttachmentExtension =
+  | '.md'
+  | '.markdown'
+  | '.txt'
+  | '.json'
+  | '.csv'
+  | '.yaml'
+  | '.yml'
+  | '.xml'
+  | '.log'
+
+/**
+ * Attachment extensions the agent can name and wire into a graph but cannot read — every
+ * format Load3D opens EXCEPT .usdz, which the accepted list rejects, plus the two image
+ * formats that are attachable but not decodable into a turn (.svg, .avif).
  *
  */
 export type AgentReferenceAttachmentExtension =
@@ -4675,22 +4690,13 @@ export type AgentReferenceAttachmentExtension =
   | '.spz'
   | '.splat'
   | '.ksplat'
-  | '.md'
-  | '.markdown'
-  | '.txt'
-  | '.json'
-  | '.csv'
-  | '.yaml'
-  | '.yml'
-  | '.xml'
-  | '.log'
   | '.svg'
   | '.avif'
 
 /**
- * Attachment extensions the agent can only describe from metadata. Matches the containers
- * ingest sorts into a load node's video/audio lists, so anything accepted here is also
- * wirable into a graph.
+ * Attachment extensions the agent can only describe from metadata. A subset of the containers
+ * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
+ * .aac and .wma, which the agreed attachment list rejects.
  *
  */
 export type AgentProbeableAttachmentExtension =
@@ -4906,13 +4912,20 @@ export type AgentAttachmentRejected = {
  * - `reference`: the agent knows the file exists, its kind and its id, and can wire it into a
  * graph node by filename — but cannot read it at all. The cloud turn registers neither a
  * shell nor a file-read tool, by design: it is a shared multi-tenant pod.
+ * - `retain`: the file is attached and nothing more. The agent is told it is there and can
+ * neither read it nor wire it in. Kept separate from `reference` because no node in the
+ * catalog takes a text file on an upload-backed input — Load3D/Load3DAdvanced take a mesh,
+ * LoadImage/LoadAudio/LoadVideo take media, and nothing takes .md or .csv. Telling the user
+ * the agent could "use this in the graph" would be false for this tier, and would send the
+ * model hunting for a loader that does not exist.
  *
- * The union of the three arrays is the accepted list. Anything absent is rejected.
+ * The union of the four arrays is the accepted list. Anything absent is rejected.
  *
  */
 export type AgentAttachmentPolicy = {
   probe: Array<AgentProbeableAttachmentExtension>
   reference: Array<AgentReferenceAttachmentExtension>
+  retain: Array<AgentRetainedAttachmentExtension>
   view: Array<AgentViewableAttachmentExtension>
 }
 

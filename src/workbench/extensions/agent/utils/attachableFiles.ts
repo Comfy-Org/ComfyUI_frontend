@@ -1,18 +1,20 @@
 import {
   zAgentProbeableAttachmentExtension,
   zAgentReferenceAttachmentExtension,
+  zAgentRetainedAttachmentExtension,
   zAgentViewableAttachmentExtension
 } from '@comfyorg/ingest-types/zod'
 
 /**
  * What the agent can do with an attachment, straight off the server contract.
  *
- * The three tiers are not interchangeable and the composer must not present
- * them as one list: `view` means the model sees the content, `probe` means it
- * reads metadata and never the content, and `reference` means it knows only
- * that the file exists and how to wire it into a graph node.
+ * The tiers are not interchangeable and the composer must not present them as
+ * one list: `view` means the model sees the content, `probe` means it reads
+ * metadata and never the content, `reference` means it knows the file exists
+ * and can wire it into a graph node, and `retain` means it knows the file
+ * exists and nothing more — no node in the catalog loads a text file.
  */
-export type AgentAttachCapability = 'view' | 'probe' | 'reference'
+export type AgentAttachCapability = 'view' | 'probe' | 'reference' | 'retain'
 
 /**
  * Derived from the generated enums rather than hand-listed here, so the accept
@@ -29,6 +31,9 @@ const CAPABILITY_BY_EXTENSION = new Map<string, AgentAttachCapability>([
   ),
   ...zAgentReferenceAttachmentExtension.options.map(
     (extension) => [extension, 'reference'] as const
+  ),
+  ...zAgentRetainedAttachmentExtension.options.map(
+    (extension) => [extension, 'retain'] as const
   )
 ])
 

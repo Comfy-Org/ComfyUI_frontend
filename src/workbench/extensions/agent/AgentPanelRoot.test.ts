@@ -3146,6 +3146,39 @@ describe('AgentPanelRoot attach flow', () => {
     }
   })
 
+  it('refuses an asset card whose type is outside the accepted list', async () => {
+    // The asset-card path can stage without uploading, so it used to skip the
+    // policy entirely: it gated on the shared media taxonomy, which files
+    // .usdz as 3D while the accepted list rejects it. The card staged silently
+    // and the turn then failed at submit.
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const dragData = {
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: 'scene.usdz',
+          type: 'input',
+          attachment_ref: 'stored_scene.usdz',
+          media_kind: '3D'
+        })
+    }
+    dispatchDrag(screen.getByRole('textbox'), 'drop', dragData)
+
+    await vi.waitFor(() =>
+      expect(
+        useToastStore().messagesToAdd.some(({ detail }) =>
+          String(detail).includes('scene.usdz')
+        )
+      ).toBe(true)
+    )
+    expect(
+      screen.queryByTestId('composer-asset-section')
+    ).not.toBeInTheDocument()
+  })
+
   it('attaches a dropped workflow json to the chat instead of the graph loader', async () => {
     // Dropping ONTO THE COMPOSER means "attach this", so the panel claims a
     // .json rather than leaving it for the loader (PM-1855). The canvas keeps

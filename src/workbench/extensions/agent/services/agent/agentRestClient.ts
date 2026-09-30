@@ -2,9 +2,13 @@ import type {
   AgentPostMessageRequest,
   UploadImageResponse
 } from '@comfyorg/ingest-types'
-import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zAgentAttachmentRejected,
+  zUploadImageResponse
+} from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
+import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 
 import {
@@ -115,6 +119,16 @@ function parseErrorBody(text: string): unknown {
 }
 
 function getErrorMessage(body: unknown, fallback: string): string {
+  // A refused attachment type is the user's to fix, so it is answered in their
+  // language from the names the server refused — not with the server's English
+  // `error` string, which is what a plain AgentError parse would surface.
+  const refused = zAgentAttachmentRejected.safeParse(body)
+  if (refused.success) {
+    return refused.data.rejected
+      .map((name) => i18n.global.t('agent.attachmentTypeNotAccepted', { name }))
+      .join(' ')
+  }
+
   const plain = zAgentError.safeParse(body)
   if (plain.success) {
     return typeof plain.data.error === 'string'

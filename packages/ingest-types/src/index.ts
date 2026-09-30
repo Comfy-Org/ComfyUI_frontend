@@ -96,6 +96,7 @@ export type {
   AgentPutRunModeResponse,
   AgentPutRunModeResponses,
   AgentReferenceAttachmentExtension,
+  AgentRetainedAttachmentExtension,
   AgentRunMode,
   AgentRunModePutRequest,
   AgentSkill,

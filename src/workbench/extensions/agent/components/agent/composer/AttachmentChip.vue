@@ -41,6 +41,8 @@ const capabilityLabel = computed(() => {
       return t('agent.attachmentCapabilityProbe')
     case 'reference':
       return t('agent.attachmentCapabilityReference')
+    case 'retain':
+      return t('agent.attachmentCapabilityRetain')
     default:
       return undefined
   }
