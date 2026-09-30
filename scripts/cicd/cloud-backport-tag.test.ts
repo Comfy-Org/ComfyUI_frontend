@@ -98,7 +98,6 @@ function runTagScript(
       GITHUB_OUTPUT: output,
       GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
       GITHUB_STEP_SUMMARY: summary,
-      GH_TOKEN: 'test-token',
       PATH: `${directory}:${process.env.PATH}`,
       SHA: options.sha ?? targetSha,
       TAG_OBJECT_SHA: tagObjectSha,
