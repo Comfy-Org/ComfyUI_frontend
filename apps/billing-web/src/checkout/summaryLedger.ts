@@ -48,16 +48,8 @@ export interface SummaryLedger {
   readonly credits?: { readonly count: string; readonly qualifier: string }
   /** Money rows the total reconciles with; see `moneyItems`. */
   readonly items: readonly LedgerRow[]
-  /** Discounts the customer already holds, priced before any entered code. */
-  readonly adjustments: readonly DiscountRow[]
-  /**
-   * The pre-discount base an entered code applied to. The quote carries
-   * no such field today, so no builder populates this; it stays typed for
-   * when the server reports one, and the row renders only then.
-   */
-  readonly subtotal?: string
-  /** The row for the code the customer entered. */
-  readonly promo?: DiscountRow
+  /** Every promotion the quote applied, held or entered, in the server's order. */
+  readonly discounts: readonly DiscountRow[]
   readonly chips: readonly PromoChip[]
   /** Codes apply to a charge made today, so only those families take one. */
   readonly acceptsPromo: boolean
@@ -65,10 +57,7 @@ export interface SummaryLedger {
   readonly trailing: readonly string[]
 }
 
-type DiscountSlots = Pick<
-  SummaryLedger,
-  'adjustments' | 'subtotal' | 'promo' | 'chips' | 'acceptsPromo'
->
+type DiscountSlots = Pick<SummaryLedger, 'discounts' | 'chips' | 'acceptsPromo'>
 
 type FamilyLedger = Omit<SummaryLedger, keyof DiscountSlots>
 
@@ -436,21 +425,8 @@ export function acceptsPromoCode(quote: SubscriptionPreview): boolean {
 
 type Discount = NonNullable<SubscriptionPreview['discounts']>[number]
 
-/**
- * The `promotion` discount matching the quote's `promotion_code` is the
- * customer's entered code, any other is one the account already holds.
- * Subtotal would name the base the entered code applied to, but the quote
- * carries no pre-discount total, so this builder never sets it. Computing
- * one as today's charge plus what the code took would be a frontend guess
- * at a number the server is supposed to report.
- */
-function discountSlots(r: QuoteReading): DiscountSlots {
-  const enteredCode = r.quote.promotion_code
-  const entered = r.promotions.find(
-    (discount) => discount.code.toUpperCase() === enteredCode?.toUpperCase()
-  )
-  const held = r.promotions.filter((discount) => discount !== entered)
-  const rowOf = (discount: Discount) => ({
+function discountRow(r: QuoteReading, discount: Discount): DiscountRow {
+  return {
     label: discount.name ?? r.t(`${S}.discount.fallbackLabel`, {}),
     ...(discount.amount_off_cents === undefined
       ? {}
@@ -459,15 +435,27 @@ function discountSlots(r: QuoteReading): DiscountSlots {
             amount: r.money(discount.amount_off_cents)
           })
         })
-  })
+  }
+}
+
+/**
+ * Every promotion gets a row, in the order the server listed them and at the
+ * amount it reported. The `promotion` discount matching the quote's
+ * `promotion_code` is the customer's entered code, the only chip that comes
+ * off; any other is one the account already holds.
+ */
+function discountSlots(r: QuoteReading): DiscountSlots {
+  const enteredCode = r.quote.promotion_code?.toUpperCase()
+  const held = r.promotions.filter(
+    (discount) => discount.code.toUpperCase() !== enteredCode
+  )
   return {
-    adjustments: held.map(rowOf),
-    ...(entered === undefined ? {} : { promo: rowOf(entered) }),
+    discounts: r.promotions.map((discount) => discountRow(r, discount)),
     chips: [
       ...held.map(({ code }) => ({ code, removable: false })),
-      ...(enteredCode === undefined
+      ...(r.quote.promotion_code === undefined
         ? []
-        : [{ code: enteredCode, removable: true }])
+        : [{ code: r.quote.promotion_code, removable: true }])
     ],
     acceptsPromo: acceptsPromoCode(r.quote)
   }

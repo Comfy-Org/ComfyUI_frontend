@@ -46,7 +46,6 @@ import {
   webSessionSend
 } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
-import type { BillingFailure } from '@/platform/telemetry/types'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import {
@@ -62,6 +61,7 @@ import { useAuthStore } from '@/stores/authStore'
 import type { UserId } from '@/types/authTypes'
 
 import { createWebSessionAdapter } from './webSessionAdapter'
+import { WorkspaceApiError } from './workspaceApiError'
 import { workspaceApiUrl } from './workspaceApiUrl'
 
 export type WorkspaceType = 'personal' | 'team'
@@ -106,6 +106,8 @@ export interface SubscribeOptions {
   billingCycle?: SubscribeBillingCycle
   confirmReactivation?: boolean
   prorationAt?: string
+  /** Set when the caller reported this attempt's `billing.operation.started`; never sent to the server. */
+  attemptStartedAt?: number
 }
 
 export interface PreviewSubscribeOptions {
@@ -150,18 +152,7 @@ interface GetBillingEventsParams {
   limit?: number
 }
 
-export class WorkspaceApiError extends Error {
-  constructor(
-    message: string,
-    public readonly status?: number,
-    public readonly code?: string,
-    /** For a failure `status` cannot classify, such as a billing SDK refusal. */
-    public readonly failureCategory?: BillingFailure['failure_category']
-  ) {
-    super(message)
-    this.name = 'WorkspaceApiError'
-  }
-}
+export { WorkspaceApiError }
 
 const workspaceApiClient = axios.create({
   headers: {

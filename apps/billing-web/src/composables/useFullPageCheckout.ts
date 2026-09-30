@@ -40,6 +40,7 @@ import {
 import { planCreditsSettingsUrl, pricingTableUrl } from '@/checkout/cloudLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
+import { checkoutIdentity, createPromoMemory } from '@/checkout/promoMemory'
 import type { PayVerdict } from '@/checkout/payVerdict'
 import { operationOutcomeOf, payVerdictOf } from '@/checkout/payVerdict'
 import {
@@ -243,8 +244,13 @@ export function useFullPageCheckout() {
     promoEntryLive(page.value, checkout.submitting.value || moneyInFlight.value)
   )
 
+  const promoMemory = createPromoMemory(() =>
+    checkoutIdentity(entry.value, billedWorkspace())
+  )
+
   const promo = useCheckoutPromo({
     prefill: entry.value,
+    memory: promoMemory,
     live: () => promoLive.value,
     requote: async (promotionCode) => {
       const arrival = entry.value
@@ -482,6 +488,14 @@ export function useFullPageCheckout() {
       plan: { tier, duration, price_cents }
     })
   }
+
+  /** A finished checkout has no code left to re-apply. */
+  watch(
+    () => page.value.kind === 'terminal',
+    (finished) => {
+      if (finished) promoMemory.keep(undefined)
+    }
+  )
 
   watch(
     () =>

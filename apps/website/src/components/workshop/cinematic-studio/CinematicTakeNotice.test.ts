@@ -26,4 +26,22 @@ describe('CinematicTakeNotice', () => {
       screen.getByText(/rejected these inputs without identifying a field/)
     ).toBeInTheDocument()
   })
+
+  it.for([
+    ['byteplus--seedance-2-5-first-last-frame--animate-images', true],
+    ['kling--v3--animate-images', false],
+    [undefined, false]
+  ] as const)(
+    'on a block from %s, names the realistic-face rule: %s',
+    ([runSlug, named]) => {
+      render(CinematicTakeNotice, {
+        props: { take: { ...rejected, reason: 'policy', runSlug } }
+      })
+
+      expect(!!screen.queryByText(/realistic human face/)).toBe(named)
+      expect(
+        !!screen.queryByText(/blocked the input or generated output/)
+      ).toBe(!named)
+    }
+  )
 })

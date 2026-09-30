@@ -10451,6 +10451,11 @@ Enterprise`
     'zh-CN':
       '模型提供商因内容政策阻止了输入或生成的输出。请检查提示词和参考文件后再运行。'
   },
+  'workshop.error.policyRealFaces': {
+    en: 'Seedance blocks realistic human faces, even AI-generated ones. Try an image without one or a stylized character, or check your prompt.',
+    'zh-CN':
+      'Seedance 会拦截逼真的人脸，包括 AI 生成的人脸。请换一张不含人脸的图片或使用风格化角色，也可以检查一下提示词。'
+  },
   'workshop.error.noCredits': {
     en: 'Not enough credits. Add credits to continue.',
     'zh-CN': '积分不足。请添加积分后继续。'
