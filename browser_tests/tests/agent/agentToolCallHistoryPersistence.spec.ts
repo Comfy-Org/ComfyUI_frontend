@@ -97,13 +97,14 @@ test(
             tool_calls: [
               {
                 id: 'call-1',
+                tool_call_id: 'call-1',
                 tool_name: 'search_nodes',
-                status: 'ok',
+                status: 'success',
                 duration_ms: 420
               },
               {
-                // Deliberately 'success' (not 'ok', like call-1) to cover both terminal vocabularies.
                 id: 'call-2',
+                tool_call_id: 'call-2',
                 tool_name: 'add_node',
                 status: 'success',
                 duration_ms: 180

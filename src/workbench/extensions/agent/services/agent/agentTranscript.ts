@@ -143,17 +143,13 @@ function parseUserWorkflowReferences(
 }
 
 /**
- * A persisted tool-call status is `pending`/`running` while it was still in
- * flight when the turn ended, and some terminal string otherwise (`ok`,
- * `success`, `error`, `failed`, `cancelled`, `timeout`, ...) — the exact
- * terminal vocabulary is not yet settled between the backend's persisted and
- * live wire formats, so anything other than `pending`/`running` is treated as
- * terminal here.
- *
- * A restored (non-live) row has no transport left to ever settle its tool
- * parts, so a `pending`/`running` status there would otherwise spin forever;
- * only `isLive` (the row is the one actively backed by a live transport —
- * the run_approval mid-ask case) keeps it in `streaming` state.
+ * `zPersistedToolCallSummary` only ever validates a terminal
+ * (`success`/`error`) row — the backend drops a row a dead turn left in
+ * `pending`/`running` before persisting it. `isLive` (the row is the one
+ * actively backed by a live transport — the run_approval mid-ask case) is
+ * kept only for a call that arrives through the live WebSocket path with a
+ * status this schema doesn't cover; a restored (non-live) row is always
+ * `done`.
  */
 function toolCallPartState(
   status: unknown,
@@ -166,17 +162,15 @@ function toolCallPartState(
 /**
  * `undefined` while the call is still genuinely in progress (matching the
  * live path, which omits `ok` until a terminal status arrives); once the
- * part is in a `done` state, only `ok`/`success` counts as success — every
- * other terminal string, including a restored `pending`/`running` call that
- * had no live transport to finish it, reads as failure rather than being
- * rendered as if it succeeded.
+ * part is in a `done` state, only `success` counts as success — `error`
+ * reads as failure, matching `ToolCallSummary.status`.
  */
 function toolCallOk(
   status: unknown,
   state: ToolPart['state']
 ): boolean | undefined {
   if (state === 'streaming') return undefined
-  return status === 'ok' || status === 'success'
+  return status === 'success'
 }
 
 /**
@@ -184,7 +178,7 @@ function toolCallOk(
  * and maps it onto the same `ToolPart` the live WebSocket path builds from
  * `agent_tool_call` events, so a reloaded transcript renders through the
  * identical work-summary UI as a live turn. `undefined` for anything that
- * doesn't validate (missing `id`/`tool_name`, wrong types, ...).
+ * doesn't validate (missing `id`/`tool_call_id`/`tool_name`, wrong types, ...).
  */
 function parseToolCallEntry(
   entry: unknown,
@@ -193,7 +187,6 @@ function parseToolCallEntry(
   const parsed = zPersistedToolCallSummary.safeParse(entry)
   if (!parsed.success) return undefined
   const {
-    id,
     tool_call_id: toolCallId,
     tool_name: toolName,
     status,
@@ -209,11 +202,10 @@ function parseToolCallEntry(
       : undefined
   return {
     type: 'tool',
-    // A live `agent_tool_call` frame keys its update on `tool_call_id`, not
-    // this row's own `id` — prefer it so a restored part matches a live
-    // frame that arrives for it later. Falls back to `id` only for rows
-    // recorded before `tool_call_id` existed.
-    callId: toolCallId ?? id,
+    // A live `agent_tool_call` frame keys its update on `tool_call_id`, so a
+    // restored part uses the same id to match a live frame that arrives for
+    // it later.
+    callId: toolCallId,
     name: toolName,
     state,
     ...(ok !== undefined ? { ok } : {}),
