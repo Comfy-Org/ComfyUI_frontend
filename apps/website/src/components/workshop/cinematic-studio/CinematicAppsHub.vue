@@ -5,7 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { workshopApps } from '../../../lib/workshop/apps'
 import type { AppWorkshopModel } from '../../../config/models-catalogue'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import type { CinematicCopyKey } from '../../../lib/workshop/cinematic-studio/copy'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicAppCard from './CinematicAppCard.vue'

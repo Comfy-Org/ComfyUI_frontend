@@ -16,8 +16,8 @@ import { useSignInHref } from '../../../composables/useSignInHref'
 import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
 import { leaveForSignIn } from '../../../config/workshop-return'
 import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
-import type { Locale } from '../../../i18n/site'
-import { t } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const {

@@ -3,10 +3,10 @@ import { useEventListener, useTemplateRefsList } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
 import type { Department } from '../../data/roles'
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import { scrollTo } from '../../scripts/smoothScroll'
 import CategoryNav from '../common/CategoryNav.vue'
 import SectionLabel from '../common/SectionLabel.vue'

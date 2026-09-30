@@ -2,7 +2,7 @@
 // asset uploads and native zh-CN review are pending follow-ups (see
 // apps/website/.scratch/drops-page/PRD.md).
 import { externalLinks } from '../config/routes'
-import type { LocalizedText } from '../i18n/site'
+import type { LocalizedText } from '../i18n/translations'
 
 type DropMedia =
   | { type: 'image'; src: string; alt: LocalizedText }

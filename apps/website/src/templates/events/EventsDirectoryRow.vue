@@ -6,11 +6,11 @@ import { useResizeObserver } from '@vueuse/core'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import type { DirectoryRow } from '../../utils/eventsDirectory'
 
 import Badge from '../../components/ui/badge/Badge.vue'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import { resolveRel } from '../../utils/cta'
 import EventsDirectoryCta from './EventsDirectoryCta.vue'
 

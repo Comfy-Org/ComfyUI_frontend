@@ -3,8 +3,8 @@ import { ChevronLeft } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 
 import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { lastShelf } from '../../lib/workshop/shelf-memory'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 

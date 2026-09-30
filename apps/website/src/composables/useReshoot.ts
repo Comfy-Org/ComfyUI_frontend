@@ -3,8 +3,8 @@ import { computed, onScopeDispose, reactive, ref, shallowRef, watch } from 'vue'
 
 import { refreshWorkshopCredits } from '../config/workshop-credits'
 import { useWorkshopSession } from '../config/workshop-session-state'
-import type { Locale } from '../i18n/site'
-import { t } from '../i18n/site'
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
 import { studioGate } from '../lib/workshop/cinematic-studio/gate'
 import type {
   CameraKey,

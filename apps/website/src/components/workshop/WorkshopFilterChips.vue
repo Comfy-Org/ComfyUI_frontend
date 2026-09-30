@@ -2,8 +2,8 @@
 import { X } from '@lucide/vue'
 import { nextTick } from 'vue'
 
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 export interface FilterChip {
   key: string

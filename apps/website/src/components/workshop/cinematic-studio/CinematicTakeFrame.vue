@@ -5,7 +5,7 @@ import { computed, ref, watch } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
 import CinematicTakeMedia from './CinematicTakeMedia.vue'

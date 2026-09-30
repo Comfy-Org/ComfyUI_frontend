@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { externalLinks } from '../../config/routes'
 import BrandButton from '../common/BrandButton.vue'
 import HeroHeadline from './HeroHeadline.vue'

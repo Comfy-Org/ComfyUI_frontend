@@ -9,8 +9,8 @@ import {
   useWorkshopSessionAccount,
   useWorkshopWebSession
 } from '../../config/workshop-web-session-identity'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { initialsOf } from '../../lib/workshop/initials'
 
 const { locale = 'en' } = defineProps<{

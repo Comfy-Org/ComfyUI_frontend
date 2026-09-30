@@ -14,8 +14,8 @@ import {
   workshopRunInFlight
 } from '../../config/workshop-run-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
 import HeaderAccountMenu from './HeaderAccountMenu.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'

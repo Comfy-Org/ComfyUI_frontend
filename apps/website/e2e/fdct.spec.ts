@@ -6,7 +6,7 @@ import {
   projects as hubProjectsOf,
   technologists as technologistsOf
 } from '../src/data/fdct'
-import { t } from '../src/i18n/site'
+import { t } from '../src/i18n/translations'
 import { faqAnswerPlainText } from '../src/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
 

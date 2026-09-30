@@ -14,8 +14,8 @@ import {
   useCasesFor
 } from '../../config/models-catalogue'
 import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
-import type { Locale, TranslationKey } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { groupModels } from '../../config/model-family'
 import { SHELF_CARD } from '../../lib/workshop/card-layout'
 import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'

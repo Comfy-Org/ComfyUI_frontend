@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 
 import { prefersReducedMotion } from '../../../composables/useReducedMotion'
 import { externalLinks } from '../../../config/routes'
-import { t } from '../../../i18n/site'
+import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
 import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
 import DownloadLocalButton from './DownloadLocalButton.vue'

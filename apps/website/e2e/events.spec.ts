@@ -12,8 +12,8 @@ import {
   pastEvents,
   upcomingEvents
 } from '../src/data/events'
-import type { Locale } from '../src/i18n/site'
-import { t } from '../src/i18n/site'
+import type { Locale } from '../src/i18n/translations'
+import { t } from '../src/i18n/translations'
 import {
   EVENT_CATEGORIES,
   PAST_EVENTS_PAGE_SIZE,

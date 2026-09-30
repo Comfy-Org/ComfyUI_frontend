@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test'
 import { getRoutes } from '../src/config/routes'
 import { creatorReviews } from '../src/data/creatorReviews'
 import { geminiOmniPage } from '../src/data/geminiOmni'
-import { t } from '../src/i18n/site'
+import { t } from '../src/i18n/translations'
 import type { ModelLaunchCta } from '../src/templates/model-launch/types'
 import { test } from './fixtures/blockExternalMedia'
 

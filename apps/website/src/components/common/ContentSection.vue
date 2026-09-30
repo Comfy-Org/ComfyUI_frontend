@@ -7,9 +7,9 @@ import {
 } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 
-import { t, te } from '../../i18n/site'
+import { t, te } from '../../i18n/translations'
 import { scrollTo } from '../../scripts/smoothScroll'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import BrandButton from './BrandButton.vue'

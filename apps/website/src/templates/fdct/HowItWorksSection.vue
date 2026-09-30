@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 

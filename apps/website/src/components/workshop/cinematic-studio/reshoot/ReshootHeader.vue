@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { workshopAppRepo } from '../../../../lib/workshop/apps'
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 import AppRepoLink from '../AppRepoLink.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

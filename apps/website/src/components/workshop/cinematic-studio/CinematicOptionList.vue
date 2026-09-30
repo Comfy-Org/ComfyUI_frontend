@@ -2,7 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { DirectionGroup } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
 

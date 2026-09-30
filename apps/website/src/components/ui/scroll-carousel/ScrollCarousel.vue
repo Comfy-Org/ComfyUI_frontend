@@ -4,8 +4,8 @@ import { useScroll } from '@vueuse/core'
 import type { HTMLAttributes } from 'vue'
 import { computed, ref } from 'vue'
 
-import { t } from '../../../i18n/site'
-import type { Locale } from '../../../i18n/site'
+import { t } from '../../../i18n/translations'
+import type { Locale } from '../../../i18n/translations'
 
 const {
   locale = 'en',

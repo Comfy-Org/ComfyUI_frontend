@@ -1,7 +1,7 @@
 import { onMounted, ref } from 'vue'
 
 import { getRoutes } from '../config/routes'
-import type { Locale } from '../i18n/site'
+import type { Locale } from '../i18n/translations'
 
 const RETURN_PARAM = 'returnTo'
 // The real auth page sends the visitor back to the page that asked for it,

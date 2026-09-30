@@ -6,7 +6,7 @@ import { computed } from 'vue'
 import type { ReshootTake } from '../../../../composables/useReshoot'
 import { formatElapsed } from '../../../../config/workshop-run'
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 import type { ReshootSound, ReshootView } from './output'
 
 const {

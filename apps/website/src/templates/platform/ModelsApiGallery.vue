@@ -4,8 +4,8 @@ import { ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import type { GalleryMedia, ModelsGalleryCard } from './modelsGalleryCards'
 import { modelsGalleryCards } from './modelsGalleryCards'
 

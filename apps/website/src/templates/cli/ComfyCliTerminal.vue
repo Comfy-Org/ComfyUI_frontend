@@ -4,8 +4,8 @@ import { useElementVisibility } from '@vueuse/core'
 import { computed, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import type { TerminalLine } from './cliTerminalSequences'
 import { cliTerminalSequences } from './cliTerminalSequences'
 

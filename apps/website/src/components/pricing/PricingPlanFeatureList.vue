@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import type {
   PlanFeatureGroup,
   PlanFeatureStatus
@@ -7,7 +7,7 @@ import type {
 
 import { BookOpen, Check, Clock, X } from '@lucide/vue'
 
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 export type { PlanFeatureGroup }
 

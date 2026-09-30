@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import { routerT } from './routerCopy'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

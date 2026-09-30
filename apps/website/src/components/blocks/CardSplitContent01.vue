@@ -3,7 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '../ui/button/Button.vue'

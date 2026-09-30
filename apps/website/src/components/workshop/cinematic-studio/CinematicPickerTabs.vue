@@ -3,7 +3,7 @@ import type {
   DirectionGroup,
   DirectionPart
 } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { groups, locale = 'en' } = defineProps<{

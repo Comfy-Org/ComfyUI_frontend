@@ -26,8 +26,8 @@ import {
   sortOrdersFor,
   sortWorkshopModels
 } from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
 import { openedUseCases, shelfOf } from '../../lib/workshop/shelf-use-cases'
 import { sectionTitleKeyFor } from '../../lib/workshop/section-title'

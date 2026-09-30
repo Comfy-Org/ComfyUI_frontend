@@ -11,7 +11,7 @@ import {
   RESHOOT_SIZES
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 import { FORMAT_TRIGGER_CLASS } from '../cinematic-menu-trigger'
 import CinematicMenu from '../CinematicMenu.vue'
 

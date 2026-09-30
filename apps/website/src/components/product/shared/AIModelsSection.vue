@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 
 import { externalLinks } from '../../../config/routes'
-import { t } from '../../../i18n/site'
+import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
 import CardArrow from '../../common/CardArrow.vue'
 import type { AiModelCard } from './aiModelCards'

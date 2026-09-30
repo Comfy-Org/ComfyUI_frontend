@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import Button from '../ui/button/Button.vue'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'

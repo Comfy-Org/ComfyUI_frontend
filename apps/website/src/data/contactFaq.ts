@@ -1,6 +1,6 @@
-import type { Locale } from '../i18n/site'
+import type { Locale } from '../i18n/translations'
 
-import { t } from '../i18n/site'
+import { t } from '../i18n/translations'
 
 const faqNumbers = [1, 2, 3, 4] as const
 

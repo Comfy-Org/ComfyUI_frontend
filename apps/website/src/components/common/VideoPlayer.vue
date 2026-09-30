@@ -14,8 +14,8 @@ import {
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { t } from '../../i18n/site'
-import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
 import VolumeMutedIcon from '../icons/VolumeMutedIcon.vue'
 import VolumeUnmutedIcon from '../icons/VolumeUnmutedIcon.vue'
 import PlayPauseButton from './PlayPauseButton.vue'

@@ -6,8 +6,8 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 import { HERO_SLIDES, PROVIDER_ICON } from '../../config/hero-slides'
 import { useProgressBarPainter } from '../../composables/useProgressBarPainter'
 import { useVideoCarousel, wrapIndex } from '../../composables/useVideoCarousel'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 

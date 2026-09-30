@@ -4,8 +4,8 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import type { TranslationKey } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import SectionHeading from './SectionHeading.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
 

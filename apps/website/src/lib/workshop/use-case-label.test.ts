@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import { useCaseLabelKey } from './use-case-label'
 
 const expected = [

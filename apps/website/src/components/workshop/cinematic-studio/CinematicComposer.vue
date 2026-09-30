@@ -20,7 +20,7 @@ import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic
 import { videoTags } from '../../../lib/workshop/cinematic-studio/video'
 import type { ShotBlock } from '../../../composables/useCinematicShot'
 import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicDirectionSegments from './CinematicDirectionSegments.vue'
 import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'

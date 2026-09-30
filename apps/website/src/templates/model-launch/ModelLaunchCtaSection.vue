@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchClosingCta } from './types'
 
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en', cta } = defineProps<{
   cta: ModelLaunchClosingCta

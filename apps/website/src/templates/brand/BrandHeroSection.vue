@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import Button from '../../components/ui/button/Button.vue'
 import { BRAND_ASSETS_ZIP, BRAND_GUIDELINES_PDF } from '../../data/brandAssets'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>

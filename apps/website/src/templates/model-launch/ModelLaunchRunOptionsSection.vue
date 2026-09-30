@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchRunOptions } from './types'
 
 import ProductCard from '../../components/common/ProductCard.vue'
 import { getRoutes } from '../../config/routes'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en', runOptions } = defineProps<{
   runOptions: ModelLaunchRunOptions

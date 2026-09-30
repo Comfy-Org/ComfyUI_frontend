@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchAudioCard } from './types'
 
 import AudioPlayer from '../../components/common/AudioPlayer.vue'
 import CopyTextButton from '../../components/ui/copy-text-button/CopyTextButton.vue'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en', card } = defineProps<{
   card: ModelLaunchAudioCard

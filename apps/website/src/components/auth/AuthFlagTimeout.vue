@@ -4,8 +4,8 @@
  * when the auth flag never answers, with the same copy. Restart reloads,
  * since no session exists to sign out of.
  */
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 

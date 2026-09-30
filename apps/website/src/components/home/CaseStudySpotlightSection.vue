@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import { getRoutes } from '../../config/routes'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import GlassCard from '../common/GlassCard.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'

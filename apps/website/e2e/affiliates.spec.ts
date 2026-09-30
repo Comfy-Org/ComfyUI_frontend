@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { affiliateFaqs } from '../src/data/affiliateFaq'
-import { t } from '../src/i18n/site'
+import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 

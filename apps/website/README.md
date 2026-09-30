@@ -48,11 +48,11 @@ as the application's `src/locales/` at the repository root:
 - The characters `{`, `}`, `@` and `|` are message syntax, so literal ones are
   written as `{'{'}`, `{'}'}`, `{'@'}` and `{'|'}`.
 
-`src/i18n/site.ts` configures vue-i18n and exports its `t` and `te` functions.
-Pass the locale in each call's options rather than changing the global locale,
-because the site renders locales concurrently. Missing messages fall back to
-English. A catalog test compiles every message in every locale and checks that
-every English message has Chinese copy.
+`src/i18n/site.ts` configures vue-i18n, and `src/i18n/translations.ts`
+re-exports its public translation API. Pass the locale in each call's options
+rather than changing the global locale, because the site renders locales
+concurrently. Missing messages fall back to English. The catalog test compiles
+every message and checks that each English message has Chinese copy.
 
 `main.json` is the site-wide catalog every page loads. A feature whose copy
 should ship only with its own pages keeps a catalog beside it. The Cinematic

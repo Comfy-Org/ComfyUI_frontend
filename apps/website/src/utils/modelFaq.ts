@@ -1,6 +1,6 @@
 import type { Model } from '../config/models'
-import { t } from '../i18n/site'
-import type { Locale, TranslationKey } from '../i18n/site'
+import { t } from '../i18n/translations'
+import type { Locale, TranslationKey } from '../i18n/translations'
 import type { JsonLdNode } from './jsonLd'
 import { getFaqPricingAnswer, getWhatIsDescription } from './modelSeoCopy'
 

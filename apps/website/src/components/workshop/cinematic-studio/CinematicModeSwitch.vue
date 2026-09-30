@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const {

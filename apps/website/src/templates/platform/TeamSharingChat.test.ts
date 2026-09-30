@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import {
   setAllIntersecting,
   stubIntersectionObserver

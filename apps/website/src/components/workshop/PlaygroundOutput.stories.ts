@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import type { RunFailure, RunState } from '../../config/workshop-run'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 
 // A run costs credits and most of these states cannot be reached on purpose at

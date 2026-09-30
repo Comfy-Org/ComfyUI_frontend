@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import CtaBands01 from '../../components/blocks/CtaBands01.vue'
 import { localizeHref } from '../../config/routes'
 import { fdctPage } from '../../data/fdct'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 

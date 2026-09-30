@@ -7,7 +7,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { clipFits } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { fileSecondsOf } from '../../../../lib/workshop/cinematic-studio/reshoot-clip'
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 

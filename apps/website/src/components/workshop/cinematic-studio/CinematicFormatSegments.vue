@@ -3,7 +3,7 @@ import type {
   AspectRatio,
   Resolution
 } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
 import CinematicMenu from './CinematicMenu.vue'

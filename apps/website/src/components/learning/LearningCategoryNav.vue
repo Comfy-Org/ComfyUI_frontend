@@ -5,7 +5,7 @@
 // ClientRouter upgrades clicks to history-aware client-side navigations. The
 // active entry is derived from `category`.
 import type { LearningCategory } from '../../data/learningTutorials'
-import type { Locale, TranslationKey } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import {
   categoryBlurbKeys,
@@ -15,7 +15,7 @@ import {
   populatedCategories
 } from '../../data/learningTutorials'
 import { localizeHref } from '../../config/routes'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en', category } = defineProps<{
   locale?: Locale

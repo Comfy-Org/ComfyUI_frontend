@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import CloudPricingSection from './CloudPricingSection.vue'
 
 function isBefore(first: Element, second: Element) {

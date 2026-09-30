@@ -2,8 +2,8 @@
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
 import { externalLinks } from '../../config/routes'
-import type { Locale, TranslationKey } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 

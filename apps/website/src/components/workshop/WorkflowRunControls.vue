@@ -7,7 +7,7 @@ import { useSignInHref } from '../../composables/useSignInHref'
 import { leaveForSignIn } from '../../config/workshop-return'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import type { WorkflowState } from '../../config/workshop-workflow-state'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const { state, signedIn, canStart, statusLabel } = defineProps<{
   state: WorkflowState

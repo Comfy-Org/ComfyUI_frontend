@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import type { PlanFeatureGroup } from './PricingPlanFeatureList.vue'
 import { computed, ref } from 'vue'
 
@@ -10,7 +10,7 @@ import {
   formatTeamCreditsShort,
   teamCreditTiers
 } from '../../data/teamCreditTiers'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import Button from '../ui/button/Button.vue'
 import Slider from '../ui/slider/Slider.vue'
 import PricingCard from './PricingCard.vue'

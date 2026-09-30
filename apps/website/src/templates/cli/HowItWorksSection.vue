@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import FeatureGrid02 from '../../components/blocks/FeatureGrid02.vue'
 import type { FeatureStep } from '../../components/blocks/FeatureGrid02.vue'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { cliCtas } from './ctas'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

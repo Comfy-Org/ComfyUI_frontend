@@ -10,7 +10,7 @@ import { computed, ref, useTemplateRef } from 'vue'
 
 import type { HTMLAttributes } from 'vue'
 
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import { useCarouselAutoplay } from '../../composables/useCarouselAutoplay'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { resolveRel } from '../../utils/cta'

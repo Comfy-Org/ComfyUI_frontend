@@ -2,8 +2,8 @@
 import FeatureRows01 from '../../components/blocks/FeatureRows01.vue'
 import type { FeatureRow } from '../../components/blocks/FeatureRows01.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
-import type { Locale, TranslationKey } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 

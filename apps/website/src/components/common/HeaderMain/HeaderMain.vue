@@ -10,8 +10,8 @@ import {
 import type { Component } from 'vue'
 import { useMounted } from '@vueuse/core'
 
-import type { Locale } from '../../../i18n/site.ts'
-import { t } from '../../../i18n/site.ts'
+import type { Locale } from '../../../i18n/translations.ts'
+import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import type { WorkshopBuyCreditsTrigger } from '../../../config/workshop-buy-credits.ts'
 import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import HeroLivestream01 from '../../components/blocks/HeroLivestream01.vue'
 import LaunchesHeroLogo from './LaunchesHeroLogo.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import { livestream } from './livestream'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

@@ -16,7 +16,7 @@ import {
   zoneArcs
 } from '../../../../lib/workshop/cinematic-studio/reshoot-globe'
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 
 const {
   clip,

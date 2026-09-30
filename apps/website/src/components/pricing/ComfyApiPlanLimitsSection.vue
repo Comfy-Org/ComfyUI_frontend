@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { computed } from 'vue'
 
 import SectionHeader from '../common/SectionHeader.vue'
 import { getRoutes } from '../../config/routes'
 import { comfyApiPlanLimits } from '../../data/comfyApiPlanLimits'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 
 const { locale = 'en', bare = false } = defineProps<{

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { getRoutes } from '../config/routes'
-import { t } from '../i18n/site'
+import { t } from '../i18n/translations'
 import { getMainNavigation } from './mainNavigation'
 
 describe('getMainNavigation', () => {

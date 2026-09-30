@@ -35,8 +35,8 @@ import {
 } from '../../config/workshop-return'
 import type { WorkshopSessionUser } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import {
   captureAuthCompleted,
   captureAuthFailed,

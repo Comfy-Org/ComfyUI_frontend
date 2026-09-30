@@ -2,7 +2,7 @@
 import { workshopAppRepo } from '../../../lib/workshop/apps'
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
 import { STARTER_SHOTS } from '../../../lib/workshop/cinematic-studio/starters'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicCheckBadge from './CinematicCheckBadge.vue'
 import AppRepoLink from './AppRepoLink.vue'

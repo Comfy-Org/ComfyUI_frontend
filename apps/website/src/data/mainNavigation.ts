@@ -1,7 +1,7 @@
 import { externalLinks, getRoutes, localizeHref } from '../config/routes'
 import { categoryPath } from './learningPaths'
-import type { Locale } from '../i18n/site'
-import { t } from '../i18n/site'
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
 
 export type NavColumnItem = {
   label: string

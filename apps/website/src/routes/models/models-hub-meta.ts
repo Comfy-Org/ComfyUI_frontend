@@ -1,5 +1,5 @@
 import type { RouterWorkshopModel } from '../../config/models-catalogue'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const HEADLINE_FAMILIES = ['FLUX', 'Seedance', 'Kling', 'Veo', 'Nano Banana']
 

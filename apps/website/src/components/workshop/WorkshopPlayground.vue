@@ -21,8 +21,8 @@ import {
 } from '../../config/workshop-snippets'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workspaceLinkedHref } from '../../config/workshop-workspace-link'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import WorkshopForm from './WorkshopForm.vue'
 
 const { model, locale = 'en' } = defineProps<{

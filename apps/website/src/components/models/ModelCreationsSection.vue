@@ -2,9 +2,9 @@
 import { ref } from 'vue'
 
 import type { GalleryItem } from '../../data/gallery'
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import GalleryCard from '../gallery/GalleryCard.vue'
 import GalleryDetailModal from '../gallery/GalleryDetailModal.vue'

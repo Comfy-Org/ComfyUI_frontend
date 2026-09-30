@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const {
   locale = 'en',

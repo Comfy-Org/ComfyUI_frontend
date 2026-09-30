@@ -11,7 +11,7 @@ import {
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 import type { ReshootSound, ReshootView } from './output'
 
 const {

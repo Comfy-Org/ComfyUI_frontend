@@ -4,7 +4,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard } from '@vueuse/core'
 
 import { ROUTER_MIGRATION_PROMPT } from '../../config/router-migration-prompt'
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import { routerT } from './routerCopy'
 import BrandButton from '../../components/common/BrandButton.vue'
 

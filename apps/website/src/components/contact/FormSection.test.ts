@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import FormSection from './FormSection.vue'
 

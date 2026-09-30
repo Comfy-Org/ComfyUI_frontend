@@ -6,8 +6,8 @@ import SectionHeader from '../../components/common/SectionHeader.vue'
 import SurfaceToggle from '../../components/common/SurfaceToggle.vue'
 import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import type { CliClientId } from '../../scripts/posthog'
 import {
   captureCliClientTabClick,

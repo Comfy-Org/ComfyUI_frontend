@@ -13,7 +13,7 @@ import {
   ROUTER_PROVIDER_COVERAGE,
   ROUTER_SERVING_PROVIDERS
 } from '../../config/router-providers'
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import { routerT } from './routerCopy'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

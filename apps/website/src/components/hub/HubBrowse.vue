@@ -23,8 +23,8 @@ import {
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
 import { withFacetFields } from '../../lib/hub/facet-fields'
 import type { HubTemplate } from '../../lib/hub/types'
-import type { Locale, TranslationKey } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import type {
   FacetGroupConfig,
   SortOption,

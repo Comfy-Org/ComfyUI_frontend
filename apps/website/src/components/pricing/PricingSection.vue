@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useSlots } from 'vue'
 
 import { pricingPlans } from '../../data/pricingPlans'
 import type { BillingCycle, PricingPlan } from '../../data/pricingPlans'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '../ui/button/Button.vue'
 import ToggleGroup from '../ui/toggle-group/ToggleGroup.vue'

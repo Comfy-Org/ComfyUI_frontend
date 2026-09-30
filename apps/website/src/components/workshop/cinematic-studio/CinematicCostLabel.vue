@@ -5,7 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
 import { formatCreditRange } from '../../../lib/workshop/cinematic-studio/estimate'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const {

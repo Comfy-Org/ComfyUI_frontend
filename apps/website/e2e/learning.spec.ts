@@ -14,7 +14,7 @@ import {
   tutorialPath
 } from '../src/data/learningTutorials'
 import { externalLinks } from '../src/config/routes'
-import { t } from '../src/i18n/site'
+import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const thumbnailLinkName = (title: string, locale: 'en' | 'zh-CN') =>

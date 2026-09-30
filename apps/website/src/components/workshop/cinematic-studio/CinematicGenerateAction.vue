@@ -10,8 +10,8 @@ import {
   takesWithin
 } from '../../../lib/workshop/cinematic-studio/estimate'
 import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
-import type { Locale } from '../../../i18n/site'
-import { t } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicCostLabel from './CinematicCostLabel.vue'
 import CinematicGateButton from './CinematicGateButton.vue'

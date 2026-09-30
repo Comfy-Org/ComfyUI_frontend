@@ -34,7 +34,7 @@ file wins. These root rules do not apply here:
 
 - Copy lives in `apps/website/src/locales/<locale>/main.json` (nested JSON in
   vue-i18n message syntax), not in the app's root `src/locales/`. Read it with
-  `t(key, { name }, { locale })` from `src/i18n/site.ts`; never fill a
+  `t(key, { name }, { locale })` from `src/i18n/translations.ts`; never fill a
   placeholder with `.replace`. Write a literal `@`, `|`, `{` or `}` as `{'@'}`,
   `{'|'}`, `{'{'}` or `{'}'}`. Add `en` and `zh-CN` values for every new string.
   The Cinematic Studio and re-shoot app share `studio.json`; the Router page

@@ -3,8 +3,8 @@ import { ref } from 'vue'
 
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import SectionLabel from '../common/SectionLabel.vue'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { ScrollTrigger } from '../../scripts/gsapSetup'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { modelTitle } from './model-title'
 
 const nameOfLength = (length: number) => 'x'.repeat(length)

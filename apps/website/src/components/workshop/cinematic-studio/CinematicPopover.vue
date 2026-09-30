@@ -3,7 +3,7 @@ import { X } from '@lucide/vue'
 import { onClickOutside, onKeyStroke } from '@vueuse/core'
 import { onMounted, useTemplateRef } from 'vue'
 
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { title, locale = 'en' } = defineProps<{

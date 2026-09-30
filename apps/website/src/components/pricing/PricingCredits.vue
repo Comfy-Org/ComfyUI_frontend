@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { computed } from 'vue'
 
 import { Coins as CreditsIcon } from '@lucide/vue'
 
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const {
   locale = 'en',

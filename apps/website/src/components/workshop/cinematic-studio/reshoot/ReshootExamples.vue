@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import type { PlaygroundExample } from '../../../../config/workshop-playground'
 import { RESHOOT_EXAMPLE } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 import ExamplesTab from '../../ExamplesTab.vue'
 
 const { activeId, locale = 'en' } = defineProps<{

@@ -8,8 +8,8 @@ import {
   platformIcons,
   useDownloadUrl
 } from '../../../composables/useDownloadUrl'
-import type { Locale } from '../../../i18n/site'
-import { t } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 import { captureDownloadClick } from '../../../scripts/posthog'
 import BrandButton from '../../common/BrandButton.vue'
 import InstallerMenu from './InstallerMenu.vue'

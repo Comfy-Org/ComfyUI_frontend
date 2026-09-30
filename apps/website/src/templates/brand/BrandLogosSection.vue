@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { affiliateBrandAssets } from '../../data/affiliateBrandAssets'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 

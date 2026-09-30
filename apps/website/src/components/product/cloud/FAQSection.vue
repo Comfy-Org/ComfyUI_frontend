@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 
 import FAQSection from '../../common/FAQSection.vue'
 

@@ -6,7 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { CameraKey } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { frameTime } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 
 // The move's keys. Scrubbing, keying and the motion curve are on the
 // timeline under the preview; a key here jumps to it.

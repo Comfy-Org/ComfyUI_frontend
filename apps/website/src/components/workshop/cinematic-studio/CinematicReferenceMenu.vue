@@ -13,7 +13,7 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicTooltip from './CinematicTooltip.vue'

@@ -13,8 +13,8 @@ import type {
   AuthErrorCopy
 } from '@comfyorg/account-core/firebaseAuthError'
 
-import type { Locale, TranslationKey } from '../i18n/site'
-import { t } from '../i18n/site'
+import type { Locale, TranslationKey } from '../i18n/translations'
+import { t } from '../i18n/translations'
 import en from '../locales/en/main.json' with { type: 'json' }
 
 export type AuthSignInProvider = 'google' | 'github' | 'email'

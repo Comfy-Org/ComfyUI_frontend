@@ -16,7 +16,7 @@ import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-eng
 import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import type { ReshootRunPhase } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/run'
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 import type { ReshootSound, ReshootView } from './output'
 import ReshootOutputBar from './ReshootOutputBar.vue'
 import ReshootTakes from './ReshootTakes.vue'

@@ -2,7 +2,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { FaqItem } from '../../components/common/FAQSection.vue'
 import { DEFAULT_LOCALE } from '../../config/locales'
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import en from '../../locales/en/router.json' with { type: 'json' }
 import ja from '../../locales/ja/router.json' with { type: 'json' }
 import zhCN from '../../locales/zh-CN/router.json' with { type: 'json' }

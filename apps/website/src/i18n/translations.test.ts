@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Locale } from '../config/locales'
 import { LOCALE_CODES } from '../config/locales'
-import { t } from './site'
+import { t } from './translations'
 
 type Catalog = { [key: string]: string | Catalog }
 

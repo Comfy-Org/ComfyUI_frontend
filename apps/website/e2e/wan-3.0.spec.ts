@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { getRoutes } from '../src/config/routes'
 import { wan3Page } from '../src/data/wan3'
-import { t } from '../src/i18n/site'
+import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 

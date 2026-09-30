@@ -10,7 +10,7 @@ import {
   takesOfShot
 } from '../../../lib/workshop/cinematic-studio/reel'
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
 import CinematicCreditSummary from './CinematicCreditSummary.vue'

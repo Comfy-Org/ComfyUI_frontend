@@ -3,8 +3,8 @@ import { ref } from 'vue'
 
 import { externalLinks, getRoutes } from '../../config/routes'
 import { useFrameScrub } from '../../composables/useFrameScrub'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import FooterLinkColumn from './FooterLinkColumn.vue'
 import type { FooterLink } from './FooterLinkColumn.vue'
 

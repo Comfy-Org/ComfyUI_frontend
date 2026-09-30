@@ -11,7 +11,7 @@ import {
   rateCard
 } from '../../data/rateCard'
 import { STORAGE_TYPE_LABEL_KEYS } from '../../data/rateCardChecks'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import PricingSection from './PricingSection.vue'
 
 const renderedStorageRates = rateCard.storage.filter(

@@ -13,8 +13,8 @@ import {
 import { lockScroll, unlockScroll } from '../../composables/scrollLock'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { GalleryItem } from '../../data/gallery'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import GalleryItemAttribution from './GalleryItemAttribution.vue'
 

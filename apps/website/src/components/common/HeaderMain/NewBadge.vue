@@ -4,8 +4,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Badge from '@/components/ui/badge/Badge.vue'
 
 import type { BadgeVariants } from '@/components/ui/badge'
-import type { Locale } from '../../../i18n/site'
-import { t } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 
 const { label = 'new' } = defineProps<{
   locale: Locale

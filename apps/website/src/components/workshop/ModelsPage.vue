@@ -14,7 +14,7 @@ import type { FunctionalComponent } from 'vue'
 import { isWorkflowSlug } from '../../config/models-catalogue'
 import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
 import { useWorkshopSession } from '../../config/workshop-session-state'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled,

@@ -2,8 +2,8 @@
 import { defineAsyncComponent, onMounted, ref } from 'vue'
 
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { platformCtas } from './ctas'
 import ClosingCtaColumnField from './ClosingCtaColumnField.vue'
 import PlatformHeroBadge from './PlatformHeroBadge.vue'

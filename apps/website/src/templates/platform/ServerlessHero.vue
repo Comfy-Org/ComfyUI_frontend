@@ -2,8 +2,8 @@
 import { useMediaQuery } from '@vueuse/core'
 
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { platformCtas } from './ctas'
 import ServerlessJsonApiGpuAnimation from './ServerlessJsonApiGpuAnimation.vue'
 

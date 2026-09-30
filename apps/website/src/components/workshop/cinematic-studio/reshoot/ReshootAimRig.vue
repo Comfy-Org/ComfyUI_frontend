@@ -12,7 +12,7 @@ import {
 import type { ReshootCopyKey } from '../../../../lib/workshop/cinematic-studio/copy'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 import ReshootBarField from './ReshootBarField.vue'
 import ReshootGlobe from './ReshootGlobe.vue'
 import ReshootZone from './ReshootZone.vue'

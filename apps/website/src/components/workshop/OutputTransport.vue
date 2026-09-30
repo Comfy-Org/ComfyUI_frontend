@@ -4,8 +4,8 @@ import { useMediaControls } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const { src, locale = 'en' } = defineProps<{ src: string; locale?: Locale }>()
 const emit = defineEmits<{

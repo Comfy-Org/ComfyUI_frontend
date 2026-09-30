@@ -2,8 +2,8 @@
 import { EyeOff } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/site'
-import { t } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 const {
   current,

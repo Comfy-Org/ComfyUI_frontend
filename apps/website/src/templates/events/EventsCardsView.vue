@@ -2,7 +2,7 @@
 import { CalendarDays, MapPin } from '@lucide/vue'
 import { useMediaQuery } from '@vueuse/core'
 
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import type { DirectoryRow } from '../../utils/eventsDirectory'
 
 import Badge from '../../components/ui/badge/Badge.vue'
@@ -12,7 +12,7 @@ import CardDescription from '../../components/ui/card/CardDescription.vue'
 import CardFooter from '../../components/ui/card/CardFooter.vue'
 import CardHeader from '../../components/ui/card/CardHeader.vue'
 import CardTitle from '../../components/ui/card/CardTitle.vue'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import EventsDirectoryCardMedia from './EventsDirectoryCardMedia.vue'
 import EventsDirectoryCta from './EventsDirectoryCta.vue'
 

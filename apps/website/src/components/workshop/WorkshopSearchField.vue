@@ -9,8 +9,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { filterWorkshopModels } from '../../config/models-catalogue'
 import { useVisualViewport } from '../../composables/useVisualViewport'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
 
 const {

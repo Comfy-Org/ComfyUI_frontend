@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import { usePersonalWorkspaceSwitch } from '../../composables/usePersonalWorkspaceSwitch'
 import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import type { WorkflowCreditsGate } from '../../lib/workshop/workflow-credits-gate'
 
 const { gate, workspaceName = '' } = defineProps<{

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import type { Ref } from 'vue'
 
@@ -7,7 +7,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver, useTemplateRefsList } from '@vueuse/core'
 import { computed, onMounted, ref, useSlots } from 'vue'
 
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 type TranslationKey = Parameters<typeof t>[0]
 type Point = { x: number; y: number }

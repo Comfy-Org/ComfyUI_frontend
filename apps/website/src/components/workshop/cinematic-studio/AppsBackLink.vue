@@ -2,7 +2,7 @@
 import { ChevronLeft } from '@lucide/vue'
 
 import { getRoutes } from '../../../config/routes'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

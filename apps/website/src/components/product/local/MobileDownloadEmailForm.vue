@@ -2,11 +2,11 @@
 import { ArrowRight } from '@lucide/vue'
 import { computed, nextTick, onMounted, ref, useId } from 'vue'
 
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 
 import IconButton from '@/components/ui/icon-button/IconButton.vue'
 import { useDownloadUrl } from '../../../composables/useDownloadUrl'
-import { t } from '../../../i18n/site'
+import { t } from '../../../i18n/translations'
 import {
   isDownloadLinkRequestEnabled,
   preloadDownloadLinkAnalytics,

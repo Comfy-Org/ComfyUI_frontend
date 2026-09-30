@@ -3,8 +3,8 @@ import { expect } from '@playwright/test'
 
 import { externalLinks } from '../src/config/routes'
 import { drops } from '../src/data/drops'
-import type { Locale } from '../src/i18n/site'
-import { t } from '../src/i18n/site'
+import type { Locale } from '../src/i18n/translations'
+import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/launches'

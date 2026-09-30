@@ -1,5 +1,5 @@
 import type { CreditRange } from '../../../config/workshop-node-pricing'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import type { AspectRatio, Resolution } from './catalog'
 import { MAX_TAKES } from './catalog'
 

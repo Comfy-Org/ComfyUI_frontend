@@ -7,8 +7,8 @@ import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
 import { useTopUpWatch } from '../../../config/workshop-credits'
 import { useWorkshopModelBalance } from '../../../config/workshop-model-balance'
 import { useWorkshopSession } from '../../../config/workshop-session-state'
-import type { Locale } from '../../../i18n/site'
-import { t } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 
 const {
   member = false,

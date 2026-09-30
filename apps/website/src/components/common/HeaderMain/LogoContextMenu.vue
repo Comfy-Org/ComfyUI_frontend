@@ -10,8 +10,8 @@ import {
 } from 'reka-ui'
 
 import { getRoutes } from '../../../config/routes'
-import type { Locale } from '../../../i18n/site'
-import { t } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 import logoSvg from '../../../assets/brand/logo.svg?raw'
 import logomarkSvg from '../../../assets/brand/logomark.svg?raw'
 

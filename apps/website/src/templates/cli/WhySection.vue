@@ -2,8 +2,8 @@
 import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
 import type { Reason } from '../../components/blocks/ReasonsSplit01.vue'
 import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 

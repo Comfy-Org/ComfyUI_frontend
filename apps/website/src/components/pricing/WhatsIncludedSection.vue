@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { Clock } from '@lucide/vue'
 
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import SafeRichText from '@/components/common/SafeRichTextContent'
 import CheckIcon from '../icons/CheckIcon.vue'
 

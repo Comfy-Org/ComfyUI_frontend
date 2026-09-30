@@ -9,7 +9,7 @@ import type {
   WorkshopModel
 } from '../../config/models-catalogue'
 import { formForContract } from '../../config/workshop-contract'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'

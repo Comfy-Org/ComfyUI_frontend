@@ -5,8 +5,8 @@ import { nextTick } from 'vue'
 
 import { pricingPlans } from '../../data/pricingPlans'
 import { teamCreditTiers } from '../../data/teamCreditTiers'
-import type { Locale, TranslationKey } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import PricingSection from './PricingSection.vue'
 
 const MONTHS_PER_YEAR = 12

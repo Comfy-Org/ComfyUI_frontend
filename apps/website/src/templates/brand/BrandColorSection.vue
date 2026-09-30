@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard } from '@vueuse/core'
@@ -7,7 +7,7 @@ import { computed, ref } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { brandColors } from '../../data/brandColors'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 

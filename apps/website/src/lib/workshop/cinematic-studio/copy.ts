@@ -1,7 +1,7 @@
 import { createI18n } from 'vue-i18n'
 
 import { DEFAULT_LOCALE } from '../../../config/locales'
-import type { MessageKey } from '../../../i18n/site'
+import type { MessageKey } from '../../../i18n/translations'
 import en from '../../../locales/en/studio.json' with { type: 'json' }
 import ja from '../../../locales/ja/studio.json' with { type: 'json' }
 import zhCN from '../../../locales/zh-CN/studio.json' with { type: 'json' }

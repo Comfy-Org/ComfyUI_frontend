@@ -5,7 +5,7 @@ import {
   customerVideoStories,
   getCustomerVideoStory
 } from '../src/data/customerVideos'
-import { t } from '../src/i18n/site'
+import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const blackMath = getCustomerVideoStory('black-math')

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import { externalLinks, getRoutes } from '../../config/routes'
 import { cloudNodesCtas } from './ctas'

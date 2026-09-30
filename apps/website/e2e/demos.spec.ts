@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { demos, getNextDemo } from '../src/config/demos'
-import { t } from '../src/i18n/site'
+import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const escapeRegExp = (value: string): string =>

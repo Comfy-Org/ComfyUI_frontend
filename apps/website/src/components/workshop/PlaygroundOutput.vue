@@ -22,8 +22,8 @@ import { formatElapsed, isExpired } from '../../config/workshop-run'
 import { downloadOutput } from '../../config/workshop-output-download'
 import { failureLabelKey } from '../../lib/workshop/failure-label'
 import { outputLabels } from '../../lib/workshop/output-labels'
-import type { Locale, TranslationKey } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const {
   state,

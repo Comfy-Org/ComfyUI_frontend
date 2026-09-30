@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import FeatureRows01 from '../../components/blocks/FeatureRows01.vue'
 import type { FeatureRow } from '../../components/blocks/FeatureRows01.vue'
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import { routerT } from './routerCopy'
 import RouterProviderLogoRow from './RouterProviderLogoRow.vue'
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { getRoutes } from '../../config/routes'
-import { te } from '../../i18n/site'
+import { te } from '../../i18n/translations'
 import en from '../../locales/en/main.json' with { type: 'json' }
 
 const PREFIX = 'enterprise-msa'

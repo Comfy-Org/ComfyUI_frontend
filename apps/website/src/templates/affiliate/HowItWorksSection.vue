@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import StepsGrid01 from '../../components/blocks/StepsGrid01.vue'
 import { affiliateHowItWorksSteps } from '../../data/affiliateHowItWorks'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 

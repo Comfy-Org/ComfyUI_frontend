@@ -22,8 +22,8 @@ import type {
   SavedAsset,
   SavedAssetTile as SavedAssetTileData
 } from '../../lib/workshop/saved-assets'
-import { t } from '../../i18n/site'
-import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
 import SavedAssetPreview from './SavedAssetPreview.vue'
 import SavedAssetTile from './SavedAssetTile.vue'
 

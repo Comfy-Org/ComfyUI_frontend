@@ -2,11 +2,11 @@
 import { ArrowRight, X } from '@lucide/vue'
 
 import type { BannerData } from '../../config/banner'
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import Button from '@/components/ui/button/Button.vue'
 import IconButton from '@/components/ui/icon-button/IconButton.vue'
 import { useBannerDismissal } from '../../composables/useBannerDismissal'

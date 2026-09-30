@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchReviews } from './types'
 
 import BrandButton from '../../components/common/BrandButton.vue'
 import ScrollCarousel from '../../components/ui/scroll-carousel/ScrollCarousel.vue'
 import { getRoutes } from '../../config/routes'
 import { creatorReviews } from '../../data/creatorReviews'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en', reviews } = defineProps<{
   reviews: ModelLaunchReviews

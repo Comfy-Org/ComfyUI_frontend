@@ -5,8 +5,8 @@ import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 

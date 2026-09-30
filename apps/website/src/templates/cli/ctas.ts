@@ -1,6 +1,6 @@
 import { externalLinks } from '../../config/routes'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 export interface CliCta {
   label: string

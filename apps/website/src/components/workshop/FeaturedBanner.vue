@@ -10,8 +10,8 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'

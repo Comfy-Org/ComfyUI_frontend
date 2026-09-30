@@ -2,7 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Pack } from '../../data/cloudNodes'
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import {
   formatLocalizedMediumDate,
@@ -10,7 +10,7 @@ import {
 } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import { useNodesByCategory } from '../../composables/useNodesByCategory'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import PackBanner from './PackBanner.vue'
 
 const { pack, locale = 'en' } = defineProps<{

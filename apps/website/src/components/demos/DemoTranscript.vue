@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import SafeRichText from '@/components/common/SafeRichTextContent'
 
 const { transcript, locale = 'en' } = defineProps<{

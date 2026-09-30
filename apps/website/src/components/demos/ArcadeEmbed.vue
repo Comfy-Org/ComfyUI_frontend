@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import { ref } from 'vue'
 
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 
 const {
   arcadeId,

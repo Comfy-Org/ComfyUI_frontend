@@ -16,7 +16,7 @@ import type {
   TakeKind
 } from '../../../lib/workshop/cinematic-studio/reel'
 import { takeKind } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { aspectStyle } from './aspect-style'
 

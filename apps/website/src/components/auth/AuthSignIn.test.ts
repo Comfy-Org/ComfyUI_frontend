@@ -32,7 +32,7 @@ import {
   signUpWorkshopWithEmail
 } from '../../config/workshop-firebase'
 import { useWorkshopSession } from '../../config/workshop-session-state'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import {
   captureAuthCompleted,
   captureAuthFailed,

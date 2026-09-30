@@ -7,8 +7,8 @@ import {
 } from '../../config/workshop-page-content'
 import { relatedModels } from '../../config/workshop-related'
 import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { describesCapability } from '../../lib/workshop/model-tags'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 

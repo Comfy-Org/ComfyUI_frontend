@@ -1,4 +1,4 @@
-import type { LocalizedText } from '../i18n/site'
+import type { LocalizedText } from '../i18n/translations'
 
 interface AudienceCriterion {
   id: string

@@ -4,8 +4,8 @@ import type {
   WorkshopModel
 } from '../../config/models-catalogue'
 import { modalityOf, splitTask } from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const modalityLabelKey: Record<
   Exclude<ModalityFilter, 'all'>,

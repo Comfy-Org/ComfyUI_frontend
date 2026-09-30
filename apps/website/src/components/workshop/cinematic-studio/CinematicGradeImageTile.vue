@@ -4,7 +4,7 @@ import { ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { sampleImageColors } from '../../../lib/workshop/cinematic-studio/colors'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicCheckBadge from './CinematicCheckBadge.vue'

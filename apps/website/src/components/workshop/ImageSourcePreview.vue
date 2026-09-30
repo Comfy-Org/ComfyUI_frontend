@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 
 import type { SourcePreviewProps } from '../../composables/useSourceUrl'
 import { useSourceUrl } from '../../composables/useSourceUrl'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogTitle from '../ui/dialog/DialogTitle.vue'
 import DialogTrigger from '../ui/dialog/DialogTrigger.vue'

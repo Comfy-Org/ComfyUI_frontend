@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { localizeHref } from '../../config/routes'
 import type { LearningTutorial } from '../../data/learningTutorials'
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import {
   categoryChapters,
@@ -11,7 +11,7 @@ import {
   tutorialDescription,
   tutorialPath
 } from '../../data/learningTutorials'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import WatchAuthorCard from '../blocks/WatchAuthorCard.vue'
 import WatchRelatedStrip from '../blocks/WatchRelatedStrip.vue'
 import WatchPageLayout from '../blocks/WatchPageLayout.vue'

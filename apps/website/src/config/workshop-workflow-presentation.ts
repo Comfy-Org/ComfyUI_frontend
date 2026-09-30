@@ -1,4 +1,4 @@
-import type { TranslationKey } from '../i18n/site'
+import type { TranslationKey } from '../i18n/translations'
 import type { WorkshopWorkflowError } from './workshop-workflow-api'
 import type { WorkflowRunSummary } from './workshop-workflow-response'
 import type { WorkflowState } from './workshop-workflow-state'

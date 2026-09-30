@@ -8,8 +8,8 @@ import type {
   DiscoveryProvider,
   DiscoveryWorkflow
 } from '../../data/modelDiscovery'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
 import Button from '../ui/button/Button.vue'
 import type { CatalogueTab } from '../workshop/CatalogueTabs.vue'

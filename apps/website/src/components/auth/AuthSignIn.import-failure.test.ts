@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { expect, it, vi } from 'vitest'
 
 import { useAuthToasts } from '../../config/auth-toast-state'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import AuthSignIn from './AuthSignIn.vue'
 
 vi.mock(import('../../scripts/posthog'))

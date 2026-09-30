@@ -13,7 +13,7 @@ import {
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
 import type { ReshootRunPhase } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/run'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
 import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import ReshootWarp from './ReshootWarp.vue'

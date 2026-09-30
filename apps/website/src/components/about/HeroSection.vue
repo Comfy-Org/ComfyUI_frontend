@@ -2,8 +2,8 @@
 import { ref } from 'vue'
 
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'

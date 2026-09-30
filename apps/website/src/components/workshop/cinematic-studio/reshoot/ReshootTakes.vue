@@ -5,7 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ReshootTake } from '../../../../composables/useReshoot'
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 import { takeLabel } from './take-label'
 
 const {

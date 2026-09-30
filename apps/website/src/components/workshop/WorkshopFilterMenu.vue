@@ -15,8 +15,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useVisualViewport } from '../../composables/useVisualViewport'
 import type { UseCase } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { filterLabel } from '../../lib/workshop/filter-label'
 import type { FacetSheetGroup } from './FacetSheet.vue'
 

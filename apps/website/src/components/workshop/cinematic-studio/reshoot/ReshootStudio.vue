@@ -5,7 +5,7 @@ import { useCinematicLeaveGuard } from '../../../../composables/useCinematicLeav
 import { useReshoot } from '../../../../composables/useReshoot'
 import { reportStudioBusy } from '../../../../composables/useStudioSwitchGuard'
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 import RunLeaveDialog from '../../RunLeaveDialog.vue'
 import AppsBackLink from '../AppsBackLink.vue'
 import ReshootHeader from './ReshootHeader.vue'

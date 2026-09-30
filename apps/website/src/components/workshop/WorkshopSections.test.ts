@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
-import type { TranslationKey } from '../../i18n/site'
+import type { TranslationKey } from '../../i18n/translations'
 import WorkshopSections from './WorkshopSections.vue'
 import { lastShelf } from '../../lib/workshop/shelf-memory'
 

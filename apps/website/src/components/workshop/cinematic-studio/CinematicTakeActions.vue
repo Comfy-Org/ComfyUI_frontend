@@ -2,7 +2,7 @@
 import { Clapperboard, ImagePlus, RotateCcw } from '@lucide/vue'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const {

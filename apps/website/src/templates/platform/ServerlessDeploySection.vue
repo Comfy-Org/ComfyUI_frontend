@@ -5,8 +5,8 @@ import { computed } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { deployPromptFor } from '../../config/deploy-prompt'
-import type { Locale } from '../../i18n/site'
-import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import LiveTerminal from './LiveTerminal.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

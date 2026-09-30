@@ -1,4 +1,4 @@
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 import type { ReshootSize } from '../reshoot'
 import { studioT as rc } from '../copy'
 import type { ReshootQuote } from './transport'

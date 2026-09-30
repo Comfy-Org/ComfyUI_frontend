@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import { computed } from 'vue'
 
 import { getRoutes } from '../../config/routes'
-import { t } from '../../i18n/site'
+import { t } from '../../i18n/translations'
 import PlatformPricingSection from '../../templates/platform/PricingSection.vue'
 import SectionHeader from '../common/SectionHeader.vue'
 import ComfyApiPlanLimitsSection from './ComfyApiPlanLimitsSection.vue'

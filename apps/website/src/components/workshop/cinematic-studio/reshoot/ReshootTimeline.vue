@@ -13,7 +13,7 @@ import {
   frameTime
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
-import type { Locale } from '../../../../i18n/site'
+import type { Locale } from '../../../../i18n/translations'
 import CinematicMenu from '../CinematicMenu.vue'
 
 // The clip's timeline under the live preview: play it, scrub it, and key the

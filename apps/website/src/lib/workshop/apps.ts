@@ -1,6 +1,6 @@
 import type { AppWorkshopModel } from '../../config/models-catalogue'
 import { externalLinks, getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 import type { CinematicCopyKey } from './cinematic-studio/copy'
 
 export type WorkshopAppId = AppWorkshopModel['appId']

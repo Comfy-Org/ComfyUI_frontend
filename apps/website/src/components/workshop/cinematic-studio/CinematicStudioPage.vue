@@ -9,7 +9,7 @@ import type { WorkshopAppId } from '../../../lib/workshop/apps'
 import { workshopAppHref } from '../../../lib/workshop/apps'
 import { getRoutes } from '../../../config/routes'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import type { Locale } from '../../../i18n/site'
+import type { Locale } from '../../../i18n/translations'
 import { studioT } from '../../../lib/workshop/cinematic-studio/copy'
 import {
   captureWorkshopEvent,

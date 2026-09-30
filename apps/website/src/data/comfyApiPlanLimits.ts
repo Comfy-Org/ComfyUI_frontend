@@ -1,4 +1,4 @@
-import type { TranslationKey } from '../i18n/site'
+import type { TranslationKey } from '../i18n/translations'
 
 export interface ComfyApiPlanLimits {
   id: string

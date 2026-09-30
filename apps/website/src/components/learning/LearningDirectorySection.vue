@@ -9,7 +9,7 @@
 import { computed } from 'vue'
 
 import type { LearningCategory } from '../../data/learningTutorials'
-import type { Locale } from '../../i18n/site'
+import type { Locale } from '../../i18n/translations'
 
 import {
   featuredFor,
