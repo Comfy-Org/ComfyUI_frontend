@@ -2,7 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 
@@ -24,6 +24,7 @@ const {
   note?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -34,14 +35,14 @@ const {
     <h3
       class="m-0 border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >
-      {{ t('workshop.api.needs', locale) }}
+      {{ t('workshop.api.needs') }}
     </h3>
     <div class="flex flex-col gap-5 p-5">
       <dl
         class="m-0 grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 text-sm/relaxed"
       >
         <dt class="text-primary-warm-gray">
-          {{ t('workshop.api.runsOn', locale) }}
+          {{ t('workshop.api.runsOn') }}
         </dt>
         <dd class="m-0 min-w-0 text-primary-warm-white">{{ where }}</dd>
         <template v-for="row in rows" :key="row.label">
@@ -61,7 +62,7 @@ const {
             <CopyTextButton
               :value="row.value"
               :label="row.copyLabel"
-              :copied-label="t('workshop.api.copied', locale)"
+              :copied-label="t('workshop.api.copied')"
               class="-mr-1 h-8 min-w-8 px-1.5"
               icon-class="size-4"
             />

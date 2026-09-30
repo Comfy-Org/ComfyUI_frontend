@@ -11,8 +11,8 @@ import {
   gradeGroup,
   lookGroups
 } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { shownOption } from '../../../lib/workshop/cinematic-studio/grade-image'
 import CinematicDirectionThumb from './CinematicDirectionThumb.vue'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
@@ -37,10 +37,10 @@ const camera = computed(() => {
     directionOption(group.part, direction)
   )
   return {
-    value: tc(body.label, locale),
+    value: tc(body.label, {}, { locale: locale }),
     specs: specs
       .filter((option) => option.id !== 'auto')
-      .map((option) => tc(option.label, locale))
+      .map((option) => tc(option.label, {}, { locale: locale }))
   }
 })
 
@@ -49,8 +49,8 @@ const rows = computed(() =>
     const { label, option } = shownOption(group.part, direction, colors)
     return {
       key: group.part,
-      title: tc(group.title, locale),
-      value: tc(label, locale),
+      title: tc(group.title, {}, { locale: locale }),
+      value: tc(label, {}, { locale: locale }),
       option
     }
   })
@@ -83,7 +83,7 @@ const rowClass = (key: PickerKey) =>
         aria-hidden="true"
       />
       <span class="w-14 shrink-0 text-xs text-primary-warm-gray">
-        {{ tc('cinematic.section.camera', locale) }}
+        {{ tc('cinematic.section.camera', {}, { locale: locale }) }}
       </span>
       <span
         class="flex min-w-0 flex-1 items-center gap-2 max-sm:flex-col max-sm:items-start max-sm:gap-1"

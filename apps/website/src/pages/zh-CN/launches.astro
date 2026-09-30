@@ -3,14 +3,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 import CtaSection from '../../templates/drops/CtaSection.vue'
 import DropsSection from '../../templates/drops/DropsSection.vue'
 import HeroSection from '../../templates/drops/HeroSection.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const locale = 'zh-CN' as const
 ---
 
 <BaseLayout
-  title={t('launches.page.title', locale)}
-  description={t('launches.page.description', locale)}
+  title={t('launches.page.title', {}, { locale: locale })}
+  description={t('launches.page.description', {}, { locale: locale })}
 >
   <HeroSection locale={locale} client:load />
   <DropsSection locale={locale} />

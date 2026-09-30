@@ -8,8 +8,8 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { requestedReturnPath } from '../../config/workshop-return'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import type { AuthMode } from './AuthSignInPanel.vue'
 import AuthSignInPanel from './AuthSignInPanel.vue'
 
@@ -31,7 +31,7 @@ const mode = ref<AuthMode>(initialMode)
 
 function show(next: AuthMode): void {
   mode.value = next
-  document.title = t(TITLES[next], locale)
+  document.title = t(TITLES[next], {}, { locale: locale })
 }
 
 function switchMode(next: AuthMode): void {

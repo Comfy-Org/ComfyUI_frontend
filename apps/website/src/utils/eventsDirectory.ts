@@ -1,5 +1,5 @@
 import type { ComfyEvent, EventCategory, EventOrganizer } from '../data/events'
-import type { Locale, LocalizedText } from '../i18n/translations'
+import type { Locale, LocalizedText } from '../i18n/site'
 import type { CalendarEvent } from './calendar'
 
 import { localizeHref } from '../config/routes'
@@ -10,7 +10,7 @@ import {
   toCalendarEvent,
   youtubeWatchHref
 } from '../data/events'
-import { t } from '../i18n/translations'
+import { t } from '../i18n/site'
 
 /** Sentinel for the "no filter" option in the type and organizer selects. */
 export const DIRECTORY_FILTER_ALL = 'all'
@@ -153,7 +153,8 @@ function mediaOf(event: ComfyEvent, locale: Locale): DirectoryRow['media'] {
 export function pastCtaLabel(event: ComfyEvent, locale: Locale): string {
   return t(
     eventVideoId(event) ? 'events.past.watchNow' : 'events.past.learnMore',
-    locale
+    {},
+    { locale: locale }
   )
 }
 
@@ -167,7 +168,7 @@ function registerOf(
       newTab: event.link.newTab ?? false,
       label: event.ctaLabel
         ? localized(event.ctaLabel, locale)
-        : t('events.directory.learnMore', locale)
+        : t('events.directory.learnMore', {}, { locale: locale })
     }
   }
   // An upcoming livestream without an outbound link still has a public
@@ -178,7 +179,7 @@ function registerOf(
     return {
       href: localized(href, locale),
       newTab: true,
-      label: t('events.directory.learnMore', locale)
+      label: t('events.directory.learnMore', {}, { locale: locale })
     }
   }
   return undefined
@@ -207,7 +208,7 @@ function watchOf(event: ComfyEvent, locale: Locale): DirectoryRow['watch'] {
 function locationOf(event: ComfyEvent, locale: Locale): string {
   return event.location
     ? localized(event.location, locale)
-    : t('events.directory.virtual', locale)
+    : t('events.directory.virtual', {}, { locale: locale })
 }
 
 function directoryRow(
@@ -219,7 +220,7 @@ function directoryRow(
   return {
     event,
     upcoming,
-    category: t(`events.category.${event.category}`, locale),
+    category: t(`events.category.${event.category}`, {}, { locale: locale }),
     title: localized(event.title, locale),
     description: localized(event.description, locale),
     date: eventDateLabel(event, locale),

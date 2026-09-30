@@ -1,7 +1,7 @@
 import type { Locale } from '../config/locales'
 import { resolveLocale } from '../config/locales'
 import { externalLinks, getRoutes } from '../config/routes'
-import { t } from '../i18n/translations'
+import { t } from '../i18n/site'
 
 export type JsonLdNode = Record<string, unknown> & { '@type': string }
 
@@ -98,7 +98,7 @@ function organizationNode(siteUrl: string, locale: Locale): JsonLdNode {
       width: 512,
       height: 512
     },
-    description: t('hero.subtitle', locale),
+    description: t('hero.subtitle', {}, { locale: locale }),
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer support',

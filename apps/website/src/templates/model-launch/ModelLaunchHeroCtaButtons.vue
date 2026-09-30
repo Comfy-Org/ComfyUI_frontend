@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { BrandButtonVariants } from '../../components/common/brandButton.variants'
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { ModelLaunchHero } from './types'
 
 import BrandButton from '../../components/common/BrandButton.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const {
   primaryCta,
@@ -32,7 +32,7 @@ const {
       size="lg"
       class="w-full p-4 text-center lg:w-auto lg:min-w-52"
     >
-      {{ t(primaryCta.labelKey, locale) }}
+      {{ t(primaryCta.labelKey, {}, { locale: locale }) }}
     </BrandButton>
     <BrandButton
       v-if="secondaryCta"
@@ -42,7 +42,7 @@ const {
       size="lg"
       class="w-full p-4 text-center lg:w-auto lg:min-w-52"
     >
-      {{ t(secondaryCta.labelKey, locale) }}
+      {{ t(secondaryCta.labelKey, {}, { locale: locale }) }}
     </BrandButton>
   </div>
 </template>

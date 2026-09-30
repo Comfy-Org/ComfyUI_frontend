@@ -16,7 +16,7 @@ import {
   learningMetaTitle,
   tutorialPath
 } from '../../data/learningTutorials'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import {
   absoluteUrl,
   itemListNode,
@@ -36,8 +36,10 @@ const { locale, url } = pageContext(
   Astro.currentLocale
 )
 
-const learningTitle = t('learning.title', locale)
-const label = category ? t(categoryLabelKeys[category], locale) : undefined
+const learningTitle = t('learning.title', {}, { locale: locale })
+const label = category
+  ? t(categoryLabelKeys[category], {}, { locale: locale })
+  : undefined
 const title = learningMetaTitle(locale, category)
 const description = learningMetaDescription(locale, category)
 const keywords = learningKeywords(category)

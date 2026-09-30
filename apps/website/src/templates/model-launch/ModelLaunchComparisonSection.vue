@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { ModelLaunchComparison } from './types'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en', comparison } = defineProps<{
   comparison: ModelLaunchComparison
@@ -16,7 +16,7 @@ const { locale = 'en', comparison } = defineProps<{
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t(comparison.headingKey, locale) }}
+        {{ t(comparison.headingKey, {}, { locale: locale }) }}
       </h2>
     </div>
 

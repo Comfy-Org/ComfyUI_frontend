@@ -6,8 +6,8 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 import { HERO_SLIDES, PROVIDER_ICON } from '../../config/hero-slides'
 import { useProgressBarPainter } from '../../composables/useProgressBarPainter'
 import { useVideoCarousel, wrapIndex } from '../../composables/useVideoCarousel'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -63,11 +63,15 @@ const announcement = ref('')
 const announceCurrentSlide = () => {
   const slide = slides[activeIndex.value]
   if (!slide) return
-  announcement.value = t('auth.hero.slideStatus', locale, {
-    title: slide.title,
-    current: activeIndex.value + 1,
-    total: slides.length
-  })
+  announcement.value = t(
+    'auth.hero.slideStatus',
+    {
+      title: slide.title,
+      current: activeIndex.value + 1,
+      total: slides.length
+    },
+    { locale: locale }
+  )
 }
 
 const goToNext = () => {
@@ -132,8 +136,10 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
   >
     <div
       role="group"
-      :aria-roledescription="t('auth.hero.carouselRoleDescription', locale)"
-      :aria-label="t('auth.hero.carouselLabel', locale)"
+      :aria-roledescription="
+        t('auth.hero.carouselRoleDescription', {}, { locale: locale })
+      "
+      :aria-label="t('auth.hero.carouselLabel', {}, { locale: locale })"
       class="flex min-h-0 w-full max-w-3xl flex-1 flex-col gap-4 xl:gap-5 2xl:gap-6"
     >
       <p class="sr-only" role="status" aria-live="polite">
@@ -151,7 +157,9 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
             v-for="(slide, index) in slides"
             :key="slide.id"
             role="group"
-            :aria-roledescription="t('auth.hero.slideRoleDescription', locale)"
+            :aria-roledescription="
+              t('auth.hero.slideRoleDescription', {}, { locale: locale })
+            "
             :aria-label="slide.title"
             :aria-hidden="index !== activeIndex"
             :inert="index !== activeIndex"
@@ -221,7 +229,7 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
         <button
           type="button"
           :class="NAV_BUTTON_CLASS"
-          :aria-label="t('auth.hero.previousSlide', locale)"
+          :aria-label="t('auth.hero.previousSlide', {}, { locale: locale })"
           @click="goToPrevious"
         >
           <ChevronLeft class="size-6" aria-hidden="true" />
@@ -229,7 +237,7 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
         <button
           type="button"
           :class="NAV_BUTTON_CLASS"
-          :aria-label="t('auth.hero.nextSlide', locale)"
+          :aria-label="t('auth.hero.nextSlide', {}, { locale: locale })"
           @click="goToNext"
         >
           <ChevronRight class="size-6" aria-hidden="true" />

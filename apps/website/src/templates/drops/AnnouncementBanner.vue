@@ -2,11 +2,11 @@
 import { ArrowRight, X } from '@lucide/vue'
 
 import type { BannerData } from '../../config/banner'
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import Button from '@/components/ui/button/Button.vue'
 import IconButton from '@/components/ui/icon-button/IconButton.vue'
 import { useBannerDismissal } from '../../composables/useBannerDismissal'
@@ -84,7 +84,7 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
           <div v-if="dismissible" class="flex flex-1 justify-end">
             <IconButton
               type="button"
-              :aria-label="t('nav.close', locale)"
+              :aria-label="t('nav.close', {}, { locale: locale })"
               @click="close"
             >
               <X class="size-5" aria-hidden="true" />

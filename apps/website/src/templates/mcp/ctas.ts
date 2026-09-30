@@ -1,6 +1,6 @@
 import { externalLinks } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 export interface McpCta {
   label: string
@@ -19,12 +19,12 @@ export function mcpCtas(locale: Locale): {
 } {
   return {
     docs: {
-      label: t('mcp.hero.viewDocs', locale),
+      label: t('mcp.hero.viewDocs', {}, { locale: locale }),
       href: externalLinks.docsMcp,
       target: '_blank'
     },
     installMcp: {
-      label: t('mcp.hero.installMcp', locale),
+      label: t('mcp.hero.installMcp', {}, { locale: locale }),
       href: '#setup'
     }
   }

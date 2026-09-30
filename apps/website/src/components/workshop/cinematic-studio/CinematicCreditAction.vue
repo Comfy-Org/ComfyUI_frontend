@@ -7,8 +7,8 @@ import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
 import { useTopUpWatch } from '../../../config/workshop-credits'
 import { useWorkshopModelBalance } from '../../../config/workshop-model-balance'
 import { useWorkshopSession } from '../../../config/workshop-session-state'
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
+import type { Locale } from '../../../i18n/site'
+import { t } from '../../../i18n/site'
 
 const {
   member = false,
@@ -65,7 +65,8 @@ const canRetry = computed(
           personal.pending.value
             ? 'workshop.run.preparingSession'
             : 'workshop.run.switchPersonal',
-          locale
+          {},
+          { locale: locale }
         )
       }}
     </Button>
@@ -75,14 +76,14 @@ const canRetry = computed(
       class="rounded-full"
       @click="requestWorkshopBuyCredits"
     >
-      {{ t('workshop.run.buyCredits', locale) }}
+      {{ t('workshop.run.buyCredits', {}, { locale: locale }) }}
     </Button>
     <span
       v-if="personal.failed.value"
       role="alert"
       class="text-xs text-primary-comfy-red"
     >
-      {{ t('nav.workspaceSwitchError', locale) }}
+      {{ t('nav.workspaceSwitchError', {}, { locale: locale }) }}
     </span>
   </span>
 </template>

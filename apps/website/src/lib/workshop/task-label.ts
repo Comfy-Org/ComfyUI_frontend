@@ -4,8 +4,8 @@ import type {
   WorkshopModel
 } from '../../config/models-catalogue'
 import { modalityOf, splitTask } from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const modalityLabelKey: Record<
   Exclude<ModalityFilter, 'all'>,
@@ -31,11 +31,15 @@ const taskInputKey: Record<TaskInput, TranslationKey> = {
 export function taskLabelFor(model: WorkshopModel, locale: Locale): string {
   const task = model.task ? splitTask(model.task) : undefined
   return task && task.output !== 'other'
-    ? t('workshop.task.label', locale, {
-        input: t(taskInputKey[task.input], locale),
-        output: t(modalityLabelKey[task.output], locale)
-      })
-    : t(modalityLabelKey[modalityOf(model)], locale)
+    ? t(
+        'workshop.task.label',
+        {
+          input: t(taskInputKey[task.input], {}, { locale }),
+          output: t(modalityLabelKey[task.output], {}, { locale })
+        },
+        { locale }
+      )
+    : t(modalityLabelKey[modalityOf(model)], {}, { locale: locale })
 }
 
 /**

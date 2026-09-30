@@ -1,4 +1,4 @@
-import type { Locale, LocalizedText } from '../../i18n/translations'
+import type { Locale, LocalizedText } from '../../i18n/site'
 
 const translations = {
   'agentPage.meta.title': {

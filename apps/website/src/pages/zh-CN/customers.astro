@@ -7,7 +7,7 @@ import HeroSection from '../../components/customers/HeroSection.vue'
 import StorySection from '../../components/customers/StorySection.vue'
 import WatchSection from '../../components/customers/WatchSection.vue'
 import { customerVideoStories, formatDuration } from '../../data/customerVideos'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import { toCardProps } from '../../utils/customers'
 import { loadStories } from '../../utils/loadStories'
 import {
@@ -25,8 +25,8 @@ const { siteUrl, url, locale } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale
 )
-const collectionLabel = t('nav.customerStories', locale)
-const homeLabel = t('breadcrumb.home', locale)
+const collectionLabel = t('nav.customerStories', {}, { locale: locale })
+const homeLabel = t('breadcrumb.home', {}, { locale: locale })
 
 const storyList = itemListNode(
   url,
@@ -73,7 +73,7 @@ const videoNodes = customerVideoStories.map((story) =>
 >
   <BreadcrumbBar
     crumbs={[{ label: homeLabel, href: '/zh-CN/' }, { label: collectionLabel }]}
-    label={t('ui.breadcrumb', locale)}
+    label={t('ui.breadcrumb', {}, { locale: locale })}
   />
   <HeroSection locale="zh-CN" client:load />
   <WatchSection stories={watchCards} locale="zh-CN" />

@@ -3,8 +3,8 @@ import type {
   DirectionGroup,
   DirectionPart
 } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { groups, locale = 'en' } = defineProps<{
   groups: readonly DirectionGroup[]
@@ -24,7 +24,7 @@ const active = defineModel<DirectionPart>({ required: true })
       class="h-9 min-w-0 truncate rounded-lg px-1 text-xs font-semibold text-primary-comfy-canvas hover:bg-transparency-white-t8 aria-pressed:bg-primary-warm-white aria-pressed:text-primary-comfy-ink"
       @click="active = group.part"
     >
-      {{ tc(group.title, locale) }}
+      {{ tc(group.title, {}, { locale: locale }) }}
     </button>
   </div>
 </template>

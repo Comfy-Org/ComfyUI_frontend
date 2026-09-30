@@ -15,8 +15,8 @@ import {
   globePoint,
   zoneArcs
 } from '../../../../lib/workshop/cinematic-studio/reshoot-globe'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { Locale } from '../../../../i18n/translations'
+import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../../i18n/site'
 
 const {
   clip,
@@ -65,7 +65,7 @@ const cone = computed(() => {
 })
 const label = computed(
   () =>
-    `${rc('reshoot.aim.globe', locale)}: ${camera.azimuth}°, ${camera.elevation}°, ${camera.distance.toFixed(2)}`
+    `${rc('reshoot.aim.globe', {}, { locale: locale })}: ${camera.azimuth}°, ${camera.elevation}°, ${camera.distance.toFixed(2)}`
 )
 
 const dragFrom = ref<{ x: number; y: number; tilts: boolean }>()
@@ -275,7 +275,7 @@ function key(event: KeyboardEvent) {
       type="button"
       tabindex="-1"
       :disabled
-      :aria-label="rc(nudgeButton.label, locale)"
+      :aria-label="rc(nudgeButton.label, {}, { locale: locale })"
       :class="
         cn(
           'absolute grid size-7 place-items-center rounded-full text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white disabled:pointer-events-none',

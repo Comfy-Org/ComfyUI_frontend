@@ -6,8 +6,8 @@ import SectionHeader from '../../components/common/SectionHeader.vue'
 import SurfaceToggle from '../../components/common/SurfaceToggle.vue'
 import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import type { CliClientId } from '../../scripts/posthog'
 import {
   captureCliClientTabClick,
@@ -43,13 +43,13 @@ const clients: Record<CliClientId, CliClient> = {
   openclaw: { name: 'OpenClaw', kind: 'agent' },
   hermes: { name: 'Hermes', kind: 'agent' },
   terminal: {
-    name: t('cli.setup.clients.terminal.name', locale),
+    name: t('cli.setup.clients.terminal.name', {}, { locale: locale }),
     kind: 'shell',
     shell: {
-      title: t('cli.setup.shell.terminal.title', locale),
+      title: t('cli.setup.shell.terminal.title', {}, { locale: locale }),
       step: {
-        cloud: t('cli.setup.shell.terminal.stepCloud', locale),
-        local: t('cli.setup.shell.terminal.stepLocal', locale)
+        cloud: t('cli.setup.shell.terminal.stepCloud', {}, { locale: locale }),
+        local: t('cli.setup.shell.terminal.stepLocal', {}, { locale: locale })
       },
       commands: {
         cloud: [
@@ -65,10 +65,10 @@ const clients: Record<CliClientId, CliClient> = {
     name: 'CI / Headless',
     kind: 'shell',
     shell: {
-      title: t('cli.setup.shell.ci.title', locale),
+      title: t('cli.setup.shell.ci.title', {}, { locale: locale }),
       step: {
-        cloud: t('cli.setup.shell.ci.stepCloud', locale),
-        local: t('cli.setup.shell.ci.stepLocal', locale)
+        cloud: t('cli.setup.shell.ci.stepCloud', {}, { locale: locale }),
+        local: t('cli.setup.shell.ci.stepLocal', {}, { locale: locale })
       },
       commands: {
         cloud: [
@@ -92,22 +92,38 @@ interface CliConnection {
 
 const connections: Record<ConnectionId, CliConnection> = {
   cloud: {
-    name: t('cli.setup.connections.cloud.name', locale),
-    tagline: t('cli.setup.connections.cloud.tagline', locale),
-    installDescription: t('cli.setup.install.cloudDescription', locale),
+    name: t('cli.setup.connections.cloud.name', {}, { locale: locale }),
+    tagline: t('cli.setup.connections.cloud.tagline', {}, { locale: locale }),
+    installDescription: t(
+      'cli.setup.install.cloudDescription',
+      {},
+      { locale: locale }
+    ),
     manualCommand: 'comfy setup --where cloud\ncomfy skills install',
-    agentCommand: t('cli.setup.agent.commandCloud', locale, {
-      url: externalLinks.docsCliMd
-    })
+    agentCommand: t(
+      'cli.setup.agent.commandCloud',
+      {
+        url: externalLinks.docsCliMd
+      },
+      { locale: locale }
+    )
   },
   local: {
-    name: t('cli.setup.connections.local.name', locale),
-    tagline: t('cli.setup.connections.local.tagline', locale),
-    installDescription: t('cli.setup.install.localDescription', locale),
+    name: t('cli.setup.connections.local.name', {}, { locale: locale }),
+    tagline: t('cli.setup.connections.local.tagline', {}, { locale: locale }),
+    installDescription: t(
+      'cli.setup.install.localDescription',
+      {},
+      { locale: locale }
+    ),
     manualCommand: 'comfy setup\ncomfy skills install',
-    agentCommand: t('cli.setup.agent.commandLocal', locale, {
-      url: externalLinks.docsCliMd
-    })
+    agentCommand: t(
+      'cli.setup.agent.commandLocal',
+      {
+        url: externalLinks.docsCliMd
+      },
+      { locale: locale }
+    )
   }
 }
 
@@ -124,15 +140,23 @@ function activeClientFor(connId: ConnectionId): CliClient {
 }
 
 function agentTitleFor(connId: ConnectionId): string {
-  return t('cli.setup.agent.title', locale, {
-    client: activeClientFor(connId).name
-  })
+  return t(
+    'cli.setup.agent.title',
+    {
+      client: activeClientFor(connId).name
+    },
+    { locale: locale }
+  )
 }
 
 function agentDescriptionFor(connId: ConnectionId): string {
-  return t('cli.setup.agent.description', locale, {
-    client: activeClientFor(connId).name
-  })
+  return t(
+    'cli.setup.agent.description',
+    {
+      client: activeClientFor(connId).name
+    },
+    { locale: locale }
+  )
 }
 
 function isConnectionId(value: unknown): value is ConnectionId {
@@ -164,8 +188,8 @@ function onClientTabChange(
   captureCliClientTabClick(value)
 }
 
-const copyLabel = t('ui.copy', locale)
-const copiedLabel = t('ui.copied', locale)
+const copyLabel = t('ui.copy', {}, { locale: locale })
+const copiedLabel = t('ui.copied', {}, { locale: locale })
 </script>
 
 <template>
@@ -175,37 +199,41 @@ const copiedLabel = t('ui.copied', locale)
   >
     <SectionHeader
       max-width="xl"
-      :label="t('cli.setup.label', locale)"
+      :label="t('cli.setup.label', {}, { locale: locale })"
       align="start"
     >
-      {{ t('cli.setup.heading', locale) }}
+      {{ t('cli.setup.heading', {}, { locale: locale }) }}
       <template #subtitle>
         <p
           class="mt-4 max-w-xl text-sm whitespace-pre-line text-smoke-700 lg:text-base"
         >
-          {{ t('cli.setup.subtitle', locale) }}
+          {{ t('cli.setup.subtitle', {}, { locale: locale }) }}
         </p>
         <p
           v-if="activeConnectionId === 'cloud'"
           class="mt-4 max-w-xl text-xs text-primary-warm-gray"
         >
-          {{ t('cli.setup.requirementPrefix', locale)
+          {{ t('cli.setup.requirementPrefix', {}, { locale: locale })
           }}<a
             :href="getRoutes(locale).pricing"
             class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-            >{{ t('cli.setup.requirementLinkLabel', locale) }}</a
-          >{{ t('cli.setup.requirementSuffix', locale)
-          }}{{ t('cli.setup.requirementFootnote', locale) }}
+            >{{
+              t('cli.setup.requirementLinkLabel', {}, { locale: locale })
+            }}</a
+          >{{ t('cli.setup.requirementSuffix', {}, { locale: locale })
+          }}{{ t('cli.setup.requirementFootnote', {}, { locale: locale }) }}
         </p>
         <p v-else class="mt-4 max-w-xl text-xs text-primary-warm-gray">
-          {{ t('cli.setup.local.requirementPrefix', locale)
+          {{ t('cli.setup.local.requirementPrefix', {}, { locale: locale })
           }}<a
             :href="externalLinks.comfyCliRepo"
             target="_blank"
             rel="noopener noreferrer"
             class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-            >{{ t('cli.setup.local.requirementLinkLabel', locale) }}</a
-          >{{ t('cli.setup.local.requirementSuffix', locale) }}
+            >{{
+              t('cli.setup.local.requirementLinkLabel', {}, { locale: locale })
+            }}</a
+          >{{ t('cli.setup.local.requirementSuffix', {}, { locale: locale }) }}
         </p>
       </template>
     </SectionHeader>
@@ -219,7 +247,9 @@ const copiedLabel = t('ui.copied', locale)
       @update:model-value="onConnectionTabChange"
     >
       <TabsList
-        :aria-label="t('cli.setup.connections.tabsLabel', locale)"
+        :aria-label="
+          t('cli.setup.connections.tabsLabel', {}, { locale: locale })
+        "
         class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:max-w-3xl"
       >
         <TabsTrigger
@@ -252,7 +282,9 @@ const copiedLabel = t('ui.copied', locale)
           @update:model-value="(value) => onClientTabChange(connId, value)"
         >
           <TabsList
-            :aria-label="t('cli.setup.manual.tabsLabel', locale)"
+            :aria-label="
+              t('cli.setup.manual.tabsLabel', {}, { locale: locale })
+            "
             class="grid grid-cols-1 gap-px rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 min-[360px]:grid-cols-2 lg:inline-flex lg:flex-nowrap"
           >
             <TabsTrigger
@@ -272,7 +304,7 @@ const copiedLabel = t('ui.copied', locale)
               <h3
                 class="text-xl font-light text-primary-comfy-canvas lg:text-2xl"
               >
-                {{ t('cli.setup.install.title', locale) }}
+                {{ t('cli.setup.install.title', {}, { locale: locale }) }}
               </h3>
               <p class="mt-3 text-sm text-smoke-700">
                 {{ conn.installDescription }}
@@ -286,7 +318,7 @@ const copiedLabel = t('ui.copied', locale)
               </div>
               <div class="mt-6 flex min-h-36 flex-col gap-3">
                 <p class="text-sm text-smoke-700">
-                  {{ t('cli.setup.manual.step', locale) }}
+                  {{ t('cli.setup.manual.step', {}, { locale: locale }) }}
                 </p>
                 <CopyableField
                   :value="conn.manualCommand"
@@ -340,13 +372,24 @@ const copiedLabel = t('ui.copied', locale)
                   v-if="activeClientFor(connId).shell?.showKeyLink"
                   class="mt-6 text-sm text-smoke-700"
                 >
-                  {{ t('cli.setup.shell.ci.keyLinkPrefix', locale)
+                  {{
+                    t(
+                      'cli.setup.shell.ci.keyLinkPrefix',
+                      {},
+                      { locale: locale }
+                    )
                   }}<a
                     :href="externalLinks.apiKeys"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-                    >{{ t('cli.setup.shell.ci.keyLinkLabel', locale) }}</a
+                    >{{
+                      t(
+                        'cli.setup.shell.ci.keyLinkLabel',
+                        {},
+                        { locale: locale }
+                      )
+                    }}</a
                   >
                 </p>
               </template>
@@ -358,17 +401,17 @@ const copiedLabel = t('ui.copied', locale)
 
     <div class="mt-8 flex max-w-2xl flex-col gap-2">
       <p class="text-xs text-primary-warm-gray">
-        {{ t('cli.setup.betaNote', locale) }}
+        {{ t('cli.setup.betaNote', {}, { locale: locale }) }}
       </p>
       <p class="text-xs text-primary-warm-gray">
-        {{ t('cli.setup.docsPrefix', locale)
+        {{ t('cli.setup.docsPrefix', {}, { locale: locale })
         }}<a
           :href="externalLinks.docsCliReference"
           target="_blank"
           rel="noopener noreferrer"
           class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-          >{{ t('cli.setup.docsLinkLabel', locale) }}</a
-        >{{ t('cli.setup.docsSuffix', locale) }}
+          >{{ t('cli.setup.docsLinkLabel', {}, { locale: locale }) }}</a
+        >{{ t('cli.setup.docsSuffix', {}, { locale: locale }) }}
       </p>
     </div>
   </section>

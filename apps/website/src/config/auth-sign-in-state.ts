@@ -13,8 +13,9 @@ import type {
   AuthErrorCopy
 } from '@comfyorg/account-core/firebaseAuthError'
 
-import type { Locale, TranslationKey } from '../i18n/translations'
-import { t, translationKeys } from '../i18n/translations'
+import type { Locale, TranslationKey } from '../i18n/site'
+import { t } from '../i18n/site'
+import en from '../locales/en/main.json' with { type: 'json' }
 
 export type AuthSignInProvider = 'google' | 'github' | 'email'
 
@@ -51,25 +52,21 @@ export type AuthSignInEvent =
 
 const SUPPORT_EMAIL = 'support@comfy.org'
 
-const AUTH_ERROR_PREFIX = 'auth.errors.'
-const authErrorCodeKeys = translationKeys.filter(
-  (key) =>
-    key.startsWith(AUTH_ERROR_PREFIX) &&
-    key !== 'auth.errors.generic' &&
-    key !== 'auth.errors.signupBlocked'
+const authErrorCodes = Object.keys(en.auth.errors).filter(
+  (code) => code !== 'generic' && code !== 'signupBlocked'
 )
 
 /** This host's own auth-error table, keyed the way the package resolver reads it. */
 function localizedAuthErrorCopy(locale: Locale): AuthErrorCopy {
   return {
     ...Object.fromEntries(
-      authErrorCodeKeys.map((key) => [
-        key.slice(AUTH_ERROR_PREFIX.length),
-        t(key, locale)
+      authErrorCodes.map((code) => [
+        code,
+        t(`auth.errors.${code}`, {}, { locale })
       ])
     ),
-    generic: t('auth.errors.generic', locale),
-    signupBlocked: t('auth.errors.signupBlocked', locale)
+    generic: t('auth.errors.generic', {}, { locale: locale }),
+    signupBlocked: t('auth.errors.signupBlocked', {}, { locale: locale })
   }
 }
 
@@ -85,10 +82,14 @@ export function signInErrorMessage(
   hostname: string
 ): string {
   return classification.kind === 'unauthorized-domain'
-    ? t('toastMessages.unauthorizedDomain', locale, {
-        domain: hostname,
-        email: SUPPORT_EMAIL
-      })
+    ? t(
+        'toastMessages.unauthorizedDomain',
+        {
+          domain: hostname,
+          email: SUPPORT_EMAIL
+        },
+        { locale: locale }
+      )
     : authErrorMessage(classification, localizedAuthErrorCopy(locale))
 }
 

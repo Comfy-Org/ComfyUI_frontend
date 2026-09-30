@@ -4,8 +4,8 @@ import { Clapperboard } from '@lucide/vue'
 import { useCinematicLeaveGuard } from '../../../../composables/useCinematicLeaveGuard'
 import { useReshoot } from '../../../../composables/useReshoot'
 import { reportStudioBusy } from '../../../../composables/useStudioSwitchGuard'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { Locale } from '../../../../i18n/translations'
+import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../../i18n/site'
 import RunLeaveDialog from '../../RunLeaveDialog.vue'
 import AppsBackLink from '../AppsBackLink.vue'
 import ReshootHeader from './ReshootHeader.vue'
@@ -111,10 +111,10 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
           aria-hidden="true"
         />
         <p class="text-base text-primary-comfy-canvas">
-          {{ rc('reshoot.empty.title', locale) }}
+          {{ rc('reshoot.empty.title', {}, { locale: locale }) }}
         </p>
         <p class="text-xs text-primary-warm-gray">
-          {{ rc('reshoot.empty.hint', locale) }}
+          {{ rc('reshoot.empty.hint', {}, { locale: locale }) }}
         </p>
       </div>
       <ReshootStage

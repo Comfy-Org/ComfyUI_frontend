@@ -2,8 +2,8 @@
 import { workshopAppRepo } from '../../../lib/workshop/apps'
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
 import { STARTER_SHOTS } from '../../../lib/workshop/cinematic-studio/starters'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicCheckBadge from './CinematicCheckBadge.vue'
 import AppRepoLink from './AppRepoLink.vue'
 
@@ -21,15 +21,15 @@ const emit = defineEmits<{ start: [shot: StarterShot] }>()
       <h1
         class="flex items-center gap-3 text-3xl font-semibold tracking-tight text-primary-warm-white lg:text-5xl"
       >
-        {{ tc('cinematic.title', locale) }}
+        {{ tc('cinematic.title', {}, { locale: locale }) }}
         <span
           class="rounded-full border border-transparency-white-t20 px-2 py-0.5 font-mono text-[10px] font-normal tracking-wider text-primary-comfy-canvas uppercase lg:text-xs"
         >
-          {{ tc('cinematic.beta', locale) }}
+          {{ tc('cinematic.beta', {}, { locale: locale }) }}
         </span>
       </h1>
       <p class="max-w-xl text-sm text-primary-comfy-canvas lg:text-base">
-        {{ tc('cinematic.firstRun.body', locale) }}
+        {{ tc('cinematic.firstRun.body', {}, { locale: locale }) }}
       </p>
       <AppRepoLink :repo="workshopAppRepo('studio')" :locale />
     </div>
@@ -53,7 +53,7 @@ const emit = defineEmits<{ start: [shot: StarterShot] }>()
           <span
             class="text-sm text-primary-comfy-canvas group-hover:text-primary-warm-white group-aria-pressed:text-primary-warm-white"
           >
-            {{ tc(shot.label, locale) }}
+            {{ tc(shot.label, {}, { locale: locale }) }}
           </span>
         </button>
       </li>

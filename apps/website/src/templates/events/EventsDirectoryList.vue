@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { nextTick, onMounted, useTemplateRef, watch } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { DirectoryRow } from '../../utils/eventsDirectory'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import EventsDirectoryRow from './EventsDirectoryRow.vue'
 
 const {
@@ -56,21 +56,21 @@ onMounted(async () => {
     <p
       class="shrink-0 border-b border-white/10 px-6 py-4 text-xs font-semibold tracking-widest text-primary-comfy-canvas uppercase"
     >
-      {{ t('events.directory.allEvents', locale) }}
+      {{ t('events.directory.allEvents', {}, { locale: locale }) }}
     </p>
 
     <p
       v-if="rows.length === 0"
       class="px-6 py-8 text-sm text-primary-comfy-canvas/70"
     >
-      {{ t('events.directory.empty', locale) }}
+      {{ t('events.directory.empty', {}, { locale: locale }) }}
     </p>
 
     <ul
       v-else
       ref="listElement"
       class="divide-y divide-white/8 overflow-y-auto"
-      :aria-label="t('events.directory.allEvents', locale)"
+      :aria-label="t('events.directory.allEvents', {}, { locale: locale })"
     >
       <EventsDirectoryRow
         v-for="row in rows"

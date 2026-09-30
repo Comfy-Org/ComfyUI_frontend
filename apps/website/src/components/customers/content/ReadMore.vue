@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
+import type { Locale } from '../../../i18n/site'
+import { t } from '../../../i18n/site'
 import Button from '../../ui/button/Button.vue'
 
 const { href, locale = 'en' } = defineProps<{
@@ -12,7 +12,7 @@ const { href, locale = 'en' } = defineProps<{
 <template>
   <div class="mt-8 flex justify-center">
     <Button as="a" :href variant="default" size="lg">
-      {{ t('customers.story.readMore', locale) }}
+      {{ t('customers.story.readMore', {}, { locale: locale }) }}
       <template #append>
         <span class="text-base" aria-hidden="true">↗</span>
       </template>

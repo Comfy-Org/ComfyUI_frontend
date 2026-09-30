@@ -2,7 +2,7 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import HeroSection from '../../../components/cloud-nodes/HeroSection.vue'
 import PackGridSection from '../../../components/cloud-nodes/PackGridSection.vue'
-import { t } from '../../../i18n/translations'
+import { t } from '../../../i18n/site'
 import { toGridPack } from '../../../data/cloudNodes'
 import { loadPacksForBuild } from '../../../utils/cloudNodes.build'
 import {
@@ -15,8 +15,8 @@ import {
 const packs = await loadPacksForBuild()
 const gridPacks = packs.map(toGridPack)
 
-const title = t('cloudNodes.meta.title', 'zh-CN')
-const description = t('cloudNodes.meta.description', 'zh-CN')
+const title = t('cloudNodes.meta.title', {}, { locale: 'zh-CN' })
+const description = t('cloudNodes.meta.description', {}, { locale: 'zh-CN' })
 const { url, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
@@ -39,11 +39,11 @@ const packList = itemListNode(
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', locale),
+      name: t('breadcrumb.home', {}, { locale: locale }),
       url: absoluteUrl(Astro.site, '/zh-CN')
     },
     { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/zh-CN/cloud') },
-    { name: t('breadcrumb.supportedNodes', locale) }
+    { name: t('breadcrumb.supportedNodes', {}, { locale: locale }) }
   ]}
   extraJsonLd={[packList]}
 >

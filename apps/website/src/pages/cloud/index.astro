@@ -7,12 +7,12 @@ import AudienceSection from '../../components/product/cloud/AudienceSection.vue'
 import PricingSection from '../../components/product/cloud/PricingSection.vue'
 import ProductCardsSection from '../../components/product/cloud/ProductCardsSection.vue'
 import FAQSection from '../../components/product/cloud/FAQSection.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 ---
 
 <BaseLayout
   title="Comfy Cloud - AI in the Cloud"
-  description={t('cloud.hero.subtitle', 'en')}
+  description={t('cloud.hero.subtitle', {}, { locale: 'en' })}
   keywords={[
     'comfyui web app',
     'comfyui app',

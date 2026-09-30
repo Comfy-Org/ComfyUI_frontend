@@ -14,8 +14,8 @@ import {
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { t } from '../../i18n/translations'
-import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/site'
 import VolumeMutedIcon from '../icons/VolumeMutedIcon.vue'
 import VolumeUnmutedIcon from '../icons/VolumeUnmutedIcon.vue'
 import PlayPauseButton from './PlayPauseButton.vue'
@@ -348,7 +348,9 @@ function toggleFullscreen() {
         :playing
         size="sm"
         :aria-label="
-          playing ? t('player.pause', locale) : t('player.play', locale)
+          playing
+            ? t('player.pause', {}, { locale: locale })
+            : t('player.play', {}, { locale: locale })
         "
         @click="playing = !playing"
       />
@@ -356,7 +358,9 @@ function toggleFullscreen() {
         type="button"
         class="flex size-8 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="
-          muted ? t('player.unmute', locale) : t('player.mute', locale)
+          muted
+            ? t('player.unmute', {}, { locale: locale })
+            : t('player.mute', {}, { locale: locale })
         "
         @click="muted = !muted"
       >
@@ -380,7 +384,9 @@ function toggleFullscreen() {
         :playing
         :variant="playButtonVariant"
         :aria-label="
-          playing ? t('player.pause', locale) : t('player.play', locale)
+          playing
+            ? t('player.pause', {}, { locale: locale })
+            : t('player.play', {}, { locale: locale })
         "
         @click.stop="playing = !playing"
       />
@@ -402,7 +408,9 @@ function toggleFullscreen() {
         :playing
         size="sm"
         :aria-label="
-          playing ? t('player.pause', locale) : t('player.play', locale)
+          playing
+            ? t('player.pause', {}, { locale: locale })
+            : t('player.play', {}, { locale: locale })
         "
         @click="playing = !playing"
       />
@@ -413,7 +421,7 @@ function toggleFullscreen() {
         class="relative h-1 flex-1 cursor-pointer rounded-full bg-white/20 select-none"
         role="slider"
         tabindex="0"
-        :aria-label="t('player.seek', locale)"
+        :aria-label="t('player.seek', {}, { locale: locale })"
         :aria-valuemin="0"
         :aria-valuemax="effectiveDuration || 0"
         :aria-valuenow="displayTime"
@@ -437,7 +445,7 @@ function toggleFullscreen() {
         v-if="!hideFullscreen"
         type="button"
         class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
-        :aria-label="t('player.fullscreen', locale)"
+        :aria-label="t('player.fullscreen', {}, { locale: locale })"
         @click="toggleFullscreen"
       >
         <svg
@@ -469,8 +477,8 @@ function toggleFullscreen() {
         "
         :aria-label="
           ccEnabled
-            ? t('player.subtitlesOff', locale)
-            : t('player.subtitlesOn', locale)
+            ? t('player.subtitlesOff', {}, { locale: locale })
+            : t('player.subtitlesOn', {}, { locale: locale })
         "
         @click="toggleCC"
       >
@@ -482,7 +490,9 @@ function toggleFullscreen() {
         type="button"
         class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="
-          muted ? t('player.unmute', locale) : t('player.mute', locale)
+          muted
+            ? t('player.unmute', {}, { locale: locale })
+            : t('player.mute', {}, { locale: locale })
         "
         @click="muted = !muted"
       >

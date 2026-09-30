@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import GlassCard from '../common/GlassCard.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
@@ -13,12 +13,12 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
   <section class="px-6 pt-20 pb-16 md:pt-28 md:pb-24">
     <div class="mx-auto max-w-4xl text-center">
       <SectionLabel>
-        {{ t('careers.hero.label', locale) }}
+        {{ t('careers.hero.label', {}, { locale: locale }) }}
       </SectionLabel>
       <h1
         class="mt-4 text-4xl font-light whitespace-pre-line text-primary-comfy-canvas md:text-6xl"
       >
-        {{ t('careers.hero.heading', locale) }}
+        {{ t('careers.hero.heading', {}, { locale: locale }) }}
       </h1>
     </div>
 
@@ -26,16 +26,16 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <VideoPlayer
         src="https://media.comfy.org/website/careers/recruiting-v03.mp4"
         poster="https://media.comfy.org/website/careers/recruiting-v03-poster.webp"
-        :aria-label="t('careers.hero.videoLabel', locale)"
+        :aria-label="t('careers.hero.videoLabel', {}, { locale: locale })"
         :locale
         autoplay
         loop
       />
       <div class="space-y-6 p-8 text-base/relaxed text-primary-comfy-canvas">
-        <p>{{ t('careers.hero.body1', locale) }}</p>
-        <p>{{ t('careers.hero.body2', locale) }}</p>
-        <p>{{ t('careers.hero.body3', locale) }}</p>
-        <p>{{ t('careers.hero.body4', locale) }}</p>
+        <p>{{ t('careers.hero.body1', {}, { locale: locale }) }}</p>
+        <p>{{ t('careers.hero.body2', {}, { locale: locale }) }}</p>
+        <p>{{ t('careers.hero.body3', {}, { locale: locale }) }}</p>
+        <p>{{ t('careers.hero.body4', {}, { locale: locale }) }}</p>
       </div>
     </GlassCard>
   </section>

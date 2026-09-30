@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { getRoutes } from '../../config/routes'
-import { hasKey, t, translationKeys } from '../../i18n/translations'
+import { t, te } from '../../i18n/site'
+import en from '../../locales/en/main.json' with { type: 'json' }
 
 const PREFIX = 'affiliate-terms'
 const EXPECTED_SECTION_IDS = [
@@ -19,13 +20,7 @@ const EXPECTED_SECTION_IDS = [
 ] as const
 
 function deriveAffiliateSectionIds(): string[] {
-  const labelRegex = new RegExp(`^${PREFIX}\\.([0-9]+-[a-z-]+)\\.label$`)
-  const ids: string[] = []
-  for (const key of translationKeys) {
-    const match = key.match(labelRegex)
-    if (match && !ids.includes(match[1])) ids.push(match[1])
-  }
-  return ids
+  return Object.keys(en[PREFIX]).filter((key) => /^[0-9]+-[a-z-]+$/.test(key))
 }
 
 describe('affiliate terms i18n', () => {
@@ -36,9 +31,9 @@ describe('affiliate terms i18n', () => {
 
   it('every section has a label, title, and at least one block', () => {
     for (const id of EXPECTED_SECTION_IDS) {
-      expect(hasKey(`${PREFIX}.${id}.label`)).toBe(true)
-      expect(hasKey(`${PREFIX}.${id}.title`)).toBe(true)
-      expect(hasKey(`${PREFIX}.${id}.block.0`)).toBe(true)
+      expect(te(`${PREFIX}.${id}.label`, 'en')).toBe(true)
+      expect(te(`${PREFIX}.${id}.title`, 'en')).toBe(true)
+      expect(te(`${PREFIX}.${id}.block.0`, 'en')).toBe(true)
     }
   })
 
@@ -51,17 +46,17 @@ describe('affiliate terms i18n', () => {
   })
 
   it('exposes the effective date and page-chrome keys editors will need', () => {
-    expect(hasKey('affiliate-terms.effective-date')).toBe(true)
-    expect(hasKey('affiliate-terms.page.title')).toBe(true)
-    expect(hasKey('affiliate-terms.page.heading')).toBe(true)
-    expect(hasKey('affiliate-terms.page.tocLabel')).toBe(true)
-    expect(hasKey('affiliate-terms.page.effectiveDateLabel')).toBe(true)
+    expect(te('affiliate-terms.effective-date', 'en')).toBe(true)
+    expect(te('affiliate-terms.page.title', 'en')).toBe(true)
+    expect(te('affiliate-terms.page.heading', 'en')).toBe(true)
+    expect(te('affiliate-terms.page.tocLabel', 'en')).toBe(true)
+    expect(te('affiliate-terms.page.effectiveDateLabel', 'en')).toBe(true)
   })
 
   it('does not include any internal-only "Competitive analysis" or "Open questions" keys', () => {
     const internalRegex = /(competitive-analysis|open-questions|legal-review)/
-    const leaks = translationKeys.filter(
-      (key) => key.startsWith(PREFIX) && internalRegex.test(key)
+    const leaks = Object.keys(en[PREFIX]).filter((key) =>
+      internalRegex.test(key)
     )
     expect(leaks).toEqual([])
   })

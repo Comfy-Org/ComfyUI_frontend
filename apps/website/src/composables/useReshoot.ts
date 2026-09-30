@@ -3,8 +3,8 @@ import { computed, onScopeDispose, reactive, ref, shallowRef, watch } from 'vue'
 
 import { refreshWorkshopCredits } from '../config/workshop-credits'
 import { useWorkshopSession } from '../config/workshop-session-state'
-import type { Locale } from '../i18n/translations'
-import { t } from '../i18n/translations'
+import type { Locale } from '../i18n/site'
+import { t } from '../i18n/site'
 import { studioGate } from '../lib/workshop/cinematic-studio/gate'
 import type {
   CameraKey,
@@ -20,7 +20,7 @@ import {
   withKey
 } from '../lib/workshop/cinematic-studio/reshoot'
 import { clipSecondsOf } from '../lib/workshop/cinematic-studio/reshoot-clip'
-import { rc } from '../lib/workshop/cinematic-studio/reshoot-copy'
+import { studioT as rc } from '../lib/workshop/cinematic-studio/copy'
 import type {
   Pose,
   Vec3
@@ -199,7 +199,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const clipError = computed(() => {
     const s = clipSeconds.value
     return upload.value && s !== undefined && Number.isFinite(s) && !clipFits(s)
-      ? rc('reshoot.clipLength', locale, { seconds: s.toFixed(1) })
+      ? rc('reshoot.clipLength', { seconds: s.toFixed(1) }, { locale: locale })
       : undefined
   })
 
@@ -275,14 +275,18 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const quoteFailed = ref(false)
   const priceNote = computed(() => {
     if (quote.value) return quoteNote(quote.value, locale, run.value)
-    return quoteFailed.value ? rc('reshoot.quote.failed', locale) : undefined
+    return quoteFailed.value
+      ? rc('reshoot.quote.failed', {}, { locale: locale })
+      : undefined
   })
   /** Why the viewport cannot show a read scene, if it cannot. */
   const notice = computed(() => {
     if (!picked.value) return undefined
-    if (unavailable.value) return rc('reshoot.unavailable', locale)
+    if (unavailable.value)
+      return rc('reshoot.unavailable', {}, { locale: locale })
     if (scene.value.phase === 'failed') return scene.value.note
-    if (gate.value === 'signedOut') return rc('reshoot.signIn', locale)
+    if (gate.value === 'signedOut')
+      return rc('reshoot.signIn', {}, { locale: locale })
     return undefined
   })
   const stage = computed(() =>
@@ -331,7 +335,11 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       session.value?.role === 'member'
         ? 'workshop.error.memberNoCredits'
         : 'workshop.error.noCreditsCloud'
-    return t(key, locale, { workspace: session.value?.workspace.name ?? '' })
+    return t(
+      key,
+      { workspace: session.value?.workspace.name ?? '' },
+      { locale: locale }
+    )
   }
 
   function noteFor(error: unknown): string {

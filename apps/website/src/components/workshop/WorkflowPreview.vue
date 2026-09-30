@@ -4,8 +4,8 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import type { TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { TranslationKey } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import SectionHeading from './SectionHeading.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
 
@@ -40,9 +40,13 @@ const OUTPUT_LABEL: Record<string, TranslationKey> = {
 const produces = computed(() => {
   const outputs = model.workflow.outputs ?? []
   if (!outputs.length) return undefined
-  const perRun = t('workshop.workflow.perRun', 'en', {
-    count: outputs.length
-  })
+  const perRun = t(
+    'workshop.workflow.perRun',
+    {
+      count: outputs.length
+    },
+    { locale: 'en' }
+  )
   const kinds = new Set(outputs.map((output) => output.kind))
   const only = kinds.size === 1 ? [...kinds][0] : undefined
   const label = only ? OUTPUT_LABEL[only] : undefined

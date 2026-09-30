@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
 import { externalLinks } from '../../config/routes'
 import { affiliateBenefits } from '../../data/affiliateBenefits'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -16,10 +16,10 @@ const benefits = affiliateBenefits.map((benefit) => ({
 
 <template>
   <BenefitsGrid01
-    :heading="t('affiliate.benefits.heading', locale)"
+    :heading="t('affiliate.benefits.heading', {}, { locale: locale })"
     :benefits="benefits"
     :primary-cta="{
-      label: t('affiliate.hero.apply', locale),
+      label: t('affiliate.hero.apply', {}, { locale: locale }),
       href: externalLinks.affiliateApplicationForm,
       target: '_blank'
     }"

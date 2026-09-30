@@ -11,8 +11,8 @@ import { groupPlaygroundFields } from '../../config/workshop-playground'
 import { useFrameRatioMismatch } from '../../composables/useFrameRatioMismatch'
 import type { FrameRatioRule } from '../../config/workshop-model-restrictions'
 import { frameSource } from '../../config/workshop-model-restrictions'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import FrameRatioNotice from './FrameRatioNotice.vue'
 import PlaygroundField from './PlaygroundField.vue'
 
@@ -132,7 +132,7 @@ function onAdvancedToggle(event: Event) {
       <summary
         class="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase select-none hover:text-primary-warm-white [&::-webkit-details-marker]:hidden"
       >
-        {{ t('workshop.form.advanced', locale) }}
+        {{ t('workshop.form.advanced', {}, { locale: locale }) }}
         <ChevronDown
           class="size-4 transition-transform group-open:rotate-180"
           aria-hidden="true"

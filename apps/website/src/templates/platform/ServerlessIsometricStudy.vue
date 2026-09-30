@@ -16,8 +16,8 @@ import {
 } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -369,7 +369,9 @@ watch(
   <div
     ref="stageRef"
     role="img"
-    :aria-label="t('platform.serverlessVisual.ariaLabel', locale)"
+    :aria-label="
+      t('platform.serverlessVisual.ariaLabel', {}, { locale: locale })
+    "
     :data-pattern="patternIndex"
     :data-phase="phase"
     :data-reset-indicator-progress="resetIndicatorProgress"

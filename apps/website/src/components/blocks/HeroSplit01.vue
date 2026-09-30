@@ -3,8 +3,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import Badge from '../ui/badge/Badge.vue'
 import BrandButton from '../common/BrandButton.vue'
 import ProductHeroBadge from '../common/ProductHeroBadge.vue'
@@ -113,7 +113,7 @@ const {
             :show-logo="badgeShowLogo"
           />
           <Badge v-if="beta" variant="accent" size="xs">
-            {{ t('nav.badgeBeta', locale) }}
+            {{ t('nav.badgeBeta', {}, { locale: locale }) }}
           </Badge>
         </slot>
       </div>

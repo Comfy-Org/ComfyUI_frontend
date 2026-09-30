@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '../../../i18n/site'
 
 import { SHOW_FREE_TIER } from '../../../config/features'
 import { getRoutes } from '../../../config/routes'
-import { t } from '../../../i18n/translations'
+import { t } from '../../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
@@ -18,18 +18,18 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           <h2
             class="text-2xl/tight font-medium text-primary-comfy-ink lg:text-3xl/tight"
           >
-            {{ t('cloud.pricing.title', locale) }}
+            {{ t('cloud.pricing.title', {}, { locale: locale }) }}
           </h2>
 
           <p class="mt-4 text-base text-primary-comfy-ink">
-            {{ t('cloud.pricing.description', locale) }}
+            {{ t('cloud.pricing.description', {}, { locale: locale }) }}
           </p>
 
           <p
             v-if="SHOW_FREE_TIER"
             class="mt-4 text-base font-bold text-primary-comfy-ink"
           >
-            {{ t('cloud.pricing.tagline', locale) }}
+            {{ t('cloud.pricing.tagline', {}, { locale: locale }) }}
           </p>
         </div>
 
@@ -37,7 +37,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           :href="getRoutes(locale).pricing"
           class="shrink-0 rounded-2xl bg-primary-comfy-ink px-6 py-3 text-center text-sm font-semibold text-primary-comfy-yellow transition-opacity hover:opacity-90"
         >
-          {{ t('cloud.pricing.cta', locale) }}
+          {{ t('cloud.pricing.cta', {}, { locale: locale }) }}
         </a>
       </div>
     </div>

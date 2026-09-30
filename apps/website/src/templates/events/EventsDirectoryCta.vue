@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { DirectoryRow } from '../../utils/eventsDirectory'
 
 import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import { resolveRel } from '../../utils/cta'
 
 const { row, locale = 'en' } = defineProps<{
@@ -21,7 +21,7 @@ const chipClass =
   <AddToCalendarButton v-if="row.calendar" :event="row.calendar" :locale>
     <template #trigger>
       <button type="button" :class="chipClass">
-        {{ t('events.directory.saveTheDate', locale) }}
+        {{ t('events.directory.saveTheDate', {}, { locale: locale }) }}
       </button>
     </template>
   </AddToCalendarButton>

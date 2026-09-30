@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { formId, locale = 'en' } = defineProps<{
   formId: string
@@ -131,14 +131,14 @@ onMounted(() => {
       class="text-sm/6 text-primary-comfy-canvas"
       role="status"
     >
-      {{ t('hubspotForm.embedLoadErrorPrefix', locale) }}
+      {{ t('hubspotForm.embedLoadErrorPrefix', {}, { locale: locale }) }}
       <a
         class="text-primary-comfy-yellow underline"
         href="mailto:hello@comfy.org"
       >
         hello@comfy.org
       </a>
-      {{ t('hubspotForm.embedLoadErrorSuffix', locale) }}
+      {{ t('hubspotForm.embedLoadErrorSuffix', {}, { locale: locale }) }}
     </p>
     <div
       v-else

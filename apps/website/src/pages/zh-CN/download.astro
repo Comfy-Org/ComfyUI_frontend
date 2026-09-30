@@ -6,7 +6,7 @@ import ReasonSection from '../../components/product/local/ReasonSection.vue'
 import EcoSystemSection from '../../components/product/local/EcoSystemSection.vue'
 import ProductCardsSection from '../../components/product/local/ProductCardsSection.vue'
 import FAQSection from '../../components/product/local/FAQSection.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import {
   absoluteUrl,
   comfyUiApplicationNode,
@@ -24,14 +24,14 @@ const { siteUrl, locale } = pageContext(
 
 <BaseLayout
   title="下载 Comfy 桌面版 - 在您的硬件上运行 AI"
-  description={t('download.meta.description', 'zh-CN')}
+  description={t('download.meta.description', {}, { locale: 'zh-CN' })}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', locale),
+      name: t('breadcrumb.home', {}, { locale: locale }),
       url: absoluteUrl(Astro.site, '/zh-CN')
     },
-    { name: t('breadcrumb.download', locale) }
+    { name: t('breadcrumb.download', {}, { locale: locale }) }
   ]}
   extraJsonLd={[
     comfyUiApplicationNode(siteUrl),

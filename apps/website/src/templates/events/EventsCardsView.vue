@@ -2,7 +2,7 @@
 import { CalendarDays, MapPin } from '@lucide/vue'
 import { useMediaQuery } from '@vueuse/core'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { DirectoryRow } from '../../utils/eventsDirectory'
 
 import Badge from '../../components/ui/badge/Badge.vue'
@@ -12,7 +12,7 @@ import CardDescription from '../../components/ui/card/CardDescription.vue'
 import CardFooter from '../../components/ui/card/CardFooter.vue'
 import CardHeader from '../../components/ui/card/CardHeader.vue'
 import CardTitle from '../../components/ui/card/CardTitle.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import EventsDirectoryCardMedia from './EventsDirectoryCardMedia.vue'
 import EventsDirectoryCta from './EventsDirectoryCta.vue'
 
@@ -39,13 +39,13 @@ const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
     v-if="rows.length === 0"
     class="rounded-3xl border border-white/10 px-6 py-10 text-center text-sm text-primary-comfy-canvas/70"
   >
-    {{ t('events.directory.empty', locale) }}
+    {{ t('events.directory.empty', {}, { locale: locale }) }}
   </p>
 
   <ul
     v-else
     class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
-    :aria-label="t('events.directory.allEvents', locale)"
+    :aria-label="t('events.directory.allEvents', {}, { locale: locale })"
   >
     <li v-for="row in rows" :key="row.event.id">
       <Card

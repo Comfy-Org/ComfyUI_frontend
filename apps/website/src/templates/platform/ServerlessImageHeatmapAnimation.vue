@@ -3,8 +3,8 @@ import { useElementVisibility, useRafFn } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import { ARTWORKS } from './serverlessArtworks'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -126,7 +126,9 @@ watch(
   <div
     ref="stageRef"
     role="img"
-    :aria-label="t('platform.serverlessVisual.ariaLabel', locale)"
+    :aria-label="
+      t('platform.serverlessVisual.ariaLabel', {}, { locale: locale })
+    "
     :data-artwork="currentArtwork.id"
     :data-phase="phase"
     :data-connection-progress="connectionProgress"
@@ -170,12 +172,14 @@ watch(
     <div
       class="absolute right-[5%] bottom-[6%] left-3/10 grid grid-cols-3 text-[7px] tracking-widest text-primary-comfy-yellow/80 uppercase sm:text-[9px] lg:text-[10px]"
     >
-      <span>{{ t('platform.serverlessVisual.worker', locale) }}</span>
+      <span>{{
+        t('platform.serverlessVisual.worker', {}, { locale: locale })
+      }}</span>
       <span class="text-center">
-        {{ t('platform.serverlessVisual.worker', locale) }}
+        {{ t('platform.serverlessVisual.worker', {}, { locale: locale }) }}
       </span>
       <span class="text-right">
-        {{ t('platform.serverlessVisual.worker', locale) }}
+        {{ t('platform.serverlessVisual.worker', {}, { locale: locale }) }}
       </span>
     </div>
   </div>

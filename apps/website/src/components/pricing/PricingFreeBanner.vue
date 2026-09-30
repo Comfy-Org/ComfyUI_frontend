@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { AnchorHTMLAttributes } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import BrandButton from '../common/BrandButton.vue'
 
 const { locale = 'en' } = defineProps<{
@@ -23,10 +23,10 @@ const { locale = 'en' } = defineProps<{
   >
     <div>
       <p class="text-lg font-bold text-primary-comfy-canvas">
-        {{ t(titleKey, locale) }}
+        {{ t(titleKey, {}, { locale: locale }) }}
       </p>
       <p class="mt-1 text-sm text-primary-comfy-canvas">
-        {{ t(subtitleKey, locale) }}
+        {{ t(subtitleKey, {}, { locale: locale }) }}
       </p>
     </div>
     <BrandButton
@@ -36,7 +36,7 @@ const { locale = 'en' } = defineProps<{
       size="xs"
       class="shrink-0 self-start sm:self-auto"
     >
-      {{ t(cta.labelKey, locale) }}
+      {{ t(cta.labelKey, {}, { locale: locale }) }}
     </BrandButton>
   </div>
 </template>

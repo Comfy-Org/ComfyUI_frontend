@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
 
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import HubspotFormEmbed from '../common/HubspotFormEmbed.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 import SocialProofBarSection from '../common/SocialProofBarSection.vue'
@@ -50,30 +50,30 @@ useHeroAnimation({
     <div class="min-w-0 lg:w-1/2">
       <div class="lg:max-w-xl">
         <SectionLabel ref="badgeRef">
-          {{ t(tk('badge'), locale) }}
+          {{ t(tk('badge'), {}, { locale: locale }) }}
         </SectionLabel>
 
         <h1
           ref="headingRef"
           class="mt-4 text-3xl font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
         >
-          {{ t(tk('heading'), locale) }}
+          {{ t(tk('heading'), {}, { locale: locale }) }}
         </h1>
 
         <div ref="descRef">
           <p class="mt-4 text-sm text-primary-comfy-canvas">
-            {{ t(tk('description'), locale) }}
+            {{ t(tk('description'), {}, { locale: locale }) }}
           </p>
 
           <p class="mt-4 text-sm text-primary-comfy-canvas">
-            {{ t(tk('supportLink'), locale) }}
+            {{ t(tk('supportLink'), {}, { locale: locale }) }}
             <a
               href="https://docs.comfy.org/"
               target="_blank"
               rel="noopener noreferrer"
               class="text-primary-comfy-yellow underline"
             >
-              {{ t(tk('supportLinkCta'), locale) }}
+              {{ t(tk('supportLinkCta'), {}, { locale: locale }) }}
             </a>
           </p>
         </div>

@@ -4,8 +4,8 @@ import { computed } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 export type CatalogueTab = 'models' | 'workflows' | 'apps'
 
@@ -59,7 +59,7 @@ const tabClass = (tab: CatalogueTab) =>
       )
     "
     :role="links ? undefined : 'group'"
-    :aria-label="t('workshop.catalogue.show', locale)"
+    :aria-label="t('workshop.catalogue.show', {}, { locale: locale })"
     data-testid="catalogue-tabs"
   >
     <div :class="cn('pointer-events-none absolute inset-1 grid', columns)">
@@ -77,7 +77,7 @@ const tabClass = (tab: CatalogueTab) =>
         :data-testid="`catalogue-tab-${tab}`"
         :class="tabClass(tab)"
       >
-        {{ t(labels[tab], locale) }}
+        {{ t(labels[tab], {}, { locale: locale }) }}
       </a>
       <button
         v-else
@@ -87,7 +87,7 @@ const tabClass = (tab: CatalogueTab) =>
         :class="tabClass(tab)"
         @click="active = tab"
       >
-        {{ t(labels[tab], locale) }}
+        {{ t(labels[tab], {}, { locale: locale }) }}
       </button>
     </template>
   </component>

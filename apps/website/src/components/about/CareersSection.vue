@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import BrandButton from '../common/BrandButton.vue'
 import GlassCard from '../common/GlassCard.vue'
 import SectionLabel from '../common/SectionLabel.vue'
@@ -29,12 +29,12 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <div class="flex flex-col justify-between p-6 lg:w-1/2">
         <div>
           <SectionLabel>
-            {{ t('about.careers.label', locale) }}
+            {{ t('about.careers.label', {}, { locale: locale }) }}
           </SectionLabel>
           <h2
             class="mt-4 text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
           >
-            {{ t('about.careers.heading', locale) }}
+            {{ t('about.careers.heading', {}, { locale: locale }) }}
           </h2>
         </div>
         <div>
@@ -44,10 +44,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
             size="lg"
             class="mt-8 self-start"
           >
-            {{ t('about.careers.cta', locale) }}
+            {{ t('about.careers.cta', {}, { locale: locale }) }}
           </BrandButton>
           <p class="mt-6 text-sm text-primary-warm-gray">
-            {{ t('about.careers.noRole', locale) }}
+            {{ t('about.careers.noRole', {}, { locale: locale }) }}
             <a
               href="mailto:hiring@comfy.org"
               class="text-primary-comfy-yellow hover:underline"

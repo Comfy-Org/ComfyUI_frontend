@@ -14,7 +14,7 @@ import ModelLaunchRunOptionsSection from './ModelLaunchRunOptionsSection.vue'
 import type { ModelLaunchPage } from './types'
 import { DEFAULT_SECTION_ORDER } from './types'
 import { getRoutes } from '../../config/routes'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import { faqAnswerPlainText } from '../../utils/faqAnswer'
 import { absoluteUrl, faqPageNode, pageContext } from '../../utils/jsonLd'
 
@@ -32,9 +32,12 @@ const { locale, url } = pageContext(
 const routes = getRoutes(locale)
 
 const crumbs = [
-  { label: t('breadcrumb.home', locale), href: routes.home },
-  { label: t('models.breadcrumb.models', locale), href: routes.models },
-  { label: t(page.breadcrumbLabelKey, locale) }
+  { label: t('breadcrumb.home', {}, { locale: locale }), href: routes.home },
+  {
+    label: t('models.breadcrumb.models', {}, { locale: locale }),
+    href: routes.models
+  },
+  { label: t(page.breadcrumbLabelKey, {}, { locale: locale }) }
 ]
 
 const breadcrumbs = crumbs.map((crumb) =>
@@ -60,15 +63,15 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
 ---
 
 <BaseLayout
-  title={t(page.metaTitleKey, locale)}
-  description={t(page.metaDescriptionKey, locale)}
+  title={t(page.metaTitleKey, {}, { locale: locale })}
+  description={t(page.metaDescriptionKey, {}, { locale: locale })}
   breadcrumbs={breadcrumbs}
   extraJsonLd={faqPage ? [faqPage] : []}
 >
   <BreadcrumbBar
     crumbs={crumbs}
-    updated={t(page.breadcrumbUpdatedKey, locale)}
-    label={t('ui.breadcrumb', locale)}
+    updated={t(page.breadcrumbUpdatedKey, {}, { locale: locale })}
+    label={t('ui.breadcrumb', {}, { locale: locale })}
   />
   <ModelLaunchHeroSection client:load hero={page.hero} locale={locale} />
   {sectionOrder.map((section) => {

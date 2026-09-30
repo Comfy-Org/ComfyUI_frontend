@@ -10,8 +10,8 @@ import {
   RESHOOT_ASPECTS,
   RESHOOT_SIZES
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { Locale } from '../../../../i18n/translations'
+import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../../i18n/site'
 import { FORMAT_TRIGGER_CLASS } from '../cinematic-menu-trigger'
 import CinematicMenu from '../CinematicMenu.vue'
 
@@ -21,7 +21,7 @@ const aspect = defineModel<ReshootAspect>('aspect', { required: true })
 const size = defineModel<ReshootSize>('size', { required: true })
 
 const aspectLabel = (id: ReshootAspect) =>
-  id === 'source' ? rc('reshoot.aspect.source', locale) : id
+  id === 'source' ? rc('reshoot.aspect.source', {}, { locale: locale }) : id
 const aspectOptions = computed(() =>
   RESHOOT_ASPECTS.map((id) => ({ id, label: aspectLabel(id) }))
 )
@@ -29,7 +29,7 @@ const sizeOptions = computed(() =>
   RESHOOT_SIZES.map((id) => ({
     id,
     label: id,
-    meta: rc(`reshoot.size.${id}`, locale)
+    meta: rc(`reshoot.size.${id}`, {}, { locale: locale })
   }))
 )
 const aspectValue = computed({
@@ -50,13 +50,13 @@ const sizeValue = computed({
 <template>
   <div
     role="group"
-    :aria-label="rc('reshoot.section.format', locale)"
+    :aria-label="rc('reshoot.section.format', {}, { locale: locale })"
     class="grid grid-cols-2 gap-2"
   >
     <CinematicMenu
       v-model="aspectValue"
       :options="aspectOptions"
-      :heading="rc('reshoot.aspect.label', locale)"
+      :heading="rc('reshoot.aspect.label', {}, { locale: locale })"
       tooltip
       :trigger-class="FORMAT_TRIGGER_CLASS"
     >
@@ -70,7 +70,7 @@ const sizeValue = computed({
     <CinematicMenu
       v-model="sizeValue"
       :options="sizeOptions"
-      :heading="rc('reshoot.size.label', locale)"
+      :heading="rc('reshoot.size.label', {}, { locale: locale })"
       tooltip
       :trigger-class="FORMAT_TRIGGER_CLASS"
     >

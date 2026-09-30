@@ -12,7 +12,7 @@ import HowItWorksSection from '../templates/cli/HowItWorksSection.vue'
 import FAQSection from '../templates/cli/FAQSection.vue'
 import { cliPageJsonLd } from '../templates/cli/jsonLd'
 import { cliModelCards } from '../templates/cli/modelCards'
-import { t } from '../i18n/translations'
+import { t } from '../i18n/site'
 import { absoluteUrl, pageContext } from '../utils/jsonLd'
 
 const { siteUrl, locale, url } = pageContext(
@@ -24,12 +24,15 @@ const { softwareId, nodes: cliJsonLd } = cliPageJsonLd(siteUrl, url, locale)
 ---
 
 <BaseLayout
-  title={t('cli.meta.title', 'en')}
-  description={t('cli.meta.description', 'en')}
+  title={t('cli.meta.title', {}, { locale: 'en' })}
+  description={t('cli.meta.description', {}, { locale: 'en' })}
   mainEntityId={softwareId}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    { name: t('breadcrumb.cli', locale) }
+    {
+      name: t('breadcrumb.home', {}, { locale: locale }),
+      url: absoluteUrl(Astro.site, '/')
+    },
+    { name: t('breadcrumb.cli', {}, { locale: locale }) }
   ]}
   extraJsonLd={cliJsonLd}
   keywords={[

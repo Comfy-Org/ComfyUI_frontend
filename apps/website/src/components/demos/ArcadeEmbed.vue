@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import { ref } from 'vue'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const {
   arcadeId,
@@ -23,7 +23,7 @@ const loaded = ref(false)
 <template>
   <section
     class="px-4 py-8 lg:px-20 lg:py-16"
-    :aria-label="t('demos.embed.label', locale)"
+    :aria-label="t('demos.embed.label', {}, { locale: locale })"
   >
     <div
       class="relative mx-auto max-w-6xl overflow-hidden rounded-4xl border border-white/10"
@@ -38,14 +38,14 @@ const loaded = ref(false)
           class="mb-4 size-10 animate-pulse rounded-full border-2 border-primary-comfy-canvas/60"
         />
         <p class="text-sm text-primary-warm-gray">
-          {{ t('demos.loading', locale) }}
+          {{ t('demos.loading', {}, { locale: locale }) }}
         </p>
       </div>
 
       <iframe
         class="size-full"
         :src="`https://demo.arcade.software/${arcadeId}?embed&show_title=0`"
-        :title="`${t('demos.embed.label', locale)}: ${title}`"
+        :title="`${t('demos.embed.label', {}, { locale: locale })}: ${title}`"
         loading="lazy"
         allow="clipboard-write"
         referrerpolicy="strict-origin-when-cross-origin"
@@ -55,14 +55,14 @@ const loaded = ref(false)
 
     <noscript>
       <p class="text-primary-warm-gray mt-4 text-sm">
-        {{ t('demos.noscript.text', locale) }}
+        {{ t('demos.noscript.text', {}, { locale: locale }) }}
         <a
           class="text-primary-comfy-yellow ml-2 underline"
           :href="`https://demo.arcade.software/${arcadeId}`"
           rel="noopener noreferrer"
           target="_blank"
         >
-          {{ t('demos.noscript.link', locale) }}
+          {{ t('demos.noscript.link', {}, { locale: locale }) }}
         </a>
       </p>
     </noscript>

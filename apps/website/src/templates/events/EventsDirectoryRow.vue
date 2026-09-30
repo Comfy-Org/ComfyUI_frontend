@@ -6,11 +6,11 @@ import { useResizeObserver } from '@vueuse/core'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { DirectoryRow } from '../../utils/eventsDirectory'
 
 import Badge from '../../components/ui/badge/Badge.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import { resolveRel } from '../../utils/cta'
 import EventsDirectoryCta from './EventsDirectoryCta.vue'
 
@@ -53,7 +53,8 @@ const expanded = ref(false)
 const expansionLabel = computed(() =>
   t(
     expanded.value ? 'events.directory.readLess' : 'events.directory.readMore',
-    locale
+    {},
+    { locale: locale }
   )
 )
 // A clamped paragraph overflows its own box; re-measuring on resize keeps
@@ -110,7 +111,7 @@ useResizeObserver(descEl, ([entry]) => {
           size="xxs"
           class="uppercase"
         >
-          {{ t('events.directory.pastBadge', locale) }}
+          {{ t('events.directory.pastBadge', {}, { locale: locale }) }}
         </Badge>
       </div>
 

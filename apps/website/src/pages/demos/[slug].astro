@@ -6,7 +6,7 @@ import ArcadeEmbed from '../../components/demos/ArcadeEmbed.vue'
 import DemoTranscript from '../../components/demos/DemoTranscript.vue'
 import DemoNavSection from '../../components/demos/DemoNavSection.vue'
 import { demos, getDemoBySlug, getNextDemo } from '../../config/demos'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import {
   absoluteUrl,
@@ -63,9 +63,12 @@ const learningResource: JsonLdNode = {
   ogImage={demo.ogImage}
   mainEntityId={learningId}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
     {
-      name: t('demos.breadcrumb.demos', locale),
+      name: t('breadcrumb.home', {}, { locale: locale }),
+      url: absoluteUrl(Astro.site, '/')
+    },
+    {
+      name: t('demos.breadcrumb.demos', {}, { locale: locale }),
       url: absoluteUrl(Astro.site, '/demos/')
     },
     { name: title }

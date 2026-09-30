@@ -2,8 +2,8 @@
 import { X } from '@lucide/vue'
 import { nextTick } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 export interface FilterChip {
   key: string
@@ -58,7 +58,11 @@ async function clear() {
         type="button"
         class="-me-1 flex size-6 shrink-0 cursor-pointer items-center justify-center text-content-muted transition-colors outline-none hover:text-content-bright focus-visible:text-content-bright"
         :aria-label="
-          t('workshop.filter.remove', locale, { filter: chip.label })
+          t(
+            'workshop.filter.remove',
+            { filter: chip.label },
+            { locale: locale }
+          )
         "
         @click="remove(index)"
       >
@@ -71,7 +75,7 @@ async function clear() {
       data-testid="workshop-filter-chips-clear"
       @click="clear"
     >
-      {{ t('workshop.filter.clear', locale) }}
+      {{ t('workshop.filter.clear', {}, { locale: locale }) }}
     </button>
   </div>
 </template>

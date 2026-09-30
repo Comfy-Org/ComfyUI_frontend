@@ -1,6 +1,6 @@
 import { externalLinks } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 export interface CliCta {
   label: string
@@ -19,12 +19,12 @@ export function cliCtas(locale: Locale): {
 } {
   return {
     docs: {
-      label: t('cli.hero.viewDocs', locale),
+      label: t('cli.hero.viewDocs', {}, { locale: locale }),
       href: externalLinks.docsCli,
       target: '_blank'
     },
     installCli: {
-      label: t('cli.hero.installCli', locale),
+      label: t('cli.hero.installCli', {}, { locale: locale }),
       href: '#setup'
     }
   }

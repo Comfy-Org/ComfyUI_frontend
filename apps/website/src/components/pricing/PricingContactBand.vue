@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
 import { computed } from 'vue'
 
 import { getRoutes } from '../../config/routes'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import Button from '../ui/button/Button.vue'
 import PricingCard from './PricingCard.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
@@ -30,9 +30,9 @@ const isExternalHref = computed(() => Boolean(href?.startsWith('http')))
       <div
         class="flex flex-col gap-6 lg:col-span-2 lg:flex-row lg:items-center"
       >
-        <PricingPlanLabel :label="t(labelKey, locale)" />
+        <PricingPlanLabel :label="t(labelKey, {}, { locale: locale })" />
         <p class="text-primary-warm-white">
-          {{ t(descriptionKey, locale) }}
+          {{ t(descriptionKey, {}, { locale: locale }) }}
         </p>
       </div>
       <Button
@@ -42,7 +42,7 @@ const isExternalHref = computed(() => Boolean(href?.startsWith('http')))
         :rel="isExternalHref ? 'noopener noreferrer' : undefined"
         variant="outline"
       >
-        {{ t(ctaKey, locale) }}
+        {{ t(ctaKey, {}, { locale: locale }) }}
       </Button>
     </div>
   </PricingCard>

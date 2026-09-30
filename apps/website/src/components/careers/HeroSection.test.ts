@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import HeroSection from './HeroSection.vue'
 
 const stubs = {
@@ -39,7 +39,7 @@ describe('HeroSection', () => {
     render(HeroSection, { props: { locale: 'zh-CN' }, global: { stubs } })
 
     expect(screen.getByTestId('video-player').dataset.ariaLabel).toBe(
-      t('careers.hero.videoLabel', 'zh-CN')
+      t('careers.hero.videoLabel', {}, { locale: 'zh-CN' })
     )
   })
 })

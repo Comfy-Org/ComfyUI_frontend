@@ -1,5 +1,5 @@
-import type { Locale } from '../i18n/translations'
-import { t } from '../i18n/translations'
+import type { Locale } from '../i18n/site'
+import { t } from '../i18n/site'
 import { fieldsForDefinition } from './workshop-form-definition'
 import { workshopExampleFiles } from './workshop-example-file'
 import { encodedWorkshopFileBytes, MAX_REQUEST_BYTES } from './workshop-limits'
@@ -645,10 +645,14 @@ export function exampleAlt(
 ): string {
   const sample = /^Sample (\d+)$/.exec(title)
   return sample
-    ? t('workshop.examples.sampleAlt', locale, {
-        name: modelName,
-        n: sample[1]
-      })
+    ? t(
+        'workshop.examples.sampleAlt',
+        {
+          name: modelName,
+          n: sample[1]
+        },
+        { locale: locale }
+      )
     : `${modelName}: ${title}`
 }
 

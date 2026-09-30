@@ -10,8 +10,8 @@ import {
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { Locale } from '../../../../i18n/translations'
+import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../../i18n/site'
 import type { ReshootSound, ReshootView } from './output'
 
 const {
@@ -50,7 +50,7 @@ const optionClass = (active: boolean) =>
     <div
       class="flex rounded-full bg-transparency-white-t4 p-1 ring-1 ring-transparency-white-t8 ring-inset"
       role="radiogroup"
-      :aria-label="rc('reshoot.views', locale)"
+      :aria-label="rc('reshoot.views', {}, { locale: locale })"
     >
       <button
         v-for="option in VIEWS"
@@ -62,7 +62,7 @@ const optionClass = (active: boolean) =>
         @click="view = option.id"
       >
         <component :is="option.icon" class="size-3.5" aria-hidden="true" />
-        {{ rc(`reshoot.view.${option.id}`, locale) }}
+        {{ rc(`reshoot.view.${option.id}`, {}, { locale: locale }) }}
       </button>
     </div>
     <div class="flex items-center gap-2">
@@ -70,7 +70,7 @@ const optionClass = (active: boolean) =>
         v-if="view === 'result'"
         class="flex items-center rounded-full bg-transparency-white-t4 p-1 pl-2.5 ring-1 ring-transparency-white-t8 ring-inset"
         role="radiogroup"
-        :aria-label="rc('reshoot.sound.label', locale)"
+        :aria-label="rc('reshoot.sound.label', {}, { locale: locale })"
       >
         <Volume2
           class="mr-1 size-3.5 text-primary-warm-gray"
@@ -85,7 +85,7 @@ const optionClass = (active: boolean) =>
           :class="optionClass(sound === option)"
           @click="sound = option"
         >
-          {{ rc(`reshoot.sound.${option}`, locale) }}
+          {{ rc(`reshoot.sound.${option}`, {}, { locale: locale }) }}
         </button>
       </div>
       <button
@@ -94,7 +94,7 @@ const optionClass = (active: boolean) =>
         @click="emit('reuse')"
       >
         <RotateCcw class="size-3.5" aria-hidden="true" />
-        {{ rc('reshoot.reuse', locale) }}
+        {{ rc('reshoot.reuse', {}, { locale: locale }) }}
       </button>
       <a
         :href
@@ -102,7 +102,7 @@ const optionClass = (active: boolean) =>
         class="flex h-10 items-center gap-1.5 rounded-full px-4 text-xs font-semibold text-primary-warm-white ring-1 ring-transparency-white-t20 transition-colors ring-inset hover:bg-transparency-white-t8"
       >
         <Download class="size-3.5" aria-hidden="true" />
-        {{ rc('reshoot.download', locale) }}
+        {{ rc('reshoot.download', {}, { locale: locale }) }}
       </a>
     </div>
   </div>

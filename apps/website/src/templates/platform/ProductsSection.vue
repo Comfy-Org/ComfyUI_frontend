@@ -2,8 +2,8 @@
 import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
 import { brandButtonVariants } from '../../components/common/brandButton.variants'
 import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import BuilderVisual from './BuilderVisual.vue'
 import CodeTabs from './CodeTabs.vue'
 import { modelsApiCodeTabs } from './codeSamples'
@@ -25,7 +25,9 @@ const modelsTabs = modelsApiCodeTabs
     >
       <a
         :href="routes.platformComfyApi"
-        :aria-label="t('platform.products.serverless.title', locale)"
+        :aria-label="
+          t('platform.products.serverless.title', {}, { locale: locale })
+        "
         class="absolute inset-0 z-0 rounded-4xl"
       ></a>
       <div class="pointer-events-none relative z-10">
@@ -33,22 +35,36 @@ const modelsTabs = modelsApiCodeTabs
           class="flex items-center gap-2.5 text-lg font-normal text-primary-warm-white lg:text-xl"
         >
           <span class="sr-only">
-            {{ t('platform.products.serverless.title', locale) }}
+            {{
+              t('platform.products.serverless.title', {}, { locale: locale })
+            }}
           </span>
           <ProductHeroBadge
-            :text="t('platform.products.serverless.badgeLabel', locale)"
+            :text="
+              t(
+                'platform.products.serverless.badgeLabel',
+                {},
+                { locale: locale }
+              )
+            "
             compact
             :show-connector="false"
             aria-hidden="true"
           />
         </h3>
         <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
-          {{ t('platform.products.serverless.description', locale) }}
+          {{
+            t(
+              'platform.products.serverless.description',
+              {},
+              { locale: locale }
+            )
+          }}
         </p>
         <div class="mt-8">
           <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
             <span class="inline-block uppercase">
-              {{ t('platform.hero.getStarted', locale) }}
+              {{ t('platform.hero.getStarted', {}, { locale: locale }) }}
             </span>
           </span>
         </div>
@@ -68,18 +84,22 @@ const modelsTabs = modelsApiCodeTabs
       >
         <a
           :href="routes.platformRouter"
-          :aria-label="t('platform.products.models.title', locale)"
+          :aria-label="
+            t('platform.products.models.title', {}, { locale: locale })
+          "
           class="absolute inset-0 z-0 rounded-4xl"
         ></a>
         <h3 class="sr-only">
-          {{ t('platform.products.models.title', locale) }}
+          {{ t('platform.products.models.title', {}, { locale: locale }) }}
         </h3>
         <div
           class="pointer-events-none relative z-10 flex w-fit items-center gap-2"
           aria-hidden="true"
         >
           <ProductHeroBadge
-            :text="t('platform.products.models.badgeLabel', locale)"
+            :text="
+              t('platform.products.models.badgeLabel', {}, { locale: locale })
+            "
             :show-connector="false"
             compact
           />
@@ -87,18 +107,22 @@ const modelsTabs = modelsApiCodeTabs
         <p
           class="pointer-events-none relative z-10 mt-3 text-sm/relaxed font-light text-primary-comfy-canvas"
         >
-          {{ t('platform.products.models.description', locale) }}
+          {{
+            t('platform.products.models.description', {}, { locale: locale })
+          }}
         </p>
         <div class="relative z-10 mt-6">
           <CodeTabs
             :tabs="modelsTabs"
-            :label="t('platform.products.models.title', locale)"
+            :label="t('platform.products.models.title', {}, { locale: locale })"
           />
         </div>
         <div class="pointer-events-none relative z-10 mt-auto self-start pt-6">
           <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
             <span class="inline-block uppercase">
-              {{ t('platform.products.models.learnMore', locale) }}
+              {{
+                t('platform.products.models.learnMore', {}, { locale: locale })
+              }}
             </span>
           </span>
         </div>
@@ -110,20 +134,30 @@ const modelsTabs = modelsApiCodeTabs
       >
         <a
           :href="routes.platformBuilder"
-          :aria-label="t('platform.products.builder.title', locale)"
+          :aria-label="
+            t('platform.products.builder.title', {}, { locale: locale })
+          "
           class="absolute inset-0 rounded-4xl"
         ></a>
         <h3 class="sr-only">
-          {{ t('platform.products.builder.title', locale) }}
+          {{ t('platform.products.builder.title', {}, { locale: locale }) }}
         </h3>
         <ProductHeroBadge
-          :text="t('platform.products.builder.title', locale).toUpperCase()"
+          :text="
+            t(
+              'platform.products.builder.title',
+              {},
+              { locale: locale }
+            ).toUpperCase()
+          "
           :show-logo="false"
           compact
           aria-hidden="true"
         />
         <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
-          {{ t('platform.products.builder.description', locale) }}
+          {{
+            t('platform.products.builder.description', {}, { locale: locale })
+          }}
         </p>
         <div class="mt-6 flex-1">
           <BuilderVisual />
@@ -131,7 +165,7 @@ const modelsTabs = modelsApiCodeTabs
         <div class="pointer-events-none relative z-10 mt-auto self-start pt-6">
           <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
             <span class="inline-block uppercase">
-              {{ t('platform.hero.getStarted', locale) }}
+              {{ t('platform.hero.getStarted', {}, { locale: locale }) }}
             </span>
           </span>
         </div>

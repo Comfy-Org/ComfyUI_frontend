@@ -13,9 +13,9 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '../../../i18n/site'
 import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicTooltip from './CinematicTooltip.vue'
 import type { ReferenceKind } from './reference-kind'
 import { useImagePreview } from './useImagePreview'
@@ -49,9 +49,11 @@ const kinds = computed(() =>
   shown.map((kind) => ({
     kind,
     icon: ICONS[kind],
-    label: tc(REFERENCE_SLOTS[kind].label, locale),
+    label: tc(REFERENCE_SLOTS[kind].label, {}, { locale: locale }),
     file: files[kind].value,
-    detail: files[kind].value?.name ?? tc(REFERENCE_SLOTS[kind].action, locale),
+    detail:
+      files[kind].value?.name ??
+      tc(REFERENCE_SLOTS[kind].action, {}, { locale: locale }),
     preview: kind === 'video' ? undefined : previews[kind].value
   }))
 )
@@ -59,7 +61,9 @@ const attached = computed(() => kinds.value.filter((entry) => entry.file))
 const cover = computed(
   () => attached.value.find((entry) => entry.preview)?.preview
 )
-const heading = computed(() => tc('cinematic.section.references', locale))
+const heading = computed(() =>
+  tc('cinematic.section.references', {}, { locale: locale })
+)
 
 const inputs: Partial<Record<ReferenceKind, HTMLInputElement>> = {}
 function keepInput(kind: ReferenceKind, element: unknown) {
@@ -91,7 +95,9 @@ const itemClass =
     <span class="flex h-full">
       <DropdownMenuRoot>
         <DropdownMenuTrigger
-          :aria-label="tc('cinematic.composer.references', locale)"
+          :aria-label="
+            tc('cinematic.composer.references', {}, { locale: locale })
+          "
           :class="
             cn(
               'relative grid size-9 shrink-0 place-items-center rounded-xl border border-dashed border-transparency-white-t20 text-primary-comfy-canvas outline-none hover:border-primary-warm-white/50 hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 data-[state=open]:border-primary-warm-white',
@@ -125,7 +131,9 @@ const itemClass =
               class="flex items-center justify-between px-2.5 pt-1.5 pb-1 text-xs text-primary-warm-gray"
             >
               {{ heading }}
-              <span>{{ tc('cinematic.reference.optional', locale) }}</span>
+              <span>{{
+                tc('cinematic.reference.optional', {}, { locale: locale })
+              }}</span>
             </DropdownMenuLabel>
             <DropdownMenuItem
               v-for="entry in kinds"
@@ -169,7 +177,7 @@ const itemClass =
                 @select="remove(entry.kind)"
               >
                 <X class="size-4 shrink-0" aria-hidden="true" />
-                {{ tc('cinematic.reference.remove', locale) }}:
+                {{ tc('cinematic.reference.remove', {}, { locale: locale }) }}:
                 {{ entry.label }}
               </DropdownMenuItem>
             </template>

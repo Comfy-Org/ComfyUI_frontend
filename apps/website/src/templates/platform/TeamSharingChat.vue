@@ -8,8 +8,8 @@ import {
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
@@ -159,7 +159,7 @@ watchEffect(() => {
               )
             "
           >
-            <span>{{ t(message.text, locale) }}</span>
+            <span>{{ t(message.text, {}, { locale: locale }) }}</span>
             <div
               v-if="message.endpoint"
               class="mt-1 break-all text-primary-comfy-yellow"
@@ -170,7 +170,7 @@ watchEffect(() => {
               v-if="message.snippet"
               class="mt-2 overflow-x-auto rounded-lg bg-primary-comfy-ink/60 px-2 py-1.5 font-mono text-2xs break-all whitespace-pre-wrap text-primary-warm-white/90"
             >
-              {{ t(message.snippet, locale) }}
+              {{ t(message.snippet, {}, { locale: locale }) }}
             </div>
           </div>
         </div>

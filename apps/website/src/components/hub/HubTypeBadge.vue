@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import IconApps from './IconApps.vue'
 import IconModel from './IconModel.vue'
 import IconWorkflow from './IconWorkflow.vue'
@@ -41,7 +41,7 @@ const labels: Record<Kind, TranslationKey> = {
     >
       <span class="overflow-hidden">
         <span class="pl-1.5 text-2xs/none whitespace-nowrap">
-          {{ t(labels[kind], locale) }}
+          {{ t(labels[kind], {}, { locale: locale }) }}
         </span>
       </span>
     </span>

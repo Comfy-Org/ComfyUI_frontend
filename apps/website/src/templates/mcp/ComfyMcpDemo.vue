@@ -5,8 +5,8 @@ import { useCssVar, useElementVisibility } from '@vueuse/core'
 import { computed, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import { mcpDemoPrompts, thumbUrls, visibleWindow } from './mcpDemoPrompts'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -18,8 +18,8 @@ const promptTextClass =
 const caretClass =
   'bg-primary-comfy-yellow animate-cursor-blink ml-0.5 inline-block h-5 w-2.25 translate-y-0.5'
 
-const generateLabel = t('mcp.hero.demoGenerate', locale)
-const idleStatus = t('mcp.hero.demoStatusIdle', locale)
+const generateLabel = t('mcp.hero.demoGenerate', {}, { locale: locale })
+const idleStatus = t('mcp.hero.demoStatusIdle', {}, { locale: locale })
 
 const index = ref(0)
 const cards = computed(() =>
@@ -29,7 +29,7 @@ const nextPrompt = computed(
   () => mcpDemoPrompts[(index.value + 1) % mcpDemoPrompts.length]
 )
 
-const typed = ref(t(nextPrompt.value.promptKey, locale))
+const typed = ref(t(nextPrompt.value.promptKey, {}, { locale: locale }))
 const submitting = ref(false)
 const status = ref(idleStatus)
 
@@ -67,7 +67,7 @@ function schedule(step: () => void, ms: number) {
 }
 
 function typeNextPrompt() {
-  const text = t(nextPrompt.value.promptKey, locale)
+  const text = t(nextPrompt.value.promptKey, {}, { locale: locale })
   typed.value = ''
 
   let typedLength = 0
@@ -91,12 +91,12 @@ function typeNextPrompt() {
 
 function runTool() {
   const { via, toolKey } = nextPrompt.value
-  const tool = t(toolKey, locale)
+  const tool = t(toolKey, {}, { locale: locale })
 
   submitting.value = true
   status.value = via
-    ? t('mcp.hero.demoStatusBridging', locale, { app: via, tool })
-    : t('mcp.hero.demoStatusRunning', locale, { tool })
+    ? t('mcp.hero.demoStatusBridging', { app: via, tool }, { locale: locale })
+    : t('mcp.hero.demoStatusRunning', { tool }, { locale: locale })
 
   schedule(commitCard, runToolMs.value)
 }
@@ -116,7 +116,7 @@ function restBeforeNextPrompt() {
 watchEffect(() => {
   clearTimeout(timer)
   if (prefersReducedMotion()) {
-    typed.value = t(nextPrompt.value.promptKey, locale)
+    typed.value = t(nextPrompt.value.promptKey, {}, { locale: locale })
     submitting.value = false
     status.value = idleStatus
     return
@@ -143,7 +143,8 @@ onUnmounted(() => clearTimeout(timer))
           aria-hidden="true"
           :class="cn(promptTextClass, 'invisible')"
         >
-          {{ t(prompt.promptKey, locale) }}<span :class="caretClass" />
+          {{ t(prompt.promptKey, {}, { locale: locale })
+          }}<span :class="caretClass" />
         </p>
 
         <p :class="cn(promptTextClass, 'text-primary-comfy-canvas')">
@@ -239,7 +240,7 @@ onUnmounted(() => clearTimeout(timer))
             <p
               class="line-clamp-2 font-formula text-xs font-extrabold tracking-[0.7px] text-primary-comfy-yellow uppercase lg:text-sm"
             >
-              {{ t(card.toolKey, locale) }}
+              {{ t(card.toolKey, {}, { locale: locale }) }}
             </p>
             <p
               class="truncate font-formula text-sm font-light text-primary-comfy-canvas"

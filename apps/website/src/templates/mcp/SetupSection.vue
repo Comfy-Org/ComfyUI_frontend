@@ -19,8 +19,8 @@ import {
   isMcpClientId
 } from '../../config/mcpClients'
 import { externalLinks, getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import {
   captureMcpClientTabClick,
   captureMcpConnectionTabClick
@@ -68,13 +68,17 @@ function onClientTabChange(value: string | number | undefined) {
 }
 
 function walkthroughLabelFor(connId: ConnectionId): string {
-  return t('mcp.setup.walkthroughAlt', locale, {
-    client: activeClientFor(connId).name
-  })
+  return t(
+    'mcp.setup.walkthroughAlt',
+    {
+      client: activeClientFor(connId).name
+    },
+    { locale: locale }
+  )
 }
 
-const copyLabel = t('ui.copy', locale)
-const copiedLabel = t('ui.copied', locale)
+const copyLabel = t('ui.copy', {}, { locale: locale })
+const copiedLabel = t('ui.copied', {}, { locale: locale })
 </script>
 
 <template>
@@ -84,37 +88,41 @@ const copiedLabel = t('ui.copied', locale)
   >
     <SectionHeader
       max-width="xl"
-      :label="t('mcp.setup.label', locale)"
+      :label="t('mcp.setup.label', {}, { locale: locale })"
       align="start"
     >
-      {{ t('mcp.setup.heading', locale) }}
+      {{ t('mcp.setup.heading', {}, { locale: locale }) }}
       <template #subtitle>
         <p
           class="mt-4 max-w-xl text-sm whitespace-pre-line text-smoke-700 lg:text-base"
         >
-          {{ t('mcp.setup.subtitle', locale) }}
+          {{ t('mcp.setup.subtitle', {}, { locale: locale }) }}
         </p>
         <p
           v-if="activeConnectionId === 'cloud'"
           class="mt-4 max-w-xl text-xs text-primary-warm-gray"
         >
-          {{ t('mcp.setup.requirementPrefix', locale)
+          {{ t('mcp.setup.requirementPrefix', {}, { locale: locale })
           }}<a
             :href="getRoutes(locale).pricing"
             class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-            >{{ t('mcp.setup.requirementLinkLabel', locale) }}</a
-          >{{ t('mcp.setup.requirementSuffix', locale)
-          }}{{ t('mcp.setup.requirementFootnote', locale) }}
+            >{{
+              t('mcp.setup.requirementLinkLabel', {}, { locale: locale })
+            }}</a
+          >{{ t('mcp.setup.requirementSuffix', {}, { locale: locale })
+          }}{{ t('mcp.setup.requirementFootnote', {}, { locale: locale }) }}
         </p>
         <p v-else class="mt-4 max-w-xl text-xs text-primary-warm-gray">
-          {{ t('mcp.setup.local.requirementPrefix', locale)
+          {{ t('mcp.setup.local.requirementPrefix', {}, { locale: locale })
           }}<a
             :href="externalLinks.comfyMcpRepo"
             target="_blank"
             rel="noopener noreferrer"
             class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-            >{{ t('mcp.setup.local.requirementLinkLabel', locale) }}</a
-          >{{ t('mcp.setup.local.requirementSuffix', locale) }}
+            >{{
+              t('mcp.setup.local.requirementLinkLabel', {}, { locale: locale })
+            }}</a
+          >{{ t('mcp.setup.local.requirementSuffix', {}, { locale: locale }) }}
         </p>
       </template>
     </SectionHeader>
@@ -128,7 +136,9 @@ const copiedLabel = t('ui.copied', locale)
       @update:model-value="onConnectionTabChange"
     >
       <TabsList
-        :aria-label="t('mcp.setup.connections.tabsLabel', locale)"
+        :aria-label="
+          t('mcp.setup.connections.tabsLabel', {}, { locale: locale })
+        "
         class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:max-w-3xl"
       >
         <TabsTrigger
@@ -161,7 +171,9 @@ const copiedLabel = t('ui.copied', locale)
           @update:model-value="onClientTabChange"
         >
           <TabsList
-            :aria-label="t('mcp.setup.manual.tabsLabel', locale)"
+            :aria-label="
+              t('mcp.setup.manual.tabsLabel', {}, { locale: locale })
+            "
             class="grid grid-cols-1 gap-px rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 min-[360px]:grid-cols-2 lg:inline-flex lg:flex-nowrap"
           >
             <TabsTrigger
@@ -233,16 +245,18 @@ const copiedLabel = t('ui.copied', locale)
                 <h3
                   class="flex flex-wrap items-center gap-2.5 text-xl font-light text-primary-comfy-canvas lg:text-2xl"
                 >
-                  {{ t('mcp.setup.agent.title', locale) }}
+                  {{ t('mcp.setup.agent.title', {}, { locale: locale }) }}
                   <span
                     v-if="conn.agentRecommended"
                     class="rounded-md bg-primary-comfy-yellow px-2 py-1 text-[10px] font-bold tracking-wider text-primary-comfy-ink uppercase"
                   >
-                    {{ t('mcp.setup.agent.recommended', locale) }}
+                    {{
+                      t('mcp.setup.agent.recommended', {}, { locale: locale })
+                    }}
                   </span>
                 </h3>
                 <p class="mt-3 text-sm text-smoke-700">
-                  {{ t('mcp.setup.agent.description', locale) }}
+                  {{ t('mcp.setup.agent.description', {}, { locale: locale }) }}
                 </p>
                 <div class="mt-6">
                   <CopyableField
@@ -255,13 +269,13 @@ const copiedLabel = t('ui.copied', locale)
                   v-if="conn.showSkillsNote"
                   class="mt-6 text-sm text-smoke-700"
                 >
-                  {{ t('mcp.setup.skillsNote', locale)
+                  {{ t('mcp.setup.skillsNote', {}, { locale: locale })
                   }}<a
                     :href="externalLinks.mcpSkills"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-                    >{{ t('mcp.setup.skillsLink', locale) }}</a
+                    >{{ t('mcp.setup.skillsLink', {}, { locale: locale }) }}</a
                   >
                 </p>
               </template>

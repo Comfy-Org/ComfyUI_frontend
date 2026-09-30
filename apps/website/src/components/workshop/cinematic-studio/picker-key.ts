@@ -7,8 +7,8 @@ import {
   gradeGroup,
   lookGroups
 } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 export type PickerKey = 'camera' | LookPart | 'grade'
 
@@ -19,6 +19,7 @@ export function pickerGroups(key?: PickerKey): readonly DirectionGroup[] {
 }
 
 export function popoverTitle(key: PickerKey, locale: Locale): string {
-  if (key === 'camera') return tc('cinematic.section.camera', locale)
-  return tc(pickerGroups(key)[0].title, locale)
+  if (key === 'camera')
+    return tc('cinematic.section.camera', {}, { locale: locale })
+  return tc(pickerGroups(key)[0].title, {}, { locale: locale })
 }

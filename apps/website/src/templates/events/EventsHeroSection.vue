@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import FeaturedCarousel01 from '../../components/blocks/FeaturedCarousel01.vue'
 import type { FeaturedSlide } from '../../components/blocks/FeaturedCarousel01.vue'
 import HeroCentered01 from '../../components/blocks/HeroCentered01.vue'
 import Button from '../../components/ui/button/Button.vue'
 import { featuredEvents } from '../../data/events'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -34,16 +34,16 @@ const slides = computed<FeaturedSlide[]>(() =>
 <template>
   <section class="pt-24 pb-16 lg:pt-30 lg:pb-24">
     <HeroCentered01
-      :eyebrow="t('events.hero.eyebrow', locale)"
-      :title="t('events.hero.title', locale)"
-      :subtitle="t('events.hero.subtitle', locale)"
+      :eyebrow="t('events.hero.eyebrow', {}, { locale: locale })"
+      :title="t('events.hero.title', {}, { locale: locale })"
+      :subtitle="t('events.hero.subtitle', {}, { locale: locale })"
     >
       <div class="mt-8 flex flex-wrap justify-center gap-4">
         <Button as="a" href="#events-directory">
-          {{ t('events.hero.browseEvents', locale) }}
+          {{ t('events.hero.browseEvents', {}, { locale: locale }) }}
         </Button>
         <Button as="a" variant="outline" href="#host-an-event">
-          {{ t('events.hero.hostAnEvent', locale) }}
+          {{ t('events.hero.hostAnEvent', {}, { locale: locale }) }}
         </Button>
       </div>
     </HeroCentered01>
@@ -51,8 +51,8 @@ const slides = computed<FeaturedSlide[]>(() =>
     <div class="mt-12 lg:mt-20">
       <FeaturedCarousel01
         :slides
-        :prev-label="t('events.hero.prevSlide', locale)"
-        :next-label="t('events.hero.nextSlide', locale)"
+        :prev-label="t('events.hero.prevSlide', {}, { locale: locale })"
+        :next-label="t('events.hero.nextSlide', {}, { locale: locale })"
       />
     </div>
   </section>

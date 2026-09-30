@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 
 import type { SourcePreviewProps } from '../../composables/useSourceUrl'
 import { useSourceUrl } from '../../composables/useSourceUrl'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogTitle from '../ui/dialog/DialogTitle.vue'
 import DialogTrigger from '../ui/dialog/DialogTrigger.vue'
@@ -19,7 +19,7 @@ const source = useSourceUrl(
 const failedSource = ref<string>()
 const expanded = ref(false)
 const expandLabel = computed(
-  () => `${t('workshop.output.expand', locale)} ${name}`
+  () => `${t('workshop.output.expand', {}, { locale: locale })} ${name}`
 )
 </script>
 
@@ -45,7 +45,7 @@ const expandLabel = computed(
     </DialogTrigger>
 
     <SourceLightbox
-      :close-label="t('workshop.output.collapse', locale)"
+      :close-label="t('workshop.output.collapse', {}, { locale: locale })"
       data-testid="image-source-dialog"
       @dismiss="expanded = false"
     >
@@ -66,7 +66,7 @@ const expandLabel = computed(
   >
     <ImageOff class="size-5 text-primary-warm-gray" aria-hidden="true" />
     <span class="sr-only">{{
-      t('workshop.field.imagePreviewUnavailable', locale)
+      t('workshop.field.imagePreviewUnavailable', {}, { locale: locale })
     }}</span>
   </span>
 </template>

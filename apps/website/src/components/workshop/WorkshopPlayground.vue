@@ -21,8 +21,8 @@ import {
 } from '../../config/workshop-snippets'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workspaceLinkedHref } from '../../config/workshop-workspace-link'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import WorkshopForm from './WorkshopForm.vue'
 
 const { model, locale = 'en' } = defineProps<{
@@ -173,7 +173,9 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
       <TabsRoot v-model="language">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <TabsList
-            :aria-label="t('workshop.model.codeLanguage', locale)"
+            :aria-label="
+              t('workshop.model.codeLanguage', {}, { locale: locale })
+            "
             class="flex gap-1"
           >
             <TabsTrigger
@@ -193,8 +195,8 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
           >
             {{
               copied
-                ? t('workshop.model.copied', locale)
-                : t('workshop.model.copy', locale)
+                ? t('workshop.model.copied', {}, { locale: locale })
+                : t('workshop.model.copy', {}, { locale: locale })
             }}
           </button>
         </div>
@@ -221,7 +223,7 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
         rel="noopener noreferrer"
         class="mt-4 inline-flex text-sm font-medium text-primary-comfy-yellow hover:underline"
       >
-        {{ t('workshop.model.getApiKey', locale) }}
+        {{ t('workshop.model.getApiKey', {}, { locale: locale }) }}
       </a>
     </section>
   </div>

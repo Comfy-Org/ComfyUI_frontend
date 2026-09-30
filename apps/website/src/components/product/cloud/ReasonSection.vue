@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
+import type { Locale } from '../../../i18n/site'
+import { t } from '../../../i18n/site'
 
 import type { Reason } from '../shared/ReasonSection.vue'
 
@@ -45,9 +45,9 @@ const reasons: CloudReason[] = [
         <span
           class="font-formula-narrow text-lg font-bold tracking-wide text-primary-comfy-yellow"
         >
-          {{ t('cloud.reason.2.badge.onlyOn', locale) }}
+          {{ t('cloud.reason.2.badge.onlyOn', {}, { locale: locale }) }}
           <img src="/icons/logo.svg" alt="Comfy" class="inline-block h-5" />
-          {{ t('cloud.reason.2.badge.cloud', locale) }}
+          {{ t('cloud.reason.2.badge.cloud', {}, { locale: locale }) }}
         </span>
       </div>
     </template>

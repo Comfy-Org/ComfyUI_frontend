@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { DirectoryRow } from '../../utils/eventsDirectory'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import { groupRowsByMonth, monthLabel } from '../../utils/eventsDirectory'
 import EventsDirectoryRow from './EventsDirectoryRow.vue'
 
@@ -28,7 +28,7 @@ const months = computed(() => groupRowsByMonth(rows))
       v-if="months.length === 0"
       class="px-6 py-8 text-sm text-primary-comfy-canvas/70"
     >
-      {{ t('events.directory.empty', locale) }}
+      {{ t('events.directory.empty', {}, { locale: locale }) }}
     </p>
 
     <template v-else>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import { routerT } from './routerCopy'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -10,7 +10,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
   <section class="mx-auto max-w-9xl px-6 py-10 lg:px-20 lg:py-14">
     <VideoPlayer
       :locale="locale"
-      :aria-label="routerT('platform.router.video.alt', locale)"
+      :aria-label="routerT('platform.router.video.alt', {}, { locale: locale })"
       src="https://media.comfy.org/website/router/router-animatic-v019.mp4"
       poster="https://media.comfy.org/website/router/router-animatic-v019-poster.webp"
       autoplay

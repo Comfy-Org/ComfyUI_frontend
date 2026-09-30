@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { expect, it, vi } from 'vitest'
 
 import { useAuthToasts } from '../../config/auth-toast-state'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import AuthSignIn from './AuthSignIn.vue'
 
 vi.mock(import('../../scripts/posthog'))
@@ -19,7 +19,9 @@ it('leaves the buttons usable when the Firebase chunk fails to load on a click',
   await userEvent.setup().click(button)
 
   await waitFor(() => expect(messages.value).toHaveLength(1))
-  expect(messages.value[0].detail).toBe(t('auth.errors.generic', 'en'))
+  expect(messages.value[0].detail).toBe(
+    t('auth.errors.generic', {}, { locale: 'en' })
+  )
   expect(
     button,
     'a failed chunk load must not strand the page in pending'

@@ -12,7 +12,7 @@ describe('RouterVideoSection', () => {
     render(RouterVideoSection, { props: { locale: 'en' } })
 
     const video = screen.getByLabelText(
-      routerT('platform.router.video.alt', 'en')
+      routerT('platform.router.video.alt', {}, { locale: 'en' })
     )
 
     expect(video).toBeTruthy()

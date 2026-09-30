@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import ServerlessDeploySection from './ServerlessDeploySection.vue'
 
 vi.mock(import('../../composables/useReducedMotion'), () => ({
@@ -37,15 +37,17 @@ describe('ServerlessDeploySection', () => {
     expect(
       screen.getByRole('heading', {
         level: 2,
-        name: t('platform.serverlessDeploy.shipHeading', 'en')
+        name: t('platform.serverlessDeploy.shipHeading', {}, { locale: 'en' })
       })
     ).toBeTruthy()
     expect(
-      screen.getByText(t('platform.serverlessDeploy.shipSubtitle', 'en'))
+      screen.getByText(
+        t('platform.serverlessDeploy.shipSubtitle', {}, { locale: 'en' })
+      )
     ).toBeTruthy()
 
     const terminal = screen.getByRole('img', {
-      name: t('platform.serverlessDeploy.heading', 'en')
+      name: t('platform.serverlessDeploy.heading', {}, { locale: 'en' })
     })
     expect(terminal.textContent).toBe(
       '$ comfy build init' +

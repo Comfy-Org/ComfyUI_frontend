@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { h, ref } from 'vue'
 
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
 
 describe('CinematicEnhanceSwitch', () => {

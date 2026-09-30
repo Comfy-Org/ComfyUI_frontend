@@ -1,5 +1,5 @@
 import type { UseCase } from '../../config/models-catalogue'
-import type { TranslationKey } from '../../i18n/translations'
+import type { TranslationKey } from '../../i18n/site'
 
 export const useCaseLabelKey: Record<
   UseCase | 'all' | 'other',

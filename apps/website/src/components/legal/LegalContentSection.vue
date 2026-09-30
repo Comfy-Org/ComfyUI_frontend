@@ -3,10 +3,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
 
-import { hasKey, t, translationKeys } from '../../i18n/translations'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { t } from '../../i18n/site'
+import en from '../../locales/en/main.json' with { type: 'json' }
 import { scrollTo } from '../../scripts/smoothScroll'
 import SafeRichText from '@/components/common/SafeRichTextContent'
 
@@ -31,43 +32,49 @@ interface LegalSection {
   blocks: Block[]
 }
 
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+interface MessageGroup {
+  [key: string]: string | MessageGroup
+}
+
+function isMessageGroup(value: unknown): value is MessageGroup {
+  return typeof value === 'object' && value !== null
 }
 
 function buildSections(): LegalSection[] {
-  const labelRegex = new RegExp(`^${escapeRegex(prefix)}\\.([^.]+)\\.label$`)
-  const sectionIds: string[] = []
-  for (const key of translationKeys) {
-    const match = key.match(labelRegex)
-    if (match && !sectionIds.includes(match[1])) sectionIds.push(match[1])
-  }
+  const catalog: unknown = en
+  if (!isMessageGroup(catalog) || !isMessageGroup(catalog[prefix])) return []
 
-  return sectionIds.map((id) => {
-    const blockRegex = new RegExp(
-      `^${escapeRegex(prefix)}\\.${escapeRegex(id)}\\.block\\.(\\d+)$`
-    )
-    const indices: number[] = []
-    for (const key of translationKeys) {
-      const match = key.match(blockRegex)
-      if (match) indices.push(parseInt(match[1]))
-    }
-    indices.sort((a, b) => a - b)
-
-    const blocks: Block[] = indices.map((i) => {
-      const key = `${prefix}.${id}.block.${i}` as TranslationKey
-      const value = t(key, locale)
-      return { type: value.includes('\n') ? 'list' : 'paragraph', key }
-    })
-
+  return Object.entries(catalog[prefix]).flatMap(([id, section]) => {
+    if (!isMessageGroup(section) || typeof section.label !== 'string') return []
+    const blocks: Block[] = isMessageGroup(section.block)
+      ? Object.entries(section.block)
+          .sort(([a], [b]) => Number(a) - Number(b))
+          .flatMap(([index, message]): Block[] => {
+            if (typeof message !== 'string') return []
+            const key = `${prefix}.${id}.block.${index}` as TranslationKey
+            return [
+              {
+                type: t(key, {}, { locale }).includes('\n')
+                  ? 'list'
+                  : 'paragraph',
+                key
+              }
+            ]
+          })
+      : []
+    const labelKey = `${prefix}.${id}.label` as TranslationKey
     const titleKey = `${prefix}.${id}.title` as TranslationKey
-    return {
-      id,
-      title: hasKey(titleKey)
-        ? t(titleKey, locale)
-        : t(`${prefix}.${id}.label` as TranslationKey, locale),
-      blocks
-    }
+    return [
+      {
+        id,
+        title: t(
+          typeof section.title === 'string' ? titleKey : labelKey,
+          {},
+          { locale }
+        ),
+        blocks
+      }
+    ]
   })
 }
 
@@ -121,7 +128,7 @@ function scrollToSection(id: string) {
 }
 
 function listItems(key: TranslationKey): string[] {
-  return t(key, locale).split('\n')
+  return t(key, {}, { locale: locale }).split('\n')
 }
 </script>
 
@@ -139,7 +146,7 @@ function listItems(key: TranslationKey): string[] {
           <summary
             class="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold tracking-wide text-primary-comfy-canvas select-none"
           >
-            <span>{{ t(tocLabelKey, locale) }}</span>
+            <span>{{ t(tocLabelKey, {}, { locale: locale }) }}</span>
             <span
               :class="
                 mobileTocOpen
@@ -174,12 +181,12 @@ function listItems(key: TranslationKey): string[] {
 
         <nav
           class="hidden lg:sticky lg:top-32 lg:block"
-          :aria-label="t(tocLabelKey, locale)"
+          :aria-label="t(tocLabelKey, {}, { locale: locale })"
         >
           <p
             class="mb-4 text-xs font-semibold tracking-widest text-primary-warm-gray uppercase"
           >
-            {{ t(tocLabelKey, locale) }}
+            {{ t(tocLabelKey, {}, { locale: locale }) }}
           </p>
           <ul class="space-y-2">
             <li v-for="item in tocItems" :key="item.id">
@@ -220,7 +227,7 @@ function listItems(key: TranslationKey): string[] {
               v-if="block.type === 'paragraph'"
               as="p"
               class="mt-4 text-sm/relaxed text-primary-comfy-canvas lg:text-base/relaxed"
-              :html="t(block.key, locale)"
+              :html="t(block.key, {}, { locale: locale })"
             />
             <ul
               v-else

@@ -2,9 +2,9 @@
 import { ref } from 'vue'
 
 import type { GalleryItem } from '../../data/gallery'
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import BrandButton from '../common/BrandButton.vue'
 import GalleryCard from '../gallery/GalleryCard.vue'
 import GalleryDetailModal from '../gallery/GalleryDetailModal.vue'
@@ -75,8 +75,12 @@ function openDetail(index: number) {
   modalOpen.value = true
 }
 
-const title = t('models.list.creations.title', locale, { name: modelName })
-const ctaLabel = t('models.list.creations.cta', locale)
+const title = t(
+  'models.list.creations.title',
+  { name: modelName },
+  { locale: locale }
+)
+const ctaLabel = t('models.list.creations.cta', {}, { locale: locale })
 </script>
 
 <template>

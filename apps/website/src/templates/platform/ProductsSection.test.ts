@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import ProductsSection from './ProductsSection.vue'
 
 describe('ProductsSection', () => {
@@ -15,7 +15,9 @@ describe('ProductsSection', () => {
     ] as const
     for (const [key, href] of cardLinks) {
       expect(
-        screen.getByRole('link', { name: t(key, 'en') }).getAttribute('href')
+        screen
+          .getByRole('link', { name: t(key, {}, { locale: 'en' }) })
+          .getAttribute('href')
       ).toBe(href)
     }
   })
@@ -23,12 +25,16 @@ describe('ProductsSection', () => {
   it('links Comfy Router to its detail page without a coming-soon badge', () => {
     render(ProductsSection, { props: { locale: 'en' } })
 
-    expect(screen.queryByText(t('nav.badgeComingSoon', 'en'))).toBeNull()
     expect(
-      screen.getByText(t('platform.products.models.learnMore', 'en'))
+      screen.queryByText(t('nav.badgeComingSoon', {}, { locale: 'en' }))
+    ).toBeNull()
+    expect(
+      screen.getByText(
+        t('platform.products.models.learnMore', {}, { locale: 'en' })
+      )
     ).toBeTruthy()
     expect(
-      screen.getAllByText(t('platform.hero.getStarted', 'en'))
+      screen.getAllByText(t('platform.hero.getStarted', {}, { locale: 'en' }))
     ).toHaveLength(2)
   })
 

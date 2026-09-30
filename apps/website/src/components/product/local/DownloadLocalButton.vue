@@ -8,8 +8,8 @@ import {
   platformIcons,
   useDownloadUrl
 } from '../../../composables/useDownloadUrl'
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
+import type { Locale } from '../../../i18n/site'
+import { t } from '../../../i18n/site'
 import { captureDownloadClick } from '../../../scripts/posthog'
 import BrandButton from '../../common/BrandButton.vue'
 import InstallerMenu from './InstallerMenu.vue'
@@ -66,11 +66,11 @@ function hasInstallerMenu(index: number) {
           class="inline-block size-5 shrink-0"
         />
         <span class="text-left">
-          {{ t('download.hero.downloadLocal', locale) }}
+          {{ t('download.hero.downloadLocal', {}, { locale }) }}
           <span
             class="block text-xs font-normal tracking-normal whitespace-normal"
           >
-            {{ t(btn.label, locale) }}
+            {{ t(btn.label, {}, { locale }) }}
           </span>
         </span>
       </span>

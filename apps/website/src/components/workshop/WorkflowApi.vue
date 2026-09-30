@@ -24,7 +24,7 @@ import {
   workflowSnippetRequest,
   workflowTypeScript
 } from '../../config/workshop-workflow-snippet'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import type { CodeLang } from '../../lib/highlight'
 import ApiFacts from './ApiFacts.vue'
 import HighlightedCode from './HighlightedCode.vue'

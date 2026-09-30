@@ -5,8 +5,8 @@ import { computed } from 'vue'
 
 import { formatElapsed } from '../../../config/workshop-run'
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const LONG_WAIT_MS = 30_000
 
@@ -24,7 +24,7 @@ const elapsed = computed(() => Math.max(0, now.value - take.startedAt))
     v-if="elapsed >= LONG_WAIT_MS"
     class="absolute inset-x-4 top-4 mx-auto w-fit rounded-full border border-transparency-white-t8 bg-primary-comfy-ink/80 px-3.5 py-2 text-center text-xs text-primary-comfy-canvas"
   >
-    {{ tc('cinematic.stage.longWait', locale) }}
+    {{ tc('cinematic.stage.longWait', {}, { locale: locale }) }}
   </p>
   <figcaption
     role="status"
@@ -36,10 +36,14 @@ const elapsed = computed(() => Math.max(0, now.value - take.startedAt))
     />
     <span class="flex items-baseline gap-2 text-sm text-primary-warm-white">
       {{
-        tc('cinematic.stage.renderingTakeName', locale, {
-          shot: take.shot,
-          take: take.letter
-        })
+        tc(
+          'cinematic.stage.renderingTakeName',
+          {
+            shot: take.shot,
+            take: take.letter
+          },
+          { locale: locale }
+        )
       }}
       <span class="text-primary-warm-gray tabular-nums">
         {{ formatElapsed(elapsed) }}

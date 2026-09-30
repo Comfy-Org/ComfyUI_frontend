@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
 
 import WireNodeLayout from '../common/WireNodeLayout.vue'
 

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { PackNode } from '../../data/cloudNodes'
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import { useNodesByCategory } from '../../composables/useNodesByCategory'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en', nodes } = defineProps<{
   locale?: Locale
@@ -20,7 +20,7 @@ const { groupedNodes } = useNodesByCategory(() => nodes)
     <summary
       class="cursor-pointer list-none text-sm font-semibold text-primary-comfy-canvas"
     >
-      {{ t('cloudNodes.card.nodesHeading', locale) }}
+      {{ t('cloudNodes.card.nodesHeading', {}, { locale: locale }) }}
     </summary>
 
     <div class="mt-4 flex flex-col gap-5">

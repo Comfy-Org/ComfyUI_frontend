@@ -3,8 +3,8 @@ import { ChevronLeft } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 
 import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import { lastShelf } from '../../lib/workshop/shelf-memory'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 
@@ -33,7 +33,7 @@ onMounted(() => {
   const url = new URL(catalogueHref, location.origin)
   url.searchParams.set('useCase', shelf)
   href.value = `${url.pathname}${url.search}${url.hash}`
-  category.value = t(useCaseLabelKey[shelf], locale)
+  category.value = t(useCaseLabelKey[shelf], {}, { locale: locale })
 })
 </script>
 
@@ -46,8 +46,8 @@ onMounted(() => {
     <ChevronLeft class="size-4" aria-hidden="true" />
     {{
       category
-        ? t('workshop.model.backTo', locale, { category })
-        : (fallback ?? t('workshop.model.back', locale))
+        ? t('workshop.model.backTo', { category }, { locale: locale })
+        : (fallback ?? t('workshop.model.back', {}, { locale: locale }))
     }}
   </a>
 </template>

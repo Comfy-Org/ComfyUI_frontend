@@ -1,4 +1,4 @@
-import type { LocalizedText } from '../i18n/translations'
+import type { LocalizedText } from '../i18n/site'
 
 export interface CreatorReview {
   id: string

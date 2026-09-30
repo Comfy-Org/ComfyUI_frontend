@@ -2,11 +2,11 @@
 // The prominent featured banner at the top of the learning directory: a large
 // poster with the play overlay beside the title, tags, and a try-workflow CTA.
 import type { LearningTutorial } from '../../data/learningTutorials'
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import { categoryLabelKeys, tutorialPath } from '../../data/learningTutorials'
 import { localizeHref } from '../../config/routes'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import Badge from '../ui/badge/Badge.vue'
 import ButtonPill from '../ui/button-pill/ButtonPill.vue'
 import PlayOverlay from '../blocks/PlayOverlay.vue'
@@ -24,10 +24,10 @@ const { tutorial, locale = 'en' } = defineProps<{
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-3">
         <Badge variant="accent">
-          {{ t('learning.featuredBadge', locale) }}
+          {{ t('learning.featuredBadge', {}, { locale: locale }) }}
         </Badge>
         <Badge variant="category">
-          {{ t(categoryLabelKeys[tutorial.category], locale) }}
+          {{ t(categoryLabelKeys[tutorial.category], {}, { locale: locale }) }}
         </Badge>
       </div>
       <h2
@@ -42,7 +42,7 @@ const { tutorial, locale = 'en' } = defineProps<{
       </h2>
       <ul class="flex flex-wrap gap-2">
         <li v-for="tag in tutorial.tags" :key="tag">
-          <Badge variant="subtle">{{ t(tag, locale) }}</Badge>
+          <Badge variant="subtle">{{ t(tag, {}, { locale: locale }) }}</Badge>
         </li>
       </ul>
       <div v-if="tutorial.href">
@@ -56,7 +56,9 @@ const { tutorial, locale = 'en' } = defineProps<{
           size="default"
           class="ps-0"
         >
-          {{ t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', locale) }}
+          {{
+            t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', {}, { locale: locale })
+          }}
         </ButtonPill>
       </div>
     </div>
@@ -64,7 +66,7 @@ const { tutorial, locale = 'en' } = defineProps<{
     <a
       :href="localizeHref(tutorialPath(tutorial), locale)"
       class="group relative block aspect-video overflow-hidden rounded-3xl"
-      :aria-label="`${t('player.play', locale)} ${tutorial.title[locale] || tutorial.title.en}`"
+      :aria-label="`${t('player.play', {}, { locale: locale })} ${tutorial.title[locale] || tutorial.title.en}`"
     >
       <img :src="tutorial.poster" alt="" class="size-full object-cover" />
       <PlayOverlay class="text-white" />

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { getRoutes } from '../config/routes'
-import { t } from '../i18n/translations'
+import { t } from '../i18n/site'
 import { getMainNavigation } from './mainNavigation'
 
 describe('getMainNavigation', () => {
@@ -42,7 +42,7 @@ describe('getMainNavigation', () => {
     (locale) => {
       const routes = getRoutes(locale)
       const products = getMainNavigation(locale).find(
-        (item) => item.label === t('nav.products', locale)
+        (item) => item.label === t('nav.products', {}, { locale: locale })
       )?.columns?.[0].items
       const badgeOf = (href: string) => {
         const entry = products?.find((item) => item.href === href)

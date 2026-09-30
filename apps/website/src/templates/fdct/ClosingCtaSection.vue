@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import { localizeHref } from '../../config/routes'
 import { fdctPage } from '../../data/fdct'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
   <CtaCenter01
-    :heading="t('fdct.closing.title', locale)"
+    :heading="t('fdct.closing.title', {}, { locale: locale })"
     :primary-cta="{
-      label: t('fdct.hero.contactCta', locale),
+      label: t('fdct.hero.contactCta', {}, { locale: locale }),
       href: localizeHref(fdctPage.ctas.contact, locale)
     }"
   />

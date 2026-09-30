@@ -4,7 +4,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard } from '@vueuse/core'
 
 import { ROUTER_MIGRATION_PROMPT } from '../../config/router-migration-prompt'
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import { routerT } from './routerCopy'
 import BrandButton from '../../components/common/BrandButton.vue'
 
@@ -20,10 +20,12 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
     >
       <div>
         <p class="text-lg font-bold text-primary-comfy-canvas">
-          {{ routerT('platform.router.migrate.title', locale) }}
+          {{ routerT('platform.router.migrate.title', {}, { locale: locale }) }}
         </p>
         <p class="mt-1 text-sm text-pretty text-primary-comfy-canvas">
-          {{ routerT('platform.router.migrate.subtitle', locale) }}
+          {{
+            routerT('platform.router.migrate.subtitle', {}, { locale: locale })
+          }}
         </p>
       </div>
       <BrandButton
@@ -38,13 +40,25 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
               :class="cn('[grid-area:1/1]', copied && 'invisible')"
               aria-hidden="true"
             >
-              {{ routerT('platform.router.migrate.copyPrompt', locale) }}
+              {{
+                routerT(
+                  'platform.router.migrate.copyPrompt',
+                  {},
+                  { locale: locale }
+                )
+              }}
             </span>
             <span
               :class="cn('[grid-area:1/1]', !copied && 'invisible')"
               aria-hidden="true"
             >
-              {{ routerT('platform.router.migrate.copied', locale) }}
+              {{
+                routerT(
+                  'platform.router.migrate.copied',
+                  {},
+                  { locale: locale }
+                )
+              }}
             </span>
             <span class="sr-only">
               {{
@@ -52,7 +66,8 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
                   copied
                     ? 'platform.router.migrate.copied'
                     : 'platform.router.migrate.copyPrompt',
-                  locale
+                  {},
+                  { locale: locale }
                 )
               }}
             </span>

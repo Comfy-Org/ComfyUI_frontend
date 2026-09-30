@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { ModelLaunchFaqSection } from './types'
 
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en', faq } = defineProps<{
   faq: ModelLaunchFaqSection
@@ -18,5 +18,8 @@ const faqs = faq.items.map((item) => ({
 </script>
 
 <template>
-  <FAQSplit01 :heading="t(faq.headingKey, locale)" :faqs="faqs" />
+  <FAQSplit01
+    :heading="t(faq.headingKey, {}, { locale: locale })"
+    :faqs="faqs"
+  />
 </template>

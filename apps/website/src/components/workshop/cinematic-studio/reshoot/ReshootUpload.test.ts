@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
 import ReshootUpload from './ReshootUpload.vue'
 
 describe('ReshootUpload', () => {

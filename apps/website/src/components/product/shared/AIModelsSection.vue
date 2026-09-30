@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '../../../i18n/site'
 
 import { externalLinks } from '../../../config/routes'
-import { t } from '../../../i18n/translations'
+import { t } from '../../../i18n/site'
 import BrandButton from '../../common/BrandButton.vue'
 import CardArrow from '../../common/CardArrow.vue'
 import type { AiModelCard } from './aiModelCards'
@@ -30,19 +30,19 @@ const cardClass =
       <p
         class="text-center text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
       >
-        {{ t('cloud.aiModels.label', locale) }}
+        {{ t('cloud.aiModels.label', {}, { locale: locale }) }}
       </p>
 
       <h2
         class="mt-8 max-w-4xl text-center text-3.5xl/tight font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ t('cloud.aiModels.heading', locale) }}
+        {{ t('cloud.aiModels.heading', {}, { locale: locale }) }}
       </h2>
 
       <p
         class="mt-8 max-w-xl text-center text-sm font-light text-primary-comfy-canvas lg:text-base/snug"
       >
-        {{ t('cloud.aiModels.subtitle', locale) }}
+        {{ t('cloud.aiModels.subtitle', {}, { locale: locale }) }}
       </p>
 
       <div class="mt-16 w-full lg:mt-24">
@@ -57,7 +57,7 @@ const cardClass =
               <video
                 v-if="card.imageSrc.endsWith('.webm')"
                 :src="card.imageSrc"
-                :aria-label="t(card.titleKey, locale)"
+                :aria-label="t(card.titleKey, {}, { locale: locale })"
                 class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 autoplay
                 loop
@@ -75,7 +75,7 @@ const cardClass =
               <img
                 v-else
                 :src="card.imageSrc"
-                :alt="t(card.titleKey, locale)"
+                :alt="t(card.titleKey, {}, { locale: locale })"
                 class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="lazy"
                 decoding="async"
@@ -107,7 +107,7 @@ const cardClass =
               <p
                 class="absolute right-20 bottom-6 left-6 text-2xl/tight font-light whitespace-pre-line text-primary-warm-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:top-6 lg:right-auto lg:bottom-auto lg:text-3xl"
               >
-                {{ t(card.titleKey, locale) }}
+                {{ t(card.titleKey, {}, { locale: locale }) }}
               </p>
 
               <CardArrow
@@ -125,10 +125,10 @@ const cardClass =
         class="mt-4 w-full max-w-md px-8 py-4 text-center lg:mt-8 lg:w-auto"
       >
         <!-- <span class="lg:hidden"> -->
-        {{ t('cloud.aiModels.ctaMobile', locale) }}
+        {{ t('cloud.aiModels.ctaMobile', {}, { locale: locale }) }}
         <!-- </span> -->
         <!-- <span class="hidden lg:inline">{{
-          t('cloud.aiModels.ctaDesktop', locale)
+          t('cloud.aiModels.ctaDesktop', {}, { locale: locale })
         }}</span> -->
       </BrandButton>
     </div>

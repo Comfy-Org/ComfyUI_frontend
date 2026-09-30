@@ -4,9 +4,9 @@ import { ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '../../../i18n/site'
 import { sampleImageColors } from '../../../lib/workshop/cinematic-studio/colors'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicCheckBadge from './CinematicCheckBadge.vue'
 
 const PALETTE_SIZE = 5
@@ -42,7 +42,9 @@ async function choose(event: Event) {
       type="button"
       role="radio"
       :aria-checked="colors.length > 0"
-      :aria-label="tc('cinematic.grade.fromImageAction', locale)"
+      :aria-label="
+        tc('cinematic.grade.fromImageAction', {}, { locale: locale })
+      "
       class="group flex flex-col gap-2 text-left"
       data-testid="cinematic-grade-image"
       @click="input?.click()"
@@ -93,7 +95,8 @@ async function choose(event: Event) {
             colors.length
               ? 'cinematic.grade.yourPalette'
               : 'cinematic.grade.fromImage',
-            locale
+            {},
+            { locale: locale }
           )
         }}
       </span>
@@ -105,14 +108,14 @@ async function choose(event: Event) {
       @click="emit('edit')"
     >
       <Pencil class="size-3.5" aria-hidden="true" />
-      {{ tc('cinematic.grade.edit', locale) }}
+      {{ tc('cinematic.grade.edit', {}, { locale: locale }) }}
     </button>
     <span
       v-if="unreadable"
       role="status"
       class="px-1 text-xs text-primary-comfy-canvas"
     >
-      {{ tc('cinematic.colors.sampleError', locale) }}
+      {{ tc('cinematic.colors.sampleError', {}, { locale: locale }) }}
     </span>
     <input
       ref="input"

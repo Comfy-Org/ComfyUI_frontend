@@ -9,7 +9,7 @@ import {
   RESHOOT_MOTIONS,
   RESHOOT_SIZES
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
 import ReshootSide from './ReshootSide.vue'
 
 describe('ReshootSide', () => {

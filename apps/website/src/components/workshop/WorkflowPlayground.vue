@@ -31,7 +31,7 @@ import { useStickyFooterScrollPadding } from '../../composables/useStickyFooterS
 import { useTablist } from '../../composables/useTablist'
 import { useWorkflowFormDraft } from '../../composables/useWorkflowFormDraft'
 import { useWorkflowRun } from '../../composables/useWorkflowRun'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,

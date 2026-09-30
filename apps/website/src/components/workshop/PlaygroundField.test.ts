@@ -14,7 +14,7 @@ import {
   defaultValues,
   MAX_UPLOAD_BYTES
 } from '../../config/workshop-playground'
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import PlaygroundField from './PlaygroundField.vue'
 
 function mountField(

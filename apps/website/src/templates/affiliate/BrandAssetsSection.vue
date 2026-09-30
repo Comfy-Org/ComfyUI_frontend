@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import BrandAssetsGrid01 from '../../components/blocks/BrandAssetsGrid01.vue'
 import { getRoutes } from '../../config/routes'
 import { affiliateBrandAssets } from '../../data/affiliateBrandAssets'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -19,10 +19,10 @@ const assets = affiliateBrandAssets.map((asset) => ({
 
 <template>
   <BrandAssetsGrid01
-    :heading="t('affiliate.assets.heading', locale)"
-    :subheading="t('affiliate.assets.subheading', locale)"
+    :heading="t('affiliate.assets.heading', {}, { locale: locale })"
+    :subheading="t('affiliate.assets.subheading', {}, { locale: locale })"
     :cta="{
-      label: t('affiliate.assets.ctaLabel', locale),
+      label: t('affiliate.assets.ctaLabel', {}, { locale: locale }),
       href: routes.brand
     }"
     :assets="assets"

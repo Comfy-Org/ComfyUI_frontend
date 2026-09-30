@@ -8,16 +8,19 @@ import HowItWorksSection from '../../templates/cloud-nodes/HowItWorksSection.vue
 import WhySection from '../../templates/cloud-nodes/WhySection.vue'
 import FAQSection from '../../templates/cloud-nodes/FAQSection.vue'
 import ClosingCtaSection from '../../templates/cloud-nodes/ClosingCtaSection.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import { absoluteUrl } from '../../utils/jsonLd'
 ---
 
 <BaseLayout
-  title={t('cloudNodesLaunch.meta.title', 'zh-CN')}
-  description={t('cloudNodesLaunch.meta.description', 'zh-CN')}
+  title={t('cloudNodesLaunch.meta.title', {}, { locale: 'zh-CN' })}
+  description={t('cloudNodesLaunch.meta.description', {}, { locale: 'zh-CN' })}
   breadcrumbs={[
-    { name: t('breadcrumb.home', 'zh-CN'), url: absoluteUrl(Astro.site, '/') },
-    { name: t('breadcrumb.cloudNodes', 'zh-CN') }
+    {
+      name: t('breadcrumb.home', {}, { locale: 'zh-CN' }),
+      url: absoluteUrl(Astro.site, '/')
+    },
+    { name: t('breadcrumb.cloudNodes', {}, { locale: 'zh-CN' }) }
   ]}
 >
   <HeroSection locale="zh-CN" client:load />

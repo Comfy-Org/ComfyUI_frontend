@@ -5,8 +5,8 @@ import { useMounted } from '@vueuse/core'
 import { useWorkshopEnabled } from '../../scripts/posthog'
 import { getRoutes } from '../../config/routes'
 import { modelReleaseSlides } from '../../data/modelRelease'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import FeaturedCarousel02 from '../blocks/FeaturedCarousel02.vue'
 import type { FeaturedSplitSlide } from '../blocks/FeaturedCarousel02.vue'
 
@@ -28,21 +28,21 @@ const slides = computed<FeaturedSplitSlide[]>(() =>
         type: slide.media.type,
         src: slide.media.src,
         poster: slide.media.poster,
-        alt: t(slide.media.ariaLabelKey, locale)
+        alt: t(slide.media.ariaLabelKey, {}, { locale: locale })
       },
-      eyebrow: t('modelRelease.eyebrow', locale),
-      title: t(slide.titleKey, locale),
-      body: t(slide.bodyKey, locale),
+      eyebrow: t('modelRelease.eyebrow', {}, { locale: locale }),
+      title: t(slide.titleKey, {}, { locale: locale }),
+      body: t(slide.bodyKey, {}, { locale: locale }),
       primaryCta: {
-        label: t(slide.exploreLabelKey, locale),
+        label: t(slide.exploreLabelKey, {}, { locale: locale }),
         href: workshopUrl ?? routes[slide.exploreRoute]
       },
       secondaryCta: {
-        label: t(slide.tryCta.labelKey, locale),
+        label: t(slide.tryCta.labelKey, {}, { locale: locale }),
         href: workshopUrl ?? slide.tryCta.href,
         newTab: !workshopUrl
       },
-      tags: slide.tagKeys.map((key) => t(key, locale)),
+      tags: slide.tagKeys.map((key) => t(key, {}, { locale: locale })),
       autoplayMs: slide.autoplayMs
     }
   })

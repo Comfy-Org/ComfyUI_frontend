@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { demos, getNextDemo } from '../src/config/demos'
-import { t } from '../src/i18n/translations'
+import { t } from '../src/i18n/site'
 import { test } from './fixtures/blockExternalMedia'
 
 const escapeRegExp = (value: string): string =>
@@ -18,7 +18,7 @@ test.describe('Demo pages @smoke', () => {
 
       const heading = page.getByRole('heading', { level: 1 })
       await expect(heading).toBeVisible()
-      await expect(heading).toContainText(t(demo.title, 'en'))
+      await expect(heading).toContainText(t(demo.title, {}, { locale: 'en' }))
 
       const ogImage = page.locator('head meta[property="og:image"]')
       await expect(ogImage).toHaveAttribute(
@@ -27,7 +27,7 @@ test.describe('Demo pages @smoke', () => {
       )
 
       const iframe = page.locator(
-        `iframe[title*="${t('demos.embed.label', 'en')}"]`
+        `iframe[title*="${t('demos.embed.label', {}, { locale: 'en' })}"]`
       )
       await expect(iframe).toBeAttached()
       await expect(iframe).toHaveAttribute(
@@ -40,7 +40,7 @@ test.describe('Demo pages @smoke', () => {
       ).toBeVisible()
 
       await expect(
-        page.getByText(t(nextDemo.title, 'en')).first()
+        page.getByText(t(nextDemo.title, {}, { locale: 'en' })).first()
       ).toBeVisible()
       const nextThumb = page.locator(`img[src="${nextDemo.thumbnail}"]`).first()
       await expect(nextThumb).toBeAttached()
@@ -59,11 +59,13 @@ test.describe('Demo pages @smoke', () => {
       await expect(page).toHaveURL(/\/zh-CN\/demos\//)
 
       const heading = page.getByRole('heading', { level: 1 })
-      await expect(heading).toContainText(t(demo.title, 'zh-CN'))
+      await expect(heading).toContainText(
+        t(demo.title, {}, { locale: 'zh-CN' })
+      )
       await expect(heading).toContainText(/[\u4E00-\u9FFF]/)
 
       await expect(
-        page.getByText(t(nextDemo.title, 'zh-CN')).first()
+        page.getByText(t(nextDemo.title, {}, { locale: 'zh-CN' })).first()
       ).toBeVisible()
     })
   }

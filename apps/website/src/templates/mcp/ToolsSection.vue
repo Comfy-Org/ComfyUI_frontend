@@ -2,8 +2,8 @@
 import FeatureRows01 from '../../components/blocks/FeatureRows01.vue'
 import type { FeatureRow } from '../../components/blocks/FeatureRows01.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -82,11 +82,11 @@ const tools: {
 ]
 
 const rows: FeatureRow[] = tools.map(({ n, media, altKey }) => {
-  const alt = altKey ? t(altKey, locale) : undefined
+  const alt = altKey ? t(altKey, {}, { locale: locale }) : undefined
   return {
     id: String(n),
-    title: t(`mcp.tools.${n}.title`, locale),
-    description: t(`mcp.tools.${n}.description`, locale),
+    title: t(`mcp.tools.${n}.title`, {}, { locale: locale }),
+    description: t(`mcp.tools.${n}.description`, {}, { locale: locale }),
     media: { ...media, alt }
   }
 })
@@ -95,13 +95,13 @@ const rows: FeatureRow[] = tools.map(({ n, media, altKey }) => {
 <template>
   <FeatureRows01
     :locale="locale"
-    :heading="t('mcp.tools.heading', locale)"
+    :heading="t('mcp.tools.heading', {}, { locale: locale })"
     :rows="rows"
   >
     <template #media>
       <VideoPlayer
         :locale="locale"
-        :aria-label="t('mcp.tools.film.alt', locale)"
+        :aria-label="t('mcp.tools.film.alt', {}, { locale: locale })"
         src="https://media.comfy.org/website/mcp/launch-film.mp4"
         autoplay
         lazy-autoplay

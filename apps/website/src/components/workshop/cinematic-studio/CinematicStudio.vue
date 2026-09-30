@@ -9,8 +9,8 @@ import { useCinematicShot } from '../../../composables/useCinematicShot'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicComposer from './CinematicComposer.vue'
@@ -173,7 +173,7 @@ function generateOn(slug: string) {
           role="status"
           class="mb-2 text-xs text-primary-comfy-canvas"
         >
-          {{ tc('cinematic.references.unreadable', locale) }}
+          {{ tc('cinematic.references.unreadable', {}, { locale: locale }) }}
         </p>
         <CinematicModeSwitch
           v-if="hasVideo"

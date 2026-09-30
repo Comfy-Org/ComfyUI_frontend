@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { ModelLaunchAudioCard } from './types'
 
 import AudioPlayer from '../../components/common/AudioPlayer.vue'
 import CopyTextButton from '../../components/ui/copy-text-button/CopyTextButton.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en', card } = defineProps<{
   card: ModelLaunchAudioCard
@@ -37,8 +37,8 @@ const { locale = 'en', card } = defineProps<{
       <CopyTextButton
         class="-mr-2 -mb-2"
         :value="card.prompt[locale] || card.prompt.en"
-        :label="t('modelLaunch.copyPrompt', locale)"
-        :copied-label="t('ui.copied', locale)"
+        :label="t('modelLaunch.copyPrompt', {}, { locale: locale })"
+        :copied-label="t('ui.copied', {}, { locale: locale })"
       />
     </div>
   </article>

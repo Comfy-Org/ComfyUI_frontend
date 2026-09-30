@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { externalLinks } from '../config/routes'
-import { t } from '../i18n/translations'
+import { t } from '../i18n/site'
 import { escapeJsonLd } from './escapeJsonLd'
 import type { JsonLdGraph } from './jsonLd'
 import {
@@ -215,7 +215,7 @@ describe('site identity', () => {
     const zhOrg = zhGraph['@graph'].find(
       (node) => node['@type'] === 'Organization'
     )
-    expect(zhOrg?.description).toBe(t('hero.subtitle', 'zh-CN'))
+    expect(zhOrg?.description).toBe(t('hero.subtitle', {}, { locale: 'zh-CN' }))
   })
 
   it('names the GitHub organization, not the ComfyUI repository', () => {

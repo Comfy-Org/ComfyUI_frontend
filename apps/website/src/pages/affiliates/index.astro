@@ -8,12 +8,12 @@ import FAQSection from '../../templates/affiliate/FAQSection.vue'
 import HeroSection from '../../templates/affiliate/HeroSection.vue'
 import HowItWorksSection from '../../templates/affiliate/HowItWorksSection.vue'
 import { affiliateFaqs } from '../../data/affiliateFaq'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import { absoluteUrl, jsonLdId, pageContext } from '../../utils/jsonLd'
 
-const pageTitle = t('affiliate.page.title', 'en')
-const pageDescription = t('affiliate.page.description', 'en')
+const pageTitle = t('affiliate.page.title', {}, { locale: 'en' })
+const pageDescription = t('affiliate.page.description', {}, { locale: 'en' })
 const { locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
@@ -34,7 +34,10 @@ const faqPage: JsonLdNode = {
   title={pageTitle}
   description={pageDescription}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    {
+      name: t('breadcrumb.home', {}, { locale: locale }),
+      url: absoluteUrl(Astro.site, '/')
+    },
     { name: pageTitle }
   ]}
   extraJsonLd={[faqPage]}

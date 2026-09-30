@@ -8,8 +8,8 @@ import type {
   WorkshopFormValues
 } from '../../config/workshop-detail'
 import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { field, locale = 'en' } = defineProps<{
   field: WorkshopField
@@ -65,7 +65,9 @@ function onText(event: Event) {
     value !== '' &&
     !parseWorkshopJsonInput(value, field.jsonSchema).success
 
-  error.value = invalid ? t('workshop.model.invalidJson', locale) : ''
+  error.value = invalid
+    ? t('workshop.model.invalidJson', {}, { locale: locale })
+    : ''
   input.setCustomValidity(error.value)
   set(value)
 }
@@ -88,9 +90,13 @@ function onMedia(event: Event) {
   const input = event.target as HTMLInputElement
   const files = [...(input.files ?? [])]
   if (field.maxItems !== undefined && files.length > field.maxItems) {
-    error.value = t('workshop.model.maxFiles', locale, {
-      count: field.maxItems
-    })
+    error.value = t(
+      'workshop.model.maxFiles',
+      {
+        count: field.maxItems
+      },
+      { locale: locale }
+    )
     input.setCustomValidity(error.value)
     // Clear the picker too. Leaving it listing files the form has discarded
     // is what made this look like nothing happened, and keeping a previously
@@ -170,7 +176,7 @@ const acceptByType = {
       @change="onSelect"
     >
       <option v-if="field.defaultValue === undefined" value="">
-        {{ t('workshop.model.select', locale) }}
+        {{ t('workshop.model.select', {}, { locale: locale }) }}
       </option>
       <!--
         `selected` rather than relying on the select's `:value`. A `value`

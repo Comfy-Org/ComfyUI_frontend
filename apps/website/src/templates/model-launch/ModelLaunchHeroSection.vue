@@ -4,13 +4,13 @@ import { ChevronRight } from '@lucide/vue'
 import { useMediaQuery, useMounted } from '@vueuse/core'
 import { computed } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { ModelLaunchHero } from './types'
 
 import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
 import Badge from '../../components/ui/badge/Badge.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import ModelLaunchHeroCtaButtons from './ModelLaunchHeroCtaButtons.vue'
 import ModelLaunchHeroLogoMask from './ModelLaunchHeroLogoMask.vue'
 
@@ -62,7 +62,7 @@ const isContentFirst = hero.layout === 'content-first'
 
     <ProductHeroBadge
       v-if="hero.eyebrowKey"
-      :text="t(hero.eyebrowKey, locale).toUpperCase()"
+      :text="t(hero.eyebrowKey, {}, { locale: locale }).toUpperCase()"
       :show-logo="false"
       compact
       class="mb-6"
@@ -72,9 +72,9 @@ const isContentFirst = hero.layout === 'content-first'
       :is="headingTag"
       class="max-w-3xl text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight"
     >
-      {{ t(hero.titleKey, locale)
+      {{ t(hero.titleKey, {}, { locale: locale })
       }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{
-        t(hero.titleRestKey, locale)
+        t(hero.titleRestKey, {}, { locale: locale })
       }}</span>
     </component>
 
@@ -82,7 +82,7 @@ const isContentFirst = hero.layout === 'content-first'
       v-if="hero.descriptionKey"
       class="mt-6 max-w-2xl text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed"
     >
-      {{ t(hero.descriptionKey, locale) }}
+      {{ t(hero.descriptionKey, {}, { locale: locale }) }}
     </p>
 
     <ModelLaunchHeroCtaButtons
@@ -102,7 +102,7 @@ const isContentFirst = hero.layout === 'content-first'
         data-testid="model-launch-hero-badge"
         variant="subtle"
       >
-        {{ t(badgeKey, locale) }}
+        {{ t(badgeKey, {}, { locale: locale }) }}
       </Badge>
     </div>
   </section>
@@ -126,7 +126,7 @@ const isContentFirst = hero.layout === 'content-first'
         <VideoPlayer
           v-if="showVideo"
           :locale
-          :aria-label="t(hero.titleKey, locale)"
+          :aria-label="t(hero.titleKey, {}, { locale: locale })"
           :src="hero.videoSrc"
           :poster="hero.posterSrc"
           autoplay
@@ -137,7 +137,7 @@ const isContentFirst = hero.layout === 'content-first'
         <VideoPlayer
           v-else-if="showMobileVideo"
           :locale
-          :aria-label="t(hero.titleKey, locale)"
+          :aria-label="t(hero.titleKey, {}, { locale: locale })"
           :src="hero.mobileVideoSrc"
           :poster="hero.posterSrc"
           autoplay
@@ -174,16 +174,16 @@ const isContentFirst = hero.layout === 'content-first'
           v-if="hero.eyebrowKey"
           class="mb-4 text-lg font-medium text-primary-warm-white uppercase lg:text-3xl"
         >
-          {{ t(hero.eyebrowKey, locale) }}
+          {{ t(hero.eyebrowKey, {}, { locale: locale }) }}
         </p>
 
         <component
           :is="headingTag"
           class="text-4xl font-light tracking-tight whitespace-pre-line text-primary-warm-white sm:text-6xl lg:text-8xl/none"
         >
-          {{ t(hero.titleKey, locale)
+          {{ t(hero.titleKey, {}, { locale: locale })
           }}<span v-if="hero.titleRestKey" class="text-primary-warm-white/80">{{
-            t(hero.titleRestKey, locale)
+            t(hero.titleRestKey, {}, { locale: locale })
           }}</span>
         </component>
 
@@ -191,7 +191,7 @@ const isContentFirst = hero.layout === 'content-first'
           v-if="hero.descriptionKey"
           class="mt-6 max-w-2xl text-base/relaxed font-light text-primary-warm-white lg:text-lg/relaxed"
         >
-          {{ t(hero.descriptionKey, locale) }}
+          {{ t(hero.descriptionKey, {}, { locale: locale }) }}
         </p>
 
         <ModelLaunchHeroCtaButtons
@@ -213,7 +213,7 @@ const isContentFirst = hero.layout === 'content-first'
         data-testid="model-launch-hero-badge"
         variant="subtle"
       >
-        {{ t(badgeKey, locale) }}
+        {{ t(badgeKey, {}, { locale: locale }) }}
       </Badge>
     </div>
   </section>
@@ -230,7 +230,7 @@ const isContentFirst = hero.layout === 'content-first'
       <VideoPlayer
         v-if="showVideo"
         :locale
-        :aria-label="t(hero.titleKey, locale)"
+        :aria-label="t(hero.titleKey, {}, { locale: locale })"
         :src="hero.videoSrc"
         :poster="hero.posterSrc"
         autoplay
@@ -239,7 +239,7 @@ const isContentFirst = hero.layout === 'content-first'
       <VideoPlayer
         v-else-if="showMobileVideo"
         :locale
-        :aria-label="t(hero.titleKey, locale)"
+        :aria-label="t(hero.titleKey, {}, { locale: locale })"
         :src="hero.mobileVideoSrc"
         :poster="hero.posterSrc"
         autoplay
@@ -284,9 +284,9 @@ const isContentFirst = hero.layout === 'content-first'
         :is="headingTag"
         class="text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight"
       >
-        {{ t(hero.titleKey, locale)
+        {{ t(hero.titleKey, {}, { locale: locale })
         }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{
-          t(hero.titleRestKey, locale)
+          t(hero.titleRestKey, {}, { locale: locale })
         }}</span>
       </component>
 
@@ -294,7 +294,7 @@ const isContentFirst = hero.layout === 'content-first'
         v-if="hero.descriptionKey"
         class="mt-6 text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed"
       >
-        {{ t(hero.descriptionKey, locale) }}
+        {{ t(hero.descriptionKey, {}, { locale: locale }) }}
       </p>
 
       <ModelLaunchHeroCtaButtons
@@ -314,7 +314,7 @@ const isContentFirst = hero.layout === 'content-first'
           data-testid="model-launch-hero-badge"
           variant="subtle"
         >
-          {{ t(badgeKey, locale) }}
+          {{ t(badgeKey, {}, { locale: locale }) }}
         </Badge>
       </div>
     </div>
@@ -332,7 +332,7 @@ const isContentFirst = hero.layout === 'content-first'
       "
     >
       <span class="text-sm text-primary-warm-gray lg:text-base">
-        {{ t(hero.promptBar.sampleKey, locale) }}
+        {{ t(hero.promptBar.sampleKey, {}, { locale: locale }) }}
       </span>
       <span
         class="flex shrink-0 items-center gap-3 text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
@@ -342,7 +342,7 @@ const isContentFirst = hero.layout === 'content-first'
         >
           <ChevronRight class="size-5" :stroke-width="2" />
         </span>
-        {{ t(hero.promptBar.cta.labelKey, locale) }}
+        {{ t(hero.promptBar.cta.labelKey, {}, { locale: locale }) }}
       </span>
     </a>
   </section>

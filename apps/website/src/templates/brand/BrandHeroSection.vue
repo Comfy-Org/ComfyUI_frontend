@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import Button from '../../components/ui/button/Button.vue'
 import { BRAND_ASSETS_ZIP, BRAND_GUIDELINES_PDF } from '../../data/brandAssets'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
@@ -15,17 +15,17 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     <p
       class="text-sm font-extrabold tracking-[0.7px] text-primary-comfy-yellow uppercase"
     >
-      {{ t('brand.hero.label', locale) }}
+      {{ t('brand.hero.label', {}, { locale: locale }) }}
     </p>
     <h1
       class="mx-auto mt-6 max-w-4xl text-4xl/[1.3] font-light tracking-[-0.03em] text-primary-comfy-canvas md:text-5xl lg:text-6.5xl"
     >
-      {{ t('brand.hero.heading', locale) }}
+      {{ t('brand.hero.heading', {}, { locale: locale }) }}
     </h1>
     <p
       class="mx-auto mt-6 max-w-2xl text-[17px]/[1.6] font-light text-primary-comfy-canvas/80"
     >
-      {{ t('brand.hero.subheading', locale) }}
+      {{ t('brand.hero.subheading', {}, { locale: locale }) }}
     </p>
 
     <div
@@ -39,7 +39,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         variant="default"
         class="h-12 w-full px-5 text-sm font-extrabold sm:w-auto"
       >
-        {{ t('brand.hero.viewGuidelines', locale) }}
+        {{ t('brand.hero.viewGuidelines', {}, { locale: locale }) }}
       </Button>
       <Button
         as="a"
@@ -48,7 +48,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         variant="outline"
         class="h-12 w-full px-5 text-sm font-extrabold sm:w-auto"
       >
-        {{ t('brand.hero.downloadLogos', locale) }}
+        {{ t('brand.hero.downloadLogos', {}, { locale: locale }) }}
       </Button>
     </div>
   </section>

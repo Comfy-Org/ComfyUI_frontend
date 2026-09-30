@@ -5,7 +5,7 @@ import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
 import ModelHeroSection from '../../../components/models/ModelHeroSection.vue'
 import { models, getModelBySlug } from '../../../config/models'
 import { buildModelLlmsLinks } from '../../../config/model-llms'
-import { t } from '../../../i18n/translations'
+import { t } from '../../../i18n/site'
 import {
   absoluteUrl,
   jsonLdId,
@@ -68,9 +68,12 @@ const whatIsRest = whatIsBacklinkUrl
   ogImage={model.thumbnailUrl}
   mainEntityId={softwareId}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
     {
-      name: t('models.breadcrumb.models', locale),
+      name: t('breadcrumb.home', {}, { locale: locale }),
+      url: absoluteUrl(Astro.site, '/')
+    },
+    {
+      name: t('models.breadcrumb.models', {}, { locale: locale }),
       url: absoluteUrl(Astro.site, '/p/supported-models/')
     },
     { name: displayName }
@@ -146,7 +149,7 @@ const whatIsRest = whatIsBacklinkUrl
 
   <section class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
     <h2 class="text-2xl font-bold text-primary-comfy-canvas lg:text-3xl">
-      {t('models.whatIs.heading', locale, { name: displayName })}
+      {t('models.whatIs.heading', { name: displayName }, { locale: locale })}
     </h2>
     <p
       class="mt-4 max-w-3xl text-base/relaxed text-primary-comfy-canvas/70 lg:text-lg/relaxed"
@@ -186,7 +189,7 @@ const whatIsRest = whatIsBacklinkUrl
   </section>
 
   <FAQSplit01
-    heading={t('models.faq.heading', locale)}
+    heading={t('models.faq.heading', {}, { locale: locale })}
     faqs={faqs}
     client:visible
   />

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import ScrollCarousel from '../ui/scroll-carousel/ScrollCarousel.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -32,14 +32,14 @@ const feedbacks = [
       class="flex w-full shrink-0 snap-start flex-col justify-between rounded-3xl bg-transparency-white-t4 p-8 lg:w-3/4 lg:p-12"
     >
       <p class="text-2xl/relaxed font-light text-primary-comfy-canvas">
-        "{{ t(fb.quote, locale) }}"
+        "{{ t(fb.quote, {}, { locale: locale }) }}"
       </p>
       <div class="mt-12">
         <p class="text-base font-medium text-primary-comfy-yellow">
-          {{ t(fb.name, locale) }},
+          {{ t(fb.name, {}, { locale: locale }) }},
         </p>
         <p class="text-base font-medium text-primary-comfy-yellow">
-          {{ t(fb.role, locale) }}
+          {{ t(fb.role, {}, { locale: locale }) }}
         </p>
       </div>
     </div>

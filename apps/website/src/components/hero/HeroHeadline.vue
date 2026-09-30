@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const lines = t('hero.title', locale).split('\n')
+const lines = t('hero.title', {}, { locale: locale }).split('\n')
 
 // Sizing is em-relative to the inherited font size so the lockup scales with
 // whatever context renders it (canvas overlay or mobile flow).

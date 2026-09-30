@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const {
   locale = 'en',
@@ -46,7 +46,7 @@ const {
         :class="cn('flex items-center gap-2', centerText && 'translate-y-1')"
       >
         <slot name="label">
-          {{ label ?? t('platform.hero.badge', locale) }}
+          {{ label ?? t('platform.hero.badge', {}, { locale: locale }) }}
         </slot>
       </span>
     </span>

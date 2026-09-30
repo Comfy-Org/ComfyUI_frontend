@@ -7,7 +7,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { resolveTemplateLogos } from '../../lib/hub/model-logos'
 import { hubCreatorUrl } from '../../lib/hub/routes'
 import type { HubTemplate } from '../../lib/hub/types'
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import HubTypeBadge from './HubTypeBadge.vue'
 import TagRow from './TagRow.vue'
 

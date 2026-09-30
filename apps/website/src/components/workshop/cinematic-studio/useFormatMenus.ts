@@ -10,8 +10,8 @@ import {
   MAX_TAKES,
   RESOLUTIONS
 } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 /** Menu options and string-valued models for the aspect, resolution and takes menus. */
 export function useFormatMenus(
@@ -33,7 +33,7 @@ export function useFormatMenus(
     ).map((ratio) => ({
       id: ratio.id,
       label: ratio.id,
-      meta: tc(ratio.label, locale())
+      meta: tc(ratio.label, {}, { locale: locale() })
     }))
   })
   const resolutionOptions = RESOLUTIONS.map((option) => ({

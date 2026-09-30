@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '../../../i18n/site'
 
 import { prefersReducedMotion } from '../../../composables/useReducedMotion'
 import { externalLinks } from '../../../config/routes'
-import { t } from '../../../i18n/translations'
+import { t } from '../../../i18n/site'
 import BrandButton from '../../common/BrandButton.vue'
 import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
 import DownloadLocalButton from './DownloadLocalButton.vue'
@@ -289,13 +289,13 @@ onUnmounted(() => {
       <h1
         class="mt-6 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
       >
-        {{ t('download.hero.heading', locale) }}
+        {{ t('download.hero.heading', {}, { locale }) }}
       </h1>
 
       <p
         class="mt-6 max-w-md text-sm text-primary-comfy-canvas lg:mt-6 lg:text-base"
       >
-        {{ t('download.hero.subtitle', locale) }}
+        {{ t('download.hero.subtitle', {}, { locale }) }}
       </p>
 
       <div class="mt-8 flex flex-col gap-4 lg:flex-row lg:items-end">
@@ -317,7 +317,7 @@ onUnmounted(() => {
                 class="size-5 icon-mask mask-[url('/icons/social/github.svg')]"
                 aria-hidden="true"
               />
-              {{ t('download.hero.installGithub', locale) }}
+              {{ t('download.hero.installGithub', {}, { locale }) }}
             </span>
           </BrandButton>
         </div>

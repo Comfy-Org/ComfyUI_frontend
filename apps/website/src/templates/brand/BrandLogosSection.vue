@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { affiliateBrandAssets } from '../../data/affiliateBrandAssets'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -17,10 +17,10 @@ const assets = affiliateBrandAssets.map((asset) =>
 <template>
   <section id="logos" class="mx-auto max-w-9xl px-6 py-10 lg:px-20 lg:py-12">
     <SectionHeader align="start" max-width="xl">
-      {{ t('brand.logos.heading', locale) }}
+      {{ t('brand.logos.heading', {}, { locale: locale }) }}
       <template #subtitle>
         <p class="mt-4 max-w-2xl text-sm/[1.45] text-primary-warm-gray">
-          {{ t('brand.logos.subheading', locale) }}
+          {{ t('brand.logos.subheading', {}, { locale: locale }) }}
         </p>
       </template>
     </SectionHeader>

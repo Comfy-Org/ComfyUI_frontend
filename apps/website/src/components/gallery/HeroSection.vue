@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
-import { t, tAround } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import SectionLabel from '../common/SectionLabel.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-const [titleBefore, titleAfter] = tAround('gallery.heroTitle', locale, 'brand')
 </script>
 
 <template>
@@ -14,16 +12,17 @@ const [titleBefore, titleAfter] = tAround('gallery.heroTitle', locale, 'brand')
     class="mx-auto flex max-w-9xl flex-col items-center px-6 pt-36 pb-16 text-center"
   >
     <SectionLabel>
-      {{ t('gallery.label', locale) }}
+      {{ t('gallery.label', {}, { locale: locale }) }}
     </SectionLabel>
     <h1
       class="mt-4 max-w-3xl text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl"
     >
-      {{ titleBefore }}<span class="text-primary-comfy-yellow">ComfyUI</span
-      >{{ titleAfter }}
+      {{ t('gallery.heroTitleBefore', {}, { locale })
+      }}<span class="text-primary-comfy-yellow">ComfyUI</span
+      >{{ t('gallery.heroTitleAfter', {}, { locale }) }}
     </h1>
     <p class="mt-4 max-w-lg text-sm text-primary-comfy-canvas lg:text-base">
-      {{ t('gallery.heroSubtitle', locale) }}
+      {{ t('gallery.heroSubtitle', {}, { locale: locale }) }}
     </p>
   </section>
 </template>

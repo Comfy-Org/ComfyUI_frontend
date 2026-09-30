@@ -6,9 +6,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import { isUnpaid } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { t } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { studioAnalytics } from '../../../lib/workshop/cinematic-studio/analytics'
 import { captureWorkshopEvent } from '../../../scripts/posthog'
 
@@ -62,12 +62,14 @@ async function onKeydown(event: KeyboardEvent) {
 <template>
   <div class="flex max-w-full min-w-0 items-center gap-2.5">
     <span class="shrink-0 text-sm font-semibold text-primary-warm-white">
-      {{ tc('cinematic.stage.shot', locale, { number: current.shot }) }}
+      {{
+        tc('cinematic.stage.shot', { number: current.shot }, { locale: locale })
+      }}
     </span>
     <div
       v-if="takePicker && siblings.length > 1"
       role="radiogroup"
-      :aria-label="tc('cinematic.stage.takes', locale)"
+      :aria-label="tc('cinematic.stage.takes', {}, { locale: locale })"
       class="flex gap-1"
       @keydown="onKeydown"
     >
@@ -79,7 +81,9 @@ async function onKeydown(event: KeyboardEvent) {
         :aria-checked="take.id === current.id"
         :tabindex="take.id === current.id ? 0 : -1"
         :aria-description="
-          isUnpaid(take) ? tc('cinematic.state.noCredits', locale) : undefined
+          isUnpaid(take)
+            ? tc('cinematic.state.noCredits', {}, { locale: locale })
+            : undefined
         "
         :class="
           cn(
@@ -105,8 +109,8 @@ async function onKeydown(event: KeyboardEvent) {
       :href="current.output.url"
       :download="current.output.fileName"
       class="grid size-8 shrink-0 place-items-center rounded-lg text-primary-comfy-canvas hover:bg-transparency-white-t8"
-      :aria-label="tc('cinematic.stage.download', locale)"
-      :title="t('workshop.output.expires', locale)"
+      :aria-label="tc('cinematic.stage.download', {}, { locale: locale })"
+      :title="t('workshop.output.expires', {}, { locale: locale })"
       @click="captureDownload"
     >
       <Download class="size-4" aria-hidden="true" />

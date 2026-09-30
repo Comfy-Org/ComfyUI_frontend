@@ -13,13 +13,13 @@ import RouterProofStripSection from '../../templates/platform/RouterProofStripSe
 import RouterProviderCoverageSection from '../../templates/platform/RouterProviderCoverageSection.vue'
 import RouterRoadmapSection from '../../templates/platform/RouterRoadmapSection.vue'
 import { externalLinks } from '../../config/routes'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import { routerFaq, routerT } from '../../templates/platform/routerCopy'
 ---
 
 <BaseLayout
-  title={`${t('platform.products.models.title', 'en')} · ${t('platform.meta.title', 'en')}`}
-  description={t('platform.products.models.description', 'en')}
+  title={`${t('platform.products.models.title', {}, { locale: 'en' })} · ${t('platform.meta.title', {}, { locale: 'en' })}`}
+  description={t('platform.products.models.description', {}, { locale: 'en' })}
 >
   <ModelsApiHero locale="en" client:load />
   <RouterVideoSection locale="en" client:idle />
@@ -32,7 +32,7 @@ import { routerFaq, routerT } from '../../templates/platform/routerCopy'
   <RouterRoadmapSection locale="en" client:visible />
   <FAQSection
     locale="en"
-    heading={routerT('platform.router.faq.heading', 'en')}
+    heading={routerT('platform.router.faq.heading', {}, { locale: 'en' })}
     items={routerFaq('en')}
     client:load
   />
@@ -40,9 +40,10 @@ import { routerFaq, routerT } from '../../templates/platform/routerCopy'
     locale="en"
     heading-after-badge={routerT(
       'platform.router.closing.headingAfterBadge',
-      'en'
+      {},
+      { locale: 'en' }
     )}
-    subtitle={routerT('platform.router.closing.subtitle', 'en')}
+    subtitle={routerT('platform.router.closing.subtitle', {}, { locale: 'en' })}
     primary-href={externalLinks.routerApiKeys}
     client:visible
   />

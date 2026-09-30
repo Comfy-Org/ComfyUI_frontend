@@ -5,8 +5,8 @@ import { computed, ref, useId, useTemplateRef } from 'vue'
 
 import { useAutoAdvance } from '../../composables/useAutoAdvance'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import { externalLinks } from '../../config/routes'
 import BrandButton from '../common/BrandButton.vue'
 import BlobMedia from './BlobMedia.vue'
@@ -34,25 +34,25 @@ const MEDIA_BASE = 'https://media.comfy.org/website/homepage/use-case'
 
 const industries: Industry[] = [
   {
-    label: t('industries.vfx', locale),
+    label: t('industries.vfx', {}, { locale: locale }),
     primarySrc: `${MEDIA_BASE}/left1.webm`,
     secondarySrc: `${MEDIA_BASE}/right1.webm`,
     ambientSrc: '/industries/ambient-vfx-animation.webm'
   },
   {
-    label: t('industries.advertising', locale),
+    label: t('industries.advertising', {}, { locale: locale }),
     primarySrc: `${MEDIA_BASE}/left2.webm`,
     secondarySrc: `${MEDIA_BASE}/right2.webm`,
     ambientSrc: '/industries/ambient-advertising.webm'
   },
   {
-    label: t('industries.gaming', locale),
+    label: t('industries.gaming', {}, { locale: locale }),
     primarySrc: `${MEDIA_BASE}/left3.webm`,
     secondarySrc: '/industries/secondary-gaming.webm',
     ambientSrc: '/industries/ambient-gaming.webm'
   },
   {
-    label: t('industries.ecommerce', locale),
+    label: t('industries.ecommerce', {}, { locale: locale }),
     primarySrc: `${MEDIA_BASE}/left4.webm`,
     secondarySrc: `${MEDIA_BASE}/right4.webm`,
     ambientSrc: '/industries/ambient-ecommerce-fashion.webm',
@@ -150,16 +150,16 @@ const ambientClipId = `industries-ambient-${uid}`
           <p
             class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
           >
-            {{ t('industries.label', locale) }}
+            {{ t('industries.label', {}, { locale: locale }) }}
           </p>
           <p class="max-w-md text-lg/relaxed text-primary-warm-gray">
-            {{ t('industries.body', locale) }}
+            {{ t('industries.body', {}, { locale: locale }) }}
           </p>
         </div>
 
         <nav
           class="flex flex-col items-start gap-7"
-          :aria-label="t('industries.navLabel', locale)"
+          :aria-label="t('industries.navLabel', {}, { locale: locale })"
           @pointerenter="hovering = true"
           @pointerleave="((hovering = false), resume())"
         >
@@ -189,7 +189,7 @@ const ambientClipId = `industries-ambient-${uid}`
           variant="outline"
           class="font-bold"
         >
-          {{ t('industries.cta', locale) }}
+          {{ t('industries.cta', {}, { locale: locale }) }}
         </BrandButton>
       </div>
 

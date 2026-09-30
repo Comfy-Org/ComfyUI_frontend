@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { ModelLaunchSteps } from './types'
 
 import BrandButton from '../../components/common/BrandButton.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import { parseFaqAnswer } from '../../utils/faqAnswer'
 
 const { locale = 'en', steps } = defineProps<{
@@ -28,7 +28,7 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t(steps.headingKey, locale) }}
+        {{ t(steps.headingKey, {}, { locale: locale }) }}
       </h2>
     </div>
 
@@ -48,7 +48,8 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
         <p
           class="text-sm/tight font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
         >
-          {{ t(steps.stepLabelKey, locale) }} {{ stepNumber(index) }}
+          {{ t(steps.stepLabelKey, {}, { locale: locale }) }}
+          {{ stepNumber(index) }}
         </p>
         <p class="text-2xl/snug font-medium text-primary-warm-white">
           {{ step.title[locale] || step.title.en }}
@@ -92,7 +93,7 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
         size="lg"
         class="w-full p-4 text-center sm:w-auto sm:min-w-52"
       >
-        {{ t(steps.primaryCta.labelKey, locale) }}
+        {{ t(steps.primaryCta.labelKey, {}, { locale: locale }) }}
       </BrandButton>
       <BrandButton
         v-if="steps.secondaryCta"
@@ -102,7 +103,7 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
         size="lg"
         class="w-full p-4 text-center sm:w-auto sm:min-w-52"
       >
-        {{ t(steps.secondaryCta.labelKey, locale) }}
+        {{ t(steps.secondaryCta.labelKey, {}, { locale: locale }) }}
       </BrandButton>
     </div>
   </section>

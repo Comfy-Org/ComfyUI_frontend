@@ -3,8 +3,8 @@ import { computed } from 'vue'
 
 import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog'
 import { ASPECT_RATIOS } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic-studio/video'
 import { resolutionLabel } from '../../../lib/workshop/cinematic-studio/video'
 
@@ -21,7 +21,7 @@ export function useVideoMenus(
       (ratio) => ({
         id: ratio.id,
         label: ratio.id,
-        meta: tc(ratio.label, locale())
+        meta: tc(ratio.label, {}, { locale: locale() })
       })
     )
   )

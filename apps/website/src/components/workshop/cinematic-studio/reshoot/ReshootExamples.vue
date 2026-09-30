@@ -3,8 +3,8 @@ import { computed } from 'vue'
 
 import type { PlaygroundExample } from '../../../../config/workshop-playground'
 import { RESHOOT_EXAMPLE } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { Locale } from '../../../../i18n/translations'
+import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../../i18n/site'
 import ExamplesTab from '../../ExamplesTab.vue'
 
 const { activeId, locale = 'en' } = defineProps<{
@@ -18,8 +18,8 @@ const emit = defineEmits<{ pick: [] }>()
 const examples = computed<readonly PlaygroundExample[]>(() => [
   {
     id: 'crossview-example',
-    title: rc('reshoot.pick.exampleTitle', locale),
-    specs: [rc('reshoot.pick.exampleMeta', locale)],
+    title: rc('reshoot.pick.exampleTitle', {}, { locale: locale }),
+    specs: [rc('reshoot.pick.exampleMeta', {}, { locale: locale })],
     values: {},
     outputUrl: RESHOOT_EXAMPLE.clip,
     mediaKind: 'video'
@@ -32,7 +32,7 @@ const examples = computed<readonly PlaygroundExample[]>(() => [
 <template>
   <ExamplesTab
     :examples="examples"
-    :gallery-label="rc('reshoot.title', locale)"
+    :gallery-label="rc('reshoot.title', {}, { locale: locale })"
     :active-id="activeId"
     :locale
     @open="emit('pick')"

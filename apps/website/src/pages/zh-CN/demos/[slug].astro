@@ -6,7 +6,7 @@ import ArcadeEmbed from '../../../components/demos/ArcadeEmbed.vue'
 import DemoTranscript from '../../../components/demos/DemoTranscript.vue'
 import DemoNavSection from '../../../components/demos/DemoNavSection.vue'
 import { demos, getDemoBySlug, getNextDemo } from '../../../config/demos'
-import { t } from '../../../i18n/translations'
+import { t } from '../../../i18n/site'
 import type { JsonLdNode } from '../../../utils/jsonLd'
 import {
   absoluteUrl,
@@ -24,8 +24,8 @@ export const getStaticPaths: GetStaticPaths = () => {
 const { slug } = Astro.params
 const demo = getDemoBySlug(slug as string)!
 const nextDemo = getNextDemo(slug as string)
-const title = t(demo.title, 'zh-CN')
-const description = t(demo.description, 'zh-CN')
+const title = t(demo.title, {}, { locale: 'zh-CN' })
+const description = t(demo.description, {}, { locale: 'zh-CN' })
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
@@ -64,11 +64,11 @@ const learningResource: JsonLdNode = {
   mainEntityId={learningId}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', locale),
+      name: t('breadcrumb.home', {}, { locale: locale }),
       url: absoluteUrl(Astro.site, '/zh-CN')
     },
     {
-      name: t('demos.breadcrumb.demos', locale),
+      name: t('demos.breadcrumb.demos', {}, { locale: locale }),
       url: absoluteUrl(Astro.site, '/zh-CN/demos')
     },
     { name: title }
@@ -82,7 +82,7 @@ const learningResource: JsonLdNode = {
   </Fragment>
 
   <DemoHeroSection
-    label={t(demo.category, 'zh-CN')}
+    label={t(demo.category, {}, { locale: 'zh-CN' })}
     title={title}
     description={description}
     difficulty={demo.difficulty}
@@ -100,14 +100,14 @@ const learningResource: JsonLdNode = {
 
   {demo.transcript && (
     <DemoTranscript
-      transcript={t(demo.transcript, 'zh-CN')}
+      transcript={t(demo.transcript, {}, { locale: 'zh-CN' })}
       locale="zh-CN"
       client:visible
     />
   )}
 
   <DemoNavSection
-    nextTitle={t(nextDemo.title, 'zh-CN')}
+    nextTitle={t(nextDemo.title, {}, { locale: 'zh-CN' })}
     nextSlug={nextDemo.slug}
     nextThumbnail={nextDemo.thumbnail}
     locale="zh-CN"

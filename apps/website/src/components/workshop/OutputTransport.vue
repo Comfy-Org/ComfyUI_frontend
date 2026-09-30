@@ -4,8 +4,8 @@ import { useMediaControls } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { src, locale = 'en' } = defineProps<{ src: string; locale?: Locale }>()
 const emit = defineEmits<{
@@ -36,7 +36,7 @@ const buttonClass =
       ref="audio"
       :src
       preload="metadata"
-      :aria-label="t('workshop.output.title', locale)"
+      :aria-label="t('workshop.output.title', {}, { locale: locale })"
       data-testid="output-audio"
       @loadeddata="emit('loaded', src)"
       @play="emit('playbackStarted', src)"
@@ -47,7 +47,11 @@ const buttonClass =
     <button
       type="button"
       :aria-label="
-        t(playing ? 'workshop.output.pause' : 'workshop.output.play', locale)
+        t(
+          playing ? 'workshop.output.pause' : 'workshop.output.play',
+          {},
+          { locale: locale }
+        )
       "
       :class="buttonClass"
       data-testid="output-play"
@@ -63,7 +67,7 @@ const buttonClass =
       :max="seconds"
       step="0.01"
       :disabled="!seconds"
-      :aria-label="t('player.seek', locale)"
+      :aria-label="t('player.seek', {}, { locale: locale })"
       class="min-w-0 flex-1 accent-primary-comfy-yellow"
     />
     <span
@@ -76,7 +80,8 @@ const buttonClass =
       :aria-label="
         t(
           muted ? 'workshop.output.soundOn' : 'workshop.output.soundOff',
-          locale
+          {},
+          { locale: locale }
         )
       "
       :class="cn(buttonClass, !muted && 'text-primary-warm-white')"

@@ -1,8 +1,8 @@
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { JsonLdNode } from '../../utils/jsonLd'
 
 import { externalLinks } from '../../config/routes'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import {
   faqPageNode,
   jsonLdId,
@@ -28,7 +28,7 @@ export function cliPageJsonLd(
         url,
         applicationCategory: 'DeveloperApplication',
         firstParty: true,
-        description: t('cli.meta.description', locale),
+        description: t('cli.meta.description', {}, { locale: locale }),
         operatingSystem: 'macOS, Windows, Linux',
         codeRepository: externalLinks.comfyCliRepo,
         isFree: true

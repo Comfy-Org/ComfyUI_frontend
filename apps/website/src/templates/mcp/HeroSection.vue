@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import ComfyMcpDemo from './ComfyMcpDemo.vue'
 import { mcpCtas } from './ctas'
 
@@ -16,8 +16,8 @@ const ctas = mcpCtas(locale)
     :locale="locale"
     class="min-h-[calc(100svh-5rem)] lg:min-h-[calc(100svh-6.75rem)]"
     badge-text="MCP"
-    :title="t('mcp.hero.heading', locale)"
-    :subtitle="t('mcp.hero.subtitle', locale)"
+    :title="t('mcp.hero.heading', {}, { locale: locale })"
+    :subtitle="t('mcp.hero.subtitle', {}, { locale: locale })"
     :primary-cta="ctas.installMcp"
     :secondary-cta="ctas.docs"
   >

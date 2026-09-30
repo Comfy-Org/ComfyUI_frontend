@@ -35,8 +35,8 @@ import {
 } from '../../config/workshop-return'
 import type { WorkshopSessionUser } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import {
   captureAuthCompleted,
   captureAuthFailed,
@@ -212,7 +212,11 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     const severity = severityForAuthError(classification)
     addToast({
       severity,
-      summary: t(severity === 'warn' ? 'g.warning' : 'g.error', locale),
+      summary: t(
+        severity === 'warn' ? 'g.warning' : 'g.error',
+        {},
+        { locale: locale }
+      ),
       detail: signInErrorMessage(classification, locale, hostname)
     })
   }

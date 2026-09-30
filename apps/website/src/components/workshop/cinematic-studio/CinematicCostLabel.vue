@@ -5,8 +5,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
 import { formatCreditRange } from '../../../lib/workshop/cinematic-studio/estimate'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const {
   estimate,
@@ -20,23 +20,31 @@ const {
 
 function perTake(shot: ShotEstimate): string | undefined {
   if (shot.takes === 1) return undefined
-  return tc('cinematic.credits.perTake', locale, {
-    takes: shot.takes,
-    credits: formatCreditRange(shot.perTake, locale)
-  })
+  return tc(
+    'cinematic.credits.perTake',
+    {
+      takes: shot.takes,
+      credits: formatCreditRange(shot.perTake, locale)
+    },
+    { locale: locale }
+  )
 }
 
 const cost = computed(() =>
   estimate
     ? {
-        label: tc('cinematic.credits.estimate', locale, {
-          credits: formatCreditRange(estimate.total, locale)
-        }),
+        label: tc(
+          'cinematic.credits.estimate',
+          {
+            credits: formatCreditRange(estimate.total, locale)
+          },
+          { locale: locale }
+        ),
         detail: perTake(estimate)
       }
     : {
-        label: tc('cinematic.credits.varies', locale),
-        hint: tc('cinematic.credits.variesHint', locale)
+        label: tc('cinematic.credits.varies', {}, { locale: locale }),
+        hint: tc('cinematic.credits.variesHint', {}, { locale: locale })
       }
 )
 </script>

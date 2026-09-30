@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import Button from '../../components/ui/button/Button.vue'
 import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { locale = 'en', showCustomerProof = false } = defineProps<{
   locale?: Locale
@@ -18,15 +18,15 @@ const { locale = 'en', showCustomerProof = false } = defineProps<{
       <p
         class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
       >
-        {{ t('platform.serverlessApps.eyebrow', locale) }}
+        {{ t('platform.serverlessApps.eyebrow', {}, { locale }) }}
       </p>
       <h2
         class="mt-4 max-w-xl text-2xl font-light text-balance text-primary-comfy-canvas lg:text-3xl"
       >
-        {{ t('platform.serverlessApps.heading', locale) }}
+        {{ t('platform.serverlessApps.heading', {}, { locale }) }}
       </h2>
       <p class="mt-4 max-w-xl text-sm/relaxed text-smoke-700">
-        {{ t('platform.serverlessApps.body', locale) }}
+        {{ t('platform.serverlessApps.body', {}, { locale }) }}
       </p>
       <Button
         as="a"
@@ -34,7 +34,7 @@ const { locale = 'en', showCustomerProof = false } = defineProps<{
         variant="default"
         class="mt-7 font-bold"
       >
-        {{ t('platform.serverlessApps.browseApps', locale) }}
+        {{ t('platform.serverlessApps.browseApps', {}, { locale }) }}
       </Button>
     </div>
 
@@ -42,7 +42,7 @@ const { locale = 'en', showCustomerProof = false } = defineProps<{
       class="overflow-hidden rounded-4xl border border-white/10 bg-primary-comfy-ink-light shadow-2xl shadow-black/20"
     >
       <video
-        :aria-label="t('platform.serverlessApps.videoLabel', locale)"
+        :aria-label="t('platform.serverlessApps.videoLabel', {}, { locale })"
         class="block size-full object-cover"
         controls
         loop
@@ -63,20 +63,22 @@ const { locale = 'en', showCustomerProof = false } = defineProps<{
   >
     <a
       href="/customers/svedka-silverside/"
-      :aria-label="t('platform.serverlessCaseStudy.linkLabel', locale)"
+      :aria-label="
+        t('platform.serverlessCaseStudy.linkLabel', {}, { locale })
+      "
       class="mx-auto flex w-full shrink-0 snap-start flex-col justify-between rounded-3xl bg-transparency-white-t4 p-8 lg:w-3/4 lg:p-12"
     >
       <blockquote class="text-2xl/relaxed font-light text-primary-comfy-canvas">
         <span aria-hidden="true">“</span>
-        <span>{{ t('platform.serverlessCaseStudy.quote', locale) }}</span>
+        <span>{{ t('platform.serverlessCaseStudy.quote', {}, { locale }) }}</span>
         <span aria-hidden="true">”</span>
       </blockquote>
       <cite class="mt-12 not-italic">
         <span class="block text-base font-medium text-primary-comfy-yellow">
-          {{ t('platform.serverlessCaseStudy.name', locale) }},
+          {{ t('platform.serverlessCaseStudy.name', {}, { locale }) }},
         </span>
         <span class="block text-base font-medium text-primary-comfy-yellow">
-          {{ t('platform.serverlessCaseStudy.role', locale) }}
+          {{ t('platform.serverlessCaseStudy.role', {}, { locale }) }}
         </span>
       </cite>
     </a>

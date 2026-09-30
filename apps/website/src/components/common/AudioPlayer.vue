@@ -8,8 +8,8 @@ import {
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { t } from '../../i18n/translations'
-import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/site'
+import type { Locale } from '../../i18n/site'
 import PlayPauseButton from './PlayPauseButton.vue'
 
 type AudioSource = {
@@ -135,7 +135,9 @@ function handleScrubberKeydown(e: KeyboardEvent) {
         :playing
         size="sm"
         :aria-label="
-          playing ? t('player.pause', locale) : t('player.play', locale)
+          playing
+            ? t('player.pause', {}, { locale: locale })
+            : t('player.play', {}, { locale: locale })
         "
         @click="playing = !playing"
       />
@@ -145,7 +147,7 @@ function handleScrubberKeydown(e: KeyboardEvent) {
         class="relative h-1 flex-1 cursor-pointer rounded-full bg-white/20 select-none"
         role="slider"
         tabindex="0"
-        :aria-label="t('player.seek', locale)"
+        :aria-label="t('player.seek', {}, { locale: locale })"
         :aria-valuemin="0"
         :aria-valuemax="duration || 0"
         :aria-valuenow="displayTime"

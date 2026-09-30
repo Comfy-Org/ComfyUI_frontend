@@ -1,5 +1,5 @@
 import { localizeHref } from '../config/routes'
-import type { Locale, LocalizedText } from '../i18n/translations'
+import type { Locale, LocalizedText } from '../i18n/site'
 import type { CalendarEvent } from '../utils/calendar'
 import type { JsonLdNode } from '../utils/jsonLd'
 import {

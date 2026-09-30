@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import CardArticleGallery01 from '../../components/blocks/CardArticleGallery01.vue'
 import type { CardArticleGalleryItem } from '../../components/blocks/CardArticleGallery01.vue'
 import { drops } from '../../data/drops'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -33,7 +33,7 @@ const items = computed<CardArticleGalleryItem[]>(() =>
 
 <template>
   <CardArticleGallery01
-    :title="t('launches.section.title', locale)"
+    :title="t('launches.section.title', {}, { locale: locale })"
     :items
     layout="mixed"
   />

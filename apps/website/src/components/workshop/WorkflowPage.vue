@@ -8,7 +8,7 @@ import { getRoutes } from '../../config/routes'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 
 const { model } = defineProps<{ model: WorkflowWorkshopModelDetail }>()

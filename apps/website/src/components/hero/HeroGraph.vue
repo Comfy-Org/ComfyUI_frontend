@@ -3,8 +3,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { reactive, ref } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import { externalLinks } from '../../config/routes'
 import BrandButton from '../common/BrandButton.vue'
 import AngleNode from './AngleNode.vue'
@@ -135,7 +135,7 @@ function wrapperStyle(key: ElementKey) {
           variant="outline"
           class="pointer-events-auto font-bold uppercase"
         >
-          {{ t('hero.getStartedFree', locale) }}
+          {{ t('hero.getStartedFree', {}, { locale: locale }) }}
         </BrandButton>
       </div>
 

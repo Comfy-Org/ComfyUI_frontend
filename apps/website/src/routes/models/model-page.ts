@@ -7,8 +7,8 @@ import {
 } from '../../config/workshop-page-content'
 import { relatedModels } from '../../config/workshop-related'
 import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import { describesCapability } from '../../lib/workshop/model-tags'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 
@@ -61,10 +61,14 @@ export async function prepareModelPage(
     model: { ...model, href },
     related,
     relatedHeading: relatedProvider
-      ? t('workshop.model.relatedProvider', locale, {
-          provider: relatedProvider
-        })
-      : t('workshop.model.related', locale),
+      ? t(
+          'workshop.model.relatedProvider',
+          {
+            provider: relatedProvider
+          },
+          { locale: locale }
+        )
+      : t('workshop.model.related', {}, { locale: locale }),
     successor: model.successorSlug
       ? getWorkshopModel(model.successorSlug)
       : undefined,
@@ -72,7 +76,9 @@ export async function prepareModelPage(
       model,
       model.useCases?.length === 1 ? model.useCases[0] : undefined
     ),
-    useCaseLabel: useCase ? t(useCaseLabelKey[useCase], locale) : undefined,
+    useCaseLabel: useCase
+      ? t(useCaseLabelKey[useCase], {}, { locale: locale })
+      : undefined,
     tags,
     ...splitShownTags(tags)
   }

@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 
 import type { SourcePreviewProps } from '../../composables/useSourceUrl'
 import { useSourceUrl } from '../../composables/useSourceUrl'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogTitle from '../ui/dialog/DialogTitle.vue'
 import DialogTrigger from '../ui/dialog/DialogTrigger.vue'
@@ -16,7 +16,7 @@ const source = useSourceUrl(
   () => src
 )
 const expandLabel = computed(
-  () => `${t('workshop.output.expand', locale)} ${name}`
+  () => `${t('workshop.output.expand', {}, { locale: locale })} ${name}`
 )
 const expanded = ref(false)
 </script>
@@ -43,7 +43,7 @@ const expanded = ref(false)
     </DialogTrigger>
 
     <SourceLightbox
-      :close-label="t('workshop.output.collapse', locale)"
+      :close-label="t('workshop.output.collapse', {}, { locale: locale })"
       data-testid="video-source-dialog"
       @dismiss="expanded = false"
     >

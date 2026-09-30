@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import { externalLinks } from '../../config/routes'
 import { cliCtas } from './ctas'

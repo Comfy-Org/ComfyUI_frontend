@@ -9,8 +9,8 @@ import {
   isVideoUrl,
   videoPosterUrl
 } from '../../config/workshop-playground'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -68,7 +68,7 @@ function actionFor(example: PlaygroundExample, active = false) {
     : active
       ? 'workshop.examples.using'
       : 'workshop.examples.use'
-  return t(key, locale)
+  return t(key, {}, { locale: locale })
 }
 </script>
 
@@ -81,14 +81,15 @@ function actionFor(example: PlaygroundExample, active = false) {
             samplesOnly
               ? 'workshop.examples.samples'
               : 'workshop.examples.start',
-            locale
+            {},
+            { locale: locale }
           )
         }}
       </h2>
     </div>
 
     <p v-if="!examples.length" class="text-sm text-primary-warm-gray">
-      {{ t('workshop.examples.empty', locale) }}
+      {{ t('workshop.examples.empty', {}, { locale: locale }) }}
     </p>
 
     <!-- A phone scrolls the examples sideways, edge to edge; from a tablet up
@@ -115,7 +116,7 @@ function actionFor(example: PlaygroundExample, active = false) {
             :aria-label="`${example.title}: ${
               example.sampleOnly
                 ? actionFor(example)
-                : t('workshop.examples.open', locale)
+                : t('workshop.examples.open', {}, { locale: locale })
             }`"
             :aria-current="example.id === activeId ? 'true' : undefined"
             class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none"

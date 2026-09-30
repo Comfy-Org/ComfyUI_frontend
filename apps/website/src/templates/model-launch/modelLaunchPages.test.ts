@@ -14,8 +14,8 @@ import { minimaxMusic3Page } from '../../data/minimaxMusic3'
 import { seedancePage } from '../../data/seedance'
 import { wanAnimate2Page } from '../../data/wanAnimate2'
 import { wan3Page } from '../../data/wan3'
-import type { TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { TranslationKey } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import { DEFAULT_SECTION_ORDER } from './types'
 import type { ModelLaunchPage } from './types'
 
@@ -91,8 +91,8 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     ].filter((key): key is TranslationKey => key !== undefined)
 
     for (const key of keys) {
-      expect(t(key, 'en'), `${key} (en)`).not.toBe('')
-      expect(t(key, 'zh-CN'), `${key} (zh-CN)`).not.toBe('')
+      expect(t(key, {}, { locale: 'en' }), `${key} (en)`).not.toBe('')
+      expect(t(key, {}, { locale: 'zh-CN' }), `${key} (zh-CN)`).not.toBe('')
     }
   })
 

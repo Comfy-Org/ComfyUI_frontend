@@ -3,8 +3,8 @@ import WorkshopGate from '../workshop/WorkshopGate.vue'
 import { ArrowRight } from '@lucide/vue'
 
 import type { WorkshopBrowseModel } from '../../config/workshop'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { models, locale = 'en' } = defineProps<{
   models: readonly WorkshopBrowseModel[]
@@ -24,13 +24,13 @@ const { models, locale = 'en' } = defineProps<{
           <p
             class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase"
           >
-            {{ t('workshop.hero.eyebrow', locale) }}
+            {{ t('workshop.hero.eyebrow', {}, { locale: locale }) }}
           </p>
           <h2 class="text-5xl font-light text-primary-comfy-canvas">
-            {{ t('home.workshop.heading', locale) }}
+            {{ t('home.workshop.heading', {}, { locale: locale }) }}
           </h2>
           <p class="mt-6 max-w-2xl text-base text-primary-comfy-canvas/70">
-            {{ t('home.workshop.subheading', locale) }}
+            {{ t('home.workshop.subheading', {}, { locale: locale }) }}
           </p>
         </div>
 
@@ -38,7 +38,7 @@ const { models, locale = 'en' } = defineProps<{
           href="/workshop/"
           class="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-comfy-canvas/25 px-6 py-3 text-sm text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow"
         >
-          {{ t('home.workshop.browseAll', locale) }}
+          {{ t('home.workshop.browseAll', {}, { locale: locale }) }}
           <ArrowRight aria-hidden="true" class="size-4" />
         </a>
       </div>

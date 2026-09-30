@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import SafeRichText from '@/components/common/SafeRichTextContent'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -13,12 +13,12 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     <span
       class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
     >
-      {{ t('customers.contact.label', locale) }}
+      {{ t('customers.contact.label', {}, { locale: locale }) }}
     </span>
     <SafeRichText
       as="h2"
       class="mt-4 max-w-2xl text-3xl font-light whitespace-pre-line text-primary-comfy-canvas"
-      :html="t('customers.contact.heading', locale)"
+      :html="t('customers.contact.heading', {}, { locale: locale })"
     />
   </section>
 </template>

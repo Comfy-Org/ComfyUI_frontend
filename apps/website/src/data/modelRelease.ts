@@ -1,5 +1,5 @@
 import type { getRoutes } from '../config/routes'
-import type { TranslationKey } from '../i18n/translations'
+import type { TranslationKey } from '../i18n/site'
 
 type RouteKey = keyof ReturnType<typeof getRoutes>
 

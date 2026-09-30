@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
 
 import { localizeHref } from '../../config/routes'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const {
   nextTitle,
@@ -22,7 +22,7 @@ const nextHref = localizeHref(`/demos/${nextSlug}/`, locale)
 <template>
   <section class="px-4 py-16 lg:px-20 lg:py-24">
     <h2 class="mb-10 text-2xl font-light text-primary-comfy-canvas lg:text-3xl">
-      {{ t('demos.nav.nextDemo' as TranslationKey, locale) }}
+      {{ t('demos.nav.nextDemo' as TranslationKey, {}, { locale: locale }) }}
     </h2>
 
     <div
@@ -52,7 +52,9 @@ const nextHref = localizeHref(`/demos/${nextSlug}/`, locale)
           <span
             class="inline-block text-sm font-semibold tracking-wider text-primary-comfy-canvas uppercase"
           >
-            {{ t('demos.nav.viewDemo' as TranslationKey, locale) }}
+            {{
+              t('demos.nav.viewDemo' as TranslationKey, {}, { locale: locale })
+            }}
           </span>
         </a>
       </div>

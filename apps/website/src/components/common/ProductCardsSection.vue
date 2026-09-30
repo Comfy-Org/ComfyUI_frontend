@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
 import type { ButtonVariants } from '../ui/button'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { getRoutes } from '../../config/routes'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import ProductCard from './ProductCard.vue'
 import SectionLabel from './SectionLabel.vue'
 
@@ -30,9 +30,9 @@ const routes = getRoutes(locale)
 function cardDef(product: Product, href: string, bg: string) {
   return {
     product,
-    title: t(`products.${product}.title`, locale),
-    description: t(`products.${product}.description`, locale),
-    cta: t(ctaKey ?? `products.${product}.cta`, locale),
+    title: t(`products.${product}.title`, {}, { locale: locale }),
+    description: t(`products.${product}.description`, {}, { locale: locale }),
+    cta: t(ctaKey ?? `products.${product}.cta`, {}, { locale: locale }),
     href,
     bg
   }
@@ -57,22 +57,22 @@ const cards = excludeProduct
     <!-- Header -->
     <div class="flex flex-col items-center px-4 text-center">
       <SectionLabel v-if="labelKey">
-        {{ t(labelKey, locale) }}
+        {{ t(labelKey, {}, { locale: locale }) }}
       </SectionLabel>
       <h2
         class="mt-4 text-4xl font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ t('products.heading', locale) }}
+        {{ t('products.heading', {}, { locale: locale }) }}
       </h2>
       <p class="mt-4 text-sm text-primary-comfy-canvas/70">
-        {{ t('products.subheading', locale) }}
+        {{ t('products.subheading', {}, { locale: locale }) }}
       </p>
     </div>
 
     <!-- Cards -->
     <div
       role="group"
-      :aria-label="t('products.labelProducts', locale)"
+      :aria-label="t('products.labelProducts', {}, { locale: locale })"
       :class="
         cn(
           'mt-16 grid grid-cols-1 gap-4 rounded-5xl bg-transparency-white-t4 p-4 lg:p-2',

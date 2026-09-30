@@ -8,8 +8,8 @@ import type {
   DiscoveryProvider,
   DiscoveryWorkflow
 } from '../../data/modelDiscovery'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
 import Button from '../ui/button/Button.vue'
 import type { CatalogueTab } from '../workshop/CatalogueTabs.vue'
@@ -45,7 +45,8 @@ const rowLabel = computed(() =>
     onWorkflows.value
       ? 'modelDiscovery.workflowRowLabel'
       : 'modelDiscovery.rowLabel',
-    locale
+    {},
+    { locale: locale }
   )
 )
 const browseLabel = computed(() =>
@@ -53,7 +54,8 @@ const browseLabel = computed(() =>
     onWorkflows.value
       ? 'modelDiscovery.browseWorkflows'
       : 'modelDiscovery.browse',
-    locale
+    {},
+    { locale: locale }
   )
 )
 const browseHref = computed(() =>
@@ -95,17 +97,17 @@ const cardClass =
         <p
           class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
         >
-          {{ t('modelDiscovery.label', locale) }}
+          {{ t('modelDiscovery.label', {}, { locale: locale }) }}
         </p>
         <h2
           class="mt-4 text-3.5xl/tight font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
         >
-          {{ t('modelDiscovery.heading', locale) }}
+          {{ t('modelDiscovery.heading', {}, { locale: locale }) }}
         </h2>
         <p
           class="mt-4 max-w-xl text-sm font-light text-primary-comfy-canvas/80 lg:text-base/snug"
         >
-          {{ t('modelDiscovery.subtitle', locale) }}
+          {{ t('modelDiscovery.subtitle', {}, { locale: locale }) }}
         </p>
 
         <!-- The catalogue's own control, taught here: whoever presses it on

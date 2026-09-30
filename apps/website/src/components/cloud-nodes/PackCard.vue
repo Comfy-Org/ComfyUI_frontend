@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { GridPack } from '../../data/cloudNodes'
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import NodeList from './NodeList.vue'
 import PackBanner from './PackBanner.vue'
 
@@ -21,7 +21,7 @@ function nodeCountLabel(nodeCount: number): string {
     new Intl.PluralRules(locale).select(nodeCount) === 'one'
       ? 'cloudNodes.card.nodeCountOne'
       : 'cloudNodes.card.nodeCountOther'
-  return t(key, locale, { count: nodeCount })
+  return t(key, { count: nodeCount }, { locale: locale })
 }
 </script>
 
@@ -50,7 +50,7 @@ function nodeCountLabel(nodeCount: number): string {
         <p class="text-sm/relaxed text-primary-warm-gray">
           {{
             pack.description ||
-            t('cloudNodes.card.unavailableDescription', locale)
+            t('cloudNodes.card.unavailableDescription', {}, { locale: locale })
           }}
         </p>
       </div>
@@ -63,10 +63,10 @@ function nodeCountLabel(nodeCount: number): string {
           rel="noopener noreferrer"
           class="font-semibold text-primary-comfy-yellow underline hover:text-primary-comfy-yellow/85"
         >
-          {{ t('cloudNodes.card.viewRepo', locale) }}
+          {{ t('cloudNodes.card.viewRepo', {}, { locale: locale }) }}
         </a>
         <span v-else class="text-primary-warm-gray">
-          {{ t('cloudNodes.card.viewRepo', locale) }}
+          {{ t('cloudNodes.card.viewRepo', {}, { locale: locale }) }}
         </span>
         <span class="text-primary-warm-gray">•</span>
         <span class="text-primary-comfy-canvas">{{

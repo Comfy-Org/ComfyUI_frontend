@@ -1,7 +1,7 @@
 import type { ButtonVariants } from '../components/ui/button'
-import type { Locale, TranslationKey } from '../i18n/translations'
+import type { Locale, TranslationKey } from '../i18n/site'
 
-import { t } from '../i18n/translations'
+import { t } from '../i18n/site'
 import { resolveRel } from '../utils/cta'
 import { localizeHref } from './routes'
 
@@ -68,14 +68,14 @@ export function getBannerData(
 
   return {
     id: config.id,
-    title: t(config.titleKey, locale),
+    title: t(config.titleKey, {}, { locale: locale }),
     description: config.descriptionKey
-      ? t(config.descriptionKey, locale)
+      ? t(config.descriptionKey, {}, { locale: locale })
       : undefined,
     link: link
       ? {
           href: localizeHref(link.href, locale),
-          title: t(link.titleKey, locale),
+          title: t(link.titleKey, {}, { locale: locale }),
           target,
           rel: resolveRel({ target: target ?? '_self' }),
           buttonVariant: link.buttonVariant

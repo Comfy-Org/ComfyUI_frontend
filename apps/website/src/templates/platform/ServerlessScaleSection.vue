@@ -2,8 +2,8 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import ServerlessAutoscaleAnimation from './ServerlessAutoscaleAnimation.vue'
 import ServerlessLogsAnimation from './ServerlessLogsAnimation.vue'
 
@@ -83,10 +83,10 @@ onBeforeUnmount(() => {
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.serverlessScale.heading', locale) }}
+      {{ t('platform.serverlessScale.heading', {}, { locale: locale }) }}
       <template #subtitle>
         <p class="mx-auto mt-4 max-w-2xl text-sm text-smoke-700">
-          {{ t('platform.serverlessScale.subtitle', locale) }}
+          {{ t('platform.serverlessScale.subtitle', {}, { locale: locale }) }}
         </p>
       </template>
     </SectionHeader>
@@ -101,10 +101,12 @@ onBeforeUnmount(() => {
           <ServerlessAutoscaleAnimation />
         </div>
         <h3 class="mt-4 text-base font-normal text-primary-warm-white">
-          {{ t('platform.serverlessScale.1.title', locale) }}
+          {{ t('platform.serverlessScale.1.title', {}, { locale: locale }) }}
         </h3>
         <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
-          {{ t('platform.serverlessScale.1.description', locale) }}
+          {{
+            t('platform.serverlessScale.1.description', {}, { locale: locale })
+          }}
         </p>
       </article>
 
@@ -117,10 +119,12 @@ onBeforeUnmount(() => {
           <ServerlessLogsAnimation />
         </div>
         <h3 class="mt-4 text-base font-normal text-primary-warm-white">
-          {{ t('platform.serverlessScale.2.title', locale) }}
+          {{ t('platform.serverlessScale.2.title', {}, { locale: locale }) }}
         </h3>
         <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
-          {{ t('platform.serverlessScale.2.description', locale) }}
+          {{
+            t('platform.serverlessScale.2.description', {}, { locale: locale })
+          }}
         </p>
       </article>
 
@@ -278,10 +282,12 @@ onBeforeUnmount(() => {
           </svg>
         </div>
         <h3 class="mt-4 text-base font-normal text-primary-warm-white">
-          {{ t('platform.serverlessScale.3.title', locale) }}
+          {{ t('platform.serverlessScale.3.title', {}, { locale: locale }) }}
         </h3>
         <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
-          {{ t('platform.serverlessScale.3.description', locale) }}
+          {{
+            t('platform.serverlessScale.3.description', {}, { locale: locale })
+          }}
         </p>
       </article>
     </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const {
   label,
@@ -47,12 +47,12 @@ const difficultyKey = `demos.difficulty.${difficulty}` as TranslationKey
         <span
           class="rounded-full bg-transparency-white-t4 px-3 py-1 text-xs font-semibold tracking-wide text-primary-comfy-canvas uppercase"
         >
-          {{ t(difficultyKey, locale) }}
+          {{ t(difficultyKey, {}, { locale: locale }) }}
         </span>
         <span
           class="rounded-full bg-transparency-white-t4 px-3 py-1 text-xs font-semibold text-primary-comfy-canvas"
         >
-          {{ t(estimatedTime as TranslationKey, locale) }}
+          {{ t(estimatedTime as TranslationKey, {}, { locale: locale }) }}
         </span>
       </div>
     </div>

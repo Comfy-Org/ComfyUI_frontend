@@ -5,8 +5,8 @@ import { computed } from 'vue'
 
 import type { ReshootTake } from '../../../../composables/useReshoot'
 import { formatElapsed } from '../../../../config/workshop-run'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { Locale } from '../../../../i18n/translations'
+import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../../i18n/site'
 import type { ReshootSound, ReshootView } from './output'
 
 const {
@@ -54,7 +54,7 @@ const shown = computed(() => {
         v-if="view === 'warp' && !take.warpUrl"
         class="absolute inset-x-4 top-4 mx-auto w-fit max-w-md rounded-xl bg-primary-comfy-ink/85 px-3.5 py-2 text-center text-xs text-primary-comfy-canvas"
       >
-        {{ rc('reshoot.warpNote', locale) }}
+        {{ rc('reshoot.warpNote', {}, { locale: locale }) }}
       </p>
     </template>
     <div
@@ -69,7 +69,7 @@ const shown = computed(() => {
           class="size-4 text-primary-comfy-yellow motion-safe:animate-spin"
           aria-hidden="true"
         />
-        {{ rc('reshoot.generating', locale) }}
+        {{ rc('reshoot.generating', {}, { locale: locale }) }}
         <span class="font-mono text-primary-comfy-canvas tabular-nums">
           {{ formatElapsed(elapsed) }}
         </span>
@@ -82,7 +82,8 @@ const shown = computed(() => {
               : take.phase === 'queued'
                 ? 'reshoot.stage.queued'
                 : 'reshoot.generatingHelp',
-            locale
+            {},
+            { locale: locale }
           )
         }}
       </p>
@@ -92,7 +93,7 @@ const shown = computed(() => {
         class="h-8 rounded-full px-4 text-xs text-primary-warm-white ring-1 ring-transparency-white-t20 ring-inset hover:bg-transparency-white-t8"
         @click="emit('cancel')"
       >
-        {{ rc('reshoot.cancel', locale) }}
+        {{ rc('reshoot.cancel', {}, { locale: locale }) }}
       </button>
     </div>
     <div
@@ -102,7 +103,7 @@ const shown = computed(() => {
     >
       <p class="flex items-center gap-2.5 text-sm text-primary-warm-white">
         <CircleStop class="size-4" aria-hidden="true" />
-        {{ rc('reshoot.take.failed', locale) }}
+        {{ rc('reshoot.take.failed', {}, { locale: locale }) }}
       </p>
       <p class="text-xs wrap-break-word text-primary-warm-gray">
         {{ take.note }}
@@ -114,7 +115,7 @@ const shown = computed(() => {
       class="flex items-center gap-2.5 text-sm text-primary-comfy-canvas"
     >
       <CircleStop class="size-4" aria-hidden="true" />
-      {{ rc('reshoot.take.cancelled', locale) }}
+      {{ rc('reshoot.take.cancelled', {}, { locale: locale }) }}
     </p>
   </div>
 </template>

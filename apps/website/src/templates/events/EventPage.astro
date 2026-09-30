@@ -19,7 +19,7 @@ import {
   toCalendarEvent,
   youtubeWatchHref
 } from '../../data/events'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import {
   absoluteUrl,
@@ -73,11 +73,11 @@ const mainEntityId = videoJsonLd?.['@id'] ?? eventJsonLd?.['@id']
 
 const breadcrumbs = [
   {
-    name: t('breadcrumb.home', locale),
+    name: t('breadcrumb.home', {}, { locale: locale }),
     url: absoluteUrl(Astro.site, localizeHref('/', locale))
   },
   {
-    name: t('breadcrumb.events', locale),
+    name: t('breadcrumb.events', {}, { locale: locale }),
     url: absoluteUrl(Astro.site, localizeHref('/events/', locale))
   },
   { name: title }

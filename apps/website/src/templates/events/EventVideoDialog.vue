@@ -10,10 +10,10 @@ import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
 import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue'
 import { lockScroll, unlockScroll } from '../../composables/scrollLock'
 import { localizeHref } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { CalendarEvent } from '../../utils/calendar'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import { isUrlUnderPath, previousEntryUrl } from '../../utils/previousEntry'
 
 const {
@@ -84,7 +84,7 @@ onUnmounted(() => {
     @cancel.prevent="closeDialog"
   >
     <button
-      :aria-label="t('events.videoDialog.close', locale)"
+      :aria-label="t('events.videoDialog.close', {}, { locale: locale })"
       class="group absolute top-8 right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 border-primary-comfy-yellow bg-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow lg:right-26"
       @click="closeDialog"
     >

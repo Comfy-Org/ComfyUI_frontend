@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import Button from '../ui/button/Button.vue'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
@@ -15,17 +15,17 @@ const emit = defineEmits<{ replace: [] }>()
 <template>
   <Dialog v-model:open="open">
     <DialogContent
-      :close-label="t('workshop.examples.replaceKeep', locale)"
+      :close-label="t('workshop.examples.replaceKeep', {}, { locale: locale })"
       hide-close
       class="flex flex-col gap-6 sm:max-w-md"
       data-testid="example-replace-dialog"
     >
       <div class="flex flex-col gap-3">
         <DialogTitle>
-          {{ t('workshop.examples.replaceTitle', locale) }}
+          {{ t('workshop.examples.replaceTitle', {}, { locale: locale }) }}
         </DialogTitle>
         <DialogDescription class="text-base text-primary-comfy-canvas/70">
-          {{ t('workshop.examples.replaceBody', locale) }}
+          {{ t('workshop.examples.replaceBody', {}, { locale: locale }) }}
         </DialogDescription>
       </div>
 
@@ -37,7 +37,7 @@ const emit = defineEmits<{ replace: [] }>()
           data-testid="example-replace-keep"
           @click="open = false"
         >
-          {{ t('workshop.examples.replaceKeep', locale) }}
+          {{ t('workshop.examples.replaceKeep', {}, { locale: locale }) }}
         </Button>
         <Button
           size="lg"
@@ -45,7 +45,7 @@ const emit = defineEmits<{ replace: [] }>()
           data-testid="example-replace-confirm"
           @click="emit('replace')"
         >
-          {{ t('workshop.examples.replaceConfirm', locale) }}
+          {{ t('workshop.examples.replaceConfirm', {}, { locale: locale }) }}
         </Button>
       </div>
     </DialogContent>

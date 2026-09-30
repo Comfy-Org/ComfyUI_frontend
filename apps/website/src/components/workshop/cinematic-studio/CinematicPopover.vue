@@ -3,8 +3,8 @@ import { X } from '@lucide/vue'
 import { onClickOutside, onKeyStroke } from '@vueuse/core'
 import { onMounted, useTemplateRef } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { title, locale = 'en' } = defineProps<{
   title: string
@@ -45,7 +45,7 @@ onMounted(() => {
       <button
         type="button"
         class="grid size-9 place-items-center rounded-lg text-primary-comfy-canvas hover:bg-transparency-white-t8"
-        :aria-label="tc('cinematic.picker.close', locale)"
+        :aria-label="tc('cinematic.picker.close', {}, { locale: locale })"
         @click="emit('close')"
       >
         <X class="size-4" aria-hidden="true" />

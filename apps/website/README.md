@@ -42,43 +42,28 @@ and [vue-i18n message syntax](https://vue-i18n.intlify.dev/guide/essentials/synt
 as the application's `src/locales/` at the repository root:
 
 - Named placeholders: `"Show {n} models"`, filled with
-  `t('workshop.search.show', locale, { n })`. Every placeholder needs a value;
-  list placeholders such as `{0}` are refused.
+  `t('workshop.search.show', { n }, { locale })`.
 - Plural forms separated by `|`: `"{count} node | {count} nodes"`, picked with
-  `tPlural('cloudNodesLaunch.models.nodeCount', count, locale)`, which fills
-  `{count}`. Pass other named values as a fourth argument, for example
-  `tPlural('models.hub.meta.description', count, locale, { names })`.
-  Missing named values throw, just as with `t()`. The first form is used when the locale's plural
-  category for the count is `one`, the last otherwise, judged by the locale the
-  message came from.
+  `t('cloudNodesLaunch.models.nodeCount', { count }, { locale, plural: count })`.
 - The characters `{`, `}`, `@` and `|` are message syntax, so literal ones are
   written as `{'{'}`, `{'}'}`, `{'@'}` and `{'|'}`.
 
-`src/i18n/translations.ts` wraps a vue-i18n instance whose locale is passed
-explicitly on every call (`t(key, locale, named?)`), never switched globally,
-because the site is rendered statically per locale. Any key the requested
-locale lacks falls back to English. `t()` throws on a key the English catalog
-does not have, on a placeholder the caller gives no value for, on an unescaped
-`|` or `@`, and on a message that does not compile, naming the key and locale.
-`createTranslator` throws on a translated key the English catalog does not
-have and on a key segment containing `.`. A unit test renders every message in
-every locale with the English message's placeholders filled, so those mistakes,
-and a translation that adds a placeholder English lacks, fail `pnpm test:unit`
-rather than a page.
+`src/i18n/site.ts` configures vue-i18n and exports its `t` and `te` functions.
+Pass the locale in each call's options rather than changing the global locale,
+because the site renders locales concurrently. Missing messages fall back to
+English. A catalog test compiles every message in every locale and checks that
+every English message has Chinese copy.
 
 `main.json` is the site-wide catalog every page loads. A feature whose copy
-should ship only with its own pages keeps a catalog beside it and reads it
-through `createTranslator`: the Cinematic Studio (`cinematic.json`), its
-re-shoot app (`reshoot.json`) and the Router page (`router.json`).
+should ship only with its own pages keeps a catalog beside it. The Cinematic
+Studio and re-shoot app share `studio.json`; the Router page uses `router.json`.
 
 Add new English copy to the English catalog; translated copy lives in the
 matching file under each locale. Every English message requires a Chinese
 entry; the catalog tests check completeness without using English fallback.
-Catalog files use two-space JSON indentation and a final newline. Their raw
-text must round-trip through parsing and serialization without losing entries,
-which also rejects duplicate keys. Legal and content pages render their sections
-in the order they appear in the catalog, so keep `en/main.json` in document
-order and never sort its keys.
+Catalog files use two-space JSON indentation and a final newline. Legal and
+content pages render their sections in the order they appear in the catalog, so
+keep `en/main.json` in document order and never sort its keys.
 
 ### English-only copy
 

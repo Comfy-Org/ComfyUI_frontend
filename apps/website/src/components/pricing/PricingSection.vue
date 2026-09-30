@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useSlots } from 'vue'
 
 import { pricingPlans } from '../../data/pricingPlans'
 import type { BillingCycle, PricingPlan } from '../../data/pricingPlans'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '../ui/button/Button.vue'
 import ToggleGroup from '../ui/toggle-group/ToggleGroup.vue'
@@ -54,7 +54,7 @@ function originalPriceFor(plan: PricingPlan): string | undefined {
   return billingPeriod.value === 'yearly' &&
     plan.yearlyPriceKey &&
     plan.priceKey
-    ? t(plan.priceKey, locale)
+    ? t(plan.priceKey, {}, { locale: locale })
     : undefined
 }
 
@@ -77,7 +77,8 @@ function creditsLabelFor(plan: PricingPlan): string {
     showsYearlyCredits(plan)
       ? 'pricing.creditsLabelYearly'
       : 'pricing.creditsLabel',
-    locale
+    {},
+    { locale: locale }
   )
 }
 
@@ -87,7 +88,7 @@ const planCards = computed(() =>
     priceKey: displayPriceKey(plan),
     originalPrice: originalPriceFor(plan),
     yearlyTotal: plan.yearlyTotalKey
-      ? t(plan.yearlyTotalKey, locale)
+      ? t(plan.yearlyTotalKey, {}, { locale: locale })
       : undefined,
     creditsKey: displayCreditsKey(plan),
     creditsLabel: creditsLabelFor(plan),
@@ -104,12 +105,12 @@ const planCards = computed(() =>
         :is="headingLevel"
         class="font-formula text-4xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ t('pricing.title', locale) }}
+        {{ t('pricing.title', {}, { locale: locale }) }}
       </component>
       <p
         class="mx-auto mt-3 max-w-xl text-base text-pretty text-primary-comfy-canvas"
       >
-        {{ t('pricing.subtitle', locale) }}
+        {{ t('pricing.subtitle', {}, { locale: locale }) }}
       </p>
     </div>
 
@@ -124,7 +125,7 @@ const planCards = computed(() =>
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
           <span class="inline-block">{{
-            t('pricing.period.monthly', locale)
+            t('pricing.period.monthly', {}, { locale: locale })
           }}</span>
         </ToggleGroupItem>
         <ToggleGroupItem
@@ -132,7 +133,7 @@ const planCards = computed(() =>
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
           <span class="inline-block">{{
-            t('pricing.period.yearly', locale)
+            t('pricing.period.yearly', {}, { locale: locale })
           }}</span>
         </ToggleGroupItem>
       </ToggleGroup>
@@ -164,18 +165,18 @@ const planCards = computed(() =>
       >
         <div class="flex items-center gap-4">
           <PricingPlanLabel
-            :label="t(plan.labelKey, locale)"
+            :label="t(plan.labelKey, {}, { locale: locale })"
             class="inline-block text-base uppercase"
           />
           <Badge v-if="plan.isPopular" variant="callout" size="xs">
-            {{ t('pricing.badge.popular', locale) }}</Badge
+            {{ t('pricing.badge.popular', {}, { locale: locale }) }}</Badge
           >
         </div>
 
         <PricingPrice
           v-if="priceKey"
-          :price="t(priceKey, locale)"
-          :period="t('pricing.plan.period', locale)"
+          :price="t(priceKey, {}, { locale: locale })"
+          :period="t('pricing.plan.period', {}, { locale: locale })"
           :original-price="originalPrice"
           :billing-period="billingPeriod"
           :yearly-total="yearlyTotal"
@@ -188,7 +189,7 @@ const planCards = computed(() =>
 
         <PricingCredits
           v-if="creditsKey"
-          :credits="t(creditsKey, locale)"
+          :credits="t(creditsKey, {}, { locale: locale })"
           :label="creditsLabel"
           :estimate-key="estimateKey"
           :locale
@@ -200,7 +201,7 @@ const planCards = computed(() =>
             variant="outline"
             class="w-full text-center"
           >
-            {{ t(plan.ctaKey, locale) }}
+            {{ t(plan.ctaKey, {}, { locale: locale }) }}
           </Button>
         </div>
       </PricingCard>
@@ -221,7 +222,7 @@ const planCards = computed(() =>
     </div>
 
     <p class="mt-12 text-xs text-primary-comfy-canvas/70">
-      {{ t('pricing.footnote', locale) }}
+      {{ t('pricing.footnote', {}, { locale: locale }) }}
     </p>
   </section>
 </template>

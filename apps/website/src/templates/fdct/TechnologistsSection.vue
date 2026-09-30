@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import type { CardWorkflowItem } from '../../components/blocks/CardWorkflow01.vue'
 import TeamGrid01 from '../../components/blocks/TeamGrid01.vue'
 import type { FdctTechnologist } from '../../data/fdct'
 import { projects, technologists } from '../../data/fdct'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -26,18 +26,22 @@ function workflowsOf(person: FdctTechnologist): CardWorkflowItem[] {
 
 const people = technologists(locale).map((person) => ({
   ...person,
-  ctaLabel: t('fdct.technologists.seeWork', locale, {
-    name: person.nickname ?? person.name.split(' ')[0]
-  }),
+  ctaLabel: t(
+    'fdct.technologists.seeWork',
+    {
+      name: person.nickname ?? person.name.split(' ')[0]
+    },
+    { locale: locale }
+  ),
   workflows: workflowsOf(person)
 }))
 </script>
 
 <template>
   <TeamGrid01
-    :heading="t('fdct.technologists.title', locale)"
-    :lead="t('fdct.technologists.lead', locale)"
+    :heading="t('fdct.technologists.title', {}, { locale: locale })"
+    :lead="t('fdct.technologists.lead', {}, { locale: locale })"
     :people="people"
-    :close-label="t('fdct.technologists.close', locale)"
+    :close-label="t('fdct.technologists.close', {}, { locale: locale })"
   />
 </template>

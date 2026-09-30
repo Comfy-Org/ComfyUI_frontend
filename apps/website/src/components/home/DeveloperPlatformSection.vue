@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import { getRoutes } from '../../config/routes'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
 
@@ -14,6 +14,6 @@ const routes = getRoutes(locale)
     visual="shader"
     badge-only
     :primary-href="routes.platform"
-    :subtitle="t('home.platform.body', locale)"
+    :subtitle="t('home.platform.body', {}, { locale: locale })"
   />
 </template>

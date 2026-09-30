@@ -3,8 +3,8 @@ import { ArrowUpRight } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { repo, locale = 'en' } = defineProps<{
   repo?: string
@@ -31,7 +31,13 @@ const { repo, locale = 'en' } = defineProps<{
       class="size-4 icon-mask mask-[url('/icons/social/github.svg')]"
       aria-hidden="true"
     />
-    {{ tc(repo ? 'cinematic.repo.view' : 'cinematic.repo.soon', locale) }}
+    {{
+      tc(
+        repo ? 'cinematic.repo.view' : 'cinematic.repo.soon',
+        {},
+        { locale: locale }
+      )
+    }}
     <ArrowUpRight v-if="repo" class="size-3.5" aria-hidden="true" />
   </component>
 </template>

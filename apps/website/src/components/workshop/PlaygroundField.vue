@@ -20,8 +20,8 @@ import {
 import { formatWorkshopUploadLimit } from '../../config/workshop-limits'
 import { isHttpImageSource } from '../../config/workshop-image-source'
 import { workshopExampleFile } from '../../config/workshop-example-file'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import FileSourceInput from './FileSourceInput.vue'
 import DialogueInput from './DialogueInput.vue'
@@ -107,16 +107,20 @@ function videoWidthMaximum(): string {
 
 function messageForError(error: FieldErrorCode): string {
   if (error === 'incompatible' && field.hint) return field.hint
-  return t(errorKey[error], locale, {
-    limit: formatWorkshopUploadLimit(uploadLimit(), locale),
-    seconds: videoDurationLimit(),
-    minimum: String(
-      field.presentation?.imageAspectRatio?.minimum ?? videoWidthMinimum()
-    ),
-    maximum: String(
-      field.presentation?.imageAspectRatio?.maximum ?? videoWidthMaximum()
-    )
-  })
+  return t(
+    errorKey[error],
+    {
+      limit: formatWorkshopUploadLimit(uploadLimit(), locale),
+      seconds: videoDurationLimit(),
+      minimum: String(
+        field.presentation?.imageAspectRatio?.minimum ?? videoWidthMinimum()
+      ),
+      maximum: String(
+        field.presentation?.imageAspectRatio?.maximum ?? videoWidthMaximum()
+      )
+    },
+    { locale: locale }
+  )
 }
 
 const errorMessage = computed(() =>
@@ -137,9 +141,13 @@ function formatValue(value: string | number | boolean): string {
   const optionLabel = field.presentation?.optionLabels?.[String(value)]
   if (optionLabel) return optionLabel
   if (typeof value === 'boolean')
-    return t(value ? 'workshop.field.on' : 'workshop.field.off', locale)
+    return t(
+      value ? 'workshop.field.on' : 'workshop.field.off',
+      {},
+      { locale: locale }
+    )
   if (value === 'auto' || value === 'adaptive')
-    return t('workshop.field.auto', locale)
+    return t('workshop.field.auto', {}, { locale: locale })
   const label =
     typeof value === 'number'
       ? new Intl.NumberFormat(locale).format(value)
@@ -154,8 +162,8 @@ function formatValue(value: string | number | boolean): string {
       ? new Intl.NumberFormat(locale).format(Number(value.slice(0, -1)))
       : label
   return value === -1 || value === '-1'
-    ? t('workshop.field.auto', locale)
-    : t('workshop.field.seconds', locale, { value: seconds })
+    ? t('workshop.field.auto', {}, { locale: locale })
+    : t('workshop.field.seconds', { value: seconds }, { locale: locale })
 }
 
 const hasEmptyOption = computed(
@@ -391,7 +399,11 @@ function booleanValue(fallback = false): boolean {
           :value="numberValue() ?? ''"
           :disabled
           :aria-label="
-            t('workshop.field.exactValue', locale, { label: field.label })
+            t(
+              'workshop.field.exactValue',
+              { label: field.label },
+              { locale: locale }
+            )
           "
           :aria-required="field.required || undefined"
           :aria-invalid="invalid()"
@@ -416,9 +428,13 @@ function booleanValue(fallback = false): boolean {
         class="text-xs text-primary-warm-gray"
       >
         {{
-          t('workshop.field.defaultValue', locale, {
-            value: formatValue(declaredDefault)
-          })
+          t(
+            'workshop.field.defaultValue',
+            {
+              value: formatValue(declaredDefault)
+            },
+            { locale: locale }
+          )
         }}
       </p>
     </div>
@@ -498,7 +514,13 @@ function booleanValue(fallback = false): boolean {
           :selected="selectValue() === ''"
           class="bg-primary-comfy-ink"
         >
-          {{ t('workshop.field.chooseValue', locale, { label: field.label }) }}
+          {{
+            t(
+              'workshop.field.chooseValue',
+              { label: field.label },
+              { locale: locale }
+            )
+          }}
         </option>
         <option
           v-for="(option, index) in field.options"
@@ -570,13 +592,13 @@ function booleanValue(fallback = false): boolean {
       @change="onOptionalToggle"
     >
       <option value="" :selected="values[field.name] === undefined">
-        {{ t('workshop.field.providerDefault', locale) }}
+        {{ t('workshop.field.providerDefault', {}, { locale: locale }) }}
       </option>
       <option value="true" :selected="values[field.name] === true">
-        {{ t('workshop.field.on', locale) }}
+        {{ t('workshop.field.on', {}, { locale: locale }) }}
       </option>
       <option value="false" :selected="values[field.name] === false">
-        {{ t('workshop.field.off', locale) }}
+        {{ t('workshop.field.off', {}, { locale: locale }) }}
       </option>
     </select>
 

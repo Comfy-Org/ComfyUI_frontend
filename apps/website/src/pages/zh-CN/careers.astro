@@ -7,7 +7,7 @@ import TeamPhotosSection from '../../components/careers/TeamPhotosSection.vue'
 import FAQSection from '../../components/common/FAQSection.vue'
 import { fetchRolesForBuild } from '../../utils/ashby'
 import { reportAshbyOutcome } from '../../utils/ashby.ci'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import {
   absoluteUrl,
   itemListNode,
@@ -34,7 +34,7 @@ const { locale, url } = pageContext(
 )
 const roles = itemListNode(
   url,
-  t('breadcrumb.careers', locale),
+  t('breadcrumb.careers', {}, { locale: locale }),
   departments.flatMap((department) =>
     department.roles.map((role) => ({ name: role.title, url: role.jobUrl }))
   )
@@ -48,10 +48,10 @@ const roles = itemListNode(
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', locale),
+      name: t('breadcrumb.home', {}, { locale: locale }),
       url: absoluteUrl(Astro.site, '/zh-CN')
     },
-    { name: t('breadcrumb.careers', locale) }
+    { name: t('breadcrumb.careers', {}, { locale: locale }) }
   ]}
   extraJsonLd={[roles]}
 >

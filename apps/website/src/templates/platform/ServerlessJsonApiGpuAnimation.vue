@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { locale = 'en', compact = false } = defineProps<{
   locale?: Locale
@@ -20,7 +20,9 @@ const { locale = 'en', compact = false } = defineProps<{
     "
   >
     <iframe
-      :title="t('platform.serverlessHero.animationTitle', locale)"
+      :title="
+        t('platform.serverlessHero.animationTitle', {}, { locale: locale })
+      "
       :src="`/assets/platform/serverless/json-api-gpu-animation.html?v=astronaut-quality-2${compact ? '&layout=compact' : ''}`"
       class="absolute inset-0 size-full border-0"
       loading="eager"

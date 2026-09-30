@@ -5,7 +5,7 @@ import StorySection from '../../components/about/StorySection.vue'
 import OurValuesSection from '../../components/about/OurValuesSection.vue'
 import ValuesSection from '../../components/about/ValuesSection.vue'
 import CareersSection from '../../components/about/CareersSection.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import { absoluteUrl, organizationId, pageContext } from '../../utils/jsonLd'
 
 const { siteUrl, locale } = pageContext(
@@ -22,10 +22,10 @@ const { siteUrl, locale } = pageContext(
   mainEntityId={organizationId(siteUrl)}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', locale),
+      name: t('breadcrumb.home', {}, { locale: locale }),
       url: absoluteUrl(Astro.site, '/zh-CN')
     },
-    { name: t('breadcrumb.about', locale) }
+    { name: t('breadcrumb.about', {}, { locale: locale }) }
   ]}
 >
   <HeroSection locale="zh-CN" client:load />

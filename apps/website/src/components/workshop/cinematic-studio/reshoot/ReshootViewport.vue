@@ -11,9 +11,9 @@ import {
   clampAxis,
   viewTransform
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
 import type { ReshootRunPhase } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/run'
-import type { Locale } from '../../../../i18n/translations'
+import type { Locale } from '../../../../i18n/site'
 import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
 import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import ReshootWarp from './ReshootWarp.vue'
@@ -65,7 +65,8 @@ const analyzing = computed(() =>
       : stage === 'queued'
         ? 'reshoot.stage.queued'
         : 'reshoot.analyzing',
-    locale
+    {},
+    { locale: locale }
   )
 )
 
@@ -180,10 +181,10 @@ const DOLLY_BUTTONS = [
       >
         <Move3d class="size-3.5 shrink-0" aria-hidden="true" />
         <span class="truncate pointer-coarse:hidden">
-          {{ rc('reshoot.dragHint.label', locale) }}
+          {{ rc('reshoot.dragHint.label', {}, { locale: locale }) }}
         </span>
         <span class="hidden truncate pointer-coarse:inline">
-          {{ rc('reshoot.dragHint.touch', locale) }}
+          {{ rc('reshoot.dragHint.touch', {}, { locale: locale }) }}
         </span>
       </span>
       <span
@@ -202,7 +203,7 @@ const DOLLY_BUTTONS = [
         v-for="{ step, label, icon } in DOLLY_BUTTONS"
         :key="label"
         type="button"
-        :aria-label="rc(label, locale)"
+        :aria-label="rc(label, {}, { locale: locale })"
         class="grid size-9 place-items-center rounded-full bg-primary-comfy-ink/80 text-primary-warm-white"
         @pointerdown.stop
         @click="dolly(step)"

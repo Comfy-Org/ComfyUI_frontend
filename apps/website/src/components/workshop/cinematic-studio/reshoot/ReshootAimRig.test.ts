@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { h } from 'vue'
 
 import { DEFAULT_CAMERA } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
 import ReshootAimRig from './ReshootAimRig.vue'
 
 describe('ReshootAimRig', () => {

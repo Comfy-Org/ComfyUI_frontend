@@ -8,12 +8,12 @@ import ToolsSection from '../templates/mcp/ToolsSection.vue'
 import UseCasesSection from '../templates/mcp/UseCasesSection.vue'
 import HowItWorksSection from '../templates/mcp/HowItWorksSection.vue'
 import FAQSection from '../templates/mcp/FAQSection.vue'
-import { t } from '../i18n/translations'
+import { t } from '../i18n/site'
 ---
 
 <BaseLayout
-  title={t('mcp.meta.title', 'en')}
-  description={t('mcp.meta.description', 'en')}
+  title={t('mcp.meta.title', {}, { locale: 'en' })}
+  description={t('mcp.meta.description', {}, { locale: 'en' })}
 >
   <HeroSection locale="en" client:load />
   <SetupSection locale="en" client:visible />

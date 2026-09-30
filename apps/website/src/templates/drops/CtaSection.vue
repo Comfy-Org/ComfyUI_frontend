@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import { externalLinks } from '../../config/routes'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
   <CtaCenter01
-    :heading="t('launches.cta.heading', locale)"
+    :heading="t('launches.cta.heading', {}, { locale: locale })"
     :primary-cta="{
-      label: t('launches.cta.primary', locale),
+      label: t('launches.cta.primary', {}, { locale: locale }),
       href: externalLinks.cloud,
       target: '_blank'
     }"
     :secondary-cta="{
-      label: t('launches.cta.secondary', locale),
+      label: t('launches.cta.secondary', {}, { locale: locale }),
       href: externalLinks.workflows,
       target: '_blank'
     }"

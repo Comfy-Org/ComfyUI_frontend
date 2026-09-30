@@ -10,12 +10,16 @@ import ServerlessHowItWorksSection from '../../../templates/platform/ServerlessH
 import ServerlessProductVideoSection from '../../../templates/platform/ServerlessProductVideoSection.vue'
 import ServerlessScaleSection from '../../../templates/platform/ServerlessScaleSection.vue'
 import ServerlessSkipSetupBanner from '../../../templates/platform/ServerlessSkipSetupBanner.vue'
-import { t } from '../../../i18n/translations'
+import { t } from '../../../i18n/site'
 ---
 
 <BaseLayout
-  title={`${t('platform.products.serverless.title', 'zh-CN')} · ${t('platform.meta.title', 'zh-CN')}`}
-  description={t('platform.products.serverless.description', 'zh-CN')}
+  title={`${t('platform.products.serverless.title', {}, { locale: 'zh-CN' })} · ${t('platform.meta.title', {}, { locale: 'zh-CN' })}`}
+  description={t(
+    'platform.products.serverless.description',
+    {},
+    { locale: 'zh-CN' }
+  )}
 >
   <ServerlessHero locale="zh-CN" client:load />
   <ServerlessHowItWorksSection locale="zh-CN" client:visible />
@@ -27,7 +31,11 @@ import { t } from '../../../i18n/translations'
   <ServerlessProductVideoSection locale="zh-CN" client:visible />
   <ClosingCtaSection
     locale="zh-CN"
-    heading-after-badge={t('platform.closing.headingAfterBadge', 'zh-CN')}
+    heading-after-badge={t(
+      'platform.closing.headingAfterBadge',
+      {},
+      { locale: 'zh-CN' }
+    )}
     client:visible
   />
   <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />

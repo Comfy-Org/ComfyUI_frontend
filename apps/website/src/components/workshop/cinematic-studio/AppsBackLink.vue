@@ -2,8 +2,8 @@
 import { ChevronLeft } from '@lucide/vue'
 
 import { getRoutes } from '../../../config/routes'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -17,6 +17,6 @@ const href = getRoutes(locale).hubApps
     data-testid="apps-back"
   >
     <ChevronLeft class="size-4" aria-hidden="true" />
-    {{ tc('cinematic.backToApps', locale) }}
+    {{ tc('cinematic.backToApps', {}, { locale: locale }) }}
   </a>
 </template>

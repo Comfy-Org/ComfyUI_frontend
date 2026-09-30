@@ -2,8 +2,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { locale = 'en', active } = defineProps<{
   locale?: Locale
@@ -15,14 +15,14 @@ const routes = getRoutes(locale)
 const surfaces = [
   {
     id: 'mcp' as const,
-    name: t('surfaces.mcp.name', locale),
-    tagline: t('surfaces.mcp.tagline', locale),
+    name: t('surfaces.mcp.name', {}, { locale: locale }),
+    tagline: t('surfaces.mcp.tagline', {}, { locale: locale }),
     href: routes.mcp
   },
   {
     id: 'cli' as const,
-    name: t('surfaces.cli.name', locale),
-    tagline: t('surfaces.cli.tagline', locale),
+    name: t('surfaces.cli.name', {}, { locale: locale }),
+    tagline: t('surfaces.cli.tagline', {}, { locale: locale }),
     href: routes.cli
   }
 ]
@@ -33,7 +33,7 @@ const surfaceClass =
 
 <template>
   <nav
-    :aria-label="t('surfaces.tabsLabel', locale)"
+    :aria-label="t('surfaces.tabsLabel', {}, { locale: locale })"
     class="inline-flex flex-wrap gap-2"
   >
     <template v-for="surface in surfaces" :key="surface.id">

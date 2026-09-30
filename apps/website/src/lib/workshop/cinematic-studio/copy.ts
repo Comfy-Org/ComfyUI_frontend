@@ -1,14 +1,22 @@
-import type { MessageKey } from '../../../i18n/translations'
-import { createTranslator } from '../../../i18n/translations'
-import en from '../../../locales/en/cinematic.json' with { type: 'json' }
-import ja from '../../../locales/ja/cinematic.json' with { type: 'json' }
-import zhCN from '../../../locales/zh-CN/cinematic.json' with { type: 'json' }
+import { createI18n } from 'vue-i18n'
 
-/**
- * Copy for the Cinematic Studio only. It has its own catalog, outside the
- * site-wide one, so the studio's strings ship with the studio and do not add
- * to every other page's script budget.
- */
-export const { t: tc } = createTranslator({ en, 'zh-CN': zhCN, ja })
+import { DEFAULT_LOCALE } from '../../../config/locales'
+import type { MessageKey } from '../../../i18n/site'
+import en from '../../../locales/en/studio.json' with { type: 'json' }
+import ja from '../../../locales/ja/studio.json' with { type: 'json' }
+import zhCN from '../../../locales/zh-CN/studio.json' with { type: 'json' }
 
-export type CinematicCopyKey = MessageKey<typeof en>
+const studioI18n = createI18n({
+  legacy: false,
+  locale: DEFAULT_LOCALE,
+  fallbackLocale: DEFAULT_LOCALE,
+  messages: { en, 'zh-CN': zhCN, ja },
+  missingWarn: false,
+  fallbackWarn: false,
+  warnHtmlMessage: false
+})
+
+export const { t: studioT } = studioI18n.global
+
+export type CinematicCopyKey = MessageKey<{ cinematic: typeof en.cinematic }>
+export type ReshootCopyKey = MessageKey<{ reshoot: typeof en.reshoot }>

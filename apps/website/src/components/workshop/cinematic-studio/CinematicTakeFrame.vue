@@ -5,8 +5,8 @@ import { computed, ref, watch } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
 import CinematicTakeMedia from './CinematicTakeMedia.vue'
 import CinematicTakeNotice from './CinematicTakeNotice.vue'
@@ -97,7 +97,7 @@ function frameTone(take: Take): string | undefined {
       <LoaderCircle
         v-if="!loaded && !withheld"
         class="size-5 animate-spin text-primary-warm-gray"
-        :aria-label="tc('cinematic.stage.loadingTake', locale)"
+        :aria-label="tc('cinematic.stage.loadingTake', {}, { locale: locale })"
       />
     </template>
     <CinematicTakeProgress

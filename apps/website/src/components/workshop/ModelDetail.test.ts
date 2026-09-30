@@ -26,7 +26,7 @@ import type {
 } from '@comfyorg/account-core/session'
 
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import {
   runWorkshopRouter,

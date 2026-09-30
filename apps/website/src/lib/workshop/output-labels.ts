@@ -1,5 +1,5 @@
 import type { RunOutput } from '../../config/workshop-run'
-import type { TranslationKey } from '../../i18n/translations'
+import type { TranslationKey } from '../../i18n/site'
 
 const KIND_KEYS: Record<RunOutput['kind'], TranslationKey> = {
   image: 'workshop.output.kindImage',

@@ -10,7 +10,11 @@ describe('routerT', () => {
     'fills named values in the $locale message',
     ({ locale, expected }) => {
       expect(
-        routerT('platform.router.coverage.browseAll', locale, { count: 120 })
+        routerT(
+          'platform.router.coverage.browseAll',
+          { count: 120 },
+          { locale: locale }
+        )
       ).toBe(expected)
     }
   )

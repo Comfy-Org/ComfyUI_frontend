@@ -9,14 +9,13 @@ import type { WorkshopAppId } from '../../../lib/workshop/apps'
 import { workshopAppHref } from '../../../lib/workshop/apps'
 import { getRoutes } from '../../../config/routes'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT } from '../../../lib/workshop/cinematic-studio/copy'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
   useWorkshopEnabled
 } from '../../../scripts/posthog'
-import { rc } from '../../../lib/workshop/cinematic-studio/reshoot-copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import WorkshopGate from '../WorkshopGate.vue'
 import CinematicAppsHub from './CinematicAppsHub.vue'
@@ -83,12 +82,21 @@ watch(
   }
 )
 const layoutOptions = computed(() =>
-  LAYOUTS.map((option) => ({ id: option.id, label: tc(option.label, locale) }))
+  LAYOUTS.map((option) => ({
+    id: option.id,
+    label: studioT(option.label, {}, { locale: locale })
+  }))
 )
 const appOptions = computed(() =>
   [
-    { id: 'studio', label: tc('cinematic.title', locale) },
-    { id: 'reshoot', label: rc('reshoot.title', locale) }
+    {
+      id: 'studio',
+      label: studioT('cinematic.title', {}, { locale: locale })
+    },
+    {
+      id: 'reshoot',
+      label: studioT('reshoot.title', {}, { locale: locale })
+    }
   ].filter((option) =>
     shownApps.value.some((candidate) => candidate.appId === option.id)
   )
@@ -169,8 +177,8 @@ function pickApp(id: string) {
       :layout
       :apps="appOptions"
       :layouts="layoutOptions"
-      :app-heading="tc('cinematic.ux.app', locale)"
-      :layout-heading="tc('cinematic.ux.heading', locale)"
+      :app-heading="studioT('cinematic.ux.app', {}, { locale: locale })"
+      :layout-heading="studioT('cinematic.ux.heading', {}, { locale: locale })"
       @update:app="pickApp"
       @update:layout="pickLayout"
     />
@@ -185,13 +193,13 @@ function pickApp(id: string) {
         class="flex min-h-[60svh] flex-col items-center justify-center gap-3 text-center"
       >
         <p class="text-base font-semibold text-primary-warm-white">
-          {{ tc('cinematic.unavailable.title', locale) }}
+          {{ studioT('cinematic.unavailable.title', {}, { locale: locale }) }}
         </p>
         <a
           :href="workshopHref"
           class="text-sm text-primary-comfy-yellow underline underline-offset-4"
         >
-          {{ tc('cinematic.unavailable.link', locale) }}
+          {{ studioT('cinematic.unavailable.link', {}, { locale: locale }) }}
         </a>
       </div>
     </template>

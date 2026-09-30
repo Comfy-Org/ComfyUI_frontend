@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import HeroLivestream01 from '../../components/blocks/HeroLivestream01.vue'
 import LaunchesHeroLogo from './LaunchesHeroLogo.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import { livestream } from './livestream'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -14,13 +14,13 @@ const routes = getRoutes(locale)
 
 <template>
   <HeroLivestream01
-    :title="t('launches.hero.title', locale)"
+    :title="t('launches.hero.title', {}, { locale: locale })"
     :primary-cta="{
-      label: t('launches.hero.primary', locale),
+      label: t('launches.hero.primary', {}, { locale: locale }),
       href: routes.download
     }"
     :secondary-cta="{
-      label: t('launches.hero.secondary', locale),
+      label: t('launches.hero.secondary', {}, { locale: locale }),
       href: externalLinks.cloud,
       target: '_blank'
     }"
@@ -29,7 +29,9 @@ const routes = getRoutes(locale)
     :end-date-time="livestream.endDateTime"
   >
     <template #visual>
-      <LaunchesHeroLogo :label="t('launches.hero.visualAlt', locale)" />
+      <LaunchesHeroLogo
+        :label="t('launches.hero.visualAlt', {}, { locale: locale })"
+      />
     </template>
   </HeroLivestream01>
 </template>

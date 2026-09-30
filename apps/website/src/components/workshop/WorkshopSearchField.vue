@@ -9,8 +9,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { filterWorkshopModels } from '../../config/models-catalogue'
 import { useVisualViewport } from '../../composables/useVisualViewport'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
 
 const {
@@ -32,14 +32,19 @@ const {
 const query = defineModel<string>({ required: true })
 const mounted = useMounted()
 const label = computed(() =>
-  t(kind === 'models' ? 'workshop.search.label' : 'workshop.hub.search', locale)
+  t(
+    kind === 'models' ? 'workshop.search.label' : 'workshop.hub.search',
+    {},
+    { locale: locale }
+  )
 )
 const shortLabel = computed(() =>
   t(
     kind === 'models'
       ? 'workshop.search.short'
       : 'workshop.catalogue.searchWorkflows',
-    locale
+    {},
+    { locale: locale }
   )
 )
 const showLabel = computed(() =>
@@ -47,8 +52,8 @@ const showLabel = computed(() =>
     kind === 'models'
       ? 'workshop.search.show'
       : 'workshop.catalogue.showWorkflows',
-    locale,
-    { n: matches.value }
+    { n: matches.value },
+    { locale: locale }
   )
 )
 
@@ -128,7 +133,7 @@ const clearButtonClass =
       <button
         v-if="query"
         type="button"
-        :aria-label="t('workshop.search.clear', locale)"
+        :aria-label="t('workshop.search.clear', {}, { locale: locale })"
         data-testid="workshop-search-clear"
         :class="clearButtonClass"
         @click="query = ''"
@@ -165,7 +170,7 @@ const clearButtonClass =
               <button
                 v-if="query"
                 type="button"
-                :aria-label="t('workshop.search.clear', locale)"
+                :aria-label="t('workshop.search.clear', {}, { locale: locale })"
                 :class="clearButtonClass"
                 @click="query = ''"
               >
@@ -174,7 +179,7 @@ const clearButtonClass =
             </div>
             <button
               type="button"
-              :aria-label="t('workshop.search.close', locale)"
+              :aria-label="t('workshop.search.close', {}, { locale: locale })"
               class="grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl bg-white/8 text-primary-warm-gray hover:text-primary-warm-white"
               data-testid="workshop-search-sheet-close"
               @click="sheetOpen = false"
@@ -207,7 +212,7 @@ const clearButtonClass =
               data-testid="workshop-search-sheet-clear"
               @click="clearSheet"
             >
-              {{ t('workshop.filter.clearAll', locale) }}
+              {{ t('workshop.filter.clearAll', {}, { locale: locale }) }}
             </button>
             <button
               type="button"

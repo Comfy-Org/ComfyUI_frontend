@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import { routerT } from './routerCopy'
 import ModelsApiHero from './ModelsApiHero.vue'
 
@@ -13,7 +13,7 @@ describe('ModelsApiHero', () => {
     expect(screen.queryByText('Comfy Router', { exact: true })).toBeNull()
     expect(
       screen.getByRole('heading', {
-        name: t('platform.modelsHero.heading', 'en')
+        name: t('platform.modelsHero.heading', {}, { locale: 'en' })
       })
     ).toBeTruthy()
     expect(
@@ -21,9 +21,11 @@ describe('ModelsApiHero', () => {
     ).toBeTruthy()
     for (const panel of screen.getAllByRole('tabpanel'))
       expect(panel).toHaveTextContent('client.models.run')
-    expect(screen.queryByText(t('nav.badgeBeta', 'en'))).toBeNull()
+    expect(
+      screen.queryByText(t('nav.badgeBeta', {}, { locale: 'en' }))
+    ).toBeNull()
     const browseModels = screen.getAllByRole('link', {
-      name: routerT('platform.router.cta.browseModels', 'en')
+      name: routerT('platform.router.cta.browseModels', {}, { locale: 'en' })
     })
     expect(browseModels.length).toBeGreaterThan(0)
     for (const link of browseModels)
@@ -35,7 +37,9 @@ describe('ModelsApiHero', () => {
 
     expect(
       screen
-        .getByRole('link', { name: t('platform.modelsHero.getApiKey', 'en') })
+        .getByRole('link', {
+          name: t('platform.modelsHero.getApiKey', {}, { locale: 'en' })
+        })
         .getAttribute('href')
     ).toBe('https://platform.comfy.org/profile/api-keys?onboarding=router')
   })

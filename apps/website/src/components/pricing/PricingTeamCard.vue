@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
 import type { PlanFeatureGroup } from './PricingPlanFeatureList.vue'
 import { computed, ref } from 'vue'
 
@@ -10,7 +10,7 @@ import {
   formatTeamCreditsShort,
   teamCreditTiers
 } from '../../data/teamCreditTiers'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import Button from '../ui/button/Button.vue'
 import Slider from '../ui/slider/Slider.vue'
 import PricingCard from './PricingCard.vue'
@@ -55,7 +55,8 @@ const teamCreditsLabel = computed(() =>
     billingPeriod === 'yearly'
       ? 'pricing.creditsLabelYearly'
       : 'pricing.creditsLabel',
-    locale
+    {},
+    { locale: locale }
   )
 )
 
@@ -68,10 +69,14 @@ const teamSaving = computed<string | undefined>(() => {
   const discounted = selectedTeamPrice.value
   if (base === discounted) return undefined
   const pct = Math.round(((base - discounted) / base) * 1000) / 10
-  return t('pricing.savePercent', locale, {
-    pct,
-    amount: fmtPrice(base - discounted)
-  })
+  return t(
+    'pricing.savePercent',
+    {
+      pct,
+      amount: fmtPrice(base - discounted)
+    },
+    { locale: locale }
+  )
 })
 
 const featureGroups = computed<PlanFeatureGroup[]>(() => [
@@ -109,15 +114,17 @@ const ctaHref = computed(() =>
         <div
           class="flex flex-col items-start gap-2 lg:flex-row lg:items-center lg:gap-4"
         >
-          <PricingPlanLabel :label="t('pricing.plan.team.label', locale)" />
+          <PricingPlanLabel
+            :label="t('pricing.plan.team.label', {}, { locale: locale })"
+          />
           <p class="text-sm text-primary-warm-gray">
-            {{ t('pricing.team.description', locale) }}
+            {{ t('pricing.team.description', {}, { locale: locale }) }}
           </p>
         </div>
 
         <PricingPrice
           :price="fmtPrice(selectedTeamPrice)"
-          :period="t('pricing.plan.period', locale)"
+          :period="t('pricing.plan.period', {}, { locale: locale })"
           :original-price="
             selectedTeamTier.basePrice !== selectedTeamPrice
               ? fmtPrice(selectedTeamTier.basePrice)
@@ -137,8 +144,8 @@ const ctaHref = computed(() =>
             :max="teamCreditTiers.length - 1"
             :step="1"
             :ticks="teamCreditTiers.length"
-            :thumb-label="t('pricing.team.sliderLabel', locale)"
-            :thumb-value-text="`${teamCredits.toLocaleString('en-US')} ${teamCreditsLabel}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', locale)}`"
+            :thumb-label="t('pricing.team.sliderLabel', {}, { locale: locale })"
+            :thumb-value-text="`${teamCredits.toLocaleString('en-US')} ${teamCreditsLabel}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', {}, { locale: locale })}`"
           >
             <template #tick="{ index, active }">
               <CreditsIcon
@@ -176,7 +183,7 @@ const ctaHref = computed(() =>
 
         <div class="mt-8">
           <Button :href="ctaHref" class="w-full" variant="outline">
-            {{ t('pricing.plan.team.cta', locale) }}
+            {{ t('pricing.plan.team.cta', {}, { locale: locale }) }}
           </Button>
         </div>
       </div>

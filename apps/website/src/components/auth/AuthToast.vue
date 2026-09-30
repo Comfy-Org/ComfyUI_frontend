@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { removeToast, useAuthToasts } from '../../config/auth-toast-state'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import AuthToastMessage from './AuthToastMessage.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -27,7 +27,7 @@ const { messages } = useAuthToasts()
         v-for="message in messages"
         :key="message.id"
         :message="message"
-        :close-label="t('auth.toast.close', locale)"
+        :close-label="t('auth.toast.close', {}, { locale: locale })"
         @close="removeToast"
       />
     </TransitionGroup>

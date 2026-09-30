@@ -843,7 +843,8 @@
         "label": "创作者",
         "title": "从创意到成品，\n只需几分钟。"
       },
-      "heading": "为追求质量、控制与简约的{creators}而生。",
+      "headingAfter": "而生。",
+      "headingBefore": "为追求质量、控制与简约的",
       "headingHighlight": "创作者",
       "teams": {
         "description": "无需 IT 部署、GPU 采购，也没有环境配置的烦恼。所有人在同一个最新平台上工作。通过 App Mode 链接分享工作流——团队立即运行，无需培训。",
@@ -2089,7 +2090,8 @@
       "visitHub": "访问社区中心"
     },
     "heroSubtitle": "社区使用 ComfyUI 创作成果的一小部分展示。",
-    "heroTitle": "在 {brand} 中构建、调整与创想",
+    "heroTitleAfter": " 中构建、调整与创想",
+    "heroTitleBefore": "在 ",
     "label": "画廊"
   },
   "geminiOmni": {
@@ -2823,7 +2825,8 @@
       },
       "heroCta": "立即试用 {name}",
       "heroSubtitle": "从开源扩散模型到合作伙伴 API，涵盖每一个主流模型，并附带可直接运行的社区工作流模板。",
-      "heroTitle": "{brand} 中的 {name}",
+      "heroTitleAfter": " 中的 {name}",
+      "heroTitleBefore": "",
       "label": "模型"
     },
     "llms": {

@@ -7,12 +7,12 @@ import BrandColorSection from '../../templates/brand/BrandColorSection.vue'
 import BrandVoiceSection from '../../templates/brand/BrandVoiceSection.vue'
 import BrandTrademarkSection from '../../templates/brand/BrandTrademarkSection.vue'
 import BrandQuestionsSection from '../../templates/brand/BrandQuestionsSection.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 ---
 
 <BaseLayout
-  title={t('brand.page.title', 'zh-CN')}
-  description={t('brand.page.description', 'zh-CN')}
+  title={t('brand.page.title', {}, { locale: 'zh-CN' })}
+  description={t('brand.page.description', {}, { locale: 'zh-CN' })}
 >
   <div class="relative">
     <BrandBackground client:idle />

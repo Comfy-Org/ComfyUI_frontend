@@ -1,6 +1,6 @@
 import type { Analytics } from '@customerio/cdp-analytics-browser'
 
-import type { Locale } from '@/i18n/translations'
+import type { Locale } from '@/i18n/site'
 
 // Public client-side key for the "comfy.org website" Customer.io source,
 // overridable per-environment; setting the env var to '' disables the form.

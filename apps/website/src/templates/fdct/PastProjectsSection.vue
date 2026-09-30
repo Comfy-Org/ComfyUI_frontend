@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
 import CardWorkflowGallery01 from '../../components/blocks/CardWorkflowGallery01.vue'
 import type { CardWorkflowItem } from '../../components/blocks/CardWorkflow01.vue'
 import { featuredProjects } from '../../data/fdct'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -22,7 +22,7 @@ const items = computed<CardWorkflowItem[]>(() =>
 
 <template>
   <CardWorkflowGallery01
-    :title="t('fdct.projects.title', locale)"
+    :title="t('fdct.projects.title', {}, { locale: locale })"
     title-align="center"
     :items
   />

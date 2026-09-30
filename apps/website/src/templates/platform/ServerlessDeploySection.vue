@@ -5,8 +5,8 @@ import { computed } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { deployPromptFor } from '../../config/deploy-prompt'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import LiveTerminal from './LiveTerminal.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -31,12 +31,12 @@ const DEPLOY_TRANSCRIPT = [
 <template>
   <section class="mx-auto max-w-9xl px-6 pt-10 pb-4 lg:pt-14 lg:pb-6">
     <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.serverlessDeploy.shipHeading', locale) }}
+      {{ t('platform.serverlessDeploy.shipHeading', {}, { locale }) }}
       <template #subtitle>
         <p
           class="mx-auto mt-4 max-w-2xl text-sm whitespace-pre-line text-smoke-700"
         >
-          {{ t('platform.serverlessDeploy.shipSubtitle', locale) }}
+          {{ t('platform.serverlessDeploy.shipSubtitle', {}, { locale }) }}
         </p>
       </template>
     </SectionHeader>
@@ -50,7 +50,8 @@ const DEPLOY_TRANSCRIPT = [
             copied
               ? 'platform.serverlessDeploy.copied'
               : 'platform.serverlessDeploy.copy',
-            locale
+            {},
+            { locale }
           )
         "
         @click="copy()"
@@ -63,7 +64,7 @@ const DEPLOY_TRANSCRIPT = [
       </button>
       <LiveTerminal
         :lines="DEPLOY_TRANSCRIPT"
-        :label="t('platform.serverlessDeploy.heading', locale)"
+        :label="t('platform.serverlessDeploy.heading', {}, { locale })"
         :typewriter="false"
       />
     </div>

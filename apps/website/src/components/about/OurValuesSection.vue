@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import NodeBadge from '../common/NodeBadge.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 
@@ -36,16 +36,16 @@ const values: {
   <section class="mx-auto max-w-9xl px-6 py-24 lg:px-20 lg:py-32">
     <div class="mx-auto max-w-5xl text-center">
       <SectionLabel>
-        {{ t('about.values.label', locale) }}
+        {{ t('about.values.label', {}, { locale: locale }) }}
       </SectionLabel>
       <h2
         class="mt-6 text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ t('about.values.headingBefore', locale)
+        {{ t('about.values.headingBefore', {}, { locale: locale })
         }}<span class="text-primary-comfy-yellow">{{
-          t('about.values.headingHighlight', locale)
+          t('about.values.headingHighlight', {}, { locale: locale })
         }}</span
-        >{{ t('about.values.headingAfter', locale) }}
+        >{{ t('about.values.headingAfter', {}, { locale: locale }) }}
       </h2>
     </div>
 
@@ -63,7 +63,7 @@ const values: {
               text-class="text-2xl lg:text-3xl"
             />
             <p class="mt-4 text-sm/relaxed text-primary-comfy-canvas">
-              {{ t(values[0].bodyKey, locale) }}
+              {{ t(values[0].bodyKey, {}, { locale: locale }) }}
             </p>
           </div>
           <img
@@ -81,7 +81,7 @@ const values: {
               text-class="text-2xl lg:text-3xl"
             />
             <p class="mt-4 text-sm/relaxed text-primary-comfy-canvas">
-              {{ t(values[1].bodyKey, locale) }}
+              {{ t(values[1].bodyKey, {}, { locale: locale }) }}
             </p>
           </div>
         </div>
@@ -104,7 +104,7 @@ const values: {
             text-class="text-2xl lg:text-3xl"
           />
           <p class="mt-4 text-sm/relaxed text-primary-comfy-canvas">
-            {{ t(values[2].bodyKey, locale) }}
+            {{ t(values[2].bodyKey, {}, { locale: locale }) }}
           </p>
         </div>
 
@@ -126,7 +126,7 @@ const values: {
             text-class="text-2xl lg:text-3xl"
           />
           <p class="mt-4 text-sm/relaxed text-primary-comfy-canvas">
-            {{ t(values[3].bodyKey, locale) }}
+            {{ t(values[3].bodyKey, {}, { locale: locale }) }}
           </p>
         </div>
       </div>
@@ -156,7 +156,7 @@ const values: {
               text-class="text-xl sm:text-2xl lg:text-3xl"
             />
             <p class="mt-4 text-sm/relaxed text-primary-comfy-canvas">
-              {{ t(value.bodyKey, locale) }}
+              {{ t(value.bodyKey, {}, { locale: locale }) }}
             </p>
           </div>
         </template>

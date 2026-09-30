@@ -10,8 +10,8 @@ import {
 import { computed } from 'vue'
 
 import type { ButtonVariants } from '../ui/button'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import type { CalendarEvent } from '../../utils/calendar'
 import {
   toGoogleCalendarUrl,
@@ -36,10 +36,10 @@ const {
 }>()
 
 const labels = computed(() => ({
-  trigger: t('events.calendar.addToCalendar', locale),
-  google: t('events.calendar.google', locale),
-  apple: t('events.calendar.apple', locale),
-  outlook: t('events.calendar.outlook', locale)
+  trigger: t('events.calendar.addToCalendar', {}, { locale: locale }),
+  google: t('events.calendar.google', {}, { locale: locale }),
+  apple: t('events.calendar.apple', {}, { locale: locale }),
+  outlook: t('events.calendar.outlook', {}, { locale: locale })
 }))
 
 const externalRel = resolveRel({ target: '_blank' })

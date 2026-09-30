@@ -1332,7 +1332,8 @@
       "ctaMobile": "EXPLORE WORKFLOWS"
     },
     "audience": {
-      "heading": "Built for {creators} who need quality, control, and simplicity.",
+      "headingBefore": "Built for ",
+      "headingAfter": " who need quality, control, and simplicity.",
       "headingHighlight": "creators",
       "creators": {
         "label": "CREATORS",
@@ -1716,7 +1717,8 @@
   },
   "gallery": {
     "label": "GALLERY",
-    "heroTitle": "Built, Tweaked, and Dreamed in {brand}",
+    "heroTitleBefore": "Built, Tweaked, and Dreamed in ",
+    "heroTitleAfter": "",
     "heroSubtitle": "A small glimpse of what’s being created with ComfyUI by the community.",
     "card": {
       "by": "By",
@@ -3426,7 +3428,8 @@
         "title": "{name} Image and Video Creations",
         "cta": "Explore Workflows"
       },
-      "heroTitle": "{name} in {brand}",
+      "heroTitleBefore": "{name} in ",
+      "heroTitleAfter": "",
       "heroSubtitle": "From open-source diffusion checkpoints to partner APIs — every major model, with community workflow templates ready to run.",
       "card": {
         "workflows": "{count} workflows"

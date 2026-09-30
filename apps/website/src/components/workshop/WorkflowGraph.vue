@@ -6,7 +6,7 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 import type { GraphPicture } from '../../lib/workshop/workflow-graph'
 import { linkPath, readGraphPicture } from '../../lib/workshop/workflow-graph'
 import { openingView } from '../../lib/workshop/workflow-graph-view'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 import WorkflowGraphControls from './WorkflowGraphControls.vue'
 import WorkflowGraphNode from './WorkflowGraphNode.vue'
 

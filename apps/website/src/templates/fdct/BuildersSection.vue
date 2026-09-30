@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import WireNodeLayout from '../../components/common/WireNodeLayout.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -18,12 +18,12 @@ const reasons: TranslationKey[] = [
 <template>
   <section class="px-6 py-24 lg:px-20 lg:py-32">
     <SectionHeader>
-      {{ t('fdct.builders.title', locale) }}
+      {{ t('fdct.builders.title', {}, { locale: locale }) }}
       <template #subtitle>
         <p
           class="mx-auto mt-6 max-w-xl text-base font-light text-primary-comfy-canvas lg:text-lg"
         >
-          {{ t('fdct.builders.lead', locale) }}
+          {{ t('fdct.builders.lead', {}, { locale: locale }) }}
         </p>
       </template>
     </SectionHeader>

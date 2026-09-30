@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import GlassCard from '../common/GlassCard.vue'
 import InlineCodeText from '../common/InlineCodeText.vue'
 import SectionHeader from '../common/SectionHeader.vue'

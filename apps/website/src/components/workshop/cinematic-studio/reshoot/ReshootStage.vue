@@ -15,8 +15,8 @@ import type {
 import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
 import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import type { ReshootRunPhase } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/run'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { Locale } from '../../../../i18n/translations'
+import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../../i18n/site'
 import type { ReshootSound, ReshootView } from './output'
 import ReshootOutputBar from './ReshootOutputBar.vue'
 import ReshootTakes from './ReshootTakes.vue'
@@ -98,7 +98,7 @@ const fileName = computed(
 
 <template>
   <section
-    :aria-label="rc('reshoot.title', locale)"
+    :aria-label="rc('reshoot.title', {}, { locale: locale })"
     class="flex min-h-0 w-full flex-1 flex-col items-center gap-3 max-lg:contents"
   >
     <div
@@ -147,10 +147,18 @@ const fileName = computed(
         <button
           type="button"
           :aria-label="
-            rc(isFullscreen ? 'reshoot.collapse' : 'reshoot.expand', locale)
+            rc(
+              isFullscreen ? 'reshoot.collapse' : 'reshoot.expand',
+              {},
+              { locale: locale }
+            )
           "
           :title="
-            rc(isFullscreen ? 'reshoot.collapse' : 'reshoot.expand', locale)
+            rc(
+              isFullscreen ? 'reshoot.collapse' : 'reshoot.expand',
+              {},
+              { locale: locale }
+            )
           "
           class="absolute top-3 right-3 z-10 grid size-9 place-items-center rounded-full bg-primary-comfy-ink/80 text-primary-warm-white opacity-70 transition-opacity group-hover/frame:opacity-100 hover:bg-primary-comfy-ink focus-visible:opacity-100"
           @click="toggleFullscreen"
@@ -178,7 +186,7 @@ const fileName = computed(
         <template v-if="current">
           {{
             current.id === 'example'
-              ? rc('reshoot.take.exampleHelp', locale)
+              ? rc('reshoot.take.exampleHelp', {}, { locale: locale })
               : takeLabel(current, locale)
           }}
         </template>

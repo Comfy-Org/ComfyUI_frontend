@@ -4,13 +4,13 @@ import { ChevronRight } from '@lucide/vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { ref, useTemplateRef } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import type { ModelLaunchGallery } from './types'
 
 import Badge from '../../components/ui/badge/Badge.vue'
 import CopyTextButton from '../../components/ui/copy-text-button/CopyTextButton.vue'
 import IconButton from '../../components/ui/icon-button/IconButton.vue'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const { locale = 'en', gallery } = defineProps<{
   gallery: ModelLaunchGallery
@@ -41,7 +41,7 @@ const { stop } = useIntersectionObserver(
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t(gallery.headingKey, locale) }}
+        {{ t(gallery.headingKey, {}, { locale: locale }) }}
       </h2>
     </div>
 
@@ -103,8 +103,8 @@ const { stop } = useIntersectionObserver(
             <Badge :variant="card.tier === 'free' ? 'accent' : 'callout'">
               {{
                 card.tier === 'free'
-                  ? t('modelLaunch.tagFree', locale)
-                  : t('modelLaunch.tagPremium', locale)
+                  ? t('modelLaunch.tagFree', {}, { locale: locale })
+                  : t('modelLaunch.tagPremium', {}, { locale: locale })
               }}
             </Badge>
             <span class="text-xs text-primary-warm-gray">
@@ -149,8 +149,8 @@ const { stop } = useIntersectionObserver(
           <CopyTextButton
             class="-mr-2 -mb-2"
             :value="card.prompt[locale] || card.prompt.en"
-            :label="t('modelLaunch.copyPrompt', locale)"
-            :copied-label="t('ui.copied', locale)"
+            :label="t('modelLaunch.copyPrompt', {}, { locale: locale })"
+            :copied-label="t('ui.copied', {}, { locale: locale })"
           />
         </div>
       </article>

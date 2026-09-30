@@ -2,8 +2,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { externalLinks } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import BrandButton from '../common/BrandButton.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 
@@ -72,28 +72,30 @@ const iconRingClass =
         </svg>
       </div>
 
-      <SectionLabel>{{ t(`payment.${status}.label`, locale) }}</SectionLabel>
+      <SectionLabel>{{
+        t(`payment.${status}.label`, {}, { locale: locale })
+      }}</SectionLabel>
 
       <h1
         class="text-4xl/tight font-light text-primary-comfy-canvas md:text-5xl/tight lg:text-6xl/tight"
       >
-        {{ t(`payment.${status}.title`, locale) }}
+        {{ t(`payment.${status}.title`, {}, { locale: locale }) }}
       </h1>
 
       <p
         class="max-w-xl text-base font-light text-primary-comfy-canvas/80 lg:text-lg"
       >
-        {{ t(`payment.${status}.subtitle`, locale) }}
+        {{ t(`payment.${status}.subtitle`, {}, { locale: locale }) }}
       </p>
 
       <div
         class="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center"
       >
         <BrandButton :href="primaryHref" variant="solid" size="nav">
-          {{ t(`payment.${status}.primaryCta`, locale) }}
+          {{ t(`payment.${status}.primaryCta`, {}, { locale: locale }) }}
         </BrandButton>
         <BrandButton :href="secondaryHref" variant="outline" size="nav">
-          {{ t(`payment.${status}.secondaryCta`, locale) }}
+          {{ t(`payment.${status}.secondaryCta`, {}, { locale: locale }) }}
         </BrandButton>
       </div>
 
@@ -101,14 +103,16 @@ const iconRingClass =
         v-if="status === 'failed'"
         class="max-w-xl text-sm font-light text-primary-comfy-canvas/60"
       >
-        {{ t('payment.failed.statusPrompt.prefix', locale) }}
+        {{ t('payment.failed.statusPrompt.prefix', {}, { locale: locale }) }}
         <a
           :href="externalLinks.cloudStatus"
           class="rounded-sm text-primary-comfy-yellow underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
         >
-          {{ t('payment.failed.statusPrompt.statusLink', locale) }}
+          {{
+            t('payment.failed.statusPrompt.statusLink', {}, { locale: locale })
+          }}
         </a>
-        {{ t('payment.failed.statusPrompt.suffix', locale) }}
+        {{ t('payment.failed.statusPrompt.suffix', {}, { locale: locale }) }}
       </p>
     </div>
   </section>

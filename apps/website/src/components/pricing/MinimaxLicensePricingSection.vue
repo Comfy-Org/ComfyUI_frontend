@@ -4,8 +4,8 @@ import { computed } from 'vue'
 import SectionHeader from '../common/SectionHeader.vue'
 import { getRoutes } from '../../config/routes'
 import { minimaxLicenseComparison } from '../../data/minimaxLicense'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -17,10 +17,10 @@ const { columns, rows } = minimaxLicenseComparison
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="subsection">
-      {{ t('pricing.minimaxLicense.heading', locale) }}
+      {{ t('pricing.minimaxLicense.heading', {}, { locale: locale }) }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700">
-          {{ t('pricing.minimaxLicense.description', locale) }}
+          {{ t('pricing.minimaxLicense.description', {}, { locale: locale }) }}
         </p>
       </template>
     </SectionHeader>
@@ -77,7 +77,7 @@ const { columns, rows } = minimaxLicenseComparison
           :href="licenseHref"
           class="rounded-sm text-sm text-primary-comfy-yellow underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
         >
-          {{ t('pricing.minimaxLicense.cta', locale) }}
+          {{ t('pricing.minimaxLicense.cta', {}, { locale: locale }) }}
         </a>
       </p>
     </div>

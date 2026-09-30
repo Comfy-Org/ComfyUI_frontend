@@ -13,8 +13,8 @@ import {
 import { lockScroll, unlockScroll } from '../../composables/scrollLock'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { GalleryItem } from '../../data/gallery'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import BrandButton from '../common/BrandButton.vue'
 import GalleryItemAttribution from './GalleryItemAttribution.vue'
 
@@ -122,7 +122,7 @@ onUnmounted(() => {
     >
       <!-- Close button -->
       <button
-        :aria-label="t('gallery.detail.close', locale)"
+        :aria-label="t('gallery.detail.close', {}, { locale: locale })"
         class="group absolute right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 border-primary-comfy-yellow bg-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow lg:top-8 lg:right-26"
         @click="emit('close')"
       >
@@ -157,7 +157,7 @@ onUnmounted(() => {
             size="lg"
             class="mt-24"
           >
-            {{ t('gallery.detail.visitHub', locale) }}
+            {{ t('gallery.detail.visitHub', {}, { locale: locale }) }}
           </BrandButton>
         </div>
 
@@ -244,7 +244,7 @@ onUnmounted(() => {
             size="lg"
             class="mt-6 w-full"
           >
-            {{ t('gallery.detail.visitHub', locale) }}
+            {{ t('gallery.detail.visitHub', {}, { locale: locale }) }}
           </BrandButton>
         </div>
       </div>

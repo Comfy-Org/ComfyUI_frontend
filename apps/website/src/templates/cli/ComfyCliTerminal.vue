@@ -4,8 +4,8 @@ import { useElementVisibility } from '@vueuse/core'
 import { computed, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import type { TerminalLine } from './cliTerminalSequences'
 import { cliTerminalSequences } from './cliTerminalSequences'
 
@@ -132,7 +132,7 @@ onUnmounted(() => clearTimeout(timer))
     ref="root"
     data-testid="cli-terminal"
     role="img"
-    :aria-label="t('cli.hero.terminalAria', locale)"
+    :aria-label="t('cli.hero.terminalAria', {}, { locale: locale })"
     class="flex flex-col overflow-hidden rounded-5xl bg-white/4"
   >
     <div class="flex items-center gap-2 border-b border-white/10 px-5 py-4">

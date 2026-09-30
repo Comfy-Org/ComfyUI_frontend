@@ -2,9 +2,9 @@
 import { EyeOff } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { t } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 const {
   current,
   height,
@@ -43,7 +43,7 @@ const revealed = defineModel<boolean>('revealed', { required: true })
     "
     :key="current.id"
     :src="current.output.url"
-    :aria-label="tc('cinematic.video.preview', locale)"
+    :aria-label="tc('cinematic.video.preview', {}, { locale: locale })"
     controls
     playsinline
     preload="metadata"
@@ -63,14 +63,14 @@ const revealed = defineModel<boolean>('revealed', { required: true })
   >
     <EyeOff class="size-5 text-primary-warm-white" aria-hidden="true" />
     <span class="text-sm text-primary-warm-white">
-      {{ t('workshop.output.nsfw', locale) }}
+      {{ t('workshop.output.nsfw', {}, { locale: locale }) }}
     </span>
     <button
       type="button"
       class="h-8 rounded-full px-4 text-xs font-bold tracking-wider text-primary-warm-white uppercase ring-1 ring-transparency-white-t20 ring-inset hover:bg-transparency-white-t8"
       @click="revealed = true"
     >
-      {{ t('workshop.output.reveal', locale) }}
+      {{ t('workshop.output.reveal', {}, { locale: locale }) }}
     </button>
   </div>
 </template>

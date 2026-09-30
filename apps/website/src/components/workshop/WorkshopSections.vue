@@ -14,8 +14,8 @@ import {
   useCasesFor
 } from '../../config/models-catalogue'
 import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
+import { t } from '../../i18n/site'
 import { groupModels } from '../../config/model-family'
 import { SHELF_CARD } from '../../lib/workshop/card-layout'
 import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
@@ -108,7 +108,7 @@ function rememberModel(
               :data-testid="`section-${section.useCase}-open`"
               @click="emit('open', section.useCase)"
             >
-              {{ t(labelKey[section.useCase], locale) }}
+              {{ t(labelKey[section.useCase], {}, { locale: locale }) }}
             </button>
           </h2>
         </template>
@@ -122,7 +122,13 @@ function rememberModel(
             @click="emit('open', section.useCase)"
           >
             <span class="tabular-nums">
-              {{ t('workshop.sections.seeAll', locale, { n: section.total }) }}
+              {{
+                t(
+                  'workshop.sections.seeAll',
+                  { n: section.total },
+                  { locale: locale }
+                )
+              }}
             </span>
             <ChevronRight
               class="size-4 transition-transform group-hover:translate-x-0.5"
@@ -159,7 +165,7 @@ function rememberModel(
               data-testid="section-other-formats-open"
               @click="emit('open', 'other')"
             >
-              {{ t('workshop.sections.otherFormats', locale) }}
+              {{ t('workshop.sections.otherFormats', {}, { locale: locale }) }}
             </button>
           </h2>
         </template>
@@ -174,9 +180,13 @@ function rememberModel(
           >
             <span class="tabular-nums">
               {{
-                t('workshop.sections.seeAll', locale, {
-                  n: otherFormats.length
-                })
+                t(
+                  'workshop.sections.seeAll',
+                  {
+                    n: otherFormats.length
+                  },
+                  { locale: locale }
+                )
               }}
             </span>
             <ChevronRight
@@ -209,7 +219,7 @@ function rememberModel(
         id="section-other"
         class="mb-5 flex items-baseline gap-2 text-xl font-medium text-primary-warm-white"
       >
-        {{ t('workshop.filter.other', locale) }}
+        {{ t('workshop.filter.other', {}, { locale: locale }) }}
         <span class="text-sm text-primary-warm-gray tabular-nums">
           {{ unplaced.length }}
         </span>

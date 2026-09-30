@@ -6,7 +6,7 @@ import {
   DEFAULT_CAMERA,
   frameTime
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
 import ReshootMoveControls from './ReshootMoveControls.vue'
 
 const keys = [
@@ -27,14 +27,22 @@ describe('ReshootMoveControls', () => {
       const edits = [
         ...keys.map((key) =>
           screen.getByRole('button', {
-            name: rc('reshoot.move.remove', 'en', {
-              time: frameTime(key.frame)
-            })
+            name: rc(
+              'reshoot.move.remove',
+              {
+                time: frameTime(key.frame)
+              },
+              { locale: 'en' }
+            )
           })
         ),
         ...keys.map((key) =>
           screen.getByRole('button', {
-            name: rc('reshoot.move.goTo', 'en', { time: frameTime(key.frame) })
+            name: rc(
+              'reshoot.move.goTo',
+              { time: frameTime(key.frame) },
+              { locale: 'en' }
+            )
           })
         )
       ]

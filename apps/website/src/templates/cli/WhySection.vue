@@ -2,8 +2,8 @@
 import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
 import type { Reason } from '../../components/blocks/ReasonsSplit01.vue'
 import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -11,8 +11,8 @@ const reasonNumbers = [1, 2, 3, 4, 5] as const
 
 const reasons: Reason[] = reasonNumbers.map((n) => ({
   id: String(n),
-  title: t(`cli.why.${n}.title`, locale),
-  description: t(`cli.why.${n}.description`, locale)
+  title: t(`cli.why.${n}.title`, {}, { locale: locale }),
+  description: t(`cli.why.${n}.description`, {}, { locale: locale })
 }))
 
 const MCP_REASON_ID = '5'
@@ -20,10 +20,10 @@ const MCP_REASON_ID = '5'
 
 <template>
   <ReasonsSplit01
-    :heading="t('cli.why.heading', locale)"
-    :heading-highlight="t('cli.why.headingHighlight', locale)"
+    :heading="t('cli.why.heading', {}, { locale: locale })"
+    :heading-highlight="t('cli.why.headingHighlight', {}, { locale: locale })"
     highlight-class="text-primary-comfy-yellow"
-    :subtitle="t('cli.why.subtitle', locale)"
+    :subtitle="t('cli.why.subtitle', {}, { locale: locale })"
     :reasons="reasons"
   >
     <template #reason-extra="{ reason }">
@@ -32,7 +32,7 @@ const MCP_REASON_ID = '5'
         :href="getRoutes(locale).mcp"
         class="mt-4 inline-block rounded-sm text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
       >
-        {{ t('cli.why.mcpLinkLabel', locale) }}
+        {{ t('cli.why.mcpLinkLabel', {}, { locale: locale }) }}
       </a>
     </template>
   </ReasonsSplit01>

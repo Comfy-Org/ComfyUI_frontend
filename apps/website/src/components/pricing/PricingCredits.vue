@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/site'
 import { computed } from 'vue'
 
 import { Coins as CreditsIcon } from '@lucide/vue'
 
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const {
   locale = 'en',
@@ -21,8 +21,8 @@ const {
 const estimate = computed(() => {
   if (!estimateKey) return undefined
   return estimateCount
-    ? t(estimateKey, locale, { count: estimateCount })
-    : t(estimateKey, locale)
+    ? t(estimateKey, { count: estimateCount }, { locale: locale })
+    : t(estimateKey, {}, { locale: locale })
 })
 </script>
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { TranslationKey } from '../i18n/translations'
+import type { TranslationKey } from '../i18n/site'
 import { WorkshopWorkflowError } from './workshop-workflow-api'
 import {
   workflowErrorKey,

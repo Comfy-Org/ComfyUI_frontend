@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
@@ -10,17 +10,17 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 <template>
   <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <SectionHeader max-width="xl">
-      {{ t('mcp.useCases.heading', locale) }}
+      {{ t('mcp.useCases.heading', {}, { locale: locale }) }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700 lg:text-base">
-          {{ t('mcp.useCases.subtitle', locale) }}
+          {{ t('mcp.useCases.subtitle', {}, { locale: locale }) }}
         </p>
       </template>
     </SectionHeader>
 
     <VideoPlayer
       :locale="locale"
-      :aria-label="t('mcp.useCases.alt', locale)"
+      :aria-label="t('mcp.useCases.alt', {}, { locale: locale })"
       src="https://media.comfy.org/website/mcp/production-use-cases.mp4"
       poster="https://media.comfy.org/website/mcp/production-use-cases-poster.webp"
       minimal

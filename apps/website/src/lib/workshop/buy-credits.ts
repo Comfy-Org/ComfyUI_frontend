@@ -6,7 +6,7 @@ import {
   WORKSHOP_CLOUD_BASE_URL,
   WORKSHOP_CREDITS_URL
 } from '../../config/workshop-env'
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
 import {
   combineAbortSignals,
   createTimeoutSignal

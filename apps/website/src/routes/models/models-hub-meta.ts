@@ -1,5 +1,5 @@
 import type { RouterWorkshopModel } from '../../config/models-catalogue'
-import { t, tPlural } from '../../i18n/translations'
+import { t } from '../../i18n/site'
 
 const HEADLINE_FAMILIES = ['FLUX', 'Seedance', 'Kling', 'Veo', 'Nano Banana']
 
@@ -11,17 +11,17 @@ export function modelsHubMeta(
   )
   return {
     title: t('models.hub.meta.title'),
-    description: tPlural(
+    description: t(
       families.length
         ? 'models.hub.meta.description'
         : 'models.hub.meta.descriptionWithoutNames',
-      models.length,
-      'en',
       {
+        count: models.length,
         names: new Intl.ListFormat('en', { type: 'conjunction' }).format(
           families
         )
-      }
+      },
+      { locale: 'en', plural: models.length }
     )
   }
 }

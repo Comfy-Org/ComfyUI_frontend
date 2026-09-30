@@ -4,8 +4,8 @@ import { computed } from 'vue'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import { isUnpaid } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '../../../i18n/site'
+import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicCreditAction from './CinematicCreditAction.vue'
 
 const {
@@ -37,15 +37,21 @@ const skipped = computed(() => takes.filter(isUnpaid))
         aria-hidden="true"
       />
       {{
-        tc('cinematic.credits.skipped', locale, {
-          failed: skipped.length,
-          total: takes.length
-        })
+        tc(
+          'cinematic.credits.skipped',
+          {
+            failed: skipped.length,
+            total: takes.length
+          },
+          { locale: locale }
+        )
       }}
     </span>
     <CinematicCreditAction
       :member="memberWorkspace !== undefined"
-      :retry-label="tc('cinematic.credits.retrySkipped', locale)"
+      :retry-label="
+        tc('cinematic.credits.retrySkipped', {}, { locale: locale })
+      "
       :locale
       @retry="
         emit(

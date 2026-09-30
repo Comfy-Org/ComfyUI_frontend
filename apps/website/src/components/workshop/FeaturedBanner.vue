@@ -10,8 +10,8 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/site'
+import { t } from '../../i18n/site'
 
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -117,7 +117,7 @@ const fill = computed(() =>
   <section
     v-if="active"
     ref="banner"
-    :aria-label="t('workshop.sections.featured', locale)"
+    :aria-label="t('workshop.sections.featured', {}, { locale: locale })"
     class="relative isolate overflow-hidden rounded-3xl border border-transparency-white-t8"
     data-testid="section-featured"
   >
@@ -197,7 +197,7 @@ const fill = computed(() =>
 
         <div class="pointer-events-auto flex w-fit items-center gap-3">
           <Button as="a" :href="active.href" class="w-fit">
-            {{ active.cta ?? t('workshop.hub.tryNow', locale) }}
+            {{ active.cta ?? t('workshop.hub.tryNow', {}, { locale: locale }) }}
           </Button>
           <Button
             v-if="active.docsHref"
@@ -209,7 +209,7 @@ const fill = computed(() =>
             class="w-fit"
             data-testid="featured-docs-link"
           >
-            {{ t('workshop.hub.docs', locale) }}
+            {{ t('workshop.hub.docs', {}, { locale: locale }) }}
           </Button>
         </div>
       </div>
