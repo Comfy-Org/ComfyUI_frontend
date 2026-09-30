@@ -19,6 +19,9 @@ export type Take =
       readonly status: 'failed'
       readonly reason: RunFailure
       readonly requestId?: string
+      /** The operation that ran, which a starting frame or references move
+       * off the model the shot was directed on. */
+      readonly runSlug?: string
     })
   | (TakeBase & { readonly status: 'cancelled' })
 
@@ -47,6 +50,7 @@ export type ReelEvent =
       readonly id: string
       readonly reason: RunFailure
       readonly requestId?: string
+      readonly runSlug?: string
     }
   | { readonly type: 'rendersCancelled' }
   | {
@@ -120,7 +124,8 @@ export function reduceReel(reel: Reel, event: ReelEvent): Reel {
         ...take,
         status: 'failed',
         reason: event.reason,
-        requestId: event.requestId
+        requestId: event.requestId,
+        runSlug: event.runSlug
       }))
     case 'rendersCancelled':
       return {

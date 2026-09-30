@@ -504,7 +504,9 @@ describe('PricingTable', () => {
         cycle: 'yearly',
         checkout_type: 'new',
         payment_intent_source: undefined,
-        failure_category: 'api_rejected'
+        checkout_attempt_id: expect.any(String),
+        failure_category: 'api_rejected',
+        duration_ms: expect.any(Number)
       })
       expect(useAuthActions().reportError).toHaveBeenCalled()
     })

@@ -79,11 +79,11 @@ describe('buildSummaryLedger', () => {
             sublines: ['$700 /mo, billed monthly']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$700.00',
-        trailing: ['Renews at $700.00 on July 28, 2026']
+        trailing: ['Renews at $700.00 on July\u00A028,\u00A02026']
       }
     },
     {
@@ -110,11 +110,11 @@ describe('buildSummaryLedger', () => {
             sublines: ['Billed yearly']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$7,560.00',
-        trailing: ['Renews at $7,560.00 on June 28, 2027']
+        trailing: ['Renews at $7,560.00 on June\u00A028,\u00A02027']
       }
     },
     {
@@ -135,13 +135,13 @@ describe('buildSummaryLedger', () => {
         headline: { amount: '$0', currency: 'USD' },
         credits: { count: '1,772,400', qualifier: 'credits per year' },
         items: [],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$0.00',
         trailing: [
-          'Renews at $7,560.00 on June 28, 2027',
-          "You won't be charged today. Your payment method renews the plan at $7,560.00 on June 28, 2027."
+          'Renews at $7,560.00 on June\u00A028,\u00A02027',
+          "You won't be charged today. Your payment method renews the plan at $7,560.00 on June\u00A028,\u00A02027."
         ]
       }
     },
@@ -165,7 +165,7 @@ describe('buildSummaryLedger', () => {
         headline: { amount: '$32.50', currency: 'USD' },
         credits: {
           count: '6,858',
-          qualifier: 'credits added today (expire July 28)'
+          qualifier: 'credits added today (expire July\u00A028)'
         },
         items: [
           {
@@ -177,13 +177,13 @@ describe('buildSummaryLedger', () => {
             ]
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$32.50',
         trailing: [
           'Existing credits are kept',
-          'Renews at $100.00 on July 28, 2026'
+          'Renews at $100.00 on July\u00A028,\u00A02026'
         ]
       }
     },
@@ -206,7 +206,7 @@ describe('buildSummaryLedger', () => {
         headline: { amount: '$32.50', currency: 'USD' },
         credits: {
           count: '6,858',
-          qualifier: 'credits added today (expire July 28)'
+          qualifier: 'credits added today (expire July\u00A028)'
         },
         items: [
           {
@@ -218,11 +218,11 @@ describe('buildSummaryLedger', () => {
             ]
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$32.50',
-        trailing: ['Renews at $100.00 on July 28, 2026']
+        trailing: ['Renews at $100.00 on July\u00A028,\u00A02026']
       }
     },
     {
@@ -253,13 +253,13 @@ describe('buildSummaryLedger', () => {
             sublines: ['Billed yearly', 'Credits refill to 88,620 each year']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$336.00',
         trailing: [
-          'Renews at $336.00 on June 28, 2027',
-          "This month's credits stay valid until July 28, 2026"
+          'Renews at $336.00 on June\u00A028,\u00A02027',
+          "This month's credits stay valid until July\u00A028,\u00A02026"
         ]
       }
     },
@@ -290,13 +290,13 @@ describe('buildSummaryLedger', () => {
             sublines: ['Billed yearly', 'Credits refill to 253,200 each year']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$960.00',
         trailing: [
-          'Renews at $960.00 on June 28, 2027',
-          "This month's credits stay valid until July 28, 2026"
+          'Renews at $960.00 on June\u00A028,\u00A02027',
+          "This month's credits stay valid until July\u00A028,\u00A02026"
         ]
       }
     },
@@ -321,20 +321,20 @@ describe('buildSummaryLedger', () => {
         headline: { amount: '$35', currency: 'USD', rate: '/ mo' },
         credits: {
           count: '7,400',
-          qualifier: 'credits refill monthly after July 28, 2026'
+          qualifier: 'credits refill monthly after July\u00A028,\u00A02026'
         },
         items: [
           {
             label: 'Creator Plan',
             amount: '$35.00 /mo',
-            sublines: ['Starts July 28, 2026, billed monthly']
+            sublines: ['Starts July\u00A028,\u00A02026, billed monthly']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: false,
         total: '$0.00',
-        trailing: ["You'll keep Pro until July 28, 2026"]
+        trailing: ["You'll keep Pro until July\u00A028,\u00A02026"]
       }
     },
     {
@@ -357,20 +357,20 @@ describe('buildSummaryLedger', () => {
         headline: { amount: '$35', currency: 'USD', rate: '/ mo' },
         credits: {
           count: '7,400',
-          qualifier: 'credits refill monthly after June 28, 2027'
+          qualifier: 'credits refill monthly after June\u00A028,\u00A02027'
         },
         items: [
           {
             label: 'Creator Monthly',
             amount: '$35.00 /mo',
-            sublines: ['Starts June 28, 2027, billed monthly']
+            sublines: ['Starts June\u00A028,\u00A02027, billed monthly']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: false,
         total: '$0.00',
-        trailing: ["You'll keep Creator Yearly until June 28, 2027"]
+        trailing: ["You'll keep Creator Yearly until June\u00A028,\u00A02027"]
       }
     },
     {
@@ -393,20 +393,22 @@ describe('buildSummaryLedger', () => {
         headline: { amount: '$700', currency: 'USD', rate: '/ mo' },
         credits: {
           count: '147,700',
-          qualifier: 'credits refill monthly after July 28, 2026'
+          qualifier: 'credits refill monthly after July\u00A028,\u00A02026'
         },
         items: [
           {
             label: 'Team Plan',
             amount: '$700.00 /mo',
-            sublines: ['Starts July 28, 2026, billed monthly']
+            sublines: ['Starts July\u00A028,\u00A02026, billed monthly']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: false,
         total: '$0.00',
-        trailing: ["You'll keep Team at $1,400.00 /mo until July 28, 2026"]
+        trailing: [
+          "You'll keep Team at $1,400.00 /mo until July\u00A028,\u00A02026"
+        ]
       }
     },
     {
@@ -429,7 +431,7 @@ describe('buildSummaryLedger', () => {
         headline: { amount: '$123.45', currency: 'USD' },
         credits: {
           count: '10,550',
-          qualifier: 'credits added today (expire July 28)'
+          qualifier: 'credits added today (expire July\u00A028)'
         },
         items: [
           {
@@ -441,11 +443,11 @@ describe('buildSummaryLedger', () => {
             ]
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$123.45',
-        trailing: ['Renews at $1,400.00 on July 28, 2026']
+        trailing: ['Renews at $1,400.00 on July\u00A028,\u00A02026']
       }
     }
   ])('$name', ({ quote, ledger }) => {
@@ -471,7 +473,7 @@ describe('buildSummaryLedger', () => {
         discounts: [{ kind: 'promotion', code: 'FREE', amount_off_cents: 5000 }]
       },
       zeroDue:
-        "You won't be charged today. Your payment method renews the plan at $50.00 on July 28, 2026."
+        "You won't be charged today. Your payment method renews the plan at $50.00 on July\u00A028,\u00A02026."
     },
     {
       name: 'a prorated upgrade a code takes to $0',
@@ -488,7 +490,7 @@ describe('buildSummaryLedger', () => {
         discounts: [{ kind: 'promotion', code: 'FREE', amount_off_cents: 2200 }]
       },
       zeroDue:
-        "You won't be charged today. Your payment method renews the plan at $50.00 on July 28, 2026."
+        "You won't be charged today. Your payment method renews the plan at $50.00 on July\u00A028,\u00A02026."
     },
     {
       name: 'a $0 new subscription the quote gives no renewal date',
@@ -535,7 +537,9 @@ describe('buildSummaryLedger', () => {
       new_plan: planOf('CREATOR', 'ANNUAL', 28_000)
     })
 
-    expect(trailing).toEqual(["You'll keep Pro Yearly until June 28, 2027"])
+    expect(trailing).toEqual([
+      "You'll keep Pro Yearly until June\u00A028,\u00A02027"
+    ])
   })
 
   it('names only the plan when the session has no workspace', () => {
@@ -586,7 +590,7 @@ function discountSlotsOf(
   promotionCode?: string,
   amountDueCents = 0
 ) {
-  const { adjustments, subtotal, promo, chips } = ledgerOf({
+  const ledger = ledgerOf({
     transition_type: 'new_subscription',
     amount_due_cents: amountDueCents,
     cost_today_cents: 756_000,
@@ -594,7 +598,7 @@ function discountSlotsOf(
     discounts,
     ...(promotionCode === undefined ? {} : { promotion_code: promotionCode })
   })
-  return { adjustments, subtotal, promo, chips }
+  return { discounts: ledger.discounts, chips: ledger.chips }
 }
 
 describe('buildSummaryLedger discounts', () => {
@@ -609,21 +613,14 @@ describe('buildSummaryLedger discounts', () => {
       name: 'a catalog coupon folds into the price: no row, no chip',
       discounts: [ANNUAL_RATE],
       amountDueCents: 756_000,
-      slots: {
-        adjustments: [],
-        subtotal: undefined,
-        promo: undefined,
-        chips: []
-      }
+      slots: { discounts: [], chips: [] }
     },
     {
       name: 'an unnamed entered code reads "Promo code"; the code sits only on its removable chip',
       discounts: [ANNUAL_RATE, entered('COMFYFREE', 756_000)],
       promotionCode: 'COMFYFREE',
       slots: {
-        adjustments: [],
-        subtotal: undefined,
-        promo: { label: 'Promo code', amount: '−$7,560.00' },
+        discounts: [{ label: 'Promo code', amount: '−$7,560.00' }],
         chips: [{ code: 'COMFYFREE', removable: true }]
       }
     },
@@ -633,9 +630,7 @@ describe('buildSummaryLedger discounts', () => {
       promotionCode: 'LAUNCH20',
       amountDueCents: 604_800,
       slots: {
-        adjustments: [],
-        subtotal: undefined,
-        promo: { label: 'Launch week', amount: '−$1,512.00' },
+        discounts: [{ label: 'Launch week', amount: '−$1,512.00' }],
         chips: [{ code: 'LAUNCH20', removable: true }]
       }
     },
@@ -645,32 +640,29 @@ describe('buildSummaryLedger discounts', () => {
       promotionCode: 'LAUNCH20',
       amountDueCents: 604_800,
       slots: {
-        adjustments: [],
-        subtotal: undefined,
-        promo: { label: 'Promo code', amount: '−$1,512.00' },
+        discounts: [{ label: 'Promo code', amount: '−$1,512.00' }],
         chips: [{ code: 'LAUNCH20', removable: true }]
       }
     },
     {
-      name: 'a held discount is a pre-applied row whose chip has no remove',
+      name: 'a held discount is a row whose chip has no remove',
       discounts: [EDUCATION],
       amountDueCents: 604_800,
       slots: {
-        adjustments: [{ label: 'Education discount', amount: '−$1,512.00' }],
-        subtotal: undefined,
-        promo: undefined,
+        discounts: [{ label: 'Education discount', amount: '−$1,512.00' }],
         chips: [{ code: 'COMFY-EDU', removable: false }]
       }
     },
     {
-      name: 'a held discount before an entered code still leaves Subtotal out: the quote reports no pre-discount base',
+      name: 'a held discount the server lists first renders first',
       discounts: [ANNUAL_RATE, EDUCATION, entered('COMFY50', 302_400)],
       promotionCode: 'COMFY50',
       amountDueCents: 302_400,
       slots: {
-        adjustments: [{ label: 'Education discount', amount: '−$1,512.00' }],
-        subtotal: undefined,
-        promo: { label: 'Promo code', amount: '−$3,024.00' },
+        discounts: [
+          { label: 'Education discount', amount: '−$1,512.00' },
+          { label: 'Promo code', amount: '−$3,024.00' }
+        ],
         chips: [
           { code: 'COMFY-EDU', removable: false },
           { code: 'COMFY50', removable: true }
@@ -678,14 +670,31 @@ describe('buildSummaryLedger discounts', () => {
       }
     },
     {
-      name: 'an entered code with no reported amount keeps its row and no Subtotal',
+      name: 'an entered code the server lists first renders first',
+      discounts: [entered('COMFY50', 302_400), ANNUAL_RATE, EDUCATION],
+      promotionCode: 'COMFY50',
+      amountDueCents: 302_400,
+      slots: {
+        discounts: [
+          { label: 'Promo code', amount: '−$3,024.00' },
+          { label: 'Education discount', amount: '−$1,512.00' }
+        ],
+        chips: [
+          { code: 'COMFY-EDU', removable: false },
+          { code: 'COMFY50', removable: true }
+        ]
+      }
+    },
+    {
+      name: 'an entered code with no reported amount keeps its row, amount left out',
       discounts: [EDUCATION, entered('COMFY50')],
       promotionCode: 'COMFY50',
       amountDueCents: 302_400,
       slots: {
-        adjustments: [{ label: 'Education discount', amount: '−$1,512.00' }],
-        subtotal: undefined,
-        promo: { label: 'Promo code' },
+        discounts: [
+          { label: 'Education discount', amount: '−$1,512.00' },
+          { label: 'Promo code' }
+        ],
         chips: [
           { code: 'COMFY-EDU', removable: false },
           { code: 'COMFY50', removable: true }

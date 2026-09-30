@@ -176,7 +176,10 @@ describe('churnkeyClient', () => {
 
   const lateDiscountReport = [
     expect.any(Error),
-    { errorType: 'error_applying_churnkey_discount_during_cancellation' }
+    {
+      surface: 'billing',
+      errorType: 'error_applying_churnkey_discount_during_cancellation'
+    }
   ]
 
   it('keeps the cancellation result when a discount lands after cancellation starts', async () => {
@@ -208,6 +211,7 @@ describe('churnkeyClient', () => {
   const displayDuringCancellationReport = [
     'display failed',
     {
+      surface: 'billing',
       errorType: 'error_displaying_churnkey_during_cancellation',
       context: { churnkeyErrorType: 'display' }
     }
@@ -254,6 +258,7 @@ describe('churnkeyClient', () => {
         [
           'display failed after success',
           {
+            surface: 'billing',
             errorType: 'error_displaying_churnkey_after_discount',
             context: { churnkeyErrorType: 'display' }
           }
@@ -312,6 +317,7 @@ describe('churnkeyClient', () => {
 
     await expect(showPromise).resolves.toEqual({ type: 'discount-applied' })
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'billing',
       errorType: 'error_displaying_churnkey_after_discount',
       context: { churnkeyErrorType: 'display' }
     })

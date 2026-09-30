@@ -1,65 +1,126 @@
+import type { BillingOperationTelemetryEvent } from '@comfyorg/account-core/billing'
 import { describe, expect, it } from 'vitest'
 
 import { toBillingTelemetryEvent } from './billingSdkTelemetry'
 
 describe('toBillingTelemetryEvent', () => {
-  it('reports a start without a duration or an id, as the poller does', () => {
-    expect(
-      toBillingTelemetryEvent({
+  it.for<{
+    name: string
+    event: BillingOperationTelemetryEvent
+    expected: Record<string, unknown>
+  }>([
+    {
+      name: 'a start, paired to its terminal by operation id',
+      event: {
         name: 'billing.operation.started',
-        billing_op_id: 'op-1',
+        billing_op_id: 'op-start',
         operation_type: 'topup',
         presentation: 'hosted',
         resumed: true
-      })
-    ).toEqual({
-      operation: 'operation',
-      operation_type: 'topup',
-      stage: 'started',
-      outcome: 'pending'
-    })
-  })
-
-  it.for([
-    [
-      'billing.operation.succeeded',
-      undefined,
-      { stage: 'succeeded', outcome: 'success' }
-    ],
-    [
-      'billing.operation.failed',
-      'reconciliation_needed',
-      {
+      },
+      expected: {
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'topup',
+        billing_op_id: 'op-start',
+        presentation: 'hosted',
+        resumed: true
+      }
+    },
+    {
+      name: 'a success with its duration',
+      event: {
+        name: 'billing.operation.succeeded',
+        billing_op_id: 'op-success',
+        operation_type: 'subscription',
+        presentation: 'embedded',
+        resumed: false,
+        duration_ms: 1500
+      },
+      expected: {
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        operation_type: 'subscription',
+        billing_op_id: 'op-success',
+        presentation: 'embedded',
+        resumed: false,
+        duration_ms: 1500
+      }
+    },
+    {
+      name: 'a declined failure with its decline reason',
+      event: {
+        name: 'billing.operation.failed',
+        billing_op_id: 'op-declined',
+        operation_type: 'topup',
+        presentation: 'embedded',
+        resumed: true,
+        failure_category: 'provider_decline',
+        decline_reason: 'insufficient_funds',
+        duration_ms: 2300
+      },
+      expected: {
+        operation: 'operation',
         stage: 'failed',
         outcome: 'failure',
-        failure_category: 'reconciliation_needed'
-      }
-    ],
-    [
-      'billing.operation.timeout',
-      'poll_timeout',
-      { stage: 'timeout', outcome: 'failure', failure_category: 'poll_timeout' }
-    ]
-  ] as const)(
-    'maps %s onto the terminal payload with its category and duration',
-    ([name, category, expected]) => {
-      expect(
-        toBillingTelemetryEvent({
-          name,
-          billing_op_id: 'op-1',
-          operation_type: 'topup',
-          presentation: 'embedded',
-          resumed: false,
-          ...(category === undefined ? {} : { failure_category: category }),
-          duration_ms: 1500
-        })
-      ).toEqual({
-        operation: 'operation',
         operation_type: 'topup',
-        billing_op_id: 'op-1',
-        duration_ms: 1500,
-        ...expected
-      })
+        billing_op_id: 'op-declined',
+        presentation: 'embedded',
+        resumed: true,
+        failure_category: 'provider_decline',
+        decline_reason: 'insufficient_funds',
+        duration_ms: 2300
+      }
+    },
+    {
+      name: 'a failure the provider never declined, without a decline reason',
+      event: {
+        name: 'billing.operation.failed',
+        billing_op_id: 'op-reconcile',
+        operation_type: 'cancel',
+        presentation: 'hosted',
+        resumed: false,
+        failure_category: 'reconciliation_needed',
+        duration_ms: 900
+      },
+      expected: {
+        operation: 'operation',
+        stage: 'failed',
+        outcome: 'failure',
+        operation_type: 'cancel',
+        billing_op_id: 'op-reconcile',
+        presentation: 'hosted',
+        resumed: false,
+        failure_category: 'reconciliation_needed',
+        duration_ms: 900
+      }
+    },
+    {
+      name: 'a timeout as a poll timeout',
+      event: {
+        name: 'billing.operation.timeout',
+        billing_op_id: 'op-timeout',
+        operation_type: 'subscription',
+        presentation: 'hosted',
+        resumed: true,
+        failure_category: 'poll_timeout',
+        duration_ms: 600_000
+      },
+      expected: {
+        operation: 'operation',
+        stage: 'timeout',
+        outcome: 'failure',
+        operation_type: 'subscription',
+        billing_op_id: 'op-timeout',
+        presentation: 'hosted',
+        resumed: true,
+        failure_category: 'poll_timeout',
+        duration_ms: 600_000
+      }
     }
-  )
+  ])('maps $name', ({ event, expected }) => {
+    expect(toBillingTelemetryEvent(event)).toEqual(expected)
+  })
 })

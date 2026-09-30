@@ -133,6 +133,7 @@ export type RemoteConfig = GetFeaturesResponses[200] & {
   billing_sdk_topup_enabled?: boolean
   billing_sdk_subscription_enabled?: boolean
   billing_control_enabled?: boolean
+  member_credit_limits_enabled?: boolean
   legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean
   churnkey_app_id?: string

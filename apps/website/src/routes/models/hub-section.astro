@@ -18,8 +18,8 @@ const copy = HUB_SECTION_COPY[section]
 ---
 
 <BaseLayout
-  title={copy.title.en}
-  description={copy.description.en}
+  title={copy.title}
+  description={copy.description}
   noindex={!isIndexableModelPage(Astro.url.pathname)}
   preloadFonts={['Medium']}
 >
@@ -28,7 +28,7 @@ const copy = HUB_SECTION_COPY[section]
   </script>
   <ModelsPage
     section={section}
-    heading={copy.heading.en}
+    heading={copy.heading}
     client:load
     transition:persist="hub-catalogue"
   >

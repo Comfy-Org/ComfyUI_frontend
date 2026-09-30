@@ -843,6 +843,7 @@ describe('useMediaAssetActions', () => {
         )
       })
       expect(mockReportError).toHaveBeenCalledWith(failure, {
+        surface: 'assets',
         errorType: 'error_downloading_asset',
         context: { filename: 'a.png' }
       })

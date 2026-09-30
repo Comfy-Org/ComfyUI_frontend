@@ -8,6 +8,7 @@ import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
@@ -503,4 +504,28 @@ describe('cloud auth requests with unified_web_session off', () => {
       ).toEqual([])
     }
   )
+})
+
+describe('an interactive sign-in with unified_web_session off', () => {
+  beforeEach(() => {
+    identity.reset()
+    sessionStorage.clear()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+  })
+
+  it('never consumes the marker and sends no session request', async () => {
+    const recorder = installFetchRecorder({ unified_cloud_auth: false })
+    await refreshRemoteConfig({ useAuth: false })
+
+    await useAuthStore().login('user-a@example.com', 'password')
+
+    expect(useCloudWebSessionStore().start()).toBe(false)
+    expect(sessionStorage.length).toBe(1)
+    expect(
+      recorder.all.filter(({ path }) => path === '/api/auth/session')
+    ).toEqual([])
+  })
 })
