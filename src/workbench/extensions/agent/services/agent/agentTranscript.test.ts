@@ -156,21 +156,6 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
-  it('falls back to attachment_refs when content.attachments is empty', () => {
-    const message = row(1, 'user', 'turn-a', 'check this image', 'row-1')
-    message.content = {
-      text: 'check this image',
-      attachments: [],
-      attachment_refs: [{ name: 'ComfyUI_00002_.png', kind: 'image' }]
-    }
-
-    const transcript = normalizeAgentTranscript([message])
-
-    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
-      { name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }
-    ])
-  })
-
   it('leaves userAttachments empty for a turn with no attachment fields', () => {
     const message = row(1, 'user', 'turn-a', 'no attachments here', 'row-1')
 
