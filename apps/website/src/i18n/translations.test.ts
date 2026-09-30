@@ -337,11 +337,11 @@ describe('tAround', () => {
   }>([
     {
       key: 'models.faq.whatIs.localAnswer',
-      locale: 'en',
+      locale: 'ja',
       slot: 'name',
       named: { description: 'a model', count: 3 },
       error:
-        'Translation models.faq.whatIs.localAnswer in en repeats slot {name}'
+        'Translation models.faq.whatIs.localAnswer in ja repeats slot {name}'
     },
     {
       key: 'models.list.heroTitle',
