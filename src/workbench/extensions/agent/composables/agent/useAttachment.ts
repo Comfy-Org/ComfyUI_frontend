@@ -91,7 +91,12 @@ export function useAttachment(options: UseAttachmentOptions) {
     return true
   }
 
-  function failAttachment(id: string, name: string, errorType: string) {
+  function failAttachment(
+    id: string,
+    name: string,
+    errorType: string,
+    notify = true
+  ) {
     return (): undefined => {
       reportError(new Error('Agent attachment upload failed'), {
         errorType,
@@ -106,7 +111,10 @@ export function useAttachment(options: UseAttachmentOptions) {
           project_context: 'agent_composer'
         }
       })
-      options.onError?.(i18n.global.t('agent.attachmentUploadFailed', { name }))
+      if (notify)
+        options.onError?.(
+          i18n.global.t('agent.attachmentUploadFailed', { name })
+        )
       options.remove(id)
       return undefined
     }
@@ -160,11 +168,19 @@ export function useAttachment(options: UseAttachmentOptions) {
 
   async function addDeferredFile(
     name: string,
-    resolve: () => Promise<File | undefined>
-  ): Promise<'uploaded' | 'unsupported' | 'cancelled' | 'failed'> {
+    resolve: (signal: AbortSignal) => Promise<File | undefined>
+  ): Promise<
+    'uploaded' | 'unsupported' | 'cancelled' | 'failed' | 'fetch_failed'
+  > {
     const id = stage(name)
+    const controller = new AbortController()
+    inFlight.set(id, controller)
     try {
-      const file = await withDeadline(resolve(), DEFERRED_FETCH_TIMEOUT_MS)
+      const file = await withDeadline(
+        resolve(controller.signal),
+        DEFERRED_FETCH_TIMEOUT_MS,
+        () => controller.abort()
+      )
       if (cancelled.has(id)) return 'cancelled'
       if (!file) {
         options.remove(id)
@@ -179,8 +195,8 @@ export function useAttachment(options: UseAttachmentOptions) {
       return 'uploaded'
     } catch {
       if (cancelled.has(id)) return 'cancelled'
-      failAttachment(id, name, 'agent_attachment_fetch_failed')()
-      return 'failed'
+      failAttachment(id, name, 'agent_attachment_fetch_failed', false)()
+      return 'fetch_failed'
     } finally {
       settle(id)
     }

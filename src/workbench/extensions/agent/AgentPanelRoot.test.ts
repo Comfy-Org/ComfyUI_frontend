@@ -3180,6 +3180,57 @@ describe('AgentPanelRoot attach flow', () => {
     }
   })
 
+  it('aborts a timed-out asset fetch and reports the retrieval failure', async () => {
+    let assetSignal: AbortSignal | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((input, init) => {
+        const url = String(input)
+        if (url.includes('/api/view')) {
+          assetSignal = init?.signal ?? undefined
+          return new Promise(() => {})
+        }
+        if (url.includes('/assets'))
+          return Promise.resolve(
+            json(200, { assets: [], total: 0, has_more: false })
+          )
+        if (url.includes('/workflows'))
+          return Promise.resolve(
+            json(200, { data: [], total: 0, has_more: false })
+          )
+        return Promise.resolve(json(200, agentThreadList()))
+      })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+    vi.useFakeTimers()
+    try {
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'gen.png', type: 'input' })
+            : 'http://localhost/api/view?filename=gen.png'
+      })
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(assetSignal?.aborted).toBe(true)
+      expect(
+        useToastStore().messagesToAdd.some(({ detail }) =>
+          String(detail).includes('gen.png could not be retrieved')
+        )
+      ).toBe(true)
+      expect(
+        useToastStore().messagesToAdd.some(({ detail }) =>
+          String(detail).includes('could not be uploaded')
+        )
+      ).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('refuses an asset card whose type is outside the accepted list', async () => {
     // The asset-card path can stage without uploading, so it used to skip the
     // policy entirely: it gated on the shared media taxonomy, which files

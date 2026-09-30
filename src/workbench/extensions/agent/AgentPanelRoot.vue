@@ -1687,10 +1687,15 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   // and a thrown fetch alike, so the outcomes are told apart here instead.
   // Reporting a 404 as a refused file type is specific and false.
   let fetched: File | undefined
-  const result = await attachment.addDeferredFile(asset.name, async () => {
-    fetched = await fetchDroppedAsset(asset)
-    return fetched && isAgentAttachable(fetched) ? fetched : undefined
-  })
+  const result = await attachment.addDeferredFile(
+    asset.name,
+    async (signal) => {
+      fetched = await fetchDroppedAsset(asset, signal)
+      return fetched && isAgentAttachable(fetched) ? fetched : undefined
+    }
+  )
+  if (result === 'fetch_failed')
+    warnAttachment(t('agent.assetFetchFailed', { name: asset.name }))
   if (result === 'unsupported')
     warnAttachment(
       fetched ? refused : t('agent.assetFetchFailed', { name: asset.name })

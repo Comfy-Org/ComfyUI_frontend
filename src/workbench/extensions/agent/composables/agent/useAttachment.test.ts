@@ -567,16 +567,18 @@ describe('useAttachment', () => {
         ...registry
       })
 
-      const pending = addDeferredFile(
-        'stuck.mp4',
-        () => new Promise<File | undefined>(() => {})
-      )
+      let fetchSignal: AbortSignal | undefined
+      const pending = addDeferredFile('stuck.mp4', (signal) => {
+        fetchSignal = signal
+        return new Promise<File | undefined>(() => {})
+      })
       await vi.advanceTimersByTimeAsync(60 * 1000)
 
-      await expect(pending).resolves.toBe('failed')
+      await expect(pending).resolves.toBe('fetch_failed')
+      expect(fetchSignal?.aborted).toBe(true)
       expect(registry.chips).toEqual([])
       expect(upload).not.toHaveBeenCalled()
-      expect(onError).toHaveBeenCalledWith('stuck.mp4 could not be uploaded')
+      expect(onError).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         errorType: 'agent_attachment_fetch_failed',
         tags: expect.objectContaining({
