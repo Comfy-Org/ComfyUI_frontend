@@ -378,7 +378,7 @@ describe('useAgentConversationStore', () => {
   it('settles a snapshot row the resumed stash displaces', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
-    store.startTurn('t1' as TurnId)
+    store.startTurn(T1)
     store.ingest(delta('t1', 'partial'))
     store.stashActiveTurn()
 
@@ -395,6 +395,26 @@ describe('useAgentConversationStore', () => {
         (message) => message.id !== 't1' && message.streaming
       )
     ).toEqual([])
+  })
+
+  // Retiring the displaced row must not reach a turn this client started. A
+  // send can take the active slot between the hydrate and the resume -- both
+  // of `resumeBackgroundTurn`'s callers reach it across an await -- and that
+  // turn is genuinely live, unlike the snapshot row the retirement is for.
+  it('leaves a newer local turn alone when a stash resumes', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'partial'))
+    store.stashActiveTurn()
+    store.startTurn(T2)
+    store.ingest(delta('t2', 'newer'))
+
+    store.resumeBackgroundTurn()
+
+    expect(
+      store.messages.find((message) => message.id === 't2')?.streaming
+    ).toBe(true)
   })
 
   // PM-1575 regression (finding #4, medium): resumeBackgroundTurn()'s SECOND

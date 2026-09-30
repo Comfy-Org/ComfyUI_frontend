@@ -60,6 +60,14 @@ export const useAgentConversationStore = defineStore(
     let transport: AgentEventTransport | null = null
     let activeTransportThreadId: string | null = null
     let liveMessage: AssistantMessage | null = null
+    /**
+     * Whether the active turn was installed by `hydrate()` from a transcript
+     * row rather than started here. Only such a row is safe for
+     * `resumeBackgroundTurn` to settle on its way past: a turn this client
+     * started is genuinely live, and a send can take the slot between the
+     * hydrate and the resume.
+     */
+    let activeFromSnapshot = false
     // PM-1575: whether a newly-created transport should hold a tool-call's
     // chat "done" state back until canvas catch-up is confirmed (see
     // agentEventTransport.ts). Defaults to never deferring, so a caller that
@@ -212,6 +220,7 @@ export const useAgentConversationStore = defineStore(
       activeTurnId.value = turnId
       activeIndex.value = messages.value.push(message) - 1
       activeTransportThreadId = threadId.value
+      activeFromSnapshot = false
       transport = createAgentEventTransport(
         message,
         replaceActive,
@@ -409,14 +418,12 @@ export const useAgentConversationStore = defineStore(
       // carries the first. Settling what we replace is what makes the outcome
       // independent of which of them coincide -- left alone, that row's
       // transport is unreachable and it streams for good.
-      if (transport !== null) abortActiveTurn()
+      if (transport !== null && activeFromSnapshot) abortActiveTurn()
       // The stash keys a turn by its message_id while hydrate() re-keys the same
       // turn by the server's turn_id; row.id bridges the two. Matching turns by
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
       const kept = messages.value.filter((m) => m.id !== entry.message.id)
-      // The persisted, authoritative copy is already on screen, kept by the
-      // filter above, so this entry contributes nothing but its transport.
       // Called before the branch, not inside it: it pops the duplicate row and
       // its user text whether or not this entry turns out to be settled.
       const poppedHydratedCopy = removeHydratedCopy(entry, kept)
@@ -431,8 +438,6 @@ export const useAgentConversationStore = defineStore(
       restoreBackgroundUserText(entry)
       const index = kept.push(entry.message) - 1
       messages.value = kept
-      // Kept on screen but not reactivated, so its transport is discarded here
-      // just as it is above.
       if (entry.settled) {
         retireBackgroundTurn(entry, resumedThreadId)
         return
@@ -440,6 +445,7 @@ export const useAgentConversationStore = defineStore(
       activeTurnId.value = entry.messageId
       activeIndex.value = index
       activeTransportThreadId = resumedThreadId
+      activeFromSnapshot = false
       transport = entry.transport
       liveMessage = entry.message
     }
@@ -536,6 +542,7 @@ export const useAgentConversationStore = defineStore(
 
     function clearActive(): void {
       transport = null
+      activeFromSnapshot = false
       activeTransportThreadId = null
       liveMessage = null
       activeIndex.value = -1
@@ -604,6 +611,7 @@ export const useAgentConversationStore = defineStore(
         activeTurnId.value = pending.messageId
         activeIndex.value = messages.value.indexOf(pending.message)
         activeTransportThreadId = threadId.value
+        activeFromSnapshot = true
         transport = createAgentEventTransport(
           pending.message,
           replaceActive,
