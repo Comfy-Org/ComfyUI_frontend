@@ -46,6 +46,7 @@ const CAPABILITY_BY_EXTENSION = new Map<string, AgentAttachCapability>([
 export const AGENT_ATTACH_ACCEPT = [...CAPABILITY_BY_EXTENSION.keys()].join(',')
 
 const EXTENSION_PATTERN = /\.[a-z0-9]{1,8}$/i
+const AUTHORITATIVE_EXTENSION_PATTERN = /\.[^.]+$/
 
 /**
  * A bare `lastIndexOf('.')` reads `.2` out of a label like "render v1.2" and
@@ -92,6 +93,16 @@ export type AgentAttachVerdict = 'accepted' | 'rejected' | 'unknown'
 export function agentAttachVerdict(filename: string): AgentAttachVerdict {
   if (agentAttachCapability(filename)) return 'accepted'
   return extensionOf(filename) === '' ? 'unknown' : 'rejected'
+}
+
+/**
+ * Stored filenames and URLs are authoritative file identities, so any final
+ * dotted token is an extension to judge. Display labels use the narrower
+ * heuristic above because names such as "render.v2" are not file identities.
+ */
+export function agentAttachRefVerdict(ref: string): AgentAttachVerdict {
+  if (agentAttachCapability(ref)) return 'accepted'
+  return AUTHORITATIVE_EXTENSION_PATTERN.test(ref) ? 'rejected' : 'unknown'
 }
 
 /**

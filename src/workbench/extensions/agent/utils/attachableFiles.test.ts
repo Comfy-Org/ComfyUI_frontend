@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   AGENT_ATTACH_ACCEPT,
   agentAttachCapability,
+  agentAttachRefVerdict,
   agentAttachVerdict,
   isAgentAttachable,
   partitionAttachableFiles
@@ -122,6 +123,18 @@ describe('agentAttachVerdict', () => {
     ['Empty Ace Step 1.0', 'unknown']
   ] as const)('reports %s as %s', ([filename, verdict]) => {
     expect(agentAttachVerdict(filename)).toBe(verdict)
+  })
+})
+
+describe('agentAttachRefVerdict', () => {
+  it.for([
+    ['stored.png', 'accepted'],
+    ['stored.v2', 'rejected'],
+    ['stored.123', 'rejected'],
+    ['stored.verylongextension', 'rejected'],
+    ['blake3:abcdef0123456789', 'unknown']
+  ] as const)('reports authoritative ref %s as %s', ([ref, verdict]) => {
+    expect(agentAttachRefVerdict(ref)).toBe(verdict)
   })
 })
 
