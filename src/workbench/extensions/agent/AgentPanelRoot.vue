@@ -39,6 +39,7 @@ import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   AGENT_ATTACH_ACCEPT,
+  agentAttachRefVerdict,
   agentAttachVerdict,
   isAgentAttachable
 } from './utils/attachableFiles'
@@ -1654,12 +1655,8 @@ function warnAttachment(detail: string): void {
  * sees the real File.
  */
 function droppedAssetVerdict(asset: DroppedAsset): AgentAttachVerdict {
-  return (
-    [asset.ref, asset.name]
-      .filter((candidate): candidate is string => Boolean(candidate))
-      .map(agentAttachVerdict)
-      .find((candidate) => candidate !== 'unknown') ?? 'unknown'
-  )
+  if (asset.ref) return agentAttachRefVerdict(asset.ref)
+  return agentAttachVerdict(asset.name)
 }
 
 async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
