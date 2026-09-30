@@ -31,7 +31,6 @@ const {
   canPay,
   reopening,
   canCancel = false,
-  failure,
   keepSubscription,
   savedMethods = []
 } = defineProps<{
@@ -42,7 +41,6 @@ const {
   /** The page is re-opening the challenge on its own, so Complete verification waits. */
   reopening: boolean
   canCancel?: boolean
-  failure?: string
   /** The notice a plan set to end shows above Pay, worded for this quote. */
   keepSubscription?: KeepSubscriptionCopy
   savedMethods?: readonly SavedPaymentMethod[]
@@ -85,7 +83,6 @@ const payContext = computed<PayContext>(() => {
   if (page.kind !== 'capture') return {}
   const { outcome, reactivation } = page
   return {
-    failure,
     ...(outcome === undefined || outcome.kind === 'reconciling'
       ? {}
       : { outcome }),

@@ -42,6 +42,13 @@ const quoted = (
   saved,
   reactivation
 })
+const unkeyed = (saved: SavedArrival): CheckoutPageEvent => ({
+  type: 'quoted',
+  method: 'collect',
+  saved,
+  element: 'failed',
+  reactivation: false
+})
 const quotedOnFile: CheckoutPageEvent = {
   type: 'quoted',
   method: 'on_file',
@@ -368,6 +375,21 @@ describe('railView', () => {
         tab: 'saved',
         element: 'ready',
         saved: 'failed'
+      }
+    },
+    {
+      name: '370-15519: no Stripe key and no saved method',
+      events: [unkeyed(0)],
+      expected: { kind: 'column_error' }
+    },
+    {
+      name: '370-15519: no Stripe key beside saved methods keeps Saved live',
+      events: [unkeyed(2)],
+      expected: {
+        kind: 'tabs',
+        tab: 'saved',
+        element: 'failed',
+        saved: 'ready'
       }
     },
     {
