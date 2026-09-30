@@ -42,6 +42,13 @@ const quoted = (
   saved,
   reactivation
 })
+const unkeyed = (saved: SavedArrival): CheckoutPageEvent => ({
+  type: 'quoted',
+  method: 'collect',
+  saved,
+  element: 'failed',
+  reactivation: false
+})
 const quotedOnFile: CheckoutPageEvent = {
   type: 'quoted',
   method: 'on_file',
@@ -110,9 +117,31 @@ describe('reduceCheckoutPage', () => {
       pay: false
     },
     {
+      name: 'a refusal for a change already scheduled, with that change',
+      events: [
+        {
+          type: 'refused',
+          reason: 'subscription_change_in_progress',
+          scheduled: {
+            plan: { tier: 'PRO', duration: 'ANNUAL' },
+            effectiveAt: '2026-10-28T00:00:00.000Z'
+          }
+        }
+      ],
+      expected: {
+        kind: 'refused',
+        reason: 'subscription_change_in_progress',
+        scheduled: {
+          plan: { tier: 'PRO', duration: 'ANNUAL' },
+          effectiveAt: '2026-10-28T00:00:00.000Z'
+        }
+      },
+      pay: false
+    },
+    {
       name: 'a failed read',
       events: [unavailable],
-      expected: { kind: 'unavailable', code: 'REQUEST_FAILED' },
+      expected: { kind: 'unavailable', cause: 'quote', code: 'REQUEST_FAILED' },
       pay: false
     },
     {
@@ -349,6 +378,21 @@ describe('railView', () => {
       }
     },
     {
+      name: '370-15519: no Stripe key and no saved method',
+      events: [unkeyed(0)],
+      expected: { kind: 'column_error' }
+    },
+    {
+      name: '370-15519: no Stripe key beside saved methods keeps Saved live',
+      events: [unkeyed(2)],
+      expected: {
+        kind: 'tabs',
+        tab: 'saved',
+        element: 'failed',
+        saved: 'ready'
+      }
+    },
+    {
       name: 'both rails down',
       events: [quoted('failed'), failed],
       expected: { kind: 'column_error' }
@@ -549,7 +593,11 @@ describe('reduceCheckoutPage after Pay', () => {
         { type: 'requoteFailed', code: 'REQUEST_FAILED' }
       ])
 
-      expect(page).toEqual({ kind: 'unavailable', code: 'REQUEST_FAILED' })
+      expect(page).toEqual({
+        kind: 'unavailable',
+        cause: 'quote',
+        code: 'REQUEST_FAILED'
+      })
       expect(railAcceptsPay(page)).toBe(false)
     }
   )
@@ -914,9 +962,13 @@ describe('reduceCheckoutPage endings', () => {
       expected: RESOLVING
     },
     {
-      name: "a re-read of the workspace's payments that fails is its own ending, not a failed load",
+      name: "a re-read of the workspace's payments that fails is a failed load of the re-read",
       events: [recheckFailed],
-      expected: { kind: 'recheck_failed', code: 'REQUEST_FAILED' }
+      expected: {
+        kind: 'unavailable',
+        cause: 'recheck',
+        code: 'REQUEST_FAILED'
+      }
     },
     {
       name: 'Try again after a failed re-read resolves again',
@@ -1219,7 +1271,7 @@ describe('isLocked', () => {
     },
     {
       name: 'unavailable',
-      page: { kind: 'unavailable', code: 'REQUEST_FAILED' },
+      page: { kind: 'unavailable', cause: 'quote', code: 'REQUEST_FAILED' },
       locked: false
     },
     {

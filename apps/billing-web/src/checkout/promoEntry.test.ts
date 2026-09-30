@@ -4,6 +4,7 @@ import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 import type { Attempt, CheckoutPage } from '@/checkout/checkoutPage'
 import type { PromoEntry, PromoEntryEvent } from '@/checkout/promoEntry'
 import {
+  hasUnappliedDraft,
   initialPromoEntry,
   promoEntryLive,
   promoRejectionOf,
@@ -171,6 +172,26 @@ describe('promoRejectionOf', () => {
     expect(promoRejectionOf({ status: 'error', code: 'REQUEST_FAILED' })).toBe(
       'unchecked'
     )
+  })
+})
+
+describe('hasUnappliedDraft', () => {
+  it.for<{ name: string; entry: PromoEntry; unapplied: boolean }>([
+    { name: 'a typed code', entry: editing('LAUNCH20'), unapplied: true },
+    { name: 'a blank field', entry: editing('  '), unapplied: false },
+    {
+      name: 'a code the server refused',
+      entry: rejected('NOPE'),
+      unapplied: false
+    },
+    {
+      name: 'a code the quote could not check',
+      entry: { kind: 'rejected', draft: 'LAUNCH20', reason: 'unchecked' },
+      unapplied: true
+    },
+    { name: 'an applied code', entry: applied('LAUNCH20'), unapplied: false }
+  ])('$name: $unapplied', ({ entry, unapplied }) => {
+    expect(hasUnappliedDraft(entry)).toBe(unapplied)
   })
 })
 

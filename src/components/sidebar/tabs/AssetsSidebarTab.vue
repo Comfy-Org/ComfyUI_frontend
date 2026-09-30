@@ -49,26 +49,20 @@
       </div>
     </template>
     <template #header>
-      <!-- Filter Bar -->
+      <div v-if="!isInFolderView" class="overflow-x-auto px-4 pt-2 pb-px">
+        <TabList v-model="activeTab">
+          <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
+          <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
+        </TabList>
+      </div>
       <MediaAssetFilterBar
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:date-filter="dateFilter"
         v-model:media-type-filters="mediaTypeFilters"
-        bottom-divider
         :show-generation-time-sort="activeTab === 'output'"
       />
-      <!-- Tab list -->
-      <div
-        v-if="!isInFolderView"
-        class="border-b border-comfy-input p-2 2xl:px-4"
-      >
-        <TabList v-model="activeTab">
-          <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
-          <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
-        </TabList>
-      </div>
     </template>
     <template #body>
       <div
