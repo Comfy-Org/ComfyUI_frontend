@@ -183,7 +183,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     signIn: InteractiveSignIn | null
   ): Promise<void> {
     const user = firebaseIdentity.currentUser()
-    const reloaded = user && takeInteractiveSignIn(user.uid)
+    const reloaded = !signIn && user && takeInteractiveSignIn(user.uid)
     const interactive =
       signIn ??
       (reloaded ? { uid: user.uid, getProof: () => user.getIdToken() } : null)

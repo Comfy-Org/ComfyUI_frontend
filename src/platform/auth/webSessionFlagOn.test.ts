@@ -1389,6 +1389,7 @@ describe.for([{ unified: false }, { unified: true }])(
       await startPage(USER_A)
 
       expect(methodsSince(server)).toEqual(['POST', 'GET', 'GET'])
+      expect(server.requests[0].authorization).toBe('Bearer firebase-id-token')
       expect(await webSessionSend()).toBeDefined()
       expect(firebaseSignOut).not.toHaveBeenCalled()
     })
@@ -1437,6 +1438,34 @@ describe.for([{ unified: false }, { unified: true }])(
         expect(firebaseSignOut).toHaveBeenCalledOnce()
       }
     )
+
+    it('keeps the marker when a pending sign-in fails to create the session, so the next load retries', async () => {
+      const server = installServer('revoked', { unified_cloud_auth: unified })
+      await refreshRemoteConfig({ useAuth: false })
+      const page = createDisposablePinia()
+      pages.push(page)
+      setActivePinia(page.pinia)
+      useAuthStore()
+      server.dropPosts = true
+      await useAuthStore().login('user-a@example.com', 'password')
+      const webSession = useCloudWebSessionStore()
+      webSession.start()
+      await webSession.whenReady()
+      server.dropPosts = false
+      await refreshRemoteConfig({ useAuth: false })
+      server.requests.length = 0
+
+      await startPage(USER_A)
+
+      expect(methodsSince(server)).toEqual(['POST', 'GET', 'GET'])
+    })
+
+    it('rejects a marker stamped in the future', () => {
+      markInteractiveSignIn('user-a')
+      vi.setSystemTime(Date.now() - 60_000)
+
+      expect(takeInteractiveSignIn('user-a')).toBe(false)
+    })
 
     it('reads a marker back only once', () => {
       markInteractiveSignIn('user-a')

@@ -36,6 +36,7 @@ export function takeInteractiveSignIn(uid: string): boolean {
   return (
     marker.success &&
     marker.data.uid === uid &&
+    Date.now() - marker.data.at >= 0 &&
     Date.now() - marker.data.at <= MAX_AGE_MS
   )
 }

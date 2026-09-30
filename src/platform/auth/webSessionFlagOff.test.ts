@@ -522,7 +522,7 @@ describe('an interactive sign-in with unified_web_session off', () => {
 
     await useAuthStore().login('user-a@example.com', 'password')
 
-    expect(takeInteractiveSignIn('user-a')).toBe(false)
     expect(sessionStorage.length).toBe(0)
+    expect(takeInteractiveSignIn('user-a')).toBe(false)
   })
 })
