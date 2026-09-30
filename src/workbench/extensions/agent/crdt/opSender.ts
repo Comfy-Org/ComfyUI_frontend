@@ -243,6 +243,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (!batch.reportedThrow) {
         batch.reportedThrow = true
         reportError(error, {
+          surface: 'agent',
           errorType: 'failure_sending_agent_human_ops',
           tags: {
             failure_kind: 'caught_unexpected',
