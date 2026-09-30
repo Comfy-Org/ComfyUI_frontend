@@ -28,6 +28,7 @@ import {
   invalidateAll
 } from '@/platform/assets/composables/useAssetsQuery'
 import { assetService } from '@/platform/assets/services/assetService'
+import { generatePreviewsForNewAssets } from '@/platform/assets/utils/hdrPreviewGeneration'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
@@ -325,6 +326,8 @@ export const useAssetsStore = defineStore('assets', () => {
             flatAssets,
             unflattenOutputAssets
           )
+          generatePreviewsForNewAssets(inputAssets.value)
+          generatePreviewsForNewAssets(flatAssets)
         })
       } else {
         inputAssets.value = historyInputs

@@ -1,10 +1,7 @@
-import type { EffectScope } from 'vue'
-import { effectScope, onScopeDispose, toValue, watch } from 'vue'
+import { toValue, watch } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { attachPreview } from '@/platform/assets/utils/assetPreviewUtil'
+import { attachPreview } from '@/platform/assets/utils/attachPreview'
 import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { PagedList } from '@/utils/pagedList'
@@ -21,7 +18,7 @@ async function generatePreview(asset: AssetItem, list: PagedList<AssetItem>) {
   }
 }
 
-function generatePreviewsForNewAssets(list: PagedList<AssetItem>) {
+export function generatePreviewsForNewAssets(list: PagedList<AssetItem>) {
   const handledIds = new Set<string>()
   let newestPreexisting: number | undefined
 
@@ -52,29 +49,4 @@ function generatePreviewsForNewAssets(list: PagedList<AssetItem>) {
     },
     { immediate: true }
   )
-}
-
-export function useHdrPreviewGeneration() {
-  const { flags } = useFeatureFlags()
-  let scope: EffectScope | undefined
-
-  watch(
-    () => flags.assetsEnabled,
-    (assetsEnabled) => {
-      scope?.stop()
-      scope = undefined
-      if (!assetsEnabled) return
-
-      scope = effectScope()
-      scope.run(() => {
-        generatePreviewsForNewAssets(useAssetsQuery({ tags_any: ['input'] }))
-        generatePreviewsForNewAssets(
-          useAssetsQuery({ tags_any: ['output', 'temp'] })
-        )
-      })
-    },
-    { immediate: true }
-  )
-
-  onScopeDispose(() => scope?.stop())
 }
