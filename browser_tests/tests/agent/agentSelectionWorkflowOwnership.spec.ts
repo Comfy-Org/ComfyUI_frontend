@@ -10,6 +10,7 @@ import {
   referenceNode,
   referenceWorkflow
 } from '@e2e/fixtures/agentInlineReferencesFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 test.use({
   connectWebSocketToServer: false,
@@ -48,10 +49,9 @@ test(
       mimeType: 'application/json',
       buffer: Buffer.from(JSON.stringify(referenceWorkflow))
     })
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
-    const panel = page.locator('#agent-panel-root')
+    const agentPanel = new AgentPanel(page)
+    await agentPanel.open()
+    const panel = agentPanel.root
     const targetPicker = panel.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
