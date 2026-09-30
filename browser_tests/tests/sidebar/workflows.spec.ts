@@ -24,23 +24,21 @@ test.describe('Workflows sidebar', () => {
   test('draws each section divider as a single 1px line', async ({
     comfyPage
   }) => {
-    const label = comfyPage.menu.workflowsTab.root.getByText('Browse', {
-      exact: true
-    })
+    const separators = comfyPage.menu.workflowsTab.root.getByRole('separator')
+    await expect(separators.first()).toBeVisible()
 
-    const borderWidths = await label.evaluate((element) => {
-      const line = element.nextElementSibling
-      if (!line) return null
-      const style = getComputedStyle(line)
-      return [
-        style.borderTopWidth,
-        style.borderRightWidth,
-        style.borderBottomWidth,
-        style.borderLeftWidth
-      ]
-    })
-
-    expect(borderWidths).toEqual(['1px', '0px', '0px', '0px'])
+    for (const separator of await separators.all()) {
+      const borderWidths = await separator.evaluate((element) => {
+        const style = getComputedStyle(element)
+        return [
+          style.borderTopWidth,
+          style.borderRightWidth,
+          style.borderBottomWidth,
+          style.borderLeftWidth
+        ]
+      })
+      expect(borderWidths).toEqual(['1px', '0px', '0px', '0px'])
+    }
   })
 
   test('Can create new blank workflow', async ({ comfyPage }) => {
