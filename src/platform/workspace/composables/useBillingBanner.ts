@@ -37,6 +37,7 @@ export interface BillingBannerInputs {
   endDate: string | null
   canManage: boolean
   outOfCreditsDismissed: boolean
+  planChangeDismissed: boolean
   hasScheduledChange: boolean
 }
 
@@ -54,9 +55,7 @@ function deriveEnterpriseBanner(
   if (!inputs.canAccessSubscriptionFeatures) return null
   if (!inputs.billingControlEnabled) return null
   const withinEndingNotice =
-    inputs.isCancelled &&
-    inputs.canManage &&
-    isWithinEnterpriseEndingNotice(inputs.endDate, now)
+    inputs.isCancelled && isWithinEnterpriseEndingNotice(inputs.endDate, now)
   return withinEndingNotice ? 'ending' : null
 }
 
@@ -95,17 +94,17 @@ function teamNoticesApply(inputs: BillingBannerInputs): boolean {
 
 // A self-serve cancellation is user-initiated news, so its ending notice
 // shows at once. A scheduled change is suppressed while cancelled — the
-// ending notice already owns that window.
+// ending notice already owns that window — and is owner-only.
 function deriveLifecycleNotice(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
-  if (inputs.isCancelled && inputs.endDate && inputs.canManage) {
-    return 'ending'
-  }
-  if (inputs.hasScheduledChange && !inputs.isCancelled) {
-    return 'planChange'
-  }
-  return null
+  if (inputs.isCancelled && inputs.endDate) return 'ending'
+  const showsPlanChange =
+    inputs.hasScheduledChange &&
+    !inputs.isCancelled &&
+    inputs.canManage &&
+    !inputs.planChangeDismissed
+  return showsPlanChange ? 'planChange' : null
 }
 
 // The team-only billing-control notices. Any other tier (including
@@ -175,7 +174,8 @@ function useBillingBannerInternal() {
   const { permissions } = useWorkspaceUI()
   const { flags } = useFeatureFlags()
 
-  const dismissed = ref(false)
+  const outOfCreditsDismissed = ref(false)
+  const planChangeDismissed = ref(false)
 
   // Coarse shared clock so the enterprise notice window opens mid-session
   // instead of waiting for an unrelated billing ref to change.
@@ -188,7 +188,8 @@ function useBillingBannerInternal() {
     canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
     billingStatus: billingStatus.value,
     canManage: permissions.value.canManageSubscription,
-    outOfCreditsDismissed: dismissed.value,
+    outOfCreditsDismissed: outOfCreditsDismissed.value,
+    planChangeDismissed: planChangeDismissed.value,
     ...readSubscriptionInputs(subscription.value)
   }))
 
@@ -196,15 +197,15 @@ function useBillingBannerInternal() {
     isCloud ? deriveBillingBanner(bannerInputs.value, now.value) : null
   )
 
-  // Dismiss silences only the out-of-credits banner, and only for the current
-  // exhaustion episode: reset once the workspace is funded again so a later
-  // exhaustion re-shows. Shared state, so it survives the settings panel
-  // unmounting when the dialog closes.
+  // Out-of-credits dismissal lasts one exhaustion episode: reset once the
+  // workspace is funded again so a later exhaustion re-shows. A plan change
+  // dismissal lasts the session. Shared state, so both survive the settings
+  // panel unmounting when the dialog closes.
   const hasExhaustedFunds = computed(
     () => subscription.value?.hasFunds === false
   )
   watch(hasExhaustedFunds, (exhausted) => {
-    if (!exhausted) dismissed.value = false
+    if (!exhausted) outOfCreditsDismissed.value = false
   })
 
   useEventListener(window, 'focus', () => {
@@ -213,7 +214,8 @@ function useBillingBannerInternal() {
   })
 
   function dismiss() {
-    dismissed.value = true
+    if (kind.value === 'outOfCredits') outOfCreditsDismissed.value = true
+    if (kind.value === 'planChange') planChangeDismissed.value = true
   }
 
   return { kind, dismiss }

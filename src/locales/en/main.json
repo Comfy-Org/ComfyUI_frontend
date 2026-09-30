@@ -3339,22 +3339,24 @@
       },
       "outOfCredits": {
         "title": "Out of credits",
-        "body": "Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.",
-        "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
-        "memberBody": "Your team has used all its credits. Your workspace admins need to add more credits to continue generating.",
+        "body": "Your team has used all its credits. Add more credits or wait until credits refill on {date}.",
+        "bodyNoDate": "Your team has used all its credits. Add more credits.",
+        "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
+          "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
-        "dismiss": "Dismiss",
-        "upgradeBody": "Upgrade your plan to add credits and continue generating."
+        "dismiss": "Dismiss"
       },
       "ending": {
         "title": "Your team plan ends on {date}",
-        "body": "Members keep full access until then. Resume your subscription to keep your shared credits and seats.",
+        "body": "Members keep full access until then. Resume your plan to keep your team's shared credits.",
+          "memberBody": "You can run workflows until then.",
         "enterpriseTitle": "Your Enterprise plan ends on {date}",
         "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
-        "reactivate": "Resume subscription"
+        "reactivate": "Resume plan",
+          "contactSales": "Contact sales"
       },
       "planChange": {
-        "title": "Your plan changes to {plan} on {date}",
+        "title": "Your plan changes to {plan} on {date}.",
         "body": "Your current plan stays active until then."
       },
       "updatePayment": "Update payment",
