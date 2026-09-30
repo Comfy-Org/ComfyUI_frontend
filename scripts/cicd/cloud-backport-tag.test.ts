@@ -7,7 +7,12 @@ import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
 interface WorkflowJob {
-  steps?: Array<{ env?: Record<string, string> }>
+  steps?: Array<{
+    env?: Record<string, string>
+    id?: string
+    uses?: string
+    with?: Record<string, string | boolean>
+  }>
   'timeout-minutes'?: number
 }
 
@@ -64,7 +69,12 @@ fi
 
 function runTagScript(
   scenario: string,
-  options: { containment?: string; event?: string; sha?: string } = {}
+  options: {
+    containment?: string
+    event?: string
+    sha?: string
+    token?: string
+  } = {}
 ) {
   const directory = mkdtempSync(join(tmpdir(), 'cloud-backport-tag-'))
   const binary = join(directory, 'gh')
@@ -81,6 +91,7 @@ function runTagScript(
       ...process.env,
       BRANCH: 'cloud/1.54',
       EVENT_NAME: options.event ?? 'workflow_dispatch',
+      GH_TOKEN: options.token ?? 'test-token',
       FAKE_CONTAINMENT: options.containment ?? 'behind',
       FAKE_GH_COUNT_FILE: count,
       FAKE_SCENARIO: scenario,
@@ -104,8 +115,23 @@ describe('cloud backport tag workflow', () => {
     expect(workflow.concurrency?.group).toContain('github.run_id')
     expect(workflow.concurrency?.['cancel-in-progress']).toBe(false)
     expect(workflow.jobs?.['create-tag']?.['timeout-minutes']).toBe(10)
-    expect(workflow.jobs?.['create-tag']?.steps?.[1]?.env?.GH_TOKEN).toContain(
-      'secrets.PR_GH_TOKEN'
+    const steps = workflow.jobs?.['create-tag']?.steps
+    const checkout = steps?.find((step) =>
+      step.uses?.startsWith('actions/checkout')
+    )
+    const tagStep = steps?.find((step) => step.id === 'tag')
+    expect(checkout?.with?.ref).toBe(
+      '${{ github.event.repository.default_branch }}'
+    )
+    expect(tagStep?.env?.GH_TOKEN).toBe('${{ secrets.PR_GH_TOKEN }}')
+  })
+
+  it('fails closed when the release token is absent', () => {
+    const result = runTagScript('same', { token: '' })
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain(
+      'PR_GH_TOKEN is required for cloud tag reconciliation'
     )
   })
 
