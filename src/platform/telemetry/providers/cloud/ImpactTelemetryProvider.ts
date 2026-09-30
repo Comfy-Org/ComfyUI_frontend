@@ -110,11 +110,10 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
       }
     }
 
-    if (stores.authStore.currentUser) {
+    if (stores.authStore.userId) {
       return {
-        customerId: stores.authStore.currentUser.uid,
-        customerEmail:
-          stores.authStore.currentUser.email ?? EMPTY_CUSTOMER_VALUE
+        customerId: stores.authStore.userId,
+        customerEmail: stores.authStore.userEmail ?? EMPTY_CUSTOMER_VALUE
       }
     }
 

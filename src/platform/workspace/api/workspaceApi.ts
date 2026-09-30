@@ -43,6 +43,7 @@ import axios from 'axios'
 
 import {
   webSessionRequests,
+  webSessionResourceHeader,
   webSessionSend
 } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
@@ -424,10 +425,13 @@ export const workspaceApi = {
   /**
    * Accept a workspace invite.
    * POST /api/invites/:token/accept
-   * Uses Firebase auth (user identity) since the user isn't yet a workspace member.
+   * Uses the user identity (Firebase, else the session token) since the user isn't yet a workspace member.
    */
   async acceptInvite(token: string): Promise<AcceptInviteResponse> {
-    const headers = await useAuthStore().getFirebaseAuthHeaderOrThrow()
+    const authStore = useAuthStore()
+    const headers =
+      (!authStore.currentUser && (await webSessionResourceHeader())) ||
+      (await authStore.getFirebaseAuthHeaderOrThrow())
     try {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
         workspaceApiUrl(`/invites/${token}/accept`),

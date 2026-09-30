@@ -317,6 +317,33 @@ describe('onboarding replay', () => {
     )
   })
 
+  test.for([
+    {
+      name: 'the session owner stays signed in',
+      sessionOwner: OWNER_ID,
+      status: 'stored'
+    },
+    {
+      name: 'the session owner signs out',
+      sessionOwner: undefined,
+      status: 'failed'
+    }
+  ])(
+    'with no Firebase user, a submission is kept only while $name',
+    async ({ sessionOwner, status }) => {
+      fetchApi.mockResolvedValueOnce(mockResponse({ ok: true, status: 200 }))
+
+      const submission = submitSurveyFor(
+        { q1: 'a' },
+        OWNER_ID,
+        () => sessionOwner
+      )
+      for (const listener of identityListeners) listener(null)
+
+      await expect(submission).resolves.toMatchObject({ status })
+    }
+  )
+
   test('a failed first-time submission reports failure to the caller', async () => {
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 500 }))
 

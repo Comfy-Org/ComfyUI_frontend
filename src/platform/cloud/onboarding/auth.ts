@@ -142,11 +142,12 @@ export type SurveySubmissionResult =
 
 export async function submitSurvey(
   survey: Record<string, unknown>,
-  ownerId: string
+  ownerId: string,
+  sessionOwnerId: () => string | undefined = () => undefined
 ): Promise<SurveySubmissionResult> {
   const identityChanged = new AbortController()
   const stopWatchingIdentity = firebaseIdentity.onUserChanged((user) => {
-    if (user?.uid !== ownerId) identityChanged.abort()
+    if ((user?.uid ?? sessionOwnerId()) !== ownerId) identityChanged.abort()
   })
 
   try {

@@ -83,7 +83,11 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
     isSubmitting.value = false
     return
   }
-  const result = await submitSurvey(payload, replayOwner)
+  const result = await submitSurvey(
+    payload,
+    replayOwner,
+    () => useAuthStore().userId
+  )
   if (result.status === 'failed') {
     reportSurveySubmissionFailure(result.cause)
     isSubmitting.value = false
