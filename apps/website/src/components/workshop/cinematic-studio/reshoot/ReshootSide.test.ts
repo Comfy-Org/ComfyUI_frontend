@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { h, ref } from 'vue'
 
 import {
@@ -103,4 +103,47 @@ describe('ReshootSide', () => {
       screen.getByRole('button', { name: `${rc('reshoot.aspect')}: ${chosen}` })
     ).toBeInTheDocument()
   })
+
+  it.for([
+    {
+      depth: 'failed' as const,
+      reason: { error: 'The deployment is not ready.' },
+      title: rc('reshoot.pending.depthFailed'),
+      retry: true
+    },
+    {
+      depth: 'none' as const,
+      reason: { blocked: rc('reshoot.signIn') },
+      title: rc('reshoot.pending.depthWaiting'),
+      retry: false
+    }
+  ])(
+    'says why the depth is not ready ($depth) instead of showing dead controls',
+    async ({ depth, reason, title, retry }) => {
+      const analyze = vi.fn()
+      render({
+        setup: () => () =>
+          h(ReshootSide, {
+            ...props,
+            ...reason,
+            depth,
+            size: RESHOOT_SIZES[0],
+            onAnalyze: analyze
+          })
+      })
+      const step = screen.getByTestId('reshoot-depth-step')
+
+      expect(step).toHaveTextContent(title)
+      expect(step).toHaveTextContent(Object.values(reason)[0])
+      expect(screen.getByTestId('reshoot-aim-controls')).toHaveAttribute(
+        'inert'
+      )
+      if (retry) {
+        await userEvent.click(screen.getByTestId('reshoot-analyze'))
+        expect(analyze).toHaveBeenCalledOnce()
+      } else {
+        expect(screen.queryByTestId('reshoot-analyze')).toBeNull()
+      }
+    }
+  )
 })

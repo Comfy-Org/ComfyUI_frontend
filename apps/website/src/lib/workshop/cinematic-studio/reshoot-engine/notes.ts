@@ -26,7 +26,7 @@ function periodPhrase(seconds: number, locale: Locale): string {
   })
 }
 
-function relativeTime(seconds: number, locale: Locale): string {
+export function relativeTime(seconds: number, locale: Locale): string {
   const format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
   if (seconds < HOUR) return format.format(Math.ceil(seconds / 60), 'minute')
   if (seconds < 2 * DAY) return format.format(Math.ceil(seconds / HOUR), 'hour')

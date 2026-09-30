@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import type { DepthState } from '../../../../composables/useReshoot'
@@ -16,6 +18,7 @@ import { fileSecondsOf } from '../../../../lib/workshop/cinematic-studio/reshoot
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import CinematicGenerateAction from '../CinematicGenerateAction.vue'
+import ReshootAimPending from './ReshootAimPending.vue'
 import ReshootAimRig from './ReshootAimRig.vue'
 import ReshootDisclosure from './ReshootDisclosure.vue'
 import ReshootFormat from './ReshootFormat.vue'
@@ -31,9 +34,11 @@ const {
   frames,
   clipError,
   error,
+  blocked,
   gate,
   canGenerate,
   priceNote,
+  limitNote,
   workspaceName,
   locale = 'en'
 } = defineProps<{
@@ -49,9 +54,13 @@ const {
   clipError?: string
   /** The last failed depth read, said above its Try again button. */
   error?: string
+  /** What stops the depth read from starting, when nothing is running. */
+  blocked?: string
   gate: StudioGate
   canGenerate: boolean
   priceNote?: string
+  /** Takes left this hour, or when the next one frees up. */
+  limitNote?: string
   workspaceName?: string
   locale?: Locale
 }>()
@@ -84,7 +93,7 @@ const prompt = defineModel<string>('prompt', { required: true })
 
 const ready = computed(() => depth === 'ready')
 const analyzing = computed(() => depth === 'analyzing')
-const failed = computed(() => !!error && !ready.value && !analyzing.value)
+const pendingDepth = computed(() => (depth === 'ready' ? undefined : depth))
 const framesText = computed(() =>
   frames === undefined
     ? ''
@@ -170,27 +179,43 @@ async function choose(event: Event) {
       >
         {{ rejected }}
       </p>
-      <ReshootAimRig
-        v-model:keep-aim="keepAim"
-        :clip
-        :camera
-        :disabled="!ready"
-        :locale
-        @aim="emit('aim', $event)"
-      />
-      <div class="flex flex-col gap-2">
-        <ReshootDisclosure
-          :label="rc('reshoot.section.move', locale)"
-          :disabled="!ready"
+      <div class="grid">
+        <div
+          :class="
+            cn(
+              'col-start-1 row-start-1 flex flex-col gap-2 transition-[opacity,visibility] motion-safe:duration-300',
+              !ready && 'invisible opacity-0'
+            )
+          "
+          :inert="!ready"
+          data-testid="reshoot-aim-controls"
         >
-          <ReshootMoveControls
-            v-model:frame="frame"
-            :keys
-            :disabled="!ready"
+          <ReshootAimRig
+            v-model:keep-aim="keepAim"
+            :clip
+            :camera
             :locale
-            @remove="emit('removeKey', $event)"
+            @aim="emit('aim', $event)"
           />
-        </ReshootDisclosure>
+          <ReshootDisclosure :label="rc('reshoot.section.move', locale)">
+            <ReshootMoveControls
+              v-model:frame="frame"
+              :keys
+              :locale
+              @remove="emit('removeKey', $event)"
+            />
+          </ReshootDisclosure>
+        </div>
+        <ReshootAimPending
+          v-if="pendingDepth"
+          :depth="pendingDepth"
+          :reason="pendingDepth === 'failed' ? error : blocked"
+          :locale
+          class="col-start-1 row-start-1 self-start"
+          @retry="emit('analyze')"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
         <ReshootDisclosure :label="rc('reshoot.advanced', locale)">
           <div class="flex flex-col gap-3">
             <div class="flex flex-col gap-1.5">
@@ -256,35 +281,20 @@ async function choose(event: Event) {
     <footer
       class="flex flex-col gap-3 rounded-b-2xl border-t border-transparency-white-t8 p-4"
     >
-      <!-- The scene is read on its own when a clip is picked; a failed
-           read waits here to be tried again. -->
-      <div
-        v-if="failed"
-        role="alert"
-        class="flex items-center gap-3 rounded-xl bg-transparency-white-t8 py-2 pr-2 pl-3"
-      >
-        <p
-          class="min-w-0 flex-1 text-[11px] wrap-break-word text-primary-warm-white"
-        >
-          {{ rc('reshoot.failed', locale) }}: {{ error }}
-        </p>
-        <Button
-          size="sm"
-          variant="outline"
-          class="shrink-0 rounded-full"
-          data-testid="reshoot-analyze"
-          @click="emit('analyze')"
-        >
-          {{ rc('reshoot.tryAgain', locale) }}
-        </Button>
-      </div>
       <p
-        v-else-if="ready || analyzing"
+        v-if="ready || analyzing"
         class="text-center text-[11px] text-primary-warm-gray"
       >
         {{
           rc(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait', locale)
         }}
+      </p>
+      <p
+        v-if="ready && limitNote"
+        class="text-center text-xs text-primary-comfy-canvas"
+        data-testid="reshoot-limit"
+      >
+        {{ limitNote }}
       </p>
       <p
         v-if="priceNote"

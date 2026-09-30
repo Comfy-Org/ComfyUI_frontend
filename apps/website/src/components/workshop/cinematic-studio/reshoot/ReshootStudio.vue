@@ -50,6 +50,7 @@ const {
   gate,
   canGenerate,
   priceNote,
+  limitNote,
   session
 } = reshoot
 
@@ -91,9 +92,11 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
         :frames
         :clip-error="clipError"
         :error="depth === 'failed' ? notice : undefined"
+        :blocked="clipError ?? notice"
         :gate
         :can-generate="canGenerate"
         :price-note="priceNote"
+        :limit-note="limitNote"
         :workspace-name="session?.workspace.name"
         :locale
         @aim="reshoot.aim"
