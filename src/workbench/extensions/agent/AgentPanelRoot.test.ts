@@ -315,6 +315,9 @@ beforeEach(() => {
       isReady: computed(() => paywallCapabilities.isReady),
       hasResolvedCapabilities: computed(
         () => paywallCapabilities.hasResolvedCapabilities
+      ),
+      snapshotAuthoritative: computed(
+        () => paywallCapabilities.snapshotAuthoritative
       )
     })
   )
@@ -1518,9 +1521,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
       cta: 'add_credits',
       surface: 'credits_exhausted'
     })
-    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith('credits', {
-      source: 'agent_paywall'
-    })
+    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith('credits')
   })
 
   it('stays hidden while the workspace has funds', async () => {
