@@ -84,6 +84,7 @@ export interface OpSender {
   admit(operations: GraphOperation[]): void
   /** Seal the open admission group into wire batches and start delivery. */
   flush(): void
+  /** Unsettled batch count for observability; 0 = drained. */
   pending(): number
   /** Every unsettled batch, in-flight first, each addressed to its mint-time workflow. */
   pendingOps(): ReadonlyArray<{ workflowId: string; ops: Op[] }>
@@ -152,14 +153,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // draw a result, including the send whose silence provoked the resend and
   // the sends of a batch that has already settled. As ANONYMOUS failures
   // (empty id lists, no failure op_id) those are indistinguishable from the
-  // current batch's. Swallowing up to the credit beats mis-attribution: a
-  // swallowed own-result only costs the idempotent resend cycle, while a
-  // mis-attributed settle poisons everything downstream of this seam.
+  // current batch's, so one is swallowed per credit rather than risk a
+  // mis-attributed settle, which poisons everything downstream of this seam.
+  // The cost is not one cycle: a credit reserved for a result that never
+  // arrives is never drained, so the next batch's own answer pays for it and
+  // reserves another on its resend. Once one result is lost, every later
+  // anonymous failure costs a RESULT_TIMEOUT_MS resend, until the host can
+  // correlate a result to the send it answers.
   let staleAnonymousBudget = 0
   const retiredOpIds = new Set<string>()
 
-  /** @param answered results already consumed for this batch. */
-  function retire(batch: InFlight, answered = 0): void {
+  function retire(batch: InFlight, answered: number): void {
     const outstanding = batch.sends - answered
     if (outstanding <= 0) return
     staleAnonymousBudget += outstanding
@@ -213,11 +217,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     try {
       return deps.sendOps(batch.workflowId, deps.tab, batch.ops)
     } catch (error) {
-      // Every retry re-runs the same throwing call: report the cycle once.
       if (!batch.reportedThrow) {
         batch.reportedThrow = true
         reportError(error, {
-          errorType: 'agent_human_ops_send_failed',
+          errorType: 'failure_sending_agent_human_ops',
           tags: {
             failure_kind: 'caught_unexpected',
             feature_area: 'agent',
@@ -233,7 +236,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function settleUnbound(batch: InFlight): void {
     if (inFlight !== batch) return
-    retire(batch)
+    retire(batch, 0)
     settle({
       state: batch.sends > 0 ? 'unconfirmed' : 'undeliverable',
       ops: batch.ops
@@ -245,7 +248,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     batch.timer = setTimeout(() => {
       if (inFlight !== batch) return
       if (batch.resent) {
-        retire(batch)
+        retire(batch, 0)
         settle({ state: 'unacknowledged', ops: batch.ops })
         return
       }
@@ -312,14 +315,16 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (inFlight === null && staleAnonymousBudget === 0) return
     const identified = [...result.applied, ...result.skipped]
     if (result.failed?.op_id) identified.push(result.failed.op_id)
-    const addressed =
+    const batch =
       inFlight !== null &&
       (result.workflowId === undefined ||
         result.workflowId === inFlight.workflowId)
+        ? inFlight
+        : null
     if (identified.length > 0) {
-      if (addressed && identified.some((opId) => inFlight!.opIds.has(opId))) {
-        retire(inFlight!, 1)
-        settle({ state: 'acknowledged', ops: inFlight!.ops, result })
+      if (batch && identified.some((opId) => batch.opIds.has(opId))) {
+        retire(batch, 1)
+        settle({ state: 'acknowledged', ops: batch.ops, result })
       } else if (identified.some((opId) => retiredOpIds.has(opId))) {
         // A retired batch's own answer consumes the credit reserved for it;
         // ops this sender never minted are nobody's answer here.
@@ -331,12 +336,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     // no batch waiting, one addressed to another workflow, or one a stale
     // credit could explain drains that credit so it cannot swallow a future
     // batch's own result. Only then is it the in-flight batch's.
-    if (!addressed || staleAnonymousBudget > 0) {
+    if (batch === null || staleAnonymousBudget > 0) {
       drainStaleCredit()
       return
     }
-    retire(inFlight!, 1)
-    settle({ state: 'acknowledged', ops: inFlight!.ops, result })
+    retire(batch, 1)
+    settle({ state: 'acknowledged', ops: batch.ops, result })
   })
 
   return {

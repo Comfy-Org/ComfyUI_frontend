@@ -54,13 +54,13 @@ async function readAck(
     return { failure: `${response.url()}: body unreadable — ${String(error)}` }
   }
   const accepted = zAgentTurnAccepted.safeParse(body)
+  if (!accepted.success)
+    return { failure: `${response.url()}: ${accepted.error.message}` }
   const posted = zAgentPostMessageRequest.safeParse(
     tryPostDataJson(response.request())
   )
-  if (!accepted.success || !posted.success)
-    return {
-      failure: `${response.url()}: ${(accepted.error ?? posted.error)?.message}`
-    }
+  if (!posted.success)
+    return { failure: `${response.url()}: ${posted.error.message}` }
   return {
     thread: {
       id: accepted.data.thread_id,
@@ -84,8 +84,6 @@ function threadIdOf(url: string): string {
  * after are acked the way the server does: the workflow the client named,
  * or a freshly minted one when it named none. Every acked thread is listed,
  * titled by its first prompt, so the history screen has a row to delete.
- * An ack that is not a 2xx `AgentTurnAccepted` is recorded as a failure
- * for the fixture to assert on instead of skewing the list.
  */
 class AgentNewChatServer {
   private readonly posted: PostedTurn[] = []
@@ -187,7 +185,7 @@ class AgentNewChatServer {
 // Depends on `agentConversation` so these routes register after the
 // harness's and answer first.
 export const agentNewChatTest = agentConversationTest.extend<{
-  newChat: AgentNewChatServer
+  newChat: Pick<AgentNewChatServer, 'postedTurns'>
 }>({
   newChat: async ({ page, agentConversation: _harness }, use) => {
     const server = new AgentNewChatServer(page)
