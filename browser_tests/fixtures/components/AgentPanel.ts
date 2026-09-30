@@ -17,7 +17,9 @@ export class AgentPanel {
   public readonly composerAssetSection: Locator
   public readonly attachmentChips: Locator
   public readonly composer: Locator
+  public readonly composerPromptArea: Locator
   public readonly sendButton: Locator
+  public readonly nodeSelectionBanner: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -44,9 +46,11 @@ export class AgentPanel {
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
     this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
+    this.composerPromptArea = this.root.getByTestId('composer-inline-input')
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send
     })
+    this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
   }
 
   /**
@@ -72,9 +76,35 @@ export class AgentPanel {
     )
   }
 
-  async open(): Promise<void> {
-    await this.openButton.click()
-    await expect(this.root).toBeVisible()
+  async open(timeout?: number): Promise<Locator> {
+    if (await this.root.isVisible()) return this.root
+
+    const dropClickIfAlreadyOpen = await this.openButton.evaluateHandle(
+      (button) => {
+        const listener = (event: Event) => {
+          if (button.getAttribute('aria-pressed') === 'true')
+            event.stopImmediatePropagation()
+        }
+        button.addEventListener('click', listener, true)
+        return listener
+      }
+    )
+    try {
+      await expect(async () => {
+        if (await this.root.isVisible()) return
+        await this.openButton.click({ timeout: 1_000 })
+      }).toPass({ timeout })
+    } finally {
+      await this.openButton.evaluate(
+        (button, listener) =>
+          button.removeEventListener('click', listener, true),
+        dropClickIfAlreadyOpen
+      )
+      await dropClickIfAlreadyOpen.dispose()
+    }
+
+    await expect(this.root).toBeVisible({ timeout })
+    return this.root
   }
 
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
@@ -83,9 +113,37 @@ export class AgentPanel {
     await expect(this.workflowPicker).toHaveText(name)
   }
 
+  /** Clicks the empty bottom-left corner of the prompt area, below any text. */
+  async clickBelowFirstPromptLine(): Promise<void> {
+    const box = await this.composerPromptArea.boundingBox()
+    if (!box) throw new Error('Composer prompt area is not visible')
+    await this.composerPromptArea.click({
+      position: { x: 8, y: box.height - 6 }
+    })
+  }
+
   async sendMessage(message: string): Promise<void> {
     await this.composer.fill(message)
     await this.sendButton.click()
+  }
+
+  async enterNodeSelectionMode(): Promise<void> {
+    await this.open()
+    await this.selectWorkflow()
+    await this.root
+      .getByRole('button', { name: enMessages.agent.addToPrompt })
+      .click()
+    await this.page
+      .getByRole('menuitem', { name: enMessages.agent.nodes })
+      .click()
+    await expect(this.nodeSelectionBanner).toBeVisible()
+  }
+
+  async exitNodeSelectionMode(): Promise<void> {
+    await this.nodeSelectionBanner
+      .getByRole('button', { name: enMessages.agent.nodeSelection.exit })
+      .click()
+    await expect(this.nodeSelectionBanner).toHaveCount(0)
   }
 
   async turnOffOptionalReportSources(): Promise<void> {

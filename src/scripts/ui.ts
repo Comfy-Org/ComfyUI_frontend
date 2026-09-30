@@ -1,9 +1,7 @@
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
@@ -126,7 +124,7 @@ function dragElement(dragEl): () => void {
       )
 
       positionElement()
-    } catch (exception) {
+    } catch {
       // robust
     }
   }
@@ -277,14 +275,14 @@ class ComfyList {
         ? { history: await api.getHistory() }
         : await api.getQueue()
     this.element.replaceChildren(
-      ...Object.keys(items).flatMap((section) => [
+      ...Object.entries(items).flatMap(([section, sectionItems]) => [
         $el('h4', {
           textContent: section
         }),
-        $el('div.comfy-list-items', [
-          // @ts-expect-error fixme ts strict error
-          ...(this._reverse ? items[section].reverse() : items[section]).map(
-            (item: JobListItem) => {
+        $el(
+          'div.comfy-list-items',
+          (this._reverse ? sectionItems.reverse() : sectionItems).map(
+            (item) => {
               // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
               const removeAction =
                 section === 'Running'
@@ -319,7 +317,7 @@ class ComfyList {
               ])
             }
           )
-        ])
+        )
       ]),
       $el('div.comfy-list-actions', [
         $el('button', {
@@ -686,7 +684,7 @@ export class ComfyUI {
               !useSettingStore().get('Comfy.ConfirmClear') ||
               confirm('Clear workflow?')
             ) {
-              runMintPortsIntentionalClear(() => app.clean())
+              app.clean()
               useLitegraphService().resetView()
               api.dispatchCustomEvent('graphCleared')
             }

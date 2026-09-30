@@ -108,7 +108,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
     useLoad3d(node).waitForLoad3d(async (load3d) => {
       try {
         await load3d.loadModel(modelUrl)
-      } catch (error) {
+      } catch {
         useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
       }
     })
@@ -479,9 +479,11 @@ useExtensionService().registerExtension({
             const recordingData = currentLoad3d.getRecordingData()
 
             if (recordingData) {
-              const [recording] = await Promise.all([
-                Load3dUtils.uploadTempImage(recordingData, 'recording', 'mp4')
-              ])
+              const recording = await Load3dUtils.uploadTempImage(
+                recordingData,
+                'recording',
+                'mp4'
+              )
               returnVal.recording = `threed/${recording.name} [temp]`
             }
 
@@ -492,7 +494,10 @@ useExtensionService().registerExtension({
             if (attempt >= MAX_STALE_CAPTURE_RETRIES) {
               reportError(
                 new Error('Load3D scene did not stabilize during capture'),
-                { errorType: 'error_capturing_load3d_scene_unstable' }
+                {
+                  surface: 'assets',
+                  errorType: 'error_capturing_load3d_scene_unstable'
+                }
               )
               return null
             }

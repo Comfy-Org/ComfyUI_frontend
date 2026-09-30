@@ -5,7 +5,7 @@
   "description": "Interactive CLI for recording and transforming Playwright browser tests",
   "type": "module",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
   "dependencies": {
     "@clack/prompts": "^1.7.0",

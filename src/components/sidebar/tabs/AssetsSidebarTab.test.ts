@@ -14,12 +14,12 @@ beforeEach(() => {
     items: [],
     hasMore: false,
     isLoading: false,
-    loadMore: vi.fn(async () => {}),
+    loadMore: vi.fn(async () => false),
     loadNew: vi.fn(async () => {}),
     invalidate: vi.fn(async () => {})
   }
   vi.spyOn(store.inputAssets, 'loadNew').mockResolvedValue(undefined)
-  vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(undefined)
+  vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(false)
 })
 
 const folderAsset = vi.hoisted(() => ({
@@ -71,23 +71,12 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(
-  import('@/platform/assets/composables/useMediaAssetActions'),
-  () => ({
-    useMediaAssetActions: () => ({
-      downloadAssets: vi.fn(),
-      deleteAssets: vi.fn(),
-      addMultipleToWorkflow: vi.fn(),
-      openMultipleWorkflows: vi.fn(),
-      exportMultipleWorkflows: vi.fn()
-    })
-  })
-)
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({ add: vi.fn() })
   })
@@ -197,5 +186,28 @@ describe('AssetsSidebarTab folder navigation', () => {
       screen.queryByRole('button', { name: 'Back to all assets' })
     ).not.toBeInTheDocument()
     expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
+  })
+})
+
+describe('AssetsSidebarTab tab panel', () => {
+  it('labels the asset list with the selected tab', async () => {
+    renderTab()
+
+    expect(
+      screen.getByRole('tabpanel', { name: 'Generated' })
+    ).toContainElement(screen.getByTestId('assets-grid'))
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Imported' }))
+
+    expect(screen.getByRole('tabpanel', { name: 'Imported' })).toBeVisible()
+  })
+
+  it('keeps the panel in the tab order', () => {
+    renderTab()
+
+    expect(screen.getByRole('tabpanel', { name: 'Generated' })).toHaveAttribute(
+      'tabindex',
+      '0'
+    )
   })
 })

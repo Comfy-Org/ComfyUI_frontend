@@ -2,7 +2,6 @@ name: 'CI: Fallow'
 
 on:
   pull_request:
-  merge_group:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -29,10 +28,8 @@ jobs:
 
       - name: Resolve audit base
         id: audit-base
-        env:
-          BASE_REF: ${{ github.event_name == 'pull_request' && 'HEAD^1' || github.event.merge_group.base_sha }}
         run: |
-          base_sha=$(git rev-parse "$BASE_REF")
+          base_sha=$(git rev-parse HEAD^1)
           echo "sha=$base_sha" >> "$GITHUB_OUTPUT"
 
       - name: Setup frontend

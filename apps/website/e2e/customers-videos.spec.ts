@@ -29,7 +29,7 @@ test.describe('Customer watch pages @smoke', () => {
       )
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
         'href',
-        `https://comfy.org${customerVideoPath(story.slug)}/`
+        `https://comfy.org${customerVideoPath(story.slug)}`
       )
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(
         story.title
@@ -45,7 +45,7 @@ test.describe('Customer watch pages @smoke', () => {
         breadcrumb.getByRole('link', {
           name: t('nav.customerStories', 'en')
         })
-      ).toHaveAttribute('href', '/customers')
+      ).toHaveAttribute('href', '/customers/')
       // The current page is plain text, never a link, in both the visible
       // breadcrumb and the JSON-LD BreadcrumbList.
       await expect(breadcrumb.getByText(story.title)).toBeVisible()
@@ -74,19 +74,20 @@ test.describe('Customer watch pages @smoke', () => {
       expect(items?.at(-1)?.item).toBeUndefined()
 
       const video = graph.find((node) => node['@type'] === 'VideoObject')
-      expect(video?.name).toBe(story.title)
-      expect(video?.description).toBe(story.description)
-      expect(video?.thumbnailUrl).toBe(story.poster)
-      expect(video?.contentUrl).toBe(story.videoSrc)
-      expect(video?.inLanguage).toBe('en')
-      expect((video?.publisher as { '@id'?: string })?.['@id']).toBe(
-        'https://comfy.org/#organization'
+      expect(video).toEqual(
+        expect.objectContaining({
+          name: story.title,
+          description: story.description,
+          thumbnailUrl: story.poster,
+          contentUrl: story.videoSrc,
+          uploadDate: story.uploadDate,
+          inLanguage: 'en',
+          publisher: { '@id': 'https://comfy.org/#organization' }
+        })
       )
 
       const webPage = graph.find((node) => node['@type'] === 'WebPage')
-      expect((webPage?.mainEntity as { '@id'?: string })?.['@id']).toBe(
-        video?.['@id']
-      )
+      expect(webPage?.mainEntity).toEqual({ '@id': video?.['@id'] })
 
       const player = page.locator('video')
       await expect(player).toHaveCount(1)
@@ -101,7 +102,7 @@ test.describe('Customer watch pages @smoke', () => {
 
       await expect(
         page.getByRole('link', { name: t('customers.watch.browseAll', 'en') })
-      ).toHaveAttribute('href', '/customers')
+      ).toHaveAttribute('href', '/customers/')
     })
   }
 
@@ -120,7 +121,7 @@ test.describe('Customer watch pages @smoke', () => {
     ).toBeVisible()
     expect(silverside.relatedStorySlug).toBe('svedka-silverside')
     await expect(
-      page.locator(`a[href="/customers/${silverside.relatedStorySlug}"]`, {
+      page.locator(`a[href="/customers/${silverside.relatedStorySlug}/"]`, {
         hasText: t('customers.watch.readWrittenStory', 'en')
       })
     ).toBeVisible()

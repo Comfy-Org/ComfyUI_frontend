@@ -13,7 +13,7 @@ import HostedSurface from '@/components/HostedSurface.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 
 const { t } = useI18n()
-const { coded } = useHostedCopy()
+const { refusal } = useHostedCopy()
 const { commands } = useBillingClient<'commands'>(undefined)
 
 const opening = ref(false)
@@ -27,7 +27,7 @@ async function openPortal() {
   })
   opening.value = false
   if (result.status === 'error') {
-    failure.value = coded('failure', result.code)
+    failure.value = refusal(result)
     return
   }
   window.location.assign(result.value.url)

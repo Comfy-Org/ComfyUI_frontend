@@ -11,25 +11,15 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    isActiveSubscription: { value: true },
-    isFreeTier: { value: false },
-    type: { value: 'legacy' }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 /**
  * Macrotask flush: releasing the FIFO queue takes several promise hops inside
@@ -181,5 +171,37 @@ describe('dialogService global prompt FIFO queue', { timeout: 30_000 }, () => {
 
     dialogStore.closeDialog({ key: 'global-prompt' })
     await expect(second).resolves.toBeNull()
+  })
+
+  it('preserves an existing cancellation scope guard for public callers', async () => {
+    const { service, dialogStore } = await importDialogModules()
+    const existingGuard = () => false
+    dialogStore.showDialog({
+      key: 'cancel-subscription',
+      component: { render: () => null },
+      props: {
+        cancelAt: '2026-10-01',
+        flowAlreadyOpened: true,
+        isScopeCurrent: existingGuard
+      }
+    })
+
+    const shown = await service.showCancelSubscriptionDialog()
+
+    expect(shown).toBe(dialogStore.dialogStack[0])
+    expect(dialogStore.dialogStack[0].contentProps).toMatchObject({
+      cancelAt: '2026-10-01',
+      flowAlreadyOpened: true,
+      isScopeCurrent: existingGuard
+    })
+  })
+
+  it('declines a guarded cancellation dialog after its scope changes', async () => {
+    const { service, dialogStore } = await importDialogModules()
+
+    await expect(
+      service.showCancelSubscriptionDialog(undefined, true, () => false)
+    ).resolves.toBe(false)
+    expect(dialogStore.dialogStack).toHaveLength(0)
   })
 })

@@ -66,12 +66,7 @@ function remove(index: number) {
       class="flex min-w-0 flex-col gap-2 rounded-2xl border border-transparency-white-t20 p-4"
     >
       <legend class="px-1 text-xs font-bold text-primary-warm-white">
-        {{
-          t('workshop.dialogue.turn', locale).replace(
-            '{number}',
-            String(index + 1)
-          )
-        }}
+        {{ t('workshop.dialogue.turn', locale, { number: index + 1 }) }}
       </legend>
       <label
         :for="`${name}-${index}-text`"

@@ -30,14 +30,14 @@ vi.mock<unknown>(import('../composables/useSecretForm'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('primevue/inputtext'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/inputtext'), // oxlint-disable-line comfy/no-primevue-imports
 
   () => ({
     default: { name: 'InputText', template: '<input />' }
   })
 )
 vi.mock<unknown>(
-  import('primevue/password'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/password'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     default: { name: 'Password', template: '<input type="password" />' }
   })

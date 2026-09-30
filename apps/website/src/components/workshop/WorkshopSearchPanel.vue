@@ -15,6 +15,7 @@ const {
   models,
   query,
   variant = 'dropdown',
+  kind = 'models',
   locale = 'en'
 } = defineProps<{
   models: readonly WorkshopModel[]
@@ -22,6 +23,7 @@ const {
   /** On a phone the same panel fills the screen instead of hanging off a
    * field. */
   variant?: 'dropdown' | 'sheet'
+  kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
 
@@ -38,6 +40,12 @@ const suggestions = computed(() =>
     ? sortWorkshopModels(matching.value, 'name').slice(0, SUGGESTIONS)
     : []
 )
+
+function sourceOf(model: WorkshopModel): string | undefined {
+  if (model.type === 'APP') return t('workshop.card.comfyApp', locale)
+  if (model.routerId === undefined) return model.models?.join(', ')
+  return model.provider ?? t('workshop.card.partnerNode', locale)
+}
 </script>
 
 <template>
@@ -56,7 +64,14 @@ const suggestions = computed(() =>
       <p
         class="text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
       >
-        {{ t('workshop.search.models', locale) }}
+        {{
+          t(
+            kind === 'models'
+              ? 'workshop.search.models'
+              : 'workshop.hub.workflows',
+            locale
+          )
+        }}
         <span class="tabular-nums opacity-60">({{ matching.length }})</span>
       </p>
       <button
@@ -88,7 +103,7 @@ const suggestions = computed(() =>
             {{ model.name }}
           </span>
           <span class="truncate text-xs text-primary-warm-gray">
-            {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
+            {{ sourceOf(model) }}
           </span>
         </span>
       </button>
