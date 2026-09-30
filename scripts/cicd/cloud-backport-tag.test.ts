@@ -7,7 +7,12 @@ import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
 interface WorkflowJob {
-  steps?: Array<{ env?: Record<string, string> }>
+  steps?: Array<{
+    env?: Record<string, string>
+    id?: string
+    uses?: string
+    with?: Record<string, string | boolean>
+  }>
   'timeout-minutes'?: number
 }
 
@@ -87,6 +92,7 @@ function runTagScript(
       GITHUB_OUTPUT: output,
       GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
       GITHUB_STEP_SUMMARY: summary,
+      GH_TOKEN: 'test-token',
       PATH: `${directory}:${process.env.PATH}`,
       SHA: options.sha ?? targetSha,
       TAG_OBJECT_SHA: tagObjectSha,
@@ -104,9 +110,15 @@ describe('cloud backport tag workflow', () => {
     expect(workflow.concurrency?.group).toContain('github.run_id')
     expect(workflow.concurrency?.['cancel-in-progress']).toBe(false)
     expect(workflow.jobs?.['create-tag']?.['timeout-minutes']).toBe(10)
-    expect(workflow.jobs?.['create-tag']?.steps?.[1]?.env?.GH_TOKEN).toContain(
-      'secrets.PR_GH_TOKEN'
+    const steps = workflow.jobs?.['create-tag']?.steps
+    const checkout = steps?.find((step) =>
+      step.uses?.startsWith('actions/checkout')
     )
+    const tagStep = steps?.find((step) => step.id === 'tag')
+    expect(checkout?.with?.ref).toBe(
+      '${{ github.event.repository.default_branch }}'
+    )
+    expect(tagStep?.env?.GH_TOKEN).toBe('${{ secrets.PR_GH_TOKEN }}')
   })
 
   it('accepts existing same, different, and annotated tags without moving them', () => {

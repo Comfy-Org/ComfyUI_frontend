@@ -23,6 +23,7 @@ name: Cloud Frontend Build Dispatch
 
 on:
   push:
+    tags-ignore: ['**']
   pull_request:
     types: [labeled]
   workflow_dispatch:
