@@ -49,27 +49,26 @@ export function partitionOwnedLocale(
   source: LocaleObject,
   existing: LocaleObject,
   machineTranslations: Readonly<Record<string, string>>,
-  excludedPrefixes: readonly string[]
+  excludedPrefixes: readonly string[],
+  modifiedKeys: ReadonlySet<string>
 ): { source: LocaleObject; retained: Map<string, LocaleTrackedLeaf> } {
   const eligible = new Map<string, LocaleTrackedLeaf>()
   const retained = new Map<string, LocaleTrackedLeaf>()
   for (const [key, leaf] of collectLeaves(source)) {
+    const name = leaf.path.join('.')
+    const excluded = excludedPrefixes.some(
+      (prefix) => name === prefix || name.startsWith(`${prefix}.`)
+    )
     const current = getLeaf(existing, leaf.path)
     if (
       current !== undefined &&
-      machineTranslations[key] !== translationDigest(current)
+      machineTranslations[key] !== translationDigest(current) &&
+      (excluded || !modifiedKeys.has(key))
     ) {
       retained.set(key, current)
       continue
     }
-    const name = leaf.path.join('.')
-    if (
-      excludedPrefixes.some(
-        (prefix) => name === prefix || name.startsWith(`${prefix}.`)
-      )
-    ) {
-      continue
-    }
+    if (excluded) continue
     eligible.set(key, leaf.value)
   }
   return { source: projectLocale(source, eligible), retained }

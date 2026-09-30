@@ -26,16 +26,40 @@ describe('translation ownership', () => {
   it.for([
     { label: 'reviewed copy', value: '確認済みの翻訳' },
     { label: 'intentional empty copy', value: '' }
-  ])('retains $label after English changes', ({ value }) => {
+  ])('retains $label while English is unchanged', ({ value }) => {
     const result = partitionOwnedLocale(
       { title: 'Revised English {name}' },
       { title: value },
       {},
-      []
+      [],
+      new Set()
     )
 
     expect(result.source).toEqual({})
     expect(result.retained).toEqual(new Map([[pathKey(['title']), value]]))
+  })
+
+  it.for([
+    { label: 'reviewed copy', value: '確認済みの翻訳', machine: {} },
+    {
+      label: 'human-edited machine copy',
+      value: '人が修正した翻訳',
+      machine: { [pathKey(['title'])]: translationDigest('古い機械翻訳') }
+    },
+    { label: 'intentional empty copy', value: '', machine: {} }
+  ])('requeues $label when English changes', ({ value, machine }) => {
+    const result = partitionOwnedLocale(
+      { title: 'Revised English {name}', unchanged: 'Unchanged English' },
+      { title: value, unchanged: '確認済み' },
+      machine,
+      [],
+      new Set([pathKey(['title'])])
+    )
+
+    expect(result.source).toEqual({ title: 'Revised English {name}' })
+    expect(result.retained).toEqual(
+      new Map([[pathKey(['unchanged']), '確認済み']])
+    )
   })
 
   it('keeps unchanged machine copy eligible for source invalidation', () => {
@@ -43,19 +67,21 @@ describe('translation ownership', () => {
       { title: 'Revised English' },
       { title: '古い機械翻訳' },
       { [pathKey(['title'])]: translationDigest('古い機械翻訳') },
-      []
+      [],
+      new Set()
     )
 
     expect(result.source).toEqual({ title: 'Revised English' })
     expect(result.retained.size).toBe(0)
   })
 
-  it('retains a human edit to previously generated copy', () => {
+  it('retains human edits while English is unchanged', () => {
     const result = partitionOwnedLocale(
       { title: 'Revised English' },
       { title: '人が修正した翻訳' },
       { [pathKey(['title'])]: translationDigest('古い機械翻訳') },
-      []
+      [],
+      new Set()
     )
 
     expect(result.source).toEqual({})
@@ -72,7 +98,8 @@ describe('translation ownership', () => {
       },
       { tos: { machine: '機械翻訳', reviewed: '確認済み' } },
       { [pathKey(['tos', 'machine'])]: translationDigest('機械翻訳') },
-      ['tos']
+      ['tos'],
+      new Set([pathKey(['tos', 'reviewed'])])
     )
 
     expect(result.source).toEqual({ tosExtra: 'Eligible' })
@@ -82,7 +109,13 @@ describe('translation ownership', () => {
   })
 
   it('withdraws translations whose English keys were removed', () => {
-    const result = partitionOwnedLocale({}, { removed: '確認済み' }, {}, [])
+    const result = partitionOwnedLocale(
+      {},
+      { removed: '確認済み' },
+      {},
+      [],
+      new Set()
+    )
 
     expect(result.source).toEqual({})
     expect(result.retained.size).toBe(0)

@@ -106,48 +106,68 @@ async function createWebsiteCatalogs({
 
 it.for<{
   previous: string
+  current: string
   value: string
-  status: number
+  statuses: [number, number]
   diagnostic: string
   recordedHash?: string
 }>([
   {
     previous: 'unavailable recorded source',
+    current: 'Hello {name}',
     value: '確認済み',
-    status: 1,
+    statuses: [1, 1],
     diagnostic: 'title: missing {name}',
     recordedHash: '0000000000000000000000000000000000000000'
   },
   {
     previous: 'Hello {name}',
+    current: 'Hello {name}',
     value: '確認済み',
-    status: 1,
+    statuses: [1, 1],
     diagnostic: 'title: missing {name}'
   },
   {
     previous: 'Hello',
+    current: 'Hello {name}',
     value: '確認済み',
-    status: 1,
-    diagnostic: 'title: missing {name}'
+    statuses: [0, 1],
+    diagnostic: 'Pending: 2 translations'
   },
   {
     previous: 'Hello',
+    current: 'Hello {name}',
     value: '確認済み {name}',
-    status: 0,
+    statuses: [0, 1],
+    diagnostic: 'Pending: 2 translations'
+  },
+  {
+    previous: 'Hello',
+    current: 'Hello {name}',
+    value: '',
+    statuses: [0, 1],
+    diagnostic: 'Pending: 2 translations'
+  },
+  {
+    previous: 'Hello {name}',
+    current: 'Hello {name}',
+    value: '確認済み {name}',
+    statuses: [0, 0],
     diagnostic: 'All locales are up to date'
   },
   {
-    previous: 'Hello',
+    previous: 'Hello {name}',
+    current: 'Hello {name}',
     value: '',
-    status: 0,
+    statuses: [0, 0],
     diagnostic: 'All locales are up to date'
   }
 ])(
-  'checks and retains $value when English changes from $previous',
-  async ({ previous, value, status, diagnostic, recordedHash }) => {
+  'checks $value when English changes from $previous to $current',
+  async ({ previous, current, value, statuses, diagnostic, recordedHash }) => {
     const catalogs = await createWebsiteCatalogs({
       previous,
-      current: 'Hello {name}',
+      current,
       translated: value,
       recordedHash
     })
@@ -155,7 +175,7 @@ it.for<{
     const check = catalogs.check()
     const generate = catalogs.generate()
 
-    expect([check.status, generate.status]).toEqual([status, status])
+    expect([check.status, generate.status]).toEqual(statuses)
     expect(check.stdout).toContain(diagnostic)
     expect(await catalogs.readLocale('ja')).toEqual({ title: value })
     expect(await catalogs.readLocale('zh-CN')).toEqual({ title: value })

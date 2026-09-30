@@ -90,9 +90,10 @@ and `pnpm locale:website`.
 The shared pipeline records English source blobs in `.source-manifest.json`
 and generated-value hashes in `.machine-translations.json`. Existing values
 without a matching machine hash are reviewed copy, including intentional
-empty strings. They survive English changes. Editing a generated value makes
-it reviewed; to approve an unchanged generated value, remove its entry from
-`.machine-translations.json`. Source-key deletion removes either ownership
+empty strings. Eligible reviewed copy is preserved while its English source
+is unchanged and retranslated when that source changes. Editing a generated
+value makes it reviewed; to approve an unchanged generated value, remove its
+entry from `.machine-translations.json`. Source-key deletion removes either ownership
 kind. Review catalog and metadata changes together.
 
 Legal namespaces and opted-out pages are excluded from generation. Reviewed

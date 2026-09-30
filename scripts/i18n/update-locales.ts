@@ -325,7 +325,8 @@ function loadLocaleFileStates(
             plan.source,
             existing,
             machineFiles[`${locale.code}/${plan.filename}`] ?? {},
-            config.excludedKeyPrefixes ?? []
+            config.excludedKeyPrefixes ?? [],
+            new Set(plan.changes.modified.map(pathKey))
           )
         : {
             source: plan.source,

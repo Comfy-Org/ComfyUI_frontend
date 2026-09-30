@@ -141,8 +141,9 @@ script translates them:
 (or `pnpm locale` / `pnpm locale:check` inside `apps/website`). The website's
 locales, glossary and output directory are the `website` entry of
 `translationTargets` in `scripts/i18n/config.ts`; the `i18n: Update Website`
-workflow will run it on demand. The website opts into reviewed-copy retention
-and legal exclusions; see `apps/website/README.md`. It also validates strictly:
+workflow will run it on demand. The website preserves reviewed copy while its
+English source is unchanged and retranslates it when that source changes,
+with legal exclusions; see `apps/website/README.md`. It also validates strictly:
 HTML tags and repeated tokens must survive in count and order, and baseline
 entries that reviewed copy still carries (such as a link localized to
 `/zh-CN/…`) persist across runs instead of healing. The app target keeps its
