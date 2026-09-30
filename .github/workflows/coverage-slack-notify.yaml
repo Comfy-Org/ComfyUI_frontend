@@ -290,10 +290,17 @@ jobs:
               }
             }
 
+            // Saving is withheld too, not just the comparison: E2E runs also
+            // finish out of order, so the newest e2e-coverage on main can be
+            // older than the stored baseline. Storing it would walk the
+            // baseline backwards and make the next delta re-cover ground
+            // already reported. Leaving the newer baseline in place lets a
+            // later measurement compare against it.
             const baselineSha = usable ? shaOf(BASELINE) : null;
             if (baselineSha !== null && currentSha !== null) {
               if ((await relation(baselineSha, currentSha)) !== 'ahead') {
                 drop(BASELINE, `E2E baseline ${baselineSha} is not behind ${currentSha}`);
+                usable = false;
               }
             }
 
