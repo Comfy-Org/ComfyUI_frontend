@@ -124,7 +124,7 @@ describe('payVerdictOf', () => {
     },
     {
       name: 'a stale subscription quote',
-      result: refusedWith('REQUEST_FAILED', 'SUBSCRIPTION_QUOTE_STALE'),
+      result: { status: 'error', code: 'QUOTE_STALE' },
       expected: { kind: 'requote', because: 'quote_expired' }
     },
     {
@@ -133,9 +133,34 @@ describe('payVerdictOf', () => {
       expected: { kind: 'requote', because: 'reactivation_required' }
     },
     {
-      name: 'an unreachable billing service',
+      name: 'a stale quote as account-core normalizes it',
+      result: { status: 'error', code: 'QUOTE_STALE' },
+      expected: { kind: 'requote', because: 'quote_expired' }
+    },
+    {
+      name: 'an unreachable billing service is the processing error card, coded for support',
       result: { status: 'error', code: 'REQUEST_FAILED' },
-      expected: { kind: 'failure', code: 'REQUEST_FAILED' }
+      expected: {
+        kind: 'outcome',
+        outcome: { kind: 'processing_error', code: 'REQUEST_FAILED' }
+      }
+    },
+    {
+      name: 'a server error keeps the sentence the server wrote',
+      result: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 500,
+        serverMessage: 'Billing is down for maintenance.'
+      },
+      expected: {
+        kind: 'outcome',
+        outcome: {
+          kind: 'processing_error',
+          code: 'REQUEST_FAILED',
+          serverMessage: 'Billing is down for maintenance.'
+        }
+      }
     }
   ])('$name', ({ result, expected }) => {
     expect(payVerdictOf(result)).toEqual(expected)
@@ -288,6 +313,14 @@ describe('supportLinkFor', () => {
     expect(link.searchParams.get('body')).toBe(
       'Operation: op_9\nDecline code: card_declined'
     )
+  })
+
+  it('quotes the code of a refused Pay', () => {
+    const link = new URL(
+      supportLinkFor({ kind: 'processing_error', code: 'REQUEST_FAILED' })
+    )
+
+    expect(link.searchParams.get('body')).toBe('Error code: REQUEST_FAILED')
   })
 
   it('leaves the body out when there is nothing to name', () => {

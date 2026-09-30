@@ -114,21 +114,29 @@ test('sends the old studio address to the app page it named', async ({
   await expect(page).toHaveURL(/\/models\/apps\/reshoot\/\?ux=d&model=flux$/)
 })
 
-test.describe('GitHub link before an app repo is published', () => {
-  for (const path of [
-    '/models/apps/cinematic-studio/',
-    '/models/apps/reshoot/'
+test.describe('GitHub links to published app repositories', () => {
+  for (const { path, repo } of [
+    {
+      path: '/models/apps/cinematic-studio/',
+      repo: 'https://github.com/Comfy-Org/comfy-cinematic-studio'
+    },
+    {
+      path: '/models/apps/reshoot/',
+      repo: 'https://github.com/Comfy-Org/comfy-reshoot'
+    }
   ])
-    test(`shows a placeholder, not a link, on ${path}`, async ({
+    test(`links to the app repository on ${path}`, async ({
       page,
       context
     }) => {
       await mockFlags(context, { apps: true, workflows: false })
       await page.goto(path)
-      await expect(page.getByText('GitHub · Coming soon')).toHaveCount(1)
-      await expect(
-        page.getByRole('link', { name: 'View on GitHub' })
-      ).toHaveCount(0)
+      await expect(page.getByText('GitHub · Coming soon')).toHaveCount(0)
+      const link = page.getByRole('link', { name: 'View on GitHub' })
+      await expect(link).toBeVisible()
+      await expect(link).toHaveAttribute('href', repo)
+      await expect(link).toHaveAttribute('target', '_blank')
+      await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
     })
 })
 

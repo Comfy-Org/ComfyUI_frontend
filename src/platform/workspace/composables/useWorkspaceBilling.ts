@@ -230,7 +230,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
       isCancelled: status.subscription_status === 'canceled',
-      hasFunds: status.has_funds
+      hasFunds: status.has_funds,
+      agentHasFunds:
+        status.scoped_effective_has_funds?.agent ?? status.has_funds
     }
   })
 
@@ -254,6 +256,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   )
   const tier = computed(() => statusData.value?.subscription_tier ?? null)
   const renewalDate = computed(() => statusData.value?.renewal_date ?? null)
+  const renewalInvoice = computed(
+    () => statusData.value?.renewal_invoice ?? null
+  )
 
   const plans = computed(() => billingPlans.plans.value)
   const currentPlanSlug = computed(
@@ -801,6 +806,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     subscriptionStatus,
     tier,
     renewalDate,
+    renewalInvoice,
     readAndAdoptPendingOperation,
 
     // Actions

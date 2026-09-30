@@ -3,6 +3,7 @@ import type { Page, Route } from '@playwright/test'
 
 import type {
   AgentThreadListResponse,
+  BillingStatusResponse,
   GlobalSetting,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
@@ -36,6 +37,89 @@ const TURN_ACCEPTED: AgentTurnAccepted = {
 }
 
 const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
+
+const FUNDED_BILLING_STATUS = {
+  billing_rail: 'stripe',
+  billing_status: 'paid',
+  has_funds: true,
+  is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
+  scoped_effective_has_funds: { agent: true },
+  scheduled_change: null,
+  subscription_duration: 'MONTHLY',
+  subscription_status: 'active',
+  subscription_tier: 'STANDARD',
+  team_credit_stop: null
+} satisfies BillingStatusResponse
+
+type HeldBillingRefresh = {
+  entered: Promise<void>
+  completed: Promise<void>
+  release: () => void
+}
+
+class AgentBillingFixture {
+  private status: BillingStatusResponse = FUNDED_BILLING_STATUS
+  private heldRefresh:
+    | {
+        resolveEntered: () => void
+        resolveCompleted: () => void
+        releaseRequest?: () => void
+      }
+    | undefined
+
+  setAgentFunds(hasFunds: boolean): void {
+    this.status = {
+      ...FUNDED_BILLING_STATUS,
+      has_funds: hasFunds,
+      scoped_effective_has_funds: { agent: hasFunds }
+    }
+  }
+
+  holdNextFundedRefresh(): HeldBillingRefresh {
+    let resolveEntered!: () => void
+    let resolveCompleted!: () => void
+    const entered = new Promise<void>((resolve) => {
+      resolveEntered = resolve
+    })
+    const completed = new Promise<void>((resolve) => {
+      resolveCompleted = resolve
+    })
+    const heldRefresh: NonNullable<AgentBillingFixture['heldRefresh']> = {
+      resolveEntered,
+      resolveCompleted
+    }
+    this.heldRefresh = heldRefresh
+
+    return {
+      entered,
+      completed,
+      release: () => {
+        if (heldRefresh.releaseRequest === undefined) {
+          throw new Error('Funded billing refresh has not entered the fixture')
+        }
+        heldRefresh.releaseRequest()
+      }
+    }
+  }
+
+  async fulfillStatus(route: Route): Promise<void> {
+    const response = this.status
+    const heldRefresh = this.heldRefresh
+    let completedHeldRefresh: typeof heldRefresh
+    if (heldRefresh && response.scoped_effective_has_funds?.agent) {
+      this.heldRefresh = undefined
+      completedHeldRefresh = heldRefresh
+      heldRefresh.resolveEntered()
+      await new Promise<void>((resolve) => {
+        heldRefresh.releaseRequest = resolve
+      })
+    }
+    await route.fulfill(jsonRoute(response))
+    completedHeldRefresh?.resolveCompleted()
+  }
+}
 
 export const FUNDS_UNAVAILABLE_MESSAGE =
   'Billing status is temporarily unavailable; please retry.'
@@ -160,6 +244,8 @@ async function mockAgentBoot(
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
     agentRetryAfter,
+    agentBilling,
+    acceptedTurns,
     crdtDebugEnabled,
     initialFeatureFlags,
     initialSettings,
@@ -215,6 +301,9 @@ async function mockAgentBoot(
   )
 
   await mockBilling(page)
+  await page.route('**/api/billing/status', (route) =>
+    agentBilling.fulfillStatus(route)
+  )
   await page.route(
     'https://media.comfy.org/website/comfy-agent/**',
     (route) => {
@@ -391,6 +480,7 @@ async function mockAgentBoot(
             ? TURN_ID
             : `${TURN_ID}-${postedMessages.length}`
       }
+      acceptedTurns.push(accepted)
       return route.fulfill({
         status: 202,
         contentType: 'application/json',
@@ -406,6 +496,8 @@ async function mockAgentBoot(
 }
 
 type AgentFixtures = {
+  acceptedTurns: AgentTurnAccepted[]
+  agentBilling: AgentBillingFixture
   agentAutoShownReadProbe: boolean
   agentConsentAccepted: boolean
   agentConsentReads: boolean[]
@@ -423,6 +515,12 @@ type AgentFixtures = {
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
+  acceptedTurns: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use([])
+  },
+  agentBilling: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use(new AgentBillingFixture())
+  },
   agentAutoShownReadProbe: [false, { option: true }],
   agentConsentAccepted: [true, { option: true }],
   agentConsentReads: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
@@ -454,6 +552,8 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       agentRetryAfter,
+      agentBilling,
+      acceptedTurns,
       crdtDebugEnabled,
       initialFeatureFlags,
       initialSettings,
@@ -474,6 +574,8 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       agentRetryAfter,
+      agentBilling,
+      acceptedTurns,
       crdtDebugEnabled,
       initialFeatureFlags,
       initialSettings,
