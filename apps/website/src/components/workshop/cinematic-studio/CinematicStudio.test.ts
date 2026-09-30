@@ -31,7 +31,9 @@ import {
   useWorkshopFlag
 } from '../../../scripts/posthog'
 import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
+import { sampleImageColors } from '../../../lib/workshop/cinematic-studio/colors'
 import { t } from '../../../i18n/translations'
+import { MAX_TAKES } from '../../../lib/workshop/cinematic-studio/catalog'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import {
@@ -46,6 +48,7 @@ vi.mock(import('../../../config/workshop-session-state'))
 vi.mock(import('../../../config/workshop-credits'))
 vi.mock(import('../../../scripts/posthog'))
 vi.mock(import('../../../config/router-render'), { spy: true })
+vi.mock(import('../../../lib/workshop/cinematic-studio/colors'), { spy: true })
 
 const deploy = vi.hoisted(() => ({ env: '' }))
 vi.mock(import('astro:env/client'), () => ({
@@ -127,6 +130,11 @@ async function chooseTakes(
   user: ReturnType<typeof userEvent.setup>,
   takes: number
 ) {
+  const more = screen.queryByRole('button', { name: 'More takes' })
+  if (more) {
+    for (let count = 1; count < takes; count++) await user.click(more)
+    return
+  }
   await user.click(screen.getByRole('button', { name: /^Takes: / }))
   await user.click(
     await screen.findByRole('menuitemradio', { name: `×${takes}` })
@@ -154,6 +162,10 @@ describe('CinematicStudio', () => {
       credits: 100
     }))
     signedIn.value = credential
+    vi.mocked(sampleImageColors).mockImplementation(async (file: File) => {
+      if (file.name === 'bad.png') throw new Error('Unsupported image')
+      return ['#102030', '#405060']
+    })
     vi.mocked(router_render)
       .mockReset()
       .mockRejectedValue(new WorkshopRouterError('client'))
@@ -599,7 +611,7 @@ describe('CinematicStudio', () => {
       screen.getByRole('button', { name: tc('cinematic.firstRun.desert') })
     ).toHaveAttribute('aria-pressed', 'true')
     expect(
-      screen.getByRole('button', { name: 'Shot: Extreme wide' })
+      screen.getByRole('button', { name: 'Framing: Extreme wide' })
     ).toBeInTheDocument()
   })
 
@@ -627,7 +639,7 @@ describe('CinematicStudio', () => {
         .getAllByRole('button')
         .map((segment) => segment.getAttribute('aria-label'))
     ).toEqual([
-      'Shot: Medium',
+      'Framing: Medium',
       'Light: Neon',
       expect.stringMatching(/^Film: /),
       'Look: Western',
@@ -662,8 +674,7 @@ describe('CinematicStudio', () => {
     )
 
   it.for([
-    { kind: 'cast', label: 'Character', action: 'Add a character reference' },
-    { kind: 'palette', label: 'Palette', action: 'Add a palette reference' }
+    { kind: 'cast', label: 'Character', action: 'Add a character reference' }
   ])(
     'names an attached $label reference in the composer menu and removes it from there',
     async ({ kind, label, action }) => {
@@ -693,20 +704,40 @@ describe('CinematicStudio', () => {
     }
   )
 
-  it('counts both references on the composer + once both are attached', async () => {
+  it('offers no palette reference in the composer menu', async () => {
     const user = renderStudio()
-    const file = new File(['ref'], 'ref.png', { type: 'image/png' })
 
-    await user.upload(screen.getByTestId('cinematic-reference-cast'), file)
-    await user.upload(screen.getByTestId('cinematic-reference-palette'), file)
+    await openReferenceMenu(user)
 
     expect(
-      within(
-        screen.getByRole('button', {
-          name: tc('cinematic.composer.references')
-        })
-      ).getByText('2')
+      await screen.findByRole('menuitem', { name: /^Character/ })
     ).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: /^Palette/ })).toBeNull()
+  })
+
+  it('sends the colors of a Grade picture as words, in place of the preset', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio()
+
+    await user.click(screen.getByRole('button', { name: /^Grade:/ }))
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Grade' })).getByRole('radio', {
+        name: 'Teal and orange'
+      })
+    )
+    await user.click(screen.getByRole('button', { name: /^Grade:/ }))
+    await user.upload(
+      screen.getByTestId('cinematic-grade-image-input'),
+      new File(['ref'], 'colors.png', { type: 'image/png' })
+    )
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+
+    await screen.findByAltText(/A diner at dawn/)
+    const shot = sent(vi.mocked(router_render).mock.calls[0])
+    expect(shot.prompt).not.toContain('teal and orange grade')
+    expect(shot.prompt).toContain('dominant colors #102030, #405060')
+    expect(shot.references).toEqual([])
   })
 
   it('keeps the camera picker open across columns until clicked away', async () => {
@@ -981,7 +1012,7 @@ describe('CinematicStudio', () => {
 
   it('moves focus into a picker and back to its chip on Escape', async () => {
     const user = renderStudio()
-    const chip = screen.getByRole('button', { name: /^Shot:/ })
+    const chip = screen.getByRole('button', { name: /^Framing:/ })
 
     await user.click(chip)
     expect(screen.getByRole('radio', { name: 'Medium' })).toHaveFocus()
@@ -1538,7 +1569,7 @@ describe('CinematicStudio', () => {
       within(panel)
         .getAllByRole('heading', { level: 2 })
         .map((heading) => heading.textContent.trim())
-    ).toEqual(['Model', 'Shot', 'References', 'Format'])
+    ).toEqual(['Model', 'Shot', 'Format'])
   })
 
   it('opens a direction part from its row in the side panel shot list', async () => {
@@ -1725,8 +1756,10 @@ describe('CinematicStudio', () => {
       const user = userEvent.setup()
 
       await user.click(await screen.findByRole('button', { name: /^Model:/ }))
+      const menu = await screen.findByRole('menu')
+      expect(within(menu).queryByText('Model')).toBeNull()
       await user.click(
-        await screen.findByRole('menuitemradio', {
+        within(menu).getByRole('menuitemradio', {
           name: new RegExp(second.name)
         })
       )
@@ -1736,6 +1769,145 @@ describe('CinematicStudio', () => {
       await screen.findByAltText(/A diner at dawn/)
       expect(vi.mocked(router_render).mock.calls[0][0]).toBe(second.slug)
       expect(panel()).toBeInTheDocument()
+    })
+  })
+
+  describe('side panel direction', () => {
+    const renderPanel = () => {
+      render(CinematicStudioPanel, { props: { models } })
+      return userEvent.setup()
+    }
+    const gradeRow = () => screen.getByRole('button', { name: /^Grade/ })
+
+    it('offers no character picture in video mode, where a clip drops it', async () => {
+      render(CinematicStudioPanel, {
+        props: { models: [...models, ...videoModels] }
+      })
+      const user = userEvent.setup()
+      const character = () =>
+        screen.queryByRole('button', { name: /character reference/i })
+
+      expect(character()).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Video' }))
+
+      expect(character()).toBeNull()
+    })
+
+    it('matches the grade to an uploaded image in place of a palette reference', async () => {
+      const user = renderPanel()
+      expect(
+        screen.queryByRole('button', { name: /Add a palette reference/ })
+      ).toBeNull()
+
+      await user.click(gradeRow())
+      const [firstOption] = within(
+        screen.getByRole('radiogroup', { name: 'Grade' })
+      ).getAllByRole('radio')
+      expect(firstOption).toHaveAccessibleName(
+        tc('cinematic.grade.fromImageAction')
+      )
+      await user.upload(
+        screen.getByTestId('cinematic-grade-image-input'),
+        new File(['ref'], 'colors.png', { type: 'image/png' })
+      )
+
+      expect(gradeRow()).toHaveTextContent(tc('cinematic.grade.yourPalette'))
+      expect(screen.queryByRole('region', { name: 'Colors' })).toBeNull()
+      const picker = screen.getByRole('dialog', { name: 'Grade' })
+      expect(
+        within(picker).getByRole('radio', {
+          name: tc('cinematic.grade.fromImageAction')
+        })
+      ).toHaveAttribute('aria-checked', 'true')
+
+      await user.click(
+        within(picker).getByRole('button', { name: tc('cinematic.grade.edit') })
+      )
+      await user.click(
+        within(picker).getByRole('button', { name: 'Remove color 1' })
+      )
+      expect(within(picker).getByLabelText('Color 1: #405060')).toBeVisible()
+      await user.click(
+        within(picker).getByRole('button', { name: tc('cinematic.grade.done') })
+      )
+
+      await user.click(
+        within(picker).getByRole('radio', { name: 'Teal and orange' })
+      )
+
+      expect(gradeRow()).toHaveTextContent('Teal and orange')
+      await user.click(gradeRow())
+      expect(
+        screen.getByRole('radio', {
+          name: tc('cinematic.grade.fromImageAction')
+        })
+      ).toHaveAttribute('aria-checked', 'false')
+    })
+
+    it('keeps the grade as it was when a picture has no colors to read', async () => {
+      const user = renderPanel()
+
+      await user.click(gradeRow())
+      await user.upload(
+        screen.getByTestId('cinematic-grade-image-input'),
+        new File(['x'], 'bad.png', { type: 'image/png' })
+      )
+
+      expect(
+        await screen.findByText("Couldn't read colors from that image.")
+      ).toBeInTheDocument()
+      expect(gradeRow()).not.toHaveTextContent(
+        tc('cinematic.grade.yourPalette')
+      )
+    })
+
+    it('lists the camera settings beside the body as separate chips', async () => {
+      const user = renderPanel()
+
+      await user.click(screen.getByRole('button', { name: /^Camera/ }))
+      await user.click(screen.getByRole('radio', { name: '85mm' }))
+
+      expect(
+        within(screen.getByTestId('camera-specs')).getByText('85mm')
+      ).toBeInTheDocument()
+    })
+
+    it('steps the number of takes between one and the maximum', async () => {
+      const user = renderPanel()
+      const fewer = screen.getByRole('button', { name: 'Fewer takes' })
+      const more = screen.getByRole('button', { name: 'More takes' })
+      const count = screen.getByTestId('cinematic-takes')
+
+      expect(fewer).toBeDisabled()
+      for (let step = 1; step < MAX_TAKES; step++) await user.click(more)
+      expect(count).toHaveTextContent(String(MAX_TAKES))
+      expect(more).toBeDisabled()
+
+      await user.click(fewer)
+      expect(count).toHaveTextContent(String(MAX_TAKES - 1))
+    })
+
+    it('attaches the character reference straight from the scene box', async () => {
+      const user = renderPanel()
+      const action = tc('cinematic.reference.castAction')
+
+      await user.upload(
+        screen.getByTestId('cinematic-reference-cast'),
+        new File(['ref'], 'face.png', { type: 'image/png' })
+      )
+      expect(
+        screen.getByRole('button', { name: `${action}: face.png` })
+      ).toBeInTheDocument()
+
+      await user.click(
+        screen.getByRole('button', { name: tc('cinematic.reference.remove') })
+      )
+      expect(screen.getByRole('button', { name: action })).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', {
+          name: tc('cinematic.composer.references')
+        })
+      ).toBeNull()
     })
   })
 })

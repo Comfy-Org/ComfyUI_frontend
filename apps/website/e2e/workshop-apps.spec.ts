@@ -279,11 +279,11 @@ test('shows a preview frame for every Cinematic Studio shot option', async ({
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/cinematic-studio/')
   await page
-    .getByRole('button', { name: /^Shot\b/ })
+    .getByRole('button', { name: /^Framing\b/ })
     .first()
     .click()
 
-  const shots = page.getByRole('radiogroup', { name: 'Shot' })
+  const shots = page.getByRole('radiogroup', { name: 'Framing' })
   await expect(shots.getByRole('radio')).toHaveCount(8)
   await expect(
     shots.locator('img[src^="/images/cinematic-studio/options/shot-"]')
@@ -303,4 +303,26 @@ test('shows a preview frame for every Cinematic Studio shot option', async ({
       )
     ).toHaveCount(1)
   }
+})
+
+test('makes a Cinematic Studio grade palette from an uploaded image', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/cinematic-studio/')
+
+  await expect(
+    page.getByRole('button', { name: /Add a palette reference/ })
+  ).toHaveCount(0)
+  await page.getByRole('button', { name: /^Grade/ }).click()
+  await page
+    .getByTestId('cinematic-grade-image-input')
+    .setInputFiles('public/images/cinematic-studio/neon-street.jpg')
+
+  await expect(page.getByRole('button', { name: /^Grade/ })).toContainText(
+    'Your palette'
+  )
+  await page.getByRole('button', { name: 'Edit palette' }).click()
+  await expect(page.getByLabel(/^Color 1: #/)).toBeVisible()
 })

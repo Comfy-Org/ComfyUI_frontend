@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { ImageIcon, Plus, Star, X } from '@lucide/vue'
-import { nextTick, ref, useTemplateRef } from 'vue'
+import { Plus, Star, X } from '@lucide/vue'
+import { nextTick, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
-import {
-  MAX_COLORS,
-  sampleImageColors
-} from '../../../lib/workshop/cinematic-studio/colors'
+import { MAX_COLORS } from '../../../lib/workshop/cinematic-studio/colors'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -17,9 +14,6 @@ const colors = defineModel<readonly string[]>({ required: true })
 const main = defineModel<number | undefined>('main')
 
 const swatches = useTemplateRef<HTMLElement>('swatches')
-const sampleInput = useTemplateRef<HTMLInputElement>('sampleInput')
-const sampling = ref(false)
-const sampleError = ref(false)
 
 const t = (key: Parameters<typeof tc>[0]) => tc(key, locale)
 
@@ -49,25 +43,6 @@ function toggleMain(index: number) {
 function clear() {
   colors.value = []
   main.value = undefined
-  sampleError.value = false
-}
-
-async function sample(event: Event) {
-  const target = event.target
-  if (!(target instanceof HTMLInputElement)) return
-  const [file] = target.files ?? []
-  target.value = ''
-  if (!file) return
-  sampling.value = true
-  sampleError.value = false
-  try {
-    colors.value = await sampleImageColors(file)
-    main.value = undefined
-  } catch {
-    sampleError.value = true
-  } finally {
-    sampling.value = false
-  }
 }
 </script>
 
@@ -83,15 +58,6 @@ async function sample(event: Event) {
         {{ t('cinematic.colors.title') }} · {{ colors.length }}/{{ MAX_COLORS }}
       </span>
       <div class="flex items-center gap-1">
-        <button
-          type="button"
-          class="flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs text-primary-warm-white hover:bg-transparency-white-t8 disabled:opacity-50"
-          :disabled="sampling"
-          @click="sampleInput?.click()"
-        >
-          <ImageIcon class="size-3.5" aria-hidden="true" />
-          {{ t('cinematic.colors.sample') }}
-        </button>
         <button
           v-if="colors.length"
           type="button"
@@ -160,25 +126,8 @@ async function sample(event: Event) {
         <Plus class="size-4" aria-hidden="true" />
       </button>
     </div>
-    <p
-      v-if="sampleError"
-      role="status"
-      class="text-xs text-primary-comfy-canvas"
-    >
-      {{ t('cinematic.colors.sampleError') }}
-    </p>
-    <p v-else class="text-xs text-primary-warm-gray">
+    <p class="text-xs text-primary-warm-gray">
       {{ t('cinematic.colors.hint') }}
     </p>
-    <input
-      ref="sampleInput"
-      type="file"
-      accept="image/png,image/jpeg,image/webp"
-      data-testid="cinematic-colors-sample"
-      class="sr-only"
-      tabindex="-1"
-      aria-hidden="true"
-      @change="sample"
-    />
   </section>
 </template>
