@@ -148,10 +148,14 @@ function removeChip(key: string) {
   else runsOn.value = runsOn.value.filter((name) => name !== value)
 }
 
-function clear() {
-  query.value = ''
+function clearFilters() {
   selected.value = []
   runsOn.value = []
+}
+
+function clear() {
+  query.value = ''
+  clearFilters()
 }
 function leaveSection() {
   browseAll.value = false
@@ -228,7 +232,7 @@ function leaveSection() {
       :chips
       :locale
       @remove="removeChip"
-      @clear="clear"
+      @clear="clearFilters"
       @emptied="filterMenu?.focus()"
     />
 

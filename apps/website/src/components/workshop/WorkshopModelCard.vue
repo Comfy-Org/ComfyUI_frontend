@@ -7,10 +7,8 @@ import { t } from '../../i18n/translations'
 import HubTypeBadge from '../hub/HubTypeBadge.vue'
 import { getLogoPath } from '../../lib/hub/model-logos'
 import { nameWithoutTask, taskLabelFor } from '../../lib/workshop/task-label'
-import { runsOnComfyApi } from '../../lib/workshop/comfy-api-workflows'
 import TagRow from '../hub/TagRow.vue'
 import ModelSupport from './ModelSupport.vue'
-import WorkshopCardApiMark from './WorkshopCardApiMark.vue'
 import WorkshopCardMark from './WorkshopCardMark.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
@@ -46,10 +44,6 @@ const logo = computed(
     getLogoPath(model.name)
 )
 
-const onComfyApi = computed(
-  () => Boolean(workflow.value) && runsOnComfyApi(model.slug)
-)
-
 const taskLabel = computed(() => taskLabelFor(model, locale))
 const cardName = computed(() => nameWithoutTask(model.name, taskLabel.value))
 const thumbnailLabel = computed(() =>
@@ -75,7 +69,6 @@ const pillClass =
       <!-- Only the hub mixes graphs, apps and models in one grid, so only
         there does a card have to say which it is. -->
       <HubTypeBadge v-if="providerBadge" kind="model" :locale />
-      <WorkshopCardApiMark v-if="onComfyApi" :locale />
       <ModelSupport
         v-if="model.incompleteReason"
         :reason="model.incompleteReason"
