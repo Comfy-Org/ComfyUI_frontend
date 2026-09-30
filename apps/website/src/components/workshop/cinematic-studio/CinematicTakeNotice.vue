@@ -62,6 +62,8 @@ const body = computed(() => {
     return t('workshop.error.memberNoCredits', locale, {
       workspace: memberWorkspace
     })
+  if (kind.value === 'rejected')
+    return t('workshop.error.inputRejected', locale)
   return t(failureLabelKey[take.reason], locale)
 })
 const requestId = computed(() =>
