@@ -508,48 +508,52 @@ defineExpose({
 
       <div
         data-testid="composer-inline-input"
-        class="max-h-100 min-h-16 overflow-x-hidden overflow-y-auto p-3"
+        class="flex max-h-100 min-h-16 flex-col overflow-x-hidden overflow-y-auto"
       >
         <div
           v-if="workflowSelecting"
           role="status"
-          class="mb-1 flex items-center gap-1 text-xs text-muted-foreground"
+          class="-mb-2 flex items-center gap-1 px-3 pt-3 text-xs text-muted-foreground"
         >
           <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
           {{ t('agent.savingWorkflow') }}
         </div>
-        <div class="relative min-h-7">
-          <InlinePromptEditor
-            ref="editorRef"
-            :model-value="composer.prompt.value"
-            :label="t('agent.placeholder')"
-            :expanded="mentionVisible"
-            :active-descendant="
-              mentionVisible
-                ? `agent-reference-item-${mentionActive}`
-                : undefined
-            "
-            :history-epoch="composer.promptEpoch.value"
-            :editable-workflow-id
-            @keydown="onComposerKeydown"
-            @update:model-value="composer.applyEditorPrompt"
-            @keyup="onComposerKeyup"
-            @input="syncMention"
-            @selection-change="onEditorSelectionChange"
-            @click="syncMention"
-            @blur="closeMention()"
-            @open-reference-workflow="
-              (id, name) => emit('openReferenceWorkflow', id, name)
-            "
-            @remove-node-reference="emit('removeTag', $event)"
-            @remove-workflow-reference="emit('removeWorkflowReference', $event)"
-          />
+        <div class="grid flex-1">
+          <div class="col-start-1 row-start-1 flex flex-col">
+            <InlinePromptEditor
+              ref="editorRef"
+              :model-value="composer.prompt.value"
+              :label="t('agent.placeholder')"
+              :expanded="mentionVisible"
+              :active-descendant="
+                mentionVisible
+                  ? `agent-reference-item-${mentionActive}`
+                  : undefined
+              "
+              :history-epoch="composer.promptEpoch.value"
+              :editable-workflow-id
+              @keydown="onComposerKeydown"
+              @update:model-value="composer.applyEditorPrompt"
+              @keyup="onComposerKeyup"
+              @input="syncMention"
+              @selection-change="onEditorSelectionChange"
+              @click="syncMention"
+              @blur="closeMention()"
+              @open-reference-workflow="
+                (id, name) => emit('openReferenceWorkflow', id, name)
+              "
+              @remove-node-reference="emit('removeTag', $event)"
+              @remove-workflow-reference="
+                emit('removeWorkflowReference', $event)
+              "
+            />
+          </div>
 
           <div
             v-if="
               !composer.draft.value && !composer.prompt.value.references.length
             "
-            class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/5 font-normal text-muted-foreground"
+            class="pointer-events-none z-10 col-start-1 row-start-1 self-start p-3 font-inter text-[14px]/5 font-normal text-muted-foreground"
           >
             <span>{{ placeholderHint.text }} </span>
             <AccessibleTooltip

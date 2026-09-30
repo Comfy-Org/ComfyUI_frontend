@@ -398,6 +398,19 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         panel.getByText('What do you want to make?')
       ).toBeInViewport()
     })
+
+    test('starts typing from a click below the first prompt line', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      await agentPanel.open()
+
+      await agentPanel.clickBelowFirstPromptLine()
+
+      await expect(agentPanel.composer).toBeFocused()
+      await comfyPage.page.keyboard.type('hello')
+      await expect(agentPanel.composer).toHaveText('hello')
+    })
   })
 
   test('T-28 / PM-677 / FE-1320 keeps the Agent scrollbar track transparent', async ({
