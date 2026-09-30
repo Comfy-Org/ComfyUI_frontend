@@ -1,19 +1,24 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { externalLinks } from '../../config/routes'
+import { externalLinks, getRoutes } from '../../config/routes'
 import SiteFooter from './SiteFooter.vue'
 
 describe('SiteFooter', () => {
-  // The /models showcase page is intentionally not promoted from the footer.
-  it('does not link the Models showcase page', () => {
-    render(SiteFooter, { props: { locale: 'en' } })
+  it.for([
+    ['en', 'ComfyUI Models'],
+    ['zh-CN', 'ComfyUI 模型'],
+    ['ja', 'ComfyUI Models']
+  ] as const)(
+    'links the one model catalogue from every locale (%s)',
+    ([locale, name]) => {
+      render(SiteFooter, { props: { locale } })
 
-    const hrefs = screen
-      .getAllByRole('link')
-      .map((link) => link.getAttribute('href'))
-    expect(hrefs).not.toContain('/models')
-  })
+      for (const link of screen.getAllByRole('link', { name })) {
+        expect(link.getAttribute('href')).toBe(getRoutes().workshop)
+      }
+    }
+  )
 
   it.for([
     ['en', 'Workflows', externalLinks.workflows],
@@ -37,8 +42,8 @@ describe('SiteFooter', () => {
   // The agent page gained a zh-CN twin, so the footer link has to follow the
   // active locale rather than staying pinned to the canonical /agent path.
   it.for([
-    ['en', 'Comfy Agent', '/agent'],
-    ['zh-CN', 'Comfy Agent', '/zh-CN/agent']
+    ['en', 'Comfy Agent', '/agent/'],
+    ['zh-CN', 'Comfy Agent', '/zh-CN/agent/']
   ] as const)(
     'links the Comfy Agent page at its localized path (%s)',
     ([locale, name, href]) => {
@@ -58,7 +63,7 @@ describe('SiteFooter', () => {
     const links = screen.getAllByRole('link', { name: 'MiniMax 商业许可' })
     expect(links.length).toBeGreaterThan(0)
     for (const link of links) {
-      expect(link.getAttribute('href')).toBe('/zh-CN/minimax/license')
+      expect(link.getAttribute('href')).toBe('/zh-CN/minimax/license/')
     }
   })
 })

@@ -3,8 +3,10 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
   RUN_APPROVAL_EVENT,
+  RUN_APPROVAL_RESOLVED_EVENT,
   agentTurnLockTest as test
 } from '@e2e/fixtures/agentTurnLockFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 // The worst shape a stall can take, from a real user report: they asked for an
 // img2img workflow, then for img2video, and the panel went dead. They restarted
@@ -23,15 +25,14 @@ import {
 // to: `ingestBackgroundTurnEvent` returns at `!entry` and the frame is gone.
 // Nothing errors, the panel looks idle, the server looks healthy.
 //
-// Deliberately not a refresh: on a refresh the ask comes back, because the
-// persisted row carries `pending_ask` and `normalizeAgentTranscript` restores
-// the card. That asymmetry is why restarting the tab "fixed" it for the user
-// and why this only ever showed up through a feedback form.
+// A refresh restores the card from the persisted row's `pending_ask`; a socket
+// blip does not. That asymmetry is why restarting the tab "fixed" it for the
+// user and why this only ever showed up through a feedback form.
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
 test.describe(
-  'an approval ask survives a socket drop',
+  'approval ask recovery across socket drop and refresh',
   { tag: ['@cloud', '@ui'] },
   () => {
     const PROMPT = 'turn this image into a video'
@@ -46,25 +47,15 @@ test.describe(
     }) => {
       const reconnected = await turnLock.dropSocket()
 
-      // Preconditions stay above the marker so a wiped thread or a lost prompt
-      // reads as a real failure rather than the expected one.
       await expect(turnLock.userBubbles).toHaveText([PROMPT])
 
-      // The server is parked on this ask and will not proceed without an
-      // answer. `ws.send()` throws on a dead route, so pushing stays above
-      // test.fail() too.
       turnLock.push(reconnected, RUN_APPROVAL_EVENT)
       expect(turnLock.pendingAskIsPrimed()).toBe(false)
 
       await expect(
         turnLock.panel.getByText(enMessages.agent.runApproval.question)
       ).toBeVisible()
-      await expect(
-        turnLock.panel.getByRole('button', {
-          name: enMessages.agent.runApproval.run,
-          exact: true
-        })
-      ).toBeVisible()
+      await expect(turnLock.runApprovalButton).toBeVisible()
     })
 
     test('the user can answer the ask that arrived after the reconnect', async ({
@@ -77,19 +68,12 @@ test.describe(
 
       // Recovery must restore both the card and its active turn identity;
       // `answerAsk` deliberately refuses to POST without `activeTurnId`.
-      await turnLock.panel
-        .getByRole('button', {
-          name: enMessages.agent.runApproval.run,
-          exact: true
-        })
-        .click({ timeout: 10_000 })
+      await turnLock.runApprovalButton.click({ timeout: 10_000 })
       await expect.poll(() => turnLock.answeredAsks()).toEqual(['run'])
     })
 
-    // Keeps the locators above honest. If the approval card never renders under
-    // this fixture at all — a changed testid, a gate, reworded copy — this case
-    // reddens and the two expected failures above stop being evidence of the
-    // defect they name.
+    // Keeps the reconnect cases' locators honest if the approval card stops
+    // rendering under this fixture.
     test('the same ask renders when the socket never drops', async ({
       turnLock
     }) => {
@@ -101,13 +85,33 @@ test.describe(
       await expect(
         turnLock.panel.getByText(enMessages.agent.runApproval.question)
       ).toBeVisible()
-      await turnLock.panel
-        .getByRole('button', {
-          name: enMessages.agent.runApproval.run,
-          exact: true
-        })
-        .click()
+      await turnLock.runApprovalButton.click()
       await expect.poll(() => turnLock.answeredAsks()).toEqual(['run'])
+    })
+
+    test('a refresh restores the persisted approval ask', async ({
+      page,
+      turnLock
+    }) => {
+      turnLock.primePendingAsk(RUN_APPROVAL_EVENT)
+
+      await page.reload()
+      await expect(
+        page.getByTestId(TestIds.topbar.integratedTabBarActions)
+      ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 30_000 })
+      await expect(turnLock.panel).toBeVisible({ timeout: 30_000 })
+      await expect(
+        turnLock.panel.getByText(enMessages.agent.runApproval.question)
+      ).toBeVisible({ timeout: 30_000 })
+
+      await turnLock.runApprovalButton.click({ timeout: 10_000 })
+      await expect
+        .poll(() => turnLock.answeredAsks(), { timeout: 10_000 })
+        .toEqual(['run'])
+
+      turnLock.push(await turnLock.liveSocket(), RUN_APPROVAL_RESOLVED_EVENT)
+      await expect(turnLock.runApprovalButton).toBeHidden({ timeout: 10_000 })
+      expect(turnLock.answeredAsks()).toEqual(['run'])
     })
   }
 )

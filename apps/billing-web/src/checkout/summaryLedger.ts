@@ -2,6 +2,8 @@ import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 import { formatQuoteMoney } from '@comfyorg/account-ui/billing/checkout'
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
+import { longDate, monthDay } from '@/checkout/longDate'
+
 /**
  * The four summary families of the checkout guidebook. `top_up`
  * has no quote on billing-web yet, so no builder produces it.
@@ -46,16 +48,8 @@ export interface SummaryLedger {
   readonly credits?: { readonly count: string; readonly qualifier: string }
   /** Money rows the total reconciles with; see `moneyItems`. */
   readonly items: readonly LedgerRow[]
-  /** Discounts the customer already holds, priced before any entered code. */
-  readonly adjustments: readonly DiscountRow[]
-  /**
-   * The pre-discount base an entered code applied to. The quote carries
-   * no such field today, so no builder populates this; it stays typed for
-   * when the server reports one, and the row renders only then.
-   */
-  readonly subtotal?: string
-  /** The row for the code the customer entered. */
-  readonly promo?: DiscountRow
+  /** Every promotion the quote applied, held or entered, in the server's order. */
+  readonly discounts: readonly DiscountRow[]
   readonly chips: readonly PromoChip[]
   /** Codes apply to a charge made today, so only those families take one. */
   readonly acceptsPromo: boolean
@@ -63,10 +57,7 @@ export interface SummaryLedger {
   readonly trailing: readonly string[]
 }
 
-type DiscountSlots = Pick<
-  SummaryLedger,
-  'adjustments' | 'subtotal' | 'promo' | 'chips' | 'acceptsPromo'
->
+type DiscountSlots = Pick<SummaryLedger, 'discounts' | 'chips' | 'acceptsPromo'>
 
 type FamilyLedger = Omit<SummaryLedger, keyof DiscountSlots>
 
@@ -169,20 +160,9 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
     plan,
     planLabel,
     money,
-    date: (iso: string) =>
-      new Intl.DateTimeFormat(locale, {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-        timeZone: 'UTC'
-      }).format(new Date(iso)),
+    date: (iso: string) => longDate(iso, locale),
     /** Month and day only: a credits expiry always falls within the current period. */
-    monthDay: (iso: string) =>
-      new Intl.DateTimeFormat(locale, {
-        month: 'long',
-        day: 'numeric',
-        timeZone: 'UTC'
-      }).format(new Date(iso)),
+    monthDay: (iso: string) => monthDay(iso, locale),
     headlineMoney: (cents: number) =>
       formatHeadlineMoney(cents, currency, locale),
     credits: (cents: number) =>
@@ -277,9 +257,16 @@ export function namedPlan(
     : context.tierName(plan.tier)
 }
 
-/** A team plan is one tier at many commitments, so the kept one is named by its rate. */
+/**
+ * A team plan is one tier at many commitments, so the kept one is named by
+ * its rate. A kept yearly plan always names its cadence.
+ */
 function keptPlanLine(r: QuoteReading, current: Plan, until: string): string {
-  const plan = namedPlan(r, current, r.cadenceChanges)
+  const plan = namedPlan(
+    r,
+    current,
+    r.cadenceChanges || current.duration === 'ANNUAL'
+  )
   if (!r.commitChange)
     return r.t(`${S}.trailing.keepUntil`, { plan, date: until })
   return r.t(`${S}.trailing.keepCommitmentUntil`, {
@@ -321,7 +308,11 @@ function proratedLedger(r: QuoteReading): FamilyLedger {
         refillsToLine(r)
       ]
     }),
-    trailing: [r.t(`${S}.trailing.creditsKept`, {}), renewalLine(r)]
+    trailing: [
+      r.t(`${S}.trailing.creditsKept`, {}),
+      renewalLine(r),
+      ...zeroDueLine(r)
+    ]
   }
 }
 
@@ -346,14 +337,10 @@ function grantIsAllowance(r: QuoteReading): boolean {
 }
 
 function chargeNowTrailing(r: QuoteReading): string[] {
-  const { quote, current } = r
+  const { current } = r
   const overlapUntil =
     r.cadenceChanges && current?.duration === 'MONTHLY'
       ? current.period_end
-      : undefined
-  const zeroDueRenewal =
-    quote.transition_type === 'new_subscription' && r.dueCents === 0
-      ? quote.renewal_at
       : undefined
   return [
     renewalLine(r),
@@ -364,14 +351,19 @@ function chargeNowTrailing(r: QuoteReading): string[] {
             date: r.date(overlapUntil)
           })
         ]),
-    ...(zeroDueRenewal === undefined
-      ? []
-      : [
-          r.t(`${S}.trailing.zeroDue`, {
-            amount: r.money(r.recurringCents),
-            date: r.date(zeroDueRenewal)
-          })
-        ])
+    ...zeroDueLine(r)
+  ]
+}
+
+/** A $0 total still collects a method, so the summary says what it will pay. */
+function zeroDueLine(r: QuoteReading): string[] {
+  if (r.dueCents !== 0) return []
+  const amount = r.money(r.recurringCents)
+  const renewsAt = r.quote.renewal_at
+  return [
+    renewsAt === undefined
+      ? r.t(`${S}.trailing.zeroDueUndated`, { amount })
+      : r.t(`${S}.trailing.zeroDue`, { amount, date: r.date(renewsAt) })
   ]
 }
 
@@ -412,7 +404,7 @@ export function buildSummaryLedger(
 ): SummaryLedger {
   const reading = readQuote(quote, context)
   const ledger = familyLedger(reading)
-  return { ...ledger, ...discountSlots(reading, ledger) }
+  return { ...ledger, ...discountSlots(reading) }
 }
 
 function familyLedger(r: QuoteReading): FamilyLedger {
@@ -427,30 +419,14 @@ function familyLedger(r: QuoteReading): FamilyLedger {
 }
 
 /** The server refuses a code on a change that charges nothing today. */
-const ACCEPTS_PROMO = {
-  charge_now: true,
-  prorated_change: true,
-  scheduled: false,
-  top_up: false
-} as const satisfies Record<SummaryFamily, boolean>
+export function acceptsPromoCode(quote: SubscriptionPreview): boolean {
+  return quote.is_immediate
+}
 
 type Discount = NonNullable<SubscriptionPreview['discounts']>[number]
 
-/**
- * The `promotion` discount matching the quote's `promotion_code` is the
- * customer's entered code, any other is one the account already holds.
- * Subtotal would name the base the entered code applied to, but the quote
- * carries no pre-discount total, so this builder never sets it. Computing
- * one as today's charge plus what the code took would be a frontend guess
- * at a number the server is supposed to report.
- */
-function discountSlots(r: QuoteReading, ledger: FamilyLedger): DiscountSlots {
-  const enteredCode = r.quote.promotion_code
-  const entered = r.promotions.find(
-    (discount) => discount.code.toUpperCase() === enteredCode?.toUpperCase()
-  )
-  const held = r.promotions.filter((discount) => discount !== entered)
-  const rowOf = (discount: Discount) => ({
+function discountRow(r: QuoteReading, discount: Discount): DiscountRow {
+  return {
     label: discount.name ?? r.t(`${S}.discount.fallbackLabel`, {}),
     ...(discount.amount_off_cents === undefined
       ? {}
@@ -459,16 +435,28 @@ function discountSlots(r: QuoteReading, ledger: FamilyLedger): DiscountSlots {
             amount: r.money(discount.amount_off_cents)
           })
         })
-  })
+  }
+}
+
+/**
+ * Every promotion gets a row, in the order the server listed them and at the
+ * amount it reported. The `promotion` discount matching the quote's
+ * `promotion_code` is the customer's entered code, the only chip that comes
+ * off; any other is one the account already holds.
+ */
+function discountSlots(r: QuoteReading): DiscountSlots {
+  const enteredCode = r.quote.promotion_code?.toUpperCase()
+  const held = r.promotions.filter(
+    (discount) => discount.code.toUpperCase() !== enteredCode
+  )
   return {
-    adjustments: held.map(rowOf),
-    ...(entered === undefined ? {} : { promo: rowOf(entered) }),
+    discounts: r.promotions.map((discount) => discountRow(r, discount)),
     chips: [
       ...held.map(({ code }) => ({ code, removable: false })),
-      ...(enteredCode === undefined
+      ...(r.quote.promotion_code === undefined
         ? []
-        : [{ code: enteredCode, removable: true }])
+        : [{ code: r.quote.promotion_code, removable: true }])
     ],
-    acceptsPromo: ACCEPTS_PROMO[ledger.family]
+    acceptsPromo: acceptsPromoCode(r.quote)
   }
 }

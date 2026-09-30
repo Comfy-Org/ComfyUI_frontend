@@ -33,7 +33,7 @@ const navOptions: readonly NavOption[] = [
   {
     labelKey: 'learning.categories.all.label',
     blurbKey: 'learning.categories.all.blurb',
-    href: '/learning'
+    href: '/learning/'
   },
   ...populatedCategories.map((value) => ({
     value,

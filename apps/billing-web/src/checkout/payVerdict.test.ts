@@ -138,9 +138,29 @@ describe('payVerdictOf', () => {
       expected: { kind: 'requote', because: 'quote_expired' }
     },
     {
-      name: 'an unreachable billing service',
+      name: 'an unreachable billing service is the processing error card, coded for support',
       result: { status: 'error', code: 'REQUEST_FAILED' },
-      expected: { kind: 'failure', code: 'REQUEST_FAILED' }
+      expected: {
+        kind: 'outcome',
+        outcome: { kind: 'processing_error', code: 'REQUEST_FAILED' }
+      }
+    },
+    {
+      name: 'a server error keeps the sentence the server wrote',
+      result: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 500,
+        serverMessage: 'Billing is down for maintenance.'
+      },
+      expected: {
+        kind: 'outcome',
+        outcome: {
+          kind: 'processing_error',
+          code: 'REQUEST_FAILED',
+          serverMessage: 'Billing is down for maintenance.'
+        }
+      }
     }
   ])('$name', ({ result, expected }) => {
     expect(payVerdictOf(result)).toEqual(expected)
@@ -181,6 +201,22 @@ describe('operationOutcomeOf', () => {
     {
       name: 'a bank that asked for authentication nobody gave',
       operation: failedOperation('authentication_required', 'op_x'),
+      outcome: { kind: 'not_completed', operationId: 'op_x' }
+    },
+    {
+      name: 'a payment the customer did not approve or let expire',
+      operation: failedWith('payment_not_completed', {
+        recoveryAction: 'retry'
+      }),
+      outcome: { kind: 'not_completed', operationId: 'op_x' }
+    },
+    {
+      name: 'a pending payment the customer did not approve',
+      operation: {
+        ...pendingOperation('op_x'),
+        authenticationState: 'failed_retryable',
+        declineReason: 'payment_not_completed'
+      },
       outcome: { kind: 'not_completed', operationId: 'op_x' }
     },
     {
@@ -293,6 +329,14 @@ describe('supportLinkFor', () => {
     expect(link.searchParams.get('body')).toBe(
       'Operation: op_9\nDecline code: card_declined'
     )
+  })
+
+  it('quotes the code of a refused Pay', () => {
+    const link = new URL(
+      supportLinkFor({ kind: 'processing_error', code: 'REQUEST_FAILED' })
+    )
+
+    expect(link.searchParams.get('body')).toBe('Error code: REQUEST_FAILED')
   })
 
   it('leaves the body out when there is nothing to name', () => {

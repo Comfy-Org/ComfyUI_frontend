@@ -27,52 +27,54 @@ const emit = defineEmits<{ choose: [id: string] }>()
     :aria-label="tc(group.title, locale)"
     class="grid grid-cols-2 gap-x-4 gap-y-5"
   >
-    <button
-      v-for="option in group.options"
-      :key="option.id"
-      type="button"
-      role="radio"
-      :aria-checked="selected === option.id"
-      class="group flex flex-col gap-2 text-left"
-      @click="emit('choose', option.id)"
-    >
-      <span
-        :class="
-          cn(
-            'relative flex aspect-video w-full overflow-hidden rounded-xl bg-transparency-white-t4 ring-1 ring-transparency-white-t8 transition-shadow group-hover:ring-transparency-white-t20',
-            selected === option.id &&
-              'ring-2 ring-primary-warm-white group-hover:ring-primary-warm-white'
-          )
-        "
+    <slot />
+    <template v-for="(option, index) in group.options" :key="option.id">
+      <button
+        type="button"
+        role="radio"
+        :aria-checked="selected === option.id"
+        class="group flex flex-col gap-2 text-left"
+        @click="emit('choose', option.id)"
       >
-        <img
-          v-if="option.preview"
-          :src="option.preview"
-          alt=""
-          loading="lazy"
-          class="size-full object-cover"
-        />
         <span
-          v-else-if="!option.palette"
-          class="grid size-full place-items-center text-primary-warm-gray"
+          :class="
+            cn(
+              'relative flex aspect-video w-full overflow-hidden rounded-xl bg-transparency-white-t4 ring-1 ring-transparency-white-t8 transition-shadow group-hover:ring-transparency-white-t20',
+              selected === option.id &&
+                'ring-2 ring-primary-warm-white group-hover:ring-primary-warm-white'
+            )
+          "
         >
-          <CircleDashed class="size-8" aria-hidden="true" />
-        </span>
-        <template v-else>
-          <span
-            v-for="(color, index) in option.palette"
-            :key="index"
-            class="h-full flex-1"
-            :style="{ backgroundColor: color }"
+          <img
+            v-if="option.preview"
+            :src="option.preview"
+            alt=""
+            loading="lazy"
+            class="size-full object-cover"
           />
-        </template>
-        <CinematicCheckBadge v-if="selected === option.id" />
-      </span>
-      <span
-        class="truncate px-1 text-sm text-primary-comfy-canvas group-hover:text-primary-warm-white"
-      >
-        {{ tc(option.label, locale) }}
-      </span>
-    </button>
+          <span
+            v-else-if="!option.palette"
+            class="grid size-full place-items-center text-primary-warm-gray"
+          >
+            <CircleDashed class="size-8" aria-hidden="true" />
+          </span>
+          <template v-else>
+            <span
+              v-for="(color, index) in option.palette"
+              :key="index"
+              class="h-full flex-1"
+              :style="{ backgroundColor: color }"
+            />
+          </template>
+          <CinematicCheckBadge v-if="selected === option.id" />
+        </span>
+        <span
+          class="truncate px-1 text-sm text-primary-comfy-canvas group-hover:text-primary-warm-white"
+        >
+          {{ tc(option.label, locale) }}
+        </span>
+      </button>
+      <slot v-if="index === 0" name="row" />
+    </template>
   </div>
 </template>

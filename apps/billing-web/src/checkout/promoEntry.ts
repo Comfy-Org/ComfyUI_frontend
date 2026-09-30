@@ -51,12 +51,16 @@ export type PromoPrefill = Pick<
 >
 
 /**
- * A code carried in on the entry URL opens the field with it typed, never
- * applied. One the link could not carry opens refused, as typed.
+ * A code this page applied before a reload or a provider return comes back
+ * applied, for the capture read to price again. A code carried in on the
+ * entry URL opens the field with it typed, never applied. One the link could
+ * not carry opens refused, as typed.
  */
 export function initialPromoEntry(
-  prefill: PromoPrefill | undefined
+  prefill: PromoPrefill | undefined,
+  restored?: string
 ): PromoEntry {
+  if (restored !== undefined) return { kind: 'applied', code: restored }
   if (prefill?.promotionCode !== undefined)
     return { kind: 'editing', draft: prefill.promotionCode }
   const unreadable = prefill?.unreadablePromotionCode
@@ -136,8 +140,9 @@ export function reducePromoEntry(
   }
 }
 
-/** A typed code Apply has not judged yet, which a Pay prices before it charges. */
+/** A typed code the server has not judged yet, which a Pay prices before it charges. */
 export function hasUnappliedDraft(entry: PromoEntry): boolean {
+  if (entry.kind === 'rejected') return entry.reason === 'unchecked'
   return entry.kind === 'editing' && entry.draft.trim() !== ''
 }
 

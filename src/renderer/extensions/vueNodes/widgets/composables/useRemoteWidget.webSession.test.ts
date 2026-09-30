@@ -61,9 +61,7 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const USER = fromPartial<User>({
   uid: 'user-a',

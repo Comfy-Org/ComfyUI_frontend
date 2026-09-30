@@ -7,6 +7,7 @@ const presentationSchema = z.object({
   name: z.string(),
   workflowCount: z.number(),
   recommendedRank: z.number().optional(),
+  // Required: catalogue.json only ships published pages (pinned by its test)
   href: z.string(),
   incompleteReason: z.literal('missing-input-schema').optional(),
   provider: z.string().optional(),
@@ -33,7 +34,8 @@ const presentationSchema = z.object({
   useCases: z.array(z.enum(USE_CASES)).optional(),
   summary: z.string().optional(),
   status: z.enum(['deprecated', 'degraded']).optional(),
-  successorSlug: z.string().optional()
+  successorSlug: z.string().optional(),
+  flag: z.string().optional()
 })
 
 export const routerModelSchema = presentationSchema.extend({

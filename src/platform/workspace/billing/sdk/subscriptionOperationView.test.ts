@@ -9,13 +9,14 @@ import {
   settledOperation
 } from './billingSdkTestUtils'
 import {
+  SettledOperationError,
   projectPaymentPortalResult,
   projectSubscribeResult,
   projectSubscriptionResult
 } from './subscriptionOperationView'
 
 describe('projectSubscriptionResult', () => {
-  it('reports a settled command as done', () => {
+  it('reports a settled command as done, with its operation observed', () => {
     const result: SubscriptionCommandResult = {
       status: 'ok',
       value: { phase: 'succeeded', operation: settledOperation('succeeded') }
@@ -23,14 +24,14 @@ describe('projectSubscriptionResult', () => {
 
     expect(projectSubscriptionResult(result)).toEqual({
       status: 'ok',
-      value: undefined
+      value: { operationObserved: true }
     })
   })
 
-  it('reports a request the server refused as already satisfied', () => {
+  it('reports a request the server refused as already satisfied, with no operation observed', () => {
     expect(
       projectSubscriptionResult({ status: 'ok', value: { phase: 'succeeded' } })
-    ).toEqual({ status: 'ok', value: undefined })
+    ).toEqual({ status: 'ok', value: { operationObserved: false } })
   })
 
   it.for([
@@ -63,6 +64,14 @@ describe('projectSubscriptionResult', () => {
       detail: "We couldn't complete payment verification. Please try again."
     },
     {
+      phase: 'failed',
+      operation: {
+        ...failedOperation(),
+        declineReason: 'payment_not_completed'
+      },
+      detail: "We couldn't complete payment verification. Please try again."
+    },
+    {
       phase: 'timed_out',
       operation: settledOperation('timed_out'),
       detail: "We couldn't update your subscription. Please try again."
@@ -73,7 +82,7 @@ describe('projectSubscriptionResult', () => {
       detail: "We couldn't update your subscription. Please try again."
     }
   ] as const)(
-    'reports a $phase operation as a sentence for the customer',
+    'reports a $phase operation as a settled failure with a sentence for the customer',
     ({ phase, operation, detail }) => {
       const outcome = projectSubscriptionResult({
         status: 'ok',
@@ -81,9 +90,13 @@ describe('projectSubscriptionResult', () => {
       })
 
       expect(outcome).toMatchObject({ status: 'error' })
-      expect(
-        outcome.status === 'error' ? outcome.error : undefined
-      ).toMatchObject({ message: detail, code: phase })
+      const error = outcome.status === 'error' ? outcome.error : undefined
+      expect(error).toBeInstanceOf(SettledOperationError)
+      expect(error).toMatchObject({
+        message: detail,
+        code: phase,
+        billingOpId: 'op-1'
+      })
     }
   )
 
@@ -150,14 +163,18 @@ describe('projectSubscriptionResult', () => {
           'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
       }
     ]
-  ] as const)('surfaces %o as a workspace error', ([failure, expected]) => {
-    const outcome = projectSubscriptionResult(failure)
+  ] as const)(
+    'surfaces %o as a workspace error the caller still owns',
+    ([failure, expected]) => {
+      const outcome = projectSubscriptionResult(failure)
 
-    expect(outcome.status).toBe('error')
-    const error = outcome.status === 'error' ? outcome.error : undefined
-    expect(error).toBeInstanceOf(WorkspaceApiError)
-    expect(error).toMatchObject(expected)
-  })
+      expect(outcome.status).toBe('error')
+      const error = outcome.status === 'error' ? outcome.error : undefined
+      expect(error).toBeInstanceOf(WorkspaceApiError)
+      expect(error).not.toBeInstanceOf(SettledOperationError)
+      expect(error).toMatchObject(expected)
+    }
+  )
 })
 
 describe('projectSubscribeResult', () => {
@@ -183,7 +200,8 @@ describe('projectSubscribeResult', () => {
         value: {
           billing_op_id: 'op-1',
           status: 'subscribed',
-          requiredPayment
+          requiredPayment,
+          operationObserved: true
         }
       })
     }
@@ -202,7 +220,7 @@ describe('projectSubscribeResult', () => {
       detail: "We couldn't update your subscription. Please try again."
     }
   ] as const)(
-    'reports a $phase subscribe as a sentence for the customer',
+    'reports a $phase subscribe as a settled failure with a sentence for the customer',
     ({ phase, operation, detail }) => {
       const outcome = projectSubscribeResult({
         status: 'ok',
@@ -210,9 +228,13 @@ describe('projectSubscribeResult', () => {
       })
 
       expect(outcome).toMatchObject({ status: 'error' })
-      expect(
-        outcome.status === 'error' ? outcome.error : undefined
-      ).toMatchObject({ message: detail, code: phase })
+      const error = outcome.status === 'error' ? outcome.error : undefined
+      expect(error).toBeInstanceOf(SettledOperationError)
+      expect(error).toMatchObject({
+        message: detail,
+        code: phase,
+        billingOpId: 'op-1'
+      })
     }
   )
 })

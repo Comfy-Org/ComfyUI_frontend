@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
+import { prepareModelRouterRender } from '../../../config/router-render'
 import { getAuthoredRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
 import { runnableCinematicVideoModels } from './models'
+import { studioRouterForm } from './request'
 import {
   durationRange,
   resolutionLabel,
@@ -104,6 +106,31 @@ describe('runnableCinematicVideoModels', () => {
 describe('videoParameters', () => {
   const frame = new File(['frame'], 'frame.png', { type: 'image/png' })
 
+  it('keeps the starting frame’s own shape on Seedance 2.5, the only ratio it accepts there', async () => {
+    const model = getAuthoredRouterWorkshopModelDetail(
+      'byteplus--seedance-2-5-first-last-frame--animate-images'
+    )
+    if (!model?.execution) throw new Error('Missing Seedance 2.5 first frame')
+    const seedance = videoCapabilities(model.execution)
+    expect(seedance.aspects).toEqual([])
+
+    const { body } = await prepareModelRouterRender(
+      model,
+      {},
+      {
+        form: studioRouterForm(model, {
+          prompt: 'The boy dribbles toward the hoop',
+          ...videoParameters(seedance, {
+            aspect: '16:9',
+            audio: false,
+            firstFrame: 'https://example.com/take.png'
+          })
+        })
+      }
+    )
+    expect(body.ratio).toBe('adaptive')
+  })
+
   it('asks for what the operation offers and drops what it does not', () => {
     const seedance = capabilities(
       'byteplus--seedance-2-5-first-last-frame--animate-images'
@@ -118,7 +145,6 @@ describe('videoParameters', () => {
         lastFrame: frame
       })
     ).toEqual({
-      aspect_ratio: '21:9',
       duration_seconds: 7,
       resolution: '1080p',
       first_frame: frame,

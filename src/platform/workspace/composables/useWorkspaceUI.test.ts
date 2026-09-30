@@ -14,7 +14,7 @@ const mockShouldUseWorkspaceBilling = ref(true)
 const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
 const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
-const mockBillingControlEnabled = vi.hoisted(() => ({ value: false }))
+const mockMemberCreditLimitsEnabled = vi.hoisted(() => ({ value: false }))
 const mockCanReactivate = ref(false)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -69,8 +69,8 @@ const teamMemberWorkspace: WorkspaceWithRole = {
 }
 
 function loadComposable() {
-  vi.mocked(useFeatureFlags().flags).billingControlEnabled =
-    mockBillingControlEnabled.value
+  vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled =
+    mockMemberCreditLimitsEnabled.value
   const ui = composableScope.run(useWorkspaceUI)
   if (!ui) throw new Error('Composable scope is inactive')
   return ui
@@ -83,7 +83,7 @@ function resetStore() {
   mockIsActiveSubscription.value = false
   mockIsCancelled.value = false
   mockIsTeamPlan.value = false
-  mockBillingControlEnabled.value = false
+  mockMemberCreditLimitsEnabled.value = false
   mockCanReactivate.value = false
   mockIsCloud.value = true
   mockShouldUseWorkspaceBilling.value = true
@@ -303,8 +303,15 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
       expect(ui.uiConfig.value.showCreditsColumn).toBe(false)
     })
 
-    it('adds the credits column when billing controls are enabled', async () => {
-      mockBillingControlEnabled.value = true
+    it('keeps the credits column hidden under billing controls alone', async () => {
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+      const ui = await loadComposable()
+
+      expect(ui.uiConfig.value.showCreditsColumn).toBe(false)
+    })
+
+    it('adds the credits column when member credit limits are enabled', async () => {
+      mockMemberCreditLimitsEnabled.value = true
       const ui = await loadComposable()
 
       expect(ui.uiConfig.value.showCreditsColumn).toBe(true)

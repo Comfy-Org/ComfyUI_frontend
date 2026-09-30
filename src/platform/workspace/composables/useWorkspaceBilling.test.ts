@@ -396,7 +396,7 @@ describe('useWorkspaceBilling', () => {
         expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
           'op-hosted',
           'subscription',
-          undefined,
+          { resumed: true },
           undefined
         )
       })
@@ -444,7 +444,7 @@ describe('useWorkspaceBilling', () => {
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-recovered',
         'subscription',
-        undefined,
+        { resumed: true },
         actionUrl
       )
     })
@@ -467,7 +467,7 @@ describe('useWorkspaceBilling', () => {
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-sub',
         'subscription',
-        undefined,
+        { resumed: true },
         actionUrl
       )
       expect(mockReportError).not.toHaveBeenCalled()
@@ -489,7 +489,7 @@ describe('useWorkspaceBilling', () => {
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-topup',
         'topup',
-        undefined,
+        { resumed: true },
         actionUrl
       )
     })
@@ -511,14 +511,17 @@ describe('useWorkspaceBilling', () => {
         expect.objectContaining({
           message: expect.stringContaining('seat_change')
         }),
-        { errorType: 'billing_unknown_resume_mode' }
+        {
+          surface: 'workspace',
+          errorType: 'billing_unknown_resume_mode'
+        }
       )
       // Recovery is preserved deliberately: without it the customer has no way
       // back to the payment page, while a wrong panel clears on reload.
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-future',
         'subscription',
-        undefined,
+        { resumed: true },
         undefined
       )
     })
@@ -541,7 +544,7 @@ describe('useWorkspaceBilling', () => {
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-recovered',
         'subscription',
-        undefined,
+        { resumed: true },
         undefined
       )
     })

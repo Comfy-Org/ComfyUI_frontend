@@ -32,7 +32,7 @@ const { t } = useI18n()
     </p>
   </div>
 
-  <template v-if="ledger.items.length + ledger.adjustments.length > 0">
+  <template v-if="ledger.items.length + ledger.discounts.length > 0">
     <hr class="mt-8 mb-0 border-border-default" />
     <ul class="m-0 flex list-none flex-col gap-4 p-0 pt-6">
       <li
@@ -57,8 +57,8 @@ const { t } = useI18n()
         </span>
       </li>
       <li
-        v-for="(row, index) in ledger.adjustments"
-        :key="`adjustment-${index}`"
+        v-for="(row, index) in ledger.discounts"
+        :key="`discount-${index}`"
         class="flex items-baseline justify-between gap-4"
       >
         <span class="text-sm font-semibold text-base-foreground">
@@ -70,28 +70,6 @@ const { t } = useI18n()
       </li>
     </ul>
   </template>
-
-  <template v-if="ledger.subtotal">
-    <hr class="mt-6 mb-0 border-border-default" />
-    <div
-      class="flex items-baseline justify-between gap-4 pt-4 text-sm text-muted-foreground"
-    >
-      <span>{{ t('checkout.fullPage.summary.subtotal') }}</span>
-      <span class="tabular-nums">{{ ledger.subtotal }}</span>
-    </div>
-  </template>
-
-  <div
-    v-if="ledger.promo"
-    class="flex items-baseline justify-between gap-4 pt-4"
-  >
-    <span class="text-sm font-semibold text-base-foreground">
-      {{ ledger.promo.label }}
-    </span>
-    <span class="shrink-0 text-sm text-muted-foreground tabular-nums">
-      {{ ledger.promo.amount }}
-    </span>
-  </div>
 
   <div class="pt-4 empty:hidden">
     <slot />

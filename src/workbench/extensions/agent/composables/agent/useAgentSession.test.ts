@@ -2,12 +2,14 @@ import type {
   AgentAdmissionError,
   UploadImageResponse
 } from '@comfyorg/ingest-types'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { api } from '@/scripts/api'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -27,7 +29,8 @@ import {
 } from '../../schemas/agentApiSchema'
 import {
   AgentApiError,
-  AgentResponseUnreadableError
+  AgentResponseUnreadableError,
+  createAgentRestClient
 } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
@@ -40,9 +43,7 @@ import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 vi.mock(import('@/platform/telemetry'))
 const telemetryProvider = useTelemetry()
@@ -102,6 +103,35 @@ function hangingGetMessages(
       reject(options.signal?.reason)
     )
   })
+}
+
+const storedAttachmentRef = `${'9f2c'.repeat(16)}.png`
+
+function wireSend() {
+  const fetchApi = vi
+    .spyOn(api, 'fetchApi')
+    .mockImplementation(async () =>
+      Response.json(
+        { thread_id: 'th-1', message_id: 'msg-1', workflow_id: 'wf-1' },
+        { status: 202 }
+      )
+    )
+  const session = useAgentSession({
+    rest: createAgentRestClient(),
+    events: fakeEvents().source
+  })
+  session.start()
+  return {
+    send: session.sendMessage,
+    postedBody: (): unknown => {
+      const posted = fetchApi.mock.calls.filter(
+        ([route, init]) =>
+          route.endsWith('/messages') && init?.method === 'POST'
+      )
+      assert(posted.length === 1)
+      return JSON.parse(String(posted[0][1]?.body))
+    }
+  }
 }
 
 function fakeEvents() {
@@ -306,6 +336,59 @@ describe('useAgentSession (v1 composition root)', () => {
       ['new_chat_button']
     ])
   })
+
+  it.for(['success', 'failure', 'new-chat', 'newer-chat', 'cancelled'])(
+    'activates only a ready current selection after %s',
+    async (outcome) => {
+      let activeThreadId: string | null = null
+      let finishRestoration = (_ready: boolean) => {}
+      const restoration = new Promise<boolean>((resolve) => {
+        finishRestoration = resolve
+      })
+      let startRestoration = () => {}
+      const restorationStarted = new Promise<void>((resolve) => {
+        startRestoration = resolve
+      })
+      const restored = vi
+        .fn(async () => true)
+        .mockImplementationOnce(() => {
+          startRestoration()
+          return restoration
+        })
+      const session = useAgentSession({
+        rest: fakeRest(),
+        events: fakeEvents().source,
+        onThreadActivated: (id) => {
+          activeThreadId = id
+        },
+        workflow: { current: () => undefined, adopted: vi.fn(), restored }
+      })
+      session.start()
+      await session.sendMessage('First chat')
+      expect(activeThreadId).toBe('th-1')
+
+      let navigationCurrent = true
+      const opening = session.loadThread('th-pending', () => navigationCurrent)
+      await restorationStarted
+      expect(activeThreadId).toBe('th-1')
+
+      if (outcome === 'new-chat') session.newChat()
+      if (outcome === 'newer-chat') await session.loadThread('th-newer')
+      if (outcome === 'cancelled') navigationCurrent = false
+      finishRestoration(outcome !== 'failure')
+      expect(await opening).toBe(outcome === 'success')
+      expect(activeThreadId).toBe(
+        outcome === 'success'
+          ? 'th-pending'
+          : outcome === 'new-chat'
+            ? null
+            : outcome === 'newer-chat'
+              ? 'th-newer'
+              : 'th-1'
+      )
+      session.stop()
+    }
+  )
 
   it('(b) a second send posts to the adopted threadId, not new', async () => {
     const postMessage = vi
@@ -611,6 +694,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.answerAsk('turn-1:call-1', 'run')
 
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
       errorType: 'agent_ask_answer_failed'
     })
     expect(session.notices.value).toEqual([
@@ -1313,7 +1397,14 @@ describe('useAgentSession (v1 composition root)', () => {
   it('(g5b) recovery preserves text around a persisted tool call', async () => {
     const toolRow = historyRow(3, 'assistant', 'msg-1', '')
     toolRow.content = {
-      tool_calls: [{ id: 'tool-1', tool_name: 'add_node', status: 'success' }]
+      tool_calls: [
+        {
+          id: 'tool-1',
+          tool_call_id: 'tool-1',
+          tool_name: 'add_node',
+          status: 'success'
+        }
+      ]
     }
     const rest = fakeRest({
       getMessages: vi.fn(
@@ -1855,6 +1946,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(2))
     await vi.waitFor(() =>
       expect(reportError).toHaveBeenCalledWith(storageFailure, {
+        surface: 'agent',
         errorType: 'failure_recovering_agent_turn'
       })
     )
@@ -1877,6 +1969,20 @@ describe('useAgentSession (v1 composition root)', () => {
       workflowReferences: [],
       selection: undefined,
       attachments: ['upload_a.png', 'upload_b.png']
+    })
+  })
+
+  it('serializes stable attachment refs without unrelated fields', async () => {
+    const { postedBody, send } = wireSend()
+
+    await send('upscale this', [
+      { ref: storedAttachmentRef, name: 'Beach photo.png' }
+    ])
+
+    const body = zAgentPostMessageRequest.parse(postedBody())
+    expect(body).toMatchObject({
+      content: 'upscale this',
+      attachments: [storedAttachmentRef]
     })
   })
 
@@ -2957,6 +3063,9 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.loadThread('th-gone')
     expect(session.threadId.value).toBeNull()
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-1'
+    )
 
     await session.loadThread('th-1')
     expect(session.isStreaming.value).toBe(true)
@@ -3388,12 +3497,14 @@ describe('thread resume (B17)', () => {
 
   it('forgets a stale persisted thread on 404 without surfacing an error', async () => {
     localStorage.setItem(StorageKeys.agentThread('personal'), 'th-gone')
+    const onThreadActivated = vi.fn()
     const getMessages = vi.fn(async (): Promise<AgentMessages> => {
       throw new AgentApiError('not found', 404, null)
     })
     const session = useAgentSession({
       rest: fakeRest({ getMessages }),
-      events: fakeEvents().source
+      events: fakeEvents().source,
+      onThreadActivated
     })
     session.start()
     await vi.waitFor(() =>
@@ -3404,6 +3515,9 @@ describe('thread resume (B17)', () => {
     expect(session.threadId.value).toBeNull()
     expect(session.entries.value).toHaveLength(0)
     expect(session.notices.value).toHaveLength(0)
+    await vi.waitFor(() =>
+      expect(onThreadActivated).toHaveBeenLastCalledWith(null)
+    )
   })
 
   it('persists the thread on send and clears it on newChat', async () => {
@@ -3522,6 +3636,7 @@ describe('thread resume (B17)', () => {
         await new Promise<void>((resolve) => {
           finishRestore = resolve
         })
+        return true
       }
     )
     const session = useAgentSession({
@@ -3547,13 +3662,14 @@ describe('thread resume (B17)', () => {
     let releaseFirst = () => {}
     let firstIsCurrent = () => true
     const restored = vi
-      .fn(async (_id: string | undefined, _isCurrent: () => boolean) => {})
+      .fn(async (_id: string | undefined, _isCurrent: () => boolean) => true)
       .mockImplementationOnce(
         async (_id: string | undefined, isCurrent: () => boolean) => {
           firstIsCurrent = isCurrent
           await new Promise<void>((resolve) => {
             releaseFirst = resolve
           })
+          return true
         }
       )
     const session = useAgentSession({
@@ -3603,6 +3719,25 @@ describe('thread resume (B17)', () => {
     await session.loadThread('th-9')
 
     expect(restored).toHaveBeenCalledWith('wf-b', expect.any(Function))
+  })
+
+  it('reports an unsuccessful history selection when its workflow cannot open', async () => {
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(async () => [
+          historyRow(1, 'user', 'turn', 'Prompt')
+        ])
+      }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        restored: async () => false
+      }
+    })
+    session.start()
+
+    expect(await session.loadThread('th-history')).toBe(false)
   })
 
   it('listThreads returns the REST client thread list', async () => {
@@ -3729,6 +3864,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     await session.sendMessage('make me a cat')
 
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
       errorType: 'agent_send_message_failed'
     })
   })

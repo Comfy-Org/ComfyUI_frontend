@@ -118,6 +118,7 @@
 import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -127,6 +128,8 @@ import {
 import { cn } from '@comfyorg/tailwind-utils'
 
 const menuItemClass = 'w-full justify-start rounded-sm px-3 py-2'
+
+const toastStore = useToastStore()
 
 defineProps<{
   invites: WorkspacePendingInvite[]
@@ -138,7 +141,7 @@ defineEmits<{
   revoke: [invite: WorkspacePendingInvite]
 }>()
 
-const { d } = useI18n()
+const { d, t } = useI18n()
 
 function getInviteDisplayName(email: string): string {
   return email.split('@')[0]
@@ -160,6 +163,17 @@ function isExpired(invite: WorkspacePendingInvite): boolean {
 
 async function copyInviteLink(invite: WorkspacePendingInvite) {
   if (!invite.token) return
-  await copyTextSilently(buildInviteLink(invite.token))
+  if (await copyTextSilently(buildInviteLink(invite.token))) {
+    toastStore.add({
+      severity: 'success',
+      summary: t('workspacePanel.inviteLinks.copiedToast'),
+      life: 3000
+    })
+  } else {
+    toastStore.add({
+      severity: 'error',
+      summary: t('workspacePanel.inviteLinks.copyFailedToast')
+    })
+  }
 }
 </script>
