@@ -25,6 +25,8 @@ import type {
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
   AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
@@ -445,6 +447,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {
     this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PAYWALL_SHOWN, metadata)
+  }
+
+  trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {

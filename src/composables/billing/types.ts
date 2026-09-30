@@ -32,6 +32,8 @@ export interface SubscriptionInfo {
   endDate: string | null
   isCancelled: boolean
   hasFunds: boolean
+  /** Agent funds across shared credits and the Agent-scoped balance. */
+  agentHasFunds: boolean
 }
 
 export interface BalanceInfo {

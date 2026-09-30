@@ -1,14 +1,18 @@
 import type { Pinia } from 'pinia'
 import { createPinia, setActivePinia } from 'pinia'
+import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 
 import { useAgentPanelStore } from './agentPanelStore'
 
 vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
+vi.mock(import('@/composables/billing/useBillingContext'))
+const billingContext = useBillingContext()
 
 /**
  * Regression pin for the duplicate Pinia id `agentPanel`.
@@ -33,6 +37,10 @@ describe('the agentPanel store id', () => {
     setActivePinia(pinia)
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     vi.stubGlobal('devicePixelRatio', 1)
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() => null)
+    })
   })
 
   it('resolves the full panel shape even though the dock mount registers it first', () => {

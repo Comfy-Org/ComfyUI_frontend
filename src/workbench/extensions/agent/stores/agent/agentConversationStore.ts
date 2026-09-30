@@ -51,6 +51,7 @@ export const useAgentConversationStore = defineStore(
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
     const latestWorkflowId = ref<string>()
     const resolvedPaywallIds = ref(new Set<TurnId>())
+    const reportedPaywallImpressions = new Set<TurnId>()
     let transport: AgentEventTransport | null = null
     let activeTransportThreadId: string | null = null
     let liveMessage: AssistantMessage | null = null
@@ -157,6 +158,12 @@ export const useAgentConversationStore = defineStore(
         }
       }
       resolvedPaywallIds.value = resolved
+    }
+
+    function claimPaywallImpression(turnId: TurnId): boolean {
+      if (reportedPaywallImpressions.has(turnId)) return false
+      reportedPaywallImpressions.add(turnId)
+      return true
     }
 
     function startTurn(turnId: TurnId): void {
@@ -593,6 +600,7 @@ export const useAgentConversationStore = defineStore(
       recordFailedSend,
       recordPaywall,
       resolvePaywalls,
+      claimPaywallImpression,
       startTurn,
       ingest,
       setCanvasSyncGate,
