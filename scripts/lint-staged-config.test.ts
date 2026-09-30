@@ -82,4 +82,4 @@ describe('lint-staged config', () => {
 })
 
 const stagedEslint =
-  "pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored --rule 'better-tailwindcss/enforce-canonical-classes: off' --report-unused-disable-directives-severity off"
+  "pnpm exec eslint --cache --concurrency auto --fix --no-warn-ignored --rule 'better-tailwindcss/enforce-canonical-classes: off' --report-unused-disable-directives-severity off"

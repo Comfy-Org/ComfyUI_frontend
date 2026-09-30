@@ -199,6 +199,9 @@ function useBillingContextInternal(): BillingContext {
   )
   const tier = computed(() => toValue(activeContext.value.tier))
   const renewalDate = computed(() => toValue(activeContext.value.renewalDate))
+  const renewalInvoice = computed(() =>
+    toValue(activeContext.value.renewalInvoice)
+  )
 
   function getMaxSeats(tierKey: TierKey): number {
     if (type.value === 'legacy') return 1
@@ -324,8 +327,8 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.manageSubscription()
   }
 
-  async function cancelSubscription() {
-    return activeContext.value.cancelSubscription()
+  async function cancelSubscription(isScopeCurrent?: () => boolean) {
+    return activeContext.value.cancelSubscription(isScopeCurrent)
   }
 
   async function resubscribe(
@@ -382,6 +385,7 @@ function useBillingContextInternal(): BillingContext {
     subscriptionStatus,
     tier,
     renewalDate,
+    renewalInvoice,
     getMaxSeats,
 
     initialize,

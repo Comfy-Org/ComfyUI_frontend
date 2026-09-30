@@ -1,5 +1,6 @@
 import type {
   BillingOperationState,
+  BillingPlansData,
   CapabilityDenialReason,
   PaymentReasonKey,
   PendingBillingOperation,
@@ -7,6 +8,12 @@ import type {
 } from '@comfyorg/account-core/billing'
 
 type ElementStatus = 'loading' | 'ready' | 'failed'
+
+/** A plan change the server already scheduled, its plan as the server's catalog lists it. */
+export interface ScheduledChange {
+  readonly plan: Pick<BillingPlansData['plans'][number], 'tier' | 'duration'>
+  readonly effectiveAt: string
+}
 
 /** `none` means the read succeeded and the workspace has no saved method. */
 type SavedStatus = 'loading' | 'ready' | 'none' | 'failed'
@@ -98,16 +105,26 @@ type Attribution = 'started' | 'followed' | 'settled'
  * settles. `unconfirmed` is money whose outcome the page could not learn, so
  * it neither offers a form nor claims a charge. `sibling` on either marks
  * money another tab sent while this one had its form open, whose verdict and
- * challenge belong to that tab. `recheck_failed` is a re-read of what the
- * workspace is waiting on that failed before any form showed, so the page
- * cannot say whether money is moving. `terminal` is a payment that went
- * through.
+ * challenge belong to that tab. `unavailable` is a read that failed before
+ * any form showed: the quote, or the re-read of what the workspace is
+ * waiting on, after which the page cannot say whether money is moving.
+ * `terminal` is a payment that went through.
  */
+/** Which read failed: the quote, or the re-read of the workspace's payments. */
+export type LoadFailure = 'quote' | 'recheck'
+
 export type CheckoutPage =
   | { readonly kind: 'resolving'; readonly outcome?: InlineOutcome }
-  | { readonly kind: 'refused'; readonly reason: CapabilityDenialReason }
-  | { readonly kind: 'unavailable'; readonly code: string }
-  | { readonly kind: 'recheck_failed'; readonly code: string }
+  | {
+      readonly kind: 'refused'
+      readonly reason: CapabilityDenialReason
+      readonly scheduled?: ScheduledChange
+    }
+  | {
+      readonly kind: 'unavailable'
+      readonly cause: LoadFailure
+      readonly code: string
+    }
   | {
       readonly kind: 'plan_unavailable'
       readonly reason: PlanUnavailableReason
@@ -136,7 +153,11 @@ export type OperationOutcome = Exclude<
 >
 
 export type CheckoutPageEvent =
-  | { readonly type: 'refused'; readonly reason: CapabilityDenialReason }
+  | {
+      readonly type: 'refused'
+      readonly reason: CapabilityDenialReason
+      readonly scheduled?: ScheduledChange
+    }
   | { readonly type: 'unavailable'; readonly code: string }
   /** The lifecycle could not say what the workspace is waiting on. */
   | { readonly type: 'recheckFailed'; readonly code: string }
@@ -276,21 +297,19 @@ type StopEvent = Extract<
 function stoppedOn(event: StopEvent): CheckoutPage {
   switch (event.type) {
     case 'refused':
-      return { kind: 'refused', reason: event.reason }
+      return {
+        kind: 'refused',
+        reason: event.reason,
+        ...(event.scheduled === undefined ? {} : { scheduled: event.scheduled })
+      }
     case 'unavailable':
-      return { kind: 'unavailable', code: event.code }
+      return { kind: 'unavailable', cause: 'quote', code: event.code }
     case 'recheckFailed':
-      return { kind: 'recheck_failed', code: event.code }
+      return { kind: 'unavailable', cause: 'recheck', code: event.code }
     case 'planUnavailable':
       return { kind: 'plan_unavailable', reason: event.reason }
   }
 }
-
-/** Try again re-reads a checkout whose load or re-read failed. */
-const RETRYABLE: ReadonlySet<CheckoutPage['kind']> = new Set([
-  'unavailable',
-  'recheck_failed'
-])
 
 /** An event that means nothing in the current state returns it untouched. */
 export function reduceCheckoutPage(
@@ -306,9 +325,13 @@ export function reduceCheckoutPage(
     case 'planUnavailable':
       return page.kind === 'resolving' ? stoppedOn(event) : page
     case 'requoteFailed':
-      return leavingCapture(page, { kind: 'unavailable', code: event.code })
+      return leavingCapture(page, {
+        kind: 'unavailable',
+        cause: 'quote',
+        code: event.code
+      })
     case 'retried':
-      return RETRYABLE.has(page.kind) ? RESOLVING : page
+      return page.kind === 'unavailable' ? RESOLVING : page
     case 'quoted':
       return page.kind === 'resolving' ? arrived(page, event) : page
     case 'reconciled':

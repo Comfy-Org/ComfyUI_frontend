@@ -22,10 +22,13 @@ describe('workshopAppHref', () => {
 })
 
 describe('workshopAppRepo', () => {
-  it.for(['studio', 'reshoot'] as const)(
-    'has no repository for $0 until one is published',
-    (app) => {
-      expect(workshopAppRepo(app)).toBeUndefined()
-    }
-  )
+  it.for([
+    {
+      app: 'studio',
+      repo: 'https://github.com/Comfy-Org/comfy-cinematic-studio'
+    },
+    { app: 'reshoot', repo: 'https://github.com/Comfy-Org/comfy-reshoot' }
+  ] as const)('links $app to its published repository', ({ app, repo }) => {
+    expect(workshopAppRepo(app)).toBe(repo)
+  })
 })
