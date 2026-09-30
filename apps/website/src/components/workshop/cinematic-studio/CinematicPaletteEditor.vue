@@ -14,7 +14,7 @@ const main = defineModel<number | undefined>('main')
 
 <template>
   <CinematicColors v-model="colors" v-model:main="main" :locale>
-    <Button variant="outline" class="w-full" @click="emit('done')">
+    <Button variant="ghost" class="w-full rounded-full" @click="emit('done')">
       {{ tc('cinematic.grade.done', locale) }}
     </Button>
   </CinematicColors>
