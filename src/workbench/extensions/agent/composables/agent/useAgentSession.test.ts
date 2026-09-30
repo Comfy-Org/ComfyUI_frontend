@@ -1041,12 +1041,12 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     })
     const { source, emit } = fakeEvents()
+    conversation.setThreadId('th-1')
     const session = useAgentSession({ rest, events: source })
     session.start()
-    await session.sendMessage('go')
-    void session.loadThread('th-1')
-    emitDeltaBurst(emit, 300)
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
     emit(done('msg-1'))
+    emitDeltaBurst(emit, 300)
 
     assert(deliverHistory !== undefined)
     deliverHistory([
@@ -1060,6 +1060,48 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await vi.waitFor(() => expect(conversation.activeTurnId).toBeNull())
     expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('(b4s) retains the newest delta window when a hung hydrate queue overflows', async () => {
+    const conversation = useAgentConversationStore()
+    let deliverHistory: ((history: AgentMessages) => void) | undefined
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliverHistory = resolve
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    conversation.setThreadId('th-1')
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+    emitDeltaBurst(emit, 300)
+
+    assert(deliverHistory !== undefined)
+    deliverHistory([
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true))
+    expect(conversation.messages[0]).toMatchObject({
+      parts: [
+        {
+          type: 'text',
+          text: Array.from(
+            { length: 256 },
+            (_, index) => `chunk-${index + 44} `
+          ).join('')
+        }
+      ]
+    })
   })
 
   it('(b4i) replays a buffered done after history hydration rejects', async () => {
