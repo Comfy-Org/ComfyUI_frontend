@@ -1289,6 +1289,22 @@ describe('useAgentConversationStore', () => {
       )
     })
 
+    it('reports a late ask after REST settlement as a settled turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.settleTurn({ threadId: 'th', messageId: T1 }, [])
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
     it('keeps an aborted identity after an unrelated turn starts', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
