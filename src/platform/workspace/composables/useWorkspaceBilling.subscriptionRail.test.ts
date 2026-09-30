@@ -269,11 +269,23 @@ describe('cancel telemetry on the billing SDK rail', () => {
     return vi.mocked(trackBillingEvent).mock.calls.map(([event]) => event.stage)
   }
 
-  it('reports a rail cancel that settles as one started and one succeeded', async () => {
+  it('reports one started and leaves the terminal to the lifecycle when a rail cancel settles an operation', async () => {
     flagState.billingSdkSubscriptionEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
       SETTLED
     )
+
+    await setupBilling().cancelSubscription()
+
+    expect(stages()).toEqual(['started'])
+  })
+
+  it('reports one started and one succeeded when the server says the cancel already held', async () => {
+    flagState.billingSdkSubscriptionEnabled = true
+    vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue({
+      status: 'ok',
+      value: { phase: 'succeeded' }
+    })
 
     await setupBilling().cancelSubscription()
 
@@ -389,7 +401,8 @@ describe('subscribe on the billing SDK rail', () => {
     expect(response).toEqual({
       billing_op_id: 'op-1',
       status: 'subscribed',
-      requiredPayment: false
+      requiredPayment: false,
+      operationObserved: true
     })
     expect(workspaceApi.subscribe).not.toHaveBeenCalled()
   })

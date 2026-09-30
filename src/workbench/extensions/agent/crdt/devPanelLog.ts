@@ -288,6 +288,7 @@ export function sanitizeDevEventDetail(detail: unknown): unknown {
     return sanitizeDetail(detail)
   } catch {
     reportError(new Error('Failed to sanitize CRDT dev event detail'), {
+      surface: 'agent',
       errorType: 'crdt_dev_event_sanitization_failed'
     })
     return REDACTED

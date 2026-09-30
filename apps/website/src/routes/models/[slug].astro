@@ -1,35 +1,82 @@
 ---
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import ModelPage from '../../components/workshop/ModelPage.vue'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import {
+  HUB_MODELS_PATH,
+  hubModelSlugs,
+  hubWorkflowName
+} from '../../config/hub-models'
+import { isIndexableModelPage } from '../../config/indexing'
 import { workshopPagePaths } from '../../config/workshop-page-content'
-import { t } from '../../i18n/translations'
-import { prepareModelPage } from './model-page'
+import { modelDeveloper } from '../../config/model-vendors'
+import { modelMetaDescription } from '../../lib/workshop/model-meta-description'
+import { modelTitle } from '../../lib/workshop/model-title'
+import { pageContext } from '../../utils/jsonLd'
+import { modelPageJsonLd } from '../../utils/modelJsonLd'
+import { modelOgImage, prepareModelPage } from './model-page'
 
-export const getStaticPaths: GetStaticPaths = () =>
-  workshopPagePaths.map((slug) => ({ params: { slug } }))
+interface Props {
+  id: string
+}
 
-const page = await prepareModelPage(Astro.params.slug)
-// Static output uses an immediate meta refresh, not an HTTP 301 response.
-// Pre-launch aliases stay noindex; hosting-level permanent redirects are a
-// separate deployment decision, not a reason to switch this site to SSR.
-if (page.kind === 'redirect') return Astro.redirect(page.href, 301)
+export const getStaticPaths: GetStaticPaths = ({ routePattern }) =>
+  routePattern.startsWith(HUB_MODELS_PATH)
+    ? Array.from(hubModelSlugs, ([id, slug]) => ({
+        params: { slug },
+        props: { id }
+      }))
+    : workshopPagePaths.map((slug) => ({
+        params: { slug: hubWorkflowName(slug) },
+        props: { id: slug }
+      }))
+
+const page = await prepareModelPage(Astro.props.id)
+if (page.kind === 'redirect')
+  throw new Error(`${Astro.props.id} is an alias, not a page`)
 const { model } = page
+const { siteUrl, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const jsonLd = modelPageJsonLd({
+  model,
+  useCaseLabel: page.useCaseLabel,
+  url,
+  siteUrl,
+  developer: modelDeveloper(model.provider)
+})
+const ogImage = modelOgImage(model)
 ---
 
 <BaseLayout
-  title={`${model.name} · ${t('workshop.title')} - Comfy`}
-  description={t('workshop.model.meta.description', 'en', {
-    name: model.name
-  })}
-  ogImage={model.thumbnailUrl}
-  noindex
+  title={modelTitle(model)}
+  description={modelMetaDescription(page)}
+  ogImage={ogImage}
+  ogImageAlt={ogImage && `${model.name} example output`}
+  canonicalPath={model.href}
+  noindex={!isIndexableModelPage(Astro.url.pathname)}
+  pageType={jsonLd.pageType}
+  breadcrumbs={jsonLd.breadcrumbs}
+  mainEntityId={jsonLd.mainEntityId}
+  extraJsonLd={jsonLd.extraJsonLd}
 >
-  <ModelsPage slug={model.slug} workflowId={model.workflowId} client:load>
-    <ModelsShowcase slot="fallback" />
-  </ModelsPage>
-  <noscript>
-    <ModelsShowcase />
-  </noscript>
+  {model.routerId === undefined ? (
+    <>
+      <ModelsPage slug={model.slug} workflowId={model.workflowId} client:load>
+        <ModelsShowcase slot="fallback" />
+      </ModelsPage>
+      <noscript>
+        <ModelsShowcase />
+      </noscript>
+    </>
+  ) : (
+    <ModelPage
+      page={{ ...page, model: { ...model, form: undefined } }}
+      client:load
+    />
+  )}
 </BaseLayout>

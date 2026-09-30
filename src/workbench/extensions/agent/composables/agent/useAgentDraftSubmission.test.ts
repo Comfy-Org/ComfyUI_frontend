@@ -385,21 +385,21 @@ describe('Agent draft submission', () => {
   it('carries the starter prompt a suggestion came from into the send', async () => {
     const { composer, submit, send } = setup()
     send.mockResolvedValue(true)
-    composer.markSuggestedPrompt({ id: 'list_workflows', clickId: 'click-1' })
+    composer.markSuggestedPrompt({ id: 'slot_2', clickId: 'click-1' })
 
     await submit()
 
     expect(send.mock.calls[0][4]).toEqual({
       clientMessageId: expect.any(String),
       inputMethod: 'suggestion',
-      starterPrompt: { id: 'list_workflows', clickId: 'click-1' }
+      starterPrompt: { id: 'slot_2', clickId: 'click-1' }
     })
   })
 
   it('does not carry it into the next send', async () => {
     const { composer, submit, send } = setup()
     send.mockResolvedValue(true)
-    composer.markSuggestedPrompt({ id: 'list_workflows', clickId: 'click-1' })
+    composer.markSuggestedPrompt({ id: 'slot_2', clickId: 'click-1' })
 
     await submit()
     composer.setText('and again')
@@ -415,7 +415,7 @@ describe('Agent draft submission', () => {
   it('reports retries as separate attempts joined to the same starter click', async () => {
     const { composer, submit, send } = setup()
     send.mockResolvedValue(false)
-    composer.markSuggestedPrompt({ id: 'find_workflow', clickId: 'click-2' })
+    composer.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-2' })
 
     await submit()
     await submit()
@@ -424,12 +424,12 @@ describe('Agent draft submission', () => {
       {
         clientMessageId: expect.any(String),
         inputMethod: 'suggestion',
-        starterPrompt: { id: 'find_workflow', clickId: 'click-2' }
+        starterPrompt: { id: 'slot_3', clickId: 'click-2' }
       },
       {
         clientMessageId: expect.any(String),
         inputMethod: 'suggestion',
-        starterPrompt: { id: 'find_workflow', clickId: 'click-2' }
+        starterPrompt: { id: 'slot_3', clickId: 'click-2' }
       }
     ])
     expect(send.mock.calls[1][4].clientMessageId).not.toBe(

@@ -17,6 +17,7 @@ import type {
   WorkflowReference
 } from '../../../types/workflowReference'
 import type { ReplyAsset } from '../../../utils/replyAssets'
+import { isReplyAssetKind } from '../../../utils/replyAssets'
 import { agentMessageText } from '../../../utils/agentMessageText'
 import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
@@ -121,28 +122,30 @@ const splitAttachments = computed(() => {
   const grid: ReplyAsset[] = []
   const plain: UserAttachment[] = []
   for (const item of attachments) {
-    const kind = getMediaTypeFromFilename(item.name)
-    const url =
-      item.previewUrl ??
-      (item.ref
-        ? api.apiURL(
-            `/view?filename=${encodeURIComponent(item.ref)}&type=input`
-          )
-        : undefined)
-    if (
-      url &&
-      (kind === 'image' ||
-        kind === 'video' ||
-        kind === 'audio' ||
-        kind === '3D')
-    ) {
-      grid.push({ url, filename: item.name, kind })
-    } else {
-      plain.push(item)
-    }
+    const asset = gridAsset(item)
+    if (asset) grid.push(asset)
+    else plain.push(item)
   }
   return { grid, plain }
 })
+
+function gridAsset(item: UserAttachment): ReplyAsset | undefined {
+  const kind = item.kind ?? getMediaTypeFromFilename(item.name)
+  if (!isReplyAssetKind(kind)) return undefined
+  const url =
+    item.previewUrl ??
+    (item.ref
+      ? api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
+      : undefined)
+  if (!url) return undefined
+  const filename = item.ref ?? item.name
+  return {
+    url,
+    filename,
+    kind,
+    label: filename === item.name ? undefined : item.name
+  }
+}
 </script>
 
 <template>

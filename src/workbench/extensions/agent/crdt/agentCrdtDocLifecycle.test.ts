@@ -17,6 +17,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 const WORKFLOW_ID = 'wf-1'
 const GAVE_UP_REPORT = {
+  surface: 'agent',
   errorType: 'failure_confirming_agent_doc_subscribe',
   level: 'warning',
   tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }

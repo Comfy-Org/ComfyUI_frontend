@@ -1132,6 +1132,9 @@ importers:
       cva:
         specifier: 'catalog:'
         version: 1.0.0-beta.4(typescript@6.0.3)
+      es-toolkit:
+        specifier: ^1.39.9
+        version: 1.49.0
       firebase:
         specifier: 'catalog:'
         version: 11.10.0

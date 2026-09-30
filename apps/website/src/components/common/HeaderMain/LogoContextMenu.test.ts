@@ -46,8 +46,8 @@ describe('LogoContextMenu', () => {
   )
 
   it.for([
-    { locale: 'en', href: '/brand', label: 'Brand assets' },
-    { locale: 'zh-CN', href: '/zh-CN/brand', label: '品牌素材' }
+    { locale: 'en', href: '/brand/', label: 'Brand assets' },
+    { locale: 'zh-CN', href: '/zh-CN/brand/', label: '品牌素材' }
   ] as const)(
     'links "$label" to the $locale brand page',
     async ({ locale, href, label }) => {

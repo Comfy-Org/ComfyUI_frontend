@@ -2,19 +2,16 @@
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 
 const { app } = defineProps<{ app: CatalogueApp }>()
-
-const pillClass =
-  'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content'
 </script>
 
 <template>
   <a
     :href="app.href"
-    class="group flex cursor-pointer flex-col gap-4 overflow-hidden rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+    class="group flex cursor-pointer flex-col gap-4 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     data-testid="workshop-app-card"
   >
     <div
-      class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface"
+      class="relative aspect-4/3 overflow-hidden rounded-2xl bg-hub-surface"
       data-testid="app-card-artwork"
     >
       <img
@@ -48,11 +45,12 @@ const pillClass =
       >
         {{ app.name }}
       </h3>
-      <div class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden">
-        <span :class="pillClass" data-testid="app-card-task">
-          {{ app.task }}
-        </span>
-      </div>
+      <p
+        class="line-clamp-2 text-xs/4 text-content-secondary"
+        data-testid="app-card-task"
+      >
+        {{ app.task }}
+      </p>
     </div>
   </a>
 </template>

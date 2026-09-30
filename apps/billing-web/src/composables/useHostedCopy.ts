@@ -2,6 +2,8 @@ import { useI18n } from 'vue-i18n'
 
 import type { BillingPlansData } from '@comfyorg/account-core/billing'
 
+import { unbrokenDate } from '@/checkout/longDate'
+
 type CatalogPlan = Pick<BillingPlansData['plans'][number], 'tier' | 'duration'>
 
 export interface HostedCopy {
@@ -54,7 +56,7 @@ export function useHostedCopy(): HostedCopy {
         duration: coded('duration', plan.duration)
       }),
     refusal,
-    date: (isoDate) => d(new Date(isoDate), 'medium'),
+    date: (isoDate) => unbrokenDate(d(new Date(isoDate), 'medium')),
     money: (cents) => n(Number(cents) / 100, 'currency')
   }
 }

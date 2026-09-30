@@ -16,14 +16,24 @@ import type {
 import {
   DEFAULT_CAMERA,
   RESHOOT_EXAMPLE,
-  RESHOOT_FRAMES,
+  clipFits,
   withKey
 } from '../lib/workshop/cinematic-studio/reshoot'
+import { clipSecondsOf } from '../lib/workshop/cinematic-studio/reshoot-clip'
 import { rc } from '../lib/workshop/cinematic-studio/reshoot-copy'
+import type {
+  Pose,
+  Vec3
+} from '../lib/workshop/cinematic-studio/reshoot-engine/camera'
 import {
   estimatePivot,
   focalPx
 } from '../lib/workshop/cinematic-studio/reshoot-engine/camera'
+import {
+  cameraAt,
+  keyIndexAt,
+  roundCamera
+} from '../lib/workshop/cinematic-studio/reshoot-path'
 import type { Geometry } from '../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import { readGeometry } from '../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import type { ReshootRun } from '../lib/workshop/cinematic-studio/reshoot-engine/notes'
@@ -58,6 +68,10 @@ const QUOTE_FINAL = new Set(['not_found', 'unauthorized'])
 
 /** Read scenes kept for reuse: the 480p and 768p reads of two clips. */
 const MAX_READ_SCENES = 4
+
+/** The node's frame rate, and the longest clip it takes. */
+const FPS = 24
+const MAX_SECONDS = 15
 
 export type DepthState = 'none' | 'analyzing' | 'ready' | 'failed'
 
@@ -133,7 +147,8 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const keys = ref<CameraKey[]>([])
   const motion = ref<ReshootMotion>('smooth')
   const prompt = ref('')
-  const seed = ref(42)
+  /** A fixed seed, or none: then every take draws its own. */
+  const seed = ref<number>()
   const takes = ref<ReshootTake[]>([EXAMPLE_TAKE])
   const selected = ref<string>('example')
   const quote = shallowRef<ReshootQuote>()
@@ -152,9 +167,78 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const current = computed(() =>
     takes.value.find((take) => take.id === selected.value)
   )
-  const frames = computed(() =>
-    scene.value.phase === 'ready' ? scene.value.geometry.frames : RESHOOT_FRAMES
+  const geometry = computed(() =>
+    scene.value.phase === 'ready' ? scene.value.geometry : undefined
   )
+
+  // --- the clip: its length decides the frames and whether it fits at all
+  const clipSeconds = ref<number>()
+  watch(
+    clip,
+    async (url) => {
+      clipSeconds.value = undefined
+      const seconds = await clipSecondsOf(url)
+      if (url === clip.value) clipSeconds.value = seconds
+    },
+    { immediate: true }
+  )
+  /**
+   * The read scene's frames once there is one; before that, as many as H3's
+   * 17k + 5 grid fits in the clip at 24 fps, so the timeline has its length.
+   */
+  const frames = computed(() => {
+    if (geometry.value) return geometry.value.frames
+    const s = clipSeconds.value
+    if (s === undefined || !Number.isFinite(s)) return undefined
+    const available = Math.floor(Math.min(s, MAX_SECONDS) * FPS)
+    return available - ((available - 5) % 17)
+  })
+  // Only a chosen clip can be turned away, and only for a length the browser
+  // could read, as on Change: an unreadable one (NaN) is left for the node to
+  // judge, and the bundled example is known to fit.
+  const clipError = computed(() => {
+    const s = clipSeconds.value
+    return upload.value && s !== undefined && Number.isFinite(s) && !clipFits(s)
+      ? rc('reshoot.clipLength', locale, { seconds: s.toFixed(1) })
+      : undefined
+  })
+
+  // The node takes its pivot from frame 0, and so does the page; the pivot
+  // found here is the one the generation is told to orbit.
+  const pivot = computed<Vec3>(() => {
+    const read = geometry.value
+    if (!read) return [0, 0, 1.05]
+    return estimatePivot(
+      read.depth[0],
+      read.width,
+      read.height,
+      focalPx(read.width, camera.fov)
+    )
+  })
+
+  // --- the camera at the playhead. With no keys `camera` is the one camera;
+  // with keys the playhead flies the path, and a pose tried between keys is
+  // shown until Key writes it (moving the playhead lets it go).
+  const audition = shallowRef<ReshootCamera>()
+  watch(frame, () => (audition.value = undefined))
+  const path = computed<ReshootCamera>(() =>
+    audition.value && keys.value.length
+      ? { ...audition.value, fov: camera.fov }
+      : cameraAt(keys.value, frame.value, motion.value, camera)
+  )
+  /** What the globe, sliders and readouts show. */
+  const view = computed(() => roundCamera(path.value))
+  const onKey = computed(() => keyIndexAt(keys.value, frame.value) >= 0)
+  /** The pose the preview draws: the camera at the playhead, around the pivot. */
+  const pose = computed<Pose>(() => ({
+    az: path.value.azimuth,
+    el: path.value.elevation,
+    dist: path.value.distance,
+    vs: path.value.shift,
+    px: pivot.value[0],
+    py: pivot.value[1],
+    pz: pivot.value[2]
+  }))
 
   const quoteRefusesCredit = computed(
     () =>
@@ -175,6 +259,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     () =>
       gate.value === 'ready' &&
       depth.value === 'ready' &&
+      !clipError.value &&
       !rendering.value &&
       quoteSettled.value &&
       quote.value?.next_run !== 'blocked'
@@ -329,17 +414,22 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     const controller = new AbortController()
     analysis = controller
     selected.value = 'aim'
-    if (!transport || unavailable.value || !session.value) {
+    // A clip too long for the node is never read: the page says why instead.
+    if (!transport || unavailable.value || !session.value || clipError.value) {
       scene.value = { phase: 'none' }
       return
     }
     const { signal } = controller
     scene.value = { phase: 'analyzing' }
     try {
-      const { clip, geometry } = await clipScene(transport, signal)
+      const read = await clipScene(transport, signal)
       if (signal.aborted) return
-      scene.value = { phase: 'ready', clip, geometry }
-      frame.value = Math.min(frame.value, geometry.frames - 1)
+      scene.value = { phase: 'ready', ...read }
+      // A re-read for a new format keeps the aim and the keys: the clip's
+      // length, and so its frames, did not change.
+      const last = read.geometry.frames - 1
+      keys.value = keys.value.filter((key) => key.frame <= last)
+      frame.value = Math.min(frame.value, last)
       step.value = 2
       if (!quoteSettled.value) void refreshQuote()
     } catch (error) {
@@ -348,6 +438,11 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     }
   }
 
+  // The clip's length arrives after the read may have started: a clip that
+  // turns out too long retires that read rather than letting it finish.
+  watch(clipError, (tooLong) => {
+    if (tooLong && depth.value === 'analyzing') void analyze()
+  })
   watch([aspect, size], () => {
     if (picked.value) void analyze()
   })
@@ -390,17 +485,27 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     return url
   }
 
+  /**
+   * The camera the take is shot with: one key holds there, two or more move
+   * from the first. Aiming on a key edits the key, not `camera`, so a keyed
+   * shot must start from the keys. The lens is one for the whole clip.
+   */
+  function stillCamera(): ReshootCamera {
+    return { ...(keys.value[0]?.camera ?? camera), fov: camera.fov }
+  }
+
   async function generate() {
     const read = scene.value
     if (!canGenerate.value || !transport || read.phase !== 'ready') return
     const n = takes.value.length
     const id = `take-${n}`
+    const still = stillCamera()
     takes.value = [
       ...takes.value,
       {
         id,
         n,
-        camera: { ...camera },
+        camera: still,
         keys: keys.value.length,
         status: 'rendering',
         startedAt: Date.now()
@@ -417,18 +522,13 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
         generateWorkflow({
           clip: read.clip,
           seconds: generateSeconds(geometry.frames, geometry.fps),
-          camera,
+          camera: still,
           keepAim: keepAim.value,
-          pivot: estimatePivot(
-            geometry.depth[0],
-            geometry.width,
-            geometry.height,
-            focalPx(geometry.width, camera.fov)
-          ),
+          pivot: pivot.value,
           keys: keys.value,
           motion: motion.value,
           prompt: prompt.value,
-          seed: seed.value
+          seed: seed.value ?? Math.floor(Math.random() * 2 ** 32)
         }),
         (phase) => updateTake(id, { phase }),
         signal
@@ -464,16 +564,33 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     )
   }
 
+  /**
+   * Every way of aiming (globe, drag, wheel, sliders) lands here. On a key it
+   * edits that key; between keys it tries a pose that Key writes; with no
+   * keys it moves the one camera. The lens is one for the whole clip.
+   */
   function aim(patch: Partial<ReshootCamera>) {
-    Object.assign(camera, patch)
     selected.value = 'aim'
+    const { fov, ...move } = patch
+    if (fov !== undefined) camera.fov = fov
+    if (Object.keys(move).length === 0) return
+    const at = keyIndexAt(keys.value, frame.value)
+    if (at >= 0)
+      keys.value = keys.value.map((key, i) =>
+        i === at ? { ...key, camera: { ...key.camera, ...move } } : key
+      )
+    else if (keys.value.length) audition.value = { ...path.value, ...move }
+    else Object.assign(camera, move)
   }
 
-  function addKey() {
-    keys.value = withKey(keys.value, {
-      frame: frame.value,
-      camera: { ...camera }
-    })
+  /** Key the pose at the playhead, or take away the key already there. */
+  function toggleKey() {
+    const at = keyIndexAt(keys.value, frame.value)
+    keys.value =
+      at >= 0
+        ? keys.value.filter((_, i) => i !== at)
+        : withKey(keys.value, { frame: frame.value, camera: view.value })
+    audition.value = undefined
   }
 
   function removeKey(at: number) {
@@ -505,8 +622,13 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     stage,
     notice,
     frames,
+    clipError,
+    geometry,
     step,
     camera,
+    view,
+    pose,
+    onKey,
     keepAim,
     frame,
     keys,
@@ -522,10 +644,11 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     priceNote,
     session,
     pick,
+    analyze,
     generate,
     cancel,
     aim,
-    addKey,
+    toggleKey,
     removeKey,
     reuse
   }

@@ -18,6 +18,7 @@
     "apps/website/src/content/**/*.mdx",
     "apps/website/src/assets/world-countries.json",
     "apps/website/MODELS_TEST_RESULTS.md",
+    "apps/website/MODEL_URL_MAP.md",
     "apps/website/testing/models-test-results.json",
     "apps/website/src/content/workshop-display.json",
     "apps/website/src/content/workshop-models.json",

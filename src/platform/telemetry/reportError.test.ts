@@ -59,6 +59,7 @@ describe('reportError', () => {
     const error = new Error('boom')
 
     reportError(error, {
+      surface: 'platform',
       errorType: 'workspace_auth_gate_initialization_failure'
     })
 
@@ -66,7 +67,8 @@ describe('reportError', () => {
       error,
       expect.objectContaining({
         tags: expect.objectContaining({
-          error_type: 'workspace_auth_gate_initialization_failure'
+          error_type: 'workspace_auth_gate_initialization_failure',
+          surface: 'platform'
         })
       })
     )
@@ -76,7 +78,8 @@ describe('reportError', () => {
         message: error.message
       }),
       expect.objectContaining({
-        error_type: 'workspace_auth_gate_initialization_failure'
+        error_type: 'workspace_auth_gate_initialization_failure',
+        surface: 'platform'
       })
     )
   })
@@ -94,7 +97,10 @@ describe('reportError', () => {
       )
     )
 
-    reportError(error, { errorType: 'resource_load_error' })
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'resource_load_error'
+    })
 
     const [datadogError] = addError.mock.calls[0]
     expect(datadogError).toBeInstanceOf(Error)
@@ -115,7 +121,10 @@ describe('reportError', () => {
     sentryLive(false)
     const { reportError } = await loadReportError()
 
-    reportError(new Error('boom'), { errorType: 'bootstrap_auth_wait_timeout' })
+    reportError(new Error('boom'), {
+      surface: 'platform',
+      errorType: 'bootstrap_auth_wait_timeout'
+    })
 
     expect(captureException).not.toHaveBeenCalled()
     expect(addError).toHaveBeenCalledOnce()
@@ -136,6 +145,7 @@ describe('reportError', () => {
     Object.assign(tags, { unsafe: { nested: true } })
 
     reportError(error, {
+      surface: 'platform',
       errorType: 'workspace_auth_gate_initialization_failure',
       tags,
       context: { workflow: '/Users/private/workflow.json' },
@@ -147,7 +157,8 @@ describe('reportError', () => {
       {
         error_type: 'workspace_auth_gate_initialization_failure',
         feature_area: 'workspace_auth',
-        level: 'error'
+        level: 'error',
+        surface: 'platform'
       }
     )
   })
@@ -157,7 +168,10 @@ describe('reportError', () => {
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    reportError(new Error('early'), {
+      surface: 'platform',
+      errorType: 'resource_load_error'
+    })
     expect(captureDesktopException).not.toHaveBeenCalled()
 
     installDesktopBridge()
@@ -173,7 +187,10 @@ describe('reportError', () => {
     installDesktopBridge()
     const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    reportError(new Error('early'), {
+      surface: 'platform',
+      errorType: 'resource_load_error'
+    })
     expect(captureDesktopException).toHaveBeenCalledOnce()
 
     datadogLive(true)
@@ -188,7 +205,10 @@ describe('reportError', () => {
     window.__comfyDesktop2 = { Telemetry: { capture: vi.fn() } }
     const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    reportError(new Error('early'), {
+      surface: 'platform',
+      errorType: 'resource_load_error'
+    })
     datadogLive(true)
     flushErrorReports()
 
@@ -202,7 +222,10 @@ describe('reportError', () => {
     installDesktopBridge()
     const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('disabled'), { errorType: 'resource_load_error' })
+    reportError(new Error('disabled'), {
+      surface: 'platform',
+      errorType: 'resource_load_error'
+    })
     expect(captureDesktopException).not.toHaveBeenCalled()
 
     hostTelemetryEnabled.mockReturnValue(true)
@@ -217,7 +240,10 @@ describe('reportError', () => {
     const { reportError, flushErrorReports } = await loadReportError()
 
     expect(() =>
-      reportError(new Error('early'), { errorType: 'resource_load_error' })
+      reportError(new Error('early'), {
+        surface: 'platform',
+        errorType: 'resource_load_error'
+      })
     ).not.toThrow()
 
     datadogLive(true)
@@ -230,7 +256,10 @@ describe('reportError', () => {
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    reportError(new Error('early'), {
+      surface: 'platform',
+      errorType: 'resource_load_error'
+    })
 
     Object.defineProperty(window, '__comfyDesktop2', {
       value: { Telemetry: 'invalid' },
@@ -249,7 +278,10 @@ describe('reportError', () => {
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    reportError(new Error('early'), {
+      surface: 'platform',
+      errorType: 'resource_load_error'
+    })
     hostTelemetryEnabled.mockImplementation(() => {
       throw new Error('storage is blocked')
     })
@@ -268,7 +300,10 @@ describe('reportError', () => {
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    reportError(new Error('early'), {
+      surface: 'platform',
+      errorType: 'resource_load_error'
+    })
     expect(addError).not.toHaveBeenCalled()
 
     datadogLive(true)
@@ -288,7 +323,10 @@ describe('reportError', () => {
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    reportError(new Error('early'), {
+      surface: 'platform',
+      errorType: 'resource_load_error'
+    })
 
     datadogLive(true)
     flushErrorReports()
@@ -303,7 +341,10 @@ describe('reportError', () => {
     const { reportError, flushErrorReports } = await loadReportError()
     const error = new Error('early assertion')
 
-    reportError(error, { errorType: 'invariant_assert' })
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'invariant_assert'
+    })
     flushErrorReports()
 
     expect(captureException).toHaveBeenCalledOnce()
@@ -323,7 +364,10 @@ describe('reportError', () => {
     const { reportError, flushErrorReports } = await loadReportError()
 
     for (let i = 0; i < 200; i++) {
-      reportError(new Error(`e${i}`), { errorType: 'resource_load_error' })
+      reportError(new Error(`e${i}`), {
+        surface: 'platform',
+        errorType: 'resource_load_error'
+      })
     }
 
     datadogLive(true)
@@ -335,7 +379,10 @@ describe('reportError', () => {
   it('normalizes a non-Error cause', async () => {
     const { reportError } = await loadReportError()
 
-    reportError('just a string', { errorType: 'bootstrap_auth_wait_timeout' })
+    reportError('just a string', {
+      surface: 'platform',
+      errorType: 'bootstrap_auth_wait_timeout'
+    })
 
     expect(addError).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -350,6 +397,7 @@ describe('reportError', () => {
     const { reportError } = await loadReportError()
 
     reportError(new Error('boom'), {
+      surface: 'platform',
       errorType: 'http_error',
       tags: { api_endpoint: '/settings/{key}', http_status: undefined }
     })
@@ -363,6 +411,7 @@ describe('reportError', () => {
     const { reportError } = await loadReportError()
 
     reportError(new Error('boom'), {
+      surface: 'platform',
       errorType: 'http_error',
       context: {
         requestId: 'abc123',
@@ -395,19 +444,27 @@ describe('reportError', () => {
     })
   })
 
-  it('keeps a caller tag out of the reserved level field', async () => {
+  it('keeps caller tags out of reserved fields', async () => {
     sentryLive(false)
     datadogLive(false)
     installDesktopBridge()
     const { reportError } = await loadReportError()
 
     reportError(new Error('boom'), {
+      surface: 'platform',
       errorType: 'http_error',
-      tags: { level: 'warning', error_type: 'spoofed' }
+      tags: {
+        level: 'warning',
+        error_type: 'spoofed',
+        surface: 'spoofed'
+      }
     })
 
     const [, properties] = captureDesktopException.mock.calls[0]
-    expect(properties).toEqual({ error_type: 'http_error' })
+    expect(properties).toEqual({
+      error_type: 'http_error',
+      surface: 'platform'
+    })
   })
 
   it('does not throw out of flushErrorReports when a sink throws', async () => {
@@ -415,7 +472,10 @@ describe('reportError', () => {
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    reportError(new Error('early'), {
+      surface: 'platform',
+      errorType: 'resource_load_error'
+    })
 
     datadogLive(true)
     addError.mockImplementation(() => {
@@ -431,7 +491,10 @@ describe('reportError', () => {
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('cold boot'), { errorType: 'invariant_assert' })
+    reportError(new Error('cold boot'), {
+      surface: 'platform',
+      errorType: 'invariant_assert'
+    })
 
     sentryLive(true)
     datadogLive(true)
@@ -452,7 +515,10 @@ describe('reportError', () => {
     })
     const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('boom'), { errorType: 'invariant_assert' })
+    reportError(new Error('boom'), {
+      surface: 'platform',
+      errorType: 'invariant_assert'
+    })
     flushErrorReports()
 
     expect(captureException).toHaveBeenCalledTimes(2)
@@ -464,7 +530,10 @@ describe('reportError', () => {
     const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
     const error = new Error('listener failed')
 
-    reportError(error, { errorType: 'canvas_layout_listener_failed' })
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'canvas_layout_listener_failed'
+    })
 
     expect(consoleError).toHaveBeenCalledExactlyOnceWith(
       `${REPORTED_ERROR_PREFIX}canvas_layout_listener_failed`,
@@ -478,6 +547,7 @@ describe('reportError', () => {
     const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
 
     reportError(new Error('cookie denied'), {
+      surface: 'platform',
       errorType: 'session_cookie_creation_failure',
       level: 'warning'
     })
@@ -494,6 +564,7 @@ describe('reportError', () => {
     const { reportError } = await loadReportError()
 
     reportError(new Error('[Assertion failed]: graph must exist'), {
+      surface: 'platform',
       errorType: 'invariant_assert',
       logToConsole: false
     })
@@ -508,7 +579,10 @@ describe('reportError', () => {
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    reportError(new Error('early'), {
+      surface: 'platform',
+      errorType: 'resource_load_error'
+    })
     datadogLive(true)
     flushErrorReports()
 
@@ -523,6 +597,7 @@ describe('reportError', () => {
 
     expect(() =>
       reportError(new Error('boom'), {
+        surface: 'platform',
         errorType: 'bootstrap_auth_wait_timeout'
       })
     ).not.toThrow()
@@ -534,10 +609,14 @@ describe('reportError', () => {
     const { reportError } = await loadReportError()
     const nested = new Error('Graph serialization state mismatch')
     captureException.mockImplementationOnce(() => {
-      reportError(nested, { errorType: 'graph_serialization_state_mismatch' })
+      reportError(nested, {
+        surface: 'platform',
+        errorType: 'graph_serialization_state_mismatch'
+      })
     })
 
     reportError(new Error('bad subgraph'), {
+      surface: 'platform',
       errorType: 'subgraph_load_failure'
     })
 
@@ -548,7 +627,10 @@ describe('reportError', () => {
       nested
     )
 
-    reportError(new Error('later'), { errorType: 'http_error' })
+    reportError(new Error('later'), {
+      surface: 'platform',
+      errorType: 'http_error'
+    })
 
     expect(captureException).toHaveBeenCalledTimes(2)
     expect(addError).toHaveBeenCalledTimes(2)
@@ -560,12 +642,14 @@ describe('reportError', () => {
     const { reportError } = await loadReportError()
     captureException.mockImplementationOnce(() => {
       reportError(new Error('nested'), {
+        surface: 'platform',
         errorType: 'invariant_assert',
         logToConsole: false
       })
     })
 
     reportError(new Error('outer'), {
+      surface: 'platform',
       errorType: 'subgraph_load_failure',
       logToConsole: false
     })
@@ -581,12 +665,14 @@ describe('reportError', () => {
     const nested = new Error('nested')
     captureException.mockImplementationOnce(() => {
       reportError(nested, {
+        surface: 'platform',
         errorType: 'session_cookie_creation_failure',
         level: 'warning'
       })
     })
 
     reportError(new Error('outer'), {
+      surface: 'platform',
       errorType: 'subgraph_load_failure',
       logToConsole: false
     })

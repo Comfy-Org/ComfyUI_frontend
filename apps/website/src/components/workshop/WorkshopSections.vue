@@ -89,7 +89,7 @@ function rememberModel(
   model: WorkshopModel,
   event: MouseEvent
 ) {
-  rememberShelfOnClick(shelf, model.href, event)
+  if (model.href) rememberShelfOnClick(shelf, model.href, event)
 }
 </script>
 

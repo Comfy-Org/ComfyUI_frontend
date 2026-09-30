@@ -1,4 +1,4 @@
-import { tryOnScopeDispose } from '@vueuse/core'
+import { tryOnScopeDispose, useIntervalFn } from '@vueuse/core'
 import { computed, shallowReadonly, shallowRef, watch } from 'vue'
 
 import {
@@ -15,7 +15,10 @@ import type {
   SubscribeInput,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
-import { matchesServerCode } from '@comfyorg/account-core/billing'
+import {
+  OPERATION_POLL_TIMING,
+  matchesServerCode
+} from '@comfyorg/account-core/billing'
 import type { BillingEntry } from '@comfyorg/billing-contract'
 import { buildReturnUrl } from '@comfyorg/billing-contract'
 
@@ -37,12 +40,14 @@ import {
 import { planCreditsSettingsUrl, pricingTableUrl } from '@/checkout/cloudLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
+import { checkoutIdentity, createPromoMemory } from '@/checkout/promoMemory'
 import type { PayVerdict } from '@/checkout/payVerdict'
 import { operationOutcomeOf, payVerdictOf } from '@/checkout/payVerdict'
 import {
   buildSubscribeRequest,
   checkoutReturnUrl
 } from '@/checkout/subscribeRequest'
+import { acceptsPromoCode } from '@/checkout/summaryLedger'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
 import { BILLING_WEB_ENV } from '@/config/env'
@@ -75,15 +80,12 @@ type PlannedEntry = BillingEntry & { plan: string }
 /** What the quote answers for a plan slug the catalog does not have. */
 const UNKNOWN_PLAN_SERVER_CODE = 'INVALID_PLAN'
 
-/** No Stripe key resolved, so a card form could never mount. */
-const PAYMENT_PROVIDER_UNAVAILABLE = 'PAYMENT_PROVIDER_UNAVAILABLE'
-
 /** A capability read that ends the page before any quote: unreadable, or refused. */
 function capabilityStop(
   allowed: BillingResult<CapabilitiesSnapshot>
 ): CheckoutPageEvent | undefined {
   if (allowed.status === 'error')
-    return { type: 'unavailable', code: allowed.code }
+    return { type: 'capabilitiesFailed', code: allowed.code }
   if (allowed.value.capabilities.can_subscribe_self_serve) return undefined
   return {
     type: 'refused',
@@ -91,17 +93,37 @@ function capabilityStop(
   }
 }
 
-/** A quote the page cannot capture: a team plan with no stop, or a card form with no key to mount on. */
+/**
+ * A quote the page cannot capture: one the server refuses, or a team plan
+ * named without its stop.
+ */
 function quotedStop(
   quoted: SubscriptionPreview,
-  arrival: PlannedEntry,
-  stripeKey: string | undefined
+  arrival: PlannedEntry
 ): CheckoutPageEvent | undefined {
+  if (!quoted.allowed) return { type: 'notAllowed' }
   if (quoted.new_plan.tier === 'TEAM' && arrival.teamCreditStopId === undefined)
     return { type: 'planUnavailable', reason: 'team_stop_missing' }
-  if (quoted.transition_type === 'new_subscription' && stripeKey === undefined)
-    return { type: 'unavailable', code: PAYMENT_PROVIDER_UNAVAILABLE }
   return undefined
+}
+
+/**
+ * How a quote collects the money: a new subscription on a card form, which
+ * arrives failed with no Stripe key to mount on, or a plan change on the
+ * method on file, which needs no key.
+ */
+function railOf(
+  quoted: SubscriptionPreview,
+  saved: SavedArrival,
+  stripeKey: string | undefined
+) {
+  if (quoted.transition_type !== 'new_subscription')
+    return { method: 'on_file' } as const
+  return {
+    method: 'collect',
+    saved,
+    ...(stripeKey === undefined ? { element: 'failed' as const } : {})
+  } as const
 }
 
 /**
@@ -173,7 +195,7 @@ export function useFullPageCheckout() {
 
   async function reconcileOnce(): Promise<void> {
     const mine = ++generation
-    const recovered = await lifecycle.recover()
+    const recovered = await lifecycle.recover({ includeSettled: true })
     if (mine !== generation) return
     dispatch(reconciledEvent(recovered))
   }
@@ -222,14 +244,29 @@ export function useFullPageCheckout() {
     promoEntryLive(page.value, checkout.submitting.value || moneyInFlight.value)
   )
 
+  const promoMemory = createPromoMemory(() =>
+    checkoutIdentity(entry.value, billedWorkspace())
+  )
+
   const promo = useCheckoutPromo({
     prefill: entry.value,
+    memory: promoMemory,
     live: () => promoLive.value,
-    requote: (promotionCode) => {
+    requote: async (promotionCode) => {
       const arrival = entry.value
-      return arrival?.plan === undefined
-        ? Promise.resolve({ status: 'error', code: 'REQUEST_FAILED' })
-        : quoteArrival({ ...arrival, plan: arrival.plan }, promotionCode)
+      if (arrival?.plan === undefined)
+        return { status: 'error', code: 'REQUEST_FAILED' }
+      const quoted = await quoteArrival(
+        { ...arrival, plan: arrival.plan },
+        promotionCode
+      )
+      if (quoted.status === 'ok')
+        dispatch({
+          type: 'requoted',
+          reactivation: consentAsked(asksReactivation(quoted.value)),
+          priceUpdated: false
+        })
+      return quoted
     }
   })
 
@@ -289,20 +326,17 @@ export function useFullPageCheckout() {
         matchesServerCode(quoted, UNKNOWN_PLAN_SERVER_CODE)
         ? { type: 'planUnavailable', reason: 'retired' }
         : { type: 'unavailable', code: quoted.code }
-    const unquotable = quotedStop(quoted.value, arrival, stripeKey)
+    const unquotable = quotedStop(quoted.value, arrival)
     if (unquotable !== undefined) return unquotable
     const facts = {
       reactivation: consentAsked(asksReactivation(quoted.value)),
       ...(expiredPromo === undefined ? {} : { expiredPromo })
     }
-    return quoted.value.transition_type === 'new_subscription'
-      ? {
-          type: 'quoted',
-          method: 'collect',
-          saved: arrivalOf(methods),
-          ...facts
-        }
-      : { type: 'quoted', method: 'on_file', ...facts }
+    return {
+      type: 'quoted',
+      ...railOf(quoted.value, arrivalOf(methods), stripeKey),
+      ...facts
+    }
   }
 
   /** Capture never renders before reconciliation has answered (rule 3). */
@@ -310,6 +344,7 @@ export function useFullPageCheckout() {
     const arrival = entry.value
     if (arrival?.plan === undefined) return
     const event = await captureEvent({ ...arrival, plan: arrival.plan })
+    if (preview.value && !acceptsPromoCode(preview.value)) promo.withdraw()
     await reconciliationSettled()
     dispatch(event)
   }
@@ -348,6 +383,9 @@ export function useFullPageCheckout() {
     void readCapture()
   }
 
+  /** Set while Stripe says where a challenge this page means to re-open runs. */
+  const reopening = shallowRef(false)
+
   /**
    * Money this page is waiting on reopens the bank's challenge on its own,
    * once per challenge, as long as Stripe runs it inside this page: a reload
@@ -358,10 +396,14 @@ export function useFullPageCheckout() {
   watch(
     () => challengeToReopen(page.value),
     async (clientSecret) => {
+      reopening.value = clientSecret !== undefined
       if (clientSecret === undefined) return
-      if (await challengePort.leavesPage(clientSecret)) return
+      const leavesPage = await challengePort
+        .leavesPage(clientSecret)
+        .catch(() => true)
       if (challengeToReopen(page.value) !== clientSecret) return
-      checkout.continueVerification()
+      if (!leavesPage) checkout.continueVerification()
+      reopening.value = false
     }
   )
 
@@ -415,6 +457,54 @@ export function useFullPageCheckout() {
     return kind === 'waiting' || kind === 'unconfirmed'
   }
 
+  /**
+   * "We couldn't confirm your payment" promises to update on its own, but the
+   * lifecycle stops polling an operation the server parked for a human. The
+   * page re-reads it on the parked cadence until it settles either way.
+   */
+  const recheckUnconfirmed = useIntervalFn(
+    () => void reconcile(),
+    OPERATION_POLL_TIMING.parkedMs,
+    { immediate: false }
+  )
+  watch(
+    () => page.value.kind === 'unconfirmed',
+    (unconfirmed) =>
+      unconfirmed ? recheckUnconfirmed.resume() : recheckUnconfirmed.pause()
+  )
+
+  /** A returned payment names the plan the server now lists, never the fresh quote. */
+  async function readSettledPlan() {
+    const [read, catalog] = await Promise.all([status.read(), plans.read()])
+    const slug = read.status === 'ok' ? read.value.status.plan_slug : undefined
+    const listed =
+      slug !== undefined && catalog.status === 'ok'
+        ? catalog.value.data.plans.find((plan) => plan.slug === slug)
+        : undefined
+    if (!listed) return
+    const { tier, duration, price_cents } = listed
+    dispatch({
+      type: 'settledPlanRead',
+      plan: { tier, duration, price_cents }
+    })
+  }
+
+  /** A finished checkout has no code left to re-apply. */
+  watch(
+    () => page.value.kind === 'terminal',
+    (finished) => {
+      if (finished) promoMemory.keep(undefined)
+    }
+  )
+
+  watch(
+    () =>
+      page.value.kind === 'terminal' && page.value.attribution === 'returned',
+    (returned) => {
+      if (returned) void readSettledPlan()
+    }
+  )
+
   function onPaymentPhase(phase: StripePaymentPhase) {
     if (phase.phase === 'payment_element_ready' && phase.element === 'payment')
       dispatch({ type: 'elementReady' })
@@ -433,13 +523,6 @@ export function useFullPageCheckout() {
       !moneyInFlight.value &&
       !promo.busy.value
   )
-
-  const payFailure = computed(() => {
-    const result = checkout.result.value
-    if (result === undefined) return undefined
-    const verdict = payVerdictOf(result)
-    return verdict.kind === 'failure' ? verdict.code : undefined
-  })
 
   /**
    * Back to the product, with a settled payment's outcome and reference, or
@@ -471,16 +554,18 @@ export function useFullPageCheckout() {
     else window.location.assign(returnLink.value)
   }
 
-  /** The live catalog, on the Team tab when the link asked for a team plan. */
-  const viewPlansLink = computed(() =>
-    pricingTableUrl(
-      page.value.kind === 'plan_unavailable' &&
-        page.value.reason === 'team_stop_missing'
-        ? 'team'
-        : 'default',
-      billedWorkspace()
-    )
-  )
+  /**
+   * The live catalog, on the Team tab when the link asked for a team plan:
+   * one the quote named without its stop, or a link that carries a stop.
+   */
+  const viewPlansLink = computed(() => {
+    const current = page.value
+    const asksTeam =
+      entry.value?.teamCreditStopId !== undefined ||
+      (current.kind === 'plan_unavailable' &&
+        current.reason === 'team_stop_missing')
+    return pricingTableUrl(asksTeam ? 'team' : 'default', billedWorkspace())
+  })
 
   /** Try again re-runs the whole resolve in place: the re-read and the capture read. */
   function retryLoad() {
@@ -540,10 +625,8 @@ export function useFullPageCheckout() {
       }
       checkout.reset()
       dispatch({ type: 'payFailed', outcome: verdict.outcome })
-    } else if (verdict.kind === 'requote') {
-      await requote(verdict.because, arrival)
     } else {
-      dispatch({ type: 'payFailed' })
+      await requote(verdict.because, arrival)
     }
   }
 
@@ -607,7 +690,6 @@ export function useFullPageCheckout() {
     preview,
     canPay,
     submitting,
-    payFailure,
     returnLink,
     viewPlansLink,
     openedByScript,
@@ -627,6 +709,7 @@ export function useFullPageCheckout() {
     promo,
     promoLive,
     pay,
+    reopening: shallowReadonly(reopening),
     continueVerification: checkout.continueVerification
   }
 }
