@@ -10587,6 +10587,10 @@ Enterprise`
     en: 'Uploaded before the call, then read from their urls',
     'zh-CN': '调用前先上传，再通过链接读取'
   },
+  'workshop.api.filesSdk': {
+    en: 'Uploaded by the code from their urls',
+    'zh-CN': '由代码根据链接上传'
+  },
 
   // Workshop – examples
   'workshop.examples.start': {
