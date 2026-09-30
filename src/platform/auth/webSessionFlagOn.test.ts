@@ -1039,7 +1039,7 @@ describe('comfy-api calls on the shared web session', () => {
       status: 403,
       serverCode: 'workspace_access_denied',
       failure: 'WORKSPACE_ACCESS_DENIED',
-      copy: "You don't have access to this workspace. Choose another workspace or ask its owner for access."
+      copy: "You don't have access to this workspace. Contact support if this keeps happening."
     },
     {
       name: 'a refused request',
@@ -1104,6 +1104,7 @@ describe('comfy-api calls on the shared web session', () => {
     expect(rejection).toBeInstanceOf(SessionTokenError)
     assert(rejection instanceof WebSessionTokenError)
     expect(rejection.cause).toBeInstanceOf(SessionTokenError)
+    expect(rejection.cause).not.toBeInstanceOf(WebSessionTokenError)
     expect(rejection.cause.failure).toBe(rejection.failure)
   })
 
@@ -1145,7 +1146,11 @@ describe('comfy-api calls on the shared web session', () => {
   })
 
   it.for([
-    { name: 'a 401', refuse: () => jsonResponse({}, 401), reported: false },
+    {
+      name: 'a 401',
+      refuse: () => jsonResponse({ code: 'session_revoked' }, 401),
+      reported: false
+    },
     { name: 'a 403', refuse: () => jsonResponse({}, 403), reported: true },
     { name: 'a 429', refuse: () => jsonResponse({}, 429), reported: true },
     { name: 'a 500', refuse: () => jsonResponse({}, 500), reported: true },

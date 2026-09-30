@@ -2653,7 +2653,7 @@
         "ended": "Your session ended. Sign in again to continue.",
         "identityChanged": "Your session changed. Reload to continue.",
         "unavailable": "We couldn't reach your account. Try again in a moment.",
-        "workspaceDenied": "You don't have access to this workspace. Choose another workspace or ask its owner for access.",
+        "workspaceDenied": "You don't have access to this workspace. Contact support if this keeps happening.",
         "refused": "Your request was refused. Reload the page and try again."
       }
     },
