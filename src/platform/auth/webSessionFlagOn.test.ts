@@ -1460,6 +1460,27 @@ describe.for([{ unified: false }, { unified: true }])(
       expect(methodsSince(server)).toEqual(['POST', 'GET', 'GET'])
     })
 
+    it('carries a sign-in made while the flag read false to the reload where it reads true', async () => {
+      const features = {
+        unified_web_session: false,
+        unified_cloud_auth: unified
+      }
+      const server = installServer('revoked', features)
+      await refreshRemoteConfig({ useAuth: false })
+      const loginPage = createDisposablePinia()
+      pages.push(loginPage)
+      setActivePinia(loginPage.pinia)
+      await useAuthStore().login('user-a@example.com', 'password')
+      features.unified_web_session = true
+      await refreshRemoteConfig({ useAuth: false })
+      server.requests.length = 0
+
+      await startPage(USER_A)
+
+      expect(methodsSince(server)).toEqual(['POST', 'GET', 'GET'])
+      expect(await webSessionSend()).toBeDefined()
+    })
+
     it('rejects a marker stamped in the future', () => {
       markInteractiveSignIn('user-a')
       vi.setSystemTime(Date.now() - 60_000)

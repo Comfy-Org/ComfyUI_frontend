@@ -29,6 +29,7 @@ import {
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   clearInteractiveSignIn,
@@ -253,9 +254,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   /** Only after an interactive sign-in; a token refresh never calls this. */
   function signedInInteractively(user: User): void {
     const getProof = () => user.getIdToken()
-    if (useFeatureFlags().flags.unifiedWebSessionEnabled) {
-      markInteractiveSignIn(user.uid)
-    }
+    if (isCloud) markInteractiveSignIn(user.uid)
     if (identity) void createSession(identity, getProof)
     else if (!decided) pendingSignIn = { uid: user.uid, getProof }
   }

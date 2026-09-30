@@ -8,7 +8,7 @@ import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
-import { takeInteractiveSignIn } from '@/platform/auth/session/interactiveSignInMarker'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
@@ -516,13 +516,16 @@ describe('an interactive sign-in with unified_web_session off', () => {
     remoteConfig.value = {}
   })
 
-  it('leaves no marker behind for the next page load', async () => {
-    installFetchRecorder({ unified_cloud_auth: false })
+  it('never consumes the marker and sends no session request', async () => {
+    const recorder = installFetchRecorder({ unified_cloud_auth: false })
     await refreshRemoteConfig({ useAuth: false })
 
     await useAuthStore().login('user-a@example.com', 'password')
 
-    expect(sessionStorage.length).toBe(0)
-    expect(takeInteractiveSignIn('user-a')).toBe(false)
+    expect(useCloudWebSessionStore().start()).toBe(false)
+    expect(sessionStorage.length).toBe(1)
+    expect(
+      recorder.all.filter(({ path }) => path === '/api/auth/session')
+    ).toEqual([])
   })
 })
