@@ -2226,12 +2226,16 @@
     "hideGizmos": "Hide gizmos",
     "lookThrough": "Camera view",
     "exitLookThrough": "Exit camera view",
+    "outputView": "Output view",
+    "lockCamera": "Lock camera",
+    "unlockCamera": "Unlock camera",
     "transformGizmo": {
       "label": "Edit",
       "none": "None",
       "target": "Target",
       "cameraTranslate": "Cam pos",
-      "cameraRotate": "Cam rot"
+      "cameraRotate": "Cam rot",
+      "lightPosition": "Light pos"
     },
     "showGrid": "Show Grid",
     "backgroundColor": "Background Color",
@@ -2413,6 +2417,23 @@
       "bottom": "BOTTOM"
     }
   },
+  "lightInfo": {
+    "addLight": "Add light",
+    "removeLight": "Remove light",
+    "lightChip": "Light {index}, {type}",
+    "noLights": "Add a light to get started.",
+    "directional": "Directional",
+    "point": "Point",
+    "spot": "Spot",
+    "color": "Color",
+    "intensity": "Intensity",
+    "range": "Range",
+    "innerCone": "Inner cone",
+    "outerCone": "Outer cone",
+    "castShadow": "Cast shadow",
+    "size": "Size",
+    "angle": "Angle"
+  },
   "boundingBoxes": {
     "clearAll": "Clear all",
     "clickRegionToEdit": "Click a region to edit it.",
@@ -2542,6 +2563,7 @@
     "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
     "failedToInitializeCameraInfoViewer": "Failed to initialize Camera Info viewer. Try reloading the page.",
     "failedToInitializeCameraAngleViewer": "Failed to initialize Camera Angle viewer. Try reloading the page.",
+    "failedToInitializeLightInfoViewer": "Failed to initialize Light Info viewer. Try reloading the page.",
     "failedToLoadBackgroundImage": "Failed to load background image",
     "failedToLoadModel": "Failed to load 3D model",
     "modelLoadedSuccessfully": "3D model loaded successfully",
