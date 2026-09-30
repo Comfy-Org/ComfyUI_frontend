@@ -290,27 +290,24 @@ describe('FullPageCheckoutView', () => {
       stripeKey.value = 'pk_test_example'
     })
 
-    it('says the checkout could not load instead of a card form that can never mount, and Try again picks up a key that arrives', async () => {
+    it('370-15519: fails inside the payment column beside the summary, and Try again mounts the card form', async () => {
       const fake = await renderCheckout()
 
       expect(
-        await screen.findByRole('heading', {
-          name: "Couldn't load your checkout"
-        })
+        await screen.findByText("The payment form couldn't load")
       ).toBeInTheDocument()
-      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
-        'PAYMENT_PROVIDER_UNAVAILABLE'
-      )
+      expect(
+        screen.getByText('Subscribe to Creator Plan · Acme Team')
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('checkout-ending-code')
+      ).not.toBeInTheDocument()
       expect(form.mounts).toBe(0)
 
-      stripeKey.value = 'pk_test_example'
       await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
 
-      expect(
-        await screen.findByText('Subscribe to Creator Plan · Acme Team')
-      ).toBeInTheDocument()
-      expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
       expect(form.mounts).toBe(1)
+      expect(fake.subscribe).not.toHaveBeenCalled()
     })
 
     it('still charges a plan change to the method on file, which needs no card form', async () => {
@@ -426,6 +423,7 @@ describe('FullPageCheckoutView', () => {
     name: string
     options: FakeBillingClientOptions
     arrange: (fake: FakeBillingClient) => void
+    body: string
   }>([
     {
       name: 'the capabilities read',
@@ -434,16 +432,18 @@ describe('FullPageCheckoutView', () => {
         fake.readCapabilities.mockResolvedValue({
           status: 'error',
           code: 'REQUEST_FAILED'
-        })
+        }),
+      body: "We couldn't check whether this workspace can check out, so checkout can't open yet. Try again, or contact support if this keeps happening."
     },
     {
       name: 'the quote',
       options: { preview: { status: 'error', code: 'REQUEST_FAILED' } },
-      arrange: () => {}
+      arrange: () => {},
+      body: "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening."
     }
   ])(
     'says so instead of capture when $name fails',
-    async ({ options, arrange }) => {
+    async ({ options, arrange, body }) => {
       await renderCheckout(options, arrange)
 
       expect(
@@ -454,7 +454,7 @@ describe('FullPageCheckoutView', () => {
       expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
         'REQUEST_FAILED'
       )
-      expect(screen.getByText(/Nothing has been charged/)).toBeInTheDocument()
+      expect(screen.getByText(body)).toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: 'Pay and subscribe' })
       ).not.toBeInTheDocument()
@@ -622,6 +622,23 @@ describe('FullPageCheckoutView', () => {
       },
       code: 'PLAN_NOT_FOUND',
       plans: 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+    },
+    {
+      name: 'a retired team plan whose link carries its commit stop',
+      path: `${CHECKOUT_PATH}&team_credit_stop_id=stop_1`,
+      options: {
+        preview: {
+          status: 'error',
+          code: 'REQUEST_FAILED',
+          httpStatus: 400,
+          serverCode: readBillingErrorCode({
+            code: 'INVALID_PLAN',
+            message: 'no'
+          })
+        }
+      },
+      code: 'PLAN_NOT_FOUND',
+      plans: 'https://testcloud.comfy.org/?pricing=team&workspace=ws-team'
     },
     {
       name: 'a team plan named without its commit stop',
@@ -995,21 +1012,46 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     }
   )
 
-  it('says why a refused Pay was refused and frees Pay for another try', async () => {
+  it('314-10612: a refused Pay is the processing error card, with support quoting its code, and Pay stays free for another try', async () => {
     const fake = await payReady({
       subscribe: { status: 'error', code: 'REQUEST_FAILED' }
     })
 
     form.emit('confirm', 'ctoken_1')
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent("Payment couldn't be processed")
+    expect(card).toHaveTextContent(
       "We couldn't reach the billing service. Please try again."
     )
+    const support = new URL(
+      screen
+        .getByRole('link', { name: 'Contact support' })
+        .getAttribute('href') ?? ''
+    )
+    expect(support.searchParams.get('body')).toBe('Error code: REQUEST_FAILED')
     await waitFor(() => expect(payButton()).toBeEnabled())
 
     form.emit('confirm', 'ctoken_2')
 
     await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
+  })
+
+  it('shows the sentence a server error wrote inside the processing error card', async () => {
+    await payReady({
+      subscribe: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 500,
+        serverMessage: 'Billing is down for maintenance.'
+      }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent("Payment couldn't be processed")
+    expect(card).toHaveTextContent('Billing is down for maintenance.')
   })
 
   it('frees Pay again when the collision re-reads as nothing pending', async () => {
