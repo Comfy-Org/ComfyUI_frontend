@@ -50,7 +50,6 @@ const {
   resolution,
   takes,
   cast,
-  palette,
   colors,
   mainColor,
   estimate,
@@ -143,15 +142,13 @@ function generate() {
         v-model:resolution="resolution"
         v-model:takes="takes"
         v-model:cast="cast"
-        v-model:palette="palette"
-        v-model:colors="colors"
-        v-model:main-color="mainColor"
         v-model:duration="duration"
         v-model:video-resolution="videoResolution"
         v-model:audio="audio"
         v-model:first-frame="firstFrame"
         v-model:last-frame="lastFrame"
         v-model:source-video="sourceVideo"
+        :colors
         :models="modeModels"
         :blocked
         :video
@@ -189,7 +186,6 @@ function generate() {
       <CinematicPicker
         v-if="picker"
         :key="picker"
-        v-model:palette="palette"
         v-model:colors="colors"
         v-model:main-color="mainColor"
         :groups="pickerGroups(picker)"

@@ -7,7 +7,8 @@ import type {
   DirectionPart
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
-import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import CinematicColors from './CinematicColors.vue'
 import CinematicGradeImageTile from './CinematicGradeImageTile.vue'
 import CinematicOptionGrid from './CinematicOptionGrid.vue'
 import CinematicOptionList from './CinematicOptionList.vue'
@@ -31,16 +32,15 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const palette = defineModel<StudioImage | undefined>('palette')
 const colors = defineModel<readonly string[]>('colors', { required: true })
 const mainColor = defineModel<number | undefined>('mainColor')
 
 const multiple = groups.length > 1
 const activePart = ref(groups[0].part)
+const editing = ref(false)
 
 function choose(part: DirectionPart, id: string) {
-  if (part === 'grade' && palette.value) {
-    palette.value = undefined
+  if (part === 'grade') {
     colors.value = []
     mainColor.value = undefined
   }
@@ -48,15 +48,14 @@ function choose(part: DirectionPart, id: string) {
   if (!multiple) emit('close')
 }
 
-function matchImage(sampled: readonly string[]) {
+function usePalette(sampled: readonly string[]) {
   colors.value = sampled
   mainColor.value = undefined
   emit('choose', 'grade', 'auto')
-  emit('close')
 }
 
 const selectedIn = (part: DirectionPart) =>
-  part === 'grade' && palette.value ? '' : direction[part]
+  part === 'grade' && colors.value.length ? '' : direction[part]
 </script>
 
 <template>
@@ -79,6 +78,16 @@ const selectedIn = (part: DirectionPart) =>
         @choose="choose(group.part, $event)"
       />
     </div>
+    <div v-else-if="editing && colors.length" class="flex flex-col gap-3">
+      <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
+      <button
+        type="button"
+        class="h-9 self-end rounded-xl bg-primary-warm-white px-4 text-sm font-semibold text-primary-comfy-ink hover:bg-primary-warm-white/90"
+        @click="editing = false"
+      >
+        {{ tc('cinematic.grade.done', locale) }}
+      </button>
+    </div>
     <template v-else>
       <CinematicOptionGrid
         v-for="group in groups"
@@ -90,9 +99,10 @@ const selectedIn = (part: DirectionPart) =>
       >
         <CinematicGradeImageTile
           v-if="group.part === 'grade'"
-          v-model="palette"
+          :colors
           :locale
-          @picked="matchImage"
+          @picked="usePalette"
+          @edit="editing = true"
         />
       </CinematicOptionGrid>
     </template>

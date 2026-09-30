@@ -273,7 +273,7 @@ test('shows a preview frame for every Cinematic Studio shot option', async ({
   }
 })
 
-test('matches the Cinematic Studio grade to an uploaded image', async ({
+test('makes a Cinematic Studio grade palette from an uploaded image', async ({
   page,
   context
 }) => {
@@ -289,7 +289,8 @@ test('matches the Cinematic Studio grade to an uploaded image', async ({
     .setInputFiles('public/images/cinematic-studio/neon-street.jpg')
 
   await expect(page.getByRole('button', { name: /^Grade/ })).toContainText(
-    'Your image'
+    'Your palette'
   )
+  await page.getByRole('button', { name: 'Edit palette' }).click()
   await expect(page.getByLabel(/^Color 1: #/)).toBeVisible()
 })

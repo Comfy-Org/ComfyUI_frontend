@@ -32,14 +32,13 @@ import CinematicReferenceMenu from './CinematicReferenceMenu.vue'
 import CinematicTooltip from './CinematicTooltip.vue'
 import CinematicVideoSegments from './CinematicVideoSegments.vue'
 import type { PickerKey } from './picker-key'
-import { useImagePreview } from './useImagePreview'
 import type { ReferenceKind } from './reference-kind'
 
 const {
   models,
   aspects,
   slots,
-  colorCount = 0,
+  colors = [],
   blocked,
   video,
   direction,
@@ -57,7 +56,8 @@ const {
   aspects?: readonly AspectRatio[]
   /** The files the shot can take, listed in the References menu. */
   slots?: readonly ReferenceKind[]
-  colorCount?: number
+  /** The visitor's own palette, shown on the Grade segment. */
+  colors?: readonly string[]
   blocked?: ShotBlock
   /** Present in video mode: what the running operation lets a shot choose. */
   video?: CinematicVideoCapabilities
@@ -74,7 +74,6 @@ const {
 
 const emit = defineEmits<{
   open: [key: PickerKey]
-  colors: []
   generate: []
   cancel: []
 }>()
@@ -86,14 +85,12 @@ const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
 const enhance = defineModel<boolean>('enhance', { required: true })
 const cast = defineModel<StudioImage | undefined>('cast')
-const palette = defineModel<StudioImage | undefined>('palette')
 const firstFrame = defineModel<StudioImage | undefined>('firstFrame')
 const lastFrame = defineModel<StudioImage | undefined>('lastFrame')
 const sourceVideo = defineModel<StudioImage | undefined>('sourceVideo')
 const duration = defineModel<number | undefined>('duration')
 const videoResolution = defineModel<string | undefined>('videoResolution')
 const audio = defineModel<boolean>('audio', { default: false })
-const palettePreview = useImagePreview(() => palette.value)
 
 const modelOptions = computed(() =>
   models.map((model) => ({
@@ -158,9 +155,7 @@ const chipClass = (key: PickerKey) =>
         v-model:last-frame="lastFrame"
         v-model:source-video="sourceVideo"
         :shown="slots"
-        :color-count="colorCount"
         :locale
-        @colors="emit('colors')"
       />
       <label for="cinematic-scene" class="sr-only">
         {{ tc('cinematic.section.scene', locale) }}
@@ -226,7 +221,7 @@ const chipClass = (key: PickerKey) =>
         </CinematicTooltip>
         <CinematicDirectionSegments
           :direction
-          :palette-preview="palettePreview"
+          :colors
           :open="openPopover"
           :locale
           @open="emit('open', $event)"

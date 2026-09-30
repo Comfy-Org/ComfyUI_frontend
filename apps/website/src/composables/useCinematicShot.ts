@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
+import { computed, onMounted, ref, shallowRef, watchEffect } from 'vue'
 
 import type { CinematicCopyKey } from '../lib/workshop/cinematic-studio/copy'
 
@@ -72,7 +72,6 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const resolution = ref<Resolution>('2K')
   const takes = ref(1)
   const cast = shallowRef<StudioImage>()
-  const palette = shallowRef<StudioImage>()
   const colors = ref<readonly string[]>([])
   const mainColor = ref<number>()
   const duration = ref<number>()
@@ -81,16 +80,6 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const firstFrame = shallowRef<StudioImage>()
   const lastFrame = shallowRef<StudioImage>()
   const sourceVideo = shallowRef<StudioImage>()
-
-  // The colour comes from one place: a picture chosen in the Grade picker
-  // fills the Colors swatches and stands in for the preset grade. The
-  // picture itself is not sent; clearing its colours clears it too.
-  watch(palette, (picture) => {
-    if (picture) direction.value = { ...direction.value, grade: 'auto' }
-  })
-  watch(colors, (chosen) => {
-    if (!chosen.length) palette.value = undefined
-  })
 
   onMounted(() => {
     const requested = new URLSearchParams(window.location.search).get('model')
@@ -329,7 +318,6 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     resolution,
     takes,
     cast,
-    palette,
     colors,
     mainColor,
     references,
