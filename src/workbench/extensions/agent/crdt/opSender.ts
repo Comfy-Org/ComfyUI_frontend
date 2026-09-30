@@ -323,7 +323,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function admit(operations: GraphOperation[]): void {
-    if (detached || operations.length === 0) return
+    if (operations.length === 0) return
     const workflowId = deps.workflowId()
     if (workflowId !== lastMintedWorkflowId) {
       lastMintedVersion = -1
@@ -335,6 +335,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       mintWireOps([operation], { actor, baseVersion: baseVersion + index })
     )
     lastMintedVersion = baseVersion + minted.length - 1
+    if (detached) {
+      guardedSettlementNotifier('failure_settling_agent_op_sender_detach')({
+        state: 'undeliverable',
+        ops: minted
+      })
+      return
+    }
     if (workflowId === null) {
       deps.onBatchSettled({ state: 'undeliverable', ops: minted })
       return

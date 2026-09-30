@@ -546,6 +546,10 @@ describe('createOpSender', () => {
     sender.enqueue([addNode(2)])
 
     expect(sent).toHaveLength(1)
+    expect(settled.at(-1)).toMatchObject({
+      state: 'undeliverable',
+      ops: [expect.objectContaining({ node_id: 2 })]
+    })
   })
 
   it('detach clears the armed result-timeout timer so no late resend or settlement follows', () => {
