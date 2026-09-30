@@ -281,7 +281,7 @@ export class AgentTwoSessionCrdtHarness {
     expected: readonly string[],
     timeout: number
   ): Promise<string[]> {
-    let observed: string[] = []
+    let observed: string[] | undefined
     try {
       await expect
         .poll(
@@ -292,11 +292,10 @@ export class AgentTwoSessionCrdtHarness {
           { timeout }
         )
         .toEqual(expected)
-    } catch {
-      // Never matched. That is an outcome under test, so report what the poll
-      // actually saw instead of re-reading a canvas that may have moved on.
+    } catch (error) {
+      if (observed === undefined) throw error
     }
-    return observed
+    return observed ?? []
   }
 
   /** How many times the client has subscribed this workflow's doc. */

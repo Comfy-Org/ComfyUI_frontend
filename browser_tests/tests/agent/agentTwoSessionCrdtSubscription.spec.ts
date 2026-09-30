@@ -13,7 +13,6 @@ const WORKFLOW_A = { id: '11111111-1111-4111-8111-111111111111', name: 'Alpha' }
 const WORKFLOW_B = { id: '22222222-2222-4222-8222-222222222222', name: 'Bravo' }
 
 const BUILD_PROMPT = 'Build a basic text to image workflow'
-// How long the canvas gets to show a build before a test reads it.
 const SETTLE_TIMEOUT = 20_000
 
 const BUILD_OPS: RecordedGraphOperation[] = loadAgentConversation(
@@ -95,8 +94,8 @@ test.describe(
       // boundWorkflowId, still Bravo after thread two bound it, so returning
       // to Alpha unsubscribes rather than resubscribing. The marker is
       // unconditional on purpose: when the fix lands this reports an
-      // unexpected pass, which is the signal to delete these three lines and
-      // leave the assertion guarding against regression.
+      // unexpected pass, which is the signal to delete this test.fail call
+      // and the toContainEqual guard, leaving the final assertion.
       test.fail(
         true,
         'PM-1535: returning to Alpha does not resubscribe its document'
