@@ -8804,6 +8804,38 @@ Enterprise`
     'zh-CN':
       'Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Comfy API，并按需扩展。'
   },
+  'platform.howItWorks.chat.channel': {
+    en: 'creative-team',
+    'zh-CN': '创意团队'
+  },
+  'platform.howItWorks.chat.message': {
+    en: "here's the link",
+    'zh-CN': '链接在这里'
+  },
+  'platform.howItWorks.chat.reply': {
+    en: 'got it!',
+    'zh-CN': '收到！'
+  },
+  'platform.howItWorks.chat.messageReady': {
+    en: 'The workflow is ready to try',
+    'zh-CN': '工作流可以试用了'
+  },
+  'platform.howItWorks.chat.replyTesting': {
+    en: 'Testing it now!',
+    'zh-CN': '现在就来试！'
+  },
+  'platform.howItWorks.chat.messagePreview': {
+    en: 'Preview is live',
+    'zh-CN': '预览已上线'
+  },
+  'platform.howItWorks.chat.replySharing': {
+    en: "I'll share it with the team",
+    'zh-CN': '我会分享给团队'
+  },
+  'platform.howItWorks.chat.placeholder': {
+    en: 'Message your team',
+    'zh-CN': '发送消息给团队'
+  },
   'platform.howItWorks.1.title': {
     en: 'Deploy your workflow as an API',
     'zh-CN': '把工作流部署为 API'
@@ -8836,6 +8868,44 @@ Enterprise`
   'platform.serverlessDeploy.tabWorkflow': {
     en: 'Start with your workflow',
     'zh-CN': '从你的工作流开始'
+  },
+  'platform.serverlessApps.eyebrow': {
+    en: 'CREATIVE APPS',
+    'zh-CN': '创意应用'
+  },
+  'platform.serverlessApps.heading': {
+    en: 'Build the app, not just the workflow.',
+    'zh-CN': '构建应用，而不只是工作流。'
+  },
+  'platform.serverlessApps.body': {
+    en: 'Deploy your ComfyUI workflows as APIs behind customer-facing products, internal tools, and automated creative pipelines. Build the experience your users need without exposing the graph.',
+    'zh-CN':
+      '将 ComfyUI 工作流作为 API 部署在面向客户的产品、内部工具和自动化创意流程之后。在不暴露工作流图的情况下，构建用户所需的体验。'
+  },
+  'platform.serverlessApps.browseApps': {
+    en: 'Browse apps',
+    'zh-CN': '浏览应用'
+  },
+  'platform.serverlessApps.videoLabel': {
+    en: 'Creative app powered by Comfy API',
+    'zh-CN': '由 Comfy API 驱动的创意应用'
+  },
+  'platform.serverlessCaseStudy.quote': {
+    en: 'We build creative systems that have to hold up at brand scale. Comfy API lets us package a ComfyUI workflow once and deploy it as an endpoint our team and tools can call, so our time goes into the creative, not the infrastructure.',
+    'zh-CN':
+      '我们构建的创意系统必须能够支撑品牌级规模。Comfy API 让我们一次打包 ComfyUI 工作流，并将其部署为团队和工具都能调用的端点，让我们把时间投入创意，而不是基础设施。'
+  },
+  'platform.serverlessCaseStudy.name': {
+    en: 'PJ Pereira',
+    'zh-CN': 'PJ Pereira'
+  },
+  'platform.serverlessCaseStudy.role': {
+    en: 'Co-founder of Silverside AI',
+    'zh-CN': 'Silverside AI 联合创始人'
+  },
+  'platform.serverlessCaseStudy.linkLabel': {
+    en: 'Read the Silverside AI customer story',
+    'zh-CN': '阅读 Silverside AI 客户案例'
   },
   'platform.serverlessScale.heading': {
     en: 'Built for teams',
@@ -8948,6 +9018,10 @@ Enterprise`
     en: 'Package all your custom nodes, LoRAs, models, and Python dependencies into an autoscaling endpoint.',
     'zh-CN':
       '将你的所有自定义节点、LoRA、模型和 Python 依赖打包成一个自动扩缩的端点。'
+  },
+  'platform.serverlessHero.animationTitle': {
+    en: 'Comfy image pipeline and GPU orchestration animation',
+    'zh-CN': 'Comfy 图像管线与 GPU 编排动画'
   },
   'platform.modelsGallery.ariaLabel': {
     en: 'Sample outputs from partner models',
