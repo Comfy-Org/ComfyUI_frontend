@@ -7,6 +7,9 @@ import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
+import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   bootCloudIdentity,
@@ -149,7 +152,18 @@ const USER_B = fromPartial<User>({
   getIdToken: async () => 'firebase-id-token-b'
 })
 
-type ServerSession = 'none' | 'revoked' | 'network' | { userId: string }
+type ServerSession =
+  | 'none'
+  | 'revoked'
+  | 'network'
+  | 'restore_token_revoked'
+  | { userId: string }
+
+interface FeatureAnswers {
+  probe: boolean
+  anonymous: boolean
+  credentialed: boolean
+}
 
 interface SessionRequest {
   method: string
@@ -180,11 +194,22 @@ function sessionBody(userId: string) {
 
 function installServer(
   initial: ServerSession,
-  features: Record<string, boolean> = {}
+  features: Record<string, boolean> = {},
+  answers?: FeatureAnswers
 ) {
-  const server = { session: initial, requests: [] as SessionRequest[] }
+  const server = {
+    session: initial,
+    requests: [] as SessionRequest[],
+    featureReads: [] as {
+      credentials: RequestCredentials | null
+      client: string | null
+    }[]
+  }
 
   const answerSession = (method: string): Response => {
+    if (method === 'POST' && server.session === 'restore_token_revoked') {
+      return jsonResponse({ code: 'token_revoked', message: 'revoked' }, 401)
+    }
     if (method === 'POST') {
       server.session = { userId: 'user-a' }
       return jsonResponse({ success: true })
@@ -203,14 +228,28 @@ function installServer(
     return jsonResponse({ code, message: code }, 401)
   }
 
+  const answerFeatures = (init: RequestInit | undefined): Response => {
+    const client = new Headers(init?.headers).get('x-comfy-client')
+    const credentials = init?.credentials ?? null
+    server.featureReads.push({ credentials, client })
+    if (!answers)
+      return jsonResponse({ unified_web_session: true, ...features })
+    const credentialed = client !== null && credentials === 'include'
+    return jsonResponse({
+      ...features,
+      unified_web_session: credentialed
+        ? answers.credentialed
+        : answers.anonymous,
+      ...(answers.probe && !credentialed && { web_session_probe: true })
+    })
+  }
+
   vi.stubGlobal(
     'fetch',
     vi.fn<typeof fetch>(async (input, init) => {
       const url = new URL(String(input), location.href)
       const method = (init?.method ?? 'GET').toUpperCase()
-      if (url.pathname === '/api/features') {
-        return jsonResponse({ unified_web_session: true, ...features })
-      }
+      if (url.pathname === '/api/features') return answerFeatures(init)
       if (url.pathname !== '/api/auth/session') {
         return jsonResponse({ id: 'customer-1' }, 201)
       }
@@ -1564,7 +1603,106 @@ describe.for([{ unified: false }, { unified: true }])(
       expect(authStore.userId).toBe('user-a')
     })
 
+    it.for([
+      {
+        name: 'the credentialed read turns an anonymous false on',
+        answers: { probe: true, anonymous: false, credentialed: true },
+        enabled: true,
+        reads: 2
+      },
+      {
+        name: 'a credentialed read that comes back false (untrusted origin) stays off',
+        answers: { probe: true, anonymous: false, credentialed: false },
+        enabled: false,
+        reads: 2
+      },
+      {
+        name: 'no probe means the one anonymous read and nothing else',
+        answers: { probe: false, anonymous: false, credentialed: true },
+        enabled: false,
+        reads: 1
+      }
+    ])('unified_web_session: $name', async ({ answers, enabled, reads }) => {
+      const server = installServer(
+        { userId: 'user-a' },
+        { unified_cloud_auth: unified },
+        answers
+      )
+      await refreshRemoteConfig({ useAuth: false })
+      useAuthStore()
+      identity.resolve(null)
+
+      await expect(cloudSignIn()).resolves.toBe(
+        enabled ? 'signed_in' : 'signed_out'
+      )
+
+      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(enabled)
+      expect(server.featureReads).toHaveLength(reads)
+      expect(server.featureReads.slice(1)).toEqual(
+        reads === 2 ? [{ credentials: 'include', client: COMFY_CLIENT }] : []
+      )
+      expect(server.featureReads[0].client).toBeNull()
+      expect(methodsOfServer(server)).toEqual(enabled ? ['GET'] : [])
+    })
+
+    it('holds a request while the session read is retrying, then sends it on the session', async () => {
+      const { server } = await install('network')
+      identity.resolve(null)
+      await cloudSignIn()
+      const queueReads = () =>
+        vi
+          .mocked(fetch)
+          .mock.calls.filter(
+            ([input]) =>
+              new URL(String(input), location.href).pathname === '/api/queue'
+          )
+
+      const response = api.fetchApi('/queue')
+      await vi.advanceTimersByTimeAsync(3_000)
+      expect(queueReads()).toEqual([])
+
+      server.session = { userId: 'user-a' }
+      await vi.advanceTimersByTimeAsync(60_000)
+      await response
+      expect(queueReads().map(([, init]) => init?.credentials)).toEqual([
+        'include'
+      ])
+    })
+
+    it('reports reconnecting only after ten seconds of failed reads, and never signs out', async () => {
+      const { server } = await install('network')
+      identity.resolve(null)
+      await cloudSignIn()
+      const webSession = useCloudWebSessionStore()
+
+      await vi.advanceTimersByTimeAsync(9_000)
+      expect(webSession.reconnecting).toBe(false)
+
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect(webSession.reconnecting).toBe(true)
+      expect(methodsOfServer(server)).not.toContain('DELETE')
+      expect(firebaseSignOut).not.toHaveBeenCalled()
+
+      server.session = { userId: 'user-a' }
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(webSession.reconnecting).toBe(false)
+    })
+
+    it('a restore refused as a revoked token signs the remembered login out', async () => {
+      const { server } = await install('restore_token_revoked')
+      identity.resolve(USER_A)
+
+      await expect(cloudSignIn()).resolves.toBe('signed_out')
+
+      expect(methodsOfServer(server)).toEqual(['GET', 'POST'])
+      expect(firebaseSignOut).toHaveBeenCalledOnce()
+    })
+
     describe('the router', () => {
+      afterEach(() => {
+        clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN)
+      })
+
       const enterApp = async () => {
         await router.push('/cloud/login')
         await router.push('/user-select')
@@ -1576,6 +1714,19 @@ describe.for([{ unified: false }, { unified: true }])(
         identity.resolve(null)
 
         await expect(enterApp()).resolves.toBe('/user-select')
+      })
+
+      it('sends a session-only tab holding a desktop login code to sign in, not into the app', async () => {
+        await install({ userId: 'user-a' })
+        identity.resolve(null)
+        await router.push('/cloud/login')
+
+        await router.push(
+          `/user-select?desktop_login_code=dlc_${'A'.repeat(43)}`
+        )
+
+        expect(router.currentRoute.value.path).toBe('/cloud/login')
+        expect(router.currentRoute.value.query.switchAccount).toBeDefined()
       })
 
       it('sends a revoked session to the login page', async () => {

@@ -62,6 +62,12 @@ describe('web session status mapping', () => {
     },
     {
       status: 401,
+      body: errorBody('token_revoked'),
+      code: 'SESSION_REVOKED',
+      server: 'token_revoked'
+    },
+    {
+      status: 401,
       body: errorBody('token_mismatch'),
       code: 'NO_SESSION',
       server: 'token_mismatch'
