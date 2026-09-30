@@ -9,7 +9,11 @@ import type {
 } from '@comfyorg/account-ui/billing/stripe'
 import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
 
-import type { CheckoutPage, PaymentTab } from '@/checkout/checkoutPage'
+import type {
+  CheckoutPage,
+  PaymentTab,
+  RailView
+} from '@/checkout/checkoutPage'
 import type { KeepSubscriptionCopy } from '@/checkout/keepSubscription'
 import { isLocked, railView, submitPhaseOf } from '@/checkout/checkoutPage'
 import type { PayContext } from '@/components/fullPage/CheckoutPayAction.vue'
@@ -69,14 +73,23 @@ const locked = computed(() => isLocked(page))
 const methodTypeOf = (id: string) =>
   savedMethods.find((method) => method.id === id)?.type ?? ''
 
+const failureHidesPay = (current: RailView) =>
+  current.kind === 'column_error' ||
+  (current.kind === 'tabs' &&
+    current.tab === 'new' &&
+    current.element === 'failed')
+
 /**
  * A Pay that collided with another operation keeps the form, with Pay
  * locked, until it is re-read. Money in flight shows the rail its quote
- * asks for, locked, once the quote is in.
+ * asks for, locked, once the quote is in, unless a rail failure would
+ * take the payment's status and verification action with it.
  */
 const view = computed(() => {
   if (page.kind === 'capture') return railView(page.rail)
-  return page.kind === 'waiting' && page.rail ? railView(page.rail) : undefined
+  if (page.kind !== 'waiting' || !page.rail) return undefined
+  const current = railView(page.rail)
+  return failureHidesPay(current) ? undefined : current
 })
 
 const payContext = computed<PayContext>(() => {

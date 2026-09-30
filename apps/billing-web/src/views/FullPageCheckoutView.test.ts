@@ -2023,6 +2023,56 @@ describe('FullPageCheckoutView payment authentication', () => {
     )
   })
 
+  it('keeps the phase and Complete verification for a reload mid-challenge when the card form cannot load, with no saved method', async () => {
+    stripeKey.value = undefined
+    try {
+      const fake = await renderCheckout({
+        recover: {
+          status: 'ok',
+          value: challengedOperation('op_reload', 'required')
+        }
+      })
+      await waitFor(() =>
+        expect(fake.reportChallengeStarted).toHaveBeenCalledOnce()
+      )
+      await capturePromisesFlushed()
+
+      expect(footnote()).toHaveTextContent(PHASE_A)
+      expect(
+        screen.getByRole('button', { name: 'Complete verification' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText("The payment form couldn't load")
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Try again' })
+      ).not.toBeInTheDocument()
+    } finally {
+      stripeKey.value = 'pk_test_example'
+    }
+  })
+
+  it("keeps the phase over a failed Add new tab when another tab's payment is in flight", async () => {
+    const fake = await renderQuoted({
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    reportPhase({
+      phase: 'payment_element_failed',
+      element: 'payment',
+      element_phase: 'mount'
+    })
+    await userEvent.click(tab('Add new payment'))
+
+    fake.publishOperation(processingOperation('op_sibling'))
+    await waitingStatus()
+
+    expect(footnote()).toHaveTextContent(PHASE_B)
+    expect(payButton()).toBeDisabled()
+    expect(
+      screen.queryByRole('button', { name: 'Try again' })
+    ).not.toBeInTheDocument()
+  })
+
   it('marks only the skeleton blocks busy while the quote loads, so the phase line is still announced', async () => {
     await renderCheckout(
       {
