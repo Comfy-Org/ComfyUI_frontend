@@ -1,10 +1,17 @@
 import { computed, ref } from 'vue'
+import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import type {
+  AgentErrorClass,
+  AgentErrorMetadata
+} from '@/platform/telemetry/types'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
+  AgentWsEvent,
   AgentTurnAccepted,
   TurnId
 } from '../../schemas/agentApiSchema'
@@ -15,7 +22,10 @@ import {
   zAgentAdmissionError,
   zDisownedWorkflowError
 } from '../../schemas/agentApiSchema'
-import { AgentApiError } from '../../services/agent/agentRestClient'
+import {
+  AgentApiError,
+  AgentResponseUnreadableError
+} from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
   DraftSnapshot,
@@ -93,6 +103,41 @@ export interface AgentSessionDeps {
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
+const NON_RETRYABLE_REQUEST_STATUSES = new Set([
+  400, 401, 403, 404, 405, 409, 410, 422
+])
+
+export function isRetryableRequestFailure(
+  error: unknown,
+  accepted: boolean
+): boolean {
+  if (accepted) return false
+  if (error instanceof AgentApiError)
+    return !NON_RETRYABLE_REQUEST_STATUSES.has(error.status)
+  return true
+}
+
+function isUnreadableAckFailure(error: unknown): boolean {
+  return (
+    error instanceof ZodError || error instanceof AgentResponseUnreadableError
+  )
+}
+
+export function trackAgentError(
+  errorClass: AgentErrorClass,
+  stage: AgentErrorMetadata['failure_stage'],
+  uiTreatment: AgentErrorMetadata['ui_treatment'],
+  overrides: { retryable?: boolean; turnAccepted?: boolean } = {}
+): void {
+  useTelemetry()?.trackAgentError({
+    error_class: errorClass,
+    failure_stage: stage,
+    retryable: overrides.retryable ?? stage === 'pre_acceptance',
+    turn_accepted: overrides.turnAccepted ?? stage === 'post_acceptance',
+    ui_treatment: uiTreatment
+  })
+}
+
 let sessionGeneration = 0
 
 /**
@@ -162,6 +207,31 @@ export function useAgentSession(deps: AgentSessionDeps) {
     notices.value.push({ level: 'error', text })
   }
 
+  const malformedStreamReports = new Map<TurnId | null, boolean>()
+
+  function trackMalformedStreamEvent(
+    cause: ZodError,
+    eventType: string,
+    turnId: TurnId | null,
+    uiTreatment: AgentErrorMetadata['ui_treatment']
+  ): void {
+    const visible = uiTreatment !== 'none'
+    const priorVisible = malformedStreamReports.get(turnId)
+    if (priorVisible === true || (priorVisible === false && !visible)) return
+    malformedStreamReports.set(turnId, visible)
+    reportError(new Error('Malformed agent stream event'), {
+      errorType: 'agent_malformed_stream_event',
+      tags: { ui_treatment: uiTreatment, event_type: eventType },
+      context: { issues: cause.issues }
+    })
+    trackAgentError(
+      'malformed_stream_event',
+      turnId === null ? 'pre_acceptance' : 'post_acceptance',
+      uiTreatment,
+      { retryable: false }
+    )
+  }
+
   function start(): void {
     ownedGeneration = ++sessionGeneration
     everLive = false
@@ -181,8 +251,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const generation = ++loadGeneration
       const isCurrent = () =>
         generation === loadGeneration && ownedGeneration === sessionGeneration
+      const stashedTurn = conversationStore.activeTurnId !== null
       conversationStore.stashActiveTurn()
-      void hydrateFromServer(surviving, isCurrent).then(() => {
+      void hydrateFromServer(surviving, isCurrent, stashedTurn).then(() => {
         if (isCurrent() && conversationStore.threadId === surviving)
           conversationStore.resumeBackgroundTurn()
       })
@@ -205,7 +276,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function hydrateFromServer(
     threadId: string,
-    isCurrent: () => boolean = () => true
+    isCurrent: () => boolean = () => true,
+    stashedTurn = false
   ): Promise<boolean> {
     try {
       const history = await rest.getMessages(threadId)
@@ -222,7 +294,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
         localStorage.removeItem(THREAD_STORAGE_KEY)
         return false
       }
+      reportError(error, { errorType: 'agent_history_load_failed' })
       pushError(error instanceof Error ? error.message : String(error))
+      trackAgentError(
+        'history_load_failed',
+        'pre_acceptance',
+        'error_overlay',
+        {
+          retryable: isRetryableRequestFailure(error, false),
+          turnAccepted: stashedTurn
+        }
+      )
       return false
     }
   }
@@ -428,7 +510,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function recordSendError(error: unknown, text: string): void {
+  function recordSendError(
+    error: unknown,
+    text: string,
+    accepted: boolean
+  ): void {
     const admission = parseAdmissionError(error)
     if (admission?.reason === 'no_funds') {
       conversationStore.recordPaywall(
@@ -459,6 +545,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       nextLocalErrorId(),
       text,
       `${i18n.global.t('agent.sendFailed')}: ${message}`
+    )
+    const turnAccepted = accepted || isUnreadableAckFailure(error)
+    reportError(error, { errorType: 'agent_send_message_failed' })
+    trackAgentError(
+      'request_failed',
+      turnAccepted ? 'post_acceptance' : 'pre_acceptance',
+      'inline_notice',
+      { retryable: isRetryableRequestFailure(error, turnAccepted) }
     )
   }
 
@@ -497,6 +591,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const origin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
     let sentContext: WorkflowTurnContext | undefined
+    let accepted = false
     try {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
@@ -516,6 +611,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflowReferences,
         selectionWorkflowId
       )
+      accepted = true
       if (generation !== loadGeneration) return false
       acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
       return true
@@ -525,7 +621,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
       if (generation !== loadGeneration) return false
-      recordSendError(error, text)
+      recordSendError(error, text, accepted)
       return false
     }
   }
@@ -587,11 +683,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (error instanceof AgentApiError) {
         if (error.status === 409) return
         promptEditState.value = { phase: 'idle' }
+        reportError(error, { errorType: 'agent_cancel_turn_failed' })
         pushError(error.message)
+        trackAgentError('cancel_failed', 'post_acceptance', 'error_overlay', {
+          retryable: isRetryableRequestFailure(error, false)
+        })
         return
       }
       promptEditState.value = { phase: 'idle' }
+      reportError(error, { errorType: 'agent_cancel_turn_failed' })
       pushError(error instanceof Error ? error.message : String(error))
+      trackAgentError('cancel_failed', 'post_acceptance', 'error_overlay', {
+        retryable: true
+      })
     }
   }
 
@@ -628,6 +732,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       reportError(error, { errorType: 'agent_ask_answer_failed' })
       pushError(error instanceof Error ? error.message : String(error))
+      trackAgentError('ask_answer_failed', 'post_acceptance', 'error_overlay', {
+        retryable: isRetryableRequestFailure(error, false)
+      })
     }
   }
 
@@ -640,6 +747,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.reset()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
+    malformedStreamReports.clear()
     localStorage.removeItem(THREAD_STORAGE_KEY)
   }
 
@@ -652,13 +760,44 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
+    const stashedTurn = conversationStore.activeTurnId !== null
     conversationStore.stashActiveTurn()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
+    malformedStreamReports.clear()
     conversationStore.setThreadId(threadId)
     localStorage.setItem(THREAD_STORAGE_KEY, threadId)
-    const hydrated = await hydrateFromServer(threadId, isCurrent)
+    const hydrated = await hydrateFromServer(threadId, isCurrent, stashedTurn)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
+  }
+
+  function handleMalformedEvent(
+    raw: object,
+    type: string,
+    error: ZodError
+  ): void {
+    const messageId = (raw as { data?: { message_id?: unknown } }).data
+      ?.message_id
+    let reportedTurnId =
+      typeof messageId === 'string'
+        ? (messageId as TurnId)
+        : conversationStore.activeTurnId
+    let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
+    if (type === 'agent_message_done') {
+      if (
+        typeof messageId !== 'string' ||
+        messageId === conversationStore.activeTurnId
+      ) {
+        conversationStore.abortActiveTurn()
+        pushError(i18n.global.t('agent.malformedEvent'))
+        uiTreatment = 'error_overlay'
+      } else {
+        reportedTurnId =
+          conversationStore.settleBackgroundTurn(messageId) ?? reportedTurnId
+      }
+    }
+    trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment)
+    console.warn('[agent] dropping malformed agent event', error)
   }
 
   function onRaw(raw: unknown): void {
@@ -667,48 +806,47 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (typeof type !== 'string' || !isAgentEvent(type)) return
     const parsed = parseAgentWsEvent(raw)
     if (!parsed.success) {
-      const messageId = (raw as { data?: { message_id?: unknown } }).data
-        ?.message_id
-      if (type === 'agent_message_done') {
-        if (
-          typeof messageId !== 'string' ||
-          messageId === conversationStore.activeTurnId
-        ) {
-          conversationStore.abortActiveTurn()
-          pushError(i18n.global.t('agent.malformedEvent'))
-        } else {
-          conversationStore.settleBackgroundTurn(messageId)
-        }
-      }
-      console.warn('[agent] dropping malformed agent event', parsed.error)
+      handleMalformedEvent(raw, type, parsed.error)
       return
     }
-    const event = parsed.data
+    ingestAgentEvent(parsed.data)
+  }
+
+  function ingestAgentEvent(event: AgentWsEvent): void {
     if (event.type === 'agent_ask_resolved')
       setAskAnswering(event.data.ask_id, false)
-    switch (event.type) {
-      case 'agent_active_tab':
-        // Every thread records the link in its own transcript; only the thread
-        // on screen is allowed to move the user's tabs.
-        conversationStore.ingest(event)
-        if (
-          event.data.thread_id === undefined ||
-          event.data.thread_id === conversationStore.threadId
-        )
-          workflow?.activeTab?.(event.data)
-        return
-      default:
-        conversationStore.ingest(event)
-        if (
-          event.type === 'agent_message_done' &&
-          promptEditState.value.phase === 'stopping' &&
-          event.data.message_id === promptEditState.value.turnId &&
-          event.data.thread_id === conversationStore.threadId
-        )
-          promptEditState.value = {
-            phase: 'ready',
-            turnId: promptEditState.value.turnId
-          }
+    conversationStore.ingest(event)
+    if (event.type === 'agent_active_tab') {
+      applyActiveTabEvent(event)
+      return
+    }
+    if (event.type === 'agent_message_done') settleStoppedTurn(event)
+  }
+
+  function applyActiveTabEvent(
+    event: Extract<AgentWsEvent, { type: 'agent_active_tab' }>
+  ): void {
+    // Every thread records the link in its own transcript; only the thread on
+    // screen is allowed to move the user's tabs.
+    if (
+      event.data.thread_id === undefined ||
+      event.data.thread_id === conversationStore.threadId
+    )
+      workflow?.activeTab?.(event.data)
+  }
+
+  function settleStoppedTurn(
+    event: Extract<AgentWsEvent, { type: 'agent_message_done' }>
+  ): void {
+    if (
+      promptEditState.value.phase !== 'stopping' ||
+      event.data.message_id !== promptEditState.value.turnId ||
+      event.data.thread_id !== conversationStore.threadId
+    )
+      return
+    promptEditState.value = {
+      phase: 'ready',
+      turnId: promptEditState.value.turnId
     }
   }
 
