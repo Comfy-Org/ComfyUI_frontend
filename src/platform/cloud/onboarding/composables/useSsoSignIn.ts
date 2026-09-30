@@ -9,7 +9,7 @@ import {
 
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 
-export type SsoEntryState =
+type SsoEntryState =
   | { phase: 'idle' }
   | { phase: 'checking' }
   | { phase: 'redirecting' }

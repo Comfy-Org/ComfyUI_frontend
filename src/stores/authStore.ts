@@ -88,6 +88,15 @@ export class AuthStoreError extends Error {
   }
 }
 
+async function throwIfSsoRequired(
+  response: Response,
+  email: string | null | undefined
+): Promise<void> {
+  if (response.status !== 403) return
+  const body: unknown = await response.json().catch(() => null)
+  if (isSsoRequiredRefusal(body)) throw new SsoRequiredError(email ?? undefined)
+}
+
 async function webSessionRunToken(
   requests: WebSessionRequests
 ): Promise<string | undefined> {
@@ -563,14 +572,10 @@ export const useAuthStore = defineStore('auth', () => {
     )
     if (!createCustomerRes.ok) {
       if (!completedUser) assertIdentityUnchanged(sessionIdentity)
-      if (
-        createCustomerRes.status === 403 &&
-        isSsoRequiredRefusal(await createCustomerRes.json().catch(() => null))
-      ) {
-        throw new SsoRequiredError(
-          completedUser?.email ?? currentUser.value?.email ?? undefined
-        )
-      }
+      await throwIfSsoRequired(
+        createCustomerRes,
+        completedUser?.email ?? currentUser.value?.email
+      )
       throw new AuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
           error: createCustomerRes.statusText
