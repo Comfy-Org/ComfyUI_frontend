@@ -1,18 +1,10 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import { t } from '../../i18n/translations'
-import { pageContext } from '../../utils/jsonLd'
-
-const { locale } = pageContext(
-  Astro.site,
-  Astro.url.pathname,
-  Astro.currentLocale
-)
 ---
 
 <BaseLayout
-  title={t('workshop.credits.openingMetaTitle', {}, { locale })}
-  description={t('workshop.credits.openingMetaDescription', {}, { locale })}
+  title={Astro.locals.t('workshop.credits.openingMetaTitle')}
+  description={Astro.locals.t('workshop.credits.openingMetaDescription')}
   noindex
 >
   <main class="flex min-h-dvh items-center justify-center px-6 py-16">
@@ -26,13 +18,13 @@ const { locale } = pageContext(
       <p
         class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
       >
-        {t('workshop.credits.openingLabel', {}, { locale })}
+        {Astro.locals.t('workshop.credits.openingLabel')}
       </p>
       <h1 class="text-4xl font-bold text-primary-warm-white">
-        {t('workshop.credits.openingTitle', {}, { locale })}
+        {Astro.locals.t('workshop.credits.openingTitle')}
       </h1>
       <p class="text-primary-warm-gray">
-        {t('workshop.credits.openingBody', {}, { locale })}
+        {Astro.locals.t('workshop.credits.openingBody')}
       </p>
     </div>
   </main>

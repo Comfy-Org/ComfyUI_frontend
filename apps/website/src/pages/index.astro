@@ -18,7 +18,6 @@ import {
   resolveDiscoveryProviders,
   resolveDiscoveryWorkflows
 } from '../components/home/modelDiscoveryProviders'
-import { t } from '../i18n/translations'
 import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
@@ -39,7 +38,7 @@ const discoveryWorkflows = await resolveDiscoveryWorkflows(isWorkshopInBuild())
 <BaseLayout
   title="Comfy - Professional Control of Visual AI"
   pageName="Professional Control of Visual AI"
-  description={t('hero.subtitle', {}, { locale: 'en' })}
+  description={Astro.locals.t('hero.subtitle')}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
   extraJsonLd={[
     comfyUiApplicationNode(siteUrl),

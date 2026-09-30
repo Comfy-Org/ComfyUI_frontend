@@ -6,7 +6,6 @@ import ReasonSection from '../components/product/local/ReasonSection.vue'
 import EcoSystemSection from '../components/product/local/EcoSystemSection.vue'
 import ProductCardsSection from '../components/product/local/ProductCardsSection.vue'
 import FAQSection from '../components/product/local/FAQSection.vue'
-import { t } from '../i18n/translations'
 import {
   absoluteUrl,
   comfyUiApplicationNode,
@@ -15,7 +14,7 @@ import {
   pageContext
 } from '../utils/jsonLd'
 
-const { siteUrl, locale } = pageContext(
+const { siteUrl } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale
@@ -24,14 +23,14 @@ const { siteUrl, locale } = pageContext(
 
 <BaseLayout
   title="Download Comfy Desktop - Run AI on Your Hardware"
-  description={t('download.meta.description', {}, { locale: 'en' })}
+  description={Astro.locals.t('download.meta.description')}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', {}, { locale }),
+      name: Astro.locals.t('breadcrumb.home'),
       url: absoluteUrl(Astro.site, '/')
     },
-    { name: t('breadcrumb.download', {}, { locale }) }
+    { name: Astro.locals.t('breadcrumb.download') }
   ]}
   extraJsonLd={[
     comfyUiApplicationNode(siteUrl),

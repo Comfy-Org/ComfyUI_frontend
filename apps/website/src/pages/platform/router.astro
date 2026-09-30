@@ -13,13 +13,12 @@ import RouterProofStripSection from '../../templates/platform/RouterProofStripSe
 import RouterProviderCoverageSection from '../../templates/platform/RouterProviderCoverageSection.vue'
 import RouterRoadmapSection from '../../templates/platform/RouterRoadmapSection.vue'
 import { externalLinks } from '../../config/routes'
-import { t } from '../../i18n/translations'
 import { routerFaq, routerT } from '../../templates/platform/routerCopy'
 ---
 
 <BaseLayout
-  title={`${t('platform.products.models.title', {}, { locale: 'en' })} · ${t('platform.meta.title', {}, { locale: 'en' })}`}
-  description={t('platform.products.models.description', {}, { locale: 'en' })}
+  title={`${Astro.locals.t('platform.products.models.title')} · ${Astro.locals.t('platform.meta.title')}`}
+  description={Astro.locals.t('platform.products.models.description')}
 >
   <ModelsApiHero locale="en" client:load />
   <RouterVideoSection locale="en" client:idle />

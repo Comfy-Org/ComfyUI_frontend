@@ -16,16 +16,28 @@ export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
   Record<Locale, string>
 >
 
-const siteI18n = createI18n({
-  legacy: false,
-  locale: DEFAULT_LOCALE,
-  fallbackLocale: DEFAULT_LOCALE,
-  messages: { en, 'zh-CN': zhCN, ja },
-  missingWarn: false,
-  fallbackWarn: false,
-  warnHtmlMessage: false
-})
+function createSiteI18n(locale: Locale) {
+  return createI18n({
+    legacy: false,
+    locale,
+    fallbackLocale: DEFAULT_LOCALE,
+    messages: { en, 'zh-CN': zhCN, ja },
+    missingWarn: false,
+    fallbackWarn: false,
+    warnHtmlMessage: false
+  })
+}
 
-export const { t, te } = siteI18n.global
+const siteI18nByLocale = {
+  en: createSiteI18n('en'),
+  'zh-CN': createSiteI18n('zh-CN'),
+  ja: createSiteI18n('ja')
+} satisfies Record<Locale, ReturnType<typeof createSiteI18n>>
+
+export function translationsFor(locale: Locale) {
+  return siteI18nByLocale[locale].global
+}
+
+export const { t, te } = translationsFor(DEFAULT_LOCALE)
 
 export type { Locale }

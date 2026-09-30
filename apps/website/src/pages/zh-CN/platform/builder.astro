@@ -6,16 +6,11 @@ import BuilderHero from '../../../templates/platform/BuilderHero.vue'
 import BuilderPillarsSection from '../../../templates/platform/BuilderPillarsSection.vue'
 import BuilderProblemSection from '../../../templates/platform/BuilderProblemSection.vue'
 import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
-import { t } from '../../../i18n/translations'
 ---
 
 <BaseLayout
-  title={`${t('platform.products.builder.title', {}, { locale: 'zh-CN' })} · ${t('platform.meta.title', {}, { locale: 'zh-CN' })}`}
-  description={t(
-    'platform.products.builder.description',
-    {},
-    { locale: 'zh-CN' }
-  )}
+  title={`${Astro.locals.t('platform.products.builder.title')} · ${Astro.locals.t('platform.meta.title')}`}
+  description={Astro.locals.t('platform.products.builder.description')}
 >
   <BuilderHero locale="zh-CN" client:load />
   <BuilderProblemSection locale="zh-CN" />
@@ -23,11 +18,7 @@ import { t } from '../../../i18n/translations'
   <BuilderEnterpriseSection locale="zh-CN" />
   <ClosingCtaSection
     locale="zh-CN"
-    heading-after-badge={t(
-      'platform.closing.headingAfterBadge',
-      {},
-      { locale: 'zh-CN' }
-    )}
+    heading-after-badge={Astro.locals.t('platform.closing.headingAfterBadge')}
     client:visible
   />
   <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />

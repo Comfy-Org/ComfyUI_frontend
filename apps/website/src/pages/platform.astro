@@ -6,12 +6,11 @@ import SocialProofBarSection from '../components/common/SocialProofBarSection.vu
 import ClosingCtaSection from '../templates/platform/ClosingCtaSection.vue'
 import HeroSection from '../templates/platform/HeroSection.vue'
 import ProductsSection from '../templates/platform/ProductsSection.vue'
-import { t } from '../i18n/translations'
 ---
 
 <BaseLayout
-  title={t('platform.meta.title', {}, { locale: 'en' })}
-  description={t('platform.meta.description', {}, { locale: 'en' })}
+  title={Astro.locals.t('platform.meta.title')}
+  description={Astro.locals.t('platform.meta.description')}
 >
   <div class="relative isolate">
     <BrandBackground client:idle />
@@ -21,11 +20,7 @@ import { t } from '../i18n/translations'
   <SocialProofBarSection />
   <ClosingCtaSection
     locale="en"
-    heading-after-badge={t(
-      'platform.closing.headingAfterBadge',
-      {},
-      { locale: 'en' }
-    )}
+    heading-after-badge={Astro.locals.t('platform.closing.headingAfterBadge')}
     client:visible
   />
   <ProductCardsSection locale="en" label-key="products.labelProducts" />

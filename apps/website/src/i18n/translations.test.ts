@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Locale } from '../config/locales'
 import { LOCALE_CODES } from '../config/locales'
-import { t } from './translations'
+import { t, translationsFor } from './translations'
 
 type Catalog = { [key: string]: string | Catalog }
 
@@ -68,6 +68,15 @@ const catalogs = [...catalogFiles]
   })
 
 describe('site translations', () => {
+  it('binds translations to a locale', () => {
+    expect(translationsFor('ja').t('hero.title')).toBe(
+      'ビジュアルAIを自在にコントロール'
+    )
+    expect(translationsFor('zh-CN').t('hero.title')).toBe(
+      '视觉 AI 的\n最强可控性'
+    )
+  })
+
   it('selects Japanese and falls back to English', () => {
     expect(t('hero.title', {}, { locale: 'ja' })).toBe(
       'ビジュアルAIを自在にコントロール'

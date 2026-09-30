@@ -7,12 +7,11 @@ import BrandColorSection from '../../templates/brand/BrandColorSection.vue'
 import BrandVoiceSection from '../../templates/brand/BrandVoiceSection.vue'
 import BrandTrademarkSection from '../../templates/brand/BrandTrademarkSection.vue'
 import BrandQuestionsSection from '../../templates/brand/BrandQuestionsSection.vue'
-import { t } from '../../i18n/translations'
 ---
 
 <BaseLayout
-  title={t('brand.page.title', {}, { locale: 'zh-CN' })}
-  description={t('brand.page.description', {}, { locale: 'zh-CN' })}
+  title={Astro.locals.t('brand.page.title')}
+  description={Astro.locals.t('brand.page.description')}
 >
   <div class="relative">
     <BrandBackground client:idle />

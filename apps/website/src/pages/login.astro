@@ -1,6 +1,5 @@
 ---
 import AuthSignIn from '../components/auth/AuthSignIn.vue'
-import { t } from '../i18n/translations'
 import AuthLayout from '../layouts/AuthLayout.astro'
 import { pageContext } from '../utils/jsonLd'
 
@@ -12,8 +11,8 @@ const { locale } = pageContext(
 ---
 
 <AuthLayout
-  title={t('auth.signIn.meta.title', {}, { locale })}
-  description={t('auth.signIn.meta.description', {}, { locale })}
+  title={Astro.locals.t('auth.signIn.meta.title')}
+  description={Astro.locals.t('auth.signIn.meta.description')}
   {locale}
   showTermsNotice
 >

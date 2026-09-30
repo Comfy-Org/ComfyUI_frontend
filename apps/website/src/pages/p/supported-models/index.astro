@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import { models } from '../../../config/models'
-import { t } from '../../../i18n/translations'
 import {
   absoluteUrl,
   itemListNode,
@@ -11,14 +10,10 @@ import {
 
 const canonicalModels = models.filter((model) => !model.canonicalSlug)
 
-const title = t('models.index.title')
-const subtitle = t('models.index.subtitle')
+const title = Astro.locals.t('models.index.title')
+const subtitle = Astro.locals.t('models.index.subtitle')
 
-const { url, locale } = pageContext(
-  Astro.site,
-  Astro.url.pathname,
-  Astro.currentLocale
-)
+const { url } = pageContext(Astro.site, Astro.url.pathname, Astro.currentLocale)
 const modelList = itemListNode(
   url,
   title,
@@ -51,7 +46,7 @@ const dirLabel: Record<string, string> = {
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', {}, { locale }),
+      name: Astro.locals.t('breadcrumb.home'),
       url: absoluteUrl(Astro.site, '/')
     },
     { name: title }
@@ -63,7 +58,7 @@ const dirLabel: Record<string, string> = {
       <p
         class="mb-2 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase"
       >
-        {t('models.hero.eyebrow')}
+        {Astro.locals.t('models.hero.eyebrow')}
       </p>
       <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
         {title}
