@@ -20,11 +20,10 @@ import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic
 import { videoTags } from '../../../lib/workshop/cinematic-studio/video'
 import type { ShotBlock } from '../../../composables/useCinematicShot'
 import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
-import CinematicCharacterButton from './CinematicCharacterButton.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
-import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
+import CinematicReferenceButton from './CinematicReferenceButton.vue'
 import CinematicSceneField from './CinematicSceneField.vue'
 import CinematicShotList from './CinematicShotList.vue'
 import CinematicVideoControls from './CinematicVideoControls.vue'
@@ -94,6 +93,7 @@ const model = computed(() =>
   models.find((candidate) => candidate.slug === modelSlug.value)
 )
 const slots = computed(() => referenceSlots(model.value, !!firstFrame.value))
+const files = { cast, firstFrame, lastFrame, video: sourceVideo }
 const blockedNote = computed(() =>
   blocked ? tc(blocked.key, locale, { model: blocked.model }) : undefined
 )
@@ -149,7 +149,15 @@ const cardClass =
         :video="!!video"
         :locale
       >
-        <CinematicCharacterButton v-if="!video" v-model="cast" :locale />
+        <div class="flex items-center gap-2">
+          <CinematicReferenceButton
+            v-for="kind in slots"
+            :key="kind"
+            v-model="files[kind].value"
+            :kind
+            :locale
+          />
+        </div>
       </CinematicSceneField>
       <section class="flex flex-col gap-2">
         <h2 :class="labelClass">
@@ -162,37 +170,6 @@ const cardClass =
           :locale
           @open="emit('open', $event)"
         />
-      </section>
-      <section v-if="video" class="flex flex-col gap-2">
-        <div class="flex items-center justify-between">
-          <h2 :class="labelClass">
-            {{ tc('cinematic.section.references', locale) }}
-          </h2>
-          <span class="text-xs text-primary-warm-gray">
-            {{ tc('cinematic.reference.optional', locale) }}
-          </span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <CinematicReferenceSlot
-            v-if="slots.includes('video')"
-            v-model="sourceVideo"
-            kind="video"
-            class="col-span-2"
-            :locale
-          />
-          <CinematicReferenceSlot
-            v-if="slots.includes('firstFrame')"
-            v-model="firstFrame"
-            kind="firstFrame"
-            :locale
-          />
-          <CinematicReferenceSlot
-            v-if="slots.includes('lastFrame')"
-            v-model="lastFrame"
-            kind="lastFrame"
-            :locale
-          />
-        </div>
       </section>
       <section class="flex flex-col gap-2">
         <h2 :class="labelClass">

@@ -1900,12 +1900,34 @@ describe('CinematicStudio', () => {
       ).toBeInTheDocument()
 
       await user.click(
-        screen.getByRole('button', { name: tc('cinematic.reference.remove') })
+        screen.getByRole('button', {
+          name: `${tc('cinematic.reference.remove')}: ${tc('cinematic.reference.cast')}`
+        })
       )
       expect(screen.getByRole('button', { name: action })).toBeInTheDocument()
       expect(
         screen.queryByRole('button', {
           name: tc('cinematic.composer.references')
+        })
+      ).toBeNull()
+    })
+
+    it('offers the starting frame beside the scene in video mode', async () => {
+      render(CinematicStudioPanel, {
+        props: { models: [...models, ...videoModels] }
+      })
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: 'Video' }))
+
+      expect(
+        screen.getByRole('button', {
+          name: tc('cinematic.video.addFirstFrame')
+        })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('heading', {
+          name: tc('cinematic.section.references')
         })
       ).toBeNull()
     })
