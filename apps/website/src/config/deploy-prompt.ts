@@ -7,7 +7,7 @@ import type { Locale } from './locales'
  * its own strict script-byte budget), and this prompt is only ever used by
  * `ServerlessDeploySection.vue` on the platform/comfy-api pages.
  */
-const DEPLOY_PROMPT: Partial<Record<Locale, string>> = {
+const DEPLOY_PROMPT: Partial<Record<Locale, string>> & { en: string } = {
   en: `Install comfy-cli and read its build skill:
 
 \`pip install -U comfy-cli\`, then \`comfy skills show comfy-build\`.
@@ -21,5 +21,5 @@ It covers packaging a local ComfyUI install — models, custom nodes, dependency
 }
 
 export function deployPromptFor(locale: Locale): string {
-  return DEPLOY_PROMPT[locale] ?? DEPLOY_PROMPT.en!
+  return DEPLOY_PROMPT[locale] ?? DEPLOY_PROMPT.en
 }

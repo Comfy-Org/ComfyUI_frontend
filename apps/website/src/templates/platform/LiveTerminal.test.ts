@@ -82,4 +82,14 @@ describe('LiveTerminal', () => {
     await advance(10000)
     expect(transcript()).toBe('$ comfy up✔ Done')
   })
+
+  it('renders prose lines plain and blank lines as a spacer row', async () => {
+    vi.mocked(prefersReducedMotion).mockReturnValue(true)
+    render(LiveTerminal, {
+      props: { lines: ['$ comfy up', '', 'Ready in 2.1s'], label: 'Demo' }
+    })
+    await nextTick()
+
+    expect(transcript()).toBe('$ comfy up Ready in 2.1s')
+  })
 })

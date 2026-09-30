@@ -13,6 +13,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       :aria-label="t('platform.serverlessVideo.label', locale)"
       src="https://media.comfy.org/website/comfy-api/comfy-api-product-demo.mp4"
       autoplay
+      lazy-autoplay
       persistent-controls
       fit="contain"
     />

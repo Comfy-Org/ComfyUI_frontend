@@ -44,7 +44,7 @@ const {
       <video
         :aria-label="t('platform.serverlessApps.videoLabel', locale)"
         class="block size-full object-cover"
-        autoplay
+        controls
         muted
         loop
         playsinline

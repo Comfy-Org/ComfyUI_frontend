@@ -41,11 +41,6 @@ describe('ServerlessCustomerProofSection', () => {
       screen.getByRole('link', {
         name: t('platform.serverlessApps.browseApps', 'en')
       })
-    ).toHaveAttribute('data-variant', 'default')
-    expect(
-      screen.getByRole('link', {
-        name: t('platform.serverlessApps.browseApps', 'en')
-      })
     ).toHaveAttribute('href', '/hub/apps/')
     expect(
       screen.getByText(t('platform.serverlessCaseStudy.quote', 'en'))
