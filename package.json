@@ -113,6 +113,7 @@
     "@floating-ui/vue": "catalog:",
     "@formkit/auto-animate": "catalog:",
     "@iconify/json": "catalog:",
+    "@monogrid/gainmap-js": "catalog:",
     "@primeuix/utils": "catalog:",
     "@primevue/themes": "catalog:",
     "@sentry/vue": "catalog:",

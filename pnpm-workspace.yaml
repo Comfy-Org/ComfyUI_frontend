@@ -170,6 +170,7 @@ catalog:
   '@comfyorg/comfy-multi-player': 0.3.10
   typescript-native-bridge: 6.0.3-bridge.17.tsgo.7.0.2
   dependency-cruiser: ^18.5.0
+  '@monogrid/gainmap-js': ^3.4.0
 
 cleanupUnusedCatalogs: true
 
