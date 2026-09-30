@@ -446,6 +446,17 @@ describe('isSheriffPr', () => {
       expect(isSheriffPr(pr({ author: { login } }))).toBe(true)
   })
 
+  it('matches a website snapshot refresh on its label alone', () => {
+    expect(
+      isSheriffPr(
+        pr({
+          labels: [{ name: 'Release:Website' }],
+          author: { login: 'someone' }
+        })
+      )
+    ).toBe(true)
+  })
+
   it('ignores humans whose login merely resembles a bot', () => {
     expect(isSheriffPr(pr({ author: { login: 'dependabot-fan' } }))).toBe(false)
     expect(isSheriffPr(pr({ author: null }))).toBe(false)

@@ -67,6 +67,8 @@ open PR that has no assignee and is either:
 - a backport (label `backport`, or a `[backport ...]` title);
 - a release version bump (label `Release`, or a `version-bump-<version>`
   branch);
+- a website snapshot refresh (label `Release:Website`, opened by
+  `release-website.yaml`);
 - opened by automation — `dependabot`, `comfy-pr-bot`, or `cloud-code-bot`.
 
 It also requests their review, since backport merges are gated on an approval.
@@ -83,11 +85,20 @@ Automation-authored PRs are included because nobody feels addressed by what a
 robot opens: they accumulated unassigned for weeks. Note these are matched by
 author rather than by content, so a dependency bump counts as sheriff work.
 
+`Release:Website` is matched as well as the author, even though those PRs are
+already `comfy-pr-bot`'s. The author rule turns on which credential signs the
+PR: `release-website.yaml` passes `PR_GH_TOKEN`, and a future edit to
+`github.token` would make the author `github-actions[bot]` and drop the PR out
+of the rotation's hands with nothing failing. The label is written by the
+workflow that opens the PR, so it cannot come apart that way.
+
 It runs on PR events and hourly. Bot PRs are picked up by the hourly sweep
 rather than on open — the `pull_request_target` gate matches labels, titles and
 branches, and teaching it about bot logins would duplicate the author list in a
 second syntax (the webhook says `dependabot[bot]` where `gh` says
-`app/dependabot`), which would drift.
+`app/dependabot`), which would drift. A `Release:Website` PR is the exception:
+it carries a label, so the gate can match it and the sheriff is assigned when
+it opens rather than up to an hour later.
 
 The rotation itself lives in Datadog On-Call ("Frontend Team – Oncall
 Schedule", layer "Release Sheriff") and is read at execution time, so handovers
@@ -305,6 +316,7 @@ branch has unreleased commits, it triggers a patch bump and drafts a PR to
 | `release-draft-create.yaml`      | Build + publish to GitHub/PyPI/npm                 |
 | `release-branch-create.yaml`     | Create `core/` + `cloud/` branches (minor/major)   |
 | `release-weekly-comfyui.yaml`    | Weekly auto-patch + ComfyUI requirements PR        |
+| `release-website.yaml`           | Refresh comfy.org data snapshots, open a PR        |
 | `pr-backport.yaml`               | Cherry-pick fixes to stable branches               |
 | `cloud-backport-tag.yaml`        | Tag cloud branch merges                            |
 | `pr-assign-release-sheriff.yaml` | Assign on-call sheriff to backport/release/bot PRs |

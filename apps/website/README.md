@@ -63,6 +63,14 @@ inline that into the client bundle).
 | `WEBSITE_ASHBY_API_KEY`        | Ashby API key (Basic auth)  | Build uses the committed snapshot |
 | `WEBSITE_ASHBY_JOB_BOARD_NAME` | Ashby public job board slug | Build uses the committed snapshot |
 
+Note that an absent key is not an error anywhere, including production — the
+build falls back to the committed snapshot and `src/utils/ashby.ci.ts` emits a
+CI warning, so a careers page frozen at whatever the snapshot last held looks
+like a green deploy. The cloud-nodes equivalent does hard-fail production
+(`ci-vercel-website-preview.yaml`, `Verify WEBSITE_CLOUD_API_KEY`); adding the
+same gate here is worthwhile once someone has confirmed both values are set as
+Actions **secrets** rather than repo variables.
+
 ### CI wiring (manual step — required)
 
 This repo's `.github/workflows/*.yaml` changes cannot be pushed by a
@@ -83,7 +91,7 @@ jobs:
       - name: Build website
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
-          WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ vars.WEBSITE_ASHBY_JOB_BOARD_NAME || 'comfy-org' }}
+          WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
         run: pnpm --filter @comfyorg/website build
 
       - name: Verify API key is not leaked into build output
@@ -116,7 +124,7 @@ env:
   VERCEL_TOKEN: ${{ secrets.VERCEL_WEBSITE_TOKEN }}
   VERCEL_SCOPE: comfyui
   WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
-  WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ vars.WEBSITE_ASHBY_JOB_BOARD_NAME || 'comfy-org' }}
+  WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
 ```
 
 The secret must also be added to the Vercel project environment
@@ -127,6 +135,46 @@ Fork PRs do not exercise this path: `ci-vercel-website-preview.yaml`
 receives an empty `VERCEL_TOKEN` for forks and fails at `vercel pull`
 before the build runs. Fork-safe PR interactions (the preview-URL
 comment) are handled by `pr-vercel-website-preview.yaml`.
+
+### Keeping the careers page current
+
+A role edited in Ashby appears on comfy.org only once a production deploy runs,
+because the page is rendered at build time. Any push to `main` touching
+`apps/website/**` produces one (see `ci-vercel-website-preview.yaml`), and each
+rebuild re-fetches Ashby live — so during normal development the live page
+tracks Ashby on its own.
+
+What does not keep up is the committed snapshot, which is what fork CI builds,
+local dev, and any build where Ashby is unreachable or the key is missing
+render from. Same-repo Vercel previews are not in that list — they get the key
+and fetch live, same as production. Refreshing the snapshot is the
+`Release: Website` workflow's job: it regenerates both snapshots and opens a
+PR, and merging the PR also triggers a production deploy — which is what makes
+it useful during a quiet week with no other website commits.
+
+It has one trigger, `workflow_dispatch`, reached two ways:
+
+| `inputs.source` | Dispatched by                                |
+| --------------- | -------------------------------------------- |
+| `manual`        | A maintainer clicking **Run workflow**       |
+| `ashby-webhook` | The `comfy-router` Worker, on an Ashby event |
+
+There is deliberately no `schedule`. A periodic refresh was considered and
+dropped: the live page already tracks Ashby through ordinary deploys (256 in
+one five-week sample), so a cron would only be maintaining the fallback file,
+and it would do so by opening PRs nobody asked for. The webhook covers the
+case the deploy stream does not — an Ashby change during a quiet week.
+
+The webhook receiver lives in [`Comfy-Org/comfy-router`](https://github.com/Comfy-Org/comfy-router)
+(`src/ashby-webhook.js`), which serves `https://comfy.org/api/webhooks/ashby`.
+Ashby cannot call GitHub directly: the dispatch endpoint needs a GitHub-shaped
+body Ashby does not send, and it would put a release-capable credential in an
+ATS setting. So the Worker verifies Ashby's signature and calls this workflow's
+dispatch endpoint. See that repo's `docs/ashby-webhook.md` for setup and key
+rotation.
+
+A run only opens a PR when the underlying data actually changed; see
+"Refreshing the snapshot" below.
 
 ### Refreshing the snapshot
 
@@ -139,8 +187,74 @@ WEBSITE_ASHBY_API_KEY=… WEBSITE_ASHBY_JOB_BOARD_NAME=comfy-org \
 git commit apps/website/src/data/ashby-roles.snapshot.json
 ```
 
-The script exits non-zero on any non-fresh outcome so stale/empty
-snapshots can't be accidentally committed.
+The script exits non-zero on any non-fresh outcome, so a failed fetch cannot
+be committed as data. It also refuses to write when **all three** hold: Ashby
+returned zero usable roles, at least one posting was dropped in validation,
+and the committed snapshot is non-empty. That combination is a schema
+mismatch — every posting failing validation is otherwise reported as a
+successful fetch of zero roles, which would empty the careers page. A
+genuinely empty board drops nothing and is allowed through.
+
+The guard is all-or-nothing: 9 of 10 postings failing still leaves one role
+and writes. Partial drops are surfaced as CI warnings by
+`src/utils/ashby.ci.ts` rather than blocked.
+
+Both guards decide what a refresh would cost by reading the committed
+snapshot, so a snapshot that exists but cannot be parsed generally aborts the
+refresh rather than being silently replaced — otherwise the guard would see
+"no baseline" and wave through exactly the data it exists to catch. There is
+one exception, in the table below. A missing file is still fine; that is a
+first run.
+
+The two guards differ in when they read it, so an unparseable snapshot does
+not behave the same way on both sides:
+
+| Committed snapshot            | Cloud-nodes refresh                                                  | Ashby refresh                        |
+| ----------------------------- | -------------------------------------------------------------------- | ------------------------------------ |
+| Absent                        | Writes (first run — no baseline, so a degraded fetch is written too) | Writes (first run)                   |
+| Valid                         | Guard applies                                                        | Guard applies                        |
+| Unparseable, fetch degraded   | Aborts                                                               | Aborts                               |
+| Unparseable, fetch healthy    | Aborts                                                               | **Overwrites it with the good data** |
+| Unreadable (permissions, I/O) | Aborts                                                               | Aborts                               |
+
+The cloud-nodes guard reads the snapshot unconditionally, so it aborts on
+anything it cannot parse. The Ashby guard reads it only once the fetch already
+looks like a schema break (zero usable roles, at least one dropped), because
+that is the only case where the baseline changes the answer. On a healthy
+fetch it never looks, and `writeSnapshotIfChanged` replaces the corrupt file —
+which is the outcome you want, and what `snapshot-writer.test.ts` asserts.
+
+Note the last row is not the same thing. Unparseable means the bytes are
+there and are not a JSON object — malformed JSON, or a valid array or scalar,
+all three of which `snapshot-writer.test.ts` covers. Unreadable means the read
+itself failed. Only ENOENT is treated as "no snapshot yet", so a permissions
+error or a directory in the file's place aborts every refresh, including a
+healthy one. Neither script repairs that for you.
+
+`refresh-cloud-nodes-snapshot.ts` has the equivalent guard for packs that lose
+their registry metadata, tolerating up to two — a delisted pack is a real
+thing, a registry outage strips dozens at once. If a larger loss is genuine,
+re-run it locally with the override and commit the result to `main`:
+
+```sh
+WEBSITE_ALLOW_REGISTRY_LOSS=1 WEBSITE_CLOUD_API_KEY=… \
+  pnpm --filter @comfyorg/website cloud-nodes:refresh-snapshot
+```
+
+Close any open refresh PR first. While one is open the workflow takes its
+baseline from that branch, not from `main`, so a fix committed only to `main`
+would not clear the guard.
+
+Each refresh stamps a fresh `fetchedAt`, so `scripts/snapshot-writer.ts` leaves
+the file untouched when that timestamp is the only thing that moved. Without
+that, every webhook run would open a PR whose whole diff is a timestamp.
+
+The cloud-nodes snapshot needs the same treatment for `downloads` and
+`githubStars`, which the registry moves continuously — across two real
+snapshot commits 10 days apart, 106 of 179 changed lines were those two
+counters alone. `refresh-cloud-nodes-snapshot.ts` passes them as volatile so
+they never by themselves open a PR; they are still written, with current
+values, whenever something substantive changes.
 
 ## Cloud nodes integration
 
@@ -183,8 +297,15 @@ git commit apps/website/src/data/cloud-nodes.snapshot.json
 
 The script exits non-zero on any non-fresh outcome so stale/empty snapshots
 can't be accidentally committed. Otherwise the `Release: Website` GitHub
-Actions workflow runs the same step on every manual dispatch and opens a PR
-with the refreshed snapshot.
+Actions workflow runs the same step on the Ashby webhook and on manual
+dispatch, opening a PR only when the refreshed data differs from what is
+already proposed. See "Keeping the careers page current" above.
+
+Note that this snapshot therefore refreshes on an Ashby event, which has
+nothing to do with cloud nodes. The coupling is harmless — production fetches
+the Cloud API live on every build, so only the fallback is involved — but if
+this snapshot ever needs refreshing on its own cadence, dispatch the workflow
+or run the script above.
 
 ## Hub sections
 
