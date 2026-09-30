@@ -53,7 +53,6 @@ const i18n = createI18n({
   messages: {
     en: {
       sideToolbar: {
-        closeSidebar: 'Close sidebar',
         nodeLibraryTab: {
           noMatchingNodes: 'No nodes match "{query}"'
         }
@@ -92,12 +91,6 @@ describe('NodeLibrarySidebarTabV2', () => {
     renderComponent()
 
     expect(screen.getByRole('combobox')).toBeInTheDocument()
-  })
-
-  it('offers the sidebar close button in its own header', () => {
-    renderComponent()
-
-    expect(screen.getByRole('button', { name: 'Close sidebar' })).toBeVisible()
   })
 
   it('should render only the selected panel', () => {
