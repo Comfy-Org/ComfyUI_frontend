@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
 interface WorkflowJob {
+  concurrency?: { group?: string; 'cancel-in-progress'?: boolean }
   if?: string
   steps?: Array<{
     env?: Record<string, string>
@@ -115,14 +116,24 @@ describe('cloud backport tag workflow', () => {
   it('dispatches branch pushes without dispatching tags or deleted branches', () => {
     expect(dispatchWorkflow.on?.push?.branches).toEqual(['**'])
     expect(dispatchWorkflow.on?.push?.['tags-ignore']).toEqual(['**'])
-    expect(dispatchWorkflow.jobs?.dispatch.if).toContain(
+    const dispatchJob = dispatchWorkflow.jobs?.dispatch
+    if (!dispatchJob) throw new Error('dispatch job is required')
+    expect(dispatchJob.if).toContain(
       "github.event_name != 'push' || github.event.deleted == false"
     )
-    expect(dispatchWorkflow.concurrency?.group).toBe(
+    expect(dispatchJob.if).toContain(
+      'github.event.pull_request.head.repo.full_name == github.repository'
+    )
+    expect(dispatchJob.concurrency?.group).toBe(
       'cloud-dispatch-${{ github.event.pull_request.head.ref || github.ref_name }}'
     )
+    expect(dispatchJob.concurrency?.['cancel-in-progress']).toBe(false)
+    expect(dispatchWorkflow.concurrency).toBeUndefined()
     expect(dispatchWorkflowSource).toContain(
       '[[ "${BRANCH}" =~ ^cloud/[0-9]+\\.[0-9]+$ ]]'
+    )
+    expect(dispatchWorkflowSource).toContain(
+      `Unrecognized cloud release branch '\${BRANCH}'; expected cloud/x.y`
     )
   })
 
