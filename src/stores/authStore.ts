@@ -435,9 +435,6 @@ export const useAuthStore = defineStore('auth', () => {
       return useWorkspaceAuthStore().getUnifiedToken()
     }
 
-    // The OAuth token is already bound to the workspace picked at consent.
-    if (hasBrowserSession()) return useLocalOAuthStore().getAccessToken()
-
     if (currentUser.value === null && useApiKeyAuthStore().isAuthenticated) {
       return undefined
     }
@@ -466,6 +463,12 @@ export const useAuthStore = defineStore('auth', () => {
       undefined
     )
   }
+
+  // The browser-session token is already bound to the workspace picked at consent.
+  const getRunAuthToken = async (): Promise<string | undefined> =>
+    hasBrowserSession()
+      ? useLocalOAuthStore().getAccessToken()
+      : getWorkspaceAuthToken()
 
   const getAuthHeaderOrThrow = async (): Promise<AuthHeader> => {
     const authHeader = await getAuthHeader()
@@ -937,7 +940,7 @@ export const useAuthStore = defineStore('auth', () => {
     getWorkspaceAuthHeader,
     getWorkspaceAuthHeaderOrThrow,
     getAuthToken,
-    getWorkspaceAuthToken,
+    getWorkspaceAuthToken: getRunAuthToken,
     notifyTokenRefreshed
   }
 })

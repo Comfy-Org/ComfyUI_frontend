@@ -24,7 +24,7 @@ const REFRESH_LOCK = 'Comfy.LocalOAuth.Refresh'
 const REFRESH_LEEWAY_MS = 60_000
 const SIGN_IN_TIMEOUT_MS = 5 * 60_000
 
-export type BrowserSignInResult =
+type BrowserSignInResult =
   | 'signed_in'
   | 'popup_blocked'
   | 'timed_out'
