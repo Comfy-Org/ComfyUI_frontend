@@ -506,6 +506,25 @@ export const useAgentConversationStore = defineStore(
       clearActive()
     }
 
+    /**
+     * What the stash carried for its own user turn, restored only where the
+     * hydrated transcript has nothing: a row that came back with the same
+     * fields is the authoritative copy of them.
+     */
+    function restoreStashedUserRecords(entry: BackgroundTurn): void {
+      const turnId = entry.message.id
+      if (entry.userText !== undefined && !userTexts.value.has(turnId))
+        userTexts.value.set(turnId, entry.userText)
+      if (
+        entry.userAttachments !== undefined &&
+        !userAttachments.value.has(turnId)
+      )
+        userAttachments.value.set(
+          turnId,
+          withoutRevokedPreviews(entry.userAttachments)
+        )
+    }
+
     function activateResumedTurn(entry: BackgroundTurn, index: number): void {
       // A hydrate that landed on a mid-ask row left its own transport in the
       // active slot, and this resume supersedes it. Dispose rather than
@@ -563,19 +582,7 @@ export const useAgentConversationStore = defineStore(
         resyncActiveSlot()
         return
       }
-      if (
-        entry.userText !== undefined &&
-        !userTexts.value.has(entry.message.id)
-      )
-        userTexts.value.set(entry.message.id, entry.userText)
-      if (
-        entry.userAttachments !== undefined &&
-        !userAttachments.value.has(entry.message.id)
-      )
-        userAttachments.value.set(
-          entry.message.id,
-          withoutRevokedPreviews(entry.userAttachments)
-        )
+      restoreStashedUserRecords(entry)
       const index = kept.push(entry.message) - 1
       messages.value = kept
       if (entry.settled) {
@@ -775,18 +782,33 @@ export const useAgentConversationStore = defineStore(
           const copy = transport === undefined ? settledCopy(part) : { ...part }
           adopted.push(copy)
           transport?.adoptToolPart(copy)
-        } else if (
-          part.state === 'done' &&
-          !holdsOwnOutcome(alreadyLive) &&
-          !(
-            transport !== undefined && hydratedUnsettledCallIds.has(part.callId)
-          )
-        ) {
+        } else if (rowOutranksLiveCall(alreadyLive, part, transport)) {
           settleFromRow(alreadyLive, part)
         }
       }
       if (adopted.length === 0) return
       live.parts = spliceBeforeTrailingReply(live.parts, adopted)
+    }
+
+    /**
+     * Whether the row is the better record of a call the live copy also holds.
+     *
+     * A row that was itself still `pending`/`running` knows nothing: its part
+     * was forced terminal only so a restored transcript could not spin, and
+     * `ok` then reads as failure. Handing that to a call still in flight
+     * paints a red cross on it, so it is left to the transport still watching
+     * it -- and taken once no transport remains, where a terminal part beats
+     * one nothing can ever finish.
+     */
+    function rowOutranksLiveCall(
+      live: ToolPart,
+      row: ToolPart,
+      transport: AgentEventTransport | undefined
+    ): boolean {
+      if (row.state !== 'done' || holdsOwnOutcome(live)) return false
+      return (
+        transport === undefined || !hydratedUnsettledCallIds.has(row.callId)
+      )
     }
 
     /**

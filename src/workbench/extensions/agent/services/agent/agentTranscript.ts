@@ -236,12 +236,15 @@ function parseUserWorkflowReferences(
  * only `isLive` (the row is the one actively backed by a live transport —
  * the run_approval mid-ask case) keeps it in `streaming` state.
  */
+function isInProgressStatus(status: unknown): boolean {
+  return status === 'pending' || status === 'running'
+}
+
 function toolCallPartState(
   status: unknown,
   isLive: boolean
 ): ToolPart['state'] {
-  const inProgress = status === 'pending' || status === 'running'
-  return inProgress && isLive ? 'streaming' : 'done'
+  return isInProgressStatus(status) && isLive ? 'streaming' : 'done'
 }
 
 /**
@@ -283,12 +286,16 @@ function parseToolCallEntry(
   } = parsed.data
   const state = toolCallPartState(status, isLive)
   const ok = toolCallOk(status, state)
+  // A live `agent_tool_call` frame keys its update on `tool_call_id`, not this
+  // row's own `id` — prefer it so a restored part matches a live frame that
+  // arrives for it later. Falls back to `id` only for rows recorded before
+  // `tool_call_id` existed.
+  const callId = toolCallId ?? id
   // `state` is forced terminal for a non-live row so a restored call does not
   // spin forever, and `ok` then reads as failure. Neither is evidence the
   // service watched this call end, so the raw status is recorded separately
   // for callers that still have a transport able to finish it.
-  if (status === 'pending' || status === 'running')
-    unsettledCallIds?.add(toolCallId ?? id)
+  if (isInProgressStatus(status)) unsettledCallIds?.add(callId)
   const durationMs =
     typeof rawDuration === 'number' &&
     Number.isFinite(rawDuration) &&
@@ -297,11 +304,7 @@ function parseToolCallEntry(
       : undefined
   return {
     type: 'tool',
-    // A live `agent_tool_call` frame keys its update on `tool_call_id`, not
-    // this row's own `id` — prefer it so a restored part matches a live
-    // frame that arrives for it later. Falls back to `id` only for rows
-    // recorded before `tool_call_id` existed.
-    callId: toolCallId ?? id,
+    callId,
     name: toolName,
     state,
     ...(ok !== undefined ? { ok } : {}),
