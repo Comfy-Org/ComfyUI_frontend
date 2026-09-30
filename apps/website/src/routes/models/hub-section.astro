@@ -23,8 +23,8 @@ const copy = HUB_SECTION_COPY[section]
 ---
 
 <BaseLayout
-  title={copy.title.en}
-  description={copy.description.en}
+  title={copy.title}
+  description={copy.description}
   noindex={!isIndexableModelPage(Astro.url.pathname)}
   preloadFonts={['Medium']}
 >
@@ -37,7 +37,7 @@ const copy = HUB_SECTION_COPY[section]
         {t('workshop.catalogue.eyebrow')}
       </p>
       <h1 class={workshopHeadingClass}>
-        {copy.heading.en}
+        {copy.heading}
       </h1>
     </div>
     <ModelsShowcase slot="fallback" />
