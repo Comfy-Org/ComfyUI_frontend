@@ -124,7 +124,7 @@ describe('AgentPanel', () => {
         }
       }
     })
-    const prompt = 'Generate a yellow duck with a hockey mask'
+    const prompt = 'Generate a realistic portrait of an astronaut'
     const suggestion = screen.getByRole('button', { name: prompt })
     const textarea = screen.getByRole('textbox')
 
