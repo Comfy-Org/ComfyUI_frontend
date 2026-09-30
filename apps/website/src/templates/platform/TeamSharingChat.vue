@@ -17,41 +17,74 @@ const { locale = 'en' } = defineProps<{
 const root = useTemplateRef<HTMLElement>('root')
 const visible = useElementVisibility(root)
 const visibility = useDocumentVisibility()
-// A single scripted exchange: M asks a question, B replies with a deployed
-// workflow link and a code snippet, and M says thanks. It loops in place
-// rather than cycling between different exchanges, since there's only one.
-const chatScript = [
+// Three scripted exchanges, each a different asker paired with B (the one
+// deploying workflows): M asks about video upscaling, S about batch
+// background removal, R about product shots. Each exchange is ask -> reply
+// (with a deployed workflow link + snippet) -> thanks, and the three cycle
+// continuously, sliding one message at a time through a 4-message window.
+const exchanges = [
   {
-    reply: false,
-    avatar: 'M',
-    text: 'platform.howItWorks.chat.message'
-  },
-  {
-    reply: true,
-    avatar: 'B',
-    text: 'platform.howItWorks.chat.reply',
+    asker: 'M',
+    message: 'platform.howItWorks.chat.message',
+    reply: 'platform.howItWorks.chat.reply',
     endpoint: 'video-upscale-4k',
-    snippet: 'platform.howItWorks.chat.replySnippet'
+    snippet: 'platform.howItWorks.chat.replySnippet',
+    thanks: 'platform.howItWorks.chat.thanks'
   },
   {
-    reply: false,
-    avatar: 'M',
-    text: 'platform.howItWorks.chat.thanks'
+    asker: 'S',
+    message: 'platform.howItWorks.chat.messageBgRemove',
+    reply: 'platform.howItWorks.chat.replyBgRemove',
+    endpoint: 'bg-remove-batch',
+    snippet: 'platform.howItWorks.chat.replySnippetBgRemove',
+    thanks: 'platform.howItWorks.chat.thanksBgRemove'
+  },
+  {
+    asker: 'R',
+    message: 'platform.howItWorks.chat.messageProductShots',
+    reply: 'platform.howItWorks.chat.replyProductShots',
+    endpoint: 'product-shots',
+    snippet: 'platform.howItWorks.chat.replySnippetProductShots',
+    thanks: 'platform.howItWorks.chat.thanksProductShots'
   }
 ] as const
 type ChatMessage = {
   id: number
   reply: boolean
   avatar: string
-  text: (typeof chatScript)[number]['text']
+  text:
+    | (typeof exchanges)[number]['message']
+    | (typeof exchanges)[number]['reply']
+    | (typeof exchanges)[number]['thanks']
   endpoint?: string
-  snippet?: 'platform.howItWorks.chat.replySnippet'
+  snippet?: (typeof exchanges)[number]['snippet']
 }
-const initialMessages: ChatMessage[] = chatScript.map((message, index) => ({
-  ...message,
-  id: index
-}))
-const tick = ref(chatScript.length - 1)
+const chatScript: ChatMessage[] = exchanges.flatMap((exchange, index) => [
+  {
+    id: index * 3,
+    reply: false,
+    avatar: exchange.asker,
+    text: exchange.message
+  },
+  {
+    id: index * 3 + 1,
+    reply: true,
+    avatar: 'B',
+    text: exchange.reply,
+    endpoint: exchange.endpoint,
+    snippet: exchange.snippet
+  },
+  {
+    id: index * 3 + 2,
+    reply: false,
+    avatar: exchange.asker,
+    text: exchange.thanks
+  }
+])
+// The fixed, reduced-motion frame shows one full exchange (never a
+// mid-question cut) rather than the sliding window's cross-exchange overlap.
+const initialMessages: ChatMessage[] = chatScript.slice(0, 3)
+const tick = ref(2)
 const messages = ref<ChatMessage[]>(initialMessages)
 const reduced = computed(() => prefersReducedMotion())
 const displayed = computed(() =>
@@ -61,10 +94,7 @@ const { pause, resume } = useIntervalFn(
   () => {
     tick.value += 1
     const next = chatScript[tick.value % chatScript.length]
-    messages.value = [
-      ...messages.value.slice(-(chatScript.length - 1)),
-      { ...next, id: tick.value }
-    ]
+    messages.value = [...messages.value.slice(-3), { ...next, id: tick.value }]
   },
   1600,
   { immediate: false }
