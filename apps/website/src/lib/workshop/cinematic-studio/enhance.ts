@@ -55,33 +55,40 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-/**
- * The rewritten scene from an OpenAI Responses document, or undefined if it
- * carries none. The text sits at `output[].content[].text` on the message
- * items; reasoning and tool items are skipped.
- */
-export function enhancedScene(document: string): string | undefined {
-  let data: unknown
+function parsed(document: string): unknown {
   try {
-    data = JSON.parse(document)
+    return JSON.parse(document)
   } catch {
     return undefined
   }
+}
+
+/** The text parts of one output item; reasoning and tool items have none. */
+function messageTexts(item: unknown): string[] {
+  if (!isRecord(item) || item.type !== 'message') return []
+  if (!Array.isArray(item.content)) return []
+  return item.content.flatMap((part) =>
+    isRecord(part) &&
+    part.type === 'output_text' &&
+    typeof part.text === 'string'
+      ? [part.text]
+      : []
+  )
+}
+
+function replyTexts(data: Record<string, unknown>): string[] {
+  if (typeof data.output_text === 'string') return [data.output_text]
+  return Array.isArray(data.output) ? data.output.flatMap(messageTexts) : []
+}
+
+/**
+ * The rewritten scene from an OpenAI Responses document, or undefined if it
+ * carries none. The text sits at `output[].content[].text` on the message
+ * items.
+ */
+export function enhancedScene(document: string): string | undefined {
+  const data = parsed(document)
   if (!isRecord(data)) return undefined
-  const texts: string[] = []
-  if (typeof data.output_text === 'string') texts.push(data.output_text)
-  else if (Array.isArray(data.output))
-    for (const item of data.output) {
-      if (!isRecord(item) || item.type !== 'message') continue
-      if (!Array.isArray(item.content)) continue
-      for (const part of item.content)
-        if (
-          isRecord(part) &&
-          part.type === 'output_text' &&
-          typeof part.text === 'string'
-        )
-          texts.push(part.text)
-    }
-  const scene = texts.join(' ').replace(/\s+/g, ' ').trim()
+  const scene = replyTexts(data).join(' ').replace(/\s+/g, ' ').trim()
   return scene || undefined
 }
