@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="referrer" content="no-referrer" />
+    <title>ComfyUI sign-in</title>
+  </head>
+  <body>
+    <p>Sign-in complete. You can close this window and return to ComfyUI.</p>
+    <script>
+      // Relays the OAuth result to the ComfyUI tab that started sign-in. That
+      // tab holds the PKCE verifier, checks state and redeems the code.
+      // BroadcastChannel, not window.opener: the cloud pages in between can
+      // sever the opener with Cross-Origin-Opener-Policy.
+      ;(function () {
+        var params = new URLSearchParams(window.location.search)
+        history.replaceState(null, '', window.location.pathname)
+        try {
+          var channel = new BroadcastChannel('comfy-local-oauth')
+          channel.postMessage({
+            type: 'comfy-local-oauth-callback',
+            code: params.get('code'),
+            state: params.get('state'),
+            error: params.get('error')
+          })
+          channel.close()
+        } catch (e) {}
+        window.close()
+      })()
+    </script>
+  </body>
+</html>
