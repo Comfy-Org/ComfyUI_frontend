@@ -10,6 +10,7 @@ import type {
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 
+import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
   CLOUD_REMOTE_CONFIG,
@@ -19,7 +20,6 @@ import {
   TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceTokenMint } from '@e2e/fixtures/utils/workspaceMocks'
@@ -56,17 +56,9 @@ export class CloudWorkspaceMockHelper {
         timeout: 45_000
       }
     )
-    await this.page
-      .getByRole('button', { name: /^Settings/ })
-      .first()
-      .click()
-    const dialog = this.page.getByTestId(TestIds.dialogs.settings)
-    await dialog.waitFor({ state: 'visible' })
-    await dialog
-      .locator('nav')
-      .getByRole('button', { name: 'Plan & Credits', exact: true })
-      .click()
-    return dialog.getByRole('main')
+    const settings = new SettingDialog(this.page)
+    await settings.openFromToolbar()
+    return settings.openPlanAndCredits()
   }
 
   async setup(

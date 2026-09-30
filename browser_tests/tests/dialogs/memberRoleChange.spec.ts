@@ -4,6 +4,7 @@ import type { Locator, Page } from '@playwright/test'
 import type { Member } from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import {
   CREATOR,
   DEFAULT_TEAM_MEMBERS,
@@ -26,15 +27,9 @@ async function openMembersTab(page: Page): Promise<Locator> {
     timeout: 45_000
   })
 
-  await page
-    .getByRole('button', { name: /^Settings/ })
-    .first()
-    .click()
-  const dialog = page.getByTestId('settings-dialog')
-  await expect(dialog).toBeVisible()
-  await dialog.locator('nav').getByRole('button', { name: 'Members' }).click()
-
-  const content = dialog.getByRole('main')
+  const settings = new SettingDialog(page)
+  await settings.openFromToolbar()
+  const content = await settings.goToCategory('Members')
   await expect(content.getByText('4 of 30 members')).toBeVisible()
   return content
 }

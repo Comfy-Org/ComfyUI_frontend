@@ -9,20 +9,41 @@ export class SettingDialog extends BaseDialog {
   public readonly searchBox: Locator
   public readonly categories: Locator
   public readonly contentArea: Locator
+  public readonly toolbarButton: Locator
 
   constructor(
     page: Page,
-    public readonly comfyPage: ComfyPage
+    public readonly comfyPage?: ComfyPage
   ) {
     super(page, TestIds.dialogs.settings)
     this.searchBox = this.root.getByPlaceholder(/Search/)
     this.categories = this.root.locator('nav').getByRole('button')
     this.contentArea = this.root.getByRole('main')
+    this.toolbarButton = page.getByRole('button', { name: /^Settings/ }).first()
   }
 
   async open() {
+    if (!this.comfyPage) {
+      throw new Error(
+        'SettingDialog.open() requires ComfyPage; use openFromToolbar() for page-only tests'
+      )
+    }
     await this.comfyPage.command.executeCommand('Comfy.ShowSettingsDialog')
     await this.waitForVisible()
+  }
+
+  async openFromToolbar() {
+    await this.toolbarButton.click()
+    await this.waitForVisible()
+  }
+
+  async goToCategory(name: string) {
+    await this.category(name).click()
+    return this.contentArea
+  }
+
+  async openPlanAndCredits() {
+    return this.goToCategory('Plan & Credits')
   }
 
   async selectLocale(locale: 'zh' | 'en') {
@@ -40,7 +61,7 @@ export class SettingDialog extends BaseDialog {
       })
       .click()
     await expect
-      .poll(() => this.comfyPage.settings.getPersistedSetting('Comfy.Locale'))
+      .poll(() => this.comfyPage!.settings.getPersistedSetting('Comfy.Locale'))
       .toBe(locale)
     await this.root
       .getByRole('button', { name: /Close dialog|关闭对话框/i })
