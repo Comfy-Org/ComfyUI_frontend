@@ -8,6 +8,7 @@ import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
   useWorkshopEnabled,
+  useWorkshopEnabledSettled,
   useWorkshopFlag
 } from '../../scripts/posthog'
 import ModelsCatalogue from './ModelsCatalogue.vue'
@@ -308,6 +309,59 @@ describe('ModelsCatalogue', () => {
       ).toEqual(tabs)
     }
   )
+
+  describe('catalogue route access', () => {
+    let settled: Ref<boolean>
+
+    beforeEach(() => {
+      settled = ref(false)
+      vi.mocked(useWorkshopEnabledSettled).mockReturnValue(readonly(settled))
+      vi.spyOn(location, 'replace').mockImplementation(() => {})
+    })
+
+    it.for([
+      { tab: 'apps', models: launchModels },
+      {
+        tab: 'workflows',
+        models: launchModels.filter((model) => model.type !== 'CLOUD')
+      }
+    ] as const)(
+      'replaces an unavailable $tab route with Models only after flags settle',
+      async ({ tab, models }) => {
+        enabled.value = true
+        appsEnabled.value = false
+        render(ModelsCatalogue, { props: { models, catalogueTab: tab } })
+
+        expect(await screen.findByTestId('workshop-loading')).toBeVisible()
+        expect(screen.queryByRole('link', { name: /Image model/ })).toBeNull()
+        expect(location.replace).not.toHaveBeenCalled()
+        expect(captureWorkshopEvent).not.toHaveBeenCalled()
+
+        settled.value = true
+        await waitFor(() =>
+          expect(location.replace).toHaveBeenCalledExactlyOnceWith(
+            '/hub/models/'
+          )
+        )
+        expect(captureWorkshopEvent).not.toHaveBeenCalled()
+      }
+    )
+
+    it('keeps the requested catalogue when its flag grants access', async () => {
+      appsEnabled.value = false
+      render(ModelsCatalogue, {
+        props: { models: launchModels, catalogueTab: 'apps' }
+      })
+      expect(await screen.findByTestId('workshop-loading')).toBeVisible()
+
+      appsEnabled.value = true
+      settled.value = true
+
+      expect(await screen.findByTestId('app-shelf')).toBeVisible()
+      expect(screen.queryByTestId('workshop-loading')).toBeNull()
+      expect(location.replace).not.toHaveBeenCalled()
+    })
+  })
 
   it('opens all workflows with a count and returns to the use-case groups', async () => {
     history.replaceState(null, '', '/models/?type=workflows')

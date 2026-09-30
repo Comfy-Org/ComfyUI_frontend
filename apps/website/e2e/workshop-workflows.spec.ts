@@ -274,7 +274,10 @@ test('workflow search and category filters share the mobile controls @mobile', a
   await page.goto('/hub/models/')
   await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
   await page.getByTestId('catalogue-tab-workflows').click()
-  await page.getByTestId('workshop-filter').click()
+  await page
+    .getByTestId('workflow-catalogue')
+    .getByTestId('workshop-filter')
+    .click()
   await page.getByRole('button', { name: 'Upscale & restore 6' }).click()
   await page.getByRole('button', { name: 'Show 6 workflows' }).click()
   await expect(

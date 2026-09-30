@@ -59,6 +59,46 @@ for (const { path, heading } of [
     expect(live).not.toContain('/models/apps/cinematic-studio/')
   })
 
+test.describe('unavailable catalogue routes', () => {
+  test.beforeEach(async ({ context }) => {
+    await stubWorkshopFlags(context, {
+      'workshop-enabled': true,
+      'workshop-workflows-enabled': false,
+      'workshop-apps-enabled': false
+    })
+  })
+
+  for (const path of ['/hub/workflows/', '/hub/apps/'])
+    test(`${path} redirects to the matching Models page when its flag is off`, async ({
+      page
+    }) => {
+      await page.goto(path)
+
+      await expect(page).toHaveURL(/\/hub\/models\/$/)
+      await expect(page).toHaveTitle(/^ComfyUI Models:/)
+      await expect(
+        page.getByRole('heading', {
+          level: 1,
+          name: 'ComfyUI models',
+          exact: true
+        })
+      ).toBeVisible()
+      await expect(page.getByTestId('workshop-search')).toBeVisible()
+      await expect(page.getByTestId('workflow-catalogue')).toHaveCount(0)
+      await expect(page.getByTestId('app-shelf')).toHaveCount(0)
+    })
+})
+
+test('a blocked flag request redirects the workflow catalogue to Models', async ({
+  page
+}) => {
+  await page.goto('/hub/workflows/')
+
+  await expect(page).toHaveURL(/\/hub\/models\/$/)
+  await expect(page).toHaveTitle(/^ComfyUI Models:/)
+  await expect(page.getByTestId('workshop-search')).toBeVisible()
+})
+
 test('static HTML of a model page paints the model, not a loader', async ({
   request
 }) => {

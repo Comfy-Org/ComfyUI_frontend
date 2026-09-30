@@ -12,13 +12,15 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import SplitReveal from './SplitReveal.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
+import WorkshopLoading from './WorkshopLoading.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from '../../lib/workshop/catalogue-tabs'
 import type { WorkshopPageType } from '../../scripts/workshop-analytics'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
-  useWorkshopEnabled
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled
 } from '../../scripts/posthog'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
@@ -44,6 +46,7 @@ const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
+const settled = useWorkshopEnabledSettled()
 const requestedTab =
   catalogueTab === 'models' && typeof location !== 'undefined'
     ? new URLSearchParams(location.search).get('type')
@@ -86,7 +89,17 @@ const availableTabs = computed<readonly CatalogueTab[]>(() => [
   ...(appsEnabled.value && apps.value.length ? (['apps'] as const) : [])
 ])
 const activeTab = computed(() =>
-  availableTabs.value.includes(selectedTab) ? selectedTab : 'models'
+  availableTabs.value.includes(selectedTab)
+    ? selectedTab
+    : catalogueTab === 'models'
+      ? 'models'
+      : undefined
+)
+watch(
+  () => mounted.value && settled.value && activeTab.value === undefined,
+  (unavailable) => {
+    if (unavailable) location.replace(getRoutes(locale).workshop)
+  }
 )
 const catalogueHrefs = computed(() => {
   const routes = getRoutes(locale)
@@ -96,6 +109,16 @@ const catalogueHrefs = computed(() => {
     apps: routes.workshopApps
   }
 })
+const catalogueView = computed(() => {
+  if (activeTab.value === 'models')
+    return {
+      component: WorkshopModelsGrid,
+      props: { models: routerModels.value }
+    }
+  if (activeTab.value === 'workflows')
+    return { component: WorkflowCatalogue, props: { models: workflows.value } }
+  return { component: AppCatalogue, props: { apps: appCards.value } }
+})
 
 // Each tab says what its own listing is for, in Eric's words.
 const SUBTITLE_KEY = {
@@ -103,7 +126,9 @@ const SUBTITLE_KEY = {
   workflows: 'workshop.catalogue.workflowsSubtitle',
   apps: 'workshop.catalogue.appsSubtitle'
 } as const satisfies Record<CatalogueTab, TranslationKey>
-const subtitleKey = computed(() => SUBTITLE_KEY[activeTab.value])
+const subtitleKey = computed(
+  () => SUBTITLE_KEY[activeTab.value ?? catalogueTab]
+)
 
 const viewedTabs = new Set<CatalogueTab>()
 watch(
@@ -129,7 +154,7 @@ watch(
 
 <template>
   <div
-    v-if="!inSection"
+    v-if="activeTab && !inSection"
     class="relative isolate -mx-6 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 overflow-hidden px-6 pb-2 max-sm:mb-4 max-sm:pb-0 lg:-mx-8 lg:px-8 sm:short:pb-0"
     data-testid="workshop-hero"
   >
@@ -137,10 +162,15 @@ watch(
       <SplitReveal :text="t(subtitleKey, locale)" :delay="260" :stagger="50" />
     </p>
   </div>
-  <WorkshopModelsGrid
-    v-if="activeTab === 'models'"
+  <WorkshopLoading
+    v-if="!activeTab"
+    :label="t('workshop.load.pending', locale)"
+  />
+  <component
+    :is="catalogueView.component"
+    v-else
     v-model:browse-all="browseAll"
-    :models="routerModels"
+    v-bind="catalogueView.props"
     :locale
     @section="inSection = $event"
   >
@@ -153,37 +183,5 @@ watch(
         :hrefs="catalogueHrefs"
       />
     </template>
-  </WorkshopModelsGrid>
-  <WorkflowCatalogue
-    v-else-if="activeTab === 'workflows'"
-    v-model:browse-all="browseAll"
-    :models="workflows"
-    :locale
-    @section="inSection = $event"
-  >
-    <template #tabs>
-      <CatalogueTabs
-        :tabs="availableTabs"
-        :model-value="activeTab"
-        :locale
-        :hrefs="catalogueHrefs"
-      />
-    </template>
-  </WorkflowCatalogue>
-  <AppCatalogue
-    v-else
-    v-model:browse-all="browseAll"
-    :apps="appCards"
-    :locale
-    @section="inSection = $event"
-  >
-    <template #tabs>
-      <CatalogueTabs
-        :tabs="availableTabs"
-        :model-value="activeTab"
-        :locale
-        :hrefs="catalogueHrefs"
-      />
-    </template>
-  </AppCatalogue>
+  </component>
 </template>
