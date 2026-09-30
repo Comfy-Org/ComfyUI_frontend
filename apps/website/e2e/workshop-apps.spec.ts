@@ -186,6 +186,18 @@ test('asks Safari for a first frame on the Re-shoot example video tile', async (
 })
 
 signedInTest(
+  'keeps the Re-shoot camera help behind info buttons',
+  async ({ page, context, modelsAccount }) => {
+    await openReadReshootScene(page, context, modelsAccount)
+
+    const help = 'Distance is approximate; angles give the most control.'
+    await expect(page.getByText(help)).toBeHidden()
+    await page.getByRole('button', { name: help }).hover()
+    await expect(page.getByText(help).first()).toBeVisible()
+  }
+)
+
+signedInTest(
   '@mobile keeps the Re-shoot aim badges to one line on a phone',
   async ({ page, context, modelsAccount }) => {
     await openReadReshootScene(page, context, modelsAccount)
@@ -225,20 +237,6 @@ signedInTest(
       .toBeLessThan(before)
   }
 )
-
-test('keeps the Re-shoot camera help behind info buttons', async ({
-  page,
-  context
-}) => {
-  await mockFlags(context, { apps: true, workflows: false })
-  await page.goto('/models/apps/reshoot/')
-  await page.getByText('Sci-fi pilot').first().click()
-
-  const help = 'Distance is approximate; angles give the most control.'
-  await expect(page.getByText(help)).toBeHidden()
-  await page.getByRole('button', { name: help }).hover()
-  await expect(page.getByText(help).first()).toBeVisible()
-})
 
 test('shows a preview frame for every Cinematic Studio shot option', async ({
   page,
