@@ -3103,6 +3103,40 @@ describe('AgentPanelRoot attach flow', () => {
     )
   })
 
+  it('uses the fetched asset filename when its display label has no type', async () => {
+    const uploads: File[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Response(new Blob(['asset'], { type: 'image/png' }))
+        if (url.endsWith('/api/upload/image')) {
+          if (!(init?.body instanceof FormData))
+            throw new Error('Expected upload form data')
+          const image = init.body.get('image')
+          if (!(image instanceof File)) throw new Error('Expected upload file')
+          uploads.push(image)
+          return json(200, { name: 'uploaded_gen.png' })
+        }
+        return json(200, agentThreadList())
+      })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({ display_name: 'My renamed asset', type: 'input' })
+          : 'http://localhost/api/view?filename=gen.png'
+    })
+
+    await vi.waitFor(() => expect(uploads).toHaveLength(1))
+    expect(uploads[0].name).toBe('gen.png')
+  })
+
   it('does not warn after closing the panel during a deferred asset fetch', async () => {
     vi.stubGlobal(
       'fetch',

@@ -32,16 +32,20 @@ export function getDroppedAsset(
     : undefined
 }
 
-export async function fetchDroppedAsset({
-  name,
-  uri
-}: DroppedAsset): Promise<File | undefined> {
+export async function fetchDroppedAsset(
+  { name, uri, ref }: DroppedAsset,
+  signal?: AbortSignal
+): Promise<File | undefined> {
   if (!uri) return undefined
   try {
-    const response = await fetch(uri)
+    const response = await fetch(uri, { signal })
     if (!response.ok) return undefined
     const blob = await response.blob()
-    return new File([blob], name, { type: blob.type })
+    const resolvedUrl = new URL(response.url || uri, 'http://localhost')
+    const resolvedName =
+      resolvedUrl.searchParams.get('filename') ??
+      decodeURIComponent(resolvedUrl.pathname.split('/').pop() || '')
+    return new File([blob], resolvedName || ref || name, { type: blob.type })
   } catch {
     return undefined
   }
