@@ -4,7 +4,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import CinematicTakeVideo from './CinematicTakeVideo.vue'
 const {
   current,
   height,
@@ -37,25 +37,16 @@ const revealed = defineModel<boolean>('revealed', { required: true })
     @load="emit('loaded')"
     @error="emit('loaded')"
   />
-  <video
+  <CinematicTakeVideo
     v-else-if="
       current.output.kind === 'video' && (!current.output.nsfw || revealed)
     "
     :key="current.id"
     :src="current.output.url"
-    :aria-label="tc('cinematic.video.preview', locale)"
-    controls
-    playsinline
-    preload="metadata"
-    :class="
-      cn(
-        'block h-auto w-auto max-w-full transition-opacity duration-300',
-        pending && 'absolute opacity-0'
-      )
-    "
-    :style="{ maxHeight: height }"
-    @loadeddata="emit('loaded')"
-    @error="emit('loaded')"
+    :height
+    :pending
+    :locale
+    @loaded="emit('loaded')"
   />
   <div
     v-if="current.output.nsfw && !revealed"
