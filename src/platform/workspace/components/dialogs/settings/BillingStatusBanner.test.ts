@@ -101,11 +101,6 @@ const i18n = createI18n({
     en: {
       workspacePanel: {
         billingStatus: {
-          warning: {
-            title: 'Payment failed',
-            bodyNoDate:
-              'Your payment failed to process. Update payment to avoid a pause.'
-          },
           paused: {
             title: 'Subscription paused',
             body: "This workspace's subscription is paused. Update payment to resume.",
@@ -331,16 +326,14 @@ describe('BillingStatusBanner', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('shows immediate payment-failed copy with Update payment for owners', () => {
+  it('shows the paused copy for a failed renewal, since runs are already blocked', () => {
     paymentFailedState()
-    state.renewalDate = '2026-08-01T00:00:00Z'
     renderBanner()
 
-    expect(screen.getByRole('status')).toHaveTextContent('Payment failed')
+    expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Update payment to avoid a pause'
+      'Update payment to resume'
     )
-    expect(screen.getByRole('status')).not.toHaveTextContent('will pause on')
     expect(
       screen.getByRole('button', { name: 'Update payment' })
     ).toBeInTheDocument()
@@ -352,7 +345,7 @@ describe('BillingStatusBanner', () => {
     state.workspaceType = 'personal'
     renderBanner()
 
-    expect(screen.getByRole('status')).toHaveTextContent('Payment failed')
+    expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment' })
     )
