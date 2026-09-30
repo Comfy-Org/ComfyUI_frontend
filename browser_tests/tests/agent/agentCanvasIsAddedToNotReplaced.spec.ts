@@ -63,8 +63,7 @@ test.describe(
     test.use({ conversationCase: CASE, humanOpsHost: 'apply' })
 
     test('story 37: an inserted workflow leaves the note the user was working on', async ({
-      agentConversation,
-      page
+      agentConversation
     }) => {
       test.setTimeout(90_000)
 
@@ -73,25 +72,13 @@ test.describe(
 
       const noteId =
         await test.step('user writes a note of their own', async () => {
-          const id = await agentConversation.addNodeOfType(
-            'Note',
-            USER_NODE_POSITION
-          )
-          await page.evaluate(
-            ([nodeId, text]) => {
-              const node = window.app!.graph.nodes.find(
-                (candidate) => String(candidate.id) === nodeId
-              )
-              if (!node) throw new Error(`node ${nodeId} is not on the graph`)
-              const widget = node.widgets?.[0]
-              if (!widget) throw new Error(`node ${nodeId} has no text widget`)
-              widget.value = text
-            },
-            [id, USER_NOTE_TEXT] as const
-          )
-          await expect(
-            agentConversation.vueNodes.getNodeLocator(id)
-          ).toBeVisible()
+          const id = await agentConversation.addNoteThroughSearchBox({
+            x: USER_NODE_POSITION[0],
+            y: USER_NODE_POSITION[1]
+          })
+          const note = agentConversation.vueNodes.getNodeLocator(id)
+          await expect(note).toBeVisible()
+          await note.getByRole('textbox').fill(USER_NOTE_TEXT)
           return id
         })
 
