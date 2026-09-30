@@ -56,7 +56,13 @@ const capabilityLabel = computed(() =>
   // need not carry a judgeable extension at all.
   t(
     CAPABILITY_MESSAGE[
-      capability ??
+      // `'unknown'` has to fall THROUGH, not short-circuit. It is a real
+      // string, so `??` accepts it — and every production caller passes
+      // exactly that, because admission coerces an unjudgeable ref with
+      // `agentAttachCapability(ref) ?? 'unknown'`. The two fallback legs were
+      // therefore unreachable outside tests, and a hash-backed card always
+      // read "will verify when sent" even when its name said otherwise.
+      (capability === 'unknown' ? undefined : capability) ??
         agentAttachCapability(refName ?? '') ??
         agentAttachCapability(name) ??
         'unknown'

@@ -2699,6 +2699,23 @@ export const zAssetCreated = zAsset.and(
 )
 
 /**
+ * Attachment extensions whose content the model can see. Exactly the raster formats Go's
+ * image package decodes — view_asset always re-encodes to PNG or JPEG, so the provider's own
+ * four-type image allowlist is satisfied by construction rather than by matching this list.
+ *
+ */
+export const zAgentViewableAttachmentExtension = z.enum([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.bmp',
+  '.tif',
+  '.tiff'
+])
+
+/**
  * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, draft_patch, agent_message_done).
  */
 export const zAgentTurnAccepted = z.object({
@@ -2793,6 +2810,82 @@ export const zAgentRunMode = z.object({
 })
 
 /**
+ * Attachment extensions that are accepted so a user can keep them beside a workflow, and
+ * nothing more — the agent can neither read the contents nor wire the file in.
+ *
+ * .avif is the only one: it is an image the turn cannot decode (no registry entry, so
+ * view_asset would fail) and it is not text, so read_asset would return mojibake. It stays
+ * accepted because it was attachable before the policy existed.
+ *
+ */
+export const zAgentRetainedAttachmentExtension = z.enum(['.avif'])
+
+/**
+ * Attachment extensions the agent can recognize as 3D but cannot read. They are exactly the
+ * set Load3D accepts (comfy_extras/nodes_load_3d.py), but cloud does not currently populate
+ * Load3D's model_file choices from uploaded meshes, so the agent is told not to wire or run
+ * one. .usdz is absent from both lists, so it is not an exclusion this tier makes.
+ *
+ */
+export const zAgentReferenceAttachmentExtension = z.enum([
+  '.glb',
+  '.obj',
+  '.fbx',
+  '.gltf',
+  '.stl',
+  '.ply',
+  '.spz',
+  '.splat',
+  '.ksplat'
+])
+
+/**
+ * Attachment extensions whose contents the agent reads verbatim, with read_asset. The bytes
+ * are decoded as UTF-8 and returned as text, bounded and truncation-marked.
+ *
+ * This tier describes CONTENT ACCESS only and says nothing about whether the file can be
+ * wired into a graph. Those are separate questions, so a format becoming a node input later
+ * does not move it out of this tier.
+ *
+ * .svg is here rather than with the images because it is XML: view_asset cannot decode it,
+ * but its markup is exactly what a caller would want read.
+ *
+ */
+export const zAgentReadableAttachmentExtension = z.enum([
+  '.md',
+  '.markdown',
+  '.txt',
+  '.json',
+  '.csv',
+  '.yaml',
+  '.yml',
+  '.xml',
+  '.log',
+  '.svg'
+])
+
+/**
+ * Attachment extensions the agent can only describe from metadata. A subset of the containers
+ * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
+ * .aac and .wma, which the agreed attachment list rejects.
+ *
+ */
+export const zAgentProbeableAttachmentExtension = z.enum([
+  '.mp4',
+  '.webm',
+  '.mov',
+  '.m4v',
+  '.avi',
+  '.mkv',
+  '.mp3',
+  '.wav',
+  '.ogg',
+  '.opus',
+  '.flac',
+  '.m4a'
+])
+
+/**
  * A user turn posted to the agent.
  */
 export const zAgentPostMessageRequest = z.object({
@@ -2823,84 +2916,6 @@ export const zAgentPostMessageRequest = z.object({
       })
     )
     .optional()
-})
-
-export const zAgentRetainedAttachmentExtension = z.enum(['.avif'])
-
-export const zAgentReadableAttachmentExtension = z.enum([
-  '.md',
-  '.markdown',
-  '.txt',
-  '.json',
-  '.csv',
-  '.yaml',
-  '.yml',
-  '.xml',
-  '.log',
-  '.svg'
-])
-
-export const zAgentReferenceAttachmentExtension = z.enum([
-  '.glb',
-  '.obj',
-  '.fbx',
-  '.gltf',
-  '.stl',
-  '.ply',
-  '.spz',
-  '.splat',
-  '.ksplat'
-])
-
-export const zAgentProbeableAttachmentExtension = z.enum([
-  '.mp4',
-  '.webm',
-  '.mov',
-  '.m4v',
-  '.avi',
-  '.mkv',
-  '.mp3',
-  '.wav',
-  '.ogg',
-  '.opus',
-  '.flac',
-  '.m4a'
-])
-
-export const zAgentViewableAttachmentExtension = z.enum([
-  '.png',
-  '.jpg',
-  '.jpeg',
-  '.gif',
-  '.webp',
-  '.bmp',
-  '.tif',
-  '.tiff'
-])
-
-export const zAgentAttachmentBoundsExceeded = z.object({
-  error: z.string(),
-  type: z.enum(['ATTACHMENT_BOUNDS_EXCEEDED']),
-  limits: z.object({
-    max_attachments: z.number().int(),
-    max_reference_runes: z.number().int()
-  })
-})
-
-export const zAgentAttachmentPolicy = z.object({
-  view: z.array(zAgentViewableAttachmentExtension),
-  probe: z.array(zAgentProbeableAttachmentExtension),
-  read: z.array(zAgentReadableAttachmentExtension),
-  reference: z.array(zAgentReferenceAttachmentExtension),
-  retain: z.array(zAgentRetainedAttachmentExtension)
-})
-
-export const zAgentAttachmentRejected = z.object({
-  error: z.string(),
-  type: z.enum(['ATTACHMENT_TYPE_NOT_ACCEPTED']),
-  rejected: z.array(z.string()),
-  rejected_count: z.number().int(),
-  accepted: zAgentAttachmentPolicy
 })
 
 /**
@@ -2957,6 +2972,72 @@ export const zAgentDraftSnapshot = z.object({
  */
 export const zAgentCancelAccepted = z.object({
   status: z.enum(['cancelling'])
+})
+
+/**
+ * Every extension the agent accepts as an attachment, grouped by what it can actually DO with
+ * one. The grouping is the point: the tiers differ sharply, and a client that renders them as
+ * one flat "supported files" list tells the user something false (PM-1855).
+ *
+ * - `view`: the model sees the content. view_asset decodes the still and re-encodes it as
+ * PNG/JPEG into the turn, so the model reasons about actual pixels.
+ * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
+ * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
+ * video means cutting a frame out with process_media and viewing that.
+ * - `reference`: the agent knows the file exists, its kind and its id, but cannot read it at
+ * all. Cloud does not currently populate Load3D's model_file choices from uploaded meshes,
+ * so the agent is explicitly told not to wire or run one either. The cloud turn registers
+ * neither a shell nor a file-read tool, by design: it is a shared multi-tenant pod.
+ * - `read`: the agent reads the contents verbatim with read_asset — UTF-8 decoded, bounded
+ * and truncation-marked. The tier describes CONTENT ACCESS only; whether the file can also
+ * be wired into a graph is a separate axis, so a format gaining an upload-backed node input
+ * later stays in this tier.
+ * - `retain`: the file is attached and nothing more — neither readable nor wirable. Only
+ * .avif, which the turn cannot decode as an image and is not text.
+ *
+ * The union of the five arrays is the accepted list. Anything absent is rejected.
+ *
+ */
+export const zAgentAttachmentPolicy = z.object({
+  probe: z.array(zAgentProbeableAttachmentExtension),
+  read: z.array(zAgentReadableAttachmentExtension),
+  reference: z.array(zAgentReferenceAttachmentExtension),
+  retain: z.array(zAgentRetainedAttachmentExtension),
+  view: z.array(zAgentViewableAttachmentExtension)
+})
+
+/**
+ * 422 body when a posted attachment's extension is outside the accepted list. It carries the
+ * policy rather than only an error string so a client never has to hardcode the list to
+ * explain the refusal — the same reason the list is expressed as enums the frontend generates
+ * its types from.
+ *
+ */
+export const zAgentAttachmentRejected = z.object({
+  accepted: zAgentAttachmentPolicy,
+  error: z.string(),
+  rejected: z.array(z.string()),
+  rejected_count: z.number().int(),
+  type: z.enum(['ATTACHMENT_TYPE_NOT_ACCEPTED'])
+})
+
+/**
+ * 422 body when a turn breaks the attachment bounds declared on the `attachments` property —
+ * more than maxItems references, or a single reference longer than maxLength runes. It is a
+ * separate shape from AgentAttachmentRejected because nothing about it is per-reference:
+ * there is no offending extension to name and no policy to quote, only the limit that was
+ * passed. Browsers rarely see it (the composer caps itself at the same maxItems); it exists
+ * for SDK, CLI and MCP callers, which previously got a 200 with the overflow silently
+ * dropped.
+ *
+ */
+export const zAgentAttachmentBoundsExceeded = z.object({
+  error: z.string(),
+  limits: z.object({
+    max_attachments: z.number().int(),
+    max_reference_runes: z.number().int()
+  }),
+  type: z.enum(['ATTACHMENT_BOUNDS_EXCEEDED'])
 })
 
 /**

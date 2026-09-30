@@ -4508,6 +4508,22 @@ export type AssetCreated = Asset & {
 }
 
 /**
+ * Attachment extensions whose content the model can see. Exactly the raster formats Go's
+ * image package decodes — view_asset always re-encodes to PNG or JPEG, so the provider's own
+ * four-type image allowlist is satisfied by construction rather than by matching this list.
+ *
+ */
+export type AgentViewableAttachmentExtension =
+  | '.png'
+  | '.jpg'
+  | '.jpeg'
+  | '.gif'
+  | '.webp'
+  | '.bmp'
+  | '.tif'
+  | '.tiff'
+
+/**
  * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, draft_patch, agent_message_done).
  */
 export type AgentTurnAccepted = {
@@ -4674,11 +4690,107 @@ export type AgentRunMode = {
 }
 
 /**
+ * Attachment extensions that are accepted so a user can keep them beside a workflow, and
+ * nothing more — the agent can neither read the contents nor wire the file in.
+ *
+ * .avif is the only one: it is an image the turn cannot decode (no registry entry, so
+ * view_asset would fail) and it is not text, so read_asset would return mojibake. It stays
+ * accepted because it was attachable before the policy existed.
+ *
+ */
+export type AgentRetainedAttachmentExtension = '.avif'
+
+/**
+ * Attachment extensions the agent can recognize as 3D but cannot read. They are exactly the
+ * set Load3D accepts (comfy_extras/nodes_load_3d.py), but cloud does not currently populate
+ * Load3D's model_file choices from uploaded meshes, so the agent is told not to wire or run
+ * one. .usdz is absent from both lists, so it is not an exclusion this tier makes.
+ *
+ */
+export type AgentReferenceAttachmentExtension =
+  | '.glb'
+  | '.obj'
+  | '.fbx'
+  | '.gltf'
+  | '.stl'
+  | '.ply'
+  | '.spz'
+  | '.splat'
+  | '.ksplat'
+
+/**
+ * Attachment extensions whose contents the agent reads verbatim, with read_asset. The bytes
+ * are decoded as UTF-8 and returned as text, bounded and truncation-marked.
+ *
+ * This tier describes CONTENT ACCESS only and says nothing about whether the file can be
+ * wired into a graph. Those are separate questions, so a format becoming a node input later
+ * does not move it out of this tier.
+ *
+ * .svg is here rather than with the images because it is XML: view_asset cannot decode it,
+ * but its markup is exactly what a caller would want read.
+ *
+ */
+export type AgentReadableAttachmentExtension =
+  | '.md'
+  | '.markdown'
+  | '.txt'
+  | '.json'
+  | '.csv'
+  | '.yaml'
+  | '.yml'
+  | '.xml'
+  | '.log'
+  | '.svg'
+
+/**
+ * Attachment extensions the agent can only describe from metadata. A subset of the containers
+ * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
+ * .aac and .wma, which the agreed attachment list rejects.
+ *
+ */
+export type AgentProbeableAttachmentExtension =
+  | '.mp4'
+  | '.webm'
+  | '.mov'
+  | '.m4v'
+  | '.avi'
+  | '.mkv'
+  | '.mp3'
+  | '.wav'
+  | '.ogg'
+  | '.opus'
+  | '.flac'
+  | '.m4a'
+
+/**
  * A user turn posted to the agent.
  */
 export type AgentPostMessageRequest = {
   /**
-   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). Images, video and audio are all accepted. The agent wires them into the workflow by filename — it never receives file bytes here, and reads an attachment's contents through its own asset tools when a request depends on them.
+   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via
+   * /api/upload/image, which returns the {name, subfolder, type} reference). The agent never
+   * receives file bytes here; what it can read or wire depends on the policy tier.
+   *
+   * Both bounds above are ENFORCED, not merely declared: a turn over maxItems, or a reference
+   * over maxLength, is refused with 422 ATTACHMENT_BOUNDS_EXCEEDED. Previously the overflow
+   * was dropped with a warn and the turn still answered 200, so a caller posting 26
+   * references lost one silently — which mattered most to SDK, CLI and MCP callers, since
+   * the browser composer caps itself.
+   *
+   * Each entry's extension must appear in AgentAttachmentPolicy; a reference outside it is
+   * rejected with 422 (AgentAttachmentRejected). A reference with NO extension is the one
+   * exception: not every reference is a filename — an asset hash may be a bare hex digest or
+   * "blake3:<hex>" — so one with nothing to judge is admitted here and checked again once it
+   * resolves to a stored name. A refusal there costs the attachment its asset id and its
+   * kind, so the agent gets no tool for it and the turn is not refused; the reference itself
+   * is still echoed back by GET .../messages. Which tier of that policy an extension lands
+   * in says what the agent can do with it, and the tiers differ sharply — a client that
+   * presents them as one flat list misleads the user.
+   *
+   * The constraint is expressed as extension enums rather than on this array because the array
+   * carries FILENAMES, not content types: an extension is what both ends can actually agree
+   * on, and the upload route this list references stores no MIME type for what it accepts.
+   *
    */
   attachments?: Array<string>
   /**
@@ -4734,80 +4846,6 @@ export type AgentPostMessageRequest = {
     name?: string
     workflow_id: string
   }>
-}
-
-export type AgentRetainedAttachmentExtension = '.avif'
-
-export type AgentReadableAttachmentExtension =
-  | '.md'
-  | '.markdown'
-  | '.txt'
-  | '.json'
-  | '.csv'
-  | '.yaml'
-  | '.yml'
-  | '.xml'
-  | '.log'
-  | '.svg'
-
-export type AgentReferenceAttachmentExtension =
-  | '.glb'
-  | '.obj'
-  | '.fbx'
-  | '.gltf'
-  | '.stl'
-  | '.ply'
-  | '.spz'
-  | '.splat'
-  | '.ksplat'
-
-export type AgentProbeableAttachmentExtension =
-  | '.mp4'
-  | '.webm'
-  | '.mov'
-  | '.m4v'
-  | '.avi'
-  | '.mkv'
-  | '.mp3'
-  | '.wav'
-  | '.ogg'
-  | '.opus'
-  | '.flac'
-  | '.m4a'
-
-export type AgentViewableAttachmentExtension =
-  | '.png'
-  | '.jpg'
-  | '.jpeg'
-  | '.gif'
-  | '.webp'
-  | '.bmp'
-  | '.tif'
-  | '.tiff'
-
-export type AgentAttachmentBoundsExceeded = {
-  error: string
-  type: 'ATTACHMENT_BOUNDS_EXCEEDED'
-  limits: {
-    max_attachments: number
-    max_reference_runes: number
-  }
-}
-
-export type AgentAttachmentPolicy = {
-  view: Array<AgentViewableAttachmentExtension>
-  probe: Array<AgentProbeableAttachmentExtension>
-  read: Array<AgentReadableAttachmentExtension>
-  reference: Array<AgentReferenceAttachmentExtension>
-  retain: Array<AgentRetainedAttachmentExtension>
-}
-
-export type AgentAttachmentRejected = {
-  error: string
-  type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
-  rejected: Array<string>
-  rejected_count: number
-  accepted: AgentAttachmentPolicy
 }
 
 /**
@@ -4902,6 +4940,90 @@ export type AgentDraftSnapshot = {
  */
 export type AgentCancelAccepted = {
   status: 'cancelling'
+}
+
+/**
+ * 422 body when a posted attachment's extension is outside the accepted list. It carries the
+ * policy rather than only an error string so a client never has to hardcode the list to
+ * explain the refusal — the same reason the list is expressed as enums the frontend generates
+ * its types from.
+ *
+ */
+export type AgentAttachmentRejected = {
+  accepted: AgentAttachmentPolicy
+  error: string
+  /**
+   * The offending references, in the order they were posted. Capped, so it can be shorter than rejected_count — a client that reports "N were refused" must read that field rather than this array's length.
+   */
+  rejected: Array<string>
+  /**
+   * How many references were refused in total, before the list above was capped.
+   */
+  rejected_count: number
+  type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+}
+
+/**
+ * Every extension the agent accepts as an attachment, grouped by what it can actually DO with
+ * one. The grouping is the point: the tiers differ sharply, and a client that renders them as
+ * one flat "supported files" list tells the user something false (PM-1855).
+ *
+ * - `view`: the model sees the content. view_asset decodes the still and re-encodes it as
+ * PNG/JPEG into the turn, so the model reasons about actual pixels.
+ * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
+ * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
+ * video means cutting a frame out with process_media and viewing that.
+ * - `reference`: the agent knows the file exists, its kind and its id, but cannot read it at
+ * all. Cloud does not currently populate Load3D's model_file choices from uploaded meshes,
+ * so the agent is explicitly told not to wire or run one either. The cloud turn registers
+ * neither a shell nor a file-read tool, by design: it is a shared multi-tenant pod.
+ * - `read`: the agent reads the contents verbatim with read_asset — UTF-8 decoded, bounded
+ * and truncation-marked. The tier describes CONTENT ACCESS only; whether the file can also
+ * be wired into a graph is a separate axis, so a format gaining an upload-backed node input
+ * later stays in this tier.
+ * - `retain`: the file is attached and nothing more — neither readable nor wirable. Only
+ * .avif, which the turn cannot decode as an image and is not text.
+ *
+ * The union of the five arrays is the accepted list. Anything absent is rejected.
+ *
+ */
+export type AgentAttachmentPolicy = {
+  probe: Array<AgentProbeableAttachmentExtension>
+  read: Array<AgentReadableAttachmentExtension>
+  reference: Array<AgentReferenceAttachmentExtension>
+  retain: Array<AgentRetainedAttachmentExtension>
+  view: Array<AgentViewableAttachmentExtension>
+}
+
+/**
+ * 422 body when a turn breaks the attachment bounds declared on the `attachments` property —
+ * more than maxItems references, or a single reference longer than maxLength runes. It is a
+ * separate shape from AgentAttachmentRejected because nothing about it is per-reference:
+ * there is no offending extension to name and no policy to quote, only the limit that was
+ * passed. Browsers rarely see it (the composer caps itself at the same maxItems); it exists
+ * for SDK, CLI and MCP callers, which previously got a 200 with the overflow silently
+ * dropped.
+ *
+ */
+export type AgentAttachmentBoundsExceeded = {
+  /**
+   * Human-readable statement of which bound was exceeded and by how much.
+   */
+  error: string
+  /**
+   * The bounds as enforced, so a client can report them without hardcoding.
+   */
+  limits: {
+    /**
+     * Maximum references per turn — the same value as the attachments maxItems.
+     */
+    max_attachments: number
+    /**
+     * Maximum length of a single reference, counted in RUNES (Unicode code points), which is what the server measures. A client counting UTF-16 code units may compute a larger number for the same string.
+     */
+    max_reference_runes: number
+  }
+  type: 'ATTACHMENT_BOUNDS_EXCEEDED'
 }
 
 /**
@@ -5976,6 +6098,16 @@ export type AgentPostMessageErrors = {
    * Forbidden (workflow or thread not owned by the caller). An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
    */
   403: ErrorResponse | AgentError
+  /**
+   * The turn's attachments were refused, for one of two reasons. Either a reference names a file type the agent does not accept (ATTACHMENT_TYPE_NOT_ACCEPTED), in which case the body names the offending references and carries the full accepted policy so the client can explain the refusal without hardcoding the list; or the turn breaks the declared bounds — more than maxItems references, or one longer than maxLength (ATTACHMENT_BOUNDS_EXCEEDED). Discriminate on `type`, which is present and distinct in both shapes.
+   */
+  422:
+    | ({
+        type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+      } & AgentAttachmentRejected)
+    | ({
+        type: 'ATTACHMENT_BOUNDS_EXCEEDED'
+      } & AgentAttachmentBoundsExceeded)
   /**
    * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
    */
