@@ -2077,6 +2077,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
     expect(session.isStreaming.value).toBe(false)
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
       errorType: 'agent_send_message_failed'
     })
   })
