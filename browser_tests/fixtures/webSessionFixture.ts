@@ -35,6 +35,7 @@ interface TokenMint {
 interface WebSessionFixtures {
   tokenMints: TokenMint[]
   workspaceReads: Request[]
+  firebaseRequests: string[]
 }
 
 export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
@@ -52,6 +53,19 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
     })
     await use(mints)
   },
+  firebaseRequests: async ({ context }, use) => {
+    const urls: string[] = []
+    context.on('request', (request) => {
+      const { hostname } = new URL(request.url())
+      if (
+        hostname === 'securetoken.googleapis.com' ||
+        hostname === 'identitytoolkit.googleapis.com'
+      ) {
+        urls.push(request.url())
+      }
+    })
+    await use(urls)
+  },
   workspaceReads: async ({ context }, use) => {
     const reads: Request[] = []
     context.on('request', (request) => {
@@ -65,8 +79,12 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
     })
     await use(reads)
   },
-  page: async ({ page, context, tokenMints, workspaceReads }, use) => {
+  page: async (
+    { page, context, tokenMints, workspaceReads, firebaseRequests },
+    use
+  ) => {
     void tokenMints
+    void firebaseRequests
     void workspaceReads
 
     await page.route('**/api/features', async (route) => {

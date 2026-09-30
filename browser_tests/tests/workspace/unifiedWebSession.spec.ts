@@ -2,6 +2,7 @@ import { zPromptRequest } from '@comfyorg/ingest-types/zod'
 import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
 
+import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
   PROMPT_ACCEPTED,
   WEB_SESSION_COOKIE,
@@ -209,6 +210,36 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
       expect(tokenMints.map(({ workspace }) => workspace)).toEqual([
         TEAM_WORKSPACE_ID
       ])
+    })
+  })
+
+  test.describe('arrived from the website with no Firebase login', () => {
+    test.use({ firebaseLogin: false })
+
+    test('boots on the session: no login page, the session user, a Run on the cookie, no Firebase traffic', async ({
+      comfyPage,
+      firebaseRequests
+    }) => {
+      const page = comfyPage.page
+      await mockPromptAccepted(page)
+      await comfyPage.waitForAppReady()
+      expect(page.url()).not.toContain('/cloud/login')
+
+      await comfyPage.toast.closeToasts()
+      await page.keyboard.press('Escape')
+      await page.getByRole('button', { name: 'Current user' }).click()
+      await expect(page.getByText(CLOUD_SELF_EMAIL)).toBeVisible()
+      await page.keyboard.press('Escape')
+
+      const promptRequest = page.waitForRequest(isPromptPost)
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.toast.closeToasts()
+      await comfyPage.runButton.click()
+      const headers = await (await promptRequest).allHeaders()
+
+      expect(headers['x-csrf-token']).toBe(WEB_SESSION_CSRF_TOKEN)
+      expect(headers['authorization']).toBeUndefined()
+      expect(firebaseRequests).toEqual([])
     })
   })
 })
