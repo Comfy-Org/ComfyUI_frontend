@@ -163,15 +163,15 @@ describe('resolveUnitBaseline', () => {
 // strength of one leaves the ancestor download empty, and unit silently drops
 // out of that report.
 describe('liveArtifactNamesOf', () => {
-  it('keeps a live artifact and drops an expired one of the same name', () => {
-    const names = liveArtifactNamesOf({
-      artifacts: [
-        { name: UNIT_COVERAGE, expired: true },
-        { name: UNIT_COVERAGE, expired: false }
-      ]
-    })
-
-    expect(names).toEqual([UNIT_COVERAGE])
+  it.for<[label: string, expired: boolean, expected: string[]]>([
+    ['keeps a live artifact', false, [UNIT_COVERAGE]],
+    ['drops an expired artifact', true, []]
+  ])('%s', ([, expired, expected]) => {
+    expect(
+      liveArtifactNamesOf({
+        artifacts: [{ name: UNIT_COVERAGE, expired }]
+      })
+    ).toEqual(expected)
   })
 
   it.for<[shape: string, page: unknown]>([
