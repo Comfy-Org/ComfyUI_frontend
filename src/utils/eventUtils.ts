@@ -41,11 +41,21 @@ export async function fetchDroppedAsset(
     const response = await fetch(uri, { signal })
     if (!response.ok) return undefined
     const blob = await response.blob()
+    // Each candidate is taken only if it carries an extension, then the next
+    // one answers. /api/assets/<id>/content 302s to a signed storage URL keyed
+    // by hash and with no `filename` parameter, so the basename is often a bare
+    // digest: preferring it unconditionally produced an extensionless File, and
+    // a valid PNG dragged from the assets panel was then refused as an
+    // unaccepted type. A dotted key (`<hex>.png`) judged fine but relabelled
+    // the chip with the 64-character hash.
     const resolvedUrl = new URL(response.url || uri, 'http://localhost')
-    const resolvedName =
-      resolvedUrl.searchParams.get('filename') ??
-      decodeURIComponent(resolvedUrl.pathname.split('/').pop() || '')
-    return new File([blob], resolvedName || ref || name, { type: blob.type })
+    const named = [
+      resolvedUrl.searchParams.get('filename'),
+      decodeURIComponent(resolvedUrl.pathname.split('/').pop() || ''),
+      ref,
+      name
+    ].find((candidate) => candidate && /\.[a-z0-9]{1,8}$/i.test(candidate))
+    return new File([blob], named || name, { type: blob.type })
   } catch {
     return undefined
   }

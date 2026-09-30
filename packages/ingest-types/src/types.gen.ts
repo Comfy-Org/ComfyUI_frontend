@@ -4739,6 +4739,12 @@ export type AgentPostMessageRequest = {
    * /api/upload/image, which returns the {name, subfolder, type} reference). The agent never
    * receives file bytes here; what it can read or wire depends on the policy tier.
    *
+   * Both bounds above are ENFORCED, not merely declared: a turn over maxItems, or a reference
+   * over maxLength, is refused with 422 ATTACHMENT_BOUNDS_EXCEEDED. Previously the overflow
+   * was dropped with a warn and the turn still answered 200, so a caller posting 26
+   * references lost one silently — which mattered most to SDK, CLI and MCP callers, since
+   * the browser composer caps itself.
+   *
    * Each entry's extension must appear in AgentAttachmentPolicy; a reference outside it is
    * rejected with 422 (AgentAttachmentRejected). A reference with NO extension is the one
    * exception: not every reference is a filename — an asset hash may be a bare hex digest or

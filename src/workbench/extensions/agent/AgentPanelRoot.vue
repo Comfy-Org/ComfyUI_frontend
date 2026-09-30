@@ -89,6 +89,7 @@ import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
   MAX_ATTACHMENT_BYTES,
+  MAX_TURN_ATTACHMENTS,
   useAttachment
 } from './composables/agent/useAttachment'
 import type { ActiveTab } from './types/activeTab'
@@ -1675,6 +1676,32 @@ function warnDroppedAssetResult(
   warnAttachment(fetched ? refused : t('agent.assetFetchFailed', { name }))
 }
 
+/**
+ * Stages a card whose stored ref the policy already accepted, without an upload.
+ *
+ * The only path that stages outside useAttachment, so it is the only one that
+ * has to apply the turn cap itself. Skipping it let a 26th card take a chip
+ * while resolveAttachmentAssets dropped the reference — attached-looking and
+ * absent from the turn, the PM-1856 failure the cap exists to prevent.
+ */
+function stageAcceptedAssetCard(asset: DroppedAsset, ref: string): boolean {
+  if (composerStore.attachments.length >= MAX_TURN_ATTACHMENTS) {
+    warnAttachment(
+      t('agent.attachmentCountExceeded', { count: MAX_TURN_ATTACHMENTS })
+    )
+    return false
+  }
+  return (
+    panelRef.value?.addAttachment({
+      id: `asset:${ref}`,
+      name: asset.name,
+      ref,
+      capability: agentAttachCapability(ref) ?? 'unknown',
+      previewUrl: asset.previewUrl
+    }) ?? false
+  )
+}
+
 async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
   if (!asset) {
@@ -1695,15 +1722,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   // fetch URI, so routing an opaque ref through the deferred fetch would drop a
   // valid attachment before the server can adjudicate it.
   if (asset.ref && asset.kind !== 'other') {
-    return (
-      panelRef.value?.addAttachment({
-        id: `asset:${asset.ref}`,
-        name: asset.name,
-        ref: asset.ref,
-        capability: agentAttachCapability(asset.ref) ?? 'unknown',
-        previewUrl: asset.previewUrl
-      }) ?? false
-    )
+    return stageAcceptedAssetCard(asset, asset.ref)
   }
 
   // fetchDroppedAsset answers undefined for a missing URI, a non-ok response

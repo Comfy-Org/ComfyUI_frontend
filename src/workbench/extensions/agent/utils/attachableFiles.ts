@@ -59,7 +59,12 @@ const CAPABILITY_BY_EXTENSION = new Map<string, AgentAttachCapability>([
 export const AGENT_ATTACH_ACCEPT = [...CAPABILITY_BY_EXTENSION.keys()].join(',')
 
 const EXTENSION_PATTERN = /\.[a-z0-9]{1,8}$/i
-const AUTHORITATIVE_EXTENSION_PATTERN = /\.[^.]+$/
+// `[^./\\]` rather than `[^.]`: the server judges the final PATH SEGMENT
+// (filepath.Ext over path.Base), so a ref like `my.folder/image` has no
+// extension there. Matching `.folder/image` here made it the one ref the two
+// allowlists judged differently — rejected on the client, accepted on the
+// server.
+const AUTHORITATIVE_EXTENSION_PATTERN = /\.[^./\\]+$/
 
 /**
  * A bare `lastIndexOf('.')` reads `.2` out of a label like "render v1.2" and

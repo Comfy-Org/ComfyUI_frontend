@@ -177,3 +177,21 @@ describe('partitionAttachableFiles', () => {
     })
   })
 })
+
+describe('agentAttachRefVerdict', () => {
+  /* The server judges the final path segment (filepath.Ext over path.Base), so
+     the client must too — a dotted SUBFOLDER is not an extension. This was the
+     one ref shape the two allowlists disagreed about. */
+  it.for([
+    ['stored_photo.png', 'accepted'],
+    ['a1b2c3.md', 'accepted'],
+    ['stored_scene.usdz', 'rejected'],
+    ['doc.pdf', 'rejected'],
+    ['blake3:abcdef0123456789', 'unknown'],
+    ['abcdef0123456789', 'unknown'],
+    ['my.folder/image', 'unknown'],
+    ['my.folder\\image', 'unknown']
+  ] as const)('judges %s as %s', ([ref, verdict]) => {
+    expect(agentAttachRefVerdict(ref)).toBe(verdict)
+  })
+})

@@ -43,6 +43,7 @@ import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { MAX_TURN_ATTACHMENTS,MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getFilenameDetails } from '@/utils/formatUtil'
@@ -245,7 +246,6 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
-import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
@@ -3264,28 +3264,100 @@ describe('AgentPanelRoot attach flow', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('lets the server adjudicate an opaque asset ref despite its display label', async () => {
-    stubUploadFetch()
+  it('lets the fetched file adjudicate an opaque asset ref, not its display label', async () => {
+    // An opaque ref cannot be judged, so the drop must reach the deferred fetch
+    // and be decided by the REAL file — a valid .png must attach even though the
+    // card is labelled report.pdf, because the label is user-editable and the
+    // bytes are not. The previous version of this test supplied no uri-list, so
+    // the fetch returned undefined immediately and it asserted a transient chip
+    // that was already being removed.
+    const uploads: File[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Response(new Blob(['x'], { type: 'image/png' }))
+        if (url.endsWith('/api/upload/image')) {
+          if (!(init?.body instanceof FormData))
+            throw new Error('Expected upload form data')
+          const image = init.body.get('image')
+          if (!(image instanceof File)) throw new Error('Expected upload file')
+          uploads.push(image)
+          return json(200, { name: 'uploaded.png' })
+        }
+        return json(200, agentThreadList())
+      })
+    )
     renderWithSelectedTarget()
     await nextTick()
 
     dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({
+              filename: 'report.pdf',
+              type: 'input',
+              attachment_ref: 'blake3:abcdef0123456789',
+              media_kind: 'image'
+            })
+          : 'http://localhost/api/view?filename=real.png'
+    })
+
+    await vi.waitFor(() => expect(uploads).toHaveLength(1))
+    expect(uploads[0].name).toBe('real.png')
+    expect(
+      useToastStore().messagesToAdd.some(({ detail }) =>
+        String(detail).includes('not a file type')
+      )
+    ).toBe(false)
+  })
+
+  it('refuses an asset card once the turn is already full', async () => {
+    // The asset-card fast path stages without going through useAttachment, so
+    // it is the one route that has to apply the cap itself. Without this a 26th
+    // card got a chip while the server dropped the reference.
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const card = (index: number) => ({
       types: ['application/x-comfy-asset-info'],
       getData: () =>
         JSON.stringify({
-          filename: 'report.pdf',
+          filename: `photo${index}.png`,
           type: 'input',
-          attachment_ref: 'blake3:abcdef0123456789',
+          attachment_ref: `stored_photo${index}.png`,
           media_kind: 'image'
         })
     })
+    const target = screen.getByRole('textbox')
+    for (let index = 0; index < MAX_TURN_ATTACHMENTS; index++) {
+      dispatchDrag(target, 'drop', card(index))
+    }
+    await vi.waitFor(() =>
+      expect(
+        within(screen.getByTestId('composer-asset-section')).getAllByTestId(
+          'agent-attachment-chip'
+        )
+      ).toHaveLength(MAX_TURN_ATTACHMENTS)
+    )
 
+    dispatchDrag(target, 'drop', card(MAX_TURN_ATTACHMENTS))
+
+    await vi.waitFor(() =>
+      expect(
+        useToastStore().messagesToAdd.some(({ detail }) =>
+          String(detail).includes(String(MAX_TURN_ATTACHMENTS))
+        )
+      ).toBe(true)
+    )
     expect(
-      within(await screen.findByTestId('composer-asset-section')).getByText(
-        'report.pdf'
+      within(screen.getByTestId('composer-asset-section')).getAllByTestId(
+        'agent-attachment-chip'
       )
-    ).toBeInTheDocument()
-    expect(useToastStore().messagesToAdd).toEqual([])
+    ).toHaveLength(MAX_TURN_ATTACHMENTS)
   })
 
   it('judges an asset by its stored filename rather than its display label', async () => {
