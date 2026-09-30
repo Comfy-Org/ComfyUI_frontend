@@ -14,11 +14,11 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Check out the DynamicGroup backend contract
+    - name: Check out the merged DynamicGroup backend
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: Comfy-Org/ComfyUI
-        ref: ded3c4496f4d925b824c93cc2cd04881c1e1d9eb
+        ref: 2d2fa46e18d293ced1b958fe288730e2ef4b322e
         path: .ci-backend
         persist-credentials: false
 
