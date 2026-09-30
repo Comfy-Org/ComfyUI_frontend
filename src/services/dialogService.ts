@@ -656,7 +656,10 @@ export const useDialogService = () => {
         new Error(
           'showSubscriptionRequiredDialog: subscription_required gate closed'
         ),
-        { errorType: 'error_opening_subscription_dialog_gate_closed' }
+        {
+          surface: 'billing',
+          errorType: 'error_opening_subscription_dialog_gate_closed'
+        }
       )
       return
     }

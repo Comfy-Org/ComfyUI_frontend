@@ -1141,6 +1141,7 @@ describe('comfy-api calls on the shared web session', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(rejection.cause, {
       errorType: 'auth_session_token_mint_failure',
       level: 'warning',
+      surface: 'auth',
       tags: { code: 'SESSION_UNAVAILABLE', http_status: 500 }
     })
   })

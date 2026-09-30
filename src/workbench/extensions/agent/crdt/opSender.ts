@@ -180,6 +180,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   function reportSettleFailure(cause: unknown, errorType: string): void {
     reportError(cause, {
       errorType,
+      surface: 'agent',
       tags: { feature_area: 'agent', operation: 'sync', outcome: 'degraded' }
     })
   }
@@ -243,6 +244,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (!batch.reportedThrow) {
         batch.reportedThrow = true
         reportError(error, {
+          surface: 'agent',
           errorType: 'failure_sending_agent_human_ops',
           tags: {
             failure_kind: 'caught_unexpected',

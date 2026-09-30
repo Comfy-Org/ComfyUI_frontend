@@ -319,6 +319,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (priorVisible === true || (priorVisible === false && !visible)) return
     malformedStreamReports.set(turnId, visible)
     reportError(new Error('Malformed agent stream event'), {
+      surface: 'agent',
       errorType: 'agent_malformed_stream_event',
       tags: { ui_treatment: uiTreatment, event_type: eventType },
       context: { issues: cause.issues }
@@ -442,7 +443,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         localStorage.removeItem(threadStorageKey)
       return false
     }
-    reportError(error, { errorType: 'agent_history_load_failed' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_history_load_failed'
+    })
     pushError(error instanceof Error ? error.message : String(error))
     trackAgentError('history_load_failed', 'pre_acceptance', 'error_overlay', {
       retryable: isRetryableRequestFailure(error, false),
@@ -702,7 +706,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
     const turnAccepted = accepted || isUnreadableAckFailure(error)
-    reportError(error, { errorType: 'agent_send_message_failed' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed'
+    })
     trackAgentError(
       'request_failed',
       turnAccepted ? 'post_acceptance' : 'pre_acceptance',
@@ -856,7 +863,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (error instanceof AgentApiError) {
       if (error.status === 409) return
       promptEditState.value = { phase: 'idle' }
-      reportError(error, { errorType: 'agent_cancel_turn_failed' })
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_cancel_turn_failed'
+      })
       pushError(error.message)
       trackAgentError('cancel_failed', 'post_acceptance', 'error_overlay', {
         retryable: isRetryableRequestFailure(error, false)
@@ -864,7 +874,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     promptEditState.value = { phase: 'idle' }
-    reportError(error, { errorType: 'agent_cancel_turn_failed' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_cancel_turn_failed'
+    })
     pushError(error instanceof Error ? error.message : String(error))
     trackAgentError('cancel_failed', 'post_acceptance', 'error_overlay', {
       retryable: true
@@ -927,7 +940,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         })
         return false
       }
-      reportError(error, { errorType: 'agent_ask_answer_failed' })
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_failed'
+      })
       pushError(error instanceof Error ? error.message : String(error))
       trackAgentError('ask_answer_failed', 'post_acceptance', 'error_overlay', {
         retryable: isRetryableRequestFailure(error, false)

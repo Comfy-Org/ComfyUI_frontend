@@ -58,6 +58,7 @@ export function useAgentWorkflowResolver({
     } catch (error) {
       if (generation !== refreshGeneration) return false
       reportError(error, {
+        surface: 'agent',
         errorType: 'agent_cloud_workflow_ids_refresh_failed'
       })
       return false

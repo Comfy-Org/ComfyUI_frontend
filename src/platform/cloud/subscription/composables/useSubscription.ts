@@ -278,6 +278,7 @@ function useSubscriptionInternal() {
       new Error('Pending subscription checkout recovery timed out'),
       {
         errorType: 'failure_completing_cloud_checkout',
+        surface: 'billing',
         context: {
           checkout_attempt_id: attempt.attempt_id,
           checkout_type: attempt.checkout_type,
@@ -638,6 +639,7 @@ function useSubscriptionInternal() {
       ),
       {
         errorType: 'failure_recovering_cloud_checkout',
+        surface: 'billing',
         context: {
           checkout_attempt_id: attempt.attempt_id,
           checkout_type: attempt.checkout_type,

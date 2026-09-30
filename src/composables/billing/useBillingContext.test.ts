@@ -415,6 +415,7 @@ describe('useBillingContext', () => {
     await scope.run(() => launchCancellationFlow({ showFallback }))
 
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'billing',
       errorType: 'error_refreshing_billing_after_churnkey_discount'
     })
     expect(useSubscription().fetchStatus).not.toHaveBeenCalled()

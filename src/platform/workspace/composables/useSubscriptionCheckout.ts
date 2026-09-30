@@ -641,6 +641,7 @@ export function useSubscriptionCheckout(
     } catch (portalError) {
       if (!isCurrent()) return null
       reportError(portalError, {
+        surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
       showSubscribeError(hasPaymentRecoveryCode ? error : portalError)
