@@ -1385,7 +1385,10 @@ describe.for([{ unified: false }, { unified: true }])(
 
     it('prefers the session over a different Firebase user', async () => {
       firebaseSignOut.mockResolvedValue()
-      const server = installServer({ userId: 'user-a' })
+      const server = installServer(
+        { userId: 'user-a' },
+        { unified_cloud_auth: unified }
+      )
       await refreshRemoteConfig({ useAuth: false })
       const authStore = useAuthStore()
       identity.signIn(USER_B)
@@ -1403,6 +1406,39 @@ describe.for([{ unified: false }, { unified: true }])(
       expect(user.userDisplayName.value).toBeUndefined()
       expect(user.userPhotoUrl.value).toBeUndefined()
       expect(user.isEmailProvider.value).toBe(false)
+    })
+
+    it('discards a late balance response after the Firebase credential changes', async () => {
+      const { authStore } = await bootSessionOnly()
+      identity.signIn(USER_A)
+      const sessionFetch = fetch
+      let signalBalanceRequested: () => void = () => {}
+      const balanceRequested = new Promise<void>((resolve) => {
+        signalBalanceRequested = resolve
+      })
+      let resolveBalance: (value: unknown) => void = () => {}
+      const balance = new Promise((resolve) => {
+        resolveBalance = resolve
+      })
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>(async (input, init) => {
+          const url = new URL(String(input), location.href)
+          if (url.pathname === '/customers/balance') {
+            signalBalanceRequested()
+            return fromPartial<Response>({ ok: true, json: () => balance })
+          }
+          return sessionFetch(input, init)
+        })
+      )
+
+      const pending = authStore.fetchBalance()
+      await balanceRequested
+      identity.signIn(USER_B)
+      resolveBalance({ balance: 4242 })
+
+      await expect(pending).resolves.toBeNull()
+      expect(authStore.balance).toBeNull()
     })
 
     it('signs out on the session alone', async () => {
