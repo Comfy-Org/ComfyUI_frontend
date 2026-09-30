@@ -218,6 +218,17 @@ function isValueWidget(
   )
 }
 
+/** Whether a live widget value belongs in an API prompt. */
+function isPromptValueWidget(
+  widget: { type?: string; options?: { serialize?: boolean } } | undefined
+): boolean {
+  return (
+    widget !== undefined &&
+    widget.type !== 'button' &&
+    widget.options?.serialize !== false
+  )
+}
+
 /** Root-graph nodes and links keyed by stringified id (undo/redo diff input). */
 interface RestoreSnapshot {
   nodes: Map<string, WorkflowNode>
@@ -493,7 +504,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const detachWidgetChanges = widgetStore.onValueChange(
     ({ widgetId, value, oldValue, context }) => {
       if (isRemoteMutationContext(context)) return
-      if (!isValueWidget(widgetStore.getWidget(widgetId))) return
+      if (!isPromptValueWidget(widgetStore.getWidget(widgetId))) return
       const { graphId, nodeId, name: widgetName } = parseWidgetId(widgetId)
       for (const listener of setListeners) {
         listener({
