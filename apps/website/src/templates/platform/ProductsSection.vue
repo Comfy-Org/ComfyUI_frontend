@@ -56,6 +56,7 @@ const modelsTabs = modelsApiCodeTabs
       <ServerlessJsonApiGpuAnimation
         class="pointer-events-none relative z-10"
         :locale
+        compact
       />
     </article>
 
