@@ -62,6 +62,10 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
     await load3dAgent.expectModel('cube.obj')
     await load3dAgent.viewer.waitForModelLoaded()
 
+    const agentPanel = new AgentPanel(page)
+    await agentPanel.openButton.click()
+    await expect(agentPanel.root).toBeHidden()
+
     const viewer = new Load3DViewerHelper(page)
     await page.evaluate(() => {
       const app = window.app!
@@ -78,6 +82,7 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
       })
       .click()
     await viewer.waitForOpen()
+    await agentPanel.open()
     await page.setViewportSize({ width: 500, height: 800 })
 
     const viewport = page.viewportSize()
@@ -132,7 +137,6 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
     await viewer.cancelButton.click()
     await viewer.waitForClosed()
 
-    const agentPanel = new AgentPanel(page)
     await expect(agentPanel.openButton).toHaveAttribute('aria-pressed', 'true')
     await agentPanel.openButton.click()
     await expect(agentPanel.root).toBeHidden()
