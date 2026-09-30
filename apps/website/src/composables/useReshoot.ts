@@ -550,7 +550,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
         keys: keys.value.length,
         status: 'rendering',
         startedAt: Date.now(),
-        sourceUrl: clip.value
+        sourceUrl: objectUrl(upload.value) ?? clip.value
       }
     ]
     selected.value = id

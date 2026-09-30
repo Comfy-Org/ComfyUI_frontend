@@ -15,22 +15,24 @@ import {
 const storageKey = (kind: ReshootLimitKind, owner: string) =>
   `comfy.reshoot.runs.${kind}.${owner}`
 
-function readRuns(key: string): number[] {
+/** The stored run times, or undefined when storage cannot be read. */
+function readRuns(key: string): number[] | undefined {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? '[]')
     return Array.isArray(parsed)
       ? parsed.filter((at): at is number => typeof at === 'number')
       : []
   } catch {
-    return []
+    return undefined
   }
 }
 
-function writeRuns(key: string, runs: readonly number[]) {
+function writeRuns(key: string, runs: readonly number[]): boolean {
   try {
     localStorage.setItem(key, JSON.stringify(runs))
+    return true
   } catch {
-    // Storage unavailable: the count lasts for this visit only.
+    return false
   }
 }
 
@@ -46,15 +48,18 @@ export function useReshootAllowance(
   const now = useTimestamp({ interval: 30_000 })
   const key = computed(() => storageKey(kind, toValue(owner) ?? 'guest'))
   const runs = ref<number[]>([])
-  watch(key, (next) => (runs.value = readRuns(next)), { immediate: true })
+  // Without working storage the count lives in memory for this visit.
+  let stored = true
+  watch(key, (next) => (runs.value = readRuns(next) ?? []), { immediate: true })
 
   const left = computed<Allowance>(() =>
     allowance(runs.value, limit, now.value)
   )
 
   function record(at = Date.now()) {
-    runs.value = [...pruneRuns(readRuns(key.value), limit, at), at]
-    writeRuns(key.value, runs.value)
+    const latest = (stored && readRuns(key.value)) || runs.value
+    runs.value = [...pruneRuns(latest, limit, at), at]
+    stored = writeRuns(key.value, runs.value)
   }
 
   return { allowance: left, record }
