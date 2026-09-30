@@ -352,7 +352,7 @@ function parseAwarenessState(value: unknown): Record<string, unknown> | null {
     : null
 }
 
-const serverFrameParsers: Record<string, ServerFrameParser> = {
+const serverFrameParsers: Partial<Record<string, ServerFrameParser>> = {
   doc_update: (workflowId, data) => {
     if (!isSequence(data.seq) || typeof data.update_b64 !== 'string') return null
     const update = decodeBase64(data.update_b64)
