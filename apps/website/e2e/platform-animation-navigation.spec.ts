@@ -17,9 +17,10 @@ test('keeps the API animation playing across client navigation', async ({
   await page.getByRole('link', { name: 'Comfy API', exact: true }).click()
   await expect(page).toHaveURL(/\/platform\/comfy-api\/$/)
   await expect(scene).toBeVisible()
+  const apiTime = Number(await scene.getAttribute('data-time'))
   await expect
     .poll(async () => Number(await scene.getAttribute('data-time')))
-    .toBeGreaterThan(0)
+    .toBeGreaterThan(apiTime)
   expect(await page.evaluate(() => performance.timeOrigin)).toBe(timeOrigin)
 
   await page
@@ -27,8 +28,9 @@ test('keeps the API animation playing across client navigation', async ({
     .click()
   await expect(page).toHaveURL(/\/platform\/$/)
   await expect(scene).toBeVisible()
+  const platformTime = Number(await scene.getAttribute('data-time'))
   await expect
     .poll(async () => Number(await scene.getAttribute('data-time')))
-    .toBeGreaterThan(0)
+    .toBeGreaterThan(platformTime)
   expect(await page.evaluate(() => performance.timeOrigin)).toBe(timeOrigin)
 })
