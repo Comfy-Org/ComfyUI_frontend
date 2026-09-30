@@ -2,6 +2,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import type { ChurnkeySession } from '@/platform/cloud/churnkey/churnkeyClient'
+import type { ChurnkeySessionOutcome } from '@/platform/cloud/churnkey/types'
 import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -147,6 +148,82 @@ async function prepareCancellationSession(
 
 let activeFlow: Promise<void> | undefined
 
+type BillingContext = ReturnType<typeof useBillingContext>
+
+function supportsChurnkey(
+  billing: BillingContext,
+  workspaceStore: ReturnType<typeof useTeamWorkspaceStore>,
+  workspaceId: string | null
+): boolean {
+  return (
+    billing.type.value === 'workspace' &&
+    !!workspaceId &&
+    workspaceStore.activeWorkspaceBillingRail === 'stripe'
+  )
+}
+
+async function cancelCurrentSubscription(
+  billing: BillingContext,
+  isScopeCurrent: () => boolean,
+  onConfirm: () => void
+) {
+  if (!isScopeCurrent()) {
+    throw new CancellationScopeChangedError(
+      t('subscription.cancelDialog.workspaceChanged')
+    )
+  }
+  onConfirm()
+  try {
+    await billing.cancelSubscription(isScopeCurrent)
+    return { message: t('subscription.cancelSuccess') }
+  } catch (error) {
+    throw new Error(
+      getErrorMessage(error) ?? t('subscription.cancelDialog.failed'),
+      { cause: error }
+    )
+  }
+}
+
+async function handleSessionOutcome(
+  result: ChurnkeySessionOutcome,
+  billing: BillingContext,
+  isScopeCurrent: () => boolean,
+  onAbandoned: () => void
+): Promise<void> {
+  switch (result.type) {
+    case 'discount-applied':
+      if (!isScopeCurrent()) return
+      await billing.fetchStatus().catch((error) => {
+        reportError(error, {
+          surface: 'billing',
+          errorType: 'error_refreshing_billing_after_churnkey_discount'
+        })
+        useToastStore().add({
+          severity: 'warn',
+          summary: t('subscription.cancelDialog.discountRefreshFailed'),
+          life: 8000
+        })
+      })
+      return
+    case 'abandoned':
+      onAbandoned()
+      return
+    case 'billing-pending':
+      useToastStore().add({
+        severity: 'warn',
+        summary: t('subscription.cancelDialog.retentionPending'),
+        life: 10000
+      })
+      return
+    case 'closed':
+      return
+    default: {
+      const unreachable: never = result
+      return unreachable
+    }
+  }
+}
+
 export function launchCancellationFlow(
   options: LaunchCancellationFlowOptions
 ): Promise<void> {
@@ -169,11 +246,7 @@ async function runCancellationFlow({
       : capturedWorkspaceId
   const isLaunchWorkspaceCurrent = () =>
     workspaceStore.activeWorkspaceId === launchWorkspaceId
-  if (
-    billing.type.value !== 'workspace' ||
-    !launchWorkspaceId ||
-    workspaceStore.activeWorkspaceBillingRail !== 'stripe'
-  ) {
+  if (!supportsChurnkey(billing, workspaceStore, launchWorkspaceId)) {
     await showCancellationFallback(
       showFallback,
       launchWorkspaceId ? isLaunchWorkspaceCurrent : () => true
@@ -200,59 +273,16 @@ async function runCancellationFlow({
 
   try {
     const results = await session.show({
-      workspaceId: launchWorkspaceId,
+      workspaceId: launchWorkspaceId ?? undefined,
       isWorkspaceCurrent: isLaunchWorkspaceCurrent,
-      handleCancel: async () => {
-        if (!isLaunchWorkspaceCurrent()) {
-          throw new CancellationScopeChangedError(
-            t('subscription.cancelDialog.workspaceChanged')
-          )
-        }
-        telemetry?.trackSubscriptionCancellation('confirmed', metadata)
-        try {
-          await billing.cancelSubscription(isLaunchWorkspaceCurrent)
-          return { message: t('subscription.cancelSuccess') }
-        } catch (error) {
-          throw new Error(
-            getErrorMessage(error) ?? t('subscription.cancelDialog.failed'),
-            { cause: error }
-          )
-        }
-      }
+      handleCancel: () =>
+        cancelCurrentSubscription(billing, isLaunchWorkspaceCurrent, () => {
+          telemetry?.trackSubscriptionCancellation('confirmed', metadata)
+        })
     })
-
-    switch (results.type) {
-      case 'discount-applied':
-        if (!isLaunchWorkspaceCurrent()) return
-        await billing.fetchStatus().catch((error) => {
-          reportError(error, {
-            surface: 'billing',
-            errorType: 'error_refreshing_billing_after_churnkey_discount'
-          })
-          useToastStore().add({
-            severity: 'warn',
-            summary: t('subscription.cancelDialog.discountRefreshFailed'),
-            life: 8000
-          })
-        })
-        return
-      case 'abandoned':
-        telemetry?.trackSubscriptionCancellation('abandoned', metadata)
-        return
-      case 'billing-pending':
-        useToastStore().add({
-          severity: 'warn',
-          summary: t('subscription.cancelDialog.retentionPending'),
-          life: 10000
-        })
-        return
-      case 'closed':
-        return
-      default: {
-        const unreachable: never = results
-        return unreachable
-      }
-    }
+    await handleSessionOutcome(results, billing, isLaunchWorkspaceCurrent, () =>
+      telemetry?.trackSubscriptionCancellation('abandoned', metadata)
+    )
   } catch (error) {
     if (!isLaunchWorkspaceCurrent()) return
     telemetry?.trackSubscriptionCancellation('failed', {

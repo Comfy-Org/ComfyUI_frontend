@@ -122,7 +122,7 @@ function createSession(flow: ChurnkeyFlowResponse): ChurnkeySession {
           action = pending
           return pending
         }
-        async function applyDiscount() {
+        function assertOfferAvailable() {
           if (!flow.allowed_offer)
             throw new ChurnkeyActionError(
               t('subscription.cancelDialog.offerUnavailable')
@@ -131,6 +131,9 @@ function createSession(flow: ChurnkeyFlowResponse): ChurnkeySession {
             throw new ChurnkeyActionError(
               t('subscription.cancelDialog.retentionExpired')
             )
+        }
+        async function applyDiscount() {
+          assertOfferAvailable()
           redemptionAttempted = true
           uncertain = 'discount'
           try {
