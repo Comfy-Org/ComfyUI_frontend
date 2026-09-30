@@ -4358,16 +4358,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (result) rollbackClipboardPaste(graph, result)
     }
 
-    let graphClosingError: unknown
+    const closingErrors: unknown[] = []
     try {
       graph.afterChange()
     } catch (error) {
-      graphClosingError = error
+      closingErrors.push(error)
       if (!operationError && result) rollbackClipboardPaste(graph, result)
     }
 
-    const closingErrors: unknown[] = []
-    if (graphClosingError) closingErrors.push(graphClosingError)
     try {
       this.emitAfterChange()
     } catch (error) {

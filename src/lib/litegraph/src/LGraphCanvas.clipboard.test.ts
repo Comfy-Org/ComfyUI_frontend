@@ -374,6 +374,30 @@ describe('clipboard ID allocation', () => {
       { nodeCount: 0, subType: 'after-change' }
     ])
   })
+
+  it('retains a falsy change finalization failure after rollback', () => {
+    const nodeType = 'test/clipboard-falsy-finalization-fail'
+    LiteGraph.registerNodeType(nodeType, LGraphNode)
+    const rootGraph = new LGraph()
+    vi.spyOn(rootGraph, 'afterChange').mockImplementationOnce(() => {
+      throw undefined
+    })
+    const canvas = createCanvas(rootGraph)
+
+    let completed = false
+    try {
+      canvas._deserializeItems(
+        { nodes: [createSerialisedNode(1, nodeType)] },
+        {}
+      )
+      completed = true
+    } catch (error) {
+      expect(error).toBeUndefined()
+    }
+
+    expect(completed).toBe(false)
+    expect(rootGraph.nodes).toEqual([])
+  })
 })
 
 function createClipboardSubgraph(id: string): ExportedSubgraph {
