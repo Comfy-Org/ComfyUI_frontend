@@ -4,6 +4,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type {
   AgentThreadListResponse,
   AgentThreadSummary,
+  BillingStatus,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
@@ -241,6 +242,9 @@ const telemetry = vi.hoisted(() => ({
   trackAgentCloseButtonClicked: vi.fn(),
   trackAgentPanelOpened: vi.fn(),
   trackAgentPanelClosed: vi.fn(),
+  trackAgentPaywallShown: vi.fn(),
+  trackAgentPaywallCtaClicked: vi.fn(),
+  trackAddApiCreditButtonClicked: vi.fn(),
   trackAgentConsentShown: vi.fn(),
   trackAgentConsentResolved: vi.fn(),
   trackAgentOnboardingShown: vi.fn(),
@@ -278,9 +282,13 @@ const paywallCapabilities = vi.hoisted(() => ({
   isReady: true
 }))
 const paywallBilling = vi.hoisted(() => ({
-  tier: 'STANDARD' as SubscriptionTier | null
+  tier: 'STANDARD' as SubscriptionTier | null,
+  type: 'legacy' as 'workspace' | 'legacy',
+  status: 'paid' as BillingStatus | null,
+  fetchStatus: vi.fn<() => Promise<void>>()
 }))
 const paywallHasFunds = ref<boolean | null>(false)
+const paywallAgentHasFunds = ref<boolean | undefined>()
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -352,9 +360,15 @@ beforeEach(() => {
       subscription: computed(() =>
         paywallHasFunds.value === null
           ? null
-          : fromPartial({ hasFunds: paywallHasFunds.value })
+          : fromPartial({
+              hasFunds: paywallHasFunds.value,
+              agentHasFunds: paywallAgentHasFunds.value ?? paywallHasFunds.value
+            })
       ),
-      tier: computed(() => paywallBilling.tier)
+      tier: computed(() => paywallBilling.tier),
+      type: computed(() => paywallBilling.type),
+      billingStatus: computed(() => paywallBilling.status),
+      fetchStatus: paywallBilling.fetchStatus
     })
   )
   vi.mocked(useBillingCapabilities).mockReturnValue(
@@ -403,7 +417,11 @@ beforeEach(() => {
   paywallCapabilities.canSubscribeSelfServe = true
   paywallCapabilities.isReady = true
   paywallBilling.tier = 'STANDARD'
+  paywallBilling.type = 'legacy'
+  paywallBilling.status = 'paid'
+  paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
+  paywallAgentHasFunds.value = undefined
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
