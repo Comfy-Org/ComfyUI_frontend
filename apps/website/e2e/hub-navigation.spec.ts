@@ -14,6 +14,99 @@ test.beforeEach(async ({ context }) => {
   })
 })
 
+for (const { from, to, copy, reducedMotion } of [
+  {
+    from: 'models',
+    to: 'workflows',
+    copy: 'Turn your ideas into finished results',
+    reducedMotion: 'no-preference'
+  },
+  {
+    from: 'workflows',
+    to: 'apps',
+    copy: 'Take on bigger ideas with apps',
+    reducedMotion: 'no-preference'
+  },
+  {
+    from: 'apps',
+    to: 'models',
+    copy: 'Try the latest AI models',
+    reducedMotion: 'no-preference'
+  },
+  {
+    from: 'models',
+    to: 'workflows',
+    copy: 'Turn your ideas into finished results',
+    reducedMotion: 'reduce'
+  }
+] as const) {
+  test(`${from} to ${to} respects ${reducedMotion} motion preferences`, async ({
+    page
+  }) => {
+    await page.emulateMedia({ reducedMotion })
+    await page.goto(`/hub/${from}/`)
+    await expect(page.getByTestId(`catalogue-tab-${from}`)).toHaveAttribute(
+      'aria-current',
+      'page'
+    )
+    const motion = await page.evaluateHandle((destination) => {
+      const observed = { crossfade: false, reveal: false }
+      const finished = new Promise<void>((resolve) => {
+        document.addEventListener(
+          'astro:before-swap',
+          (event) => {
+            void event.viewTransition.finished.then(resolve)
+          },
+          { once: true }
+        )
+      })
+      let frame: number
+      function record() {
+        observed.crossfade ||= [
+          '::view-transition-old(root)',
+          '::view-transition-new(root)'
+        ].every((pseudo) => isFading(document.documentElement, pseudo))
+        const word = document.querySelector(
+          '[data-testid="workshop-hero"] [data-word]'
+        )
+        observed.reveal ||=
+          location.pathname === destination && word !== null && isFading(word)
+        frame = requestAnimationFrame(record)
+      }
+      function isFading(element: Element, pseudo?: string) {
+        const opacity = Number(getComputedStyle(element, pseudo).opacity)
+        return opacity > 0 && opacity < 1
+      }
+      record()
+      return {
+        observed,
+        finished,
+        stop() {
+          cancelAnimationFrame(frame)
+        }
+      }
+    }, `/hub/${to}/`)
+    try {
+      await page.getByTestId(`catalogue-tab-${to}`).click()
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+        `ComfyUI ${to}`
+      )
+      await motion.evaluate((probe) => probe.finished)
+      await expect(page.getByTestId('split-reveal')).toContainText(copy)
+      await expect(
+        page.getByTestId('split-reveal').locator('[data-word]').last()
+      ).toHaveCSS('opacity', '1')
+      expect(await motion.evaluate((probe) => probe.observed)).toEqual({
+        crossfade: reducedMotion === 'no-preference',
+        reveal: reducedMotion === 'no-preference'
+      })
+    } finally {
+      await motion.evaluate((probe) => probe.stop())
+      await motion.dispose()
+    }
+  })
+}
+
 for (const width of [1440, 390]) {
   test.describe(`Hub navigation at ${width}px`, () => {
     test.use({ viewport: { width, height: 900 } })

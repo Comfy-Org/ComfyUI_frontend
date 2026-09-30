@@ -11,6 +11,7 @@ import type {
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
+import SplitReveal from './SplitReveal.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
 import type { WorkshopPageType } from '../../scripts/workshop-analytics'
@@ -123,7 +124,13 @@ whenever(
         :class="cn('col-start-1 row-start-1', tab !== section && 'invisible')"
         :aria-hidden="tab !== section"
       >
-        {{ t(subtitle, locale) }}
+        <SplitReveal
+          v-if="tab === section"
+          :text="t(subtitle, locale)"
+          :delay="260"
+          :stagger="50"
+        />
+        <template v-else>{{ t(subtitle, locale) }}</template>
       </p>
     </div>
   </div>

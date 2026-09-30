@@ -245,27 +245,33 @@ describe('WorkshopModelsGrid', () => {
   // Coming back from a model, a browser can restore this page from its cache
   // with the shelf still open, so the reader lands on a narrowed catalogue the
   // address does not name. Reported by Eric: back should reach all models.
-  it('starts from the address again when the browser restores the page', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
+  it.for([undefined, ''])(
+    'starts from the address again when the browser restores the page (initialSearch: %s)',
+    async (initialSearch) => {
+      const user = userEvent.setup()
+      render(WorkshopModelsGrid, { props: { models, initialSearch } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images' }))
-    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+      await user.click(screen.getByRole('button', { name: 'Edit images' }))
+      expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
 
-    // A different shelf in the address, so a handler that only emptied the
-    // selection would fail here rather than pass by coincidence.
-    history.replaceState(null, '', '/models/?useCase=generate-videos')
-    onTestFinished(() => history.replaceState(null, '', '/'))
-    const restored = new Event('pageshow')
-    Object.defineProperty(restored, 'persisted', { value: true })
-    window.dispatchEvent(restored)
+      // A different shelf in the address, so a handler that only emptied the
+      // selection would fail here rather than pass by coincidence.
+      history.replaceState(null, '', '/models/?useCase=generate-videos')
+      onTestFinished(() => history.replaceState(null, '', '/'))
+      const restored = new Event('pageshow')
+      Object.defineProperty(restored, 'persisted', { value: true })
+      window.dispatchEvent(restored)
 
-    expect(
-      await screen.findByRole('heading', { level: 2, name: /Generate videos/ })
-    ).toBeTruthy()
-    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
-    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
-  })
+      expect(
+        await screen.findByRole('heading', {
+          level: 2,
+          name: /Generate videos/
+        })
+      ).toBeTruthy()
+      expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+      expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+    }
+  )
 
   // A first load is a pageshow too, and it must not throw away a shelf the
   // visitor opened before the page had finished settling.

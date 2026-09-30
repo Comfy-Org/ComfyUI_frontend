@@ -5,9 +5,10 @@ import {
 } from '../lib/workshop/catalogue-components'
 
 const routes = getRoutes('en')
-const catalogues: Readonly<Record<string, () => Promise<unknown>>> = {
-  [routes.workshop]: () =>
-    import('../components/workshop/WorkshopModelsGrid.vue'),
+const catalogues: Readonly<
+  Record<string, (() => Promise<unknown>) | undefined>
+> = {
+  [routes.workshop]: undefined,
   [routes.hubWorkflows]: loadWorkflowCatalogue,
   [routes.hubApps]: loadAppCatalogue
 }
@@ -26,13 +27,17 @@ document.addEventListener('astro:before-preparation', (event) => {
   event.loader = async () => {
     await Promise.all([
       prepare(),
-      catalogues[event.to.pathname]().catch(() => undefined)
+      catalogues[event.to.pathname]?.().catch(() => undefined)
     ])
   }
 })
 
 document.addEventListener('astro:before-swap', (event) => {
-  if (!isHubNavigation(event.from, event.to)) return
+  if (
+    !isHubNavigation(event.from, event.to) ||
+    !matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+    return
   void event.viewTransition.ready.catch(() => undefined)
   event.viewTransition.skipTransition()
 })
