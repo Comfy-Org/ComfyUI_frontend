@@ -2101,9 +2101,9 @@ Enterprise`
     'zh-CN': '简单的按积分计费'
   },
   'cloud.pricing.description': {
-    en: 'One balance for Cloud GPU time and Partner Node API models. Build and edit workflows for free — credits are consumed only when the GPU runs.',
+    en: 'One balance for Cloud GPU time, Partner Node API models, and Comfy Agent. Build and edit workflows yourself for free — credits are consumed only when a job runs or the agent works.',
     'zh-CN':
-      '一个余额即可使用云端 GPU 算力和合作伙伴节点 API 模型。免费构建和编辑工作流——仅在 GPU 运行时消耗积分。'
+      '一个余额即可使用云端 GPU 算力、合作伙伴节点 API 模型和 Comfy Agent。自己构建和编辑工作流完全免费——仅在任务运行或智能体工作时消耗积分。'
   },
   'cloud.pricing.tagline': {
     en: "Start free. Upgrade when you're ready.",
@@ -2533,9 +2533,9 @@ Enterprise`
     'zh-CN': '积分余额'
   },
   'pricing.included.feature4.description': {
-    en: 'All plans will include a monthly pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro.',
+    en: 'All plans will include a monthly pool of credits that are spent on active workflow runtime, <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro, and <a href="/agent" class="text-primary-comfy-yellow underline">Comfy Agent</a> usage.',
     'zh-CN':
-      '所有计划均包含每月积分池，可用于工作流运行和<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）。'
+      '所有计划均包含每月积分池，可用于工作流运行、<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）以及 <a href="/zh-CN/agent" class="text-primary-comfy-yellow underline">Comfy Agent</a> 的使用。'
   },
   'pricing.included.feature5.title': {
     en: 'Add more credits anytime',
@@ -2596,6 +2596,15 @@ Enterprise`
   'pricing.included.feature11.description': {
     en: 'Run multiple workflows in parallel to speed up your pipeline.',
     'zh-CN': '并行运行多个工作流，加速你的流程。'
+  },
+  'pricing.included.feature12.title': {
+    en: 'Comfy Agent',
+    'zh-CN': 'Comfy Agent'
+  },
+  'pricing.included.feature12.description': {
+    en: '<a href="/agent" class="text-primary-comfy-yellow underline">Comfy Agent</a> plans, builds, runs, and reviews workflows alongside you on the canvas. It draws on the same monthly pool of credits as the rest of your plan — there is no separate subscription to buy.',
+    'zh-CN':
+      '<a href="/zh-CN/agent" class="text-primary-comfy-yellow underline">Comfy Agent</a> 与你一同在画布上规划、构建、运行并检查工作流。它消耗的是与计划其余部分相同的每月积分池——无需单独订阅。'
   },
 
   'pricing.faq.heading': {

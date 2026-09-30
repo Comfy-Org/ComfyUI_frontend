@@ -289,9 +289,9 @@ const copy = {
     'zh-CN': 'Comfy Router 如何计费？'
   },
   'platform.router.faq.11.a': {
-    en: 'Comfy Router uses the same Comfy credits that cover Partner Nodes, Comfy Cloud workflow runs, and other supported model calls. Per-model pricing is listed in the model catalog, so you can see the cost for each model before you run it.',
+    en: 'Comfy Router uses the same Comfy credits that cover Partner Nodes, Comfy Cloud workflow runs, Comfy Agent, and other supported model calls. Per-model pricing is listed in the model catalog, so you can see the cost for each model before you run it.',
     'zh-CN':
-      'Comfy Router 使用与 Partner Nodes、Comfy Cloud 工作流运行及其他受支持模型调用相同的 Comfy 积分。每个模型的价格都列在模型目录中，运行前即可查看费用。'
+      'Comfy Router 使用与 Partner Nodes、Comfy Cloud 工作流运行、Comfy Agent 及其他受支持模型调用相同的 Comfy 积分。每个模型的价格都列在模型目录中，运行前即可查看费用。'
   },
   'platform.router.faq.12.q': {
     en: 'Do I need a Comfy subscription?',
