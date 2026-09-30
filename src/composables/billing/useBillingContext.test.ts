@@ -330,6 +330,21 @@ describe('useBillingContext', () => {
     })
   })
 
+  it('forwards the renewal invoice from workspace billing', async () => {
+    const invoice = {
+      hosted_invoice_url: 'https://invoice.stripe.com/i/test',
+      amount_due: 5000,
+      currency: 'usd'
+    }
+    mockBillingRail.value = 'stripe'
+    mockBillingStatus.value.renewal_invoice = invoice
+
+    const context = useBillingContext()
+    await context.initialize()
+
+    expect(context.renewalInvoice.value).toStrictEqual(invoice)
+  })
+
   it('provides balance info from legacy billing', () => {
     mockBillingRail.value = 'legacy_stripe'
     const { balance } = useBillingContext()

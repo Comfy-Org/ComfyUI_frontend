@@ -10,7 +10,7 @@ export const MODEL_PATH = '/models/bfl--flux-2-max--generate-images/'
 /** The identity this fixture signs in as, and the workspace its token mints. */
 export const MODELS_ACCOUNT_UID = 'e2e-models-user'
 export const MODELS_WORKSPACE_ID = 'ws-personal'
-const MODELS_WORKSPACE_TOKEN = 'mock-workspace-jwt'
+export const MODELS_WORKSPACE_TOKEN = 'mock-workspace-jwt'
 
 function jsonRoute(body: unknown, status = 200) {
   return { status, contentType: 'application/json', body: JSON.stringify(body) }
