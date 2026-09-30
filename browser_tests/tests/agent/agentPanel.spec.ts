@@ -467,6 +467,23 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         panel.getByText('What do you want to make?')
       ).toBeInViewport()
     })
+
+    test('starts typing from a click below the first prompt line', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      await agentPanel.open()
+
+      const panel = agentPanel.root
+      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      await panel
+        .getByTestId('composer-inline-input')
+        .click({ position: { x: 8, y: 58 } })
+
+      await expect(composer).toBeFocused()
+      await comfyPage.page.keyboard.type('hello')
+      await expect(composer).toHaveText('hello')
+    })
   })
 
   test('T-28 / PM-677 / FE-1320 keeps the Agent scrollbar track transparent', async ({
