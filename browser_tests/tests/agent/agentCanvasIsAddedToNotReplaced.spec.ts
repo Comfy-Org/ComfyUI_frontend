@@ -60,7 +60,7 @@ test.describe(
   'Agent work adds to the canvas instead of replacing it',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test.use({ conversationCase: CASE, humanOpsHost: 'apply' })
+    test.use({ conversationCase: CASE, humanOpsHost: 'hold' })
 
     test('story 37: an inserted workflow leaves the note the user was working on', async ({
       agentConversation,
@@ -80,11 +80,20 @@ test.describe(
           await comfyPage.nextFrame()
           const note = agentConversation.vueNodes.getNodeLocator(id)
           await expect(note).toBeVisible()
-          await note.getByRole('textbox').fill(USER_NOTE_TEXT)
+          const textbox = note.getByRole('textbox')
+          await textbox.fill(USER_NOTE_TEXT)
+          await textbox.press('Tab')
+          await comfyPage.nextFrame()
+          await expect(textbox).toHaveValue(USER_NOTE_TEXT)
           return id
         })
 
       const nodesBefore = await agentConversation.vueNodes.nodes.count()
+      const nodeIdsBefore = new Set(
+        await agentConversation.vueNodes.nodes.evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute('data-node-id'))
+        )
+      )
 
       await test.step('agent inserts a workflow', () => {
         agentConversation.pushHostOps([INSERT_WORKFLOW])
@@ -103,8 +112,16 @@ test.describe(
         await expect(agentConversation.vueNodes.nodes).toHaveCount(
           nodesBefore + 1
         )
+        const nodeIdsAfter = await agentConversation.vueNodes.nodes.evaluateAll(
+          (nodes) => nodes.map((node) => node.getAttribute('data-node-id'))
+        )
+        const insertedNodeIds = nodeIdsAfter.filter(
+          (nodeId): nodeId is string =>
+            nodeId !== null && !nodeIdsBefore.has(nodeId)
+        )
+        expect(insertedNodeIds).toHaveLength(1)
         const inserted = agentConversation.vueNodes.getNodeLocator(
-          String(INSERTED_NODE_ID)
+          insertedNodeIds[0]
         )
         await expect(inserted.getByTestId('node-title')).toContainText(
           'Empty Latent Image'
