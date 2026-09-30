@@ -94,7 +94,10 @@ function resumeModeFor(
         new Error(
           `Unknown pending billing op type: ${JSON.stringify(unexpected)}`
         ),
-        { errorType: 'billing_unknown_resume_mode' }
+        {
+          surface: 'workspace',
+          errorType: 'billing_unknown_resume_mode'
+        }
       )
       // Reachable only against a newer server. Dropping recovery strands a
       // customer who cannot reach the payment page; a wrong panel clears on

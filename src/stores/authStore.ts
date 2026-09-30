@@ -88,6 +88,7 @@ async function webSessionRunToken(
   if (result.status === 'ok') return result.credential.token
   if (result.httpStatus !== 401) {
     reportError(new Error(`Run token mint failed: ${result.code}`), {
+      surface: 'auth',
       errorType: 'web_session_run_token_failure',
       level: 'warning',
       tags: { failure_code: result.code, http_status: result.httpStatus ?? 0 }
@@ -682,7 +683,10 @@ export const useAuthStore = defineStore('auth', () => {
             credential
           ),
         onRollbackFailure: (error) => {
-          reportError(error, { errorType: 'auth_signup_rollback_failed' })
+          reportError(error, {
+            surface: 'auth',
+            errorType: 'auth_signup_rollback_failed'
+          })
           console.warn(
             'Failed to roll back orphaned Firebase user after customer creation failed',
             error

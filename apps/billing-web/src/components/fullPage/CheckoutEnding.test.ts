@@ -129,7 +129,7 @@ describe('CheckoutEnding', () => {
     {
       ending: { kind: 'completed', code: 'op_seen' },
       title: "You're all set",
-      body: 'A payment on this workspace completed — check your plan in settings.',
+      body: 'A payment for Acme Team went through. Check your plan in settings for the details.',
       codeLabel: 'Your reference for this payment:',
       action: 'Close',
       support: false,
@@ -325,6 +325,35 @@ describe('CheckoutEnding', () => {
 
     expect(screen.queryByText(/Don't pay again/)).not.toBeInTheDocument()
   })
+
+  it.for([
+    {
+      code: '3f2b9c1e-8a4d-4f6b-9c2e-7d1a5b8e0f43',
+      pieces: ['3f2b9c1e-', '8a4d-', '4f6b-', '9c2e-', '7d1a5b8e0f43']
+    },
+    {
+      code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
+      pieces: ['SUBSCRIPTION_', 'CHANGE_', 'IN_', 'PROGRESS']
+    }
+  ])(
+    '372-4951: $code may wrap after each hyphen or underscore',
+    ({ code, pieces }) => {
+      renderEnding({ kind: 'in_progress', code })
+
+      const shown = screen.getByTestId('checkout-ending-code')
+      const breakable = Array.from(shown.childNodes)
+        .map((node) =>
+          node.nodeName === 'WBR'
+            ? '|'
+            : node.nodeType === Node.TEXT_NODE
+              ? node.textContent
+              : ''
+        )
+        .join('')
+        .split('|')
+      expect(breakable).toEqual(pieces)
+    }
+  )
 
   it('mails support with the code the screen shows', () => {
     renderEnding({ kind: 'in_progress', code: 'op_s' })

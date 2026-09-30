@@ -175,7 +175,13 @@ const loadEvents = async () => {
     // supersedes this load, since legacy and workspace backends emit different
     // top-up events and the winning fetch may not carry the completion yet.
     if (usePendingTopup().isPendingTopupCompleted(response?.events)) {
-      useTelemetry()?.trackApiCreditTopupSucceeded()
+      const telemetry = useTelemetry()
+      telemetry?.trackApiCreditTopupSucceeded()
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'succeeded',
+        outcome: 'success'
+      })
     }
 
     if (loadToken !== latestLoadToken) return

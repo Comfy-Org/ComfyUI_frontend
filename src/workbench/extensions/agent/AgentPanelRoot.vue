@@ -461,14 +461,29 @@ const coachDeferredBy = computed(() =>
       ? 'tour_active'
       : null
 )
+const coachCompletionWaiters = new Set<() => void>()
+function releaseCoachCompletionWaiters(): void {
+  for (const resolve of coachCompletionWaiters) resolve()
+  coachCompletionWaiters.clear()
+}
 watch(
   [consentAccepted, onboardingKey, coachDeferredBy],
   ([accepted, key, reason]) => {
     if (accepted && key && !hasSeenCoach(key)) trackCoachDeferral(key, reason)
+    if (reason !== null) releaseCoachCompletionWaiters()
   },
   { immediate: true }
 )
 const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
+
+async function waitForCoachCompletion(): Promise<void> {
+  const key = onboardingKey.value
+  if (!key || hasSeenCoach(key)) return
+  await nextTick()
+  if (coachDeferredBy.value !== null || !coachRef.value) return
+  await new Promise<void>((resolve) => coachCompletionWaiters.add(resolve))
+}
+
 function restartCoach(): void {
   // Take-the-tour stays clickable while the coach is deferred by App Mode, and
   // there is no instance to hand the transition to. Clearing the persisted flag
@@ -962,6 +977,7 @@ watch(
       if (completedTurn && billingType.value === 'workspace') {
         void refreshBillingStatus().catch((error: unknown) => {
           reportError(error, {
+            surface: 'agent',
             errorType: 'error_refreshing_agent_billing_status'
           })
         })
@@ -1087,7 +1103,10 @@ async function onAgentActiveTab(
   } catch (error) {
     if (stale()) return false
     bindWorkflow(data.workflow_id)
-    reportError(error, { errorType: 'agent_workflow_open_failed' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_workflow_open_failed'
+    })
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
@@ -1210,7 +1229,11 @@ async function onAnswerAsk(
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
-  if (composerStore.submission?.id === consentHeldSubmissionId)
+  releaseCoachCompletionWaiters()
+  if (
+    (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
+    composerStore.submission?.id === consentHeldSubmissionId
+  )
     composerStore.invalidateSubmission()
   docOpMinter.detach()
   restoreOpMinter.detach()
@@ -1265,7 +1288,10 @@ async function refreshHistory(): Promise<void> {
   try {
     history.replaceAll((await listThreads()).map(toChatSession))
   } catch (error) {
-    reportError(error, { errorType: 'agent_thread_list_load_failed' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed'
+    })
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
@@ -1364,6 +1390,7 @@ async function consentAllowsSubmission(
     await withConsent('first_message', () => {
       hasConsent = true
     })
+    if (hasConsent) await waitForCoachCompletion()
   } finally {
     if (consentHeldSubmissionId === submissionId)
       consentHeldSubmissionId = undefined
@@ -1828,6 +1855,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"
+      @finished="releaseCoachCompletionWaiters"
     />
   </div>
 </template>

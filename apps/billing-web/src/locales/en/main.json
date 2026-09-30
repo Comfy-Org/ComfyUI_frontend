@@ -282,7 +282,7 @@
         },
         "completed": {
           "title": "You're all set",
-          "body": "A payment on this workspace completed — check your plan in settings.",
+          "body": "A payment for {workspace} went through. Check your plan in settings for the details.",
           "codeLabel": "Your reference for this payment:"
         },
         "already_completed": {

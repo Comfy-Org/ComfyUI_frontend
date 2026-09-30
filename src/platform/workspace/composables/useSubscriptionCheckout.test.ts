@@ -1649,6 +1649,7 @@ describe('useSubscriptionCheckout', () => {
         'Update your payment method before changing plans'
       )
       expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
       expect(globalThis.location.href).toBe(
@@ -1674,6 +1675,7 @@ describe('useSubscriptionCheckout', () => {
       )
 
       expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
       expect(mockToastAdd).toHaveBeenCalledWith(
@@ -1828,6 +1830,7 @@ describe('useSubscriptionCheckout', () => {
 
         expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
         expect(mockReportError).toHaveBeenCalledWith(portalError, {
+          surface: 'workspace',
           errorType: 'billing_portal_open_failure'
         })
         expect(mockToastAdd).toHaveBeenCalledWith(
