@@ -72,6 +72,8 @@ export type Member = GeneratedMember & {
   // neither usage nor limit yet; persistence and real usage land in FE-1278.
   credits_used_this_month?: number
   monthly_credit_limit?: number | null
+  // SSO directory-managed role (BE-17892); drop once ingest-types syncs it.
+  managed_by_directory?: boolean
 }
 
 export interface ListMembersParams {

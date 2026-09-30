@@ -757,6 +757,17 @@ describe('useMembersPanel', () => {
       })
     })
 
+    it('is a no-op for a directory-managed member', async () => {
+      const panel = await setup()
+      panel.handleChangeRole(
+        createMember({ role: 'member', managedByDirectory: true }),
+        'owner'
+      )
+      expect(
+        useDialogService().showChangeMemberRoleDialog
+      ).not.toHaveBeenCalled()
+    })
+
     it('is a no-op when the member already has the target role', async () => {
       const panel = await setup()
       panel.handleChangeRole(createMember({ role: 'member' }), 'member')
@@ -783,6 +794,30 @@ describe('useMembersPanel', () => {
         'workspaceSwitcher.roleMember'
       ])
       expect(roleItems.map((i) => i.checked)).toEqual([false, true])
+    })
+
+    it('keeps Change role enabled for a member not managed by a directory', async () => {
+      const panel = await setup()
+      const [roleItem] = panel.memberMenuItems(
+        createMember({ managedByDirectory: false })
+      )
+
+      expect(roleItem.disabled).toBeUndefined()
+      expect(roleItem.tooltip).toBeUndefined()
+      expect(roleItem.items).toHaveLength(2)
+    })
+
+    it('disables Change role with a note for a directory-managed member', async () => {
+      const panel = await setup()
+      const [roleItem] = panel.memberMenuItems(
+        createMember({ managedByDirectory: true })
+      )
+
+      expect(roleItem).toEqual({
+        label: 'workspacePanel.members.actions.changeRole',
+        disabled: true,
+        tooltip: 'workspacePanel.members.directoryManagedRole'
+      })
     })
 
     it('omits Set credit limit for owner rows', async () => {

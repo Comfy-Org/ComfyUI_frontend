@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import ChangeMemberRoleDialogContent from './ChangeMemberRoleDialogContent.vue'
 
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
@@ -122,6 +123,27 @@ describe('ChangeMemberRoleDialogContent', () => {
       )
     )
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+  })
+
+  it('explains a DIRECTORY_MANAGED refusal', async () => {
+    vi.mocked(useTeamWorkspaceStore().changeMemberRole).mockRejectedValue(
+      new WorkspaceApiError('managed', 403, 'DIRECTORY_MANAGED')
+    )
+    const { user } = renderDialog('owner')
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'workspacePanel.changeRoleDialog.promoteConfirm'
+      })
+    )
+
+    await waitFor(() =>
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'workspacePanel.changeRoleDialog.error',
+        detail: 'workspacePanel.members.directoryManagedRole'
+      })
+    )
   })
 
   it('closes without changing the role on cancel', async () => {

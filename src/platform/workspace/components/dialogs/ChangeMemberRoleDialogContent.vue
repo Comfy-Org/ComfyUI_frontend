@@ -65,6 +65,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -103,10 +104,15 @@ async function onConfirm() {
       life: 2000
     })
     dialogStore.closeDialog({ key: 'change-member-role' })
-  } catch {
+  } catch (err) {
+    const directoryManaged =
+      err instanceof WorkspaceApiError && err.code === 'DIRECTORY_MANAGED'
     toast.add({
       severity: 'error',
-      summary: t('workspacePanel.changeRoleDialog.error')
+      summary: t('workspacePanel.changeRoleDialog.error'),
+      detail: directoryManaged
+        ? t('workspacePanel.members.directoryManagedRole')
+        : undefined
     })
   } finally {
     loading.value = false

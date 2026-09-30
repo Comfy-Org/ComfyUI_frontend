@@ -30,6 +30,7 @@ export interface WorkspaceMember {
   joinDate: Date
   role: 'owner' | 'member'
   isOriginalOwner: boolean
+  managedByDirectory?: boolean
   creditsUsedThisMonth?: number
   monthlyCreditLimit?: number | null
 }
@@ -66,6 +67,7 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
     joinDate: new Date(member.joined_at),
     role: member.role,
     isOriginalOwner: member.is_original_owner,
+    managedByDirectory: member.managed_by_directory,
     creditsUsedThisMonth: member.credits_used_this_month,
     monthlyCreditLimit: member.monthly_credit_limit
   }

@@ -345,13 +345,19 @@ export function useMembersPanel() {
     }
 
     return [
-      {
-        label: t('workspacePanel.members.actions.changeRole'),
-        items: [
-          roleMenuItem(member, 'owner', t('workspaceSwitcher.roleOwner')),
-          roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
-        ]
-      },
+      member.managedByDirectory
+        ? {
+            label: t('workspacePanel.members.actions.changeRole'),
+            disabled: true,
+            tooltip: t('workspacePanel.members.directoryManagedRole')
+          }
+        : {
+            label: t('workspacePanel.members.actions.changeRole'),
+            items: [
+              roleMenuItem(member, 'owner', t('workspaceSwitcher.roleOwner')),
+              roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
+            ]
+          },
       ...(flags.billingControlEnabled && member.role === 'member'
         ? [creditLimitItem]
         : []),
@@ -436,7 +442,7 @@ export function useMembersPanel() {
     targetRole: WorkspaceRole
   ) {
     if (!permissions.value.canManageMembers) return
-    if (member.role === targetRole) return
+    if (member.role === targetRole || member.managedByDirectory) return
     void showChangeMemberRoleDialog({
       memberId: member.id,
       memberName: member.name,
