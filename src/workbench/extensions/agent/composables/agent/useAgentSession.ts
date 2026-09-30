@@ -1006,23 +1006,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (metadata !== null) useTelemetry()?.trackAgentStopClicked(metadata)
   }
 
-  /**
-   * Returns the prompt to idle only while the stopping phase still names this
-   * turn. A cancel is awaited across arbitrary delay, so by the time it
-   * rejects a later send may own the phase -- and resetting that would clear a
-   * different turn's prompt.
-   */
   function releaseStoppingPhase(turnId: TurnId): void {
     if (isStoppingTurn(turnId)) promptEditState.value = { phase: 'idle' }
   }
 
-  /**
-   * Whether this rejection answers a turn the session has already moved past,
-   * for any status rather than only the terminal two: the turn settled while
-   * the cancel was in flight, or a newer send replaced it. Acting on it would
-   * push an error over a live turn and report a cancel failure for a turn that
-   * is already gone.
-   */
   function abandonedStop(turnId: TurnId): boolean {
     return conversationStore.activeTurnId !== turnId
   }
