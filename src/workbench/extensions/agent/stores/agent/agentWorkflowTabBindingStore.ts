@@ -229,6 +229,8 @@ export const useAgentWorkflowTabBindingStore = defineStore(
 
     return {
       bind,
+      // Called by useAgentWorkflowResolver when a persisted binding is stale.
+      // fallow-ignore-next-line unused-store-member
       unbind,
       unbindWorkflow,
       matchesWorkflow,

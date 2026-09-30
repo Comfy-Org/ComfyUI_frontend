@@ -348,6 +348,10 @@ function ownsSendSlot(slot: SendInFlight): boolean {
   return sendInFlight?.generation === slot.generation
 }
 
+function hasCurrentOwnerSend(): boolean {
+  return sendInFlight?.owner === getStorageIdentity()
+}
+
 function consumeStopPendingAck() {
   const pending = stopPendingAck
   stopPendingAck = null
@@ -1379,8 +1383,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // The POST has not acked yet; remember the intent and cancel on ack.
       // sendInFlight, not this instance's sending: the panel that posted may
       // have been remounted, and the stop arrives through the new instance.
-      if (sendInFlight?.owner === getStorageIdentity())
-        stopPendingAck = { method }
+      if (hasCurrentOwnerSend()) stopPendingAck = { method }
       return
     }
     if (isStoppingTurn(turnId)) return
