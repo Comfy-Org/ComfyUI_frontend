@@ -3140,7 +3140,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
 
-  it('does not resume a consent-held send after the panel unmounts', async () => {
+  it('does not resume a consent-held send after closing in App Mode', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
     const settleSubmission = vi.spyOn(
@@ -3165,6 +3165,8 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.paste('build me a workflow')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
+    canvasStore.linearMode = true
+    useAgentPanelStore().close('close_button')
     unmount()
     accept()
     await waitFor(() =>
