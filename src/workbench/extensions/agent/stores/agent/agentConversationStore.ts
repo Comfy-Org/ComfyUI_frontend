@@ -36,6 +36,7 @@ interface UserEntry {
 export type ConversationEntry = UserEntry | AssistantMessage
 
 interface BackgroundTurn {
+  threadId: string
   messageId: TurnId
   message: AssistantMessage
   transport: AgentEventTransport
@@ -330,16 +331,19 @@ export const useAgentConversationStore = defineStore(
     ): void {
       if (eventThreadId === undefined || eventThreadId === threadId.value)
         transport?.ingest(event)
-      else backgroundTurns.get(eventThreadId)?.transport.ingest(event)
+      else latestBackgroundTurn(eventThreadId)?.transport.ingest(event)
     }
 
     function ingestBackgroundTurnEvent(
       event: AgentChatEvent,
       eventThreadId: string
     ): void {
-      const entry = backgroundTurns.get(eventThreadId)
-      if (!entry || entry.messageId !== event.data.message_id) {
-        const eventMessageId = event.data.message_id
+      const eventMessageId = event.data.message_id
+      const entry =
+        eventMessageId === undefined
+          ? undefined
+          : backgroundTurns.get(eventMessageId)
+      if (!entry || entry.threadId !== eventThreadId) {
         const reason =
           eventMessageId === undefined
             ? undefined
@@ -406,7 +410,8 @@ export const useAgentConversationStore = defineStore(
         abortActiveTurn()
         return
       }
-      backgroundTurns.set(threadId.value, {
+      backgroundTurns.set(activeTurnId.value, {
+        threadId: threadId.value,
         messageId: activeTurnId.value,
         message: liveMessage,
         transport,
@@ -419,7 +424,7 @@ export const useAgentConversationStore = defineStore(
     function resumeBackgroundTurn(): void {
       const resumedThreadId = threadId.value
       if (resumedThreadId === null) return
-      const entry = backgroundTurns.get(resumedThreadId)
+      const entry = latestBackgroundTurn(resumedThreadId)
       if (!entry) return
       // A turn started while this resume was in flight holds the slot, and the
       // stash is the older of the two. Taking the slot anyway would orphan the
@@ -427,7 +432,7 @@ export const useAgentConversationStore = defineStore(
       // the stash where it is: it still receives its own frames as a
       // background turn, and a later resume can restore it.
       if (transport !== null && !activeFromSnapshot) return
-      backgroundTurns.delete(resumedThreadId)
+      backgroundTurns.delete(entry.messageId)
       // A snapshot the stash could not be matched to installed its own live
       // row, and this stash is about to take the slot. Ownership matching
       // cannot close that gap alone: a multi-row turn's acknowledgement row
@@ -446,14 +451,14 @@ export const useAgentConversationStore = defineStore(
       // its user text whether or not this entry turns out to be settled.
       const poppedHydratedCopy = removeHydratedCopy(entry, kept)
       if (persistedCopyOutlivesEntry(entry, poppedHydratedCopy)) {
-        retireBackgroundTurn(entry, resumedThreadId)
+        retireBackgroundTurn(entry)
         return
       }
       restoreBackgroundUserText(entry)
       const index = kept.push(entry.message) - 1
       messages.value = kept
       if (entry.settled) {
-        retireBackgroundTurn(entry, resumedThreadId)
+        retireBackgroundTurn(entry)
         return
       }
       claimSlotForBackgroundTurn(entry, index, resumedThreadId)
@@ -491,12 +496,19 @@ export const useAgentConversationStore = defineStore(
      * PM-1575: flush what the discarded transport still holds rather than
      * leaving it reachable only by its own STALE_AFTER_MS fallback.
      */
-    function retireBackgroundTurn(
-      entry: BackgroundTurn,
-      resumedThreadId: string
-    ): void {
-      rememberDepartedTurn(resumedThreadId, entry.messageId, 'settled-turn')
+    function retireBackgroundTurn(entry: BackgroundTurn): void {
+      rememberDepartedTurn(entry.threadId, entry.messageId, 'settled-turn')
       entry.transport.dispose()
+    }
+
+    function latestBackgroundTurn(
+      backgroundThreadId: string
+    ): BackgroundTurn | undefined {
+      let latest: BackgroundTurn | undefined
+      for (const entry of backgroundTurns.values()) {
+        if (entry.threadId === backgroundThreadId) latest = entry
+      }
+      return latest
     }
 
     function restoreBackgroundUserText(entry: BackgroundTurn): void {
@@ -525,24 +537,24 @@ export const useAgentConversationStore = defineStore(
     }
 
     function settleBackgroundTurn(turnId: string): TurnId | null {
-      for (const [key, entry] of backgroundTurns) {
-        if (entry.messageId !== turnId) continue
-        rememberDepartedTurn(key, entry.messageId, 'settled-turn')
+      const entry = backgroundTurns.get(turnId)
+      if (entry) {
+        rememberDepartedTurn(entry.threadId, entry.messageId, 'settled-turn')
         entry.transport.settle()
         // This turn is being dropped from the map here, unlike the
         // agent_message_done path in ingestBackgroundTurnEvent -- nothing
         // will keep it reachable afterwards, so flush its held parts now.
         entry.transport.dispose()
-        backgroundTurns.delete(key)
+        backgroundTurns.delete(entry.messageId)
         return entry.messageId
       }
       return null
     }
 
     function dropBackgroundTurns(): void {
-      for (const [backgroundThreadId, entry] of backgroundTurns) {
+      for (const entry of backgroundTurns.values()) {
         rememberDepartedTurn(
-          backgroundThreadId,
+          entry.threadId,
           entry.messageId,
           entry.settled ? 'settled-turn' : 'no-live-turn'
         )
@@ -696,13 +708,12 @@ export const useAgentConversationStore = defineStore(
     ): NormalizedAgentTranscript['pending'] {
       const pending = transcript.pending
       if (!pending) return undefined
-      const stashed =
-        threadId.value === null
-          ? undefined
-          : backgroundTurns.get(threadId.value)
-      const ownsPending =
-        stashed?.messageId === pending.messageId ||
-        stashed?.message.id === pending.message.id
+      const ownsPending = [...backgroundTurns.values()].some(
+        (stashed) =>
+          stashed.threadId === threadId.value &&
+          (stashed.messageId === pending.messageId ||
+            stashed.message.id === pending.message.id)
+      )
       if (!ownsPending) return pending
       settleLiveMessage(pending.message)
       return undefined

@@ -430,6 +430,41 @@ describe('useAgentConversationStore', () => {
     ).toEqual(['newer and more'])
   })
 
+  it('keeps an older same-thread stash routable after stashing a newer turn', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'older'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go', 'u1'),
+      {
+        ...historyRow(2, 'assistant', 'turn-a', '', 't1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+    store.startTurn(T2)
+    store.ingest(delta('t2', 'newer'))
+    store.resumeBackgroundTurn()
+    store.stashActiveTurn()
+
+    store.ingest(delta('t1', ' and complete'))
+    store.ingest(done('t1'))
+    store.ingest(done('t2'))
+    store.resumeBackgroundTurn()
+    store.resumeBackgroundTurn()
+
+    store.ingest(runApproval('t1', 'late-old-ask'))
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({ reason: 'settled-turn' })
+      })
+    )
+  })
+
   // Provenance has to expire with the slot it describes. Here the snapshot row
   // really is installed -- its id matches neither the stash's nor the turn's --
   // and then settles, so the send that follows owns a slot no resume may
