@@ -18,6 +18,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentMessageSentMetadata } from '@/platform/telemetry/types'
 import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
@@ -93,7 +94,11 @@ import type {
 import type { CoachStep } from './composables/agent/useOnboarding'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
-import { useAgentSession } from './composables/agent/useAgentSession'
+import {
+  isRetryableRequestFailure,
+  trackAgentError,
+  useAgentSession
+} from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
@@ -767,6 +772,14 @@ function surfaceAgentError(type: 'agent_api_failed', details: string): void {
   executionErrorStore.showErrorOverlay()
 }
 
+function trackWorkflowOpenFailure(
+  uiTreatment: 'error_overlay' | 'toast'
+): void {
+  trackAgentError('workflow_open_failed', 'post_acceptance', uiTreatment, {
+    retryable: false
+  })
+}
+
 let noticesSeen = 0
 watch(
   () => notices.value.length,
@@ -852,6 +865,7 @@ async function onAgentActiveTab(
       if (stale()) return
       if (!opened) {
         warnWorkflowUnavailable()
+        trackWorkflowOpenFailure('toast')
         return
       }
       // boundOrOpenWorkflowFor can resolve by cloud name, which leaves no binding behind
@@ -886,7 +900,10 @@ async function onAgentActiveTab(
     }
     if (stale() || !opened) {
       await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
-      if (!stale()) warnWorkflowUnavailable()
+      if (!stale()) {
+        warnWorkflowUnavailable()
+        trackWorkflowOpenFailure('toast')
+      }
       return
     }
     if (status.value !== 'idle') tabActivity.setEditing(tab.path)
@@ -899,10 +916,12 @@ async function onAgentActiveTab(
   } catch (error) {
     if (stale()) return
     bindWorkflow(data.workflow_id)
+    reportError(error, { errorType: 'agent_workflow_open_failed' })
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
     )
+    trackWorkflowOpenFailure('error_overlay')
   } finally {
     tabActivity.setCreating(false)
   }
@@ -963,9 +982,16 @@ async function refreshHistory(): Promise<void> {
   try {
     history.replaceAll((await listThreads()).map(toChatSession))
   } catch (error) {
+    reportError(error, { errorType: 'agent_thread_list_load_failed' })
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
+    )
+    trackAgentError(
+      'thread_list_load_failed',
+      'pre_acceptance',
+      'error_overlay',
+      { retryable: isRetryableRequestFailure(error, false) }
     )
   }
 }
