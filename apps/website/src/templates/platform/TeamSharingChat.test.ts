@@ -19,27 +19,33 @@ describe('TeamSharingChat', () => {
     vi.mocked(prefersReducedMotion).mockReturnValue(false)
   })
 
-  it('advances messages while keeping distinct workflow links fixed', async () => {
+  it('shows the scripted exchange and loops it with the workflow link fixed', async () => {
     vi.useFakeTimers()
     const { unmount } = render(TeamSharingChat, {
       props: { locale: 'en' }
     })
 
     await setAllIntersecting(true)
-    await vi.advanceTimersByTimeAsync(3200)
 
     expect(
       screen.getByText(t('platform.howItWorks.chat.message', 'en'))
     ).toBeTruthy()
+    expect(screen.getByText('video-upscale-4k.run.comfy.app')).toBeTruthy()
 
-    expect(screen.getByText('upscale-4k.run.comfy.app')).toBeTruthy()
-    expect(screen.getByText('try-on-x7k2.run.comfy.app')).toBeTruthy()
+    await vi.advanceTimersByTimeAsync(1600 * 3)
+
+    // The script loops: after a full cycle, the same question and workflow
+    // link are showing again rather than advancing to something new.
+    expect(
+      screen.getByText(t('platform.howItWorks.chat.message', 'en'))
+    ).toBeTruthy()
+    expect(screen.getByText('video-upscale-4k.run.comfy.app')).toBeTruthy()
 
     unmount()
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('shows a fixed sequence when reduced motion is preferred', async () => {
+  it('shows the full fixed exchange when reduced motion is preferred', async () => {
     vi.useFakeTimers()
     vi.mocked(prefersReducedMotion).mockReturnValue(true)
     const { unmount } = render(TeamSharingChat, {
@@ -50,13 +56,13 @@ describe('TeamSharingChat', () => {
     await vi.advanceTimersByTimeAsync(6400)
 
     expect(
-      screen.queryByText(t('platform.howItWorks.chat.message', 'en'))
-    ).toBeNull()
-    expect(
-      screen.getByText(t('platform.howItWorks.chat.messageReady', 'en'))
+      screen.getByText(t('platform.howItWorks.chat.message', 'en'))
     ).toBeTruthy()
     expect(
-      screen.getByText(t('platform.howItWorks.chat.messagePreview', 'en'))
+      screen.getByText(t('platform.howItWorks.chat.reply', 'en'))
+    ).toBeTruthy()
+    expect(
+      screen.getByText(t('platform.howItWorks.chat.thanks', 'en'))
     ).toBeTruthy()
 
     unmount()

@@ -17,49 +17,41 @@ const { locale = 'en' } = defineProps<{
 const root = useTemplateRef<HTMLElement>('root')
 const visible = useElementVisibility(root)
 const visibility = useDocumentVisibility()
-const exchanges = [
+// A single scripted exchange: M asks a question, B replies with a deployed
+// workflow link and a code snippet, and M says thanks. It loops in place
+// rather than cycling between different exchanges, since there's only one.
+const chatScript = [
   {
-    message: 'platform.howItWorks.chat.message',
-    reply: 'platform.howItWorks.chat.reply',
-    responder: 'J',
-    endpoint: 'try-on-x7k2'
+    reply: false,
+    avatar: 'M',
+    text: 'platform.howItWorks.chat.message'
   },
   {
-    message: 'platform.howItWorks.chat.messageReady',
-    reply: 'platform.howItWorks.chat.replyTesting',
-    responder: 'M',
-    endpoint: 'product-photos'
+    reply: true,
+    avatar: 'B',
+    text: 'platform.howItWorks.chat.reply',
+    endpoint: 'video-upscale-4k',
+    snippet: 'platform.howItWorks.chat.replySnippet'
   },
   {
-    message: 'platform.howItWorks.chat.messagePreview',
-    reply: 'platform.howItWorks.chat.replySharing',
-    responder: 'Q',
-    endpoint: 'upscale-4k'
+    reply: false,
+    avatar: 'M',
+    text: 'platform.howItWorks.chat.thanks'
   }
 ] as const
 type ChatMessage = {
   id: number
   reply: boolean
   avatar: string
-  text: (typeof exchanges)[number]['message' | 'reply']
+  text: (typeof chatScript)[number]['text']
+  endpoint?: string
+  snippet?: 'platform.howItWorks.chat.replySnippet'
 }
-const initialMessages: ChatMessage[] = [
-  { id: 5, reply: false, avatar: 'B', text: exchanges[1].message },
-  {
-    id: 7,
-    reply: true,
-    avatar: exchanges[1].responder,
-    text: exchanges[1].reply
-  },
-  { id: 9, reply: false, avatar: 'B', text: exchanges[2].message },
-  {
-    id: 11,
-    reply: true,
-    avatar: exchanges[2].responder,
-    text: exchanges[2].reply
-  }
-]
-const tick = ref(11)
+const initialMessages: ChatMessage[] = chatScript.map((message, index) => ({
+  ...message,
+  id: index
+}))
+const tick = ref(chatScript.length - 1)
 const messages = ref<ChatMessage[]>(initialMessages)
 const reduced = computed(() => prefersReducedMotion())
 const displayed = computed(() =>
@@ -68,20 +60,11 @@ const displayed = computed(() =>
 const { pause, resume } = useIntervalFn(
   () => {
     tick.value += 1
-    if (tick.value % 2 === 1) {
-      const reply = tick.value % 4 === 3
-      const exchange =
-        exchanges[Math.floor((tick.value - 1) / 4) % exchanges.length]
-      messages.value = [
-        ...messages.value.slice(-3),
-        {
-          id: tick.value,
-          reply,
-          avatar: reply ? exchange.responder : 'B',
-          text: reply ? exchange.reply : exchange.message
-        }
-      ]
-    }
+    const next = chatScript[tick.value % chatScript.length]
+    messages.value = [
+      ...messages.value.slice(-(chatScript.length - 1)),
+      { ...next, id: tick.value }
+    ]
   },
   1600,
   { immediate: false }
@@ -145,13 +128,16 @@ watchEffect(() => {
           >
             <span>{{ t(message.text, locale) }}</span>
             <div
-              v-if="!message.reply"
+              v-if="message.endpoint"
               class="mt-1 break-all text-primary-comfy-yellow"
             >
-              {{
-                exchanges.find((exchange) => exchange.message === message.text)
-                  ?.endpoint
-              }}.run.comfy.app
+              {{ message.endpoint }}.run.comfy.app
+            </div>
+            <div
+              v-if="message.snippet"
+              class="mt-2 overflow-x-auto rounded-lg bg-primary-comfy-ink/60 px-2 py-1.5 font-mono text-2xs whitespace-pre-wrap text-primary-warm-white/90"
+            >
+              {{ t(message.snippet, locale) }}
             </div>
           </div>
         </div>

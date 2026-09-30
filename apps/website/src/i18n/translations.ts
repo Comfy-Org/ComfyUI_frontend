@@ -8819,28 +8819,21 @@ Enterprise`
     'zh-CN': '创意团队'
   },
   'platform.howItWorks.chat.message': {
-    en: "here's the link",
-    'zh-CN': '链接在这里'
+    en: "what's the best way to do video upscaling right now?",
+    'zh-CN': '现在做视频高清放大，最好的方式是什么？'
   },
   'platform.howItWorks.chat.reply': {
-    en: 'got it!',
-    'zh-CN': '收到！'
+    en: 'deployed this workflow, give it a spin:',
+    'zh-CN': '我部署了这个工作流，试试看：'
   },
-  'platform.howItWorks.chat.messageReady': {
-    en: 'The workflow is ready to try',
-    'zh-CN': '工作流可以试用了'
+  'platform.howItWorks.chat.replySnippet': {
+    en: 'curl https://video-upscale-4k.run.comfy.app \\\n  -F "video=@clip.mp4"',
+    'zh-CN':
+      'curl https://video-upscale-4k.run.comfy.app \\\n  -F "video=@clip.mp4"'
   },
-  'platform.howItWorks.chat.replyTesting': {
-    en: 'Testing it now!',
-    'zh-CN': '现在就来试！'
-  },
-  'platform.howItWorks.chat.messagePreview': {
-    en: 'Preview is live',
-    'zh-CN': '预览已上线'
-  },
-  'platform.howItWorks.chat.replySharing': {
-    en: "I'll share it with the team",
-    'zh-CN': '我会分享给团队'
+  'platform.howItWorks.chat.thanks': {
+    en: 'thanks!',
+    'zh-CN': '谢谢！'
   },
   'platform.howItWorks.chat.placeholder': {
     en: 'Message your team',
