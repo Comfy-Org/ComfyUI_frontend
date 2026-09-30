@@ -9,6 +9,17 @@ vi.mock(import('../../composables/useReducedMotion'), () => ({
 }))
 
 describe('ServerlessDeploySection', () => {
+  it('copies runnable commands without prompts or sample output', async () => {
+    const user = userEvent.setup()
+    render(ServerlessDeploySection, { props: { locale: 'en' } })
+
+    await user.click(screen.getByRole('button', { name: 'Copy commands' }))
+
+    expect(await navigator.clipboard.readText()).toBe(
+      'comfy build init\ncomfy build push --release --target linux/nvidia\ncomfy deploy up'
+    )
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy()
+  })
   it('presents the deploy transcript as a live terminal', () => {
     render(ServerlessDeploySection, { props: { locale: 'en' } })
 
@@ -38,3 +49,4 @@ describe('ServerlessDeploySection', () => {
     }
   })
 })
+import userEvent from '@testing-library/user-event'

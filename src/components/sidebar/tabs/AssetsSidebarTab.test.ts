@@ -203,3 +203,26 @@ it.for([
 
   expect(screen.getByTestId('template-closable')).toHaveTextContent(closable)
 })
+
+describe('AssetsSidebarTab tab panel', () => {
+  it('labels the asset list with the selected tab', async () => {
+    renderTab()
+
+    expect(
+      screen.getByRole('tabpanel', { name: 'Generated' })
+    ).toContainElement(screen.getByTestId('assets-grid'))
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Imported' }))
+
+    expect(screen.getByRole('tabpanel', { name: 'Imported' })).toBeVisible()
+  })
+
+  it('keeps the panel in the tab order', () => {
+    renderTab()
+
+    expect(screen.getByRole('tabpanel', { name: 'Generated' })).toHaveAttribute(
+      'tabindex',
+      '0'
+    )
+  })
+})

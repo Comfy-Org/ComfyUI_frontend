@@ -11,9 +11,8 @@ import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en', endpoint } = defineProps<{
+const { locale = 'en' } = defineProps<{
   locale?: Locale
-  endpoint: string
 }>()
 const root = useTemplateRef<HTMLElement>('root')
 const visible = useElementVisibility(root)
@@ -22,17 +21,20 @@ const exchanges = [
   {
     message: 'platform.howItWorks.chat.message',
     reply: 'platform.howItWorks.chat.reply',
-    responder: 'J'
+    responder: 'J',
+    endpoint: 'try-on-x7k2'
   },
   {
     message: 'platform.howItWorks.chat.messageReady',
     reply: 'platform.howItWorks.chat.replyTesting',
-    responder: 'M'
+    responder: 'M',
+    endpoint: 'product-photos'
   },
   {
     message: 'platform.howItWorks.chat.messagePreview',
     reply: 'platform.howItWorks.chat.replySharing',
-    responder: 'Q'
+    responder: 'Q',
+    endpoint: 'upscale-4k'
   }
 ] as const
 type ChatMessage = {
@@ -113,7 +115,12 @@ watchEffect(() => {
         <div
           v-for="message in displayed"
           :key="message.id"
-          class="flex shrink-0 items-end gap-2"
+          :class="
+            cn(
+              'flex shrink-0 items-end gap-2',
+              !message.reply && 'flex-row-reverse'
+            )
+          "
         >
           <span
             :class="
@@ -141,7 +148,10 @@ watchEffect(() => {
               v-if="!message.reply"
               class="mt-1 break-all text-primary-comfy-yellow"
             >
-              {{ endpoint }}.run.comfy.app
+              {{
+                exchanges.find((exchange) => exchange.message === message.text)
+                  ?.endpoint
+              }}.run.comfy.app
             </div>
           </div>
         </div>

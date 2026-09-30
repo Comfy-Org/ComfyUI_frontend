@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, Video } from '@lucide/vue'
+import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -13,15 +13,19 @@ import {
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { shownOption } from '../../../lib/workshop/cinematic-studio/grade-image'
 import CinematicDirectionThumb from './CinematicDirectionThumb.vue'
+import CinematicOptionIcon from './CinematicOptionIcon.vue'
 import type { PickerKey } from './picker-key'
 
 const {
   direction,
   openPicker,
+  colors,
   locale = 'en'
 } = defineProps<{
   direction: Direction
+  colors?: readonly string[]
   openPicker?: PickerKey
   locale?: Locale
 }>()
@@ -34,20 +38,19 @@ const camera = computed(() => {
   )
   return {
     value: tc(body.label, locale),
-    detail: specs
+    specs: specs
       .filter((option) => option.id !== 'auto')
       .map((option) => tc(option.label, locale))
-      .join(' · ')
   }
 })
 
 const rows = computed(() =>
   [...lookGroups, gradeGroup].map((group) => {
-    const option = directionOption(group.part, direction)
+    const { label, option } = shownOption(group.part, direction, colors)
     return {
       key: group.part,
       title: tc(group.title, locale),
-      value: tc(option.label, locale),
+      value: tc(label, locale),
       option
     }
   })
@@ -68,24 +71,40 @@ const rowClass = (key: PickerKey) =>
       type="button"
       aria-haspopup="dialog"
       :aria-expanded="openPicker === 'camera'"
-      :class="rowClass('camera')"
+      :class="
+        cn(rowClass('camera'), 'max-sm:h-auto max-sm:min-h-12 max-sm:py-2')
+      "
       @click="emit('open', 'camera')"
     >
-      <span
-        class="grid h-7 w-10 shrink-0 place-items-center"
+      <CinematicOptionIcon
+        part="body"
+        :option="direction.body"
+        class="h-7 w-10 shrink-0"
         aria-hidden="true"
-      >
-        <Video class="size-5 text-primary-warm-white" />
-      </span>
+      />
       <span class="w-14 shrink-0 text-xs text-primary-warm-gray">
         {{ tc('cinematic.section.camera', locale) }}
       </span>
-      <span class="min-w-0 flex-1 truncate text-sm">
-        <span class="font-semibold text-primary-warm-white">
+      <span
+        class="flex min-w-0 flex-1 items-center gap-2 max-sm:flex-col max-sm:items-start max-sm:gap-1"
+      >
+        <span
+          class="max-w-full min-w-0 truncate text-sm font-semibold text-primary-warm-white sm:flex-1"
+        >
           {{ camera.value }}
         </span>
-        <span v-if="camera.detail" class="text-primary-warm-gray">
-          · {{ camera.detail }}
+        <span
+          v-if="camera.specs.length"
+          class="flex max-w-full flex-wrap items-center gap-1 sm:shrink-0"
+          data-testid="camera-specs"
+        >
+          <span
+            v-for="spec in camera.specs"
+            :key="spec"
+            class="rounded-md bg-transparency-white-t8 px-1.5 py-0.5 text-xs text-primary-comfy-canvas tabular-nums"
+          >
+            {{ spec }}
+          </span>
         </span>
       </span>
       <ChevronRight

@@ -46,7 +46,7 @@ describe('ComfyApiPricingSection', () => {
 
     expect(
       screen.getByRole('link', { name: t('pricing.comfyApi.learnMore', 'en') })
-    ).toHaveAttribute('href', '/platform/comfy-api')
+    ).toHaveAttribute('href', '/platform/comfy-api/')
   })
 
   it('links the Learn More CTA to the localized Comfy API page for zh-CN', () => {
@@ -58,6 +58,6 @@ describe('ComfyApiPricingSection', () => {
       screen.getByRole('link', {
         name: t('pricing.comfyApi.learnMore', 'zh-CN')
       })
-    ).toHaveAttribute('href', '/zh-CN/platform/comfy-api')
+    ).toHaveAttribute('href', '/zh-CN/platform/comfy-api/')
   })
 })

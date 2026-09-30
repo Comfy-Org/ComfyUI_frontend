@@ -280,9 +280,9 @@ const copy = {
     'zh-CN': '我可以使用自己的供应商密钥吗？'
   },
   'platform.router.faq.10.a': {
-    en: 'BYOK is available for select models on Enterprise. Access is enabled by request.\n\n<a href="/enterprise">Contact Enterprise Sales</a>',
+    en: 'BYOK is available for select models on Enterprise. Access is enabled by request.\n\n<a href="/enterprise/">Contact Enterprise Sales</a>',
     'zh-CN':
-      '在企业版中，部分模型支持自带密钥（BYOK），需申请开通。\n\n<a href="/zh-CN/enterprise">联系企业销售</a>'
+      '在企业版中，部分模型支持自带密钥（BYOK），需申请开通。\n\n<a href="/zh-CN/enterprise/">联系企业销售</a>'
   },
   'platform.router.faq.11.q': {
     en: 'How is Comfy Router priced?',

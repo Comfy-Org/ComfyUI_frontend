@@ -237,7 +237,7 @@ describe('directoryRows', () => {
     const [row] = directoryRows([recorded], 'en', past)
     expect(row.calendar).toBeUndefined()
     expect(row.watch).toEqual({
-      href: '/events/recorded',
+      href: '/events/recorded/',
       newTab: false,
       label: 'WATCH NOW'
     })
@@ -246,7 +246,7 @@ describe('directoryRows', () => {
   it('localizes the page link for a past recording', () => {
     const recorded = makeEvent({ id: 'recorded', recordingVideoId: 'abc123' })
     const [row] = directoryRows([recorded], 'zh-CN', past)
-    expect(row.watch?.href).toBe('/zh-CN/events/recorded')
+    expect(row.watch?.href).toBe('/zh-CN/events/recorded/')
   })
 
   it('sends a past event without a recording to its external link', () => {

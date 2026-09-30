@@ -14,6 +14,9 @@ import {
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { ReshootRunPhase } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/run'
 import type { Locale } from '../../../../i18n/translations'
+import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
+import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import ReshootWarp from './ReshootWarp.vue'
 import ReshootZone from './ReshootZone.vue'
 
 const {
@@ -23,6 +26,10 @@ const {
   stage,
   notice,
   aimable,
+  geometry,
+  pose,
+  keepAim = true,
+  frame = 0,
   locale = 'en'
 } = defineProps<{
   clip: string
@@ -31,14 +38,25 @@ const {
   stage?: ReshootRunPhase
   notice?: string
   aimable: boolean
+  /** The analysed clip; with it, the view is the real warp, not a tilt. */
+  geometry?: Geometry
+  pose?: Pose
+  keepAim?: boolean
+  frame?: number
+  /** Where the analysis stands while it runs. */
   locale?: Locale
 }>()
+
+const noWebgl = ref(false)
+const live = computed(
+  () => ready.value && !!geometry && !!pose && !noWebgl.value
+)
 
 const emit = defineEmits<{ aim: [patch: Partial<ReshootCamera>] }>()
 
 const ready = computed(() => aimable && depth === 'ready')
 const transform = computed(() =>
-  ready.value ? viewTransform(camera) : undefined
+  ready.value && !live.value ? viewTransform(camera) : undefined
 )
 const analyzing = computed(() =>
   rc(
@@ -114,7 +132,17 @@ const DOLLY_BUTTONS = [
     @pointercancel="dragFrom = undefined"
     @wheel="zoom"
   >
+    <ReshootWarp
+      v-if="live && geometry && pose"
+      :geometry
+      :pose
+      :hfov="camera.fov"
+      :keep-aim="keepAim"
+      :frame
+      @unsupported="noWebgl = true"
+    />
     <video
+      v-else
       :src="clip"
       autoplay
       muted
