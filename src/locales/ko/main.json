@@ -9,7 +9,6 @@
       "signInCaption": "파트너 노드에는 계정이 필요합니다",
       "signInToRun": "실행하려면 로그인"
     },
-    "share": "공유",
     "shareTooltip": "워크플로우 공유"
   },
   "agent": {
@@ -35,8 +34,8 @@
     "coachHistoryTitle": "중단한 지점부터 계속하기",
     "coachProgress": "{total}개 중 {current}",
     "coachTitle": "Comfy Agent 만나기",
-    "coachWorkflowBody": "에이전트는 선택한 워크플로만 편집합니다. 참조 파일을 업로드하거나 다른 워크플로를 언급할 수도 있습니다.",
-    "coachWorkflowTitle": "에이전트가 편집할 워크플로 선택",
+    "coachWorkflowBody": "메시지를 보내거나, 워크플로를 선택하거나, 노드 참조를 추가할 때까지 탭 전환에 따라 함께 전환됩니다.",
+    "coachWorkflowTitle": "에이전트가 현재 보고 있는 워크플로를 편집합니다",
     "consent": {
       "accept": "Comfy Agent 사용 시작",
       "body1": "Comfy Agent는 워크플로를 계획하고, 구축하고, 실행하고, 반복 개선할 수 있도록 도와줍니다. 만들고 싶은 것을 설명하면 Comfy Agent가 강력한 팀원으로 함께합니다.",
@@ -65,6 +64,12 @@
     "dismiss": "닫기",
     "downloadAssets": "에셋 다운로드",
     "dragAndDropAssets": "여기에 에셋을 끌어다 놓으세요",
+    "editRejected": {
+      "generic": "편집이 거부되어 저장되지 않았습니다. 워크플로가 더 이상 캔버스와 일치하지 않을 수 있습니다. 유지된 내용을 확인하려면 워크플로를 다시 로드하세요.",
+      "genericPartial": "편집이 거부되어 저장되지 않았지만, 일부 이전 편집은 저장되었습니다. 워크플로가 더 이상 캔버스와 일치하지 않을 수 있습니다. 유지된 내용을 확인하려면 워크플로를 다시 로드하세요.",
+      "widgetWrite": "위젯 편집이 거부되어 저장되지 않았습니다. 입력한 값은 캔버스에만 존재합니다. 유지된 값을 확인하려면 워크플로를 다시 로드하세요.",
+      "widgetWritePartial": "위젯 편집이 거부되어 저장되지 않았지만, 일부 이전 편집은 저장되었습니다. 입력한 값은 캔버스에만 존재합니다. 유지된 값을 확인하려면 워크플로를 다시 로드하세요."
+    },
     "editWhileWorking": "작업 중에도 계속 편집할 수 있습니다",
     "entryButton": "에이전트",
     "feedbackCaption": "피드백 공유",
@@ -159,18 +164,31 @@
     "showChatHistory": "채팅 기록 표시",
     "showLess": "간단히 보기",
     "showMore": "더 보기",
+    "showTarget": "대상 표시",
+    "showTargetWorkflow": "대상 워크플로 표시: {workflowName}",
     "skip": "건너뛰기",
     "stop": "중지",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "하키 mask를 쓴 노란 오리를 생성해 줘",
-      "저장된 워크플로 목록 보기",
-      "피부 업스케일링에 가장 적합한 워크플로 찾기",
-      "선택한 노드 설명하기",
-      "3개의 모델로 이미지를 동영상으로 변환하는 워크플로 만들기"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "우주비행사의 캐릭터 시트를 생성해 줘",
+        "제품 이미지를 짧은 광고로 만들어 줘",
+        "선택한 노드를 설명해 줘",
+        "4K에 가장 적합한 이미지 업스케일 워크플로",
+        "이 워크플로의 오류를 수정해 줘"
+      ],
+      "local": [
+        "우주비행사의 사실적인 초상화 생성",
+        "내 GPU에 맞는 이미지-비디오 워크플로",
+        "선택한 노드 설명",
+        "이 워크플로에 누락된 노드를 설치하도록 도와줘",
+        "이 워크플로의 오류 수정"
+      ]
+    },
     "switchWorkflow": "워크플로 전환",
     "switchWorkflowForNodes": "노드를 추가하려면 {workflowName}(으)로 전환하세요.",
+    "takeTour": "둘러보기",
+    "targetFollowsVisibleWorkflow": "대상 워크플로는 대상을 선택하거나, 노드를 참조하거나, 메시지를 보낼 때까지 현재 표시된 탭을 따릅니다.",
     "targetForThisChat": "이 채팅의 에이전트 대상",
     "targetNavigationUnavailable": "이 워크플로 대상은 더 이상 사용할 수 없습니다.",
     "thinking": "생각 중...",
@@ -189,6 +207,7 @@
     "updatingGraph": "에이전트가 그래프를 업데이트하고 있습니다",
     "uploading": "업로드 중",
     "viewAddedNodes": "노드 보기 | 노드 보기",
+    "viewingDifferentWorkflow": "대상과 다른 워크플로를 보고 있습니다.",
     "worked": "작업 완료",
     "workedForMinutes": "{minutes}분 {seconds}초 동안 작업함",
     "workedForSeconds": "{seconds}초 동안 작업함",
@@ -722,6 +741,8 @@
         "selectAtLeastOne": "최소 한 가지 옵션을 선택해 주세요."
       },
       "intro": "ComfyUI 경험을 맞춤화할 수 있도록 도와주세요.",
+      "navigationFailed": "설문조사는 저장되었지만 온보딩을 계속할 수 없습니다",
+      "navigationFailedDetail": "다시 시도하세요.",
       "options": {
         "experience": {
           "new": "ComfyUI가 처음이에요",
@@ -762,6 +783,8 @@
       },
       "otherPlaceholder": "자세히 알려주세요",
       "placeholder": "설문 질문 자리표시자",
+      "submitFailed": "설문조사를 제출할 수 없습니다",
+      "submitFailedDetail": "답변이 저장되지 않았습니다. 다시 시도하세요.",
       "title": "클라우드 설문"
     }
   },
@@ -2105,6 +2128,9 @@
     "updating": "{id} 업데이트 중",
     "upload": "업로드",
     "uploadAlreadyInProgress": "업로드가 이미 진행 중입니다",
+    "uploadFailed": "업로드 실패: {reason}",
+    "uploadFileTooLarge": "파일이 너무 커서 업로드할 수 없습니다.",
+    "uploadFileTooLargeWithLimit": "파일이 너무 커서 업로드할 수 없습니다(제한: {limit}MB).",
     "uploadTimedOut": "업로드 시간이 초과되었습니다. 다시 시도해 주세요.",
     "usageHint": "사용 힌트",
     "use": "사용",
@@ -3548,6 +3574,12 @@
     "skip": "건너뛰기",
     "stepLabel": "단계 {current} / {total}"
   },
+  "onboardingReplay": {
+    "confirmMessage": "ComfyUI를 다시 로드하고 이 환경에서 사용할 수 있는 온보딩 단계를 초기화합니다. 워크플로에는 영향을 주지 않습니다.",
+    "confirmTitle": "온보딩을 다시 재생할까요?",
+    "failedDetail": "온보딩 상태를 초기화할 수 없습니다. 다시 시도하세요.",
+    "failedSummary": "온보딩을 다시 재생할 수 없습니다"
+  },
   "openSharedWorkflow": {
     "author": "작성자:",
     "copyAssetsAndOpen": "에셋 가져오기 및 워크플로우 열기",
@@ -4472,6 +4504,7 @@
       "memberTitle": "이 워크스페이스의 구독이 비활성화되었습니다",
       "runLabel": "실행"
     },
+    "inactiveEnterpriseDescription": "워크플로를 실행하거나 새 멤버를 추가할 수 없습니다. 액세스를 복원하려면 영업팀에 문의하세요.",
     "inactiveTeamDescription": "팀 플랜을 다시 활성화하여 더 많은 멤버를 추가하고 워크플로우를 실행하세요",
     "inactiveTeamPlanIncludes": "활성 플랜에는 {plan}의 모든 기능과 다음이 포함됩니다:",
     "inactiveTeamTitle": "비활성화된 팀 구독",
@@ -4608,7 +4641,13 @@
         "title": "구독 재활성화",
         "titleAnnual": "구독 재활성화 — 1년치가 오늘 결제됩니다",
         "unavailable": "현재 이 재활성화를 확인할 수 없습니다 — 다시 플랜을 선택해 주세요",
-        "upgradeBody": "귀하의 {plan}은(는) {date}에 종료될 예정이었습니다. 지금 업그레이드하면 구독이 재활성화되며, 오늘 {amount}가 결제되고 {nextDate}에 자동 갱신됩니다."
+        "upgradeBody": "귀하의 {plan}은(는) {date}에 종료될 예정이었습니다. 지금 업그레이드하면 구독이 재활성화되며, 오늘 {amount}가 결제되고 {nextDate}에 자동 갱신됩니다.",
+        "withoutRenewalDate": {
+          "downgradeBody": "{plan}은(는) {date}에 종료될 예정이었습니다. {newPlan}(으)로 전환하면 다시 활성화됩니다 — 오늘은 청구되지 않지만, 종료되는 대신 새 가격으로 자동 갱신됩니다.",
+          "durationChangeBody": "{plan}은(는) {date}에 종료될 예정이었습니다. 연간 결제로 전환하면 다시 활성화되고 오늘 연간 전체 금액인 {amount}이(가) 청구됩니다. 이후 종료되는 대신 매년 자동 갱신됩니다.",
+          "durationChangeBodyMonthly": "{plan}은(는) {date}에 종료될 예정이었습니다. 월간 결제로 전환하면 다시 활성화됩니다 — 오늘 {amount}이(가) 청구되며, 종료되는 대신 자동으로 갱신됩니다.",
+          "upgradeBody": "{plan}은(는) {date}에 종료될 예정이었습니다. 지금 업그레이드하면 다시 활성화됩니다 — 오늘 {amount}이(가) 청구되며, 종료되는 대신 자동으로 갱신됩니다."
+        }
       },
       "refillReplacesNote": "월간 리필을 대체합니다. 기존 잔액은 유지됩니다.",
       "renewsAt": "{date}에 {amount}로 갱신됩니다. 언제든지 취소할 수 있습니다.",
@@ -4655,6 +4694,8 @@
     "resubscribeFailed": "구독을 다시 활성화하지 못했습니다",
     "resubscribeSuccess": "구독이 성공적으로 재활성화되었습니다",
     "resubscribeTo": "{plan} 재개",
+    "salesManagedCreditsEndedNote": "플랜 크레딧은 구독과 함께 종료되었습니다.",
+    "salesManagedInactiveCreditsNote": "플랜이 복원되면 사용할 수 있습니다.",
     "salesManagedRunBlockedDetail": "이 워크스페이스의 플랜이 더 이상 활성 상태가 아닙니다. 액세스를 복원하려면 Comfy 계정 관리자에게 문의하세요.",
     "salesManagedRunBlockedTitle": "플랜 비활성화",
     "saveYearly": "20% 절감",
@@ -4665,7 +4706,7 @@
     "subscribe": "구독하기",
     "subscribeFailed": "구독에 실패했습니다",
     "subscribeForMore": "업그레이드",
-    "subscribeNow": "지금 구독하기",
+    "subscribeNow": "구독하기",
     "subscribeTo": "{plan} 구독하기",
     "subscribeToComfyCloud": "Comfy Cloud 구독",
     "subscribeToRun": "구독",
@@ -4821,6 +4862,7 @@
     "clearAllFilters": "모든 필터 지우기",
     "error": {
       "loading": "템플릿을 열 수 없습니다. 다시 시도해 주세요.",
+      "preparingMedia": "일부 예제 미디어를 준비하지 못했습니다. 워크플로는 열리며, 누락된 입력에는 직접 파일을 선택하세요.",
       "templateNotFound": "템플릿 \"{templateName}\"을(를) 찾을 수 없음"
     },
     "filtersApplied": "{count}개 필터 적용됨",
@@ -4837,6 +4879,7 @@
       "credits": "크레딧으로 실행",
       "title": "프리미엄 템플릿"
     },
+    "preparingMedia": "예제 미디어를 준비하는 중...",
     "resultsCount": "{total}개 중 {count}개 템플릿 표시",
     "runsOnFilter": "실행 환경",
     "runsOnSelected": "{count}회 실행됨",
@@ -5140,6 +5183,8 @@
     "billingStatus": {
       "ending": {
         "body": "그때까지 멤버는 모든 기능을 계속 이용할 수 있습니다. 공유 크레딧과 좌석을 유지하려면 구독을 재개하세요.",
+        "enterpriseBody": "그때까지 멤버는 모든 기능을 계속 이용할 수 있습니다. 연장하려면 영업팀에 문의하세요.",
+        "enterpriseTitle": "Enterprise 플랜이 {date}에 종료됩니다",
         "reactivate": "구독 재개",
         "title": "팀 플랜이 {date}에 종료됩니다"
       },
@@ -5253,6 +5298,7 @@
         "inviteDate": "초대 날짜",
         "role": "역할"
       },
+      "contactSales": "영업팀에 문의",
       "contactUs": "문의하기",
       "creditLimitDialog": {
         "description": "이 한도에 도달하면 워크플로우 실행이 불가능합니다.",
@@ -5263,6 +5309,9 @@
         "update": "한도 업데이트",
         "warning": "이 사용자는 이미 {credits} 크레딧을 사용했습니다. 한도를 현재 사용량 이하로 설정하면 다음 달까지 추가 실행이 불가합니다."
       },
+      "endedEnterpriseTitle": "Enterprise 플랜이 종료되었습니다",
+      "endedPlanTitle": "플랜이 종료되었습니다",
+      "endedTeamTitle": "팀 플랜이 종료되었습니다",
       "header": "멤버",
       "membersCount": "구성원 {count}명 / {maxSeats}명",
       "needMoreMembers": "더 많은 멤버가 필요하신가요?",
@@ -5270,6 +5319,7 @@
       "noMembers": "멤버 없음",
       "pendingInvitesCount": "{count}건의 초대 대기 중 | {count}건의 초대 대기 중",
       "reactivateTeam": "팀 재활성화",
+      "resubscribe": "재구독",
       "searchPlaceholder": "검색...",
       "tabs": {
         "active": "활성",
@@ -5277,6 +5327,8 @@
       },
       "upgradeToTeam": "팀으로 업그레이드",
       "upsellBanner": "팀원을 추가하려면 요금제를 업그레이드하세요.",
+      "upsellBannerEnterpriseEnded": "Enterprise 플랜을 다시 활성화하려면 영업팀에 문의하세요.",
+      "upsellBannerPlanEnded": "플랜을 다시 활성화하려면 영업팀에 문의하세요.",
       "upsellBannerReactivate": "더 많은 팀원을 추가하려면 요금제를 재활성화하세요."
     },
     "menu": {

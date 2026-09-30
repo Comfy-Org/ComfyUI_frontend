@@ -9,7 +9,6 @@
       "signInCaption": "パートナーノードにはアカウントが必要です",
       "signInToRun": "実行するにはサインイン"
     },
-    "share": "共有",
     "shareTooltip": "ワークフローを共有"
   },
   "agent": {
@@ -35,8 +34,8 @@
     "coachHistoryTitle": "前回の続きから再開",
     "coachProgress": "{total}件中{current}件",
     "coachTitle": "Comfy Agentの紹介",
-    "coachWorkflowBody": "エージェントが編集するのは、選択したワークフローのみです。参照ファイルをアップロードしたり、他のワークフローに言及したりすることもできます。",
-    "coachWorkflowTitle": "エージェントが編集するワークフローを選択",
+    "coachWorkflowBody": "メッセージを送信するか、ワークフローを選択するか、ノード参照を追加するまで、タブの切り替えに合わせて切り替わります。",
+    "coachWorkflowTitle": "エージェントが表示中のワークフローを編集します",
     "consent": {
       "accept": "Comfy Agent を使い始める",
       "body1": "Comfy Agent は、ワークフローの計画、構築、実行、改善を支援します。作成したいものを説明すると、Comfy Agent が強力なチームメイトとして働きます。",
@@ -65,6 +64,12 @@
     "dismiss": "閉じる",
     "downloadAssets": "アセットをダウンロード",
     "dragAndDropAssets": "ここにアセットをドラッグ＆ドロップ",
+    "editRejected": {
+      "generic": "編集は拒否され、保存されませんでした。ワークフローがキャンバスと一致しなくなっている可能性があります。保持された内容を確認するには、ワークフローを再読み込みしてください。",
+      "genericPartial": "編集は拒否され、保存されませんでしたが、一部の以前の編集は保存されました。ワークフローがキャンバスと一致しなくなっている可能性があります。保持された内容を確認するには、ワークフローを再読み込みしてください。",
+      "widgetWrite": "ウィジェットの編集は拒否され、保存されませんでした。入力した値はキャンバス上にのみ存在します。保持された値を確認するには、ワークフローを再読み込みしてください。",
+      "widgetWritePartial": "ウィジェットの編集は拒否され、保存されませんでしたが、一部の以前の編集は保存されました。入力した値はキャンバス上にのみ存在します。保持された値を確認するには、ワークフローを再読み込みしてください。"
+    },
     "editWhileWorking": "処理中も編集を続けられます",
     "entryButton": "エージェント",
     "feedbackCaption": "フィードバックを共有",
@@ -159,18 +164,31 @@
     "showChatHistory": "チャット履歴を表示",
     "showLess": "表示を減らす",
     "showMore": "さらに表示",
+    "showTarget": "ターゲットを表示",
+    "showTargetWorkflow": "ターゲットワークフローを表示: {workflowName}",
     "skip": "スキップ",
     "stop": "停止",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "ホッケーマスクを着けた黄色いアヒルを生成",
-      "保存済みのワークフローを一覧表示",
-      "肌のアップスケーリングに最適なワークフローを探す",
-      "選択したノードを説明",
-      "3つのモデルを使用した画像から動画へのワークフローを作成"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "宇宙飛行士のキャラクターシートを生成",
+        "商品画像を短い広告に変換",
+        "選択したノードを説明",
+        "4K向けの最適な画像アップスケールワークフロー",
+        "このワークフローのエラーを修正"
+      ],
+      "local": [
+        "宇宙飛行士のリアルなポートレートを生成して",
+        "私のGPUに適した画像から動画へのワークフロー",
+        "選択したノードを説明して",
+        "このワークフローに不足しているノードのインストールを手伝って",
+        "このワークフローのエラーを修正して"
+      ]
+    },
     "switchWorkflow": "ワークフローを切り替え",
     "switchWorkflowForNodes": "ノードを追加するには{workflowName}に切り替えてください。",
+    "takeTour": "ツアーを開始",
+    "targetFollowsVisibleWorkflow": "ターゲット、参照ノードを選択するか、メッセージを送信するまで、ターゲットワークフローは表示中のタブに従います。",
     "targetForThisChat": "このチャットのエージェント対象",
     "targetNavigationUnavailable": "このワークフローのターゲットは利用できなくなりました。",
     "thinking": "考え中...",
@@ -189,6 +207,7 @@
     "updatingGraph": "エージェントがグラフを更新しています",
     "uploading": "アップロード中",
     "viewAddedNodes": "ノードを表示 | ノードを表示",
+    "viewingDifferentWorkflow": "ターゲットとは異なるワークフローを表示しています。",
     "worked": "完了",
     "workedForMinutes": "{minutes}分{seconds}秒間処理しました",
     "workedForSeconds": "{seconds}秒間処理しました",
@@ -722,6 +741,8 @@
         "selectAtLeastOne": "少なくとも1つ選択してください。"
       },
       "intro": "ComfyUIの体験をより最適化するためにご協力ください。",
+      "navigationFailed": "アンケートは保存されましたが、オンボーディングを続行できませんでした",
+      "navigationFailedDetail": "もう一度お試しください。",
       "options": {
         "experience": {
           "new": "ComfyUIは初めて",
@@ -762,6 +783,8 @@
       },
       "otherPlaceholder": "詳細をお聞かせください",
       "placeholder": "アンケート質問のプレースホルダー",
+      "submitFailed": "アンケートを送信できませんでした",
+      "submitFailedDetail": "回答は保存されませんでした。もう一度お試しください。",
       "title": "クラウドアンケート"
     }
   },
@@ -2105,6 +2128,9 @@
     "updating": "{id}を更新中",
     "upload": "アップロード",
     "uploadAlreadyInProgress": "アップロードはすでに進行中です",
+    "uploadFailed": "アップロードに失敗しました: {reason}",
+    "uploadFileTooLarge": "ファイルが大きすぎてアップロードできません。",
+    "uploadFileTooLargeWithLimit": "ファイルが大きすぎてアップロードできません（上限: {limit} MB）。",
     "uploadTimedOut": "アップロードがタイムアウトしました。もう一度お試しください。",
     "usageHint": "使用ヒント",
     "use": "使用",
@@ -3548,6 +3574,12 @@
     "skip": "スキップ",
     "stepLabel": "ステップ {current} / {total}"
   },
+  "onboardingReplay": {
+    "confirmMessage": "これにより ComfyUI が再読み込みされ、この環境で利用できるオンボーディング手順がリセットされます。ワークフローには影響しません。",
+    "confirmTitle": "オンボーディングを再生しますか？",
+    "failedDetail": "オンボーディングの状態をリセットできませんでした。もう一度お試しください。",
+    "failedSummary": "オンボーディングを再生できませんでした"
+  },
   "openSharedWorkflow": {
     "author": "作成者：",
     "copyAssetsAndOpen": "アセットをインポートしてワークフローを開く",
@@ -4472,6 +4504,7 @@
       "memberTitle": "このワークスペースのサブスクリプションは無効です",
       "runLabel": "実行"
     },
+    "inactiveEnterpriseDescription": "ワークフローを実行したり、新しいメンバーを追加したりすることはできません。アクセスを復旧するには営業担当者にお問い合わせください。",
     "inactiveTeamDescription": "チームプランを再有効化して、メンバーを追加したりワークフローを実行したりできます",
     "inactiveTeamPlanIncludes": "有効なプランには{plan}のすべてに加えて、以下が含まれます：",
     "inactiveTeamTitle": "チームサブスクリプションが無効です",
@@ -4608,7 +4641,13 @@
         "title": "サブスクリプションの再有効化",
         "titleAnnual": "サブスクリプションの再有効化 — 本日1年分を請求",
         "unavailable": "現在この再有効化を確認できません — プランを再度選択してください",
-        "upgradeBody": "あなたの {plan} は {date} に終了予定でした。今アップグレードすると再有効化されます — 本日 {amount} が請求され、{nextDate} から自動更新されます（終了しません）。"
+        "upgradeBody": "あなたの {plan} は {date} に終了予定でした。今アップグレードすると再有効化されます — 本日 {amount} が請求され、{nextDate} から自動更新されます（終了しません）。",
+        "withoutRenewalDate": {
+          "downgradeBody": "{plan} は {date} に終了予定でした。{newPlan} に切り替えると再有効化されます。本日は請求されませんが、終了する代わりに新しい料金で自動更新されます。",
+          "durationChangeBody": "{plan} は {date} に終了予定でした。年払いに切り替えると再有効化され、本日1年分の料金 {amount} が請求されます。以後は終了する代わりに毎年更新されます。",
+          "durationChangeBodyMonthly": "{plan} は {date} に終了予定でした。月払いに切り替えると再有効化されます。本日 {amount} が請求され、終了する代わりに自動更新されます。",
+          "upgradeBody": "{plan} は {date} に終了予定でした。今すぐアップグレードすると再有効化されます。本日 {amount} が請求され、終了する代わりに自動更新されます。"
+        }
       },
       "refillReplacesNote": "月間補充を置き換えます。既存の残高は保持されます。",
       "renewsAt": "{date}に{amount}で更新されます。いつでもキャンセルできます。",
@@ -4655,6 +4694,8 @@
     "resubscribeFailed": "サブスクリプションの再有効化に失敗しました",
     "resubscribeSuccess": "サブスクリプションが再開されました",
     "resubscribeTo": "{plan}を再開",
+    "salesManagedCreditsEndedNote": "プランのクレジットはサブスクリプションの終了とともに失効しました。",
+    "salesManagedInactiveCreditsNote": "プランが復旧すると使用できます。",
     "salesManagedRunBlockedDetail": "このワークスペースのプランは現在無効です。アクセスを復元するには、Comfyのアカウントマネージャーにお問い合わせください。",
     "salesManagedRunBlockedTitle": "プランが無効です",
     "saveYearly": "20%お得",
@@ -4665,7 +4706,7 @@
     "subscribe": "購読する",
     "subscribeFailed": "購読に失敗しました",
     "subscribeForMore": "アップグレード",
-    "subscribeNow": "今すぐ購読",
+    "subscribeNow": "購読する",
     "subscribeTo": "{plan}に登録",
     "subscribeToComfyCloud": "Comfy Cloudを購読",
     "subscribeToRun": "購読する",
@@ -4821,6 +4862,7 @@
     "clearAllFilters": "すべてのフィルターをクリア",
     "error": {
       "loading": "テンプレートを開けませんでした。もう一度お試しください。",
+      "preparingMedia": "一部のサンプルメディアを準備できませんでした。ワークフローは開きます。不足している入力には、ご自身のファイルを選択してください。",
       "templateNotFound": "テンプレート「{templateName}」が見つかりません"
     },
     "filtersApplied": "{count} 件のフィルターが適用されました",
@@ -4837,6 +4879,7 @@
       "credits": "クレジットで実行",
       "title": "プレミアムテンプレート"
     },
+    "preparingMedia": "サンプルメディアを準備しています...",
     "resultsCount": "{total}件中{count}件のテンプレートを表示中",
     "runsOnFilter": "実行環境",
     "runsOnSelected": "{count} 回実行",
@@ -5140,6 +5183,8 @@
     "billingStatus": {
       "ending": {
         "body": "それまでメンバーはすべての機能を利用できます。共有クレジットとシートを維持するには、サブスクリプションを再開してください。",
+        "enterpriseBody": "それまではメンバーはすべての機能にアクセスできます。延長については営業チームにお問い合わせください。",
+        "enterpriseTitle": "Enterprise プランは {date} に終了します",
         "reactivate": "サブスクリプションを再開",
         "title": "チームプランは{date}に終了します"
       },
@@ -5253,6 +5298,7 @@
         "inviteDate": "招待日",
         "role": "役割"
       },
+      "contactSales": "営業担当者に問い合わせる",
       "contactUs": "お問い合わせ",
       "creditLimitDialog": {
         "description": "この上限に達すると、ワークフローの実行ができなくなります。",
@@ -5263,6 +5309,9 @@
         "update": "上限を更新",
         "warning": "このユーザーはすでに {credits} クレジットを使用しています。現在の使用量以下に上限を設定すると、来月まで実行できなくなります。"
       },
+      "endedEnterpriseTitle": "Enterprise プランが終了しました",
+      "endedPlanTitle": "プランが終了しました",
+      "endedTeamTitle": "チームプランが終了しました",
       "header": "メンバー",
       "membersCount": "{maxSeats}人中{count}人のメンバー",
       "needMoreMembers": "さらにメンバーが必要ですか？",
@@ -5270,6 +5319,7 @@
       "noMembers": "メンバーがいません",
       "pendingInvitesCount": "{count}件の招待保留中",
       "reactivateTeam": "チームを再有効化",
+      "resubscribe": "再購読",
       "searchPlaceholder": "検索...",
       "tabs": {
         "active": "アクティブ",
@@ -5277,6 +5327,8 @@
       },
       "upgradeToTeam": "チームにアップグレード",
       "upsellBanner": "チームメンバーを追加するには、プランをアップグレードしてください。",
+      "upsellBannerEnterpriseEnded": "Enterprise プランを再有効化するには、営業担当者にお問い合わせください。",
+      "upsellBannerPlanEnded": "プランを再有効化するには、営業担当者にお問い合わせください。",
       "upsellBannerReactivate": "さらにメンバーを追加するには、プランを再有効化してください。"
     },
     "menu": {

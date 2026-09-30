@@ -9,7 +9,6 @@
       "signInCaption": "Les nœuds partenaires nécessitent un compte",
       "signInToRun": "Connectez-vous pour exécuter"
     },
-    "share": "Partager",
     "shareTooltip": "Partager le workflow"
   },
   "agent": {
@@ -35,8 +34,8 @@
     "coachHistoryTitle": "Reprenez là où vous en étiez",
     "coachProgress": "{current} sur {total}",
     "coachTitle": "Faites connaissance avec votre agent Comfy",
-    "coachWorkflowBody": "L’agent modifie uniquement le workflow que vous choisissez. Vous pouvez aussi téléverser des fichiers de référence ou mentionner d’autres workflows.",
-    "coachWorkflowTitle": "Sélectionnez un workflow à modifier par votre agent",
+    "coachWorkflowBody": "Il suit vos onglets jusqu’à ce que vous envoyiez un message, choisissiez un workflow ou ajoutiez une référence de nœud.",
+    "coachWorkflowTitle": "Votre agent modifie le workflow que vous consultez",
     "consent": {
       "accept": "Commencer à utiliser Comfy Agent",
       "body1": "Comfy Agent vous aide à planifier, créer, exécuter et itérer sur vos workflows. Décrivez ce que vous souhaitez créer, et Comfy Agent sera votre puissant partenaire.",
@@ -65,6 +64,12 @@
     "dismiss": "Fermer",
     "downloadAssets": "Télécharger les ressources",
     "dragAndDropAssets": "Glissez-déposez des ressources ici",
+    "editRejected": {
+      "generic": "Votre modification a été refusée et n’a pas été enregistrée. Le workflow ne correspond peut-être plus à son canevas — rechargez le workflow pour voir ce qui a été conservé.",
+      "genericPartial": "Votre modification a été refusée et n’a pas été enregistrée, bien que certaines modifications antérieures l’aient été. Le workflow ne correspond peut-être plus à son canevas — rechargez le workflow pour voir ce qui a été conservé.",
+      "widgetWrite": "La modification du widget a été refusée et n’a pas été enregistrée. La valeur que vous avez saisie n’existe que sur le canevas — rechargez le workflow pour voir la valeur qui a été conservée.",
+      "widgetWritePartial": "La modification du widget a été refusée et n’a pas été enregistrée, bien que certaines modifications antérieures l’aient été. La valeur que vous avez saisie n’existe que sur le canevas — rechargez le workflow pour voir les valeurs qui ont été conservées."
+    },
     "editWhileWorking": "Vous pouvez continuer à modifier pendant qu’il travaille",
     "entryButton": "Agent",
     "feedbackCaption": "Partager vos commentaires",
@@ -159,18 +164,31 @@
     "showChatHistory": "Afficher l’historique des discussions",
     "showLess": "Afficher moins",
     "showMore": "Afficher plus",
+    "showTarget": "Afficher la cible",
+    "showTargetWorkflow": "Afficher le workflow cible : {workflowName}",
     "skip": "Passer",
     "stop": "Arrêter",
     "stopShortcut": "Échap",
-    "suggestedPrompts": [
-      "Générez un canard jaune avec un masque de hockey",
-      "Listez mes workflows enregistrés",
-      "Trouvez le meilleur workflow pour l’agrandissement de la peau",
-      "Expliquez le nœud sélectionné",
-      "Créez un workflow d’image à vidéo avec 3 modèles"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Générer une fiche de personnage d’un astronaute",
+        "Transformer l’image du produit en une courte publicité",
+        "Expliquer les nœuds sélectionnés",
+        "Meilleur workflow d’agrandissement d’image pour la 4K",
+        "Corriger les erreurs de ce workflow"
+      ],
+      "local": [
+        "Générez un portrait réaliste d’un astronaute",
+        "Un workflow d’image vers vidéo adapté à mon GPU",
+        "Expliquez les nœuds sélectionnés",
+        "Aidez-moi à installer les nœuds manquants pour ce workflow",
+        "Corrigez les erreurs de ce workflow"
+      ]
+    },
     "switchWorkflow": "Changer de workflow",
     "switchWorkflowForNodes": "Basculez vers {workflowName} pour ajouter des nœuds.",
+    "takeTour": "Faire la visite guidée",
+    "targetFollowsVisibleWorkflow": "Le workflow cible suit l’onglet affiché jusqu’à ce que vous choisissiez une cible, des nœuds de référence ou envoyiez un message.",
     "targetForThisChat": "Cible de l’agent pour cette discussion",
     "targetNavigationUnavailable": "Cette cible de workflow n'est plus disponible.",
     "thinking": "Réflexion...",
@@ -189,6 +207,7 @@
     "updatingGraph": "L’agent met à jour le graphe",
     "uploading": "Envoi en cours",
     "viewAddedNodes": "Voir le nœud | Voir les nœuds",
+    "viewingDifferentWorkflow": "Vous consultez un workflow différent de la cible.",
     "worked": "Terminé",
     "workedForMinutes": "A travaillé pendant {minutes} min {seconds} s",
     "workedForSeconds": "A travaillé pendant {seconds} secondes",
@@ -722,6 +741,8 @@
         "selectAtLeastOne": "Veuillez sélectionner au moins une option."
       },
       "intro": "Aidez-nous à personnaliser votre expérience ComfyUI.",
+      "navigationFailed": "Le questionnaire a été enregistré, mais l’intégration n’a pas pu se poursuivre",
+      "navigationFailedDetail": "Veuillez réessayer.",
       "options": {
         "experience": {
           "new": "Nouveau sur ComfyUI",
@@ -762,6 +783,8 @@
       },
       "otherPlaceholder": "Dites-nous en plus",
       "placeholder": "Texte indicatif des questions de l'enquête",
+      "submitFailed": "Impossible d’envoyer le questionnaire",
+      "submitFailedDetail": "Vos réponses n’ont pas été enregistrées. Veuillez réessayer.",
       "title": "Enquête Cloud"
     }
   },
@@ -2105,6 +2128,9 @@
     "updating": "Mise à jour de {id}",
     "upload": "Téléverser",
     "uploadAlreadyInProgress": "Téléversement déjà en cours",
+    "uploadFailed": "Échec du téléversement : {reason}",
+    "uploadFileTooLarge": "Le fichier est trop volumineux pour être téléversé.",
+    "uploadFileTooLargeWithLimit": "Le fichier est trop volumineux pour être téléversé (limite : {limit} Mo).",
     "uploadTimedOut": "Le téléchargement a expiré. Veuillez réessayer.",
     "usageHint": "Conseil d'utilisation",
     "use": "Utiliser",
@@ -3548,6 +3574,12 @@
     "skip": "Passer",
     "stepLabel": "Étape {current} sur {total}"
   },
+  "onboardingReplay": {
+    "confirmMessage": "Cela recharge ComfyUI et réinitialise les étapes du parcours d’accueil disponibles dans cet environnement. Vos workflows ne sont pas affectés.",
+    "confirmTitle": "Recommencer le parcours d’accueil ?",
+    "failedDetail": "L’état de votre parcours d’accueil n’a pas pu être réinitialisé. Veuillez réessayer.",
+    "failedSummary": "Impossible de recommencer le parcours d’accueil"
+  },
   "openSharedWorkflow": {
     "author": "Auteur :",
     "copyAssetsAndOpen": "Importer les ressources et ouvrir le workflow",
@@ -4472,6 +4504,7 @@
       "memberTitle": "L’abonnement de cet espace de travail est inactif",
       "runLabel": "Exécuter"
     },
+    "inactiveEnterpriseDescription": "Vous ne pouvez pas exécuter de workflows ni ajouter de nouveaux membres. Contactez le service commercial pour rétablir l’accès.",
     "inactiveTeamDescription": "Réactivez votre abonnement d'équipe pour ajouter des membres et exécuter des workflows",
     "inactiveTeamPlanIncludes": "Un abonnement actif comprend tout ce qui est dans {plan}, plus :",
     "inactiveTeamTitle": "Abonnement d'équipe inactif",
@@ -4608,7 +4641,13 @@
         "title": "Réactivation de votre abonnement",
         "titleAnnual": "Réactivation de votre abonnement — année complète facturée aujourd'hui",
         "unavailable": "Nous ne pouvons pas confirmer cette réactivation pour le moment — veuillez choisir à nouveau votre abonnement",
-        "upgradeBody": "Votre {plan} devait se terminer le {date}. La mise à niveau réactive votre abonnement — vous serez facturé {amount} aujourd'hui, et il se renouvellera automatiquement le {nextDate} au lieu de se terminer."
+        "upgradeBody": "Votre {plan} devait se terminer le {date}. La mise à niveau réactive votre abonnement — vous serez facturé {amount} aujourd'hui, et il se renouvellera automatiquement le {nextDate} au lieu de se terminer.",
+        "withoutRenewalDate": {
+          "downgradeBody": "Votre {plan} devait prendre fin le {date}. Le passage à {newPlan} le réactive — rien ne vous sera facturé aujourd’hui, mais il se renouvellera désormais automatiquement au nouveau tarif au lieu de prendre fin.",
+          "durationChangeBody": "Votre {plan} devait prendre fin le {date}. Le passage à une facturation annuelle le réactive et facture l’année entière, soit {amount}, aujourd’hui. Il se renouvellera ensuite chaque année au lieu de prendre fin.",
+          "durationChangeBodyMonthly": "Votre {plan} devait prendre fin le {date}. Le passage à une facturation mensuelle le réactive — {amount} vous sera facturé aujourd’hui, puis il se renouvellera automatiquement au lieu de prendre fin.",
+          "upgradeBody": "Votre {plan} devait prendre fin le {date}. Une mise à niveau le réactive — {amount} vous sera facturé aujourd’hui, puis il se renouvellera automatiquement au lieu de prendre fin."
+        }
       },
       "refillReplacesNote": "Remplace votre recharge mensuelle. Le solde existant est conservé.",
       "renewsAt": "Renouvellement à {amount} le {date}. Résiliable à tout moment.",
@@ -4655,6 +4694,8 @@
     "resubscribeFailed": "Échec de la réactivation de l’abonnement",
     "resubscribeSuccess": "Abonnement réactivé avec succès",
     "resubscribeTo": "Reprendre {plan}",
+    "salesManagedCreditsEndedNote": "Les crédits du forfait ont pris fin avec votre abonnement.",
+    "salesManagedInactiveCreditsNote": "Utilisables une fois votre forfait rétabli.",
     "salesManagedRunBlockedDetail": "Le forfait de cet espace de travail n’est plus actif. Contactez votre responsable de compte Comfy pour rétablir l’accès.",
     "salesManagedRunBlockedTitle": "Forfait inactif",
     "saveYearly": "Économisez 20 %",
@@ -4665,7 +4706,7 @@
     "subscribe": "S’abonner",
     "subscribeFailed": "Échec de l'abonnement",
     "subscribeForMore": "Mettre à niveau",
-    "subscribeNow": "S'abonner maintenant",
+    "subscribeNow": "S’abonner",
     "subscribeTo": "S'abonner à {plan}",
     "subscribeToComfyCloud": "S'abonner à Comfy Cloud",
     "subscribeToRun": "S'abonner",
@@ -4821,6 +4862,7 @@
     "clearAllFilters": "Effacer tous les filtres",
     "error": {
       "loading": "Impossible d’ouvrir le modèle. Veuillez réessayer.",
+      "preparingMedia": "Certains fichiers multimédias d’exemple n’ont pas pu être préparés. Le workflow s’ouvrira ; choisissez vos propres fichiers pour toutes les entrées manquantes.",
       "templateNotFound": "Modèle \"{templateName}\" introuvable"
     },
     "filtersApplied": "{count} filtre appliqué | {count} filtres appliqués",
@@ -4837,6 +4879,7 @@
       "credits": "S'exécute avec des crédits",
       "title": "Modèle premium"
     },
+    "preparingMedia": "Préparation des fichiers multimédias d’exemple...",
     "resultsCount": "Affichage de {count} sur {total} modèles",
     "runsOnFilter": "Exécute sur",
     "runsOnSelected": "{count} exécutions sur",
@@ -5140,6 +5183,8 @@
     "billingStatus": {
       "ending": {
         "body": "Les membres conservent un accès complet jusque-là. Reprenez votre abonnement pour conserver vos crédits partagés et vos places.",
+        "enterpriseBody": "Les membres conservent un accès complet jusque-là. Contactez notre équipe commerciale pour le prolonger.",
+        "enterpriseTitle": "Votre forfait Enterprise prend fin le {date}",
         "reactivate": "Reprendre l’abonnement",
         "title": "Votre forfait d'équipe se termine le {date}"
       },
@@ -5253,6 +5298,7 @@
         "inviteDate": "Date d'invitation",
         "role": "Rôle"
       },
+      "contactSales": "Contacter le service commercial",
       "contactUs": "Contactez-nous",
       "creditLimitDialog": {
         "description": "Une fois cette limite atteinte, ils ne pourront plus exécuter de workflows.",
@@ -5263,6 +5309,9 @@
         "update": "Mettre à jour la limite",
         "warning": "Cet utilisateur a déjà dépensé {credits} crédits. Définir la limite à ce montant ou en dessous empêchera toute exécution supplémentaire jusqu'au mois prochain."
       },
+      "endedEnterpriseTitle": "Votre forfait Enterprise a pris fin",
+      "endedPlanTitle": "Votre forfait a pris fin",
+      "endedTeamTitle": "Votre forfait d’équipe a pris fin",
       "header": "Membres",
       "membersCount": "{count} membres sur {maxSeats}",
       "needMoreMembers": "Besoin de plus de membres ?",
@@ -5270,6 +5319,7 @@
       "noMembers": "Aucun membre",
       "pendingInvitesCount": "{count} invitation en attente | {count} invitations en attente",
       "reactivateTeam": "Réactiver l'offre Équipe",
+      "resubscribe": "Se réabonner",
       "searchPlaceholder": "Rechercher...",
       "tabs": {
         "active": "Actif",
@@ -5277,6 +5327,8 @@
       },
       "upgradeToTeam": "Passer à l'offre Équipe",
       "upsellBanner": "Pour ajouter des coéquipiers, passez à une offre supérieure.",
+      "upsellBannerEnterpriseEnded": "Contactez le service commercial pour réactiver votre forfait Enterprise.",
+      "upsellBannerPlanEnded": "Contactez le service commercial pour réactiver votre forfait.",
       "upsellBannerReactivate": "Pour ajouter plus de coéquipiers, réactivez votre offre."
     },
     "menu": {
