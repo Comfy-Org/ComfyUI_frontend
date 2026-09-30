@@ -10,7 +10,8 @@ import {
 
 import {
   PENDING_PAYMENT_CANCEL_AVAILABLE,
-  isLocked
+  isLocked,
+  submitPhaseOf
 } from '@/checkout/checkoutPage'
 import { endingOf } from '@/checkout/endingScreen'
 import type { EndingPlan } from '@/components/fullPage/CheckoutEnding.vue'
@@ -34,7 +35,6 @@ const {
   page,
   preview,
   canPay,
-  submitting,
   payFailure,
   returnLink,
   viewPlansLink,
@@ -53,15 +53,27 @@ const {
   promo,
   promoLive,
   pay,
+  reopening,
   continueVerification,
   reconcile
 } = useFullPageCheckout()
 
 // A page restored from the back-forward cache is whatever it was when the
 // customer left, which may be a form over money that has since moved (rule 16).
+// One that left for a payment method's own site loads afresh instead: the
+// challenge it handed over froze with it and never settles.
 useEventListener(window, 'pageshow', (event: PageTransitionEvent) => {
-  if (event.persisted) void reconcile()
+  if (!event.persisted) return
+  if (leftForProvider()) window.location.reload()
+  else void reconcile()
 })
+
+function leftForProvider() {
+  const current = page.value
+  return (
+    current.kind === 'capture' && submitPhaseOf(current).kind === 'redirecting'
+  )
+}
 
 const quote = computed(() =>
   page.value.kind === 'capture' || page.value.kind === 'waiting'
@@ -190,7 +202,7 @@ function viewPlans() {
         :charge
         :publishable-key="stripeKey ?? ''"
         :can-pay="canPay"
-        :submitting
+        :reopening
         :can-cancel="PENDING_PAYMENT_CANCEL_AVAILABLE"
         :failure="payFailureCopy"
         :keep-subscription="keepSubscription"
