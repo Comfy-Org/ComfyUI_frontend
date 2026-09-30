@@ -20,7 +20,10 @@ function sleep(ms: number): Promise<void> {
  * server errors and transport failures are retried. A 4xx is the caller's own
  * mistake and is raised immediately.
  */
-export async function fetchGitHubJson(path: string): Promise<unknown> {
+export async function fetchGitHubJson(
+  path: string,
+  retryDelayMs: number = RETRY_DELAY_MS
+): Promise<unknown> {
   const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN
   if (!token) throw new Error('GH_TOKEN is required to reach the GitHub API.')
 
@@ -28,7 +31,7 @@ export async function fetchGitHubJson(path: string): Promise<unknown> {
   let lastError = new Error(`No attempt was made for ${path}.`)
 
   for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
-    if (attempt > 1) await sleep(RETRY_DELAY_MS)
+    if (attempt > 1) await sleep(retryDelayMs)
 
     let response: Response
     try {

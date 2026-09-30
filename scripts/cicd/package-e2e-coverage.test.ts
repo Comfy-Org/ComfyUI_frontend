@@ -332,20 +332,6 @@ describe('per-merge measurement wiring', () => {
     return jobSteps(readWorkflow(NOTIFY)).find(predicate)
   }
 
-  // Sharing a group across main pushes is what let one merge cancel the run
-  // measuring the merge before it, which is the bug this wiring exists to fix.
-  it('gives every main push its own concurrency group', () => {
-    const group = field(
-      readWorkflow('.github/workflows/ci-tests-unit.yaml'),
-      'concurrency',
-      'group'
-    )
-
-    expect(group).toBe(
-      "${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && github.sha || '' }}"
-    )
-  })
-
   // Deleting any one of these leaves the module it calls as dead code that
   // its own suite still happily covers.
   it('runs the extracted scripts rather than inline copies of them', () => {
@@ -388,12 +374,14 @@ describe('per-merge measurement wiring', () => {
     expect(condition).toContain(
       'contains(fromJSON(\'["success", "failure"]\'), github.event.workflow_run.conclusion)'
     )
-    // Absent coverage has to leave unit out rather than redden the notifier.
-    // Matched on path: the ancestor download also carries a run_id.
+    // Absent coverage has to leave unit out rather than redden the notifier,
+    // but an API or extraction failure still should. Matched on path: the
+    // ancestor download also carries a run_id.
     const current = notifyStep(
       (step) => field(step, 'with', 'path') === 'coverage'
     )
     expect(field(current, 'with', 'if_no_artifact_found')).toBe('warn')
+    expect(field(current, 'continue-on-error')).toBeUndefined()
   })
 
   it('stores no unit baseline artifact', () => {

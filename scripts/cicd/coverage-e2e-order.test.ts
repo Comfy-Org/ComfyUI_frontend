@@ -61,6 +61,18 @@ describe('orderE2eCoverage', () => {
     ])
   })
 
+  // The steady state between E2E runs: the same artifact is read again, the
+  // delta is zero, and re-saving it leaves the baseline where it was.
+  it('keeps a baseline the measurement has not moved past', async () => {
+    const order = await orderE2eCoverage(
+      { current: 'measured', baseline: 'measured' },
+      HEAD,
+      relating({ 'measured->head-sha': 'ahead' })
+    )
+
+    expect(order).toEqual({ usable: true, withheld: [] })
+  })
+
   it('withholds a baseline the new measurement is not ahead of', async () => {
     const order = await orderE2eCoverage(
       { current: 'measured', baseline: 'newer' },

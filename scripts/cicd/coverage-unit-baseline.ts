@@ -38,6 +38,8 @@ export interface UnitBaseline {
   runId: number | null
   /** The ancestor is further back than the direct parent. */
   spanned: boolean
+  /** Oldest commit the walk rejected, so a give-up can say how far it got. */
+  lastChecked?: string | null
 }
 
 /**
@@ -70,16 +72,18 @@ export async function resolveUnitBaseline(
 ): Promise<UnitBaseline> {
   const directParent = await history.firstParentOf(headSha)
   let ancestor = directParent
+  let lastChecked: string | null = null
 
   for (let hop = 0; ancestor !== null && hop < MAX_HOPS; hop++) {
     const runId = await measuredRunFor(history, ancestor)
     if (runId !== null) {
       return { ancestor, runId, spanned: ancestor !== directParent }
     }
+    lastChecked = ancestor
     ancestor = await history.firstParentOf(ancestor)
   }
 
-  return { ancestor: null, runId: null, spanned: false }
+  return { ancestor: null, runId: null, spanned: false, lastChecked }
 }
 
 function firstParentOf(commit: unknown): string | null {
@@ -132,7 +136,8 @@ function githubHistory(repository: string): History {
     async liveArtifactsOf(runId) {
       return liveArtifactNamesOf(
         await fetchGitHubJson(
-          `/repos/${repository}/actions/runs/${runId}/artifacts?per_page=100`
+          `/repos/${repository}/actions/runs/${runId}/artifacts` +
+            `?name=${UNIT_COVERAGE_ARTIFACT}&per_page=100`
         )
       )
     }
@@ -163,8 +168,11 @@ async function main() {
   const baseline = await resolveUnitBaseline(githubHistory(repository), headSha)
 
   if (baseline.ancestor === null) {
+    const reach = baseline.lastChecked
+      ? `back as far as ${baseline.lastChecked}`
+      : 'and it has no parent'
     process.stdout.write(
-      `::warning::No measured ancestor within ${MAX_HOPS} commits of ${headSha}; unit coverage has nothing to compare against, and movement since then goes unreported.\n`
+      `::warning::No measured ancestor within ${MAX_HOPS} commits of ${headSha} (${reach}); unit coverage has nothing to compare against, and movement since then goes unreported.\n`
     )
   } else if (baseline.spanned) {
     process.stdout.write(

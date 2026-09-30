@@ -82,11 +82,10 @@ jobs:
         if: steps.pr-meta.outputs.skip != 'true'
         run: pnpm exec tsx scripts/cicd/coverage-unit-baseline.ts
 
-      # Tolerant: a run whose shards failed never reaches the report job and
-      # uploads nothing, and that must leave unit out of the report rather
-      # than turn the notifier red.
+      # `warn`, not `continue-on-error`: a run whose shards failed uploads
+      # nothing, and that has to leave unit out of the report rather than turn
+      # the notifier red. An API or extraction failure still should.
       - name: Download current unit coverage
-        continue-on-error: true
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
           run_id: ${{ github.event.workflow_run.id }}
@@ -142,6 +141,7 @@ jobs:
       # behaviour of publishing non-comparable numbers.
       - name: Resolve E2E coverage completeness
         id: e2e-meta
+        if: steps.e2e-order.outputs.usable == 'true'
         run: |
           META=temp/e2e-coverage/coverage-metadata.json
           COMPLETE=$(pnpm exec tsx scripts/coverage-metadata.ts "$META")
