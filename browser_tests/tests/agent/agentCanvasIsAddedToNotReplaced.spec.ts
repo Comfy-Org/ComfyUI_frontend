@@ -5,10 +5,8 @@ import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConve
 
 const CASE = 'agent-rec-text-only-answer'
 
-// The seed's "Positive prompt" CLIPTextEncode; a host edit to its text is the
-// readiness boundary for "every frame queued ahead of this one has landed".
-const PROMPT_NODE_ID = '6'
-const PROMPT_WIDGET = 'text'
+const READINESS_SIGNAL_NODE_ID = '6'
+const READINESS_SIGNAL_WIDGET = 'text'
 
 const USER_NODE_POSITION: [number, number] = [1500, 700]
 const USER_NOTE_TEXT = 'do not lose me'
@@ -105,8 +103,8 @@ test.describe(
 
       await test.step('let every queued frame land', () =>
         agentConversation.waitForPendingFrames(
-          PROMPT_NODE_ID,
-          PROMPT_WIDGET,
+          READINESS_SIGNAL_NODE_ID,
+          READINESS_SIGNAL_WIDGET,
           'insert_workflow frame landed'
         ))
 
@@ -138,8 +136,8 @@ test.describe(
 
       await test.step('let the build land', () =>
         agentConversation.waitForPendingFrames(
-          PROMPT_NODE_ID,
-          PROMPT_WIDGET,
+          READINESS_SIGNAL_NODE_ID,
+          READINESS_SIGNAL_WIDGET,
           'agent build landed'
         ))
 
@@ -155,8 +153,8 @@ test.describe(
 
       await test.step('let the redelivery land', () =>
         agentConversation.waitForPendingFrames(
-          PROMPT_NODE_ID,
-          PROMPT_WIDGET,
+          READINESS_SIGNAL_NODE_ID,
+          READINESS_SIGNAL_WIDGET,
           'agent build redelivered'
         ))
 
