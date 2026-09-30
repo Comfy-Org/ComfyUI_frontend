@@ -135,9 +135,10 @@ describe('ModelsCatalogue', () => {
         props: { models: launchModels, locale, section: tab }
       })
 
-      expect(await screen.findByTestId('workshop-hero')).toHaveTextContent(
-        subtitle
-      )
+      const hero = await screen.findByTestId('workshop-hero')
+      const introduction = within(hero).getByTestId('split-reveal')
+      expect(introduction).toBeVisible()
+      expect(introduction).toHaveTextContent(subtitle)
     }
   )
 
