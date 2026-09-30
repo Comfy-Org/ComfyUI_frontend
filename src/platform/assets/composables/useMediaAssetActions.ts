@@ -360,7 +360,10 @@ export function useMediaAssetActions() {
       return { success: true }
     } catch (error) {
       console.error('Failed to open API graph as workflow:', error)
-      reportError(error, { errorType: 'asset_api_prompt_open_failure' })
+      reportError(error, {
+        surface: 'assets',
+        errorType: 'asset_api_prompt_open_failure'
+      })
       return {
         success: false,
         error: error instanceof Error ? error.message : undefined

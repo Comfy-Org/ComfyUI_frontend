@@ -550,7 +550,10 @@ function handlePrimaryAction() {
 
 function openManageBilling() {
   void manageSubscription().catch((error) => {
-    reportError(error, { errorType: 'billing_portal_open_failure' })
+    reportError(error, {
+      surface: 'billing',
+      errorType: 'billing_portal_open_failure'
+    })
     toast.add({
       severity: 'error',
       summary: t('credits.topUp.manageBillingError'),

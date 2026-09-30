@@ -216,7 +216,7 @@
         },
         "promo_expired": {
           "title": "Your promo code expired",
-          "body": "The {code} code expired, so the total was updated. Review the new total before paying — you have not been charged."
+          "body": "The {code} code expired, so the total was updated. Review the new total before paying. You have not been charged."
         },
         "price_updated": {
           "title": "The price has updated",
@@ -282,7 +282,7 @@
         },
         "completed": {
           "title": "You're all set",
-          "body": "A payment on this workspace completed — check your plan in settings.",
+          "body": "A payment for {workspace} went through. Check your plan in settings for the details.",
           "codeLabel": "Your reference for this payment:"
         },
         "already_completed": {
@@ -327,6 +327,7 @@
         "load_failed": {
           "title": "Couldn't load your checkout",
           "body": {
+            "capabilities": "We couldn't check whether this workspace can check out, so checkout can't open yet. Try again, or contact support if this keeps happening.",
             "quote": "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
             "recheck": "We couldn't check your recent payments, so checkout can't open yet. Try again, or contact support if this keeps happening."
           },
@@ -372,7 +373,6 @@
           "startsMonthly": "Starts {date}, billed monthly",
           "startsYearly": "Starts {date}, billed yearly"
         },
-        "subtotal": "Subtotal",
         "discount": {
           "fallbackLabel": "Promo code",
           "amount": "−{amount}"
@@ -393,7 +393,8 @@
           "creditsOverlap": "This month's credits stay valid until {date}",
           "keepUntil": "You'll keep {plan} until {date}",
           "keepCommitmentUntil": "You'll keep {plan} at {rate} until {date}",
-          "zeroDue": "You won't be charged today. Your payment method renews the plan at {amount} on {date}."
+          "zeroDue": "You won't be charged today. Your payment method renews the plan at {amount} on {date}.",
+          "zeroDueUndated": "You won't be charged today. Your payment method renews the plan at {amount}."
         }
       }
     },

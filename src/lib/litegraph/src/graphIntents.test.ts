@@ -86,6 +86,7 @@ describe('emitGraphIntent', () => {
 
     expect(events).toEqual([{ ...CLEAR, source: 'local' }])
     expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+      surface: 'graph',
       errorType: 'graph_intent_listener_failed',
       context: { intent: 'clear', source: 'local' }
     })

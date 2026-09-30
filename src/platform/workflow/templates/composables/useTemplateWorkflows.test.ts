@@ -511,6 +511,7 @@ describe('useTemplateWorkflows', () => {
 
     expect(result).toBe('not-started')
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'graph',
       errorType: 'error_loading_template'
     })
     expect(loader.loadingTemplateId.value).toBeNull()
@@ -900,6 +901,7 @@ describe('useTemplateWorkflows', () => {
     expect(await first).toBe('graph-failed')
 
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'graph',
       errorType: 'error_loading_template'
     })
     expect(useToastStore().messagesToAdd).toEqual([

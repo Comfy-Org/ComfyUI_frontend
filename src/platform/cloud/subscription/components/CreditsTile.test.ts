@@ -2,7 +2,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useDialogService } from '@/services/dialogService'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -790,6 +790,31 @@ describe('CreditsTile', () => {
       expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
     )
     expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
+  })
+
+  it('closes a confirmed legacy top-up with one succeeded event', async () => {
+    activeProSubscription()
+    state.type = 'legacy'
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
+      events: [
+        {
+          event_type: 'credit_added',
+          createdAt: new Date(Date.now() + 1000).toISOString()
+        }
+      ]
+    })
+
+    renderTile()
+
+    await waitFor(() =>
+      expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
+    )
+    const telemetry = useTelemetry()
+    assert.exists(telemetry)
+    expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual([
+      [{ operation: 'topup', stage: 'succeeded', outcome: 'success' }]
+    ])
   })
 
   it('refreshes and reconciles a pending legacy top-up when telemetry is unavailable', async () => {

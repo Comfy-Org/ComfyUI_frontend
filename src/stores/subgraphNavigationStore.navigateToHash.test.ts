@@ -331,6 +331,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
         expect.stringContaining('workflow load failed')
       )
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'graph',
         errorType: 'workflow_navigation_failure',
         level: 'warning',
         context: { stage: 'recovery' }

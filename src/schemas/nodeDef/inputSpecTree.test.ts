@@ -55,6 +55,7 @@ describe('input specification diagnostics', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       new Error('Unable to parse dynamic node input specification'),
       {
+        surface: 'graph',
         errorType: 'error_parsing_node_input_spec',
         tags: {
           failure_kind: 'degraded',

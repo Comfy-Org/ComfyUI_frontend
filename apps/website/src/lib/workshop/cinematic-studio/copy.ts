@@ -241,6 +241,11 @@ const copy = {
     en: 'Describe the moment. Pick the camera, the light and the look. Switch models any time.',
     'zh-CN': '描述这一刻。选择摄影机、光线与风格。随时切换模型。'
   },
+  'cinematic.lead': {
+    en: 'Direct every shot. Pick the camera, lens, light and grade, and get film-grade frames from any model.',
+    'zh-CN':
+      '执导每一个镜头。选择摄影机、镜头、光线与调色，用任意模型生成电影级画面。'
+  },
   'cinematic.firstRun.desert': {
     en: 'Lone rider crossing dunes at dawn',
     'zh-CN': '黎明时分独自穿越沙丘的骑手'
@@ -294,7 +299,7 @@ const copy = {
     'zh-CN': '光圈'
   },
   'cinematic.part.shot': {
-    en: 'Shot',
+    en: 'Framing',
     'zh-CN': '景别'
   },
   'cinematic.part.light': {
@@ -577,13 +582,25 @@ const copy = {
     en: 'Add a character reference',
     'zh-CN': '添加角色参考'
   },
-  'cinematic.reference.palette': {
-    en: 'Palette',
-    'zh-CN': '色板'
+  'cinematic.grade.fromImage': {
+    en: 'From an image',
+    'zh-CN': '来自图片'
   },
-  'cinematic.reference.paletteAction': {
-    en: 'Add a palette reference',
-    'zh-CN': '添加色板参考'
+  'cinematic.grade.fromImageAction': {
+    en: 'Match the colors of an image',
+    'zh-CN': '匹配图片的色彩'
+  },
+  'cinematic.grade.yourPalette': {
+    en: 'Your palette',
+    'zh-CN': '你的色板'
+  },
+  'cinematic.grade.edit': {
+    en: 'Edit palette',
+    'zh-CN': '编辑色板'
+  },
+  'cinematic.grade.done': {
+    en: 'Done',
+    'zh-CN': '完成'
   },
   'cinematic.reference.remove': {
     en: 'Remove reference',
@@ -692,10 +709,6 @@ const copy = {
   'cinematic.colors.main': {
     en: 'Main color',
     'zh-CN': '主色'
-  },
-  'cinematic.colors.sample': {
-    en: 'From an image',
-    'zh-CN': '从图片取色'
   },
   'cinematic.colors.sampleError': {
     en: "Couldn't read colors from that image.",

@@ -11,7 +11,7 @@ import {
   pendingOperation,
   succeededOperation
 } from './fixtures/scenario'
-import { expectStraightToHost } from './fixtures/planless'
+import { expectStraightToPricingTable } from './fixtures/planless'
 import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
 
@@ -76,24 +76,93 @@ test('a Pay that goes through names the plan and the workspace, and Close goes b
   expect(back.searchParams.get('billing_ref')).toBe('op_subscribe')
 })
 
-test('a revisit after the payment settled renders Already completed on every load, never a form', async ({
+/** What the real Cloud answers once this plan is active: no longer pending, and not for sale again. */
+function settleOnServer(cloud: MockCloud) {
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    plan_slug: 'pro_monthly',
+    subscription_tier: 'PRO'
+  }
+  cloud.scenario.preview = { ...cloud.scenario.preview, allowed: false }
+}
+
+test('a reload after its own Pay went through renders Already completed on every load, never a form', async ({
   page,
   cloud,
   signIn
 }) => {
-  markPending(cloud, 'op_done')
-  cloud.scenario.operations.op_done = succeededOperation('op_done')
   await signIn(CHECKOUT)
+  await payButton(page).click()
+  await expect(heading(page, "You're all set")).toBeVisible()
+  settleOnServer(cloud)
+
+  await page.reload()
 
   await expect(heading(page, 'Already completed')).toBeVisible()
-  await expect(code(page)).toHaveText('op_done')
+  await expect(code(page)).toHaveText('op_subscribe')
   await expect(page.getByTestId('checkout-ending-plan')).toBeHidden()
 
   await page.reload()
 
   await expect(heading(page, 'Already completed')).toBeVisible()
   await expect(payButton(page)).toBeHidden()
-  expect(subscribeRequests(cloud)).toHaveLength(0)
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+test('a later checkout in the same tab for a plan still for sale opens the form, not the old payment', async ({
+  page,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+  await expect(heading(page, "You're all set")).toBeVisible()
+
+  await page.goto(entryPath('checkout', { plan: 'creator_monthly' }))
+
+  await expect(payButton(page)).toBeVisible()
+  await expect(heading(page, 'Already completed')).toBeHidden()
+})
+
+test('a quote the server refuses with nothing paid here ends on Checkout not available, not a form Pay cannot use', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.preview = { ...cloud.scenario.preview, allowed: false }
+  await signIn(CHECKOUT)
+
+  await expect(heading(page, 'Checkout not available')).toBeVisible()
+  await expect(code(page)).toHaveText('UNSPECIFIED')
+  await expect(payButton(page)).toBeHidden()
+})
+
+test("a reload on We couldn't confirm stays on it, never a live form, and lands on Success once the payment settles", async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const stuck = {
+    ...pendingOperation('op_subscribe'),
+    status: 'reconciliation_needed' as const
+  }
+  cloud.scenario.operations.op_subscribe = stuck
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+  const unconfirmed = heading(page, "We couldn't confirm your payment")
+  await expect(unconfirmed).toBeVisible()
+
+  await page.reload()
+
+  await expect(unconfirmed).toBeVisible()
+  await expect(payButton(page)).toBeHidden()
+
+  cloud.scenario.operations.op_subscribe = succeededOperation('op_subscribe')
+  settleOnServer(cloud)
+  await page.reload()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  await expect(page.getByTestId('checkout-ending-plan')).toContainText('Pro')
+  expect(subscribeRequests(cloud)).toHaveLength(1)
 })
 
 test('FE-2856: a capture the bank is still settling renders Payment in progress, then resolves forward to success', async ({
@@ -123,7 +192,7 @@ test('FE-2856: a capture the bank is still settling renders Payment in progress,
   await expect(heading(page, "You're all set")).toBeVisible()
   await expect(
     page.getByText(
-      'A payment on this workspace completed — check your plan in settings.'
+      'A payment for Personal went through. Check your plan in settings for the details.'
     )
   ).toBeVisible()
   await expect(code(page)).toHaveText('op_bank')
@@ -289,6 +358,33 @@ test('433-6840: a link to a plan the catalog lacks renders Plan not available wi
   )
 })
 
+test('433-6840: a retired team plan whose link carries its commit stop opens the pricing table on the Team tab', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.reply('POST', '/billing/preview-subscribe', () => ({
+    status: 400,
+    body: { code: 'INVALID_PLAN', message: 'Plan not found' }
+  }))
+  await signIn(
+    entryPath('checkout', {
+      plan: 'team_per_credit_monthly',
+      team_credit_stop_id: 'stop_1'
+    })
+  )
+
+  await expect(heading(page, "This plan isn't available")).toBeVisible()
+  await expect(code(page)).toHaveText('PLAN_NOT_FOUND')
+
+  await page.getByRole('button', { name: 'View plans' }).click()
+
+  await expect(heading(page, 'Host app')).toBeVisible()
+  await expect(page).toHaveURL(
+    'https://testcloud.comfy.org/?pricing=team&workspace=ws_e2e'
+  )
+})
+
 test('433-6840: a team link without its commit stop is an invalid link, and View plans opens the pricing table on the Team tab', async ({
   page,
   cloud,
@@ -339,7 +435,7 @@ test('433-6840: a checkout link that names no plan, routed once the tab is signe
 test('a signed-out visitor on the flag still goes back to the host for a checkout link that names no plan', async ({
   page
 }) => {
-  await expectStraightToHost(page, 'ws_team_e2e')
+  await expectStraightToPricingTable(page, 'ws_team_e2e')
 })
 
 test('a checkout link that names no plan, opened by the host in a new tab, goes back to the host even for a signed-in customer on the flag', async ({
@@ -348,7 +444,7 @@ test('a checkout link that names no plan, opened by the host in a new tab, goes 
 }) => {
   await signIn(CHECKOUT)
 
-  await expectStraightToHost(await context.newPage(), 'ws_e2e')
+  await expectStraightToPricingTable(await context.newPage(), 'ws_e2e')
 })
 
 test("433-6840: a checkout link the contract cannot read is the checkout's 404 on the full page, and still the entry error on the embedded one", async ({
@@ -399,6 +495,41 @@ test("a checkout that couldn't load retries in place on Try again, without leavi
   await expect(payButton(page)).toBeEnabled()
   await expect(page).toHaveURL(CHECKOUT)
   expect(quotes).toBe(2)
+})
+
+test('421-5804: a capabilities read that fails says so without claiming nothing was charged, and Try again opens the checkout', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  let reads = 0
+  cloud.reply('GET', '/billing/capabilities', () => {
+    reads += 1
+    return reads === 1
+      ? { status: 503, body: { code: 'UNAVAILABLE', message: 'down' } }
+      : {
+          body: cloud.scenario.capabilities,
+          headers: {
+            'x-capability-revision': String(
+              cloud.scenario.capabilities.revision
+            )
+          }
+        }
+  })
+  await signIn(CHECKOUT)
+
+  await expect(heading(page, "Couldn't load your checkout")).toBeVisible()
+  await expect(
+    page.getByText(
+      "We couldn't check whether this workspace can check out, so checkout can't open yet. Try again, or contact support if this keeps happening."
+    )
+  ).toBeVisible()
+  await expect(page.getByText(/Nothing has been charged/)).toBeHidden()
+  await expect(code(page)).toHaveText('REQUEST_FAILED')
+
+  await page.getByRole('button', { name: 'Try again' }).click()
+
+  await expect(payButton(page)).toBeEnabled()
 })
 
 test("a re-read of the workspace's payments that fails never claims nothing was charged, and Try again follows the payment once it answers", async ({

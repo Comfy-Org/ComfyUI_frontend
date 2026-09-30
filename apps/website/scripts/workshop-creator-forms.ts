@@ -187,6 +187,10 @@ export function creatorFormFor(
             imageAspectRatio: { minimum: 0.39, maximum: 2.5 },
             help: 'Use an image with an aspect ratio between 0.39 and 2.50.'
           }
+        // BytePlus rejects any other ratio once a first frame is given; the
+        // clip keeps that frame's own shape.
+        if (model.options.mode === 'first-last')
+          rules.ratio = { ...rules.ratio, fixed: 'adaptive' }
       }
       request = {
         kind: 'callback',

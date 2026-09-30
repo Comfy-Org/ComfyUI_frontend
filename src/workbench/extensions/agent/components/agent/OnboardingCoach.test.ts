@@ -438,6 +438,7 @@ describe('OnboardingCoach', () => {
 
       await vi.advanceTimersByTimeAsync(1_000)
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
         errorType: 'failure_locating_agent_coach_target',
         level: 'warning',
         context: { target: '#never-a', step: 1 }
@@ -477,6 +478,7 @@ describe('OnboardingCoach', () => {
       await vi.advanceTimersByTimeAsync(8_000)
 
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
         errorType: 'failure_locating_agent_coach_target',
         level: 'warning',
         context: { target: '#never-e', step: 2 }

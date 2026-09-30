@@ -476,7 +476,7 @@ describe('agentEventTransport text and tool parts', () => {
             id: 'audit-row-uuid-1',
             tool_call_id: 'call-1',
             tool_name: 'run',
-            status: 'running'
+            status: 'error'
           }
         ]
       }

@@ -49,6 +49,7 @@ export const useAgentConversationStore = defineStore(
     const userAttachments = ref(new Map<TurnId, UserAttachment[]>())
     const userTags = ref(new Map<TurnId, string[]>())
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
+    const attachmentNamesByThread = new Map<string, Map<string, string>>()
     const latestWorkflowId = ref<string>()
     const resolvedPaywallIds = ref(new Set<TurnId>())
     let transport: AgentEventTransport | null = null
@@ -131,6 +132,16 @@ export const useAgentConversationStore = defineStore(
       if (index >= 0) messages.value[index] = message
     }
 
+    function rememberAttachmentNames(attachments: UserAttachment[]): void {
+      const currentThreadId = threadId.value
+      if (currentThreadId === null) return
+      const names = attachmentNamesByThread.get(currentThreadId) ?? new Map()
+      for (const attachment of attachments) {
+        if (attachment.ref) names.set(attachment.ref, attachment.name)
+      }
+      attachmentNamesByThread.set(currentThreadId, names)
+    }
+
     function recordUser(
       turnId: TurnId,
       text: string,
@@ -139,8 +150,10 @@ export const useAgentConversationStore = defineStore(
       workflowReferences?: WorkflowReference[]
     ): void {
       userTexts.value.set(turnId, text)
-      if (attachments !== undefined && attachments.length > 0)
+      if (attachments !== undefined && attachments.length > 0) {
         userAttachments.value.set(turnId, attachments)
+        rememberAttachmentNames(attachments)
+      }
       if (tags !== undefined && tags.length > 0)
         userTags.value.set(turnId, tags)
       if (workflowReferences !== undefined && workflowReferences.length > 0)
@@ -539,6 +552,7 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId.value = undefined
       resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
+      attachmentNamesByThread.clear()
       threadId.value = null
       forgetAllApprovals()
       hydratedMessageIds = new Set()
@@ -563,7 +577,22 @@ export const useAgentConversationStore = defineStore(
       hydratedMessageIds = transcript.rowIds
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
-      userAttachments.value = transcript.userAttachments
+      const rememberedNames =
+        threadId.value === null
+          ? undefined
+          : attachmentNamesByThread.get(threadId.value)
+      userAttachments.value = new Map(
+        [...transcript.userAttachments].map(([turnId, attachments]) => [
+          turnId,
+          attachments.map((attachment) => {
+            const name =
+              attachment.ref && attachment.name === attachment.ref
+                ? rememberedNames?.get(attachment.ref)
+                : undefined
+            return name === undefined ? attachment : { ...attachment, name }
+          })
+        ])
+      )
       if (transcript.pending) {
         liveMessage = transcript.pending.message
         activeTurnId.value = transcript.pending.messageId

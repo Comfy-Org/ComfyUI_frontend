@@ -296,6 +296,7 @@ async function loadAudioRecordWidget() {
 }
 
 const RECORDER_FAILURE_REPORT = {
+  surface: 'assets',
   errorType: 'failure_starting_audio_recorder',
   tags: {
     failure_kind: 'caught_unexpected',

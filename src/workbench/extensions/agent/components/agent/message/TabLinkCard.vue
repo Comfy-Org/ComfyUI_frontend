@@ -69,7 +69,10 @@ async function open(): Promise<void> {
       await targetNavigation.navigate({ workflowId, locatorId })
     } catch (error) {
       if (!(error instanceof AgentTargetNavigationError))
-        reportError(error, { errorType: 'agent_target_navigation_failure' })
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_target_navigation_failure'
+        })
       toast.add({
         severity: 'warn',
         detail: t('agent.targetNavigationUnavailable'),

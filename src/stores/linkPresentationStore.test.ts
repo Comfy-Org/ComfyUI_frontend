@@ -60,6 +60,7 @@ describe('useLinkPresentationStore', () => {
       label: 'Owned'
     })
     expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      surface: 'platform',
       errorType: 'link_presentation_ownership_conflict',
       context: {
         linkId: LINK,
