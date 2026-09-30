@@ -116,7 +116,9 @@ export function createTranslator<T extends MessageTree>(catalogs: Catalogs<T>) {
 
     const message =
       messageAtPath(catalogs[locale], key) ?? messageAtPath(catalogs.en, key)
-    if (message === undefined) throw new Error(`Unknown translation key ${key}`)
+    if (message === undefined) {
+      throw new Error(`Unknown translation key ${key} in ${locale}`)
+    }
     const source = message.replace(literalPattern, '')
     if (source.includes('@')) {
       throw new Error(
