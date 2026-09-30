@@ -367,6 +367,20 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   await expect(outcomes).toHaveCount(7)
 })
 
+test('keeps an old catalogue link for the Workflows tab on the models catalogue while workflows are off', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, false)
+  await page.goto('/hub/models/?type=workflows')
+  await expect(
+    page.getByRole('searchbox', {
+      name: 'Search models, providers, and categories'
+    })
+  ).toBeVisible()
+  await expect(page).toHaveURL('/hub/models/?type=workflows')
+})
+
 test('the background example pairs its input and output and restores edited inputs', async ({
   page,
   context
