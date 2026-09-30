@@ -2784,7 +2784,17 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     const [error, options] = vi.mocked(reportError).mock.calls[0]
     expect((error as Error).message).toBe('Malformed agent stream event')
     expect(options.tags?.event_type).toBe('agent_message_done')
-    expect(options.context?.issues).toEqual(expect.any(Array))
+    expect(options.context?.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: expect.any(String),
+          path: expect.any(Array),
+          message: expect.any(String)
+        })
+      ])
+    )
+    for (const issue of (options.context?.issues ?? []) as object[])
+      expect(Object.keys(issue).sort()).toEqual(['code', 'message', 'path'])
   })
 
   it('reports a rejected send to the unified error sinks', async () => {
@@ -2876,7 +2886,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     try {
       const ok = await session.sendMessage('make me a cat')
-      expect(ok).toBe(false)
+      expect(ok).toBe(true)
     } finally {
       setItem.mockRestore()
     }
@@ -2901,7 +2911,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     const session = useAgentSession({ rest, events: fakeEvents().source })
     session.start()
 
-    await session.sendMessage('make me a cat')
+    expect(await session.sendMessage('make me a cat')).toBe(true)
 
     expect(telemetry.trackAgentError).toHaveBeenCalledWith({
       error_class: 'request_failed',
@@ -2924,7 +2934,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     const session = useAgentSession({ rest, events: fakeEvents().source })
     session.start()
 
-    await session.sendMessage('make me a cat')
+    expect(await session.sendMessage('make me a cat')).toBe(true)
 
     expect(telemetry.trackAgentError).toHaveBeenCalledWith({
       error_class: 'request_failed',
@@ -3060,6 +3070,18 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     // The aborted turn, then the idle session the other nineteen arrived into.
     expect(telemetry.trackAgentError).toHaveBeenCalledTimes(2)
+    expect(session.notices.value).toHaveLength(2)
+  })
+
+  it('does not trust attacker-controlled message ids as telemetry keys', () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+
+    for (let i = 0; i < 100; i++)
+      emit({ type: 'agent_message_delta', data: { message_id: `spoof-${i}` } })
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledTimes(1)
   })
 
   it('tracks malformed frames of event types that never reach the user', async () => {
