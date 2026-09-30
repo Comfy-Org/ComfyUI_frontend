@@ -94,8 +94,9 @@ describe('RouterProviderCoverageSection', () => {
       screen.getByRole('link', { name: 'Nano Banana Pro' })
     ).toBeInTheDocument()
     expect(screen.getByText('更多模型')).toBeInTheDocument()
-    expect(
-      screen.getByRole('link', { name: '浏览全部模型' })
-    ).toHaveAttribute('href', '/hub/models/')
+    expect(screen.getByRole('link', { name: '浏览全部模型' })).toHaveAttribute(
+      'href',
+      '/hub/models/'
+    )
   })
 })
