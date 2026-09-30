@@ -18,10 +18,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { isFloatingTopology } from '@/types/linkTopology'
 import { isRemoteMutationContext } from '@/types/graphMutationContext'
 import { parseWidgetId } from '@/types/widgetId'
-import {
-  findSubgraphNodePathById,
-  getNodeByState
-} from '@/utils/graphTraversalUtil'
+import { findSubgraphNodePathById } from '@/utils/graphTraversalUtil'
 
 import type { GraphOperation } from './graphOperations'
 import { attachLayoutMintPort } from './layoutMintPort'
@@ -496,15 +493,8 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const detachWidgetChanges = widgetStore.onValueChange(
     ({ widgetId, value, oldValue, context }) => {
       if (isRemoteMutationContext(context)) return
+      if (!isValueWidget(widgetStore.getWidget(widgetId))) return
       const { graphId, nodeId, name: widgetName } = parseWidgetId(widgetId)
-      const graph = deps.getGraph()
-      const liveWidget = graph
-        ? getNodeByState(graph as unknown as LGraph, {
-            id: nodeId,
-            graphId
-          })?.widgets?.find((widget) => widget.name === widgetName)
-        : undefined
-      if (!isValueWidget(liveWidget ?? widgetStore.getWidget(widgetId))) return
       for (const listener of setListeners) {
         listener({
           graphId,
