@@ -31,6 +31,7 @@ const defaultFlags: FeatureFlags = {
   unifiedCloudAuthEnabled: false,
   unifiedWebSessionEnabled: false,
   billingControlEnabled: false,
+  memberCreditLimitsEnabled: false,
   legacyBillingMigrationEnabled: false,
   embeddedCheckoutEnabled: false,
   billingSdkTopupEnabled: false,
