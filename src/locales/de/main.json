@@ -9,7 +9,6 @@
       "signInCaption": "Partner-Nodes erfordern ein Konto",
       "signInToRun": "Zum Ausführen anmelden"
     },
-    "share": "Teilen",
     "shareTooltip": "Workflow teilen"
   },
   "agent": {
@@ -35,8 +34,8 @@
     "coachHistoryTitle": "Machen Sie dort weiter, wo Sie aufgehört haben",
     "coachProgress": "{current} von {total}",
     "coachTitle": "Lernen Sie Ihren Comfy Agent kennen",
-    "coachWorkflowBody": "Der Agent bearbeitet nur den von Ihnen ausgewählten Workflow. Sie können auch Referenzdateien hochladen oder andere Workflows erwähnen.",
-    "coachWorkflowTitle": "Wählen Sie einen Workflow aus, den Ihr Agent bearbeiten soll",
+    "coachWorkflowBody": "Er wechselt mit Ihren Tabs, bis Sie eine Nachricht senden, einen Workflow auswählen oder eine Node-Referenz hinzufügen.",
+    "coachWorkflowTitle": "Ihr Agent bearbeitet den Workflow, den Sie gerade anzeigen",
     "consent": {
       "accept": "Comfy Agent verwenden",
       "body1": "Comfy Agent hilft Ihnen, Workflows zu planen, zu erstellen, auszuführen und zu iterieren. Beschreiben Sie, was Sie erstellen möchten, und Comfy Agent arbeitet als leistungsstarkes Teammitglied mit Ihnen zusammen.",
@@ -65,6 +64,12 @@
     "dismiss": "Verwerfen",
     "downloadAssets": "Assets herunterladen",
     "dragAndDropAssets": "Assets hierher ziehen und ablegen",
+    "editRejected": {
+      "generic": "Ihre Bearbeitung wurde abgelehnt und nicht gespeichert. Der Workflow stimmt möglicherweise nicht mehr mit seinem Canvas überein – laden Sie den Workflow neu, um zu sehen, was beibehalten wurde.",
+      "genericPartial": "Ihre Bearbeitung wurde abgelehnt und nicht gespeichert, obwohl einige frühere Bearbeitungen gespeichert wurden. Der Workflow stimmt möglicherweise nicht mehr mit seinem Canvas überein – laden Sie den Workflow neu, um zu sehen, was beibehalten wurde.",
+      "widgetWrite": "Die Widget-Bearbeitung wurde abgelehnt und nicht gespeichert. Ihr eingegebener Wert befindet sich nur auf dem Canvas – laden Sie den Workflow neu, um den beibehaltenen Wert zu sehen.",
+      "widgetWritePartial": "Die Widget-Bearbeitung wurde abgelehnt und nicht gespeichert, obwohl einige frühere Bearbeitungen gespeichert wurden. Ihr eingegebener Wert befindet sich nur auf dem Canvas – laden Sie den Workflow neu, um die beibehaltenen Werte zu sehen."
+    },
     "editWhileWorking": "Sie können weiter bearbeiten, während er arbeitet",
     "entryButton": "Agent",
     "feedbackCaption": "Feedback teilen",
@@ -159,18 +164,31 @@
     "showChatHistory": "Chatverlauf anzeigen",
     "showLess": "Weniger anzeigen",
     "showMore": "Mehr anzeigen",
+    "showTarget": "Ziel anzeigen",
+    "showTargetWorkflow": "Ziel-Workflow anzeigen: {workflowName}",
     "skip": "Überspringen",
     "stop": "Stopp",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "Erstellen Sie eine gelbe Ente mit einer Hockeymaske",
-      "Meine gespeicherten Workflows auflisten",
-      "Den besten Workflow für Haut-Upscaling finden",
-      "Den ausgewählten Node erklären",
-      "Einen Workflow für Bild-zu-Video mit 3 Modellen erstellen"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Erstellen Sie ein Charakterblatt eines Astronauten",
+        "Verwandeln Sie das Produktbild in eine kurze Anzeige",
+        "Erklären Sie die ausgewählten Nodes",
+        "Bester Bild-Upscale-Workflow für 4K",
+        "Beheben Sie die Fehler in diesem Workflow"
+      ],
+      "local": [
+        "Erstellen Sie ein realistisches Porträt eines Astronauten",
+        "Ein Bild-zu-Video-Workflow, der zu meiner GPU passt",
+        "Erklären Sie die ausgewählten Nodes",
+        "Helfen Sie mir, die fehlenden Nodes für diesen Workflow zu installieren",
+        "Beheben Sie die Fehler in diesem Workflow"
+      ]
+    },
     "switchWorkflow": "Workflow wechseln",
     "switchWorkflowForNodes": "Wechseln Sie zu {workflowName}, um Nodes hinzuzufügen.",
+    "takeTour": "Tour starten",
+    "targetFollowsVisibleWorkflow": "Der Ziel-Workflow folgt dem sichtbaren Tab, bis Sie ein Ziel auswählen, Nodes referenzieren oder eine Nachricht senden.",
     "targetForThisChat": "Agent-Ziel für diesen Chat",
     "targetNavigationUnavailable": "Dieses Workflow-Ziel ist nicht mehr verfügbar.",
     "thinking": "Denkt nach...",
@@ -189,6 +207,7 @@
     "updatingGraph": "Der Agent aktualisiert den Graphen",
     "uploading": "Wird hochgeladen",
     "viewAddedNodes": "Node anzeigen | Nodes anzeigen",
+    "viewingDifferentWorkflow": "Sie sehen einen anderen Workflow als den Ziel-Workflow.",
     "worked": "Abgeschlossen",
     "workedForMinutes": "Bearbeitungszeit: {minutes}m {seconds}s",
     "workedForSeconds": "Bearbeitungszeit: {seconds} Sekunden",
@@ -722,6 +741,8 @@
         "selectAtLeastOne": "Bitte wählen Sie mindestens eine Option aus."
       },
       "intro": "Ein paar kurze Fragen, damit wir ComfyUI für Sie einrichten können.",
+      "navigationFailed": "Umfrage gespeichert, aber das Onboarding konnte nicht fortgesetzt werden",
+      "navigationFailedDetail": "Bitte versuchen Sie es erneut.",
       "options": {
         "experience": {
           "new": "Neu bei ComfyUI",
@@ -762,6 +783,8 @@
       },
       "otherPlaceholder": "Erzählen Sie uns mehr",
       "placeholder": "Platzhalter für Umfragefragen",
+      "submitFailed": "Die Umfrage konnte nicht gesendet werden",
+      "submitFailedDetail": "Ihre Antworten wurden nicht gespeichert. Bitte versuchen Sie es erneut.",
       "title": "Lernen wir Sie kennen"
     }
   },
@@ -2105,6 +2128,9 @@
     "updating": "Aktualisierung von {id}",
     "upload": "Hochladen",
     "uploadAlreadyInProgress": "Upload läuft bereits",
+    "uploadFailed": "Hochladen fehlgeschlagen: {reason}",
+    "uploadFileTooLarge": "Datei ist zu groß zum Hochladen.",
+    "uploadFileTooLargeWithLimit": "Datei ist zu groß zum Hochladen (Limit: {limit} MB).",
     "uploadTimedOut": "Zeitüberschreitung beim Upload. Bitte versuchen Sie es erneut.",
     "usageHint": "Nutzungshinweis",
     "use": "Verwenden",
@@ -3548,6 +3574,12 @@
     "skip": "Überspringen",
     "stepLabel": "Schritt {current} von {total}"
   },
+  "onboardingReplay": {
+    "confirmMessage": "Dadurch wird ComfyUI neu geladen und die in dieser Umgebung verfügbaren Onboarding-Schritte werden zurückgesetzt. Ihre Workflows sind nicht betroffen.",
+    "confirmTitle": "Onboarding erneut abspielen?",
+    "failedDetail": "Ihr Onboarding-Status konnte nicht zurückgesetzt werden. Bitte versuchen Sie es erneut.",
+    "failedSummary": "Onboarding konnte nicht erneut abgespielt werden"
+  },
   "openSharedWorkflow": {
     "author": "Autor:",
     "copyAssetsAndOpen": "Ressourcen importieren & Workflow öffnen",
@@ -4472,6 +4504,7 @@
       "memberTitle": "Das Abonnement dieses Workspace ist inaktiv",
       "runLabel": "Ausführen"
     },
+    "inactiveEnterpriseDescription": "Sie können keine Workflows ausführen oder neue Mitglieder hinzufügen. Kontaktieren Sie den Vertrieb, um den Zugriff wiederherzustellen.",
     "inactiveTeamDescription": "Reaktivieren Sie Ihren Team-Tarif, um weitere Mitglieder hinzuzufügen und Workflows auszuführen",
     "inactiveTeamPlanIncludes": "Ein aktiver Tarif umfasst alles aus {plan}, zusätzlich:",
     "inactiveTeamTitle": "Inaktives Team-Abonnement",
@@ -4608,7 +4641,13 @@
         "title": "Ihr Abonnement wird reaktiviert",
         "titleAnnual": "Ihr Abonnement wird reaktiviert – das volle Jahr wird heute abgerechnet",
         "unavailable": "Wir können diese Reaktivierung derzeit nicht bestätigen — bitte wählen Sie Ihren Plan erneut aus",
-        "upgradeBody": "Ihr {plan} sollte am {date} enden. Ein Upgrade jetzt reaktiviert ihn – Ihnen werden heute {amount} berechnet, und statt zu enden wird er am {nextDate} automatisch verlängert."
+        "upgradeBody": "Ihr {plan} sollte am {date} enden. Ein Upgrade jetzt reaktiviert ihn – Ihnen werden heute {amount} berechnet, und statt zu enden wird er am {nextDate} automatisch verlängert.",
+        "withoutRenewalDate": {
+          "downgradeBody": "Ihr {plan} sollte am {date} enden. Wenn Sie zu {newPlan} wechseln, wird er reaktiviert — Ihnen werden heute keine Kosten berechnet, aber er verlängert sich nun automatisch zum neuen Preis, statt zu enden.",
+          "durationChangeBody": "Ihr {plan} sollte am {date} enden. Der Wechsel zur jährlichen Abrechnung reaktiviert ihn und berechnet Ihnen heute den vollen Jahresbetrag von {amount}. Anschließend verlängert er sich jährlich, statt zu enden.",
+          "durationChangeBodyMonthly": "Ihr {plan} sollte am {date} enden. Der Wechsel zur monatlichen Abrechnung reaktiviert ihn — Ihnen werden heute {amount} berechnet, und er verlängert sich automatisch, statt zu enden.",
+          "upgradeBody": "Ihr {plan} sollte am {date} enden. Wenn Sie jetzt upgraden, wird er reaktiviert — Ihnen werden heute {amount} berechnet, und er verlängert sich automatisch, statt zu enden."
+        }
       },
       "refillReplacesNote": "Ersetzt Ihre monatliche Aufladung. Das vorhandene Guthaben bleibt erhalten.",
       "renewsAt": "Verlängert sich am {date} für {amount}. Jederzeit kündbar.",
@@ -4655,6 +4694,8 @@
     "resubscribeFailed": "Abonnement konnte nicht reaktiviert werden",
     "resubscribeSuccess": "Abonnement erfolgreich reaktiviert",
     "resubscribeTo": "{plan} fortsetzen",
+    "salesManagedCreditsEndedNote": "Die Plan-Credits sind mit Ihrem Abonnement abgelaufen.",
+    "salesManagedInactiveCreditsNote": "Nutzbar, sobald Ihr Plan wiederhergestellt ist.",
     "salesManagedRunBlockedDetail": "Der Tarif dieses Workspace ist nicht mehr aktiv. Wenden Sie sich an Ihre Comfy-Kundenbetreuung, um den Zugriff wiederherzustellen.",
     "salesManagedRunBlockedTitle": "Tarif inaktiv",
     "saveYearly": "20 % sparen",
@@ -4665,7 +4706,7 @@
     "subscribe": "Abonnieren",
     "subscribeFailed": "Abonnement konnte nicht abgeschlossen werden",
     "subscribeForMore": "Upgraden",
-    "subscribeNow": "Jetzt abonnieren",
+    "subscribeNow": "Abonnieren",
     "subscribeTo": "{plan} abonnieren",
     "subscribeToComfyCloud": "Comfy Cloud abonnieren",
     "subscribeToRun": "Abonnieren",
@@ -4821,6 +4862,7 @@
     "clearAllFilters": "Alle Filter zurücksetzen",
     "error": {
       "loading": "Die Vorlage konnte nicht geöffnet werden. Bitte versuchen Sie es erneut.",
+      "preparingMedia": "Einige Beispielmedien konnten nicht vorbereitet werden. Der Workflow wird geöffnet; wählen Sie für fehlende Eingaben eigene Dateien aus.",
       "templateNotFound": "Vorlage \"{templateName}\" nicht gefunden"
     },
     "filtersApplied": "{count} Filter angewendet | {count} Filter angewendet",
@@ -4837,6 +4879,7 @@
       "credits": "Wird mit Credits ausgeführt",
       "title": "Premium-Vorlage"
     },
+    "preparingMedia": "Beispielmedien werden vorbereitet...",
     "resultsCount": "{count} von {total} Vorlagen werden angezeigt",
     "runsOnFilter": "Läuft auf",
     "runsOnSelected": "{count} Plattformen",
@@ -5140,6 +5183,8 @@
     "billingStatus": {
       "ending": {
         "body": "Mitglieder behalten bis dahin vollen Zugriff. Setzen Sie Ihr Abonnement fort, um Ihre gemeinsamen Credits und Sitzplätze zu behalten.",
+        "enterpriseBody": "Mitglieder behalten bis dahin den vollständigen Zugriff. Kontaktieren Sie unser Vertriebsteam, um zu verlängern.",
+        "enterpriseTitle": "Ihr Enterprise-Plan endet am {date}",
         "reactivate": "Abonnement fortsetzen",
         "title": "Ihr Teamplan endet am {date}"
       },
@@ -5253,6 +5298,7 @@
         "inviteDate": "Einladungsdatum",
         "role": "Rolle"
       },
+      "contactSales": "Vertrieb kontaktieren",
       "contactUs": "Kontaktieren Sie uns",
       "creditLimitDialog": {
         "description": "Sobald dieses Limit erreicht ist, können keine Workflows mehr ausgeführt werden.",
@@ -5263,6 +5309,9 @@
         "update": "Limit aktualisieren",
         "warning": "Dieser Benutzer hat bereits {credits} Credits verbraucht. Wenn Sie das Limit auf oder unter den aktuellen Verbrauch setzen, sind bis zum nächsten Monat keine weiteren Ausführungen möglich."
       },
+      "endedEnterpriseTitle": "Ihr Enterprise-Plan ist abgelaufen",
+      "endedPlanTitle": "Ihr Plan ist abgelaufen",
+      "endedTeamTitle": "Ihr Team-Plan ist abgelaufen",
       "header": "Mitglieder",
       "membersCount": "{count} von {maxSeats} Mitgliedern",
       "needMoreMembers": "Benötigen Sie mehr Mitglieder?",
@@ -5270,6 +5319,7 @@
       "noMembers": "Keine Mitglieder",
       "pendingInvitesCount": "{count} ausstehende Einladung | {count} ausstehende Einladungen",
       "reactivateTeam": "Team reaktivieren",
+      "resubscribe": "Erneut abonnieren",
       "searchPlaceholder": "Suchen...",
       "tabs": {
         "active": "Aktiv",
@@ -5277,6 +5327,8 @@
       },
       "upgradeToTeam": "Auf Team upgraden",
       "upsellBanner": "Um Teammitglieder hinzuzufügen, upgraden Sie Ihren Plan.",
+      "upsellBannerEnterpriseEnded": "Kontaktieren Sie den Vertrieb, um Ihren Enterprise-Plan zu reaktivieren.",
+      "upsellBannerPlanEnded": "Kontaktieren Sie den Vertrieb, um Ihren Plan zu reaktivieren.",
       "upsellBannerReactivate": "Um weitere Teammitglieder hinzuzufügen, reaktivieren Sie Ihren Plan."
     },
     "menu": {

@@ -8376,6 +8376,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "עורך או משלב עד 5 תמונות בהנחיית פרומפט טקסט באמצעות Ideogram 4.5. מרנדר מחדש את התמונה כולה ויכול לשנות את גודלה או את יחס הממדים שלה; השתמשו ב-Ideogram 4.5 עריכה מדויקת כדי להשאיר פיקסלים שלא שונו ללא שינוי.",
+    "display_name": "Ideogram 4.5 עריכה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שבו ייעשה שימוש."
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_size": {
+        "name": "גודל"
+      },
+      "model_width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "יוצר תמונות באמצעות P-Image, מודל טקסט-לתמונה מהיר של Ideogram. טיפוגרפיה חזקה ופוטוריאליזם; תומך ב־Ideogram 4.0 structured JSON captions לטקסט, צבעים ופריסה מדויקים.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8451,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "הפרומפט שממנו התמונה נוצרה בפועל (הכיתוב המובנה המשוכתב כאשר prompt_upsampling הופעל, אחרת הפרומפט שלכם). ניתן להזינו שוב עם prompt_upsampling ב־OFF ואותו seed כדי לשחזר את התמונה."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "עורך תמונה בהנחיית פרומפט טקסט באמצעות העריכה המדויקת של Ideogram 4.5: רק מה שהפרומפט מבקש משתנה, פיקסלים שלא שונו נשארים זהים, והפלט שומר על גודל תמונה 1 (תמונות מעל ~4 MP מוקטנות תחילה). מקבל עד 4 תמונות ייחוס.",
+    "display_name": "Ideogram 4.5 עריכה מדויקת",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שבו ייעשה שימוש."
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "יוצר תמונות מפרומפט טקסט באמצעות Ideogram 4.5.",
+    "display_name": "Ideogram 4.5 טקסט לתמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שבו ייעשה שימוש."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_size": {
+        "name": "גודל"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "הכיתוב המובנה שממנו נוצרה התמונה. הזינו אותו מחדש כאשר magic_prompt מוגדר ל-'off' ועם אותו זרע כדי לשחזר את התמונה."
       }
     }
   },

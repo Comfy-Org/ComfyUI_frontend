@@ -8376,6 +8376,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "display_name": "Ideogram 4.5 Edit",
+    "description": "Edits or combines up to 5 images guided by a text prompt using Ideogram 4.5. Re-renders the whole image and can change its size or aspect ratio; use Ideogram 4.5 Precise Edit to keep untouched pixels unchanged.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "display_name": "Ideogram & Pruna P-Image",
     "description": "Generates images using P-Image, Ideogram's fast text-to-image model. Strong typography and photorealism; supports Ideogram 4.0 structured JSON captions for exact text, colors and layout.",
@@ -8415,6 +8451,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "The prompt the image was actually generated from (the rewritten structured caption when prompt_upsampling ran, else your prompt). Feed it back with prompt_upsampling OFF and the same seed to reproduce this image."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "display_name": "Ideogram 4.5 Precise Edit",
+    "description": "Edits an image guided by a text prompt using Ideogram 4.5 precise editing: only what the prompt asks for changes, untouched pixels stay identical and the output keeps the size of image 1 (images above ~4 MP are scaled down first). Accepts up to 4 reference images.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "display_name": "Ideogram 4.5 Text to Image",
+    "description": "Generates images from a text prompt using Ideogram 4.5.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "The structured caption the image was generated from. Feed it back with magic_prompt set to 'off' and the same seed to reproduce the image."
       }
     }
   },

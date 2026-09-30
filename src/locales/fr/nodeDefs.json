@@ -8376,6 +8376,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Modifie ou combine jusqu’à 5 images selon un texte d’invite à l’aide d’Ideogram 4.5. Effectue un nouveau rendu de l’image entière et peut modifier sa taille ou son format d’image ; utilisez Ideogram 4.5 Modification précise pour conserver les pixels non modifiés inchangés.",
+    "display_name": "Ideogram 4.5 Modification",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_quality": {
+        "name": "qualité"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_size": {
+        "name": "taille"
+      },
+      "model_width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Génère des images à l'aide de P-Image, le modèle texte-vers-image rapide d'Ideogram. Excellente typographie et photoréalisme ; prend en charge les légendes JSON structurées Ideogram 4.0 pour un texte, des couleurs et une mise en page exacts.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8451,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "Le prompt à partir duquel l'image a réellement été générée (la légende structurée réécrite si prompt_upsampling a été utilisé, sinon votre prompt). Réutilisez-le avec prompt_upsampling sur OFF et la même graine pour reproduire cette image."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Modifie une image selon un texte d’invite à l’aide de la modification précise d’Ideogram 4.5 : seuls les éléments demandés par l’invite changent, les pixels non modifiés restent identiques et la sortie conserve la taille de l’image 1 (les images de plus d’environ 4 MP sont d’abord réduites). Accepte jusqu’à 4 images de référence.",
+    "display_name": "Ideogram 4.5 Modification précise",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_quality": {
+        "name": "qualité"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Génère des images à partir d’un texte d’invite à l’aide d’Ideogram 4.5.",
+    "display_name": "Ideogram 4.5 Texte vers image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_quality": {
+        "name": "qualité"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_size": {
+        "name": "taille"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "La légende structurée à partir de laquelle l’image a été générée. Réinjectez-la avec magic_prompt défini sur 'off' et la même graine pour reproduire l’image."
       }
     }
   },

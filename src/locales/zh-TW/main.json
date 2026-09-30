@@ -9,7 +9,6 @@
       "signInCaption": "合作夥伴節點需要帳戶",
       "signInToRun": "登入以執行"
     },
-    "share": "分享",
     "shareTooltip": "分享工作流程"
   },
   "agent": {
@@ -35,8 +34,8 @@
     "coachHistoryTitle": "從上次中斷處繼續",
     "coachProgress": "{current} / {total}",
     "coachTitle": "認識您的 Comfy Agent",
-    "coachWorkflowBody": "Agent 只會編輯您選擇的工作流程。您也可以上傳參考檔案或提及其他工作流程。",
-    "coachWorkflowTitle": "選擇要讓 Agent 編輯的工作流程",
+    "coachWorkflowBody": "它會隨著您切換分頁而切換，直到您傳送訊息、選擇工作流程或新增節點參照為止。",
+    "coachWorkflowTitle": "您的代理會編輯您正在檢視的工作流程",
     "consent": {
       "accept": "開始使用 Comfy Agent",
       "body1": "Comfy Agent 可協助您規劃、建立、執行及反覆改進工作流程。描述您想創作的內容，Comfy Agent 將成為您強大的夥伴。",
@@ -65,6 +64,12 @@
     "dismiss": "關閉",
     "downloadAssets": "下載資產",
     "dragAndDropAssets": "將資產拖放至此處",
+    "editRejected": {
+      "generic": "您的編輯遭拒，且未儲存。工作流程可能已不再與其畫布同步——請重新載入工作流程以查看保留的內容。",
+      "genericPartial": "您的編輯遭拒，且未儲存，但部分較早的編輯已儲存。工作流程可能已不再與其畫布同步——請重新載入工作流程以查看保留的內容。",
+      "widgetWrite": "小工具編輯遭拒，且未儲存。您輸入的值僅存在於畫布上——請重新載入工作流程以查看保留的值。",
+      "widgetWritePartial": "小工具編輯遭拒，且未儲存，但部分較早的編輯已儲存。您輸入的值僅存在於畫布上——請重新載入工作流程以查看保留的值。"
+    },
     "editWhileWorking": "代理運作時，您仍可繼續編輯",
     "entryButton": "代理",
     "feedbackCaption": "分享意見回饋",
@@ -159,18 +164,31 @@
     "showChatHistory": "顯示聊天記錄",
     "showLess": "顯示更少",
     "showMore": "顯示更多",
+    "showTarget": "顯示目標",
+    "showTargetWorkflow": "顯示目標工作流程：{workflowName}",
     "skip": "略過",
     "stop": "停止",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "生成一隻戴著冰球面具的黃色鴨子",
-      "列出我儲存的工作流程",
-      "尋找最適合皮膚放大的工作流程",
-      "說明所選節點",
-      "建立使用 3 個模型的圖像轉影片工作流程"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "產生一張太空人的角色設定圖",
+        "將產品圖片製作成一支短廣告",
+        "說明所選節點",
+        "適用於 4K 的最佳圖片放大工作流程",
+        "修正此工作流程中的錯誤"
+      ],
+      "local": [
+        "生成一幅逼真的太空人肖像",
+        "適合我的 GPU 的圖像轉影片工作流程",
+        "說明所選節點",
+        "協助我安裝此工作流程缺少的節點",
+        "修正此工作流程中的錯誤"
+      ]
+    },
     "switchWorkflow": "切換工作流程",
     "switchWorkflowForNodes": "切換至 {workflowName} 以新增節點。",
+    "takeTour": "開始導覽",
+    "targetFollowsVisibleWorkflow": "在您選擇目標、參考節點或傳送訊息之前，目標工作流程會跟隨目前可見的分頁。",
     "targetForThisChat": "此聊天的代理目標",
     "targetNavigationUnavailable": "此工作流程目標已無法使用。",
     "thinking": "思考中...",
@@ -189,6 +207,7 @@
     "updatingGraph": "代理正在更新圖表",
     "uploading": "上傳中",
     "viewAddedNodes": "檢視節點 | 檢視節點",
+    "viewingDifferentWorkflow": "您正在檢視與目標不同的工作流程。",
     "worked": "已完成",
     "workedForMinutes": "已處理 {minutes} 分 {seconds} 秒",
     "workedForSeconds": "已處理 {seconds} 秒",
@@ -722,6 +741,8 @@
         "selectAtLeastOne": "請至少選擇一個選項。"
       },
       "intro": "協助我們為您量身打造 ComfyUI 體驗。",
+      "navigationFailed": "問卷已儲存，但無法繼續新手導覽",
+      "navigationFailedDetail": "請再試一次。",
       "options": {
         "experience": {
           "new": "ComfyUI 新手",
@@ -762,6 +783,8 @@
       },
       "otherPlaceholder": "請告訴我們更多",
       "placeholder": "問卷問題佔位符",
+      "submitFailed": "無法提交問卷",
+      "submitFailedDetail": "您的回答尚未儲存。請再試一次。",
       "title": "雲端問卷"
     }
   },
@@ -2105,6 +2128,9 @@
     "updating": "正在更新 {id}",
     "upload": "上傳",
     "uploadAlreadyInProgress": "上傳已在進行中",
+    "uploadFailed": "上傳失敗：{reason}",
+    "uploadFileTooLarge": "檔案太大，無法上傳。",
+    "uploadFileTooLargeWithLimit": "檔案太大，無法上傳（上限：{limit} MB）。",
     "uploadTimedOut": "上傳逾時。請再試一次。",
     "usageHint": "使用提示",
     "use": "使用",
@@ -3548,6 +3574,12 @@
     "skip": "跳過",
     "stepLabel": "步驟 {current} / {total}"
   },
+  "onboardingReplay": {
+    "confirmMessage": "這會重新載入 ComfyUI，並重設此環境中可用的新手導覽步驟。您的工作流程不會受到影響。",
+    "confirmTitle": "重新播放新手導覽？",
+    "failedDetail": "無法重設您的新手導覽狀態。請再試一次。",
+    "failedSummary": "無法重新播放新手導覽"
+  },
   "openSharedWorkflow": {
     "author": "作者：",
     "copyAssetsAndOpen": "匯入資產並開啟工作流程",
@@ -4472,6 +4504,7 @@
       "memberTitle": "此工作區的訂閱已失效",
       "runLabel": "執行"
     },
+    "inactiveEnterpriseDescription": "您無法執行工作流程或新增成員。請聯絡業務團隊以恢復存取權。",
     "inactiveTeamDescription": "重新啟用您的團隊方案以新增更多成員並執行工作流程",
     "inactiveTeamPlanIncludes": "啟用方案包含 {plan} 的所有功能，並額外提供：",
     "inactiveTeamTitle": "團隊訂閱已停用",
@@ -4608,7 +4641,13 @@
         "title": "正在重新啟用您的訂閱",
         "titleAnnual": "正在重新啟用您的訂閱 — 今日收取全年費用",
         "unavailable": "目前無法確認此重新啟用 — 請重新選擇您的方案",
-        "upgradeBody": "您的 {plan} 原定於 {date} 結束。現在升級將重新啟用訂閱 — 今日將收取 {amount}，並於 {nextDate} 自動續訂，而非結束。"
+        "upgradeBody": "您的 {plan} 原定於 {date} 結束。現在升級將重新啟用訂閱 — 今日將收取 {amount}，並於 {nextDate} 自動續訂，而非結束。",
+        "withoutRenewalDate": {
+          "downgradeBody": "您的 {plan} 原定於 {date} 結束。切換至 {newPlan} 即可重新啟用方案——您今天不會被收費，但方案將改為按新價格自動續訂，而非結束。",
+          "durationChangeBody": "您的 {plan} 原定於 {date} 結束。切換為年繳即可重新啟用方案，並於今天收取全年費用 {amount}。之後方案將改為每年自動續訂，而非結束。",
+          "durationChangeBodyMonthly": "您的 {plan} 原定於 {date} 結束。切換為月繳即可重新啟用方案——您今天將被收取 {amount}，且方案將自動續訂而非結束。",
+          "upgradeBody": "您的 {plan} 原定於 {date} 結束。現在升級即可重新啟用方案——您今天將被收取 {amount}，且方案將自動續訂而非結束。"
+        }
       },
       "refillReplacesNote": "將取代您的月度補充。現有餘額將保留。",
       "renewsAt": "將於 {date} 以 {amount} 續訂。可隨時取消。",
@@ -4655,6 +4694,8 @@
     "resubscribeFailed": "重新啟用訂閱失敗",
     "resubscribeSuccess": "訂閱已重新啟用",
     "resubscribeTo": "恢復 {plan}",
+    "salesManagedCreditsEndedNote": "方案點數已隨您的訂閱結束。",
+    "salesManagedInactiveCreditsNote": "方案恢復後即可使用。",
     "salesManagedRunBlockedDetail": "此工作區的方案已不再啟用。請聯絡您的 Comfy 客戶經理以恢復存取權。",
     "salesManagedRunBlockedTitle": "方案未啟用",
     "saveYearly": "節省 20%",
@@ -4665,7 +4706,7 @@
     "subscribe": "訂閱",
     "subscribeFailed": "訂閱失敗",
     "subscribeForMore": "升級",
-    "subscribeNow": "立即訂閱",
+    "subscribeNow": "訂閱",
     "subscribeTo": "訂閱 {plan}",
     "subscribeToComfyCloud": "訂閱 Comfy Cloud",
     "subscribeToRun": "訂閱",
@@ -4821,6 +4862,7 @@
     "clearAllFilters": "清除所有篩選器",
     "error": {
       "loading": "無法開啟範本。請再試一次。",
+      "preparingMedia": "部分範例媒體無法準備。工作流程將會開啟；請為所有缺少的輸入選擇您自己的檔案。",
       "templateNotFound": "找不到範本 \"{templateName}\""
     },
     "filtersApplied": "已套用 {count} 個篩選器",
@@ -4837,6 +4879,7 @@
       "credits": "需使用點數執行",
       "title": "高級範本"
     },
+    "preparingMedia": "正在準備範例媒體…",
     "resultsCount": "顯示 {count} 個範本（共 {total} 個）",
     "runsOnFilter": "運行於",
     "runsOnSelected": "{count} 次運行於",
@@ -5140,6 +5183,8 @@
     "billingStatus": {
       "ending": {
         "body": "成員在此之前仍可完整存取。恢復訂閱以保留您的共用點數和席次。",
+        "enterpriseBody": "在此之前，成員仍可完整存取。請聯絡我們的業務團隊以延長方案。",
+        "enterpriseTitle": "您的 Enterprise 方案將於 {date} 結束",
         "reactivate": "恢復訂閱",
         "title": "您的團隊方案將於 {date} 結束"
       },
@@ -5253,6 +5298,7 @@
         "inviteDate": "邀請日期",
         "role": "角色"
       },
+      "contactSales": "聯絡業務團隊",
       "contactUs": "聯絡我們",
       "creditLimitDialog": {
         "description": "一旦達到上限，他們將無法再執行工作流程。",
@@ -5263,6 +5309,9 @@
         "update": "更新上限",
         "warning": "此使用者已花費 {credits} 點數。若將上限設於目前用量或更低，將會阻止其本月進一步運行。"
       },
+      "endedEnterpriseTitle": "您的 Enterprise 方案已結束",
+      "endedPlanTitle": "您的方案已結束",
+      "endedTeamTitle": "您的團隊方案已結束",
       "header": "成員",
       "membersCount": "{count} / {maxSeats} 位成員",
       "needMoreMembers": "需要更多成員？",
@@ -5270,6 +5319,7 @@
       "noMembers": "沒有成員",
       "pendingInvitesCount": "{count} 個待處理邀請",
       "reactivateTeam": "重新啟用團隊方案",
+      "resubscribe": "重新訂閱",
       "searchPlaceholder": "搜尋...",
       "tabs": {
         "active": "已啟用",
@@ -5277,6 +5327,8 @@
       },
       "upgradeToTeam": "升級為團隊方案",
       "upsellBanner": "若要新增團隊成員，請升級您的方案。",
+      "upsellBannerEnterpriseEnded": "請聯絡業務團隊以重新啟用您的 Enterprise 方案。",
+      "upsellBannerPlanEnded": "請聯絡業務團隊以重新啟用您的方案。",
       "upsellBannerReactivate": "若要新增更多團隊成員，請重新啟用您的方案。"
     },
     "menu": {
