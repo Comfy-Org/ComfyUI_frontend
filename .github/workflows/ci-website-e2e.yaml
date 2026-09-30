@@ -70,7 +70,7 @@ jobs:
     needs: website-build
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.61.1-noble
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
     timeout-minutes: 30
     permissions:
       contents: read
