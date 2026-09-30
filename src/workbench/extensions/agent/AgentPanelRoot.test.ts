@@ -3203,6 +3203,30 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToastStore().messagesToAdd).toEqual([])
   })
 
+  it('judges an asset by its stored filename rather than its display label', async () => {
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: 'renamed.usdz',
+          type: 'input',
+          attachment_ref: 'stored.png',
+          media_kind: 'image'
+        })
+    })
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'renamed.usdz'
+      )
+    ).toBeInTheDocument()
+    expect(useToastStore().messagesToAdd).toEqual([])
+  })
+
   it('attaches a dropped workflow json to the chat instead of the graph loader', async () => {
     // Dropping ONTO THE COMPOSER means "attach this", so the panel claims a
     // .json rather than leaving it for the loader (PM-1855). The canvas keeps

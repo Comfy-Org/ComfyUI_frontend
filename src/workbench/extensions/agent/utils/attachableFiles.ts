@@ -83,10 +83,9 @@ export function isAgentAttachable(file: File): boolean {
 /**
  * Three-valued because `undefined` from agentAttachCapability conflates two
  * different answers: "this type is refused" and "there is no extension to
- * judge". A caller holding several strings of unequal authority — an asset
- * card's display name, which a user can rename to anything, and the stored ref
- * the server will actually resolve — must refuse on a REJECTED verdict from
- * either, and only fall back when every one of them is UNKNOWN.
+ * judge". Callers must choose the authoritative identity before applying this
+ * verdict; a mutable display label must not override a stored filename or
+ * opaque server reference.
  */
 export type AgentAttachVerdict = 'accepted' | 'rejected' | 'unknown'
 
