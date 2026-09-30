@@ -58,9 +58,9 @@ describe('doc frame client: stale-schema reseed', () => {
   it('encodes a doc_reseed carrying the canvas', () => {
     const transport = new TestTransport()
     const client = new DocFrameClient(transport)
-    expect(client.reseed('wf-1', canvas)).toBe(true)
+    expect(client.reseed('wf-1', 7, canvas)).toBe(true)
     expect(transport.frames('doc_reseed')).toEqual([
-      { v: 1, workflow_id: 'wf-1', workflow: canvas }
+      { v: 1, workflow_id: 'wf-1', expected_seq: 7, workflow: canvas }
     ])
   })
 
@@ -118,7 +118,8 @@ describe('layout follower bridge: stale-schema reseed', () => {
       v: 1,
       workflow_id: 'wf-1',
       ok: false,
-      code: STALE_SCHEMA_RESEED_REQUIRED
+      code: STALE_SCHEMA_RESEED_REQUIRED,
+      expected_seq: 7
     })
     return { transport, bridge }
   }

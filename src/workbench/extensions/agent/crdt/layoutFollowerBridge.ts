@@ -151,6 +151,8 @@ export class LayoutFollowerBridge extends EventTarget {
    * whole canvas (ADR-CRDT-FOLLOWER-0025, 2026-09-26 amendment).
    */
   private reseedEligibleWorkflowId: string | null = null
+  /** Sequence bound to the current stale-schema refusal. */
+  private reseedExpectedSeq: number | null = null
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -270,9 +272,12 @@ export class LayoutFollowerBridge extends EventTarget {
    * @returns whether the frame left the transport.
    */
   reseed(workflowId: string, workflow: Record<string, unknown>): boolean {
+    const expectedSeq = this.reseedExpectedSeq
     const eligible =
       workflowId === this.reseedEligibleWorkflowId &&
-      workflowId === this.desiredWorkflowId
+      workflowId === this.desiredWorkflowId &&
+      expectedSeq !== null &&
+      expectedSeq > 0
     if (
       !holdsInvariant(
         eligible,
@@ -281,8 +286,11 @@ export class LayoutFollowerBridge extends EventTarget {
       )
     )
       return false
+    if (expectedSeq === null) return false
     this.reseedEligibleWorkflowId = null
-    if (!trySend(() => this.client.reseed(workflowId, workflow))) return false
+    this.reseedExpectedSeq = null
+    if (!trySend(() => this.client.reseed(workflowId, expectedSeq, workflow)))
+      return false
     this.reseedWorkflowId = workflowId
     return true
   }
@@ -467,6 +475,11 @@ export class LayoutFollowerBridge extends EventTarget {
       !subscribed.ok && subscribed.code === STALE_SCHEMA_RESEED_REQUIRED
         ? subscribed.workflowId
         : null
+    this.reseedExpectedSeq =
+      this.reseedEligibleWorkflowId !== null &&
+      subscribed.expectedSeq !== undefined
+        ? subscribed.expectedSeq
+        : null
     if (subscribed.ok) {
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
@@ -489,10 +502,14 @@ export class LayoutFollowerBridge extends EventTarget {
     this.reseedWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: result }))
     if (result.workflowId !== this.desiredWorkflowId) return
-    if (!result.ok && result.code !== 'conflict') return
+    if (!result.ok && result.code !== 'conflict') {
+      if (isRetryableReseedCode(result.code)) this.resubscribe()
+      return
+    }
     const reset: DocReset = {
       workflowId: result.workflowId,
       seq: result.seq ?? 0,
+      lineageSeq: result.seq ?? 0,
       actor: 'system:client-seed'
     }
     this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
@@ -505,4 +522,14 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }
+}
+
+/** Transient reseed refusals for which a fresh subscribe/reseed is safe. */
+export function isRetryableReseedCode(code: string | undefined): boolean {
+  return (
+    code === 'retry' ||
+    code === 'unavailable' ||
+    code === 'overloaded' ||
+    code === 'error'
+  )
 }

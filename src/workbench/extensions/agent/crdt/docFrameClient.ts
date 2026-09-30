@@ -36,6 +36,8 @@ export interface DocSubscribed {
   workflowId: string
   ok: boolean
   seq?: number
+  /** Exact stored sequence a stale-schema refusal authorizes for reseed. */
+  expectedSeq?: number
   code?: string
   message?: string
 }
@@ -122,6 +124,7 @@ interface WireData {
   v?: unknown
   workflow_id?: unknown
   seq?: unknown
+  expected_seq?: unknown
   update_b64?: unknown
   actor?: unknown
   op_ids?: unknown
@@ -346,6 +349,9 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         workflowId: data.workflow_id,
         ok: data.ok,
         ...(isSequence(data.seq) && { seq: data.seq }),
+        ...(isSequence(data.expected_seq) && {
+          expectedSeq: data.expected_seq
+        }),
         ...(code !== undefined && { code }),
         ...(message !== undefined && { message })
       }
@@ -481,10 +487,15 @@ export class DocFrameClient extends EventTarget {
    *
    * @returns whether the reseed frame actually left the transport.
    */
-  reseed(workflowId: string, workflow: Record<string, unknown>): boolean {
+  reseed(
+    workflowId: string,
+    expectedSeq: number,
+    workflow: Record<string, unknown>
+  ): boolean {
     return this.send('doc_reseed', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
+      expected_seq: expectedSeq,
       workflow
     })
   }
