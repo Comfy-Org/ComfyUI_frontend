@@ -7,6 +7,7 @@ import { computed, defineComponent, nextTick, ref } from 'vue'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
+import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
@@ -71,6 +72,7 @@ function renderPanel() {
 
 describe('DockedAgentPanel', () => {
   beforeEach(() => {
+    window.innerWidth = 1024
     localStorage.clear()
     fetchApi.mockReset()
     fetchApi.mockResolvedValue(jsonResponse(404, { error: 'not found' }))
@@ -100,6 +102,25 @@ describe('DockedAgentPanel', () => {
         timeout: 5000
       })
     ).toBeTruthy()
+  })
+
+  it('keeps the panel usable as an overlay when the dock cannot fit', async () => {
+    const store = openPanel()
+    renderPanel()
+
+    const root = await screen.findByTestId('agent-panel-root-stub')
+    window.innerWidth = 400
+    window.dispatchEvent(new Event('resize'))
+    await nextTick()
+
+    const container = screen.getByTestId('docked-agent-panel')
+    expect(store.isVisible).toBe(true)
+    expect(container.style.width).toBe('400px')
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe('0px')
+    expect(screen.getByTestId('agent-panel-root-stub')).toBe(root)
+    expect(rootLiveness.maxLive).toBe(1)
   })
 
   it('restores the server run mode when the panel initializes', async () => {
@@ -178,6 +199,31 @@ describe('DockedAgentPanel', () => {
     await user.pointer({ coords: { x: 800, y: 10 } })
     expect(store.width).toBe(420)
   })
+
+  it.for(['pointerup', 'pointercancel'] as const)(
+    'stops resizing on document %s',
+    async (terminationEvent) => {
+      window.innerWidth = 1920
+      const store = openPanel()
+      const user = userEvent.setup()
+      renderPanel()
+
+      const handle = screen.getByTestId('agent-panel-resize-handle')
+      handle.setPointerCapture = () => {}
+      await user.pointer({
+        keys: '[MouseLeft>]',
+        target: handle,
+        coords: { x: 800, y: 10 }
+      })
+      await user.pointer({ coords: { x: 750, y: 10 } })
+      expect(store.width).toBe(470)
+
+      await fireEvent(document, new PointerEvent(terminationEvent))
+      await user.pointer({ coords: { x: 700, y: 10 } })
+
+      expect(store.width).toBe(470)
+    }
+  )
 
   it('settles to one live root and the live turn survives both mode switches through rehydration', async () => {
     openPanel()
