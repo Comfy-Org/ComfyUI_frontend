@@ -554,7 +554,6 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       }
     ]
     selected.value = id
-    takeAllowance.record()
     const controller = new AbortController()
     runs.set(id, controller)
     const { signal } = controller
@@ -574,7 +573,8 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
           seed: seed.value ?? Math.floor(Math.random() * 2 ** 32)
         }),
         (phase) => updateTake(id, { phase }),
-        signal
+        signal,
+        () => takeAllowance.record()
       )
       const optional = (part: string) =>
         downloadOutput(transport, job, part, signal).catch(() => undefined)

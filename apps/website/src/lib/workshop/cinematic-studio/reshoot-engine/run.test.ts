@@ -83,15 +83,38 @@ describe('runJob', () => {
     expect(transport.submit).toHaveBeenCalledTimes(60)
   })
 
-  it('gives up on any other refusal at once', async () => {
+  it('gives up on any other refusal at once, never admitted', async () => {
     const transport = fakeTransport()
     vi.mocked(transport.submit).mockRejectedValue(
       new ReshootError('insufficient_credits')
     )
+    const admitted = vi.fn()
     await expect(
-      runJob(transport, {}, () => {}, new AbortController().signal)
+      runJob(transport, {}, () => {}, new AbortController().signal, admitted)
     ).rejects.toMatchObject({ code: 'insufficient_credits' })
     expect(transport.submit).toHaveBeenCalledTimes(1)
+    expect(admitted).not.toHaveBeenCalled()
+  })
+
+  it('reports admission once, when the server accepts the job', async () => {
+    const transport = fakeTransport()
+    vi.mocked(transport.submit).mockRejectedValueOnce(
+      new ReshootError('deployment_not_ready')
+    )
+    const admitted = vi.fn()
+    const run = runJob(
+      transport,
+      {},
+      () => {},
+      new AbortController().signal,
+      admitted
+    )
+
+    await vi.advanceTimersByTimeAsync(9_999)
+    expect(admitted).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    await run
+    expect(admitted).toHaveBeenCalledOnce()
   })
 
   it('polls until the job succeeds and reads nothing before that', async () => {

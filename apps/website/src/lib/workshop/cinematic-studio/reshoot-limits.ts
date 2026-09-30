@@ -6,7 +6,7 @@
  */
 export const RESHOOT_LIMITS = {
   generate: { runs: 3, windowMs: 60 * 60 * 1000 },
-  depth: { runs: 20, windowMs: 60 * 60 * 1000 }
+  depth: { runs: 3, windowMs: 60 * 60 * 1000 }
 } as const
 
 export type ReshootLimitKind = keyof typeof RESHOOT_LIMITS

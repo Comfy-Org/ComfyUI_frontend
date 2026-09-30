@@ -8,8 +8,10 @@ import {
   fakeTransport,
   signIn
 } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
+import { ReshootError } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { reshootTransport } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/transport-config'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import { RESHOOT_LIMITS } from '../../../../lib/workshop/cinematic-studio/reshoot-limits'
 import ReshootStudio from './ReshootStudio.vue'
 
 vi.mock(import('../../../../config/workshop-session-state'))
@@ -200,10 +202,29 @@ describe('Re-shoot on one screen', () => {
     expect(screen.getByTestId('reshoot-action')).toBeDisabled()
   })
 
+  it('does not count a take the server refused', async () => {
+    const transport = fakeTransport()
+    vi.mocked(reshootTransport).mockReturnValue(transport)
+    const user = setup()
+    await pickExample(user)
+    vi.mocked(transport.submit).mockRejectedValueOnce(
+      new ReshootError('insufficient_credits')
+    )
+
+    await user.click(screen.getByTestId('reshoot-action'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(screen.getByTestId('reshoot-limit')).toHaveTextContent(
+      '3 of 3 takes left this hour'
+    )
+  })
+
   it('names the hourly ceiling when too many clips were analyzed', async () => {
     localStorage.setItem(
       'comfy.reshoot.runs.depth.user-1',
-      JSON.stringify(Array.from({ length: 20 }, () => Date.now()))
+      JSON.stringify(
+        Array.from({ length: RESHOOT_LIMITS.depth.runs }, () => Date.now())
+      )
     )
     const user = setup()
     await pickExample(user)

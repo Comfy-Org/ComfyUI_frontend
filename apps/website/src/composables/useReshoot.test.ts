@@ -16,6 +16,7 @@ import {
 import type { ReshootTransport } from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { ReshootError } from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { reshootTransport } from '../lib/workshop/cinematic-studio/reshoot-engine/transport-config'
+import { RESHOOT_LIMITS } from '../lib/workshop/cinematic-studio/reshoot-limits'
 import { useReshoot } from './useReshoot'
 
 vi.mock(import('../config/workshop-session-state'))
@@ -57,6 +58,7 @@ async function readScene(reshoot: ReturnType<typeof useReshoot>) {
 }
 
 beforeEach(() => {
+  localStorage.clear()
   vi.useFakeTimers()
   transport = fakeTransport()
   vi.mocked(reshootTransport).mockReturnValue(transport)
@@ -190,6 +192,7 @@ describe('useReshoot', () => {
       'source',
       '4:3'
     ] as const) {
+      await vi.advanceTimersByTimeAsync(RESHOOT_LIMITS.depth.windowMs)
       reshoot.aspect.value = aspect
       await vi.advanceTimersByTimeAsync(2_500)
     }
