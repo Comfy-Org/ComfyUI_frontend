@@ -47,6 +47,47 @@ describe('subscriptionCheckoutTracker', () => {
     }
   )
 
+  it.for([
+    {
+      name: 'a reported start survives',
+      stored: { start_reported: true },
+      startReported: true
+    },
+    {
+      name: 'an attempt stored without it still parses',
+      stored: {},
+      startReported: undefined
+    },
+    {
+      name: 'a value other than true is dropped',
+      stored: { start_reported: 'true' },
+      startReported: undefined
+    }
+  ])(
+    'round-trips the start marker through storage: $name',
+    ({ stored, startReported }) => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-marker',
+          started_at_ms: Date.now(),
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          ...stored
+        })
+      )
+
+      const attempt = getPendingSubscriptionCheckoutAttempt()
+      const consumed =
+        consumePendingSubscriptionCheckoutSuccess(activeProStatus)
+
+      expect(attempt).toMatchObject({ attempt_id: 'attempt-marker' })
+      expect(attempt?.start_reported).toBe(startReported)
+      expect(consumed?.start_reported).toBe(startReported)
+    }
+  )
+
   it('omits payment_intent_source when the attempt had none', () => {
     recordPendingSubscriptionCheckoutAttempt({
       tier: 'pro',
