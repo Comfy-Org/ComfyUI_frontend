@@ -49,11 +49,11 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
-      pull-requests: read
 
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.event.pull_request.base.ref }}
           persist-credentials: false
 
       - name: Create tag for cloud backport

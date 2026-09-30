@@ -106,11 +106,17 @@ describe('cloud backport tag workflow', () => {
   })
 
   it('accepts existing same, different, and annotated tags without moving them', () => {
-    for (const scenario of ['same', 'different', 'annotated']) {
+    for (const scenario of ['same', 'annotated']) {
       const result = runTagScript(scenario)
       expect(result.status).toBe(0)
-      expect(result.stdout).toContain('already exists')
+      expect(result.stdout).toContain('already exists at')
+      expect(result.stdout).toContain('skipping')
     }
+
+    const different = runTagScript('different')
+    expect(different.status).toBe(0)
+    expect(different.stdout).toContain('first release marker is preserved')
+    expect(different.stdout).not.toContain('refs/tags/cloud/v1.54.16')
   })
 
   it('creates a missing lightweight tag through the refs API', () => {
