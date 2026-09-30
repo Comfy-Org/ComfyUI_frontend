@@ -494,7 +494,10 @@ useExtensionService().registerExtension({
             if (attempt >= MAX_STALE_CAPTURE_RETRIES) {
               reportError(
                 new Error('Load3D scene did not stabilize during capture'),
-                { errorType: 'error_capturing_load3d_scene_unstable' }
+                {
+                  surface: 'assets',
+                  errorType: 'error_capturing_load3d_scene_unstable'
+                }
               )
               return null
             }

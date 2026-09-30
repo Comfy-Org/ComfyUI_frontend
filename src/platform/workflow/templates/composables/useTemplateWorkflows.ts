@@ -144,7 +144,10 @@ export function useTemplateWorkflows() {
   }
 
   function reportTemplateError(error: unknown) {
-    reportError(error, { errorType: 'error_loading_template' })
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'error_loading_template'
+    })
     showTemplateError(t('templateWorkflows.error.loading'))
   }
 
@@ -198,6 +201,7 @@ export function useTemplateWorkflows() {
       reportError(
         new AggregateError(errors, 'Template sample preparation failed'),
         {
+          surface: 'graph',
           errorType: 'error_loading_template_media'
         }
       )

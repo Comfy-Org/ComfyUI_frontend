@@ -2007,6 +2007,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
     await waitFor(() =>
       expect(reportError).toHaveBeenCalledWith(refreshError, {
+        surface: 'agent',
         errorType: 'error_refreshing_agent_billing_status'
       })
     )
@@ -3814,6 +3815,7 @@ describe('AgentPanelRoot attach flow', () => {
       })
     )
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_attachment_upload_failed',
       tags: {
         failure_kind: 'caught_unexpected',

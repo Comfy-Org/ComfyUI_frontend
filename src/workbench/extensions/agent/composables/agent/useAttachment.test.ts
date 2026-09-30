@@ -395,6 +395,7 @@ describe('useAttachment', () => {
     expect(registry.chips).toEqual([])
     expect(onError).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_attachment_upload_failed',
       tags: {
         failure_kind: 'caught_unexpected',
@@ -660,6 +661,7 @@ describe('useAttachment', () => {
       expect(upload).not.toHaveBeenCalled()
       expect(onError).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
         errorType: 'agent_attachment_fetch_failed',
         tags: expect.objectContaining({
           feature_area: 'agent',

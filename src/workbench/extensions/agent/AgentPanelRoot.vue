@@ -986,6 +986,7 @@ watch(
       if (completedTurn && billingType.value === 'workspace') {
         void refreshBillingStatus().catch((error: unknown) => {
           reportError(error, {
+            surface: 'agent',
             errorType: 'error_refreshing_agent_billing_status'
           })
         })
@@ -1111,7 +1112,10 @@ async function onAgentActiveTab(
   } catch (error) {
     if (stale()) return false
     bindWorkflow(data.workflow_id)
-    reportError(error, { errorType: 'agent_workflow_open_failed' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_workflow_open_failed'
+    })
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
@@ -1293,7 +1297,10 @@ async function refreshHistory(): Promise<void> {
   try {
     history.replaceAll((await listThreads()).map(toChatSession))
   } catch (error) {
-    reportError(error, { errorType: 'agent_thread_list_load_failed' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed'
+    })
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)

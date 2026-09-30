@@ -679,6 +679,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.answerAsk('turn-1:call-1', 'run')
 
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
       errorType: 'agent_ask_answer_failed'
     })
     expect(session.notices.value).toEqual([
@@ -3242,6 +3243,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     await session.sendMessage('make me a cat')
 
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
       errorType: 'agent_send_message_failed'
     })
   })

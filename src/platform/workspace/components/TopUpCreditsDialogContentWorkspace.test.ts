@@ -483,6 +483,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     await waitFor(() =>
       expect(mockReportError).toHaveBeenCalledWith(failure, {
+        surface: 'billing',
         errorType: 'billing_portal_open_failure'
       })
     )
