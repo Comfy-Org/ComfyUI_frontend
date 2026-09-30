@@ -9,23 +9,15 @@ import LiveTerminal from './LiveTerminal.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-// Command surface from comfy-cli's build + deploy stack (PRs #801-805):
-// `comfy build init`, `build push --release`, whose `--target` decides
-// whether `deploy up` finds a deployable artifact, and `deploy up`. All
-// three default to the current directory.
-const deployTranscript = [
-  '$ comfy build init',
-  '✔ Scanned this ComfyUI install — custom nodes, models, pinned deps',
-  '$ comfy build push --release --target linux/nvidia',
-  '✔ Build released',
-  '$ comfy deploy up',
-  '✔ Endpoint live → https://your-build.run.comfy.app'
-]
-const deployCommands = deployTranscript
-  .filter((line) => line.startsWith('$ '))
-  .map((line) => line.slice(2))
-  .join('\n')
-const { copy, copied } = useClipboard({ source: deployCommands, legacy: true })
+// The prompt to paste into a coding agent; the copy button puts it on the
+// clipboard verbatim.
+const deployPrompt = `Install comfy-cli and read its build skill:
+
+\`pip install -U comfy-cli\`, then \`comfy skills show comfy-build\`.
+
+It covers packaging a local ComfyUI install — models, custom nodes, dependency pins — into a build on platform.comfy.org and cutting a release. \`comfy skills show comfy-deploy\` covers running that release as a serverless endpoint.`
+const deployTranscript = deployPrompt.split('\n')
+const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
 </script>
 
 <template>
