@@ -303,14 +303,17 @@ import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
 import type {
+  BillingOperationTerminal,
   CheckoutJourneyPhaseEvent,
   PaymentIntentSource
 } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
+import { UncreditedTopupResponse } from '@/platform/workspace/billing/sdk/topupOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
@@ -620,21 +623,10 @@ async function handleBuy() {
     const response = await topup(amountCents)
     if (!response) {
       if (isCurrentAttempt()) paymentSubmitted.value = false
-      telemetry?.trackBillingEvent({
-        operation: 'topup',
+      reportTerminal(attemptStartedAt, {
         stage: 'failed',
         outcome: 'failure',
-        payment_intent_source: source,
-        failure_category: 'unknown',
-        duration_ms: Date.now() - attemptStartedAt
-      })
-      telemetry?.trackBillingEvent({
-        operation: 'operation',
-        stage: 'failed',
-        outcome: 'failure',
-        operation_type: 'topup',
-        failure_category: 'unknown',
-        duration_ms: Date.now() - attemptStartedAt
+        failure_category: 'unknown'
       })
       return
     }
@@ -657,28 +649,20 @@ async function handleBuy() {
       }
     }
 
+    const terminal =
+      response instanceof UncreditedTopupResponse
+        ? response.terminal
+        : RESPONSE_TERMINALS[response.status]
+    if (terminal) {
+      reportTerminal(attemptStartedAt, terminal, response.billing_op_id)
+    }
+
     if (response.status === 'completed') {
       if (
         getActiveCheckoutJourney()?.billing_op_id === response.billing_op_id
       ) {
         clearCheckoutJourney()
       }
-      telemetry?.trackBillingEvent({
-        operation: 'topup',
-        stage: 'succeeded',
-        outcome: 'success',
-        billing_op_id: response.billing_op_id,
-        payment_intent_source: source,
-        duration_ms: Date.now() - attemptStartedAt
-      })
-      telemetry?.trackBillingEvent({
-        operation: 'operation',
-        stage: 'succeeded',
-        outcome: 'success',
-        operation_type: 'topup',
-        billing_op_id: response.billing_op_id,
-        duration_ms: Date.now() - attemptStartedAt
-      })
       toast.add({
         severity: 'success',
         summary: t('credits.topUp.purchaseSuccess'),
@@ -705,26 +689,7 @@ async function handleBuy() {
           )
         })
     } else {
-      // Synchronous 'failed' here means the charge was declined, not rejected pre-attempt.
       if (isCurrentAttempt()) paymentSubmitted.value = false
-      telemetry?.trackBillingEvent({
-        operation: 'topup',
-        stage: 'failed',
-        outcome: 'failure',
-        billing_op_id: response.billing_op_id,
-        payment_intent_source: source,
-        failure_category: 'provider_decline',
-        duration_ms: Date.now() - attemptStartedAt
-      })
-      telemetry?.trackBillingEvent({
-        operation: 'operation',
-        stage: 'failed',
-        outcome: 'failure',
-        operation_type: 'topup',
-        billing_op_id: response.billing_op_id,
-        failure_category: 'provider_decline',
-        duration_ms: Date.now() - attemptStartedAt
-      })
       toast.add({
         severity: 'error',
         summary: t('credits.topUp.purchaseError'),
@@ -747,30 +712,74 @@ function reportPurchaseError(
   if (currentAttempt) paymentSubmitted.value = false
   console.error('Purchase failed', ...(error === undefined ? [] : [error]))
 
-  telemetry?.trackBillingEvent({
-    operation: 'topup',
-    stage: 'failed',
-    outcome: 'failure',
-    ...(billingOpId ? { billing_op_id: billingOpId } : {}),
-    payment_intent_source: source,
-    failure_category:
-      error === undefined ? 'unknown' : categorizeBillingApiError(error),
-    duration_ms: Date.now() - attemptStartedAt
-  })
-  telemetry?.trackBillingEvent({
-    operation: 'operation',
-    stage: 'failed',
-    outcome: 'failure',
-    operation_type: 'topup',
-    ...(billingOpId ? { billing_op_id: billingOpId } : {}),
-    failure_category:
-      error === undefined ? 'unknown' : categorizeBillingApiError(error),
-    duration_ms: Date.now() - attemptStartedAt
-  })
+  reportTerminal(
+    attemptStartedAt,
+    {
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category:
+        error === undefined ? 'unknown' : categorizeBillingApiError(error)
+    },
+    billingOpId
+  )
   toast.add({
     severity: 'error',
     summary: t('credits.topUp.purchaseError'),
     detail: purchaseErrorDetail(error)
+  })
+}
+
+/**
+ * The terminal a response's status implies. A synchronous `failed` is a
+ * declined charge, not a pre-attempt rejection; a `pending` one is the
+ * poller's to report once it settles.
+ */
+const RESPONSE_TERMINALS: Record<
+  CreateTopupResponse['status'],
+  BillingOperationTerminal | undefined
+> = {
+  completed: { stage: 'succeeded', outcome: 'success' },
+  failed: {
+    stage: 'failed',
+    outcome: 'failure',
+    failure_category: 'provider_decline'
+  },
+  pending: undefined
+}
+
+function reportTerminal(
+  attemptStartedAt: number,
+  terminal: BillingOperationTerminal,
+  billingOpId?: string
+) {
+  const attempt = {
+    ...(billingOpId ? { billing_op_id: billingOpId } : {}),
+    duration_ms: Date.now() - attemptStartedAt
+  }
+  // No timeout stage on the top-up funnel; the poller reports it as failed too.
+  telemetry?.trackBillingEvent(
+    terminal.stage === 'succeeded'
+      ? {
+          operation: 'topup',
+          stage: 'succeeded',
+          outcome: 'success',
+          payment_intent_source: source,
+          ...attempt
+        }
+      : {
+          operation: 'topup',
+          stage: 'failed',
+          outcome: 'failure',
+          payment_intent_source: source,
+          failure_category: terminal.failure_category,
+          ...attempt
+        }
+  )
+  telemetry?.trackBillingEvent({
+    operation: 'operation',
+    operation_type: 'topup',
+    ...terminal,
+    ...attempt
   })
 }
 
