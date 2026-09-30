@@ -142,6 +142,19 @@ export const RUN_APPROVAL_RESOLVED_EVENT: AgentWsEvent = {
  * so row id and turn id coincide where the real server mints them separately.
  * That keeps these specs on the turn-lock behaviour they exist for.
  */
+interface Deferred {
+  promise: Promise<void>
+  resolve: () => void
+}
+
+function deferred(): Deferred {
+  let resolve!: () => void
+  const promise = new Promise<void>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
+}
+
 class TurnLockServer {
   private streaming = false
   private prompt = ''
@@ -199,17 +212,14 @@ class TurnLockServer {
   }
 
   holdNextTranscript(): void {
-    let markRequested: (() => void) | undefined
-    let release: (() => void) | undefined
-    const requested = new Promise<void>((resolve) => {
-      markRequested = resolve
-    })
-    const released = new Promise<void>((resolve) => {
-      release = resolve
-    })
-    if (markRequested === undefined || release === undefined)
-      throw new Error('Transcript gate did not initialize')
-    this.heldTranscript = { requested, markRequested, released, release }
+    const requested = deferred()
+    const released = deferred()
+    this.heldTranscript = {
+      requested: requested.promise,
+      markRequested: requested.resolve,
+      released: released.promise,
+      release: released.resolve
+    }
   }
 
   async waitForHeldTranscript(): Promise<void> {

@@ -133,6 +133,15 @@ const RECONCILE_TIMEOUT_MS = 5000
 interface HydrationBuffer {
   threadId: string
   events: AgentWsEvent[]
+  /**
+   * Whether this buffer's own GET is still in flight. Both mailbox bounds
+   * respect it: a queue whose hydrate has not come back is the one case where
+   * discarding it strands a turn outright, because the transcript that lands
+   * afterwards still says `streaming` and nothing is left to settle it. Set
+   * for exactly the request's lifetime -- `drainHydration` clears it from the
+   * hydrate's `finally`, so an error path releases it too.
+   */
+  pending: boolean
   retirement?: ReturnType<typeof setTimeout>
   mailboxRetirement?: ReturnType<typeof setTimeout>
 }
@@ -474,7 +483,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // Moved, not copied: a superseded hydrate still drains from its own
       // `finally`, and a frame left behind there is replayed a second time
       // into whatever is active by then.
-      events: superseded?.events.splice(0) ?? []
+      events: superseded?.events.splice(0) ?? [],
+      pending: true
     }
     hydrationBuffers.set(threadId, buffer)
     buffer.retirement = setTimeout(
@@ -490,12 +500,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     hydrationMailboxes.delete(buffer.threadId)
     hydrationMailboxes.set(buffer.threadId, buffer)
     buffer.mailboxRetirement = setTimeout(() => {
+      if (buffer.pending) return
       if (hydrationMailboxes.get(buffer.threadId) === buffer)
         hydrationMailboxes.delete(buffer.threadId)
       buffer.events.length = 0
     }, HYDRATION_MAILBOX_MS)
     while (hydrationMailboxes.size > MAX_HYDRATION_MAILBOXES) {
-      const oldest = hydrationMailboxes.entries().next().value
+      const oldest = [...hydrationMailboxes].find(([, held]) => !held.pending)
       if (oldest === undefined) break
       const [threadId, retired] = oldest
       hydrationMailboxes.delete(threadId)
@@ -527,6 +538,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * live hydrate's frames with nowhere to be held.
    */
   function drainHydration(buffer: HydrationBuffer): void {
+    buffer.pending = false
     if (stopped) return
     if (buffer.retirement !== undefined) clearTimeout(buffer.retirement)
     if (buffer.mailboxRetirement !== undefined)

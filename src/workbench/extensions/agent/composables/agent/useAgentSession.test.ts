@@ -721,6 +721,48 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('(b4n) captures a terminal frame past the mailbox TTL while hydration is pending', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      let deliverHistory: ((history: AgentMessages) => void) | undefined
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          () =>
+            new Promise<AgentMessages>((resolve) => {
+              deliverHistory = resolve
+            })
+        )
+      })
+      const { source, emit } = fakeEvents()
+      conversation.setThreadId('th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+
+      // Past the handoff into the mailbox, then past the mailbox's own TTL --
+      // the GET has still not come back, so there is nothing else left to
+      // settle the turn the transcript is about to report as streaming.
+      await vi.advanceTimersByTimeAsync(30_001)
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
+      emit(done('msg-1'))
+      assert(deliverHistory !== undefined)
+      deliverHistory([
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBeNull())
+      expect(session.isStreaming.value).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('(b4k) retires stopped thread A while its successor hydrates thread B', async () => {
     vi.useFakeTimers()
     try {
