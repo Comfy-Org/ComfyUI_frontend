@@ -816,7 +816,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     error: ZodError
   ): void {
     const turnId = malformedEventTurnId(raw)
-    let reportedTurnId =
+    const reportedTurnId =
       turnId !== undefined && conversationStore.hasPendingTurn(turnId)
         ? turnId
         : conversationStore.activeTurnId
@@ -826,8 +826,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         conversationStore.abortActiveTurn()
         uiTreatment = 'error_overlay'
       } else {
-        reportedTurnId =
-          conversationStore.settleBackgroundTurn(turnId) ?? reportedTurnId
+        conversationStore.settleBackgroundTurn(turnId)
       }
     }
     if (
