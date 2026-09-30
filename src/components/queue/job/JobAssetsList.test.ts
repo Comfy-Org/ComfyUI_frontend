@@ -197,12 +197,15 @@ describe('JobAssetsList', () => {
     expect(list).toHaveAttribute('tabindex', '-1')
   })
 
-  it('leaves an empty job list out of the tab order', async () => {
-    const { user } = renderJobAssetsList({ displayedJobGroups: [] })
+  it('leaves a list with no jobs out of the tab order and landmarks', async () => {
+    const { user } = renderJobAssetsList({ jobs: [] })
 
     await user.tab()
 
-    expect(screen.getByRole('region', { name: 'Jobs' })).not.toHaveFocus()
+    const list = screen.getByTestId('job-assets-list')
+    expect(list).not.toHaveFocus()
+    expect(list).toHaveAttribute('tabindex', '-1')
+    expect(screen.queryByRole('region')).not.toBeInTheDocument()
   })
 
   it('forwards parent attrs to the scroll container', () => {

@@ -1,9 +1,9 @@
 <template>
   <div
     ref="scrollContainer"
-    :tabindex="flatRows.length ? 0 : -1"
-    role="region"
-    :aria-label="$t('g.jobs')"
+    :tabindex="hasJobRows ? 0 : -1"
+    :role="hasJobRows ? 'region' : undefined"
+    :aria-label="hasJobRows ? $t('g.jobs') : undefined"
     v-bind="$attrs"
     data-testid="job-assets-list"
     class="h-full overflow-y-auto pb-4"
@@ -153,6 +153,9 @@ const hideTimer = ref<number | null>(null)
 const hideTimerJobId = ref<string | null>(null)
 const showTimer = ref<number | null>(null)
 const flatRows = computed(() => buildVirtualJobRows(displayedJobGroups))
+const hasJobRows = computed(() =>
+  flatRows.value.some((row) => row.type === 'job')
+)
 const virtualizer = useVirtualizer({
   get count(): number {
     return flatRows.value.length
