@@ -9081,8 +9081,8 @@ Enterprise`
     'zh-CN': '“比我们自己从头拼接快 10 倍。”'
   },
   'platform.customers.quoteAttribution': {
-    en: 'Design partner, private beta',
-    'zh-CN': '私测阶段设计合作伙伴'
+    en: 'Design partner',
+    'zh-CN': '设计合作伙伴'
   },
   'platform.customers.solo.title': {
     en: 'Solo & indie',
@@ -9230,19 +9230,6 @@ Enterprise`
     'zh-CN':
       'Comfy Router 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。'
   },
-  'platform.faq.betaBanner': {
-    en: 'Limited beta: builds can take up to 3 hours and may fail. You get a direct support line while we harden the pipeline.',
-    'zh-CN':
-      '有限测试阶段：构建最长可能需要 3 小时，并且可能失败。在我们加固管线期间，你将获得直达的支持渠道。'
-  },
-  'platform.faq.betaBannerLead': {
-    en: 'Limited beta: builds can take up to 3 hours and may fail.',
-    'zh-CN': '有限测试阶段：构建最长可能需要 3 小时，并且可能失败。'
-  },
-  'platform.faq.betaBannerSupport': {
-    en: 'You get a direct support line while we harden the pipeline.',
-    'zh-CN': '在我们加固管线期间，你将获得直达的支持渠道。'
-  },
   'platform.faq.heading': {
     en: 'Frequently asked questions',
     'zh-CN': '常见问题'
@@ -9325,21 +9312,22 @@ Enterprise`
       '任何 Comfy 订阅都包含平台和 Builder。只有与队友共享构建才需要企业版计划；模型与合作伙伴节点的治理功能仅限 Enterprise。'
   },
   'platform.faq.10.q': {
-    en: 'What are the limits during beta?',
-    'zh-CN': '测试期间有哪些限制？'
+    en: 'What are the limits on each plan?',
+    'zh-CN': '各计划有哪些限制？'
   },
   'platform.faq.10.a': {
-    en: 'During beta, the default limits are 10 concurrent workers, 10 builds, 3 deployments, and 500 GB of models per deployment. All limits can be raised on request.',
+    en: 'Deployments, build releases, and max worker concurrency per deployment: Standard 2 / 5 / 2, Creator 2 / 5 / 2, Pro 5 / 10 / 10, Team 20 / 40 / 20. Enterprise limits are set with our sales team.',
     'zh-CN':
-      '测试期间：10 个并发工作节点、10 个构建、3 个部署，每个部署最多 500 GB 模型——均可申请提高。'
+      '部署数、构建发布数、每个部署的最大工作节点并发数：Standard 2 / 5 / 2，Creator 2 / 5 / 2，Pro 5 / 10 / 10，Team 20 / 40 / 20。Enterprise 的限制请与销售团队商定。'
   },
   'platform.faq.11.q': {
-    en: 'When is general availability?',
-    'zh-CN': '什么时候正式发布？'
+    en: 'Is Comfy API generally available?',
+    'zh-CN': 'Comfy API 已正式发布了吗？'
   },
   'platform.faq.11.a': {
-    en: 'Targeting the end of September 2026.',
-    'zh-CN': '目标是 2026 年 9 月底。'
+    en: 'Yes. Comfy API is generally available as of September 30, 2026. Deployments created during the limited beta keep working as normal.',
+    'zh-CN':
+      '是的。Comfy API 已于 2026 年 9 月 30 日正式发布。有限测试期间创建的部署会照常运行。'
   },
   // ── Builder subpage ───────────────────────────────────────────
   'platform.builderProblem.heading': {
