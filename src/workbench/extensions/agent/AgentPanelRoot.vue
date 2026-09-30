@@ -987,10 +987,17 @@ const { submit: onSend } = useAgentDraftSubmission({
     replace: replaceSelectionTags,
     exit: exitNodeSelectionMode
   },
-  send: (text, attachments, nodes, references) => {
+  send: (text, attachments, nodes, references, meta) => {
+    const originContext = targetWorkflowTurnContext()
     useTelemetry()?.trackAgentMessageSent({
       attachment_count: attachments.length,
-      node_tag_count: nodes.length
+      node_tag_count: nodes.length,
+      thread_id: threadId.value,
+      workflow_id: originContext?.id ?? null,
+      client_message_id: meta.clientMessageId,
+      input_method: meta.inputMethod,
+      starter_prompt_id: meta.starterPrompt?.id ?? null,
+      starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
     })
     const selectionWorkflow = selectedTarget.value
     return sendMessage(text, attachments, nodes, references, () =>
