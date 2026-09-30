@@ -8,6 +8,7 @@ import type {
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentErrorMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
@@ -443,6 +444,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.dispatch((provider) => provider.trackAgentWorkflowApplied?.(metadata))
+  }
+
+  trackAgentError(metadata: AgentErrorMetadata): void {
+    this.dispatch((provider) => provider.trackAgentError?.(metadata))
   }
 
   trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {
