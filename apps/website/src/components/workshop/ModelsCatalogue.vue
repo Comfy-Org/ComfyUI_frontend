@@ -9,7 +9,7 @@ import type {
 } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import WorkshopHero from './WorkshopHero.vue'
+import SplitReveal from './SplitReveal.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
@@ -127,13 +127,15 @@ watch(
 </script>
 
 <template>
-  <WorkshopHero
+  <div
     v-if="!inSection"
-    :eyebrow="t('workshop.catalogue.eyebrow', locale)"
-    :heading="t('workshop.hero.heading', locale)"
-    :subtitle="t(subtitleKey, locale)"
-    :subtitle-space="availableTabs.map((tab) => t(SUBTITLE_KEY[tab], locale))"
-  />
+    class="relative isolate -mx-6 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 overflow-hidden px-6 pb-2 max-sm:mb-4 max-sm:pb-0 lg:-mx-8 lg:px-8 sm:short:pb-0"
+    data-testid="workshop-hero"
+  >
+    <p class="text-lg text-primary-comfy-canvas/70">
+      <SplitReveal :text="t(subtitleKey, locale)" :delay="260" :stagger="50" />
+    </p>
+  </div>
   <WorkshopModelsGrid
     v-if="activeTab === 'models'"
     v-model:browse-all="browseAll"

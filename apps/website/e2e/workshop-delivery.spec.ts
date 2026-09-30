@@ -6,6 +6,7 @@ import { z } from 'zod'
 import availability from '../src/data/workshop-model-availability.json' with { type: 'json' }
 import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
 import { test } from './fixtures/modelsAccount'
+import { hubModelHref } from '../src/config/hub-models'
 
 test.use({
   launchOptions: { args: ['--disable-blink-features=AutomationControlled'] }
@@ -87,7 +88,7 @@ test(
         .fill(modelsAccount.password)
       await page.getByRole('button', { name: 'Sign in', exact: true }).click()
       await expect(page).toHaveURL('/')
-      await page.goto(`/models/${slug}/`)
+      await page.goto(hubModelHref(slug))
       await expect(page.getByTestId('run-button')).toBeEnabled()
       await page.getByTestId('run-button').click()
       await expect(page.getByTestId('playground-output')).toHaveAttribute(

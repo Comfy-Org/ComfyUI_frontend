@@ -9,6 +9,7 @@ import MinimaxLicenseHeroSection from '../components/common/MinimaxLicenseHeroSe
 import { pricingOffers } from '../config/pricing'
 import { t } from '../i18n/translations'
 import {
+  DEFAULT_OG_IMAGE,
   absoluteUrl,
   jsonLdId,
   pageContext,
@@ -21,11 +22,13 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale
 )
 const productId = jsonLdId(url, 'product')
+const description =
+  'Comfy Cloud plans and credits: start free with 5 GPU runs, then pick Standard, Creator, Pro, or Team for monthly credits, hosted models, and longer workflow runtimes.'
 ---
 
 <BaseLayout
   title="Pricing - Comfy Cloud"
-  description="Comfy Cloud plans and credits: start free with 5 GPU runs, then pick Standard, Creator, Pro, or Team for monthly credits, hosted models, and longer workflow runtimes."
+  description={description}
   mainEntityId={productId}
   breadcrumbs={[
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
@@ -38,6 +41,8 @@ const productId = jsonLdId(url, 'product')
       id: productId,
       name: 'Comfy Cloud',
       url,
+      image: DEFAULT_OG_IMAGE,
+      description,
       offers: pricingOffers(locale)
     })
   ]}
