@@ -4679,9 +4679,10 @@ export type AgentRetainedAttachmentExtension =
   | '.avif'
 
 /**
- * Attachment extensions the agent can name and wire into a graph but cannot read. Exactly the
- * set Load3D accepts (comfy_extras/nodes_load_3d.py); .usdz is absent from both, so it is not
- * an exclusion this tier makes.
+ * Attachment extensions the agent can recognize as 3D but cannot read. They are exactly the
+ * set Load3D accepts (comfy_extras/nodes_load_3d.py), but cloud does not currently populate
+ * Load3D's model_file choices from uploaded meshes, so the agent is told not to wire or run
+ * one. .usdz is absent from both lists, so it is not an exclusion this tier makes.
  *
  */
 export type AgentReferenceAttachmentExtension =
@@ -4721,9 +4722,8 @@ export type AgentProbeableAttachmentExtension =
 export type AgentPostMessageRequest = {
   /**
    * Optional input filenames the client already uploaded to the ComfyUI input namespace (via
-   * /api/upload/image, which returns the {name, subfolder, type} reference). The agent wires
-   * them into the workflow by filename — it never receives file bytes here, and reads an
-   * attachment's contents through its own asset tools when a request depends on them.
+   * /api/upload/image, which returns the {name, subfolder, type} reference). The agent never
+   * receives file bytes here; what it can read or wire depends on the policy tier.
    *
    * Each entry's extension must appear in AgentAttachmentPolicy; a reference outside it is
    * rejected with 422 (AgentAttachmentRejected). A reference with NO extension is the one
@@ -4920,9 +4920,10 @@ export type AgentAttachmentRejected = {
  * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
  * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
  * video means cutting a frame out with process_media and viewing that.
- * - `reference`: the agent knows the file exists, its kind and its id, and can wire it into a
- * graph node by filename — but cannot read it at all. The cloud turn registers neither a
- * shell nor a file-read tool, by design: it is a shared multi-tenant pod.
+ * - `reference`: the agent knows the file exists, its kind and its id, but cannot read it at
+ * all. Cloud does not currently populate Load3D's model_file choices from uploaded meshes,
+ * so the agent is explicitly told not to wire or run one either. The cloud turn registers
+ * neither a shell nor a file-read tool, by design: it is a shared multi-tenant pod.
  * - `retain`: the file is attached and nothing more. The agent is told it is there and can
  * neither read it nor wire it in. Kept separate from `reference` because no node in the
  * catalog takes a text file on an upload-backed input — Load3D/Load3DAdvanced take a mesh,

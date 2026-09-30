@@ -2817,9 +2817,10 @@ export const zAgentRetainedAttachmentExtension = z.enum([
 ])
 
 /**
- * Attachment extensions the agent can name and wire into a graph but cannot read. Exactly the
- * set Load3D accepts (comfy_extras/nodes_load_3d.py); .usdz is absent from both, so it is not
- * an exclusion this tier makes.
+ * Attachment extensions the agent can recognize as 3D but cannot read. They are exactly the
+ * set Load3D accepts (comfy_extras/nodes_load_3d.py), but cloud does not currently populate
+ * Load3D's model_file choices from uploaded meshes, so the agent is told not to wire or run
+ * one. .usdz is absent from both lists, so it is not an exclusion this tier makes.
  *
  */
 export const zAgentReferenceAttachmentExtension = z.enum([
@@ -2859,7 +2860,7 @@ export const zAgentProbeableAttachmentExtension = z.enum([
  * A user turn posted to the agent.
  */
 export const zAgentPostMessageRequest = z.object({
-  attachments: z.array(z.string()).optional(),
+  attachments: z.array(z.string().max(256)).max(25).optional(),
   content: z.string(),
   current_tab: z.string().optional(),
   current_tab_unbound: z.boolean().optional(),
@@ -2950,9 +2951,10 @@ export const zAgentCancelAccepted = z.object({
  * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
  * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
  * video means cutting a frame out with process_media and viewing that.
- * - `reference`: the agent knows the file exists, its kind and its id, and can wire it into a
- * graph node by filename — but cannot read it at all. The cloud turn registers neither a
- * shell nor a file-read tool, by design: it is a shared multi-tenant pod.
+ * - `reference`: the agent knows the file exists, its kind and its id, but cannot read it at
+ * all. Cloud does not currently populate Load3D's model_file choices from uploaded meshes,
+ * so the agent is explicitly told not to wire or run one either. The cloud turn registers
+ * neither a shell nor a file-read tool, by design: it is a shared multi-tenant pod.
  * - `retain`: the file is attached and nothing more. The agent is told it is there and can
  * neither read it nor wire it in. Kept separate from `reference` because no node in the
  * catalog takes a text file on an upload-backed input — Load3D/Load3DAdvanced take a mesh,
