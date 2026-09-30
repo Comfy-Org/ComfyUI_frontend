@@ -36,7 +36,7 @@ on:
 # concurrency keeps only one pending run and can silently drop an older tag
 # when several backports merge in a burst.
 concurrency:
-  group: cloud-backport-tag-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.event.pull_request.merge_commit_sha }}
+  group: cloud-backport-tag-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.event.pull_request.number || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -46,78 +46,21 @@ jobs:
       (github.event.pull_request.merged == true &&
       contains(github.event.pull_request.labels.*.name, 'backport'))
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
-      pull-requests: read
 
     steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.event.pull_request.base.ref }}
+          persist-credentials: false
+
       - name: Create tag for cloud backport
         id: tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
           BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.event.pull_request.base.ref }}
           SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.commit || github.event.pull_request.merge_commit_sha }}
-        run: |
-          set -euo pipefail
-
-          if [[ ! "$BRANCH" =~ ^cloud/([0-9]+)\.([0-9]+)$ ]]; then
-            echo "::error::Base branch '$BRANCH' is not a cloud/x.y branch"
-            exit 1
-          fi
-
-          MAJOR="${BASH_REMATCH[1]}"
-          MINOR="${BASH_REMATCH[2]}"
-
-          # Manual recovery can target the historical merge commit whose
-          # original run failed. Without an explicit commit it tags the head.
-          if [[ -z "$SHA" ]]; then
-            SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${BRANCH}" --jq '.object.sha')
-          elif [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "::error::Commit must be a full 40-character lowercase SHA"
-            exit 1
-          fi
-
-          VERSION=$(gh api "repos/${GITHUB_REPOSITORY}/contents/package.json?ref=${SHA}" \
-            -H 'Accept: application/vnd.github.raw+json' | jq -r '.version')
-          if [[ ! "$VERSION" =~ ^${MAJOR}\.${MINOR}\.([0-9]+)(-.+)?$ ]]; then
-            echo "::error::Version '${VERSION}' does not match cloud branch '${BRANCH}'"
-            exit 1
-          fi
-
-          TAG="cloud/v${VERSION}"
-
-          if EXISTING=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.sha' 2>/dev/null); then
-            if [[ "$EXISTING" == "$SHA" ]]; then
-              echo "::notice::Tag ${TAG} already exists at ${EXISTING}; skipping"
-              echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            echo "::error::Tag ${TAG} already points at ${EXISTING}, expected ${SHA}"
-            exit 1
-          fi
-
-          if ! gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
-            -f ref="refs/tags/${TAG}" \
-            -f sha="${SHA}" \
-            --jq '.ref'; then
-            # Two runs for the same branch can both pass the existence check
-            # above; the loser gets 409 Conflict. Treat that as a no-op.
-            if EXISTING=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.sha' 2>/dev/null); then
-              if [[ "$EXISTING" == "$SHA" ]]; then
-                echo "::notice::Tag ${TAG} was created concurrently at ${EXISTING}; skipping"
-                echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-                exit 0
-              fi
-              echo "::error::Tag ${TAG} was created concurrently at ${EXISTING}, expected ${SHA}"
-              exit 1
-            fi
-            echo "::error::Failed to create tag ${TAG} at ${SHA}"
-            exit 1
-          fi
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          {
-            echo "Created tag: ${TAG}"
-            echo "Branch: ${BRANCH}"
-            echo "Version: ${VERSION}"
-            echo "Commit: ${SHA}"
-          } >> "$GITHUB_STEP_SUMMARY"
+        run: bash scripts/cicd/cloud-backport-tag.sh

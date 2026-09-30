@@ -179,9 +179,7 @@ test(
       )
     ).toBe(PORTRAIT_PATH)
 
-    await new AgentPanel(page).open()
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel).toBeVisible()
+    const panel = await new AgentPanel(page).open()
     await expect(panel.getByTestId('user-message-bubble')).toHaveText([
       'Earlier request'
     ])

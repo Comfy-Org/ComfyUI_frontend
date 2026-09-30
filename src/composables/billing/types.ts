@@ -32,6 +32,8 @@ export interface SubscriptionInfo {
   endDate: string | null
   isCancelled: boolean
   hasFunds: boolean
+  /** Agent funds across shared credits and the Agent-scoped balance. */
+  agentHasFunds: boolean
 }
 
 /**
@@ -62,7 +64,7 @@ export interface BillingActions {
     options?: PreviewSubscribeOptions
   ) => Promise<PreviewSubscribeResponse | null>
   manageSubscription: () => Promise<void>
-  cancelSubscription: () => Promise<void>
+  cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<void>
   /**
    * Reactivates a cancelled-but-still-active subscription. Legacy has no
    * dedicated endpoint, so the legacy adapter re-runs the checkout flow.

@@ -74,19 +74,35 @@ export class AgentPanel {
     )
   }
 
-  async open(): Promise<void> {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      if (await this.root.isVisible()) return
-      await this.openButton.click()
-      try {
-        await expect(this.root).toBeVisible({ timeout: 1_000 })
-        return
-      } catch {
-        // Startup activation can open between the visibility read and click,
-        // making that click close the panel. Retry from the observed state.
+  async open(timeout?: number): Promise<Locator> {
+    if (await this.root.isVisible()) return this.root
+
+    const dropClickIfAlreadyOpen = await this.openButton.evaluateHandle(
+      (button) => {
+        const listener = (event: Event) => {
+          if (button.getAttribute('aria-pressed') === 'true')
+            event.stopImmediatePropagation()
+        }
+        button.addEventListener('click', listener, true)
+        return listener
       }
+    )
+    try {
+      await expect(async () => {
+        if (await this.root.isVisible()) return
+        await this.openButton.click({ timeout: 1_000 })
+      }).toPass({ timeout })
+    } finally {
+      await this.openButton.evaluate(
+        (button, listener) =>
+          button.removeEventListener('click', listener, true),
+        dropClickIfAlreadyOpen
+      )
+      await dropClickIfAlreadyOpen.dispose()
     }
-    await expect(this.root).toBeVisible()
+
+    await expect(this.root).toBeVisible({ timeout })
+    return this.root
   }
 
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
