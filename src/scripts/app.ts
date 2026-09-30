@@ -4,7 +4,7 @@ import { reactive, unref, shallowRef } from 'vue'
 
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { isValidCameraState } from '@/renderer/core/canvas/cameraState'
+import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
 import {
   applyViewport,
   measureViewportFromElement
@@ -1490,6 +1490,10 @@ export class ComfyApp {
     }
 
     const fitView = () => {
+      const savedCameraState = normalizeCameraState(graphData.extra?.ds, {
+        minScale: this.canvas.ds.min_scale,
+        maxScale: this.canvas.ds.max_scale
+      })
       if (
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
@@ -1497,14 +1501,9 @@ export class ComfyApp {
         // Always fit view for templates to ensure they're visible on load
         if (openSource === 'template') {
           useLitegraphService().fitView()
-        } else if (
-          isValidCameraState(graphData.extra?.ds, {
-            minScale: this.canvas.ds.min_scale,
-            maxScale: this.canvas.ds.max_scale
-          })
-        ) {
-          this.canvas.ds.offset = graphData.extra.ds.offset
-          this.canvas.ds.scale = graphData.extra.ds.scale
+        } else if (savedCameraState) {
+          this.canvas.ds.offset = savedCameraState.offset
+          this.canvas.ds.scale = savedCameraState.scale
 
           // Fit view if no nodes visible in restored viewport
           this.canvas.ds.computeVisibleArea(this.canvas.viewport)

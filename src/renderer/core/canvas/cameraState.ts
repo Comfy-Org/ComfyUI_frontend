@@ -7,10 +7,10 @@ interface CameraScaleRange {
 
 const defaultScaleRange: CameraScaleRange = { minScale: 0.1, maxScale: 10 }
 
-export function isValidCameraState(
+export function normalizeCameraState(
   value: unknown,
   { minScale, maxScale }: CameraScaleRange = defaultScaleRange
-): value is DragAndScaleState {
+): DragAndScaleState | null {
   if (
     !value ||
     typeof value !== 'object' ||
@@ -19,17 +19,23 @@ export function isValidCameraState(
     !Array.isArray(value.offset) ||
     value.offset.length !== 2
   ) {
-    return false
+    return null
   }
 
-  return (
+  if (
     typeof value.offset[0] === 'number' &&
     Number.isFinite(value.offset[0]) &&
     typeof value.offset[1] === 'number' &&
     Number.isFinite(value.offset[1]) &&
     typeof value.scale === 'number' &&
     Number.isFinite(value.scale) &&
-    value.scale >= minScale &&
-    value.scale <= maxScale
-  )
+    value.scale > 0
+  ) {
+    return {
+      offset: [value.offset[0], value.offset[1]],
+      scale: Math.min(Math.max(value.scale, minScale), maxScale)
+    }
+  }
+
+  return null
 }
