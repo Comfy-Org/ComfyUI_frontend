@@ -171,7 +171,13 @@ function installServer(
     dropPosts: false
   }
 
+  const answerElsewhere = (pathname: string): Response =>
+    pathname === '/api/features'
+      ? jsonResponse({ unified_web_session: true, ...features })
+      : jsonResponse({ id: 'customer-1' }, 201)
+
   const answerSession = (method: string): Response => {
+    if (method === 'POST' && server.dropPosts) throw new TypeError('reloaded')
     if (method === 'POST') {
       server.session = { userId: 'user-a' }
       return jsonResponse({ success: true })
@@ -192,13 +198,9 @@ function installServer(
     vi.fn<typeof fetch>(async (input, init) => {
       const url = new URL(String(input), location.href)
       const method = (init?.method ?? 'GET').toUpperCase()
-      if (url.pathname === '/api/features') {
-        return jsonResponse({ unified_web_session: true, ...features })
-      }
       if (url.pathname !== '/api/auth/session') {
-        return jsonResponse({ id: 'customer-1' }, 201)
+        return answerElsewhere(url.pathname)
       }
-      if (method === 'POST' && server.dropPosts) throw new TypeError('reloaded')
       server.requests.push({
         method,
         authorization: new Headers(init?.headers).get('authorization'),
