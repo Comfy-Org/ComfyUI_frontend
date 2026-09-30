@@ -168,15 +168,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       : toRaw(target.workflow) === toRaw(workflow)
   }
 
-  function reportDeletedTarget(deleted: ComfyWorkflow): void {
-    const target = targetTracking.value
-    if (
-      target.mode === 'retained' &&
-      (target.workflow === null || toRaw(target.workflow) === toRaw(deleted))
-    )
-      markWorkflowTargetUnavailable()
-  }
-
   function followClosedTargetRename(oldPath: string, newPath: string): void {
     const target = targetTracking.value
     if (
@@ -191,7 +182,9 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (name === 'deleteWorkflow') {
       const [workflow] = args
       if (!workflow.isTemporary && isRetainedTarget(workflow))
-        after(() => reportDeletedTarget(workflow))
+        after(() => {
+          if (isRetainedTarget(workflow)) markWorkflowTargetUnavailable()
+        })
     } else if (name === 'renameWorkflow') {
       const [workflow] = args
       const oldPath = workflow.path

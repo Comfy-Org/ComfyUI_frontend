@@ -1,5 +1,3 @@
-import { setFlagsFromString } from 'node:v8'
-import { runInNewContext } from 'node:vm'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -53,20 +51,9 @@ describe('Agent target tab lifetime', () => {
 
 type TargetSetup = Awaited<ReturnType<typeof setup>>
 
-setFlagsFromString('--expose-gc')
-const collectGarbage: () => void = runInNewContext('gc')
-
 function saveTarget(target: ComfyWorkflow): void {
   target.size = 1
   vi.spyOn(target, 'delete').mockResolvedValue()
-}
-
-async function closeTemporaryTarget(): Promise<WeakRef<ComfyWorkflow>> {
-  const { workflows, target } = await setup()
-  await nextTick()
-  await workflows.closeWorkflow(target)
-  await nextTick()
-  return new WeakRef(target)
 }
 
 describe('Agent target deletion', () => {
@@ -128,6 +115,25 @@ describe('Agent target deletion', () => {
       selected: undefined
     },
     {
+      event: 'deleting the saved target after the chat cleared it mid-delete',
+      act: async ({ workflows, panel, target }: TargetSetup) => {
+        saveTarget(target)
+        let finishDelete = () => {}
+        vi.spyOn(target, 'delete').mockImplementation(
+          () =>
+            new Promise<void>((resolve) => {
+              finishDelete = resolve
+            })
+        )
+        const deleting = workflows.deleteWorkflow(target)
+        panel.setWorkflowTarget(null)
+        finishDelete()
+        await deleting
+      },
+      unavailable: false,
+      selected: undefined
+    },
+    {
       event: 'only closing the target',
       act: async ({ workflows, target }: TargetSetup) =>
         workflows.closeWorkflow(target),
@@ -183,17 +189,34 @@ describe('Agent target deletion', () => {
     }
   )
 
-  it('does not keep a closed temporary target alive', async () => {
-    const closed = await closeTemporaryTarget()
-    // Mock call records would otherwise keep the workflow reachable.
-    vi.clearAllMocks()
+  it.for([
+    {
+      kind: 'temporary',
+      prepare: (_target: ComfyWorkflow) => {},
+      tracking: { mode: 'retained', workflow: null }
+    },
+    {
+      kind: 'saved',
+      prepare: saveTarget,
+      tracking: {
+        mode: 'retained',
+        workflow: null,
+        closedPath: 'workflows/a.json'
+      }
+    }
+  ])(
+    'keeps no workflow object once a $kind target closes',
+    async ({ prepare, tracking }) => {
+      const { workflows, panel, target } = await setup()
+      prepare(target)
+      await nextTick()
 
-    await new Promise((resolve) => setTimeout(resolve))
-    collectGarbage()
+      await workflows.closeWorkflow(target)
+      await nextTick()
 
-    expect(closed.deref()).toBeUndefined()
-    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
-  })
+      expect(panel.targetTracking).toEqual(tracking)
+    }
+  )
 })
 
 describe('Agent target tracking policy', () => {
