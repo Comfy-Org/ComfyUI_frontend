@@ -24,8 +24,13 @@ import WorkshopModelCard from './WorkshopModelCard.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  initialSearch,
+  locale = 'en'
+} = defineProps<{
   models: readonly WorkflowWorkshopModel[]
+  initialSearch?: string
   locale?: Locale
 }>()
 
@@ -43,7 +48,7 @@ watch(browseAll, () => {
   void nextTick(() => window.scrollTo({ top: 0 }))
 })
 onMounted(() => {
-  const params = new URLSearchParams(location.search)
+  const params = new URLSearchParams(initialSearch ?? location.search)
   query.value = params.get('q') ?? ''
   selected.value = params
     .getAll('category')
@@ -148,10 +153,14 @@ function removeChip(key: string) {
   else runsOn.value = runsOn.value.filter((name) => name !== value)
 }
 
-function clear() {
-  query.value = ''
+function clearFilters() {
   selected.value = []
   runsOn.value = []
+}
+
+function clear() {
+  query.value = ''
+  clearFilters()
 }
 function leaveSection() {
   browseAll.value = false
@@ -228,7 +237,7 @@ function leaveSection() {
       :chips
       :locale
       @remove="removeChip"
-      @clear="clear"
+      @clear="clearFilters"
       @emptied="filterMenu?.focus()"
     />
 

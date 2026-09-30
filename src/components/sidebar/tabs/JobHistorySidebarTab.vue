@@ -59,7 +59,6 @@
         >
           <JobAssetsList
             class="scrollbar-custom min-h-0 flex-1"
-            tabindex="0"
             :displayed-job-groups="displayedJobGroups"
             @cancel-item="onCancelItem"
             @delete-item="onDeleteItem"
