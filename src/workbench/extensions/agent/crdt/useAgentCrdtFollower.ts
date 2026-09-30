@@ -34,7 +34,10 @@ import { DocFrameClient } from './docFrameClient'
 import { STALE_SCHEMA_RESEED_REQUIRED } from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
-import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import {
+  LayoutFollowerBridge,
+  isRetryableReseedCode
+} from './layoutFollowerBridge'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
 import { readDocSlotNames } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
@@ -545,6 +548,12 @@ function startAgentCrdtFollower(
     if (!isCurrentWorkflow(detail?.workflowId)) return
     lastFrameType.value = event.type
     recordDevEvent('doc_reseed_result', detail)
+    const code = typeof detail.code === 'string' ? detail.code : undefined
+    if (detail.ok !== true && isRetryableReseedCode(code)) {
+      reseedAttempted.delete(detail.workflowId as string)
+      lifecycle.onSubscribeRefused(code)
+      return
+    }
     // ok / conflict: the bridge has already reset the lineage and
     // resubscribed. Anything else is final for this document.
     if (detail.ok !== true && detail.code !== 'conflict')
@@ -567,7 +576,9 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      if (!tryReseed(detail)) handleSubscribeRefusal(detail, lifecycle)
+      const refusal = tryReseed(detail ?? {})
+        ? { shouldNotify: false }
+        : handleSubscribeRefusal(detail, lifecycle)
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
