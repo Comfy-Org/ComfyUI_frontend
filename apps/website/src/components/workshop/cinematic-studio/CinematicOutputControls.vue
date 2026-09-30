@@ -43,7 +43,7 @@ const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
       v-model="aspectValue"
       :options="aspectOptions"
       :heading="tc('cinematic.output.aspect', locale)"
-      side="bottom"
+      side="top"
       tooltip
       :trigger-class="FORMAT_TRIGGER_CLASS"
     >
@@ -60,7 +60,7 @@ const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
       v-model="resolutionValue"
       :options="resolutionOptions"
       :heading="tc('cinematic.output.resolution', locale)"
-      side="bottom"
+      side="top"
       tooltip
       :trigger-class="FORMAT_TRIGGER_CLASS"
     >

@@ -33,9 +33,7 @@ import type { GraphOperation } from './graphOperations'
 import { readDocSlotNames } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSource extends LGraphNode {
   constructor() {

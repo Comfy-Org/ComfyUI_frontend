@@ -4229,8 +4229,8 @@
       "needsEndpoint": "接口地址",
       "needsKey": "密钥",
       "needsFiles": "你的文件",
-      "runsOnRouter": "由 Comfy Router 运行",
-      "runsOnCloud": "由 Comfy Cloud 运行",
+      "runsOnRouter": "Comfy Router",
+      "runsOnCloud": "Comfy Cloud",
       "filesRead": "代码运行时从代码中的路径读取",
       "filesUploaded": "调用前先上传，再通过链接读取",
       "filesOmitted": "cURL 已省略上传的文件，请求可能不完整。请使用 Python 或 TypeScript 包含这些文件。",
@@ -4239,7 +4239,10 @@
       "heading": "从代码中调用该模型",
       "inputInvalid": "请在试用区填写有效的模型参数以生成请求。",
       "localFiles": "代码运行时会读取文件并进行 Base64 编码。请将路径设置为您的本地文件。",
-      "mappingUnavailable": "此模型的原生 Router 请求映射尚未验证。调用前请查看 Router 文档。"
+      "mappingUnavailable": "此模型的原生 Router 请求映射尚未验证。调用前请查看 Router 文档。",
+      "copyEndpoint": "复制接口地址",
+      "runsOn": "运行于",
+      "filesSdk": "由代码根据链接上传"
     },
     "card": {
       "creditsPerRun": "积分 / 次",
@@ -4789,7 +4792,7 @@
       "previewHint": "源模板的只读预览。在 Cloud 中打开，即可查看节点并进行修改。",
       "fullPreview": "打开完整尺寸的工作流预览",
       "apiHint": "以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。",
-      "apiNote": "需要付费的 Cloud 方案和可用额度。",
+      "apiNote": "需要付费的 Cloud 方案和额度。",
       "apiDocs": "API 文档",
       "apiSteps": "完整调用步骤",
       "apiUploads": "先上传媒体",
@@ -4856,8 +4859,6 @@
       "notSaved": "这次生成未能保存到你的素材。结果在过期前仍然留在页面上。",
       "cancelError": "无法请求取消。生成可能仍在进行。"
     },
-    "cinematic": {
-      "openInStudio": "在 Cinematic Studio 中打开"
-    }
+    "cinematic": {}
   }
 }

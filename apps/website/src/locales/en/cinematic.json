@@ -84,7 +84,8 @@
     },
     "backToApps": "Back to apps",
     "panel": {
-      "label": "Shot settings"
+      "label": "Shot settings",
+      "newShot": "New shot"
     },
     "section": {
       "output": "Format",
@@ -239,7 +240,8 @@
       "audioTag": "Audio",
       "resolution": "Resolution",
       "aspect": "Frame",
-      "modelDecides": "This model sets the length and resolution itself."
+      "modelDecides": "This model sets the length and resolution itself.",
+      "audioHint": "Adds sound to the clip."
     },
     "references": {
       "needsPicture": "{model} needs the picture itself, and this image can't be read here. Download it and add it with +, or pick another model.",
@@ -248,14 +250,16 @@
     },
     "colors": {
       "title": "Colors",
-      "hint": "Sent as words, so every model can follow them",
       "color": "Color",
       "add": "Add a color",
       "remove": "Remove color",
       "makeMain": "Make main color",
       "main": "Main color",
       "sampleError": "Couldn't read colors from that image.",
-      "clear": "Clear colors"
+      "clear": "Clear colors",
+      "shade": "Saturation and brightness",
+      "hue": "Hue",
+      "hex": "Hex color"
     },
     "grade": {
       "fromImage": "From an image",

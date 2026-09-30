@@ -495,10 +495,13 @@
       "needsEndpoint": "Endpoint",
       "needsKey": "Key",
       "needsFiles": "Your files",
-      "runsOnRouter": "Comfy Router runs it",
-      "runsOnCloud": "Comfy Cloud runs it",
+      "runsOnRouter": "Comfy Router",
+      "runsOnCloud": "Comfy Cloud",
       "filesRead": "Read from the paths in the code when it runs",
-      "filesUploaded": "Uploaded before the call, then read from their urls"
+      "filesUploaded": "Uploaded before the call, then read from their urls",
+      "copyEndpoint": "Copy endpoint",
+      "runsOn": "Runs on",
+      "filesSdk": "Uploaded by the code from their urls"
     },
     "hub": {
       "title": "Browse models",
@@ -582,7 +585,7 @@
       "previewHint": "A read-only preview of the source template. Open it in Cloud to explore the nodes and make changes.",
       "fullPreview": "Open full-size workflow preview",
       "apiHint": "The request below uses the same prepared graph and settings as the Playground. Each submission can start a paid run; do not automatically retry a submission whose outcome is unknown.",
-      "apiNote": "Needs a paid Cloud plan and available credits.",
+      "apiNote": "Needs a paid Cloud plan and credits.",
       "apiDocs": "API documentation",
       "apiSteps": "The whole call, step by step",
       "apiUploads": "Upload media first",
@@ -649,9 +652,7 @@
       "notSaved": "This generation could not be saved to your assets. The result is still on the page until it expires.",
       "cancelError": "Could not request cancellation. Your generation may still be running."
     },
-    "cinematic": {
-      "openInStudio": "Open in Cinematic Studio"
-    }
+    "cinematic": {}
   },
   "auth": {
     "signIn": {

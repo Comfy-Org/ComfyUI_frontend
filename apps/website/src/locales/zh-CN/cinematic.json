@@ -84,7 +84,8 @@
     },
     "backToApps": "返回应用",
     "panel": {
-      "label": "镜头设置"
+      "label": "镜头设置",
+      "newShot": "新镜头"
     },
     "section": {
       "output": "画幅",
@@ -239,7 +240,8 @@
       "audioTag": "音频",
       "resolution": "分辨率",
       "aspect": "画幅",
-      "modelDecides": "此模型自行决定时长和分辨率。"
+      "modelDecides": "此模型自行决定时长和分辨率。",
+      "audioHint": "为片段添加声音。"
     },
     "references": {
       "needsPicture": "{model} 需要图片本身，但此处无法读取该图片。请下载后通过 + 添加，或选择其他模型。",
@@ -248,14 +250,16 @@
     },
     "colors": {
       "title": "颜色",
-      "hint": "以文字发送，所有模型都能使用",
       "color": "颜色",
       "add": "添加颜色",
       "remove": "移除颜色",
       "makeMain": "设为主色",
       "main": "主色",
       "sampleError": "无法从该图片读取颜色。",
-      "clear": "清除颜色"
+      "clear": "清除颜色",
+      "shade": "饱和度与亮度",
+      "hue": "色相",
+      "hex": "十六进制颜色"
     },
     "grade": {
       "fromImage": "来自图片",

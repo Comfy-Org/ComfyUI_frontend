@@ -11,13 +11,11 @@ const { video = false, locale = 'en' } = defineProps<{
 
 const scene = defineModel<string>('scene', { required: true })
 const enhance = defineModel<boolean>('enhance', { required: true })
-
-const labelClass = 'text-xs font-medium text-primary-warm-gray'
 </script>
 
 <template>
-  <section class="flex flex-col gap-2">
-    <label for="cinematic-scene" :class="labelClass">
+  <section class="flex flex-col">
+    <label for="cinematic-scene" class="sr-only">
       {{ tc('cinematic.section.scene', locale) }}
     </label>
     <div

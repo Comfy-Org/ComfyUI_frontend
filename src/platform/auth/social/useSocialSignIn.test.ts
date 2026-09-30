@@ -9,9 +9,7 @@ import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { reportError } from '@/platform/telemetry/reportError'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const credential = {
   user: { uid: 'u1' }

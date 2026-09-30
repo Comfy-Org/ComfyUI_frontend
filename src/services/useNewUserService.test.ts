@@ -18,9 +18,7 @@ Object.defineProperty(window, 'localStorage', {
 import { useNewUserService } from '@/services/useNewUserService'
 import { reportError } from '@/platform/telemetry/reportError'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('useNewUserService', () => {
   let service: ReturnType<typeof useNewUserService>
