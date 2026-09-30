@@ -84,11 +84,6 @@ export interface OpSender {
   admit(operations: GraphOperation[]): void
   /** Seal the open admission group into wire batches and start delivery. */
   flush(): void
-  /**
-   * Unsettled batch count for observability: in-flight, queued, and the open
-   * admission group as one until `flush()` seals it into wire-capped batches.
-   * 0 = drained.
-   */
   pending(): number
   /** Every unsettled batch, in-flight first, each addressed to its mint-time workflow. */
   pendingOps(): ReadonlyArray<{ workflowId: string; ops: Op[] }>
@@ -138,14 +133,7 @@ interface InFlight {
   workflowId: string
   ops: Op[]
   opIds: Set<string>
-  /** Successful `sendOps` calls: each may still draw one result. */
   sends: number
-  /**
-   * One throw report per delivery of these ops: armed when the batch enters
-   * flight and re-armed by the silence-resend, which is a second delivery.
-   * `resume()` continues the delivery that `suspend()` parked, so it
-   * deliberately does not re-arm.
-   */
   reportedThrow: boolean
   resent: boolean
   parked: boolean

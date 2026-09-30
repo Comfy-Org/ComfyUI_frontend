@@ -1,19 +1,13 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 
-const telemetryState = vi.hoisted(() => ({
-  reportError: vi.fn<typeof reportErrorFn>()
-}))
-
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: telemetryState.reportError
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
@@ -642,11 +636,11 @@ describe('createOpSender', () => {
     expect(() => sender.enqueue([addNode(1)])).not.toThrow()
 
     expect(sent).toHaveLength(0)
-    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
 
     vi.advanceTimersByTime(1_500)
 
-    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
 
     transportThrows = false
     vi.advanceTimersByTime(500)
@@ -686,13 +680,13 @@ describe('createOpSender', () => {
 
     sender.enqueue([addNode(1)])
 
-    expect(telemetryState.reportError).not.toHaveBeenCalled()
+    expect(vi.mocked(reportError)).not.toHaveBeenCalled()
 
     transportThrows = true
     vi.advanceTimersByTime(1_500)
 
     expect(sent).toHaveLength(0)
-    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
 
     transportThrows = false
     transportUp = true

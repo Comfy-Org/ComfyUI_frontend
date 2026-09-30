@@ -16,7 +16,6 @@ const NEW_CHAT_THREAD_ID = '4b8e2c6a-1d3f-4e57-9a80-2c7d5e9f1b33'
 const NEW_CHAT_TURN_ID = '9f1d3b5c-7a2e-4c68-8d41-6e0a2b4c8d55'
 const FRESH_WORKFLOW_ID = 'c2d4e6f8-0a1b-4c3d-9e5f-7a8b9c0d1e2f'
 const MESSAGES_PATH = /\/api\/agent\/threads\/([^/]+)\/messages$/
-/** Drain waves, not time: a pass awaits the acks enrolled when it began. */
 const SETTLE_PASSES = 10
 
 interface PostedTurn {
@@ -52,11 +51,9 @@ async function readAck(
   try {
     body = await response.json()
   } catch (error) {
-    // Unreadable is not malformed; say which so the failure names itself.
     return { failure: `${response.url()}: body unreadable — ${String(error)}` }
   }
   const accepted = zAgentTurnAccepted.safeParse(body)
-  // postDataJSON() throws on a non-JSON body, inside an unawaited listener.
   const posted = zAgentPostMessageRequest.safeParse(
     tryPostDataJson(response.request())
   )
@@ -108,9 +105,6 @@ class AgentNewChatServer {
       void record.finally(() => this.recording.delete(record))
     })
     await this.page.route('**/api/agent/threads', async (route) => {
-      // The list is built from acks recorded off the response event, so a
-      // turn still being read would otherwise be missing a row. Answer the
-      // request either way: a stalled route outshouts its own diagnostic.
       await this.settled().catch((error: unknown) => {
         this.ackFailures.push(`${route.request().url()}: ${String(error)}`)
       })
@@ -129,7 +123,6 @@ class AgentNewChatServer {
     return this.ackFailures
   }
 
-  /** `response` fires on headers, so a body read can still be in flight. */
   async settled(): Promise<void> {
     for (let pass = 0; pass < SETTLE_PASSES; pass++) {
       if (this.recording.size === 0) return
