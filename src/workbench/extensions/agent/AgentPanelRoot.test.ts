@@ -2219,7 +2219,13 @@ describe('AgentPanelRoot attach flow', () => {
     })
     expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith({
       attachment_count: 1,
-      node_tag_count: 0
+      node_tag_count: 0,
+      thread_id: null,
+      workflow_id: 'wf-42',
+      client_message_id: expect.any(String),
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
     })
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
@@ -7674,7 +7680,13 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['7'] } })
     expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith({
       attachment_count: 0,
-      node_tag_count: 1
+      node_tag_count: 1,
+      thread_id: null,
+      workflow_id: null,
+      client_message_id: expect.any(String),
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
     })
     expect(screen.getByText('VAEDecode #7')).toBeInTheDocument()
     expect(screen.queryByText(/KSampler/)).not.toBeInTheDocument()

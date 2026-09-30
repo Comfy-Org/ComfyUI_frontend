@@ -125,7 +125,12 @@ describe('Agent draft submission', () => {
       'Compare these',
       original.attachments,
       original.nodes,
-      original.references
+      original.references,
+      {
+        clientMessageId: expect.any(String),
+        inputMethod: 'typed',
+        starterPrompt: null
+      }
     )
     composer.setText('Next prompt')
     pending.resolve(true)
@@ -316,7 +321,12 @@ describe('Agent draft submission', () => {
       'Compare these',
       original.attachments,
       [],
-      original.references
+      original.references,
+      {
+        clientMessageId: expect.any(String),
+        inputMethod: 'typed',
+        starterPrompt: null
+      }
     )
     expect(composer.draft).toBe(original.draft)
     expect(selection.staged.value).toEqual([])

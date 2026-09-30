@@ -6,6 +6,7 @@ import type {
   AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageSentMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
@@ -402,6 +403,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
     this.dispatch((provider) => provider.trackAgentMessageSent?.(metadata))
+  }
+
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentStarterPromptClicked?.(metadata)
+    )
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
