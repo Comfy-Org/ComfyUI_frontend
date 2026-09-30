@@ -26,6 +26,7 @@ import { useSignInHref } from '../../composables/useSignInHref'
 import { usePersonalWorkspaceSwitch } from '../../composables/usePersonalWorkspaceSwitch'
 import { useTablist } from '../../composables/useTablist'
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
+import type { SnippetLanguage } from '../../config/models-snippets'
 import type {
   FieldErrors,
   FormValues,
@@ -292,6 +293,20 @@ watch([activeSection, workshopEnabled], ([section, enabled]) => {
     captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
   }
 })
+function captureApiKeyClick() {
+  if (workshopEnabled.value)
+    captureWorkshopEvent({
+      name: 'api_key_clicked',
+      properties: modelAnalytics
+    })
+}
+function captureSnippetCopy(language: SnippetLanguage) {
+  if (workshopEnabled.value)
+    captureWorkshopEvent({
+      name: 'api_snippet_copied',
+      properties: { ...modelAnalytics, snippet_language: language }
+    })
+}
 const canRunModel = computed(
   () =>
     !model.incompleteReason &&
@@ -1227,6 +1242,8 @@ function useInCode() {
         :workspace-id="session?.workspace.id"
         :locale
         :model-slug="model.slug"
+        @get-key="captureApiKeyClick"
+        @copy="captureSnippetCopy"
       />
     </section>
 
