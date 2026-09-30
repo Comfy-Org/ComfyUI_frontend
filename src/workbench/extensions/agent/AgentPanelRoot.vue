@@ -1204,6 +1204,12 @@ async function consentAllowsSubmission(
   return composerStore.submission?.id === submissionId && hasConsent
 }
 
+async function consentAllowsDraftSubmission(
+  submissionId: number | undefined
+): Promise<boolean> {
+  return consentAccepted.value || (await consentAllowsSubmission(submissionId))
+}
+
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
   target: () => selectedTarget.value,
@@ -1217,11 +1223,7 @@ const { submit: onSend } = useAgentDraftSubmission({
   },
   send: async (text, attachments, nodes, references, meta) => {
     const submissionId = composerStore.submission?.id
-    if (
-      !consentAccepted.value &&
-      !(await consentAllowsSubmission(submissionId))
-    )
-      return false
+    if (!(await consentAllowsDraftSubmission(submissionId))) return false
 
     const originContext = targetWorkflowTurnContext()
     useTelemetry()?.trackAgentMessageSent({
