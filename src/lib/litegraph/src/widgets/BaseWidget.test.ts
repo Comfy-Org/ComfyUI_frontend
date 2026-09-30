@@ -445,6 +445,23 @@ describe('BaseWidget store integration', () => {
       expect(widget.advanced).toBe(true)
     })
 
+    it('writes serialize changes to store when registered', () => {
+      const widget = node.addWidget(
+        'number',
+        'serializeWidget',
+        42,
+        () => undefined,
+        {}
+      )
+
+      widget.serialize = false
+
+      expect(
+        store.getWidget(widgetId(graph.id, toNodeId(1), 'serializeWidget'))
+          ?.serialize
+      ).toBe(false)
+    })
+
     it('maps legacy visibility APIs to the visibility component', () => {
       const widget = createMutableTypeWidget(node, 'visibleWidget')
       widget.setNodeId(toNodeId(1))

@@ -108,7 +108,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   static labelValueGap = 5
 
   declare computedHeight?: number
-  declare serialize?: boolean
   computeLayoutSize?(node: LGraphNode): {
     minHeight: number
     maxHeight?: number
@@ -347,6 +346,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.disabled = value ?? false
   }
 
+  get serialize(): boolean | undefined {
+    return this._state.serialize
+  }
+  set serialize(value: boolean | undefined) {
+    this._state.serialize = value
+  }
+
   syncLiveDisabled(): void {
     if (Object.getOwnPropertyDescriptor(this, 'disabled')?.get)
       this._state.disabled = this.disabled ?? false
@@ -469,6 +475,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       label,
       hidden,
       disabled,
+      serialize,
       value,
       linkedWidgets,
       name: _name,
@@ -485,7 +492,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       value,
       label,
       disabled: disabled ?? false,
-      serialize: this.serialize,
+      serialize,
       options: this._rawOptions,
       y: this.y
     }

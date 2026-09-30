@@ -324,12 +324,11 @@ describe('attachMintPortWiring', () => {
     })
     widget.serialize = false
     graphNodes.set('7', node)
-    // The post-registration assignment is intentionally absent from the store:
-    // mint eligibility must come from the live widget.
+    // The post-registration assignment must update the registered store state.
     expect(
       useWidgetValueStore().getWidget(widgetId(ROOT_ID, toNodeId(7), 'preview'))
         ?.serialize
-    ).toBeUndefined()
+    ).toBe(false)
 
     widget.value = 'tick 1'
     widget.value = 'tick 2'
