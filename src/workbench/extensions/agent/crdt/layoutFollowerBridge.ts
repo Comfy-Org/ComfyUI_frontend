@@ -59,6 +59,18 @@ function holdsInvariant(
   return condition
 }
 
+function reseedRefusalState(subscribed: DocSubscribed): {
+  workflowId: string | null
+  expectedSeq: number | null
+} {
+  if (subscribed.ok || subscribed.code !== STALE_SCHEMA_RESEED_REQUIRED)
+    return { workflowId: null, expectedSeq: null }
+  return {
+    workflowId: subscribed.workflowId,
+    expectedSeq: subscribed.expectedSeq ?? null
+  }
+}
+
 /**
  * Bridges server doc frames to the follower's semantic {@link FollowerDoc} and
  * re-dispatches them. It does NOT touch the layout store: the semantic doc is
@@ -471,15 +483,9 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
-    this.reseedEligibleWorkflowId =
-      !subscribed.ok && subscribed.code === STALE_SCHEMA_RESEED_REQUIRED
-        ? subscribed.workflowId
-        : null
-    this.reseedExpectedSeq =
-      this.reseedEligibleWorkflowId !== null &&
-      subscribed.expectedSeq !== undefined
-        ? subscribed.expectedSeq
-        : null
+    const refusal = reseedRefusalState(subscribed)
+    this.reseedEligibleWorkflowId = refusal.workflowId
+    this.reseedExpectedSeq = refusal.expectedSeq
     if (subscribed.ok) {
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
