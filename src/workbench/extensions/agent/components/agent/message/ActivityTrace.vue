@@ -37,12 +37,13 @@ function glyphOf(row: ActivityRow): string {
 
 function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
   if (row.name === 'load_skill' && row.skill) {
-    return t(
+    const label =
       row.state === 'streaming'
         ? 'agent.toolLoadingSkill'
-        : 'agent.toolLoadedSkill',
-      { skill: row.skill }
-    )
+        : row.ok
+          ? 'agent.toolLoadedSkill'
+          : 'agent.toolFailedSkill'
+    return t(label, { skill: row.skill })
   }
   return toolLabel(row.name, row.state, t)
 }

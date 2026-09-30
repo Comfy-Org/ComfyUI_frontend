@@ -167,6 +167,23 @@ describe('ActivityTrace', () => {
     expect(screen.getByText('Loaded comfy-director')).toBeInTheDocument()
   })
 
+  it('names a skill load that finishes with an error', () => {
+    render(ActivityTrace, {
+      props: {
+        parts: [
+          {
+            ...tool('c1', 'load_skill', 'done', false),
+            skill: 'broken-skill'
+          }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Failed to load broken-skill')).toBeInTheDocument()
+    expect(screen.queryByText('Loaded broken-skill')).not.toBeInTheDocument()
+  })
+
   it('updates a generic loading label when the skill name arrives', async () => {
     const { rerender } = render(ActivityTrace, {
       props: { parts: [tool('c1', 'load_skill', 'streaming')] },
