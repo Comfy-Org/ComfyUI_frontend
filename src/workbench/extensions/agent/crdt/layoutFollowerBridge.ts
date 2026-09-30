@@ -502,10 +502,8 @@ export class LayoutFollowerBridge extends EventTarget {
     this.reseedWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: result }))
     if (result.workflowId !== this.desiredWorkflowId) return
-    if (!result.ok && result.code !== 'conflict') {
-      if (isRetryableReseedCode(result.code)) this.resubscribe()
-      return
-    }
+    // Retryable failures are rescheduled by the lifecycle's bounded backoff.
+    if (!result.ok && result.code !== 'conflict') return
     const reset: DocReset = {
       workflowId: result.workflowId,
       seq: result.seq ?? 0,
