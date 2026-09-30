@@ -7,6 +7,8 @@
 import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 import { formatQuoteMoney } from '@comfyorg/account-ui/billing/checkout'
 
+import { longDate } from '@/checkout/longDate'
+
 export interface KeepSubscriptionCopy {
   readonly title: string
   readonly body: string
@@ -50,15 +52,6 @@ function changeOf(quote: SubscriptionPreview): Change {
     return CHANGE_OF_TRANSITION[quote.transition_type]
   if (next.duration !== 'ANNUAL') return 'to_monthly'
   return quote.renewal_at === undefined ? 'to_yearly_undated' : 'to_yearly'
-}
-
-function longDate(iso: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC'
-  }).format(new Date(iso))
 }
 
 export function keepSubscriptionCopy(

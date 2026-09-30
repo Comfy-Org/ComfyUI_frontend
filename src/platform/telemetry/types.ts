@@ -994,6 +994,23 @@ export interface AgentThreadStartedMetadata extends Record<string, unknown> {
   source: AgentThreadStartSource
 }
 
+export type AgentErrorClass =
+  | 'request_failed'
+  | 'malformed_stream_event'
+  | 'cancel_failed'
+  | 'history_load_failed'
+  | 'ask_answer_failed'
+  | 'thread_list_load_failed'
+  | 'workflow_open_failed'
+export interface AgentErrorMetadata extends Record<string, unknown> {
+  error_class: AgentErrorClass
+  failure_stage: 'pre_acceptance' | 'post_acceptance'
+  retryable: boolean
+  turn_accepted: boolean
+  /** `none` is a failure the user was never shown. */
+  ui_treatment: 'inline_notice' | 'error_overlay' | 'toast' | 'none'
+}
+
 /**
  * Widget (input/parameter) favorite toggle tracking metadata.
  * Used to measure discoverability of the right side panel favoriting feature.
@@ -1140,14 +1157,33 @@ export type AgentPaywallReason =
   | 'sales_managed'
   | 'unknown'
 
+/**
+ * Which moment put the paywall in front of the user. The two are not
+ * interchangeable and collapsing them made the funnel unreadable:
+ *
+ * - `refused_send` is reactive — a turn POST came back 402/`no_funds`, so the
+ *   user had to compose and send a message to discover they could not.
+ * - `credits_exhausted` is standing — the client already knows the workspace
+ *   has no funds and says so beside the composer, without a refusal first.
+ *
+ * Reported because `app:agent_paywall_shown` alone cannot tell a rise in
+ * impressions caused by the standing surface from one caused by more users
+ * being refused. Without the split, "the paywall is showing more" is
+ * ambiguous between the fix working and the product getting worse.
+ */
+export type AgentPaywallSurface = 'refused_send' | 'credits_exhausted'
+
 export interface AgentPaywallShownMetadata {
   reason: AgentPaywallReason
+  surface: AgentPaywallSurface
 }
 
 export type AgentPaywallCta = 'subscribe' | 'add_credits' | 'upgrade'
 
 export interface AgentPaywallCtaMetadata {
   cta: AgentPaywallCta
+  /** The surface whose impression this click follows. */
+  surface: AgentPaywallSurface
 }
 
 export interface SubscriptionCancellationMetadata {
@@ -1766,6 +1802,7 @@ export interface TelemetryProvider {
     metadata: AgentAttachButtonClickedMetadata
   ): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
   trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
   trackAgentRunApprovalShown?(metadata: AgentRunApprovalShownMetadata): void
@@ -1965,6 +2002,7 @@ export const TelemetryEvents = {
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_ERROR: 'app:agent_error',
   AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
   AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
   AGENT_RUN_APPROVAL_SHOWN: 'app:agent_run_approval_shown',

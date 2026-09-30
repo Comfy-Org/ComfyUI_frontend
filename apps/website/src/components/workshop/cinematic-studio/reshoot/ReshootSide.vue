@@ -3,8 +3,8 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
-import type { DepthState } from '../../../../composables/useReshootDemo'
-import { RESHOOT_FRAMES } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import type { DepthState } from '../../../../composables/useReshoot'
+import type { StudioGate } from '../../../../lib/workshop/cinematic-studio/gate'
 import type {
   CameraKey,
   ReshootAspect,
@@ -14,6 +14,7 @@ import type {
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
+import CinematicGenerateAction from '../CinematicGenerateAction.vue'
 import ReshootAimRig from './ReshootAimRig.vue'
 import ReshootDisclosure from './ReshootDisclosure.vue'
 import ReshootFormat from './ReshootFormat.vue'
@@ -26,6 +27,11 @@ const {
   camera,
   keys,
   depth,
+  frames,
+  gate,
+  canGenerate,
+  priceNote,
+  workspaceName,
   locale = 'en'
 } = defineProps<{
   clip: string
@@ -34,6 +40,11 @@ const {
   camera: Readonly<ReshootCamera>
   keys: readonly CameraKey[]
   depth: DepthState
+  frames: number
+  gate: StudioGate
+  canGenerate: boolean
+  priceNote?: string
+  workspaceName?: string
   locale?: Locale
 }>()
 
@@ -55,10 +66,12 @@ const motion = defineModel<ReshootMotion>('motion', { required: true })
 const prompt = defineModel<string>('prompt', { required: true })
 
 const ready = computed(() => depth === 'ready')
-const frames = rc('reshoot.frames', locale, {
-  frames: RESHOOT_FRAMES,
-  seconds: (RESHOOT_FRAMES / 24).toFixed(1)
-})
+const framesLabel = computed(() =>
+  rc('reshoot.frames', locale, {
+    frames,
+    seconds: (frames / 24).toFixed(1)
+  })
+)
 
 function choose(event: Event) {
   const input = event.target
@@ -94,7 +107,7 @@ function choose(event: Event) {
           <span class="truncate text-[11px] text-primary-warm-gray">
             {{
               ready
-                ? `${rc('reshoot.clip.ready', locale)} · ${frames}`
+                ? `${rc('reshoot.clip.ready', locale)} · ${framesLabel}`
                 : rc('reshoot.aim.reading', locale)
             }}
           </span>
@@ -128,6 +141,7 @@ function choose(event: Event) {
             v-model:frame="frame"
             v-model:motion="motion"
             :keys
+            :frames
             :disabled="!ready"
             :locale
             @key="emit('key')"
@@ -193,15 +207,32 @@ function choose(event: Event) {
           rc(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait', locale)
         }}
       </p>
+      <p
+        v-if="priceNote"
+        class="text-center text-xs text-primary-comfy-canvas"
+        data-testid="reshoot-price"
+      >
+        {{ priceNote }}
+      </p>
       <Button
+        v-if="gate === 'ready'"
         size="lg"
         class="rounded-full"
-        :disabled="!ready"
+        :disabled="!canGenerate"
         data-testid="reshoot-action"
         @click="emit('generate')"
       >
         {{ rc('reshoot.generate', locale) }}
       </Button>
+      <CinematicGenerateAction
+        v-else
+        :gate
+        :workspace-name
+        :rendering="false"
+        :can-generate="false"
+        wide
+        :locale
+      />
     </footer>
   </aside>
 </template>
