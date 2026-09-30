@@ -41,7 +41,7 @@ const tabClass = (tab: CatalogueTab) =>
   cn(
     'relative inline-flex h-9 cursor-pointer items-center justify-center rounded-xl px-5 text-sm font-semibold whitespace-nowrap transition-colors duration-300 ease-out outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 motion-reduce:transition-none max-sm:px-3',
     active.value === tab
-      ? 'text-page'
+      ? 'text-primary-warm-white'
       : 'text-content-secondary hover:text-content-bright'
   )
 </script>
@@ -61,7 +61,7 @@ const tabClass = (tab: CatalogueTab) =>
   >
     <div :class="cn('pointer-events-none absolute inset-1 grid', columns)">
       <div
-        class="rounded-xl bg-primary-comfy-canvas transition-transform duration-300 ease-out motion-reduce:transition-none"
+        class="rounded-xl bg-transparency-white-t20 transition-transform duration-300 ease-out motion-reduce:transition-none"
         :style="{ transform: marker }"
       />
     </div>

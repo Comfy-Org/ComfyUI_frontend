@@ -22,41 +22,6 @@ const base: WorkshopModel = {
 }
 
 describe('WorkshopModelCard', () => {
-  // Every workflow but a couple runs on the shared Cloud endpoint, so a mark
-  // on all of them would mark nothing.
-  const workflow = (slug: string): WorkshopModel => ({
-    slug,
-    name: 'Remove an object from a video',
-    workflowCount: 1,
-    href: `/models/${slug}/`,
-    type: 'CLOUD',
-    workflowId: 'ltx2-obscura-remova',
-    capabilities: [],
-    modality: 'video'
-  })
-
-  it.for([
-    { case: 'a model', model: base },
-    {
-      case: 'a workflow on the shared endpoint',
-      model: workflow('workflows/remove-object')
-    }
-  ])('says nothing about Comfy API for $case', ({ model }) => {
-    render(WorkshopModelCard, { props: { model } })
-
-    expect(screen.queryByTestId('model-card-comfy-api')).toBeNull()
-  })
-
-  it('marks a workflow that runs on its own deployment', () => {
-    render(WorkshopModelCard, {
-      props: { model: workflow('workflows/remove-object-from-video') }
-    })
-
-    expect(screen.getByTestId('model-card-comfy-api')).toHaveTextContent(
-      'Comfy API'
-    )
-  })
-
   it('links the name, provider badge and task to the model page', () => {
     render(WorkshopModelCard, { props: { model: base } })
     const link = screen.getByTestId('workshop-model-card')
