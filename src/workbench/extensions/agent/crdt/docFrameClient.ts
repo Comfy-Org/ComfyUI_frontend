@@ -305,6 +305,23 @@ function parseDocReseedResult(
   }
 }
 
+function parseDocSubscribed(
+  workflowId: string,
+  ok: boolean,
+  data: WireData
+): DocSubscribed {
+  const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
+  const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
+  return {
+    workflowId,
+    ok,
+    ...(isSequence(data.seq) && { seq: data.seq }),
+    ...(isSequence(data.expected_seq) && { expectedSeq: data.expected_seq }),
+    ...(code !== undefined && { code }),
+    ...(message !== undefined && { message })
+  }
+}
+
 export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   if (typeof value !== 'object' || value === null) return null
   const frame = value as { type?: unknown; data?: unknown }
@@ -341,20 +358,9 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   }
 
   if (frame.type === 'doc_subscribed' && typeof data.ok === 'boolean') {
-    const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
-    const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
     return {
       type: frame.type,
-      data: {
-        workflowId: data.workflow_id,
-        ok: data.ok,
-        ...(isSequence(data.seq) && { seq: data.seq }),
-        ...(isSequence(data.expected_seq) && {
-          expectedSeq: data.expected_seq
-        }),
-        ...(code !== undefined && { code }),
-        ...(message !== undefined && { message })
-      }
+      data: parseDocSubscribed(data.workflow_id, data.ok, data)
     }
   }
 
