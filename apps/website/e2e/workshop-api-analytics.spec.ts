@@ -1,9 +1,10 @@
 import type { BrowserContext, Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { MODEL_PATH, test } from './fixtures/modelsAccount'
+import { MODEL_ID, MODEL_PATH, test } from './fixtures/modelsAccount'
 import type { PosthogEvent } from './fixtures/posthogEvents'
 import { capturePosthogEvents } from './fixtures/posthogEvents'
+import { stubWorkshopFlags } from './fixtures/workshopFlags'
 
 test.use({
   launchOptions: { args: ['--disable-blink-features=AutomationControlled'] }
@@ -66,7 +67,7 @@ test('the model API tab reports snippet copies and Get API key clicks', async ({
   await copySnippetAndGetKey(page, context, page.getByTestId('snippet'))
 
   await expectApiActions(captured, {
-    model_slug: 'bfl--flux-2-max--generate-images',
+    model_slug: MODEL_ID,
     page_type: 'model'
   })
 })
@@ -75,21 +76,12 @@ test('the workflow API tab reports snippet copies and Get API key clicks', async
   page,
   context
 }) => {
-  await context.route('**/t.comfy.org/**', (route) =>
-    /\/(flags|decide)\//.test(route.request().url())
-      ? route.fulfill({
-          json: {
-            featureFlags: {
-              'workshop-enabled': true,
-              'workshop-workflows-enabled': true
-            },
-            featureFlagPayloads: {}
-          }
-        })
-      : route.abort('blockedbyclient')
-  )
+  await stubWorkshopFlags(context, {
+    'workshop-enabled': true,
+    'workshop-workflows-enabled': true
+  })
   const captured = await capturePosthogEvents(context)
-  await page.goto('/models/workflows/remove-background/')
+  await page.goto('/hub/workflows/remove-background/')
   await copySnippetAndGetKey(
     page,
     context,

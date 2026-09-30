@@ -670,12 +670,8 @@ describe('ModelDetail', () => {
   })
 
   it('reports API key clicks and snippet copies with the model and language', async () => {
-    mountDetail({ model: runnable })
+    mountDetail({ model: { ...runnable, defaults: { prompt: 'A landscape' } } })
     const visitor = user()
-    await visitor.type(
-      screen.getByRole('textbox', { name: 'Prompt' }),
-      'A landscape'
-    )
     await visitor.click(screen.getByRole('tab', { name: 'API' }))
     await visitor.click(await screen.findByTestId('snippet-curl'))
     await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
@@ -699,12 +695,8 @@ describe('ModelDetail', () => {
   })
 
   it('reports no API key clicks or snippet copies while Models is hidden', async () => {
-    mountDetail({ model: runnable })
+    mountDetail({ model: { ...runnable, defaults: { prompt: 'A landscape' } } })
     const visitor = user()
-    await visitor.type(
-      screen.getByRole('textbox', { name: 'Prompt' }),
-      'A landscape'
-    )
     await visitor.click(screen.getByRole('tab', { name: 'API' }))
     await screen.findByRole('button', { name: 'Copy snippet' })
     auth.workshopEnabled.value = false
