@@ -66,7 +66,7 @@ export async function forwardLegacySection(
     }
     function check() {
       if (signal.aborted || location.href !== href) return finish()
-      if (workshopOn.value && sectionOn.value) {
+      if (settled.value && workshopOn.value && sectionOn.value) {
         stop()
         location.replace(target.href)
         setTimeout(resolve, FORWARD_GRACE_MS)

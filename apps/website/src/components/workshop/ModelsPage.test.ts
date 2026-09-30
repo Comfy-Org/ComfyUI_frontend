@@ -16,7 +16,7 @@ import {
   useWorkshopWorkflowsEnabled,
   useWorkshopAuthFlag
 } from '../../scripts/posthog'
-import { FORWARD_GRACE_MS } from './forwardLegacySection'
+import { FORWARD_GRACE_MS, forwardLegacySection } from './forwardLegacySection'
 import ModelsPage from './ModelsPage.vue'
 
 vi.mock(import('../../scripts/posthog'))
@@ -219,6 +219,29 @@ describe('Models page entry', () => {
         expect(screen.getByTestId('models-loading')).toBeTruthy()
       }
     )
+
+    it('waits for settled flags before forwarding when both flags are enabled', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      settled.value = false
+      workflowsEnabled.value = true
+      const controller = new AbortController()
+      const forwarding = forwardLegacySection(location.href, controller.signal)
+
+      try {
+        await nextTick()
+        expect(replace).not.toHaveBeenCalled()
+
+        settled.value = true
+        await nextTick()
+        expect(replace).toHaveBeenCalledExactlyOnceWith(
+          new URL('/hub/workflows/', location.origin).href
+        )
+        await vi.advanceTimersByTimeAsync(FORWARD_GRACE_MS)
+        await forwarding
+      } finally {
+        controller.abort()
+      }
+    })
 
     it('loads the models catalogue while it waits for the flags', async () => {
       window.history.replaceState({}, '', '/hub/models/?type=workflows')
