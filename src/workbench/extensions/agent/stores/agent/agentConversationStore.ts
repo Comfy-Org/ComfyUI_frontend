@@ -362,6 +362,13 @@ export const useAgentConversationStore = defineStore(
       }
     }
 
+    function hasPendingTurn(turnId: string): boolean {
+      if (activeTurnId.value === turnId) return true
+      for (const entry of backgroundTurns.values())
+        if (entry.messageId === turnId) return true
+      return false
+    }
+
     function dropBackgroundTurns(): void {
       for (const entry of backgroundTurns.values()) {
         entry.transport.settle()
@@ -504,6 +511,7 @@ export const useAgentConversationStore = defineStore(
       stashActiveTurn,
       resumeBackgroundTurn,
       settleBackgroundTurn,
+      hasPendingTurn,
       dropBackgroundTurns,
       reset,
       hydrate

@@ -327,6 +327,38 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
   })
 
+  test('keeps a failed prompt available to retry', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    // Regression: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16628
+    await comfyPage.page.route(
+      '**/api/agent/threads/*/messages',
+      async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        await route.fulfill({
+          status: 500,
+          body: 'Agent temporarily unavailable'
+        })
+      }
+    )
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+
+    const prompt = 'Build a product photo workflow'
+    await agentPanel.composer.fill(prompt)
+    await agentPanel.sendButton.click()
+
+    await expect(agentPanel.root.getByTestId('user-message-bubble')).toHaveText(
+      prompt
+    )
+    await expect(
+      agentPanel.root.getByText(enMessages.agent.sendFailed)
+    ).toBeVisible()
+    await expect(agentPanel.composer).toHaveText(prompt)
+    await expect(agentPanel.sendButton).toBeEnabled()
+  })
+
   test('T-28 / PM-677 / FE-1320 keeps the Agent scrollbar track transparent', async ({
     comfyPage
   }) => {

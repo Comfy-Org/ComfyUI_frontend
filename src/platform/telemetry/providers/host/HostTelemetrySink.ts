@@ -9,6 +9,7 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentErrorMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
@@ -367,6 +368,10 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.capture(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
+  trackAgentError(metadata: AgentErrorMetadata): void {
+    this.capture(TelemetryEvents.AGENT_ERROR, metadata)
   }
 
   trackAgentOnboardingShown(): void {
