@@ -37,12 +37,13 @@ const mainColor = defineModel<number | undefined>('mainColor')
 
 const multiple = groups.length > 1
 const activePart = ref(groups[0].part)
-const editing = ref(false)
+const editing = defineModel<boolean>('editing', { default: false })
 
 function choose(part: DirectionPart, id: string) {
   if (part === 'grade') {
     colors.value = []
     mainColor.value = undefined
+    editing.value = false
   }
   emit('choose', part, id)
   if (!multiple) emit('close')
@@ -78,23 +79,14 @@ const selectedIn = (part: DirectionPart) =>
         @choose="choose(group.part, $event)"
       />
     </div>
-    <div v-else-if="editing && colors.length" class="flex flex-col gap-3">
-      <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
-      <button
-        type="button"
-        class="h-9 self-end rounded-xl bg-primary-warm-white px-4 text-sm font-semibold text-primary-comfy-ink hover:bg-primary-warm-white/90"
-        @click="editing = false"
-      >
-        {{ tc('cinematic.grade.done', locale) }}
-      </button>
-    </div>
-    <template v-else>
+    <div v-else class="flex flex-col gap-4 lg:flex-row lg:items-start">
       <CinematicOptionGrid
         v-for="group in groups"
         :key="group.part"
         :group
         :selected="selectedIn(group.part)"
         :locale
+        class="min-w-0 flex-1"
         @choose="choose(group.part, $event)"
       >
         <CinematicGradeImageTile
@@ -105,6 +97,19 @@ const selectedIn = (part: DirectionPart) =>
           @edit="editing = true"
         />
       </CinematicOptionGrid>
-    </template>
+      <div
+        v-if="editing && colors.length"
+        class="flex shrink-0 flex-col gap-3 max-lg:border-t max-lg:border-transparency-white-t8 max-lg:pt-4 lg:sticky lg:top-0 lg:w-80 lg:border-l lg:border-transparency-white-t8 lg:pl-4"
+      >
+        <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
+        <button
+          type="button"
+          class="h-9 self-end rounded-xl bg-primary-warm-white px-4 text-sm font-semibold text-primary-comfy-ink hover:bg-primary-warm-white/90"
+          @click="editing = false"
+        >
+          {{ tc('cinematic.grade.done', locale) }}
+        </button>
+      </div>
+    </div>
   </CinematicPopover>
 </template>

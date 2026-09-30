@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, useTemplateRef } from 'vue'
+import { nextTick, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -70,6 +70,9 @@ const {
   toggle: togglePicker,
   close: closePicker
 } = useCinematicPopover<PickerKey>()
+
+const editingPalette = ref(false)
+watch(picker, () => (editingPalette.value = false))
 
 const output = useTemplateRef<HTMLElement>('output')
 const layout = useTemplateRef<HTMLElement>('layout')
@@ -191,6 +194,7 @@ function generate() {
         :key="picker"
         v-model:colors="colors"
         v-model:main-color="mainColor"
+        v-model:editing="editingPalette"
         :groups="pickerGroups(picker)"
         :direction
         :title="popoverTitle(picker, locale)"
@@ -198,7 +202,7 @@ function generate() {
         :class="
           cn(
             'fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl',
-            picker === 'camera' ? 'lg:right-0' : 'lg:w-150'
+            picker === 'camera' || editingPalette ? 'lg:right-0' : 'lg:w-150'
           )
         "
         :style="{ '--anchor-top': `${anchorTop}px` }"

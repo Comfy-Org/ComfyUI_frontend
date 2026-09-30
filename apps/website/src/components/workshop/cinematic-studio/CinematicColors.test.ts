@@ -48,6 +48,24 @@ describe('CinematicColors', () => {
     expect(main.value).toBeUndefined()
   })
 
+  it('edits the chosen swatch from the hex field', async () => {
+    const { colors, user } = renderColors(['#aa0000', '#00aa00'])
+    await user.click(screen.getByRole('button', { name: 'Color 2: #00aa00' }))
+    const hex = screen.getByRole('textbox', { name: 'Hex color' })
+    await user.clear(hex)
+    await user.type(hex, '3b1b6e{Enter}')
+    expect(colors.value).toEqual(['#aa0000', '#3b1b6e'])
+  })
+
+  it('keeps the color when the hex field holds no color', async () => {
+    const { colors, user } = renderColors(['#aa0000'])
+    const hex = screen.getByRole('textbox', { name: 'Hex color' })
+    await user.clear(hex)
+    await user.type(hex, 'nope{Enter}')
+    expect(colors.value).toEqual(['#aa0000'])
+    expect(hex).toHaveValue('#aa0000')
+  })
+
   it('clears every color', async () => {
     const { colors, main, user } = renderColors(['#aa0000'], 0)
     await user.click(screen.getByRole('button', { name: 'Clear colors' }))

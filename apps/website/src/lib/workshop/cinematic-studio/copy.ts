@@ -686,10 +686,12 @@ const copy = {
     en: 'Colors',
     'zh-CN': '颜色'
   },
-  'cinematic.colors.hint': {
-    en: 'Sent as words, so every model can follow them',
-    'zh-CN': '以文字发送，所有模型都能使用'
+  'cinematic.colors.shade': {
+    en: 'Saturation and brightness',
+    'zh-CN': '饱和度与亮度'
   },
+  'cinematic.colors.hue': { en: 'Hue', 'zh-CN': '色相' },
+  'cinematic.colors.hex': { en: 'Hex color', 'zh-CN': '十六进制颜色' },
   'cinematic.colors.color': {
     en: 'Color',
     'zh-CN': '颜色'
