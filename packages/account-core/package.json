@@ -39,6 +39,7 @@
     "./turnstileScript": "./src/turnstileScript.ts",
     "./firebaseAuthError": "./src/firebaseAuthError.ts",
     "./provisioning": "./src/provisioning.ts",
+    "./authenticate": "./src/authenticate.ts",
     "./redirect": "./src/redirect.ts",
     "./sso": "./src/sso.ts",
     "./workspaceLink": "./src/workspaceLink.ts",
@@ -115,6 +116,10 @@
       "./provisioning": {
         "types": "./dist/provisioning.d.ts",
         "import": "./dist/provisioning.js"
+      },
+      "./authenticate": {
+        "types": "./dist/authenticate.d.ts",
+        "import": "./dist/authenticate.js"
       },
       "./redirect": {
         "types": "./dist/redirect.d.ts",
