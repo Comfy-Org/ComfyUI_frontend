@@ -136,7 +136,10 @@ const structuredData = head.emitStructuredData
 {/* <html> must stay overflow: visible — body's overflow (incl. reka-ui's
      dialog scroll lock) only propagates to the viewport when the root is
      visible. The horizontal clip lives on <body>. */}
-<html lang={locale}>
+<html
+  lang={locale}
+  data-banner-version={bannerVisible ? bannerVersion : undefined}
+>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -324,7 +327,9 @@ const structuredData = head.emitStructuredData
     <main class="overflow-x-clip">
       <slot />
     </main>
-    {!minimal && <SiteFooter locale={locale} client:load />}
+    {!minimal && (
+      <SiteFooter locale={locale} client:visible={{ rootMargin: '200px' }} />
+    )}
 
     <Analytics />
 
@@ -333,6 +338,11 @@ const structuredData = head.emitStructuredData
       import { ScrollTrigger } from '../scripts/gsapSetup'
       import { initPostHog, capturePageview } from '../scripts/posthog'
       import { reifyMediaElements } from '../scripts/reifyMediaElements'
+      import {
+        BANNER_DISMISS_ATTR,
+        BANNER_STORAGE_KEY,
+        toClosedBanners
+      } from '../utils/banner'
 
       initSmoothScroll()
 
@@ -347,6 +357,19 @@ const structuredData = head.emitStructuredData
 
       document.addEventListener('astro:before-preparation', () => {
         cancelScroll()
+      })
+
+      document.addEventListener('astro:before-swap', ({ newDocument }) => {
+        try {
+          const closed = toClosedBanners(
+            JSON.parse(localStorage.getItem(BANNER_STORAGE_KEY) || '{}')
+          )
+          const version = newDocument.documentElement.dataset.bannerVersion
+          newDocument.documentElement.toggleAttribute(
+            BANNER_DISMISS_ATTR,
+            version !== undefined && closed[version] === true
+          )
+        } catch {}
       })
 
       // Synchronous, so it runs before island hydration touches the DOM.

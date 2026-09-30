@@ -318,6 +318,7 @@ describe('useBillingPlans', () => {
       expect(isLoading.value).toBe(false)
       expect(plans.value).toEqual([])
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'billing',
         errorType: 'cloud_billing_plan_catalog_fallback',
         tags: {
           failure_kind: 'degraded',

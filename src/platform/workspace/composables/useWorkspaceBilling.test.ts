@@ -511,7 +511,10 @@ describe('useWorkspaceBilling', () => {
         expect.objectContaining({
           message: expect.stringContaining('seat_change')
         }),
-        { errorType: 'billing_unknown_resume_mode' }
+        {
+          surface: 'workspace',
+          errorType: 'billing_unknown_resume_mode'
+        }
       )
       // Recovery is preserved deliberately: without it the customer has no way
       // back to the payment page, while a wrong panel clears on reload.

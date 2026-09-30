@@ -2,11 +2,8 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { workshopModels } from '../../config/workshop-browse-content'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
+import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
 import { t } from '../../i18n/translations'
-import {
-  workshopEyebrowClass,
-  workshopHeadingClass
-} from '../../components/workshop/workshopHeadingClasses'
 import { modelsHubMeta } from './models-hub-meta'
 
 const { title, description } = modelsHubMeta(workshopModels)
@@ -16,17 +13,17 @@ const directory = workshopModels.toSorted((a, b) =>
 ---
 
 <BaseLayout {title} {description} preloadFonts={['Medium']}>
-  <div
-    class="mx-auto max-w-10xl px-6 pt-8 pb-4 max-sm:pt-5 lg:px-8 lg:pt-12 sm:short:pb-3"
+  <script>
+    import '../../scripts/hubNavigation'
+  </script>
+  <ModelsPage
+    section="models"
+    heading={t('workshop.catalogue.heading')}
+    client:load
+    transition:persist="hub-catalogue"
   >
-    <p class={workshopEyebrowClass}>
-      {t('workshop.catalogue.eyebrow')}
-    </p>
-    <h1 class={workshopHeadingClass}>
-      {t('workshop.catalogue.heading')}
-    </h1>
-  </div>
-  <ModelsPage client:load />
+    <ModelsShowcase slot="fallback" />
+  </ModelsPage>
   <section
     aria-labelledby="models-directory-heading"
     class="mx-auto max-w-10xl px-6 pb-16 max-sm:pb-10 lg:px-8 lg:pb-24"

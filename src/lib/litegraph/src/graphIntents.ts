@@ -117,6 +117,7 @@ export function emitGraphIntent(intent: GraphIntent): void {
       listener(event)
     } catch (error) {
       reportError(error, {
+        surface: 'graph',
         errorType: 'graph_intent_listener_failed',
         context: { intent: intent.type, source: activeSource }
       })

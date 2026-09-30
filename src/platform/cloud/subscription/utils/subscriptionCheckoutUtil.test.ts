@@ -1,11 +1,12 @@
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
 import { useAuthStore } from '@/stores/authStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 
@@ -208,6 +209,10 @@ describe('performSubscriptionCheckout', () => {
     const beginCheckoutMetadata = vi.mocked(telemetry.trackBeginCheckout).mock
       .calls[0][0]
     const [, storedAttempt] = mockLocalStorage.setItem.mock.calls[0]
+    expect(JSON.parse(storedAttempt)).toMatchObject({
+      owner_id: 'user-123',
+      workspace_id: null
+    })
     expect(beginCheckoutMetadata.checkout_attempt_id).toBe(
       JSON.parse(storedAttempt).attempt_id
     )
@@ -248,6 +253,7 @@ describe('performSubscriptionCheckout', () => {
     await performSubscriptionCheckout('pro', 'monthly')
 
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'billing',
       errorType: 'cloud_checkout_attribution_fallback',
       tags: {
         failure_kind: 'degraded',
@@ -332,7 +338,7 @@ describe('performSubscriptionCheckout', () => {
     openSpy.mockRestore()
   })
 
-  it('uses the latest userId when it changes after checkout starts', async () => {
+  it('keeps the initiating scope when identity changes during checkout', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
     const authHeader =
@@ -343,6 +349,9 @@ describe('performSubscriptionCheckout', () => {
       >()
 
     Object.assign(useAuthStore(), { userId: 'user-early' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-early'
+    })
     vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementationOnce(
       () => authHeader.promise
     )
@@ -354,6 +363,9 @@ describe('performSubscriptionCheckout', () => {
     const checkoutPromise = performSubscriptionCheckout('pro', 'yearly')
 
     Object.assign(useAuthStore(), { userId: 'user-late' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-late'
+    })
     authHeader.resolve({ Authorization: 'Bearer test-token' as const })
 
     await checkoutPromise
@@ -361,13 +373,18 @@ describe('performSubscriptionCheckout', () => {
     expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledTimes(1)
     expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
       expect.objectContaining({
-        user_id: 'user-late',
+        user_id: 'user-early',
         tier: 'pro',
         cycle: 'yearly',
         checkout_type: 'new',
         checkout_attempt_id: expect.any(String)
       })
     )
+    const [, storedAttempt] = mockLocalStorage.setItem.mock.calls[0]
+    expect(JSON.parse(storedAttempt)).toMatchObject({
+      owner_id: 'user-early',
+      workspace_id: 'workspace-early'
+    })
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
   })
 
@@ -395,7 +412,53 @@ describe('performSubscriptionCheckout', () => {
     )
   })
 
-  it('reports checkout-initiation failure via trackBillingEvent, so the marketing deep link inherits it too', async () => {
+  it('opens the attempt with one started event that the pending attempt shares', async () => {
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue(
+      '00000000-0000-4000-8000-000000000001'
+    )
+    vi.spyOn(window, 'open').mockImplementation(() => window)
+    vi.mocked(global.fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({ checkout_url: 'https://checkout.stripe.com/x' })
+      )
+    )
+
+    await performSubscriptionCheckout('pro', 'yearly', {
+      paymentIntentSource: 'out_of_credits'
+    })
+
+    const telemetry = useTelemetry()
+    assert.exists(telemetry)
+    expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual([
+      [
+        {
+          operation: 'subscription_checkout',
+          stage: 'started',
+          outcome: 'pending',
+          checkout_attempt_id: '00000000-0000-4000-8000-000000000001',
+          tier: 'pro',
+          cycle: 'yearly',
+          checkout_type: 'new',
+          payment_intent_source: 'out_of_credits'
+        }
+      ]
+    ])
+    expect(
+      JSON.parse(
+        window.localStorage.getItem(
+          PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+        ) ?? 'null'
+      )
+    ).toMatchObject({
+      attempt_id: '00000000-0000-4000-8000-000000000001',
+      start_reported: true
+    })
+  })
+
+  it('closes a rejected checkout attempt with a failure that follows its started event', async () => {
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue(
+      '00000000-0000-4000-8000-000000000002'
+    )
     vi.mocked(global.fetch).mockResolvedValue({
       ok: false,
       status: 400,
@@ -410,16 +473,36 @@ describe('performSubscriptionCheckout', () => {
       })
     ).rejects.toThrow()
 
-    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
-      operation: 'subscription_checkout',
-      stage: 'failed',
-      outcome: 'failure',
-      tier: 'pro',
-      cycle: 'yearly',
-      checkout_type: 'new',
-      payment_intent_source: 'deep_link',
-      failure_category: 'api_rejected'
-    })
+    const telemetry = useTelemetry()
+    assert.exists(telemetry)
+    expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual([
+      [
+        {
+          operation: 'subscription_checkout',
+          stage: 'started',
+          outcome: 'pending',
+          checkout_attempt_id: '00000000-0000-4000-8000-000000000002',
+          tier: 'pro',
+          cycle: 'yearly',
+          checkout_type: 'new',
+          payment_intent_source: 'deep_link'
+        }
+      ],
+      [
+        {
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          checkout_attempt_id: '00000000-0000-4000-8000-000000000002',
+          tier: 'pro',
+          cycle: 'yearly',
+          checkout_type: 'new',
+          payment_intent_source: 'deep_link',
+          failure_category: 'api_rejected',
+          duration_ms: expect.any(Number)
+        }
+      ]
+    ])
   })
 })
 vi.mock(import('firebase/auth'))

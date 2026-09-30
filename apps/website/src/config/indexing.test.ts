@@ -31,12 +31,14 @@ const modelPages = workshopModels.flatMap(({ href, routerId, slug }) =>
 
 const MODELS_PAGES_BY_KIND = [
   ['hub', '/hub/models/'],
+  ['section', '/hub/workflows/'],
+  ['section', '/hub/apps/'],
   ['model', `/hub/models/${hubModelSlug}/`],
   ['alias', '/models/'],
   ['alias', `/models/${modelSlug}/`],
   ['alias', `/models/${aliasSlug}/`],
   ['workflow', '/hub/workflows/change-material/'],
-  ['app', '/models/apps/cinematic-studio/'],
+  ['app', '/hub/apps/cinematic-studio/'],
   ['showcase', '/models/showcase/'],
   ['catalogue', '/models/catalogue.json'],
   ['page data', `/models/${modelSlug}/page.json`]
@@ -252,6 +254,25 @@ describe('model page launch', () => {
       modelPages.every(({ href }) => isIndexableModelPage(href, 'all', false))
     ).toBe(true)
   })
+
+  it.for([
+    { path: '/hub/workflows/', workflowsLaunched: false },
+    { path: '/hub/workflows/', workflowsLaunched: true },
+    { path: '/hub/apps/', workflowsLaunched: false },
+    { path: '/hub/apps/', workflowsLaunched: true }
+  ])(
+    'keeps $path out of the index with workflows launched $workflowsLaunched',
+    ({ path, workflowsLaunched }) => {
+      expect(isIndexableModelPage(path, 'all', workflowsLaunched)).toBe(false)
+      expect(
+        isExcludedFromSitemap(
+          `https://comfy.org${path}`,
+          'all',
+          workflowsLaunched
+        )
+      ).toBe(true)
+    }
+  )
 
   it('fails loudly when model page URLs drift from the Router id map', () => {
     const movedModelPaths = modelPages.map(({ slug }) => `/models/${slug}`)

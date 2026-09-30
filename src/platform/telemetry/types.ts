@@ -17,6 +17,10 @@ import {
   SESSION_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
 import type {
+  BillingDeclineReason,
+  BillingPresentation
+} from '@comfyorg/account-core/billing'
+import type {
   AgentRunMode,
   CreateTopupResponse,
   SubscribeResponse
@@ -685,6 +689,8 @@ export type AgentConsentOfferExit =
   | 'offer_in_flight'
   /** The card has already been on screen for this scope this page load. */
   | 'card_already_seen'
+  /** Panel activation owns consent timing, so the automatic offer is dropped. */
+  | 'activation_opened_panel'
   /** The one-shot auto-show key for this scope is already burned. */
   | 'already_offered'
   /** The first-run startup probe rejected. */
@@ -1254,6 +1260,7 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   operation?: 'resubscribe'
   /** The click-time source, carried through so the terminal event can report it. */
   resubscribe_source?: ResubscribeClickMetadata['source']
+  recovery_outcome?: 'late_success'
 }
 
 export interface WorkspaceInviteMetadata extends Record<string, unknown> {
@@ -1320,6 +1327,10 @@ type BillingSucceeded = {
   outcome: 'success'
 }
 
+type BillingRecoveredSucceeded = BillingSucceeded & {
+  recovery_outcome?: 'late_success'
+}
+
 type BillingFailed = BillingFailure & {
   stage: 'failed'
   outcome: 'failure'
@@ -1334,6 +1345,7 @@ type BillingTimedOut = {
 type SubscriptionCheckoutBillingEvent = {
   operation: 'subscription_checkout'
   billing_op_id?: string
+  checkout_attempt_id?: string
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
@@ -1348,8 +1360,9 @@ type SubscriptionCheckoutBillingEvent = {
   | BillingCheckoutReceived<SubscribeResponse['status']>
   | BillingRequestSent
   | BillingStarted
-  | BillingSucceeded
+  | BillingRecoveredSucceeded
   | BillingFailed
+  | BillingTimedOut
 )
 
 type BillingOperationBillingEvent = {
@@ -1357,6 +1370,10 @@ type BillingOperationBillingEvent = {
   /** Absent when the initiating call itself failed, before the backend returned one to poll. */
   billing_op_id?: string
   operation_type: 'subscription' | 'topup' | 'cancel'
+  /** Set by the billing SDK rail, as is `resumed`; the poller never sets either. */
+  presentation?: BillingPresentation
+  /** True when this tab reattached to an operation it did not issue. */
+  resumed?: boolean
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
@@ -1369,13 +1386,19 @@ type BillingOperationBillingEvent = {
    * true duration.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed | BillingTimedOut)
+} & (
+  | BillingStarted
+  | BillingSucceeded
+  | (BillingFailed & { decline_reason?: BillingDeclineReason })
+  | BillingTimedOut
+)
 
 type ResubscribeBillingEvent = {
   operation: 'resubscribe'
   source: ResubscribeClickMetadata['source']
+  checkout_attempt_id?: string
   payment_intent_source?: PaymentIntentSource
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (BillingStarted | BillingRecoveredSucceeded | BillingFailed)
 
 type TopupBillingEvent = {
   operation: 'topup'
@@ -1439,47 +1462,68 @@ export function getBillingTelemetryEventName(
   return `billing.${event.operation}.${event.stage}` as BillingTelemetryEventName
 }
 
+type BillingTelemetryPayload = Record<string, unknown>
+
+type KeysOfUnion<T> = T extends unknown ? keyof T : never
+
+type BillingPayloadField = Exclude<
+  KeysOfUnion<BillingTelemetryEvent>,
+  'operation' | 'stage' | 'outcome'
+>
+
+const BILLING_PAYLOAD_FIELD_HANDLING = {
+  checkout_status: 'required',
+  failure_category: 'required',
+  member_removal_count: 'required',
+  member_removal_failures: 'required',
+  operation_type: 'required',
+  source: 'required',
+  billing_op_id: 'optional',
+  checkout_attempt_id: 'optional',
+  checkout_type: 'optional',
+  cycle: 'optional',
+  decline_reason: 'optional',
+  duration_ms: 'optional',
+  error_code: 'optional',
+  payment_intent_source: 'optional',
+  presentation: 'optional',
+  recovery_outcome: 'optional',
+  resumed: 'optional',
+  target_tier: 'optional',
+  tier: 'optional'
+} as const satisfies Record<BillingPayloadField, 'optional' | 'required'>
+
+const OPTIONAL_BILLING_PAYLOAD_FIELDS = Object.entries(
+  BILLING_PAYLOAD_FIELD_HANDLING
+).flatMap(([field, handling]) => (handling === 'optional' ? [field] : []))
+
+const REQUIRED_BILLING_PAYLOAD_FIELDS = Object.entries(
+  BILLING_PAYLOAD_FIELD_HANDLING
+).flatMap(([field, handling]) => (handling === 'required' ? [field] : []))
+
+const optionalBillingPayloadFields: ReadonlySet<string> = new Set(
+  OPTIONAL_BILLING_PAYLOAD_FIELDS
+)
+const requiredBillingPayloadFields: ReadonlySet<string> = new Set(
+  REQUIRED_BILLING_PAYLOAD_FIELDS
+)
+
 export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
-  return {
+  const payload: BillingTelemetryPayload = {
     operation: event.operation,
     stage: event.stage,
-    outcome: event.outcome,
-    ...('billing_op_id' in event &&
-      event.billing_op_id !== undefined && {
-        billing_op_id: event.billing_op_id
-      }),
-    ...('checkout_status' in event && {
-      checkout_status: event.checkout_status
-    }),
-    ...('operation_type' in event && {
-      operation_type: event.operation_type
-    }),
-    ...('tier' in event && event.tier !== undefined && { tier: event.tier }),
-    ...('cycle' in event &&
-      event.cycle !== undefined && { cycle: event.cycle }),
-    ...('checkout_type' in event &&
-      event.checkout_type !== undefined && {
-        checkout_type: event.checkout_type
-      }),
-    ...('payment_intent_source' in event &&
-      event.payment_intent_source !== undefined && {
-        payment_intent_source: event.payment_intent_source
-      }),
-    ...('source' in event && { source: event.source }),
-    ...('failure_category' in event && {
-      failure_category: event.failure_category
-    }),
-    ...('error_code' in event &&
-      event.error_code !== undefined && { error_code: event.error_code }),
-    ...('member_removal_count' in event && {
-      member_removal_count: event.member_removal_count,
-      member_removal_failures: event.member_removal_failures
-    }),
-    ...('target_tier' in event &&
-      event.target_tier !== undefined && { target_tier: event.target_tier }),
-    ...('duration_ms' in event &&
-      event.duration_ms !== undefined && { duration_ms: event.duration_ms })
+    outcome: event.outcome
   }
+
+  for (const [field, value] of Object.entries(event)) {
+    if (requiredBillingPayloadFields.has(field)) {
+      payload[field] = value
+    } else if (optionalBillingPayloadFields.has(field) && value !== undefined) {
+      payload[field] = value
+    }
+  }
+
+  return payload
 }
 
 /**
@@ -1898,6 +1942,8 @@ export const TelemetryEvents = {
   BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
     'billing.subscription_checkout.succeeded',
   BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
+  BILLING_SUBSCRIPTION_CHECKOUT_TIMEOUT:
+    'billing.subscription_checkout.timeout',
   BILLING_OPERATION_STARTED: 'billing.operation.started',
   BILLING_CAPABILITY_READ_SUCCEEDED: 'billing.capability_read.succeeded',
   BILLING_CAPABILITY_READ_FAILED: 'billing.capability_read.failed',

@@ -2,12 +2,14 @@ import type {
   AgentAdmissionError,
   UploadImageResponse
 } from '@comfyorg/ingest-types'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { api } from '@/scripts/api'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -27,7 +29,8 @@ import {
 } from '../../schemas/agentApiSchema'
 import {
   AgentApiError,
-  AgentResponseUnreadableError
+  AgentResponseUnreadableError,
+  createAgentRestClient
 } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
@@ -87,6 +90,35 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     )
   }
   return { ...base, ...overrides }
+}
+
+const storedAttachmentRef = `${'9f2c'.repeat(16)}.png`
+
+function wireSend() {
+  const fetchApi = vi
+    .spyOn(api, 'fetchApi')
+    .mockImplementation(async () =>
+      Response.json(
+        { thread_id: 'th-1', message_id: 'msg-1', workflow_id: 'wf-1' },
+        { status: 202 }
+      )
+    )
+  const session = useAgentSession({
+    rest: createAgentRestClient(),
+    events: fakeEvents().source
+  })
+  session.start()
+  return {
+    send: session.sendMessage,
+    postedBody: (): unknown => {
+      const posted = fetchApi.mock.calls.filter(
+        ([route, init]) =>
+          route.endsWith('/messages') && init?.method === 'POST'
+      )
+      assert(posted.length === 1)
+      return JSON.parse(String(posted[0][1]?.body))
+    }
+  }
 }
 
 function fakeEvents() {
@@ -647,6 +679,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.answerAsk('turn-1:call-1', 'run')
 
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
       errorType: 'agent_ask_answer_failed'
     })
     expect(session.notices.value).toEqual([
@@ -1307,6 +1340,20 @@ describe('useAgentSession (v1 composition root)', () => {
       workflowReferences: [],
       selection: undefined,
       attachments: ['upload_a.png', 'upload_b.png']
+    })
+  })
+
+  it('serializes stable attachment refs without unrelated fields', async () => {
+    const { postedBody, send } = wireSend()
+
+    await send('upscale this', [
+      { ref: storedAttachmentRef, name: 'Beach photo.png' }
+    ])
+
+    const body = zAgentPostMessageRequest.parse(postedBody())
+    expect(body).toMatchObject({
+      content: 'upscale this',
+      attachments: [storedAttachmentRef]
     })
   })
 
@@ -3159,6 +3206,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     await session.sendMessage('make me a cat')
 
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
       errorType: 'agent_send_message_failed'
     })
   })

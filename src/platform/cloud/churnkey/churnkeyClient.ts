@@ -120,6 +120,7 @@ function createSession(
               reportError(
                 new Error('Churnkey applied a discount during cancellation'),
                 {
+                  surface: 'billing',
                   errorType:
                     'error_applying_churnkey_discount_during_cancellation'
                 }
@@ -190,6 +191,7 @@ function createSession(
                 settled = true
                 resolve({ type: 'discount-applied' })
                 reportError(error, {
+                  surface: 'billing',
                   errorType: 'error_displaying_churnkey_after_discount',
                   context: { churnkeyErrorType: type }
                 })
@@ -197,6 +199,7 @@ function createSession(
                 return
               case 'cancelling':
                 reportError(error, {
+                  surface: 'billing',
                   errorType: 'error_displaying_churnkey_during_cancellation',
                   context: { churnkeyErrorType: type }
                 })

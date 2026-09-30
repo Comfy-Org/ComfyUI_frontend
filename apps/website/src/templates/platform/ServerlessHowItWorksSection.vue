@@ -229,7 +229,7 @@ watchEffect(() => {
               v-else-if="step.number === 2"
               class="flex size-full items-center justify-center"
             >
-              <TeamSharingChat :locale :endpoint="workflow.endpoint" />
+              <TeamSharingChat :locale />
             </div>
 
             <div v-else class="flex size-full items-center justify-center">

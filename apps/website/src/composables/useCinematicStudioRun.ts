@@ -133,15 +133,16 @@ function shotParameters(request: ShotRequest, model: WorkshopModelDetail) {
   }
 }
 
-function takeFailure(id: string, error: unknown): ReelEvent {
+function takeFailure(id: string, runSlug: string, error: unknown): ReelEvent {
   return error instanceof WorkshopRouterError
     ? {
         type: 'takeFailed',
         id,
         reason: error.reason,
-        requestId: error.requestId ?? undefined
+        requestId: error.requestId ?? undefined,
+        runSlug
       }
-    : { type: 'takeFailed', id, reason: 'client' }
+    : { type: 'takeFailed', id, reason: 'client', runSlug }
 }
 
 function mayStillSettle(error: unknown): boolean {
@@ -332,7 +333,7 @@ export function useCinematicStudioRun(
         return
       }
       if (!mayStillSettle(error)) unsettledTakes.delete(fingerprint)
-      dispatch(takeFailure(id, error))
+      dispatch(takeFailure(id, model.slug, error))
       captureWorkshopEvent({
         name: 'run_finished',
         properties: {

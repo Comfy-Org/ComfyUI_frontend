@@ -928,6 +928,7 @@ describe('billingOperationStore', () => {
 
       await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
       expect(mockReportError).toHaveBeenCalledWith(error, {
+        surface: 'billing',
         errorType: 'failure_handling_billing_operation_success',
         context: { billing_op_id: 'op-1' }
       })
@@ -951,6 +952,7 @@ describe('billingOperationStore', () => {
 
       await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
       expect(mockReportError).toHaveBeenCalledWith(error, {
+        surface: 'billing',
         errorType: 'failure_handling_billing_operation_success',
         context: { billing_op_id: 'op-1' }
       })
@@ -1358,6 +1360,70 @@ describe('billingOperationStore', () => {
       )
       expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ failure_category: 'provider_decline' })
+      )
+    })
+
+    it('closes a downgrade to personal that needs reconciliation with one failed terminal', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-downgrade',
+        status: 'reconciliation_needed',
+        authentication_state: 'reconciliation_needed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-downgrade', 'subscription', {
+        tier: 'creator',
+        cycle: 'monthly',
+        checkoutType: 'change',
+        attemptStartedAt: Date.now(),
+        downgradeToPersonal: {
+          memberRemovalCount: 3,
+          memberRemovalFailures: 0,
+          targetTier: 'creator',
+          startedAt: Date.now() - 7_000
+        }
+      })
+      await vi.advanceTimersByTimeAsync(0)
+      expect((await terminal).status).toBe('reconciliation_needed')
+      await vi.runAllTimersAsync()
+
+      const downgradeEvents = vi
+        .mocked(useTelemetry()?.trackBillingEvent)
+        ?.mock.calls.map(([event]) => event)
+        .filter((event) => event.operation === 'downgrade_to_personal')
+      expect(downgradeEvents).toEqual([
+        {
+          operation: 'downgrade_to_personal',
+          stage: 'failed',
+          outcome: 'failure',
+          member_removal_count: 3,
+          member_removal_failures: 0,
+          target_tier: 'creator',
+          failure_category: 'reconciliation_needed',
+          duration_ms: expect.any(Number)
+        }
+      ])
+      expect(downgradeEvents?.[0]?.duration_ms).toBeGreaterThanOrEqual(7_000)
+    })
+
+    it('reports no downgrade terminal when a subscription that is not a downgrade needs reconciliation', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-reconcile',
+        status: 'reconciliation_needed',
+        authentication_state: 'reconciliation_needed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-reconcile', 'subscription', {
+        attemptStartedAt: Date.now()
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect((await terminal).status).toBe('reconciliation_needed')
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ operation: 'downgrade_to_personal' })
       )
     })
 

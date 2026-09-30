@@ -41,8 +41,13 @@ import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  initialSearch,
+  locale = 'en'
+} = defineProps<{
   models: readonly WorkshopModel[]
+  initialSearch?: string
   locale?: Locale
 }>()
 
@@ -58,8 +63,8 @@ const openedShelf = computed(() => shelfOf(selectedUseCases.value))
 const browseAll = defineModel<boolean>('browseAll', { default: false })
 let scrollReady = false
 
-function readAddress() {
-  const initial = parseCatalogSearch(location.search)
+function readAddress(search: string) {
+  const initial = parseCatalogSearch(search)
   query.value = initial.query ?? ''
   selectedUseCases.value = openedUseCases(initial.useCase ?? 'all')
   legacyModalities.value = [...initial.modalities]
@@ -73,11 +78,11 @@ function readAddress() {
 function onPageShow(event: PageTransitionEvent) {
   if (!event.persisted) return
   browseAll.value = false
-  readAddress()
+  readAddress(location.search)
 }
 
 onMounted(() => {
-  readAddress()
+  readAddress(initialSearch ?? location.search)
   window.addEventListener('pageshow', onPageShow)
   void nextTick(() => {
     scrollReady = true
