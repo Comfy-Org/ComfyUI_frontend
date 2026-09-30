@@ -1,20 +1,24 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
 import type { Platform } from '../../../composables/useDownloadUrl'
-import {
-  downloadUrls,
-  useDownloadUrl
-} from '../../../composables/useDownloadUrl'
+import { installers, useDownloadUrl } from '../../../composables/useDownloadUrl'
+import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { captureDownloadClick } from '../../../scripts/posthog'
 import BrandButton from '../../common/BrandButton.vue'
+import InstallerMenu from './InstallerMenu.vue'
 
-const { locale = 'en', class: customClass = '' } = defineProps<{
+const {
+  locale = 'en',
+  class: customClass = '',
+  showInstallerMenu = false
+} = defineProps<{
   locale?: Locale
   class?: HTMLAttributes['class']
+  showInstallerMenu?: boolean
 }>()
 
 const { downloadUrl, platform, showFallback } = useDownloadUrl()
@@ -27,58 +31,58 @@ const ICONS: Record<Platform, string> = {
   linux: '/icons/os/linux.svg'
 }
 
-interface ButtonSpec {
-  key: Platform
-  href: string
-  icon: string
-  ariaLabel?: string
-}
-
-const buttons = computed<ButtonSpec[]>(() => {
+const buttons = computed(() => {
   if (platform.value) {
-    return [
-      {
-        key: platform.value,
-        href: downloadUrl.value,
-        icon: ICONS[platform.value]
-      }
-    ]
+    return Object.values(installers).filter(
+      (installer) => installer.url === downloadUrl.value
+    )
   }
   if (showFallback.value) {
-    return [
-      {
-        key: 'windows',
-        href: downloadUrls.windows,
-        icon: ICONS.windows,
-        ariaLabel: `${label.value} — Windows`
-      },
-      {
-        key: 'mac',
-        href: downloadUrls.macArm,
-        icon: ICONS.mac,
-        ariaLabel: `${label.value} — macOS`
-      }
-    ]
+    return [installers.windows, installers.macArm]
   }
   return []
 })
 </script>
 
 <template>
-  <BrandButton
+  <div
     v-for="btn in buttons"
-    :key="btn.key"
-    :href="btn.href"
-    target="_blank"
-    size="lg"
-    :class="customClass"
-    :aria-label="btn.ariaLabel"
-    :data-astro-prefetch="btn.key === 'windows' ? 'false' : undefined"
-    @click="captureDownloadClick(btn.key)"
+    :key="btn.url"
+    :class="
+      cn(
+        'inline-flex',
+        showInstallerMenu && btn === buttons[0] && 'lg:min-w-60'
+      )
+    "
   >
-    <span class="inline-flex items-center gap-2">
-      <img :src="btn.icon" alt="" class="inline-block size-5" />
-      <span class="inline-block">{{ label }}</span>
-    </span>
-  </BrandButton>
+    <BrandButton
+      :href="btn.url"
+      target="_blank"
+      size="lg"
+      :class="
+        cn(
+          customClass,
+          'flex-1',
+          showInstallerMenu && btn === buttons[0] && 'rounded-r-none lg:min-w-0'
+        )
+      "
+      :aria-label="
+        showFallback
+          ? `${label} — ${btn.platform === 'mac' ? 'macOS' : 'Windows'}`
+          : undefined
+      "
+      :data-astro-prefetch="btn.platform === 'windows' ? 'false' : undefined"
+      @click="captureDownloadClick(btn.platform)"
+    >
+      <span class="inline-flex items-center gap-2">
+        <img
+          :src="ICONS[btn.platform]"
+          alt=""
+          class="inline-block size-5 shrink-0"
+        />
+        <span class="inline-block">{{ label }}</span>
+      </span>
+    </BrandButton>
+    <InstallerMenu v-if="showInstallerMenu && btn === buttons[0]" :locale />
+  </div>
 </template>

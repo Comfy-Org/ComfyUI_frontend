@@ -1759,6 +1759,26 @@ Enterprise`
     en: 'INSTALL FROM GITHUB',
     'zh-CN': '从 GITHUB 安装'
   },
+  'download.hero.installers.label': {
+    en: 'All installers',
+    'zh-CN': '全部安装包'
+  },
+  'download.hero.installers.windowsX64': {
+    en: 'Windows x64 (including Snapdragon)',
+    'zh-CN': 'Windows x64（含骁龙电脑）'
+  },
+  'download.hero.installers.windowsArm64': {
+    en: 'Windows ARM64 (NVIDIA only)',
+    'zh-CN': 'Windows ARM64（仅限 NVIDIA）'
+  },
+  'download.hero.installers.macArm64': {
+    en: 'macOS (Apple Silicon)',
+    'zh-CN': 'macOS（Apple 芯片）'
+  },
+  'download.hero.installers.linuxX64': {
+    en: 'Linux x64 (AppImage)',
+    'zh-CN': 'Linux x64（AppImage）'
+  },
 
   // Download – MobileDownloadEmailForm
   'download.emailForm.heading': {
