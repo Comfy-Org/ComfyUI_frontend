@@ -2,7 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComposerAttachment } from './useComposer'
-import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
+
+import {
+  MAX_ATTACHMENT_BYTES,
+  MAX_TURN_ATTACHMENTS,
+  useAttachment
+} from './useAttachment'
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -18,6 +24,7 @@ function chipRegistry() {
   const chips: ComposerAttachment[] = []
   return {
     chips,
+    stagedCount: () => chips.length,
     stage: (attachment: ComposerAttachment) => chips.push(attachment),
     update: (id: string, patch: Partial<ComposerAttachment>) => {
       const index = chips.findIndex((chip) => chip.id === id)
@@ -90,6 +97,79 @@ describe('useAttachment', () => {
       'mesh.glb'
     ])
     expect(onError).toHaveBeenCalledTimes(1)
+  })
+
+  it('stages no more than the contract allows and says so', async () => {
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles(
+      Array.from({ length: MAX_TURN_ATTACHMENTS + 1 }, (_unused, index) =>
+        fileOfSize(`${index}.png`, 1)
+      )
+    )
+
+    expect(registry.chips).toHaveLength(MAX_TURN_ATTACHMENTS)
+    expect(upload).toHaveBeenCalledTimes(MAX_TURN_ATTACHMENTS)
+    expect(onError.mock.calls.flat().join(' ')).toContain(
+      String(MAX_TURN_ATTACHMENTS)
+    )
+  })
+
+  it('counts what is already staged, not just the current batch', async () => {
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles(
+      Array.from({ length: MAX_TURN_ATTACHMENTS }, (_unused, index) =>
+        fileOfSize(`${index}.png`, 1)
+      )
+    )
+    onError.mockClear()
+    await addFiles([fileOfSize('one-too-many.png', 1)])
+
+    expect(registry.chips).toHaveLength(MAX_TURN_ATTACHMENTS)
+    expect(onError).toHaveBeenCalledTimes(1)
+  })
+
+  it('refuses a deferred asset once the turn is full', async () => {
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles, addDeferredFile } = useAttachment({
+      upload,
+      onError,
+      ...registry
+    })
+
+    await addFiles(
+      Array.from({ length: MAX_TURN_ATTACHMENTS }, (_unused, index) =>
+        fileOfSize(`${index}.png`, 1)
+      )
+    )
+
+    await expect(
+      addDeferredFile('card.png', async () => fileOfSize('card.png', 1))
+    ).resolves.toBe('too_many')
+    expect(registry.chips).toHaveLength(MAX_TURN_ATTACHMENTS)
+  })
+
+  /* The number is restated in source because Zod exposes maxItems only through
+     internals. This pins it against the generated contract itself, so a change
+     to the spec's maxItems fails here rather than drifting unnoticed. */
+  it('matches the maxItems the generated contract declares', () => {
+    const attachments = (count: number) =>
+      zAgentPostMessageRequest.safeParse({
+        content: 'hi',
+        attachments: Array.from({ length: count }, () => 'a.png')
+      }).success
+
+    expect(attachments(MAX_TURN_ATTACHMENTS)).toBe(true)
+    expect(attachments(MAX_TURN_ATTACHMENTS + 1)).toBe(false)
   })
 
   it('rejects files over 20MB before staging or uploading', async () => {

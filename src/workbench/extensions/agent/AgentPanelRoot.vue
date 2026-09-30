@@ -1556,6 +1556,7 @@ const attachment = useAttachment({
   // must not raise the server-error overlay.
   onError: (message) =>
     toast.add({ severity: 'warn', detail: message, life: 5000 }),
+  stagedCount: () => composerStore.attachments.length,
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment

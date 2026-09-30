@@ -10,6 +10,20 @@ import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
 import type { ComposerAttachment } from './useComposer'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
+
+/**
+ * The contract's `maxItems` on AgentPostMessageRequest.attachments.
+ *
+ * Capped here rather than left to the server because the server does not refuse
+ * the overflow — resolveAttachmentAssets drops every reference past this many
+ * with a warn log, so the file would appear attached and then silently not
+ * exist for the turn. That is the failure PM-1856 is about.
+ *
+ * Restated as a number because Zod exposes `maxItems` only through internals;
+ * useAttachment.test.ts pins it against zAgentPostMessageRequest itself, so a
+ * change to the spec fails there rather than drifting unnoticed.
+ */
+export const MAX_TURN_ATTACHMENTS = 25
 const UPLOAD_HANDSHAKE_TIMEOUT_MS = 30 * 1000
 const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
 const DEFERRED_FETCH_TIMEOUT_MS = 60 * 1000
@@ -26,6 +40,12 @@ export interface UseAttachmentOptions {
   maxBytes?: (file: File) => number
   onError?: (message: string) => void
   onUploaded?: () => void
+  /**
+   * How many attachments are already staged on the turn. Required rather than
+   * optional: defaulting it to 0 would disable the count cap silently, and the
+   * composer — not this composable — owns the staged list.
+   */
+  stagedCount: () => number
   stage: (attachment: ComposerAttachment) => void
   update: (id: string, patch: Partial<ComposerAttachment>) => void
   remove: (id: string) => void
@@ -59,6 +79,13 @@ async function withDeadline<T>(
   }
 }
 
+type DeferredOutcome =
+  | 'uploaded'
+  | 'unsupported'
+  | 'cancelled'
+  | 'failed'
+  | 'fetch_failed'
+
 let stagedCount = 0
 
 export function useAttachment(options: UseAttachmentOptions) {
@@ -79,6 +106,14 @@ export function useAttachment(options: UseAttachmentOptions) {
       capability: agentAttachCapability(name) ?? 'unknown'
     })
     return id
+  }
+
+  function reportTurnLimit(): void {
+    options.onError?.(
+      i18n.global.t('agent.attachmentCountExceeded', {
+        count: MAX_TURN_ATTACHMENTS
+      })
+    )
   }
 
   function settle(id: string): void {
@@ -178,9 +213,18 @@ export function useAttachment(options: UseAttachmentOptions) {
   async function addDeferredFile(
     name: string,
     resolve: (signal: AbortSignal) => Promise<File | undefined>
-  ): Promise<
-    'uploaded' | 'unsupported' | 'cancelled' | 'failed' | 'fetch_failed'
-  > {
+  ): Promise<DeferredOutcome | 'too_many'> {
+    if (options.stagedCount() >= MAX_TURN_ATTACHMENTS) {
+      reportTurnLimit()
+      return 'too_many'
+    }
+    return stageDeferredFile(name, resolve)
+  }
+
+  async function stageDeferredFile(
+    name: string,
+    resolve: (signal: AbortSignal) => Promise<File | undefined>
+  ): Promise<DeferredOutcome> {
     const id = stage(name)
     const controller = new AbortController()
     inFlight.set(id, controller)
@@ -228,7 +272,12 @@ export function useAttachment(options: UseAttachmentOptions) {
         refusedAttachmentsMessage(rejected.map(({ name }) => name))
       )
     }
+
+    const room = Math.max(0, MAX_TURN_ATTACHMENTS - options.stagedCount())
+    if (attachable.length > room) reportTurnLimit()
+
     const staged = attachable
+      .slice(0, room)
       .filter((file) => !isTooLarge(file))
       .map((file) => ({ file, id: stage(file.name) }))
     let uploaded = 0
