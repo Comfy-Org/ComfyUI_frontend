@@ -20,6 +20,7 @@
       :min
       :max
       :step
+      step-snapping
       :disabled
       @update:model-value="(value) => emit('update:modelValue', value)"
     >

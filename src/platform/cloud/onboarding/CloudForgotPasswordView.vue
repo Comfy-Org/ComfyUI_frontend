@@ -26,7 +26,7 @@
           type="email"
           :placeholder="t('cloudForgotPassword_emailPlaceholder')"
           :class="CLOUD_AUTH_FIELD_CLASS"
-          :aria-invalid="!!errorMessage && !email"
+          :aria-invalid="!!errorMessage"
           autocomplete="email"
           required
         />

@@ -58,9 +58,11 @@ describe('MultiSelectWidget', () => {
         ['Alpha', 'Beta']
       )
 
-      for (const text of expectedTexts) {
-        expect(screen.getByText(text)).toBeInTheDocument()
-      }
+      expect(
+        screen
+          .getAllByText(/^(Alpha|Beta|Alpha, Beta)$/)
+          .map((element) => element.textContent)
+      ).toEqual(expectedTexts)
     }
   )
 

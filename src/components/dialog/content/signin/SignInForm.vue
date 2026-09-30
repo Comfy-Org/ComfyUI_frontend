@@ -24,7 +24,8 @@
             <FieldLabel for="comfy-org-sign-in-password">
               {{ t('auth.login.passwordLabel') }}
             </FieldLabel>
-            <span
+            <button
+              type="button"
               :class="
                 cn(
                   'text-sm font-medium text-muted-foreground select-none',
@@ -36,7 +37,7 @@
               @click="handleForgotPassword"
             >
               {{ t('auth.login.forgotPassword') }}
-            </span>
+            </button>
           </div>
           <PasswordInput
             v-bind="componentField"
