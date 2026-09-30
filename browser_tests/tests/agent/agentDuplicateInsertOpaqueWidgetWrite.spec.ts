@@ -353,21 +353,23 @@ async function driveThroughRejectedWidgetEdit(
   await expect
     .poll(() => outboundFrames.slice(framesBeforeEdit))
     .toContainEqual(expect.stringContaining('"op":"set_widget"'))
-  const opsFrame = outboundFrames
+  const isSeedWrite = (op: Op): op is Extract<Op, { op: 'set_widget' }> =>
+    op.op === 'set_widget' &&
+    String(op.node_id) === copyBNodeId &&
+    op.widget === 'seed'
+  const docOpsFrames = outboundFrames
     .slice(framesBeforeEdit)
-    .map(
-      (frame) =>
-        JSON.parse(frame) as {
-          type: string
-          data: { ops: Array<{ op: string; op_id: string }> }
-        }
+    .map((frame) => JSON.parse(frame) as { type: string; data: { ops: Op[] } })
+    .filter((frame) => frame.type === 'doc_ops')
+  const opsFrame = docOpsFrames.find((frame) =>
+    frame.data.ops.some(isSeedWrite)
+  )
+  if (!opsFrame)
+    throw new Error(
+      "expected a doc_ops frame containing copy B's seed set_widget op"
     )
-    .find((frame) => frame.type === 'doc_ops')
-  if (!opsFrame) throw new Error('expected a doc_ops frame for the widget edit')
-  const setWidgetOp = opsFrame.data.ops.find((op) => op.op === 'set_widget')
-  if (!setWidgetOp)
-    throw new Error('expected a set_widget op in the doc_ops batch')
-  const rejectedOpId = setWidgetOp.op_id
+  const setWidgetIndex = opsFrame.data.ops.findIndex(isSeedWrite)
+  const rejectedOpId = opsFrame.data.ops[setWidgetIndex].op_id
 
   socket.send(
     JSON.stringify({
@@ -376,10 +378,12 @@ async function driveThroughRejectedWidgetEdit(
         v: 1,
         workflow_id: WORKFLOW_ID,
         ok: false,
-        applied: [],
+        applied: opsFrame.data.ops
+          .slice(0, setWidgetIndex)
+          .map((op) => op.op_id),
         skipped: [],
         failed: {
-          index: 0,
+          index: setWidgetIndex,
           op_id: rejectedOpId,
           code: 'opaque_widgets',
           message: `${copyBNodeId} is absent from the pinned catalog, so its widgets_values is stored opaquely (schema §1.2) and is not name-addressable`
@@ -409,8 +413,10 @@ test.describe(
       page,
       getWebSocket
     }) => {
-      const { vueNodes, copyANodeId, copyBNodeId } =
-        await driveThroughDuplicateInsert(page, getWebSocket)
+      const { copyANodeId, copyBNodeId } = await driveThroughDuplicateInsert(
+        page,
+        getWebSocket
+      )
 
       expect(
         await page.evaluate(
@@ -427,48 +433,91 @@ test.describe(
         )
       ).toBe(2)
 
+      // `Fit View` animates the pan/zoom over a fixed duration via
+      // requestAnimationFrame rather than a CSS transition, so there is no
+      // completion event to await. Read both copies' boxes from a single
+      // page.evaluate call -- one JS-side snapshot, not two sequential
+      // round-trips that could straddle a frame -- and only call them
+      // settled once several consecutive reads are pixel-IDENTICAL: an
+      // in-progress animation recomputes both offsets from elapsed time on
+      // every frame, so it can't produce the same floats twice in a row,
+      // which also rules out two ticks sampled before the animation has
+      // even started from passing as "settled".
+      type Box = { x: number; y: number; width: number; height: number }
+      const OVERLAP_TOLERANCE = 1
+      const boxesOverlap = (a: Box, b: Box): boolean =>
+        Math.abs(a.x - b.x) <= OVERLAP_TOLERANCE &&
+        Math.abs(a.y - b.y) <= OVERLAP_TOLERANCE &&
+        Math.abs(a.width - b.width) <= OVERLAP_TOLERANCE &&
+        Math.abs(a.height - b.height) <= OVERLAP_TOLERANCE
+      const boxesIdentical = (a: Box, b: Box): boolean =>
+        a.x === b.x &&
+        a.y === b.y &&
+        a.width === b.width &&
+        a.height === b.height
+
+      const readNodeBoxes = (): Promise<[Box | null, Box | null]> =>
+        page.evaluate(
+          ([idA, idB]: readonly [string, string]) => {
+            const rectOf = (nodeId: string) => {
+              const el = document.querySelector(`[data-node-id="${nodeId}"]`)
+              if (!el) return null
+              const { x, y, width, height } = el.getBoundingClientRect()
+              return { x, y, width, height }
+            }
+            return [rectOf(idA), rectOf(idB)] as const
+          },
+          [copyANodeId, copyBNodeId] as const
+        )
+
       await page
         .getByRole('button', { name: 'Fit View (.)', exact: true })
         .click()
 
-      // `Fit View` pans/zooms with a brief transition; read both copies'
-      // boxes together on each poll tick so neither is a stale sample from a
-      // different moment of the transition, and require two consecutive
-      // matching reads (within a pixel tolerance, not exact float equality)
-      // before trusting them as settled.
-      type Box = NonNullable<Awaited<ReturnType<Locator['boundingBox']>>>
-      const PIXEL_TOLERANCE = 1
-      const closeEnough = (a: Box, b: Box): boolean =>
-        Math.abs(a.x - b.x) <= PIXEL_TOLERANCE &&
-        Math.abs(a.y - b.y) <= PIXEL_TOLERANCE &&
-        Math.abs(a.width - b.width) <= PIXEL_TOLERANCE &&
-        Math.abs(a.height - b.height) <= PIXEL_TOLERANCE
-
-      const settledBoxes: { boxA: Box; boxB: Box }[] = []
-      let previous: { boxA: Box; boxB: Box } | null = null
-      await expect
-        .poll(async () => {
-          const boxA = await vueNodes.getNodeLocator(copyANodeId).boundingBox()
-          const boxB = await vueNodes.getNodeLocator(copyBNodeId).boundingBox()
-          if (boxA === null || boxB === null) return false
-          const isSettled =
-            previous !== null &&
-            closeEnough(boxA, previous.boxA) &&
-            closeEnough(boxB, previous.boxB)
-          previous = { boxA, boxB }
-          if (isSettled) settledBoxes.push({ boxA, boxB })
-          return isSettled
-        })
-        .toBe(true)
-      const settled = settledBoxes.at(-1)
-      if (settled === undefined)
+      const REQUIRED_STABLE_READS = 3
+      const settle: {
+        stableReads: number
+        lastBoxA: Box | null
+        lastBoxB: Box | null
+        lastNullNode: 'copy A' | 'copy B' | null
+      } = { stableReads: 0, lastBoxA: null, lastBoxB: null, lastNullNode: null }
+      try {
+        await expect
+          .poll(async () => {
+            const [boxA, boxB] = await readNodeBoxes()
+            if (boxA === null || boxB === null) {
+              settle.lastNullNode = boxA === null ? 'copy A' : 'copy B'
+              settle.stableReads = 0
+              settle.lastBoxA = null
+              settle.lastBoxB = null
+              return false
+            }
+            const isRepeat =
+              settle.lastBoxA !== null &&
+              settle.lastBoxB !== null &&
+              boxesIdentical(boxA, settle.lastBoxA) &&
+              boxesIdentical(boxB, settle.lastBoxB)
+            settle.stableReads = isRepeat ? settle.stableReads + 1 : 1
+            settle.lastBoxA = boxA
+            settle.lastBoxB = boxB
+            return settle.stableReads >= REQUIRED_STABLE_READS
+          })
+          .toBe(true)
+      } catch (error) {
+        if (settle.lastNullNode)
+          throw new Error(`${settle.lastNullNode}'s box never rendered`, {
+            cause: error
+          })
+        throw error
+      }
+      if (settle.lastBoxA === null || settle.lastBoxB === null)
         throw new Error('boxes never settled after Fit View')
 
       // Nobody previously asserted the resulting VISUAL overlap: the same
       // template inserted twice renders both copies at pixel-identical
       // positions (within a small tolerance), so a human cannot tell them
       // apart on canvas.
-      expect(closeEnough(settled.boxA, settled.boxB)).toBe(true)
+      expect(boxesOverlap(settle.lastBoxA, settle.lastBoxB)).toBe(true)
     })
 
     test('a widget edit the host rejects as opaque leaves the human-typed value on screen and the shared document silently unrevised', async ({
