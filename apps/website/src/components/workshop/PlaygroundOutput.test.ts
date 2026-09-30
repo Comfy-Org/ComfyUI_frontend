@@ -32,6 +32,20 @@ const succeeded = (out: RunOutput, nsfw = false): RunState => ({
 })
 
 describe('PlaygroundOutput', () => {
+  it('reserves a minimum height only until there is media to size the panel', async () => {
+    const { rerender } = render(PlaygroundOutput, {
+      props: {
+        now: 3000,
+        state: { status: 'running', startedAt: 1000, label: 'Queued' }
+      }
+    })
+    const panel = screen.getByTestId('playground-output')
+    expect(panel).toHaveClass('min-h-96')
+
+    await rerender({ state: succeeded(output('latest')) })
+    expect(panel).not.toHaveClass('min-h-96')
+  })
+
   it('uses a signed download without buffering media and refreshes an expired link', async () => {
     const user = userEvent.setup()
     const media = {
@@ -41,7 +55,6 @@ describe('PlaygroundOutput', () => {
     }
     const view = render(PlaygroundOutput, {
       props: {
-        modelName: 'Workflow',
         now: 2000,
         state: {
           status: 'succeeded',
@@ -85,7 +98,7 @@ describe('PlaygroundOutput', () => {
       nsfw: false
     }
     const view = render(PlaygroundOutput, {
-      props: { modelName: 'Workflow', state, attachments: [second], now: 2000 }
+      props: { state, attachments: [second], now: 2000 }
     })
     await user.click(screen.getByRole('button', { name: 'Image 2' }))
     await view.rerender({
@@ -108,7 +121,6 @@ describe('PlaygroundOutput', () => {
   it('shows the supplied run phase before generation begins', () => {
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Workflow',
         now: 3000,
         state: { status: 'running', startedAt: 1000, label: 'Queued' }
       }
@@ -116,6 +128,34 @@ describe('PlaygroundOutput', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Queued')
     expect(screen.queryByText('Generating…')).toBeNull()
   })
+
+  // A spinner and a climbing clock both promise the run is being watched.
+  it.for([
+    { stalled: false, spinners: 1, reads: '1:00' },
+    { stalled: true, spinners: 0, reads: undefined }
+  ])(
+    'stalled $stalled keeps $spinners spinner and reads $reads',
+    ({ stalled, spinners, reads }) => {
+      render(PlaygroundOutput, {
+        props: {
+          now: 62_000,
+          state: {
+            status: 'running',
+            startedAt: 2000,
+            label: 'Connection interrupted',
+            stalled
+          }
+        }
+      })
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Connection interrupted'
+      )
+      expect(screen.queryAllByTestId('run-spinner')).toHaveLength(spinners)
+      const clock = screen.queryByTestId('run-elapsed')
+      expect(clock?.textContent.trim()).toBe(reads)
+    }
+  )
   it.for([
     { event: 'playing', status: 'succeeded' },
     { event: 'pause', status: 'cancelled' }
@@ -128,7 +168,7 @@ describe('PlaygroundOutput', () => {
         fileName: 'audio.wav'
       }
       const view = render(PlaygroundOutput, {
-        props: { modelName: 'Demo', state: succeeded(media), now: 2000 }
+        props: { state: succeeded(media), now: 2000 }
       })
       const element = screen.getByLabelText('Output', { selector: 'audio' })
       await fireEvent(element, new Event('loadstart'))
@@ -150,7 +190,7 @@ describe('PlaygroundOutput', () => {
         fileName: 'result'
       }
       const view = render(PlaygroundOutput, {
-        props: { modelName: 'Demo', state: succeeded(media), now: 2000 }
+        props: { state: succeeded(media), now: 2000 }
       })
       const element = screen.getByLabelText('Output', { selector: kind })
       await fireEvent(element, new Event('loadedmetadata'))
@@ -185,7 +225,6 @@ describe('PlaygroundOutput', () => {
       const user = userEvent.setup()
       const view = render(PlaygroundOutput, {
         props: {
-          modelName: 'Demo',
           state: succeeded(latest),
           earlier: [{ output: output('first'), attachments: [] }],
           attachments: [
@@ -214,7 +253,6 @@ describe('PlaygroundOutput', () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(output('latest')),
         now: 2_000
       }
@@ -234,7 +272,6 @@ describe('PlaygroundOutput', () => {
   it('leaves video fullscreen to the shared video player', () => {
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded({
           kind: 'video',
           url: 'https://example.com/run.mp4',
@@ -254,7 +291,6 @@ describe('PlaygroundOutput', () => {
   it('announces expiration when a completed output is no longer available', async () => {
     const { rerender } = render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(output('latest')),
         now: 2_000
       }
@@ -269,7 +305,6 @@ describe('PlaygroundOutput', () => {
   it('asks users to review their inputs after a content-policy rejection', () => {
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedance 2.5',
         state: { status: 'failed', reason: 'policy', fieldErrors: {} },
         now: 0
       }
@@ -290,7 +325,6 @@ describe('PlaygroundOutput', () => {
       const user = userEvent.setup()
       const view = render(PlaygroundOutput, {
         props: {
-          modelName: 'Seedream 4.5',
           state: { status: 'failed', reason: 'noCredits', fieldErrors: {} },
           now: 0,
           locale
@@ -309,7 +343,6 @@ describe('PlaygroundOutput', () => {
     }
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(video),
         now: 2_000
       }
@@ -327,7 +360,6 @@ describe('PlaygroundOutput', () => {
     }
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(audio),
         now: 2_000
       }
@@ -352,7 +384,6 @@ describe('PlaygroundOutput', () => {
     }
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(text),
         earlier: [{ output: model, attachments: [] }],
         now: 2_000
@@ -367,27 +398,63 @@ describe('PlaygroundOutput', () => {
     )
     expect(screen.queryByRole('img')).toBeNull()
   })
-  it('renders the shipped example with a hint instead of run actions', () => {
+  it('marks the shipped example and offers no run actions for it', () => {
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: { status: 'example', output: output('example') },
         now: 0
       }
     })
-    expect(screen.getByTestId('output-example')).toBeTruthy()
-    expect(screen.getByTestId('output-example-hint').textContent).toContain(
-      'Run Seedream 4.5 to make your own.'
+    expect(screen.getByTestId('output-example').textContent).toContain(
+      'Example'
     )
     expect(screen.queryByTestId('output-download')).toBeNull()
     expect(screen.getByRole('img').getAttribute('src')).toContain('example')
+  })
+
+  it('names the expanded image by the alt its output carries', async () => {
+    const user = userEvent.setup()
+    render(PlaygroundOutput, {
+      props: {
+        state: succeeded({
+          ...output('example'),
+          alt: 'Seedream 4.5: Neon street'
+        }),
+        now: 2_000
+      }
+    })
+    await user.click(screen.getByRole('button', { name: 'Expand' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(
+      within(dialog).getByRole('img', { name: 'Seedream 4.5: Neon street' })
+    ).toBeTruthy()
+  })
+
+  it('labels a shipped example video by its example', () => {
+    render(PlaygroundOutput, {
+      props: {
+        state: {
+          status: 'example',
+          output: {
+            kind: 'video',
+            url: 'https://example.com/example.mp4',
+            fileName: 'example.mp4',
+            alt: 'Seedance 2.5: Neon street'
+          }
+        },
+        modality: 'video',
+        now: 0
+      }
+    })
+    expect(
+      screen.getByLabelText('Seedance 2.5: Neon street', { selector: 'video' })
+    ).toHaveAttribute('src', 'https://example.com/example.mp4')
   })
 
   it('shows the latest run and switches to an earlier one on demand', async () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(output('latest')),
         earlier: [{ output: output('first'), attachments: [] }],
         now: 2_000
@@ -416,7 +483,6 @@ describe('PlaygroundOutput', () => {
     }
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(output('latest')),
         attachments: [response],
         now: 2_000
@@ -440,7 +506,6 @@ describe('PlaygroundOutput', () => {
   it('gives every file of a wide run its own button', () => {
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(output('latest')),
         attachments: Array.from({ length: 10 }, (_, index) => ({
           kind: 'image' as const,
@@ -460,7 +525,6 @@ describe('PlaygroundOutput', () => {
   it('withholds the file switch while the result is blurred', () => {
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(output('latest'), true),
         attachments: [
           {
@@ -479,7 +543,6 @@ describe('PlaygroundOutput', () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(output('third')),
         earlier: [
           { output: output('second'), attachments: [] },
@@ -507,7 +570,6 @@ describe('PlaygroundOutput', () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded({
           ...output('latest'),
           urls: ['https://example.com/a.webp', 'https://example.com/b.webp']
@@ -550,7 +612,6 @@ describe('PlaygroundOutput', () => {
       vi.mocked(downloadOutput).mockResolvedValueOnce(false)
       render(PlaygroundOutput, {
         props: {
-          modelName: 'Seedream 4.5',
           state: succeeded(output('latest')),
           now: 2_000,
           locale
@@ -579,7 +640,6 @@ describe('PlaygroundOutput', () => {
     vi.mocked(downloadOutput).mockReturnValueOnce(result.promise)
     const { rerender } = render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(output('first')),
         now: 2_000
       }
@@ -604,7 +664,6 @@ describe('PlaygroundOutput', () => {
     }
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(batch),
         earlier: [{ output: output('first'), attachments: [] }],
         now: 2_000
@@ -627,7 +686,6 @@ describe('PlaygroundOutput', () => {
     }
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(batch, true),
         now: 2_000
       }
@@ -651,7 +709,6 @@ describe('PlaygroundOutput', () => {
   it('blurs the latest run in the strip when the run, not its output, is rated sensitive', () => {
     render(PlaygroundOutput, {
       props: {
-        modelName: 'Seedream 4.5',
         state: succeeded(output('latest'), true),
         earlier: [{ output: output('first'), attachments: [] }],
         now: 2_000

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import Button from '@/components/ui/button/Button.vue'
 import type {
@@ -16,13 +17,20 @@ import { t } from '../../i18n/translations'
 import CardRow from './CardRow.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
 import { modelSlides } from '../../lib/workshop/featured-slides'
+import type { FilterChip } from './WorkshopFilterChips.vue'
+import WorkshopFilterChips from './WorkshopFilterChips.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  initialSearch,
+  locale = 'en'
+} = defineProps<{
   models: readonly WorkflowWorkshopModel[]
+  initialSearch?: string
   locale?: Locale
 }>()
 
@@ -30,6 +38,8 @@ const query = ref('')
 const selected = ref<string[]>([])
 const runsOn = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
+const filterMenu =
+  useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
 const browseAll = defineModel<boolean>('browseAll', { default: false })
 const emit = defineEmits<{ section: [boolean] }>()
 watch(browseAll, (value) => emit('section', value), { immediate: true })
@@ -38,7 +48,7 @@ watch(browseAll, () => {
   void nextTick(() => window.scrollTo({ top: 0 }))
 })
 onMounted(() => {
-  const params = new URLSearchParams(location.search)
+  const params = new URLSearchParams(initialSearch ?? location.search)
   query.value = params.get('q') ?? ''
   selected.value = params
     .getAll('category')
@@ -122,10 +132,35 @@ const featured = computed(() =>
 )
 const featuredSlides = computed(() => modelSlides(featured.value, locale))
 
-function clear() {
-  query.value = ''
+// What narrowed the list stays legible next to it, so a reader can take one
+// choice off without reopening the menu that made it.
+const chips = computed<FilterChip[]>(() => [
+  ...selected.value.map((id) => ({
+    key: `use:${id}`,
+    label: options.value.find((option) => option.value === id)?.label ?? id
+  })),
+  ...runsOn.value.map((name) => ({
+    key: `model:${name}`,
+    label: t('workshop.filter.runsOn', locale, { model: name })
+  }))
+])
+
+function removeChip(key: string) {
+  const [kind, ...rest] = key.split(':')
+  const value = rest.join(':')
+  if (kind === 'use')
+    selected.value = selected.value.filter((id) => id !== value)
+  else runsOn.value = runsOn.value.filter((name) => name !== value)
+}
+
+function clearFilters() {
   selected.value = []
   runsOn.value = []
+}
+
+function clear() {
+  query.value = ''
+  clearFilters()
 }
 function leaveSection() {
   browseAll.value = false
@@ -145,7 +180,7 @@ function leaveSection() {
         <ChevronLeft class="size-4" aria-hidden="true" />
         {{ t('workshop.sections.back', locale) }}
       </button>
-      <h1
+      <h2
         class="mt-3 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
       >
         {{ t('workshop.catalogue.allWorkflows', locale) }}
@@ -153,7 +188,7 @@ function leaveSection() {
           class="text-base font-normal text-primary-warm-gray tabular-nums"
           >{{ visible.length }}</span
         >
-      </h1>
+      </h2>
     </template>
     <div
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
@@ -161,7 +196,7 @@ function leaveSection() {
     >
       <slot name="tabs" />
       <div
-        class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
+        class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit sm:justify-end"
       >
         <WorkshopSearchField
           v-model="query"
@@ -169,9 +204,10 @@ function leaveSection() {
           :locale
           kind="workflows"
           compact
-          class="min-w-0 flex-1 sm:ml-auto sm:max-w-xl"
+          class="min-w-0 flex-1 sm:max-w-120"
         />
         <WorkshopFilterMenu
+          ref="filterMenu"
           v-model:use-cases="selected"
           v-model:models="runsOn"
           kind="workflows"
@@ -195,6 +231,14 @@ function leaveSection() {
       :locale
       :autoplay="false"
       class="mb-10 short:mb-6"
+    />
+
+    <WorkshopFilterChips
+      :chips
+      :locale
+      @remove="removeChip"
+      @clear="clearFilters"
+      @emptied="filterMenu?.focus()"
     />
 
     <div v-if="browsing" class="flex flex-col gap-12">
@@ -238,7 +282,7 @@ function leaveSection() {
 
     <ul
       v-else-if="visible.length"
-      class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
+      class="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
       :aria-label="t('workshop.hub.workflows', locale)"
       data-testid="workflow-search-results"
     >

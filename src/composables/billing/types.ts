@@ -9,6 +9,7 @@ import type {
   Plan,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
+  RenewalInvoice,
   ScheduledPlanChange,
   SubscribeOptions,
   SubscribeResponse,
@@ -64,7 +65,7 @@ export interface BillingActions {
     options?: PreviewSubscribeOptions
   ) => Promise<PreviewSubscribeResponse | null>
   manageSubscription: () => Promise<void>
-  cancelSubscription: () => Promise<void>
+  cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<void>
   /**
    * Reactivates a cancelled-but-still-active subscription. Legacy has no
    * dedicated endpoint, so the legacy adapter re-runs the checkout flow.
@@ -126,11 +127,15 @@ export interface BillingState {
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
   tier: ComputedRef<SubscriptionTier | null>
   renewalDate: ComputedRef<string | null>
+  /** Open renewal invoice to pay; owners on the stripe rail while payment_failed. */
+  renewalInvoice: ComputedRef<RenewalInvoice | null>
 }
 
 export interface BillingContext extends BillingState, BillingActions {
   type: ComputedRef<BillingType>
   reconcileSubscriptionSuccess: () => Promise<void>
+  /** Reads the checkout rail's status; true once its pending operation is adopted. */
+  readCheckoutOperation: () => Promise<boolean>
   /**
    * True when the active team workspace is still on a pre-credit-slider
    * (legacy) per-member tier plan, which keeps the old team pricing table.

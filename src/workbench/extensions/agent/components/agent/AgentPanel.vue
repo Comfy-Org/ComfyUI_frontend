@@ -7,7 +7,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, nextTick, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -32,9 +33,10 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import StandingAgentPaywall from './message/StandingAgentPaywall.vue'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
+import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
+import type { AgentPanelView } from '../../stores/agent/agentPanelStore'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
@@ -44,6 +46,7 @@ import EmptyState from './EmptyState.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
 import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
+import AgentPaywallCard from './message/AgentPaywallCard.vue'
 
 const {
   entries,
@@ -66,12 +69,15 @@ const {
   selectingTabPath = null,
   selectTab = async () => false,
   workflowDetached = false,
+  targetUnavailable = false,
   getMentionNodes = () => [],
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   creditsExhausted = false,
   sessionId = null,
+  currentChatReady = false,
   customTitle,
   historyGroups,
+  selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>()
 } = defineProps<{
@@ -97,6 +103,7 @@ const {
   selectingTabPath?: string | null
   selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
+  targetUnavailable?: boolean
   getMentionNodes?: () => SelectedNode[]
   paywallPresentation?: AgentPaywallPresentation
   /**
@@ -106,8 +113,10 @@ const {
    */
   creditsExhausted?: boolean
   sessionId?: string | null
+  currentChatReady?: boolean
   customTitle?: string
   historyGroups: HistoryGroups
+  selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
 }>()
@@ -119,6 +128,7 @@ const emit = defineEmits<{
   ]
   stop: [method: AgentStopMethod]
   attach: []
+  attachFiles: [files: File[]]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -133,7 +143,6 @@ const emit = defineEmits<{
   toggleSize: []
   close: []
   openHistory: []
-  selectHistory: [id: string]
   deleteHistory: [id: string]
   copyHistory: [id: string]
   renameHistory: [id: string, title: string]
@@ -146,13 +155,27 @@ const emit = defineEmits<{
 }>()
 
 const targetNotice = computed(() => {
+  if (targetUnavailable) return 'unavailable'
   if (workflowDetached || activeTab === null) return undefined
   if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
     return 'mismatch'
   return followsVisibleWorkflow ? 'following' : undefined
 })
 
-const showHistory = ref(false)
+const panelStore = useAgentPanelStore()
+const { view } = storeToRefs(panelStore)
+const showHistory = computed(() => view.value.screen === 'history')
+const loadingHistoryId = computed(() =>
+  view.value.screen === 'history' && view.value.selection.status === 'loading'
+    ? view.value.selection.id
+    : null
+)
+const failedHistoryId = computed(() =>
+  view.value.screen === 'history' && view.value.selection.status === 'failed'
+    ? view.value.selection.id
+    : null
+)
+onScopeDispose(panelStore.interruptHistorySelection)
 
 watch(
   [showHistory, () => creditsExhausted],
@@ -163,16 +186,66 @@ watch(
 )
 
 function onNewChat(): void {
-  showHistory.value = false
+  view.value = { screen: 'chat' }
   emit('newChat')
 }
 function onOpenHistory(): void {
-  showHistory.value = true
+  view.value = {
+    screen: 'history',
+    previousThreadId: sessionId,
+    selection: { status: 'idle' }
+  }
   emit('openHistory')
 }
-function onSelectHistory(id: string): void {
-  showHistory.value = false
-  emit('selectHistory', id)
+async function onSelectHistory(id: string): Promise<void> {
+  if (view.value.screen !== 'history' || loadingHistoryId.value === id) return
+  const opening: AgentPanelView = {
+    ...view.value,
+    selection: { status: 'loading', id }
+  }
+  view.value = opening
+  const isCurrent = () => view.value === opening
+  let opened = false
+  try {
+    opened = await selectHistory(id, isCurrent)
+  } finally {
+    if (isCurrent())
+      view.value = opened
+        ? { screen: 'chat' }
+        : { ...opening, selection: { status: 'failed', id } }
+  }
+}
+
+function onBackFromHistory(): void {
+  if (view.value.screen !== 'history') return
+  if (
+    sessionId === view.value.previousThreadId &&
+    (view.value.selection.status === 'idle' || currentChatReady)
+  )
+    view.value = { screen: 'chat' }
+  else if (view.value.previousThreadId === null) onNewChat()
+  else void onSelectHistory(view.value.previousThreadId)
+}
+
+function onDeleteHistory(id: string): void {
+  if (
+    view.value.screen === 'history' &&
+    (view.value.previousThreadId === id ||
+      (view.value.selection.status !== 'idle' &&
+        view.value.selection.id === id))
+  )
+    view.value = {
+      ...view.value,
+      previousThreadId:
+        view.value.previousThreadId === id ? null : view.value.previousThreadId,
+      selection: { status: 'idle' }
+    }
+  emit('deleteHistory', id)
+}
+
+function onClose(): void {
+  panelStore.interruptHistorySelection()
+  emit('close')
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
@@ -272,16 +345,18 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       @new-chat="onNewChat"
       @start-tour="emit('startTour')"
       @toggle-size="emit('toggleSize')"
-      @close="emit('close')"
+      @close="onClose"
     />
 
     <template v-if="showHistory">
       <ChatHistoryScreen
         :groups="historyGroups"
+        :loading-id="loadingHistoryId"
+        :failed-id="failedHistoryId"
         class="min-h-0 flex-1"
-        @back="showHistory = false"
+        @back="onBackFromHistory"
         @select="onSelectHistory"
-        @delete="emit('deleteHistory', $event)"
+        @delete="onDeleteHistory"
         @copy-markdown="emit('copyHistory', $event)"
         @rename="(id, title) => emit('renameHistory', id, title)"
       />
@@ -377,11 +452,16 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <EmptyState
           v-if="!entries.length"
           :user-name
-          @insert="composerRef?.insert($event)"
+          @insert="
+            (text, prompt) => {
+              composerRef?.insert(text, prompt)
+            }
+          "
         />
         <ConversationView
           v-else
           :entries
+          :conversation-id="sessionId"
           :editable-turn-id
           :answering-ask-ids
           :paywall-presentation
@@ -411,8 +491,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <slot name="instrument" />
       <footer class="shrink-0 py-3">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
-          <StandingAgentPaywall
-            :visible="creditsExhausted"
+          <AgentPaywallCard
+            v-if="creditsExhausted"
+            data-testid="agent-credits-exhausted-paywall"
             :presentation="paywallPresentation"
             @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
           />
@@ -439,6 +520,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @send="onComposerSend"
             @stop="emit('stop', $event)"
             @attach="emit('attach')"
+            @attach-files="emit('attachFiles', $event)"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"

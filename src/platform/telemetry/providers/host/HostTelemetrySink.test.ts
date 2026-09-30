@@ -281,7 +281,9 @@ describe('HostTelemetrySink', () => {
           thread_id: 'thread-1',
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
-          input_method: 'suggestion'
+          input_method: 'suggestion',
+          starter_prompt_id: 'slot_2',
+          starter_prompt_click_id: 'click-1'
         }),
       properties: {
         attachment_count: 2,
@@ -289,7 +291,9 @@ describe('HostTelemetrySink', () => {
         thread_id: 'thread-1',
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
-        input_method: 'suggestion'
+        input_method: 'suggestion',
+        starter_prompt_id: 'slot_2',
+        starter_prompt_click_id: 'click-1'
       }
     },
     {
@@ -301,7 +305,9 @@ describe('HostTelemetrySink', () => {
           thread_id: null,
           workflow_id: null,
           client_message_id: 'client-message-2',
-          input_method: 'typed'
+          input_method: 'typed',
+          starter_prompt_id: null,
+          starter_prompt_click_id: null
         }),
       properties: {
         attachment_count: 0,
@@ -309,7 +315,31 @@ describe('HostTelemetrySink', () => {
         thread_id: null,
         workflow_id: null,
         client_message_id: 'client-message-2',
-        input_method: 'typed'
+        input_method: 'typed',
+        starter_prompt_id: null,
+        starter_prompt_click_id: null
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentStarterPromptClicked({
+          prompt_id: 'slot_4',
+          prompt_index: 3,
+          prompt_count: 5,
+          prompt_text_hash: 'deadbeef',
+          locale: 'en',
+          click_id: 'click-1',
+          draft_was_empty: false
+        }),
+      properties: {
+        prompt_id: 'slot_4',
+        prompt_index: 3,
+        prompt_count: 5,
+        prompt_text_hash: 'deadbeef',
+        locale: 'en',
+        click_id: 'click-1',
+        draft_was_empty: false
       }
     },
     {
@@ -321,8 +351,11 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_CONSENT_RESOLVED,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentConsentResolved({ decision: 'accepted' }),
-      properties: { decision: 'accepted' }
+        sink.trackAgentConsentResolved({
+          decision: 'dismissed',
+          save_error_shown: true
+        }),
+      properties: { decision: 'dismissed', save_error_shown: true }
     },
     {
       name: TelemetryEvents.AGENT_ONBOARDING_SHOWN,
@@ -424,6 +457,36 @@ describe('HostTelemetrySink', () => {
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentNotOffered({ reason: 'tour_active' }),
       properties: { reason: 'tour_active' }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentOfferExited({
+          exit: 'workspace_switching',
+          stage: 'offer',
+          retry_armed: true
+        }),
+      properties: {
+        exit: 'workspace_switching',
+        stage: 'offer',
+        retry_armed: true
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentOfferExited({
+          exit: 'scope_probe_failed',
+          stage: 'request',
+          retry_armed: false,
+          trigger: 'first_load'
+        }),
+      properties: {
+        exit: 'scope_probe_failed',
+        stage: 'request',
+        retry_armed: false,
+        trigger: 'first_load'
+      }
     },
     {
       name: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,

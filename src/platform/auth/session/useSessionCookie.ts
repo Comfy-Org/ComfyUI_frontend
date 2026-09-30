@@ -1,3 +1,6 @@
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -114,13 +117,20 @@ export const useSessionCookie = () => {
     return ownerUid
   }
 
+  const isApiKeyOnWebSession = () =>
+    useFeatureFlags().flags.unifiedWebSessionEnabled &&
+    useCurrentUser().isApiKeyLogin.value
+
   const ensureSessionCookie = async (): Promise<void> => {
-    if (!isCloud) return
+    if (!isCloud || isApiKeyOnWebSession()) return
+    const webSession = useCloudWebSessionStore()
+    if (webSession.start()) return webSession.whenReady()
     await establishSession(currentOwnerUidOrThrow(), false)
   }
 
   const createSession = async (): Promise<void> => {
-    if (!isCloud) return
+    if (!isCloud || isApiKeyOnWebSession()) return
+    if (useCloudWebSessionStore().start()) return
     try {
       await establishSession(currentOwnerUidOrThrow(), true)
     } catch (error) {
@@ -135,6 +145,8 @@ export const useSessionCookie = () => {
 
   const createSessionOrThrow = async (): Promise<void> => {
     if (!isCloud) return
+    const webSession = useCloudWebSessionStore()
+    if (webSession.isActive()) return webSession.whenReady()
     await establishSession(currentOwnerUidOrThrow(), true)
   }
 
@@ -144,6 +156,7 @@ export const useSessionCookie = () => {
    */
   const deleteSession = async (): Promise<void> => {
     if (!isCloud) return
+    if (useCloudWebSessionStore().isActive()) return
     confirmedSessionOwnerUid = null
     inFlightCreateSession = null
 

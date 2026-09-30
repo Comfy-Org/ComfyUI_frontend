@@ -6,6 +6,7 @@ import type {
   AddCreditsClickMetadata,
   AgentAttachButtonClickedMetadata,
   AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
@@ -21,6 +22,7 @@ import type {
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -364,6 +366,12 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
   }
 
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
+  }
+
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.capture(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
   }
@@ -406,6 +414,12 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
     this.capture(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_OFFER_EXITED, metadata)
   }
 
   trackAgentOnboardingNotShown(

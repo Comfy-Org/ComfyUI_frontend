@@ -150,6 +150,19 @@ describe('ReplyAssetGroup', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
+  it('uses the presentation label for audio and 3D titles', async () => {
+    renderGroup([
+      { ...audio, filename: 'upload_song.mp3', label: 'song.mp3' },
+      { ...model, filename: 'asset-hash', label: 'model.glb' }
+    ])
+
+    expect(screen.getByTestId('audio-card').dataset.title).toBe('song.mp3')
+    await userEvent.click(screen.getByRole('button', { name: 'model.glb' }))
+    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'model.glb' })
+    )
+  })
+
   it('collapses long audio lists behind Show more', async () => {
     renderGroup(
       Array.from({ length: 6 }, (_, n) => ({

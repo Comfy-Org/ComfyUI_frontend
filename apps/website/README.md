@@ -186,6 +186,30 @@ can't be accidentally committed. Otherwise the `Release: Website` GitHub
 Actions workflow runs the same step on every manual dispatch and opens a PR
 with the refreshed snapshot.
 
+## Hub sections
+
+The hub has one page per section, linked by the catalogue tabs: `/hub/models/`,
+`/hub/workflows/` and `/hub/apps/`. The workflows and apps pages show the
+showcase until their flag is on, and stay noindex: `/hub/workflows/` lifts with
+`launchedWorkflowPages`, `/hub/apps/` has no switch yet. Being noindex, neither
+has a markdown twin. Old `/hub/models/?type=workflows` and `?type=apps` links
+replace themselves with the section page in the browser, keeping the other
+query parameters.
+
+## Hub workflows routing
+
+The website builds the workflow pages listed in `src/config/hub-workflow-names.json` at `/hub/workflows/<name>/`. It publishes `/hub/workflows/manifest.json` (`{ version, defaultOwner, pages, legacyRedirects }`), which comfy-router reads to decide who answers each `/hub/workflows/*` URL. The build validates the manifest and fails if it is invalid.
+
+The router (comfy-router#46) fetches the manifest from the website origin directly, not through comfy.org, so it never depends on its own routing to reach it. It also passes the public `comfy.org/hub/workflows/manifest.json` path straight through to the website, even though `manifest.json` is not in `pages`.
+
+To move more workflows onto the website:
+
+1. Add the pages; `hub-workflow-names.test.ts` fails until you refresh the list with `vitest -u`. The router picks up the new `pages` from the live manifest on the next website deploy.
+2. To redirect an old `/workflows/<slug>/` URL, list it in `legacyRedirects` in `src/config/hub-workflows-routing.ts` (exact paths only, each pointing at a page in the list), then copy the same entry into the router's bundled `src/hub-workflow-manifest.js` and redeploy the router. The router reads only its bundled copy for `/workflows/*`, so the website's entry alone redirects nothing.
+3. Once every workflow has moved, flip `defaultOwner` to `website`. This one is data only: it affects `/hub/workflows/*`, which reads the live manifest.
+
+The website itself never redirects `/workflows/*`; the router does.
+
 ## Models rollout
 
 Models is included in production and preview builds by default. The boolean
@@ -242,7 +266,10 @@ applies only outside production. The `workshop` PR label is no longer needed.
 `workshop-test` only selects test Cloud; neither label bypasses the PostHog
 visibility flag.
 
-`WORKSHOP_IN_BUILD=0` remains an explicit build exclusion for diagnostics.
+`WORKSHOP_IN_BUILD=0` turns Workshop off: Run, the Models nav tab and the account
+menu stay hidden whatever the PostHog flag says. Except the four noindex
+checkout pages, it never removes or replaces a page; every Models page keeps its
+URL and content.
 `PUBLIC_WORKSHOP_AUTH_FLAG=1` overrides a remote auth disable outside production.
 `PUBLIC_WORKSHOP_ROUTER_RUN=1` enables execution; neither grants Models visibility.
 For local development without PostHog:
@@ -271,10 +298,14 @@ switching detaches its controller and hides its results. Backend authorization a
 admission controls remain authoritative. Local development also accepts
 `PUBLIC_WORKSHOP_WORKFLOWS_ENABLED=1`.
 
-Workshop apps (Cinematic Studio and its Re-shoot app) are gated separately by
-the `workshop-apps-enabled` PostHog flag: the `/cinematic-studio` page, the
-featured slide on `/models` and a model page's Open in Studio link. Local
-development also accepts `PUBLIC_WORKSHOP_APPS_ENABLED=1`.
+Workshop apps (Cinematic Studio and Re-shoot) are gated separately by the
+`workshop-apps-enabled` PostHog flag: their pages at `/hub/apps/<slug>/`, the
+`/hub/apps/` page and its tab, the featured slide on `/hub/models/` and a model
+page's Open in Studio link. `/cinematic-studio` and the old
+`/models/apps/<slug>/` addresses redirect to the app pages. The built apps are
+listed in `src/config/hub-app-names.json`; `hub-app-names.test.ts` fails until
+you add or remove the app there too. Local development also accepts
+`PUBLIC_WORKSHOP_APPS_ENABLED=1`.
 
 `src/config/workflow-render.ts` implements the shared workflow request and polling
 helper. Node scripts import `workflow_render` and `workflow_for_model` from
@@ -366,6 +397,23 @@ sitekey in this mapping, so the client widget stays off there.
 The `workshop-release-gate` Astro integration registers the Models routes and
 always removes the retired `/workshop` output, including in enabled builds.
 
+## Search indexing
+
+Only the production build (`VERCEL_ENV=production`) can be indexed. Every
+other build (local, CI, Vercel previews) puts
+`<meta name="robots" content="noindex, nofollow">` on every page, so a copy of
+the site never competes with comfy.org. Those builds also drop the canonical
+link and hreflang alternates, so a preview never points its noindex at
+comfy.org. `WEBSITE_INDEXABLE=1` gives a build outside Vercel the production
+head; `pnpm build:e2e` sets it for the e2e and screenshot builds. Pages that are
+noindex on their own stay noindex either way.
+
+The decision is baked into the HTML at build time, so never use Vercel's
+Promote to Production on a preview deployment: it would serve
+`noindex, nofollow` on comfy.org. The `deploy-production` job fails if its
+build has a robots meta on `/`, and `CI: Website Build` fails if a
+non-production build doesn't.
+
 ## HubSpot forms
 
 Pages that collect leads use HubSpot's hosted form embed:
@@ -401,8 +449,9 @@ the hosted script once, and renders the documented embed container.
 
 - `pnpm dev` — Astro dev server
 - `pnpm build` — production build to `dist/`
+- `pnpm build:e2e` — indexable build to `dist/`, the one e2e and screenshots run against
 - `pnpm typecheck` — `astro check`
 - `pnpm test:unit` — Vitest unit tests
-- `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build` first)
+- `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build:e2e` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot

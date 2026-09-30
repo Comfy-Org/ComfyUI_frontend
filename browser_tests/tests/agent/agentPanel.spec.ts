@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict'
+
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
@@ -69,7 +71,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
-    const firstPrompt = enMessages.agent.suggestedPrompts[0]
+    const firstPrompt = enMessages.agent.suggestedPrompts.cloud[0]
     const promptChip = panel.getByRole('button', { name: firstPrompt })
     await expect(promptChip).toBeVisible()
 
@@ -241,6 +243,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await expect(
         agentPanel.root.getByRole('button', { name: 'Stop' })
       ).toBeVisible()
+      await expect(paywall).toHaveCount(0)
       pushEvent(ws, MESSAGE_DONE_EVENT)
       await expect(paywall).toBeVisible()
     })
@@ -252,11 +255,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       const topUpDialog = new TopUpCreditsDialog(page)
       await topUpDialog.waitForVisible()
       await recovery.entered
+      agentBilling.failSubsequentRefreshes()
       await topUpDialog.close()
-      await agentPanel.root
-        .getByRole('button', { name: enMessages.g.close })
-        .click()
-      await expect(agentPanel.root).toHaveCount(0)
+      await agentPanel.close()
       recovery.release()
       await recovery.completed
     })
@@ -264,6 +265,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await test.step('reopen without the stale paywall', async () => {
       await agentPanel.open()
       await expect(paywall).toHaveCount(0)
+      agentBilling.resumeRefreshes()
     })
 
     await test.step('show the standing paywall after a second exhaustion', async () => {
@@ -274,9 +276,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await expect.poll(() => postedMessages.length).toBe(2)
       expect(acceptedTurns).toHaveLength(2)
       const secondTurn = acceptedTurns.at(-1)
-      if (secondTurn === undefined) {
-        throw new Error('No second Agent turn was accepted')
-      }
+      assert(secondTurn)
       pushEvent(
         ws,
         zAgentWsEvent.parse({
@@ -307,6 +307,38 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
   })
 
+  test('keeps a failed prompt available to retry', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    // Regression: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16628
+    await comfyPage.page.route(
+      '**/api/agent/threads/*/messages',
+      async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        await route.fulfill({
+          status: 500,
+          body: 'Agent temporarily unavailable'
+        })
+      }
+    )
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+
+    const prompt = 'Build a product photo workflow'
+    await agentPanel.composer.fill(prompt)
+    await agentPanel.sendButton.click()
+
+    await expect(agentPanel.root.getByTestId('user-message-bubble')).toHaveText(
+      prompt
+    )
+    await expect(
+      agentPanel.root.getByText(enMessages.agent.sendFailed)
+    ).toBeVisible()
+    await expect(agentPanel.composer).toHaveText(prompt)
+    await expect(agentPanel.sendButton).toBeEnabled()
+  })
+
   test.describe('diagnostic report', () => {
     test.use({
       permissions: ['clipboard-read', 'clipboard-write'],
@@ -334,6 +366,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         await expect(
           agentPanel.root.getByRole('button', { name: 'Stop' })
         ).toBeVisible()
+        await expect(
+          agentPanel.root.getByTestId('user-message-bubble')
+        ).toHaveText('private diagnostic prompt')
         const ws = await getWebSocket()
         pushEvent(ws, THINKING_EVENT)
         await expect(
@@ -430,6 +465,19 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await expect(
         panel.getByText('What do you want to make?')
       ).toBeInViewport()
+    })
+
+    test('starts typing from a click below the first prompt line', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      await agentPanel.open()
+
+      await agentPanel.clickBelowFirstPromptLine()
+
+      await expect(agentPanel.composer).toBeFocused()
+      await comfyPage.page.keyboard.type('hello')
+      await expect(agentPanel.composer).toHaveText('hello')
     })
   })
 

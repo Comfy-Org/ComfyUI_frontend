@@ -37,10 +37,7 @@ test.describe(
       })
 
       await test.step('preserve exhaustion across a panel remount', async () => {
-        await agentPanel.root
-          .getByRole('button', { name: enMessages.agent.close })
-          .click()
-        await expect(agentPanel.root).toHaveCount(0)
+        await agentPanel.close()
         await agentPanel.open()
         await expect(paywall).toBeVisible()
       })
@@ -53,10 +50,7 @@ test.describe(
         )
         await heldRefresh.entered
         agentBilling.failSubsequentRefreshes()
-        await agentPanel.root
-          .getByRole('button', { name: enMessages.agent.close })
-          .click()
-        await expect(agentPanel.root).toHaveCount(0)
+        await agentPanel.close()
         heldRefresh.release()
         await heldRefresh.completed
         await completedTurn

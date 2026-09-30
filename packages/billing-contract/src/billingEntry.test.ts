@@ -72,7 +72,8 @@ describe('buildBillingEntryUrl', () => {
     [{ plan: 'pro plan' }, 'INVALID_PLAN'],
     [{ correlationId: '../escape' }, 'INVALID_CORRELATION_ID'],
     [{ workspaceId: '' }, 'INVALID_WORKSPACE_ID'],
-    [{ teamCreditStopId: '../escape' }, 'INVALID_TEAM_CREDIT_STOP_ID']
+    [{ teamCreditStopId: '../escape' }, 'INVALID_TEAM_CREDIT_STOP_ID'],
+    [{ promotionCode: 'SAVE 20' }, 'INVALID_PROMOTION_CODE']
   ] as const)('refuses %o with %s', ([overrides, expected]) => {
     expect(errorCode({ ...BASE_INPUT, ...overrides })).toBe(expected)
   })
@@ -86,7 +87,8 @@ describe('parseBillingEntry', () => {
       plan: 'pro_monthly',
       correlationId: 'corr-1',
       workspaceId: 'ws_1',
-      teamCreditStopId: 'stop_1'
+      teamCreditStopId: 'stop_1',
+      promotionCode: 'LAUNCH20'
     })
 
     expect(parseBillingEntry(url)).toEqual({
@@ -99,7 +101,8 @@ describe('parseBillingEntry', () => {
         plan: 'pro_monthly',
         correlationId: 'corr-1',
         workspaceId: 'ws_1',
-        teamCreditStopId: 'stop_1'
+        teamCreditStopId: 'stop_1',
+        promotionCode: 'LAUNCH20'
       }
     })
   })
@@ -133,6 +136,26 @@ describe('parseBillingEntry', () => {
       }
     })
   })
+
+  it.for(['SAVE 20', 'a/b', ''])(
+    'keeps the link when its promo code %j is unreadable, carrying it apart from a usable code',
+    (promo) => {
+      const url = `/v1/checkout?product=platform&return_to=platform_account&plan=pro_monthly&workspace=ws_1&promo=${encodeURIComponent(promo)}`
+
+      expect(parseBillingEntry(url)).toEqual({
+        status: 'ok',
+        entry: {
+          version: 'v1',
+          intent: 'checkout',
+          product: 'platform',
+          returnTo: 'platform_account',
+          plan: 'pro_monthly',
+          workspaceId: 'ws_1',
+          unreadablePromotionCode: promo
+        }
+      })
+    }
+  )
 
   it.for([
     [
