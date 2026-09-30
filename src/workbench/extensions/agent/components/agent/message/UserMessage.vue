@@ -141,7 +141,13 @@ const splitAttachments = computed(() => {
         kind === 'audio' ||
         kind === '3D')
     ) {
-      grid.push({ url, filename: item.name, kind })
+      const filename = item.ref ?? item.name
+      grid.push({
+        url,
+        filename,
+        kind,
+        label: filename === item.name ? undefined : item.name
+      })
     } else {
       plain.push(item)
     }

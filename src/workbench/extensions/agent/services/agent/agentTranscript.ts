@@ -50,16 +50,9 @@ export interface NormalizedAgentTranscript {
   userAttachments: Map<TurnId, UserAttachment[]>
   userWorkflowReferences: Map<TurnId, WorkflowReference[]>
   latestWorkflowId?: string
-  /**
-   * Every persisted row read, mapped to the turn it landed on. A live turn id
-   * is the assistant row's own id, so this is what resolves one back to the
-   * hydrated turn it belongs to.
-   */
-  turnIdsByRowId: Map<string, TurnId>
+  rowIds: Set<string>
   /** Tracks turns with assistant rows, including rows that produce no parts. */
   assistantTurnIds: Set<TurnId>
-  /** Turns the service still considers unfinished, by its own row status. */
-  streamingTurnIds: Set<TurnId>
   pending?: {
     messageId: TurnId
     message: AssistantMessage
@@ -470,30 +463,29 @@ export function normalizeAgentTranscript(
   const assistants = new Map<TurnId, AssistantMessage>()
   const turnOrder: TurnId[] = []
   const seenTurns = new Set<TurnId>()
-  const turnIdsByRowId = new Map<string, TurnId>()
-  const streamingTurnIds = new Set<TurnId>()
+  const rowIds = new Set<string>()
   let pending: NormalizedAgentTranscript['pending']
   let latestWorkflowId: string | undefined
 
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
     const turnId = row.turn_id as TurnId
-    turnIdsByRowId.set(row.id, turnId)
+    rowIds.add(row.id)
     recordTurnOrder(turnId, seenTurns, turnOrder)
     const text = typeof row.content?.text === 'string' ? row.content.text : ''
     if (row.role === 'user') {
-      latestWorkflowId =
-        recordUserRow(
-          row,
-          turnId,
-          text,
-          userTexts,
-          userAttachments,
-          userWorkflowReferences
-        ) ?? latestWorkflowId
+      const workflowId = recordUserRow(
+        row,
+        turnId,
+        text,
+        userTexts,
+        userAttachments,
+        userWorkflowReferences
+      )
+      if (workflowId) latestWorkflowId = workflowId
     }
     if (row.role === 'assistant') {
-      if (row.status === 'streaming') streamingTurnIds.add(turnId)
-      pending = recordAssistantRow(row, turnId, text, assistants) ?? pending
+      const rowPending = recordAssistantRow(row, turnId, text, assistants)
+      if (rowPending) pending = rowPending
     }
   }
 
@@ -509,9 +501,8 @@ export function normalizeAgentTranscript(
     userAttachments,
     userWorkflowReferences,
     latestWorkflowId,
-    turnIdsByRowId,
+    rowIds,
     assistantTurnIds: new Set(assistants.keys()),
-    streamingTurnIds,
     pending
   }
 }
