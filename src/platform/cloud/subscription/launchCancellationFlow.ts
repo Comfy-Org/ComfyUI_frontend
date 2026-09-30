@@ -261,6 +261,20 @@ async function runCancellationFlow({
   if (!session) return
   if (!isLaunchWorkspaceCurrent()) return
 
+  await showPreparedCancellationSession(
+    session,
+    billing,
+    isLaunchWorkspaceCurrent,
+    { cancelAt, launchWorkspaceId, showFallback }
+  )
+}
+
+async function showPreparedCancellationSession(
+  session: ChurnkeySession,
+  billing: BillingContext,
+  isLaunchWorkspaceCurrent: () => boolean,
+  { cancelAt, launchWorkspaceId, showFallback }: LaunchCancellationFlowOptions
+): Promise<void> {
   const telemetry = useTelemetry()
   const metadata = getSubscriptionCancellationMetadata({
     cancelAt,
