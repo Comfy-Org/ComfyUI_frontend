@@ -60,7 +60,7 @@
     "assets": {
       "ctaLabel": "前往品牌门户",
       "heading": "可用于您内容的品牌 Logo",
-      "subheading": "横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。点击<a href=\"https://comfy.org/brand\" class=\"text-primary-comfy-yellow underline\">此处获取完整品牌素材</a>。"
+      "subheading": "横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。点击<a href=\"https://comfy.org/brand/\" class=\"text-primary-comfy-yellow underline\">此处获取完整品牌素材</a>。"
     },
     "audience": {
       "heading": "我们在寻找谁",
@@ -182,52 +182,6 @@
       "heading": "Affiliate Terms",
       "title": "Affiliate Terms - Comfy",
       "tocLabel": "本页内容"
-    }
-  },
-  "agent": {
-    "cards": {
-      "anywhere": {
-        "body": "同一个智能体，既能在你的本地机器上和你协作，也能在 Comfy Cloud 中运行。它会带你走完所有配置、搭好工作流，并依据你的硬件挑选模型，还会为你的工作流和依赖推荐环境与部署方案。",
-        "tag": "本地与云端",
-        "title": "你在哪里运行，它就在哪里运行"
-      },
-      "control": {
-        "body": "ComfyUI 给你的每一项控制都原封不动地留在原处。你的时间花在构图、镜头角度、遮罩、参数和细节打磨上。资深用户随时可以接管：打开节点，逐个像素地检查。",
-        "tag": "掌控与迭代",
-        "title": "创作始终属于你"
-      },
-      "heading": "它契合你原本的工作方式",
-      "knowledge": {
-        "body": "由 ComfyUI 专家精选整理，随时掌握最新模型、ComfyUI 扩展、参数与最佳工作流。你只要描述想要的内容和素材，钻研技术与模型细节是 Comfy Agent 的事。它可以在自动模式下推进整个项目，端到端交付最好的结果。",
-        "tag": "创意知识",
-        "title": "最佳实践可以端到端交付"
-      },
-      "multiplayer": {
-        "body": "和智能体并行搭建大型工作流，看着节点图一步步成形。提到某个节点，或引用另一个工作流；指出一处报错，它就会修好。画布上发生的一切，Comfy Agent 都清清楚楚。",
-        "tag": "人机协同",
-        "title": "你们两位同时编辑"
-      }
-    },
-    "form": {
-      "emailLabel": "邮箱地址",
-      "error": "出错了，请重试。",
-      "invalidEmail": "请输入有效的邮箱地址。",
-      "placeholder": "输入你的邮箱",
-      "submit": "加入候补名单",
-      "submitPending": "提交中…",
-      "success": "你已加入候补名单！准备就绪后我们会发邮件到 {email}。我们刚在新标签页里打开了几个问题 —",
-      "successLink": "点这里打开",
-      "successTail": "（如果浏览器拦截了它）。"
-    },
-    "hero": {
-      "badge": "AGENT",
-      "footnote": "我们会为你准备好账户，就绪后通过邮件通知你。",
-      "subtitle": "一个住在 ComfyUI 里的智能体，本地与云端皆可运行。描述你想要的东西：它与你一起在画布上搭建工作流、审阅素材、执行生成，并不断迭代，直到结果足以直接交付。",
-      "title": "首个为创作而生的智能体"
-    },
-    "meta": {
-      "description": "Comfy Agent 就住在 ComfyUI 里，本地与云端皆可运行。描述你想要的东西：它会在你的画布上搭好工作流、运行它，并把结果交给你。",
-      "title": "首个为创作而生的智能体"
     }
   },
   "api": {
@@ -654,11 +608,11 @@
         "q": "支持哪些智能体和终端？"
       },
       "2": {
-        "a": "两者驱动同一个引擎、共用同一个账户。Comfy MCP 适合对话中的交互式智能体工作：结果直接返回会话。CLI 适合自动化：批量运行、CI、shell 管线，输出用 --download 存盘或以 --json 输出。很多团队两个都用，让智能体按任务选择。Comfy MCP 见 https://comfy.org/mcp。",
+        "a": "两者驱动同一个引擎、共用同一个账户。Comfy MCP 适合对话中的交互式智能体工作：结果直接返回会话。CLI 适合自动化：批量运行、CI、shell 管线，输出用 --download 存盘或以 --json 输出。很多团队两个都用，让智能体按任务选择。Comfy MCP 见 https://comfy.org/mcp/。",
         "q": "CLI 还是 MCP：该用哪个？"
       },
       "3": {
-        "a": "CLI 免费且开源。有 Comfy 账户即可免费浏览模板、模型和节点，在你自己硬件上的运行也是免费的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗 Comfy 积分。云端运行同样消耗积分，可以直接添加，也可以使用现有的 [Comfy Cloud 订阅](https://comfy.org/cloud/pricing)。",
+        "a": "CLI 免费且开源。有 Comfy 账户即可免费浏览模板、模型和节点，在你自己硬件上的运行也是免费的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗 Comfy 积分。云端运行同样消耗积分，可以直接添加，也可以使用现有的 [Comfy Cloud 订阅](https://comfy.org/pricing/)。",
         "q": "需要付费吗？"
       },
       "4": {
@@ -943,10 +897,10 @@
         "q": "ComfyUI 本地运行会一直免费吗？"
       },
       "12": {
-        "a": "计划起价为每月 $20，采用基于积分的模式。如需完整的定价详情——积分、计划、团队计划、账单和退款——请查看 <a href=\"/zh-CN/cloud/pricing#faq\" class=\"text-primary-comfy-yellow underline\">定价常见问题</a>。",
+        "a": "计划起价为每月 $20，采用基于积分的模式。如需完整的定价详情——积分、计划、团队计划、账单和退款——请查看 <a href=\"/zh-CN/pricing/#faq\" class=\"text-primary-comfy-yellow underline\">定价常见问题</a>。",
         "q": "Comfy Cloud 的费用是多少？"
       },
-      "footer": "有关定价、计划、积分和账单的详细信息，请查看<a href=\"/zh-CN/cloud/pricing#faq\" class=\"text-primary-comfy-yellow underline\">定价常见问题</a>。",
+      "footer": "有关定价、计划、积分和账单的详细信息，请查看<a href=\"/zh-CN/pricing/#faq\" class=\"text-primary-comfy-yellow underline\">定价常见问题</a>。",
       "heading": "常见问题"
     },
     "hero": {
@@ -1164,8 +1118,8 @@
   },
   "contact": {
     "faq": {
-      "a1": "Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，面向在自有硬件上本地运行模型的场景。许可分为专业版和企业版两个级别。通过此表单申请许可，或在 [MiniMax 商业许可页面](https://comfy.org/zh-CN/minimax/license)了解更多。",
-      "a2": "Comfy 专家驻场加入你的团队，在你的环境中构建生产级工作流，用你的风格训练 LoRA，并教会你的团队运行和扩展他们构建的一切。通过此表单告诉我们你在做什么，或[认识前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives)。",
+      "a1": "Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，面向在自有硬件上本地运行模型的场景。许可分为专业版和企业版两个级别。通过此表单申请许可，或在 [MiniMax 商业许可页面](https://comfy.org/zh-CN/minimax/license/)了解更多。",
+      "a2": "Comfy 专家驻场加入你的团队，在你的环境中构建生产级工作流，用你的风格训练 LoRA，并教会你的团队运行和扩展他们构建的一切。通过此表单告诉我们你在做什么，或[认识前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives/)。",
       "a3": "云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/enterprise/)，或通过此表单预约演示。",
       "a4": "SOC 2 Type II 审计正在进行中。安全文档和实时控制状态可在我们的 [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz) 查看，我们的团队也可以在企业版沟通中详细说明安全要求。",
       "heading": "常见问题",
@@ -1376,11 +1330,6 @@
     }
   },
   "download": {
-    "cloud": {
-      "cta": "试试 COMFY CLOUD",
-      "prefix": "需要更强算力？",
-      "suffix": "强大 GPU，同样的工作流，同样的结果，随时随地。"
-    },
     "ecosystem": {
       "description": "超过 5,000 个社区构建的扩展——共计 60,000+ 节点——接入 ComfyUI 并扩展其能力。当新的开源模型发布时，ComfyUI 会实现它，社区会立即将其定制并构建到工作流中。当研究论文发布新技术时，几天内就会出现相应扩展。",
       "heading": "一个比任何公司都迭代更快的生态系统。"
@@ -1436,7 +1385,7 @@
       "subtitle": "完整的 ComfyUI 引擎——开源、快速、可扩展，随你运行。"
     },
     "meta": {
-      "description": "下载适用于 Windows 或 macOS 的 ComfyUI，也可从 GitHub 安装。完整的开源引擎，永久免费，在你自己的硬件上运行。"
+      "description": "下载适用于 Windows、macOS 或 Linux 的 ComfyUI，也可从 GitHub 安装。完整的开源引擎，永久免费，在你自己的硬件上运行。"
     },
     "reason": {
       "1": {
@@ -2110,7 +2059,8 @@
     "useCases": "用例",
     "wan3": "Wan 3.0",
     "wanAnimate2": "Wan Animate 2",
-    "workflows": "工作流"
+    "workflows": "工作流",
+    "modelCatalogue": "ComfyUI 模型"
   },
   "g": {
     "error": "错误",
@@ -2240,8 +2190,8 @@
   },
   "launches": {
     "banner": {
-      "cta": "试用 Comfy Router",
-      "text": "一个 API，调用前沿媒体模型。"
+      "cta": "免费试用",
+      "text": "Comfy Agent 现在可以在 ComfyUI 内部构建工作流。"
     },
     "cta": {
       "heading": "Comfy 的全部内容，一处尽享。",
@@ -2384,7 +2334,7 @@
         "q": "我需要 API 密钥吗？"
       },
       "6": {
-        "a": "本地连接方面，在你自己硬件上的生成是免费的，服务器也是开源的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗你 Comfy 账户中的积分，因此使用前需要登录。云端连接方面，连接和搜索免费，运行生成会使用 Comfy Cloud 积分——你需要[任意套餐的订阅](https://comfy.org/cloud/pricing)，仅充值积分是不够的。无论哪种方式，智能体在消费前都会先与你确认。",
+        "a": "本地连接方面，在你自己硬件上的生成是免费的，服务器也是开源的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗你 Comfy 账户中的积分，因此使用前需要登录。云端连接方面，连接和搜索免费，运行生成会使用 Comfy Cloud 积分——你需要[任意套餐的订阅](https://comfy.org/pricing/)，仅充值积分是不够的。无论哪种方式，智能体在消费前都会先与你确认。",
         "q": "需要付费吗？"
       },
       "7": {
@@ -2820,7 +2770,7 @@
         "withoutDocs": "打开 ComfyUI，浏览{templates}。加载其中一个作为起点，然后自定义节点和参数以满足您的需求。"
       },
       "isFree": {
-        "cloudAnswer": "此模型仅在 Comfy Cloud 上运行。按算力用量付费，详情请参阅 comfy.org/cloud/pricing。",
+        "cloudAnswer": "此模型仅在 Comfy Cloud 上运行。按算力用量付费，详情请参阅 comfy.org/pricing。",
         "localAnswer": "ComfyUI 是免费且开源的。{name} 的权重文件可从 Hugging Face 下载。仅在 Comfy Cloud 上运行时才需要为算力付费；在您自己的硬件上进行本地推理始终是免费的。",
         "question": "在 ComfyUI 中使用 {name} 是免费的吗？"
       },
@@ -2857,7 +2807,7 @@
         "workflows": "{count} 个工作流"
       },
       "contact": {
-        "heading": "选择一个模型，浏览社区的创作成果。<a href=\"https://comfy.org/workflows\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">访问 Comfy Workflows</a> 查看最新工作流。",
+        "heading": "选择一个模型，浏览社区的创作成果。<a href=\"https://comfy.org/workflows/\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">访问 Comfy Workflows</a> 查看最新工作流。",
         "label": "COMFY WORKFLOWS"
       },
       "creations": {
@@ -2893,6 +2843,13 @@
     "whatIs": {
       "heading": "什么是 {name}？",
       "tutorialLink": "阅读完整教程 →"
+    },
+    "hub": {
+      "meta": {
+        "title": "ComfyUI 模型：运行 AI 图像、视频和音频模型 - Comfy",
+        "description": "在 ComfyUI 中浏览 {count} 个 AI 模型，包括 {names}。在浏览器中试用任意模型，然后在你的代码中调用它。",
+        "descriptionWithoutNames": "在 ComfyUI 中浏览 {count} 个 AI 模型。在浏览器中试用任意模型，然后在你的代码中调用它。"
+      }
     }
   },
   "nav": {
@@ -2933,6 +2890,7 @@
     "ctaDesktopCore": "桌面版",
     "customerStories": "客户故事",
     "developerPlatform": "开发者平台",
+    "comfyRouter": "Comfy Router",
     "discord": "Discord",
     "docs": "文档",
     "downloadLocal": "下载桌面版",
@@ -2977,7 +2935,7 @@
     "toggleMenu": "切换菜单",
     "upgrade": "升级",
     "upgradeToAddCredits": "升级以添加积分",
-    "workshop": "模型",
+    "workshop": "Hub",
     "workspaceSettings": "工作区设置",
     "workspaceSwitchError": "无法切换工作区。请检查网络连接后重试。",
     "workspaces": "工作区",
@@ -3192,7 +3150,34 @@
       "3": {
         "description": "在内部工具、应用、网站、工作流等任何场景中调用这个 API。",
         "title": "在任何地方使用"
+      },
+      "chat": {
+        "channel": "创意团队",
+        "message": "现在做视频高清放大，最好的方式是什么？",
+        "reply": "我部署了这个工作流，试试看：",
+        "placeholder": "发送消息给团队",
+        "replySnippet": "curl https://video-upscale-4k.run.comfy.app \\\n  -F \"video={'@'}clip.mp4\"",
+        "thanks": "谢谢！",
+        "messageBgRemove": "有批量去背景的工作流吗？",
+        "replyBgRemove": "有的，调用方式是：",
+        "thanksBgRemove": "太好了，谢谢！",
+        "messageProductShots": "批量产品图最快方法？",
+        "replyProductShots": "已经上线了：",
+        "thanksProductShots": "太棒了，谢谢！"
       }
+    },
+    "serverlessApps": {
+      "eyebrow": "创意应用",
+      "heading": "构建应用，而不只是工作流。",
+      "body": "将 ComfyUI 工作流作为 API 部署在面向客户的产品、内部工具和自动化创意流程之后。在不暴露工作流图的情况下，构建用户所需的体验。",
+      "browseApps": "浏览应用",
+      "videoLabel": "由 Comfy API 驱动的创意应用"
+    },
+    "serverlessCaseStudy": {
+      "quote": "在 Silverside，Comfy 工作流将我们的创意专长转化为基础设施。我们构建生产流水线，再通过 Comfy API 提供服务，让客户能够大规模运行同样经过验证的工作流。这让小团队也能交付企业级创意成果。",
+      "name": "Allie Wrubel",
+      "role": "Silverside AI 技术负责人",
+      "linkLabel": "阅读 Silverside AI 客户案例"
     },
     "meta": {
       "description": "部署并扩展 ComfyUI 工作流。你的工作流。所有模型。一个 API。",
@@ -3233,22 +3218,12 @@
       "idleNote": "存储持续计费；GPU 只在工作节点运行时计费。绝不为闲置算力付费。",
       "modelsNote": "Comfy Router 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。",
       "priceColumn": "价格",
-      "storage": {
-        "containerDisk": "容器磁盘",
-        "highPerformance": "网络存储——高性能",
-        "networkTitle": "网络存储",
-        "standardOver1tb": "网络存储——标准，1 TB 及以上",
-        "standardUnder1tb": "网络存储——标准，1 TB 以下",
-        "sub": {
-          "containerDisk": "每个工作节点的本地文件系统",
-          "highPerformance": "高性能",
-          "standardOver1tb": "标准，1 TB 及以上",
-          "standardUnder1tb": "标准，1 TB 以下"
-        }
-      },
       "storageColumn": "存储",
-      "storageExample": "示例：500 GB 模型存放在标准网络存储上 = 每月 {amount} + GPU 时间。",
-      "storageNote": "模型存放在网络存储上——持久化并在部署的所有工作节点间共享。容器磁盘是每个工作节点自己的本地文件系统，单独计费。",
+      "storage": {
+        "title": "网络存储"
+      },
+      "storageExample": "示例：20 GB 模型 = 每月 {amount} + GPU 时间。",
+      "storageNote": "模型存放在网络存储上——持久化并在部署的所有工作节点间共享。",
       "subtitle": "只为实际用量付费。",
       "vramColumn": "显存"
     },
@@ -3261,7 +3236,8 @@
       "models": {
         "description": "在一个 API 中使用数千个最新模型。调用 Seedance、Minimax H3、Nano Banana 和 GPT-Image。",
         "learnMore": "了解更多",
-        "title": "Comfy Router"
+        "title": "Comfy Router",
+        "badgeLabel": "ROUTER"
       },
       "serverless": {
         "badgeLabel": "API",
@@ -3279,11 +3255,14 @@
       "shipSubtitle": "使用我们的 CLI 和 Skills，让你的编码智能体在几分钟内完成部署。",
       "subtitle": "Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Comfy API，并按需扩展。",
       "tabInstall": "从你的环境开始",
-      "tabWorkflow": "从你的工作流开始"
+      "tabWorkflow": "从你的工作流开始",
+      "copy": "复制命令",
+      "copied": "已复制"
     },
     "serverlessHero": {
       "heading": "几分钟内，将 ComfyUI 工作流变成生产级 API。",
-      "subtitle": "将你的所有自定义节点、LoRA、模型和 Python 依赖打包成一个自动扩缩的端点。"
+      "subtitle": "将你的所有自定义节点、LoRA、模型和 Python 依赖打包成一个自动扩缩的端点。",
+      "animationTitle": "Comfy 图像管线与 GPU 编排动画"
     },
     "serverlessScale": {
       "1": {
@@ -3341,6 +3320,18 @@
     "faq": {
       "heading": "常见问题"
     },
+    "comfyApi": {
+      "heading": "Comfy API 定价",
+      "subtitle": "Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。GPU 时间与存储按秒计费；下方列出了各套餐的版本、部署与并发限制。",
+      "metricColumn": "限制项",
+      "metric": {
+        "releases": "版本总数上限",
+        "deployments": "部署总数上限",
+        "concurrency": "最大工作节点并发数（每个部署）"
+      },
+      "enterpriseNote": "企业版的限制由合同约定。",
+      "learnMore": "了解更多"
+    },
     "feature": {
       "addCredits": "可随时增加积分",
       "concurrentWorkflows": "成员可并行运行工作流",
@@ -3352,11 +3343,7 @@
       "longRuntime": "更长工作流运行时长（最长 1 小时）",
       "roleBasedPermissions": "基于角色的权限",
       "sharedCreditPool": "所有成员共享积分池",
-      "shortRuntime": "单个工作流最长运行 30 分钟",
-      "apiConcurrency1": "通过 Cloud API 最多并发运行 1 个工作流",
-      "apiConcurrency3": "通过 Cloud API 最多并发运行 3 个工作流",
-      "apiConcurrency5": "通过 Cloud API 最多并发运行 5 个工作流",
-      "apiConcurrency25": "通过 Cloud API 最多并发运行 25 个工作流"
+      "shortRuntime": "单个工作流最长运行 30 分钟"
     },
     "footnote": "*基于默认设置（81 帧、18fps、640x640、4-step sampler）使用 Wan 2.2 图生视频模板生成 5 秒视频估算",
     "included": {
@@ -3487,10 +3474,6 @@
         "sharedWorkflowsAndAssets": "共享工作流与资产"
       }
     },
-    "resourceCosts": {
-      "heading": "开发者平台定价",
-      "subtitle": "按实际用量付费。以下费率适用于 Comfy API，按 GPU 秒计费。"
-    },
     "savePercent": "节省 {pct}%（{amount}）",
     "subtitle": "通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。",
     "team": {
@@ -3498,7 +3481,11 @@
       "sliderLabel": "团队每月积分承诺",
       "videosEstimate": "约可生成 {count} 个 5 秒视频*"
     },
-    "title": "价格"
+    "title": "价格",
+    "cycle": {
+      "monthly": "按月",
+      "yearly": "按年"
+    }
   },
   "privacy": {
     "australian-privacy": {
@@ -3573,10 +3560,10 @@
     },
     "intro": {
       "block": {
-        "0": "您的隐私对我们非常重要。Comfy Organization Inc 的政策是尊重您的隐私，并遵守有关我们可能收集的您的个人信息的任何适用法律和法规，包括在我们的网站 <a href=\"https://www.comfy.org\" class=\"text-white underline\">https://www.comfy.org</a> 以及我们拥有和运营的其他网站上。",
+        "0": "您的隐私对我们非常重要。Comfy Organization Inc 的政策是尊重您的隐私，并遵守有关我们可能收集的您的个人信息的任何适用法律和法规，包括在我们的网站 <a href=\"https://comfy.org/\" class=\"text-white underline\">https://www.comfy.org</a> 以及我们拥有和运营的其他网站上。",
         "1": "个人信息是指可以用于识别您身份的任何信息。这包括关于您个人的信息（如姓名、地址和出生日期）、您的设备、付款信息，甚至包括您如何使用网站或在线服务的信息。",
         "2": "如果我们的网站包含指向第三方网站和服务的链接，请注意这些网站和服务有自己的隐私政策。在访问任何第三方内容的链接后，您应阅读其发布的关于如何收集和使用个人信息的隐私政策信息。本隐私政策不适用于您离开我们网站后的任何活动。",
-        "3": "本政策自 2025 年 4 月 18 日起生效。有关 Comfy Desktop（本地安装应用程序）的具体信息，包括指定的数据处理方、GDPR/UK GDPR 下的合法依据、保留期限以及您的权利，请参阅我们的<a href=\"/zh-CN/privacy/desktop\" class=\"text-white underline\">Desktop 隐私政策</a>。"
+        "3": "本政策自 2025 年 4 月 18 日起生效。有关 Comfy Desktop（本地安装应用程序）的具体信息，包括指定的数据处理方、GDPR/UK GDPR 下的合法依据、保留期限以及您的权利，请参阅我们的<a href=\"/zh-CN/privacy/desktop/\" class=\"text-white underline\">Desktop 隐私政策</a>。"
       },
       "label": "简介"
     },
@@ -4248,6 +4235,7 @@
       "filesUploaded": "调用前先上传，再通过链接读取",
       "filesOmitted": "cURL 已省略上传的文件，请求可能不完整。请使用 Python 或 TypeScript 包含这些文件。",
       "getKey": "获取 API 密钥",
+      "downloadGraph": "下载 API 节点图",
       "heading": "从代码中调用该模型",
       "inputInvalid": "请在试用区填写有效的模型参数以生成请求。",
       "localFiles": "代码运行时会读取文件并进行 Base64 编码。请将路径设置为您的本地文件。",
@@ -4336,21 +4324,23 @@
       "timeout": "等待结果已超时。若该运行随后完成仍会扣费，请重试未更改的请求，而不要开始新的运行。",
       "unavailable": "该模型暂时不可用。",
       "upload": "文件上传失败，模型尚未运行。请重试或粘贴可访问的网址。",
-      "validation": "请检查高亮的字段。"
+      "validation": "请检查高亮的字段。",
+      "policyRealFaces": "Seedance 会拦截逼真的人脸，包括 AI 生成的人脸。请换一张不含人脸的图片或使用风格化角色，也可以检查一下提示词。"
     },
     "examples": {
       "empty": "该模型暂无示例。",
       "open": "在 Playground 中打开",
-      "replaceBody": "该示例自带输入内容，你填写的内容将被替换。",
-      "replaceConfirm": "使用该示例",
-      "replaceKeep": "保留我的内容",
-      "replaceTitle": "要替换你的输入吗？",
+      "replaceBody": "它自带输入内容，你填写的内容会被替换。",
+      "replaceConfirm": "载入示例",
+      "replaceKeep": "取消",
+      "replaceTitle": "要载入这个示例吗？",
       "samples": "输出样例",
       "start": "试试一个示例",
       "use": "使用此示例",
       "using": "已填入表单",
       "view": "查看样例",
-      "viewing": "正在查看样例"
+      "viewing": "正在查看样例",
+      "sampleAlt": "{name} 示例输出 {n}"
     },
     "field": {
       "aspectRatio": "宽高比",
@@ -4377,6 +4367,8 @@
       "remove": "移除文件",
       "removeNamedFile": "移除 {name}",
       "replaceFile": "替换 {name}",
+      "removedFile": "已移除 {name}",
+      "undoRemove": "撤销移除",
       "resolution": "分辨率",
       "seconds": "{value} 秒",
       "seed": "随机种子",
@@ -4437,8 +4429,8 @@
     },
     "hero": {
       "eyebrow": "模型",
-      "heading": "接下来你想创造什么？",
-      "subtitle": "用你自己的创意试用最新的 AI 模型，就在浏览器中。"
+      "heading": "ComfyUI 模型",
+      "subtitle": "接下来你想创造什么？用你自己的创意试用最新的 AI 模型，就在浏览器中。"
     },
     "hub": {
       "categories": "分类",
@@ -4521,7 +4513,16 @@
       "invalidJson": "请输入符合此模型输入架构的 JSON。",
       "maxFiles": "最多选择 {count} 个文件。",
       "meta": {
-        "description": "在浏览器中运行 {name}，然后从代码中调用它。"
+        "byProvider": "{name}（{provider}）",
+        "lead": "{who}：{summary}",
+        "leadNoSummary": "{who}。",
+        "cta": "在浏览器中运行，或通过 API 调用。",
+        "ctaShort": "可在浏览器或 API 中运行。",
+        "price": "默认设置下约 {credits} 积分。",
+        "priceNoUnit": "默认设置下约 {credits} 积分。",
+        "title": "{name} API 与 Playground - Comfy",
+        "titleUnbranded": "{name} API 与 Playground",
+        "titleApi": "{name} API - Comfy"
       },
       "missingInputSchema": "Comfy Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。",
       "nodePriceDefaults": "根据公布的费率或节点默认设置估算。实际费用随设置和用量变化。",
@@ -4530,7 +4531,6 @@
       "priceNoteLabel": "此估算的计算方式",
       "related": "更多模型",
       "relatedProvider": "{provider} 的更多模型",
-      "relatedShort": "更多模型",
       "runNext": "运行模型 — 登录功能即将推出",
       "select": "选择一个选项",
       "tabs": {
@@ -4553,7 +4553,6 @@
       "earlier": "本次会话的早前运行",
       "earlierRun": "早前运行 {number}",
       "example": "示例",
-      "exampleHint": "运行 {model} 以生成你自己的结果。",
       "expand": "放大",
       "expired": "该输出已过期。",
       "expiredHint": "结果不会被保存。链接在运行后 24 小时内有效；请下载以保留。",
@@ -4662,7 +4661,10 @@
       "savedAssets": "打开你的素材",
       "savedStay": "留在此页面",
       "savedLeave": "离开并停止",
-      "savedKeep": "让它继续运行"
+      "savedKeep": "让它继续运行",
+      "rollingOut": "浏览器内运行正在逐步开放。你可以通过 API 调用此模型，或在 ComfyUI 中运行。",
+      "resolvingAvailability": "请稍候…",
+      "rollingOutApi": "查看 API"
     },
     "search": {
       "clear": "清除搜索",
@@ -4789,12 +4791,12 @@
       "apiHint": "以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。",
       "apiNote": "需要付费的 Cloud 方案和可用额度。",
       "apiDocs": "API 文档",
+      "apiSteps": "完整调用步骤",
       "apiUploads": "先上传媒体",
       "apiUploadGrant": "使用工作区凭证向 Cloud 的 POST /api/inputs/upload-url 发送 {'{'}\"content_type\":\"image/png\"{'}'}。",
       "apiUploadPut": "将文件原始字节 PUT 到同一 Cloud 地址返回的 upload_path。此 PUT 不要携带账号凭证。",
       "apiUploadFinalize": "PUT 响应包含 name。用此名称替换下方对应的 UPLOADED_*_FILENAME。",
       "apiPoll": "POST /api/prompt 返回 prompt_id。使用凭证轮询 GET /api/jobs/{'{'}prompt_id{'}'}?short_link=ephemeral_tool_chain。选定输出包含临时 short_url 链接；再次读取运行即可刷新链接。",
-      "exampleHint": "此模板的示例。",
       "preparing": "正在准备输入…",
       "submitting": "正在提交工作流",
       "queued": "排队中",
@@ -4830,14 +4832,16 @@
       "eyebrow": "Hub",
       "categories": "分类",
       "show": "浏览",
-      "workflowsSubtitle": "借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。",
-      "appsSubtitle": "用整合多个工作流的应用，挑战更大的创意。",
+      "workflowsSubtitle": "用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。",
+      "appsSubtitle": "用把多个工作流组合在一起的应用，挑战更大的想法。",
       "noWorkflows": "没有符合搜索和筛选条件的工作流。",
       "backToWorkflows": "返回工作流",
       "allWorkflows": "全部工作流",
       "browseAllWorkflows": "浏览全部工作流",
       "searchWorkflows": "搜索工作流…",
-      "showWorkflows": "显示 {n} 个工作流"
+      "showWorkflows": "显示 {n} 个工作流",
+      "heading": "ComfyUI 模型",
+      "directory": "全部模型（A 到 Z）"
     },
     "assets": {
       "title": "你的素材",
@@ -4853,9 +4857,6 @@
       "cancelError": "无法请求取消。生成可能仍在进行。"
     },
     "cinematic": {
-      "badge": "新 · 测试版",
-      "summary": "用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。",
-      "cta": "打开工作室",
       "openInStudio": "在 Cinematic Studio 中打开"
     }
   }

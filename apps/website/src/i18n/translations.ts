@@ -213,10 +213,14 @@ export function createTranslator<T extends MessageTree>(catalogs: Catalogs<T>) {
   function tPlural(
     key: Key,
     count: number,
-    locale: Locale = DEFAULT_LOCALE
+    locale: Locale = DEFAULT_LOCALE,
+    named: NamedValues = {}
   ): string {
-    requireValues(key, locale, shapeOf(key, locale).placeholders, { count })
-    return render(key, locale, () => i18n.global.t(key, count, { locale }))
+    const values = { ...named, count }
+    requireValues(key, locale, shapeOf(key, locale).placeholders, values)
+    return render(key, locale, () =>
+      i18n.global.t(key, values, { locale, plural: count })
+    )
   }
 
   return { t, tAround, tPlural, hasKey, keys }

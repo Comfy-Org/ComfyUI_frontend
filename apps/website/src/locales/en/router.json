@@ -114,7 +114,7 @@
         },
         "10": {
           "q": "Can I bring my own provider key?",
-          "a": "BYOK is available for select models on Enterprise. Access is enabled by request.\n\n<a href=\"/enterprise\">Contact Enterprise Sales</a>"
+          "a": "BYOK is available for select models on Enterprise. Access is enabled by request.\n\n<a href=\"/enterprise/\">Contact Enterprise Sales</a>"
         },
         "11": {
           "q": "How is Comfy Router priced?",

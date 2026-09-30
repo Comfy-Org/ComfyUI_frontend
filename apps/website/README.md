@@ -46,7 +46,9 @@ as the application's `src/locales/` at the repository root:
   list placeholders such as `{0}` are refused.
 - Plural forms separated by `|`: `"{count} node | {count} nodes"`, picked with
   `tPlural('cloudNodesLaunch.models.nodeCount', count, locale)`, which fills
-  `{count}` and nothing else. The first form is used when the locale's plural
+  `{count}`. Pass other named values as a fourth argument, for example
+  `tPlural('models.hub.meta.description', count, locale, { names })`.
+  Missing named values throw, just as with `t()`. The first form is used when the locale's plural
   category for the count is `one`, the last otherwise, judged by the locale the
   message came from.
 - The characters `{`, `}`, `@` and `|` are message syntax, so literal ones are

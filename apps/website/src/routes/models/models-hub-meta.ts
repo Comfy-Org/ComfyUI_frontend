@@ -15,10 +15,13 @@ export function modelsHubMeta(
       families.length
         ? 'models.hub.meta.description'
         : 'models.hub.meta.descriptionWithoutNames',
-      models.length
-    ).replace(
-      '{names}',
-      new Intl.ListFormat('en', { type: 'conjunction' }).format(families)
+      models.length,
+      'en',
+      {
+        names: new Intl.ListFormat('en', { type: 'conjunction' }).format(
+          families
+        )
+      }
     )
   }
 }

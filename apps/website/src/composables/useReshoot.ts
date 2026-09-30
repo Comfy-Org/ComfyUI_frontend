@@ -331,10 +331,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       session.value?.role === 'member'
         ? 'workshop.error.memberNoCredits'
         : 'workshop.error.noCreditsCloud'
-    return t(key, locale).replace(
-      '{workspace}',
-      session.value?.workspace.name ?? ''
-    )
+    return t(key, locale, { workspace: session.value?.workspace.name ?? '' })
   }
 
   function noteFor(error: unknown): string {

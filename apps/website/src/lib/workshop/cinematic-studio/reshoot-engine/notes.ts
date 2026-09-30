@@ -8,20 +8,13 @@ import { sizeTier } from './workflow'
 const HOUR = 3600
 const DAY = 24 * HOUR
 
-function fill(text: string, values: Record<string, string | number>): string {
-  return Object.entries(values).reduce(
-    (out, [key, value]) => out.replaceAll(`{${key}}`, String(value)),
-    text
-  )
-}
-
 /** The rolling free-run period as a reader says it: today, this week, per 12 hours. */
 function periodPhrase(seconds: number, locale: Locale): string {
   if (seconds === DAY) return rc('reshoot.period.day', locale)
   if (seconds === 7 * DAY) return rc('reshoot.period.week', locale)
   if (seconds % DAY === 0)
-    return fill(rc('reshoot.period.days', locale), { n: seconds / DAY })
-  return fill(rc('reshoot.period.hours', locale), {
+    return rc('reshoot.period.days', locale, { n: seconds / DAY })
+  return rc('reshoot.period.hours', locale, {
     n: Math.max(1, Math.round(seconds / HOUR))
   })
 }
@@ -34,7 +27,7 @@ function relativeTime(seconds: number, locale: Locale): string {
 }
 
 const credits = (price: number, locale: Locale) =>
-  fill(rc('reshoot.quote.paid', locale), {
+  rc('reshoot.quote.paid', locale, {
     price: price.toLocaleString(locale)
   })
 
@@ -47,7 +40,7 @@ function exhausted(
     inSeconds === undefined
       ? rc('reshoot.quote.later', locale)
       : relativeTime(inSeconds, locale)
-  const note = fill(rc('reshoot.quote.exhausted', locale), { when })
+  const note = rc('reshoot.quote.exhausted', locale, { when })
   return price > 0 ? `${note} · ${credits(price, locale)}` : note
 }
 
@@ -79,7 +72,7 @@ function priceText(quote: ReshootQuote, run: ReshootRun, locale: Locale) {
   if (price !== undefined) return credits(price, locale)
   const rate = perSecondRate(quote, run.size)
   if (rate === undefined) return rc('reshoot.quote.priceUnknown', locale)
-  return fill(rc('reshoot.quote.perSecond', locale), {
+  return rc('reshoot.quote.perSecond', locale, {
     rate: rate.toLocaleString(locale)
   })
 }
@@ -94,7 +87,7 @@ export function quoteNote(
   const { free_runs_allowance: allowance } = quote
   if (quote.next_run === 'free')
     return allowance
-      ? fill(rc('reshoot.quote.free', locale), {
+      ? rc('reshoot.quote.free', locale, {
           left: quote.free_runs_remaining,
           runs: allowance.runs,
           period: periodPhrase(allowance.period_seconds, locale)
@@ -127,7 +120,7 @@ export function failureNote(error: unknown, locale: Locale, price = 0): string {
       return rc('reshoot.error.busy', locale)
     case 'unmetered_rate_limited':
     case 'upload_rate_limited':
-      return fill(rc('reshoot.error.rateLimited', locale), {
+      return rc('reshoot.error.rateLimited', locale, {
         when:
           retry === undefined
             ? rc('reshoot.quote.later', locale)

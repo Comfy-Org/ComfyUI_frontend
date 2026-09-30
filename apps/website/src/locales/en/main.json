@@ -19,8 +19,8 @@
     },
     "hero": {
       "eyebrow": "Models",
-      "heading": "What will you make next?",
-      "subtitle": "Try the latest AI models with your own ideas, right in your browser."
+      "heading": "ComfyUI models",
+      "subtitle": "What will you make next? Try the latest AI models with your own ideas, right in your browser."
     },
     "search": {
       "label": "Search models, providers, and categories",
@@ -86,7 +86,16 @@
       "related": "More models",
       "browseAll": "Browse all models",
       "meta": {
-        "description": "Run {name} in your browser, then call it from your code."
+        "byProvider": "{name} by {provider}",
+        "lead": "{who}: {summary}",
+        "leadNoSummary": "{who}.",
+        "cta": "Run it in your browser or call it via API.",
+        "ctaShort": "Run it in your browser or via API.",
+        "price": "Typical cost: {credits} credits per {unit}.",
+        "priceNoUnit": "Typical cost: {credits} credits.",
+        "title": "{name} API & Playground - Comfy",
+        "titleUnbranded": "{name} API & Playground",
+        "titleApi": "{name} API - Comfy"
       },
       "tabs": {
         "playground": "Playground",
@@ -94,7 +103,6 @@
         "details": "Details"
       },
       "relatedProvider": "More from {provider}",
-      "relatedShort": "More models",
       "browseAllShort": "Browse all",
       "versions": "{n} versions",
       "deprecated": "Deprecated",
@@ -206,7 +214,6 @@
       "complete": "Generation complete.",
       "truncated": "Preview shortened. Download the complete response below.",
       "example": "Example",
-      "exampleHint": "Run {model} to make your own.",
       "earlier": "Earlier runs this session",
       "earlierRun": "Earlier run {number}",
       "latest": "Latest",
@@ -366,6 +373,8 @@
       "frameRatioMismatch": "The video has one shape, so a frame that does not match it will be stretched to fit. Run it as is, or upload frames with the same proportions.",
       "file": "File",
       "replaceFile": "Replace {name}",
+      "removedFile": "{name} removed",
+      "undoRemove": "Put it back",
       "removeNamedFile": "Remove {name}",
       "tooManyImages": "Choose up to {count} images.",
       "tooManyFiles": "Choose up to {count} files.",
@@ -414,7 +423,10 @@
       "savedAssets": "Open your assets",
       "savedStay": "Stay on this page",
       "savedLeave": "Leave and stop",
-      "savedKeep": "Leave it running"
+      "savedKeep": "Leave it running",
+      "rollingOut": "Running in the browser is rolling out. Call this model through the API or run it in ComfyUI.",
+      "resolvingAvailability": "Just a moment…",
+      "rollingOutApi": "See the API"
     },
     "dialogue": {
       "turn": "Turn {number}",
@@ -428,10 +440,10 @@
       "failed": "Models did not load."
     },
     "examples": {
-      "replaceTitle": "Replace your inputs?",
-      "replaceBody": "This example comes with its own inputs. What you wrote will be replaced.",
-      "replaceKeep": "Keep mine",
-      "replaceConfirm": "Use the example",
+      "replaceTitle": "Load this example?",
+      "replaceBody": "It comes with its own inputs, so what you filled in will be replaced.",
+      "replaceKeep": "Cancel",
+      "replaceConfirm": "Load example",
       "start": "Try an example",
       "samples": "Sample outputs",
       "view": "View sample",
@@ -439,7 +451,8 @@
       "open": "Open in Playground",
       "use": "Use this example",
       "using": "Loaded",
-      "empty": "No examples yet for this model."
+      "empty": "No examples yet for this model.",
+      "sampleAlt": "{name} example output {n}"
     },
     "error": {
       "provider": "The run failed. Keep your inputs unchanged when retrying. If credits were deducted without a result, contact support with the request ID.",
@@ -463,7 +476,8 @@
       "creditsTitle": "Not enough credits",
       "checkoutFailed": "Checkout could not start. Try again.",
       "noCreditsCloud": "Not enough credits in {workspace}.",
-      "noCreditsPlatform": "Add credits to {workspace} on platform.comfy.org"
+      "noCreditsPlatform": "Add credits to {workspace} on platform.comfy.org",
+      "policyRealFaces": "Seedance blocks realistic human faces, even AI-generated ones. Try an image without one or a stylized character, or check your prompt."
     },
     "api": {
       "heading": "Call this model from your code",
@@ -475,6 +489,7 @@
       "mappingUnavailable": "We have not verified this request against the Router yet. Check the docs before you rely on it.",
       "copied": "Copied",
       "getKey": "Get API key",
+      "downloadGraph": "Download the API graph",
       "docs": "Router docs",
       "needs": "What you need",
       "needsEndpoint": "Endpoint",
@@ -569,12 +584,12 @@
       "apiHint": "The request below uses the same prepared graph and settings as the Playground. Each submission can start a paid run; do not automatically retry a submission whose outcome is unknown.",
       "apiNote": "Needs a paid Cloud plan and available credits.",
       "apiDocs": "API documentation",
+      "apiSteps": "The whole call, step by step",
       "apiUploads": "Upload media first",
       "apiUploadGrant": "POST /api/inputs/upload-url with {'{'}\"content_type\":\"image/png\"{'}'} on the Cloud origin, using your workspace credential.",
       "apiUploadPut": "PUT the raw file bytes to the returned upload_path on the same Cloud origin. Do not send an account credential with this PUT.",
       "apiUploadFinalize": "The PUT response contains name. Replace the corresponding UPLOADED_*_FILENAME value below with that name.",
       "apiPoll": "POST /api/prompt returns prompt_id. Poll GET /api/jobs/{'{'}prompt_id{'}'}?short_link=ephemeral_tool_chain with your credential. Selected outputs contain temporary short_url links; read the job again to refresh them.",
-      "exampleHint": "An example from this template.",
       "preparing": "Preparing inputs…",
       "submitting": "Handing the workflow over",
       "queued": "Waiting its turn",
@@ -617,7 +632,9 @@
       "allWorkflows": "All workflows",
       "browseAllWorkflows": "Browse all workflows",
       "searchWorkflows": "Search workflows…",
-      "showWorkflows": "Show {n} workflows"
+      "showWorkflows": "Show {n} workflows",
+      "heading": "ComfyUI models",
+      "directory": "All models A to Z"
     },
     "assets": {
       "title": "Your assets",
@@ -633,9 +650,6 @@
       "cancelError": "Could not request cancellation. Your generation may still be running."
     },
     "cinematic": {
-      "badge": "New · Beta",
-      "summary": "Direct a shot with a real camera, light and grade, then run it on any image model.",
-      "cta": "Open studio",
       "openInStudio": "Open in Cinematic Studio"
     }
   },
@@ -1237,7 +1251,7 @@
       "headingHighlight": "Desktop"
     },
     "meta": {
-      "description": "Download ComfyUI for Windows or macOS, or install from GitHub. The full open source engine, free forever, running on your own hardware."
+      "description": "Download ComfyUI for Windows, macOS, or Linux, or install from GitHub. The full open source engine, free forever, running on your own hardware."
     },
     "hero": {
       "heading": "Run on your hardware.\nFree forever.",
@@ -1253,11 +1267,6 @@
       "success": "The link is sent to {email}!",
       "invalidEmail": "Please enter a valid email address.",
       "error": "Something went wrong. Please try again."
-    },
-    "cloud": {
-      "prefix": "Need more power?",
-      "cta": "TRY COMFY CLOUD",
-      "suffix": "Powerful GPUs, same workflow, same results, from anywhere."
     }
   },
   "cloud": {
@@ -1379,10 +1388,10 @@
       },
       "12": {
         "q": "How much does Comfy Cloud cost?",
-        "a": "Plans start at $20/mo with a credit-based model. For full pricing details — credits, plans, Team plan, billing, and refunds — see the <a href=\"/cloud/pricing#faq\" class=\"text-primary-comfy-yellow underline\">Pricing FAQs</a>."
+        "a": "Plans start at $20/mo with a credit-based model. For full pricing details — credits, plans, Team plan, billing, and refunds — see the <a href=\"/pricing/#faq\" class=\"text-primary-comfy-yellow underline\">Pricing FAQs</a>."
       },
       "heading": "FAQs",
-      "footer": "For pricing, plans, credits, and billing details, see the <a href=\"/cloud/pricing#faq\" class=\"text-primary-comfy-yellow underline\">Pricing FAQs</a>."
+      "footer": "For pricing, plans, credits, and billing details, see the <a href=\"/pricing/#faq\" class=\"text-primary-comfy-yellow underline\">Pricing FAQs</a>."
     }
   },
   "cloudNodes": {
@@ -1536,10 +1545,6 @@
       "educationalSavings": "Educational savings – 10% off",
       "educationalSavingsYearly": "Educational savings – 25% off",
       "shortRuntime": "30 minute max workflow runtime",
-      "apiConcurrency1": "Run up to 1 concurrent workflow via Cloud API",
-      "apiConcurrency3": "Run up to 3 concurrent workflows via Cloud API",
-      "apiConcurrency5": "Run up to 5 concurrent workflows via Cloud API",
-      "apiConcurrency25": "Run up to 25 concurrent workflows via Cloud API",
       "addCredits": "Add more credits anytime",
       "importModels": "Import your own models",
       "longRuntime": "Longer workflow runtime (up to 1 hr)",
@@ -1612,14 +1617,26 @@
     "faq": {
       "heading": "FAQs"
     },
-    "resourceCosts": {
-      "subtitle": "Only pay for what you use. Rates below apply to the Comfy API, billed by the GPU second.",
-      "heading": "Developer Platform pricing"
+    "comfyApi": {
+      "heading": "Comfy API pricing",
+      "subtitle": "Comfy API is a separate product from your Comfy Cloud plan, for teams building on Comfy Cloud programmatically. GPU time and storage are billed by the second; release, deployment, and concurrency limits apply to each plan below.",
+      "metricColumn": "Limit",
+      "metric": {
+        "releases": "Total releases limit",
+        "deployments": "Total deployments limit",
+        "concurrency": "Max worker concurrency (per deployment)"
+      },
+      "enterpriseNote": "Enterprise limits are determined by your contract.",
+      "learnMore": "Learn More"
     },
     "minimaxLicense": {
       "heading": "MiniMax license pricing",
       "description": "For running MiniMax models locally. Comfy Cloud already includes commercial use. Enterprise on an annual agreement, priced to your volume. Video, audio, and music under one license.",
       "cta": "See license tiers"
+    },
+    "cycle": {
+      "monthly": "monthly",
+      "yearly": "yearly"
     }
   },
   "player": {
@@ -2040,7 +2057,7 @@
       },
       "6": {
         "q": "Does it cost anything?",
-        "a": "On the local connection, runs on your own hardware are free, and the server is open source. Partner models are the exception: they run on partner infrastructure and spend Comfy credits from your account, so you sign in before using them. On the cloud connection, connecting and searching are free, and running a generation uses Comfy Cloud credits — you need a [subscription of any tier](https://comfy.org/cloud/pricing); a credit top-up alone isn't enough. Either way, your agent confirms with you before it spends."
+        "a": "On the local connection, runs on your own hardware are free, and the server is open source. Partner models are the exception: they run on partner infrastructure and spend Comfy credits from your account, so you sign in before using them. On the cloud connection, connecting and searching are free, and running a generation uses Comfy Cloud credits — you need a [subscription of any tier](https://comfy.org/pricing/); a credit top-up alone isn't enough. Either way, your agent confirms with you before it spends."
       },
       "7": {
         "q": "Is Comfy MCP open source?",
@@ -2250,11 +2267,11 @@
       },
       "2": {
         "q": "CLI or MCP: which should I use?",
-        "a": "Both drive the same engine with the same account. Comfy MCP is for interactive agent work in chat: results come back in the session. The CLI is for automation: batch runs, CI, shell pipelines, and outputs saved to disk with --download or emitted as --json. Many teams run both and let the agent pick per task. Comfy MCP lives at https://comfy.org/mcp."
+        "a": "Both drive the same engine with the same account. Comfy MCP is for interactive agent work in chat: results come back in the session. The CLI is for automation: batch runs, CI, shell pipelines, and outputs saved to disk with --download or emitted as --json. Many teams run both and let the agent pick per task. Comfy MCP lives at https://comfy.org/mcp/."
       },
       "3": {
         "q": "Does it cost anything?",
-        "a": "The CLI is free and open source. With a Comfy account you can browse templates, models, and nodes at no cost, and runs on your own hardware are free. Partner models are the exception: they run on partner infrastructure and spend Comfy credits. Cloud runs spend credits too, either added directly or through an existing [Comfy Cloud subscription](https://comfy.org/cloud/pricing)."
+        "a": "The CLI is free and open source. With a Comfy account you can browse templates, models, and nodes at no cost, and runs on your own hardware are free. Partner models are the exception: they run on partner infrastructure and spend Comfy credits. Cloud runs spend credits too, either added directly or through an existing [Comfy Cloud subscription](https://comfy.org/pricing/)."
       },
       "4": {
         "q": "How does cloud vs local routing work?",
@@ -2365,7 +2382,8 @@
     "featuredCompanyAlt": "Black Math customer story image",
     "featuredCompanyCtaAria": "Watch the Black Math customer story",
     "developerPlatform": "Developer Platform",
-    "workshop": "Models",
+    "comfyRouter": "Comfy Router",
+    "workshop": "Hub",
     "comfyWorkshop": "Browse Models",
     "signIn": "Sign in",
     "signOut": "Log out",
@@ -2405,52 +2423,6 @@
     "supportedNodes": "Supported Nodes",
     "events": "Events"
   },
-  "agent": {
-    "meta": {
-      "title": "The first agent for craft",
-      "description": "The Comfy Agent lives inside ComfyUI, local and cloud. Describe what you want: it builds the workflow on your canvas, runs it, and hands back the result."
-    },
-    "hero": {
-      "badge": "AGENT",
-      "title": "The first agent for craft",
-      "subtitle": "An agent that lives inside ComfyUI, local and cloud. Describe what you want: it builds the workflow on your canvas with you, reviews assets, runs generations, and iterates until the result is production ready.",
-      "footnote": "We'll prepare your account and email you when it's ready."
-    },
-    "cards": {
-      "heading": "It fits the way you already work",
-      "knowledge": {
-        "tag": "Creative knowledge",
-        "title": "Best practice can be delivered end to end",
-        "body": "Up-to-date knowledge of all the latest models, ComfyUI extensions, parameters, and best workflows, curated by ComfyUI experts. Describe the content and asset you want. It is Comfy Agent's job to learn the technology and model details. It can run a project in auto mode and deliver the best result end to end."
-      },
-      "multiplayer": {
-        "tag": "Human-agent Multiplayer",
-        "title": "Two of you edit at the same time",
-        "body": "Build a big workflow with the agent in parallel. Watch the graph assemble. Mention a node or reference another workflow. Point at an error and it fixes it. Comfy Agent is fully aware of what's happening on the canvas."
-      },
-      "control": {
-        "tag": "Control & Iterate",
-        "title": "The craft stays yours",
-        "body": "Every control ComfyUI gives you stays exactly where it is. You spend your time on composition, camera angles, masks, parameters, and polishing the details. Power users can always take over: open the nodes and check every single pixel."
-      },
-      "anywhere": {
-        "tag": "Local and Cloud",
-        "title": "It runs where you run",
-        "body": "Same agent, works with you on your local machine or in Comfy Cloud. It walks you through all setups, builds the workflows, and chooses models based on your hardware. It suggests environment and deployment solutions for your workflow and dependencies."
-      }
-    },
-    "form": {
-      "emailLabel": "Email address",
-      "placeholder": "Type your email",
-      "submit": "Join the waitlist",
-      "submitPending": "Joining…",
-      "invalidEmail": "Please enter a valid email address.",
-      "error": "Something went wrong. Please try again.",
-      "success": "You're on the waitlist! We'll email {email} when it's ready. A few questions just opened in a new tab —",
-      "successLink": "open them here",
-      "successTail": "if your browser blocked it."
-    }
-  },
   "footer": {
     "tagline": "The open standard for visual AI",
     "products": "Products",
@@ -2483,16 +2455,17 @@
     "wan3": "Wan 3.0",
     "chatgptImage25": "ChatGPT Images 2.5",
     "qwenImage21": "Qwen-Image 2.1",
-    "cloudNodes": "Comfy Cloud Nodes"
+    "cloudNodes": "Comfy Cloud Nodes",
+    "modelCatalogue": "ComfyUI Models"
   },
   "privacy": {
     "intro": {
       "label": "INTRO",
       "block": {
-        "0": "Your privacy is important to us. It is Comfy Organization Inc's policy to respect your privacy and comply with any applicable law and regulation regarding any personal information we may collect about you, including across our website, <a href=\"https://www.comfy.org\" class=\"text-white underline\">https://www.comfy.org</a>, and other sites we own and operate.",
+        "0": "Your privacy is important to us. It is Comfy Organization Inc's policy to respect your privacy and comply with any applicable law and regulation regarding any personal information we may collect about you, including across our website, <a href=\"https://comfy.org/\" class=\"text-white underline\">https://www.comfy.org</a>, and other sites we own and operate.",
         "1": "Personal information is any information about you which can be used to identify you. This includes information about you as a person (such as name, address, and date of birth), your devices, payment details, and even information about how you use a website or online service.",
         "2": "In the event our site contains links to third-party sites and services, please be aware that those sites and services have their own privacy policies. After following a link to any third-party content, you should read their posted privacy policy information about how they collect and use personal information. This Privacy Policy does not apply to any of your activities after you leave our site.",
-        "3": "This policy is effective as of April 18, 2025. For information specific to Comfy Desktop (the local install application), including named processors, lawful basis under GDPR/UK GDPR, retention periods, and your rights, see our <a href=\"/privacy/desktop\" class=\"text-white underline\">Desktop Privacy Policy</a>."
+        "3": "This policy is effective as of April 18, 2025. For information specific to Comfy Desktop (the local install application), including named processors, lawful basis under GDPR/UK GDPR, retention periods, and your rights, see our <a href=\"/privacy/desktop/\" class=\"text-white underline\">Desktop Privacy Policy</a>."
       }
     },
     "information-we-collect": {
@@ -3289,9 +3262,9 @@
     "faq": {
       "heading": "Common questions",
       "q1": "How do I get a MiniMax commercial license?",
-      "a1": "Comfy is the only official reseller of MiniMax commercial-use licenses, covering MiniMax H3 plus MiniMax Audio & Music for running the models locally on your own hardware. Licenses come in two tiers, Professional and Enterprise. Request a license through this form, or read more on the [MiniMax Commercial License page](https://comfy.org/minimax/license).",
+      "a1": "Comfy is the only official reseller of MiniMax commercial-use licenses, covering MiniMax H3 plus MiniMax Audio & Music for running the models locally on your own hardware. Licenses come in two tiers, Professional and Enterprise. Request a license through this form, or read more on the [MiniMax Commercial License page](https://comfy.org/minimax/license/).",
       "q2": "What are Forward Deployed Creatives?",
-      "a2": "Comfy experts who embed with your team, build production workflows in your environment, train LoRAs on your style, and teach your team to run and extend everything they build. Tell us what you are making through this form, or [meet the Forward Deployed Creatives](https://comfy.org/forward-deployed-creatives).",
+      "a2": "Comfy experts who embed with your team, build production workflows in your environment, train LoRAs on your style, and teach your team to run and extend everything they build. Tell us what you are making through this form, or [meet the Forward Deployed Creatives](https://comfy.org/forward-deployed-creatives/).",
       "q3": "What does Comfy Enterprise include?",
       "a3": "Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/enterprise/), or request a demo through this form.",
       "q4": "Is Comfy SOC 2 compliant?",
@@ -3405,7 +3378,7 @@
       "isFree": {
         "question": "Is {name} free to use in ComfyUI?",
         "localAnswer": "ComfyUI is free and open source. {name} weights are available to download from Hugging Face. You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.",
-        "cloudAnswer": "This model runs exclusively on Comfy Cloud. Pay-per-compute pricing applies - see comfy.org/cloud/pricing"
+        "cloudAnswer": "This model runs exclusively on Comfy Cloud. Pay-per-compute pricing applies - see comfy.org/pricing"
       }
     },
     "dirDescription": {
@@ -3450,7 +3423,7 @@
       },
       "contact": {
         "label": "COMFY WORKFLOWS",
-        "heading": "Pick a model and explore what the community has built. <a href=\"https://comfy.org/workflows\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">Browse Comfy Workflows</a> for the newest workflows."
+        "heading": "Pick a model and explore what the community has built. <a href=\"https://comfy.org/workflows/\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">Browse Comfy Workflows</a> for the newest workflows."
       }
     },
     "showcase": {
@@ -3464,6 +3437,13 @@
         "ltx23": "LTX 2.3",
         "qwenAdvancedEdit": "Advanced image\nediting with Qwen",
         "wan22TextToVideo": "Wan 2.2\ntext to video"
+      }
+    },
+    "hub": {
+      "meta": {
+        "title": "ComfyUI Models: Run AI Image, Video & Audio Models - Comfy",
+        "description": "Browse {count} AI model in ComfyUI, including {names}. Try it in your browser, then call it from your code. | Browse {count} AI models in ComfyUI, including {names}. Try any model in your browser, then call it from your code.",
+        "descriptionWithoutNames": "Browse {count} AI model in ComfyUI. Try it in your browser, then call it from your code. | Browse {count} AI models in ComfyUI. Try any model in your browser, then call it from your code."
       }
     }
   },
@@ -3512,7 +3492,7 @@
     },
     "assets": {
       "heading": "Brand logos for your content",
-      "subheading": "Banners, screenshots, and talking points are in your affiliate dashboard after approval. Get the <a href=\"https://comfy.org/brand\" class=\"text-primary-comfy-yellow underline\">full brand assets here</a>.",
+      "subheading": "Banners, screenshots, and talking points are in your affiliate dashboard after approval. Get the <a href=\"https://comfy.org/brand/\" class=\"text-primary-comfy-yellow underline\">full brand assets here</a>.",
       "ctaLabel": "Go to brand portal"
     },
     "faq": {
@@ -3540,8 +3520,8 @@
       "visualAlt": "Comfy"
     },
     "banner": {
-      "text": "One API for frontier media models.",
-      "cta": "Try Comfy Router"
+      "text": "Comfy Agent can now build workflows inside ComfyUI.",
+      "cta": "Try It for Free"
     },
     "cta": {
       "heading": "Everything Comfy ships. All in one place.",
@@ -4460,7 +4440,9 @@
       "shipSubtitle": "Using our CLI and Skills, have your coding agent deploy everything in minutes.",
       "subtitle": "Builder packages your ComfyUI workflow and environment into a reproducible build. Deploy that build to Comfy API and scale it on demand.",
       "tabInstall": "Start with your environment",
-      "tabWorkflow": "Start with your workflow"
+      "tabWorkflow": "Start with your workflow",
+      "copy": "Copy commands",
+      "copied": "Copied"
     },
     "howItWorks": {
       "1": {
@@ -4474,7 +4456,34 @@
       "3": {
         "title": "Use it anywhere",
         "description": "Use the API in your internal tool, application, website, workflow, and more."
+      },
+      "chat": {
+        "channel": "creative-team",
+        "message": "what's the best way to do video upscaling right now?",
+        "reply": "deployed this workflow, give it a spin:",
+        "placeholder": "Message your team",
+        "replySnippet": "curl https://video-upscale-4k.run.comfy.app \\\n  -F \"video={'@'}clip.mp4\"",
+        "thanks": "thanks!",
+        "messageBgRemove": "got a workflow for batch bg removal?",
+        "replyBgRemove": "yep — here's the call:",
+        "thanksBgRemove": "perfect, thanks!",
+        "messageProductShots": "quickest way to batch product shots?",
+        "replyProductShots": "this one's live:",
+        "thanksProductShots": "amazing, thanks!"
       }
+    },
+    "serverlessApps": {
+      "eyebrow": "CREATIVE APPS",
+      "heading": "Build the app, not just the workflow.",
+      "body": "Deploy your ComfyUI workflows as APIs behind customer-facing products, internal tools, and automated creative pipelines. Build the experience your users need without exposing the graph.",
+      "browseApps": "Browse apps",
+      "videoLabel": "Creative app powered by Comfy API"
+    },
+    "serverlessCaseStudy": {
+      "quote": "At Silverside, Comfy workflows are where our creative expertise becomes infrastructure. We build production pipelines then serve them through Comfy API so our clients can run the same proven workflows at scale. It lets a small team deliver enterprise-grade creative output.",
+      "name": "Allie Wrubel",
+      "role": "Head of Technology at Silverside AI",
+      "linkLabel": "Read the Silverside AI customer story"
     },
     "serverlessScale": {
       "1": {
@@ -4501,7 +4510,8 @@
       "models": {
         "learnMore": "Learn more",
         "title": "Comfy Router",
-        "description": "Use thousands of the latest models in one API. Call Seedance, Minimax H3, Nano Banana, and GPT-Image."
+        "description": "Use thousands of the latest models in one API. Call Seedance, Minimax H3, Nano Banana, and GPT-Image.",
+        "badgeLabel": "ROUTER"
       },
       "builder": {
         "title": "Builds",
@@ -4524,7 +4534,8 @@
     },
     "serverlessHero": {
       "heading": "ComfyUI workflow to production API in minutes.",
-      "subtitle": "Package all your custom nodes, LoRAs, models, and Python dependencies into an autoscaling endpoint."
+      "subtitle": "Package all your custom nodes, LoRAs, models, and Python dependencies into an autoscaling endpoint.",
+      "animationTitle": "Comfy image pipeline and GPU orchestration animation"
     },
     "modelsGallery": {
       "ariaLabel": "Sample outputs from partner models"
@@ -4616,21 +4627,11 @@
       "creditsColumn": "Comfy Credits",
       "storageColumn": "Storage",
       "storage": {
-        "standardUnder1tb": "Standard network storage, under 1 TB",
-        "standardOver1tb": "Standard network storage, 1 TB and above",
-        "highPerformance": "High-performance network storage",
-        "containerDisk": "Container disk",
-        "networkTitle": "Network storage",
-        "sub": {
-          "standardUnder1tb": "Standard, under 1 TB",
-          "standardOver1tb": "Standard, 1 TB and above",
-          "highPerformance": "High performance",
-          "containerDisk": "Per-worker local filesystem"
-        }
+        "title": "Network Storage"
       },
-      "storageNote": "Models live on persistent network storage shared across a deployment's workers. Container disk is each worker's local filesystem and is billed separately.",
+      "storageNote": "Models live on persistent network storage shared across a deployment's workers.",
       "billedPerSecond": "Billed by the GPU second",
-      "storageExample": "Worked example: 500 GB of models on standard network storage = {amount}/mo + GPU time.",
+      "storageExample": "For example: 20 GB of models = {amount}/mo + GPU time.",
       "modelsNote": "Comfy Router usage shows per-output prices on each model card and draws from the same credit pool."
     },
     "faq": {

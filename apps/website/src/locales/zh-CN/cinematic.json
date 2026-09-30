@@ -27,8 +27,10 @@
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {
-      "renderingTake": "正在渲染第 {take} 条",
       "longWait": "仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。",
+      "generatingImage": "正在生成图像",
+      "generatingVideo": "正在生成视频",
+      "loadingTake": "正在加载镜头",
       "again": "再生成一次",
       "useAsReference": "用作参考",
       "emptyTitle": "你的第一个镜头会显示在这里",
@@ -39,7 +41,8 @@
       "takes": "条数",
       "download": "下载",
       "sequence": "序列",
-      "thumb": "镜头 {shot}，第 {take} 条"
+      "takeName": "镜头 {shot}，第 {take} 条",
+      "renderingTakeName": "正在渲染镜头 {shot}，第 {take} 条"
     },
     "state": {
       "failed": "这一条生成失败",
@@ -100,12 +103,14 @@
       "optional": "可选",
       "cast": "角色",
       "castAction": "添加角色参考",
-      "palette": "色板",
-      "paletteAction": "添加色板参考",
       "remove": "移除参考"
     },
     "title": "电影工作室",
     "beta": "测试版",
+    "repo": {
+      "view": "在 GitHub 上查看",
+      "soon": "GitHub · 即将推出"
+    },
     "meta": {
       "description": "导演电影感静帧：选择摄影机、景别、光线、胶片与调色，然后通过 Comfy Router 运行任意图像模型。"
     },
@@ -124,6 +129,7 @@
       "portrait": "阴天码头上的老渔夫",
       "train": "蓝调时刻的夜车车窗"
     },
+    "lead": "执导每一个镜头。选择摄影机、镜头、光线与调色，用任意模型生成电影级画面。",
     "camera": {
       "body": "机身",
       "lens": "镜头",
@@ -200,11 +206,63 @@
       "scope": "宽银幕",
       "widescreen": "宽屏",
       "academy": "学院比例",
+      "landscapePhoto": "横向照片",
+      "portraitPhoto": "纵向照片",
       "square": "方形",
       "vertical": "竖屏"
     },
+    "video": {
+      "audioOn": "开启",
+      "audioOff": "关闭",
+      "enhanceHint": "在提示词中添加电影运镜和连续动作",
+      "mode": "创作类型",
+      "image": "图像",
+      "video": "视频",
+      "animate": "将图像转为视频",
+      "preview": "生成的视频",
+      "duration": "时长",
+      "audio": "生成音频",
+      "firstFrame": "起始帧",
+      "lastFrame": "结束帧",
+      "addFirstFrame": "添加起始帧",
+      "addLastFrame": "添加结束帧",
+      "uploadFrame": "上传图像",
+      "needFrame": "请为此模型添加起始帧。",
+      "oneClip": "每次请求生成一个片段。请在场景中描述动作和镜头运动。",
+      "start": "描述运动，选择视频模型，或将你的静帧转为视频。",
+      "frameError": "无法加载起始帧。请下载图像并在视频设置中上传。",
+      "frameLoading": "正在准备起始帧…",
+      "sourceVideo": "要编辑的视频",
+      "addSourceVideo": "添加要编辑的视频",
+      "noFirstFrame": "{model} 无法从图像开始。请移除该帧或选择其他模型。",
+      "needSourceVideo": "请先添加要编辑的视频。",
+      "audioTag": "音频",
+      "resolution": "分辨率",
+      "aspect": "画幅",
+      "modelDecides": "此模型自行决定时长和分辨率。"
+    },
     "references": {
+      "needsPicture": "{model} 需要图片本身，但此处无法读取该图片。请下载后通过 + 添加，或选择其他模型。",
+      "unreadable": "无法使用此图片。请下载后通过 + 添加。",
       "unsupported": "{model} 无法使用参考图。请移除参考图或选择其他模型。"
+    },
+    "colors": {
+      "title": "颜色",
+      "hint": "以文字发送，所有模型都能使用",
+      "color": "颜色",
+      "add": "添加颜色",
+      "remove": "移除颜色",
+      "makeMain": "设为主色",
+      "main": "主色",
+      "sampleError": "无法从该图片读取颜色。",
+      "clear": "清除颜色"
+    },
+    "grade": {
+      "fromImage": "来自图片",
+      "fromImageAction": "匹配图片的色彩",
+      "yourPalette": "你的色板",
+      "edit": "编辑色板",
+      "done": "完成"
     }
   }
 }

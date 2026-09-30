@@ -44,7 +44,7 @@ describe('ReshootSide', () => {
     })
 
     await userEvent.click(
-      screen.getByRole('button', { name: `${rc('reshoot.size')}: 480p` })
+      screen.getByRole('button', { name: `${rc('reshoot.size.label')}: 480p` })
     )
     await userEvent.click(
       await screen.findByRole('menuitemradio', {
@@ -55,7 +55,7 @@ describe('ReshootSide', () => {
     expect(size.value).toBe('768p')
     expect(screen.queryByText(rc('reshoot.section.video'))).toBeNull()
     expect(
-      screen.getByRole('button', { name: `${rc('reshoot.size')}: 768p` })
+      screen.getByRole('button', { name: `${rc('reshoot.size.label')}: 768p` })
     ).toBeInTheDocument()
   })
 
@@ -66,7 +66,7 @@ describe('ReshootSide', () => {
     const help = rc('reshoot.promptHelp')
 
     expect(screen.queryByText(help)).toBeNull()
-    await userEvent.click(screen.getByText(rc('reshoot.advanced')))
+    await userEvent.click(screen.getByText(rc('reshoot.advanced.label')))
     await userEvent.click(screen.getByRole('button', { name: help }))
     const [shownHelp] = await screen.findAllByText(help)
     expect(shownHelp).toBeVisible()
@@ -89,7 +89,7 @@ describe('ReshootSide', () => {
 
     await userEvent.click(
       screen.getByRole('button', {
-        name: `${rc('reshoot.aspect')}: ${rc('reshoot.aspect.source')}`
+        name: `${rc('reshoot.aspect.label')}: ${rc('reshoot.aspect.source')}`
       })
     )
     await userEvent.click(
@@ -100,7 +100,9 @@ describe('ReshootSide', () => {
 
     expect(aspect.value).toBe(chosen)
     expect(
-      screen.getByRole('button', { name: `${rc('reshoot.aspect')}: ${chosen}` })
+      screen.getByRole('button', {
+        name: `${rc('reshoot.aspect.label')}: ${chosen}`
+      })
     ).toBeInTheDocument()
   })
 })

@@ -14,13 +14,25 @@ const catalogSources = import.meta.glob<string>('../locales/*/*.json', {
 type Catalog = { [key: string]: string | Catalog }
 
 const catalogFiles = new Map(
-  Object.entries(
-    import.meta.glob<Catalog>('../locales/*/*.json', {
-      eager: true,
-      import: 'default'
-    })
-  )
+  Object.entries(catalogSources).map<[string, Catalog]>(([path, source]) => {
+    const parsed: unknown = JSON.parse(source)
+    if (!isCatalog(parsed)) {
+      throw new Error(`Catalog ${path} must contain nested string messages`)
+    }
+    return [path, parsed]
+  })
 )
+
+function isCatalog(value: unknown): value is Catalog {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.values(value).every(
+      (entry: unknown) => typeof entry === 'string' || isCatalog(entry)
+    )
+  )
+}
 
 function leafMessages(tree: Catalog, prefix = ''): [string, string][] {
   return Object.entries(tree).flatMap<[string, string]>(([key, value]) =>
@@ -41,7 +53,12 @@ function unrenderable<Key extends string>(
   translator: {
     keys: readonly Key[]
     t: (key: Key, locale: Locale, named: Record<string, string>) => string
-    tPlural: (key: Key, count: number, locale: Locale) => string
+    tPlural: (
+      key: Key,
+      count: number,
+      locale: Locale,
+      named: Record<string, string>
+    ) => string
   },
   english: Catalog,
   locale: Locale
@@ -52,7 +69,7 @@ function unrenderable<Key extends string>(
       const message = englishMessages.get(key) ?? ''
       const syntax = message.replace(/\{\s*'(?:[^'\\]|\\.)*'\s*\}/g, '')
       if (syntax.includes('|')) {
-        translator.tPlural(key, 2, locale)
+        translator.tPlural(key, 2, locale, valuesForPlaceholders(message))
       } else {
         translator.t(key, locale, valuesForPlaceholders(message))
       }
@@ -189,6 +206,7 @@ describe('createTranslator', () => {
     },
     'zh-CN': {
       nodes: '一个节点 | {count} 个节点',
+      unitNodes: '{unit}中的 {count} 个节点',
       hero: ''
     }
   })
@@ -242,7 +260,7 @@ describe('createTranslator', () => {
     expect(catalog.tPlural('nodes', 1, 'zh-CN')).toBe('1 个节点')
   })
 
-  it('refuses a plural message with a placeholder besides {count}', () => {
+  it('refuses a plural message whose named values are missing', () => {
     expect(() => catalog.tPlural('unitNodes', 2)).toThrow(
       'Translation unitNodes in en needs values for {unit}'
     )
