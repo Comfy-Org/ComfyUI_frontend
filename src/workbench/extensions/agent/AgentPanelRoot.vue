@@ -461,6 +461,11 @@ const coachDeferredBy = computed(() =>
       ? 'tour_active'
       : null
 )
+const coachCompletionWaiters = new Set<() => void>()
+function releaseCoachCompletionWaiters(): void {
+  for (const resolve of coachCompletionWaiters) resolve()
+  coachCompletionWaiters.clear()
+}
 watch(
   [consentAccepted, onboardingKey, coachDeferredBy],
   ([accepted, key, reason]) => {
@@ -470,11 +475,6 @@ watch(
   { immediate: true }
 )
 const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
-const coachCompletionWaiters = new Set<() => void>()
-function releaseCoachCompletionWaiters(): void {
-  for (const resolve of coachCompletionWaiters) resolve()
-  coachCompletionWaiters.clear()
-}
 
 async function waitForCoachCompletion(): Promise<void> {
   const key = onboardingKey.value
