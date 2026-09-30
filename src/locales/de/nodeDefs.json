@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "Animieren Sie ein Bild mit HeyGen Video 1.0 zu einem Video mit synchronisiertem Dialog und Ton. Das Bild wird als erstes Frame verwendet.",
+    "display_name": "HeyGen Video 1.0 Bild zu Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Generieren Sie mit HeyGen Video 1.0 aus einem Text-Prompt ein Video mit synchronisiertem Dialog und Ton. Optional können Sie bis zu 12 Referenzbilder, Videos und Audioclips verbinden und diese im Prompt als {'@'}Image1, {'@'}Video1, {'@'}Audio1 erwähnen.",
+    "display_name": "HeyGen Video 1.0 Referenz zu Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "model_aspect_ratio": {
+        "name": "Seitenverhältnis"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "Animiert ein beliebiges Bild einer Person zu einem lippensynchronen Sprechvideo (HeyGen Avatar IV). Steuern Sie es mit einem Textskript oder eigenem Audio.",
     "display_name": "HeyGen-Sprechendes Foto",

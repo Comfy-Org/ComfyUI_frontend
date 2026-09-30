@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "Анимируйте изображение в видео с синхронизированными диалогом и звуком с помощью HeyGen Video 1.0. Изображение используется как первый кадр.",
+    "display_name": "HeyGen Video 1.0: изображение в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Создайте видео с синхронизированными диалогом и звуком по текстовому промпту с помощью HeyGen Video 1.0. При необходимости подключите до 12 референсных изображений, видео и аудиоклипов и упомяните их в промпте как {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0: референсы в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение_сторон"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "Анимируйте любое изображение человека в синхронизированное с губами говорящee видео (HeyGen Avatar IV). Управляйте им с помощью текстового сценария или собственного аудио.",
     "display_name": "HeyGen Talking Photo",

@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "با استفاده از HeyGen Video 1.0، یک تصویر را با گفت‌وگو و صدای همگام‌سازی‌شده به ویدئو متحرک تبدیل کنید. تصویر به‌عنوان فریم اول استفاده می‌شود.",
+    "display_name": "تبدیل تصویر به ویدئو با HeyGen Video 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "با استفاده از HeyGen Video 1.0، از یک پرامپت متنی ویدئویی با گفت‌وگو و صدای همگام‌سازی‌شده تولید کنید. در صورت تمایل، حداکثر ۱۲ تصویر مرجع، ویدئو و کلیپ صوتی را متصل کرده و در پرامپت به آن‌ها با {'@'}Image1، {'@'}Video1، {'@'}Audio1 اشاره کنید.",
+    "display_name": "تبدیل مرجع به ویدئو با HeyGen Video 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "هر تصویر از یک فرد را به یک ویدیوی صحبت‌کننده با هماهنگی لب (HeyGen Avatar IV) تبدیل کنید. می‌توانید آن را با یک متن یا صدای خود هدایت کنید.",
     "display_name": "HeyGen Talking Photo",

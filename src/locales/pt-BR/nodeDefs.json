@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "Anime uma imagem em um vídeo com diálogo e som sincronizados usando o HeyGen Video 1.0. A imagem é usada como o primeiro quadro.",
+    "display_name": "HeyGen Video 1.0 de Imagem para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após a geração"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Gere um vídeo com diálogo e som sincronizados a partir de um prompt de texto usando o HeyGen Video 1.0. Opcionalmente, conecte até 12 imagens de referência, vídeos e clipes de áudio e mencione-os no prompt como {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0 de Referência para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após a geração"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_aspect_ratio": {
+        "name": "proporção_da_tela"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "Anime qualquer imagem de uma pessoa em um vídeo falante com sincronização labial (HeyGen Avatar IV). Controle com um roteiro de texto ou seu próprio áudio.",
     "display_name": "HeyGen Talking Photo",

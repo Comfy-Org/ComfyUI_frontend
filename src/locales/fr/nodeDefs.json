@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "Animez une image en vidéo avec des dialogues et du son synchronisés à l’aide de HeyGen Video 1.0. L’image est utilisée comme première image.",
+    "display_name": "HeyGen Video 1.0 Image vers vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Générez une vidéo avec des dialogues et du son synchronisés à partir d’un prompt textuel à l’aide de HeyGen Video 1.0. Connectez éventuellement jusqu’à 12 images, vidéos et extraits audio de référence, et mentionnez-les dans le prompt sous la forme {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0 Référence vers vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "Animez n'importe quelle image d'une personne en une vidéo parlante synchronisée sur les lèvres (HeyGen Avatar IV). Contrôlez-la avec un script texte ou votre propre audio.",
     "display_name": "HeyGen Talking Photo",
