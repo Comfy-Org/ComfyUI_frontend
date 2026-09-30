@@ -10,7 +10,10 @@ import type {
   PreviewSubscribeResult,
   SavedPaymentMethod
 } from '@comfyorg/account-core/billing'
-import { readBillingErrorCode } from '@comfyorg/account-core/billing'
+import {
+  OPERATION_POLL_TIMING,
+  readBillingErrorCode
+} from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
@@ -384,17 +387,6 @@ describe('FullPageCheckoutView', () => {
     await nextTick()
 
     expect(fake.subscribe).not.toHaveBeenCalled()
-  })
-
-  it('keeps Pay disabled for a quote the server does not allow', async () => {
-    await renderCheckout({
-      preview: { status: 'ok', value: previewOf({ allowed: false }) }
-    })
-    await screen.findByText('Subscribe to Creator Plan · Acme Team')
-    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
-    await nextTick()
-
-    expect(payButton()).toBeDisabled()
   })
 
   it('leaves the form for the waiting state once money is in flight, so a second click cannot charge twice', async () => {
@@ -1534,15 +1526,33 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     expect(form.mounts).toBe(1)
   })
 
-  it('lands on Already completed for a payment the server already settled', async () => {
+  it('lands on Already completed for a payment the server already settled when the quote refuses this link again', async () => {
     await renderCheckout({
-      recover: { status: 'ok', value: succeededOperation('op_done') }
+      recover: { status: 'ok', value: succeededOperation('op_done') },
+      preview: { status: 'ok', value: previewOf({ allowed: false }) }
     })
 
     expect(
       await screen.findByRole('heading', { name: 'Already completed' })
     ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'op_done'
+    )
     expect(form.mounts).toBe(0)
+  })
+
+  it('opens the form over a settled payment when the quote still sells this link', async () => {
+    await renderCheckout({
+      recover: { status: 'ok', value: succeededOperation('op_done') }
+    })
+
+    expect(
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Already completed' })
+    ).not.toBeInTheDocument()
+    expect(form.mounts).toBe(1)
   })
 
   it('resolves a fresh capture, on its card, when the money it arrived on declines', async () => {
@@ -1804,6 +1814,117 @@ describe('FullPageCheckoutView re-reconciliation', () => {
     await screen.findByRole('heading', { name: 'Already completed' })
 
     expect(siblings.published).toEqual([])
+  })
+})
+
+describe("FullPageCheckoutView over this tab's own payment", () => {
+  beforeEach(() => {
+    form.mounts = 0
+    siblings.reset()
+  })
+
+  const awaited = <T extends BillingOperationState>(operation: T): T => ({
+    ...operation,
+    awaitedHere: true
+  })
+  const couldNotConfirm = (id: string): BillingOperationState => ({
+    ...awaited(succeededOperation(id)),
+    phase: 'reconciliation_needed'
+  })
+  const ON_PRO: FakeBillingClientOptions = {
+    status: {
+      is_active: true,
+      has_funds: true,
+      max_seats: 1,
+      occupied_seats: 1,
+      plan_slug: 'pro_monthly',
+      scheduled_change: null,
+      team_credit_stop: null
+    },
+    plans: {
+      status: 'ok',
+      value: {
+        plans: [
+          planOf(),
+          planOf({ slug: 'pro_monthly', tier: 'PRO', price_cents: 5000n })
+        ]
+      }
+    }
+  }
+
+  it("asks the lifecycle for this tab's settled payment too", async () => {
+    const fake = await renderCheckout()
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    expect(fake.recover).toHaveBeenCalledWith({ includeSettled: true })
+  })
+
+  it('ends on Checkout not available, never a dead form, when the quote refuses a link nothing here paid', async () => {
+    await renderCheckout({
+      preview: { status: 'ok', value: previewOf({ allowed: false }) }
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Checkout not available' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'UNSPECIFIED'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Pay and subscribe' })
+    ).not.toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+  })
+
+  it('is Success, naming the plan the server now lists, for its own payment that went through while it was on a provider page', async () => {
+    await renderCheckout({
+      ...ON_PRO,
+      recover: { status: 'ok', value: awaited(succeededOperation('op_mine')) },
+      preview: { status: 'ok', value: previewOf({ allowed: false }) }
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+    const plan = await screen.findByTestId('checkout-ending-plan')
+    expect(plan).toHaveTextContent('Pro')
+    expect(plan).toHaveTextContent('$50.00')
+    expect(plan).not.toHaveTextContent('Creator')
+    expect(form.mounts).toBe(0)
+  })
+
+  it('keeps re-reading a payment it could not confirm, and resolves forward to Success when it settles', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    const fake = await renderCheckout({
+      ...ON_PRO,
+      recover: { status: 'ok', value: couldNotConfirm('op_mine') }
+    })
+    expect(
+      await screen.findByRole('heading', {
+        name: "We couldn't confirm your payment"
+      })
+    ).toBeInTheDocument()
+    expect(fake.recover).toHaveBeenCalledOnce()
+
+    vi.advanceTimersByTime(OPERATION_POLL_TIMING.parkedMs)
+    await waitFor(() => expect(fake.recover).toHaveBeenCalledTimes(2))
+    expect(
+      screen.getByRole('heading', { name: "We couldn't confirm your payment" })
+    ).toBeInTheDocument()
+
+    fake.recover.mockImplementationOnce(async () => {
+      fake.publishOperation(awaited(succeededOperation('op_mine')))
+      return { status: 'ok', value: awaited(succeededOperation('op_mine')) }
+    })
+    vi.advanceTimersByTime(OPERATION_POLL_TIMING.parkedMs)
+
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+    expect(await screen.findByTestId('checkout-ending-plan')).toHaveTextContent(
+      'Pro'
+    )
+    expect(fake.subscribe).not.toHaveBeenCalled()
   })
 })
 

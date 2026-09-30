@@ -118,22 +118,33 @@ const locked = computed(() => isLocked(page.value))
 /** The server cannot cancel a pending payment yet; the click has nowhere honest to go. */
 function cancelPayment() {}
 
-/** The plan this page's own Pay bought, as its quote priced it. */
-const endingPlan = computed<EndingPlan | undefined>(() => {
+/**
+ * The plan this page's own Pay bought: as its quote priced it, or, once a
+ * reload or a provider's page took that quote away, as the server now lists it.
+ */
+const boughtPlan = computed(() => {
+  const current = page.value
+  if (current.kind === 'terminal' && current.attribution === 'returned')
+    return current.plan && { ...current.plan, currency: 'usd' }
   const quoted = preview.value
-  if (!quoted) return undefined
+  return quoted && { ...quoted.new_plan, currency: quoted.currency ?? 'usd' }
+})
+
+const endingPlan = computed<EndingPlan | undefined>(() => {
+  const plan = boughtPlan.value
+  if (!plan) return undefined
   return {
-    name: coded('tier', quoted.new_plan.tier),
+    name: coded('tier', plan.tier),
     price: formatQuoteMoney(
-      quoted.new_plan.price_cents,
-      quoted.currency ?? 'usd',
+      Number(plan.price_cents),
+      plan.currency,
       locale.value
     ),
     period: t(
-      isAnnualDuration(quoted.new_plan.duration)
+      isAnnualDuration(plan.duration)
         ? 'checkout.fullPage.ending.perYear'
         : 'checkout.fullPage.ending.perMonth',
-      { currency: (quoted.currency ?? 'usd').toUpperCase() }
+      { currency: plan.currency.toUpperCase() }
     )
   }
 })
