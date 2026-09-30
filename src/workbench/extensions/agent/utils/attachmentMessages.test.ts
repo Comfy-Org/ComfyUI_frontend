@@ -32,6 +32,12 @@ describe('refusedAttachmentsMessage', () => {
     expect(message).toContain('are not file types')
   })
 
+  it('uses the server total when the capped list contains no names', () => {
+    expect(refusedAttachmentsMessage([], 12)).toBe(
+      '12 are not file types the agent accepts'
+    )
+  })
+
   it('does not claim an overflow when the list is complete', () => {
     expect(refusedAttachmentsMessage(['a.pdf', 'b.pdf'], 2)).not.toContain(
       'more'

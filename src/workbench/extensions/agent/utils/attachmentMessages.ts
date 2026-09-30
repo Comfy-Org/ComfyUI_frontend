@@ -21,11 +21,13 @@ export function refusedAttachmentsMessage(
   const named = names.slice(0, MAX_NAMED_REJECTIONS)
   const remaining = total - named.length
   const name =
-    remaining > 0
-      ? i18n.global.t('agent.attachmentNamesOverflow', {
-          names: named.join(', '),
-          count: remaining
-        })
-      : named.join(', ')
+    named.length === 0
+      ? String(total)
+      : remaining > 0
+        ? i18n.global.t('agent.attachmentNamesOverflow', {
+            names: named.join(', '),
+            count: remaining
+          })
+        : named.join(', ')
   return i18n.global.t('agent.attachmentTypeNotAccepted', { name }, total)
 }
