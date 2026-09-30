@@ -34,7 +34,7 @@ jobs:
         with:
           node_cache: 'false'
 
-      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
         id: app
         with:
           app-id: ${{ vars.APPROVAL_POLICY_APP_ID }}
