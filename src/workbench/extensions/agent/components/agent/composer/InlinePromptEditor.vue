@@ -140,7 +140,7 @@ onMounted(() => {
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
       class:
-        'text-base-foreground min-h-7 w-full cursor-text font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
+        'text-base-foreground w-full flex-1 cursor-text p-3 font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
     }),
     decorations(state) {
       if (state.selection.empty) return null
@@ -489,5 +489,5 @@ defineExpose({
 </script>
 
 <template>
-  <div ref="host" />
+  <div ref="host" class="flex flex-1 flex-col" />
 </template>
