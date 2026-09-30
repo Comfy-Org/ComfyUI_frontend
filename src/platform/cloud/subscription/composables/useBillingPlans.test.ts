@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { computed, nextTick } from 'vue'
@@ -40,11 +39,13 @@ const buildPlan = (overrides: Partial<Plan> = {}): Plan => ({
 })
 
 const importUseBillingPlans = async () => {
-  const [{ useBillingPlans }, { workspaceApi }] = await Promise.all([
-    import('@/platform/cloud/subscription/composables/useBillingPlans'),
-    import('@/platform/workspace/api/workspaceApi')
-  ])
-  return { useBillingPlans, workspaceApi }
+  const [{ useBillingPlans }, { workspaceApi }, { reportError }] =
+    await Promise.all([
+      import('@/platform/cloud/subscription/composables/useBillingPlans'),
+      import('@/platform/workspace/api/workspaceApi'),
+      import('@/platform/telemetry/reportError')
+    ])
+  return { useBillingPlans, workspaceApi, reportError }
 }
 
 describe('useBillingPlans', () => {
@@ -305,7 +306,8 @@ describe('useBillingPlans', () => {
     })
 
     it('reports an outright failure when no catalog was cached', async () => {
-      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      const { useBillingPlans, workspaceApi, reportError } =
+        await importUseBillingPlans()
       vi.mocked(workspaceApi.getBillingPlans).mockRejectedValue(
         new Error('network down')
       )
@@ -332,7 +334,8 @@ describe('useBillingPlans', () => {
     })
 
     it('reports a recovered fallback and preserves cached catalog state', async () => {
-      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      const { useBillingPlans, workspaceApi, reportError } =
+        await importUseBillingPlans()
       const stops = {
         default_stop_index: 0,
         stops: [
@@ -380,7 +383,8 @@ describe('useBillingPlans', () => {
     })
 
     it('reports a malformed plan list without throwing from the fallback', async () => {
-      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      const { useBillingPlans, workspaceApi, reportError } =
+        await importUseBillingPlans()
       vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
         plans: undefined
       } as never)
@@ -399,7 +403,8 @@ describe('useBillingPlans', () => {
     })
 
     it('rejects malformed team credit stops through the guarded fallback', async () => {
-      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      const { useBillingPlans, workspaceApi, reportError } =
+        await importUseBillingPlans()
       vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
         plans: [buildPlan()],
         team_credit_stops: { stops: { invalid: true } }
@@ -419,7 +424,8 @@ describe('useBillingPlans', () => {
     })
 
     it('accepts an explicit null team credit stop catalog', async () => {
-      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      const { useBillingPlans, workspaceApi, reportError } =
+        await importUseBillingPlans()
       vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
         plans: [buildPlan()],
         team_credit_stops: null
@@ -471,7 +477,8 @@ describe('useBillingPlans', () => {
     })
 
     it('does not treat another workspace catalog as a recovered fallback', async () => {
-      const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
+      const { useBillingPlans, workspaceApi, reportError } =
+        await importUseBillingPlans()
       vi.mocked(workspaceApi.getBillingPlans)
         .mockResolvedValueOnce({ plans: [buildPlan()] })
         .mockRejectedValueOnce(new Error('network down'))
@@ -618,7 +625,7 @@ describe('useBillingPlans', () => {
         }))
       }
 
-      const { useBillingPlans } = await importUseBillingPlans()
+      const { useBillingPlans, reportError } = await importUseBillingPlans()
       const { fetchPlans, error } = useBillingPlans()
       await fetchPlans()
 
