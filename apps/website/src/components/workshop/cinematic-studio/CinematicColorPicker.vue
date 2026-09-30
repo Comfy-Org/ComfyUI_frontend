@@ -87,6 +87,9 @@ const hueColor = computed(() => hsvToHex({ h: hsv.value.h, s: 1, v: 1 }))
       role="slider"
       tabindex="0"
       :aria-label="tc('cinematic.colors.shade', locale)"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      :aria-valuenow="Math.round(hsv.s * 100)"
       :aria-valuetext="color"
       class="relative h-36 w-full cursor-crosshair touch-none rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/60"
       :style="{

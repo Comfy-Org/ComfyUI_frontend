@@ -202,7 +202,9 @@ function generate() {
         :class="
           cn(
             'fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl',
-            picker === 'camera' || editingPalette ? 'lg:right-0' : 'lg:w-150'
+            picker === 'camera' || editingPalette
+              ? 'lg:right-0'
+              : 'lg:right-0 lg:max-w-150'
           )
         "
         :style="{ '--anchor-top': `${anchorTop}px` }"
