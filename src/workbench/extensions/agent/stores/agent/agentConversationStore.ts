@@ -618,7 +618,10 @@ export const useAgentConversationStore = defineStore(
         threadId.value === null
           ? undefined
           : backgroundTurns.get(threadId.value)
-      if (stashed?.messageId !== pending.messageId) return pending
+      const ownsPending =
+        stashed?.messageId === pending.messageId ||
+        stashed?.message.id === pending.message.id
+      if (!ownsPending) return pending
       settleLiveMessage(pending.message)
       return undefined
     }

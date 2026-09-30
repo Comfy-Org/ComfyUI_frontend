@@ -521,7 +521,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       hydrationBuffers.delete(buffer.threadId)
     if (hydrationMailboxes.get(buffer.threadId) === buffer)
       hydrationMailboxes.delete(buffer.threadId)
-    for (const event of buffer.events.splice(0)) handleAgentEvent(event)
+    for (const event of buffer.events.splice(0)) {
+      try {
+        handleAgentEvent(event)
+      } catch (error) {
+        reportError(error, { errorType: 'agent_hydration_replay_failed' })
+      }
+    }
   }
 
   /**
@@ -991,7 +997,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (metadata !== null) useTelemetry()?.trackAgentStopClicked(metadata)
   }
 
-  function handleStopFailure(error: unknown, turnId: TurnId): void {
+  async function handleStopFailure(
+    error: unknown,
+    turnId: TurnId
+  ): Promise<void> {
     if (error instanceof AgentApiError) {
       // 409 and 404 both say the server has no turn to stop, but only for a
       // turn restored from a snapshot is that the end of it. A turn this
@@ -1000,11 +1009,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // answers a cancel that beat the run into existence as readily as one
       // that outlived it. Tearing either down would abandon a turn the server
       // goes on to run -- the state this whole change exists to remove.
-      const terminal =
-        snapshotTurns.has(turnId) &&
-        (error.status === 404 || error.status === 409)
-      if (terminal && conversationStore.activeTurnId === turnId) {
-        conversationStore.abortActiveTurn()
+      const terminal = error.status === 404 || error.status === 409
+      if (terminal && conversationStore.activeTurnId !== turnId) {
+        promptEditState.value = { phase: 'idle' }
+        return
+      }
+      if (terminal && snapshotTurns.has(turnId)) {
+        const threadId = conversationStore.threadId
+        if (threadId !== null)
+          await hydrateFromServer(
+            threadId,
+            () => conversationStore.threadId === threadId
+          )
+        if (conversationStore.activeTurnId === turnId)
+          conversationStore.abortActiveTurn()
         snapshotTurns.delete(turnId)
         promptEditState.value = { phase: 'idle' }
         return
@@ -1049,7 +1067,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await rest.cancelMessage(threadId, turnId)
       trackCommittedStop(stopMetadata)
     } catch (error) {
-      handleStopFailure(error, turnId)
+      await handleStopFailure(error, turnId)
     }
   }
 
@@ -1231,9 +1249,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * so a stop failure must leave it alone and let the stream settle it.
    */
   function observeLiveDelivery(event: AgentWsEvent): void {
-    const active = conversationStore.activeTurnId
-    if (active !== null && event.data.message_id === active)
-      snapshotTurns.delete(active)
+    const messageId = event.data.message_id
+    if (messageId !== undefined) snapshotTurns.delete(toTurnId(messageId))
   }
 
   function handleAgentEvent(event: AgentWsEvent): void {

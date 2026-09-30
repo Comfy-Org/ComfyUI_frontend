@@ -366,13 +366,12 @@ function recordAssistantRow(
  */
 export function settleLiveMessage(message: AssistantMessage): void {
   message.streaming = false
-  message.parts = message.parts
-    .filter((part) => part.type !== 'runApproval')
-    .map((part) =>
-      part.type === 'tool' && part.state === 'streaming'
-        ? { ...part, state: 'done', ok: false }
-        : part
-    )
+  message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+  for (const part of message.parts) {
+    if (part.type !== 'tool' || part.state !== 'streaming') continue
+    part.state = 'done'
+    part.ok ??= false
+  }
 }
 
 /**
