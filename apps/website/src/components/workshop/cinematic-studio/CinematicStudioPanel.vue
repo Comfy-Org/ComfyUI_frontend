@@ -128,13 +128,6 @@ function generate() {
     <p class="-mt-3 mb-6 text-lg text-primary-warm-gray">
       {{ tc('cinematic.lead', locale) }}
     </p>
-    <CinematicModeSwitch
-      v-if="hasVideo"
-      v-model="mode"
-      :disabled="studio.rendering.value"
-      :locale
-      class="mb-4 w-fit"
-    />
     <div
       ref="layout"
       class="relative grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
@@ -169,7 +162,17 @@ function generate() {
         @open="openPicker"
         @generate="generate"
         @cancel="studio.cancel"
-      />
+      >
+        <template #mode>
+          <CinematicModeSwitch
+            v-if="hasVideo"
+            v-model="mode"
+            :disabled="studio.rendering.value"
+            compact
+            :locale
+          />
+        </template>
+      </CinematicPanel>
       <div
         ref="output"
         class="relative flex min-w-0 flex-col lg:sticky lg:top-26 lg:self-start"
@@ -201,10 +204,10 @@ function generate() {
         :locale
         :class="
           cn(
-            'fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl',
+            'fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:right-0 lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl lg:transition-[max-width] lg:duration-300 lg:ease-out',
             picker === 'camera' || editingPalette
-              ? 'lg:right-0'
-              : 'lg:right-0 lg:max-w-150'
+              ? 'lg:max-w-full'
+              : 'lg:max-w-150'
           )
         "
         :style="{ '--anchor-top': `${anchorTop}px` }"

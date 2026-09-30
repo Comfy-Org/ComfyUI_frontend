@@ -164,6 +164,7 @@ const copy = {
     en: 'D · Side panel',
     'zh-CN': 'D · 侧边面板'
   },
+  'cinematic.panel.newShot': { en: 'New shot', 'zh-CN': '新镜头' },
   'cinematic.panel.label': {
     en: 'Shot settings',
     'zh-CN': '镜头设置'

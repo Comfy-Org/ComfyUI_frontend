@@ -66,6 +66,22 @@ describe('CinematicColors', () => {
     expect(hex).toHaveValue('#aa0000')
   })
 
+  it('moves the shade square from the keyboard and reports its saturation', async () => {
+    const { colors, user } = renderColors(['#808080'])
+    const shade = screen.getByRole('slider', {
+      name: 'Saturation and brightness'
+    })
+    expect(shade).toHaveAttribute('aria-valuemin', '0')
+    expect(shade).toHaveAttribute('aria-valuemax', '100')
+    expect(shade).toHaveAttribute('aria-valuenow', '0')
+
+    shade.focus()
+    await user.keyboard('{ArrowRight}{ArrowRight}')
+
+    expect(shade).toHaveAttribute('aria-valuenow', '4')
+    expect(colors.value[0]).not.toBe('#808080')
+  })
+
   it('clears every color', async () => {
     const { colors, main, user } = renderColors(['#aa0000'], 0)
     await user.click(screen.getByRole('button', { name: 'Clear colors' }))

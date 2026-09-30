@@ -12,7 +12,6 @@ import type {
 import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
 import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
 import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import { shotAspects } from '../../../lib/workshop/cinematic-studio/models'
@@ -100,7 +99,6 @@ const blockedNote = computed(() =>
 const canGenerate = computed(
   () => gate === 'ready' && scene.value.trim().length > 0 && !blockedNote.value
 )
-const labelClass = 'text-xs font-medium text-primary-warm-gray'
 const cardClass =
   'flex w-full items-center gap-3 rounded-2xl border border-transparency-white-t8 p-2.5 text-left transition-colors hover:border-transparency-white-t20'
 </script>
@@ -111,38 +109,33 @@ const cardClass =
     class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
   >
     <header
-      class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+      class="flex min-h-13 items-center justify-between gap-3 border-b border-transparency-white-t8 py-2 pr-2 pl-5"
     >
-      {{ t('workshop.input.title', locale) }}
+      <h2 class="text-sm font-semibold text-primary-warm-white">
+        {{ tc('cinematic.panel.newShot', locale) }}
+      </h2>
+      <slot name="mode" />
     </header>
-    <div class="flex flex-col gap-5 p-4">
-      <section class="flex flex-col gap-2">
-        <h2 :class="labelClass">
-          {{ tc('cinematic.model.heading', locale) }}
-        </h2>
-        <CinematicMenu
-          v-model="modelSlug"
-          :options="modelOptions"
-          :heading="tc('cinematic.model.heading', locale)"
-          :show-heading="false"
-          side="bottom"
-          :trigger-class="cn(cardClass, 'h-11 gap-3 px-3')"
-        >
-          <img
-            v-if="model"
-            :src="model.logo"
-            alt=""
-            class="size-5 brightness-0 invert"
-          />
-          <span class="flex-1 text-sm font-semibold text-primary-warm-white">
-            {{ model?.name }}
-          </span>
-          <ChevronDown
-            class="size-4 text-primary-warm-gray"
-            aria-hidden="true"
-          />
-        </CinematicMenu>
-      </section>
+    <div class="flex flex-col gap-4 p-4">
+      <CinematicMenu
+        v-model="modelSlug"
+        :options="modelOptions"
+        :heading="tc('cinematic.model.heading', locale)"
+        :show-heading="false"
+        side="bottom"
+        :trigger-class="cn(cardClass, 'h-11 gap-3 px-3')"
+      >
+        <img
+          v-if="model"
+          :src="model.logo"
+          alt=""
+          class="size-5 brightness-0 invert"
+        />
+        <span class="flex-1 text-sm font-semibold text-primary-warm-white">
+          {{ model?.name }}
+        </span>
+        <ChevronDown class="size-4 text-primary-warm-gray" aria-hidden="true" />
+      </CinematicMenu>
       <CinematicSceneField
         v-model:scene="scene"
         v-model:enhance="enhance"
@@ -159,10 +152,7 @@ const cardClass =
           />
         </div>
       </CinematicSceneField>
-      <section class="flex flex-col gap-2">
-        <h2 :class="labelClass">
-          {{ tc('cinematic.section.shot', locale) }}
-        </h2>
+      <section :aria-label="tc('cinematic.section.shot', locale)">
         <CinematicShotList
           :direction
           :colors
@@ -171,10 +161,10 @@ const cardClass =
           @open="emit('open', $event)"
         />
       </section>
-      <section class="flex flex-col gap-2">
-        <h2 :class="labelClass">
-          {{ tc('cinematic.section.output', locale) }}
-        </h2>
+      <section
+        :aria-label="tc('cinematic.section.output', locale)"
+        class="flex flex-col gap-2"
+      >
         <CinematicVideoControls
           v-if="video"
           v-model:aspect="aspect"

@@ -97,19 +97,26 @@ const selectedIn = (part: DirectionPart) =>
           @edit="editing = true"
         />
       </CinematicOptionGrid>
-      <div
-        v-if="editing && colors.length"
-        class="flex shrink-0 flex-col gap-3 max-lg:border-t max-lg:border-transparency-white-t8 max-lg:pt-4 lg:sticky lg:top-0 lg:w-80 lg:border-l lg:border-transparency-white-t8 lg:pl-4"
+      <Transition
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="translate-x-4 opacity-0"
+        leave-active-class="transition duration-200 ease-in"
+        leave-to-class="translate-x-4 opacity-0"
       >
-        <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
-        <button
-          type="button"
-          class="h-9 self-end rounded-xl bg-primary-warm-white px-4 text-sm font-semibold text-primary-comfy-ink hover:bg-primary-warm-white/90"
-          @click="editing = false"
+        <div
+          v-if="editing && colors.length"
+          class="flex shrink-0 flex-col gap-3 lg:sticky lg:top-0 lg:w-80"
         >
-          {{ tc('cinematic.grade.done', locale) }}
-        </button>
-      </div>
+          <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
+          <button
+            type="button"
+            class="h-10 w-full rounded-xl bg-primary-warm-white text-sm font-semibold text-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow"
+            @click="editing = false"
+          >
+            {{ tc('cinematic.grade.done', locale) }}
+          </button>
+        </div>
+      </Transition>
     </div>
   </CinematicPopover>
 </template>

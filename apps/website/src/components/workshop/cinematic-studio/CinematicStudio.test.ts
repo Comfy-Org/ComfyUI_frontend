@@ -1558,7 +1558,7 @@ describe('CinematicStudio', () => {
     ).toHaveAttribute('href', '/hub/apps/')
   })
 
-  it('shows every setting in the side panel, with Format last before the run button', async () => {
+  it('heads the side panel as a new shot, with Shot then Format and no field labels', async () => {
     render(CinematicStudioPage, { props: { apps: appModels, models } })
 
     const panel = await screen.findByRole('complementary', {
@@ -1567,9 +1567,14 @@ describe('CinematicStudio', () => {
     expect(within(panel).queryByTestId('cinematic-advanced')).toBeNull()
     expect(
       within(panel)
-        .getAllByRole('heading', { level: 2 })
+        .getAllByRole('heading')
         .map((heading) => heading.textContent.trim())
-    ).toEqual(['Model', 'Shot', 'Format'])
+    ).toEqual(['New shot'])
+    expect(
+      within(panel)
+        .getAllByRole('region')
+        .map((region) => region.getAttribute('aria-label'))
+    ).toEqual(['Shot', 'Format'])
   })
 
   it('opens a direction part from its row in the side panel shot list', async () => {

@@ -48,7 +48,7 @@ function clear() {
 <template>
   <section
     :aria-label="t('cinematic.colors.title')"
-    class="flex flex-col gap-2 rounded-xl border border-transparency-white-t8 p-2.5"
+    class="flex flex-col gap-3 rounded-xl bg-transparency-white-t4 p-3"
   >
     <div class="flex items-center justify-between gap-2">
       <span
@@ -74,7 +74,7 @@ function clear() {
           type="button"
           :class="
             cn(
-              'block size-9 rounded-lg ring-1 ring-transparency-white-t20 outline-none ring-inset focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow',
+              'block size-9 rounded-lg ring-1 ring-transparency-white-t20 transition-[box-shadow,transform] duration-150 outline-none ring-inset hover:scale-105 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow',
               active === index && 'ring-2 ring-primary-warm-white'
             )
           "
