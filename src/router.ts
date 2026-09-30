@@ -8,6 +8,8 @@ import {
 import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { cloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -16,7 +18,10 @@ import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
-import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
+import {
+  hasPendingDesktopLoginCode,
+  installDesktopLoginRedemption
+} from '@/platform/cloud/onboarding/desktopLoginRedemption'
 import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { unmatchedRouteRedirect } from '@/platform/navigation/unmatchedRoute'
@@ -147,9 +152,16 @@ if (isCloud) {
       }
     }
 
-    // Pass authenticated users
-    const authHeader = await authStore.getAuthHeader()
-    const isLoggedIn = !!authHeader
+    let signIn = await cloudSignIn()
+    if (signIn === 'pending' && !isPublicRoute(to)) {
+      await useCloudWebSessionStore().whenDecided()
+      signIn = await cloudSignIn()
+    }
+    const needsFirebaseForDesktopCode =
+      signIn === 'signed_in' &&
+      authStore.currentUser === null &&
+      hasPendingDesktopLoginCode()
+    const isLoggedIn = signIn === 'signed_in' && !needsFirebaseForDesktopCode
     preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 
     // Allow public routes
@@ -171,10 +183,12 @@ if (isCloud) {
       return next()
     }
 
-    const query =
-      to.fullPath === '/'
-        ? undefined
-        : { previousFullPath: encodeURIComponent(to.fullPath) }
+    const query = {
+      ...(to.fullPath !== '/' && {
+        previousFullPath: encodeURIComponent(to.fullPath)
+      }),
+      ...(needsFirebaseForDesktopCode && { switchAccount: 'true' })
+    }
 
     // Check if route requires authentication
     if (to.meta.requiresAuth && !isLoggedIn) {

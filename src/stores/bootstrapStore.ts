@@ -2,6 +2,7 @@ import { until, useAsyncState } from '@vueuse/core'
 import axios from 'axios'
 import { defineStore, storeToRefs } from 'pinia'
 
+import { bootCloudIdentity } from '@/platform/auth/session/cloudIdentityBoot'
 import { isCloud } from '@/platform/distribution/types'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -106,6 +107,7 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
 
     if (isCloud) {
       await bootstrapTracer.settle('auth-gate/initialized', waitForCloudAuth)
+      await bootCloudIdentity()
 
       // Signed-out cloud pages (/cloud/login) must issue no authenticated
       // request, so bootstrap parks here until the user signs in rather than

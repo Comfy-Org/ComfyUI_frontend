@@ -1,3 +1,4 @@
+import { until } from '@vueuse/core'
 import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
@@ -47,9 +48,18 @@ interface InteractiveSignIn {
   readonly getProof: () => Promise<string>
 }
 
-const UNSETTLED_PHASES: ReadonlySet<WebSessionIdentityState['phase']> = new Set(
-  ['idle', 'reading', 'restoring']
-)
+type Phase = WebSessionIdentityState['phase']
+
+const BOOTING_PHASES: ReadonlySet<Phase> = new Set([
+  'idle',
+  'reading',
+  'restoring'
+])
+const UNDECIDED_PHASES: ReadonlySet<Phase> = new Set([
+  ...BOOTING_PHASES,
+  'retry_wait'
+])
+const RECONNECTING_AFTER_MS = 10_000
 
 type TokenFailureMessageKey =
   `auth.webSession.token.${keyof (typeof enMessages)['auth']['webSession']['token']}`
@@ -72,11 +82,14 @@ const LIFECYCLE_RACES: ReadonlySet<WebSessionErrorCode> = new Set([
   'IDENTITY_CHANGED'
 ])
 
-async function whenSettled(identity: WebSessionIdentity): Promise<void> {
+async function whenSettled(
+  identity: WebSessionIdentity,
+  unsettled: ReadonlySet<Phase>
+): Promise<void> {
   let stop = () => {}
   await new Promise<void>((resolve) => {
     stop = identity.subscribe((state) => {
-      if (!UNSETTLED_PHASES.has(state.phase)) resolve()
+      if (!unsettled.has(state.phase)) resolve()
     })
   })
   stop()
@@ -141,6 +154,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   let decided = false
   let identity: WebSessionIdentity | null = null
   let ready: Promise<void> = Promise.resolve()
+  let decidedForRequests: Promise<void> = Promise.resolve()
+  let reconnectTimer: ReturnType<typeof setTimeout> | undefined
   let pendingSignIn: InteractiveSignIn | null = null
   let reread: WebSession | null = null
   let releaseRequests = () => {}
@@ -158,7 +173,23 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     }
   )
 
+  const reconnecting = shallowRef(false)
+  const readsFailing = computed(
+    () => 'failures' in state.value && state.value.failures > 0
+  )
+
+  watch(readsFailing, (failing) => {
+    clearTimeout(reconnectTimer)
+    reconnecting.value = false
+    if (failing) {
+      reconnectTimer = setTimeout(() => {
+        reconnecting.value = true
+      }, RECONNECTING_AFTER_MS)
+    }
+  })
+
   onScopeDispose(() => {
+    clearTimeout(reconnectTimer)
     releaseRequests()
     identity?.dispose()
   })
@@ -235,7 +266,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
         }
       }
     })
-    ready = whenSettled(session)
+    ready = whenSettled(session, BOOTING_PHASES)
+    decidedForRequests = whenSettled(session, UNDECIDED_PHASES)
     void bootAfter(session, pendingSignIn)
     pendingSignIn = null
     return true
@@ -266,7 +298,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
 
   /** Undefined unless this tab is signed in on the session. */
   async function requestScope(): Promise<WebSessionRequestScope | undefined> {
-    await ready
+    await decidedForRequests
     const session = currentSession()
     if (!identity || !session) return undefined
     const workspaceId = teamWorkspaceId()
@@ -302,11 +334,21 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     })
   }
 
+  async function whenDecided(): Promise<'signed_in' | 'signed_out'> {
+    await until(state).toMatch(
+      ({ phase }) => phase === 'signed_in' || phase === 'signed_out'
+    )
+    return state.value.phase === 'signed_in' ? 'signed_in' : 'signed_out'
+  }
+
   return {
     start,
+    state,
     signedInUser,
+    reconnecting,
     isActive: () => identity !== null,
     whenReady: () => ready,
+    whenDecided,
     signedInInteractively,
     signOut
   }

@@ -1,3 +1,6 @@
+import type { WebSession } from '@comfyorg/account-core/webSession'
+import { bootCloudIdentity } from '@/platform/auth/session/cloudIdentityBoot'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -15,6 +18,7 @@ import { api } from '@/scripts/api'
 import { useBootstrapStore } from './bootstrapStore'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/auth/session/cloudIdentityBoot'))
 
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false
@@ -154,6 +158,28 @@ describe('bootstrapStore', () => {
       await bootstrapPromise
 
       expect(settingStore.isReady).toBe(true)
+    })
+
+    it('boots the web session before waiting for a sign-in and loads stores for a session-only user', async () => {
+      const boot = vi.mocked(bootCloudIdentity)
+      const store = useBootstrapStore()
+      const bootstrapPromise = store.startStoreBootstrap()
+      await vi.waitFor(() => expect(store.isI18nReady).toBe(true))
+      expect(boot).not.toHaveBeenCalled()
+
+      useAuthStore().isInitialized = true
+      await vi.waitFor(() => expect(boot).toHaveBeenCalledOnce())
+      expect(useSettingStore().isReady).toBe(false)
+
+      Object.assign(useCloudWebSessionStore(), {
+        state: {
+          phase: 'signed_in',
+          session: fromPartial<WebSession>({ user: { id: 'user-a' } })
+        }
+      })
+      await bootstrapPromise
+
+      expect(useSettingStore().isReady).toBe(true)
     })
 
     it('retries once and keeps authenticated stores gated if Firebase resolves signed out', async () => {
