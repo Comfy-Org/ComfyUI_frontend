@@ -435,6 +435,7 @@ describe('useMembersPanel', () => {
             renewalDate: null,
             endDate: null,
             hasFunds: true,
+            agentHasFunds: true,
             ...mockSubscription.value
           }
         : null

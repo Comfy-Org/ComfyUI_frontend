@@ -16,7 +16,6 @@ const routes = getRoutes(locale)
   <HeroSplit01
     :locale="locale"
     compact
-    beta
     :badge-text="routerT('platform.router.badge.label', locale)"
     :title="t('platform.modelsHero.heading', locale)"
     title-class="text-primary-comfy-yellow text-3xl/tight font-light tracking-[-1.44px] md:text-4xl/tight lg:text-5xl/tight"

@@ -53,7 +53,25 @@ function partsOf(method: SavedPaymentMethod) {
 </script>
 
 <template>
-  <SelectRoot v-model="selectedId">
+  <p
+    v-if="methods.length === 1 && chosen"
+    class="m-0 flex h-10 w-full items-center gap-3 rounded-lg bg-base-background px-4 text-sm"
+  >
+    <i
+      :class="cn(partsOf(chosen).icon, 'size-4 shrink-0')"
+      aria-hidden="true"
+    />
+    <span class="text-base-foreground capitalize">
+      {{ partsOf(chosen).name }}
+    </span>
+    <span
+      v-if="partsOf(chosen).detail"
+      class="text-muted-foreground tabular-nums"
+    >
+      {{ partsOf(chosen).detail }}
+    </span>
+  </p>
+  <SelectRoot v-else v-model="selectedId">
     <SelectTrigger
       :aria-label="t('checkout.fullPage.saved.selectLabel')"
       :class="

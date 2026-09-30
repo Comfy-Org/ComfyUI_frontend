@@ -1,25 +1,39 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v3.24.1/schema.json",
 
-  // Entry points fallow cannot infer. These files are roots (run by package.json
-  // scripts / CI / tool CLIs / Storybook or loaded by Vitest convention), not
-  // imported from the app graph.
+  // Runtime entry points fallow cannot infer.
   "entry": [
-    "src/main.ts",
-    "src/**/__mocks__/**/*.ts",
-    "apps/website/src/**/__mocks__/**/*.ts",
-    "index.html",
-    "scripts/**/*.{js,ts}",
-    "apps/website/src/scripts/**/*.ts",
     // Astro injects these routes when WORKSHOP_IN_BUILD is enabled.
     "apps/website/src/routes/models/*.{astro,ts}",
-    "**/.storybook/{main,preview}.ts",
-    "packages/ingest-types/openapi-ts.config.ts",
-    // Playwright loads these by path string from playwright.config.ts, so the
-    // reference is not in the import graph.
-    "browser_tests/global{Setup,Teardown}.ts",
-    // Opt-in session E2E config, run only as `playwright test --config`.
-    "playwright.session.config.ts"
+    "index.html",
+    "src/main.ts"
+  ],
+
+  // Keep tooling and test roots reachable without treating their imports as
+  // production runtime dependencies.
+  "framework": [
+    {
+      "name": "comfyui-support-entry-points",
+      "enablers": ["fallow"],
+      "entryPoints": [
+        "**/.storybook/{main,preview}.ts",
+        "apps/website/src/scripts/**/*.ts",
+        "packages/ingest-types/openapi-ts.config.ts",
+        "scripts/**/*.{js,ts}"
+      ],
+      "entryPointRole": "support"
+    },
+    {
+      "name": "comfyui-test-entry-points",
+      "enablers": ["@playwright/test"],
+      "entryPoints": [
+        "apps/website/src/**/__mocks__/**/*.ts",
+        "browser_tests/global{Setup,Teardown}.ts",
+        "playwright.session.config.ts",
+        "src/**/__mocks__/**/*.ts"
+      ],
+      "entryPointRole": "test"
+    }
   ],
 
   "ignorePatterns": [
@@ -140,5 +154,7 @@
     "dupesBaseline": ".fallow-baselines/dupes.json"
   },
 
-  "rules": {}
+  "rules": {
+    "dev-dependencies-in-production": "error"
+  }
 }
