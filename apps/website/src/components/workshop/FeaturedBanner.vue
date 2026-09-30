@@ -190,7 +190,7 @@ const fill = computed(() =>
 
         <p
           v-if="active.summary"
-          class="line-clamp-2 max-w-prose shrink-0 text-content-secondary max-sm:line-clamp-1 short:hidden"
+          class="line-clamp-1 max-w-prose shrink-0 text-content-secondary short:hidden"
         >
           {{ active.summary }}
         </p>
