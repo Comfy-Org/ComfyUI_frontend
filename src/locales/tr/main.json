@@ -358,9 +358,6 @@
     "processingModelDescription": "Bu pencereyi kapatabilirsiniz. İndirme arka planda devam edecek.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "Varlık yeniden adlandırılamadı."
-    },
     "searchModels": "Modelleri ara",
     "selectFrameworks": "Framework'leri Seçin",
     "selectModelType": "Model türünü seçin",

@@ -13,7 +13,6 @@ const defaultFlags: FeatureFlags = {
   supportsManagerV4: false,
   modelUploadButtonEnabled: false,
   assetDeletionEnabled: false,
-  assetRenameEnabled: false,
   privateModelsEnabled: false,
   onboardingSurveyEnabled: false,
   linearToggleEnabled: false,

@@ -358,9 +358,6 @@
     "processingModelDescription": "يمكنك إغلاق هذه النافذة. سيستمر التنزيل في الخلفية.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "تعذر إعادة تسمية الأصل."
-    },
     "searchModels": "بحث عن النماذج",
     "selectFrameworks": "اختر الأطر",
     "selectModelType": "اختر نوع النموذج",
