@@ -776,6 +776,39 @@ describe('useAgentConversationStore', () => {
     ).toHaveLength(1)
   })
 
+  it('demotes a hydrated live copy that shares the stashed message identity', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'work'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 't1', 'go', 'user-row'),
+      historyRow(2, 'assistant', 't1', 'partial', 'older-row'),
+      {
+        ...historyRow(3, 'assistant', 't1', '', 'newest-row'),
+        status: 'streaming'
+      }
+    ])
+
+    // The acknowledgement row (`t1`) and newest persisted row differ, so
+    // only the shared message identity can associate this snapshot with the
+    // stash. The snapshot must not install its own competing transport.
+    expect(store.activeTurnId).toBeNull()
+    expect(store.messages.at(-1)?.streaming).toBe(false)
+
+    store.ingest(done('t1'))
+    store.resumeBackgroundTurn()
+
+    expect(store.isStreaming).toBe(false)
+    expect(store.activeTurnId).toBeNull()
+  })
+
   it('keeps a settled background reply when an earlier history turn shares its prompt text', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')

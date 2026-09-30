@@ -503,6 +503,70 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBeNull()
   })
 
+  it('(b4n) isolates a failed replay frame and still delivers the terminal frame after it', async () => {
+    const conversation = useAgentConversationStore()
+    let deliverHistory: ((history: AgentMessages) => void) | undefined
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliverHistory = resolve
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => undefined,
+        activeTab: () => {
+          throw new Error('panel was torn down')
+        }
+      }
+    })
+    session.start()
+    await session.sendMessage('go')
+    void session.loadThread('th-1')
+
+    emit(
+      wire({
+        type: 'agent_active_tab',
+        data: {
+          thread_id: 'th-1',
+          message_id: 'msg-1',
+          workflow_id: 'wf-1'
+        }
+      })
+    )
+    emit(done('msg-1'))
+    assert(deliverHistory !== undefined)
+    deliverHistory([
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+
+    await vi.waitFor(() => expect(conversation.activeTurnId).toBeNull())
+    expect(session.isStreaming.value).toBe(false)
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, metadata]) =>
+            metadata.errorType === 'agent_hydration_replay_failed'
+        )
+    ).toHaveLength(1)
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'agent_history_load_failed' })
+    )
+  })
+
   // A buffered frame defers, it does not disappear: the hydrate that armed the
   // buffer may never reach its own replay, and the background turn waiting on
   // that done is the one `resumeBackgroundTurn` would otherwise restore as
@@ -1673,6 +1737,50 @@ describe('useAgentSession (v1 composition root)', () => {
       const stopping = reopened.stopTurn('button')
       emit(delta('msg-1', 'still here'))
       await stopping
+
+      expect(conversation.activeTurnId).toBe('msg-1')
+      expect(reopened.isStreaming.value).toBe(true)
+    }
+  )
+
+  it.for([404, 409] as const)(
+    'keeps a snapshot-restored background turn after live delivery when Stop fails with %i',
+    async (status) => {
+      const streamingHistory: AgentMessages = [
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ]
+      const getMessages = vi.fn(
+        async (threadId: string): Promise<AgentMessages> =>
+          threadId === 'th-1' ? streamingHistory : []
+      )
+      const cancelMessage = vi
+        .fn()
+        .mockRejectedValue(new AgentApiError('no turn', status, undefined))
+      const rest = fakeRest({ getMessages, cancelMessage })
+      const conversation = useAgentConversationStore()
+
+      const minimized = useAgentSession({ rest, events: fakeEvents().source })
+      minimized.start()
+      await minimized.sendMessage('go')
+      minimized.stop()
+      await Promise.resolve()
+
+      const { source, emit } = fakeEvents()
+      const reopened = useAgentSession({ rest, events: source })
+      reopened.start()
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBe('msg-1'))
+
+      await reopened.loadThread('th-2')
+      emit(delta('msg-1', 'still live'))
+      await reopened.loadThread('th-1')
+      expect(conversation.activeTurnId).toBe('msg-1')
+
+      await reopened.stopTurn('button')
 
       expect(conversation.activeTurnId).toBe('msg-1')
       expect(reopened.isStreaming.value).toBe(true)
