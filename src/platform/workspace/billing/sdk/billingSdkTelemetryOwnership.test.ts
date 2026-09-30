@@ -52,6 +52,17 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 vi.mock(import('firebase/auth'))
 vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useBillingPlans'),
+  () => ({
+    useBillingPlans: () => ({
+      plans: { value: [] },
+      currentPlanSlug: { value: null },
+      error: { value: null },
+      fetchPlans: vi.fn()
+    })
+  })
+)
+vi.mock<unknown>(
   import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({ add: vi.fn(), remove: vi.fn(), removeGroup: vi.fn() })
@@ -106,7 +117,8 @@ const ACTIVE_SUBSCRIPTION: SubscriptionInfo = {
   renewalDate: null,
   endDate: null,
   isCancelled: false,
-  hasFunds: true
+  hasFunds: true,
+  agentHasFunds: true
 }
 
 const DOWNGRADE_PREVIEW = {
