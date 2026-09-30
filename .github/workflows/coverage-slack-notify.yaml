@@ -82,9 +82,8 @@ jobs:
         if: steps.pr-meta.outputs.skip != 'true'
         run: pnpm exec tsx scripts/cicd/coverage-unit-baseline.ts
 
-      # `warn`, not `continue-on-error`: a run whose shards failed uploads
-      # nothing, and that has to leave unit out of the report rather than turn
-      # the notifier red. An API or extraction failure still should.
+      # warn: a run whose shards failed uploads nothing, and that has to leave
+      # unit out of the report rather than turn the notifier red.
       - name: Download current unit coverage
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
@@ -190,7 +189,9 @@ jobs:
       # success(), not always(): the download above defaults to
       # workflow_conclusion=success, so a baseline saved by a failing run can
       # never be read back. A rejected Slack post fails the job, which also
-      # keeps the baseline from advancing past a report nobody saw.
+      # keeps the baseline from advancing past a report nobody saw — and, when
+      # Slack accepted a post whose response was lost, means the next merge
+      # reposts that delta under its own PR rather than dropping it.
       - name: Save E2E coverage baseline
         if: >
           success() && steps.e2e-meta.outputs.complete == 'true' &&

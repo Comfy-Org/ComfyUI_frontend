@@ -7,12 +7,15 @@ const PATH = '/repos/o/r/commits/x'
 /** The backoff length is not what any of these cases is about. */
 const NO_DELAY = 0
 
-function responding(...outcomes: (number | Error)[]) {
+type Outcome = number | Error | [status: number, headers: HeadersInit]
+
+function responding(...outcomes: Outcome[]) {
   const fetchMock = vi.fn(() => {
     const outcome = outcomes.shift()
     if (outcome instanceof Error) return Promise.reject(outcome)
+    const [status, headers] = Array.isArray(outcome) ? outcome : [outcome, {}]
     return Promise.resolve(
-      new Response(JSON.stringify(BODY), { status: outcome })
+      new Response(JSON.stringify(BODY), { status, headers })
     )
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -25,10 +28,15 @@ describe('fetchGitHubJson', () => {
   })
 
   // The caller has no fallback: a transient failure costs the whole report.
-  it.for<[label: string, first: number | Error]>([
+  // GitHub signals rate limits with 403 and 429, so neither the status alone
+  // nor "4xx is our fault" separates them from a genuine client error.
+  it.for<[label: string, first: Outcome]>([
     ['a server error', 500],
     ['a gateway error', 502],
-    ['a transport failure', new TypeError('fetch failed')]
+    ['a transport failure', new TypeError('fetch failed')],
+    ['a secondary rate limit', 429],
+    ['a primary rate limit', [403, { 'x-ratelimit-remaining': '0' }]],
+    ['a 403 asking us to wait', [403, { 'retry-after': '0' }]]
   ])('retries past %s', async ([, first]) => {
     const fetchMock = responding(first, 200)
 
@@ -36,13 +44,16 @@ describe('fetchGitHubJson', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
-  // Our own mistake, not the network's: retrying it only delays the failure.
-  it('raises a client error without retrying', async () => {
-    const fetchMock = responding(404, 200)
+  // Our own mistake, not the network's: retrying only delays the failure. A
+  // 403 carrying no rate-limit signal is an answer about permissions.
+  it.for<[label: string, only: Outcome]>([
+    ['a missing commit', 404],
+    ['a forbidden read', 403],
+    ['a rejected query', 422]
+  ])('raises %s without retrying', async ([, only]) => {
+    const fetchMock = responding(only, 200)
 
-    await expect(fetchGitHubJson(PATH, NO_DELAY)).rejects.toThrow(
-      'GitHub returned 404'
-    )
+    await expect(fetchGitHubJson(PATH, NO_DELAY)).rejects.toThrow('GitHub')
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 

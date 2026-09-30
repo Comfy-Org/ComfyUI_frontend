@@ -45,6 +45,12 @@ export interface E2eOrder {
   withheld: Withheld[]
 }
 
+const USABLE: E2eOrder = { usable: true, withheld: [] }
+
+function withholding(target: Withheld['target'], reason: string): E2eOrder {
+  return { usable: false, withheld: [{ target, reason }] }
+}
+
 /**
  * E2E has no per-commit artifact to pin — it is whichever run last finished on
  * main — so unlike unit it can be measured on a commit this one does not
@@ -64,56 +70,57 @@ export async function orderE2eCoverage(
   headSha: string,
   compare: Compare
 ): Promise<E2eOrder> {
+  // A failed comparison is an unavailable answer, not an answer about
+  // ancestry: claiming the commit does not contain it would send whoever
+  // reads the warning through the history for a problem that is in the API.
   if (current !== null && current !== headSha) {
     const toHead = await compare(current, headSha)
+    if (toHead === 'unknown') {
+      return withholding(
+        'current',
+        `E2E coverage at ${current} could not be ordered against this commit`
+      )
+    }
     if (toHead !== 'ahead') {
-      return {
-        usable: false,
-        withheld: [
-          {
-            target: 'current',
-            reason: `E2E coverage was measured on ${current}, which this commit does not contain`
-          }
-        ]
-      }
+      return withholding(
+        'current',
+        `E2E coverage was measured on ${current}, which this commit does not contain`
+      )
     }
   }
 
-  if (baseline === null) return { usable: true, withheld: [] }
+  if (baseline === null) return USABLE
 
   // An identified baseline must not be replaced by a measurement that cannot
   // be placed against it. A baseline with no sha is the opposite case and is
   // left replaceable, or a legacy one would block its own succession forever.
   if (current === null) {
-    return {
-      usable: false,
-      withheld: [
-        {
-          target: 'baseline',
-          reason: `E2E coverage names no commit to order against baseline ${baseline}`
-        }
-      ]
-    }
+    return withholding(
+      'baseline',
+      `E2E coverage names no commit to order against baseline ${baseline}`
+    )
   }
 
   // Re-reporting the same measurement is the steady state between E2E runs,
   // not an anomaly: the delta is zero, and re-saving it leaves the baseline
   // exactly where it was.
-  if (baseline === current) return { usable: true, withheld: [] }
+  if (baseline === current) return USABLE
 
-  if ((await compare(baseline, current)) !== 'ahead') {
-    return {
-      usable: false,
-      withheld: [
-        {
-          target: 'baseline',
-          reason: `E2E baseline ${baseline} is not behind ${current}`
-        }
-      ]
-    }
+  const toCurrent = await compare(baseline, current)
+  if (toCurrent === 'unknown') {
+    return withholding(
+      'baseline',
+      `E2E baseline ${baseline} could not be ordered against ${current}`
+    )
+  }
+  if (toCurrent !== 'ahead') {
+    return withholding(
+      'baseline',
+      `E2E baseline ${baseline} is not behind ${current}`
+    )
   }
 
-  return { usable: true, withheld: [] }
+  return USABLE
 }
 
 function sourceShaIn(dir: string): string | null {
