@@ -21,9 +21,7 @@ import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSource extends LGraphNode {
   constructor() {
