@@ -211,6 +211,27 @@ test('a declined Pay leaves the card above an unchanged Pay, with support one cl
   await expect(page).toHaveURL(/\/v1\/checkout\?/)
 })
 
+test('a payment the customer did not approve reads as not completed, not as a decline', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.operations.op_subscribe = {
+    ...declinedOperation('op_subscribe'),
+    decline_reason: 'payment_not_completed',
+    recovery_action: 'retry'
+  }
+  await signIn(CHECKOUT)
+
+  await payButton(page).click()
+
+  const card = page.getByRole('alert')
+  await expect(card).toContainText('Payment not completed')
+  await expect(card).not.toContainText('Reported issue')
+  await expect(payButton(page)).toBeEnabled()
+})
+
 test('553-9297: a plan change on a plan set to end needs the keep-subscription tick: Pay without it sends nothing, with it sends the consent', async ({
   page,
   cloud,

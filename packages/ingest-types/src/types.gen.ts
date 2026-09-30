@@ -4137,7 +4137,9 @@ export type BillingOpStatusResponse = {
    * intent has recorded a failed attempt and the operation is either
    * still pending with authentication_state failed_retryable or has
    * terminally failed. generic means the attempt failed for a reason
-   * outside this vocabulary.
+   * outside this vocabulary. payment_not_completed means Stripe explicitly
+   * reported customer non-approval or an expired attempt. Generic failed
+   * attempts and ambiguous provider declines retain their failure meaning.
    *
    */
   decline_reason?:
@@ -4148,6 +4150,7 @@ export type BillingOpStatusResponse = {
     | 'authentication_required'
     | 'authentication_failed'
     | 'processing_error'
+    | 'payment_not_completed'
     | 'generic'
   /**
    * PII-safe failure code or generic failure message

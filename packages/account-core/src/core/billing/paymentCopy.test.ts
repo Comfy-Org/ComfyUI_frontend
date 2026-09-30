@@ -70,6 +70,20 @@ describe('paymentCopyKeys', () => {
     })
   })
 
+  it('gives a payment the customer did not complete its own reason copy', () => {
+    const keys = paymentCopyKeys({
+      step: 'declined',
+      reasonKey: 'payment_not_completed',
+      recoveryAction: 'retry',
+      noChargeConfirmed: false
+    })
+
+    expect(keys.reason).toBe('billing.reason.payment_not_completed')
+    expect(createPaymentCopy()['billing.reason.payment_not_completed']).toBe(
+      'The payment was not completed.'
+    )
+  })
+
   it.for([
     'retry',
     'replace_payment_method',
@@ -106,6 +120,7 @@ describe('declineDetailKey', () => {
     ['incorrect_cvc', 'incorrectCvcDetail'],
     ['authentication_required', 'authenticationFailedDetail'],
     ['authentication_failed', 'authenticationFailedDetail'],
+    ['payment_not_completed', 'authenticationFailedDetail'],
     ['processing_error', 'processingErrorDetail']
   ])('reads a %s decline as %s', ([reason, key]) => {
     expect(declineDetailKey(reason)).toBe(key)
