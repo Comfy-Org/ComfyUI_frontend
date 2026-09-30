@@ -14,6 +14,17 @@ import ChurnkeyFlowDialog from './ChurnkeyFlowDialog.vue'
 import { churnkeyCoreSchema } from './churnkeyCoreSchema'
 import type { ChurnkeyHandlerResult, ChurnkeySessionOutcome } from './types'
 
+function confirmedNoWrite(error: unknown): boolean {
+  if (!(error instanceof WorkspaceApiError)) return false
+  return new Set([
+    'RETENTION_SESSION_STALE',
+    'RETENTION_NOT_ALLOWED',
+    'RETENTION_ALREADY_REDEEMED',
+    'RETENTION_UNAVAILABLE',
+    'PREVIOUS_OPERATION_FAILED'
+  ]).has(error.code ?? '')
+}
+
 class ChurnkeyActionError extends Error {
   readonly recoverable = true
 }
@@ -142,18 +153,7 @@ function createSession(flow: ChurnkeyFlowResponse): ChurnkeySession {
               )
             )
           } catch (error) {
-            if (
-              error instanceof WorkspaceApiError &&
-              error.code &&
-              [
-                'RETENTION_SESSION_STALE',
-                'RETENTION_NOT_ALLOWED',
-                'RETENTION_ALREADY_REDEEMED',
-                'RETENTION_UNAVAILABLE',
-                'PREVIOUS_OPERATION_FAILED'
-              ].includes(error.code)
-            )
-              uncertain = undefined
+            if (confirmedNoWrite(error)) uncertain = undefined
             throw error
           }
         }

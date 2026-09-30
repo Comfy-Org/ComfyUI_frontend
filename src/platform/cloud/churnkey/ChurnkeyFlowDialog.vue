@@ -7,6 +7,8 @@ import { useI18n } from 'vue-i18n'
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
+import ChurnkeyFlowSurvey from './ChurnkeyFlowSurvey.vue'
+import ChurnkeyFlowActions from './ChurnkeyFlowActions.vue'
 
 const { machine, onClose, canCancel, pendingMessage } = defineProps<{
   machine: CancelFlowMachine
@@ -46,90 +48,83 @@ const body = computed(
 const selectedReason = computed(() =>
   reasons.value.find((reason) => reason.id === state.value.selectedReason)
 )
+function surveyComplete() {
+  return Boolean(
+    state.value.selectedReason &&
+    (!selectedReason.value?.freeform || state.value.followupResponse.trim())
+  )
+}
+function feedbackComplete() {
+  if (step.value?.type !== 'feedback') return true
+  return (
+    !step.value.required ||
+    state.value.feedback.trim().length >= (step.value.minLength ?? 1)
+  )
+}
 const canContinue = computed(() => {
-  if (state.value.step === 'survey')
-    return Boolean(
-      state.value.selectedReason &&
-      (!selectedReason.value?.freeform || state.value.followupResponse.trim())
-    )
-  if (state.value.step === 'feedback' && step.value?.type === 'feedback')
-    return (
-      !step.value.required ||
-      state.value.feedback.trim().length >= (step.value.minLength ?? 1)
-    )
-  return true
+  switch (state.value.step) {
+    case 'survey':
+      return surveyComplete()
+    case 'feedback':
+      return feedbackComplete()
+    default:
+      return true
+  }
 })
+const disabled = computed(() => busy.value || blocked.value)
+const heading = computed(
+  () =>
+    offer.value?.copy.headline ??
+    step.value?.title ??
+    t('subscription.cancelDialog.title')
+)
+const feedbackPlaceholder = computed(() =>
+  step.value?.type === 'feedback' ? step.value.placeholder : undefined
+)
+const errorMessage = computed(() =>
+  blocked.value ? pendingMessage() : state.value.error?.message
+)
+const successMessage = computed(() =>
+  t(
+    state.value.outcome === 'saved'
+      ? 'subscription.cancelDialog.retentionSuccess'
+      : 'subscription.cancelSuccess'
+  )
+)
 function feedback(value: string | number | undefined) {
   machine.setFeedback(String(value ?? ''))
-}
-function followup(value: string | number | undefined) {
-  machine.setFollowupResponse(String(value ?? ''))
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-4 p-4 text-base-foreground">
     <template v-if="state.step === 'success'">
-      <p role="status">
-        {{
-          t(
-            state.outcome === 'saved'
-              ? 'subscription.cancelDialog.retentionSuccess'
-              : 'subscription.cancelSuccess'
-          )
-        }}
-      </p>
+      <p role="status">{{ successMessage }}</p>
       <Button @click="onClose">{{ t('g.close') }}</Button>
     </template>
     <template v-else>
-      <h3 class="m-0 text-lg font-semibold">
-        {{
-          offer?.copy.headline ??
-          step?.title ??
-          t('subscription.cancelDialog.title')
-        }}
-      </h3>
+      <h3 class="m-0 text-lg font-semibold">{{ heading }}</h3>
       <SanitizedHtml
         v-if="body"
         class="text-sm text-muted-foreground"
         :html="body"
       />
-      <div
+      <ChurnkeyFlowSurvey
         v-if="state.step === 'survey'"
-        class="flex flex-col gap-2"
-        role="group"
-        :aria-label="step?.title ?? t('subscription.cancelDialog.title')"
-      >
-        <Button
-          v-for="reason in reasons"
-          :key="reason.id"
-          :variant="
-            state.selectedReason === reason.id ? 'primary' : 'secondary'
-          "
-          :disabled="busy || blocked"
-          :aria-pressed="state.selectedReason === reason.id"
-          @click="machine.selectReason(reason.id)"
-        >
-          {{ reason.label }}
-        </Button>
-        <Textarea
-          v-if="selectedReason?.freeform"
-          :model-value="state.followupResponse"
-          :aria-label="t('subscription.cancelDialog.additionalFeedback')"
-          :disabled="busy || blocked"
-          @update:model-value="followup"
-        />
-      </div>
+        :machine
+        :state
+        :disabled
+      />
       <Textarea
         v-if="state.step === 'feedback'"
         :model-value="state.feedback"
         :aria-label="t('subscription.cancelDialog.additionalFeedback')"
-        :placeholder="step?.type === 'feedback' ? step.placeholder : undefined"
-        :disabled="busy || blocked"
+        :placeholder="feedbackPlaceholder"
+        :disabled
         @update:model-value="feedback"
       />
       <p v-if="state.error" role="alert" class="text-error">
-        {{ blocked ? pendingMessage() : state.error.message }}
+        {{ errorMessage }}
       </p>
       <p v-if="busy" role="status">
         {{ t('subscription.cancelDialog.retentionBusy') }}
@@ -137,44 +132,14 @@ function followup(value: string | number | undefined) {
       <p v-if="periodEnd" class="text-sm text-muted-foreground">
         {{ t('subscription.cancelDialog.description', { date: periodEnd }) }}
       </p>
-      <div class="flex flex-wrap justify-end gap-2">
-        <Button variant="muted-textonly" :disabled="busy" @click="onClose">{{
-          t('subscription.cancelDialog.keepSubscription')
-        }}</Button>
-        <Button
-          v-if="machine.canGoBack"
-          variant="secondary"
-          :disabled="busy || blocked"
-          @click="machine.back()"
-          >{{ t('g.back') }}</Button
-        >
-        <template v-if="state.step === 'offer'">
-          <Button
-            variant="secondary"
-            :disabled="busy || blocked"
-            @click="machine.decline()"
-            >{{ offer?.copy.declineCta }}</Button
-          >
-          <Button :loading="busy" @click="machine.accept()">{{
-            blocked
-              ? t('subscription.cancelDialog.retryDiscount')
-              : offer?.copy.cta
-          }}</Button>
-        </template>
-        <Button
-          v-else-if="state.step !== 'confirm'"
-          :disabled="busy || blocked || !canContinue"
-          @click="machine.next()"
-          >{{ t('g.next') }}</Button
-        >
-        <Button
-          variant="destructive"
-          :loading="busy"
-          :disabled="blocked"
-          @click="machine.cancel()"
-          >{{ t('subscription.cancelDialog.confirmCancel') }}</Button
-        >
-      </div>
+      <ChurnkeyFlowActions
+        :machine
+        :state
+        :disabled
+        :blocked
+        :can-continue="canContinue"
+        :on-close="onClose"
+      />
     </template>
   </div>
 </template>
