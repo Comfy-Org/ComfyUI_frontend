@@ -7,6 +7,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
+import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
@@ -20,10 +21,12 @@ function setup() {
   const panel = useAgentPanelStore()
   panel.beginWorkflowRestoration()
   const warnRestoreFailed = vi.fn()
-  const listCloudWorkflows = vi.fn(async () => [
-    { id: 'wf-saved', name: 'saved' },
-    { id: 'wf-current', name: 'current' }
-  ])
+  const listCloudWorkflows = vi.fn(
+    async (): Promise<CloudWorkflowEntry[]> => [
+      { id: 'wf-saved', name: 'saved' },
+      { id: 'wf-current', name: 'current' }
+    ]
+  )
   const resolver = useAgentWorkflowResolver({
     workflows,
     bindings,
@@ -372,6 +375,42 @@ describe('historical workflow restoration', () => {
       expect(workflows.activeWorkflow?.path).toBe(current.path)
       expect(panel.targetUnavailable).toBe(false)
       expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    {
+      listing: 'omits it',
+      entries: [],
+      unavailable: true,
+      active: 'workflows/current.json'
+    },
+    {
+      listing: 'lists it without a name',
+      entries: [{ id: 'wf-stale' }],
+      unavailable: false,
+      active: 'workflows/bound.json'
+    }
+  ])(
+    'lets a successful listing decide a stale binding when the listing $listing',
+    async ({ entries, unavailable, active }) => {
+      const { selection, workflows, bindings, panel, listCloudWorkflows } =
+        setup()
+      const bound = createMockLoadedWorkflow({
+        path: 'workflows/bound.json',
+        filename: 'bound',
+        isTemporary: false
+      })
+      bound.load = vi.fn(async () => bound)
+      workflows.attachWorkflow(bound)
+      workflows.openWorkflowsInBackground({ right: [bound.path] })
+      bindings.bind('wf-stale', bound.path)
+      listCloudWorkflows.mockImplementationOnce(async () => entries)
+
+      expect(await selection.restoreTarget('wf-stale', () => true)).toBe(true)
+
+      expect(panel.targetUnavailable).toBe(unavailable)
+      expect(workflows.activeWorkflow?.path).toBe(active)
     }
   )
 

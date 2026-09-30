@@ -218,7 +218,10 @@ export function useAgentWorkflowSelection({
     workflowId: string | undefined,
     isSessionCurrent: () => boolean
   ): Promise<boolean> {
-    if (!canRestoreWorkflow.value || !isSessionCurrent()) return false
+    if (!isSessionCurrent()) return false
+    // A target that is already decided (e.g. a remounted panel) needs no
+    // restoration, so the chat is ready as far as its workflow goes.
+    if (!canRestoreWorkflow.value) return true
     const generation = ++targetSelectionGeneration
     const isCurrent = () =>
       generation === targetSelectionGeneration &&
@@ -229,14 +232,15 @@ export function useAgentWorkflowSelection({
     if (target === null) {
       const listed = await refreshCloudWorkflowIds()
       if (!isCurrent()) return false
-      target =
-        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
-      // A successful listing without the id means the workflow is gone; a
-      // failed listing stays a retryable restoration failure.
-      if (target === null && listed && !isCloudWorkflowListed(workflowId)) {
+      // A successful listing without the id means the workflow is gone, even
+      // when a stale local binding still names a tab; a failed listing stays
+      // a retryable restoration failure.
+      if (listed && !isCloudWorkflowListed(workflowId)) {
         panelStore.markWorkflowTargetUnavailable()
         return true
       }
+      target =
+        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
     }
     return openRestoredWorkflow(target, workflowId, isCurrent)
   }

@@ -32,6 +32,7 @@ export function useAgentWorkflowResolver({
   listCloudWorkflows
 }: WorkflowResolverDeps) {
   const cloudIndex = ref<WorkflowReferenceMetadata[]>([])
+  const listedCloudIds = ref<ReadonlySet<string>>(new Set())
   let refreshGeneration = 0
   const cloudIdsByName = computed(() => {
     const counts = new Map<string, number>()
@@ -49,6 +50,7 @@ export function useAgentWorkflowResolver({
     try {
       const entries = await listCloudWorkflows()
       if (generation !== refreshGeneration) return false
+      listedCloudIds.value = new Set(entries.map(({ id }) => id))
       cloudIndex.value = entries.flatMap(({ id, name }) =>
         name === undefined ? [] : [{ id, name }]
       )
@@ -153,7 +155,7 @@ export function useAgentWorkflowResolver({
 
   /** Whether the last successful Cloud listing included `workflowId`. */
   function isCloudWorkflowListed(workflowId: string): boolean {
-    return indexedNameFor(workflowId) !== undefined
+    return listedCloudIds.value.has(workflowId)
   }
 
   function storedWorkflowFor(workflowId: string): ComfyWorkflow | null {

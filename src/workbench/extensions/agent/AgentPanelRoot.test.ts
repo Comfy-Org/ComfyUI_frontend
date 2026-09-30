@@ -5314,7 +5314,7 @@ describe('AgentPanelRoot workflow binding', () => {
       targetId: 'wf-42',
       references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
     })
-    mockMessagesEndpoint('wf-other')
+    mockMessagesEndpoint('wf-other', [{ id: 'wf-other', name: 'other' }])
     localStorage.setItem(StorageKeys.agentThread('personal'), 'th-restored')
     const defaultFetch = vi.mocked(fetch).getMockImplementation()
     assert.exists(defaultFetch)
@@ -6103,8 +6103,8 @@ describe('AgentPanelRoot workflow binding', () => {
         if (url.includes('/messages')) return json(200, history)
         if (url.includes('/workflows'))
           return json(200, {
-            data: [],
-            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+            data: [{ id: 'wf-minted', name: 'minted' }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
           })
         return json(200, agentThreadList())
       })
@@ -6202,8 +6202,8 @@ describe('AgentPanelRoot workflow binding', () => {
             return json(200, { assets: [], total: 0, has_more: false })
           if (url.includes('/workflows'))
             return json(200, {
-              data: [],
-              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+              data: [{ id: 'wf-old', name: 'old' }],
+              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
             })
           return json(
             200,
@@ -6293,17 +6293,19 @@ describe('AgentPanelRoot workflow binding', () => {
       listing: 'omits the workflow',
       listingStatus: 200,
       notices: [i18n.global.t('agent.targetWorkflowUnavailable')],
-      toasts: []
+      toasts: [],
+      current: 'th-history'
     },
     {
       listing: 'fails',
       listingStatus: 500,
       notices: [],
-      toasts: [i18n.global.t('agent.targetWorkflowOpenFailed')]
+      toasts: [i18n.global.t('agent.targetWorkflowOpenFailed')],
+      current: null
     }
   ])(
     'restores a stored chat on startup when the workflow listing $listing',
-    async ({ listingStatus, notices, toasts }) => {
+    async ({ listingStatus, notices, toasts, current }) => {
       makeTab('wf-42')
       useAgentConversationStore().setThreadId('th-history')
       localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
@@ -6324,8 +6326,41 @@ describe('AgentPanelRoot workflow binding', () => {
         ).toEqual(notices)
       })
       expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+      expect(useAgentChatHistoryStore().activeId).toBe(current)
     }
   )
+
+  it('does not mark a stored chat Current when its messages fail to load on startup', async () => {
+    telemetry.trackAgentError.mockClear()
+    makeTab('wf-42')
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages')) return json(500, { error: 'down' })
+        if (url.includes('/agent/threads'))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-history',
+                title: 'Earlier chat',
+                last_message_at: '2026-09-01T00:00:00Z'
+              })
+            ])
+          )
+        return json(200, {})
+      })
+    )
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({ error_class: 'history_load_failed' })
+      )
+    )
+    expect(useAgentChatHistoryStore().activeId).toBeNull()
+  })
 
   it('toasts a startup restoration failure that lands while history is open without a selection', async () => {
     let failListing = () => {}
@@ -6395,8 +6430,8 @@ describe('AgentPanelRoot workflow binding', () => {
             )
           if (url.includes('/workflows'))
             return json(200, {
-              data: [],
-              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+              data: [{ id: 'wf-history', name: 'history-target' }],
+              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
             })
           return json(200, {})
         })

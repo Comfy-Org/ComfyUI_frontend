@@ -358,8 +358,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
     if (!restore) return
-    onThreadActivated?.(initialThreadId)
-    if (initialThreadId === null) return
+    if (initialThreadId === null) {
+      onThreadActivated?.(null)
+      return
+    }
     void restoreInitialThread(initialThreadId, surviving)
   }
 
@@ -370,14 +372,37 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const generation = ++loadGeneration
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
-    const stashedTurn =
-      surviving !== null && conversationStore.activeTurnId !== null
-    if (surviving !== null) conversationStore.stashActiveTurn()
-    else conversationStore.setThreadId(initialThreadId)
-    await hydrateFromServer(initialThreadId, isCurrent, stashedTurn)
-    if (!isCurrent()) return
-    if (conversationStore.threadId === null) onThreadActivated?.(null)
-    else if (surviving !== null && conversationStore.threadId === surviving)
+    const stashedTurn = beginInitialThread(initialThreadId, surviving)
+    const ready = await hydrateFromServer(
+      initialThreadId,
+      isCurrent,
+      stashedTurn
+    )
+    if (isCurrent()) settleInitialThread(initialThreadId, surviving, ready)
+  }
+
+  /** Returns whether a surviving thread's active turn was stashed. */
+  function beginInitialThread(
+    initialThreadId: string,
+    surviving: string | null
+  ): boolean {
+    if (surviving === null) {
+      conversationStore.setThreadId(initialThreadId)
+      return false
+    }
+    const stashedTurn = conversationStore.activeTurnId !== null
+    conversationStore.stashActiveTurn()
+    return stashedTurn
+  }
+
+  function settleInitialThread(
+    initialThreadId: string,
+    surviving: string | null,
+    ready: boolean
+  ): void {
+    if (ready) onThreadActivated?.(initialThreadId)
+    else if (conversationStore.threadId === null) onThreadActivated?.(null)
+    if (surviving !== null && conversationStore.threadId === surviving)
       conversationStore.resumeBackgroundTurn()
   }
 
