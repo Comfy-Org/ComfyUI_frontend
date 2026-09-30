@@ -240,7 +240,11 @@ describe('Astro redirects', () => {
         .map(({ source }) => source)
     )
     const aliasCount = models.filter((model) => model.canonicalSlug).length
-    expect(Object.keys(astroRedirects)).toHaveLength(18 + aliasCount)
+    expect(Object.keys(astroRedirects)).toHaveLength(19 + aliasCount)
+    expect(astroRedirects['/hub']).toEqual({
+      status: 308,
+      destination: '/hub/models/'
+    })
     expect(astroRedirects['/minimax']).toEqual({
       status: 307,
       destination: '/minimax-h3/'

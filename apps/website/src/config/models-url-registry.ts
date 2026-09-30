@@ -1,5 +1,6 @@
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
 import {
+  HUB_APPS_PATH,
   HUB_MODELS_PATH,
   HUB_WORKFLOWS_PATH,
   hubModelAliases,
@@ -62,6 +63,8 @@ export function modelsUrlEntries({
   })
   return [
     { path: HUB_MODELS_PATH, kind: 'hub' },
+    { path: HUB_WORKFLOWS_PATH, kind: 'hub' },
+    { path: HUB_APPS_PATH, kind: 'hub' },
     {
       path: MODELS_BASE_PATH,
       kind: 'alias',
@@ -91,10 +94,9 @@ export function modelsUrlEntries({
   ]
 }
 
-function assertOneHub(entries: readonly ModelsUrlEntry[]) {
+function assertHasHub(entries: readonly ModelsUrlEntry[]) {
   const hubs = entries.filter(({ kind }) => kind === 'hub').length
-  if (hubs !== 1)
-    throw new Error(`The registry needs exactly one hub, found ${hubs}`)
+  if (hubs === 0) throw new Error('The registry needs at least one hub')
 }
 
 const isUnderRoots = (pathname: string, roots: readonly string[]) =>
@@ -104,7 +106,7 @@ export function buildModelsUrlRegistry(
   entries: readonly ModelsUrlEntry[],
   roots: readonly string[]
 ): ModelsUrlRegistry {
-  assertOneHub(entries)
+  assertHasHub(entries)
   const normalizedRoots = roots.map(withoutTrailingSlash)
   const registry = new Map<string, ModelsUrlEntry>()
   for (const entry of entries) {
@@ -150,7 +152,7 @@ const modelsUrlRegistry = buildModelsUrlRegistry(
     apps: slugsOfType(['APP']),
     aliases: hubModelAliases
   }),
-  [MODELS_BASE_PATH, HUB_MODELS_PATH, HUB_WORKFLOWS_PATH]
+  [MODELS_BASE_PATH, HUB_MODELS_PATH, HUB_WORKFLOWS_PATH, HUB_APPS_PATH]
 )
 
 export const modelsUrlRoots = modelsUrlRegistry.roots

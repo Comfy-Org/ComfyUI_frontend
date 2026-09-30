@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { modelsHubMeta } from './models-hub-meta'
+import { catalogueHubMeta, modelsHubMeta } from './models-hub-meta'
 
 describe('modelsHubMeta', () => {
   it('titles the hub for ComfyUI models within SERP length', () => {
@@ -51,4 +51,26 @@ describe('modelsHubMeta', () => {
       'Browse 1 AI model in ComfyUI, including Veo. Try it in your browser, then call it from your code.'
     )
   })
+})
+
+describe('catalogueHubMeta', () => {
+  it.for([
+    {
+      tab: 'workflows',
+      title: 'ComfyUI Workflows - Comfy',
+      description:
+        'Turn your ideas into finished results with multi-step workflows powered by AI models.'
+    },
+    {
+      tab: 'apps',
+      title: 'ComfyUI Apps - Comfy',
+      description:
+        'Take on bigger ideas with apps that bring multiple workflows together.'
+    }
+  ] as const)(
+    'describes the $tab catalogue in search results',
+    ({ tab, title, description }) => {
+      expect(catalogueHubMeta(tab, [])).toEqual({ title, description })
+    }
+  )
 })

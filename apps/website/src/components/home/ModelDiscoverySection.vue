@@ -10,9 +10,9 @@ import type {
 } from '../../data/modelDiscovery'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { CatalogueTab } from '../../lib/workshop/catalogue-tabs'
 import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
 import Button from '../ui/button/Button.vue'
-import type { CatalogueTab } from '../workshop/CatalogueTabs.vue'
 import CatalogueTabs from '../workshop/CatalogueTabs.vue'
 import DiscoveryProviderCard from './DiscoveryProviderCard.vue'
 import DiscoveryWorkflowCard from './DiscoveryWorkflowCard.vue'
@@ -57,7 +57,7 @@ const browseLabel = computed(() =>
   )
 )
 const browseHref = computed(() =>
-  onWorkflows.value ? `${routes.workshop}?type=workflows` : routes.workshop
+  onWorkflows.value ? routes.workshopWorkflows : routes.workshop
 )
 
 // The marquee travels one row's width per period, so a fixed period runs a

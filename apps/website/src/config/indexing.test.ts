@@ -31,6 +31,8 @@ const modelPages = workshopModels.flatMap(({ href, routerId, slug }) =>
 
 const MODELS_PAGES_BY_KIND = [
   ['hub', '/hub/models/'],
+  ['hub', '/hub/workflows/'],
+  ['hub', '/hub/apps/'],
   ['model', `/hub/models/${hubModelSlug}/`],
   ['alias', '/models/'],
   ['alias', `/models/${modelSlug}/`],

@@ -53,9 +53,11 @@ const baseRoutes = {
   chatgptImage25: '/chatgpt-image-2.5/',
   qwenImage21: '/qwen-image-2.1/',
   brand: '/brand/',
-  // The catalogue answers to /models now. The keys keep their old names while
-  // the pull requests stacked on this branch are still open against them.
+  // The public catalogue pages share the Workshop implementation but live
+  // under the Hub URL family.
   workshop: '/hub/models/',
+  workshopWorkflows: '/hub/workflows/',
+  workshopApps: '/hub/apps/',
   workshopSignIn: '/login/',
   cinematicStudio: '/models/apps/cinematic-studio/',
   reshoot: '/models/apps/reshoot/'
@@ -86,8 +88,9 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
-// workshop, workshopSignIn, cinematicStudio, reshoot: English only. Every
-// locale links the one catalogue.
+// workshop, workshopWorkflows, workshopApps, workshopSignIn,
+// cinematicStudio, reshoot: English only. Every locale links the one
+// catalogue.
 //
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
 // built from a single English-language caption track — a "translated" watch
@@ -101,6 +104,8 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'models',
   'minimaxLicenseProfessionalRequest',
   'workshop',
+  'workshopWorkflows',
+  'workshopApps',
   'workshopSignIn',
   'cinematicStudio',
   'reshoot',
@@ -127,7 +132,9 @@ const LOCALE_INVARIANT_EXTRA_PATHS = [
   '/platform/serverless-animation',
   '/signup',
   '/workshop',
+  '/hub/apps',
   '/hub/models',
+  '/hub/workflows',
   '/models'
 ]
 

@@ -1,42 +1,38 @@
 <script setup lang="ts">
-import { computed, onMounted, useTemplateRef } from 'vue'
+import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-
-export type CatalogueTab = 'models' | 'workflows' | 'apps'
+import type { CatalogueTab } from '../../lib/workshop/catalogue-tabs'
 
 const {
   locale = 'en',
-  focusActive = false,
-  tabs = ['models', 'workflows', 'apps']
+  tabs = ['models', 'workflows', 'apps'],
+  hrefs
 } = defineProps<{
   locale?: Locale
-  focusActive?: boolean
   /** The home page teaches the same control with the halves it can open. */
   tabs?: readonly CatalogueTab[]
+  hrefs?: Readonly<Record<CatalogueTab, string>>
 }>()
-const emit = defineEmits<{ focused: [] }>()
 const active = defineModel<CatalogueTab>({ required: true })
 const labels = {
   models: 'workshop.hub.kind.models',
   workflows: 'workshop.hub.workflows',
   apps: 'workshop.catalogue.apps'
 } as const
-const buttons = useTemplateRef<HTMLButtonElement[]>('buttons')
-onMounted(() => {
-  if (!focusActive) return
-  buttons.value?.[tabs.indexOf(active.value)]?.focus()
-  emit('focused')
-})
 const marker = computed(
   () => `translateX(${tabs.indexOf(active.value) * 100}%)`
 )
 const columns = computed(() =>
   tabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
 )
+
+function select(tab: CatalogueTab) {
+  if (!hrefs) active.value = tab
+}
 </script>
 
 <template>
@@ -57,12 +53,14 @@ const columns = computed(() =>
         :style="{ transform: marker }"
       />
     </div>
-    <button
+    <component
+      :is="hrefs ? 'a' : 'button'"
       v-for="tab in tabs"
-      ref="buttons"
       :key="tab"
-      type="button"
-      :aria-pressed="active === tab"
+      :href="hrefs?.[tab]"
+      :type="hrefs ? undefined : 'button'"
+      :aria-current="hrefs && active === tab ? 'page' : undefined"
+      :aria-pressed="hrefs ? undefined : active === tab"
       :data-testid="`catalogue-tab-${tab}`"
       :class="
         cn(
@@ -72,9 +70,9 @@ const columns = computed(() =>
             : 'text-content-secondary hover:text-content-bright'
         )
       "
-      @click="active = tab"
+      @click="select(tab)"
     >
       {{ t(labels[tab], locale) }}
-    </button>
+    </component>
   </div>
 </template>

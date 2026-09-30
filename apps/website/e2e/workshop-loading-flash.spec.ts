@@ -34,7 +34,30 @@ test('static HTML at /hub/models/ names the catalogue and links every model', as
   )
   expect(new Set(linked)).toEqual(publishedModelSlugs)
   expect(linked).toHaveLength(new Set(linked).size)
+  expect(directory).not.toContain('/hub/workflows/change-material/')
+  expect(directory).not.toContain('/models/apps/cinematic-studio/')
 })
+
+for (const { path, heading } of [
+  {
+    path: '/hub/workflows/',
+    heading: 'ComfyUI Workflows'
+  },
+  {
+    path: '/hub/apps/',
+    heading: 'ComfyUI Apps'
+  }
+])
+  test(`static HTML at ${path} names its catalogue without exposing flag-gated links`, async ({
+    request
+  }) => {
+    const live = liveDom(await (await request.get(path)).text())
+    expect(live.match(/<h1\b[\s\S]*?<\/h1>/g)).toEqual([
+      expect.stringContaining(heading)
+    ])
+    expect(live).not.toContain('/hub/workflows/change-material/')
+    expect(live).not.toContain('/models/apps/cinematic-studio/')
+  })
 
 test('static HTML of a model page paints the model, not a loader', async ({
   request

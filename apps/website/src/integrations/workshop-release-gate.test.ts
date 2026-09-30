@@ -131,6 +131,8 @@ describe('Workshop release output', () => {
     const disabled = modelsBuildRoutes(false)
     expect(disabled.map((route) => route.pattern)).toEqual([
       '/hub/models',
+      '/hub/workflows',
+      '/hub/apps',
       '/hub/models/[slug]',
       '/hub/workflows/[slug]',
       '/hub/workflows/manifest.json',

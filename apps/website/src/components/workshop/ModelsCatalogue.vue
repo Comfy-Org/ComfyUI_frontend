@@ -7,12 +7,13 @@ import type {
   WorkflowWorkshopModel,
   WorkshopModel
 } from '../../config/models-catalogue'
+import { getRoutes } from '../../config/routes'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import SplitReveal from './SplitReveal.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
-import type { CatalogueTab } from './CatalogueTabs.vue'
+import type { CatalogueTab } from '../../lib/workshop/catalogue-tabs'
 import type { WorkshopPageType } from '../../scripts/workshop-analytics'
 import {
   captureWorkshopEvent,
@@ -28,9 +29,14 @@ const WorkflowCatalogue = defineAsyncComponent(
 )
 const AppCatalogue = defineAsyncComponent(() => import('./AppCatalogue.vue'))
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  locale = 'en',
+  catalogueTab = 'models'
+} = defineProps<{
   models: readonly WorkshopModel[]
   locale?: Locale
+  catalogueTab?: CatalogueTab
 }>()
 
 const inSection = ref(false)
@@ -38,15 +44,16 @@ const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
-const selectedTab = ref<CatalogueTab>('models')
-if (typeof location !== 'undefined') {
-  const requested = new URLSearchParams(location.search).get('type')
-  if (requested === 'workflows' || requested === 'workflow') {
-    selectedTab.value = 'workflows'
-    void import('./WorkflowCatalogue.vue').catch(() => undefined)
-  }
-  if (requested === 'apps') selectedTab.value = 'apps'
-}
+const requestedTab =
+  catalogueTab === 'models' && typeof location !== 'undefined'
+    ? new URLSearchParams(location.search).get('type')
+    : catalogueTab
+const selectedTab: CatalogueTab =
+  requestedTab === 'workflows' || requestedTab === 'workflow'
+    ? 'workflows'
+    : requestedTab === 'apps'
+      ? 'apps'
+      : 'models'
 const shownModels = computed(() =>
   models.filter((model) => isWorkshopModelShown(model))
 )
@@ -79,8 +86,16 @@ const availableTabs = computed<readonly CatalogueTab[]>(() => [
   ...(appsEnabled.value && apps.value.length ? (['apps'] as const) : [])
 ])
 const activeTab = computed(() =>
-  availableTabs.value.includes(selectedTab.value) ? selectedTab.value : 'models'
+  availableTabs.value.includes(selectedTab) ? selectedTab : 'models'
 )
+const catalogueHrefs = computed(() => {
+  const routes = getRoutes(locale)
+  return {
+    models: routes.workshop,
+    workflows: routes.workshopWorkflows,
+    apps: routes.workshopApps
+  }
+})
 
 // Each tab says what its own listing is for, in Eric's words.
 const SUBTITLE_KEY = {
@@ -89,20 +104,6 @@ const SUBTITLE_KEY = {
   apps: 'workshop.catalogue.appsSubtitle'
 } as const satisfies Record<CatalogueTab, TranslationKey>
 const subtitleKey = computed(() => SUBTITLE_KEY[activeTab.value])
-
-const focusTabs = ref(false)
-function changeTab(tab: CatalogueTab) {
-  focusTabs.value = Boolean(
-    document.activeElement?.closest('[data-testid="catalogue-tabs"]')
-  )
-  selectedTab.value = tab
-  inSection.value = false
-  browseAll.value = false
-  const url = new URL(location.href)
-  url.search = ''
-  if (tab !== 'models') url.searchParams.set('type', tab)
-  history.replaceState(history.state, '', url)
-}
 
 const viewedTabs = new Set<CatalogueTab>()
 watch(
@@ -149,9 +150,7 @@ watch(
         :tabs="availableTabs"
         :model-value="activeTab"
         :locale
-        :focus-active="focusTabs"
-        @update:model-value="changeTab"
-        @focused="focusTabs = false"
+        :hrefs="catalogueHrefs"
       />
     </template>
   </WorkshopModelsGrid>
@@ -167,9 +166,7 @@ watch(
         :tabs="availableTabs"
         :model-value="activeTab"
         :locale
-        :focus-active="focusTabs"
-        @update:model-value="changeTab"
-        @focused="focusTabs = false"
+        :hrefs="catalogueHrefs"
       />
     </template>
   </WorkflowCatalogue>
@@ -185,9 +182,7 @@ watch(
         :tabs="availableTabs"
         :model-value="activeTab"
         :locale
-        :focus-active="focusTabs"
-        @update:model-value="changeTab"
-        @focused="focusTabs = false"
+        :hrefs="catalogueHrefs"
       />
     </template>
   </AppCatalogue>

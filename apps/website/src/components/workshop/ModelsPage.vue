@@ -8,14 +8,20 @@ import { isWorkflowSlug } from '../../config/models-catalogue'
 import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { t } from '../../i18n/translations'
+import type { CatalogueTab } from '../../lib/workshop/catalogue-tabs'
 import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
 
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
 
-const { slug, workflowId } = defineProps<{
+const {
+  slug,
+  workflowId,
+  catalogueTab = 'models'
+} = defineProps<{
   slug?: string
   workflowId?: string
+  catalogueTab?: CatalogueTab
 }>()
 
 const loadingLabel = t('workshop.load.pending', 'en')
@@ -124,6 +130,7 @@ function createContent() {
           },
           [
             h(ModelsCatalogue, {
+              catalogueTab,
               models: models.filter(
                 (model) =>
                   model.routerId !== undefined ||

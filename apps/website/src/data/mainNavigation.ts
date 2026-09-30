@@ -38,6 +38,7 @@ export type NavItem =
   | {
       label: string
       href: string
+      activeHrefs?: readonly string[]
       badge?: 'new'
       columns?: never
       featured?: never
@@ -53,6 +54,7 @@ export function getMainNavigation(
         {
           label: t('nav.workshop', locale),
           href: routes.workshop,
+          activeHrefs: [routes.workshopWorkflows, routes.workshopApps],
           badge: 'new'
         }
       ]

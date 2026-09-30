@@ -93,7 +93,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await expect(shelf).toHaveText('Edit images')
   await expect(shelf).toHaveAttribute(
     'href',
-    '/hub/models/?type=workflows&category=product'
+    '/hub/workflows/?category=product'
   )
   await expect(
     page.getByRole('group', { name: 'Your original image' })
@@ -137,12 +137,10 @@ test('workflow launch groups lead to the existing shared form', async ({
     expect(response.headers()['content-type']).toContain(type)
   }
   await shelf.click()
-  await expect(page).toHaveURL(
-    /\/hub\/models\/?\?type=workflows&category=product$/
-  )
+  await expect(page).toHaveURL(/\/hub\/workflows\/?\?category=product$/)
   await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
-    'aria-pressed',
-    'true'
+    'aria-current',
+    'page'
   )
   await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   const filtered = page.getByTestId('workflow-search-results')
@@ -209,7 +207,7 @@ test('withholds workflow discovery and direct pages when the workflow flag is of
   context
 }) => {
   await mockWorkflowVisibility(context, false)
-  await page.goto('/hub/models/?type=workflows')
+  await page.goto('/hub/workflows/')
   await expect(page.getByTestId('workshop-search')).toBeVisible()
   await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
   await page.getByTestId('workshop-search').fill('Change a material')
@@ -236,7 +234,7 @@ test('cold workflow filters focus their controls and respect dismissal while loa
     await released.promise
     await route.continue()
   })
-  await page.goto('/hub/models/?type=workflows')
+  await page.goto('/hub/workflows/')
   const trigger = page.getByTestId('workshop-filter')
   await trigger.click()
   await requested.promise
@@ -347,7 +345,7 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
   await expect(outcomes).toHaveCount(30)
 
-  await page.goto('/hub/models/?type=workflows&model=LTX-2.3')
+  await page.goto('/hub/workflows/?model=LTX-2.3')
   await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   await expect(outcomes).toHaveCount(7)
 })
@@ -421,7 +419,7 @@ const tabletToolbars = [640, 700, 768].flatMap((width) => [
   {
     width,
     half: 'Workflows with a category selected',
-    path: '/hub/models/?type=workflows&category=upscale'
+    path: '/hub/workflows/?category=upscale'
   }
 ])
 
@@ -533,11 +531,11 @@ test('@mobile keeps the catalogue tabs in place when a tab changes the hero subt
   const before = await workflows.boundingBox()
 
   await workflows.click()
-  await expect(workflows).toHaveAttribute('aria-pressed', 'true')
+  await expect(workflows).toHaveAttribute('aria-current', 'page')
   expect((await workflows.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
 
   await models.click()
-  await expect(models).toHaveAttribute('aria-pressed', 'true')
+  await expect(models).toHaveAttribute('aria-current', 'page')
   expect((await models.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
 })
 

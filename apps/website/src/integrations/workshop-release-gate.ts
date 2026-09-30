@@ -11,6 +11,7 @@ import { basename, join, relative } from 'node:path'
 import { workshopClientBoundary } from './workshop-client-boundary'
 
 import {
+  HUB_APPS_PATH,
   HUB_MODELS_PATH,
   HUB_WORKFLOWS_PATH,
   oldModelLinks
@@ -43,6 +44,8 @@ const WORKSHOP_ONLY_ROUTES = [
 export function modelsBuildRoutes(enabled: boolean) {
   return [
     { pattern: HUB_MODELS_PATH, entrypoint: entry('index.astro') },
+    { pattern: HUB_WORKFLOWS_PATH, entrypoint: entry('workflows.astro') },
+    { pattern: HUB_APPS_PATH, entrypoint: entry('apps.astro') },
     { pattern: `${HUB_MODELS_PATH}/[slug]`, entrypoint: entry('[slug].astro') },
     {
       pattern: `${HUB_WORKFLOWS_PATH}/[slug]`,

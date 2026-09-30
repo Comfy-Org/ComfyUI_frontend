@@ -23,9 +23,7 @@ describe('WorkflowPage header', () => {
 
     const shelf = screen.getByTestId('workflow-use-case')
     expect(shelf.textContent.trim()).toBe('Edit images')
-    expect(shelf.getAttribute('href')).toBe(
-      '/hub/models/?type=workflows&category=cleanup'
-    )
+    expect(shelf.getAttribute('href')).toBe('/hub/workflows/?category=cleanup')
   })
 
   it('says nothing about a shelf a workflow has none of', () => {

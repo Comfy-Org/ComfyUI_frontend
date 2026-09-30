@@ -54,6 +54,14 @@ test.describe('canonical redirects', () => {
       expect(existsSync(`dist/${path}/index.html`)).toBe(false)
   })
 
+  test('builds /hub as a redirect to the Models catalogue', () => {
+    const redirectPage = readFileSync('dist/hub/index.html', 'utf8')
+    expect(redirectPage).toContain('url=/hub/models/')
+    expect(redirectPage).toContain(
+      'rel="canonical" href="https://comfy.org/hub/models/"'
+    )
+  })
+
   test('builds the former Enterprise routes with the canonical destination', () => {
     for (const { source, destination } of enterpriseCases) {
       const redirectPage = readFileSync(`dist${source}/index.html`, 'utf8')

@@ -23,14 +23,20 @@ describe('HeaderMainDesktop', () => {
     expect(link.getAttribute('data-active')).toBeNull()
   })
 
-  it('marks the leaf link active on its own page', async () => {
-    const link = await modelsLink('/hub/models/')
-    expect(link.getAttribute('data-active')).not.toBeNull()
-  })
+  it.for(['/hub/models/', '/hub/workflows/', '/hub/apps/'])(
+    'marks the leaf link active on %s',
+    async (path) => {
+      const link = await modelsLink(path)
+      expect(link.getAttribute('data-active')).not.toBeNull()
+    }
+  )
 
-  it('keeps Products inactive on the Hub page it also links to', async () => {
-    await modelsLink('/hub/models/')
-    const products = screen.getByRole('button', { name: /products/i })
-    expect(products.getAttribute('data-active')).toBeNull()
-  })
+  it.for(['/hub/models/', '/hub/workflows/', '/hub/apps/'])(
+    'keeps Products inactive on %s',
+    async (path) => {
+      await modelsLink(path)
+      const products = screen.getByRole('button', { name: /products/i })
+      expect(products.getAttribute('data-active')).toBeNull()
+    }
+  )
 })

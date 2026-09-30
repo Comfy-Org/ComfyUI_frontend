@@ -92,12 +92,47 @@ test('keeps Cinematic Studio closed on the workflows flag alone', async ({
   await expect(page.getByTestId('cinematic')).toHaveCount(0)
 })
 
+test('navigates the Hub catalogues by path and restores the page after reload and back', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: true })
+  await page.goto('/hub/models/')
+  const tabs = page.getByTestId('catalogue-tabs')
+  await tabs.getByRole('link', { name: 'Workflows' }).click()
+  await expect(page).toHaveURL(/\/hub\/workflows\/$/)
+  await expect(page.getByTestId('workflow-catalogue')).toBeVisible()
+
+  await tabs.getByRole('link', { name: 'Apps' }).click()
+  await expect(page).toHaveURL(/\/hub\/apps\/$/)
+  await expect(page.getByTestId('app-shelf')).toBeVisible()
+  await page.reload()
+  await expect(tabs.getByRole('link', { name: 'Apps' })).toHaveAttribute(
+    'aria-current',
+    'page'
+  )
+  await expect(page.getByTestId('app-shelf')).toBeVisible()
+
+  await page.goBack()
+  await expect(page).toHaveURL(/\/hub\/workflows\/$/)
+  await expect(tabs.getByRole('link', { name: 'Workflows' })).toHaveAttribute(
+    'aria-current',
+    'page'
+  )
+  await tabs.getByRole('link', { name: 'Models' }).click()
+  await expect(page).toHaveURL(/\/hub\/models\/$/)
+  await expect(tabs.getByRole('link', { name: 'Models' })).toHaveAttribute(
+    'aria-current',
+    'page'
+  )
+})
+
 test('lists both apps in the catalogue Apps tab, on /models/apps/ pages', async ({
   page,
   context
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
-  await page.goto('/hub/models/?type=apps')
+  await page.goto('/hub/apps/')
   const shelf = page.getByTestId('app-shelf')
   const cards = shelf.getByRole('link')
   await expect(cards).toHaveCount(2)
@@ -116,7 +151,7 @@ test('hides Re-shoot from the Apps tab and closes its page while its flag is off
   context
 }) => {
   await mockFlags(context, { apps: true, workflows: false, reshoot: false })
-  await page.goto('/hub/models/?type=apps')
+  await page.goto('/hub/apps/')
   const cards = page.getByTestId('app-shelf').getByRole('link')
   await expect(cards).toHaveCount(1)
   await expect(cards.first()).toHaveAttribute(

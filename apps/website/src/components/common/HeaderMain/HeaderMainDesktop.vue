@@ -31,9 +31,12 @@ const mainNavigation = computed(() =>
 const currentPath = useCurrentPath()
 
 function isNavItemActive(navItem: NavItem, path: string): boolean {
-  if (navItem.href) return isHrefActive(navItem.href, path)
+  if (navItem.href)
+    return [navItem.href, ...(navItem.activeHrefs ?? [])].some((href) =>
+      isHrefActive(href, path)
+    )
   const onLeafPage = mainNavigation.value.some(
-    (item) => item.href && isHrefActive(item.href, path)
+    (item) => item.href && isNavItemActive(item, path)
   )
   return (
     !onLeafPage &&

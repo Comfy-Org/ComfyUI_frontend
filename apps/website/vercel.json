@@ -53,6 +53,16 @@
   ],
   "redirects": [
     {
+      "source": "/hub",
+      "destination": "/hub/models/",
+      "permanent": true
+    },
+    {
+      "source": "/hub/",
+      "destination": "/hub/models/",
+      "permanent": true
+    },
+    {
       "source": "/career",
       "destination": "/careers/",
       "permanent": true
