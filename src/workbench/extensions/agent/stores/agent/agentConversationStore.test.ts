@@ -407,14 +407,56 @@ describe('useAgentConversationStore', () => {
     store.startTurn(T1)
     store.ingest(delta('t1', 'partial'))
     store.stashActiveTurn()
+    // Hydrate first: it is the only path that marks the slot snapshot-derived,
+    // so the send below has a provenance to clear rather than an absent one.
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go', 'u1'),
+      {
+        ...historyRow(2, 'assistant', 'turn-a', '', 't1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
     store.startTurn(T2)
     store.ingest(delta('t2', 'newer'))
 
     store.resumeBackgroundTurn()
 
+    expect(store.activeTurnId).toBe('t2')
+    // Still routable, not merely still flagged: the frames that follow have to
+    // reach it, which an orphaned transport could not deliver.
+    store.ingest(delta('t2', ' and more'))
+    store.ingest(done('t2'))
+    const newer = store.messages.find((message) => message.id === 't2')
+    expect(newer?.streaming).toBe(false)
     expect(
-      store.messages.find((message) => message.id === 't2')?.streaming
-    ).toBe(true)
+      newer?.parts.flatMap((part) => (part.type === 'text' ? [part.text] : []))
+    ).toEqual(['newer and more'])
+  })
+
+  // Provenance has to expire with the slot it describes. Here the snapshot row
+  // really is installed -- its id matches neither the stash's nor the turn's --
+  // and then settles, so the send that follows owns a slot no resume may
+  // retire. Left set, the stale flag makes the resume abort a live local turn.
+  it('forgets snapshot provenance once that turn settles', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'partial'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go', 'u1'),
+      { ...historyRow(2, 'assistant', 'turn-a', '', 't3'), status: 'streaming' }
+    ])
+    expect(store.activeTurnId).toBe('t3')
+    store.ingest(done('t3'))
+
+    store.startTurn(T2)
+    store.ingest(delta('t2', 'newer'))
+    store.resumeBackgroundTurn()
+
+    expect(store.activeTurnId).toBe('t2')
   })
 
   // PM-1575 regression (finding #4, medium): resumeBackgroundTurn()'s SECOND
