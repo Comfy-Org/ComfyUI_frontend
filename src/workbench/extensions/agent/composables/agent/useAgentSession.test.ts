@@ -1843,8 +1843,6 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(conversation.activeTurnId).toBe('msg-2')
       expect(session.isStreaming.value).toBe(true)
-      // The named turn is already gone, so there is nothing for the user to act
-      // on -- and the notice would sit over the turn that is genuinely running.
       expect(session.notices.value).toEqual([])
       expect(vi.mocked(reportError)).not.toHaveBeenCalledWith(
         expect.anything(),
