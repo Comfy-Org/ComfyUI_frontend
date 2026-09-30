@@ -7,6 +7,7 @@ import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGu
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
+import type { WorkshopContract } from '../../../config/workshop-contract'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
 import type { Locale } from '../../../i18n/translations'
@@ -25,10 +26,12 @@ import { referenceSlots } from './reference-kind'
 
 const {
   models,
+  enhanceContract,
   showCredits = true,
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
+  enhanceContract?: WorkshopContract
   showCredits?: boolean
   locale?: Locale
 }>()
@@ -66,7 +69,7 @@ const {
   choose,
   start: startShot,
   generate: generateShot
-} = useCinematicShot(models)
+} = useCinematicShot(models, enhanceContract)
 reportStudioBusy(() => studio.rendering.value)
 const {
   open: popover,

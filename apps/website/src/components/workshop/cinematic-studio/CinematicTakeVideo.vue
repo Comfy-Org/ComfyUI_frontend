@@ -8,9 +8,6 @@ import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
-// A clip's controls sit on the picture, not behind a hover: a big play button
-// while it is paused and a bar along the bottom, so a take reads as a video at
-// a glance. The bar stays up while paused and shows on hover while playing.
 const {
   src,
   height,
@@ -19,7 +16,6 @@ const {
 } = defineProps<{
   src: string
   height: string
-  /** Hidden until it has loaded, so the frame keeps its size meanwhile. */
   pending?: boolean
   locale: Locale
 }>()
@@ -27,8 +23,7 @@ const emit = defineEmits<{ loaded: [] }>()
 
 const video = useTemplateRef<HTMLVideoElement>('video')
 const { playing, currentTime, muted } = useMediaControls(video)
-// Read from the element too: a cached clip can report its length before the
-// media listeners are attached, and the bar would then read 0:00 for good.
+// a cached clip can report its length before the media listeners attach
 const seconds = ref(0)
 function readLength() {
   const length = video.value?.duration

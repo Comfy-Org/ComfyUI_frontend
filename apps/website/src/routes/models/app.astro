@@ -3,6 +3,8 @@ import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import CinematicStudioPage from '../../components/workshop/cinematic-studio/CinematicStudioPage.vue'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { workshopContract } from '../../config/workshop-contract-catalog'
+import { ENHANCE_MODEL } from '../../lib/workshop/cinematic-studio/enhance'
 import {
   runnableCinematicModels,
   runnableCinematicVideoModels
@@ -31,6 +33,7 @@ const models = [
   ...runnableCinematicVideoModels(getRouterWorkshopModelDetail)
 ]
 if (!models.length) throw new Error('Cinematic Studio has no runnable models')
+const enhanceContract = workshopContract(ENHANCE_MODEL)
 ---
 
 <BaseLayout
@@ -42,6 +45,7 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
   <CinematicStudioPage
     apps={appModels}
     models={models}
+    enhanceContract={enhanceContract}
     initialApp={app}
     client:load
   />

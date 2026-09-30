@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { nextTick, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 
 import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGuard'
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
+import type { WorkshopContract } from '../../../config/workshop-contract'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
+import type { CinematicCopyKey } from '../../../lib/workshop/cinematic-studio/copy'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import AppRepoLink from './AppRepoLink.vue'
@@ -21,10 +23,12 @@ import { pickerGroups, popoverTitle } from './picker-key'
 
 const {
   models,
+  enhanceContract,
   showCredits = true,
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
+  enhanceContract?: WorkshopContract
   showCredits?: boolean
   locale?: Locale
 }>()
@@ -59,7 +63,7 @@ const {
   animate,
   useAsReference: useTake,
   generate: generateShot
-} = useCinematicShot(models)
+} = useCinematicShot(models, enhanceContract)
 reportStudioBusy(() => studio.rendering.value)
 const { leavingTo, leave, stay } = useCinematicLeaveGuard(
   () => studio.rendering.value,
@@ -96,21 +100,30 @@ async function openPicker(key: PickerKey) {
 
 function generate() {
   closePicker()
+  takeError.value = undefined
   generateShot()
   output.value?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
 }
 
-// A finished take goes back into the panel: as a character reference for
-// the next still, or as the first frame of a clip.
-const takeError = ref(false)
-async function useAsReference(url: string, name: string) {
-  takeError.value = !(await useTake(url, name))
+const takeError = ref<CinematicCopyKey>()
+watch(mode, () => (takeError.value = undefined))
+function selectTake(id: string) {
+  takeError.value = undefined
+  studio.select(id)
 }
-const canAnimate = models.some((option) => !!option.firstFrameSlug)
+async function useAsReference(url: string, name: string) {
+  takeError.value = (await useTake(url, name))
+    ? undefined
+    : 'cinematic.references.unreadable'
+}
+const canAnimate = computed(() =>
+  models.some((option) => !!option.firstFrameSlug)
+)
 async function animateTake(url: string, name: string) {
   closePicker()
-  takeError.value = !(await animate(url, name))
-  if (!takeError.value) document.getElementById('cinematic-scene')?.focus()
+  const animated = await animate(url, name)
+  takeError.value = animated ? undefined : 'cinematic.video.frameError'
+  if (animated) document.getElementById('cinematic-scene')?.focus()
 }
 </script>
 
@@ -188,7 +201,7 @@ async function animateTake(url: string, name: string) {
           role="status"
           class="mb-2 text-xs text-primary-comfy-canvas"
         >
-          {{ tc('cinematic.references.unreadable', locale) }}
+          {{ tc(takeError, locale) }}
         </p>
         <CinematicStageCard
           :reel="studio.reel.value"
@@ -198,7 +211,7 @@ async function animateTake(url: string, name: string) {
           :can-animate="canAnimate"
           :can-reference="mode === 'image'"
           :locale
-          @select="studio.select"
+          @select="selectTake"
           @retry="studio.retry"
           @again="generate"
           @reference="useAsReference"

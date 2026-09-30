@@ -1,5 +1,6 @@
 import { computed, onMounted, ref, shallowRef, watchEffect } from 'vue'
 
+import type { WorkshopContract } from '../config/workshop-contract'
 import type { CinematicCopyKey } from '../lib/workshop/cinematic-studio/copy'
 
 import type {
@@ -48,7 +49,10 @@ function closestLength(values: readonly number[], target: number) {
 }
 
 /** The shot being directed, shared by every Cinematic Studio layout. */
-export function useCinematicShot(models: readonly CinematicModel[]) {
+export function useCinematicShot(
+  models: readonly CinematicModel[],
+  enhanceContract?: WorkshopContract
+) {
   const imageModels = models.filter((model) => model.mode !== 'video')
   const videoModels = models.filter((model) => model.mode === 'video')
   const mode = ref<CinematicMode>('image')
@@ -77,7 +81,6 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const mainColor = ref<number>()
   const duration = ref<number>()
   const videoResolution = ref<string>()
-  // sound is on by default; it only reaches models that have an audio field
   const audio = ref(true)
   const firstFrame = shallowRef<StudioImage>()
   const lastFrame = shallowRef<StudioImage>()
@@ -164,7 +167,11 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
 
   const studio = isCinematicDemo()
     ? useCinematicDemoRun()
-    : useCinematicStudioRun(models.length, () => estimate.value?.total.min)
+    : useCinematicStudioRun(
+        models.length,
+        () => estimate.value?.total.min,
+        enhanceContract
+      )
 
   const memberWorkspace = computed(() =>
     studio.session.value?.role === 'member'

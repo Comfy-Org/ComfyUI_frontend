@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  ENHANCE_MODEL,
-  enhanceContract,
-  enhancedScene,
-  enhanceRequest
-} from './enhance'
+import { workshopContract } from '../../../config/workshop-contract-catalog'
+import { ENHANCE_MODEL, enhancedScene, enhanceRequest } from './enhance'
+
+const completed = (body: Record<string, unknown>) =>
+  JSON.stringify({ status: 'completed', ...body })
 
 describe('enhance', () => {
-  it('runs on the pinned GPT 5.6 Luna contract', () => {
-    expect(enhanceContract()?.id).toBe(ENHANCE_MODEL)
+  it('names a model the pinned contracts have', () => {
+    expect(workshopContract(ENHANCE_MODEL)?.id).toBe(ENHANCE_MODEL)
   })
 
   it('asks for a frozen moment for a still and for motion for a clip', () => {
@@ -25,7 +24,7 @@ describe('enhance', () => {
   })
 
   it('reads the message text and skips reasoning items', () => {
-    const document = JSON.stringify({
+    const document = completed({
       output: [
         { type: 'reasoning', summary: [{ type: 'summary_text', text: 'x' }] },
         {
@@ -44,12 +43,19 @@ describe('enhance', () => {
   })
 
   it('reads a top-level output_text', () => {
-    expect(enhancedScene(JSON.stringify({ output_text: 'Rain.' }))).toBe(
-      'Rain.'
-    )
+    expect(enhancedScene(completed({ output_text: 'Rain.' }))).toBe('Rain.')
   })
 
-  it.for(['not json', '[]', JSON.stringify({ output: [] })])(
+  it('refuses a reply that did not complete', () => {
+    const cutOff = JSON.stringify({
+      status: 'incomplete',
+      incomplete_details: { reason: 'max_output_tokens' },
+      output_text: 'A waitress wipes the'
+    })
+    expect(enhancedScene(cutOff)).toBeUndefined()
+  })
+
+  it.for(['not json', '[]', completed({ output: [] })])(
     'returns nothing for %s',
     (document) => {
       expect(enhancedScene(document)).toBeUndefined()

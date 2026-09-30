@@ -24,8 +24,8 @@ import {
   frameParameters,
   watermarksOff
 } from '../lib/workshop/cinematic-studio/frames'
+import type { WorkshopContract } from '../config/workshop-contract'
 import {
-  enhanceContract,
   enhancedScene,
   enhanceRequest
 } from '../lib/workshop/cinematic-studio/enhance'
@@ -64,8 +64,7 @@ interface ShotRequest {
   /** Present for a video shot. */
   readonly video?: Omit<CinematicVideoShot, 'aspect'>
   readonly prompt: string
-  /** What the prompt was built from; with `enhance` on, its scene is
-   * rewritten by the Router's text model before the takes run. */
+  /** With `enhance` on, its scene is rewritten before the takes run. */
   readonly brief?: CinematicBrief
   readonly aspect: AspectRatio
   readonly resolutionPixels: number
@@ -80,14 +79,12 @@ interface UnsettledTake {
   readonly prepared?: PreparedRouterRender
 }
 
-/** The operation a shot runs on: its references, first frame or itself. */
 function shotSlug(request: ShotRequest): string | undefined {
   if (request.references.length) return request.referenceSlug
   if (request.video?.firstFrame) return request.firstFrameSlug
   return request.modelSlug
 }
 
-/** The scene, when this shot asks for it to be rewritten. */
 function sceneToRewrite(request: ShotRequest): string | undefined {
   const brief = request.brief
   return brief?.enhance && brief.scene.trim() ? brief.scene : undefined
@@ -184,7 +181,8 @@ function mayStillSettle(error: unknown): boolean {
  */
 export function useCinematicStudioRun(
   modelCount: number,
-  shotCost: () => number | undefined = () => undefined
+  shotCost: () => number | undefined = () => undefined,
+  enhanceContract?: WorkshopContract
 ) {
   const { user, session, sessionFailure, settled, ensureFresh } =
     useWorkshopSession()
@@ -425,21 +423,16 @@ export function useCinematicStudioRun(
     }
   }
 
-  /**
-   * The shot's prompt with its scene rewritten by GPT 5.6 Luna, or the prompt
-   * it came with (and its fixed Enhance phrase) when there is nothing to
-   * rewrite or the rewrite fails. A cancel stops it like any take.
-   */
+  /** Falls back to the prompt as sent when the rewrite fails. */
   async function rewriteScene(
     scene: string,
     video: boolean,
     startedFor: WorkshopSession,
     signal: AbortSignal
   ): Promise<string | undefined> {
-    const contract = enhanceContract()
-    if (!contract) return undefined
+    if (!enhanceContract) return undefined
     const result = await runWorkshopRouter({
-      contract,
+      contract: enhanceContract,
       body: enhanceRequest(scene, video),
       token: await tokenFor(startedFor, signal),
       freshToken: () => tokenFor(startedFor, signal),
@@ -474,30 +467,39 @@ export function useCinematicStudioRun(
       : request.prompt
   }
 
-  /** Rewrites the prompt, then runs the takes on it; a cancel during the
-   * rewrite has already settled them, so nothing runs. */
-  async function rewriteThenRun(
+  /** Undefined when cancelled: the plans keep their brief, so a retry asks again. */
+  async function rewritten(
     takes: readonly TakePlan[],
-    request: ShotRequest,
     startedFor: WorkshopSession
-  ) {
+  ): Promise<readonly TakePlan[] | undefined> {
+    const shots = [
+      ...new Set(takes.map(({ request }) => request).filter(sceneToRewrite))
+    ]
+    if (!shots.length) return takes
     const enhancing = new AbortController()
     controller = enhancing
-    let prompt: string
     try {
-      prompt = await enhancedPrompt(request, startedFor, enhancing.signal)
+      const ready = new Map<ShotRequest, ShotRequest>()
+      for (const request of shots) {
+        const prompt = await enhancedPrompt(
+          request,
+          startedFor,
+          enhancing.signal
+        )
+        enhancing.signal.throwIfAborted()
+        ready.set(request, { ...request, prompt, brief: undefined })
+      }
+      const plansReady = takes.map((take) => ({
+        ...take,
+        request: ready.get(take.request) ?? take.request
+      }))
+      plansReady.forEach((take) => plans.set(take.id, take))
+      return plansReady
     } catch {
-      return
+      return undefined
     } finally {
       if (controller === enhancing) controller = undefined
     }
-    // retries reuse the rewritten prompt rather than asking for another
-    const enhanced = takes.map((take) => ({
-      ...take,
-      request: { ...request, prompt }
-    }))
-    enhanced.forEach((take) => plans.set(take.id, take))
-    await runTakes(enhanced, startedFor)
   }
 
   async function generate(request: ShotRequest) {
@@ -521,7 +523,8 @@ export function useCinematicStudioRun(
       startedAt: Date.now(),
       preview: request.preview
     })
-    await rewriteThenRun(takes, request, startedFor)
+    const ready = await rewritten(takes, startedFor)
+    if (ready) await runTakes(ready, startedFor)
   }
 
   /** Retries settled takes; the shot being directed does not price them. */
@@ -540,7 +543,8 @@ export function useCinematicStudioRun(
     retried.forEach(({ id }) =>
       dispatch({ type: 'takeRetried', id, startedAt })
     )
-    await runTakes(retried, startedFor)
+    const ready = await rewritten(retried, startedFor)
+    if (ready) await runTakes(ready, startedFor)
   }
 
   function cancel() {

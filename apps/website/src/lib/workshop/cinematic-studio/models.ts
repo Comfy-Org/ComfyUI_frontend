@@ -45,10 +45,7 @@ export interface CinematicModel {
   readonly firstFrameVideo?: CinematicVideoCapabilities
 }
 
-// GPT Image 2, 2.5 Flare and 2.5 Sunburst are left out until their Router
-// contracts are refreshed: the Router now takes `image` on the same call for
-// edits, but the pinned contracts have no image field, so here they could
-// only run without references.
+// GPT Image 2 / 2.5 are left out until the pinned contracts gain their `image` edit field.
 const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
   'byteplus--seedream-5-pro--generate-images': '/icons/ai-models/bytedance.svg',
   'vertexai--gemini-3-pro-image--generate-images':
@@ -197,9 +194,7 @@ const CINEMATIC_VIDEO_MODELS: Readonly<Record<string, VideoEntry>> = {
     logo: '/icons/ai-models/grok.svg',
     firstFrame: 'xai--grok-imagine-video-1.5--animate-images'
   }
-  // Kling 3.0 is left out until its Router route can start from an image:
-  // its image-to-video form has no first-frame field, so it could only run
-  // text-to-video here.
+  // Kling 3.0 is left out until its image-to-video route takes a first frame.
 }
 
 function firstFrameSupport(

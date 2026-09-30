@@ -1,16 +1,7 @@
-import { workshopContract } from '../../../config/workshop-contract-catalog'
-import type { WorkshopContract } from '../../../config/workshop-contract'
-
-/**
- * Enhance prompt, for real: one GPT 5.6 Luna call through the Router rewrites
- * the scene before the takes run. Only the scene is rewritten; the studio
- * still adds the shot, camera, look, reference and colour sentences itself,
- * so a rewrite can never drop a reference or a colour.
- */
+// Only the scene is rewritten: the studio still adds the direction, reference
+// and colour sentences itself, so a rewrite cannot drop them.
 export const ENHANCE_MODEL = 'openai/gpt-5.6-luna'
 
-// A still is one frozen instant; a clip needs something to happen. The two
-// ask for different things so the rewrite suits the model it feeds.
 const SHARED_RULES = [
   'Keep every person, object, place and action the user wrote, and keep their meaning.',
   'Do not name a camera, lens, focal length, film stock, lighting setup, colour grade, shot size or art style: the studio adds those separately.',
@@ -33,11 +24,6 @@ const INSTRUCTIONS = {
   ]
 } as const
 
-export function enhanceContract(): WorkshopContract | undefined {
-  return workshopContract(ENHANCE_MODEL)
-}
-
-/** The Responses API body for one rewrite. */
 export function enhanceRequest(
   scene: string,
   video: boolean
@@ -45,7 +31,6 @@ export function enhanceRequest(
   return {
     instructions: INSTRUCTIONS[video ? 'video' : 'image'].join(' '),
     input: scene.trim(),
-    // on a reasoning id the ceiling also covers the hidden reasoning tokens
     max_output_tokens: 1024,
     reasoning: { effort: 'low' }
   }
@@ -63,7 +48,6 @@ function parsed(document: string): unknown {
   }
 }
 
-/** The text parts of one output item; reasoning and tool items have none. */
 function messageTexts(item: unknown): string[] {
   if (!isRecord(item) || item.type !== 'message') return []
   if (!Array.isArray(item.content)) return []
@@ -81,14 +65,11 @@ function replyTexts(data: Record<string, unknown>): string[] {
   return Array.isArray(data.output) ? data.output.flatMap(messageTexts) : []
 }
 
-/**
- * The rewritten scene from an OpenAI Responses document, or undefined if it
- * carries none. The text sits at `output[].content[].text` on the message
- * items.
- */
+/** Undefined unless the response completed: a reply cut off at
+ * max_output_tokens (which reasoning shares) is left for the fallback. */
 export function enhancedScene(document: string): string | undefined {
   const data = parsed(document)
-  if (!isRecord(data)) return undefined
+  if (!isRecord(data) || data.status !== 'completed') return undefined
   const scene = replyTexts(data).join(' ').replace(/\s+/g, ' ').trim()
   return scene || undefined
 }

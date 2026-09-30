@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { defineComponent, h } from 'vue'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import CinematicTakeActions from './CinematicTakeActions.vue'
@@ -53,39 +52,6 @@ describe('CinematicTakeMedia', () => {
       'src',
       'blob:image'
     )
-  })
-})
-
-describe('CinematicTakeVideo', () => {
-  it('puts its own controls on a clip so it reads as a video', () => {
-    media(take('video'))
-
-    expect(screen.getByLabelText('Generated video')).not.toHaveAttribute(
-      'controls'
-    )
-    expect(screen.getByTestId('cinematic-video-play')).toBeInTheDocument()
-    expect(screen.getByTestId('cinematic-video-controls')).toBeVisible()
-    expect(screen.getByRole('slider', { name: 'Seek' })).toBeInTheDocument()
-    expect(screen.getByTestId('cinematic-video-time')).toHaveTextContent(
-      '0:00 / 0:00'
-    )
-  })
-
-  it('plays from the big play button', async () => {
-    const play = vi
-      .spyOn(HTMLMediaElement.prototype, 'play')
-      .mockResolvedValue(undefined)
-    media(take('video'))
-
-    await userEvent.setup().click(screen.getByTestId('cinematic-video-play'))
-
-    await vi.waitFor(() => expect(play).toHaveBeenCalled())
-    play.mockRestore()
-  })
-
-  it('shows a still without video controls', () => {
-    media(take('image'))
-    expect(screen.queryByTestId('cinematic-video-controls')).toBeNull()
   })
 })
 

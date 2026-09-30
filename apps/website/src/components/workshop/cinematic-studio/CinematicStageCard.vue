@@ -34,7 +34,6 @@ const {
   models: readonly CinematicModel[]
   memberWorkspace?: string
   canAnimate?: boolean
-  /** A still becomes a character reference only for another still. */
   canReference?: boolean
   locale?: Locale
 }>()
@@ -97,8 +96,6 @@ const siblings = computed(() =>
           :locale
           @retry="emit('retry', current.id)"
         >
-          <!-- The take's actions show on hover, as on the composer layout; a
-               clip's play bar sits at the bottom, so they move to the top. -->
           <div
             v-if="current.status === 'done'"
             data-testid="cinematic-take-overlay"
