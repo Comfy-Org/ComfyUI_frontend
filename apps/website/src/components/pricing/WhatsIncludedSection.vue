@@ -48,6 +48,10 @@ const features: IncludedFeature[] = [
     descriptionKey: 'pricing.included.feature8.description'
   },
   {
+    titleKey: 'pricing.included.feature12.title',
+    descriptionKey: 'pricing.included.feature12.description'
+  },
+  {
     titleKey: 'pricing.included.feature9.title',
     descriptionKey: 'pricing.included.feature9.description'
   },

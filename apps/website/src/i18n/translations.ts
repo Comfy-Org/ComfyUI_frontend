@@ -1932,9 +1932,9 @@ Enterprise`
     'zh-CN': '强大 GPU\n端到端安全内置'
   },
   'cloud.reason.1.description': {
-    en: 'Comfy Cloud works on any device. Pay only for running workflows, not idle time. With Comfy Cloud, you get security and infrastructure built-in with access to the most popular custom nodes.',
+    en: 'Comfy Cloud works on any device. Pay only for active usage, not idle time. With Comfy Cloud, you get security and infrastructure built-in with access to the most popular custom nodes.',
     'zh-CN':
-      'Comfy Cloud 可在任何设备上使用。只需为运行工作流付费，无需为闲置时间付费。使用 Comfy Cloud，您可获得内置的安全性和基础设施，并访问最流行的自定义节点。'
+      'Comfy Cloud 可在任何设备上使用。只需为实际使用付费，无需为闲置时间付费。使用 Comfy Cloud，您可获得内置的安全性和基础设施，并访问最流行的自定义节点。'
   },
   'cloud.reason.2.title': {
     en: 'All models. Commercial\nlicense guaranteed.',
@@ -2088,9 +2088,9 @@ Enterprise`
     'zh-CN': '简单的按积分计费'
   },
   'cloud.pricing.description': {
-    en: 'One balance for Cloud GPU time and Partner Node API models. Build and edit workflows for free — credits are consumed only when the GPU runs.',
+    en: 'One balance for Cloud GPU time, Partner Node API models, and Comfy Agent. Build and edit workflows yourself for free — credits are consumed only when a job runs or the agent works.',
     'zh-CN':
-      '一个余额即可使用云端 GPU 算力和合作伙伴节点 API 模型。免费构建和编辑工作流——仅在 GPU 运行时消耗积分。'
+      '一个余额即可使用云端 GPU 算力、合作伙伴节点 API 模型和 Comfy Agent。自己构建和编辑工作流完全免费——仅在任务运行或智能体工作时消耗积分。'
   },
   'cloud.pricing.tagline': {
     en: "Start free. Upgrade when you're ready.",
@@ -2495,18 +2495,18 @@ Enterprise`
     'zh-CN': '用量计费'
   },
   'pricing.included.feature3.description': {
-    en: "You're only charged for <strong>active GPU</strong> time while a workflow is running. Idle time (e.g. time spent building workflows) does not consume GPU hours.",
+    en: 'GPU time is charged only while a workflow is <strong>actually running</strong>. Idle time (e.g. time spent building workflows) does not consume GPU hours. Partner Nodes and Comfy Agent usage draw on the same credit balance at their own rates.',
     'zh-CN':
-      '仅在工作流运行期间按<strong>实际 GPU</strong> 使用时长计费。空闲时间（如构建工作流）不消耗 GPU 时长。'
+      '仅在工作流<strong>实际运行</strong>期间按 GPU 使用时长计费。空闲时间（如构建工作流）不消耗 GPU 时长。合作伙伴节点和 Comfy Agent 的使用则按各自的费率从同一积分余额中扣费。'
   },
   'pricing.included.feature4.title': {
     en: 'Credit balance',
     'zh-CN': '积分余额'
   },
   'pricing.included.feature4.description': {
-    en: 'All plans will include a monthly pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro.',
+    en: 'All plans will include a pool of credits that are spent on active workflow runtime, <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro, and <a href="/agent" class="text-primary-comfy-yellow underline">Comfy Agent</a> usage.',
     'zh-CN':
-      '所有计划均包含每月积分池，可用于工作流运行和<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）。'
+      '所有计划均包含积分池，可用于工作流运行、<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）以及 <a href="/zh-CN/agent" class="text-primary-comfy-yellow underline">Comfy Agent</a> 的使用。'
   },
   'pricing.included.feature5.title': {
     en: 'Add more credits anytime',
@@ -2567,6 +2567,15 @@ Enterprise`
   'pricing.included.feature11.description': {
     en: 'Run multiple workflows in parallel to speed up your pipeline.',
     'zh-CN': '并行运行多个工作流，加速你的流程。'
+  },
+  'pricing.included.feature12.title': {
+    en: 'Comfy Agent',
+    'zh-CN': 'Comfy Agent'
+  },
+  'pricing.included.feature12.description': {
+    en: '<a href="/agent" class="text-primary-comfy-yellow underline">Comfy Agent</a> plans, builds, runs, and reviews workflows alongside you on the canvas. It draws on the same pool of credits as the rest of your plan — there is no separate subscription to buy.',
+    'zh-CN':
+      '<a href="/zh-CN/agent" class="text-primary-comfy-yellow underline">Comfy Agent</a> 与你一同在画布上规划、构建、运行并检查工作流。它与计划内的其他用量共用同一积分池——无需单独订阅。'
   },
 
   'pricing.faq.heading': {
