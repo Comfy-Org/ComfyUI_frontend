@@ -198,7 +198,7 @@ export function useWorkflowActionsMenu(
       icon: 'icon-[comfy--send]',
       command: () =>
         openShareDialog().catch(useErrorHandling().toastErrorHandler),
-      visible: isCloud && flags.workflowSharingEnabled
+      visible: isCloud
     })
 
     addItem({

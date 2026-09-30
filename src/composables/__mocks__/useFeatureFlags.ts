@@ -22,7 +22,6 @@ const defaultFlags: FeatureFlags = {
   userSecretsEnabled: false,
   nodeReplacementsEnabled: false,
   nodeLibraryEssentialsEnabled: false,
-  workflowSharingEnabled: false,
   comfyHubUploadEnabled: false,
   comfyHubProfileGateEnabled: false,
   hostedBillingDestination: 'stripe',
