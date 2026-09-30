@@ -336,17 +336,11 @@ const turnStartedAt = new Map<TurnId, number>()
  * flight, consumed exactly once at ack.
  */
 interface SendInFlight {
-  generation: number
   owner: string | null
 }
 
-let sendGeneration = 0
 let sendInFlight: SendInFlight | null = null
 let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
-
-function ownsSendSlot(slot: SendInFlight): boolean {
-  return sendInFlight?.generation === slot.generation
-}
 
 function hasCurrentOwnerSend(): boolean {
   return sendInFlight?.owner === getStorageIdentity()
@@ -1230,7 +1224,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     const sendSlot = {
-      generation: ++sendGeneration,
       owner: getStorageIdentity()
     }
     sending.value = true
@@ -1246,7 +1239,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId
       )
     } finally {
-      if (ownsSendSlot(sendSlot)) {
+      if (sendInFlight === sendSlot) {
         sending.value = false
         sendInFlight = null
       }

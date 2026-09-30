@@ -465,7 +465,9 @@ describe('useAgentSession (v1 composition root)', () => {
           acknowledgements.push(resolve)
         })
     )
-    const cancelMessage = vi.fn().mockResolvedValue(undefined)
+    const cancelMessage = vi
+      .fn<AgentRestClient['cancelMessage']>()
+      .mockResolvedValue({ status: 'cancelling' })
     const session = useAgentSession({
       rest: fakeRest({ postMessage, cancelMessage }),
       events: fakeEvents().source
