@@ -767,11 +767,14 @@ export const useAgentConversationStore = defineStore(
      *
      * Demoted rather than merely skipped: the snapshot stays on screen when
      * its row id differs from the stash's, and a second live-looking row is
-     * exactly what the caller is hydrating to get rid of. It does still show:
-     * `resumeBackgroundTurn` keys the stash by row id and the snapshot by
-     * `turn_id`, so `removeHydratedCopy` cannot match the two and both render
-     * until the turn settles. That duplicate predates this guard, which only
-     * keeps the second row from also claiming to be live.
+     * exactly what the caller is hydrating to get rid of. No lookup at resume
+     * can pair the two, since the stash is keyed by row id and the snapshot
+     * by `turn_id`; `removeHydratedCopy`'s tail branch cannot either, because
+     * a snapshot's id is always in `hydratedAssistantTurnIds`. So the pairing
+     * is recorded here, at the one point ownership is established, as
+     * `demotedSnapshotByStash`. The resume
+     * reads it to drop the snapshot and seat the stash at that same index,
+     * leaving one row where a duplicate used to render until settlement.
      */
     function unstashedLiveTurn(
       transcript: NormalizedAgentTranscript
