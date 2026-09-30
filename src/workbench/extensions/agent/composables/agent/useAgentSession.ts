@@ -225,18 +225,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (
       !malformedStreamReports.has(turnId) &&
       malformedStreamReports.size >= 32
-    )
-      return false
+    ) {
+      const oldest = malformedStreamReports.keys().next().value
+      if (oldest !== undefined) malformedStreamReports.delete(oldest)
+    }
     malformedStreamReports.set(turnId, visible)
     reportError(new Error('Malformed agent stream event'), {
       errorType: 'agent_malformed_stream_event',
       tags: { ui_treatment: uiTreatment, event_type: eventType },
       context: {
-        issues: cause.issues.slice(0, 10).map(({ code, path, message }) => ({
-          code,
-          path,
-          message
-        }))
+        issue_count: cause.issues.length,
+        issue_codes: cause.issues.slice(0, 10).map(({ code }) => code)
       }
     })
     trackAgentError(
@@ -565,12 +564,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       text,
       `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
-    const turnAccepted = accepted || isUnreadableAckFailure(error)
-    const disowned =
-      error instanceof AgentApiError &&
-      error.status === 403 &&
-      zDisownedWorkflowError.safeParse(error.body).success
-    if (!disowned)
+    const turnAccepted = accepted
+    if (!disownsWorkflow(error))
       reportError(error, { errorType: 'agent_send_message_failed' })
     trackAgentError(
       'request_failed',
@@ -656,6 +651,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
         selectionWorkflowId
       )
       accepted = true
+      // Navigation invalidates the originating submission before advancing the
+      // generation. The server still accepted this turn, so reporting success
+      // prevents a future caller from offering a duplicate non-idempotent send.
       if (generation !== loadGeneration) return true
       acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
       return true
@@ -830,12 +828,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     turnId: TurnId | undefined
   ): AgentErrorMetadata['ui_treatment'] {
     if (type !== 'agent_message_done') return 'none'
-    if (turnId !== undefined && turnId !== conversationStore.activeTurnId) {
-      conversationStore.settleBackgroundTurn(turnId)
-      return 'none'
+    if (turnId === undefined || turnId === conversationStore.activeTurnId) {
+      conversationStore.abortActiveTurn()
+      return 'error_overlay'
     }
-    conversationStore.abortActiveTurn()
-    return 'error_overlay'
+    if (conversationStore.hasPendingTurn(turnId)) {
+      conversationStore.settleBackgroundTurn(turnId)
+    }
+    return 'none'
   }
 
   function handleMalformedEvent(

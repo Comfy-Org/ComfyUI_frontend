@@ -2784,17 +2784,11 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     const [error, options] = vi.mocked(reportError).mock.calls[0]
     expect((error as Error).message).toBe('Malformed agent stream event')
     expect(options.tags?.event_type).toBe('agent_message_done')
-    expect(options.context?.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: expect.any(String),
-          path: expect.any(Array),
-          message: expect.any(String)
-        })
-      ])
+    expect(options.context?.issue_count).toEqual(expect.any(Number))
+    expect(options.context?.issue_codes).toEqual(
+      expect.arrayContaining([expect.any(String)])
     )
-    for (const issue of (options.context?.issues ?? []) as object[])
-      expect(Object.keys(issue).sort()).toEqual(['code', 'message', 'path'])
+    expect(options.context).not.toHaveProperty('issues')
   })
 
   it('reports a rejected send to the unified error sinks', async () => {

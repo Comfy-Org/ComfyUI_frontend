@@ -384,11 +384,17 @@ export function createAgentRestClient() {
     if (req.draft !== undefined) body.draft = { content: req.draft.content }
     if (req.currentTabUnbound !== undefined)
       body.current_tab_unbound = req.currentTabUnbound
-    return request(
-      `/agent/threads/${encodeURIComponent(threadId)}/messages`,
-      jsonInit('POST', body),
-      zAgentTurnAccepted
-    )
+    try {
+      return await request(
+        `/agent/threads/${encodeURIComponent(threadId)}/messages`,
+        jsonInit('POST', body),
+        zAgentTurnAccepted
+      )
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError')
+        throw new AgentResponseUnreadableError(error)
+      throw error
+    }
   }
 
   async function getMessages(threadId: string): Promise<AgentMessages> {
