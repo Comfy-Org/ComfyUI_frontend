@@ -2365,6 +2365,8 @@ export const zBillingStatusResponse = z.object({
   plan_slug: z.string().optional(),
   renewal_date: z.string().datetime().optional(),
   scheduled_change: zScheduledPlanChange.nullable(),
+  scoped_effective_has_funds: z.record(z.boolean()).optional(),
+  scoped_has_funds: z.record(z.boolean()).optional(),
   subscription_duration: zSubscriptionDuration.optional(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
   subscription_tier: zSubscriptionTier.optional(),

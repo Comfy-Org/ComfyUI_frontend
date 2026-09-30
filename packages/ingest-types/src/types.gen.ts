@@ -3949,6 +3949,18 @@ export type BillingStatusResponse = {
    * The authoritative successor scheduled for the current Stripe subscription. Always present; null when no valid scheduled plan transition exists.
    */
   scheduled_change: ScheduledPlanChange | null
+  /**
+   * Per-product funds verdict, keyed by product name (currently only "agent" is populated): shared credits OR that product's own scoped balance. This is what decides whether the product still has funds to spend, so a gratis-only workspace correctly reads true even though has_funds (the shared-only verdict) is false. It is not the complete admission verdict — a funded workspace can still be denied for other reasons, e.g. manual_block — so treat it as necessary but not sufficient for gating funds-exhaustion UI. Defaults to agent: true when billing is disabled; omitted only by older servers.
+   */
+  scoped_effective_has_funds?: {
+    [key: string]: boolean
+  }
+  /**
+   * Per-product scoped balance state, keyed by product name (currently only "agent" is populated). True while that product's own dedicated balance remains; false once it is exhausted, regardless of shared credits, and also false if that product has never held a scoped balance of its own — both read the same way: no exclusive allowance to draw from right now. Use this to detect that, not to gate admission — use scoped_effective_has_funds for that. Defaults to agent: true when billing is disabled; omitted only by older servers.
+   */
+  scoped_has_funds?: {
+    [key: string]: boolean
+  }
   subscription_duration?: SubscriptionDuration
   /**
    * Subscription activity status (scheduled subscriptions are not returned)
