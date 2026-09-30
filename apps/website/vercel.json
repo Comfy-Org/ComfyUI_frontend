@@ -55,12 +55,12 @@
     {
       "source": "/hub",
       "destination": "/hub/models/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/hub/",
       "destination": "/hub/models/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/career",

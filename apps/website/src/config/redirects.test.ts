@@ -197,6 +197,8 @@ describe('generated Vercel rules', () => {
         )
         .map(({ source }) => source)
     ).toEqual([
+      '/hub',
+      '/hub/',
       '/trust',
       '/trust/',
       '/login',
@@ -242,7 +244,7 @@ describe('Astro redirects', () => {
     const aliasCount = models.filter((model) => model.canonicalSlug).length
     expect(Object.keys(astroRedirects)).toHaveLength(19 + aliasCount)
     expect(astroRedirects['/hub']).toEqual({
-      status: 308,
+      status: 307,
       destination: '/hub/models/'
     })
     expect(astroRedirects['/minimax']).toEqual({

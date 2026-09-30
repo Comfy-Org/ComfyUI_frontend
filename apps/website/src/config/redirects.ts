@@ -69,7 +69,11 @@ const hubModelRedirects: readonly SiteRedirect[] = [
  * two drift, so edit this list and never `vercel.json` by hand.
  */
 export const siteRedirects: readonly SiteRedirect[] = [
-  { source: '/hub', destination: `${HUB_MODELS_PATH}/` },
+  {
+    source: '/hub',
+    destination: `${HUB_MODELS_PATH}/`,
+    temporaryBecause: 'the default Hub catalogue can change'
+  },
   { source: '/career', destination: '/careers/' },
   { source: '/privacy', destination: '/privacy-policy/' },
   { source: '/press', destination: '/about/' },
