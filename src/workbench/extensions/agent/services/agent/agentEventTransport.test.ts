@@ -19,9 +19,7 @@ import type {
 } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const fixtureText = import.meta.glob(
   '../../schemas/__fixtures__/agent/*.jsonl',
@@ -478,7 +476,7 @@ describe('agentEventTransport text and tool parts', () => {
             id: 'audit-row-uuid-1',
             tool_call_id: 'call-1',
             tool_name: 'run',
-            status: 'running'
+            status: 'error'
           }
         ]
       }

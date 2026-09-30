@@ -10,12 +10,11 @@ import {
 
 describe('starter prompt identity', () => {
   it('has one id per prompt the empty state renders', () => {
-    // If this fails, a prompt was added to or removed from
-    // `agent.suggestedPrompts` and `STARTER_PROMPT_IDS` needs the same change in
-    // the same position. Until it gets one the extra chip reports
-    // `unregistered`, which is readable but not comparable.
     expect(STARTER_PROMPT_IDS).toHaveLength(
-      enMain.agent.suggestedPrompts.length
+      enMain.agent.suggestedPrompts.cloud.length
+    )
+    expect(STARTER_PROMPT_IDS).toHaveLength(
+      enMain.agent.suggestedPrompts.local.length
     )
   })
 
@@ -62,7 +61,7 @@ describe('starter prompt identity', () => {
     expect(
       starterPromptAttribution('Explain the selected node', 3, 5, 'zh')
     ).toEqual({
-      promptId: 'explain_selected_node',
+      promptId: 'slot_4',
       promptIndex: 3,
       promptCount: 5,
       promptTextHash: '3849a858',

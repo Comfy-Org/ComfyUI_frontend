@@ -19,9 +19,7 @@ import DockedAgentPanel from './DockedAgentPanel.vue'
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 const billingContext = useBillingContext()
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
@@ -124,6 +122,7 @@ describe('DockedAgentPanel', () => {
 
     await vi.waitFor(() =>
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
         errorType: 'agent_run_mode_load_failure'
       })
     )

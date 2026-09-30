@@ -27,7 +27,7 @@ describe('ModelsApiHero', () => {
     })
     expect(browseModels.length).toBeGreaterThan(0)
     for (const link of browseModels)
-      expect(link.getAttribute('href')).toBe('/models')
+      expect(link.getAttribute('href')).toBe('/hub/models/')
   })
 
   it('sends the get-key link as a Router onboarding arrival', () => {

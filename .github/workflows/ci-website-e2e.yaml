@@ -55,7 +55,7 @@ jobs:
           # Un-hides the mobile download email form so e2e can exercise it;
           # requests are intercepted in the specs, the key is never contacted.
           PUBLIC_CUSTOMERIO_WRITE_KEY: test-e2e-write-key
-        run: pnpm --filter @comfyorg/website build
+        run: pnpm --filter @comfyorg/website build:e2e
 
       - name: Upload built website
         uses: actions/upload-artifact@v6
@@ -70,7 +70,7 @@ jobs:
     needs: website-build
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.61.1-noble
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
     timeout-minutes: 30
     permissions:
       contents: read

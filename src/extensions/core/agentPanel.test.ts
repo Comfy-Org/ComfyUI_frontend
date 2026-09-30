@@ -73,9 +73,7 @@ function beginFirstRunScreenHandoff(): void {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock(
@@ -294,6 +292,12 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     expect(agentStore.isVisible).toBe(true)
+    if (user)
+      expect(await offerExited()).toHaveBeenCalledWith({
+        exit: 'activation_opened_panel',
+        stage: 'offer',
+        retry_armed: false
+      })
   })
 
   it('waits for the general onboarding decision before activation', async () => {

@@ -39,7 +39,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         </div>
         <div>
           <BrandButton
-            :href="locale === 'zh-CN' ? '/zh-CN/careers' : '/careers'"
+            :href="locale === 'zh-CN' ? '/zh-CN/careers/' : '/careers/'"
             variant="solid"
             size="lg"
             class="mt-8 self-start"

@@ -1,14 +1,25 @@
 <script setup lang="ts">
-import { onMounted, useTemplateRef } from 'vue'
+import { computed, onMounted, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { InlineOutcome } from '@/checkout/checkoutPage'
+import { useHostedCopy } from '@/composables/useHostedCopy'
 
 const { outcome } = defineProps<{
   outcome: Exclude<InlineOutcome, { kind: 'reconciling' }>
 }>()
 
 const { t } = useI18n()
+const { refusal } = useHostedCopy()
+
+/** A Pay the server refused outright is worded by its code, or by the sentence the server wrote. */
+const body = computed(() => {
+  if (outcome.kind === 'processing_error' && 'code' in outcome)
+    return refusal(outcome)
+  return t(`checkout.fullPage.outcome.${outcome.kind}.body`, {
+    code: outcome.kind === 'promo_expired' ? outcome.code : ''
+  })
+})
 
 const card = useTemplateRef<HTMLDivElement>('card')
 
@@ -35,11 +46,7 @@ onMounted(() => {
       {{ t(`checkout.fullPage.outcome.${outcome.kind}.title`) }}
     </p>
     <p class="m-0 text-sm/5 text-muted-foreground">
-      {{
-        t(`checkout.fullPage.outcome.${outcome.kind}.body`, {
-          code: outcome.kind === 'promo_expired' ? outcome.code : ''
-        })
-      }}
+      {{ body }}
     </p>
     <p
       v-if="outcome.kind === 'declined' && outcome.reason"

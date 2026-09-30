@@ -120,6 +120,7 @@ export function useAgentConsent() {
         // what separates giving up after a failed save from walking away.
         saveErrorShown = true
         reportError(error, {
+          surface: 'agent',
           errorType: 'agent_consent_setting_write_failure'
         })
         dialogStore.updateDialog({
@@ -237,6 +238,7 @@ export function useAgentConsent() {
       if (!(await dialogService.showSignInDialog())) return null
     } catch (error) {
       reportError(error, {
+        surface: 'agent',
         errorType: 'agent_consent_sign_in_failure'
       })
       toastStore.add({
@@ -267,6 +269,7 @@ export function useAgentConsent() {
       return decisionIdentity
     } catch (error) {
       reportError(error, {
+        surface: 'agent',
         errorType: 'agent_consent_setting_write_failure'
       })
       toastStore.add({
@@ -303,6 +306,7 @@ export function useAgentConsent() {
         trigger
       )
       reportError(error, {
+        surface: 'agent',
         errorType: 'agent_consent_setting_load_failure'
       })
       toastStore.add({

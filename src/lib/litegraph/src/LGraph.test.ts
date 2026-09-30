@@ -933,6 +933,7 @@ describe('Store-driven serialization parity', () => {
         message: 'Graph serialization state mismatch'
       }),
       {
+        surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
         context: {
           graphId: graph.id,

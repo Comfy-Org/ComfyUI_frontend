@@ -12,9 +12,7 @@ import {
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
@@ -284,11 +282,13 @@ describe('doc frame client', () => {
     expect(listener).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledTimes(2)
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_crdt_invalid_server_frame',
       tags: { frame_type: 'doc_update' },
       level: 'warning'
     })
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_crdt_invalid_server_frame',
       tags: { frame_type: 'awareness' },
       level: 'warning'

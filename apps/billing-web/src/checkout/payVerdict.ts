@@ -16,8 +16,8 @@ const STALE_QUOTE_SERVER_CODES = ['PRORATION_QUOTE_EXPIRED'] as const
 
 /**
  * What a Pay's result asks of the page. `settled` needs nothing from
- * capture; `requote` prices the plan again first; `failure` is a coded
- * refusal the page states in a line of its own.
+ * capture; `requote` prices the plan again first; `outcome` is the card
+ * above Pay, a coded refusal included.
  */
 export type PayVerdict =
   | { readonly kind: 'settled' }
@@ -26,7 +26,6 @@ export type PayVerdict =
       readonly kind: 'requote'
       readonly because: 'quote_expired' | 'reactivation_required'
     }
-  | { readonly kind: 'failure'; readonly code: string }
 
 export function payVerdictOf(result: SubscriptionCommandResult): PayVerdict {
   if (result.status === 'error') {
@@ -44,7 +43,16 @@ export function payVerdictOf(result: SubscriptionCommandResult): PayVerdict {
       case 'CONFLICT':
         return { kind: 'outcome', outcome: { kind: 'reconciling' } }
       default:
-        return { kind: 'failure', code: result.code }
+        return {
+          kind: 'outcome',
+          outcome: {
+            kind: 'processing_error',
+            code: result.code,
+            ...('serverMessage' in result && result.serverMessage !== undefined
+              ? { serverMessage: result.serverMessage }
+              : {})
+          }
+        }
     }
   }
   const { operation } = result.value
@@ -90,10 +98,11 @@ export function operationOutcomeOf(
   }
 }
 
-/** Declines that mean the customer never finished authenticating, not a refused card. */
-const UNAUTHENTICATED_REASONS: ReadonlySet<PaymentReasonKey> = new Set([
+/** Declines that mean the customer never finished paying, not a refused card. */
+const NOT_COMPLETED_REASONS: ReadonlySet<PaymentReasonKey> = new Set([
   'authentication_failed',
-  'authentication_required'
+  'authentication_required',
+  'payment_not_completed'
 ])
 
 /**
@@ -103,18 +112,21 @@ const UNAUTHENTICATED_REASONS: ReadonlySet<PaymentReasonKey> = new Set([
  */
 function isNotCompleted(projection: PaymentProjection): boolean {
   const { reasonKey } = projection
-  if (reasonKey !== undefined && UNAUTHENTICATED_REASONS.has(reasonKey))
+  if (reasonKey !== undefined && NOT_COMPLETED_REASONS.has(reasonKey))
     return true
   return reasonKey === 'generic' && projection.recoveryAction === 'retry'
 }
 
 const SUPPORT_ADDRESS = 'support@comfy.org'
 
-/** A mail to support that already names the operation and the decline code. */
+/** A mail to support that already names the operation, the decline code, or the refusal's code. */
 export function supportLinkFor(outcome: InlineOutcome): string {
   const facts = [
     'operationId' in outcome && outcome.operationId !== undefined
       ? `Operation: ${outcome.operationId}`
+      : undefined,
+    'code' in outcome && outcome.kind === 'processing_error'
+      ? `Error code: ${outcome.code}`
       : undefined,
     'reason' in outcome && outcome.reason !== undefined
       ? `Decline code: ${outcome.reason}`

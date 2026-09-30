@@ -159,14 +159,6 @@ test(
 
     const topbar = new Topbar(page)
     await expect(topbar.getActiveTab()).toContainText('Unsaved Workflow')
-    await page.evaluate(async (path) => {
-      const store = (window.app!.extensionManager as WorkspaceStore).workflow
-      await store.syncWorkflows()
-      const portrait = store.getWorkflowByPath(path)
-      if (!portrait) throw new Error('Portrait workflow was not indexed')
-      await store.openWorkflow(portrait)
-    }, PORTRAIT_PATH)
-    await expect(topbar.getActiveTab()).toContainText('Portrait')
     expect(
       await page.evaluate(
         ([key, workflowId]) => {
@@ -178,6 +170,14 @@ test(
         [BINDING_KEY, TARGET_ID] as const
       )
     ).toBe(PORTRAIT_PATH)
+    await page.evaluate(async (path) => {
+      const store = (window.app!.extensionManager as WorkspaceStore).workflow
+      await store.syncWorkflows()
+      const portrait = store.getWorkflowByPath(path)
+      if (!portrait) throw new Error('Portrait workflow was not indexed')
+      await store.openWorkflow(portrait)
+    }, PORTRAIT_PATH)
+    await expect(topbar.getActiveTab()).toContainText('Portrait')
 
     const panel = await new AgentPanel(page).open()
     await expect(panel.getByTestId('user-message-bubble')).toHaveText([

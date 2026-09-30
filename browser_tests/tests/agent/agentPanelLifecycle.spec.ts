@@ -120,7 +120,7 @@ test.describe(
         page
       }) => {
         const agentPanel = new AgentPanel(page)
-        await agentPanel.openButton.evaluate<void, HTMLElement>((button) => {
+        await agentPanel.openButton.evaluate((button: HTMLElement) => {
           button.dataset.testClickCount = '0'
           button.addEventListener(
             'click',
@@ -172,7 +172,7 @@ test.describe(
         page
       }) => {
         const agentPanel = new AgentPanel(page)
-        await agentPanel.openButton.evaluate<void, HTMLElement>((button) => {
+        await agentPanel.openButton.evaluate((button: HTMLElement) => {
           button.dataset.testClickCount = '0'
           button.dataset.testActivationClickCount = '0'
           button.addEventListener('click', (event) => {
