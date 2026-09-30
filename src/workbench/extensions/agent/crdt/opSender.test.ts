@@ -704,6 +704,35 @@ describe('createOpSender', () => {
     expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
   })
 
+  it('never settles a batch with a result whose ops it does not own', () => {
+    const anonymousFailure = () =>
+      resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    // A leaves two sends on the wire and settles on the first answer, so the
+    // second is still owed to it.
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    anonymousFailure()
+
+    // A's second answer arrives while B holds the slot. It is A's, not B's.
+    sender.enqueue([addNode(2)])
+    anonymousFailure()
+
+    // B likewise settles on its resend's answer, still owed one.
+    vi.advanceTimersByTime(10_000)
+    anonymousFailure()
+
+    // B's second answer must not be read as C's.
+    sender.enqueue([addNode(3)])
+    anonymousFailure()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+    expect(sender.pending()).toBe(1)
+  })
+
   describe('suspension', () => {
     function parkSecondBatch(): string {
       sender.enqueue([addNode(1)])
