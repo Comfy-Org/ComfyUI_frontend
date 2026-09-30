@@ -184,6 +184,21 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     })
   }
 
+  function guardedSettlementNotifier(
+    errorType: string
+  ): (outcome: BatchOutcome) => void {
+    let reportedFailure = false
+    return (outcome) => {
+      try {
+        deps.onBatchSettled(outcome)
+      } catch (cause) {
+        if (reportedFailure) return
+        reportedFailure = true
+        reportSettleFailure(cause, errorType)
+      }
+    }
+  }
+
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
     inFlight = null
@@ -409,28 +424,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     abortAll() {
       lastMintedVersion = -1
       lastMintedWorkflowId = null
-      drainOutstanding((outcome) => {
-        try {
-          deps.onBatchSettled(outcome)
-        } catch (cause) {
-          reportSettleFailure(cause, 'failure_settling_agent_op_sender_abort')
-        }
-      })
+      drainOutstanding(
+        guardedSettlementNotifier('failure_settling_agent_op_sender_abort')
+      )
     },
     detach() {
       if (detached) return
       detached = true
       try {
-        drainOutstanding((outcome) => {
-          try {
-            deps.onBatchSettled(outcome)
-          } catch (cause) {
-            reportSettleFailure(
-              cause,
-              'failure_settling_agent_op_sender_detach'
-            )
-          }
-        })
+        drainOutstanding(
+          guardedSettlementNotifier('failure_settling_agent_op_sender_detach')
+        )
       } finally {
         unsubscribe()
       }

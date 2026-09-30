@@ -665,6 +665,29 @@ describe('createOpSender', () => {
     }
   )
 
+  it('reports a systematically failing detach listener only once', () => {
+    const localUnsubscribe = vi.fn()
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => localUnsubscribe,
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        throw new Error('listener boom')
+      }
+    })
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+    localSender.admit([addNode(3)])
+
+    localSender.detach()
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(localUnsubscribe).toHaveBeenCalledOnce()
+  })
+
   it('abortAll settles the transmitted batch and every queued batch in mint order', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])
