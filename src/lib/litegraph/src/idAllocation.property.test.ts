@@ -1,5 +1,5 @@
 import * as fc from 'fast-check'
-import { describe, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   AGENT_RESERVED_BIT,
@@ -156,15 +156,17 @@ describe("mintNodeId's 'crdt-disjoint' mode never collides with a simulated agen
   })
 
   it('never repeats an id across a run of local crdt-disjoint mints', () => {
-    fc.assert(
-      fc.property(fc.integer({ min: 2, max: 50 }), (mintCount) => {
-        const frontend = createLGraphState()
-        const ids = Array.from({ length: mintCount }, () =>
-          BigInt(mintNodeId(frontend, 'crdt-disjoint', new Set()))
-        )
-
-        return new Set(ids).size === ids.length
-      })
+    const frontend = createLGraphState()
+    vi.spyOn(Math, 'random').mockReturnValue(0.25)
+    const first = mintNodeId(frontend, 'crdt-disjoint', new Set())
+    const second = mintNodeId(
+      frontend,
+      'crdt-disjoint',
+      new Set([Number(first)])
     )
+
+    expect(second).not.toBe(first)
+    expect(BigInt(second) & AGENT_RESERVED_BIT).toBe(0n)
+    expect(BigInt(second) & CRDT_DISJOINT_FLOOR).not.toBe(0n)
   })
 })

@@ -194,7 +194,6 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Sparse clipboard widget values keep their original indices', async ({
     comfyPage
   }) => {
-    // Regression: https://github.com/Comfy-Org/ComfyUI_frontend/pull/19239#discussion_r4123007404
     const originalNodes = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
     const originalIds = new Set(originalNodes.map(({ id }) => id))
 

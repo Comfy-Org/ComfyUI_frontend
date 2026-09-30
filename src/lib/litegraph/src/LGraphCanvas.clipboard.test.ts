@@ -309,6 +309,58 @@ describe('clipboard ID allocation', () => {
     expect(rootGraph.links.size).toBe(0)
     expect(rootGraph.reroutes.size).toBe(0)
   })
+
+  it('retains the paste failure when change finalization also fails', () => {
+    const nodeType = 'test/clipboard-operation-and-finalization-fail'
+    const operationError = new Error('node configure failed')
+    const finalizationError = new Error('after change failed')
+    class ThrowingConfigureNode extends LGraphNode {
+      override configure(): void {
+        throw operationError
+      }
+    }
+    LiteGraph.registerNodeType(nodeType, ThrowingConfigureNode)
+    const rootGraph = new LGraph()
+    rootGraph.onAfterChange = () => {
+      throw finalizationError
+    }
+    const canvas = createCanvas(rootGraph)
+
+    let thrown: unknown
+    try {
+      canvas._deserializeItems(
+        { nodes: [createSerialisedNode(1, nodeType)] },
+        {}
+      )
+    } catch (error) {
+      thrown = error
+    }
+
+    expect(thrown).toBeInstanceOf(AggregateError)
+    if (!(thrown instanceof AggregateError)) return
+    expect(thrown.cause).toBe(operationError)
+    expect(thrown.errors).toEqual([operationError, finalizationError])
+    expect(rootGraph.nodes).toEqual([])
+  })
+
+  it('rolls back a successful paste when change finalization fails', () => {
+    const nodeType = 'test/clipboard-finalization-fail'
+    LiteGraph.registerNodeType(nodeType, LGraphNode)
+    const rootGraph = new LGraph()
+    const finalizationError = new Error('after change failed')
+    rootGraph.onAfterChange = () => {
+      throw finalizationError
+    }
+    const canvas = createCanvas(rootGraph)
+
+    expect(() =>
+      canvas._deserializeItems(
+        { nodes: [createSerialisedNode(1, nodeType)] },
+        {}
+      )
+    ).toThrow(finalizationError)
+    expect(rootGraph.nodes).toEqual([])
+  })
 })
 
 function createClipboardSubgraph(id: string): ExportedSubgraph {

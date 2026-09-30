@@ -26,10 +26,7 @@ export interface ReservedIdIndex {
   collect(): ReadonlySet<number>
 }
 
-type ReservedIds =
-  | ReadonlySet<number>
-  | (() => ReadonlySet<number>)
-  | ReservedIdIndex
+type ReservedIds = ReadonlySet<number> | ReservedIdIndex
 
 export function createLGraphState(): LGraphState {
   return {
@@ -127,20 +124,11 @@ export function findNextAvailableId(
 }
 
 function mintSequentialId(lastId: number, reservedIds: ReservedIds): number {
-  const hasReservedId = (id: number) =>
-    typeof reservedIds === 'function'
-      ? reservedIds().has(id)
-      : reservedIds.has(id)
   if (Number.isSafeInteger(lastId) && lastId >= 0) {
     const nextId = lastId + 1
-    if (Number.isSafeInteger(nextId) && !hasReservedId(nextId)) return nextId
+    if (Number.isSafeInteger(nextId) && !reservedIds.has(nextId)) return nextId
   }
-  const usedIds =
-    typeof reservedIds === 'function'
-      ? reservedIds()
-      : 'collect' in reservedIds
-        ? reservedIds.collect()
-        : reservedIds
+  const usedIds = 'collect' in reservedIds ? reservedIds.collect() : reservedIds
   return findNextAvailableId(usedIds, lastId + 1)
 }
 
@@ -173,9 +161,14 @@ export const AGENT_RESERVED_BIT = 1n << 40n
 export const CRDT_DISJOINT_FLOOR = 1n << 41n
 const CRDT_RANDOM_BIT_COUNT = 52
 
-function mintCrdtDisjointNodeId(): NodeId {
+function mintCrdtDisjointNodeId(reservedIds: ReservedIds): NodeId {
   const random = BigInt(Math.floor(Math.random() * 2 ** CRDT_RANDOM_BIT_COUNT))
-  const id = (random & ~AGENT_RESERVED_BIT) | CRDT_DISJOINT_FLOOR
+  let id = (random & ~AGENT_RESERVED_BIT) | CRDT_DISJOINT_FLOOR
+  const partitionStart = id & ~((1n << 40n) - 1n)
+  while (reservedIds.has(Number(id))) {
+    const lowBits = (id + 1n) & ((1n << 40n) - 1n)
+    id = partitionStart | lowBits
+  }
   return toNodeId(Number(id))
 }
 
@@ -255,7 +248,7 @@ export function mintNodeId(
   mode: NodeIdMintMode,
   reservedIds: ReservedIds
 ): NodeId {
-  if (mode === 'crdt-disjoint') return mintCrdtDisjointNodeId()
+  if (mode === 'crdt-disjoint') return mintCrdtDisjointNodeId(reservedIds)
   const id = mintSequentialId(state.lastNodeId, reservedIds)
   state.lastNodeId = id
   return toNodeId(id)

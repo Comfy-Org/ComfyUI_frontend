@@ -17,6 +17,7 @@ import {
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import {
   applyCanvasSelection,
   clearGraphSelection,
@@ -4289,10 +4290,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.emitBeforeChange()
 
     let result: ClipboardPasteResult | undefined
+    let operationError: unknown
     try {
       const items = initializeClipboardItems(clipboardItems)
       const [offsetX, offsetY] = clipboardOffset(items)
-      result = createClipboardPasteResult()
+      result = {
+        created: [],
+        links: new Map(),
+        nodes: new Map(),
+        reroutes: new Map(),
+        subgraphs: new Map()
+      }
       const context: ClipboardPasteContext = {
         connectInputs,
         dx: position[0] - offsetX,
@@ -4345,15 +4353,42 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.selectItems(result.created)
       forEachNode(graph, (n) => n.onGraphConfigured?.())
       forEachNode(graph, (n) => n.onAfterGraphConfigured?.())
-
-      return result
     } catch (error) {
+      operationError = error
       if (result) rollbackClipboardPaste(graph, result)
-      throw error
-    } finally {
-      graph.afterChange()
-      this.emitAfterChange()
     }
+
+    const closingErrors: unknown[] = []
+    try {
+      graph.afterChange()
+    } catch (error) {
+      closingErrors.push(error)
+    }
+    try {
+      this.emitAfterChange()
+    } catch (error) {
+      closingErrors.push(error)
+    }
+
+    if (!operationError && closingErrors.length && result) {
+      rollbackClipboardPaste(graph, result)
+    }
+    if (operationError && closingErrors.length) {
+      const combinedError = new AggregateError(
+        [operationError, ...closingErrors],
+        'Clipboard paste and change finalization both failed'
+      )
+      combinedError.cause = operationError
+      throw combinedError
+    }
+    if (operationError) throw operationError
+    if (closingErrors.length === 1) throw closingErrors[0]
+    if (closingErrors.length)
+      throw new AggregateError(
+        closingErrors,
+        'Clipboard paste change finalization failed'
+      )
+    return result
   }
 
   pasteFromClipboard(options: IPasteFromClipboardOptions = {}): void {
@@ -8854,16 +8889,6 @@ function clipboardOffset(items: InitializedClipboardItems): Point {
   return [x, y]
 }
 
-function createClipboardPasteResult(): ClipboardPasteResult {
-  return {
-    created: [],
-    links: new Map(),
-    nodes: new Map(),
-    reroutes: new Map(),
-    subgraphs: new Map()
-  }
-}
-
 function rollbackClipboardPaste(
   graph: LGraph,
   result: ClipboardPasteResult
@@ -8876,7 +8901,9 @@ function rollbackClipboardPaste(
         graph.removeReroute(item.id)
       }
     } catch (error) {
-      console.error('Failed to fully roll back a pasted canvas item', error)
+      reportError(error, {
+        errorType: 'failure_rolling_back_clipboard_item'
+      })
     }
   }
 
@@ -8886,7 +8913,9 @@ function rollbackClipboardPaste(
   try {
     graph.releaseSubgraphs(registeredSubgraphs)
   } catch (error) {
-    console.error('Failed to fully roll back pasted subgraphs', error)
+    reportError(error, {
+      errorType: 'failure_rolling_back_clipboard_subgraphs'
+    })
   }
 }
 

@@ -2160,7 +2160,7 @@ export class LGraph
   ): Subgraph[] {
     if (!data.length) return []
 
-    const nodeIds = this.collectReservedNodeIds()
+    const nodeIds = collectReservedNodeIds(this.rootGraph)
     for (const id of reserved.nodeIds ?? []) nodeIds.add(id)
     const linkIds = collectReservedLinkIds(this.rootGraph)
     for (const id of reserved.linkIds ?? []) linkIds.add(id)
@@ -2175,20 +2175,6 @@ export class LGraph
       this.state
     ).subgraphs
     return this.createNormalizedSubgraphs(normalized)
-  }
-
-  private collectReservedNodeIds(
-    rootNodes: ISerialisedNode[] = []
-  ): Set<NodeId> {
-    const reserved = new Set<NodeId>()
-    for (const owner of [
-      this.rootGraph,
-      ...this.rootGraph.subgraphs.values()
-    ]) {
-      for (const node of owner.nodes) reserved.add(node.id)
-    }
-    for (const node of rootNodes) reserved.add(toNodeId(node.id))
-    return reserved
   }
 
   private createNormalizedSubgraphs(data: ExportedSubgraph[]): Subgraph[] {
@@ -3258,7 +3244,7 @@ export class LGraph
             ? normalizeSubgraphDefinitions(
                 subgraphs,
                 {
-                  nodeIds: this.collectReservedNodeIds(nodesData),
+                  nodeIds: collectReservedNodeIds(this.rootGraph, nodesData),
                   groupIds: collectReservedGroupIds(this, data.groups),
                   linkIds: collectReservedLinkIds(this, data.floatingLinks),
                   rerouteIds: collectReservedRerouteIds(this)

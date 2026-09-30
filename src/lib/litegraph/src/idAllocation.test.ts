@@ -186,22 +186,6 @@ describe('idAllocation', () => {
     expect(mintGroupId(state, new Set([2]))).toBe(3)
   })
 
-  it('checks thunk reservations before taking the fast path', () => {
-    const state = createLGraphState()
-    let collections = 0
-    const collectReservedIds = () => {
-      collections++
-      return new Set([1])
-    }
-
-    expect(mintGroupId(state, collectReservedIds)).toBe(2)
-    expect(collections).toBe(2)
-
-    state.lastGroupId = Number.MAX_SAFE_INTEGER
-    expect(mintGroupId(state, collectReservedIds)).toBe(2)
-    expect(collections).toBe(3)
-  })
-
   it('checks an indexed reservation without collecting on the fast path', () => {
     const state = createLGraphState()
     state.lastGroupId = 1

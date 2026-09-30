@@ -428,14 +428,22 @@ describe('zClipboardItems', () => {
     expect(values?.[2]).toBe('third')
   })
 
-  it('rejects an impractically large sparse widget values length', () => {
-    const node = {
-      ...structuredClone(defaultGraph.nodes[0]),
-      widgets_values: { 0: 'first', length: 10_001 }
-    }
+  test.for([
+    { length: 10_000, accepted: true },
+    { length: 10_001, accepted: false }
+  ])(
+    'accepts sparse widget lengths through the exact limit: $length',
+    ({ length, accepted }) => {
+      const node = {
+        ...structuredClone(defaultGraph.nodes[0]),
+        widgets_values: { 0: 'first', length }
+      }
 
-    expect(zClipboardItems.safeParse({ nodes: [node] }).success).toBe(false)
-  })
+      expect(zClipboardItems.safeParse({ nodes: [node] }).success).toBe(
+        accepted
+      )
+    }
+  )
 
   it('preserves named-record widget values as named values', () => {
     const node = {

@@ -108,25 +108,6 @@ export class SubgraphInput extends SubgraphSlot {
     }
     subgraph._addLink(link)
 
-    return this.finishConnection(
-      link,
-      existingLink,
-      slot,
-      node,
-      inputIndex,
-      inputWidget
-    )
-  }
-
-  private finishConnection(
-    link: LLink,
-    existingLink: LLink | undefined,
-    slot: INodeInputSlot,
-    node: LGraphNode,
-    inputIndex: number,
-    inputWidget: IBaseWidget | undefined
-  ): LLink | undefined {
-    const { subgraph } = this.parent
     try {
       if (existingLink) {
         this.parent._disconnectNodeInput(node, slot, existingLink)

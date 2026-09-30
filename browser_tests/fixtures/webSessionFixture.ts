@@ -94,6 +94,10 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
 
     await context.addCookies([{ ...WEB_SESSION_COOKIE, url: APP_URL }])
 
-    await use(page)
+    try {
+      await use(page)
+    } finally {
+      await page.unrouteAll({ behavior: 'ignoreErrors' })
+    }
   }
 })
