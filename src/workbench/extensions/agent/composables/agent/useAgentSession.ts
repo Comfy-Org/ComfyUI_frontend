@@ -535,13 +535,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * permanently running. Idempotent, so the success path and the `finally`
    * can both call it.
    *
-   * Delivery is best-effort within explicit bounds, not guaranteed. A thread
-   * captures for `HYDRATION_HANDOFF_MS` from the moment its hydrate is armed;
-   * past that the queue becomes a mailbox a later hydrate of the same thread
-   * can still claim, for `HYDRATION_MAILBOX_MS` and only while it is among the
-   * newest `MAX_HYDRATION_MAILBOXES` threads. A queue holds `MAX_HYDRATION_EVENTS`
-   * frames, evicting non-terminal ones first so an `agent_message_done` --
-   * the frame whose loss strands a turn -- outlives the deltas around it.
+   * Delivery is best-effort, and of its bounds only the per-queue one always
+   * holds. A thread captures for `HYDRATION_HANDOFF_MS` from the moment its
+   * hydrate is armed; past that the queue becomes a mailbox a later hydrate
+   * of the same thread can still claim. That mailbox expires after
+   * `HYDRATION_MAILBOX_MS` and gives way once it is no longer among the
+   * newest `MAX_HYDRATION_MAILBOXES` threads -- but both are suspended while
+   * its own GET is outstanding (see `pending`), so an unsettled hydrate keeps
+   * its mailbox past either, and settling is what reimposes them. A queue
+   * holds `MAX_HYDRATION_EVENTS` frames throughout, evicting non-terminal
+   * ones first so an `agent_message_done` -- the frame whose loss strands a
+   * turn -- outlives the deltas around it.
    *
    * Only ever deletes its own registration: a superseded hydrate draining
    * late would otherwise unregister the buffer that replaced it, leaving the

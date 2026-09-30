@@ -816,6 +816,67 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('(b4q) drops a stopped expired mailbox once its own hydrate settles', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      let deliverFirst: ((history: AgentMessages) => void) | undefined
+      const first = fakeRest({
+        getMessages: vi.fn(
+          () =>
+            new Promise<AgentMessages>((resolve) => {
+              deliverFirst = resolve
+            })
+        )
+      })
+      const { source, emit } = fakeEvents()
+      conversation.setThreadId('th-1')
+      const stopping = useAgentSession({ rest: first, events: source })
+      stopping.start()
+      await vi.waitFor(() => expect(first.getMessages).toHaveBeenCalledOnce())
+
+      // Into the mailbox, holding a terminal frame, then past the TTL that
+      // its own pending GET makes it skip -- so settling is the only thing
+      // left that can unregister it.
+      await vi.advanceTimersByTimeAsync(30_001)
+      emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
+      stopping.stop()
+      assert(deliverFirst !== undefined)
+      deliverFirst([])
+      await vi.advanceTimersByTimeAsync(0)
+
+      // A successor adopts whatever registration it finds for the thread, so
+      // a mailbox left behind replays that stale `done` over the live turn
+      // this hydrate restores.
+      const second = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'turn-1', 'go'),
+            {
+              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+              content: {},
+              status: 'streaming'
+            }
+          ]
+        )
+      })
+      conversation.setThreadId('th-1')
+      const successor = useAgentSession({
+        rest: second,
+        events: fakeEvents().source
+      })
+      successor.start()
+      await vi.waitFor(() => expect(second.getMessages).toHaveBeenCalledOnce())
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(conversation.activeTurnId).toBe('msg-1')
+      expect(successor.isStreaming.value).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('(b4k) retires stopped thread A while its successor hydrates thread B', async () => {
     vi.useFakeTimers()
     try {
