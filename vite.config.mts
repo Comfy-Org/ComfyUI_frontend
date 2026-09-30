@@ -758,7 +758,12 @@ export default defineConfig({
             // Heavy optional features
             {
               name: 'vendor-three',
-              test: /[\\/]node_modules[\\/](three|@sparkjsdev)[\\/]/,
+              test: /[\\/]node_modules[\\/](three|@sparkjsdev|@comfyorg[\\/]fbx-exporter-three|wwobjloader2|wtd-three-ext|wtd-core)[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-gainmap',
+              test: /[\\/]node_modules[\\/]@monogrid[\\/]gainmap-js[\\/]/,
               priority: 15
             },
             {
