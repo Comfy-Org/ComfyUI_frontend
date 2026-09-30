@@ -31,6 +31,10 @@
         {{ t('auth.login.insecureContextWarning') }}
       </Message>
 
+      <Message v-if="ssoPromptStore.prompt" severity="warning" class="mb-4">
+        {{ t('auth.errors.ssoRequired') }}
+      </Message>
+
       <!-- Form -->
       <SignInForm v-if="isSignIn" @submit="signInWithEmail" />
       <template v-else>
@@ -176,6 +180,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Message from '@/components/ui/message/Message.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useSsoPromptStore } from '@/platform/auth/sso/ssoPromptStore'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
@@ -196,6 +201,7 @@ const { onSuccess } = defineProps<{
 
 const { t } = useI18n()
 const authActions = useAuthActions()
+const ssoPromptStore = useSsoPromptStore()
 const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)

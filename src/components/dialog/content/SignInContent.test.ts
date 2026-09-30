@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import SignInContent from '@/components/dialog/content/SignInContent.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useSsoPromptStore } from '@/platform/auth/sso/ssoPromptStore'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
@@ -66,7 +67,8 @@ const MESSAGES = {
       regionRestrictionChina: 'Email sign-up is unavailable in your region.'
     },
     apiKey: { helpText: 'Help', generateKey: 'Generate key' },
-    reauthRequired: { title: 'Reauth', message: 'Reauth' }
+    reauthRequired: { title: 'Reauth', message: 'Reauth' },
+    errors: { ssoRequired: 'Your organization signs in with single sign-on.' }
   },
   g: { comfy: 'Comfy', close: 'Close' },
   toastMessages: { useApiKeyTip: 'Tip' }
@@ -100,6 +102,19 @@ beforeEach(() => {
 })
 
 describe('SignInContent', () => {
+  it('shows the SSO notice inline after an sso_required refusal', async () => {
+    renderSignInContent()
+    expect(
+      screen.queryByText('Your organization signs in with single sign-on.')
+    ).not.toBeInTheDocument()
+
+    useSsoPromptStore().show('ada@corp.example')
+
+    expect(
+      await screen.findByText('Your organization signs in with single sign-on.')
+    ).toBeVisible()
+  })
+
   it('shows the access-error tip again after dismissal and another error', async () => {
     const user = userEvent.setup()
     const { accessError } = useAuthActions()
