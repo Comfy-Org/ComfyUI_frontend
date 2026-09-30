@@ -30,10 +30,10 @@ export function createUndeliverableAskReporter() {
       reason: UndeliverableAskReason,
       context: UndeliverableAskContext = {}
     ): void {
-      const reportKey = `${data.ask_id}\u0000${reason}`
+      const reportKey = `${data.thread_id}\u0000${data.ask_id}\u0000${reason}`
       if (reportedAskReasons.has(reportKey)) return
-      reportedAskReasons.add(reportKey)
       if (reportCount >= MAX_REPORTS_PER_SESSION) return
+      reportedAskReasons.add(reportKey)
       reportCount += 1
 
       const askKind =
