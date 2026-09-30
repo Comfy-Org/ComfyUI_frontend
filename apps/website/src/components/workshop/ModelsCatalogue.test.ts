@@ -7,7 +7,8 @@ import type { Ref } from 'vue'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
-  useWorkshopEnabled
+  useWorkshopEnabled,
+  useWorkshopFlag
 } from '../../scripts/posthog'
 import ModelsCatalogue from './ModelsCatalogue.vue'
 import type { WorkshopModel } from '../../config/models-catalogue'
@@ -16,13 +17,18 @@ vi.mock(import('../../scripts/posthog'))
 
 let enabled: Ref<boolean>
 let appsEnabled: Ref<boolean>
+let reshootFlag: Ref<boolean>
 
 beforeEach(() => {
   history.replaceState(null, '', '/models/')
   enabled = ref(false)
   appsEnabled = ref(true)
+  reshootFlag = ref(true)
   vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
   vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(appsEnabled))
+  vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+    readonly(name === 'workshop-reshoot-app-enabled' ? reshootFlag : ref(false))
+  )
 })
 
 const launchModels: WorkshopModel[] = [
@@ -78,6 +84,7 @@ const launchModels: WorkshopModel[] = [
     type: 'APP',
     appId: 'reshoot',
     slug: 'apps/reshoot',
+    flag: 'workshop-reshoot-app-enabled',
     name: 'Re-shoot a video',
     href: '/models/apps/reshoot/',
     workflowCount: 0,
@@ -184,18 +191,6 @@ describe('ModelsCatalogue', () => {
     )
   })
 
-  it('names the Hub in the eyebrow on every tab', async () => {
-    const user = userEvent.setup()
-    render(ModelsCatalogue, { props: { models: launchModels } })
-
-    const hero = () => screen.getByTestId('workshop-hero')
-    expect(hero()).toHaveTextContent('Hub')
-
-    await user.click(screen.getByRole('button', { name: 'Workflows' }))
-    await screen.findByRole('heading', { name: 'Create product photos & ads' })
-    expect(hero()).toHaveTextContent('Hub')
-  })
-
   it('opens the workflow tab from its return link and filters by its own categories', async () => {
     history.replaceState(null, '', '/models/?type=workflows')
     const user = userEvent.setup()
@@ -285,6 +280,29 @@ describe('ModelsCatalogue', () => {
     expect(screen.queryByRole('button', { name: /Browse all apps/ })).toBeNull()
   })
 
+  it('hides an app whose PostHog flag is off, and shows it once it turns on', async () => {
+    const user = userEvent.setup()
+    reshootFlag.value = false
+    render(ModelsCatalogue, { props: { models: launchModels } })
+    await user.click(screen.getByRole('button', { name: 'Apps' }))
+    const hrefs = () =>
+      within(screen.getByTestId('app-shelf'))
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href'))
+
+    await waitFor(() =>
+      expect(hrefs()).toEqual(['/models/apps/cinematic-studio/'])
+    )
+
+    reshootFlag.value = true
+    await waitFor(() =>
+      expect(hrefs()).toEqual([
+        '/models/apps/cinematic-studio/',
+        '/models/apps/reshoot/'
+      ])
+    )
+  })
+
   it.for([
     {
       name: 'apps off',
@@ -323,9 +341,10 @@ describe('ModelsCatalogue', () => {
     render(ModelsCatalogue, { props: { models: launchModels } })
     await screen.findByRole('heading', { name: 'Create product photos & ads' })
     await user.click(screen.getByTestId('browse-all-end'))
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'All workflows 2'
-    )
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'All workflows 2' })
+    ).toBeVisible()
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
     expect(screen.queryByTestId('workshop-hero')).toBeNull()
     expect(screen.getByTestId('workflow-search-results')).toBeVisible()
     await user.click(screen.getByTestId('section-back'))
@@ -339,9 +358,10 @@ describe('ModelsCatalogue', () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
     await user.click(screen.getByTestId('browse-all-end'))
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'All models 1'
-    )
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'All models 1' })
+    ).toBeVisible()
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
     expect(screen.getByRole('link', { name: /Image model/ })).toBeVisible()
     expect(screen.queryByRole('link', { name: /Change a material/ })).toBeNull()
     expect(

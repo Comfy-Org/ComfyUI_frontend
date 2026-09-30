@@ -41,16 +41,27 @@ const CHANGE_OF_TRANSITION = {
 >
 
 /**
- * The renewal after a switch to yearly starts a new year, so its date is
- * spelled out when the quote names one, and left out when it does not.
+ * A team plan changes its commitment only when it keeps its billing period;
+ * a new period reads as the switch to monthly or yearly it is.
  */
 function changeOf(quote: SubscriptionPreview): Change {
   const next = quote.new_plan
-  if (next.tier === 'TEAM' && quote.current_plan?.tier === 'TEAM')
-    return 'commitment'
+  const current = quote.current_plan
+  if (next.tier === 'TEAM' && current?.tier === 'TEAM')
+    return current.duration === next.duration
+      ? 'commitment'
+      : durationChangeOf(quote)
   if (quote.transition_type !== 'duration_change')
     return CHANGE_OF_TRANSITION[quote.transition_type]
-  if (next.duration !== 'ANNUAL') return 'to_monthly'
+  return durationChangeOf(quote)
+}
+
+/**
+ * The renewal after a switch to yearly starts a new year, so its date is
+ * spelled out when the quote names one, and left out when it does not.
+ */
+function durationChangeOf(quote: SubscriptionPreview): Change {
+  if (quote.new_plan.duration !== 'ANNUAL') return 'to_monthly'
   return quote.renewal_at === undefined ? 'to_yearly_undated' : 'to_yearly'
 }
 

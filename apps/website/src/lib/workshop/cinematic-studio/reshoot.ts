@@ -1,7 +1,8 @@
 /**
- * The Re-shoot prototype: a design mock of the CrossView Warp app (#18691)
- * shown in the Cinematic Studio's review switcher. It runs no jobs; the
- * worked example's clip and result come from the media CDN.
+ * The Re-shoot prototype: the CrossView Warp app (#18691) in the Cinematic
+ * Studio's review switcher. Jobs run on a dedicated Comfy API deployment
+ * (see reshoot-engine/); the worked example's clip and result come from the
+ * media CDN.
  */
 const MEDIA = 'https://media.comfy.org/website/workshop/crossview'
 
@@ -19,7 +20,6 @@ export function clipFits(seconds: number): boolean {
 }
 
 const RESHOOT_FPS = 24
-export const RESHOOT_FRAMES = 17 * 11 + 5
 
 export interface ReshootCamera {
   azimuth: number
@@ -56,11 +56,23 @@ export function clampAxis(axis: CameraAxis, value: number): number {
 
 export type ReshootZone = 'green' | 'yellow' | 'red'
 
+/**
+ * The ranges the CrossView LoRA was trained on, as the node's own orbit
+ * picker draws them: ellipses of (azimuth, elevation up, elevation down).
+ * Green is where the model has been checked; yellow is trained but looser.
+ */
+const ZONE_GREEN = [45, 30, 20] as const
+const ZONE_YELLOW = [90, 45, 35] as const
+
 export function cameraZone({ azimuth, elevation }: ReshootCamera): ReshootZone {
-  const turn = Math.abs(azimuth)
-  if (turn > 70 || elevation < -20 || elevation > 40) return 'red'
-  if (turn > 45 || elevation < -10 || elevation > 30) return 'yellow'
-  return 'green'
+  const inside = ([turn, up, down]: readonly number[]) => {
+    const a = azimuth / turn
+    const e = elevation >= 0 ? elevation / up : elevation / down
+    return a * a + e * e <= 1
+  }
+  if (inside(ZONE_GREEN)) return 'green'
+  if (inside(ZONE_YELLOW)) return 'yellow'
+  return 'red'
 }
 
 export function viewTransform({

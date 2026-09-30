@@ -81,7 +81,6 @@ const standardPricingPlans: PricingPlan[] = [
     ctaHref: (cycle) => subscribeUrl('standard', cycle),
     features: [
       { text: 'pricing.feature.shortRuntime' },
-      { text: 'pricing.feature.apiConcurrency1' },
       { text: 'pricing.feature.addCredits' },
       { text: 'pricing.feature.importModels', status: 'excluded' },
       { text: 'pricing.feature.longRuntime', status: 'excluded' }
@@ -104,7 +103,6 @@ const standardPricingPlans: PricingPlan[] = [
     ctaHref: (cycle) => subscribeUrl('creator', cycle),
     features: [
       { text: 'pricing.feature.shortRuntime' },
-      { text: 'pricing.feature.apiConcurrency3' },
       { text: 'pricing.feature.addCredits' },
       { text: 'pricing.feature.importModels' },
       { text: 'pricing.feature.longRuntime', status: 'excluded' }
@@ -128,7 +126,6 @@ const standardPricingPlans: PricingPlan[] = [
     ctaHref: (cycle) => subscribeUrl('pro', cycle),
     features: [
       { text: 'pricing.feature.shortRuntime' },
-      { text: 'pricing.feature.apiConcurrency5' },
       { text: 'pricing.feature.addCredits' },
       { text: 'pricing.feature.importModels' },
       { text: 'pricing.feature.longRuntime' }

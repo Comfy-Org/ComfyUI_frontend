@@ -702,6 +702,29 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('a follower_replaced with no preceding doc_reset (a deliberate workflow switch) still rebinds and clears applied state', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    expect(projectionState.bind).toHaveBeenCalledTimes(1)
+
+    bridge().follower.updatesApplied = 3
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 44 })
+    expect(status().updatesApplied).toBe(3)
+
+    // No doc_reset precedes this: unlike the reset-then-replace flow above,
+    // there is no armed replacement for this workflow to reuse. The switch
+    // must still rebind and clear applied state on its own.
+    dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+
+    expect(status().updatesApplied).toBe(0)
+    expect(projectionState.discardPending).toHaveBeenLastCalledWith('wf-1')
+    expect(projectionState.bind).toHaveBeenCalledTimes(2)
+    expect(projectionState.bind).toHaveBeenLastCalledWith(
+      'wf-1',
+      bridge().follower
+    )
+    unmount()
+  })
+
   it('re-drives subscription intent on every status frame', () => {
     const { unmount } = mountFollower('wf-1')
 

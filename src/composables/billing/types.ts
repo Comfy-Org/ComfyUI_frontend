@@ -9,6 +9,7 @@ import type {
   Plan,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
+  RenewalInvoice,
   ScheduledPlanChange,
   SubscribeOptions,
   SubscribeResponse,
@@ -126,6 +127,8 @@ export interface BillingState {
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
   tier: ComputedRef<SubscriptionTier | null>
   renewalDate: ComputedRef<string | null>
+  /** Open renewal invoice to pay; owners on the stripe rail while payment_failed. */
+  renewalInvoice: ComputedRef<RenewalInvoice | null>
 }
 
 export interface BillingContext extends BillingState, BillingActions {

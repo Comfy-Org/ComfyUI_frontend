@@ -4,24 +4,44 @@ import { computed } from 'vue'
 
 import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
-import type { ModelsPageData } from '../../config/models-page-data'
-import type { RouterWorkshopModelDetail } from '../../config/models-catalogue'
+import type {
+  RouterWorkshopModelDetail,
+  WorkshopModel
+} from '../../config/models-catalogue'
+import { formForContract } from '../../config/workshop-contract'
 import { t } from '../../i18n/translations'
-import { useWorkshopEnabled } from '../../scripts/posthog'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
 import ModelStatus from './ModelStatus.vue'
 import ModelSupport from './ModelSupport.vue'
-import SplitReveal from './SplitReveal.vue'
 import TagOverflow from './TagOverflow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
+interface ModelTag {
+  label: string
+  search: string
+}
+
 const { page } = defineProps<{
-  page: ModelsPageData & { model: RouterWorkshopModelDetail }
+  page: {
+    model: RouterWorkshopModelDetail
+    related: readonly WorkshopModel[]
+    relatedHeading: string
+    successor?: WorkshopModel
+    priceEstimate?: string
+    useCaseLabel?: string
+    shownTags: readonly ModelTag[]
+    restTags: readonly ModelTag[]
+    restTagCount: number
+  }
 }>()
 const routes = getRoutes()
-const enabled = useWorkshopEnabled()
+const model = computed(() =>
+  page.model.execution
+    ? { ...page.model, form: formForContract(page.model.execution) }
+    : page.model
+)
 const modelUseCase = computed(() => useCaseFor(page.model))
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
@@ -63,7 +83,7 @@ const restTags = computed(() =>
           </div>
 
           <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-4xl">
-            <SplitReveal :text="page.model.name" />
+            {{ page.model.name }}
           </h1>
           <p
             v-if="page.model.summary"
@@ -89,7 +109,7 @@ const restTags = computed(() =>
               </a>
             </li>
             <li v-if="page.restTagCount > 0">
-              <TagOverflow v-if="enabled" :tags="restTags" />
+              <TagOverflow :tags="restTags" />
             </li>
           </ul>
         </div>
@@ -103,7 +123,7 @@ const restTags = computed(() =>
     </header>
 
     <div class="sm:px-8 lg:px-10">
-      <ModelDetail :model="page.model" />
+      <ModelDetail :model />
 
       <section
         class="mt-24 border-t border-transparency-white-t8 pt-12"
@@ -111,8 +131,7 @@ const restTags = computed(() =>
       >
         <div class="mb-6 flex items-baseline justify-between gap-4">
           <h2 class="text-2xl font-bold text-primary-comfy-canvas">
-            <span class="sm:hidden">{{ page.relatedHeadingShort }}</span>
-            <span class="max-sm:hidden">{{ page.relatedHeading }}</span>
+            {{ page.relatedHeading }}
           </h2>
           <a
             :href="routes.workshop"
