@@ -62,6 +62,7 @@ it('reports invalid persisted node templates before falling back to empty', asyn
 
   await vi.waitFor(() => {
     expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'graph',
       errorType: 'failure_loading_node_templates',
       tags: {
         failure_kind: 'caught_unexpected',

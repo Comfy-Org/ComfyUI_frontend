@@ -26,6 +26,39 @@ beforeEach(() => {
 })
 
 describe('useCheckout', () => {
+  it('leaves a continuation the host declines to run on its own for the host to run on a click', async () => {
+    const { client, answer } = createBillingHarness()
+    answer(
+      'POST',
+      SUBSCRIBE_ROUTE,
+      httpOk({
+        billing_op_id: 'op-1',
+        status: 'needs_payment_method',
+        payment_method_url: PAYMENT_PAGE
+      })
+    )
+    answer(
+      'GET',
+      operationRoute('op-1'),
+      httpOk(opStatus({ action_url: PAYMENT_PAGE }))
+    )
+    const openUrl = vi.fn()
+    const autoContinue = vi.fn(() => false)
+
+    const checkout = useCheckout({ client, openUrl, autoContinue })
+    void checkout.subscribe(PLAN)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(autoContinue).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'op-1', phase: 'pending' })
+    )
+    expect(openUrl).not.toHaveBeenCalled()
+
+    checkout.continueVerification()
+
+    expect(openUrl).toHaveBeenCalledExactlyOnceWith(PAYMENT_PAGE, 'new_tab')
+  })
+
   it('hands the hosted payment page the server offered to the host and settles the subscription', async () => {
     const { client, answer, calls } = createBillingHarness()
     answer(

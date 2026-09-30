@@ -1,11 +1,14 @@
 import { render } from '@testing-library/vue'
 import { useDialogStore } from '@/stores/dialogStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { FEATURE_SURVEYS } from '@/platform/surveys/surveyRegistry'
+import { useFeatureUsageTracker } from '@/platform/surveys/useFeatureUsageTracker'
+import type { FeatureSurveyConfig } from '@/platform/surveys/useSurveyEligibility'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
@@ -510,6 +513,7 @@ describe('useTemplateWorkflows', () => {
 
     expect(result).toBe('not-started')
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'graph',
       errorType: 'error_loading_template'
     })
     expect(loader.loadingTemplateId.value).toBeNull()
@@ -899,6 +903,7 @@ describe('useTemplateWorkflows', () => {
     expect(await first).toBe('graph-failed')
 
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'graph',
       errorType: 'error_loading_template'
     })
     expect(useToastStore().messagesToAdd).toEqual([
@@ -1107,4 +1112,48 @@ describe('useTemplateWorkflows', () => {
       ).toEqual([])
     }
   )
+
+  describe('example workflows survey tracking', () => {
+    const SURVEY_ID = 'example-workflows'
+    let shippedConfig: FeatureSurveyConfig
+
+    beforeEach(() => {
+      localStorage.clear()
+      shippedConfig = FEATURE_SURVEYS[SURVEY_ID]
+      // The shipped entry stays disabled until the Typeform is published, which
+      // makes tracking a no-op. Enable it here so these tests cover the seam
+      // rather than the launch flag.
+      FEATURE_SURVEYS[SURVEY_ID] = {
+        ...shippedConfig,
+        typeformId: 'test-form',
+        enabled: true
+      }
+      mockWorkflowTemplatesStore.isLoaded = true
+    })
+
+    afterEach(() => {
+      FEATURE_SURVEYS[SURVEY_ID] = shippedConfig
+    })
+
+    it('counts a template that reached the canvas', async () => {
+      const { loader } = mountTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+        'loaded'
+      )
+
+      expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(1)
+    })
+
+    it('does not count a template whose graph failed to load', async () => {
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
+      const { loader } = mountTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+        'graph-failed'
+      )
+
+      expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(0)
+    })
+  })
 })

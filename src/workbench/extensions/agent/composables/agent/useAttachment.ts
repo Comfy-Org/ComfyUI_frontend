@@ -92,6 +92,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   function failAttachment(id: string, name: string, errorType: string) {
     return (): undefined => {
       reportError(new Error('Agent attachment upload failed'), {
+        surface: 'agent',
         errorType,
         tags: {
           failure_kind: 'caught_unexpected',

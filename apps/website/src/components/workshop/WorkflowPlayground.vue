@@ -3,6 +3,7 @@ import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
+import type { SnippetLanguage } from '../../config/models-snippets'
 import {
   initialWorkshopPageState,
   workshopExampleState
@@ -16,10 +17,9 @@ import {
   workflowNoticeKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
-import {
-  refreshWorkshopCredits,
-  useWorkshopCredits
-} from '../../config/workshop-credits'
+import { refreshWorkshopCredits } from '../../config/workshop-credits'
+import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
+import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { WorkflowCreditsRefusal } from '../../lib/workshop/workflow-credits-gate'
 import {
   withRefusalBaseline,
@@ -45,7 +45,7 @@ import WorkflowCreditsGuard from './WorkflowCreditsGuard.vue'
 import WorkflowRunControls from './WorkflowRunControls.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
-import WorkflowExamplePreview from './WorkflowExamplePreview.vue'
+import WorkflowExampleCard from './WorkflowExampleCard.vue'
 
 const { model, scope, cloudHref } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -109,6 +109,20 @@ watch([section, enabled, workflowsEnabled], ([active, enabled, workflows]) => {
   if (enabled && workflows && active === 'api')
     captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
 })
+function captureApiKeyClick() {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'api_key_clicked',
+      properties: modelAnalytics
+    })
+}
+function captureSnippetCopy(language: SnippetLanguage) {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'api_snippet_copied',
+      properties: { ...modelAnalytics, snippet_language: language }
+    })
+}
 const busy = computed(() =>
   ['preparing', 'active', 'interrupted'].includes(state.value.phase)
 )
@@ -144,7 +158,8 @@ const refusalSaidHere = computed(() =>
     ? t(workflowNoticeKey(state.value, error.value))
     : undefined
 )
-const { balance, session } = useWorkshopCredits()
+const { session } = useWorkshopSession()
+const balance = useWorkshopModelBalance(session)
 const credits = computed(() =>
   balance.value.status === 'ok' ? balance.value.credits : undefined
 )
@@ -346,7 +361,12 @@ function start() {
     role="tabpanel"
     aria-labelledby="workflow-tab-api"
   >
-    <WorkflowApi :model="model" :values="values" />
+    <WorkflowApi
+      :model="model"
+      :values="values"
+      @get-key="captureApiKeyClick"
+      @copy="captureSnippetCopy"
+    />
   </div>
   <section
     v-if="model.examples.length"
@@ -355,25 +375,20 @@ function start() {
   >
     <h2
       id="workflow-examples-heading"
-      class="mb-5 text-2xl font-light text-primary-comfy-canvas"
+      class="mb-5 text-sm font-bold text-primary-warm-white"
     >
-      {{ t('workshop.workflow.explore') }}
+      {{ t('workshop.examples.start') }}
     </h2>
     <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      <button
+      <WorkflowExampleCard
         v-for="(example, index) in model.examples"
         :key="example.name"
-        type="button"
-        :aria-pressed="selectedExample === index"
-        class="cursor-pointer overflow-hidden rounded-2xl border border-transparency-white-t8 text-left hover:border-primary-comfy-yellow focus-visible:outline-primary-comfy-yellow disabled:cursor-not-allowed disabled:opacity-50"
+        :example
+        :chosen="selectedExample === index"
+        :poster="model.thumbnailUrl"
         :disabled="formDisabled"
-        @click="selectExample(index)"
-      >
-        <WorkflowExamplePreview :example :poster="model.thumbnailUrl" />
-        <span class="block p-4 text-sm text-primary-warm-gray">
-          {{ example.title }}
-        </span>
-      </button>
+        @open="selectExample(index)"
+      />
     </div>
   </section>
   <ExampleReplaceDialog
