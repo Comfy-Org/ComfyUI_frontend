@@ -10,6 +10,8 @@ const TARGET = 80
 const MILESTONE_STEP = 5
 const MIN_DELTA = 0.05
 const BAR_WIDTH = 20
+const UNIT_COVERAGE_DIR = 'coverage'
+const UNIT_BASELINE_DIR = 'temp/coverage-baseline'
 const E2E_COVERAGE_DIR = 'temp/e2e-coverage'
 const E2E_BASELINE_DIR = 'temp/e2e-coverage-baseline'
 
@@ -140,6 +142,28 @@ function readE2eSnapshot(): CoverageSnapshot {
   }
 }
 
+/**
+ * Unit coverage is not assembled from shards here: the report job runs only
+ * once every shard has passed, so there is no partial merge to detect. A run
+ * that failed its coverage floor is still reported, and writes its tracefile
+ * before asserting, so the only truncation risk is a crash mid-write — which
+ * `MIN_SOURCE_FILES` catches when it is gross and tolerates when it is not.
+ * The sidecar carries the span, and the workflow writes it only when the
+ * baseline is not the direct parent.
+ */
+function readUnitSnapshot(): CoverageSnapshot {
+  return {
+    current: parseLcov(join(UNIT_COVERAGE_DIR, 'lcov.info')),
+    baseline: parseLcov(join(UNIT_BASELINE_DIR, 'lcov.info')),
+    currentSha: readCoverageMetadata(
+      join(UNIT_COVERAGE_DIR, COVERAGE_METADATA_FILE)
+    )?.sourceSha,
+    baselineSha: readCoverageMetadata(
+      join(UNIT_BASELINE_DIR, COVERAGE_METADATA_FILE)
+    )?.sourceSha
+  }
+}
+
 function shortSha(sha: string): string {
   return sha.slice(0, 7)
 }
@@ -224,21 +248,40 @@ function formatCoverageRow(
   return `*${label}:*  ${formatPct(baseline.percentage)} → ${formatPct(current.percentage)}  (${formatDelta(delta)})`
 }
 
+interface MetricSource {
+  label: string
+  snapshot: CoverageSnapshot
+  baselineDescription: string
+}
+
 interface ReportedMetric {
   label: string
   current: CoverageData
   baseline: CoverageData
   delta: number
+  baselineDescription: string
+  currentSha?: string
+  baselineSha?: string
 }
 
-function reportable(
-  label: string,
-  { current, baseline }: CoverageSnapshot
-): ReportedMetric | null {
+function reportable({
+  label,
+  snapshot,
+  baselineDescription
+}: MetricSource): ReportedMetric | null {
+  const { current, baseline, currentSha, baselineSha } = snapshot
   if (current === null || baseline === null) return null
   const delta = current.percentage - baseline.percentage
   if (Math.abs(delta) < MIN_DELTA) return null
-  return { label, current, baseline, delta }
+  return {
+    label,
+    current,
+    baseline,
+    delta,
+    baselineDescription,
+    currentSha,
+    baselineSha
+  }
 }
 
 function direction(deltas: number[]): Direction {
@@ -248,19 +291,17 @@ function direction(deltas: number[]): Direction {
 }
 
 /**
- * Names the commits an E2E delta actually spans. Silent unless the baseline
+ * Names the commits a delta actually spans. Silent unless the baseline
  * identifies itself, so nothing is claimed that cannot be shown.
  */
-function spanNote(
-  reported: ReportedMetric[],
-  e2e: CoverageSnapshot
-): string | null {
-  if (!reported.some((metric) => metric.label === 'E2E')) return null
-  if (e2e.baselineSha === undefined) return null
+function spanNote(metric: ReportedMetric): string | null {
+  if (metric.baselineSha === undefined) return null
 
   const head =
-    e2e.currentSha === undefined ? '' : ` to \`${shortSha(e2e.currentSha)}\``
-  return `_E2E measured from the last whole merge (\`${shortSha(e2e.baselineSha)}\`)${head}; this span may cover several merges._`
+    metric.currentSha === undefined
+      ? ''
+      : ` to \`${shortSha(metric.currentSha)}\``
+  return `_${metric.label} measured from ${metric.baselineDescription} (\`${shortSha(metric.baselineSha)}\`)${head}; this span may cover several merges._`
 }
 
 function progressLine(label: string, data: CoverageData): string {
@@ -281,9 +322,18 @@ export function buildPayload(
   e2e: CoverageSnapshot,
   context: ReportContext
 ): SlackPayload | null {
-  const reported = [reportable('Unit', unit), reportable('E2E', e2e)].filter(
-    (metric): metric is ReportedMetric => metric !== null
-  )
+  const reported = [
+    reportable({
+      label: 'Unit',
+      snapshot: unit,
+      baselineDescription: 'the last measured merge'
+    }),
+    reportable({
+      label: 'E2E',
+      snapshot: e2e,
+      baselineDescription: 'the last whole merge'
+    })
+  ].filter((metric): metric is ReportedMetric => metric !== null)
 
   if (reported.length === 0) return null
 
@@ -305,8 +355,10 @@ export function buildPayload(
   if (unit.current) summaryLines.push(progressLine('unit', unit.current))
   if (e2e.current) summaryLines.push(progressLine('e2e', e2e.current))
 
-  const e2eSpan = spanNote(reported, e2e)
-  if (e2eSpan) summaryLines.push('', e2eSpan)
+  const spans = reported
+    .map(spanNote)
+    .filter((note): note is string => note !== null)
+  if (spans.length > 0) summaryLines.push('', ...spans)
 
   const blocks: SlackBlock[] = [
     {
@@ -330,12 +382,7 @@ export function buildPayload(
 function main() {
   const context = parseArgs(process.argv.slice(2))
 
-  const unit: CoverageSnapshot = {
-    current: parseLcov('coverage/lcov.info'),
-    baseline: parseLcov('temp/coverage-baseline/lcov.info')
-  }
-
-  const payload = buildPayload(unit, readE2eSnapshot(), context)
+  const payload = buildPayload(readUnitSnapshot(), readE2eSnapshot(), context)
   if (payload === null) process.exit(0)
 
   process.stdout.write(JSON.stringify(payload))
