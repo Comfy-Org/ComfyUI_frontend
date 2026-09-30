@@ -907,6 +907,7 @@ export default defineConfig({
           setupFiles: ['./vitest.timer.setup.ts', './vitest.setup.ts'],
           exclude: ISOLATED_STORE_TESTS,
           include: [
+            'index.test.ts',
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             ...FRONTEND_SCRIPT_TESTS
