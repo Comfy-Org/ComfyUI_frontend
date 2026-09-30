@@ -670,7 +670,9 @@ describe('ModelDetail', () => {
   })
 
   it('reports API key clicks and snippet copies with the model and language', async () => {
-    mountDetail({ model: { ...runnable, defaults: { prompt: 'A landscape' } } })
+    await mountDetail({
+      model: { ...runnable, defaults: { prompt: 'A landscape' } }
+    })
     const visitor = user()
     await visitor.click(screen.getByRole('tab', { name: 'API' }))
     await visitor.click(await screen.findByTestId('snippet-curl'))
@@ -695,7 +697,9 @@ describe('ModelDetail', () => {
   })
 
   it('reports no API key clicks or snippet copies while Models is hidden', async () => {
-    mountDetail({ model: { ...runnable, defaults: { prompt: 'A landscape' } } })
+    await mountDetail({
+      model: { ...runnable, defaults: { prompt: 'A landscape' } }
+    })
     const visitor = user()
     await visitor.click(screen.getByRole('tab', { name: 'API' }))
     await screen.findByRole('button', { name: 'Copy snippet' })
