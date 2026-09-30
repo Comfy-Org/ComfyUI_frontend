@@ -130,12 +130,15 @@ describe('cloud backport tag workflow', () => {
       'github.event.pull_request.head.repo.full_name == github.repository'
     )
     expect(dispatchJob.concurrency?.group).toBe(
-      'cloud-dispatch-${{ github.run_id }}'
+      'cloud-dispatch-${{ github.event.pull_request.head.ref || github.ref_name }}'
     )
     expect(dispatchJob.concurrency?.['cancel-in-progress']).toBe(false)
     expect(dispatchWorkflow.concurrency).toBeUndefined()
     expect(dispatchWorkflowSource).toContain(
       '[[ "${BRANCH}" =~ ^cloud/[0-9]+\\.[0-9]+$ ]]'
+    )
+    expect(dispatchWorkflowSource).toContain(
+      'elif [[ "${BRANCH}" =~ ^cloud/[0-9] ]]'
     )
     expect(dispatchWorkflowSource).toContain(
       `Unrecognized cloud release branch '\${BRANCH}'; expected cloud/x.y`
