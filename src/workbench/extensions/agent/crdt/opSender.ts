@@ -177,9 +177,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (staleAnonymousBudget === 0) retiredOpIds.clear()
   }
 
-  function reportDetachSettleFailure(cause: unknown): void {
+  function reportSettleFailure(cause: unknown, errorType: string): void {
     reportError(cause, {
-      errorType: 'failure_settling_agent_op_sender_detach',
+      errorType,
       tags: { feature_area: 'agent', operation: 'sync', outcome: 'degraded' }
     })
   }
@@ -409,7 +409,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     abortAll() {
       lastMintedVersion = -1
       lastMintedWorkflowId = null
-      drainOutstanding((outcome) => deps.onBatchSettled(outcome))
+      drainOutstanding((outcome) => {
+        try {
+          deps.onBatchSettled(outcome)
+        } catch (cause) {
+          reportSettleFailure(cause, 'failure_settling_agent_op_sender_abort')
+        }
+      })
     },
     detach() {
       if (detached) return
@@ -419,7 +425,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           try {
             deps.onBatchSettled(outcome)
           } catch (cause) {
-            reportDetachSettleFailure(cause)
+            reportSettleFailure(
+              cause,
+              'failure_settling_agent_op_sender_detach'
+            )
           }
         })
       } finally {

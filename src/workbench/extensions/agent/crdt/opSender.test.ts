@@ -690,6 +690,39 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
   })
 
+  it('abortAll settles every other batch when one settlement listener throws', () => {
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2))
+          throw new Error('listener boom')
+        localSettled.push(outcome)
+      }
+    })
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+    localSender.enqueue([addNode(3)])
+
+    expect(() => localSender.abortAll()).not.toThrow()
+
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'unconfirmed', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [3] }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_settling_agent_op_sender_abort'
+      })
+    )
+  })
+
   it('abortAll settles each chunk from one oversized admission', () => {
     sender.enqueue(Array.from({ length: 300 }, (_, index) => addNode(index)))
 
