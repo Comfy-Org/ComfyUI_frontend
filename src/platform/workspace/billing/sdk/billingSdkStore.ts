@@ -6,6 +6,7 @@
  * dialog performs for the operations it issues itself.
  */
 import type {
+  BillingOperationKind,
   BillingOperationState,
   BillingEventsReadOptions,
   BillingOperationTelemetryEvent,
@@ -41,8 +42,7 @@ import type {
   BillingStatusResponse,
   CreateTopupResponse,
   PreviewSubscribeResponse,
-  SavedPaymentMethod,
-  SubscribeResponse
+  SavedPaymentMethod
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
@@ -59,7 +59,11 @@ import { projectBillingStatus } from './billingStatusView'
 import { createBillingSdk } from './createBillingSdk'
 import type { BillingOperationRecordView } from './operationRecordView'
 import { projectOperationRecord } from './operationRecordView'
-import type { SubscriptionRailOutcome } from './subscriptionOperationView'
+import type {
+  SettledCommand,
+  SettledSubscribeResponse,
+  SubscriptionRailOutcome
+} from './subscriptionOperationView'
 import {
   projectPaymentPortalResult,
   projectPreviewSubscribeResult,
@@ -107,6 +111,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const operations = shallowRef<readonly BillingOperationState[]>([])
   const dismissed = shallowRef<ReadonlySet<string>>(new Set())
   const resumedOperations = new Set<string>()
+  const callerStarted = new Set<BillingOperationKind>()
   const drivenChallenges = new Set<string>()
   const offeredActions = new Map<string, Set<string>>()
   const progressToasts = new Map<
@@ -206,18 +211,34 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   // A top-up the dialog issued is reported by the dialog, exactly as before;
   // the lifecycle's events stand in for the poller's only on an operation
-  // this tab reattached to. A cancel or resubscribe has no such second
-  // reporter on this rail — the poller owned both ends of it on the legacy
-  // one — so the lifecycle's events are the only ones it emits.
+  // this tab reattached to. A cancel or subscribe the caller announced with
+  // its own `started` keeps that one event: the lifecycle's `started` is
+  // dropped inside the caller's command window, and its terminal is always
+  // forwarded, since only the lifecycle holds the operation's id, category
+  // and timing. A command no caller announced — a resubscribe, a checkout
+  // that reports nothing — is reported at both ends by the lifecycle.
   function reportTelemetry(event: BillingOperationTelemetryEvent) {
     if (event.operation_type === 'topup' && !event.resumed) return
-    if (
-      event.resumed &&
-      event.name === BILLING_OPERATION_TELEMETRY_EVENT.started
-    ) {
-      resumedOperations.add(event.billing_op_id)
+    const started = event.name === BILLING_OPERATION_TELEMETRY_EVENT.started
+    if (started && event.resumed) resumedOperations.add(event.billing_op_id)
+    if (started && !event.resumed && callerStarted.has(event.operation_type)) {
+      return
     }
     useTelemetry()?.trackBillingEvent(toBillingTelemetryEvent(event))
+  }
+
+  // Sound because the lifecycle runs one command per kind at a time and
+  // emits both of an issued operation's events before the command resolves.
+  async function withCallerStart<T>(
+    kind: BillingOperationKind,
+    run: () => Promise<T>
+  ): Promise<T> {
+    callerStarted.add(kind)
+    try {
+      return await run()
+    } finally {
+      callerStarted.delete(kind)
+    }
   }
 
   function onTopupChanged(state: BillingOperationState) {
@@ -429,15 +450,19 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     ])
   }
 
-  function cancelSubscription(): Promise<SubscriptionRailOutcome> {
-    return runSubscriptionCommand(
-      async () =>
-        projectSubscriptionResult(await sdk.commands.cancelSubscription()),
-      refreshAfterCancel
+  function cancelSubscription(): Promise<
+    SubscriptionRailOutcome<SettledCommand>
+  > {
+    return withCallerStart('cancel', () =>
+      runSubscriptionCommand(
+        async () =>
+          projectSubscriptionResult(await sdk.commands.cancelSubscription()),
+        refreshAfterCancel
+      )
     )
   }
 
-  function resubscribe(): Promise<SubscriptionRailOutcome> {
+  function resubscribe(): Promise<SubscriptionRailOutcome<SettledCommand>> {
     return runSubscriptionCommand(
       async () => projectSubscriptionResult(await sdk.commands.resubscribe()),
       refreshAfterSubscriptionChange
@@ -445,12 +470,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   }
 
   function subscribe(
-    input: SubscribeInput
-  ): Promise<SubscriptionRailOutcome<SubscribeResponse>> {
-    return runSubscriptionCommand(
-      async () => projectSubscribeResult(await sdk.commands.subscribe(input)),
-      refreshAfterSubscriptionChange
-    )
+    input: SubscribeInput,
+    { callerStarted: announced = false }: { callerStarted?: boolean } = {}
+  ): Promise<SubscriptionRailOutcome<SettledSubscribeResponse>> {
+    const run = () =>
+      runSubscriptionCommand(
+        async () => projectSubscribeResult(await sdk.commands.subscribe(input)),
+        refreshAfterSubscriptionChange
+      )
+    return announced ? withCallerStart('subscription', run) : run()
   }
 
   // A quote changes nothing, so it refreshes nothing; it shares the route
