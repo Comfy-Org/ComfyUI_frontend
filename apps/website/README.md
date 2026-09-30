@@ -186,6 +186,16 @@ can't be accidentally committed. Otherwise the `Release: Website` GitHub
 Actions workflow runs the same step on every manual dispatch and opens a PR
 with the refreshed snapshot.
 
+## Hub sections
+
+The hub has one page per section, linked by the catalogue tabs: `/hub/models/`,
+`/hub/workflows/` and `/hub/apps/`. The workflows and apps pages show the
+showcase until their flag is on, and stay noindex: `/hub/workflows/` lifts with
+`launchedWorkflowPages`, `/hub/apps/` has no switch yet. Being noindex, neither
+has a markdown twin. Old `/hub/models/?type=workflows` and `?type=apps` links
+replace themselves with the section page in the browser, keeping the other
+query parameters.
+
 ## Hub workflows routing
 
 The website builds the workflow pages listed in `src/config/hub-workflow-names.json` at `/hub/workflows/<name>/`. It publishes `/hub/workflows/manifest.json` (`{ version, defaultOwner, pages, legacyRedirects }`), which comfy-router reads to decide who answers each `/hub/workflows/*` URL. The build validates the manifest and fails if it is invalid.
@@ -289,10 +299,13 @@ admission controls remain authoritative. Local development also accepts
 `PUBLIC_WORKSHOP_WORKFLOWS_ENABLED=1`.
 
 Workshop apps (Cinematic Studio and Re-shoot) are gated separately by the
-`workshop-apps-enabled` PostHog flag: their pages at `/models/apps/<slug>/`, the
-catalogue's Apps tab, the featured slide on `/models` and a model page's Open in
-Studio link. `/cinematic-studio` redirects to the app pages. Local
-development also accepts `PUBLIC_WORKSHOP_APPS_ENABLED=1`.
+`workshop-apps-enabled` PostHog flag: their pages at `/hub/apps/<slug>/`, the
+`/hub/apps/` page and its tab, the featured slide on `/hub/models/` and a model
+page's Open in Studio link. `/cinematic-studio` and the old
+`/models/apps/<slug>/` addresses redirect to the app pages. The built apps are
+listed in `src/config/hub-app-names.json`; `hub-app-names.test.ts` fails until
+you refresh it with `vitest -u`. Local development also accepts
+`PUBLIC_WORKSHOP_APPS_ENABLED=1`.
 
 `src/config/workflow-render.ts` implements the shared workflow request and polling
 helper. Node scripts import `workflow_render` and `workflow_for_model` from
