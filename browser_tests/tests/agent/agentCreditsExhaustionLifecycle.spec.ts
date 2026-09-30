@@ -30,6 +30,9 @@ test.describe(
         await expect(paywall).toContainText(
           enMessages.agent.paywall.body.subscribed
         )
+        await expect(
+          agentPanel.root.getByTestId('user-message-bubble')
+        ).toHaveText(['Build a red fox workflow'])
       })
 
       await test.step('preserve exhaustion across a panel remount', async () => {
@@ -46,6 +49,9 @@ test.describe(
         )
         await heldRefresh.entered
         agentBilling.failSubsequentRefreshes()
+        await expect(
+          agentPanel.root.getByTestId('user-message-bubble')
+        ).toHaveText(['Make the lighting warmer'])
         await agentPanel.close()
         heldRefresh.release()
         await heldRefresh.completed
@@ -61,6 +67,9 @@ test.describe(
         })
         await expect(sendButton).toBeVisible()
         await expect(paywall).toBeVisible()
+        await expect(
+          agentPanel.root.getByTestId('user-message-bubble')
+        ).toHaveText(['Add shallow depth of field'])
       })
 
       await test.step('recover again and preserve the conversation', async () => {
@@ -71,12 +80,7 @@ test.describe(
         await expect(paywall).toHaveCount(0)
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
-        ).toHaveText([
-          'Build a red fox workflow',
-          'Make the lighting warmer',
-          'Add shallow depth of field',
-          'Finish the workflow'
-        ])
+        ).toHaveText(['Add shallow depth of field', 'Finish the workflow'])
       })
     })
   }
