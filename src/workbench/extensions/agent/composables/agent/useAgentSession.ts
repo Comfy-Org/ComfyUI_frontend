@@ -441,9 +441,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let stopped = false
 
   function bufferFor(
-    threadId: string | undefined
+    threadId: string | undefined,
+    terminal: boolean
   ): HydrationBuffer | undefined {
-    return threadId === undefined ? undefined : hydrationBuffers.get(threadId)
+    if (threadId === undefined) return undefined
+    return (
+      hydrationBuffers.get(threadId) ??
+      (terminal ? hydrationMailboxes.get(threadId) : undefined)
+    )
   }
 
   /**
@@ -1260,7 +1265,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       event.data.message_id === conversationStore.activeTurnId
     )
       return false
-    const buffer = bufferFor(event.data.thread_id)
+    const buffer = bufferFor(
+      event.data.thread_id,
+      event.type === 'agent_message_done'
+    )
     if (buffer === undefined) return false
     if (buffer.events.length >= MAX_HYDRATION_EVENTS) {
       const replace = buffer.events.findIndex(

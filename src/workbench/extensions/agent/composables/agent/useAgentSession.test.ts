@@ -683,37 +683,39 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
-  it('(b4j) retires a stopped hydration buffer when no successor claims it', async () => {
+  it('(b4j) captures a terminal frame after handoff expiry while hydration is pending', async () => {
     vi.useFakeTimers()
     try {
       const conversation = useAgentConversationStore()
+      let deliverHistory: ((history: AgentMessages) => void) | undefined
       const rest = fakeRest({
-        getMessages: vi
-          .fn<(threadId: string) => Promise<AgentMessages>>()
-          .mockImplementationOnce(() => new Promise(() => {}))
-          .mockResolvedValueOnce([
-            historyRow(1, 'user', 'turn-1', 'go'),
-            {
-              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-              content: {},
-              status: 'streaming'
-            }
-          ])
+        getMessages: vi.fn(
+          () =>
+            new Promise<AgentMessages>((resolve) => {
+              deliverHistory = resolve
+            })
+        )
       })
       const { source, emit } = fakeEvents()
+      conversation.setThreadId('th-1')
       const session = useAgentSession({ rest, events: source })
       session.start()
-      await session.sendMessage('go')
-      void session.loadThread('th-1')
-      session.stop()
+      await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
 
       await vi.advanceTimersByTimeAsync(30_001)
       emit(done('msg-1'))
-      const reopened = useAgentSession({ rest, events: fakeEvents().source })
-      reopened.start()
-      await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(2))
-      await vi.waitFor(() => expect(conversation.activeTurnId).toBe('msg-1'))
-      expect(reopened.isStreaming.value).toBe(true)
+      assert(deliverHistory !== undefined)
+      deliverHistory([
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBeNull())
+      expect(session.isStreaming.value).toBe(false)
     } finally {
       vi.useRealTimers()
     }

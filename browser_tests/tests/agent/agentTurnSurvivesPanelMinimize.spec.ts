@@ -92,6 +92,31 @@ test.describe(
         })
       })
 
+      test('settles when completion arrives after hydration handoff expires', async ({
+        page,
+        turnLock,
+        getWebSocket
+      }) => {
+        await page.clock.install()
+        turnLock.holdNextTranscript()
+
+        await test.step('restore while live-turn hydration remains pending', async () => {
+          await turnLock.minimizePanel()
+          await turnLock.beginRestorePanel()
+          await turnLock.waitForHeldTranscript()
+          await page.clock.fastForward(30_001)
+        })
+
+        await test.step('accept terminal delivery before stale hydration resolves', async () => {
+          turnLock.push(await getWebSocket(), TURN_DONE_EVENT)
+          turnLock.releaseHeldTranscript()
+
+          await expect(turnLock.workSummary).toBeVisible()
+          await expect(turnLock.sendButton).toBeVisible()
+          await expect(turnLock.stopButton).toHaveCount(0)
+        })
+      })
+
       test('does not reject the next message after the panel is reopened', async ({
         turnLock
       }) => {

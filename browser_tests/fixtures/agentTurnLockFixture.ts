@@ -149,6 +149,14 @@ class TurnLockServer {
   private posts = 0
   private readonly answered: string[][] = []
   private pendingAsk: AgentPendingAsk | undefined
+  private heldTranscript:
+    | {
+        requested: Promise<void>
+        markRequested: () => void
+        released: Promise<void>
+        release: () => void
+      }
+    | undefined
 
   get turnIsStreaming(): boolean {
     return this.streaming
@@ -188,6 +196,36 @@ class TurnLockServer {
 
   completeTurn(): void {
     this.streaming = false
+  }
+
+  holdNextTranscript(): void {
+    let markRequested: (() => void) | undefined
+    let release: (() => void) | undefined
+    const requested = new Promise<void>((resolve) => {
+      markRequested = resolve
+    })
+    const released = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    if (markRequested === undefined || release === undefined)
+      throw new Error('Transcript gate did not initialize')
+    this.heldTranscript = { requested, markRequested, released, release }
+  }
+
+  async waitForHeldTranscript(): Promise<void> {
+    await this.heldTranscript?.requested
+  }
+
+  releaseHeldTranscript(): void {
+    this.heldTranscript?.release()
+    this.heldTranscript = undefined
+  }
+
+  async waitForTranscriptRelease(): Promise<void> {
+    const held = this.heldTranscript
+    if (held === undefined) return
+    held.markRequested()
+    await held.released
   }
 
   transcript(): AgentMessage[] {
@@ -231,9 +269,11 @@ async function routeTurnLock(
   page: Page,
   server: TurnLockServer
 ): Promise<void> {
-  await page.route('**/api/agent/threads/*/messages', (route) => {
-    if (route.request().method() === 'GET')
+  await page.route('**/api/agent/threads/*/messages', async (route) => {
+    if (route.request().method() === 'GET') {
+      await server.waitForTranscriptRelease()
       return route.fulfill(jsonRoute(server.transcript()))
+    }
     server.countPost()
     if (server.turnIsStreaming)
       return route.fulfill({ ...jsonRoute(server.rejectPost()), status: 409 })
@@ -471,6 +511,23 @@ export class AgentTurnLockHarness {
   async minimizePanel(): Promise<void> {
     await this.entryButton.click()
     await expect(this.dock).toHaveCount(0)
+  }
+
+  holdNextTranscript(): void {
+    this.server.holdNextTranscript()
+  }
+
+  async waitForHeldTranscript(): Promise<void> {
+    await this.server.waitForHeldTranscript()
+  }
+
+  releaseHeldTranscript(): void {
+    this.server.releaseHeldTranscript()
+  }
+
+  async beginRestorePanel(): Promise<void> {
+    await this.entryButton.click()
+    await expect(this.panel).toBeVisible()
   }
 
   /**
