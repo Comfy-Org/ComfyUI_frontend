@@ -125,7 +125,7 @@ export function dynamicGroupWidget(
     )
     if (!removed.length) return false
     if (!removeRowInputs(prefix)) return false
-    for (const widget of removed.toReversed()) {
+    for (const widget of removed.reverse()) {
       if (node.widgets.includes(widget)) node.removeWidget(widget)
     }
     for (const header of rows()) {
@@ -208,7 +208,7 @@ export function dynamicGroupWidget(
     ]
     const result = replaceNodeInputs(node, previous, inputs, previous.links)
     if (!result.ok) {
-      for (const widget of (node.widgets?.slice(start) ?? []).toReversed())
+      for (const widget of (node.widgets?.slice(start) ?? []).reverse())
         node.removeWidget(widget)
       node.setSize(previousSize)
       return false
