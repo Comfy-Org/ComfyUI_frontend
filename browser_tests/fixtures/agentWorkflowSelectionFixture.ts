@@ -38,7 +38,7 @@ export const workflowSelectionTest = base.extend<{
     let pendingLookup: Promise<void> | undefined
     let resumeWorkflowLookups = () => {}
     let lookupCount = 0
-    const forgetSavedWorkflow = (path: string) => {
+    function forgetSavedWorkflow(path: string): void {
       const name = path.slice('workflows/'.length, -'.json'.length)
       savedContent.delete(path)
       const fileIndex = savedFiles.findIndex((file) => file.path === path)

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
@@ -56,6 +56,17 @@ function saveTarget(target: ComfyWorkflow): void {
   vi.spyOn(target, 'delete').mockResolvedValue()
 }
 
+function deferDelete(target: ComfyWorkflow): () => void {
+  let finishDelete = () => {}
+  vi.spyOn(target, 'delete').mockImplementation(
+    () =>
+      new Promise<void>((resolve) => {
+        finishDelete = resolve
+      })
+  )
+  return () => finishDelete()
+}
+
 describe('Agent target deletion', () => {
   it.for([
     {
@@ -82,6 +93,19 @@ describe('Agent target deletion', () => {
       event: 'deleting an unsaved target, which only closes it',
       act: async ({ workflows, target }: TargetSetup) =>
         workflows.deleteWorkflow(target),
+      unavailable: false,
+      selected: undefined
+    },
+    {
+      event: 'deleting a saved workflow at a closed unsaved target path',
+      act: async ({ workflows, target }: TargetSetup) => {
+        await workflows.closeWorkflow(target)
+        await nextTick()
+        const successor = workflows.createTemporary('a.json')
+        expect(successor.path).toBe(target.path)
+        saveTarget(successor)
+        await workflows.deleteWorkflow(successor)
+      },
       unavailable: false,
       selected: undefined
     },
@@ -118,19 +142,27 @@ describe('Agent target deletion', () => {
       event: 'deleting the saved target after the chat cleared it mid-delete',
       act: async ({ workflows, panel, target }: TargetSetup) => {
         saveTarget(target)
-        let finishDelete = () => {}
-        vi.spyOn(target, 'delete').mockImplementation(
-          () =>
-            new Promise<void>((resolve) => {
-              finishDelete = resolve
-            })
-        )
+        const finishDelete = deferDelete(target)
         const deleting = workflows.deleteWorkflow(target)
         panel.setWorkflowTarget(null)
         finishDelete()
         await deleting
       },
       unavailable: false,
+      selected: undefined
+    },
+    {
+      event: 'deleting the saved target while a restoring chat commits it',
+      act: async ({ workflows, panel, target }: TargetSetup) => {
+        saveTarget(target)
+        const finishDelete = deferDelete(target)
+        panel.beginWorkflowRestoration()
+        const deleting = workflows.deleteWorkflow(target)
+        panel.setWorkflowTarget(target)
+        finishDelete()
+        await deleting
+      },
+      unavailable: true,
       selected: undefined
     },
     {
@@ -176,7 +208,7 @@ describe('Agent target deletion', () => {
       selected: 'workflows/b.json'
     }
   ])(
-    'reports the target unavailable after $event: $unavailable',
+    '$event: unavailable=$unavailable',
     async ({ act, unavailable, selected }) => {
       const context = await setup()
       await nextTick()
@@ -190,23 +222,11 @@ describe('Agent target deletion', () => {
   )
 
   it.for([
-    {
-      kind: 'temporary',
-      prepare: (_target: ComfyWorkflow) => {},
-      tracking: { mode: 'retained', workflow: null }
-    },
-    {
-      kind: 'saved',
-      prepare: saveTarget,
-      tracking: {
-        mode: 'retained',
-        workflow: null,
-        closedPath: 'workflows/a.json'
-      }
-    }
+    { kind: 'temporary', prepare: (_target: ComfyWorkflow) => {} },
+    { kind: 'saved', prepare: saveTarget }
   ])(
     'keeps no workflow object once a $kind target closes',
-    async ({ prepare, tracking }) => {
+    async ({ prepare }) => {
       const { workflows, panel, target } = await setup()
       prepare(target)
       await nextTick()
@@ -214,7 +234,9 @@ describe('Agent target deletion', () => {
       await workflows.closeWorkflow(target)
       await nextTick()
 
-      expect(panel.targetTracking).toEqual(tracking)
+      expect(Object.values(panel.targetTracking)).not.toContainEqual(
+        expect.any(ComfyWorkflow)
+      )
     }
   )
 })

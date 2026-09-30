@@ -29,8 +29,20 @@ type TargetTracking =
   | {
       mode: 'retained'
       workflow: null
-      closedPath?: string
-      unavailable?: true
+      closedPath?: never
+      unavailable?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath: string
+      unavailable?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath?: never
+      unavailable: true
     }
 
 export type AgentPanelView =
@@ -138,8 +150,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   }
 
   // Only a retained target can become detached. A following target belongs to
-  // the editor, including its replacement when the visible tab closes. Once a
-  // closed target reopens it is just another tab, so it is no longer tracked.
+  // the editor, including its replacement when the visible tab closes.
   watch(
     () => [targetTracking.value, ...workflowStore.openWorkflows],
     () => {
@@ -157,9 +168,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     }
   )
 
-  // Closing the target's tab only clears it; deleting its saved file means the
-  // chat's target is gone, which the chat then says. A closed target is known
-  // by its saved path, so the store never keeps the closed workflow alive.
   function isRetainedTarget(workflow: ComfyWorkflow): boolean {
     const target = targetTracking.value
     if (target.mode !== 'retained') return false
@@ -175,13 +183,17 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       target.workflow === null &&
       target.closedPath === oldPath
     )
-      targetTracking.value = { ...target, closedPath: newPath }
+      targetTracking.value = {
+        mode: 'retained',
+        workflow: null,
+        closedPath: newPath
+      }
   }
 
   workflowStore.$onAction(({ name, args, after }) => {
     if (name === 'deleteWorkflow') {
       const [workflow] = args
-      if (!workflow.isTemporary && isRetainedTarget(workflow))
+      if (!workflow.isTemporary)
         after(() => {
           if (isRetainedTarget(workflow)) markWorkflowTargetUnavailable()
         })
