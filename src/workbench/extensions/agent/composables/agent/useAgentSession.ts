@@ -198,6 +198,14 @@ function parseAdmissionError(error: unknown) {
   return { ...parsed.data.error, retryAfterSeconds: error.retryAfterSeconds }
 }
 
+function isAttachmentTypeRejection(error: unknown): boolean {
+  if (!(error instanceof AgentApiError) || error.status !== 422) return false
+  if (typeof error.body !== 'object' || error.body === null) return false
+  return (
+    (error.body as { type?: unknown }).type === 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+  )
+}
+
 function disownsWorkflow(error: unknown): boolean {
   return (
     error instanceof AgentApiError &&
@@ -652,7 +660,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
     const turnAccepted = accepted || isUnreadableAckFailure(error)
-    reportError(error, { errorType: 'agent_send_message_failed' })
+    // The refusal message deliberately names the user's files so the inline
+    // notice is actionable. It is an expected, user-fixable response, though,
+    // and reporting the AgentApiError would copy those names into telemetry.
+    if (!isAttachmentTypeRejection(error))
+      reportError(error, { errorType: 'agent_send_message_failed' })
     trackAgentError(
       'request_failed',
       turnAccepted ? 'post_acceptance' : 'pre_acceptance',
