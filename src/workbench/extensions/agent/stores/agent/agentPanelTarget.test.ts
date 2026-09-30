@@ -1,3 +1,5 @@
+import { setFlagsFromString } from 'node:v8'
+import { runInNewContext } from 'node:vm'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -51,11 +53,28 @@ describe('Agent target tab lifetime', () => {
 
 type TargetSetup = Awaited<ReturnType<typeof setup>>
 
+setFlagsFromString('--expose-gc')
+const collectGarbage: () => void = runInNewContext('gc')
+
+function saveTarget(target: ComfyWorkflow): void {
+  target.size = 1
+  vi.spyOn(target, 'delete').mockResolvedValue()
+}
+
+async function closeTemporaryTarget(): Promise<WeakRef<ComfyWorkflow>> {
+  const { workflows, target } = await setup()
+  await nextTick()
+  await workflows.closeWorkflow(target)
+  await nextTick()
+  return new WeakRef(target)
+}
+
 describe('Agent target deletion', () => {
   it.for([
     {
-      event: 'deleting the target after its tab closes',
+      event: 'deleting the saved target after its tab closes',
       act: async ({ workflows, target }: TargetSetup) => {
+        saveTarget(target)
         await workflows.closeWorkflow(target)
         await nextTick()
         await workflows.deleteWorkflow(target)
@@ -64,9 +83,34 @@ describe('Agent target deletion', () => {
       selected: undefined
     },
     {
-      event: 'deleting the target while its tab is open',
+      event: 'deleting the saved target while its tab is open',
+      act: async ({ workflows, target }: TargetSetup) => {
+        saveTarget(target)
+        await workflows.deleteWorkflow(target)
+      },
+      unavailable: true,
+      selected: undefined
+    },
+    {
+      event: 'deleting an unsaved target, which only closes it',
       act: async ({ workflows, target }: TargetSetup) =>
         workflows.deleteWorkflow(target),
+      unavailable: false,
+      selected: undefined
+    },
+    {
+      event: 'renaming, then deleting, the closed saved target',
+      act: async ({ workflows, target }: TargetSetup) => {
+        saveTarget(target)
+        vi.spyOn(target, 'rename').mockImplementation(async (path) => {
+          target.path = path
+          return target
+        })
+        await workflows.closeWorkflow(target)
+        await nextTick()
+        await workflows.renameWorkflow(target, 'workflows/renamed.json')
+        await workflows.deleteWorkflow(target)
+      },
       unavailable: true,
       selected: undefined
     },
@@ -125,6 +169,18 @@ describe('Agent target deletion', () => {
       expect(context.panel.selectedWorkflow?.path).toBe(selected)
     }
   )
+
+  it('does not keep a closed temporary target alive', async () => {
+    const closed = await closeTemporaryTarget()
+    // Mock call records would otherwise keep the workflow reachable.
+    vi.clearAllMocks()
+
+    await new Promise((resolve) => setTimeout(resolve))
+    collectGarbage()
+
+    expect(closed.deref()).toBeUndefined()
+    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+  })
 })
 
 describe('Agent target tracking policy', () => {

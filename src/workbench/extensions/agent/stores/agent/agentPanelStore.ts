@@ -28,7 +28,7 @@ type TargetTracking =
   | {
       mode: 'retained'
       workflow: ComfyWorkflow | null
-      closed?: ComfyWorkflow
+      closedPath?: string
       unavailable?: true
     }
 
@@ -139,24 +139,49 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
         targetTracking.value = {
           mode: 'retained',
           workflow: null,
-          closed: target.workflow
+          ...(target.workflow.isTemporary
+            ? {}
+            : { closedPath: target.workflow.path })
         }
     }
   )
 
-  // Closing the target's tab only clears it; deleting the workflow means the
-  // chat's target is gone, which the chat then says.
+  // Closing the target's tab only clears it; deleting its saved file means the
+  // chat's target is gone, which the chat then says. A closed target is known
+  // by its saved path, so the store never keeps the closed workflow alive.
+  function isRetainedTarget(workflow: ComfyWorkflow): boolean {
+    const target = targetTracking.value
+    if (target.mode !== 'retained') return false
+    return target.workflow === null
+      ? target.closedPath === workflow.path
+      : toRaw(target.workflow) === toRaw(workflow)
+  }
+
+  function reportDeletedTarget(deleted: ComfyWorkflow): void {
+    const target = targetTracking.value
+    if (
+      target.mode === 'retained' &&
+      (target.workflow === null || toRaw(target.workflow) === toRaw(deleted))
+    )
+      markWorkflowTargetUnavailable()
+  }
+
+  function followClosedTargetRename(oldPath: string, newPath: string): void {
+    const target = targetTracking.value
+    if (target.mode === 'retained' && target.closedPath === oldPath)
+      targetTracking.value = { ...target, closedPath: newPath }
+  }
+
   workflowStore.$onAction(({ name, args, after }) => {
-    if (name !== 'deleteWorkflow') return
-    const [deleted] = args
-    after(() => {
-      const target = targetTracking.value
-      if (
-        target.mode === 'retained' &&
-        toRaw(target.workflow ?? target.closed) === toRaw(deleted)
-      )
-        markWorkflowTargetUnavailable()
-    })
+    if (name === 'deleteWorkflow') {
+      const [workflow] = args
+      if (!workflow.isTemporary && isRetainedTarget(workflow))
+        after(() => reportDeletedTarget(workflow))
+    } else if (name === 'renameWorkflow') {
+      const [workflow] = args
+      const oldPath = workflow.path
+      after(() => followClosedTargetRename(oldPath, workflow.path))
+    }
   })
 
   let openedAt: number | null = null
