@@ -2,28 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import type { Locale } from '../config/locales'
 import { LOCALE_CODES } from '../config/locales'
-import cinematicEn from '../locales/en/cinematic.json' with { type: 'json' }
-import mainEn from '../locales/en/main.json' with { type: 'json' }
-import cinematicJa from '../locales/ja/cinematic.json' with { type: 'json' }
-import reshootEn from '../locales/en/reshoot.json' with { type: 'json' }
-import reshootJa from '../locales/ja/reshoot.json' with { type: 'json' }
-import routerEn from '../locales/en/router.json' with { type: 'json' }
-import routerJa from '../locales/ja/router.json' with { type: 'json' }
-import cinematicZhCN from '../locales/zh-CN/cinematic.json' with { type: 'json' }
-import reshootZhCN from '../locales/zh-CN/reshoot.json' with { type: 'json' }
-import routerZhCN from '../locales/zh-CN/router.json' with { type: 'json' }
-import mainZhCN from '../locales/zh-CN/main.json' with { type: 'json' }
 import type { TranslationKey } from './translations'
-import {
-  createTranslator,
-  hasKey,
-  t,
-  tAround,
-  tPlural,
-  translationKeys
-} from './translations'
-
-const pluralKeys: readonly string[] = ['cloudNodesLaunch.models.nodeCount']
+import { createTranslator, hasKey, t, tAround } from './translations'
 
 const catalogSources = import.meta.glob<string>('../locales/*/*.json', {
   eager: true,
@@ -32,6 +12,15 @@ const catalogSources = import.meta.glob<string>('../locales/*/*.json', {
 })
 
 type Catalog = { [key: string]: string | Catalog }
+
+const catalogFiles = new Map(
+  Object.entries(
+    import.meta.glob<Catalog>('../locales/*/*.json', {
+      eager: true,
+      import: 'default'
+    })
+  )
+)
 
 function leafMessages(tree: Catalog, prefix = ''): [string, string][] {
   return Object.entries(tree).flatMap<[string, string]>(([key, value]) =>
@@ -56,76 +45,44 @@ function unrenderable<Key extends string>(
   },
   english: Catalog,
   locale: Locale
-): Key[] {
+): [Key, string][] {
   const englishMessages = new Map(leafMessages(english))
-  return translator.keys.filter((key) => {
+  return translator.keys.flatMap<[Key, string]>((key) => {
     try {
-      if (pluralKeys.includes(key)) {
+      const message = englishMessages.get(key) ?? ''
+      const syntax = message.replace(/\{\s*'(?:[^'\\]|\\.)*'\s*\}/g, '')
+      if (syntax.includes('|')) {
         translator.tPlural(key, 2, locale)
       } else {
-        translator.t(
-          key,
-          locale,
-          valuesForPlaceholders(englishMessages.get(key) ?? '')
-        )
+        translator.t(key, locale, valuesForPlaceholders(message))
       }
-      return false
-    } catch {
-      return true
+      return []
+    } catch (error) {
+      return [[key, error instanceof Error ? error.message : String(error)]]
     }
   })
 }
 
-const catalogs = [
-  {
-    file: 'main.json',
-    english: mainEn,
-    chinese: mainZhCN,
-    unrenderable: (locale: Locale) =>
-      unrenderable({ keys: translationKeys, t, tPlural }, mainEn, locale)
-  },
-  {
-    file: 'cinematic.json',
-    english: cinematicEn,
-    chinese: cinematicZhCN,
-    unrenderable: (locale: Locale) =>
-      unrenderable(
-        createTranslator({
-          en: cinematicEn,
-          'zh-CN': cinematicZhCN,
-          ja: cinematicJa
-        }),
-        cinematicEn,
-        locale
-      )
-  },
-  {
-    file: 'reshoot.json',
-    english: reshootEn,
-    chinese: reshootZhCN,
-    unrenderable: (locale: Locale) =>
-      unrenderable(
-        createTranslator({
-          en: reshootEn,
-          'zh-CN': reshootZhCN,
-          ja: reshootJa
-        }),
-        reshootEn,
-        locale
-      )
-  },
-  {
-    file: 'router.json',
-    english: routerEn,
-    chinese: routerZhCN,
-    unrenderable: (locale: Locale) =>
-      unrenderable(
-        createTranslator({ en: routerEn, 'zh-CN': routerZhCN, ja: routerJa }),
-        routerEn,
-        locale
-      )
-  }
-]
+const catalogs = [...catalogFiles]
+  .filter(([path]) => path.startsWith('../locales/en/'))
+  .map(([path, english]) => {
+    const file = path.slice('../locales/en/'.length)
+    const chinese = catalogFiles.get(`../locales/zh-CN/${file}`) ?? {}
+    const translated = Object.fromEntries(
+      LOCALE_CODES.flatMap((locale) => {
+        const messages = catalogFiles.get(`../locales/${locale}/${file}`)
+        return messages ? [[locale, messages]] : []
+      })
+    )
+    const translator = createTranslator({ ...translated, en: english })
+    return {
+      file,
+      english,
+      chinese,
+      unrenderable: (locale: Locale) =>
+        unrenderable(translator, english, locale)
+    }
+  })
 
 it.for(Object.entries(catalogSources))(
   'preserves every entry when parsing %s',
