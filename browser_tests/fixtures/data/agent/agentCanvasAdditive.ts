@@ -1,4 +1,4 @@
-import type { RecordedGraphOperation } from './agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
 export const ADDITIVE_CANVAS_CASE = 'agent-rec-text-only-answer'
 export const ADDITIVE_READINESS_NODE_ID = '6'
