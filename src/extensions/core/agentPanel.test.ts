@@ -249,6 +249,7 @@ describe('AgentPanel extension flag gate', () => {
     )
     mocks.registerTracker.mockClear()
     localStorage.clear()
+    sessionStorage.clear()
     canvasStore.updateSelectedItems.mockClear()
     mocks.getNodeByLocatorId.mockReset()
     nodeSelectionStore.beginWorkflowLoad.mockClear()
@@ -294,6 +295,26 @@ describe('AgentPanel extension flag gate', () => {
     expect(
       useTelemetry()?.trackAgentPanelOpened
     ).toHaveBeenCalledExactlyOnceWith({ source: 'restored' })
+  })
+
+  it('preserves activation ownership across an app remount', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    sessionStorage.setItem(
+      'Comfy.AgentPanel.ActivationOpened.account-a.workspace-a',
+      'true'
+    )
+
+    await loadEntryAndSetup()
+    await flush()
+
+    expect(agentStore.isOpen).toBe(true)
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+      exit: 'activation_opened_panel',
+      stage: 'offer',
+      retry_armed: false
+    })
   })
 
   it.for([
