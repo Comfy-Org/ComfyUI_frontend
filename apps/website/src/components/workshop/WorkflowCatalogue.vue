@@ -16,6 +16,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import CardRow from './CardRow.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
+import { CARD_GRID, SHELF_CARD } from '../../lib/workshop/card-layout'
 import { modelSlides } from '../../lib/workshop/featured-slides'
 import type { FilterChip } from './WorkshopFilterChips.vue'
 import WorkshopFilterChips from './WorkshopFilterChips.vue'
@@ -260,7 +261,7 @@ function leaveSection() {
           <li
             v-for="model in category.models"
             :key="model.slug"
-            class="w-60 shrink-0 snap-start sm:w-[calc((100cqw-2*1.25rem)/2.5)] md:w-[calc((100cqw-3*1.25rem)/3.5)] lg:w-[calc((100cqw-4*1.25rem)/4.5)] xl:w-[calc((100cqw-5*1.25rem)/5.5)]"
+            :class="SHELF_CARD"
           >
             <WorkshopModelCard :model :locale />
           </li>
@@ -282,7 +283,7 @@ function leaveSection() {
 
     <ul
       v-else-if="visible.length"
-      class="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+      :class="CARD_GRID"
       :aria-label="t('workshop.hub.workflows', locale)"
       data-testid="workflow-search-results"
     >
