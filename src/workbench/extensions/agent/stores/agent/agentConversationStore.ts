@@ -61,11 +61,16 @@ export const useAgentConversationStore = defineStore(
     let activeTransportThreadId: string | null = null
     let liveMessage: AssistantMessage | null = null
     /**
-     * Whether the active turn was installed by `hydrate()` from a transcript
-     * row rather than started here. Only such a row is safe for
+     * Whether the occupied slot holds a row `hydrate()` restored from a
+     * transcript rather than a turn started here. Only such a row is safe for
      * `resumeBackgroundTurn` to settle on its way past: a turn this client
      * started is genuinely live, and a send can take the slot between the
      * hydrate and the resume.
+     *
+     * Written in exactly two places -- set where `hydrate()` installs its
+     * transport, cleared by `clearActive()` -- so `transport === null` implies
+     * `false` and every other install path is preceded by a clear. That is
+     * what keeps it from drifting out of step with the slot it describes.
      */
     let activeFromSnapshot = false
     // PM-1575: whether a newly-created transport should hold a tool-call's
@@ -220,7 +225,6 @@ export const useAgentConversationStore = defineStore(
       activeTurnId.value = turnId
       activeIndex.value = messages.value.push(message) - 1
       activeTransportThreadId = threadId.value
-      activeFromSnapshot = false
       transport = createAgentEventTransport(
         message,
         replaceActive,
@@ -409,6 +413,12 @@ export const useAgentConversationStore = defineStore(
       if (resumedThreadId === null) return
       const entry = backgroundTurns.get(resumedThreadId)
       if (!entry) return
+      // A turn started while this resume was in flight holds the slot, and the
+      // stash is the older of the two. Taking the slot anyway would orphan the
+      // newer turn's transport -- the same leak in the other direction. Leave
+      // the stash where it is: it still receives its own frames as a
+      // background turn, and a later resume can restore it.
+      if (transport !== null && !activeFromSnapshot) return
       backgroundTurns.delete(resumedThreadId)
       // A snapshot the stash could not be matched to installed its own live
       // row, and this stash is about to take the slot. Ownership matching
@@ -427,11 +437,7 @@ export const useAgentConversationStore = defineStore(
       // Called before the branch, not inside it: it pops the duplicate row and
       // its user text whether or not this entry turns out to be settled.
       const poppedHydratedCopy = removeHydratedCopy(entry, kept)
-      if (
-        entry.settled &&
-        !poppedHydratedCopy &&
-        hydratedMessageIds.has(entry.messageId)
-      ) {
+      if (persistedCopyOutlivesEntry(entry, poppedHydratedCopy)) {
         retireBackgroundTurn(entry, resumedThreadId)
         return
       }
@@ -442,10 +448,17 @@ export const useAgentConversationStore = defineStore(
         retireBackgroundTurn(entry, resumedThreadId)
         return
       }
+      claimSlotForBackgroundTurn(entry, index, resumedThreadId)
+    }
+
+    function claimSlotForBackgroundTurn(
+      entry: BackgroundTurn,
+      index: number,
+      resumedThreadId: string
+    ): void {
       activeTurnId.value = entry.messageId
       activeIndex.value = index
       activeTransportThreadId = resumedThreadId
-      activeFromSnapshot = false
       transport = entry.transport
       liveMessage = entry.message
     }
@@ -454,6 +467,22 @@ export const useAgentConversationStore = defineStore(
      * PM-1575: flush what the discarded transport still holds rather than
      * leaving it reachable only by its own STALE_AFTER_MS fallback.
      */
+    /**
+     * Whether the hydrated transcript already shows this settled turn, so the
+     * entry has nothing left to contribute but the transport it is about to
+     * hand over.
+     */
+    function persistedCopyOutlivesEntry(
+      entry: BackgroundTurn,
+      poppedHydratedCopy: boolean
+    ): boolean {
+      return (
+        entry.settled &&
+        !poppedHydratedCopy &&
+        hydratedMessageIds.has(entry.messageId)
+      )
+    }
+
     function retireBackgroundTurn(
       entry: BackgroundTurn,
       resumedThreadId: string
