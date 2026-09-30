@@ -239,6 +239,20 @@ describe('persistThumbnail', () => {
     })
   })
 
+  it('names a jpeg thumbnail with a jpg extension', async () => {
+    mockFetchEmpty()
+    mockFetchResponse([localAsset])
+    mockUploadAssetFromBase64.mockResolvedValue({ id: 'new-preview-id' })
+    mockUpdateAsset.mockResolvedValue({})
+
+    const blob = new Blob(['fake-jpeg'], { type: 'image/jpeg' })
+    await persistThumbnail('ComfyUI_00081_.glb', blob)
+
+    expect(mockUploadAssetFromBase64.mock.calls[0][0].name).toBe(
+      'ComfyUI_00081_.glb_preview.jpg'
+    )
+  })
+
   it('skips when asset already has preview_id', async () => {
     mockFetchEmpty()
     mockFetchResponse([localAssetWithPreview])

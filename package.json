@@ -114,6 +114,7 @@
     "@floating-ui/vue": "catalog:",
     "@formkit/auto-animate": "catalog:",
     "@iconify/json": "catalog:",
+    "@monogrid/gainmap-js": "catalog:",
     "@primeuix/utils": "catalog:",
     "@primevue/core": "catalog:",
     "@primevue/forms": "catalog:",

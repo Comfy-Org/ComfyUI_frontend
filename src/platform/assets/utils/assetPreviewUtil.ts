@@ -86,7 +86,8 @@ export async function attachPreview(
   asset: Pick<AssetRecord, 'id' | 'name'>,
   blob: Blob
 ): Promise<void> {
-  const previewFilename = `${asset.name}_preview.png`
+  const extension = blob.type === 'image/jpeg' ? 'jpg' : 'png'
+  const previewFilename = `${asset.name}_preview.${extension}`
   const uploaded = await assetService.uploadAssetFromBase64({
     data: await blobToDataUrl(blob),
     name: previewFilename,
