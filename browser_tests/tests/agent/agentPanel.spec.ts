@@ -4,6 +4,7 @@ import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -59,9 +60,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     const page = comfyPage.page
 
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
-    await expect(openButton).toBeVisible()
-    await openButton.click()
+    await new AgentPanel(page).open()
 
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
@@ -275,7 +274,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       comfyPage
     }) => {
       const page = comfyPage.page
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+      await new AgentPanel(page).open()
 
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
@@ -376,7 +375,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await new AgentPanel(page).open()
 
     const scrollContainer = page
       .locator('#agent-panel-root div.overflow-y-auto')
@@ -400,7 +399,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await new AgentPanel(page).open()
 
     const panel = page.locator('#agent-panel-root')
     await panel
@@ -497,7 +496,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await new AgentPanel(page).open()
 
     await selectAgentWorkflow(page)
 
@@ -520,7 +519,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     getWebSocket
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await new AgentPanel(page).open()
 
     await selectAgentWorkflow(page)
 

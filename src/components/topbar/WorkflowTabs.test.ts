@@ -400,7 +400,7 @@ describe('WorkflowTabs agent entry button', () => {
     ).toBeInTheDocument()
   })
 
-  it('keeps a hidden restored intent reachable and clears it before requesting consent', async () => {
+  it('closes a restored pre-consent panel from the entry button', async () => {
     useAgentPanelStore().open()
     withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
       expect(useAgentPanelStore().isOpen).toBe(false)
@@ -413,8 +413,8 @@ describe('WorkflowTabs agent entry button', () => {
       screen.getByRole('button', { name: enMessages.agent.entryButton })
     )
 
-    expect(withConsent).toHaveBeenCalledOnce()
-    expect(useAgentPanelStore().isVisible).toBe(true)
+    expect(withConsent).not.toHaveBeenCalled()
+    expect(useAgentPanelStore().isVisible).toBe(false)
   })
 
   it('exposes the gate-settled signal on the actions container once the gate settles', async () => {

@@ -5,6 +5,7 @@ import type { AgentMessage } from '@comfyorg/ingest-types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   dropAssets,
   expectAssets
@@ -167,12 +168,7 @@ for (const scenario of [
         return route.fulfill(jsonRoute(messages))
       })
 
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,

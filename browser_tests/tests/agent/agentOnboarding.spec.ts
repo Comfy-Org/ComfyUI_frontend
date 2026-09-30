@@ -16,9 +16,6 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     await bootAgentApp(page, agentFlagEnabled, {
       onboardingCompleted: false
     })
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
     const steps = [
       [enMessages.agent.coachTitle, enMessages.agent.coachBody],
       [enMessages.agent.coachWorkflowTitle, enMessages.agent.coachWorkflowBody],

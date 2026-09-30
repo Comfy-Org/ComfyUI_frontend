@@ -101,9 +101,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   let openedAt: number | null = null
 
-  const isVisible = computed(
-    () => enabled.value && isOpen.value && consentAccepted.value
-  )
+  const isVisible = computed(() => enabled.value && isOpen.value)
 
   watch(isVisible, (visible) => {
     if (!visible) {

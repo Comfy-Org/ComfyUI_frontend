@@ -6,17 +6,14 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
-
 test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
   for (const width of [480, 640]) {
     test(`X-01 / PM-672 keeps controls usable at ${width}px panel width`, async ({
+      agentPanel,
       comfyPage
     }) => {
       const page = comfyPage.page
-      await page
-        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-        .click()
+      await agentPanel.open()
       const panel = page.locator('#agent-panel-root')
 
       const dock = page.getByTestId('docked-agent-panel')
