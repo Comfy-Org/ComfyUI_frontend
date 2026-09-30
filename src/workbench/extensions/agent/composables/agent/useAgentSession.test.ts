@@ -483,10 +483,10 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.isStreaming).toBe(false)
   })
 
-  // The buffer belongs to one panel instance. Left armed past `stop()`, its
-  // hydrate replays into whatever the next panel has built by then, which is
-  // not the state these frames describe.
-  it('(b4d) delivers buffered frames when the panel closes mid-fetch', async () => {
+  // A panel can close after the terminal frame was buffered but before its
+  // history request installs a transport. The successor must own that frame:
+  // replaying it during stop has no active turn to settle.
+  it('(b4d) hands a buffered done to the successor when the panel closes mid-fetch', async () => {
     const conversation = useAgentConversationStore()
     const rest = fakeRest({
       getMessages: vi.fn(() => new Promise<AgentMessages>(() => {}))
@@ -500,11 +500,59 @@ describe('useAgentSession (v1 composition root)', () => {
     void session.loadThread('th-1')
     emit(done('msg-1'))
     session.stop()
+    await Promise.resolve()
+    expect(conversation.activeTurnId).toBeNull()
 
-    // Synchronous: `stop()`'s own abort is queued behind a microtask, so the
-    // stash is still here to receive what the buffer was holding.
+    const reopened = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'turn-1', 'go'),
+            {
+              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+              content: {},
+              status: 'streaming'
+            }
+          ]
+        )
+      }),
+      events: fakeEvents().source
+    })
+    reopened.start()
+
+    await vi.waitFor(() => {
+      expect(reopened.isStreaming.value).toBe(false)
+      expect(conversation.activeTurnId).toBeNull()
+    })
+  })
+
+  it('(b4i) replays a buffered done after history hydration rejects', async () => {
+    const conversation = useAgentConversationStore()
+    let rejectHistory: ((error: Error) => void) | undefined
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((_, reject) => {
+            rejectHistory = reject
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('go')
+    emit(thinking('msg-1', 'planning'))
+
+    void session.loadThread('th-1')
+    emit(done('msg-1'))
+    assert(rejectHistory !== undefined)
+    rejectHistory(new Error('history unavailable'))
+
+    await vi.waitFor(() => expect(reportError).toHaveBeenCalled())
+    conversation.setThreadId('th-1')
     conversation.resumeBackgroundTurn()
     expect(conversation.isStreaming).toBe(false)
+    expect(conversation.activeTurnId).toBeNull()
   })
 
   // Both halves of the hazard at once, which (b4c)/(b4d) and (b4e) only cover

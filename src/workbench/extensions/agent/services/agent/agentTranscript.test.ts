@@ -368,9 +368,9 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.pending?.messageId).toBe('row-1')
   })
 
-  // PM-1776 / PM-1682: the counterpart of the clamp above. The server leaves a
-  // row `streaming` for exactly as long as it is still running the turn, so a
-  // client hydrating mid-turn gets a live turn back, ask or no ask.
+  // PM-1776 / PM-1682: the counterpart of the clamp above. A server row that
+  // is still `streaming` is the best snapshot signal available to a client
+  // hydrating mid-turn, so it restores a live turn, ask or no ask.
   it('restores a row the server still reports as streaming as the live turn', () => {
     const message = row(1, 'assistant', 'turn-a', '', 'row-1')
     message.status = 'streaming'

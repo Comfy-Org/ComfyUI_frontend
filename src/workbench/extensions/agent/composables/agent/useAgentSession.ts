@@ -128,6 +128,16 @@ export interface AgentSessionDeps {
 
 const PREPARE_TIMEOUT_MS = 3000
 
+interface HydrationBuffer {
+  threadId: string
+  events: AgentWsEvent[]
+  owner: symbol
+}
+
+// Hydration outlives the panel that initiated it. Keep frames at page scope so
+// a remounted session can claim them before installing the restored transport.
+const hydrationBuffers = new Map<string, HydrationBuffer>()
+
 const NON_RETRYABLE_REQUEST_STATUSES = new Set([
   400, 401, 403, 404, 405, 409, 410, 422
 ])
@@ -323,6 +333,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function start(): void {
+    stopped = false
     ownedGeneration = ++sessionGeneration
     everLive = false
     const surviving = conversationStore.threadId
@@ -365,11 +376,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  interface HydrationBuffer {
-    threadId: string
-    events: AgentWsEvent[]
-  }
-
   /**
    * The buffer holding for each thread whose hydrate is still fetching.
    * `subscribe()` runs before the GET resolves, and until the transcript
@@ -384,12 +390,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * thread is what makes "one buffer per thread" unrepresentable rather than
    * merely maintained.
    */
-  const hydrations = new Map<string, HydrationBuffer>()
+  const hydrationOwner = Symbol('agent-session-hydration')
+  let stopped = false
 
   function bufferFor(
     threadId: string | undefined
   ): HydrationBuffer | undefined {
-    return threadId === undefined ? undefined : hydrations.get(threadId)
+    return threadId === undefined ? undefined : hydrationBuffers.get(threadId)
   }
 
   /**
@@ -403,15 +410,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * settled transport drop what they cannot place.
    */
   function armHydration(threadId: string): HydrationBuffer {
-    const superseded = hydrations.get(threadId)
+    const superseded = hydrationBuffers.get(threadId)
     const buffer: HydrationBuffer = {
       threadId,
+      owner: hydrationOwner,
       // Moved, not copied: a superseded hydrate still drains from its own
       // `finally`, and a frame left behind there is replayed a second time
       // into whatever is active by then.
       events: superseded?.events.splice(0) ?? []
     }
-    hydrations.set(threadId, buffer)
+    hydrationBuffers.set(threadId, buffer)
     return buffer
   }
 
@@ -429,8 +437,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * live hydrate's frames with nowhere to be held.
    */
   function drainHydration(buffer: HydrationBuffer): void {
-    if (hydrations.get(buffer.threadId) === buffer)
-      hydrations.delete(buffer.threadId)
+    if (buffer.owner !== hydrationOwner || stopped) return
+    if (hydrationBuffers.get(buffer.threadId) === buffer)
+      hydrationBuffers.delete(buffer.threadId)
     for (const event of buffer.events.splice(0)) handleAgentEvent(event)
   }
 
@@ -494,18 +503,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function stop(): void {
+    stopped = true
     unsubscribe?.()
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
-    // The buffers belong to this instance, so a hydrate still in flight would
-    // replay into whatever the successor has set up by then. Deliver now,
-    // while the turns these frames describe are still the ones on the store.
-    // Clear before replaying: a replayed frame runs `heldForHydration` again,
-    // and a buffer still registered would simply re-capture it.
-    const armed = [...hydrations.values()]
-    hydrations.clear()
-    for (const buffer of armed) drainHydration(buffer)
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
