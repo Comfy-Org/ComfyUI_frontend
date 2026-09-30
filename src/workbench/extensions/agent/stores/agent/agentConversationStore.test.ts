@@ -2183,6 +2183,31 @@ describe('useAgentConversationStore', () => {
     expect(partTexts(store)).toEqual(['persisted reply'])
   })
 
+  /**
+   * Disposing the stash flushes any part PM-1575's canvas gate is holding, and
+   * that flush emits a snapshot of the message being discarded. `replaceActive`
+   * places a snapshot by id -- the same id the merged copy occupies on this
+   * path -- so a flush run after the merge is published overwrites it and the
+   * persisted reply disappears.
+   */
+  it('keeps the merged same-id copy when the disposed stash still holds a gated part', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 't1', 'go'),
+      historyRow(2, 'assistant', 't1', 'persisted reply', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['persisted reply'])
+  })
+
   it('resolves existing paywalls without resurrecting them', () => {
     const store = useAgentConversationStore()
     store.recordPaywall(T1, 'subscribe')

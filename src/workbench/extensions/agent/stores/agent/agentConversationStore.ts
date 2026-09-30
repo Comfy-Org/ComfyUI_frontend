@@ -529,13 +529,19 @@ export const useAgentConversationStore = defineStore(
         )
       ) {
         rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
-        messages.value = kept
-        resyncActiveSlot()
         // The persisted, authoritative copy is already on screen (kept, via
         // the filter above) -- this entry's transport is now discarded for
         // good, so flush anything it is still holding rather than leaving it
         // unreachable until its own STALE_AFTER_MS fallback.
+        //
+        // Flushed BEFORE the merge is published: a transport still holding a
+        // gated part emits a snapshot of the message being discarded, and
+        // `replaceActive` places that by id -- which is the id the merged copy
+        // is about to occupy. Draining it against the outgoing array lets the
+        // assignment below overwrite the stray write instead of the reverse.
         entry.transport.dispose()
+        messages.value = kept
+        resyncActiveSlot()
         return
       }
       if (

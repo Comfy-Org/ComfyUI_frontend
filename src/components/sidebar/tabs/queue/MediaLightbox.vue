@@ -45,7 +45,7 @@
               :key="resultItemUrl(activeItem)"
               :src="resultItemUrl(activeItem)"
               :contain="false"
-              :alt="activeItem.filename"
+              :alt="activeItem.display_name ?? activeItem.filename"
               class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
             />
             <ResultVideo

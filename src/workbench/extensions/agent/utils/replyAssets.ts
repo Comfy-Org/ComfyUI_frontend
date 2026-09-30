@@ -113,9 +113,11 @@ export function htmlReplyAssets(html: string): ReplyAsset[] {
 
 export function replyAssetResultItem(asset: ReplyAsset): AugmentedResultItem {
   return {
-    // The lightbox renders this as alt text, and a user attachment's filename
-    // is its storage ref -- a content hash reads as nothing to a screenreader.
-    filename: asset.label ?? asset.filename,
+    // Stays the storage filename: the lightbox picks its renderer off this
+    // extension. The readable string rides on display_name, which is alt text
+    // only -- a reply's label is markdown alt text and can name any extension.
+    filename: asset.filename,
+    display_name: asset.label,
     subfolder: '',
     type: 'output',
     nodeId: '',
