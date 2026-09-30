@@ -39,9 +39,7 @@ vi.mock(import('extendable-media-recorder'), () => ({
   )
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/composables/node/useNodeDragAndDrop'), () => ({
   useNodeDragAndDrop: (_node, options) => {
@@ -298,6 +296,7 @@ async function loadAudioRecordWidget() {
 }
 
 const RECORDER_FAILURE_REPORT = {
+  surface: 'assets',
   errorType: 'failure_starting_audio_recorder',
   tags: {
     failure_kind: 'caught_unexpected',

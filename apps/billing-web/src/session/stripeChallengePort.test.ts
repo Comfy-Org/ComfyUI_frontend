@@ -104,3 +104,52 @@ describe('createDeferredStripeChallengePort', () => {
     expect(h.loadStripe).toHaveBeenCalledWith('pk_server')
   })
 })
+
+describe('leavesPage', () => {
+  beforeEach(() => {
+    h.loadStripe.mockReset()
+  })
+
+  it.for<{ name: string; retrieved: unknown; leaves: boolean }>([
+    {
+      name: 'a challenge Stripe runs in the page',
+      retrieved: { paymentIntent: { next_action: { type: 'use_stripe_sdk' } } },
+      leaves: false
+    },
+    {
+      name: 'an Alipay redirect',
+      retrieved: {
+        paymentIntent: { next_action: { type: 'alipay_handle_redirect' } }
+      },
+      leaves: true
+    },
+    {
+      name: "a bank's own page",
+      retrieved: {
+        paymentIntent: { next_action: { type: 'redirect_to_url' } }
+      },
+      leaves: true
+    },
+    {
+      name: 'an intent Stripe would not return',
+      retrieved: { error: { code: 'resource_missing' } },
+      leaves: true
+    }
+  ])(
+    'reads $name as leaving the page: $leaves',
+    async ({ retrieved, leaves }) => {
+      const retrievePaymentIntent = vi.fn(async () => retrieved)
+      h.loadStripe.mockResolvedValue({ retrievePaymentIntent })
+      const port = createDeferredStripeChallengePort(() => 'pk_server')
+
+      await expect(port.leavesPage('cs_reload')).resolves.toBe(leaves)
+      expect(retrievePaymentIntent).toHaveBeenCalledWith('cs_reload')
+    }
+  )
+
+  it('reads a provider that never loaded as leaving the page', async () => {
+    const port = createDeferredStripeChallengePort(() => undefined)
+
+    await expect(port.leavesPage('cs_reload')).resolves.toBe(true)
+  })
+})

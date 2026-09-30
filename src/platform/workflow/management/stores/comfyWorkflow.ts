@@ -209,6 +209,7 @@ export class ComfyWorkflow extends UserFile {
       })
     } catch (error) {
       reportError(error, {
+        surface: 'graph',
         errorType: 'error_loading_dialog_service_prompt_save'
       })
       return null

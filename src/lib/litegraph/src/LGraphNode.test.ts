@@ -185,6 +185,20 @@ describe('LGraphNode', () => {
     expect(node.id).not.toBe(-1)
   })
 
+  test('draws the ❌ type fallback title for an unknown-type replacement node', () => {
+    const node = new LGraphNode('', 'UNKNOWN NODE')
+    node.configure(getMockISerialisedNode({ type: 'UNKNOWN NODE' }))
+    const ctx = createMockCanvasRenderingContext2D()
+
+    node.drawTitleText(ctx, { scale: 1, default_title_color: '#fff' })
+
+    expect(ctx.fillText).toHaveBeenCalledWith(
+      '❌ UNKNOWN NODE',
+      expect.any(Number),
+      expect.any(Number)
+    )
+  })
+
   describe('Disconnect I/O Slots', () => {
     function createConnectedPair() {
       const graph = new LGraph()

@@ -97,14 +97,14 @@ const {
         :class="
           variant === 'compact'
             ? 'w-full truncate text-sm leading-[1.2] font-semibold text-primary-comfy-canvas/95'
-            : 'text-2xl leading-[1.4] font-medium text-primary-comfy-canvas'
+            : 'text-2xl/[1.4] font-medium text-primary-comfy-canvas'
         "
       >
         {{ item.title }}
       </h3>
       <p
         v-if="item.description"
-        class="text-sm leading-[1.6] font-light text-primary-comfy-canvas"
+        class="text-sm/[1.6] font-light text-primary-comfy-canvas"
         :class="variant === 'compact' ? undefined : 'mt-4'"
       >
         {{ item.description }}

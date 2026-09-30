@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
 describe('registered LiteGraph type cleanup', { concurrent: false }, () => {
-  it('tracks a singleton registered after a module reset', async () => {
+  it('clears registrations from a singleton created after a module reset', async ({
+    onTestFinished
+  }) => {
     vi.resetModules()
     const { LGraphNode, LiteGraph } =
       await import('@/lib/litegraph/src/litegraph')
@@ -10,13 +12,12 @@ describe('registered LiteGraph type cleanup', { concurrent: false }, () => {
       class ResetModuleNode extends LGraphNode {}
     )
     expect(LiteGraph.registered_node_types['test/reset-module']).toBeDefined()
-  })
 
-  it('clears registrations from the new singleton', async () => {
-    const { litegraph } = await import('@/lib/litegraph/src/litegraphInstance')
-    expect(
-      litegraph().registered_node_types['test/reset-module']
-    ).toBeUndefined()
+    onTestFinished(() => {
+      expect(
+        LiteGraph.registered_node_types['test/reset-module']
+      ).toBeUndefined()
+    })
   })
 })
 

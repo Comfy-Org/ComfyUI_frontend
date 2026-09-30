@@ -10,6 +10,7 @@ import { createAgentEventTransport } from '../../services/agent/agentEventTransp
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
+import { createUndeliverableAskReporter } from '../../services/agent/undeliverableAskReporter'
 import type { UserAttachment } from '../../services/agent/agentTranscript'
 import type { WorkflowReference } from '../../types/workflowReference'
 
@@ -36,6 +37,8 @@ interface BackgroundTurn {
   settled: boolean
 }
 
+const MAX_DEPARTED_TURNS = 32
+
 export const useAgentConversationStore = defineStore(
   'agentConversation',
   () => {
@@ -46,9 +49,11 @@ export const useAgentConversationStore = defineStore(
     const userAttachments = ref(new Map<TurnId, UserAttachment[]>())
     const userTags = ref(new Map<TurnId, string[]>())
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
+    const attachmentNamesByThread = new Map<string, Map<string, string>>()
     const latestWorkflowId = ref<string>()
     const resolvedPaywallIds = ref(new Set<TurnId>())
     let transport: AgentEventTransport | null = null
+    let activeTransportThreadId: string | null = null
     let liveMessage: AssistantMessage | null = null
     // PM-1575: whether a newly-created transport should hold a tool-call's
     // chat "done" state back until canvas catch-up is confirmed (see
@@ -84,6 +89,8 @@ export const useAgentConversationStore = defineStore(
     const reportedPaywallImpressions = new Set<TurnId>()
     const approvalShownAtByAsk = new Map<string, number>()
     const shownApprovalIds = new Set<string>()
+    const undeliverableAskReporter = createUndeliverableAskReporter()
+    const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
     const activeIndex = ref(-1)
 
     function recordApprovalShown(askId: string, shownAt: number): boolean {
@@ -125,6 +132,16 @@ export const useAgentConversationStore = defineStore(
       if (index >= 0) messages.value[index] = message
     }
 
+    function rememberAttachmentNames(attachments: UserAttachment[]): void {
+      const currentThreadId = threadId.value
+      if (currentThreadId === null) return
+      const names = attachmentNamesByThread.get(currentThreadId) ?? new Map()
+      for (const attachment of attachments) {
+        if (attachment.ref) names.set(attachment.ref, attachment.name)
+      }
+      attachmentNamesByThread.set(currentThreadId, names)
+    }
+
     function recordUser(
       turnId: TurnId,
       text: string,
@@ -133,8 +150,10 @@ export const useAgentConversationStore = defineStore(
       workflowReferences?: WorkflowReference[]
     ): void {
       userTexts.value.set(turnId, text)
-      if (attachments !== undefined && attachments.length > 0)
+      if (attachments !== undefined && attachments.length > 0) {
         userAttachments.value.set(turnId, attachments)
+        rememberAttachmentNames(attachments)
+      }
       if (tags !== undefined && tags.length > 0)
         userTags.value.set(turnId, tags)
       if (workflowReferences !== undefined && workflowReferences.length > 0)
@@ -199,11 +218,13 @@ export const useAgentConversationStore = defineStore(
       liveMessage = message
       activeTurnId.value = turnId
       activeIndex.value = messages.value.push(message) - 1
+      activeTransportThreadId = threadId.value
       transport = createAgentEventTransport(
         message,
         replaceActive,
         () => canvasSyncGate(),
-        () => canvasSyncOutcomeCount()
+        () => canvasSyncOutcomeCount(),
+        reportUndeliverableAskData
       )
     }
 
@@ -223,8 +244,45 @@ export const useAgentConversationStore = defineStore(
         ingestActiveTabEvent(event, eventThreadId)
         return
       }
+      // Unreachable for `agent_ask`: the schema makes `thread_id` required on
+      // every event except `agent_active_tab`, handled above.
       if (eventThreadId === undefined) return
       ingestBackgroundTurnEvent(event, eventThreadId)
+    }
+
+    /**
+     * A dropped `agent_ask` is the one lost frame with no user-visible symptom:
+     * the server parks the turn waiting for an answer, the panel keeps showing
+     * whatever it last had, and nothing errors. The only report we have of this
+     * class reached us through a feedback form that happened to include a
+     * session id, so every `return` that can swallow an ask says so here.
+     *
+     * Deliberately not a `pushError`: the user cannot act on it, and a notice
+     * would replace a silent stall with a stall plus a scary message. This is
+     * for the dashboard.
+     */
+    function reportUndeliverableAsk(
+      event: AgentChatEvent,
+      reason: 'no-live-turn' | 'settled-turn'
+    ): void {
+      if (event.type !== 'agent_ask') return
+      reportUndeliverableAskData(event.data, reason)
+    }
+
+    function reportUndeliverableAskData(
+      data: Extract<AgentChatEvent, { type: 'agent_ask' }>['data'],
+      reason:
+        | 'no-live-turn'
+        | 'settled-turn'
+        | 'unknown-kind'
+        | 'unrendered-kind'
+    ): void {
+      undeliverableAskReporter.report(data, reason, {
+        hasActiveTurn: activeTurnId.value !== null,
+        backgroundTurnCount: backgroundTurns.size,
+        activeThreadId: threadId.value,
+        activeTurnId: activeTurnId.value
+      })
     }
 
     function ingestActiveTurnEvent(
@@ -245,6 +303,7 @@ export const useAgentConversationStore = defineStore(
     // something pending -- a settled transport with nothing held has no
     // reason to stay reachable.
     function settleActiveTurn(activeTransport: AgentEventTransport): void {
+      rememberDepartedActiveTurn('settled-turn')
       activeTransport.settle()
       if (activeTransport.hasPendingCanvasSync())
         settledActiveTransports.add(activeTransport)
@@ -265,7 +324,15 @@ export const useAgentConversationStore = defineStore(
       eventThreadId: string
     ): void {
       const entry = backgroundTurns.get(eventThreadId)
-      if (!entry || entry.messageId !== event.data.message_id) return
+      if (!entry || entry.messageId !== event.data.message_id) {
+        const eventMessageId = event.data.message_id
+        const reason =
+          eventMessageId === undefined
+            ? undefined
+            : departedTurns.get(departedTurnKey(eventThreadId, eventMessageId))
+        if (reason) reportUndeliverableAsk(event, reason)
+        return
+      }
       if (event.type === 'agent_message_done') {
         entry.transport.settle()
         entry.settled = true
@@ -302,6 +369,7 @@ export const useAgentConversationStore = defineStore(
 
     function abortActiveTurn(): void {
       if (!transport) return
+      rememberDepartedActiveTurn('no-live-turn')
       transport.settle()
       // Not `settledActiveTransports`: an abort is not a natural completion
       // whose held parts might still catch up, so flush them to `done` and
@@ -343,6 +411,7 @@ export const useAgentConversationStore = defineStore(
         !poppedHydratedCopy &&
         hydratedMessageIds.has(entry.messageId)
       ) {
+        rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
         // The persisted, authoritative copy is already on screen (kept, via
         // the filter above) -- this entry's transport is now discarded for
         // good, so flush anything it is still holding rather than leaving it
@@ -358,6 +427,7 @@ export const useAgentConversationStore = defineStore(
       const index = kept.push(entry.message) - 1
       messages.value = kept
       if (entry.settled) {
+        rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
         // PM-1575: this settled turn is kept on screen but not reactivated --
         // its transport is discarded for good right after this, same as the
         // hydrated-copy-dropped branch above, so flush anything it is still
@@ -368,6 +438,7 @@ export const useAgentConversationStore = defineStore(
       }
       activeTurnId.value = entry.messageId
       activeIndex.value = index
+      activeTransportThreadId = threadId.value
       transport = entry.transport
       liveMessage = entry.message
     }
@@ -389,29 +460,62 @@ export const useAgentConversationStore = defineStore(
       return true
     }
 
-    function settleBackgroundTurn(turnId: string): void {
+    function settleBackgroundTurn(turnId: string): TurnId | null {
       for (const [key, entry] of backgroundTurns) {
         if (entry.messageId !== turnId) continue
+        rememberDepartedTurn(key, entry.messageId, 'settled-turn')
         entry.transport.settle()
         // This turn is being dropped from the map here, unlike the
         // agent_message_done path in ingestBackgroundTurnEvent -- nothing
         // will keep it reachable afterwards, so flush its held parts now.
         entry.transport.dispose()
         backgroundTurns.delete(key)
-        return
+        return entry.messageId
       }
+      return null
     }
 
     function dropBackgroundTurns(): void {
-      for (const entry of backgroundTurns.values()) {
+      for (const [backgroundThreadId, entry] of backgroundTurns) {
+        rememberDepartedTurn(
+          backgroundThreadId,
+          entry.messageId,
+          entry.settled ? 'settled-turn' : 'no-live-turn'
+        )
         entry.transport.settle()
         entry.transport.dispose()
       }
       backgroundTurns.clear()
     }
 
+    function departedTurnKey(threadId: string, messageId: string): string {
+      return `${threadId}\u0000${messageId}`
+    }
+
+    function rememberDepartedTurn(
+      departedThreadId: string,
+      messageId: TurnId,
+      reason: 'no-live-turn' | 'settled-turn'
+    ): void {
+      const key = departedTurnKey(departedThreadId, messageId)
+      departedTurns.delete(key)
+      departedTurns.set(key, reason)
+      if (departedTurns.size <= MAX_DEPARTED_TURNS) return
+      const oldestKey = departedTurns.keys().next().value
+      if (oldestKey !== undefined) departedTurns.delete(oldestKey)
+    }
+
+    function rememberDepartedActiveTurn(
+      reason: 'no-live-turn' | 'settled-turn'
+    ): void {
+      if (activeTransportThreadId === null || activeTurnId.value === null)
+        return
+      rememberDepartedTurn(activeTransportThreadId, activeTurnId.value, reason)
+    }
+
     function clearActive(): void {
       transport = null
+      activeTransportThreadId = null
       liveMessage = null
       activeIndex.value = -1
       activeTurnId.value = null
@@ -448,15 +552,19 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId.value = undefined
       resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
+      attachmentNamesByThread.clear()
       threadId.value = null
       forgetAllApprovals()
       hydratedMessageIds = new Set()
       hydratedAssistantTurnIds = new Set()
       reportedPaywallImpressions.clear()
+      undeliverableAskReporter.reset()
+      departedTurns.clear()
       clearActive()
     }
 
     function hydrate(history: AgentMessages): void {
+      if (transport) rememberDepartedActiveTurn('no-live-turn')
       disposeActiveAndSettledTransports()
       clearActive()
       const transcript = normalizeAgentTranscript(history)
@@ -469,16 +577,33 @@ export const useAgentConversationStore = defineStore(
       hydratedMessageIds = transcript.rowIds
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
-      userAttachments.value = transcript.userAttachments
+      const rememberedNames =
+        threadId.value === null
+          ? undefined
+          : attachmentNamesByThread.get(threadId.value)
+      userAttachments.value = new Map(
+        [...transcript.userAttachments].map(([turnId, attachments]) => [
+          turnId,
+          attachments.map((attachment) => {
+            const name =
+              attachment.ref && attachment.name === attachment.ref
+                ? rememberedNames?.get(attachment.ref)
+                : undefined
+            return name === undefined ? attachment : { ...attachment, name }
+          })
+        ])
+      )
       if (transcript.pending) {
         liveMessage = transcript.pending.message
         activeTurnId.value = transcript.pending.messageId
         activeIndex.value = messages.value.indexOf(transcript.pending.message)
+        activeTransportThreadId = threadId.value
         transport = createAgentEventTransport(
           transcript.pending.message,
           replaceActive,
           () => canvasSyncGate(),
-          () => canvasSyncOutcomeCount()
+          () => canvasSyncOutcomeCount(),
+          reportUndeliverableAskData
         )
       }
     }

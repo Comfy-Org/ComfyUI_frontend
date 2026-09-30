@@ -435,6 +435,7 @@ describe('useMembersPanel', () => {
             renewalDate: null,
             endDate: null,
             hasFunds: true,
+            agentHasFunds: true,
             ...mockSubscription.value
           }
         : null
@@ -464,7 +465,7 @@ describe('useMembersPanel', () => {
     workspaceMembers = []
     workspacePendingInvites = []
     updateWorkspaceStore()
-    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = true
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     mockCanAccessSubscriptionFeatures.value = true
@@ -892,7 +893,20 @@ describe('useMembersPanel', () => {
     })
 
     it('omits the credit-limit action when the flag is disabled', async () => {
-      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
+      vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = false
+      const panel = await setup()
+
+      expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
+        [
+          'workspacePanel.members.actions.changeRole',
+          'workspacePanel.members.actions.removeMember'
+        ]
+      )
+    })
+
+    it('omits the credit-limit action under billing controls alone', async () => {
+      vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = false
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
@@ -904,7 +918,7 @@ describe('useMembersPanel', () => {
     })
 
     it('keeps the creator menu hidden when the flag is disabled', async () => {
-      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
+      vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = false
       setOriginalOwner()
       const panel = await setup()
 
@@ -1177,22 +1191,49 @@ describe('useMembersPanel', () => {
       expect(panel.isPlanEnded.value).toBe(true)
     })
 
-    it('keeps a missing-tier seatless plan out of the ended treatment', async () => {
+    // Without a team signal or a real tier there is nothing to hang the
+    // ended-team treatment on — a terminal tierless payload off the team
+    // plan is most plausibly lapsed personal, which the upgrade banner owns.
+    it('keeps a tierless terminal plan off the team plan out of the treatment', async () => {
       mockIsTeamPlan.value = false
-      mockMaxSeats.value = 1
       mockSubscriptionStatus.value = 'ended'
       mockSubscription.value = null
       const panel = await setup()
       expect(panel.isPlanEnded.value).toBe(false)
     })
 
-    // A seatless workspace has no member table; an Invite button that can
-    // never enable must not appear there.
-    it('hides the invite button for a seatless ended workspace', async () => {
+    // The real ended payload collapses max_seats to the no-plan default of 1
+    // and fails the self-serve Team classifier (enterprise_* slug, no team
+    // credit stop) — the treatment must survive both, or production hides
+    // the banner on exactly the workspace it was designed for. Pins the
+    // observed test-env payload: ended + ENTERPRISE + max_seats 1.
+    it('keeps the ended treatment when the backend collapses the seat limit', async () => {
+      mockIsTeamPlan.value = false
+      mockMaxSeats.value = 1
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+      // can_invite_members stays TRUE on the real ended payload —
+      // ResolveBillingWritePermissions grants it from the owner role alone.
+      // The disabled state, not the capability, carries the denial.
+      useBillingCapabilities().canInviteMembers = computed(() => true)
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(true)
+      expect(panel.isSalesManagedPlan.value).toBe(true)
+      // The visible-disabled Invite and the members table stay, banner intact.
+      expect(panel.showInviteButton.value).toBe(true)
+      expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.uiConfig.value.showMembersList).toBe(true)
+    })
+
+    // A lapsed personal workspace is seatless and outside the ended
+    // treatment; an Invite button that can never enable must not appear.
+    it('hides the invite button for a lapsed personal workspace', async () => {
+      mockIsTeamPlan.value = false
       mockSubscriptionStatus.value = 'ended'
       mockMaxSeats.value = 1
       useBillingCapabilities().canInviteMembers = computed(() => false)
       const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(false)
       expect(panel.showInviteButton.value).toBe(false)
     })
 

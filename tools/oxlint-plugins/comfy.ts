@@ -17,6 +17,7 @@ import type {
   noNewZodServerResponseSchema as NoNewZodServerResponseSchema,
   noPlaywrightImportsInFixtureData as NoPlaywrightImportsInFixtureData,
   noPrimeVueImports as NoPrimeVueImports,
+  noStaticallyDisabledTest as NoStaticallyDisabledTest,
   noUnitTestFilesInBrowserTests as NoUnitTestFilesInBrowserTests,
   noUnsafeErrorAssertion as NoUnsafeErrorAssertion
 } from './restrictedSyntax'
@@ -53,6 +54,7 @@ const {
   noNewZodServerResponseSchema,
   noPlaywrightImportsInFixtureData,
   noPrimeVueImports,
+  noStaticallyDisabledTest,
   noUnitTestFilesInBrowserTests,
   noUnsafeErrorAssertion
 } = requireFrom('./restrictedSyntax.ts') as {
@@ -66,6 +68,7 @@ const {
   noNewZodServerResponseSchema: typeof NoNewZodServerResponseSchema
   noPlaywrightImportsInFixtureData: typeof NoPlaywrightImportsInFixtureData
   noPrimeVueImports: typeof NoPrimeVueImports
+  noStaticallyDisabledTest: typeof NoStaticallyDisabledTest
   noUnitTestFilesInBrowserTests: typeof NoUnitTestFilesInBrowserTests
   noUnsafeErrorAssertion: typeof NoUnsafeErrorAssertion
 }
@@ -105,6 +108,7 @@ export default {
     'no-playwright-imports-in-fixture-data': noPlaywrightImportsInFixtureData,
     'no-primevue-imports': noPrimeVueImports,
     'no-render-in-watch-effect': noRenderInWatchEffect,
+    'no-statically-disabled-test': noStaticallyDisabledTest,
     'no-redundant-litegraph-cleanup': noRedundantLiteGraphCleanup,
     'no-redundant-vitest-cleanup': noRedundantVitestCleanup,
     'no-unit-test-files-in-browser-tests': noUnitTestFilesInBrowserTests,

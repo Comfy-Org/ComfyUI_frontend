@@ -6,6 +6,8 @@
     "components.d.ts",
     "coverage/*",
     "dist/*",
+    "apps/website/src/types/rate-card/types.gen.ts",
+    "apps/website/src/types/rate-card/zod.gen.ts",
     "packages/ingest-types/src/types.gen.ts",
     "packages/ingest-types/src/zod.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
@@ -95,7 +97,8 @@
     "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
     "vitest/expect-expect": "off",
     "vitest/no-conditional-expect": "off",
-    "vitest/no-disabled-tests": "off",
+    "vitest/no-disabled-tests": "error",
+    "vitest/warn-todo": "error",
     "vitest/no-standalone-expect": "off",
     "vitest/valid-title": "off",
     "vitest/require-to-throw-message": "off",
@@ -119,7 +122,20 @@
     "typescript/no-unsafe-declaration-merging": "off",
     "typescript/require-array-sort-compare": "error",
     "typescript/triple-slash-reference": "error",
-    "typescript/no-unused-vars": "off",
+    "typescript/no-unused-vars": [
+      "error",
+      {
+        "vars": "all",
+        "varsIgnorePattern": "^_",
+        "args": "all",
+        "argsIgnorePattern": "^_",
+        "caughtErrors": "all",
+        "caughtErrorsIgnorePattern": "^_",
+        "destructuredArrayIgnorePattern": "^_",
+        "ignoreRestSiblings": true,
+        "fix": { "imports": "safe-fix", "variables": "off" }
+      }
+    ],
     "unicorn/no-empty-file": "off",
     "vitest/require-mock-type-parameters": "off",
     "vitest/valid-expect": "error",
@@ -166,6 +182,7 @@
       ],
       "rules": {
         "comfy/no-import-actual": "error",
+        "comfy/no-statically-disabled-test": "error",
         "comfy/use-global-pinia": "error"
       }
     },

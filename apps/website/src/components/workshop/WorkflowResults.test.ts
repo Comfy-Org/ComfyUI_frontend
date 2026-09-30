@@ -3,7 +3,11 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h, shallowRef } from 'vue'
 
-import { createWorkflowApi } from '../../config/workshop-workflow-api'
+import {
+  createWorkflowApi,
+  WorkshopWorkflowError
+} from '../../config/workshop-workflow-api'
+import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
 import { createWorkflowController } from '../../config/workshop-workflow-controller'
 import type { WorkflowState } from '../../config/workshop-workflow-state'
@@ -194,5 +198,167 @@ describe('WorkflowResults', () => {
       .click(screen.getByRole('button', { name: 'Refresh download link' }))
     await waitFor(() => expect(f.fetch).toHaveBeenCalledTimes(4))
     expect(f.state.value.phase).toBe('settled')
+  })
+
+  it('hands an interrupted run to the panel without a clock', () => {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    render(WorkflowResults, {
+      props: {
+        model,
+        state: {
+          phase: 'interrupted',
+          record: {
+            version: 2,
+            cancelRequested: false,
+            stage: 'run',
+            runId: id,
+            workflowId: model.workflowId,
+            definitionVersion: '1'
+          },
+          error: new WorkshopWorkflowError('network')
+        },
+        exampleIndex: 0,
+        busy: true,
+        statusLabel: 'Connection interrupted',
+        canStart: false,
+        refreshOutput: () => undefined
+      }
+    })
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Connection interrupted'
+    )
+    expect(screen.queryByTestId('run-elapsed')).toBeNull()
+  })
+})
+
+// A request Cloud turns down used to leave the panel showing the example: a
+// picture of a successful run, beside a form that had just been refused.
+describe('a refused request', () => {
+  function mountRefused(code: WorkshopWorkflowError['code']) {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    render(WorkflowResults, {
+      props: {
+        model,
+        state: {
+          phase: 'failed',
+          error: new WorkshopWorkflowError(code)
+        } satisfies WorkflowState,
+        exampleIndex: 0,
+        busy: false,
+        statusLabel: '',
+        canStart: true,
+        refreshOutput: async () => undefined
+      }
+    })
+  }
+
+  it('stands the refusal up in the output panel instead of the example', () => {
+    mountRefused('insufficient_credits')
+
+    // Shown and also announced, so the sentence is on the page more than once.
+    expect(
+      screen.getAllByText('Not enough credits. Add credits to continue.').length
+    ).toBeGreaterThan(0)
+    expect(screen.queryByTestId('output-example')).toBeNull()
+  })
+
+  // The panel already knows how to send a reader to buy credits; it was never
+  // being told that was the refusal. A button that reaches nothing is not a way
+  // out, so press it and watch for the request the page answers.
+  it('offers the way out the refusal has', async () => {
+    const asked = vi.fn()
+    onTestFinished(subscribeToWorkshopBuyCredits(asked))
+    mountRefused('insufficient_credits')
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /credits/i }))
+    expect(asked).toHaveBeenCalledOnce()
+  })
+
+  // A refusal the panel has no sentence for is said beside the form instead.
+  // The panel then shows nothing — not the example, which is a picture of a run
+  // that worked.
+  it('shows nothing rather than the example for a refusal it cannot word', () => {
+    mountRefused('access_denied')
+
+    expect(screen.queryByTestId('output-example')).toBeNull()
+    expect(screen.getByText('Your output will appear here.')).toBeTruthy()
+  })
+})
+
+// A run the reader stopped is the one state they caused, and the panel used to
+// go blank for it.
+describe('a cancelled run', () => {
+  const runId = '9a5f2f5c-6a26-4d1e-90f4-1f7f0a0d5b21'
+
+  function mountCancelled() {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    const at = new Date(0).toISOString()
+    render(WorkflowResults, {
+      props: {
+        model,
+        state: {
+          phase: 'settled',
+          record: {
+            version: 2,
+            stage: 'run',
+            runId,
+            workflowId: model.workflowId,
+            definitionVersion: model.workflow.definitionVersion,
+            cancelRequested: true
+          },
+          observation: {
+            run: {
+              id: runId,
+              workflowId: model.workflowId,
+              definitionVersion: model.workflow.definitionVersion,
+              state: 'cancelled',
+              outputState: 'pending',
+              createdAt: at,
+              updatedAt: at
+            },
+            outputs: []
+          }
+        } satisfies WorkflowState,
+        exampleIndex: 0,
+        busy: false,
+        statusLabel: '',
+        canStart: true,
+        refreshOutput: async () => undefined
+      }
+    })
+  }
+
+  it('says the run was cancelled instead of emptying the panel', () => {
+    mountCancelled()
+
+    expect(
+      screen.getAllByText('This run was cancelled before it finished.').length
+    ).toBeGreaterThan(0)
+    expect(screen.getByTestId('playground-output')).toHaveAttribute(
+      'data-state',
+      'cancelled'
+    )
+  })
+
+  it('offers the run again', () => {
+    mountCancelled()
+
+    expect(screen.getByRole('button', { name: 'Run again' })).toBeTruthy()
+  })
+
+  // The panel says it now, and the sentence beside it went on advising a check
+  // of Cloud for a status Cloud had already given.
+  it('does not also say it under the panel', () => {
+    mountCancelled()
+
+    expect(
+      screen.queryByText(/Check Cloud for the final job status/)
+    ).toBeNull()
   })
 })

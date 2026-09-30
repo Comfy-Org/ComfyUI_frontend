@@ -25,7 +25,7 @@ describe('BuilderEnterpriseSection', () => {
           name: t('enterprise.managedBuilds.explore', 'en')
         })
         .getAttribute('href')
-    ).toBe('/enterprise/managed-builds')
+    ).toBe('/enterprise/managed-builds/')
     expect(
       screen.getByText(t('platform.builderEnterprise.teamSharing.label', 'en'))
     ).toBeTruthy()
