@@ -192,7 +192,7 @@ test('FE-2856: a capture the bank is still settling renders Payment in progress,
   await expect(heading(page, "You're all set")).toBeVisible()
   await expect(
     page.getByText(
-      'A payment on this workspace completed — check your plan in settings.'
+      'A payment for Personal went through. Check your plan in settings for the details.'
     )
   ).toBeVisible()
   await expect(code(page)).toHaveText('op_bank')

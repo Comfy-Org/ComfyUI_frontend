@@ -2,6 +2,8 @@ import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 import { formatQuoteMoney } from '@comfyorg/account-ui/billing/checkout'
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
+import { longDate, monthDay } from '@/checkout/longDate'
+
 /**
  * The four summary families of the checkout guidebook. `top_up`
  * has no quote on billing-web yet, so no builder produces it.
@@ -169,20 +171,9 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
     plan,
     planLabel,
     money,
-    date: (iso: string) =>
-      new Intl.DateTimeFormat(locale, {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-        timeZone: 'UTC'
-      }).format(new Date(iso)),
+    date: (iso: string) => longDate(iso, locale),
     /** Month and day only: a credits expiry always falls within the current period. */
-    monthDay: (iso: string) =>
-      new Intl.DateTimeFormat(locale, {
-        month: 'long',
-        day: 'numeric',
-        timeZone: 'UTC'
-      }).format(new Date(iso)),
+    monthDay: (iso: string) => monthDay(iso, locale),
     headlineMoney: (cents: number) =>
       formatHeadlineMoney(cents, currency, locale),
     credits: (cents: number) =>
