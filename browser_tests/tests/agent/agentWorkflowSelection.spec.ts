@@ -485,12 +485,7 @@ test.describe(
 
       await panel.getByRole('button', { name: enMessages.g.close }).click()
       await expect(targetMarker).toBeVisible()
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       await expect(
         panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
       ).toHaveText('Unsaved Workflow')
@@ -539,12 +534,7 @@ test.describe(
       page,
       workflowSelection
     }) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await composer.fill('Keep this draft')

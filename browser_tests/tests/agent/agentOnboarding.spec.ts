@@ -7,7 +7,6 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
   test('walks all four accessible cards and persists completion', async ({
@@ -17,7 +16,6 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     await bootAgentApp(page, agentFlagEnabled, {
       onboardingCompleted: false
     })
-    await new AgentPanel(page).open()
     const steps = [
       [enMessages.agent.coachTitle, enMessages.agent.coachBody],
       [enMessages.agent.coachWorkflowTitle, enMessages.agent.coachWorkflowBody],

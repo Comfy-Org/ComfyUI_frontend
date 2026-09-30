@@ -14,6 +14,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -384,12 +385,7 @@ test.describe(
       const panel = page.locator('#agent-panel-root')
 
       await test.step('open the agent panel and target the workflow', async () => {
-        await page
-          .getByRole('button', {
-            name: enMessages.agent.entryButton,
-            exact: true
-          })
-          .click()
+        await new AgentPanel(page).open()
         await expect(panel).toBeVisible()
         await panel
           .getByRole('button', { name: enMessages.agent.switchWorkflow })
@@ -498,12 +494,7 @@ test.describe(
         // the CRDT follower and its mint ports. Reopen it before exercising a
         // local edit, and prove the replacement follower has rebound this doc.
         subscribedTo = null
-        await page
-          .getByRole('button', {
-            name: enMessages.agent.entryButton,
-            exact: true
-          })
-          .click()
+        await new AgentPanel(page).open()
         await expect(panel).toBeVisible()
         await expect
           .poll(() => subscribedTo, { timeout: 20_000 })
