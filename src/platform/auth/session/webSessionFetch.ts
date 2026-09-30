@@ -6,6 +6,8 @@ import type { WebSession } from '@comfyorg/account-core/webSession'
 
 /** A workspace-token mint failure whose message is localized user-facing copy. */
 export class WebSessionTokenError extends SessionTokenError {
+  override readonly cause: SessionTokenError
+
   constructor(original: SessionTokenError, message: string) {
     super(original.failure)
     this.message = message

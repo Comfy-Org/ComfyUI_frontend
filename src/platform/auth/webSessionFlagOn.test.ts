@@ -5,10 +5,9 @@ import { effectScope } from 'vue'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
+import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { t } from '@/i18n'
-import { TOKEN_FAILURE_COPY } from '@/platform/auth/session/cloudWebSessionStore'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
@@ -382,6 +381,15 @@ function installIngest(features: Record<string, boolean> = {}) {
     csrfToken: 'csrf-1',
     refusals: [] as string[],
     mintRefusal: undefined as (() => Response) | undefined,
+    mintGate: undefined as Promise<void> | undefined,
+    heldMints: 0,
+    holdMint() {
+      let release = () => {}
+      ingest.mintGate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      return release
+    },
     mints: 0,
     mintedFor: [] as string[],
     requests: [] as ApiRequest[],
@@ -427,6 +435,10 @@ function installIngest(features: Record<string, boolean> = {}) {
         return jsonResponse({ unified_web_session: true, ...features })
       }
       ingest.requests.push(request)
+      if (request.path === '/api/auth/token' && ingest.mintGate) {
+        ingest.heldMints += 1
+        await ingest.mintGate
+      }
       return respond(request, init?.body)
     })
   )
@@ -907,26 +919,6 @@ describe('live updates and media on the shared web session', () => {
     )
   })
 
-  it('a sign-out that lands before the mint is not reported', async () => {
-    await bootOnSession()
-    const requests = webSessionRequests()
-    assert(requests)
-    const scope = await requests.scope()
-    assert(scope)
-    await useAuthStore().logout()
-
-    const rejection = await requests
-      .authorizeResource(scope)
-      .catch((error: unknown) => error)
-
-    assert(rejection instanceof WebSessionTokenError)
-    expect(rejection.failure.code).toBe('NO_SESSION')
-    expect(reportError).not.toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ errorType: 'auth_session_token_mint_failure' })
-    )
-  })
-
   it('sign-out closes the socket and opens no other', async () => {
     await bootWithSocket()
     const sessionSocket = api.socket
@@ -1019,36 +1011,51 @@ describe('comfy-api calls on the shared web session', () => {
       name: 'a revoked session',
       status: 401,
       serverCode: 'session_revoked',
-      failure: 'SESSION_REVOKED'
+      failure: 'SESSION_REVOKED',
+      copy: 'Your session ended. Sign in again to continue.'
     },
     {
       name: 'an expired session',
       status: 401,
       serverCode: 'session_expired',
-      failure: 'SESSION_EXPIRED'
+      failure: 'SESSION_EXPIRED',
+      copy: 'Your session ended. Sign in again to continue.'
     },
-    { name: 'no session', status: 401, failure: 'NO_SESSION' },
+    {
+      name: 'no session',
+      status: 401,
+      failure: 'NO_SESSION',
+      copy: 'Your session ended. Sign in again to continue.'
+    },
     {
       name: 'a stale CSRF token',
       status: 403,
       serverCode: 'csrf_invalid',
-      failure: 'CSRF_STALE'
+      failure: 'CSRF_STALE',
+      copy: 'Your request was refused. Reload the page and try again.'
     },
     {
       name: 'a denied workspace',
       status: 403,
       serverCode: 'workspace_access_denied',
-      failure: 'WORKSPACE_ACCESS_DENIED'
+      failure: 'WORKSPACE_ACCESS_DENIED',
+      copy: "You don't have access to this workspace. Choose another workspace or ask its owner for access."
     },
     {
       name: 'a refused request',
       status: 403,
-      failure: 'SESSION_REQUEST_REFUSED'
+      failure: 'SESSION_REQUEST_REFUSED',
+      copy: 'Your request was refused. Reload the page and try again.'
     },
-    { name: 'a server error', status: 500, failure: 'SESSION_UNAVAILABLE' }
+    {
+      name: 'a server error',
+      status: 500,
+      failure: 'SESSION_UNAVAILABLE',
+      copy: "We couldn't reach your account. Try again in a moment."
+    }
   ])(
     'a mint refused by $name rejects with the localized copy',
-    async ({ status, serverCode, failure }) => {
+    async ({ status, serverCode, failure, copy }) => {
       const ingest = await bootOnSession()
       ingest.mintRefusal = () =>
         jsonResponse(
@@ -1062,32 +1069,63 @@ describe('comfy-api calls on the shared web session', () => {
 
       assert(rejection instanceof WebSessionTokenError)
       expect(rejection.failure.code).toBe(failure)
-      expect(rejection.message).toBe(
-        t(TOKEN_FAILURE_COPY[rejection.failure.code])
-      )
+      expect(rejection.message).toBe(copy)
     }
   )
 
-  it.for([
-    ['NO_SESSION', 'Your session ended. Sign in again to continue.'],
-    ['SESSION_EXPIRED', 'Your session ended. Sign in again to continue.'],
-    ['SESSION_REVOKED', 'Your session ended. Sign in again to continue.'],
-    [
-      'IDENTITY_CHANGED',
-      "You're now signed in as a different account. Reload to continue."
-    ],
-    [
-      'SESSION_UNAVAILABLE',
-      "We couldn't reach your account. Try again in a moment."
-    ],
-    ['CSRF_STALE', 'Your request was refused. Reload the page and try again.'],
-    ['WORKSPACE_ACCESS_DENIED', 'You no longer have access to this workspace.'],
-    [
-      'SESSION_REQUEST_REFUSED',
-      'Your request was refused. Reload the page and try again.'
-    ]
-  ] as const)('%s shows its own copy', ([code, copy]) => {
-    expect(t(TOKEN_FAILURE_COPY[code])).toBe(copy)
+  it('a sign-out while the mint is in flight is not reported and says the session changed', async () => {
+    firebaseSignOut.mockImplementation(async () => identity.signOut())
+    const ingest = await bootOnSession()
+    const release = ingest.holdMint()
+
+    const pending = webSessionResourceHeader().catch((error: unknown) => error)
+    await vi.waitFor(() => expect(ingest.heldMints).toBe(1))
+    await useAuthStore().logout()
+    release()
+    const rejection = await pending
+
+    assert(rejection instanceof WebSessionTokenError)
+    expect(rejection.failure.code).toBe('IDENTITY_CHANGED')
+    expect(rejection.message).toBe('Your session changed. Reload to continue.')
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'auth_session_token_mint_failure' })
+    )
+  })
+
+  it('a mint failure stays a SessionTokenError and keeps the original as its cause', async () => {
+    const ingest = await bootOnSession()
+    ingest.mintRefusal = () => jsonResponse({}, 500)
+
+    const rejection = await webSessionResourceHeader().catch(
+      (error: unknown) => error
+    )
+
+    expect(rejection).toBeInstanceOf(SessionTokenError)
+    assert(rejection instanceof WebSessionTokenError)
+    expect(rejection.cause).toBeInstanceOf(SessionTokenError)
+    expect(rejection.cause.failure).toBe(rejection.failure)
+  })
+
+  it('a sign-out that lands before the mint is not reported', async () => {
+    firebaseSignOut.mockImplementation(async () => identity.signOut())
+    await bootOnSession()
+    const requests = webSessionRequests()
+    assert(requests)
+    const scope = await requests.scope()
+    assert(scope)
+    await useAuthStore().logout()
+
+    const rejection = await requests
+      .authorizeResource(scope)
+      .catch((error: unknown) => error)
+
+    assert(rejection instanceof WebSessionTokenError)
+    expect(rejection.failure.code).toBe('NO_SESSION')
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'auth_session_token_mint_failure' })
+    )
   })
 
   it('reports the original mint error with its code and status', async () => {

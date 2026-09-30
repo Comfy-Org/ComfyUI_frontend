@@ -54,7 +54,7 @@ const UNSETTLED_PHASES: ReadonlySet<WebSessionIdentityState['phase']> = new Set(
 type TokenFailureMessageKey =
   `auth.webSession.token.${keyof (typeof enMessages)['auth']['webSession']['token']}`
 
-export const TOKEN_FAILURE_COPY: Readonly<
+const TOKEN_FAILURE_COPY: Readonly<
   Record<WebSessionErrorCode, TokenFailureMessageKey>
 > = {
   NO_SESSION: 'auth.webSession.token.ended',
