@@ -8,29 +8,8 @@ import {
   agentTurnLockTest as test
 } from '@e2e/fixtures/agentTurnLockFixture'
 
-// PM-1776 / PM-1682. Reported on 1.54.15: the reporter asked the agent to build
-// a workflow, minimized the panel with the topbar Agent button before it
-// finished, and reopened it. The chat looked completed — no working indicator —
-// while nodes kept appearing on the canvas, and the next message came back
-// "Message failed to send: a turn is already in progress for this thread".
-//
-// `DockedAgentPanel.vue` gates the dock on `v-if`, so minimizing unmounts
-// `AgentPanelRoot` and runs its `onBeforeUnmount` -> `useAgentSession.stop()`.
-// That queues `abortActiveTurn()` + `dropBackgroundTurns()` behind a generation
-// guard which only spares a turn when a remount bumps `sessionGeneration`
-// first. A minimize never remounts, so the guard passes and the live turn is
-// destroyed locally. Nothing is sent to the server, which keeps streaming and
-// keeps answering posts with 409.
-//
-// Reopening remounts and re-hydrates from REST, which is where the client
-// learns the turn is still running: `applyAssistantRow` in
-// `agentTranscript.ts` now reads `row.status === 'streaming'` as the live
-// turn, so hydrate rebuilds an active turn with a transport and the panel
-// comes back showing work in progress instead of a finished thread.
-//
-// Deliberately neither a refresh nor a socket drop: PM-1043 and PM-1199 cover
-// those triggers. Here the page is never reloaded and the socket never closes —
-// only the panel's own mount state changes.
+// PM-1776 / PM-1682: this is a panel-only remount. The page stays loaded and
+// the socket stays connected; PM-1043 and PM-1199 cover those other triggers.
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
