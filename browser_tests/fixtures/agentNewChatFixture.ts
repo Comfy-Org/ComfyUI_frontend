@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Page, Response, Route } from '@playwright/test'
 import type {
   AgentPostMessageRequest,
@@ -21,6 +22,12 @@ interface PostedTurn {
   body: AgentPostMessageRequest
 }
 
+interface AcceptedThread {
+  id: string
+  title: string
+  workflowId: string
+}
+
 function threadIdOf(url: string): string {
   const match = MESSAGES_PATH.exec(new URL(url).pathname)
   if (match === null)
@@ -35,10 +42,13 @@ function threadIdOf(url: string): string {
  * after are acked the way the server does: the workflow the client named,
  * or a freshly minted one when it named none. Every acked thread is listed,
  * titled by its first prompt, so the history screen has a row to delete.
+ * An ack that is not a 2xx `AgentTurnAccepted` is recorded as a failure
+ * for the fixture to assert on instead of skewing the list.
  */
 class AgentNewChatServer {
   private readonly posted: PostedTurn[] = []
-  private readonly acceptedThreadIds: string[] = []
+  private readonly accepted: AcceptedThread[] = []
+  private readonly ackFailures: string[] = []
 
   constructor(private readonly page: Page) {}
 
@@ -56,6 +66,10 @@ class AgentNewChatServer {
     return this.posted
   }
 
+  failedAcks(): readonly string[] {
+    return this.ackFailures
+  }
+
   private async recordAccepted(response: Response): Promise<void> {
     const request = response.request()
     if (
@@ -63,8 +77,25 @@ class AgentNewChatServer {
       !MESSAGES_PATH.test(new URL(response.url()).pathname)
     )
       return
-    const accepted = zAgentTurnAccepted.parse(await response.json())
-    this.acceptedThreadIds.push(accepted.thread_id)
+    if (!response.ok()) {
+      this.ackFailures.push(`${response.status()} ${response.url()}`)
+      return
+    }
+    const accepted = zAgentTurnAccepted.safeParse(
+      await response.json().catch(() => undefined)
+    )
+    const posted = zAgentPostMessageRequest.safeParse(request.postDataJSON())
+    if (!accepted.success || !posted.success) {
+      this.ackFailures.push(
+        `${response.url()}: ${(accepted.error ?? posted.error)?.message}`
+      )
+      return
+    }
+    this.accepted.push({
+      id: accepted.data.thread_id,
+      title: posted.data.content,
+      workflowId: posted.data.workflow_id ?? ''
+    })
   }
 
   private answerPost(route: Route): Promise<void> {
@@ -86,11 +117,11 @@ class AgentNewChatServer {
 
   private threadList(): AgentThreadListResponse {
     return {
-      threads: this.acceptedThreadIds.map((id, index) => ({
+      threads: this.accepted.map(({ id, title, workflowId }) => ({
         id,
-        title: this.posted[index]?.body.content ?? '',
-        preview: this.posted[index]?.body.content ?? '',
-        workflow_id: this.posted[index]?.body.workflow_id ?? '',
+        title,
+        preview: title,
+        workflow_id: workflowId,
         status: 'active',
         message_count: 2,
         created_at: '2026-09-18T10:00:00Z',
@@ -100,7 +131,7 @@ class AgentNewChatServer {
       pagination: {
         offset: 0,
         limit: 100,
-        total: this.acceptedThreadIds.length,
+        total: this.accepted.length,
         has_more: false
       }
     }
@@ -116,5 +147,6 @@ export const agentNewChatTest = agentConversationTest.extend<{
     const server = new AgentNewChatServer(page)
     await server.install()
     await use(server)
+    expect(server.failedAcks()).toEqual([])
   }
 })
