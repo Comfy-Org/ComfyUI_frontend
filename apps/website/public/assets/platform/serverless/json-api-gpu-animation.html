@@ -44,11 +44,8 @@
         viewBox="-90 -170 3400 1720"
         fill="none"
         role="img"
-        aria-labelledby="scene-title scene-description"
+        aria-label="Comfy image pipeline and GPU orchestration"
       >
-        <title id="scene-title">
-          Comfy image pipeline and GPU orchestration
-        </title>
         <desc id="scene-description">
           An AI image workflow produces JSON documents. Each document enters the
           API hub and advances four GPUs by one position along an isometric
@@ -955,10 +952,9 @@
         const hubSilhouette = document.querySelector('#api-occlusion path')
         // Centre the API wordmark on the lid (lid centre 2007,355.5) and enlarge it.
         const apiLabel = hubBody.lastElementChild
-        const labelBox = apiLabel.getBBox()
         apiLabel.setAttribute(
           'transform',
-          `translate(2007 355.5) scale(1.35) translate(${-(labelBox.x + labelBox.width / 2)} ${-(labelBox.y + labelBox.height / 2)})`
+          'translate(2007 355.5) scale(1.35) translate(-2010.635 -317.6075)'
         )
         // All the way down: the lid lands exactly on the floor outline, so only the
         // lid is left and the column below it is entirely under the floor.
@@ -1172,7 +1168,7 @@
         const IMAGE_TOP = { x: 787.4, y: 454.6 }
         const LANE_LAYOUT = {
           workflow: `translate(${(laneTop(1150).x - IMAGE_TOP.x).toFixed(1)} ${(laneTop(1150).y - IMAGE_TOP.y).toFixed(1)})`,
-          viewBox: '0 -240 3000 2180'
+          viewBox: '350 -120 2500 2180'
         }
 
         function activePose(local) {

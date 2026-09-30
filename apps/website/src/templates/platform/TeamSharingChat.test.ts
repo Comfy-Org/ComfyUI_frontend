@@ -19,10 +19,10 @@ describe('TeamSharingChat', () => {
     vi.mocked(prefersReducedMotion).mockReturnValue(false)
   })
 
-  it('advances messages while visible and keeps endpoints synchronized', async () => {
+  it('advances messages while keeping distinct workflow links fixed', async () => {
     vi.useFakeTimers()
-    const { rerender, unmount } = render(TeamSharingChat, {
-      props: { endpoint: 'first-workflow', locale: 'en' }
+    const { unmount } = render(TeamSharingChat, {
+      props: { locale: 'en' }
     })
 
     await setAllIntersecting(true)
@@ -32,10 +32,8 @@ describe('TeamSharingChat', () => {
       screen.getByText(t('platform.howItWorks.chat.message', 'en'))
     ).toBeTruthy()
 
-    await rerender({ endpoint: 'second-workflow', locale: 'en' })
-
-    expect(screen.queryByText('first-workflow.run.comfy.app')).toBeNull()
-    expect(screen.getAllByText('second-workflow.run.comfy.app')).toHaveLength(2)
+    expect(screen.getByText('upscale-4k.run.comfy.app')).toBeTruthy()
+    expect(screen.getByText('try-on-x7k2.run.comfy.app')).toBeTruthy()
 
     unmount()
     expect(vi.getTimerCount()).toBe(0)
@@ -45,7 +43,7 @@ describe('TeamSharingChat', () => {
     vi.useFakeTimers()
     vi.mocked(prefersReducedMotion).mockReturnValue(true)
     const { unmount } = render(TeamSharingChat, {
-      props: { endpoint: 'steady-workflow', locale: 'en' }
+      props: { locale: 'en' }
     })
 
     await setAllIntersecting(true)
