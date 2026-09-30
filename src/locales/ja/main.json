@@ -160,13 +160,22 @@
     "skip": "スキップ",
     "stop": "停止",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "ホッケーマスクを着けた黄色いアヒルを生成",
-      "保存済みのワークフローを一覧表示",
-      "肌のアップスケーリングに最適なワークフローを探す",
-      "選択したノードを説明",
-      "3つのモデルを使用した画像から動画へのワークフローを作成"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "宇宙飛行士のキャラクターシートを生成",
+        "商品画像を短い広告に変換",
+        "選択したノードを説明",
+        "4Kに最適な画像アップスケールワークフロー",
+        "このワークフローのエラーを修正"
+      ],
+      "local": [
+        "宇宙飛行士のリアルなポートレートを生成",
+        "自分のGPUに合った画像から動画へのワークフロー",
+        "選択したノードを説明",
+        "このワークフローに不足しているノードのインストールを手伝って",
+        "このワークフローのエラーを修正"
+      ]
+    },
     "switchWorkflow": "ワークフローを切り替え",
     "switchWorkflowForNodes": "{workflowName}に切り替えてノードを追加します。",
     "targetFollowsVisibleWorkflow": "ターゲット、参照ノードを選択するかメッセージを送信するまで、ターゲットワークフローは表示中のタブに従います。",
@@ -2752,6 +2761,9 @@
     "installationQueue": "インストールキュー",
     "installingDependencies": "依存関係をインストール中...",
     "lastUpdated": "最終更新日",
+    "latestActive": "最新のActive",
+    "latestInstallable": "最新のインストール可能版",
+    "latestStableVersion": "最新の安定版",
     "latestVersion": "最新",
     "legacyManagerSearchTip": "ComfyUI-Managerをお探しですか？ComfyUIを--enable-manager-legacy-uiフラグ付きで起動すると、レガシーマネージャーUIを有効にできます。",
     "legacyManagerUI": "レガシーUIを使用する",
@@ -2773,10 +2785,13 @@
       "updatesAvailable": "アップデートあり"
     },
     "nightlyVersion": "ナイトリー",
+    "noActiveVersions": "このパックにはActiveリリースがありません。",
+    "noActiveVersionsFlagged": "このパックにはActiveリリースがありません。Flaggedリリースを選択してインストールをリクエストできますが、Managerのセキュリティ設定が適用されます。",
     "noDescription": "説明はありません",
     "noNodesFound": "ノードが見つかりません",
     "noNodesFoundDescription": "パックのノードは解析できなかったか、パックがフロントエンドの拡張機能のみでノードがない可能性があります。",
     "noResultsFound": "検索に一致する結果が見つかりませんでした。",
+    "noUpdateVersion": "選択した更新オプションで利用可能なリリースはありません。",
     "nodePack": "ノードパック",
     "nodePackInfo": "ノードパック情報",
     "notAvailable": "利用不可",
@@ -2784,9 +2799,11 @@
       "nodeIdRequired": "インストールにはノードIDが必要です"
     },
     "packsSelected": "選択したパック",
+    "queueWaitingToContinue": "タスクが保留中です。続行するには再試行してください。",
     "repository": "リポジトリ",
     "restartToApplyChanges": "変更を適用するには、ComfyUIを再起動してください",
     "restartingBackend": "変更を適用するためにバックエンドを再起動しています...",
+    "retryQueueStart": "再試行",
     "searchPlaceholder": "検索",
     "selectVersion": "バージョンを選択",
     "selected": "選択済み",
@@ -2827,9 +2844,15 @@
     },
     "update": "更新",
     "updateAll": "すべて更新",
+    "updateFailed": "パッケージのバージョンを変更できませんでした。もう一度お試しください。",
+    "updateLatestActiveTooltip": "最新のActiveバージョン（デフォルト）に切り替えます。",
+    "updateLatestInstallableTooltip": "FlaggedおよびPendingリリースを含む、最新のインストール可能バージョンに切り替えます。Managerのセキュリティ設定は引き続き適用されます。",
+    "updateOptions": "更新オプション",
     "updateSelected": "選択したものを更新",
+    "updateVersionInstalled": "バージョン{version}はすでにインストールされています。",
     "updatingAllPacks": "すべてのパッケージを更新中",
-    "version": "バージョン"
+    "version": "バージョン",
+    "versionLoadFailed": "バージョンを読み込めませんでした。この選択画面を閉じて、もう一度お試しください。"
   },
   "maskEditor": {
     "activateLayer": "レイヤーを有効化",

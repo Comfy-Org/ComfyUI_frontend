@@ -160,13 +160,22 @@
     "skip": "Atla",
     "stop": "Durdur",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "Hokey maskeli sarı bir ördek oluştur",
-      "Kaydedilmiş iş akışlarımı listele",
-      "Cilt büyütme için en iyi iş akışını bul",
-      "Seçili düğümü açıkla",
-      "3 modelle görüntüden videoya iş akışı oluştur"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Bir astronot için karakter sayfası oluştur",
+        "Ürün görselini kısa bir reklama dönüştür",
+        "Seçili düğümleri açıkla",
+        "4K için en iyi görüntü büyütme iş akışı",
+        "Bu iş akışındaki hataları düzelt"
+      ],
+      "local": [
+        "Bir astronotun gerçekçi portresini oluştur",
+        "GPU'ma uygun bir görüntüden videoya iş akışı",
+        "Seçili düğümleri açıkla",
+        "Bu iş akışı için eksik düğümleri yüklememe yardımcı ol",
+        "Bu iş akışındaki hataları düzelt"
+      ]
+    },
     "switchWorkflow": "İş akışını değiştir",
     "switchWorkflowForNodes": "Düğüm eklemek için {workflowName} iş akışına geçin.",
     "targetFollowsVisibleWorkflow": "Bir hedef seçene, düğümlere başvurana veya mesaj gönderene kadar hedef iş akışı görünür sekmeyi takip eder.",
@@ -2752,6 +2761,9 @@
     "installationQueue": "Yükleme Kuyruğu",
     "installingDependencies": "Bağımlılıklar yükleniyor...",
     "lastUpdated": "Son Güncelleme",
+    "latestActive": "En Son Etkin",
+    "latestInstallable": "En Son Yüklenebilir",
+    "latestStableVersion": "En son kararlı",
     "latestVersion": "En Son",
     "legacyManagerSearchTip": "ComfyUI-Manager'ı mı arıyorsunuz? Eski yönetici arayüzünü etkinleştirmek için ComfyUI'yi --enable-manager-legacy-ui bayrağı ile başlatabilirsiniz.",
     "legacyManagerUI": "Eski Arayüzü Kullan",
@@ -2773,10 +2785,13 @@
       "updatesAvailable": "Güncellemeler Mevcut"
     },
     "nightlyVersion": "Gecelik",
+    "noActiveVersions": "Bu pakette Etkin sürüm yok.",
+    "noActiveVersionsFlagged": "Bu pakette Etkin sürüm yok. Manager güvenlik ayarlarına tabi olarak yükleme isteğinde bulunmak için İşaretli bir sürüm seçin.",
     "noDescription": "Açıklama yok",
     "noNodesFound": "Düğüm bulunamadı",
     "noNodesFoundDescription": "Paketin düğümleri ya ayrıştırılamadı ya da paket yalnızca bir ön uç uzantısı ve herhangi bir düğüme sahip değil.",
     "noResultsFound": "Aramanızla eşleşen sonuç bulunamadı.",
+    "noUpdateVersion": "Seçilen güncelleme seçeneği için kullanılabilir sürüm yok.",
     "nodePack": "Düğüm Paketi",
     "nodePackInfo": "Düğüm Paketi Bilgisi",
     "notAvailable": "Mevcut Değil",
@@ -2784,9 +2799,11 @@
       "nodeIdRequired": "Kurulum için Düğüm Kimliği gereklidir"
     },
     "packsSelected": "paket seçildi",
+    "queueWaitingToContinue": "Görevler beklemede. Devam etmek için yeniden deneyin.",
     "repository": "Depo",
     "restartToApplyChanges": "Değişiklikleri uygulamak için lütfen ComfyUI'yi yeniden başlatın",
     "restartingBackend": "Değişiklikleri uygulamak için arka uç yeniden başlatılıyor...",
+    "retryQueueStart": "Yeniden dene",
     "searchPlaceholder": "Ara",
     "selectVersion": "Sürüm Seç",
     "selected": "Seçildi",
@@ -2827,9 +2844,15 @@
     },
     "update": "Güncelle",
     "updateAll": "Tümünü Güncelle",
+    "updateFailed": "Paket sürümü değiştirilemedi. Lütfen tekrar deneyin.",
+    "updateLatestActiveTooltip": "En son Etkin sürüme geç (varsayılan).",
+    "updateLatestInstallableTooltip": "İşaretli ve Beklemede sürümler dâhil olmak üzere en son yüklenebilir sürüme geç. Manager güvenlik ayarları yine geçerlidir.",
+    "updateOptions": "Güncelleme seçenekleri",
     "updateSelected": "Seçilenleri Güncelle",
+    "updateVersionInstalled": "{version} sürümü zaten yüklü.",
     "updatingAllPacks": "Tüm paketler güncelleniyor",
-    "version": "Sürüm"
+    "version": "Sürüm",
+    "versionLoadFailed": "Sürümler yüklenemedi. Bu seçiciyi kapatıp tekrar deneyin."
   },
   "maskEditor": {
     "activateLayer": "Katmanı Aktifleştir",

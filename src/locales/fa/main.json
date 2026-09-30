@@ -160,13 +160,22 @@
     "skip": "رد کردن",
     "stop": "توقف",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "یک اردک زرد با ماسک هاکی تولید کن",
-      "workflowهای ذخیره‌شدهٔ من را فهرست کن",
-      "بهترین workflow برای ارتقای کیفیت پوست را پیدا کن",
-      "گره انتخاب‌شده را توضیح بده",
-      "یک workflow برای تبدیل تصویر به ویدیو با ۳ مدل بساز"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "یک برگهٔ شخصیت برای یک فضانورد ایجاد کنید",
+        "تصویر محصول را به یک آگهی کوتاه تبدیل کنید",
+        "nodeهای انتخاب‌شده را توضیح دهید",
+        "بهترین workflow ارتقای وضوح تصویر برای 4K",
+        "خطاهای این workflow را برطرف کنید"
+      ],
+      "local": [
+        "یک پرترهٔ واقع‌گرایانه از یک فضانورد ایجاد کنید",
+        "یک workflow تبدیل تصویر به ویدئو که با GPU من سازگار باشد",
+        "nodeهای انتخاب‌شده را توضیح دهید",
+        "برای نصب nodeهای مفقود این workflow به من کمک کنید",
+        "خطاهای این workflow را برطرف کنید"
+      ]
+    },
     "switchWorkflow": "تغییر workflow",
     "switchWorkflowForNodes": "برای افزودن nodeها به {workflowName} بروید.",
     "targetFollowsVisibleWorkflow": "workflow هدف تا زمانی که هدفی انتخاب کنید، به nodeها ارجاع دهید یا پیامی ارسال کنید، از تب قابل‌مشاهده پیروی می‌کند.",
@@ -2752,6 +2761,9 @@
     "installationQueue": "صف نصب",
     "installingDependencies": "در حال نصب وابستگی‌ها...",
     "lastUpdated": "آخرین به‌روزرسانی",
+    "latestActive": "آخرین نسخهٔ فعال",
+    "latestInstallable": "آخرین نسخهٔ قابل‌نصب",
+    "latestStableVersion": "آخرین نسخهٔ پایدار",
     "latestVersion": "آخرین نسخه",
     "legacyManagerSearchTip": "دنبال ComfyUI-Manager هستید؟ می‌توانید رابط کاربری مدیر قدیمی را با اجرای ComfyUI و استفاده از پرچم --enable-manager-legacy-ui فعال کنید.",
     "legacyManagerUI": "استفاده از رابط کاربری قدیمی",
@@ -2773,10 +2785,13 @@
       "updatesAvailable": "به‌روزرسانی‌های موجود"
     },
     "nightlyVersion": "نسخه nightly",
+    "noActiveVersions": "این بسته هیچ انتشار فعالی ندارد.",
+    "noActiveVersionsFlagged": "این بسته هیچ انتشار فعالی ندارد. برای درخواست نصب، یک انتشار علامت‌گذاری‌شده را انتخاب کنید؛ این درخواست تابع تنظیمات امنیتی Manager است.",
     "noDescription": "توضیحی موجود نیست",
     "noNodesFound": "نودی یافت نشد",
     "noNodesFoundDescription": "نودهای این بسته قابل تجزیه نبودند یا این بسته فقط یک افزونه فرانت‌اند است و نودی ندارد.",
     "noResultsFound": "نتیجه‌ای مطابق با جستجوی شما یافت نشد.",
+    "noUpdateVersion": "برای گزینهٔ به‌روزرسانی انتخاب‌شده، هیچ انتشاری در دسترس نیست.",
     "nodePack": "بسته نود",
     "nodePackInfo": "اطلاعات Node Pack",
     "notAvailable": "در دسترس نیست",
@@ -2784,9 +2799,11 @@
       "nodeIdRequired": "شناسه node برای نصب الزامی است"
     },
     "packsSelected": "بسته انتخاب شد",
+    "queueWaitingToContinue": "وظایفی در انتظار هستند. برای ادامه، دوباره تلاش کنید.",
     "repository": "مخزن",
     "restartToApplyChanges": "برای اعمال تغییرات، لطفاً ComfyUI را مجدداً راه‌اندازی کنید",
     "restartingBackend": "در حال راه‌اندازی مجدد backend برای اعمال تغییرات...",
+    "retryQueueStart": "تلاش مجدد",
     "searchPlaceholder": "جستجو",
     "selectVersion": "انتخاب نسخه",
     "selected": "انتخاب شده",
@@ -2827,9 +2844,15 @@
     },
     "update": "به‌روزرسانی",
     "updateAll": "به‌روزرسانی همه",
+    "updateFailed": "تغییر نسخهٔ بسته ممکن نشد. لطفاً دوباره تلاش کنید.",
+    "updateLatestActiveTooltip": "تغییر به آخرین نسخهٔ فعال (پیش‌فرض).",
+    "updateLatestInstallableTooltip": "تغییر به آخرین نسخهٔ قابل‌نصب، شامل انتشارهای علامت‌گذاری‌شده و در انتظار. تنظیمات امنیتی Manager همچنان اعمال می‌شوند.",
+    "updateOptions": "گزینه‌های به‌روزرسانی",
     "updateSelected": "به‌روزرسانی انتخاب‌شده‌ها",
+    "updateVersionInstalled": "نسخه {version} از پیش نصب شده است.",
     "updatingAllPacks": "در حال به‌روزرسانی همه بسته‌ها",
-    "version": "نسخه"
+    "version": "نسخه",
+    "versionLoadFailed": "نسخه‌ها بارگیری نشدند. این انتخاب‌گر را ببندید و دوباره تلاش کنید."
   },
   "maskEditor": {
     "activateLayer": "فعال‌سازی لایه",

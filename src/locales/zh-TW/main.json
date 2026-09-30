@@ -160,13 +160,22 @@
     "skip": "略過",
     "stop": "停止",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "生成一隻戴著冰球面具的黃色鴨子",
-      "列出我儲存的工作流程",
-      "尋找最適合皮膚放大的工作流程",
-      "說明所選節點",
-      "建立使用 3 個模型的圖像轉影片工作流程"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "產生太空人的角色設定圖",
+        "將產品圖片製作成短篇廣告",
+        "說明選取的節點",
+        "適用於 4K 的最佳圖片放大工作流程",
+        "修正此工作流程中的錯誤"
+      ],
+      "local": [
+        "產生逼真的太空人肖像",
+        "適合我的 GPU 的圖像轉影片工作流程",
+        "說明選取的節點",
+        "協助我安裝此工作流程缺少的節點",
+        "修正此工作流程中的錯誤"
+      ]
+    },
     "switchWorkflow": "切換工作流程",
     "switchWorkflowForNodes": "切換至 {workflowName} 以新增節點。",
     "targetFollowsVisibleWorkflow": "在您選擇目標、參考節點或傳送訊息之前，目標工作流程會跟隨目前顯示的分頁。",
@@ -2752,6 +2761,9 @@
     "installationQueue": "安裝佇列",
     "installingDependencies": "正在安裝相依套件...",
     "lastUpdated": "最後更新",
+    "latestActive": "最新啟用中版本",
+    "latestInstallable": "最新可安裝版本",
+    "latestStableVersion": "最新穩定版",
     "latestVersion": "最新版本",
     "legacyManagerSearchTip": "正在尋找 ComfyUI-Manager？你可以在啟動 ComfyUI 時加上 --enable-manager-legacy-ui 參數來啟用舊版管理介面。",
     "legacyManagerUI": "使用舊版介面",
@@ -2773,10 +2785,13 @@
       "updatesAvailable": "有可用更新"
     },
     "nightlyVersion": "每夜建置版",
+    "noActiveVersions": "此套件沒有啟用中的版本。",
+    "noActiveVersionsFlagged": "此套件沒有啟用中的版本。請選擇已標記的版本以申請安裝，但仍須遵守管理員安全性設定。",
     "noDescription": "沒有可用的說明",
     "noNodesFound": "找不到任何節點",
     "noNodesFoundDescription": "此套件的節點無法解析，或此套件僅為前端擴充功能，沒有任何節點。",
     "noResultsFound": "找不到符合搜尋條件的結果。",
+    "noUpdateVersion": "所選更新選項沒有可用版本。",
     "nodePack": "節點包",
     "nodePackInfo": "節點包資訊",
     "notAvailable": "不可用",
@@ -2784,9 +2799,11 @@
       "nodeIdRequired": "安裝需要節點 ID"
     },
     "packsSelected": "已選擇套件",
+    "queueWaitingToContinue": "工作正在等待處理。請重試以繼續。",
     "repository": "儲存庫",
     "restartToApplyChanges": "請重新啟動 ComfyUI 以套用變更",
     "restartingBackend": "正在重新啟動後端以套用變更...",
+    "retryQueueStart": "重試",
     "searchPlaceholder": "搜尋",
     "selectVersion": "選擇版本",
     "selected": "已選取",
@@ -2827,9 +2844,15 @@
     },
     "update": "更新",
     "updateAll": "全部更新",
+    "updateFailed": "無法變更套件版本。請再試一次。",
+    "updateLatestActiveTooltip": "切換至最新啟用中版本（預設）。",
+    "updateLatestInstallableTooltip": "切換至最新可安裝版本，包括已標記及待處理的版本。管理員安全性設定仍會套用。",
+    "updateOptions": "更新選項",
     "updateSelected": "更新所選項目",
+    "updateVersionInstalled": "已安裝版本 {version}。",
     "updatingAllPacks": "正在更新所有套件",
-    "version": "版本"
+    "version": "版本",
+    "versionLoadFailed": "無法載入版本。請關閉此選擇器後再試一次。"
   },
   "maskEditor": {
     "activateLayer": "啟用圖層",

@@ -160,13 +160,22 @@
     "skip": "跳过",
     "stop": "停止",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "生成一只戴着曲棍球面具的黄色鸭子",
-      "列出我保存的工作流",
-      "查找最适合皮肤超分辨率的工作流",
-      "解释选中的节点",
-      "使用 3 个模型构建图像转视频工作流"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "生成一名宇航员的角色设定图",
+        "将产品图像制作成短广告",
+        "解释所选节点",
+        "适用于 4K 的最佳图像放大工作流",
+        "修复此工作流中的错误"
+      ],
+      "local": [
+        "生成一张逼真的宇航员肖像",
+        "适合我的 GPU 的图生视频工作流",
+        "解释所选节点",
+        "帮助我安装此工作流缺失的节点",
+        "修复此工作流中的错误"
+      ]
+    },
     "switchWorkflow": "切换工作流",
     "switchWorkflowForNodes": "切换到 {workflowName} 以添加节点。",
     "targetFollowsVisibleWorkflow": "在你选择目标、参考节点或发送消息之前，目标工作流会跟随当前可见标签页。",
@@ -2752,6 +2761,9 @@
     "installationQueue": "安装队列",
     "installingDependencies": "正在安装依赖项...",
     "lastUpdated": "最后更新",
+    "latestActive": "最新活跃版本",
+    "latestInstallable": "最新可安装版本",
+    "latestStableVersion": "最新稳定版",
     "latestVersion": "最新",
     "legacyManagerSearchTip": "在找 ComfyUI-Manager？你可以通过启动 ComfyUI 并添加 --enable-manager-legacy-ui 参数来启用旧版管理器界面。",
     "legacyManagerUI": "使用传统界面",
@@ -2773,10 +2785,13 @@
       "updatesAvailable": "有可用更新"
     },
     "nightlyVersion": "每夜",
+    "noActiveVersions": "此包没有活跃版本。",
+    "noActiveVersionsFlagged": "此包没有活跃版本。选择一个已标记版本以请求安装，但须遵循管理器安全设置。",
     "noDescription": "无可用描述",
     "noNodesFound": "未找到节点",
     "noNodesFoundDescription": "无法解析包的节点，或者该包仅为前端扩展，没有任何节点。",
     "noResultsFound": "未找到符合您搜索的结果。",
+    "noUpdateVersion": "所选更新选项没有可用版本。",
     "nodePack": "节点包",
     "nodePackInfo": "节点包信息",
     "notAvailable": "不可用",
@@ -2784,9 +2799,11 @@
       "nodeIdRequired": "安装需要节点 ID"
     },
     "packsSelected": "选定的包",
+    "queueWaitingToContinue": "任务待处理。重试以继续。",
     "repository": "仓库",
     "restartToApplyChanges": "要应用更改，请重新启动ComfyUI",
     "restartingBackend": "正在重启后端以应用更改...",
+    "retryQueueStart": "重试",
     "searchPlaceholder": "搜索",
     "selectVersion": "选择版本",
     "selected": "已选择",
@@ -2827,9 +2844,15 @@
     },
     "update": "更新",
     "updateAll": "全部更新",
+    "updateFailed": "无法更改包版本。请重试。",
+    "updateLatestActiveTooltip": "切换到最新活跃版本（默认）。",
+    "updateLatestInstallableTooltip": "切换到最新可安装版本，包括已标记和待发布版本。管理器安全设置仍然适用。",
+    "updateOptions": "更新选项",
     "updateSelected": "更新所选",
+    "updateVersionInstalled": "版本 {version} 已安装。",
     "updatingAllPacks": "更新所有包",
-    "version": "版本"
+    "version": "版本",
+    "versionLoadFailed": "无法加载版本。请关闭此选择器后重试。"
   },
   "maskEditor": {
     "activateLayer": "活跃层",

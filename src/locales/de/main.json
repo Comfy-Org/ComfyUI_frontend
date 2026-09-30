@@ -160,13 +160,22 @@
     "skip": "Überspringen",
     "stop": "Stopp",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "Erstellen Sie eine gelbe Ente mit einer Hockeymaske",
-      "Meine gespeicherten Workflows auflisten",
-      "Den besten Workflow für Haut-Upscaling finden",
-      "Den ausgewählten Node erklären",
-      "Einen Workflow für Bild-zu-Video mit 3 Modellen erstellen"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Erstellen Sie ein Charakterblatt eines Astronauten",
+        "Verwandeln Sie das Produktbild in eine kurze Werbung",
+        "Erklären Sie die ausgewählten Nodes",
+        "Bester Workflow zur Bildhochskalierung für 4K",
+        "Beheben Sie die Fehler in diesem Workflow"
+      ],
+      "local": [
+        "Erstellen Sie ein realistisches Porträt eines Astronauten",
+        "Ein Bild-zu-Video-Workflow, der zu meiner GPU passt",
+        "Erklären Sie die ausgewählten Nodes",
+        "Helfen Sie mir bei der Installation der fehlenden Nodes für diesen Workflow",
+        "Beheben Sie die Fehler in diesem Workflow"
+      ]
+    },
     "switchWorkflow": "Workflow wechseln",
     "switchWorkflowForNodes": "Wechseln Sie zu {workflowName}, um Nodes hinzuzufügen.",
     "targetFollowsVisibleWorkflow": "Der Ziel-Workflow folgt dem sichtbaren Tab, bis Sie ein Ziel auswählen, Nodes referenzieren oder eine Nachricht senden.",
@@ -2752,6 +2761,9 @@
     "installationQueue": "Installationswarteschlange",
     "installingDependencies": "Abhängigkeiten werden installiert...",
     "lastUpdated": "Zuletzt aktualisiert",
+    "latestActive": "Neueste Active-Version",
+    "latestInstallable": "Neueste installierbare Version",
+    "latestStableVersion": "Neueste stabile Version",
     "latestVersion": "Neueste",
     "legacyManagerSearchTip": "Suchen Sie ComfyUI-Manager? Sie können die Legacy-Manager-UI aktivieren, indem Sie ComfyUI mit dem Flag --enable-manager-legacy-ui starten.",
     "legacyManagerUI": "Legacy-UI verwenden",
@@ -2773,10 +2785,13 @@
       "updatesAvailable": "Updates verfügbar"
     },
     "nightlyVersion": "Nightly",
+    "noActiveVersions": "Dieses Paket hat keine Active-Releases.",
+    "noActiveVersionsFlagged": "Dieses Paket hat keine Active-Releases. Wählen Sie ein Flagged-Release aus, um die Installation anzufordern, vorbehaltlich der Sicherheitseinstellungen des Managers.",
     "noDescription": "Keine Beschreibung verfügbar",
     "noNodesFound": "Keine Nodes gefunden",
     "noNodesFoundDescription": "Die Nodes des Pakets konnten entweder nicht geparst werden, oder das Paket ist nur eine Frontend-Erweiterung und enthält keine Nodes.",
     "noResultsFound": "Keine Ergebnisse für Ihre Suche gefunden.",
+    "noUpdateVersion": "Für die ausgewählte Aktualisierungsoption ist kein Release verfügbar.",
     "nodePack": "Node-Paket",
     "nodePackInfo": "Node-Pack-Info",
     "notAvailable": "Nicht verfügbar",
@@ -2784,9 +2799,11 @@
       "nodeIdRequired": "Node ID ist für die Installation erforderlich"
     },
     "packsSelected": "Pakete ausgewählt",
+    "queueWaitingToContinue": "Es gibt ausstehende Aufgaben. Versuchen Sie es erneut, um fortzufahren.",
     "repository": "Repository",
     "restartToApplyChanges": "Starten Sie ComfyUI neu, um die Änderungen anzuwenden",
     "restartingBackend": "Backend wird neu gestartet, um Änderungen anzuwenden...",
+    "retryQueueStart": "Erneut versuchen",
     "searchPlaceholder": "Suchen",
     "selectVersion": "Version auswählen",
     "selected": "Ausgewählt",
@@ -2827,9 +2844,15 @@
     },
     "update": "Aktualisieren",
     "updateAll": "Alle aktualisieren",
+    "updateFailed": "Die Paketversion konnte nicht geändert werden. Bitte versuchen Sie es erneut.",
+    "updateLatestActiveTooltip": "Zur neuesten Active-Version wechseln (Standard).",
+    "updateLatestInstallableTooltip": "Zur neuesten installierbaren Version wechseln, einschließlich Flagged- und Pending-Releases. Die Sicherheitseinstellungen des Managers gelten weiterhin.",
+    "updateOptions": "Aktualisierungsoptionen",
     "updateSelected": "Auswahl aktualisieren",
+    "updateVersionInstalled": "Version {version} ist bereits installiert.",
     "updatingAllPacks": "Alle Pakete werden aktualisiert",
-    "version": "Version"
+    "version": "Version",
+    "versionLoadFailed": "Versionen konnten nicht geladen werden. Schließen Sie dieses Auswahlfenster und versuchen Sie es erneut."
   },
   "maskEditor": {
     "activateLayer": "Ebene aktivieren",

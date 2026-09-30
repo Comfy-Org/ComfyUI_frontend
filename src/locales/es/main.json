@@ -160,13 +160,22 @@
     "skip": "Omitir",
     "stop": "Detener",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "Genera un pato amarillo con una máscara de hockey",
-      "Enumera mis flujos de trabajo guardados",
-      "Encuentra el mejor flujo de trabajo para ampliar la piel",
-      "Explica el nodo seleccionado",
-      "Crea un flujo de trabajo de imagen a vídeo con 3 modelos"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Genera una hoja de personaje de un astronauta",
+        "Convierte la imagen del producto en un anuncio corto",
+        "Explica los nodos seleccionados",
+        "El mejor flujo de trabajo para ampliar imágenes a 4K",
+        "Corrige los errores de este flujo de trabajo"
+      ],
+      "local": [
+        "Genera un retrato realista de un astronauta",
+        "Un flujo de trabajo de imagen a vídeo compatible con mi GPU",
+        "Explica los nodos seleccionados",
+        "Ayúdame a instalar los nodos que faltan para este flujo de trabajo",
+        "Corrige los errores de este flujo de trabajo"
+      ]
+    },
     "switchWorkflow": "Cambiar de flujo de trabajo",
     "switchWorkflowForNodes": "Cambia a {workflowName} para añadir nodos.",
     "targetFollowsVisibleWorkflow": "El flujo de trabajo de destino sigue la pestaña visible hasta que elija un destino, nodos de referencia o envíe un mensaje.",
@@ -2752,6 +2761,9 @@
     "installationQueue": "Cola de Instalación",
     "installingDependencies": "Instalando dependencias...",
     "lastUpdated": "Última Actualización",
+    "latestActive": "Última activa",
+    "latestInstallable": "Última instalable",
+    "latestStableVersion": "Última estable",
     "latestVersion": "Última",
     "legacyManagerSearchTip": "¿Buscas ComfyUI-Manager? Puedes habilitar la interfaz de administrador heredada iniciando ComfyUI con el parámetro --enable-manager-legacy-ui.",
     "legacyManagerUI": "Usar UI antigua",
@@ -2773,10 +2785,13 @@
       "updatesAvailable": "Actualizaciones disponibles"
     },
     "nightlyVersion": "Nocturna",
+    "noActiveVersions": "Este paquete no tiene versiones activas.",
+    "noActiveVersionsFlagged": "Este paquete no tiene versiones activas. Selecciona una versión marcada para solicitar la instalación, sujeta a la configuración de seguridad del Manager.",
     "noDescription": "No hay descripción disponible",
     "noNodesFound": "No se encontraron nodos",
     "noNodesFoundDescription": "Los nodos del paquete no se pudieron analizar, o el paquete es solo una extensión de frontend y no tiene ningún nodo.",
     "noResultsFound": "No se encontraron resultados que coincidan con tu búsqueda.",
+    "noUpdateVersion": "No hay ninguna versión disponible para la opción de actualización seleccionada.",
     "nodePack": "Paquete de Nodos",
     "nodePackInfo": "Información del paquete de nodos",
     "notAvailable": "No Disponible",
@@ -2784,9 +2799,11 @@
       "nodeIdRequired": "Se requiere el ID del nodo para la instalación"
     },
     "packsSelected": "Paquetes Seleccionados",
+    "queueWaitingToContinue": "Hay tareas pendientes. Vuelve a intentarlo para continuar.",
     "repository": "Repositorio",
     "restartToApplyChanges": "Para aplicar los cambios, por favor reinicia ComfyUI",
     "restartingBackend": "Reiniciando backend para aplicar cambios...",
+    "retryQueueStart": "Reintentar",
     "searchPlaceholder": "Buscar",
     "selectVersion": "Seleccionar Versión",
     "selected": "Seleccionado",
@@ -2827,9 +2844,15 @@
     },
     "update": "Actualizar",
     "updateAll": "Actualizar Todos",
+    "updateFailed": "No se pudo cambiar la versión del paquete. Inténtalo de nuevo.",
+    "updateLatestActiveTooltip": "Cambiar a la versión activa más reciente (predeterminada).",
+    "updateLatestInstallableTooltip": "Cambiar a la versión instalable más reciente, incluidas las versiones marcadas y pendientes. La configuración de seguridad del Manager sigue aplicándose.",
+    "updateOptions": "Opciones de actualización",
     "updateSelected": "Actualizar Seleccionados",
+    "updateVersionInstalled": "La versión {version} ya está instalada.",
     "updatingAllPacks": "Actualizando todos los paquetes",
-    "version": "Versión"
+    "version": "Versión",
+    "versionLoadFailed": "No se pudieron cargar las versiones. Cierra este selector e inténtalo de nuevo."
   },
   "maskEditor": {
     "activateLayer": "Activar capa",
