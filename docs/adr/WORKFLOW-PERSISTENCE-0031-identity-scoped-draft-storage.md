@@ -69,10 +69,9 @@ the old binding before the destination key is selected.
 
 ### Identity changes invalidate workspace evidence at the source
 
-The auth store determines the previous owner through its unified identity
-function, covering both Firebase and API-key sessions. When Firebase replaces
-an API-key identity, it resets the team workspace store just as it does for a
-Firebase-to-Firebase account switch. Persistence therefore cannot conclude a
+The root `useStorageScopeLifecycle()` observes the resolved Firebase or API-key
+identity. When that owner changes, it resets the team workspace store before
+publishing the new storage identity. Persistence therefore cannot conclude a
 new user's fence using the previous user's `ready` workspace state.
 
 ### Logout removes one captured scope

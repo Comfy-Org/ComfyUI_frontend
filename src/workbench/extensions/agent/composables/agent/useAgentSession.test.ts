@@ -452,8 +452,85 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(
       localStorage.getItem(StorageKeys.agentThread(scope('user-b:personal')))
     ).toBeNull()
+    setStorageIdentity('user-test')
     session.stop()
     await Promise.resolve()
+  })
+
+  it('resets public and delayed session state when the storage owner changes', async () => {
+    let rejectAnswer: ((error: Error) => void) | undefined
+    const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
+      () =>
+        new Promise((_, reject) => {
+          rejectAnswer = reject
+        })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.sendMessage('account A turn')
+    const pendingAnswer = session.answerAsk('ask-shared', 'run')
+    expect(session.answeringAskIds.value).toEqual(new Set(['ask-shared']))
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+
+    expect(session.entries.value).toEqual([])
+    expect(session.threadId.value).toBeNull()
+    expect(session.answeringAskIds.value).toEqual(new Set())
+    expect(session.notices.value).toEqual([])
+    expect(session.boundWorkflowId.value).toBeNull()
+    expect(session.isSending.value).toBe(false)
+
+    rejectAnswer?.(new Error('account A delayed failure'))
+    await expect(pendingAnswer).resolves.toBe(false)
+    expect(session.notices.value).toEqual([])
+    setStorageIdentity('user-test')
+    session.stop()
+  })
+
+  it("does not let owner A's delayed refusal delete owner B's same-id binding", async () => {
+    const tabPath = 'workflows/shared.json'
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-shared', tabPath)
+    const disowned = vi.fn()
+    let rejectPost: ((error: Error) => void) | undefined
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise((_, reject) => {
+          rejectPost = reject
+        })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ id: 'wf-shared', tabPath }),
+        adopted: vi.fn(),
+        disowned
+      }
+    })
+    session.start()
+    const pendingSend = session.sendMessage('account A turn')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    await nextTick()
+    bindings.bind('wf-shared', tabPath)
+    rejectPost?.(
+      new AgentApiError('workflow not found or access denied', 403, {
+        error: 'workflow not found or access denied'
+      })
+    )
+
+    await expect(pendingSend).resolves.toBe(false)
+    expect(bindings.tabPathFor('wf-shared')).toBe(tabPath)
+    expect(disowned).not.toHaveBeenCalled()
+    setStorageIdentity('user-test')
+    session.stop()
   })
 
   it('tracks each durable thread start once with its initiating source', async () => {

@@ -2366,10 +2366,10 @@ describe('useWorkspaceAuthStore', () => {
       await store.switchWorkspace('workspace-123')
 
       expect(store.currentWorkspace).toEqual(mockWorkspaceWithRole)
-      const firstWorkspace = JSON.parse(
+      const firstWorkspace: unknown = JSON.parse(
         sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE) ??
           'null'
-      ) as unknown
+      )
       expect(firstWorkspace).toEqual(mockWorkspaceWithRole)
       expect(
         StorageKeys.draftIndex(unsafeStorageScope(mockWorkspaceWithRole.id))

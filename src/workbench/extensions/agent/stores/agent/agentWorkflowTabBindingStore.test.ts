@@ -121,6 +121,45 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.matchesWorkflow('wf-abandoned', restored)).toBe(true)
   })
 
+  it('does not carry same-id tab ownership from user A to user B', async () => {
+    const workflows = useWorkflowStore()
+    const userATab = workflows.createTemporary('Shared.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [userATab.path] })
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-shared', userATab.path)
+    expect(bindings.matchesWorkflow('wf-shared', userATab)).toBe(true)
+
+    localStorage.setItem(
+      StorageKeys.agentWorkflowTabBindings(scope('user-b:personal')),
+      JSON.stringify({
+        'wf-shared': {
+          tabPath: userATab.path,
+          graphId: DRAFT_GRAPH_ID,
+          confirmedAt: Date.now()
+        }
+      })
+    )
+    setStorageIdentity('user-b')
+    await nextTick()
+
+    expect(bindings.matchesWorkflow('wf-shared', userATab)).toBe(false)
+
+    await workflows.closeWorkflow(userATab)
+    const userBTab = workflows.createTemporary('Shared.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [userBTab.path] })
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-shared')).toBe(userBTab.path)
+    expect(bindings.matchesWorkflow('wf-shared', userBTab)).toBe(true)
+    setStorageIdentity('user-test')
+  })
+
   it('adopts two restored drafts that share a base name independently', async () => {
     seedBindings({
       'wf-first': {
