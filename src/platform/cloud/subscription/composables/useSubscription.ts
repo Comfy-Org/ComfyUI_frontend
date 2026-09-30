@@ -375,12 +375,10 @@ function useSubscriptionInternal() {
   }
 
   const trackSubscriptionCheckoutSuccess = (
-    metadata: SubscriptionSuccessMetadata
+    metadata: SubscriptionSuccessMetadata,
+    startReported: boolean
   ) => {
-    const openedWithStartedEvent =
-      metadata.checkout_type === 'new' && metadata.operation !== 'resubscribe'
-    if (!openedWithStartedEvent && metadata.recovery_outcome !== 'late_success')
-      return
+    if (!startReported && metadata.recovery_outcome !== 'late_success') return
     telemetry?.trackBillingEvent({
       operation: 'subscription_checkout',
       stage: 'succeeded',
@@ -416,9 +414,9 @@ function useSubscriptionInternal() {
       return
     }
     if (ownership === 'unresolved') return
-    const metadata = consumePendingSubscriptionCheckoutSuccess(statusData)
+    const consumed = consumePendingSubscriptionCheckoutSuccess(statusData)
 
-    if (!metadata) {
+    if (!consumed) {
       if (hasPendingSubscriptionCheckoutAttempt()) {
         schedulePendingCheckoutRecovery()
       } else {
@@ -427,12 +425,14 @@ function useSubscriptionInternal() {
       return
     }
 
+    const { start_reported: startReported, ...metadata } = consumed
+
     telemetry?.trackMonthlySubscriptionSucceeded({
       ...(authStore.userId ? { user_id: authStore.userId } : {}),
       ...metadata
     })
 
-    trackSubscriptionCheckoutSuccess(metadata)
+    trackSubscriptionCheckoutSuccess(metadata, startReported === true)
 
     // The recovery flow is shared with plain (non-resubscribe) legacy subscribes,
     // which all funnel through the same subscribeDirect(). Only emit the canonical

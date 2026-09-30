@@ -124,7 +124,8 @@ export async function performSubscriptionCheckout(
     checkout_type: 'new',
     payment_intent_source: options.paymentIntentSource,
     owner_id: useAuthStore().userId ?? undefined,
-    workspace_id: useTeamWorkspaceStore().activeWorkspaceId
+    workspace_id: useTeamWorkspaceStore().activeWorkspaceId,
+    start_reported: true
   })
   const attemptEvent = {
     operation: 'subscription_checkout',

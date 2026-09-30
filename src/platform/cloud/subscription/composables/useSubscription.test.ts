@@ -19,6 +19,7 @@ import {
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
   claimPendingCheckoutTerminal
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 
 const {
   mockGetCheckoutAttribution,
@@ -55,6 +56,7 @@ const {
       trackSubscription: vi.fn(),
       trackMonthlySubscriptionSucceeded: vi.fn(),
       trackMonthlySubscriptionCancelled: vi.fn(),
+      trackBeginCheckout: vi.fn(),
       trackBillingEvent: vi.fn()
     },
     mockLocalStorage: (() => {
@@ -1927,27 +1929,67 @@ describe('useSubscription', () => {
       )
     })
 
+    async function openCheckoutThenConfirm(
+      open: (subscription: ReturnType<typeof useSubscription>) => Promise<void>,
+      activeStatus: Partial<BillingStatusResponse>
+    ) {
+      vi.spyOn(crypto, 'randomUUID').mockReturnValue(
+        '00000000-0000-4000-8000-000000000003'
+      )
+      vi.spyOn(window, 'open').mockImplementation(() => window)
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({ checkout_url: 'https://checkout.stripe.com/test' })
+      } as Response)
+      useCurrentUser().isLoggedIn = computed(() => true)
+      const subscription = useSubscriptionWithScope()
+      await subscription.fetchStatus()
+
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        renewal_date: '2025-11-16',
+        ...activeStatus
+      })
+      await open(subscription)
+      await subscription.fetchStatus()
+      await vi.waitFor(() => {
+        expect(
+          localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+        ).toBeNull()
+      })
+    }
+
     it.for([
       {
-        name: 'a plain new subscribe closes with one checkout success',
-        attempt: {
-          attempt_id: 'attempt-new',
-          tier: 'creator',
-          cycle: 'yearly',
-          checkout_type: 'new',
-          payment_intent_source: 'out_of_credits'
-        },
-        status: {
+        name: 'performSubscriptionCheckout reported the start, so it closes with one success',
+        open: () =>
+          performSubscriptionCheckout('creator', 'yearly', {
+            paymentIntentSource: 'out_of_credits'
+          }),
+        activeStatus: {
           subscription_tier: 'CREATOR',
           subscription_duration: 'ANNUAL'
-        },
+        } satisfies Partial<BillingStatusResponse>,
         expectedEvents: [
+          [
+            {
+              operation: 'subscription_checkout',
+              stage: 'started',
+              outcome: 'pending',
+              checkout_attempt_id: '00000000-0000-4000-8000-000000000003',
+              tier: 'creator',
+              cycle: 'yearly',
+              checkout_type: 'new',
+              payment_intent_source: 'out_of_credits'
+            }
+          ],
           [
             {
               operation: 'subscription_checkout',
               stage: 'succeeded',
               outcome: 'success',
-              checkout_attempt_id: 'attempt-new',
+              checkout_attempt_id: '00000000-0000-4000-8000-000000000003',
               tier: 'creator',
               cycle: 'yearly',
               checkout_type: 'new',
@@ -1956,6 +1998,68 @@ describe('useSubscription', () => {
           ]
         ]
       },
+      {
+        name: 'a plain subscribeDirect never reported a start, so it reports nothing',
+        open: (subscription: ReturnType<typeof useSubscription>) =>
+          subscription.subscribeDirect(),
+        activeStatus: {
+          subscription_tier: 'STANDARD',
+          subscription_duration: 'MONTHLY'
+        } satisfies Partial<BillingStatusResponse>,
+        expectedEvents: []
+      }
+    ])(
+      'closes a confirmed checkout only in the funnel it opened: $name',
+      async ({ open, activeStatus, expectedEvents }) => {
+        await openCheckoutThenConfirm(open, activeStatus)
+
+        expect(mockTelemetry.trackBillingEvent.mock.calls).toEqual(
+          expectedEvents
+        )
+      }
+    )
+
+    it('keeps the start marker out of the monthly_subscription_succeeded payload', async () => {
+      await openCheckoutThenConfirm(
+        () =>
+          performSubscriptionCheckout('creator', 'yearly', {
+            paymentIntentSource: 'out_of_credits'
+          }),
+        { subscription_tier: 'CREATOR', subscription_duration: 'ANNUAL' }
+      )
+
+      expect(
+        mockTelemetry.trackMonthlySubscriptionSucceeded.mock.calls
+      ).toEqual([
+        [
+          {
+            user_id: 'user-123',
+            checkout_attempt_id: '00000000-0000-4000-8000-000000000003',
+            tier: 'creator',
+            cycle: 'yearly',
+            checkout_type: 'new',
+            payment_intent_source: 'out_of_credits',
+            value: 336,
+            currency: 'USD',
+            ecommerce: {
+              value: 336,
+              currency: 'USD',
+              items: [
+                {
+                  item_name: 'creator',
+                  item_category: 'subscription',
+                  item_variant: 'yearly',
+                  price: 336,
+                  quantity: 1
+                }
+              ]
+            }
+          }
+        ]
+      ])
+    })
+
+    it.for([
       {
         name: 'a portal plan change never opened a checkout, so it reports none',
         attempt: {

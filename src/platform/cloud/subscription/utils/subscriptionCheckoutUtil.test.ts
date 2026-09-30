@@ -443,8 +443,15 @@ describe('performSubscriptionCheckout', () => {
       ]
     ])
     expect(
-      window.localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
-    ).toContain('"attempt_id":"00000000-0000-4000-8000-000000000001"')
+      JSON.parse(
+        window.localStorage.getItem(
+          PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+        ) ?? 'null'
+      )
+    ).toMatchObject({
+      attempt_id: '00000000-0000-4000-8000-000000000001',
+      start_reported: true
+    })
   })
 
   it('closes a rejected checkout attempt with a failure that follows its started event', async () => {
