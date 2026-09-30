@@ -273,7 +273,7 @@ describe('LiveGraphApplier', () => {
     )
   })
 
-  it('routes a promoted host widget once under remote provenance and keeps the document value canonical', async () => {
+  it('routes a promoted host widget once and treats deferred callback writes as local', async () => {
     const graph = new LGraph()
     const subgraph = createTestSubgraph({
       rootGraph: graph,
@@ -293,10 +293,9 @@ describe('LiveGraphApplier', () => {
       originalCallback?.(value, undefined, host)
       hostWidget.value = 30
       queueMicrotask(() => {
-        // Exercise the registered widget-value setter after the synchronous
-        // provenance scope has closed. The corrective write already restored
-        // the canonical value, so this real seam must remain a no-op.
-        hostWidget.value = value
+        // Callback work that outlives the graph call is a separate local edit:
+        // provenance is scoped to the synchronous remote graph operation.
+        hostWidget.value = 36
       })
     })
     const onWidgetChanged = vi.fn()
@@ -341,7 +340,7 @@ describe('LiveGraphApplier', () => {
     await Promise.resolve()
     detach()
 
-    expect(hostWidget.value).toBe(35)
+    expect(hostWidget.value).toBe(36)
     expect(host.properties.steps).toBe(99)
     expect(callback).toHaveBeenCalledTimes(1)
     expect(callback).toHaveBeenCalledWith(35, undefined, host)
@@ -350,7 +349,7 @@ describe('LiveGraphApplier', () => {
       source: 'agent-remote',
       type: 'set_widget'
     })
-    expect(intents).not.toContainEqual({ source: 'local', type: 'set_widget' })
+    expect(intents).toContainEqual({ source: 'local', type: 'set_widget' })
   })
 
   it('restores a promoted callback when its value setter throws', () => {

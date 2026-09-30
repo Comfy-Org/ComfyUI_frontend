@@ -747,18 +747,17 @@ export class LiveGraphApplier {
     if (widget.type === 'button' || Object.is(widget.value, value)) return
     const previous = widget.value
     const callback = widget.callback
-    const writeWithoutCallback = (write: () => void): void => {
+    function writeWithoutCallback<T>(write: () => T): T {
       widget.callback = undefined
       try {
-        write()
+        return write()
       } finally {
         widget.callback = callback
       }
     }
-    let rollback: (() => void) | undefined
-    writeWithoutCallback(() => {
-      rollback = writeWidgetValue(node, widget, value, false)
-    })
+    const rollback = writeWithoutCallback(() =>
+      writeWidgetValue(node, widget, value, false)
+    )
     try {
       callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
       node.onWidgetChanged?.(widget.name, value, previous, widget)
@@ -766,7 +765,7 @@ export class LiveGraphApplier {
         writeWithoutCallback(() => writeWidgetValue(node, widget, value, false))
       }
     } catch (error) {
-      writeWithoutCallback(() => rollback?.())
+      writeWithoutCallback(rollback)
       throw error
     }
     node.graph?.incrementVersion()
