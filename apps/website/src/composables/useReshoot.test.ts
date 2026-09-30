@@ -358,6 +358,20 @@ describe('useReshoot', () => {
     if (gate) expect(reshoot.gate.value).toBe(gate)
   })
 
+  it('reads the picked clip once the app becomes available again', async () => {
+    vi.mocked(transport.quote).mockRejectedValueOnce(
+      new ReshootError('app_unavailable')
+    )
+    const reshoot = start()
+    await vi.advanceTimersByTimeAsync(0)
+    await readScene(reshoot)
+    expect(reshoot.depth.value).toBe('none')
+
+    await vi.advanceTimersByTimeAsync(7_500)
+
+    expect(reshoot.depth.value).toBe('ready')
+  })
+
   it('runs again after a take the app could not serve', async () => {
     const reshoot = start()
     await readScene(reshoot)

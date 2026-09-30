@@ -484,6 +484,9 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   watch(clipError, (tooLong) => {
     if (tooLong && depth.value === 'analyzing') void analyze()
   })
+  watch(unavailable, (isUnavailable) => {
+    if (!isUnavailable && picked.value && depth.value === 'none') void analyze()
+  })
   watch([aspect, size], () => {
     if (picked.value) void analyze()
   })
