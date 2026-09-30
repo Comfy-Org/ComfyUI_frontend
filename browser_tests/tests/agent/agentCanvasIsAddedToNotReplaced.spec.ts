@@ -34,6 +34,10 @@ test.describe(
           await comfyPage.nextFrame()
           const note = agentConversation.vueNodes.getNodeLocator(id)
           await expect(note).toBeVisible()
+          const outcomes = await agentConversation.waitForHumanOps(1)
+          expect(
+            outcomes.some((outcome) => outcome.outcome === 'applied')
+          ).toBe(true)
           return id
         })
 
