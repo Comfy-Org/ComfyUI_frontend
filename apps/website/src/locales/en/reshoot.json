@@ -24,14 +24,14 @@
     "edit": "Edit",
     "credit": "Built on Cseti's CrossView-Warp LoRA and node",
     "pick": {
-      "lead": "Aim a new camera at your clip and get the same moment from another angle.",
+      "lead": "Re-shoot any video from any angle. Move the camera anywhere, no reshoot day needed.",
       "drop": "Drop a video here",
       "upload": "Upload a video",
       "exampleMeta": "Try it without uploading anything",
       "exampleTitle": "Sci-fi pilot"
     },
     "aim": {
-      "globe": "Drag the camera around your clip",
+      "globe": "Drag the camera around your clip · scroll to move closer",
       "more": "More: lens, height, keep aim",
       "less": "Less",
       "reading": "Reading the scene"
@@ -56,12 +56,16 @@
     "sound": {
       "label": "Sound",
       "generated": "Generated",
-      "original": "Original clip"
+      "original": "Original audio"
     },
     "warpNote": "The warp guide of a real run shows here: the clip pushed to the new camera, magenta where it has to be invented.",
-    "seed": "Seed",
+    "seed": {
+      "label": "Seed",
+      "random": "Random",
+      "help": "Leave empty for a new seed every take; enter a number to fix it."
+    },
     "prompt": {
-      "dialogue": "The model also makes the sound: if your video has dialogue, write the lines here so the new take says them.",
+      "dialogue": "The model also generates new audio: if your video has dialogue, prompt the lines here so the new generation retains it better.",
       "placeholder": "e.g. a stone wall behind her, more wheat to the left"
     },
     "clip": {
@@ -71,12 +75,13 @@
       "yours": "Your clip",
       "example": "Example",
       "replace": "Choose another clip",
-      "help": "5–15 seconds, clear subject, no black bars"
+      "help": "5–15 seconds, clear subject, no black bars",
+      "rejected": "{name} is {seconds} s, so the current clip stays. Pick one between 5 and 15 seconds."
     },
     "reuse": "Use this angle again",
     "generate": {
-      "note": "Takes 1.5 to 5 minutes. Keep aiming while it renders.",
-      "wait": "MoGe estimates depth for every frame, about 20 to 40 seconds. The first run after a quiet spell also starts a server.",
+      "note": "Keep aiming while it renders.",
+      "wait": "Reading the scene · 20 to 40 seconds",
       "label": "Generate"
     },
     "expand": "Full screen",
@@ -93,6 +98,10 @@
       "left": "Camera left",
       "right": "Camera right"
     },
+    "dolly": {
+      "in": "Move the camera closer",
+      "out": "Move the camera away"
+    },
     "advanced": {
       "label": "Advanced",
       "value": "Prompt, dialogue, seed"
@@ -102,12 +111,13 @@
     "promptHelp": "Describe what should fill the areas the original camera never saw.",
     "generatingHelp": "The first run after a quiet spell also loads the model.",
     "take": {
-      "exampleHelp": "Example result: the clip re-shot from a new angle at 768p. Aim a camera of your own on the left.",
+      "exampleHelp": "Example result: the clip re-shot from a new angle at 768p. Aim a camera of your own to try it.",
       "aim": "Aim",
       "example": "Example result",
       "static": "Take {n} · az {az}° el {el}°",
       "move": "Take {n} · move, {keys} keys",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "failed": "This take failed"
     },
     "frames": "{frames} frames at 24 fps ({seconds} s)",
     "speed": {
@@ -115,8 +125,8 @@
       "768p": "Sharper"
     },
     "empty": {
-      "title": "Your re-shoot will appear here",
-      "hint": "Upload a clip on the left or try an example below."
+      "title": "Your new angle plays here",
+      "hint": "Start with a 5 to 15 second clip, or pick an example."
     },
     "optional": "Optional",
     "aspect": {
@@ -134,18 +144,25 @@
       "yellow": "Trained, but less reliable.",
       "red": "Outside training. The hidden side will be invented."
     },
-    "dragHint": "Drag to orbit · Scroll to move closer",
+    "dragHint": {
+      "label": "Drag to orbit · Scroll to move closer",
+      "touch": "Drag to orbit"
+    },
     "needsDepth": "Analyze depth to aim a new camera.",
     "stale": "Aspect ratio or size changed, so the depth has to be analyzed again.",
     "move": {
       "static": "Static",
       "keys": "{count} keys",
-      "help": "Scrub to a frame, aim, press Key. Two or more keys make a move; the camera holds before the first and after the last.",
+      "help": "Scrub the timeline under the preview, aim, press Key. Two or more keys make a move; the camera holds before the first and after the last. Aiming on a key edits it.",
       "frame": "Frame",
       "key": "Key",
       "remove": "Remove key at {time}",
       "clear": "Clear keys",
-      "motion": "Motion"
+      "motion": "Motion",
+      "unkey": "Remove key",
+      "noKeys": "No keys: one camera for the whole clip. Key two frames to make a move.",
+      "oneKey": "One key holds the camera there. Key another frame to make a move.",
+      "goTo": "Go to the key at {time}"
     },
     "motion": {
       "linear": "Linear",
@@ -154,12 +171,47 @@
       "ease_in_out": "Ease in and out",
       "smooth": "Smooth spline"
     },
-    "analyze": "Analyze depth",
     "analyzing": "Estimating depth…",
     "cancel": "Cancel",
     "generating": "Generating the new view",
     "takes": "Takes",
     "download": "Download",
-    "demoNote": "Design prototype: no jobs run. Takes show the example result."
+    "stage": {
+      "starting": "Starting a server",
+      "queued": "Waiting for a server",
+      "uploading": "Uploading the clip",
+      "queuedAt": "Queued · position {n}",
+      "fetching": "Fetching the result"
+    },
+    "signIn": "Sign in to read the scene.",
+    "unavailable": "Re-shoot is not available right now. Try again later.",
+    "quote": {
+      "free": "Free · {left} of {runs} left {period}",
+      "freeOnly": "Free",
+      "paid": "{price} credits",
+      "perSecond": "{rate} credits per second",
+      "failed": "Couldn’t get the price yet. Trying again…",
+      "priceUnknown": "Price not available",
+      "exhausted": "No free runs left; next one {when}",
+      "later": "later"
+    },
+    "period": {
+      "day": "today",
+      "week": "this week",
+      "days": "per {n} days",
+      "hours": "per {n} hours"
+    },
+    "error": {
+      "busy": "One take at a time: wait for this one to finish.",
+      "rateLimited": "Too many tries for now. Try again {when}.",
+      "failed": "Something went wrong. Try again."
+    },
+    "demoNote": "Preview: takes play the example result for now.",
+    "clipLength": "This clip is {seconds} s. Use one between 5 and 15 seconds.",
+    "failed": "Something went wrong",
+    "tryAgain": "Try again",
+    "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
+    "play": "Play",
+    "pause": "Pause"
   }
 }

@@ -27,8 +27,10 @@
       "reshootMeta": "Video · MiniMax H3"
     },
     "stage": {
-      "renderingTake": "Rendering take {take}",
       "longWait": "Still going. Some models take about a minute. Nothing is queued; yours already started.",
+      "generatingImage": "Generating image",
+      "generatingVideo": "Generating video",
+      "loadingTake": "Loading the take",
       "again": "Generate again",
       "useAsReference": "Use as reference",
       "emptyTitle": "Your first shot appears here",
@@ -39,7 +41,8 @@
       "takes": "Takes",
       "download": "Download",
       "sequence": "Sequence",
-      "thumb": "Shot {shot}, take {take}"
+      "takeName": "Shot {shot}, take {take}",
+      "renderingTakeName": "Rendering Shot {shot}, take {take}"
     },
     "state": {
       "failed": "This take failed",
@@ -100,12 +103,14 @@
       "optional": "Optional",
       "cast": "Character",
       "castAction": "Add a character reference",
-      "palette": "Palette",
-      "paletteAction": "Add a palette reference",
       "remove": "Remove reference"
     },
     "title": "Cinematic Studio",
     "beta": "Beta",
+    "repo": {
+      "view": "View on GitHub",
+      "soon": "GitHub · Coming soon"
+    },
     "meta": {
       "description": "Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router."
     },
@@ -124,6 +129,7 @@
       "portrait": "Old fisherman on an overcast pier",
       "train": "Night train window at blue hour"
     },
+    "lead": "Direct every shot. Pick the camera, lens, light and grade, and get film-grade frames from any model.",
     "camera": {
       "body": "Body",
       "lens": "Lens",
@@ -131,7 +137,7 @@
       "aperture": "Aperture"
     },
     "part": {
-      "shot": "Shot",
+      "shot": "Framing",
       "light": "Light",
       "film": "Film",
       "look": "Look",
@@ -200,11 +206,63 @@
       "scope": "Scope",
       "widescreen": "Widescreen",
       "academy": "Academy",
+      "landscapePhoto": "Landscape photo",
+      "portraitPhoto": "Portrait photo",
       "square": "Square",
       "vertical": "Vertical"
     },
+    "video": {
+      "audioOn": "On",
+      "audioOff": "Off",
+      "enhanceHint": "Adds cinematic motion and continuous action to the prompt",
+      "mode": "Creation type",
+      "image": "Image",
+      "video": "Video",
+      "animate": "Animate image",
+      "preview": "Generated video",
+      "duration": "Duration",
+      "audio": "Generate audio",
+      "firstFrame": "Starting frame",
+      "lastFrame": "Ending frame",
+      "addFirstFrame": "Add a starting frame",
+      "addLastFrame": "Add an ending frame",
+      "uploadFrame": "Upload an image",
+      "needFrame": "Add a starting frame for this model.",
+      "oneClip": "One clip per request. Describe the action and camera movement in your scene.",
+      "start": "Describe the movement. Choose a video model, or animate one of your stills.",
+      "frameError": "Could not load that starting frame. Download the image and upload it in the video settings.",
+      "frameLoading": "Preparing starting frame…",
+      "sourceVideo": "Video to edit",
+      "addSourceVideo": "Add the video to edit",
+      "noFirstFrame": "{model} can't start from an image. Remove the frame or pick another model.",
+      "needSourceVideo": "Add the video to edit first.",
+      "audioTag": "Audio",
+      "resolution": "Resolution",
+      "aspect": "Frame",
+      "modelDecides": "This model sets the length and resolution itself."
+    },
     "references": {
+      "needsPicture": "{model} needs the picture itself, and this image can't be read here. Download it and add it with +, or pick another model.",
+      "unreadable": "Couldn't use this image. Download it and add it with +.",
       "unsupported": "{model} can't use references. Remove them or pick another model."
+    },
+    "colors": {
+      "title": "Colors",
+      "hint": "Sent as words, so every model can follow them",
+      "color": "Color",
+      "add": "Add a color",
+      "remove": "Remove color",
+      "makeMain": "Make main color",
+      "main": "Main color",
+      "sampleError": "Couldn't read colors from that image.",
+      "clear": "Clear colors"
+    },
+    "grade": {
+      "fromImage": "From an image",
+      "fromImageAction": "Match the colors of an image",
+      "yourPalette": "Your palette",
+      "edit": "Edit palette",
+      "done": "Done"
     }
   }
 }

@@ -180,7 +180,7 @@ const DOLLY_BUTTONS = [
       >
         <Move3d class="size-3.5 shrink-0" aria-hidden="true" />
         <span class="truncate pointer-coarse:hidden">
-          {{ rc('reshoot.dragHint', locale) }}
+          {{ rc('reshoot.dragHint.label', locale) }}
         </span>
         <span class="hidden truncate pointer-coarse:inline">
           {{ rc('reshoot.dragHint.touch', locale) }}
