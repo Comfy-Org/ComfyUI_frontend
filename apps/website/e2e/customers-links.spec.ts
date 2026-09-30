@@ -51,15 +51,9 @@ test.describe('Customer-story internal links @smoke', () => {
   }) => {
     await page.goto('/pricing')
 
-    const section = page.locator('section', {
-      has: page.getByText(t('pricing.enterprise.label', 'en'))
-    })
-
-    await expect(
-      section.getByRole('link', {
-        name: t('pricing.enterprise.learnMore', 'en'),
-        exact: true
-      })
-    ).toHaveAttribute('href', '/enterprise')
+    await expect(page.getByTestId('enterprise-cta')).toHaveAttribute(
+      'href',
+      '/enterprise'
+    )
   })
 })
