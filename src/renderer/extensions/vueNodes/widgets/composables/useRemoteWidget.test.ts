@@ -1,11 +1,16 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import axios, { AxiosHeaders } from 'axios'
 import type { AxiosResponse } from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WebSession } from '@comfyorg/account-core/webSession'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  isComboWidget
+} from '@/lib/litegraph/src/litegraph'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
@@ -938,6 +943,34 @@ describe('useRemoteWidget', () => {
       expect(refreshSpy).not.toHaveBeenCalled()
     })
 
+    it('initializes a remote widget after the same node is removed and re-added', async () => {
+      const graph = new LGraph()
+      const node = new LGraphNode('remote')
+      graph.add(node)
+      const widget = node.addWidget('combo', 'model', DEFAULT_VALUE, () => {}, {
+        values: []
+      })
+      assert(isComboWidget(widget))
+      const hook = useRemoteWidget({
+        node,
+        widget,
+        remoteConfig: createMockConfig(),
+        defaultValue: DEFAULT_VALUE
+      })
+
+      try {
+        graph.remove(node)
+        graph.add(node)
+        mockAxiosResponse(['optionA', 'optionB'])
+
+        await getResolvedValue(hook)
+
+        expect(widget.value).toBe('optionA')
+      } finally {
+        graph.remove(node)
+      }
+    })
+
     it('does not apply a pending response after the owning widget is removed', async () => {
       let resolveResponse!: (value: AxiosResponse<string[]>) => void
       const response = new Promise<AxiosResponse<string[]>>((resolve) => {
@@ -949,7 +982,7 @@ describe('useRemoteWidget', () => {
       const cleanup = vi.fn()
       options.widget.onRemove = cleanup
       const hook = useRemoteWidget(options)
-      hook.getValue()
+      const loaded = getResolvedValue(hook)
       options.widget.onRemove()
       resolveResponse({
         data: ['replacement'],
@@ -958,9 +991,7 @@ describe('useRemoteWidget', () => {
         headers: new AxiosHeaders(),
         config: { headers: new AxiosHeaders() }
       })
-      await vi.waitFor(() =>
-        expect(hook.getCacheEntry()?.data).toEqual(['replacement'])
-      )
+      await loaded
       expect(options.widget.value).toBe('saved')
       expect(cleanup).toHaveBeenCalledOnce()
     })
