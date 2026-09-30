@@ -1,5 +1,5 @@
 import type {
-  ModelLaunchCompare,
+  ModelLaunchBeforeAfter,
   ModelLaunchMedia,
   ModelLaunchPage
 } from '../templates/model-launch/types'
@@ -32,9 +32,9 @@ const media = {
 
 const localNote = { en: 'Runs locally', 'zh-CN': '本地运行' }
 
-const compare: ModelLaunchCompare = {
-  headingKey: 'nvidiaRtx.compare.heading',
-  bodyKey: 'nvidiaRtx.compare.body',
+const beforeAfter: ModelLaunchBeforeAfter = {
+  headingKey: 'nvidiaRtx.beforeAfter.heading',
+  bodyKey: 'nvidiaRtx.beforeAfter.body',
   tabs: [
     {
       id: 'super-resolution',
@@ -97,7 +97,7 @@ export const nvidiaRtxPage: ModelLaunchPage = {
       target: '_blank'
     }
   },
-  compare,
+  beforeAfter,
   gallery: {
     headingKey: 'nvidiaRtx.gallery.heading',
     ctaVariant: 'none',
@@ -296,7 +296,7 @@ export const nvidiaRtxPage: ModelLaunchPage = {
       }
     ]
   },
-  sectionOrder: ['compare', 'gallery', 'steps', 'faq'],
+  sectionOrder: ['beforeAfter', 'gallery', 'steps', 'faq'],
   runOptions: {
     headingKey: 'nvidiaRtx.runOptions.heading',
     subtitleKey: 'nvidiaRtx.runOptions.subtitle',

@@ -7654,13 +7654,16 @@ Enterprise`
   },
   'modelLaunch.copyPrompt': { en: 'Copy prompt', 'zh-CN': '复制提示词' },
   'modelLaunch.loadMore': { en: 'Load more', 'zh-CN': '加载更多' },
-  'modelLaunch.compare.tabsLabel': { en: 'Comparison', 'zh-CN': '对比项目' },
-  'modelLaunch.compare.sliderLabel': {
+  'modelLaunch.beforeAfter.tabsLabel': {
+    en: 'Comparison',
+    'zh-CN': '对比项目'
+  },
+  'modelLaunch.beforeAfter.sliderLabel': {
     en: 'Comparison slider',
     'zh-CN': '对比滑块'
   },
-  'modelLaunch.compare.before': { en: 'Before', 'zh-CN': '处理前' },
-  'modelLaunch.compare.after': { en: 'After', 'zh-CN': '处理后' },
+  'modelLaunch.beforeAfter.before': { en: 'Before', 'zh-CN': '处理前' },
+  'modelLaunch.beforeAfter.after': { en: 'After', 'zh-CN': '处理后' },
   // Wan 3.0 model page (/wan-3.0)
   'wan3.meta.title': {
     en: 'Wan 3.0 on Comfy: Text, Image and Reference to Video',
@@ -7872,11 +7875,11 @@ Enterprise`
     en: 'READ THE GUIDE',
     'zh-CN': '查看教程'
   },
-  'nvidiaRtx.compare.heading': {
+  'nvidiaRtx.beforeAfter.heading': {
     en: 'One clip, two states.',
     'zh-CN': '一段视频，两种状态。'
   },
-  'nvidiaRtx.compare.body': {
+  'nvidiaRtx.beforeAfter.body': {
     en: 'Source on one side, output on the other. Drag the line to compare them frame by frame.',
     'zh-CN': '一侧是原始素材，另一侧是输出结果。拖动分割线，逐帧比较两者。'
   },

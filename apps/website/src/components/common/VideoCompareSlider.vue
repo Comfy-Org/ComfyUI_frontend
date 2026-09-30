@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, useMounted } from '@vueuse/core'
 import { ref, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
@@ -35,6 +35,9 @@ const container = useTemplateRef<HTMLElement>('container')
 const beforeVideo = useTemplateRef<HTMLVideoElement>('beforeVideo')
 const afterVideo = useTemplateRef<HTMLVideoElement>('afterVideo')
 const isDragging = ref(false)
+// Server markup carries no clip sources, so nothing downloads until the
+// island hydrates, which with client:visible is when it scrolls into view.
+const isMounted = useMounted()
 
 function moveTo(clientX: number) {
   const bounds = container.value?.getBoundingClientRect()
@@ -49,7 +52,12 @@ function onPointerDown(event: PointerEvent) {
 }
 
 useEventListener('pointermove', (event) => {
-  if (isDragging.value) moveTo(event.clientX)
+  if (!isDragging.value) return
+  if (event.buttons === 0) {
+    isDragging.value = false
+    return
+  }
+  moveTo(event.clientX)
 })
 useEventListener(['pointerup', 'pointercancel'], () => {
   isDragging.value = false
@@ -75,9 +83,10 @@ function syncAfterToBefore() {
 <template>
   <div
     ref="container"
+    data-testid="video-compare-surface"
     :class="
       cn(
-        'relative isolate aspect-video w-full cursor-ew-resize touch-none overflow-hidden bg-primary-comfy-ink select-none',
+        'relative isolate aspect-video w-full cursor-ew-resize touch-pan-y overflow-hidden bg-primary-comfy-ink select-none',
         className
       )
     "
@@ -86,7 +95,8 @@ function syncAfterToBefore() {
     <video
       ref="beforeVideo"
       :key="beforeSrc"
-      :src="beforeSrc"
+      data-testid="video-compare-before"
+      :src="isMounted ? beforeSrc : undefined"
       autoplay
       loop
       muted
@@ -98,7 +108,8 @@ function syncAfterToBefore() {
     <video
       ref="afterVideo"
       :key="afterSrc"
-      :src="afterSrc"
+      data-testid="video-compare-after"
+      :src="isMounted ? afterSrc : undefined"
       autoplay
       loop
       muted
@@ -127,7 +138,7 @@ function syncAfterToBefore() {
       :aria-valuemax="COMPARE_MAX"
       :aria-valuenow="Math.round(position)"
       :aria-valuetext="`${Math.round(position)}%`"
-      class="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-primary-warm-white outline-none focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow"
+      class="absolute inset-y-0 w-0.5 -translate-x-1/2 touch-none bg-primary-warm-white outline-none focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow"
       :style="{ left: `${position}%` }"
       @keydown="onKeyDown"
     >

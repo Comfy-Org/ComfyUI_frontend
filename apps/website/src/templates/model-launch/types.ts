@@ -194,7 +194,7 @@ export interface ModelLaunchComparison {
   rows: readonly ModelLaunchComparisonRow[]
 }
 
-interface ModelLaunchCompareTab {
+interface ModelLaunchBeforeAfterTab {
   id: string
   label: LocalizedText
   // One line under the tabs, e.g. "15 fps in, 60 fps out."
@@ -207,10 +207,10 @@ interface ModelLaunchCompareTab {
 
 // A tabbed before/after video slider, e.g. the RTX Video effects on
 // /nvidia-rtx. Each tab swaps in its own clip pair and caption.
-export interface ModelLaunchCompare {
+export interface ModelLaunchBeforeAfter {
   headingKey: TranslationKey
   bodyKey?: TranslationKey
-  tabs: readonly ModelLaunchCompareTab[]
+  tabs: readonly ModelLaunchBeforeAfterTab[]
 }
 
 export interface ModelLaunchRunOptions {
@@ -237,7 +237,7 @@ export interface ModelLaunchReviews {
 // The optional body sections, in the order they render between the hero and the
 // run-options footer. hero/runOptions/reviews are fixed and are not listed here.
 export type ModelLaunchSection =
-  | 'compare'
+  | 'beforeAfter'
   | 'gallery'
   | 'audioGallery'
   | 'steps'
@@ -251,7 +251,7 @@ export type ModelLaunchSection =
 // reorders its sections with `sectionOrder` rather than editing the template,
 // so one page's layout never moves another's.
 export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
-  'compare',
+  'beforeAfter',
   'gallery',
   'audioGallery',
   'pricing',
@@ -269,7 +269,7 @@ export interface ModelLaunchPage {
   hero: ModelLaunchHero
   // Absent on announcement pages, which render hero, run options and reviews
   // only until the model ships.
-  compare?: ModelLaunchCompare
+  beforeAfter?: ModelLaunchBeforeAfter
   gallery?: ModelLaunchGallery
   audioGallery?: ModelLaunchAudioGallery
   pricing?: ModelLaunchPricing
