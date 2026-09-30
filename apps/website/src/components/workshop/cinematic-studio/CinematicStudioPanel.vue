@@ -110,7 +110,7 @@ function generate() {
     data-testid="cinematic"
   >
     <AppsBackLink :locale class="mb-3" />
-    <div class="mb-6 flex flex-wrap items-center gap-3">
+    <div class="mb-3 flex flex-wrap items-center gap-3">
       <h1 class="text-2xl font-semibold text-primary-warm-white lg:text-3xl">
         {{ tc('cinematic.title', locale) }}
       </h1>
@@ -119,15 +119,15 @@ function generate() {
       >
         {{ tc('cinematic.beta', locale) }}
       </span>
-      <AppRepoLink
-        :repo="workshopAppRepo('studio')"
-        :locale
-        class="sm:ml-auto"
-      />
     </div>
-    <p class="-mt-3 mb-6 text-lg text-primary-warm-gray">
-      {{ tc('cinematic.lead', locale) }}
-    </p>
+    <div
+      class="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <p class="text-lg text-primary-warm-gray">
+        {{ tc('cinematic.lead', locale) }}
+      </p>
+      <AppRepoLink :repo="workshopAppRepo('studio')" :locale class="shrink-0" />
+    </div>
     <div
       ref="layout"
       class="relative grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
@@ -207,7 +207,7 @@ function generate() {
             'fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:right-0 lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl lg:transition-[max-width] lg:duration-300 lg:ease-out',
             picker === 'camera' || editingPalette
               ? 'lg:max-w-full'
-              : 'lg:max-w-150'
+              : 'lg:max-w-120'
           )
         "
         :style="{ '--anchor-top': `${anchorTop}px` }"

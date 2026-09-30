@@ -20,7 +20,7 @@ const mode = defineModel<'image' | 'video'>({ required: true })
     :class="
       cn(
         'flex gap-1 rounded-xl border border-transparency-white-t20 bg-primary-comfy-ink-light p-1',
-        compact && 'gap-0.5 rounded-lg p-0.5'
+        compact && 'gap-0.5 rounded-full p-0.5'
       )
     "
     role="group"
@@ -35,7 +35,7 @@ const mode = defineModel<'image' | 'video'>({ required: true })
       :class="
         cn(
           'min-h-10 flex-1 rounded-lg px-5 text-sm font-semibold text-primary-warm-white transition-colors hover:bg-transparency-white-t8 disabled:opacity-50',
-          compact && 'min-h-8 rounded-md px-3 text-xs',
+          compact && 'min-h-7 rounded-full px-3 text-xs',
           mode === option && 'bg-transparency-white-t20'
         )
       "
