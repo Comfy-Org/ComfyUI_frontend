@@ -362,6 +362,14 @@ function disownsWorkflow(error: unknown): boolean {
   )
 }
 
+function isCurrentStorageContinuation(
+  generation: number,
+  currentGeneration: number,
+  owner: string | null
+): boolean {
+  return generation === currentGeneration && owner === getStorageIdentity()
+}
+
 export function useAgentSession(deps: AgentSessionDeps) {
   const {
     rest,
@@ -1135,8 +1143,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const generation = loadGeneration
     const storageOwnerAtSend = getStorageIdentity()
     const isCurrentSend = () =>
-      generation === loadGeneration &&
-      storageOwnerAtSend === getStorageIdentity()
+      isCurrentStorageContinuation(
+        generation,
+        loadGeneration,
+        storageOwnerAtSend
+      )
     const threadAtSend = conversationStore.threadId ?? 'new'
     const originContext = workflow?.current()
     const origin: TurnOrigin =
@@ -1341,8 +1352,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const generation = loadGeneration
     const storageOwnerAtStop = getStorageIdentity()
     const isCurrentStop = () =>
-      generation === loadGeneration &&
-      storageOwnerAtStop === getStorageIdentity()
+      isCurrentStorageContinuation(
+        generation,
+        loadGeneration,
+        storageOwnerAtStop
+      )
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
@@ -1375,8 +1389,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const generation = loadGeneration
     const storageOwnerAtAnswer = getStorageIdentity()
     const isCurrentAnswer = () =>
-      generation === loadGeneration &&
-      storageOwnerAtAnswer === getStorageIdentity()
+      isCurrentStorageContinuation(
+        generation,
+        loadGeneration,
+        storageOwnerAtAnswer
+      )
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
       // PM-1658: the card is on screen, so a click on it is never a no-op.
