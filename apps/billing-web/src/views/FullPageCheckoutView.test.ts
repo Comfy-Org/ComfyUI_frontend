@@ -290,27 +290,24 @@ describe('FullPageCheckoutView', () => {
       stripeKey.value = 'pk_test_example'
     })
 
-    it('says the checkout could not load instead of a card form that can never mount, and Try again picks up a key that arrives', async () => {
+    it('370-15519: fails inside the payment column beside the summary, and Try again mounts the card form', async () => {
       const fake = await renderCheckout()
 
       expect(
-        await screen.findByRole('heading', {
-          name: "Couldn't load your checkout"
-        })
+        await screen.findByText("The payment form couldn't load")
       ).toBeInTheDocument()
-      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
-        'PAYMENT_PROVIDER_UNAVAILABLE'
-      )
+      expect(
+        screen.getByText('Subscribe to Creator Plan · Acme Team')
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('checkout-ending-code')
+      ).not.toBeInTheDocument()
       expect(form.mounts).toBe(0)
 
-      stripeKey.value = 'pk_test_example'
       await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
 
-      expect(
-        await screen.findByText('Subscribe to Creator Plan · Acme Team')
-      ).toBeInTheDocument()
-      expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
       expect(form.mounts).toBe(1)
+      expect(fake.subscribe).not.toHaveBeenCalled()
     })
 
     it('still charges a plan change to the method on file, which needs no card form', async () => {
@@ -426,6 +423,7 @@ describe('FullPageCheckoutView', () => {
     name: string
     options: FakeBillingClientOptions
     arrange: (fake: FakeBillingClient) => void
+    body: string
   }>([
     {
       name: 'the capabilities read',
@@ -434,16 +432,18 @@ describe('FullPageCheckoutView', () => {
         fake.readCapabilities.mockResolvedValue({
           status: 'error',
           code: 'REQUEST_FAILED'
-        })
+        }),
+      body: "We couldn't check whether this workspace can check out, so checkout can't open yet. Try again, or contact support if this keeps happening."
     },
     {
       name: 'the quote',
       options: { preview: { status: 'error', code: 'REQUEST_FAILED' } },
-      arrange: () => {}
+      arrange: () => {},
+      body: "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening."
     }
   ])(
     'says so instead of capture when $name fails',
-    async ({ options, arrange }) => {
+    async ({ options, arrange, body }) => {
       await renderCheckout(options, arrange)
 
       expect(
@@ -454,7 +454,7 @@ describe('FullPageCheckoutView', () => {
       expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
         'REQUEST_FAILED'
       )
-      expect(screen.getByText(/Nothing has been charged/)).toBeInTheDocument()
+      expect(screen.getByText(body)).toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: 'Pay and subscribe' })
       ).not.toBeInTheDocument()
@@ -622,6 +622,23 @@ describe('FullPageCheckoutView', () => {
       },
       code: 'PLAN_NOT_FOUND',
       plans: 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+    },
+    {
+      name: 'a retired team plan whose link carries its commit stop',
+      path: `${CHECKOUT_PATH}&team_credit_stop_id=stop_1`,
+      options: {
+        preview: {
+          status: 'error',
+          code: 'REQUEST_FAILED',
+          httpStatus: 400,
+          serverCode: readBillingErrorCode({
+            code: 'INVALID_PLAN',
+            message: 'no'
+          })
+        }
+      },
+      code: 'PLAN_NOT_FOUND',
+      plans: 'https://testcloud.comfy.org/?pricing=team&workspace=ws-team'
     },
     {
       name: 'a team plan named without its commit stop',
@@ -1003,21 +1020,46 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     }
   )
 
-  it('says why a refused Pay was refused and frees Pay for another try', async () => {
+  it('314-10612: a refused Pay is the processing error card, with support quoting its code, and Pay stays free for another try', async () => {
     const fake = await payReady({
       subscribe: { status: 'error', code: 'REQUEST_FAILED' }
     })
 
     form.emit('confirm', 'ctoken_1')
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent("Payment couldn't be processed")
+    expect(card).toHaveTextContent(
       "We couldn't reach the billing service. Please try again."
     )
+    const support = new URL(
+      screen
+        .getByRole('link', { name: 'Contact support' })
+        .getAttribute('href') ?? ''
+    )
+    expect(support.searchParams.get('body')).toBe('Error code: REQUEST_FAILED')
     await waitFor(() => expect(payButton()).toBeEnabled())
 
     form.emit('confirm', 'ctoken_2')
 
     await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
+  })
+
+  it('shows the sentence a server error wrote inside the processing error card', async () => {
+    await payReady({
+      subscribe: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 500,
+        serverMessage: 'Billing is down for maintenance.'
+      }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent("Payment couldn't be processed")
+    expect(card).toHaveTextContent('Billing is down for maintenance.')
   })
 
   it('frees Pay again when the collision re-reads as nothing pending', async () => {
@@ -2274,7 +2316,7 @@ describe('FullPageCheckoutView promo codes', () => {
     const card = await screen.findByRole('alert')
     expect(card).toHaveTextContent('Your promo code expired')
     expect(card).toHaveTextContent(
-      'The LAUNCH20 code expired, so the total was updated.'
+      'The LAUNCH20 code expired, so the total was updated. Review the new total before paying. You have not been charged.'
     )
     expect(card).not.toHaveTextContent('declined')
     expect(
@@ -2400,6 +2442,135 @@ describe('FullPageCheckoutView promo codes', () => {
     ).not.toBeInTheDocument()
     expect(screen.getAllByText('$28.00')).toHaveLength(2)
   })
+
+  it('ignores a URL code on a change that charges nothing today, so the first Pay pays', async () => {
+    const fake = await renderCheckout(
+      {
+        preview: {
+          status: 'ok',
+          value: previewOf({
+            transition_type: 'downgrade',
+            is_immediate: false
+          })
+        }
+      },
+      () => {},
+      `${CHECKOUT_PATH}&promo=LAUNCH20`
+    )
+    await screen.findByText(/Switch to Creator Plan/)
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    expect(fake.previewSubscribe).toHaveBeenCalledExactlyOnceWith(
+      expect.not.objectContaining({ promotionCode: expect.anything() }),
+      expect.anything()
+    )
+  })
+
+  it('a Pay over a code it could not check tries Apply again, then waits for a second Pay', async () => {
+    const fake = await renderCheckout({}, (scripted) =>
+      quotesByCode(scripted, { status: 'error', code: 'REQUEST_FAILED' })
+    )
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await enterCode('LAUNCH20')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "We couldn't check this code. Try again."
+    )
+    quotesByCode(fake)
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1')
+
+    expect(await screen.findByText('−$5.60')).toBeInTheDocument()
+    expect(fake.subscribe).not.toHaveBeenCalled()
+
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    form.emit('confirm', 'ctoken_2')
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          promotion_code: 'LAUNCH20',
+          quote_id: 'q_promo'
+        })
+      )
+    )
+  })
+
+  it.for<{
+    name: string
+    applied: boolean
+    change: () => Promise<void>
+  }>([
+    {
+      name: 'applying a code',
+      applied: false,
+      change: () => enterCode('LAUNCH20')
+    },
+    {
+      name: 'removing a code',
+      applied: true,
+      change: async () => {
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Remove LAUNCH20' })
+        )
+        await screen.findByRole('button', { name: 'Add promo code' })
+      }
+    }
+  ])(
+    '553-9297: $name re-prices the plan, so the keep-subscription tick is asked again',
+    async ({ applied, change }) => {
+      const kept = { requires_reactivation_confirmation: true }
+      const fake = await renderCheckout(
+        {
+          status: {
+            is_active: true,
+            has_funds: true,
+            max_seats: 1,
+            occupied_seats: 1,
+            scheduled_change: null,
+            team_credit_stop: null,
+            cancel_at: '2026-07-28T00:00:00.000Z'
+          }
+        },
+        (scripted) => {
+          scripted.previewSubscribe.mockImplementation(
+            async ({ promotionCode }) => ({
+              status: 'ok',
+              value:
+                promotionCode === undefined
+                  ? previewOf({ ...kept, transition_type: 'upgrade' })
+                  : { ...LAUNCH20_QUOTE, ...kept, transition_type: 'upgrade' }
+            })
+          )
+        }
+      )
+      await screen.findByText('Upgrade to Creator Plan · Acme Team')
+      if (applied) {
+        await enterCode('LAUNCH20')
+        await screen.findByText('−$5.60')
+      }
+      await userEvent.click(
+        screen.getByRole('checkbox', {
+          name: 'Keep my subscription and renew it'
+        })
+      )
+
+      await change()
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole('checkbox', {
+            name: 'Keep my subscription and renew it'
+          })
+        ).not.toBeChecked()
+      )
+      await userEvent.click(payButton())
+      expect(fake.subscribe).not.toHaveBeenCalled()
+    }
+  )
 
   it('offers no promo entry on a change that charges nothing today', async () => {
     await renderCheckout({

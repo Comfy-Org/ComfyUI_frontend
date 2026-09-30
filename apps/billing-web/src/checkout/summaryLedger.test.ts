@@ -452,6 +452,92 @@ describe('buildSummaryLedger', () => {
     expect(ledgerOf(quote)).toEqual(ledger)
   })
 
+  it.for<{
+    name: string
+    quote: Partial<SubscriptionPreview>
+    zeroDue?: string
+  }>([
+    {
+      name: 'an upgrade a code takes to $0',
+      quote: {
+        transition_type: 'upgrade',
+        amount_due_cents: 0,
+        cost_today_cents: 5000,
+        renewal_amount_cents: 5000,
+        renewal_at: JULY_28,
+        current_plan: planOf('CREATOR', 'MONTHLY', 2800),
+        new_plan: planOf('PRO', 'MONTHLY', 5000),
+        promotion_code: 'FREE',
+        discounts: [{ kind: 'promotion', code: 'FREE', amount_off_cents: 5000 }]
+      },
+      zeroDue:
+        "You won't be charged today. Your payment method renews the plan at $50.00 on July 28, 2026."
+    },
+    {
+      name: 'a prorated upgrade a code takes to $0',
+      quote: {
+        transition_type: 'upgrade',
+        proration_at: PRICED_AT,
+        amount_due_cents: 0,
+        cost_today_cents: 2200,
+        renewal_amount_cents: 5000,
+        renewal_at: JULY_28,
+        current_plan: planOf('CREATOR', 'MONTHLY', 2800),
+        new_plan: planOf('PRO', 'MONTHLY', 5000),
+        promotion_code: 'FREE',
+        discounts: [{ kind: 'promotion', code: 'FREE', amount_off_cents: 2200 }]
+      },
+      zeroDue:
+        "You won't be charged today. Your payment method renews the plan at $50.00 on July 28, 2026."
+    },
+    {
+      name: 'a $0 new subscription the quote gives no renewal date',
+      quote: {
+        transition_type: 'new_subscription',
+        amount_due_cents: 0,
+        cost_today_cents: 0,
+        renewal_amount_cents: 2800
+      },
+      zeroDue:
+        "You won't be charged today. Your payment method renews the plan at $28.00."
+    },
+    {
+      name: 'a scheduled change, which charges nothing today by design',
+      quote: {
+        transition_type: 'downgrade',
+        is_immediate: false,
+        effective_at: JULY_28,
+        amount_due_cents: 0,
+        cost_today_cents: 0,
+        current_plan: planOf('PRO', 'MONTHLY', 10_000),
+        new_plan: planOf('CREATOR', 'MONTHLY', 3500)
+      }
+    },
+    {
+      name: 'a charge above $0',
+      quote: { amount_due_cents: 2800, renewal_at: JULY_28 }
+    }
+  ])('explains a zero total: $name', ({ quote, zeroDue }) => {
+    const explained = ledgerOf(quote).trailing.filter((line) =>
+      line.startsWith("You won't be charged today.")
+    )
+    expect(explained).toEqual(zeroDue === undefined ? [] : [zeroDue])
+  })
+
+  it('names the cadence of a kept yearly plan even when the new plan is yearly too', () => {
+    const { trailing } = ledgerOf({
+      transition_type: 'downgrade',
+      is_immediate: false,
+      effective_at: JUNE_28_2027,
+      amount_due_cents: 0,
+      cost_today_cents: 0,
+      current_plan: planOf('PRO', 'ANNUAL', 50_000),
+      new_plan: planOf('CREATOR', 'ANNUAL', 28_000)
+    })
+
+    expect(trailing).toEqual(["You'll keep Pro Yearly until June 28, 2027"])
+  })
+
   it('names only the plan when the session has no workspace', () => {
     expect(ledgerOf({}, null).eyebrow).toBe('Subscribe to Creator Plan')
   })

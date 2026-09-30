@@ -3,20 +3,17 @@ import type { RateCard } from '../types/rate-card'
 // Kept free of the snapshot import so the refresh script can still run, and
 // replace the snapshot, when the committed one is invalid.
 
-export type StorageLabelKey =
-  | 'standardUnder1tb'
-  | 'standardOver1tb'
-  | 'highPerformance'
-  | 'containerDisk'
+export type StorageLabelKey = 'storage' | 'containerDisk'
 
 // Maps the rate card's stable storageType to the i18n label keys used by
-// PricingSection, which predate the rate card and read better split into
-// title + sub-label.
+// PricingSection. All network-storage variants price identically today, so
+// they collapse onto the single 'storage' display row; container disk stays
+// its own row.
 export const STORAGE_TYPE_LABEL_KEYS: Partial<Record<string, StorageLabelKey>> =
   {
-    network_standard: 'standardUnder1tb',
-    network_standard_1tb_plus: 'standardOver1tb',
-    network_high_performance: 'highPerformance',
+    network_standard: 'storage',
+    network_standard_1tb_plus: 'storage',
+    network_high_performance: 'storage',
     container_disk: 'containerDisk'
   }
 
