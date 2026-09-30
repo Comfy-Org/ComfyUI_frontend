@@ -65,69 +65,71 @@
       />
     </template>
     <template #body>
-      <div
-        v-if="showLoadingState"
-        class="grid gap-2 p-2"
-        :style="skeletonGridStyle"
-      >
+      <div v-bind="tabPanelAttrs" class="size-full">
         <div
-          v-for="n in skeletonCount"
-          :key="`skeleton-${n}`"
-          class="flex flex-col gap-2 p-2"
+          v-if="showLoadingState"
+          class="grid gap-2 p-2"
+          :style="skeletonGridStyle"
         >
-          <Skeleton class="aspect-square w-full rounded-lg" />
-          <div class="flex flex-col gap-1">
-            <Skeleton class="h-4 w-3/4" />
-            <Skeleton class="h-3 w-1/2" />
+          <div
+            v-for="n in skeletonCount"
+            :key="`skeleton-${n}`"
+            class="flex flex-col gap-2 p-2"
+          >
+            <Skeleton class="aspect-square w-full rounded-lg" />
+            <div class="flex flex-col gap-1">
+              <Skeleton class="h-4 w-3/4" />
+              <Skeleton class="h-3 w-1/2" />
+            </div>
           </div>
         </div>
-      </div>
-      <div v-else-if="showEmptyState">
-        <NoResultsPlaceholder
-          icon="pi pi-info-circle"
-          :title="
-            $t(
-              activeTab === 'input'
-                ? 'sideToolbar.noImportedFiles'
-                : 'sideToolbar.noGeneratedFiles'
-            )
-          "
-          :message="$t('sideToolbar.noFilesFoundMessage')"
-        />
-      </div>
-      <div
-        v-else
-        class="relative size-full py-2"
-        @click="handleEmptySpaceClick"
-      >
-        <AssetsSidebarListView
-          v-if="isListView"
-          :asset-items="listViewAssetItems"
-          :is-selected="isSelected"
-          :selectable-assets="listViewSelectableAssets"
-          :is-stack-expanded="isListViewStackExpanded"
-          :toggle-stack="toggleListViewStack"
-          :on-load-more="loadMoreAssets"
-          :can-load-more="canLoadMoreAssets"
-          @select-asset="handleAssetSelect"
-          @preview-asset="handleZoomClick"
-          @context-menu="handleAssetContextMenu"
-        />
-        <div v-else class="size-full">
-          <AssetsSidebarGridView
-            :assets="displayAssets"
-            :is-selected
-            :show-output-count
-            :get-output-count
-            :grid-mode
+        <div v-else-if="showEmptyState">
+          <NoResultsPlaceholder
+            icon="pi pi-info-circle"
+            :title="
+              $t(
+                activeTab === 'input'
+                  ? 'sideToolbar.noImportedFiles'
+                  : 'sideToolbar.noGeneratedFiles'
+              )
+            "
+            :message="$t('sideToolbar.noFilesFoundMessage')"
+          />
+        </div>
+        <div
+          v-else
+          class="relative size-full py-2"
+          @click="handleEmptySpaceClick"
+        >
+          <AssetsSidebarListView
+            v-if="isListView"
+            :asset-items="listViewAssetItems"
+            :is-selected="isSelected"
+            :selectable-assets="listViewSelectableAssets"
+            :is-stack-expanded="isListViewStackExpanded"
+            :toggle-stack="toggleListViewStack"
             :on-load-more="loadMoreAssets"
             :can-load-more="canLoadMoreAssets"
             @select-asset="handleAssetSelect"
-            @toggle-asset-selection="handleAssetSelectionToggle"
+            @preview-asset="handleZoomClick"
             @context-menu="handleAssetContextMenu"
-            @zoom="handleZoomClick"
-            @output-count-click="enterFolderView"
           />
+          <div v-else class="size-full">
+            <AssetsSidebarGridView
+              :assets="displayAssets"
+              :is-selected
+              :show-output-count
+              :get-output-count
+              :grid-mode
+              :on-load-more="loadMoreAssets"
+              :can-load-more="canLoadMoreAssets"
+              @select-asset="handleAssetSelect"
+              @toggle-asset-selection="handleAssetSelectionToggle"
+              @context-menu="handleAssetContextMenu"
+              @zoom="handleZoomClick"
+              @output-count-click="enterFolderView"
+            />
+          </div>
         </div>
       </div>
     </template>
@@ -253,6 +255,15 @@ const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const expectedFolderCount = ref(0)
 const isInFolderView = computed(() => folderJobId.value !== null)
+const tabPanelAttrs = computed(() =>
+  isInFolderView.value
+    ? {}
+    : {
+        id: `tabpanel-${activeTab.value}`,
+        role: 'tabpanel',
+        'aria-labelledby': `tab-${activeTab.value}`
+      }
+)
 const viewMode = useStorage<MediaAssetViewMode>(
   'Comfy.Assets.Sidebar.ViewMode',
   MEDIA_ASSET_VIEW_MODE.grid
