@@ -11,13 +11,13 @@ import type { NavGroupData } from '@/types/navTypes'
 import SettingDialog from './SettingDialog.vue'
 
 const settingUiMocks = vi.hoisted(() => ({
-  navGroups: null as unknown as Ref<NavGroupData[]>,
-  defaultCategory: null as unknown as Ref<{
-    key: string
-    label: string
-    children: never[]
-  }>
+  navGroups: null as unknown as Ref<NavGroupData[]>
 }))
+const defaultCategory = ref({
+  key: 'workspace-allowlist',
+  label: 'Allowlist',
+  children: []
+})
 const searchMocks = vi.hoisted(() => ({
   inSearch: null as unknown as Ref<boolean>,
   matchedNavItemKeys: null as unknown as Ref<Set<string>>,
@@ -29,7 +29,7 @@ vi.mock<unknown>(
   import('@/platform/settings/composables/useSettingUI'),
   () => ({
     useSettingUI: () => ({
-      defaultCategory: settingUiMocks.defaultCategory,
+      defaultCategory,
       settingCategories: { value: [] },
       navGroups: settingUiMocks.navGroups,
       findCategoryByKey: (key: string) =>
@@ -98,11 +98,11 @@ beforeEach(() => {
       }
     ]
   })
-  settingUiMocks.defaultCategory = ref({
+  defaultCategory.value = {
     key: 'workspace-allowlist',
     label: 'Allowlist',
     children: []
-  })
+  }
   settingUiMocks.navGroups = ref([
     {
       title: 'Workspace',
@@ -202,7 +202,7 @@ it('shows the workspace identity in the dialog header on workspace sections', as
 })
 
 it('leaves the dialog header empty outside workspace sections', async () => {
-  settingUiMocks.defaultCategory.value = {
+  defaultCategory.value = {
     key: 'comfy',
     label: 'Comfy',
     children: []
