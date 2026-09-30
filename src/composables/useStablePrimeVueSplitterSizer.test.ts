@@ -259,20 +259,31 @@ describe('useStablePrimeVueSplitterSizer', () => {
   it.for([
     {
       case: 'both panels are rendered',
+      sidebarMin: '',
       offsideWidth: 300,
       reservedWidth: 160,
-      sidebarMax: 'calc((100% - 160px) * 0.5714)',
-      offsideMax: 'calc((100% - 160px) * 0.4286)'
+      sidebarMax: 'calc(0px + (100% - 160px) * 0.5714)',
+      offsideMax: 'calc(0px + (100% - 160px) * 0.4286)'
+    },
+    {
+      case: 'the sidebar has a min-width',
+      sidebarMin: '312px',
+      offsideWidth: 300,
+      reservedWidth: 160,
+      sidebarMax: 'calc(312px + (100% - 472px) * 0.2268)',
+      offsideMax: 'calc(0px + (100% - 472px) * 0.7732)'
     },
     {
       case: 'the other panel is hidden',
+      sidebarMin: '',
       offsideWidth: 0,
       reservedWidth: 160,
-      sidebarMax: 'calc((100% - 160px) * 1.0000)',
+      sidebarMax: 'calc(0px + (100% - 160px) * 1.0000)',
       offsideMax: ''
     },
     {
       case: 'no width is reserved',
+      sidebarMin: '',
       offsideWidth: 300,
       reservedWidth: undefined,
       sidebarMax: '',
@@ -280,10 +291,18 @@ describe('useStablePrimeVueSplitterSizer', () => {
     }
   ])(
     'caps pinned panels by a shared width budget when $case',
-    async ({ offsideWidth, reservedWidth, sidebarMax, offsideMax }) => {
+    async ({
+      sidebarMin,
+      offsideWidth,
+      reservedWidth,
+      sidebarMax,
+      offsideMax
+    }) => {
       useKeyedStorage({ sidebar: 400, offside: 300 })
       const sidebarRef = createPanel(400)
       const offsideRef = createPanel(offsideWidth)
+      sidebarRef.value.style.minWidth = sidebarMin
+      document.body.append(sidebarRef.value, offsideRef.value)
 
       useStablePrimeVueSplitterSizer(
         [

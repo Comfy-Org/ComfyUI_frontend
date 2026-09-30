@@ -21,8 +21,8 @@ interface PanelConfig {
 interface SizerOptions {
   /**
    * Width (px) the pinned panels must leave for the rest of the splitter. When
-   * the rendered panels do not fit beside it, each is capped at its share of
-   * the remaining width, in proportion to its pinned width.
+   * the rendered panels do not fit beside it, each keeps its CSS min-width and
+   * shares what is left in proportion to how far its pinned width exceeds it.
    */
   reservedWidth?: number
 }
@@ -81,11 +81,19 @@ export function useStablePrimeVueSplitterSizer(
       const el = resolveElement(ref)
       return el && el.offsetWidth > 0 ? [el] : []
     })
-    const widths = rendered.map(pinnedWidth)
-    const totalWidth = widths.reduce((sum, width) => sum + width, 0)
+    const minWidths = rendered.map(
+      (el) => parseFloat(getComputedStyle(el).minWidth) || 0
+    )
+    const excessWidths = rendered.map((el, i) =>
+      Math.max(0, pinnedWidth(el) - minWidths[i])
+    )
+    const totalMinWidth = minWidths.reduce((sum, width) => sum + width, 0)
+    const totalExcessWidth = excessWidths.reduce((sum, width) => sum + width, 0)
     rendered.forEach((el, i) => {
-      const share = (widths[i] / totalWidth).toFixed(4)
-      el.style.maxWidth = `calc((100% - ${reservedWidth}px) * ${share})`
+      const share = (
+        totalExcessWidth > 0 ? excessWidths[i] / totalExcessWidth : 0
+      ).toFixed(4)
+      el.style.maxWidth = `calc(${minWidths[i]}px + (100% - ${reservedWidth + totalMinWidth}px) * ${share})`
     })
   }
 
