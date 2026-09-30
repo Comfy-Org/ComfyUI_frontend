@@ -2191,6 +2191,35 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it.for<[string, unknown, boolean]>([
+      ['absent', undefined, true],
+      ['zero', 0, false],
+      ['negative', -1, false],
+      ['fractional', 1.5, false],
+      ['NaN', Number.NaN, false],
+      ['positive infinity', Number.POSITIVE_INFINITY, false],
+      ['negative infinity', Number.NEGATIVE_INFINITY, false],
+      ['unsafe integer', Number.MAX_SAFE_INTEGER + 1, false]
+    ])(
+      'rejects an %s refusal token and takes the ordinary retry',
+      ([, expectedSeq, omitToken]) => {
+        vi.useFakeTimers()
+        const { unmount } = mountWithCanvas()
+        const refusal: Record<string, unknown> = {
+          ...staleRefusal,
+          expectedSeq
+        }
+        if (omitToken) delete refusal.expectedSeq
+
+        dispatchFrame('doc_subscribed', refusal)
+
+        expect(bridge().reseed).not.toHaveBeenCalled()
+        vi.advanceTimersByTime(500)
+        expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+        unmount()
+      }
+    )
+
     it('never sends a second reseed for the same workflow; a repeat refusal takes the ordinary retry', () => {
       vi.useFakeTimers()
       const { unmount } = mountWithCanvas()
