@@ -125,9 +125,8 @@ test.describe(
 
       const nodesBefore = await agentConversation.vueNodes.nodes.count()
 
-      await test.step('agent builds two nodes', () => {
-        agentConversation.pushHostOps(AGENT_BUILD)
-      })
+      const buildFrame = await test.step('agent builds two nodes', () =>
+        agentConversation.pushHostOps(AGENT_BUILD))
 
       await test.step('let the build land', () =>
         agentConversation.waitForPendingFrames(
@@ -152,10 +151,8 @@ test.describe(
         await expect(built.getByRole('spinbutton').nth(1)).toHaveValue('512')
       }
 
-      // The same batch again, the way a retried or re-echoed delivery arrives.
-      // A build that is applied twice must leave one copy, not two.
       await test.step('the same build is delivered a second time', () => {
-        agentConversation.pushHostOps(AGENT_BUILD)
+        agentConversation.redeliverHostFrame(buildFrame)
       })
 
       await test.step('let the redelivery land', () =>
