@@ -1167,6 +1167,12 @@ describe('CinematicStudio', () => {
     }
   )
 
+  it('introduces the app under its title in the side panel', () => {
+    render(CinematicStudioPanel, { props: { models } })
+
+    expect(screen.getByText(tc('cinematic.lead'))).toBeVisible()
+  })
+
   it('does not generate again once the scene is cleared', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()

@@ -148,6 +148,9 @@ async function animateTake(url: string, name: string) {
         class="sm:ml-auto"
       />
     </div>
+    <p class="-mt-3 mb-6 text-lg text-primary-warm-gray">
+      {{ tc('cinematic.lead', locale) }}
+    </p>
     <CinematicModeSwitch
       v-if="hasVideo"
       v-model="mode"
