@@ -70,8 +70,13 @@ test.describe(
         await expect(sendButton).toBeVisible()
         await expect(paywall).toHaveCount(0)
         await expect(
-          agentPanel.root.getByText('Finish the workflow')
-        ).toBeVisible()
+          agentPanel.root.getByTestId('user-message-bubble')
+        ).toHaveText([
+          'Build a red fox workflow',
+          'Make the lighting warmer',
+          'Add shallow depth of field',
+          'Finish the workflow'
+        ])
       })
     })
   }
