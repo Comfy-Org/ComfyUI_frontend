@@ -8967,6 +8967,10 @@ Enterprise`
     en: 'Comfy Router',
     'zh-CN': 'Comfy Router'
   },
+  'platform.products.models.badgeLabel': {
+    en: 'ROUTER',
+    'zh-CN': 'ROUTER'
+  },
   'platform.products.models.description': {
     en: 'Use thousands of the latest models in one API. Call Seedance, Minimax H3, Nano Banana, and GPT-Image.',
     'zh-CN':
