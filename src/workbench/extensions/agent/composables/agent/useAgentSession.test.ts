@@ -1683,42 +1683,131 @@ describe('useAgentSession (v1 composition root)', () => {
   // while frames keep arriving, so by the time a 404 lands the user may have
   // sent again. Settling whatever is active then would abandon a turn that is
   // genuinely running -- the very state this change exists to prevent.
-  it('leaves a newer turn alone when a stale stop reports not running', async () => {
-    let rejectCancel: ((error: unknown) => void) | undefined
-    const cancelMessage = vi.fn(
-      () =>
-        new Promise<AgentCancelAccepted>((_resolve, reject) => {
-          rejectCancel = reject
-        })
-    )
+  it.for([
+    [
+      'not running',
+      new AgentApiError('turn is no longer running', 404, undefined)
+    ],
+    [
+      'already finished',
+      new AgentApiError('turn is not running', 409, undefined)
+    ],
+    ['server error', new AgentApiError('boom', 500, undefined)],
+    ['network failure', new Error('network down')]
+  ] as const)(
+    'leaves a newer turn alone when a stale stop reports %s',
+    async ([, rejection]) => {
+      let rejectCancel: ((error: unknown) => void) | undefined
+      const cancelMessage = vi.fn(
+        () =>
+          new Promise<AgentCancelAccepted>((_resolve, reject) => {
+            rejectCancel = reject
+          })
+      )
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
+      const conversation = useAgentConversationStore()
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ cancelMessage, postMessage }),
+        events: source
+      })
+      session.start()
+
+      await session.sendMessage('go')
+      const stopping = session.stopTurn('button')
+      emit(done('msg-1'))
+
+      await session.sendMessage('go again')
+      emit(delta('msg-2', 'working'))
+      expect(conversation.activeTurnId).toBe('msg-2')
+
+      assert(rejectCancel !== undefined)
+      rejectCancel(rejection)
+      await stopping
+
+      expect(conversation.activeTurnId).toBe('msg-2')
+      expect(session.isStreaming.value).toBe(true)
+      // The named turn is already gone, so there is nothing for the user to act
+      // on -- and the notice would sit over the turn that is genuinely running.
+      expect(session.notices.value).toEqual([])
+      expect(vi.mocked(reportError)).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ errorType: 'agent_cancel_turn_failed' })
+      )
+    }
+  )
+
+  // The reconciliation GET outlives the turn that asked for it: the restored
+  // turn settles and the user sends again while it is in flight, so the
+  // snapshot it returns describes a turn nobody is showing. Applied anyway it
+  // overwrites the newer transport, and the abort that follows takes the live
+  // turn down with it.
+  it('discards a reconciliation snapshot a newer turn has outrun', async () => {
+    const streamingHistory: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ]
+    let deliverReconcile: ((history: AgentMessages) => void) | undefined
+    const getMessages = vi
+      .fn<(threadId: string) => Promise<AgentMessages>>()
+      .mockResolvedValueOnce(streamingHistory)
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliverReconcile = resolve
+          })
+      )
     const postMessage = vi
       .fn<
         (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
       >()
       .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
       .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
+    const cancelMessage = vi
+      .fn()
+      .mockRejectedValue(
+        new AgentApiError('turn is no longer running', 404, undefined)
+      )
+    const rest = fakeRest({ getMessages, postMessage, cancelMessage })
     const conversation = useAgentConversationStore()
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('go')
+    minimized.stop()
+    await Promise.resolve()
+
     const { source, emit } = fakeEvents()
-    const session = useAgentSession({
-      rest: fakeRest({ cancelMessage, postMessage }),
-      events: source
-    })
-    session.start()
+    const reopened = useAgentSession({ rest, events: source })
+    reopened.start()
+    await vi.waitFor(() => expect(conversation.activeTurnId).toBe('msg-1'))
 
-    await session.sendMessage('go')
-    const stopping = session.stopTurn('button')
+    const stopping = reopened.stopTurn('button')
+    await vi.waitFor(() => assert(deliverReconcile !== undefined))
+
     emit(done('msg-1'))
-
-    await session.sendMessage('go again')
+    await reopened.sendMessage('go again')
     emit(delta('msg-2', 'working'))
     expect(conversation.activeTurnId).toBe('msg-2')
 
-    assert(rejectCancel !== undefined)
-    rejectCancel(new AgentApiError('turn is no longer running', 404, undefined))
+    assert(deliverReconcile !== undefined)
+    deliverReconcile(streamingHistory)
     await stopping
 
     expect(conversation.activeTurnId).toBe('msg-2')
-    expect(session.isStreaming.value).toBe(true)
+    expect(reopened.isStreaming.value).toBe(true)
   })
 
   it('tracks a stop when completion arrives before cancellation responds', async () => {

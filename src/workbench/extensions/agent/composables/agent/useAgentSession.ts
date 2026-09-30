@@ -128,6 +128,7 @@ export interface AgentSessionDeps {
 }
 
 const PREPARE_TIMEOUT_MS = 3000
+const RECONCILE_TIMEOUT_MS = 5000
 
 interface HydrationBuffer {
   threadId: string
@@ -997,54 +998,99 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (metadata !== null) useTelemetry()?.trackAgentStopClicked(metadata)
   }
 
+  /**
+   * Returns the prompt to idle only while the stopping phase still names this
+   * turn. A cancel is awaited across arbitrary delay, so by the time it
+   * rejects a later send may own the phase -- and resetting that would clear a
+   * different turn's prompt.
+   */
+  function releaseStoppingPhase(turnId: TurnId): void {
+    if (isStoppingTurn(turnId)) promptEditState.value = { phase: 'idle' }
+  }
+
+  /**
+   * Whether this rejection answers a turn the session has already moved past,
+   * for any status rather than only the terminal two: the turn settled while
+   * the cancel was in flight, or a newer send replaced it. Acting on it would
+   * push an error over a live turn and report a cancel failure for a turn that
+   * is already gone.
+   */
+  function abandonedStop(turnId: TurnId): boolean {
+    return conversationStore.activeTurnId !== turnId
+  }
+
+  /**
+   * Re-reads the thread so a persisted terminal row can replace the stale
+   * `streaming` snapshot this Stop was answered for, then retires the
+   * snapshot's provenance.
+   *
+   * Bounded, because `stopTurn` awaits this and the composer sits in
+   * `stopping` until it returns: an unbounded GET would cost the user the one
+   * escape from the orphan this path exists to retire. The hydrate's own
+   * currency check carries the turn as well as the thread, so a response that
+   * arrives after the turn settled and a newer send took the active slot is
+   * discarded instead of overwriting the newer transport.
+   */
+  async function reconcileSnapshotTurn(turnId: TurnId): Promise<void> {
+    const threadId = conversationStore.threadId
+    if (threadId !== null)
+      await Promise.race([
+        hydrateFromServer(
+          threadId,
+          () =>
+            conversationStore.threadId === threadId &&
+            conversationStore.activeTurnId === turnId
+        ),
+        new Promise<void>((resolve) =>
+          setTimeout(resolve, RECONCILE_TIMEOUT_MS)
+        )
+      ])
+    if (conversationStore.activeTurnId === turnId)
+      conversationStore.abortActiveTurn()
+    snapshotTurns.delete(turnId)
+  }
+
+  function reportStopFailure(error: unknown, retryable: boolean): void {
+    reportError(error, { errorType: 'agent_cancel_turn_failed' })
+    pushError(error instanceof Error ? error.message : String(error))
+    trackAgentError('cancel_failed', 'post_acceptance', 'error_overlay', {
+      retryable
+    })
+  }
+
   async function handleStopFailure(
     error: unknown,
     turnId: TurnId
   ): Promise<void> {
-    if (error instanceof AgentApiError) {
-      // 409 and 404 both say the server has no turn to stop, but only for a
-      // turn restored from a snapshot is that the end of it. A turn this
-      // client started has a stream that will settle it, and neither status
-      // proves otherwise: a 409 still owes its trailing frames, and a 404
-      // answers a cancel that beat the run into existence as readily as one
-      // that outlived it. Tearing either down would abandon a turn the server
-      // goes on to run -- the state this whole change exists to remove.
-      const terminal = error.status === 404 || error.status === 409
-      if (terminal && conversationStore.activeTurnId !== turnId) {
-        promptEditState.value = { phase: 'idle' }
-        return
-      }
-      if (terminal && snapshotTurns.has(turnId)) {
-        const threadId = conversationStore.threadId
-        if (threadId !== null)
-          await hydrateFromServer(
-            threadId,
-            () => conversationStore.threadId === threadId
-          )
-        if (conversationStore.activeTurnId === turnId)
-          conversationStore.abortActiveTurn()
-        snapshotTurns.delete(turnId)
-        promptEditState.value = { phase: 'idle' }
-        return
-      }
-      // A 409 for a turn we started is swallowed whole: `handleMessageDone`
-      // settles it, keeps the trailing content, and promotes the phase to
-      // `ready`, the only route to an editable prompt.
-      if (error.status === 409) return
-      promptEditState.value = { phase: 'idle' }
-      reportError(error, { errorType: 'agent_cancel_turn_failed' })
-      pushError(error.message)
-      trackAgentError('cancel_failed', 'post_acceptance', 'error_overlay', {
-        retryable: isRetryableRequestFailure(error, false)
-      })
+    if (abandonedStop(turnId)) {
+      releaseStoppingPhase(turnId)
       return
     }
-    promptEditState.value = { phase: 'idle' }
-    reportError(error, { errorType: 'agent_cancel_turn_failed' })
-    pushError(error instanceof Error ? error.message : String(error))
-    trackAgentError('cancel_failed', 'post_acceptance', 'error_overlay', {
-      retryable: true
-    })
+    const status = error instanceof AgentApiError ? error.status : undefined
+    // 409 and 404 both say the server has no turn to stop, but only for a turn
+    // restored from a snapshot is that the end of it. A turn this client
+    // started has a stream that will settle it, and neither status proves
+    // otherwise: a 409 still owes its trailing frames, and a 404 answers a
+    // cancel that beat the run into existence as readily as one that outlived
+    // it. Tearing either down would abandon a turn the server goes on to run
+    // -- the state this whole change exists to remove.
+    if ((status === 404 || status === 409) && snapshotTurns.has(turnId)) {
+      try {
+        await reconcileSnapshotTurn(turnId)
+      } finally {
+        releaseStoppingPhase(turnId)
+      }
+      return
+    }
+    // A 409 for a turn we started is swallowed whole: `handleMessageDone`
+    // settles it, keeps the trailing content, and promotes the phase to
+    // `ready`, the only route to an editable prompt.
+    if (status === 409) return
+    releaseStoppingPhase(turnId)
+    reportStopFailure(
+      error,
+      status === undefined ? true : isRetryableRequestFailure(error, false)
+    )
   }
 
   async function stopTurn(method?: AgentStopMethod): Promise<void> {
