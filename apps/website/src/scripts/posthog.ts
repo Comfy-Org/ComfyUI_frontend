@@ -135,6 +135,28 @@ const workshopWorkflowsEnabled = ref(WORKFLOWS_OVERRIDE)
 const APPS_OVERRIDE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_APPS_ENABLED === '1'
 const workshopAppsEnabled = ref(APPS_OVERRIDE)
+// Flags named by content (workshop-model-availability.json `flag`), read on
+// demand. Local dev can turn some on: PUBLIC_WORKSHOP_FLAG_OVERRIDES=a,b.
+const FLAG_OVERRIDES = new Set(
+  WORKSHOP_LOCAL_DEV
+    ? (import.meta.env.PUBLIC_WORKSHOP_FLAG_OVERRIDES ?? '')
+        .split(',')
+        .map((name) => name.trim())
+        .filter(Boolean)
+    : []
+)
+const namedFlags = new Map<string, Ref<boolean>>()
+
+function resetNamedFlags(): void {
+  for (const [name, flag] of namedFlags) flag.value = FLAG_OVERRIDES.has(name)
+}
+
+function readNamedFlags(options?: { send_event: boolean }): void {
+  for (const [name, flag] of namedFlags)
+    flag.value =
+      FLAG_OVERRIDES.has(name) ||
+      posthog.isFeatureEnabled(name, options) === true
+}
 // Default to the resolved public experience. The gate only leaves it once
 // `awaitFlagAnswer()` starts a real flag fetch (and arms the timeout), so an
 // environment that never initializes PostHog — local dev, no key, SSR — shows
@@ -173,6 +195,20 @@ export function useWorkshopAppsEnabled(): Readonly<Ref<boolean>> {
   return readonly(workshopAppsEnabled)
 }
 
+/** Whether the PostHog flag `name` is on for this visitor; off until known. */
+export function useWorkshopFlag(name: string): Readonly<Ref<boolean>> {
+  let flag = namedFlags.get(name)
+  if (!flag) {
+    flag = ref(
+      FLAG_OVERRIDES.has(name) ||
+        (initialized &&
+          posthog.isFeatureEnabled(name, { send_event: false }) === true)
+    )
+    namedFlags.set(name, flag)
+  }
+  return readonly(flag)
+}
+
 export function useWorkshopEnabledSettled(): Readonly<Ref<boolean>> {
   return readonly(workshopEnabledSettled)
 }
@@ -207,6 +243,7 @@ function refreshFlagForSameIdentity(user: WorkshopIdentity | null): void {
   workshopEnabled.value = VISIBILITY_OVERRIDE
   workshopWorkflowsEnabled.value = WORKFLOWS_OVERRIDE
   workshopAppsEnabled.value = APPS_OVERRIDE
+  resetNamedFlags()
   awaitFlagAnswer()
   posthog.reloadFeatureFlags()
 }
@@ -219,6 +256,7 @@ function adoptNewIdentity(
   workshopEnabled.value = VISIBILITY_OVERRIDE
   workshopWorkflowsEnabled.value = WORKFLOWS_OVERRIDE
   workshopAppsEnabled.value = APPS_OVERRIDE
+  resetNamedFlags()
   if (waitForIdentityAnswer) awaitFlagAnswer()
   else markFlagResolved()
   if (persistedUid) posthog.reset()
@@ -245,6 +283,7 @@ export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
     workshopEnabled.value = VISIBILITY_OVERRIDE
     workshopWorkflowsEnabled.value = WORKFLOWS_OVERRIDE
     workshopAppsEnabled.value = APPS_OVERRIDE
+    resetNamedFlags()
     markFlagResolved()
     console.error('PostHog identity failed', error)
   }
@@ -305,6 +344,7 @@ export function initPostHog() {
         APPS_OVERRIDE ||
         posthog.isFeatureEnabled(WORKSHOP_APPS_FLAG, { send_event: false }) ===
           true
+      readNamedFlags({ send_event: false })
       markFlagResolved()
     }
     posthog.onFeatureFlags((_flags, _variants, context) => {
@@ -320,6 +360,7 @@ export function initPostHog() {
         posthog.isFeatureEnabled(WORKSHOP_WORKFLOWS_FLAG) === true
       workshopAppsEnabled.value =
         APPS_OVERRIDE || posthog.isFeatureEnabled(WORKSHOP_APPS_FLAG) === true
+      readNamedFlags()
       markFlagResolved()
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =

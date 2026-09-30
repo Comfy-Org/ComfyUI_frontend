@@ -122,6 +122,41 @@ describe('Workshop visibility', () => {
     }
   )
 
+  it('reads a content-named flag, off until PostHog answers and reset on a new identity', async () => {
+    const { initPostHog, identifyWorkshopUser, useWorkshopFlag } =
+      await import('./posthog')
+    const flag = useWorkshopFlag('workshop-reshoot-app-enabled')
+    initPostHog()
+    expect(flag.value).toBe(false)
+
+    hoisted.mockIsFeatureEnabled.mockImplementation(
+      (key) => key === 'workshop-reshoot-app-enabled'
+    )
+    emitFeatureFlags()
+    expect(flag.value).toBe(true)
+    expect(useWorkshopFlag('another-flag').value).toBe(false)
+
+    identifyWorkshopUser({ uid: 'another-reshoot-caller' })
+    expect(flag.value).toBe(false)
+  })
+
+  it.for([
+    { localDev: true, on: true },
+    { localDev: false, on: false }
+  ])(
+    'turns a content-named flag on from PUBLIC_WORKSHOP_FLAG_OVERRIDES only in local dev: $localDev',
+    async ({ localDev, on }) => {
+      hoisted.localDev = localDev
+      vi.stubEnv(
+        'PUBLIC_WORKSHOP_FLAG_OVERRIDES',
+        'other, workshop-reshoot-app-enabled'
+      )
+      const { useWorkshopFlag } = await import('./posthog')
+      expect(useWorkshopFlag('workshop-reshoot-app-enabled').value).toBe(on)
+      vi.unstubAllEnvs()
+    }
+  )
+
   it('requires an explicit enable and keeps the last answer through load failures', async () => {
     const { initPostHog, useWorkshopEnabled } = await import('./posthog')
     const enabled = useWorkshopEnabled()
