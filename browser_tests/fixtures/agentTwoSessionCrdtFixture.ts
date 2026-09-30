@@ -7,13 +7,14 @@ import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
   AgentMessages,
+  AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import {
-  DOC_PROTOCOL_VERSION,
-  parseServerDocFrame
-} from '@/workbench/extensions/agent/crdt/docFrameClient'
-import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+  parseAgentWsEvent,
+  zAgentTurnAccepted
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   agentTest,
@@ -24,18 +25,14 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-// A seed workflow with a KSampler whose numeric widgets make a doc edit
-// observable on the canvas. Borrowed from a recorded conversation so the
-// seed and its widget catalog are the shapes the production library mints.
+// Borrowed from a recorded conversation for its widget catalog alone, so the
+// node types a replayed build mints are ones the production library describes.
 const TEMPLATE_CASE = 'agent-rec-set-widget-existing'
-/** The document an "Unsaved Workflow" tab is bound to before anything edits it. */
-export const emptySeed = (): WorkflowJSON => ({ nodes: [], links: [] })
 const SOCKET_SID = 'b6f0a2c1-8e34-4d21-9c07-2a1b3c4d5e60'
 const PANEL_MOUNT_TIMEOUT = 30_000
 const SUBSCRIBE_TIMEOUT = 15_000
@@ -44,10 +41,10 @@ const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 const NEW_CHAT_LABEL = enMessages.agent.newChat
 const SWITCH_WORKFLOW_LABEL = enMessages.agent.switchWorkflow
-// The cloud id the boot tab ("Unsaved Workflow") receives when the composer
-// pins it as the first target. The composer refuses to send without a target
-// (useAgentDraftSubmission), so every thread starts here before the agent's
-// `agent_active_tab` moves it onto Alpha or Bravo. Distinct from both.
+// The cloud id the boot tab ("Unsaved Workflow") receives when `boot()` pins
+// it once as the composer's first target; the composer refuses to send without
+// one (useAgentDraftSubmission). Later threads reuse whatever target the
+// composer kept. Distinct from every workflow a test registers.
 const HOME_WORKFLOW_ID = '00000000-0000-4000-8000-000000000000'
 
 // One agent-bound workflow, its doc held by the shared library stand-in. Two
@@ -70,16 +67,10 @@ interface AgentThread {
   messageId: string
 }
 
-interface OutboundDocOps {
-  workflowId: string
-  ops: { op?: unknown; node_id?: unknown }[]
-}
-
 interface ClientDocFrame {
   type: string
   workflowId?: string
   stateVectorB64?: string
-  ops: unknown
 }
 
 /**
@@ -90,12 +81,9 @@ interface ClientDocFrame {
  * clicks back to an earlier tab. This harness opens two real agent threads
  * (composer, POST ack, `agent_active_tab` stamped with the thread's ids,
  * `agent_message_done`, New chat), then drives tab switches, so a test can
- * observe what the follower does (or fails to do) on return.
- *
- * Human `doc_ops` the page mints are judged by the real applier through
- * `HostDoc.applyWire` and answered with `doc_ops_result` (and the resulting
- * `doc_update`), as the relay does, so the sender settles each batch instead
- * of retrying it.
+ * observe what the follower does (or fails to do) on return. Only the inbound
+ * leg is served: nothing here answers a client `doc_ops` batch, because these
+ * flows make no human edit and send none.
  */
 export class AgentTwoSessionCrdtHarness {
   readonly panel: Locator
@@ -111,9 +99,6 @@ export class AgentTwoSessionCrdtHarness {
   >['workflow']
   private socket: WebSocketRoute | null = null
   private threadCounter = 0
-  // Every doc_ops frame the client put on the wire, addressed workflow first.
-  readonly outboundDocOps: OutboundDocOps[] = []
-  private readonly subscribeWaiters = new Map<string, Array<() => void>>()
   // Why a `doc_subscribe` went unanswered, oldest first, so a subscribe
   // timeout names its real cause instead of "never subscribed".
   private readonly droppedSubscribes: string[] = []
@@ -126,15 +111,11 @@ export class AgentTwoSessionCrdtHarness {
     this.topbar = new Topbar(page)
   }
 
-  /**
-   * Register a workflow the shared doc host will answer subscribes for. The
-   * seed defaults to the template's five wired nodes; pass `emptySeed()` for
-   * the unsaved, never-edited workflow an agent thread builds from scratch.
-   */
+  /** Register a workflow the shared doc host will answer subscribes for. */
   addWorkflow(
     workflowId: string,
     name: string,
-    seed: WorkflowJSON = this.template.seed
+    seed: WorkflowJSON
   ): AgentBoundWorkflow {
     const host = new HostDoc(workflowId, seed, this.template.catalog)
     this.hosts.set(workflowId, host)
@@ -162,10 +143,7 @@ export class AgentTwoSessionCrdtHarness {
       new URL(response.url()).pathname.endsWith('/api/object_info')
     )
     await bootAgentApp(this.page, true, {
-      settings: {
-        'Comfy.VueNodes.Enabled': true,
-        'Comfy.Graph.CanvasInfo': false
-      },
+      settings: { 'Comfy.Graph.CanvasInfo': false },
       objectInfo: 'server'
     })
     // Await object_info so the replayed node types are registered before the
@@ -210,9 +188,7 @@ export class AgentTwoSessionCrdtHarness {
     )
     await this.panel.getByRole('textbox').fill(prompt)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
-    const ack: { thread_id: string; message_id: string } = await (
-      await posted
-    ).json()
+    const ack = zAgentTurnAccepted.parse(await (await posted).json())
     await expect(this.panel.getByText(prompt).first()).toBeVisible()
     return { threadId: ack.thread_id, messageId: ack.message_id }
   }
@@ -287,26 +263,7 @@ export class AgentTwoSessionCrdtHarness {
     this.send(bound.host.apply(ops))
   }
 
-  /** The widget value a workflow's host doc currently holds. */
-  hostWidgetValue(
-    bound: AgentBoundWorkflow,
-    nodeId: string,
-    widget: string
-  ): unknown {
-    const widgets = bound.host.graph().nodes[nodeId]?.widgets
-    return typeof widgets === 'object' && widgets !== null
-      ? (widgets as Record<string, unknown>)[widget]
-      : undefined
-  }
-
-  /** The node ids a workflow's host doc currently holds, ascending. */
-  hostNodeIds(bound: AgentBoundWorkflow): string[] {
-    return Object.keys(bound.host.graph().nodes).sort(
-      (left, right) => Number(left) - Number(right)
-    )
-  }
-
-  /** The node ids the canvas is rendering, ordered like `hostNodeIds`. */
+  /** The node ids the canvas is rendering, numerically ascending. */
   async canvasNodeIds(): Promise<string[]> {
     return (await this.vueNodes.getNodeIds()).sort(
       (left, right) => Number(left) - Number(right)
@@ -314,26 +271,32 @@ export class AgentTwoSessionCrdtHarness {
   }
 
   /**
-   * The canvas node ids once they match `expected`, or whatever the canvas
-   * settled on when the budget ran out. Two reasons this polls for the whole
-   * list and returns rather than asserts: a build that materializes over
-   * several frames must not be read half-rendered, and the caller has to be
-   * able to tell an empty canvas apart from one holding the wrong nodes.
+   * The canvas node ids once they match `expected`, or the last ids seen if
+   * the budget runs out. Polls for the whole list so a build arriving over
+   * several frames is not read half-rendered, and returns the observed value
+   * rather than asserting so the caller can tell an empty canvas from one
+   * holding the wrong nodes.
    */
   async canvasNodeIdsWhenSettled(
     expected: readonly string[],
     timeout: number
   ): Promise<string[]> {
+    let observed: string[] = []
     try {
       await expect
-        .poll(() => this.canvasNodeIds(), { timeout })
-        .toEqual([...expected])
-    } catch (neverMatched) {
-      // A canvas that never matches is an outcome under test, not a broken
-      // test; rethrowing here would pre-empt the caller's decision.
-      void neverMatched
+        .poll(
+          async () => {
+            observed = await this.canvasNodeIds()
+            return observed
+          },
+          { timeout }
+        )
+        .toEqual(expected)
+    } catch {
+      // Never matched. That is an outcome under test, so report what the poll
+      // actually saw instead of re-reading a canvas that may have moved on.
     }
-    return this.canvasNodeIds()
+    return observed
   }
 
   /** How many times the client has subscribed this workflow's doc. */
@@ -341,40 +304,23 @@ export class AgentTwoSessionCrdtHarness {
     return this.subscribes.get(workflowId) ?? 0
   }
 
-  /** Outbound `doc_ops` frames addressed to a workflow that carry the given op. */
-  docOpsCount(workflowId: string, op: string): number {
-    return this.outboundDocOps.filter(
-      (frame) =>
-        frame.workflowId === workflowId &&
-        frame.ops.some((entry) => entry.op === op)
-    ).length
-  }
-
-  private waitForSubscribe(workflowId: string, target: number): Promise<void> {
-    if (this.subscribeCount(workflowId) >= target) return Promise.resolve()
-    return new Promise<void>((resolve, reject) => {
-      const waiters = this.subscribeWaiters.get(workflowId) ?? []
-      this.subscribeWaiters.set(workflowId, waiters)
-      const forget = (): void => {
-        const at = waiters.indexOf(waiter)
-        if (at !== -1) waiters.splice(at, 1)
-      }
-      const timer = setTimeout(() => {
-        forget()
-        const label = `${this.names.get(workflowId)} (${workflowId})`
-        const dropped = this.droppedSubscribes.length
-          ? `; dropped: ${this.droppedSubscribes.join('; ')}`
-          : ''
-        reject(new Error(`follower never subscribed ${label}${dropped}`))
-      }, SUBSCRIBE_TIMEOUT)
-      const waiter = (): void => {
-        if (this.subscribeCount(workflowId) < target) return
-        clearTimeout(timer)
-        forget()
-        resolve()
-      }
-      waiters.push(waiter)
-    })
+  private async waitForSubscribe(
+    workflowId: string,
+    target: number
+  ): Promise<void> {
+    try {
+      await expect
+        .poll(() => this.subscribeCount(workflowId), {
+          timeout: SUBSCRIBE_TIMEOUT
+        })
+        .toBeGreaterThanOrEqual(target)
+    } catch {
+      const label = `${this.names.get(workflowId)} (${workflowId})`
+      const dropped = this.droppedSubscribes.length
+        ? `; dropped: ${this.droppedSubscribes.join('; ')}`
+        : ''
+      throw new Error(`follower never subscribed ${label}${dropped}`)
+    }
   }
 
   private send(frame: AgentWsEvent | HostFrame): void {
@@ -402,12 +348,7 @@ export class AgentTwoSessionCrdtHarness {
   private onClientFrame(raw: string | Buffer): void {
     const parsed = AgentTwoSessionCrdtHarness.parseClientFrame(raw)
     if (parsed === null) return
-    const { type, workflowId, stateVectorB64, ops } = parsed
-    if (type === 'doc_ops' && workflowId !== undefined) {
-      this.recordOutboundDocOps(workflowId, ops)
-      this.judgeClientOps(workflowId, ops)
-      return
-    }
+    const { type, workflowId, stateVectorB64 } = parsed
     if (type === 'doc_subscribe') {
       this.handleDocSubscribe(workflowId, stateVectorB64)
     }
@@ -424,75 +365,15 @@ export class AgentTwoSessionCrdtHarness {
     const { type, data } = frame as { type?: unknown; data?: unknown }
     if (typeof type !== 'string' || typeof data !== 'object' || data === null)
       return null
-    const { workflow_id, state_vector_b64, ops } = data as {
+    const { workflow_id, state_vector_b64 } = data as {
       workflow_id?: unknown
       state_vector_b64?: unknown
-      ops?: unknown
     }
     return {
       type,
       workflowId: typeof workflow_id === 'string' ? workflow_id : undefined,
       stateVectorB64:
-        typeof state_vector_b64 === 'string' ? state_vector_b64 : undefined,
-      ops
-    }
-  }
-
-  private recordOutboundDocOps(workflowId: string, ops: unknown): void {
-    this.outboundDocOps.push({
-      workflowId,
-      ops: Array.isArray(ops) ? (ops as OutboundDocOps['ops']) : []
-    })
-  }
-
-  // The applier is the only judge of a structurally valid human batch. A
-  // batch for a workflow no host serves fails as `unknown_workflow`; one that
-  // is malformed, empty, or repeats an `op_id` fails as `invalid_frame` —
-  // both as the relay answers, so the sender settles instead of retrying.
-  private judgeClientOps(workflowId: string, ops: unknown): void {
-    const host = this.hosts.get(workflowId)
-    if (host === undefined) {
-      this.send(
-        this.failedOpsResult(
-          workflowId,
-          'unknown_workflow',
-          'the harness serves no such workflow'
-        )
-      )
-      return
-    }
-    const parsed = parseWireOps(ops)
-    if (!parsed.ok || !isValidDocOpsBatch(parsed.ops)) {
-      this.send(
-        this.failedOpsResult(
-          workflowId,
-          'invalid_frame',
-          'doc_ops frame was not structurally valid'
-        )
-      )
-      return
-    }
-    const { result, update } = host.applyWire(parsed.ops)
-    this.send(result)
-    if (update) this.send(update)
-  }
-
-  private failedOpsResult(
-    workflowId: string,
-    code: 'unknown_workflow' | 'invalid_frame',
-    message: string
-  ): HostFrame {
-    return {
-      type: 'doc_ops_result',
-      data: {
-        v: DOC_PROTOCOL_VERSION,
-        workflow_id: workflowId,
-        ok: false,
-        applied: [],
-        skipped: [],
-        code,
-        message
-      }
+        typeof state_vector_b64 === 'string' ? state_vector_b64 : undefined
     }
   }
 
@@ -529,7 +410,6 @@ export class AgentTwoSessionCrdtHarness {
       return
     }
     this.subscribes.set(workflowId, this.subscribeCount(workflowId) + 1)
-    for (const waiter of this.subscribeWaiters.get(workflowId) ?? []) waiter()
   }
 
   private async mockAgentApi(): Promise<void> {
@@ -541,13 +421,14 @@ export class AgentTwoSessionCrdtHarness {
       const request = route.request()
       if (request.method() === 'POST') {
         this.threadCounter += 1
+        const accepted: AgentTurnAccepted = {
+          thread_id: `thread-${this.threadCounter}`,
+          message_id: `msg-${this.threadCounter}`
+        }
         return route.fulfill({
           status: 202,
           contentType: 'application/json',
-          body: JSON.stringify({
-            thread_id: `thread-${this.threadCounter}`,
-            message_id: `msg-${this.threadCounter}`
-          })
+          body: JSON.stringify(accepted)
         })
       }
       const history: AgentMessages = []
