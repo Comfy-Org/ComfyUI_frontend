@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { Locale } from '../../../i18n/translations'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
@@ -77,7 +79,13 @@ const buttons = computed<ButtonSpec[]>(() => {
     @click="captureDownloadClick(btn.key)"
   >
     <span class="inline-flex items-center gap-2">
-      <img :src="btn.icon" alt="" class="inline-block size-5" />
+      <img
+        :src="btn.icon"
+        alt=""
+        :class="
+          cn('inline-block size-5', btn.key === 'linux' && 'translate-y-0.5')
+        "
+      />
       <span class="inline-block">{{ label }}</span>
     </span>
   </BrandButton>
