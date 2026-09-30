@@ -234,8 +234,9 @@ test.describe(
       await page.setViewportSize({ width: 1600, height: 900 })
       await bootAgentApp(page, true)
 
-      await new AgentPanel(page).open()
-      const panel = page.getByTestId('docked-agent-panel')
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      const panel = agentPanel.dockedPanel
       await expect(panel).toBeVisible()
 
       await panel
@@ -247,12 +248,7 @@ test.describe(
 
       await page.setViewportSize({ width: 900, height: 900 })
 
-      await expect
-        .poll(async () => {
-          const box = await panel.boundingBox()
-          return box && { x: box.x, width: box.width }
-        })
-        .toEqual({ x: 0, width: 900 })
+      await agentPanel.expectPanelSize({ x: 0, width: 900 })
 
       // Still maximized, so the header offers to minimize rather than maximize.
       await expect(
