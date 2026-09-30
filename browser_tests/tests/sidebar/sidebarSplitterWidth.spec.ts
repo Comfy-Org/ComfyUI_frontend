@@ -207,7 +207,7 @@ agentTest.describe(
       'keeps a dragged sidebar width when the Agent panel closes and reopens',
       async ({ agentPanel, comfyMouse, comfyPage }) => {
         const sidebar = sidebarPanel(comfyPage)
-        await comfyPage.menu.assetsTab.open()
+        await comfyPage.menu.assetsTab.open({ waitForAssets: false })
         await agentPanel.open()
         await expect(sidebar).toBeVisible()
 
@@ -226,7 +226,7 @@ agentTest.describe(
       'keeps a dragged sidebar width when the workflow overview opens',
       async ({ comfyMouse, comfyPage }) => {
         const sidebar = sidebarPanel(comfyPage)
-        await comfyPage.menu.assetsTab.open()
+        await comfyPage.menu.assetsTab.open({ waitForAssets: false })
         await expect(sidebar).toBeVisible()
         const openedWidth = await widenSidebar(comfyPage, comfyMouse)
 
