@@ -721,7 +721,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(b4n) captures a terminal frame past the mailbox TTL while hydration is pending', async () => {
+  it('(b4p) captures a terminal frame past the mailbox TTL while hydration is pending', async () => {
     vi.useFakeTimers()
     try {
       const conversation = useAgentConversationStore()

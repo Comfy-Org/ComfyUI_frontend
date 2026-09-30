@@ -137,9 +137,15 @@ interface HydrationBuffer {
    * Whether this buffer's own GET is still in flight. Both mailbox bounds
    * respect it: a queue whose hydrate has not come back is the one case where
    * discarding it strands a turn outright, because the transcript that lands
-   * afterwards still says `streaming` and nothing is left to settle it. Set
-   * for exactly the request's lifetime -- `drainHydration` clears it from the
-   * hydrate's `finally`, so an error path releases it too.
+   * afterwards still says `streaming` and nothing is left to settle it.
+   *
+   * So the bounds are suspended, not merely delayed, for as long as a hydrate
+   * is outstanding: such a buffer has no TTL and cannot be evicted, and
+   * concurrent hung GETs can hold the map above `MAX_HYDRATION_MAILBOXES`.
+   * What stays bounded meanwhile is each queue, at `MAX_HYDRATION_EVENTS`
+   * frames. Settling is what restores the rest -- `drainHydration` runs from
+   * the hydrate's `finally`, so an error path reaches it too, and it
+   * unregisters the buffer and re-applies the cap even on a stopped session.
    */
   pending: boolean
   retirement?: ReturnType<typeof setTimeout>
@@ -505,6 +511,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         hydrationMailboxes.delete(buffer.threadId)
       buffer.events.length = 0
     }, HYDRATION_MAILBOX_MS)
+    enforceMailboxCap()
+  }
+
+  function enforceMailboxCap(): void {
     while (hydrationMailboxes.size > MAX_HYDRATION_MAILBOXES) {
       const oldest = [...hydrationMailboxes].find(([, held]) => !held.pending)
       if (oldest === undefined) break
@@ -538,8 +548,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * live hydrate's frames with nowhere to be held.
    */
   function drainHydration(buffer: HydrationBuffer): void {
+    // Unregistering is not gated on `stopped`. The mailbox TTL is one-shot
+    // and returns early while this buffer is pending, so settling is the
+    // only remaining owner of the registration -- returning first would
+    // strand the entry, and its frames, for the life of the page.
     buffer.pending = false
-    if (stopped) return
     if (buffer.retirement !== undefined) clearTimeout(buffer.retirement)
     if (buffer.mailboxRetirement !== undefined)
       clearTimeout(buffer.mailboxRetirement)
@@ -547,7 +560,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       hydrationBuffers.delete(buffer.threadId)
     if (hydrationMailboxes.get(buffer.threadId) === buffer)
       hydrationMailboxes.delete(buffer.threadId)
-    for (const event of buffer.events.splice(0)) {
+    const events = buffer.events.splice(0)
+    // Re-asserted here as well as on retirement: while every mailbox was
+    // pending the cap could not evict any of them, so the count is brought
+    // back under it as they settle.
+    enforceMailboxCap()
+    if (stopped) return
+    for (const event of events) {
       try {
         handleAgentEvent(event)
       } catch (error) {
