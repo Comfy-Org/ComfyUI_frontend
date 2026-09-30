@@ -6,6 +6,7 @@ import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
 import { HUB_APPS_PATH, HUB_WORKFLOWS_PATH } from '../../config/hub-models'
 import { isIndexableModelPage } from '../../config/indexing'
 import { t } from '../../i18n/translations'
+import { HUB_SECTION_COPY } from './hub-section-copy'
 import {
   workshopEyebrowClass,
   workshopHeadingClass
@@ -18,11 +19,12 @@ const SECTIONS: Readonly<Record<string, Exclude<CatalogueTab, 'models'>>> = {
 const section = SECTIONS[Astro.routePattern]
 if (!section)
   throw new Error(`No hub section is built at ${Astro.routePattern}`)
+const copy = HUB_SECTION_COPY[section]
 ---
 
 <BaseLayout
-  title={t(`hub.${section}.meta.title` as const)}
-  description={t(`hub.${section}.meta.description` as const)}
+  title={copy.title.en}
+  description={copy.description.en}
   noindex={!isIndexableModelPage(Astro.url.pathname)}
   preloadFonts={['Medium']}
 >
@@ -35,7 +37,7 @@ if (!section)
         {t('workshop.catalogue.eyebrow')}
       </p>
       <h1 class={workshopHeadingClass}>
-        {t(`hub.${section}.heading` as const)}
+        {copy.heading.en}
       </h1>
     </div>
     <ModelsShowcase slot="fallback" />
