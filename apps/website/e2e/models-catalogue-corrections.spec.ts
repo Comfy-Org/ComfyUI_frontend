@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect } from '@playwright/test'
 
+import { hubModelAliases, hubModelSlugs } from '../src/config/hub-models'
 import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
 import { test } from './fixtures/modelsAccount'
 
@@ -37,7 +38,9 @@ test('availability manifest withholds disabled models from catalogue and routes'
   expect(disabledModelSlugs.length).toBeGreaterThan(0)
   for (const slug of disabledModelSlugs) {
     expect(publishedSlugs.has(slug), `${slug} is in the catalogue`).toBe(false)
-    const response = await request.get(`/models/${slug}/`)
+    expect(hubModelSlugs.has(slug), `${slug} has a hub page`).toBe(false)
+    expect(hubModelAliases.has(slug), `${slug} has a hub alias`).toBe(false)
+    const response = await request.get(`/hub/models/${slug}/`)
     expect(response.status(), `${slug} has a public route`).toBe(404)
   }
 })
@@ -54,7 +57,9 @@ test('GPT Image generation pages remain discoverable while disabled edit pages a
     await route.fallback()
   })
   try {
-    await page.goto('/models/?useCase=generate-images', { waitUntil: 'commit' })
+    await page.goto('/hub/models/?useCase=generate-images', {
+      waitUntil: 'commit'
+    })
     await moduleRequested
     await expect(page.getByTestId('workshop-search')).toHaveCount(0)
     await expect(page.getByTestId('models-loading')).toBeVisible()
@@ -72,19 +77,19 @@ test('GPT Image generation pages remain discoverable while disabled edit pages a
   const card = cards.first()
   await expect(card).toHaveAccessibleName(/GPT Image/)
   await expect(card.getByRole('img', { name: /GPT Image/ })).toHaveCount(0)
-  await page.getByRole('link', { name: /GPT Image 1\.5/ }).click()
-  await expect(page).toHaveURL(
-    /\/models\/openai--gpt-image-1\.5--edit-images\/$/
-  )
+  await page
+    .getByTestId('workshop-models-grid')
+    .getByRole('link', { name: /GPT Image 1\.5/ })
+    .click()
+  await expect(page).toHaveURL(/\/hub\/models\/gpt-image-1-5-image-edit\/$/)
   await expect(
     page.getByRole('textbox', { name: 'Prompt', exact: true })
   ).toBeVisible()
-  await page.goto('/models/?useCase=edit-images')
+  await page.goto('/hub/models/?useCase=edit-images')
   await page.getByTestId('workshop-search').fill('gpt image')
   await expect(cards).toHaveCount(0)
-  const disabledPage = await page.goto(
-    '/models/openai--gpt-image-2--edit-images/'
-  )
+  expect(hubModelSlugs.has('openai--gpt-image-2--edit-images')).toBe(false)
+  const disabledPage = await page.goto('/hub/models/gpt-image-2-image-edit/')
   expect(disabledPage?.status()).toBe(404)
   await expect(page.getByTestId('model-detail')).toHaveCount(0)
 })
@@ -92,7 +97,7 @@ test('GPT Image generation pages remain discoverable while disabled edit pages a
 test('role-specific pages omit controls that their requests cannot accept', async ({
   page
 }) => {
-  await page.goto('/models/vertexai--veo-3--animate-images/')
+  await page.goto('/hub/models/veo-3-image-to-video/')
   await expect(
     page.getByRole('group', { name: 'First frame', exact: true })
   ).toBeVisible()
@@ -100,7 +105,7 @@ test('role-specific pages omit controls that their requests cannot accept', asyn
     page.getByRole('group', { name: 'Reference images', exact: true })
   ).toHaveCount(0)
 
-  await page.goto('/models/byteplus--seedream-5-pro--generate-images/')
+  await page.goto('/hub/models/seedream-5-0-pro-text-to-image/')
   await expect(
     page.getByRole('group', { name: 'Source images', exact: true })
   ).toHaveCount(0)

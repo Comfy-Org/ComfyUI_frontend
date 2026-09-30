@@ -9,6 +9,7 @@ import type {
 import { isWorkshopModelDisabled } from './workshop-model-availability'
 import type { WorkshopWorkflowEntry } from './workshop-workflow-catalog'
 import { formForWorkflow } from './workshop-workflow-definition'
+import { hubWorkflowHref } from './hub-models'
 
 const exampleValuesSchema = z.record(
   z.string(),
@@ -67,7 +68,7 @@ function workflowPageFor(
     type: entry.type,
     workflowId: entry.id,
     slug: page.slug,
-    href: `/models/${page.slug}/`,
+    href: hubWorkflowHref(page.slug),
     name: page.displayName,
     summary: page.description,
     category: page.category,

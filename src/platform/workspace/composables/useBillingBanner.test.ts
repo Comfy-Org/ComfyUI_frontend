@@ -53,7 +53,8 @@ describe('useBillingBanner', () => {
             renewalDate: null,
             endDate: null,
             isCancelled: false,
-            ...billing.subscription.value
+            ...billing.subscription.value,
+            agentHasFunds: billing.subscription.value.hasFunds
           }
         : null
     )

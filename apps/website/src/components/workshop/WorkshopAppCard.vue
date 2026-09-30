@@ -2,9 +2,6 @@
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 
 const { app } = defineProps<{ app: CatalogueApp }>()
-
-const pillClass =
-  'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content'
 </script>
 
 <template>
@@ -48,11 +45,12 @@ const pillClass =
       >
         {{ app.name }}
       </h3>
-      <div class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden">
-        <span :class="pillClass" data-testid="app-card-task">
-          {{ app.task }}
-        </span>
-      </div>
+      <p
+        class="line-clamp-2 text-xs/4 text-content-secondary"
+        data-testid="app-card-task"
+      >
+        {{ app.task }}
+      </p>
     </div>
   </a>
 </template>

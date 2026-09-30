@@ -27,7 +27,8 @@ import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
-  useWorkshopAppsEnabled
+  useWorkshopAppsEnabled,
+  useWorkshopFlag
 } from '../../../scripts/posthog'
 import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
 import { t } from '../../../i18n/translations'
@@ -141,6 +142,7 @@ describe('CinematicStudio', () => {
     vi.mocked(useWorkshopEnabled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopEnabledSettled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => true))
+    vi.mocked(useWorkshopFlag).mockReturnValue(computed(() => true))
     const session = useWorkshopSession()
     session.session = computed(() => signedIn.value)
     vi.mocked(session.ensureFresh).mockResolvedValue({
@@ -934,6 +936,12 @@ describe('CinematicStudio', () => {
     }
   )
 
+  it('introduces the app under its title in the side panel', () => {
+    render(CinematicStudioPanel, { props: { models } })
+
+    expect(screen.getByText(tc('cinematic.lead'))).toBeVisible()
+  })
+
   it('does not generate again once the scene is cleared', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
@@ -1062,6 +1070,31 @@ describe('CinematicStudio', () => {
         expect(
           screen.queryAllByText(tc('cinematic.unavailable.title'))
         ).toHaveLength(open ? 0 : 1)
+      })
+    }
+  )
+
+  it.for([
+    { app: 'reshoot', flag: false, open: false },
+    { app: 'reshoot', flag: true, open: true },
+    { app: 'studio', flag: false, open: true }
+  ] as const)(
+    'opens $app only while its PostHog flag allows it (flag $flag)',
+    async ({ app, flag, open }) => {
+      vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+        computed(() => name !== 'workshop-reshoot-app-enabled' || flag)
+      )
+      render(CinematicStudioPage, {
+        props: { apps: appModels, models, initialApp: app }
+      })
+
+      await vi.waitFor(() => {
+        expect(
+          screen.queryAllByText(tc('cinematic.unavailable.title'))
+        ).toHaveLength(open ? 0 : 1)
+        expect(
+          screen.queryAllByTestId(app === 'reshoot' ? 'reshoot' : 'cinematic')
+        ).toHaveLength(open ? 1 : 0)
       })
     }
   )
@@ -1495,7 +1528,7 @@ describe('CinematicStudio', () => {
 
     expect(
       await screen.findByRole('link', { name: tc('cinematic.backToApps') })
-    ).toHaveAttribute('href', '/models/?type=apps')
+    ).toHaveAttribute('href', '/hub/models/?type=apps')
   })
 
   it('shows every setting in the side panel, with Format last before the run button', async () => {
@@ -1685,10 +1718,10 @@ describe('CinematicStudio', () => {
       const [firstApp, secondApp] = apps
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
-      ).toHaveAttribute('href', '/models/apps/cinematic-studio')
+      ).toHaveAttribute('href', '/models/apps/cinematic-studio/')
       expect(
         within(secondApp).getByRole('link', { name: 'Re-shoot a video' })
-      ).toHaveAttribute('href', '/models/apps/reshoot')
+      ).toHaveAttribute('href', '/models/apps/reshoot/')
     })
 
     it('runs a shot from the side panel on the model picked there', async () => {

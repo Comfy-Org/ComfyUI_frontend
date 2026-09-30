@@ -5,14 +5,18 @@ import { effectScope } from 'vue'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
+import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
+  WebSessionTokenError,
+  webSessionRequests,
   webSessionResourceHeader,
   webSessionSend
 } from '@/platform/auth/session/webSessionFetch'
+import { reportError } from '@/platform/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -362,18 +366,37 @@ function currentWorkspaceResponse(workspaceId: string | undefined): Response {
   })
 }
 
-function installIngest() {
+function mintBodyWorkspace(body: unknown): string {
+  const parsed: unknown = typeof body === 'string' ? JSON.parse(body) : {}
+  const workspaceId =
+    typeof parsed === 'object' && parsed !== null && 'workspace_id' in parsed
+      ? parsed.workspace_id
+      : undefined
+  return typeof workspaceId === 'string' ? workspaceId : 'personal'
+}
+
+function installIngest(features: Record<string, boolean> = {}) {
   const ingest = {
     userId: 'user-a',
     csrfToken: 'csrf-1',
     refusals: [] as string[],
     mintRefusal: undefined as (() => Response) | undefined,
+    mintGate: undefined as Promise<void> | undefined,
+    heldMints: 0,
+    holdMint() {
+      let release = () => {}
+      ingest.mintGate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      return release
+    },
     mints: 0,
+    mintedFor: [] as string[],
     requests: [] as ApiRequest[],
     currentWorkspaceDown: undefined as (() => Response) | undefined
   }
 
-  const respond = ({ path, headers }: ApiRequest): Response => {
+  const respond = ({ path, headers }: ApiRequest, body: unknown): Response => {
     if (path === '/api/auth/session') {
       return jsonResponse({
         ...sessionBody(ingest.userId),
@@ -383,6 +406,7 @@ function installIngest() {
     if (path === '/api/auth/token') {
       if (ingest.mintRefusal) return ingest.mintRefusal()
       ingest.mints += 1
+      ingest.mintedFor.push(mintBodyWorkspace(body))
       return jsonResponse({
         token: `session-jwt-${ingest.mints}`,
         expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
@@ -408,17 +432,21 @@ function installIngest() {
     vi.fn<typeof fetch>(async (input, init) => {
       const request = recordApiRequest(input, init)
       if (request.path === '/api/features') {
-        return jsonResponse({ unified_web_session: true })
+        return jsonResponse({ unified_web_session: true, ...features })
       }
       ingest.requests.push(request)
-      return respond(request)
+      if (request.path === '/api/auth/token' && ingest.mintGate) {
+        ingest.heldMints += 1
+        await ingest.mintGate
+      }
+      return respond(request, init?.body)
     })
   )
   return ingest
 }
 
-async function bootOnSession() {
-  const ingest = installIngest()
+async function bootOnSession(features: Record<string, boolean> = {}) {
+  const ingest = installIngest(features)
   await refreshRemoteConfig({ useAuth: false })
   useAuthStore()
   identity.signIn(USER_A)
@@ -960,6 +988,7 @@ describe('comfy-api calls on the shared web session', () => {
 
   it('mints nothing for pages that only call ingest', async () => {
     const ingest = await bootOnSession()
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
 
     await api.fetchApi('/queue')
     await postPrompt()
@@ -977,6 +1006,170 @@ describe('comfy-api calls on the shared web session', () => {
     })
   })
 
+  it.for([
+    {
+      name: 'a revoked session',
+      status: 401,
+      serverCode: 'session_revoked',
+      failure: 'SESSION_REVOKED',
+      copy: 'Your session ended. Sign in again to continue.'
+    },
+    {
+      name: 'an expired session',
+      status: 401,
+      serverCode: 'session_expired',
+      failure: 'SESSION_EXPIRED',
+      copy: 'Your session ended. Sign in again to continue.'
+    },
+    {
+      name: 'no session',
+      status: 401,
+      failure: 'NO_SESSION',
+      copy: 'Your session ended. Sign in again to continue.'
+    },
+    {
+      name: 'a stale CSRF token',
+      status: 403,
+      serverCode: 'csrf_invalid',
+      failure: 'CSRF_STALE',
+      copy: 'Your request was refused. Reload the page and try again.'
+    },
+    {
+      name: 'a denied workspace',
+      status: 403,
+      serverCode: 'workspace_access_denied',
+      failure: 'WORKSPACE_ACCESS_DENIED',
+      copy: "You don't have access to this workspace. Contact support if this keeps happening."
+    },
+    {
+      name: 'a refused request',
+      status: 403,
+      failure: 'SESSION_REQUEST_REFUSED',
+      copy: 'Your request was refused. Reload the page and try again.'
+    },
+    {
+      name: 'a server error',
+      status: 500,
+      failure: 'SESSION_UNAVAILABLE',
+      copy: "We couldn't reach your account. Try again in a moment."
+    }
+  ])(
+    'a mint refused by $name rejects with the localized copy',
+    async ({ status, serverCode, failure, copy }) => {
+      const ingest = await bootOnSession()
+      ingest.mintRefusal = () =>
+        jsonResponse(
+          serverCode ? { code: serverCode, message: 'refused' } : {},
+          status
+        )
+
+      const rejection = await webSessionResourceHeader().catch(
+        (error: unknown) => error
+      )
+
+      assert(rejection instanceof WebSessionTokenError)
+      expect(rejection.failure.code).toBe(failure)
+      expect(rejection.message).toBe(copy)
+    }
+  )
+
+  it('a sign-out while the mint is in flight is not reported and says the session changed', async () => {
+    firebaseSignOut.mockImplementation(async () => identity.signOut())
+    const ingest = await bootOnSession()
+    const release = ingest.holdMint()
+
+    const pending = webSessionResourceHeader().catch((error: unknown) => error)
+    await vi.waitFor(() => expect(ingest.heldMints).toBe(1))
+    await useAuthStore().logout()
+    release()
+    const rejection = await pending
+
+    assert(rejection instanceof WebSessionTokenError)
+    expect(rejection.failure.code).toBe('IDENTITY_CHANGED')
+    expect(rejection.message).toBe('Your session changed. Reload to continue.')
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'auth_session_token_mint_failure' })
+    )
+  })
+
+  it('a mint failure stays a SessionTokenError and keeps the original as its cause', async () => {
+    const ingest = await bootOnSession()
+    ingest.mintRefusal = () => jsonResponse({}, 500)
+
+    const rejection = await webSessionResourceHeader().catch(
+      (error: unknown) => error
+    )
+
+    expect(rejection).toBeInstanceOf(SessionTokenError)
+    assert(rejection instanceof WebSessionTokenError)
+    expect(rejection.cause).toBeInstanceOf(SessionTokenError)
+    expect(rejection.cause).not.toBeInstanceOf(WebSessionTokenError)
+    expect(rejection.cause.failure).toBe(rejection.failure)
+  })
+
+  it('a sign-out that lands before the mint is not reported', async () => {
+    firebaseSignOut.mockImplementation(async () => identity.signOut())
+    await bootOnSession()
+    const requests = webSessionRequests()
+    assert(requests)
+    const scope = await requests.scope()
+    assert(scope)
+    await useAuthStore().logout()
+
+    const rejection = await requests
+      .authorizeResource(scope)
+      .catch((error: unknown) => error)
+
+    assert(rejection instanceof WebSessionTokenError)
+    expect(rejection.failure.code).toBe('NO_SESSION')
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'auth_session_token_mint_failure' })
+    )
+  })
+
+  it('reports the original mint error with its code and status', async () => {
+    const ingest = await bootOnSession()
+    ingest.mintRefusal = () => jsonResponse({}, 500)
+
+    const rejection = await webSessionResourceHeader().catch(
+      (error: unknown) => error
+    )
+
+    assert(rejection instanceof WebSessionTokenError)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(rejection.cause, {
+      errorType: 'auth_session_token_mint_failure',
+      level: 'warning',
+      tags: { code: 'SESSION_UNAVAILABLE', http_status: 500 }
+    })
+  })
+
+  it.for([
+    {
+      name: 'a 401',
+      refuse: () => jsonResponse({ code: 'session_revoked' }, 401),
+      reported: false
+    },
+    { name: 'a 403', refuse: () => jsonResponse({}, 403), reported: true },
+    { name: 'a 429', refuse: () => jsonResponse({}, 429), reported: true },
+    { name: 'a 500', refuse: () => jsonResponse({}, 500), reported: true },
+    {
+      name: 'a network failure',
+      refuse: (): Response => {
+        throw new TypeError('Failed to fetch')
+      },
+      reported: true
+    }
+  ])('$name mint refusal reports: $reported', async ({ refuse, reported }) => {
+    const ingest = await bootOnSession()
+    ingest.mintRefusal = refuse
+
+    await webSessionResourceHeader().catch(() => undefined)
+
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(reported ? 1 : 0)
+  })
+
   it('mints again once the cached token is within a minute of expiry', async () => {
     const ingest = await bootOnSession()
 
@@ -990,3 +1183,136 @@ describe('comfy-api calls on the shared web session', () => {
     expect(mintRequests(ingest)).toHaveLength(2)
   })
 })
+
+describe.for([{ unified: false }, { unified: true }])(
+  'the Run token on the shared web session (unified_cloud_auth $unified)',
+  ({ unified }) => {
+    const boot = async () => {
+      const ingest = await bootOnSession({ unified_cloud_auth: unified })
+      ingest.mints = 0
+      ingest.mintedFor.length = 0
+      return ingest
+    }
+
+    beforeEach(() => {
+      identity.reset()
+      firebaseSignOut.mockReset()
+      firebaseSignOut.mockImplementation(async () => identity.signOut())
+      vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+      localStorage.clear()
+    })
+
+    it.for([
+      { workspace: 'personal', expected: ['personal'] },
+      { workspace: 'ws-team', expected: ['ws-team'] }
+    ])(
+      'mints the $workspace workspace token from the session',
+      async ({ workspace, expected }) => {
+        const ingest = await boot()
+        if (workspace !== 'personal') {
+          await useWorkspaceAuthStore().switchWorkspace(workspace)
+        }
+
+        const token = await useAuthStore().getWorkspaceAuthToken()
+
+        expect(token).toBe('session-jwt-1')
+        expect(ingest.mintedFor).toEqual(expected)
+        expect(
+          ingest.requests
+            .filter(({ path }) => path === '/api/auth/token')
+            .map(({ headers }) => headers.authorization)
+        ).toEqual(expected.map(() => undefined))
+      }
+    )
+
+    it('reuses one mint across Runs and re-mints once it nears expiry', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+
+      const first = await authStore.getWorkspaceAuthToken()
+      const second = await authStore.getWorkspaceAuthToken()
+      await vi.advanceTimersByTimeAsync(14 * 60_000)
+      const third = await authStore.getWorkspaceAuthToken()
+
+      expect([first, second]).toEqual(['session-jwt-1', 'session-jwt-1'])
+      expect(third).not.toBe(first)
+      expect(
+        ingest.requests.filter(
+          ({ path, headers }) =>
+            path === '/api/auth/token' && !('authorization' in headers)
+        )
+      ).toHaveLength(2)
+    })
+
+    it('keeps each workspace token cached across a switch and back', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+      const workspaceAuth = useWorkspaceAuthStore()
+
+      const personal = await authStore.getWorkspaceAuthToken()
+      await workspaceAuth.switchWorkspace('ws-team')
+      const team = await authStore.getWorkspaceAuthToken()
+      await workspaceAuth.switchWorkspace('ws-personal')
+      const personalAgain = await authStore.getWorkspaceAuthToken()
+
+      expect([personal, team, personalAgain]).toEqual([
+        'session-jwt-1',
+        'session-jwt-2',
+        'session-jwt-1'
+      ])
+      expect(ingest.mintedFor).toEqual(['personal', 'ws-team'])
+    })
+
+    it('resolves undefined for a revoked session and mints again once it recovers', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+      ingest.mintRefusal = () =>
+        jsonResponse({ code: 'session_revoked', message: 'revoked' }, 401)
+
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
+
+      ingest.mintRefusal = undefined
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBe(
+        'session-jwt-1'
+      )
+    })
+
+    it('resolves undefined while rate limited and sends no mint until Retry-After passes', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+      ingest.mintRefusal = () =>
+        new Response(
+          JSON.stringify({ code: 'rate_limited', message: 'slow' }),
+          {
+            status: 429,
+            headers: { 'Content-Type': 'application/json', 'Retry-After': '60' }
+          }
+        )
+
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
+
+      ingest.mintRefusal = undefined
+      await vi.advanceTimersByTimeAsync(30_000)
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      expect(ingest.mints).toBe(0)
+
+      await vi.advanceTimersByTimeAsync(30_000)
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBe(
+        'session-jwt-1'
+      )
+    })
+
+    it('resolves undefined and mints nothing after sign-out', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+      await authStore.logout()
+
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      expect(ingest.mints).toBe(0)
+    })
+  }
+)

@@ -304,7 +304,7 @@ describe('TelemetryRegistry', () => {
       starter_prompt_click_id: null
     } satisfies AgentMessageSentMetadata
     const starterPromptClickedMetadata = {
-      prompt_id: 'generate_image',
+      prompt_id: 'slot_1',
       prompt_index: 0,
       prompt_count: 5,
       prompt_text_hash: 'deadbeef',
@@ -331,10 +331,12 @@ describe('TelemetryRegistry', () => {
       target: 'active_tab_open'
     } satisfies AgentWorkflowAppliedMetadata
     const paywallShownMetadata = {
-      reason: 'subscription_inactive'
+      reason: 'subscription_inactive',
+      surface: 'credits_exhausted'
     } satisfies AgentPaywallShownMetadata
     const paywallCtaMetadata = {
-      cta: 'add_credits'
+      cta: 'add_credits',
+      surface: 'refused_send'
     } satisfies AgentPaywallCtaMetadata
 
     const cases: Array<{

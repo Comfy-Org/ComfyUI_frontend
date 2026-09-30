@@ -22,7 +22,7 @@ const { story, locale = 'en' } = defineProps<{
 
 <template>
   <a
-    :href="`/customers/videos/${story.slug}`"
+    :href="`/customers/videos/${story.slug}/`"
     class="group flex flex-col overflow-hidden rounded-3xl bg-transparency-white-t4 transition-colors hover:bg-white/8"
   >
     <div class="group relative m-2 aspect-video overflow-hidden rounded-2xl">

@@ -76,5 +76,8 @@ export function bootWorkshopWebSession(
     }
   })
   identity.boot()
-  return () => identity.dispose()
+  return () => {
+    identity.dispose()
+    webSession.value = undefined
+  }
 }

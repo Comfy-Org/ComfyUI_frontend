@@ -9,6 +9,8 @@ const WINDOWS_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 const LINUX_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+const FREEBSD_UA =
+  'Mozilla/5.0 (X11; FreeBSD amd64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 const IPHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 const NVIDIA_RENDERER =
@@ -84,11 +86,11 @@ test.describe('Download page @smoke', () => {
     )
   })
 
-  test('CloudBannerSection is visible with cloud link', async ({ page }) => {
+  test('CloudBannerSection is not shown', async ({ page }) => {
     await page.goto('/download')
-    const link = page.getByRole('link', { name: /TRY COMFY CLOUD/i })
-    await expect(link).toBeVisible()
-    await expect(link).toHaveAttribute('href', 'https://cloud.comfy.org')
+    await expect(
+      page.getByRole('link', { name: /TRY COMFY CLOUD/i })
+    ).toHaveCount(0)
   })
 
   test('HeroSection heading and subtitle are visible', async ({ page }) => {
@@ -145,8 +147,32 @@ test.describe('Download page @smoke', () => {
     })
   })
 
-  test.describe('unrecognized desktop', () => {
+  test.describe('Linux desktop', () => {
     test.use({ userAgent: LINUX_UA })
+
+    test('HeroSection links Linux to the x64 AppImage', async ({ page }) => {
+      await page.goto('/download')
+
+      const hero = heroLocator(page)
+      const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+
+      await expect(downloadBtn).toHaveCount(1)
+      await expect(downloadBtn).toBeVisible()
+      await expect(downloadBtn).toHaveAttribute(
+        'href',
+        'https://download.comfy.org/linux/appimage/x64'
+      )
+      await expect(downloadBtn.locator('img')).toHaveAttribute(
+        'src',
+        '/icons/os/linux.svg'
+      )
+
+      await expect(hero.getByRole('textbox')).toHaveCount(0)
+    })
+  })
+
+  test.describe('unrecognized desktop', () => {
+    test.use({ userAgent: FREEBSD_UA })
 
     test('HeroSection falls back to both Windows + Mac when UA is unrecognized', async ({
       page
@@ -351,7 +377,7 @@ test.describe('Download page @smoke', () => {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
 
-    for (const href of ['/cloud', '/platform', '/enterprise']) {
+    for (const href of ['/cloud/', '/platform/', '/enterprise/']) {
       await expect(section.locator(`a[href="${href}"]`)).toBeVisible()
     }
   })
@@ -420,8 +446,8 @@ test.describe('Download page mobile @mobile', () => {
     await page.goto('/download')
   })
 
-  test('CloudBannerSection is visible', async ({ page }) => {
-    await expect(page.getByText(/Need more power/)).toBeVisible()
+  test('CloudBannerSection is not shown', async ({ page }) => {
+    await expect(page.getByText(/Need more power/)).toHaveCount(0)
   })
 
   test('HeroSection heading is visible', async ({ page }) => {
