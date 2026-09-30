@@ -140,6 +140,24 @@ describe('Workshop visibility', () => {
     expect(flag.value).toBe(false)
   })
 
+  it("does not show a flag first asked for from another visitor's stored answer", async () => {
+    const { initPostHog, identifyWorkshopUser, useWorkshopFlag } =
+      await import('./posthog')
+    hoisted.mockGetProperty.mockReturnValue('visitor-a')
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    identifyWorkshopUser({ uid: 'visitor-b' })
+    initPostHog()
+
+    const flag = useWorkshopFlag('workshop-reshoot-app-enabled')
+    expect(flag.value).toBe(false)
+
+    emitFeatureFlags(true)
+    expect(flag.value).toBe(false)
+
+    emitFeatureFlags()
+    expect(flag.value).toBe(true)
+  })
+
   it.for([
     { localDev: true, on: true },
     { localDev: false, on: false }

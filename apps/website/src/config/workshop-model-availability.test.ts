@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   isWorkshopModelDisabled,
+  workshopModelAvailability,
   workshopModelFlag
 } from './workshop-model-availability'
 import { workshopModelAvailabilitySchema } from './workshop-model-availability-schema'
@@ -13,6 +14,13 @@ describe('workshop model availability', () => {
       'workshop-reshoot-app-enabled'
     )
     expect(workshopModelFlag('apps/cinematic-studio')).toBeUndefined()
+  })
+
+  it('uses flags only on apps, whose pages are the ones gated at runtime', () => {
+    const flagged = [...workshopModelAvailability]
+      .filter(([, entry]) => entry.flag !== undefined)
+      .map(([slug]) => slug)
+    expect(flagged.every((slug) => slug.startsWith('apps/'))).toBe(true)
   })
 
   it.for([

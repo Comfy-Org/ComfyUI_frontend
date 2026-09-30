@@ -146,12 +146,17 @@ const FLAG_OVERRIDES = new Set(
     : []
 )
 const namedFlags = new Map<string, Ref<boolean>>()
+// PostHog's stored answers are only this visitor's once an answer has landed
+// for their identity; until then a flag first asked for must not read them.
+let namedFlagsAnswered = false
 
 function resetNamedFlags(): void {
+  namedFlagsAnswered = false
   for (const [name, flag] of namedFlags) flag.value = FLAG_OVERRIDES.has(name)
 }
 
 function readNamedFlags(options?: { send_event: boolean }): void {
+  namedFlagsAnswered = true
   for (const [name, flag] of namedFlags)
     flag.value =
       FLAG_OVERRIDES.has(name) ||
@@ -202,6 +207,7 @@ export function useWorkshopFlag(name: string): Readonly<Ref<boolean>> {
     flag = ref(
       FLAG_OVERRIDES.has(name) ||
         (initialized &&
+          namedFlagsAnswered &&
           posthog.isFeatureEnabled(name, { send_event: false }) === true)
     )
     namedFlags.set(name, flag)
