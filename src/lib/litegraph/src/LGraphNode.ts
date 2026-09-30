@@ -31,6 +31,7 @@ import { mintLinkId } from './idAllocation'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeProperty, NodeState } from '@/types/nodeState'
+import { getWidgetPersistenceName } from '@/types/widgetId'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface,
@@ -192,16 +193,17 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const occurrences = new Map<string, number>()
   for (const widget of widgets) {
     if (widget.serialize === false) continue
+    const name = getWidgetPersistenceName(widget)
     const value = widget.value
     const serialisedValue =
       value != null && typeof value === 'object'
         ? JSON.parse(JSON.stringify(value))
         : (value ?? null)
     positional.push(serialisedValue)
-    named[widget.name] = serialisedValue
-    const occurrence = occurrences.get(widget.name) ?? 0
-    ordered.push({ name: widget.name, occurrence, value: serialisedValue })
-    occurrences.set(widget.name, occurrence + 1)
+    named[name] = serialisedValue
+    const occurrence = occurrences.get(name) ?? 0
+    ordered.push({ name, occurrence, value: serialisedValue })
+    occurrences.set(name, occurrence + 1)
   }
   return {
     widgets_values: positional,
@@ -1248,12 +1250,13 @@ export class LGraphNode
         const occurrences = new Map<string, number>()
         for (const widget of this.widgets) {
           if (widget.serialize === false) continue
-          const occurrence = occurrences.get(widget.name) ?? 0
-          occurrences.set(widget.name, occurrence + 1)
+          const name = getWidgetPersistenceName(widget)
+          const occurrence = occurrences.get(name) ?? 0
+          occurrences.set(name, occurrence + 1)
           const restored = useWidgetValueStore().getRestoredWidgetValue(
             graphId,
             this.id,
-            widget.name,
+            name,
             positionalIndex++,
             occurrence
           )
@@ -2357,12 +2360,14 @@ export class LGraphNode
       .slice(0, -1)
       .filter(
         (candidate) =>
-          candidate.serialize !== false && candidate.name === widget.name
+          candidate.serialize !== false &&
+          getWidgetPersistenceName(candidate) ===
+            getWidgetPersistenceName(widget)
       ).length
     const restored = useWidgetValueStore().getRestoredWidgetValue(
       this.graph?.rootGraph.id ?? zeroUuid,
       this.id,
-      widget.name,
+      getWidgetPersistenceName(widget),
       positionalIndex,
       occurrence
     )

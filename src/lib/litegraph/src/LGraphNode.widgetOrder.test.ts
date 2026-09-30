@@ -4,7 +4,7 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type {
   IBaseWidget,
@@ -330,6 +330,37 @@ describe('LGraphNode widget ordering', () => {
       expect(roundTripped.widgets_values_ordered).toStrictEqual(
         serialized.widgets_values_ordered
       )
+    })
+
+    it('keeps declared duplicate names after live graph identity normalization', () => {
+      const first = { trim: { start_time: 1, duration: 2 } }
+      const second = { crop: { x: 3, y: 4, width: 5, height: 6 } }
+      node.addWidget('videoedit', 'same', first, null, {})
+      node.addWidget('videoedit', 'same', second, null, {})
+      node.serialize_widgets = true
+
+      const graph = new LGraph()
+      graph.add(node)
+
+      const serialized = node.serialize()
+      const restored = new LGraphNode('Restored')
+      restored.addWidget('videoedit', 'same', {}, null, {})
+      restored.addWidget('videoedit', 'same', {}, null, {})
+      graph.add(restored)
+      restored.configure(serialized)
+
+      expect(node.widgets!.map((widget) => widget.name)).toStrictEqual([
+        'same',
+        'same#1'
+      ])
+      expect(serialized.widgets_values_ordered).toStrictEqual([
+        { name: 'same', occurrence: 0, value: first },
+        { name: 'same', occurrence: 1, value: second }
+      ])
+      expect(restored.widgets!.map((widget) => widget.value)).toStrictEqual([
+        first,
+        second
+      ])
     })
 
     it('keeps ordered values aligned with positional onSerialize changes', () => {

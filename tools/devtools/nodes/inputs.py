@@ -362,6 +362,20 @@ class NodeWithComparerWidget:
         return ()
 
 
+class NodeWithDuplicateNamedWidgets:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {}}
+
+    RETURN_TYPES = ()
+    FUNCTION = "node_with_duplicate_named_widgets"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "A node whose web extension adds duplicate named dict widgets"
+
+    def node_with_duplicate_named_widgets(self):
+        return ()
+
+
 class NodeWithHiddenAriaDialog:
     @classmethod
     def INPUT_TYPES(cls):
@@ -514,6 +528,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithLegacyWidget": NodeWithLegacyWidget,
     "DevToolsNodeWithPreAttachLegacyWidgets": NodeWithPreAttachLegacyWidgets,
     "DevToolsNodeWithComparerWidget": NodeWithComparerWidget,
+    "DevToolsNodeWithDuplicateNamedWidgets": NodeWithDuplicateNamedWidgets,
     "DevToolsNodeWithHiddenAriaDialog": NodeWithHiddenAriaDialog,
     "DevToolsWASPause": WASPause,
     "DevToolsRefModLoader": RefModLoader,
@@ -542,6 +557,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithLegacyWidget": "Node With Legacy Widget",
     "DevToolsNodeWithPreAttachLegacyWidgets": "Node With Pre-Attach Legacy Widgets",
     "DevToolsNodeWithComparerWidget": "Node With Comparer Widget",
+    "DevToolsNodeWithDuplicateNamedWidgets": "Duplicate Named Widgets",
     "DevToolsNodeWithHiddenAriaDialog": "Node With Hidden ARIA Dialog",
     "DevToolsWASPause": "WAS Pause Compatibility",
     "DevToolsRefModLoader": "RefMod Loader Compatibility",
