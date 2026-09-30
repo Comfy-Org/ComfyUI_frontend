@@ -1,4 +1,4 @@
-import { mergeTests } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { AlgoliaNodePack } from '@/types/algoliaTypes'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
@@ -8,15 +8,8 @@ import type {
 } from '@comfyorg/registry-types'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import {
-  comfyExpect as expect,
-  comfyPageFixture
-} from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
-import { webSocketFixture } from '@e2e/fixtures/ws'
-
-const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']
@@ -172,7 +165,7 @@ const MOCK_ALGOLIA_EMPTY: AlgoliaSearchResponse = {
 }
 
 test.describe('ManagerDialog', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, comfyPage }) => {
     const statsWithManager = {
       ...mockSystemStats,
       system: {
@@ -258,11 +251,18 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       await route.fulfill({ json: {} })
     })
 
-    await new FeatureFlagHelper(page).seedServerFlags({
-      extension: {
-        manager: {
-          supports_v4: true,
-          supports_csrf_post: true
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    await comfyPage.setup()
+
+    await comfyPage.page.evaluate(() => {
+      const api = window.app!.api
+      api.serverFeatureFlags.value = {
+        ...api.serverFeatureFlags.value,
+        extension: {
+          manager: {
+            supports_v4: true,
+            supports_csrf_post: true
+          }
         }
       }
     })
