@@ -197,10 +197,12 @@ export function createTranslator<T extends MessageTree>(catalogs: Catalogs<T>) {
     })
     const slotIndex = message.indexOf(slotSentinel)
     if (slotIndex === -1) {
-      throw new Error(`Translation ${key} is missing slot ${marker}`)
+      throw new Error(
+        `Translation ${key} in ${locale} is missing slot ${marker}`
+      )
     }
     if (message.indexOf(slotSentinel, slotIndex + slotSentinel.length) !== -1) {
-      throw new Error(`Translation ${key} repeats slot ${marker}`)
+      throw new Error(`Translation ${key} in ${locale} repeats slot ${marker}`)
     }
     return [
       message.slice(0, slotIndex),
