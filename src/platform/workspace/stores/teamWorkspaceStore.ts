@@ -968,7 +968,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         await refreshWorkspaces()
       } catch (error) {
         reportError(error, {
-          errorType: 'error_refreshing_workspaces_after_invite_accept'
+          errorType: 'error_refreshing_workspaces_after_invite_accept',
+          surface: 'workspace'
         })
       }
     }

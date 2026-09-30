@@ -131,10 +131,14 @@ export function useInviteUrlLoader() {
       }
     } catch (dialogError) {
       reportError(dialogError, {
-        errorType: 'error_showing_invite_landing_dialog'
+        errorType: 'error_showing_invite_landing_dialog',
+        surface: 'workspace'
       })
     }
-    reportError(error, { errorType: 'error_accepting_workspace_invite' })
+    reportError(error, {
+      errorType: 'error_accepting_workspace_invite',
+      surface: 'workspace'
+    })
     toast.add({
       severity: 'error',
       summary: t('workspace.inviteFailed'),
