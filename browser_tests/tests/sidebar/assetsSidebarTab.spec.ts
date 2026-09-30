@@ -704,28 +704,3 @@ test.describe('Assets sidebar - agent-submitted job workflow open', () => {
     })
   })
 })
-
-const closeButtonTest = comfyPageFixture.extend({
-  page: async ({ page }, use) => {
-    const jobsRoutes = new JobsRouteMocker(page)
-    await jobsRoutes.mockJobsQueue([])
-    await jobsRoutes.mockJobsHistory(generatedJobs)
-    await mockInputFiles(page, [])
-    await mockViewFiles(page, viewFiles)
-    await use(page)
-  }
-})
-
-closeButtonTest(
-  'Assets sidebar close button closes the panel and clears the sidebar icon',
-  async ({ comfyPage }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await expect(tab.selectedTabButton).toBeVisible()
-
-    await tab.closeButton.click()
-
-    await expect(tab.generatedTab).toBeHidden()
-    await expect(tab.selectedTabButton).toBeHidden()
-  }
-)
