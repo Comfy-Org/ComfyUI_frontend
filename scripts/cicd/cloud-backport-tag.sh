@@ -2,6 +2,7 @@
 set -euo pipefail
 
 : "${EVENT_NAME:?EVENT_NAME is required}"
+: "${GH_TOKEN:?PR_GH_TOKEN is required for cloud tag reconciliation}"
 : "${BRANCH:?BRANCH is required}"
 : "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
 : "${GITHUB_OUTPUT:?GITHUB_OUTPUT is required}"
