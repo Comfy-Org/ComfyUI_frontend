@@ -283,14 +283,14 @@ const bothSidePanelsVisible = computed(
 )
 
 /**
- * Side panels are pinned in pixels, so cap them against the splitter's width
- * to keep the center panel, and the gutters beside it, reachable when the
- * window narrows or the agent panel opens.
+ * Side panels are pinned in pixels, so cap each against the splitter's width
+ * to keep the center panel reachable when the window narrows or the agent
+ * panel opens. The cap must not depend on the other panel, or opening it would
+ * resize this one.
  */
-const sidePanelMaxWidth = computed(() => {
-  if (isSelectMode.value) return undefined
-  return bothSidePanelsVisible.value ? 'max-w-2/5' : 'max-w-3/5'
-})
+const sidePanelMaxWidth = computed(() =>
+  isSelectMode.value ? undefined : 'max-w-3/5'
+)
 
 const centerPanelDefaultSize = computed(() =>
   bothSidePanelsVisible.value ? 100 - 2 * SIDE_PANEL_SIZE : CENTER_PANEL_SIZE
