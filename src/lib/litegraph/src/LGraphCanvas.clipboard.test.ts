@@ -398,6 +398,32 @@ describe('clipboard ID allocation', () => {
     expect(completed).toBe(false)
     expect(rootGraph.nodes).toEqual([])
   })
+
+  it('retains a falsy paste operation failure after rollback', () => {
+    const nodeType = 'test/clipboard-falsy-operation-fail'
+    class ThrowingConfigureNode extends LGraphNode {
+      override configure(): void {
+        throw undefined
+      }
+    }
+    LiteGraph.registerNodeType(nodeType, ThrowingConfigureNode)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+
+    let completed = false
+    try {
+      canvas._deserializeItems(
+        { nodes: [createSerialisedNode(1, nodeType)] },
+        {}
+      )
+      completed = true
+    } catch (error) {
+      expect(error).toBeUndefined()
+    }
+
+    expect(completed).toBe(false)
+    expect(rootGraph.nodes).toEqual([])
+  })
 })
 
 function createClipboardSubgraph(id: string): ExportedSubgraph {

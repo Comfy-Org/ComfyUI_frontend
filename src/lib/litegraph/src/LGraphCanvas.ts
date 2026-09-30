@@ -4290,6 +4290,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.emitBeforeChange()
 
     let result: ClipboardPasteResult | undefined
+    let operationFailed = false
     let operationError: unknown
     try {
       const items = initializeClipboardItems(clipboardItems)
@@ -4354,6 +4355,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       forEachNode(graph, (n) => n.onGraphConfigured?.())
       forEachNode(graph, (n) => n.onAfterGraphConfigured?.())
     } catch (error) {
+      operationFailed = true
       operationError = error
       if (result) rollbackClipboardPaste(graph, result)
     }
@@ -4363,7 +4365,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       graph.afterChange()
     } catch (error) {
       closingErrors.push(error)
-      if (!operationError && result) rollbackClipboardPaste(graph, result)
+      if (!operationFailed && result) rollbackClipboardPaste(graph, result)
     }
 
     try {
@@ -4372,7 +4374,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       closingErrors.push(error)
     }
 
-    if (operationError && closingErrors.length) {
+    if (operationFailed && closingErrors.length) {
       const combinedError = new AggregateError(
         [operationError, ...closingErrors],
         'Clipboard paste and change finalization both failed'
@@ -4380,7 +4382,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       combinedError.cause = operationError
       throw combinedError
     }
-    if (operationError) throw operationError
+    if (operationFailed) throw operationError
     if (closingErrors.length === 1) throw closingErrors[0]
     if (closingErrors.length)
       throw new AggregateError(
