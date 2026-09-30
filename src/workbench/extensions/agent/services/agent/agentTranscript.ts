@@ -88,7 +88,8 @@ function parseAttachmentRef(entry: unknown): ParsedAttachmentRef | undefined {
 
 function parseAttachmentRefs(value: unknown): ParsedAttachmentRef[] {
   if (!Array.isArray(value)) return []
-  return value.flatMap((entry) => {
+  const entries: unknown[] = value
+  return entries.flatMap((entry) => {
     const parsed = parseAttachmentRef(entry)
     return parsed ? [parsed] : []
   })
@@ -106,9 +107,12 @@ function parseUserAttachments(
   for (const entry of refs) {
     if (!resolved.has(entry.key)) resolved.set(entry.key, entry)
   }
-  const postedNames = Array.isArray(content?.attachments)
-    ? content.attachments.filter(isNamedAttachment)
-    : undefined
+  const rawAttachments: unknown = content?.attachments
+  let postedNames: string[] | undefined
+  if (Array.isArray(rawAttachments)) {
+    const entries: unknown[] = rawAttachments
+    postedNames = entries.filter(isNamedAttachment)
+  }
   const names = postedNames ?? refs.map(({ ref }) => ref)
   return names.length > 0
     ? names.map((ref) => {
