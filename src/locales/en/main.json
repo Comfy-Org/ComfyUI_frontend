@@ -5331,6 +5331,7 @@
     },
     "addFromAssets": "Drag in asset from asset panel",
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
+    "assetFetchFailed": "{name} could not be retrieved",
     "attachmentNamesOverflow": "{names} and {count} more",
     "attachmentCapabilityProbe": "The agent can read this file's format and length, but not what it contains",
     "attachmentCapabilityReference": "The agent can load this file in the graph, but can't read what it contains",

@@ -10,10 +10,12 @@ import { agentAttachCapability } from '../../../utils/attachableFiles'
 
 const {
   name,
+  refName,
   previewUrl,
   uploading = false
 } = defineProps<{
   name: string
+  refName?: string
   previewUrl?: string
   uploading?: boolean
 }>()
@@ -34,7 +36,10 @@ const kindIconClass = computed(() =>
    all inside a mesh or a text file. Without this the chip looks identical either
    way and the user assumes it was read. */
 const capabilityLabel = computed(() => {
-  switch (agentAttachCapability(name)) {
+  // The stored ref decides when it can: an asset card's name is a display
+  // label that need not carry a judgeable extension, and a chip with no
+  // capability text is the one case this affordance exists to prevent.
+  switch (agentAttachCapability(refName ?? '') ?? agentAttachCapability(name)) {
     case 'view':
       return t('agent.attachmentCapabilityView')
     case 'probe':

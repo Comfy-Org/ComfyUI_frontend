@@ -45,9 +45,19 @@ const CAPABILITY_BY_EXTENSION = new Map<string, AgentAttachCapability>([
  */
 export const AGENT_ATTACH_ACCEPT = [...CAPABILITY_BY_EXTENSION.keys()].join(',')
 
+const EXTENSION_PATTERN = /\.[a-z0-9]{1,8}$/i
+
+/**
+ * A bare `lastIndexOf('.')` reads `.2` out of a label like "render v1.2" and
+ * `.0` out of "Empty Ace Step 1.0". The verdict below would then call those
+ * REJECTED types rather than unknown ones, and a gate that refuses on a
+ * rejected verdict would veto a perfectly valid file over its version number.
+ * Every extension on the accept list contains a letter; a digits-only suffix
+ * is a version marker.
+ */
 function extensionOf(filename: string): string {
-  const dot = filename.lastIndexOf('.')
-  return dot === -1 ? '' : filename.slice(dot).toLowerCase()
+  const match = EXTENSION_PATTERN.exec(filename)?.[0].toLowerCase()
+  return match && /[a-z]/.test(match) ? match : ''
 }
 
 /**

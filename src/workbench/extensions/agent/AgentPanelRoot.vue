@@ -1652,17 +1652,18 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   // shared media taxonomy, which files .usdz as 3D while the accepted list
   // rejects it, so a .usdz card used to stage silently here and then fail the
   // turn at submit.
-  // Two strings of unequal authority: `asset.name` is the card's DISPLAY name,
-  // which a user can rename to anything (including something with no extension
-  // to judge), while `ref` is the stored filename the server will resolve and
-  // re-check. A REJECTED verdict from either refuses — otherwise a rename talks
-  // a .usdz past this gate and the turn 422s later, defeating the gate's whole
-  // purpose. Only when both are UNKNOWN does the drop fall through to the
-  // deferred fetch below, which judges the real File.
-  const verdicts = [asset.name, asset.ref]
-    .filter((candidate): candidate is string => Boolean(candidate))
-    .map(agentAttachVerdict)
-  if (verdicts.includes('rejected')) {
+  // Two strings of unequal authority, so the AUTHORITATIVE one is asked first:
+  // `ref` is the stored filename the server resolves and re-checks, while
+  // `asset.name` is the card's display label, which need not carry a judgeable
+  // extension at all. Only when the ref says nothing does the label get a vote,
+  // and only when neither can judge does the drop fall through to the deferred
+  // fetch below, which sees the real File.
+  const verdict =
+    [asset.ref, asset.name]
+      .filter((candidate): candidate is string => Boolean(candidate))
+      .map(agentAttachVerdict)
+      .find((candidate) => candidate !== 'unknown') ?? 'unknown'
+  if (verdict === 'rejected') {
     toast.add({
       severity: 'warn',
       detail: t('agent.attachmentTypeNotAccepted', { name: asset.name }, 1),
@@ -1682,14 +1683,21 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
     )
   }
 
+  // fetchDroppedAsset answers undefined for a missing URI, a non-ok response
+  // and a thrown fetch alike, so the two outcomes are told apart here instead.
+  // Reporting a 404 as a refused file type tells the user something specific
+  // and false about their file.
+  let fetched: File | undefined
   const result = await attachment.addDeferredFile(asset.name, async () => {
-    const file = await fetchDroppedAsset(asset)
-    return file && isAgentAttachable(file) ? file : undefined
+    fetched = await fetchDroppedAsset(asset)
+    return fetched && isAgentAttachable(fetched) ? fetched : undefined
   })
   if (result === 'unsupported')
     toast.add({
       severity: 'warn',
-      detail: t('agent.attachmentTypeNotAccepted', { name: asset.name }),
+      detail: fetched
+        ? t('agent.attachmentTypeNotAccepted', { name: asset.name }, 1)
+        : t('agent.assetFetchFailed', { name: asset.name }),
       life: 5000
     })
   return result === 'uploaded'

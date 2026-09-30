@@ -117,7 +117,9 @@ describe('agentAttachVerdict', () => {
     ['doc.pdf', 'rejected'],
     ['blake3:abcdef0123456789', 'unknown'],
     ['abcdef0123456789', 'unknown'],
-    ['My renamed asset', 'unknown']
+    ['My renamed asset', 'unknown'],
+    ['render v1.2', 'unknown'],
+    ['Empty Ace Step 1.0', 'unknown']
   ] as const)('reports %s as %s', ([filename, verdict]) => {
     expect(agentAttachVerdict(filename)).toBe(verdict)
   })

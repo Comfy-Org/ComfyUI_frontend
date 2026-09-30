@@ -2981,6 +2981,7 @@ export const zAgentAttachmentRejected = z.object({
   accepted: zAgentAttachmentPolicy,
   error: z.string(),
   rejected: z.array(z.string()),
+  rejected_count: z.number().int(),
   type: z.enum(['ATTACHMENT_TYPE_NOT_ACCEPTED'])
 })
 

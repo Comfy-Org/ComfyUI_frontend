@@ -4729,7 +4729,9 @@ export type AgentPostMessageRequest = {
    * rejected with 422 (AgentAttachmentRejected). A reference with NO extension is the one
    * exception: not every reference is a filename — an asset hash may be a bare hex digest or
    * "blake3:<hex>" — so one with nothing to judge is admitted here and checked again once it
-   * resolves to a stored name, where a refusal drops the attachment rather than the turn. Which tier of that policy an extension lands
+   * resolves to a stored name. A refusal there costs the attachment its asset id and its
+   * kind, so the agent gets no tool for it and the turn is not refused; the reference itself
+   * is still echoed back by GET .../messages. Which tier of that policy an extension lands
    * in says what the agent can do with it, and the tiers differ sharply — a client that
    * presents them as one flat list misleads the user.
    *
@@ -4898,9 +4900,13 @@ export type AgentAttachmentRejected = {
   accepted: AgentAttachmentPolicy
   error: string
   /**
-   * The offending references, in the order they were posted.
+   * The offending references, in the order they were posted. Capped, so it can be shorter than rejected_count — a client that reports "N were refused" must read that field rather than this array's length.
    */
   rejected: Array<string>
+  /**
+   * How many references were refused in total, before the list above was capped.
+   */
+  rejected_count: number
   type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
 }
 
