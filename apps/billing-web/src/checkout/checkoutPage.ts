@@ -134,6 +134,7 @@ export type CheckoutPage =
       readonly kind: 'waiting'
       readonly operation: PendingBillingOperation
       readonly sibling?: true
+      readonly rail?: PaymentRail
     }
   | {
       readonly kind: 'unconfirmed'
