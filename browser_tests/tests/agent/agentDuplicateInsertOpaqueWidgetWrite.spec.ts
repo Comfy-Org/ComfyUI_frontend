@@ -356,7 +356,8 @@ async function driveThroughRejectedWidgetEdit(
   const isSeedWrite = (op: Op): op is Extract<Op, { op: 'set_widget' }> =>
     op.op === 'set_widget' &&
     String(op.node_id) === copyBNodeId &&
-    op.widget === 'seed'
+    op.widget === 'seed' &&
+    op.value === EDITED_SEED_VALUE
   const docOpsFrames = outboundFrames
     .slice(framesBeforeEdit)
     .map((frame) => JSON.parse(frame) as { type: string; data: { ops: Op[] } })
@@ -517,7 +518,10 @@ test.describe(
       // template inserted twice renders both copies at pixel-identical
       // positions (within a small tolerance), so a human cannot tell them
       // apart on canvas.
-      expect(boxesOverlap(settle.lastBoxA, settle.lastBoxB)).toBe(true)
+      expect(
+        boxesOverlap(settle.lastBoxA, settle.lastBoxB),
+        `boxA=${JSON.stringify(settle.lastBoxA)} boxB=${JSON.stringify(settle.lastBoxB)}`
+      ).toBe(true)
     })
 
     test('a widget edit the host rejects as opaque leaves the human-typed value on screen and the shared document silently unrevised', async ({
