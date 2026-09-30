@@ -321,3 +321,139 @@ describe('completeness gate wiring', () => {
     expect(field(save, 'if')).toContain('success()')
   })
 })
+
+// Every merge has to be measured, and each one compared against its own
+// parent. Both properties live entirely in workflow expressions, so nothing
+// else in the suite notices when one is softened.
+describe('per-merge measurement wiring', () => {
+  const NOTIFY = '.github/workflows/coverage-slack-notify.yaml'
+
+  function notifyStep(predicate: (step: unknown) => boolean): unknown {
+    return jobSteps(readWorkflow(NOTIFY)).find(predicate)
+  }
+
+  // Sharing a group across main pushes is what let one merge cancel the run
+  // measuring the merge before it, which is the bug this wiring exists to fix.
+  it('keeps main pushes out of each other concurrency group', () => {
+    const group = field(
+      readWorkflow('.github/workflows/ci-tests-unit.yaml'),
+      'concurrency',
+      'group'
+    )
+
+    expect(group).toContain('github.sha')
+    expect(group).toContain("github.ref == 'refs/heads/main'")
+    // Dropping the ref lets the same commit pushed to a release branch share
+    // main's group and cancel it.
+    expect(group).toContain('github.ref }}-')
+  })
+
+  // `single`, the default, cancels every pending run but the newest, which
+  // would drop exactly the reports this workflow exists to send.
+  it('queues overlapping notify runs rather than dropping them', () => {
+    const concurrency = field(readWorkflow(NOTIFY), 'concurrency')
+
+    expect(field(concurrency, 'queue')).toBe('max')
+    expect(field(concurrency, 'cancel-in-progress')).toBe(false)
+  })
+
+  // A rolling baseline is shared mutable state: read and written out of merge
+  // order once merges are measured in parallel. An ancestor's artifact is not.
+  // Resolving by commit here would re-pick the newest run for that sha —
+  // including a cancelled one, whose tracefile may be truncated — and discard
+  // the verdict check that chose this run.
+  it('downloads the ancestor baseline by resolved run id, not by commit', () => {
+    const download = notifyStep(
+      (step) => field(step, 'with', 'path') === 'temp/coverage-baseline'
+    )
+
+    expect(field(download, 'with', 'run_id')).toBe(
+      '${{ steps.pr-meta.outputs.baseline-run-id }}'
+    )
+    expect(field(download, 'with', 'commit')).toBeUndefined()
+    expect(field(download, 'with', 'workflow_conclusion')).toBeUndefined()
+  })
+
+  // Merge-queue batches leave intermediate commits with no push run, a
+  // parent's own run can still be in flight, and a cancelled run's tracefile
+  // may be truncated. Pinning the raw parent reports nothing in each case.
+  it('walks back to the nearest ancestor that reached a verdict', () => {
+    const resolve = String(
+      field(
+        notifyStep((step) => field(step, 'id') === 'pr-meta'),
+        'with',
+        'script'
+      )
+    )
+
+    expect(resolve).toContain('MAX_HOPS')
+    expect(resolve).toContain("run.conclusion !== 'success'")
+    expect(resolve).toContain("run.conclusion !== 'failure'")
+    expect(resolve).toContain('baseline-run-id')
+  })
+
+  // Coverage floors live in the same step that merges the shard reports, so a
+  // regression past a floor fails the run. Reporting only successes skipped
+  // exactly the regressions and let the next delta subtract them out.
+  it('reports merges whose unit run failed, not just successes', () => {
+    const condition = String(
+      field(readWorkflow(NOTIFY), 'jobs', 'notify', 'if')
+    )
+
+    expect(condition).toContain('success')
+    expect(condition).toContain('failure')
+    // Absent coverage has to leave unit out rather than redden the notifier.
+    // Matched on path: the ancestor download also carries a run_id.
+    const current = notifyStep(
+      (step) => field(step, 'with', 'path') === 'coverage'
+    )
+    expect(field(current, 'with', 'if_no_artifact_found')).toBe('warn')
+  })
+
+  it('stores no unit baseline artifact', () => {
+    const saves = jobSteps(readWorkflow(NOTIFY)).filter((step) =>
+      String(field(step, 'uses')).startsWith('actions/upload-artifact@')
+    )
+
+    expect(saves.map((step) => field(step, 'with', 'name'))).toEqual([
+      'e2e-coverage-baseline'
+    ])
+  })
+
+  // E2E has no per-commit artifact to pin, so it can be measured on a commit
+  // this one does not contain and would be credited to the wrong PR.
+  it('gates the E2E row and its baseline on the ordering check', () => {
+    // The download step carries the same artifact name, so match the upload.
+    const save = notifyStep(
+      (step) =>
+        field(step, 'with', 'name') === 'e2e-coverage-baseline' &&
+        String(field(step, 'uses')).startsWith('actions/upload-artifact@')
+    )
+
+    expect(
+      jobSteps(readWorkflow(NOTIFY)).map((step) => field(step, 'id'))
+    ).toContain('e2e-order')
+    expect(String(field(save, 'if'))).toContain(
+      "steps.e2e-order.outputs.usable == 'true'"
+    )
+    expect(String(field(save, 'if'))).toContain('success()')
+  })
+
+  // Slack answers 200 with ok:false, so without this a rejected post reads as
+  // delivered and the baseline advances past movement nobody ever saw.
+  it('fails the run on a Slack-level rejection', () => {
+    const post = notifyStep((step) => field(step, 'id') === 'slack-post')
+
+    expect(String(field(post, 'run'))).toContain("jq -r '.ok'")
+    // continue-on-error would keep the run green and let success() advance the
+    // baseline past a report that was never delivered.
+    expect(field(post, 'continue-on-error')).toBeUndefined()
+  })
+
+  // Serialised runs queue behind a hung one, so the default 6h is far too long.
+  it('bounds how long one run can block the queue', () => {
+    expect(
+      field(readWorkflow(NOTIFY), 'jobs', 'notify', 'timeout-minutes')
+    ).toBe(10)
+  })
+})

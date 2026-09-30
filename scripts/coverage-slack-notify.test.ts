@@ -84,6 +84,24 @@ function notifyFixture() {
         )
       }
     },
+    writeUnit(percentage: number, metadata: Record<string, unknown> | null) {
+      this.write('coverage/lcov.info', tracefile(percentage))
+      if (metadata) {
+        this.write('coverage/coverage-metadata.json', JSON.stringify(metadata))
+      }
+    },
+    writeUnitBaseline(
+      percentage: number,
+      metadata: Record<string, unknown> | null = null
+    ) {
+      this.write('temp/coverage-baseline/lcov.info', tracefile(percentage))
+      if (metadata) {
+        this.write(
+          'temp/coverage-baseline/coverage-metadata.json',
+          JSON.stringify(metadata)
+        )
+      }
+    },
     run() {
       const result = spawnSync(
         TSX,
@@ -346,5 +364,38 @@ describe('comparison span', () => {
 
     expect(result.stdout).toContain('64.0% → 67.0%')
     expect(result.stdout).not.toContain('last whole merge')
+  })
+
+  // The unit baseline is the nearest measured ancestor, which is not always
+  // the direct parent, so its delta can cover merges the named PR did not
+  // make. The workflow writes these sidecars only in that case.
+  it('names the commits a unit delta spans', () => {
+    using fixture = notifyFixture()
+    fixture.writeUnitBaseline(70, {
+      complete: true,
+      sourceSha: 'aaaaaaabbbbbb'
+    })
+    fixture.writeUnit(72, { complete: true, sourceSha: 'cccccccdddddd' })
+
+    const result = fixture.run()
+
+    expect(result.stdout).toContain(
+      'Unit measured from the last measured merge (`aaaaaaa`) to `ccccccc`'
+    )
+    expect(result.stdout).toContain('may cover several merges')
+  })
+
+  // The common case: the ancestor is the direct parent, the delta is exactly
+  // this PR, and the workflow writes no sidecar. Hedging every report would
+  // make the note meaningless on the ones that need it.
+  it('stays silent about the span when the delta is one merge', () => {
+    using fixture = notifyFixture()
+    fixture.writeUnitBaseline(70)
+    fixture.writeUnit(72, null)
+
+    const result = fixture.run()
+
+    expect(result.stdout).toContain('*Unit:*  70.0% → 72.0%')
+    expect(result.stdout).not.toContain('measured from')
   })
 })
