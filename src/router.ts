@@ -1,4 +1,5 @@
 import { until } from '@vueuse/core'
+import { delay } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import {
   createRouter,
@@ -8,6 +9,7 @@ import {
 import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { CloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
 import { cloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
@@ -113,6 +115,8 @@ router.afterEach(() => {
   trackPageView()
 })
 
+const PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS = 3_000
+
 if (isCloud) {
   const { flags } = useFeatureFlags()
   const PUBLIC_ROUTE_NAMES = new Set([
@@ -136,6 +140,12 @@ if (isCloud) {
     const path = to.path
     return PUBLIC_ROUTE_PATHS.has(path)
   }
+  async function publicRouteSignIn(): Promise<CloudSignIn> {
+    return Promise.race([
+      cloudSignIn(),
+      delay(PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS).then(() => 'signed_out' as const)
+    ])
+  }
   // Global authentication guard
   router.beforeEach(async (to, _from, next) => {
     const authStore = useAuthStore()
@@ -152,7 +162,9 @@ if (isCloud) {
       }
     }
 
-    let signIn = await cloudSignIn()
+    let signIn = isPublicRoute(to)
+      ? await publicRouteSignIn()
+      : await cloudSignIn()
     if (signIn === 'pending' && !isPublicRoute(to)) {
       await useCloudWebSessionStore().whenDecided()
       signIn = await cloudSignIn()

@@ -1813,6 +1813,25 @@ describe.for([{ unified: false }, { unified: true }])(
         reloaded[Symbol.dispose]()
       })
 
+      it('lets a public route through while the session read never answers', async () => {
+        await install({ userId: 'user-a' })
+        identity.resolve(null)
+        const fetchNow = fetch
+        vi.stubGlobal(
+          'fetch',
+          (input: RequestInfo | URL, init?: RequestInit) =>
+            String(input).includes('/auth/session')
+              ? new Promise<Response>(() => {})
+              : fetchNow(input, init)
+        )
+
+        const navigation = router.push('/cloud/forgot-password')
+        await vi.advanceTimersByTimeAsync(5_000)
+        await navigation
+
+        expect(router.currentRoute.value.path).toBe('/cloud/forgot-password')
+      })
+
       it('lets a session-only tab in without a login page', async () => {
         await install({ userId: 'user-a' })
         identity.resolve(null)
