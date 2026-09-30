@@ -214,6 +214,10 @@ async function renderCheckout(
 const payButton = () =>
   screen.getByRole('button', { name: 'Pay and subscribe' })
 
+afterEach(() => {
+  sessionStorage.clear()
+})
+
 describe('FullPageCheckoutView', () => {
   beforeEach(() => {
     form.mounts = 0
@@ -2843,5 +2847,136 @@ describe('FullPageCheckoutView promo codes', () => {
     expect(
       screen.queryByRole('button', { name: 'Add promo code' })
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('FullPageCheckoutView restoring a code this page applied', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
+  async function applyThenReload(
+    arrangeReload: (fake: FakeBillingClient) => void = quotesByCode,
+    reloadPath = CHECKOUT_PATH
+  ) {
+    await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await enterCode('LAUNCH20')
+    await screen.findByText('−$5.60')
+    cleanup()
+    return renderCheckout({}, arrangeReload, reloadPath)
+  }
+
+  it('comes back applied at the discounted price, quoted with the code', async () => {
+    const fake = await applyThenReload()
+
+    expect(await screen.findByText('−$5.60')).toBeInTheDocument()
+    expect(screen.getAllByText('$22.40')).toHaveLength(2)
+    expect(
+      screen.getByRole('button', { name: 'Remove LAUNCH20' })
+    ).toBeEnabled()
+    expect(fake.previewSubscribe).toHaveBeenCalledWith(
+      expect.objectContaining({ promotionCode: 'LAUNCH20' }),
+      expect.anything()
+    )
+  })
+
+  it('shows the expired card when the server refuses the restored code', async () => {
+    await applyThenReload((fake) =>
+      quotesByCode(fake, refusedWith('PROMOTION_CODE_INVALID'))
+    )
+
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent('Your promo code expired')
+    expect(card).toHaveTextContent('The LAUNCH20 code expired')
+    expect(screen.getAllByText('$28.00')).toHaveLength(2)
+    expect(screen.getByRole('button', { name: 'Add promo code' })).toBeEnabled()
+
+    cleanup()
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    expect(fake.previewSubscribe).toHaveBeenCalledExactlyOnceWith(
+      expect.not.objectContaining({ promotionCode: expect.anything() }),
+      expect.anything()
+    )
+  })
+
+  it('restores nothing once the customer removed the code', async () => {
+    await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await enterCode('LAUNCH20')
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Remove LAUNCH20' })
+    )
+    await screen.findByRole('button', { name: 'Add promo code' })
+    cleanup()
+
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    expect(fake.previewSubscribe).toHaveBeenCalledExactlyOnceWith(
+      expect.not.objectContaining({ promotionCode: expect.anything() }),
+      expect.anything()
+    )
+  })
+
+  it('gives a checkout for another plan nothing', async () => {
+    const fake = await applyThenReload(
+      quotesByCode,
+      CHECKOUT_PATH.replace('creator_monthly', 'pro_monthly')
+    )
+    await waitFor(() => expect(fake.previewSubscribe).toHaveBeenCalled())
+
+    expect(fake.previewSubscribe).not.toHaveBeenCalledWith(
+      expect.objectContaining({ promotionCode: expect.anything() }),
+      expect.anything()
+    )
+  })
+
+  it('restores nothing after the Pay goes through', async () => {
+    await renderCheckout(
+      {
+        subscribe: {
+          status: 'ok',
+          value: {
+            phase: 'succeeded',
+            operation: succeededOperation('op_mine')
+          }
+        }
+      },
+      quotesByCode
+    )
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await enterCode('LAUNCH20')
+    await screen.findByText('−$5.60')
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    form.emit('confirm', 'ctoken_1')
+    await screen.findByRole('heading', { name: "You're all set" })
+    cleanup()
+
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    expect(fake.previewSubscribe).toHaveBeenCalledExactlyOnceWith(
+      expect.not.objectContaining({ promotionCode: expect.anything() }),
+      expect.anything()
+    )
+  })
+
+  it('never writes the applied code into the return URL', async () => {
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await enterCode('LAUNCH20')
+    await screen.findByText('−$5.60')
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    const [request] = fake.subscribe.mock.calls[0]
+    expect(request.promotion_code).toBe('LAUNCH20')
+    expect(request.return_url).not.toMatch(/LAUNCH20/i)
   })
 })

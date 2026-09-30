@@ -79,7 +79,7 @@ describe('buildSummaryLedger', () => {
             sublines: ['$700 /mo, billed monthly']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$700.00',
@@ -110,7 +110,7 @@ describe('buildSummaryLedger', () => {
             sublines: ['Billed yearly']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$7,560.00',
@@ -135,7 +135,7 @@ describe('buildSummaryLedger', () => {
         headline: { amount: '$0', currency: 'USD' },
         credits: { count: '1,772,400', qualifier: 'credits per year' },
         items: [],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$0.00',
@@ -177,7 +177,7 @@ describe('buildSummaryLedger', () => {
             ]
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$32.50',
@@ -218,7 +218,7 @@ describe('buildSummaryLedger', () => {
             ]
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$32.50',
@@ -253,7 +253,7 @@ describe('buildSummaryLedger', () => {
             sublines: ['Billed yearly', 'Credits refill to 88,620 each year']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$336.00',
@@ -290,7 +290,7 @@ describe('buildSummaryLedger', () => {
             sublines: ['Billed yearly', 'Credits refill to 253,200 each year']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$960.00',
@@ -330,7 +330,7 @@ describe('buildSummaryLedger', () => {
             sublines: ['Starts July\u00A028,\u00A02026, billed monthly']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: false,
         total: '$0.00',
@@ -366,7 +366,7 @@ describe('buildSummaryLedger', () => {
             sublines: ['Starts June\u00A028,\u00A02027, billed monthly']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: false,
         total: '$0.00',
@@ -402,7 +402,7 @@ describe('buildSummaryLedger', () => {
             sublines: ['Starts July\u00A028,\u00A02026, billed monthly']
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: false,
         total: '$0.00',
@@ -443,7 +443,7 @@ describe('buildSummaryLedger', () => {
             ]
           }
         ],
-        adjustments: [],
+        discounts: [],
         chips: [],
         acceptsPromo: true,
         total: '$123.45',
@@ -590,7 +590,7 @@ function discountSlotsOf(
   promotionCode?: string,
   amountDueCents = 0
 ) {
-  const { adjustments, subtotal, promo, chips } = ledgerOf({
+  const ledger = ledgerOf({
     transition_type: 'new_subscription',
     amount_due_cents: amountDueCents,
     cost_today_cents: 756_000,
@@ -598,7 +598,7 @@ function discountSlotsOf(
     discounts,
     ...(promotionCode === undefined ? {} : { promotion_code: promotionCode })
   })
-  return { adjustments, subtotal, promo, chips }
+  return { discounts: ledger.discounts, chips: ledger.chips }
 }
 
 describe('buildSummaryLedger discounts', () => {
@@ -613,21 +613,14 @@ describe('buildSummaryLedger discounts', () => {
       name: 'a catalog coupon folds into the price: no row, no chip',
       discounts: [ANNUAL_RATE],
       amountDueCents: 756_000,
-      slots: {
-        adjustments: [],
-        subtotal: undefined,
-        promo: undefined,
-        chips: []
-      }
+      slots: { discounts: [], chips: [] }
     },
     {
       name: 'an unnamed entered code reads "Promo code"; the code sits only on its removable chip',
       discounts: [ANNUAL_RATE, entered('COMFYFREE', 756_000)],
       promotionCode: 'COMFYFREE',
       slots: {
-        adjustments: [],
-        subtotal: undefined,
-        promo: { label: 'Promo code', amount: '−$7,560.00' },
+        discounts: [{ label: 'Promo code', amount: '−$7,560.00' }],
         chips: [{ code: 'COMFYFREE', removable: true }]
       }
     },
@@ -637,9 +630,7 @@ describe('buildSummaryLedger discounts', () => {
       promotionCode: 'LAUNCH20',
       amountDueCents: 604_800,
       slots: {
-        adjustments: [],
-        subtotal: undefined,
-        promo: { label: 'Launch week', amount: '−$1,512.00' },
+        discounts: [{ label: 'Launch week', amount: '−$1,512.00' }],
         chips: [{ code: 'LAUNCH20', removable: true }]
       }
     },
@@ -649,32 +640,29 @@ describe('buildSummaryLedger discounts', () => {
       promotionCode: 'LAUNCH20',
       amountDueCents: 604_800,
       slots: {
-        adjustments: [],
-        subtotal: undefined,
-        promo: { label: 'Promo code', amount: '−$1,512.00' },
+        discounts: [{ label: 'Promo code', amount: '−$1,512.00' }],
         chips: [{ code: 'LAUNCH20', removable: true }]
       }
     },
     {
-      name: 'a held discount is a pre-applied row whose chip has no remove',
+      name: 'a held discount is a row whose chip has no remove',
       discounts: [EDUCATION],
       amountDueCents: 604_800,
       slots: {
-        adjustments: [{ label: 'Education discount', amount: '−$1,512.00' }],
-        subtotal: undefined,
-        promo: undefined,
+        discounts: [{ label: 'Education discount', amount: '−$1,512.00' }],
         chips: [{ code: 'COMFY-EDU', removable: false }]
       }
     },
     {
-      name: 'a held discount before an entered code still leaves Subtotal out: the quote reports no pre-discount base',
+      name: 'a held discount the server lists first renders first',
       discounts: [ANNUAL_RATE, EDUCATION, entered('COMFY50', 302_400)],
       promotionCode: 'COMFY50',
       amountDueCents: 302_400,
       slots: {
-        adjustments: [{ label: 'Education discount', amount: '−$1,512.00' }],
-        subtotal: undefined,
-        promo: { label: 'Promo code', amount: '−$3,024.00' },
+        discounts: [
+          { label: 'Education discount', amount: '−$1,512.00' },
+          { label: 'Promo code', amount: '−$3,024.00' }
+        ],
         chips: [
           { code: 'COMFY-EDU', removable: false },
           { code: 'COMFY50', removable: true }
@@ -682,14 +670,31 @@ describe('buildSummaryLedger discounts', () => {
       }
     },
     {
-      name: 'an entered code with no reported amount keeps its row and no Subtotal',
+      name: 'an entered code the server lists first renders first',
+      discounts: [entered('COMFY50', 302_400), ANNUAL_RATE, EDUCATION],
+      promotionCode: 'COMFY50',
+      amountDueCents: 302_400,
+      slots: {
+        discounts: [
+          { label: 'Promo code', amount: '−$3,024.00' },
+          { label: 'Education discount', amount: '−$1,512.00' }
+        ],
+        chips: [
+          { code: 'COMFY-EDU', removable: false },
+          { code: 'COMFY50', removable: true }
+        ]
+      }
+    },
+    {
+      name: 'an entered code with no reported amount keeps its row, amount left out',
       discounts: [EDUCATION, entered('COMFY50')],
       promotionCode: 'COMFY50',
       amountDueCents: 302_400,
       slots: {
-        adjustments: [{ label: 'Education discount', amount: '−$1,512.00' }],
-        subtotal: undefined,
-        promo: { label: 'Promo code' },
+        discounts: [
+          { label: 'Education discount', amount: '−$1,512.00' },
+          { label: 'Promo code' }
+        ],
         chips: [
           { code: 'COMFY-EDU', removable: false },
           { code: 'COMFY50', removable: true }
