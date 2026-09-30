@@ -1,9 +1,13 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
@@ -40,6 +44,7 @@ describe('createOpSender', () => {
   let settled: BatchOutcome[]
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
+  let transportThrows: boolean
   let boundWorkflow: string | null
   let sender: ReturnType<typeof createOpSender>
 
@@ -58,9 +63,11 @@ describe('createOpSender', () => {
     settled = []
     resultListener = null
     transportUp = true
+    transportThrows = false
     boundWorkflow = WORKFLOW
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
+        if (transportThrows) throw new Error('frame serialization failed')
         if (!transportUp) return false
         sent.push({ workflowId, tab, ops })
         return true
@@ -582,6 +589,191 @@ describe('createOpSender', () => {
       'acknowledged'
     ])
     expect(sender.pending()).toBe(0)
+  })
+
+  it('an aborted batch whose resend never left the client reserves one late-result credit, not two', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = null
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(1)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+
+    boundWorkflow = WORKFLOW
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'acknowledged'
+    ])
+  })
+
+  it('an identified result for ops the sender never minted leaves the aborted batch its late-result credit', () => {
+    sender.enqueue([addNode(1)])
+    sender.abortAll()
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: true, applied: ['ffff'.repeat(8)], skipped: [] })
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'acknowledged'
+    ])
+  })
+
+  it('a transport that throws is reported once and retried like a refused send, never a stalled queue', () => {
+    transportThrows = true
+
+    expect(() => sender.enqueue([addNode(1)])).not.toThrow()
+
+    expect(sent).toHaveLength(0)
+    expect(vi.mocked(reportError)).toHaveBeenCalledExactlyOnceWith(
+      new Error('frame serialization failed'),
+      expect.objectContaining({ errorType: 'failure_sending_agent_human_ops' })
+    )
+
+    vi.advanceTimersByTime(1_500)
+
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+
+    transportThrows = false
+    vi.advanceTimersByTime(500)
+    expect(sent).toHaveLength(1)
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+  })
+
+  it('a batch acknowledged by its own op id after a resend still reserves a credit', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(2)
+
+    ackInFlight()
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(3)
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+    expect(sender.pending()).toBe(1)
+  })
+
+  it('a batch acknowledged after a resend still reserves a credit for the send left unanswered', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(3)
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+    expect(sender.pending()).toBe(1)
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+    expect(sender.pending()).toBe(0)
+  })
+
+  it('reports a throw that only starts on a retry, after the transport first refused', () => {
+    transportUp = false
+
+    sender.enqueue([addNode(1)])
+
+    expect(vi.mocked(reportError)).not.toHaveBeenCalled()
+
+    transportThrows = true
+    vi.advanceTimersByTime(1_500)
+
+    expect(sent).toHaveLength(0)
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+
+    transportThrows = false
+    transportUp = true
+    vi.advanceTimersByTime(500)
+    expect(sent).toHaveLength(1)
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+  })
+
+  it('reports again when the silence resend throws, a second delivery', () => {
+    // The first delivery has to throw and report before it succeeds, or the
+    // resend reports from an unarmed flag and pins nothing.
+    transportThrows = true
+    sender.enqueue([addNode(1)])
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+
+    transportThrows = false
+    vi.advanceTimersByTime(500)
+    expect(sent).toHaveLength(1)
+
+    transportThrows = true
+    vi.advanceTimersByTime(10_000)
+
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not report again when resume continues the delivery suspend parked', () => {
+    transportThrows = true
+    sender.enqueue([addNode(1)])
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+
+    sender.suspend()
+    vi.advanceTimersByTime(500)
+    sender.resume()
+
+    expect(sent).toHaveLength(0)
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+  })
+
+  it('never settles a batch with a result whose ops it does not own', () => {
+    const anonymousFailure = () =>
+      resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    // A leaves two sends on the wire and settles on the first answer, so the
+    // second is still owed to it.
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    anonymousFailure()
+
+    // A's second answer arrives while B holds the slot. It is A's, not B's.
+    sender.enqueue([addNode(2)])
+    anonymousFailure()
+
+    // B likewise settles on its resend's answer, still owed one.
+    vi.advanceTimersByTime(10_000)
+    anonymousFailure()
+
+    // B's second answer must not be read as C's.
+    sender.enqueue([addNode(3)])
+    anonymousFailure()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+    expect(sender.pending()).toBe(1)
   })
 
   describe('suspension', () => {
