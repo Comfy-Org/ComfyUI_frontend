@@ -197,7 +197,7 @@ export function createSessionTokenMint({
       status: 'ok',
       credential: {
         token: parsed.data.token,
-        expiresAt,
+        expiresAt: Math.min(expiresAt, session.expiresAt),
         uid: session.user.id,
         workspace: parsed.data.workspace,
         role: parsed.data.role,

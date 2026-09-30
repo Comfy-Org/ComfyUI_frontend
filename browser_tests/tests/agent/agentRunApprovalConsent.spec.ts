@@ -181,8 +181,7 @@ async function startTurn(
     'true',
     { timeout: 8_000 }
   )
-  await new AgentPanel(page).open()
-  await expect(panel).toBeVisible({ timeout: 30_000 })
+  await new AgentPanel(page).open(30_000)
 
   await mockWorkflowPersistence(page, WORKFLOW_ID)
 

@@ -198,6 +198,7 @@ const {
   mockPlans,
   mockResubscribe,
   mockToastAdd,
+  mockToastRemove,
   mockToastRemoveGroup,
   mockListSavedPaymentMethods,
   mockShowDowngradeToPersonalDialog,
@@ -224,6 +225,7 @@ const {
     mockPlans: { value: [] as Plan[] },
     mockResubscribe: vi.fn(),
     mockToastAdd: vi.fn(),
+    mockToastRemove: vi.fn(),
     mockToastRemoveGroup: vi.fn(),
     mockListSavedPaymentMethods: vi.fn(),
     mockShowDowngradeToPersonalDialog: vi.fn(),
@@ -410,7 +412,11 @@ vi.mock(import('@/config/comfyApi'), () => ({
 vi.mock<unknown>(
   import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
-    useToast: () => ({ add: mockToastAdd, removeGroup: mockToastRemoveGroup })
+    useToast: () => ({
+      add: mockToastAdd,
+      remove: mockToastRemove,
+      removeGroup: mockToastRemoveGroup
+    })
   })
 )
 
@@ -1643,6 +1649,7 @@ describe('useSubscriptionCheckout', () => {
         'Update your payment method before changing plans'
       )
       expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
       expect(globalThis.location.href).toBe(
@@ -1668,6 +1675,7 @@ describe('useSubscriptionCheckout', () => {
       )
 
       expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
       expect(mockToastAdd).toHaveBeenCalledWith(
@@ -1822,6 +1830,7 @@ describe('useSubscriptionCheckout', () => {
 
         expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
         expect(mockReportError).toHaveBeenCalledWith(portalError, {
+          surface: 'workspace',
           errorType: 'billing_portal_open_failure'
         })
         expect(mockToastAdd).toHaveBeenCalledWith(
@@ -4952,6 +4961,31 @@ describe('useSubscriptionCheckout', () => {
       expect(
         useTelemetry()?.trackMonthlySubscriptionSucceeded
       ).not.toHaveBeenCalled()
+    })
+
+    it('clears the error toasts of earlier attempts once a retry succeeds', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockRejectedValueOnce(
+        new Error('Your bank declined this payment.')
+      )
+      await checkout.handleConfirmTransition()
+      const declineToast = mockToastAdd.mock.calls
+        .map(([message]) => message)
+        .find(
+          (message) => message.detail === 'Your bank declined this payment.'
+        )
+      expect(declineToast).toBeDefined()
+
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-3'
+      })
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.checkoutStep.value).toBe('success')
+      expect(mockToastRemove).toHaveBeenCalledWith(declineToast)
     })
 
     it('counts the conversion and announces a subscribe the server charged for', async () => {

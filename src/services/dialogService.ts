@@ -11,6 +11,7 @@ import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCr
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
@@ -655,7 +656,10 @@ export const useDialogService = () => {
         new Error(
           'showSubscriptionRequiredDialog: subscription_required gate closed'
         ),
-        { errorType: 'error_opening_subscription_dialog_gate_closed' }
+        {
+          surface: 'billing',
+          errorType: 'error_opening_subscription_dialog_gate_closed'
+        }
       )
       return
     }
@@ -840,14 +844,25 @@ export const useDialogService = () => {
 
   async function showCancelSubscriptionDialog(
     cancelAt?: string,
-    flowAlreadyOpened = false
+    flowAlreadyOpened?: boolean,
+    isScopeCurrent?: () => boolean
   ) {
     const { default: component } =
       await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
+    if (isScopeCurrent && !isScopeCurrent()) return false
+    const guardedProps = {
+      ...(flowAlreadyOpened !== undefined ? { flowAlreadyOpened } : {}),
+      ...(cancelAt !== undefined ? { cancelAt } : {}),
+      ...(isScopeCurrent ? { isScopeCurrent } : {})
+    }
+    dialogStore.updateDialog({
+      key: 'cancel-subscription',
+      contentProps: guardedProps
+    })
     return dialogStore.showDialog({
       key: 'cancel-subscription',
       component,
-      props: { cancelAt, flowAlreadyOpened },
+      props: guardedProps,
       dialogComponentProps: {
         ...workspaceDialogProps
       }
@@ -855,12 +870,21 @@ export const useDialogService = () => {
   }
 
   async function showCancelSubscriptionFlow(cancelAt?: string) {
+    const launchWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
     const cancellationFlow =
       await import('@/platform/cloud/subscription/launchCancellationFlow')
     return cancellationFlow.launchCancellationFlow({
       cancelAt,
-      showFallback: ({ flowAlreadyOpened = false } = {}) =>
-        showCancelSubscriptionDialog(cancelAt, flowAlreadyOpened)
+      launchWorkspaceId,
+      showFallback: ({
+        flowAlreadyOpened = false,
+        isScopeCurrent = () => true
+      } = {}) =>
+        showCancelSubscriptionDialog(
+          cancelAt,
+          flowAlreadyOpened,
+          isScopeCurrent
+        )
     })
   }
 

@@ -28,6 +28,7 @@ import { t } from '../../i18n/translations'
 import type { CodeLang } from '../../lib/highlight'
 import ApiFacts from './ApiFacts.vue'
 import HighlightedCode from './HighlightedCode.vue'
+import SectionHeading from './SectionHeading.vue'
 
 const {
   contract,
@@ -42,6 +43,8 @@ const {
   locale?: Locale
   modelSlug?: string
 }>()
+
+const emit = defineEmits<{ copy: [language: SnippetLanguage]; getKey: [] }>()
 
 const apiKeyHref = computed(() =>
   workspaceLinkedHref(
@@ -231,14 +234,10 @@ const facts = computed(() => [
 
 <template>
   <section class="flex flex-col gap-6" data-testid="api-tab">
-    <div class="flex flex-col gap-2">
-      <h2 class="text-2xl font-bold text-primary-comfy-canvas">
-        {{ t('workshop.api.heading', locale) }}
-      </h2>
-      <p class="text-sm text-primary-warm-gray">
-        {{ t('workshop.api.body', locale) }}
-      </p>
-    </div>
+    <SectionHeading
+      :title="t('workshop.api.heading', locale)"
+      :subtitle="t('workshop.api.body', locale)"
+    />
 
     <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
       <div
@@ -251,6 +250,7 @@ const facts = computed(() => [
           rel="noopener noreferrer"
           class="w-full justify-center"
           data-testid="api-get-key"
+          @click="emit('getKey')"
         >
           {{ t('workshop.api.getKey', locale) }}
         </Button>
@@ -302,6 +302,7 @@ const facts = computed(() => [
               :value="snippet"
               :label="t('workshop.api.copy', locale)"
               :copied-label="t('workshop.api.copied', locale)"
+              @click="emit('copy', language)"
             />
           </div>
           <p

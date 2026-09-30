@@ -1,18 +1,27 @@
 <script setup lang="ts">
-import { ImagePlus, RotateCcw } from '@lucide/vue'
+import { Clapperboard, ImagePlus, RotateCcw } from '@lucide/vue'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
-const { take, locale = 'en' } = defineProps<{
+const {
+  take,
+  canAnimate = false,
+  canReference = true,
+  locale = 'en'
+} = defineProps<{
   take: Extract<Take, { status: 'done' }>
+  canAnimate?: boolean
+  /** A still becomes a character reference only for another still. */
+  canReference?: boolean
   locale?: Locale
 }>()
 
 const emit = defineEmits<{
   again: []
   reference: [url: string, name: string]
+  animate: [url: string, name: string]
 }>()
 
 const actionClass =
@@ -26,12 +35,22 @@ const actionClass =
       {{ tc('cinematic.stage.again', locale) }}
     </button>
     <button
+      v-if="canReference && take.output.kind === 'image'"
       type="button"
       :class="actionClass"
       @click="emit('reference', take.output.url, take.output.fileName)"
     >
       <ImagePlus class="size-3.5" aria-hidden="true" />
       {{ tc('cinematic.stage.useAsReference', locale) }}
+    </button>
+    <button
+      v-if="canAnimate && take.output.kind === 'image'"
+      type="button"
+      :class="actionClass"
+      @click="emit('animate', take.output.url, take.output.fileName)"
+    >
+      <Clapperboard class="size-3.5" aria-hidden="true" />
+      {{ tc('cinematic.video.animate', locale) }}
     </button>
   </div>
 </template>

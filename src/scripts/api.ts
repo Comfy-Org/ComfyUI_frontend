@@ -573,6 +573,15 @@ export class ComfyApi extends EventTarget {
     return scope && ((url, init) => requests.send(url, init, scope))
   }
 
+  /** Sends a same-origin request on the web session; undefined when this tab is not on it. */
+  async fetchOnWebSession(
+    url: string,
+    init: RequestInit
+  ): Promise<Response | undefined> {
+    const send = await this.getWebSessionSend()
+    return send?.(url, init)
+  }
+
   /** Adds today's token header; true when a 401 may be re-minted. */
   private async addCloudAuthHeader(
     headers: HeadersInit,

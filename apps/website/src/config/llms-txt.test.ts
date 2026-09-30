@@ -10,9 +10,11 @@ import {
   normalizePath,
   parseLlmsTxtLinks
 } from '../lib/llms-txt'
-import { isNoindexPathname } from './indexing'
+import { isExcludedFromSitemap } from './indexing'
 import { getRoutes } from './routes'
 import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
+import { appPagePaths } from './workshop-app-content'
+import { workshopPagePaths } from './workshop-page-content'
 
 const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
@@ -42,9 +44,10 @@ const EXCLUDED_PAGES = new Set([
   '/case-studies', // "Coming Soon" placeholder
   '/videos', // "Coming Soon" placeholder
   '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
-  '/platform/serverless-animation', // noindex temporary motion study, not a real page
   '/workshop', // build-gated; static public/llms.txt cannot vary by build shape
-  '/video-sitemap.xml' // machine-readable sitemap output, not a page for agents to read
+  '/video-sitemap.xml', // machine-readable sitemap output, not a page for agents to read
+  '/models/catalogue.json', // data the /models catalogue island loads, not a page
+  '/hub/workflows/manifest.json' // routing data comfy-router reads, not a page
 ])
 
 const LLMS_TXT_NOINDEX_EXCEPTIONS = new Set([
@@ -54,7 +57,7 @@ const LLMS_TXT_NOINDEX_EXCEPTIONS = new Set([
 
 /**
  * A page kept out of search indexes has no business in llms.txt either, so
- * the noindex policy in ./indexing is the second source of exclusions.
+ * the sitemap policy in ./indexing is the second source of exclusions.
  * Deriving it rather than restating it means a launch that lifts noindex
  * also starts requiring the page here, instead of leaving a second list to
  * remember.
@@ -62,7 +65,8 @@ const LLMS_TXT_NOINDEX_EXCEPTIONS = new Set([
 function isExcludedPage(page: string): boolean {
   return (
     EXCLUDED_PAGES.has(page) ||
-    (isNoindexPathname(page) && !LLMS_TXT_NOINDEX_EXCEPTIONS.has(page))
+    (isExcludedFromSitemap(`https://comfy.org${page}`) &&
+      !LLMS_TXT_NOINDEX_EXCEPTIONS.has(page))
   )
 }
 
@@ -129,7 +133,12 @@ describe('llms.txt', () => {
   const links = parseLlmsTxtLinks(llmsTxt)
   const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
-  for (const route of modelsBuildRoutes(false)) staticPages.add(route.pattern)
+  for (const { pattern } of modelsBuildRoutes(false))
+    if (!pattern.includes('[')) staticPages.add(pattern)
+  const modelsPages = new Set([
+    ...workshopPagePaths.map((slug) => `/models/${slug}`),
+    ...appPagePaths().map(({ params }) => `/hub/apps/${params.app}`)
+  ])
   const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
 
   it('follows the llms.txt shape: one H1, a summary blockquote, Optional last', () => {
@@ -159,8 +168,11 @@ describe('llms.txt', () => {
 
   it('only links comfy.org paths that this site (or the workflows app) serves', () => {
     const unknown = internalPaths.filter((path) => {
-      if (BUILD_ARTIFACTS.has(path)) return false
-      if (path.includes('/workflows')) {
+      if (BUILD_ARTIFACTS.has(path) || modelsPages.has(path)) return false
+      if (
+        path.startsWith('/workflows') ||
+        /^\/[a-z]{2}(-[A-Za-z]{2})?\/workflows/.test(path)
+      ) {
         return !WORKFLOW_APP_ROUTES.some((route) => route.test(path))
       }
       if (path.startsWith('/zh-CN')) {

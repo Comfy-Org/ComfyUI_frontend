@@ -864,6 +864,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     } catch (error) {
       reportError(error, {
+        surface: 'billing',
         errorType: 'failure_handling_billing_operation_success',
         context: { billing_op_id: opId }
       })
@@ -1159,6 +1160,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       case 'authentication_failed':
       case 'authentication_required':
       case 'payment_intent_authentication_failure':
+      case 'payment_not_completed':
+      case 'payment_method_customer_decline':
+      case 'payment_intent_payment_attempt_expired':
         return t('billingOperation.authenticationFailedDetail')
       case 'processing_error':
       case 'issuer_not_available':
