@@ -128,6 +128,7 @@ describe('cloud backport tag workflow', () => {
       'cloud-dispatch-${{ github.event.pull_request.head.ref || github.ref_name }}'
     )
     expect(dispatchJob.concurrency?.['cancel-in-progress']).toBe(false)
+    expect(dispatchJob['timeout-minutes']).toBe(10)
     expect(dispatchWorkflow.concurrency).toBeUndefined()
     expect(dispatchWorkflowSource).toContain(
       '[[ "${BRANCH}" =~ ^cloud/[0-9]+\\.[0-9]+$ ]]'
