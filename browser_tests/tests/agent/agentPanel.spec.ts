@@ -474,15 +474,11 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     }) => {
       await agentPanel.open()
 
-      const panel = agentPanel.root
-      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
-      await panel
-        .getByTestId('composer-inline-input')
-        .click({ position: { x: 8, y: 58 } })
+      await agentPanel.clickBelowFirstPromptLine()
 
-      await expect(composer).toBeFocused()
+      await expect(agentPanel.composer).toBeFocused()
       await comfyPage.page.keyboard.type('hello')
-      await expect(composer).toHaveText('hello')
+      await expect(agentPanel.composer).toHaveText('hello')
     })
   })
 
