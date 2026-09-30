@@ -12,6 +12,8 @@ import type { CatalogueTab } from './CatalogueTabs.vue'
 
 type HubSection = Exclude<CatalogueTab, 'models'>
 
+export const FORWARD_GRACE_MS = 2000
+
 const SECTIONS_BY_TYPE = new Map<string, HubSection>([
   ['workflows', 'workflows'],
   ['workflow', 'workflows'],
@@ -23,27 +25,54 @@ const SECTION_FLAGS = {
   apps: useWorkshopAppsEnabled
 } satisfies Record<HubSection, () => Readonly<Ref<boolean>>>
 
-async function flagsAnswered(): Promise<void> {
-  const settled = useWorkshopEnabledSettled()
-  if (!settled.value)
-    await new Promise((resolve) => watch(settled, resolve, { once: true }))
+// BaseLayout's module script starts PostHog before DOMContentLoaded; until
+// then `settled` reads true without PostHog having been asked.
+function documentParsed(): Promise<void> {
+  if (document.readyState !== 'loading') return Promise.resolve()
+  return new Promise((resolve) =>
+    document.addEventListener('DOMContentLoaded', () => resolve(), {
+      once: true
+    })
+  )
 }
 
 /**
  * Sends an old `/hub/models/?type=workflows|apps` link to that section's page
- * once the flags answer, if the section is on for this visitor. Otherwise it
- * resolves and the models catalogue loads. Its own chunk, so /hub/models/
- * without `?type=` pays nothing for it.
+ * as soon as the section is on for this visitor, for as long as they are still
+ * on `href` and `signal` has not aborted. Resolves, so the models catalogue
+ * loads, once the flags settle with the section off, or FORWARD_GRACE_MS after
+ * a forward the browser did not follow. Its own chunk, so /hub/models/ without
+ * `?type=` pays nothing for it.
  */
-export async function forwardLegacySection(): Promise<void> {
-  const url = new URL(location.href)
-  const section = SECTIONS_BY_TYPE.get(url.searchParams.get('type') ?? '')
+export async function forwardLegacySection(
+  href: string,
+  signal: AbortSignal
+): Promise<void> {
+  const target = new URL(href)
+  const section = SECTIONS_BY_TYPE.get(target.searchParams.get('type') ?? '')
   if (!section) return
-  await flagsAnswered()
-  if (!useWorkshopEnabled().value || !SECTION_FLAGS[section]().value) return
   const { hubApps, hubWorkflows } = getRoutes('en')
-  url.pathname = { workflows: hubWorkflows, apps: hubApps }[section]
-  url.searchParams.delete('type')
-  location.replace(url.href)
-  return new Promise(() => {})
+  target.pathname = { workflows: hubWorkflows, apps: hubApps }[section]
+  target.searchParams.delete('type')
+  await documentParsed()
+  const settled = useWorkshopEnabledSettled()
+  const workshopOn = useWorkshopEnabled()
+  const sectionOn = SECTION_FLAGS[section]()
+  return new Promise((resolve) => {
+    const stop = watch([settled, workshopOn, sectionOn], check)
+    function finish() {
+      stop()
+      resolve()
+    }
+    function check() {
+      if (signal.aborted || location.href !== href) return finish()
+      if (workshopOn.value && sectionOn.value) {
+        stop()
+        location.replace(target.href)
+        setTimeout(resolve, FORWARD_GRACE_MS)
+      } else if (settled.value) resolve()
+    }
+    signal.addEventListener('abort', finish, { once: true })
+    check()
+  })
 }

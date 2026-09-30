@@ -16,6 +16,7 @@ import {
   useWorkshopWorkflowsEnabled,
   useWorkshopAuthFlag
 } from '../../scripts/posthog'
+import { FORWARD_GRACE_MS } from './forwardLegacySection'
 import ModelsPage from './ModelsPage.vue'
 
 vi.mock(import('../../scripts/posthog'))
@@ -216,9 +217,113 @@ describe('Models page entry', () => {
           )
         )
         expect(screen.getByTestId('models-loading')).toBeTruthy()
-        expect(fetchData).not.toHaveBeenCalled()
       }
     )
+
+    it('loads the models catalogue while it waits for the flags', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      settled.value = false
+      render(ModelsPage)
+      await vi.waitFor(() =>
+        expect(fetchData).toHaveBeenCalledExactlyOnceWith(
+          '/models/catalogue.json'
+        )
+      )
+      expect(screen.getByTestId('models-loading')).toBeTruthy()
+
+      settled.value = true
+      expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+      expect(replace).not.toHaveBeenCalled()
+    })
+
+    it('waits for the page to finish parsing before trusting the flags', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      const readyState = vi
+        .spyOn(document, 'readyState', 'get')
+        .mockReturnValue('loading')
+      render(ModelsPage)
+      await expect(
+        screen.findByTestId('workshop-search', undefined, { timeout: 200 })
+      ).rejects.toThrow()
+      expect(replace).not.toHaveBeenCalled()
+
+      workflowsEnabled.value = true
+      readyState.mockReturnValue('interactive')
+      document.dispatchEvent(new Event('DOMContentLoaded'))
+      await vi.waitFor(() =>
+        expect(replace).toHaveBeenCalledExactlyOnceWith(
+          new URL('/hub/workflows/', location.origin).href
+        )
+      )
+    })
+
+    it('forwards once the section turns on after the catalogue loaded, and only once', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      render(ModelsPage)
+      expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+
+      workflowsEnabled.value = true
+      await vi.waitFor(() => expect(replace).toHaveBeenCalledOnce())
+      workflowsEnabled.value = false
+      await nextTick()
+      workflowsEnabled.value = true
+      await nextTick()
+      expect(replace).toHaveBeenCalledOnce()
+    })
+
+    it('shows the models catalogue when the browser stays put after a forward', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      workflowsEnabled.value = true
+      render(ModelsPage)
+      await vi.waitFor(() => expect(replace).toHaveBeenCalledOnce())
+      expect(screen.getByTestId('models-loading')).toBeTruthy()
+
+      await vi.advanceTimersByTimeAsync(FORWARD_GRACE_MS)
+      expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+    })
+
+    it('does not forward a visitor who moved on before the flags answered', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      settled.value = false
+      render(ModelsPage)
+      await vi.waitFor(() =>
+        expect(useWorkshopEnabledSettled).toHaveBeenCalled()
+      )
+
+      window.history.replaceState({}, '', '/hub/models/?q=kling')
+      workflowsEnabled.value = true
+      settled.value = true
+      expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+      expect(replace).not.toHaveBeenCalled()
+    })
+
+    it('acts on the link the page opened with, not one that replaced it while loading', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      fetchData.mockImplementation(async () => {
+        window.history.replaceState({}, '', '/hub/models/?type=apps')
+        return Response.json(workshopModels)
+      })
+      workflowsEnabled.value = true
+      appsEnabled.value = true
+      render(ModelsPage)
+      expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+      expect(replace).not.toHaveBeenCalled()
+    })
+
+    it('stops forwarding once the page unmounts', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      settled.value = false
+      const { unmount } = render(ModelsPage)
+      await vi.waitFor(() =>
+        expect(useWorkshopEnabledSettled).toHaveBeenCalled()
+      )
+
+      unmount()
+      workflowsEnabled.value = true
+      settled.value = true
+      await vi.advanceTimersByTimeAsync(FORWARD_GRACE_MS)
+      expect(replace).not.toHaveBeenCalled()
+    })
 
     it.for([
       { link: '/hub/models/?type=workflows', workshop: true },

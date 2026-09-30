@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { useMounted } from '@vueuse/core'
 import { WORKSHOP_INCLUDED } from 'astro:env/client'
-import { computed, defineAsyncComponent, h, shallowRef, watch } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  h,
+  onScopeDispose,
+  shallowRef,
+  watch
+} from 'vue'
 import type { FunctionalComponent } from 'vue'
 
 import { isWorkflowSlug } from '../../config/models-catalogue'
@@ -71,6 +78,19 @@ watch(
   { immediate: true }
 )
 
+let legacyForward: AbortController | undefined
+onScopeDispose(() => legacyForward?.abort())
+
+async function forwardLegacyLink(): Promise<void> {
+  const href = location.href
+  if (section !== 'models' || !new URL(href).searchParams.has('type')) return
+  legacyForward?.abort()
+  legacyForward = new AbortController()
+  const { signal } = legacyForward
+  const { forwardLegacySection } = await import('./forwardLegacySection')
+  await forwardLegacySection(href, signal)
+}
+
 const Loading: FunctionalComponent = () =>
   h(WorkshopLoading, { label: loadingLabel, 'data-testid': 'models-loading' })
 
@@ -126,17 +146,14 @@ function createContent() {
         const { default: ModelPage } = await import('./ModelPage.vue')
         return () => h(ModelPage, { page: { ...page, model } })
       }
-      if (
-        section === 'models' &&
-        new URLSearchParams(location.search).has('type')
-      ) {
-        const { forwardLegacySection } = await import('./forwardLegacySection')
-        await forwardLegacySection()
-      }
-      const [{ default: ModelsCatalogue }, models] = await Promise.all([
+      const forwarding = forwardLegacyLink()
+      const catalogue = Promise.all([
         import('./ModelsCatalogue.vue'),
         fetchModelsCatalogue()
       ])
+      void catalogue.catch(() => undefined)
+      await forwarding
+      const [{ default: ModelsCatalogue }, models] = await catalogue
       return () =>
         h(
           'div',
