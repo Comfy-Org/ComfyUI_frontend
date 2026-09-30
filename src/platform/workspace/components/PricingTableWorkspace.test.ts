@@ -6,42 +6,100 @@ import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import enMessages from '@/locales/en/main.json'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import PricingTableWorkspace from '@/platform/workspace/components/PricingTableWorkspace.vue'
 
 const state = vi.hoisted(() => ({ plans: [] as Plan[] }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    plans: computed(() => state.plans),
-    currentPlanSlug: computed(() => null),
-    fetchPlans: vi.fn(),
-    subscription: computed(() => null),
-    getMaxSeats: () => 5
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 function apiPlan(
   tier: Plan['tier'],
   duration: Plan['duration'],
-  credits: number
+  creditsCents: number,
+  priceCents = 2000
 ): Plan {
   return {
     availability: { available: true },
-    credits_cents: credits,
+    credits_cents: creditsCents,
     duration,
     max_seats: 5,
-    price_cents: 2000,
+    price_cents: priceCents,
     seat_summary: {
       seat_count: 1,
-      total_cost_cents: 2000,
-      total_credits_cents: credits
+      total_cost_cents: priceCents,
+      total_credits_cents: creditsCents
     },
     slug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
     tier
   }
 }
+
+// GET /api/billing/plans on testcloud, 2026-09-25. credits_cents is the grant in
+// USD cents, not a credit count.
+const TESTCLOUD_CATALOG: Plan[] = [
+  apiPlan('STANDARD', 'MONTHLY', 1_991, 2_000),
+  apiPlan('STANDARD', 'ANNUAL', 23_887, 19_200),
+  apiPlan('CREATOR', 'MONTHLY', 3_508, 3_500),
+  apiPlan('CREATOR', 'ANNUAL', 42_086, 33_600),
+  apiPlan('PRO', 'MONTHLY', 10_000, 10_000),
+  apiPlan('PRO', 'ANNUAL', 120_000, 96_000)
+]
+
+const CATALOG_GRANTS: Record<string, number> = {
+  'standard-annual': 60_000,
+  'creator-annual': 96_000,
+  'pro-annual': 240_000,
+  'standard-monthly': 5_000,
+  'creator-monthly': 8_000,
+  'pro-monthly': 20_000
+}
+
+const TESTCLOUD_CATALOG_WITH_GRANTS: Plan[] = TESTCLOUD_CATALOG.map((plan) => ({
+  ...plan,
+  credits: CATALOG_GRANTS[plan.slug]
+}))
+
+const CATALOG_CARDS = [
+  {
+    source: 'the tier fallback',
+    plans: TESTCLOUD_CATALOG,
+    cycle: 'yearly',
+    credits: ['50,400', '88,800', '253,200'],
+    videos: ['4,560', '8,040', '22,980'],
+    billed: ['$192 Billed yearly', '$336 Billed yearly', '$960 Billed yearly'],
+    neverShown: ['23,887', '42,086', '120,000', '50,402', '88,801']
+  },
+  {
+    source: 'the tier fallback',
+    plans: TESTCLOUD_CATALOG,
+    cycle: 'monthly',
+    credits: ['4,200', '7,400', '21,100'],
+    videos: ['380', '670', '1,915'],
+    billed: ['Billed monthly', 'Billed monthly', 'Billed monthly'],
+    neverShown: ['1,991', '3,508', '10,000', '4,201', '7,402']
+  },
+  {
+    source: 'the catalog grant',
+    plans: TESTCLOUD_CATALOG_WITH_GRANTS,
+    cycle: 'yearly',
+    credits: ['60,000', '96,000', '240,000'],
+    videos: ['5,429', '8,692', '21,782'],
+    billed: ['$192 Billed yearly', '$336 Billed yearly', '$960 Billed yearly'],
+    neverShown: ['50,400', '88,800', '253,200', '23,887', '42,086', '120,000']
+  },
+  {
+    source: 'the catalog grant',
+    plans: TESTCLOUD_CATALOG_WITH_GRANTS,
+    cycle: 'monthly',
+    credits: ['5,000', '8,000', '20,000'],
+    videos: ['452', '724', '1,815'],
+    billed: ['Billed monthly', 'Billed monthly', 'Billed monthly'],
+    neverShown: ['4,200', '7,400', '21,100', '1,991', '3,508', '10,000']
+  }
+] as const
 
 const i18n = createI18n({
   legacy: false,
@@ -66,8 +124,7 @@ function renderComponent() {
       plugins: [i18n],
       components: { Button },
       stubs: {
-        SelectButton: cycleToggleStub,
-        Popover: { template: '<div><slot /></div>' }
+        SelectButton: cycleToggleStub
       }
     }
   })
@@ -79,19 +136,38 @@ beforeEach(() => {
 
 describe('PricingTableWorkspace credit allotment copy', () => {
   beforeEach(() => {
+    const billing = useBillingContext()
     state.plans = []
+    billing.plans = computed(() => state.plans)
+    vi.mocked(billing.getMaxSeats).mockReturnValue(5)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
   })
 
-  it('shows the catalog grant in preference to twelve static months', () => {
-    state.plans = [apiPlan('STANDARD', 'ANNUAL', 60_000)]
+  it.for(CATALOG_CARDS)(
+    'shows the $cycle per-member grant from $source',
+    async ({ plans, cycle, credits, videos, billed, neverShown }) => {
+      state.plans = plans
+      const user = userEvent.setup()
+      renderComponent()
 
-    renderComponent()
+      if (cycle === 'monthly') {
+        await user.click(screen.getByTestId('cycle-monthly'))
+        await nextTick()
+      }
 
-    expect(screen.getByText('60,000')).toBeTruthy()
-    expect(screen.queryByText('50,400')).toBeNull()
-    expect(screen.getByText('~5,429')).toBeTruthy()
-    expect(screen.getByText('88,800')).toBeTruthy()
-  })
+      for (const amount of credits)
+        expect(screen.getByText(amount)).toBeTruthy()
+      for (const count of videos)
+        expect(screen.getByText(`~${count}`)).toBeTruthy()
+      expect(
+        screen
+          .getAllByText(/Billed (yearly|monthly)/)
+          .map((el) => el.textContent.trim())
+      ).toEqual([...billed])
+      for (const amount of neverShown)
+        expect(screen.queryByText(amount)).toBeNull()
+    }
+  )
 
   it('states the whole-year per-member allotment on the yearly cycle', () => {
     renderComponent()

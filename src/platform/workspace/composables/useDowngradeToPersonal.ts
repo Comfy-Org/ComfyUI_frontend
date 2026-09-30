@@ -12,10 +12,8 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { BillingFailure } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import type {
-  PreviewSubscribeResponse,
-  SubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
+import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -23,7 +21,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 export interface DowngradeToPersonalResult {
   preview: PreviewSubscribeResponse
-  response: SubscribeResponse
+  response: SettledSubscribeResponse
 }
 
 export interface DowngradePreview {
@@ -285,7 +283,7 @@ export function useDowngradeToPersonal() {
         cycle: targetCycle,
         checkout_type: 'change'
       })
-      let response: SubscribeResponse | void
+      let response: SettledSubscribeResponse | void
       try {
         response = await subscribe(planSlug, {
           returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,

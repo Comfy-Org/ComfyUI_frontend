@@ -8,9 +8,8 @@ import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useA
 
 import { useAgentPanelStore } from './agentPanelStore'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 /**
  * Regression pin for the duplicate Pinia id `agentPanel`.
@@ -44,7 +43,9 @@ describe('the agentPanel store id', () => {
     expect(typeof store.width).toBe('number')
     expect(Number.isFinite(store.width)).toBe(true)
     expect(typeof store.toggleMaximize).toBe('function')
-    expect(Object.keys(pinia.state.value.agentPanel)).toContain('width')
+    expect(Object.keys(pinia.state.value.agentPanel)).toContain(
+      'targetTracking'
+    )
   })
 
   it('maximizes the panel through the store the dock mount already registered', () => {

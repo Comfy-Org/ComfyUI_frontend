@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useLitegraphService } from '@/services/litegraphService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -16,7 +17,6 @@ const {
   captureRoot,
   getRoot,
   resetRoot,
-  mockAddNodeOnGraph,
   mockSearchNode,
   mockOrganizeNodes,
   mockToggleNodeOnEvent
@@ -30,7 +30,6 @@ const {
     resetRoot: () => {
       capturedRoot = null
     },
-    mockAddNodeOnGraph: vi.fn(),
     mockSearchNode: vi.fn(() => []),
     mockOrganizeNodes: vi.fn(
       (): TreeNode => ({
@@ -43,9 +42,7 @@ const {
   }
 })
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 vi.mock<unknown>(import('@/services/nodeOrganizationService'), () => ({
   DEFAULT_GROUPING_ID: 'group',
@@ -76,21 +73,6 @@ vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), () => ({
     }
   }
 }))
-
-vi.mock<unknown>(
-  import('@/components/ui/search-input/SearchInput.vue'),
-  () => ({
-    default: {
-      name: 'SearchInput',
-      template: '<input data-testid="search-input" />',
-      props: ['modelValue', 'placeholder'],
-      setup() {
-        return { focus: vi.fn() }
-      },
-      expose: ['focus']
-    }
-  })
-)
 
 vi.mock<unknown>(import('./nodeLibrary/NodeBookmarkTreeExplorer.vue'), () => ({
   default: {
@@ -123,17 +105,6 @@ vi.mock<unknown>(import('@/components/searchbox/NodeSearchFilter.vue'), () => ({
       "<div data-testid=\"node-search-filter\" @click=\"$emit('add-filter', { filterDef: { invokeSequence: 'test' }, value: 'test-val' })\" />"
   }
 }))
-
-vi.mock<unknown>(
-  import('primevue/popover'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    default: {
-      name: 'Popover',
-      template: '<div><slot /></div>',
-      methods: { toggle: vi.fn(), hide: vi.fn() }
-    }
-  })
-)
 
 const i18n = createI18n({
   legacy: false,
@@ -181,7 +152,7 @@ describe('NodeLibrarySidebarTab', () => {
     expect(leaf?.leaf).toBe(true)
 
     await leaf?.handleClick?.(new MouseEvent('click'))
-    expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNode)
+    expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(mockNode)
   })
 
   it('adds and removes filters', async () => {
@@ -190,6 +161,7 @@ describe('NodeLibrarySidebarTab', () => {
     await nextTick()
 
     // Add filter by clicking the mocked search filter
+    await user.click(screen.getByRole('button', { name: 'g.filter' }))
     const searchFilter = screen.getByTestId('node-search-filter')
     await user.click(searchFilter)
     await nextTick()

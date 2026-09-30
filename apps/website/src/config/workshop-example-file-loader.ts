@@ -1,3 +1,4 @@
+import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
 import type { FileValue } from './workshop-playground'
 
 import {
@@ -17,7 +18,10 @@ export async function loadWorkshopExampleFile(
   if (cached) return cached
   if (!value.sourceUrl || !workshopExampleFile(value.sourceUrl))
     throw new Error('Invalid example media URL')
-  const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(30_000)])
+  const requestSignal = combineAbortSignals([
+    signal,
+    createTimeoutSignal(30_000)
+  ])
   const response = await fetch(value.sourceUrl, {
     signal: requestSignal,
     credentials: 'omit',

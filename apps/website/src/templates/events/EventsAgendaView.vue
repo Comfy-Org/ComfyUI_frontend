@@ -36,7 +36,7 @@ const months = computed(() => groupRowsByMonth(rows))
         <!-- Sticky within this scroll container, so the month you are reading
         stays named as you move through it. -->
         <h3
-          class="bg-site-dropdown text-primary-comfy-yellow sticky top-0 z-10 border-y border-white/10 px-6 py-3 text-xs font-semibold tracking-widest uppercase backdrop-blur-sm first:border-t-0"
+          class="sticky top-0 z-10 border-y border-white/10 bg-site-dropdown px-6 py-3 text-xs font-semibold tracking-widest text-primary-comfy-yellow uppercase backdrop-blur-sm first:border-t-0"
           :data-month="month.key"
         >
           {{ monthLabel(month.key, locale) }}

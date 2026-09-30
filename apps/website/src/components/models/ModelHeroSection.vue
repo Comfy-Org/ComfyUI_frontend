@@ -56,7 +56,7 @@ const isPartnerNode = directory === 'partner_nodes'
   >
     <div class="flex max-w-2xl flex-1 flex-col gap-6">
       <p
-        class="text-primary-comfy-yellow text-sm font-medium tracking-widest uppercase"
+        class="text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase"
       >
         {{ eyebrow }}
       </p>
@@ -66,12 +66,7 @@ const isPartnerNode = directory === 'partner_nodes'
       </h1>
 
       <p class="text-sm text-primary-comfy-canvas/60">
-        {{
-          t('models.hero.workflowCount').replace(
-            '{count}',
-            String(workflowCount)
-          )
-        }}
+        {{ t('models.hero.workflowCount', 'en', { count: workflowCount }) }}
       </p>
 
       <div class="flex flex-col gap-3 sm:flex-row">

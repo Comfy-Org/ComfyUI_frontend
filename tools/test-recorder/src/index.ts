@@ -220,9 +220,10 @@ Commands:
   pr          Open a pull request for a generated test
   check [--distribution cloud|cloud-staging|cloud-prod|local] [--backend <url>]
               Check environment prerequisites (defaults to cloud)
-  agent-replay [--case <id>] [--url <dev server>] [--headed] [--video] [--help]
+  agent-replay [--case <id>] [--spec <path>] [--url <dev server>] [--headed] [--video] [--help]
               Replay the recorded agent conversations as tests against a
-              running dev server (see .claude/skills/agent-integration-replay)
+              running dev server; --spec replays them through another spec
+              (see .claude/skills/agent-integration-replay)
   list [--filter <keyword>]
               List available test workflows, optionally filtered by path
   tags        List test tags with their meanings

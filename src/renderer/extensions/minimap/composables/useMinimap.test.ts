@@ -209,13 +209,7 @@ const setupMocks = () => {
 
 setupMocks()
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    apiURL: vi.fn().mockReturnValue('http://localhost:8188')
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -382,7 +376,7 @@ describe('useMinimap', () => {
       await minimap.init()
 
       expect(minimap.initialized.value).toBe(true)
-      expect(vi.mocked(useSettingStore().get)).toHaveBeenCalledWith(
+      expect(useSettingStore().get).toHaveBeenCalledWith(
         'Comfy.Minimap.Visible'
       )
       expect(api.addEventListener).toHaveBeenCalledWith(

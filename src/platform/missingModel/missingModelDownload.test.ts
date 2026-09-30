@@ -18,14 +18,18 @@ const { fetchMock, mockIsDesktop, mockStartDownload } = vi.hoisted(() => ({
   mockStartDownload: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
-  DISTRIBUTION: 'localhost',
-  isCloud: false,
-  get isDesktop() {
-    return mockIsDesktop.value
-  },
-  isNightly: false
-}))
+vi.mock(
+  import('@/platform/distribution/types'),
+  () =>
+    ({
+      DISTRIBUTION: 'localhost',
+      isCloud: false,
+      get isDesktop() {
+        return mockIsDesktop.value
+      },
+      isNightly: false
+    }) as const
+)
 
 beforeEach(() => {
   mockIsDesktop.value = false
@@ -302,6 +306,8 @@ describe('isTrustedHuggingFaceUrl', () => {
     { url: 'http://huggingface.co/org/model', expected: false },
     { url: 'https://huggingface.co:8443/org/model', expected: false },
     { url: 'https://huggingface.co.evil.com/org/model', expected: false },
+    { url: 'https://huggingface.co@evil.example/org/model', expected: false },
+    { url: 'https://user:pass@huggingface.co/org/model', expected: true },
     { url: 'javascript:alert(1)', expected: false }
   ] as const)('returns $expected for $url', ({ url, expected }) => {
     expect(isTrustedHuggingFaceUrl(url)).toBe(expected)

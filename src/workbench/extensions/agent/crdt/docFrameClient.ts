@@ -1,4 +1,5 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
+import type { DocResetData } from '@comfyorg/ingest-types'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
@@ -39,7 +40,7 @@ export interface DocSubscribed {
   message?: string
 }
 
-interface DocOpFailure {
+export interface DocOpFailure {
   index: number
   /** Absent when the relay cannot map the failing index to an op id. */
   op_id?: string
@@ -47,7 +48,7 @@ interface DocOpFailure {
   message: string
 }
 
-interface DocOpsResult {
+export interface DocOpsResult {
   workflowId: string
   ok: boolean
   seq?: number
@@ -75,6 +76,7 @@ interface DocAwareness {
 export interface DocReset {
   workflowId: string
   seq: number
+  lineageSeq: number
   actor?: string
 }
 
@@ -345,13 +347,16 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     }
   }
 
-  if (frame.type === 'doc_reset' && isSequence(data.seq)) {
-    const actor = parseAdvisoryActor(data.actor)
+  if (frame.type === 'doc_reset') {
+    const reset: Partial<Record<keyof DocResetData, unknown>> = data
+    if (!isSequence(reset.seq) || !isSequence(reset.lineage_seq)) return null
+    const actor = parseAdvisoryActor(reset.actor)
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
-        seq: data.seq,
+        seq: reset.seq,
+        lineageSeq: reset.lineage_seq,
         ...(actor !== undefined && { actor })
       }
     }

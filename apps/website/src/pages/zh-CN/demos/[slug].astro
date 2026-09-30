@@ -12,7 +12,7 @@ import {
   absoluteUrl,
   jsonLdId,
   organizationId,
-  pageContext,
+  pageContext
 } from '../../../utils/jsonLd'
 
 export const getStaticPaths: GetStaticPaths = () => {
@@ -30,7 +30,7 @@ const description = t(demo.description, 'zh-CN')
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const educationalLevel =
   demo.difficulty === 'beginner'
@@ -53,7 +53,7 @@ const learningResource: JsonLdNode = {
   datePublished: demo.publishedDate,
   dateModified: demo.modifiedDate,
   isPartOf: { '@id': jsonLdId(url, 'webpage') },
-  author: { '@id': organizationId(siteUrl) },
+  author: { '@id': organizationId(siteUrl) }
 }
 ---
 
@@ -65,13 +65,13 @@ const learningResource: JsonLdNode = {
   breadcrumbs={[
     {
       name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN'),
+      url: absoluteUrl(Astro.site, '/zh-CN')
     },
     {
       name: t('demos.breadcrumb.demos', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN/demos'),
+      url: absoluteUrl(Astro.site, '/zh-CN/demos')
     },
-    { name: title },
+    { name: title }
   ]}
   extraJsonLd={[learningResource]}
 >

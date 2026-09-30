@@ -73,10 +73,7 @@ const breadcrumbs = [
   extraJsonLd={[storyList, ...videoNodes]}
 >
   <BreadcrumbBar
-    crumbs={[
-      { label: homeLabel, href: '/' },
-      { label: collectionLabel }
-    ]}
+    crumbs={[{ label: homeLabel, href: '/' }, { label: collectionLabel }]}
     label={t('ui.breadcrumb', locale)}
   />
   <HeroSection client:load />
