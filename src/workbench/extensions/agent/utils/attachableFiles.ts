@@ -1,56 +1,83 @@
-import type { MediaType } from '@/utils/formatUtil'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-
-const AGENT_ATTACH_MEDIA_KINDS = [
-  'image',
-  'video',
-  'audio'
-] as const satisfies readonly MediaType[]
-const MEDIA_ATTACHABLE_KINDS = new Set<MediaType>(AGENT_ATTACH_MEDIA_KINDS)
-
-/* Non-media formats approved for agent attach (Jo, FE-1323); extended as the
-   backend grows support. json is deliberately left out here: the panel's
-   drop handler claims a raw File drop only when isAgentAttachable approves
-   it, and a bare-dropped workflow .json must stay unclaimed so the graph
-   loader (which only runs on an unclaimed drop) can still open it. */
-const AGENT_ATTACH_EXTENSIONS = [
-  'mp4',
-  'm4a',
-  'mov',
-  'mp3',
-  'wav',
-  'glb',
-  'md',
-  'txt'
-] as const
-const ATTACHABLE_EXTENSIONS = new Set<string>(AGENT_ATTACH_EXTENSIONS)
-
-/* The OS picker cannot express "any audio plus these extensions" through MIME
-   alone (glb and md have no reliable browser MIME), so the accept list names
-   the extensions explicitly alongside the media wildcards. */
-export const AGENT_ATTACH_ACCEPT = [
-  ...AGENT_ATTACH_MEDIA_KINDS.map((kind) => `${kind}/*`),
-  ...AGENT_ATTACH_EXTENSIONS.map((extension) => `.${extension}`),
-  '.json',
-  'application/json'
-].join(',')
+import {
+  zAgentProbeableAttachmentExtension,
+  zAgentReferenceAttachmentExtension,
+  zAgentViewableAttachmentExtension
+} from '@comfyorg/ingest-types/zod'
 
 /**
- * Judged by file NAME, not MIME type: dragged glb/md/txt files carry an empty
- * or generic MIME, and the reply pipeline classifies by extension already.
+ * What the agent can do with an attachment, straight off the server contract.
  *
- * .json is intentionally excluded even though it is in AGENT_ATTACH_ACCEPT:
- * this only gates the OS file-picker's visible filter, letting a user select
- * a .json through the picker. A raw drag-and-drop of a .json file must still
- * fall through to the graph loader, which treats it as a workflow to open.
+ * The three tiers are not interchangeable and the composer must not present
+ * them as one list: `view` means the model sees the content, `probe` means it
+ * reads metadata and never the content, and `reference` means it knows only
+ * that the file exists and how to wire it into a graph node.
  */
-export function isAgentAttachable(file: File): boolean {
-  if (MEDIA_ATTACHABLE_KINDS.has(getMediaTypeFromFilename(file.name)))
-    return true
-  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
-  return ATTACHABLE_EXTENSIONS.has(extension)
+export type AgentAttachCapability = 'view' | 'probe' | 'reference'
+
+/**
+ * Derived from the generated enums rather than hand-listed here, so the accept
+ * list cannot drift from what the server enforces (it answers 422 for anything
+ * outside them). `.options` is what makes this possible: a bare TypeScript
+ * union has no runtime form to build an accept string or a lookup from.
+ */
+const CAPABILITY_BY_EXTENSION = new Map<string, AgentAttachCapability>([
+  ...zAgentViewableAttachmentExtension.options.map(
+    (extension) => [extension, 'view'] as const
+  ),
+  ...zAgentProbeableAttachmentExtension.options.map(
+    (extension) => [extension, 'probe'] as const
+  ),
+  ...zAgentReferenceAttachmentExtension.options.map(
+    (extension) => [extension, 'reference'] as const
+  )
+])
+
+/**
+ * Extensions only, deliberately. The old value carried `image/*`, `video/*` and
+ * `audio/*` wildcards, and the OS picker honours those literally — which is how
+ * .hdr, .exr, .wmv, .flv, .aac and .wma reached a paperclip that then did no
+ * checking of its own (PM-1854).
+ */
+export const AGENT_ATTACH_ACCEPT = [...CAPABILITY_BY_EXTENSION.keys()].join(',')
+
+function extensionOf(filename: string): string {
+  const dot = filename.lastIndexOf('.')
+  return dot === -1 ? '' : filename.slice(dot).toLowerCase()
 }
 
-export function attachableClipboardFiles(clipboard: DataTransfer): File[] {
-  return Array.from(clipboard.files).filter(isAgentAttachable)
+/**
+ * Judged by file NAME, not MIME type: dragged 3D and text files carry an empty
+ * or generic MIME, and the server keys its own allowlist off the extension for
+ * the same reason — the upload route stores no content type for what it takes.
+ *
+ * Takes a name rather than a File so a staged attachment, which is only ever a
+ * name by the time it reaches the chip, can be labelled with the same answer
+ * the gate gave it.
+ */
+export function agentAttachCapability(
+  filename: string
+): AgentAttachCapability | undefined {
+  return CAPABILITY_BY_EXTENSION.get(extensionOf(filename))
+}
+
+export function isAgentAttachable(file: File): boolean {
+  return agentAttachCapability(file.name) !== undefined
+}
+
+/**
+ * Splits a batch into what can be attached and what cannot, so a caller can
+ * attach the one and report the other in a single pass. Every upload path funnels
+ * through this, which is what keeps the paperclip, a drop and a paste agreeing.
+ */
+export function partitionAttachableFiles(files: Iterable<File>): {
+  attachable: File[]
+  rejected: File[]
+} {
+  const attachable: File[] = []
+  const rejected: File[] = []
+  for (const file of files) {
+    if (isAgentAttachable(file)) attachable.push(file)
+    else rejected.push(file)
+  }
+  return { attachable, rejected }
 }

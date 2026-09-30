@@ -767,7 +767,7 @@ export const zResubscribeRequest = z.object({
 })
 
 /**
- * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
+ * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
  */
 export const zRenewalInvoice = z.object({
   amount_due: z.coerce
@@ -2684,6 +2684,23 @@ export const zAssetCreated = zAsset.and(
 )
 
 /**
+ * Attachment extensions whose content the model can see. Exactly the raster formats Go's
+ * image package decodes — view_asset always re-encodes to PNG or JPEG, so the provider's own
+ * four-type image allowlist is satisfied by construction rather than by matching this list.
+ *
+ */
+export const zAgentViewableAttachmentExtension = z.enum([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.bmp',
+  '.tif',
+  '.tiff'
+])
+
+/**
  * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, draft_patch, agent_message_done).
  */
 export const zAgentTurnAccepted = z.object({
@@ -2778,6 +2795,58 @@ export const zAgentRunMode = z.object({
 })
 
 /**
+ * Attachment extensions the agent can name and wire into a graph but cannot read.
+ *
+ * 3D covers every format Load3D opens EXCEPT .usdz, which the accepted list rejects. Text
+ * formats are accepted so a user can attach and keep them beside a workflow; the agent is told
+ * the kind and the id, and the composer must not imply the model has read them.
+ *
+ */
+export const zAgentReferenceAttachmentExtension = z.enum([
+  '.glb',
+  '.obj',
+  '.fbx',
+  '.gltf',
+  '.stl',
+  '.ply',
+  '.spz',
+  '.splat',
+  '.ksplat',
+  '.md',
+  '.markdown',
+  '.txt',
+  '.json',
+  '.csv',
+  '.yaml',
+  '.yml',
+  '.xml',
+  '.log',
+  '.svg',
+  '.avif'
+])
+
+/**
+ * Attachment extensions the agent can only describe from metadata. Matches the containers
+ * ingest sorts into a load node's video/audio lists, so anything accepted here is also
+ * wirable into a graph.
+ *
+ */
+export const zAgentProbeableAttachmentExtension = z.enum([
+  '.mp4',
+  '.webm',
+  '.mov',
+  '.m4v',
+  '.avi',
+  '.mkv',
+  '.mp3',
+  '.wav',
+  '.ogg',
+  '.opus',
+  '.flac',
+  '.m4a'
+])
+
+/**
  * A user turn posted to the agent.
  */
 export const zAgentPostMessageRequest = z.object({
@@ -2860,6 +2929,43 @@ export const zAgentDraftSnapshot = z.object({
  */
 export const zAgentCancelAccepted = z.object({
   status: z.enum(['cancelling'])
+})
+
+/**
+ * Every extension the agent accepts as an attachment, grouped by what it can actually DO with
+ * one. The grouping is the point: the tiers differ sharply, and a client that renders them as
+ * one flat "supported files" list tells the user something false (PM-1855).
+ *
+ * - `view`: the model sees the content. view_asset decodes the still and re-encodes it as
+ * PNG/JPEG into the turn, so the model reasons about actual pixels.
+ * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
+ * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
+ * video means cutting a frame out with process_media and viewing that.
+ * - `reference`: the agent knows the file exists, its kind and its id, and can wire it into a
+ * graph node by filename — but cannot read it at all. The cloud turn registers neither a
+ * shell nor a file-read tool, by design: it is a shared multi-tenant pod.
+ *
+ * The union of the three arrays is the accepted list. Anything absent is rejected.
+ *
+ */
+export const zAgentAttachmentPolicy = z.object({
+  probe: z.array(zAgentProbeableAttachmentExtension),
+  reference: z.array(zAgentReferenceAttachmentExtension),
+  view: z.array(zAgentViewableAttachmentExtension)
+})
+
+/**
+ * 422 body when a posted attachment's extension is outside the accepted list. It carries the
+ * policy rather than only an error string so a client never has to hardcode the list to
+ * explain the refusal — the same reason the list is expressed as enums the frontend generates
+ * its types from.
+ *
+ */
+export const zAgentAttachmentRejected = z.object({
+  accepted: zAgentAttachmentPolicy,
+  error: z.string(),
+  rejected: z.array(z.string()),
+  type: z.enum(['ATTACHMENT_TYPE_NOT_ACCEPTED'])
 })
 
 /**

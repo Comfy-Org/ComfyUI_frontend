@@ -3146,9 +3146,11 @@ describe('AgentPanelRoot attach flow', () => {
     }
   })
 
-  it('attaches dropped assets and leaves other files to the graph loader', async () => {
-    // The graph loader only opens a dropped workflow while the drop is
-    // unclaimed, so the panel must not claim files it cannot attach.
+  it('attaches a dropped workflow json to the chat instead of the graph loader', async () => {
+    // Dropping ONTO THE COMPOSER means "attach this", so the panel claims a
+    // .json rather than leaving it for the loader (PM-1855). The canvas keeps
+    // the open-as-workflow behaviour through its own handler, which a drop on
+    // this target never reaches.
     stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -3157,29 +3159,24 @@ describe('AgentPanelRoot attach flow', () => {
     const workflow = new File(['{}'], 'flow.json', {
       type: 'application/json'
     })
-    expect(dispatchDrag(target, 'drop', { files: [workflow] })).toBe(false)
-    expect(screen.queryByText('flow.json')).not.toBeInTheDocument()
-
-    const asset = new File(['x'], 'cat.png', { type: 'image/png' })
-    expect(dispatchDrag(target, 'drop', { files: [asset] })).toBe(true)
+    expect(dispatchDrag(target, 'drop', { files: [workflow] })).toBe(true)
     expect(
       within(await screen.findByTestId('composer-asset-section')).getByText(
-        'cat.png'
+        'flow.json'
       )
     ).toBeInTheDocument()
   })
 
-  it('attaches only the assets out of a mixed drop', async () => {
+  it('attaches the accepted files out of a mixed drop and reports the rest', async () => {
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
 
-    // The non-attachable file comes first: addFiles uploads sequentially, so a
-    // regression that forwards the whole drop would upload flow.json before
-    // cat.png and the settled assertion below could never latch a lucky
-    // intermediate state.
+    // The rejected file comes first so a regression that forwards the whole
+    // drop would upload doc.pdf before cat.png, rather than the assertion
+    // latching a lucky intermediate state.
     const files = [
-      new File(['{}'], 'flow.json', { type: 'application/json' }),
+      new File(['x'], 'doc.pdf', { type: 'application/pdf' }),
       new File(['x'], 'cat.png', { type: 'image/png' })
     ]
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files })
@@ -3190,6 +3187,13 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['cat.png']))
+    expect(screen.queryByText('doc.pdf')).not.toBeInTheDocument()
+    // PM-1856: the refusal is surfaced, not swallowed.
+    expect(
+      useToastStore().messagesToAdd.some(({ detail }) =>
+        String(detail).includes('doc.pdf')
+      )
+    ).toBe(true)
   })
 
   // Falsifiers for the committed-drop gates: an implementation that emits

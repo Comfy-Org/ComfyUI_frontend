@@ -2,6 +2,7 @@ import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { hasImageType } from '@/utils/eventUtils'
 import { formatSize } from '@/utils/formatUtil'
+import { partitionAttachableFiles } from '../../utils/attachableFiles'
 import type { ComposerAttachment } from './useComposer'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
@@ -184,8 +185,18 @@ export function useAttachment(options: UseAttachmentOptions) {
     }
   }
 
+  // The one gate every upload path passes through. The paperclip, a panel drop
+  // and a paste all land here, so putting the type check anywhere else is what
+  // let them disagree in the first place (PM-1854): `accept` on the file input
+  // is only a picker hint, and "All Files" defeats it.
   async function addFiles(files: Iterable<File>): Promise<boolean> {
-    const staged = [...files]
+    const { attachable, rejected } = partitionAttachableFiles(files)
+    for (const file of rejected) {
+      options.onError?.(
+        i18n.global.t('agent.attachmentTypeNotAccepted', { name: file.name })
+      )
+    }
+    const staged = attachable
       .filter((file) => !isTooLarge(file))
       .map((file) => ({ file, id: stage(file.name) }))
     let uploaded = 0

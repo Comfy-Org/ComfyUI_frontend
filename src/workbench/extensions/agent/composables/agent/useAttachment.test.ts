@@ -50,6 +50,48 @@ describe('useAttachment', () => {
     expect(upload).toHaveBeenCalledTimes(2)
   })
 
+  it('refuses an unaccepted file type before staging or uploading, and says so', async () => {
+    // The paperclip reaches this with whatever the OS picker handed back, which
+    // is anything at all under "All Files" — the accept attribute is a hint the
+    // picker can be told to ignore (PM-1854). Silence here was PM-1856.
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    const attached = await addFiles([
+      new File(['x'], 'doc.pdf', { type: 'application/pdf' }),
+      new File(['x'], 'clip.wmv', { type: 'video/x-ms-wmv' })
+    ])
+
+    expect(attached).toBe(false)
+    expect(upload).not.toHaveBeenCalled()
+    expect(registry.chips).toEqual([])
+    expect(onError).toHaveBeenCalledTimes(2)
+    expect(onError.mock.calls.flat().join(' ')).toContain('doc.pdf')
+    expect(onError.mock.calls.flat().join(' ')).toContain('clip.wmv')
+  })
+
+  it('uploads the accepted files out of a mixed batch and reports only the rest', async () => {
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    const attached = await addFiles([
+      new File(['x'], 'notes.md', { type: '' }),
+      new File(['x'], 'doc.pdf', { type: 'application/pdf' }),
+      new File(['x'], 'mesh.glb', { type: '' })
+    ])
+
+    expect(attached).toBe(true)
+    expect(registry.chips.map(({ name }) => name)).toEqual([
+      'notes.md',
+      'mesh.glb'
+    ])
+    expect(onError).toHaveBeenCalledTimes(1)
+  })
+
   it('rejects files over 20MB before staging or uploading', async () => {
     const upload = vi.fn()
     const onError = vi.fn()
@@ -363,9 +405,15 @@ describe('useAttachment', () => {
     const registry = chipRegistry()
     const { addFiles, addDeferredFile } = useAttachment({ upload, ...registry })
 
-    const first = addFiles(['a', 'b', 'c'].map((name) => fileOfSize(name, 1)))
-    const second = addFiles(['d', 'e', 'f'].map((name) => fileOfSize(name, 1)))
-    const deferred = addDeferredFile('g', async () => fileOfSize('g', 1))
+    const first = addFiles(
+      ['a.png', 'b.png', 'c.png'].map((name) => fileOfSize(name, 1))
+    )
+    const second = addFiles(
+      ['d.png', 'e.png', 'f.png'].map((name) => fileOfSize(name, 1))
+    )
+    const deferred = addDeferredFile('g.png', async () =>
+      fileOfSize('g.png', 1)
+    )
     await Promise.resolve()
     const startedBeforeRelease = upload.mock.calls.length
     release()
@@ -374,13 +422,13 @@ describe('useAttachment', () => {
     expect(startedBeforeRelease).toBe(3)
     expect(peak).toBe(3)
     expect(registry.chips.map(({ ref }) => ref)).toEqual([
-      'a',
-      'b',
-      'c',
-      'd',
-      'e',
-      'f',
-      'g'
+      'a.png',
+      'b.png',
+      'c.png',
+      'd.png',
+      'e.png',
+      'f.png',
+      'g.png'
     ])
   })
 

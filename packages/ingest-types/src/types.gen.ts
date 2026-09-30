@@ -1204,7 +1204,7 @@ export type ResubscribeRequest = {
 }
 
 /**
- * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
+ * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
  */
 export type RenewalInvoice = {
   /**
@@ -4476,6 +4476,22 @@ export type AssetCreated = Asset & {
 }
 
 /**
+ * Attachment extensions whose content the model can see. Exactly the raster formats Go's
+ * image package decodes — view_asset always re-encodes to PNG or JPEG, so the provider's own
+ * four-type image allowlist is satisfied by construction rather than by matching this list.
+ *
+ */
+export type AgentViewableAttachmentExtension =
+  | '.png'
+  | '.jpg'
+  | '.jpeg'
+  | '.gif'
+  | '.webp'
+  | '.bmp'
+  | '.tif'
+  | '.tiff'
+
+/**
  * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, draft_patch, agent_message_done).
  */
 export type AgentTurnAccepted = {
@@ -4642,11 +4658,74 @@ export type AgentRunMode = {
 }
 
 /**
+ * Attachment extensions the agent can name and wire into a graph but cannot read.
+ *
+ * 3D covers every format Load3D opens EXCEPT .usdz, which the accepted list rejects. Text
+ * formats are accepted so a user can attach and keep them beside a workflow; the agent is told
+ * the kind and the id, and the composer must not imply the model has read them.
+ *
+ */
+export type AgentReferenceAttachmentExtension =
+  | '.glb'
+  | '.obj'
+  | '.fbx'
+  | '.gltf'
+  | '.stl'
+  | '.ply'
+  | '.spz'
+  | '.splat'
+  | '.ksplat'
+  | '.md'
+  | '.markdown'
+  | '.txt'
+  | '.json'
+  | '.csv'
+  | '.yaml'
+  | '.yml'
+  | '.xml'
+  | '.log'
+  | '.svg'
+  | '.avif'
+
+/**
+ * Attachment extensions the agent can only describe from metadata. Matches the containers
+ * ingest sorts into a load node's video/audio lists, so anything accepted here is also
+ * wirable into a graph.
+ *
+ */
+export type AgentProbeableAttachmentExtension =
+  | '.mp4'
+  | '.webm'
+  | '.mov'
+  | '.m4v'
+  | '.avi'
+  | '.mkv'
+  | '.mp3'
+  | '.wav'
+  | '.ogg'
+  | '.opus'
+  | '.flac'
+  | '.m4a'
+
+/**
  * A user turn posted to the agent.
  */
 export type AgentPostMessageRequest = {
   /**
-   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). Images, video and audio are all accepted. The agent wires them into the workflow by filename — it never receives file bytes here, and reads an attachment's contents through its own asset tools when a request depends on them.
+   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via
+   * /api/upload/image, which returns the {name, subfolder, type} reference). The agent wires
+   * them into the workflow by filename — it never receives file bytes here, and reads an
+   * attachment's contents through its own asset tools when a request depends on them.
+   *
+   * Each entry's extension must appear in AgentAttachmentPolicy; a reference outside it is
+   * rejected with 422 (AgentAttachmentRejected). Which tier of that policy an extension lands
+   * in says what the agent can do with it, and the tiers differ sharply — a client that
+   * presents them as one flat list misleads the user.
+   *
+   * The constraint is expressed as three enums rather than on this array because the array
+   * carries FILENAMES, not content types: an extension is what both ends can actually agree
+   * on, and the upload route this list references stores no MIME type for what it accepts.
+   *
    */
   attachments?: Array<string>
   /**
@@ -4795,6 +4874,46 @@ export type AgentDraftSnapshot = {
  */
 export type AgentCancelAccepted = {
   status: 'cancelling'
+}
+
+/**
+ * 422 body when a posted attachment's extension is outside the accepted list. It carries the
+ * policy rather than only an error string so a client never has to hardcode the list to
+ * explain the refusal — the same reason the list is expressed as enums the frontend generates
+ * its types from.
+ *
+ */
+export type AgentAttachmentRejected = {
+  accepted: AgentAttachmentPolicy
+  error: string
+  /**
+   * The offending references, in the order they were posted.
+   */
+  rejected: Array<string>
+  type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+}
+
+/**
+ * Every extension the agent accepts as an attachment, grouped by what it can actually DO with
+ * one. The grouping is the point: the tiers differ sharply, and a client that renders them as
+ * one flat "supported files" list tells the user something false (PM-1855).
+ *
+ * - `view`: the model sees the content. view_asset decodes the still and re-encodes it as
+ * PNG/JPEG into the turn, so the model reasons about actual pixels.
+ * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
+ * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
+ * video means cutting a frame out with process_media and viewing that.
+ * - `reference`: the agent knows the file exists, its kind and its id, and can wire it into a
+ * graph node by filename — but cannot read it at all. The cloud turn registers neither a
+ * shell nor a file-read tool, by design: it is a shared multi-tenant pod.
+ *
+ * The union of the three arrays is the accepted list. Anything absent is rejected.
+ *
+ */
+export type AgentAttachmentPolicy = {
+  probe: Array<AgentProbeableAttachmentExtension>
+  reference: Array<AgentReferenceAttachmentExtension>
+  view: Array<AgentViewableAttachmentExtension>
 }
 
 /**
@@ -5869,6 +5988,10 @@ export type AgentPostMessageErrors = {
    * Forbidden (workflow or thread not owned by the caller). An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
    */
   403: ErrorResponse | AgentError
+  /**
+   * One or more attachments name a file type the agent does not accept. The body names the offending references and carries the full accepted policy, so the client can explain the refusal without hardcoding the list.
+   */
+  422: AgentAttachmentRejected
   /**
    * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
    */

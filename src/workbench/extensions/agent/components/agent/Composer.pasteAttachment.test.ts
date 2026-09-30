@@ -33,7 +33,10 @@ describe('pasting files into the composer', () => {
     expect(view.emitted().attachFiles).toEqual([[[screenshot]]])
   })
 
-  it('attaches every attachable file in one paste', async () => {
+  it('forwards every pasted file, leaving the accept decision to the composer', async () => {
+    // The editor deliberately does not filter: the composer's addFiles is the
+    // single gate, and it is what reports a type it will not take. Filtering
+    // here made a rejected paste look like pasting nothing (PM-1856).
     const user = userEvent.setup()
     const view = mount()
 
@@ -47,7 +50,11 @@ describe('pasting files into the composer', () => {
     )
 
     const [[attached]] = view.emitted<[File[]]>().attachFiles
-    expect(attached.map((file) => file.name)).toEqual(['first.png', 'notes.md'])
+    expect(attached.map((file) => file.name)).toEqual([
+      'first.png',
+      'notes.md',
+      'archive.zip'
+    ])
   })
 
   it('attaches the file and still pastes the text a mixed clipboard carries', async () => {
@@ -94,7 +101,9 @@ describe('pasting files into the composer', () => {
       clipboardOf(new File(['x'], 'archive.zip', { type: 'application/zip' }))
     )
 
-    expect(view.emitted().attachFiles).toBeUndefined()
+    // Forwarded so the composer can refuse it out loud; the draft the paste
+    // would have replaced is still untouched.
+    expect(view.emitted().attachFiles).toHaveLength(1)
     expect(editor).toHaveTextContent('keep me')
   })
 
@@ -113,7 +122,7 @@ describe('pasting files into the composer', () => {
     }
   )
 
-  it('leaves the paste to the editor when no clipboard file is attachable', async () => {
+  it('still pastes the text a mixed clipboard carries when its file is unattachable', async () => {
     const user = userEvent.setup()
     const view = mount()
     const clipboard = clipboardOf(
@@ -124,7 +133,7 @@ describe('pasting files into the composer', () => {
     await user.click(screen.getByRole('textbox'))
     await user.paste(clipboard)
 
-    expect(view.emitted().attachFiles).toBeUndefined()
+    expect(view.emitted().attachFiles).toHaveLength(1)
     expect(screen.getByRole('textbox')).toHaveTextContent('fallback text')
   })
 })

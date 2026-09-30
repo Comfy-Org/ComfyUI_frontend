@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import Tag from '@/components/chip/Tag.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { agentAttachCapability } from '../../../utils/attachableFiles'
 
 const {
   name,
@@ -17,6 +19,8 @@ const {
 }>()
 const emit = defineEmits<{ remove: [] }>()
 
+const { t } = useI18n()
+
 const kind = computed(() => getMediaTypeFromFilename(name))
 
 /* The shared map's 'other' glyph is a checkmark, which reads as a status
@@ -24,6 +28,23 @@ const kind = computed(() => getMediaTypeFromFilename(name))
 const kindIconClass = computed(() =>
   kind.value === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind.value)
 )
+
+/* What the agent can do with this file differs sharply by type and is otherwise
+   invisible: it reads an image's pixels, a clip's duration only, and nothing at
+   all inside a mesh or a text file. Without this the chip looks identical either
+   way and the user assumes it was read. */
+const capabilityLabel = computed(() => {
+  switch (agentAttachCapability(name)) {
+    case 'view':
+      return t('agent.attachmentCapabilityView')
+    case 'probe':
+      return t('agent.attachmentCapabilityProbe')
+    case 'reference':
+      return t('agent.attachmentCapabilityReference')
+    default:
+      return undefined
+  }
+})
 </script>
 
 <template>
@@ -34,6 +55,8 @@ const kindIconClass = computed(() =>
     data-testid="agent-attachment-chip"
     :data-attachment-name="name"
     :label="name"
+    :title="capabilityLabel"
+    :aria-description="capabilityLabel"
     removable
     :remove-label="$t('agent.remove')"
     class="max-w-48"

@@ -59,4 +59,24 @@ describe('AttachmentChip', () => {
     ).toBeInTheDocument()
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
+
+  // What the agent can do with a file is otherwise invisible: an image it reads,
+  // a clip it only measures, and a mesh or a text file it cannot open at all.
+  // Without this the chips look identical and the user assumes it was read.
+  describe('capability affordance', () => {
+    it.for([
+      ['cat.png', 'can see this image'],
+      ['clip.mp4', 'format and length, but not what it contains'],
+      ['mesh.glb', "use this file in the graph, but can't read"],
+      ['notes.md', "use this file in the graph, but can't read"]
+    ])('tells the user what the agent can do with %s', ([name, phrase]) => {
+      renderChip({ name })
+      const chip = screen.getByTestId('agent-attachment-chip')
+      expect(chip).toHaveAttribute('title', expect.stringContaining(phrase))
+      expect(chip).toHaveAttribute(
+        'aria-description',
+        expect.stringContaining(phrase)
+      )
+    })
+  })
 })

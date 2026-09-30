@@ -1682,11 +1682,13 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     })
     return
   }
-  // Anything the composer cannot attach still belongs to the graph loader, which
-  // only runs while the drop is unclaimed, so claim the attachable files alone.
-  const files = Array.from(event.dataTransfer?.files ?? []).filter(
-    isAgentAttachable
-  )
+  // A drop ON THE PANEL is claimed whole, including a .json the graph loader
+  // would otherwise open as a workflow: dropping onto the composer says "attach
+  // this to the chat", and the canvas keeps the workflow behaviour because it
+  // has its own handler (useCanvasDrop) this never reaches (PM-1855). Claiming
+  // everything is also what lets an unsupported file be REPORTED instead of
+  // silently falling through to a loader that ignores it (PM-1856).
+  const files = Array.from(event.dataTransfer?.files ?? [])
   if (files.length === 0) return
   event.preventDefault()
   if (await attachment.addFiles(files))

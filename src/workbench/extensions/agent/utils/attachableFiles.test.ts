@@ -2,20 +2,15 @@ import { describe, expect, it } from 'vitest'
 
 import {
   AGENT_ATTACH_ACCEPT,
-  attachableClipboardFiles,
-  isAgentAttachable
+  agentAttachCapability,
+  isAgentAttachable,
+  partitionAttachableFiles
 } from './attachableFiles'
 
 /* Dragged files often carry no MIME (glb, md) or a generic one, so the
    predicate must hold with an empty type. */
 function fileNamed(name: string): File {
   return new File(['x'], name, { type: '' })
-}
-
-function clipboardOf(...files: File[]): DataTransfer {
-  const clipboard = new DataTransfer()
-  for (const file of files) clipboard.items.add(file)
-  return clipboard
 }
 
 describe('isAgentAttachable', () => {
@@ -25,74 +20,124 @@ describe('isAgentAttachable', () => {
     'movie.mov',
     'song.mp3',
     'sound.wav',
-    'mesh.glb',
-    'notes.md',
-    'prompt.txt'
+    'picture.webp',
+    'music.flac'
   ])('accepts %s regardless of MIME type', (name) => {
     expect(isAgentAttachable(fileNamed(name))).toBe(true)
   })
 
-  it('accepts every image and audio kind, not only the named extensions', () => {
-    expect(isAgentAttachable(fileNamed('picture.webp'))).toBe(true)
-    expect(isAgentAttachable(fileNamed('music.flac'))).toBe(true)
+  /* The formats PM-1855 adds. Text and 3D were the families that could not be
+     attached at all, which is the gap the agreed list closes. */
+  it.for([
+    'notes.md',
+    'readme.markdown',
+    'prompt.txt',
+    'workflow.json',
+    'table.csv',
+    'config.yaml',
+    'config.yml',
+    'feed.xml',
+    'server.log',
+    'mesh.glb',
+    'mesh.obj',
+    'mesh.fbx',
+    'mesh.gltf',
+    'mesh.stl',
+    'cloud.ply',
+    'cloud.spz',
+    'cloud.splat',
+    'cloud.ksplat'
+  ])('accepts %s', (name) => {
+    expect(isAgentAttachable(fileNamed(name))).toBe(true)
   })
 
-  it('rejects unsupported formats', () => {
-    expect(isAgentAttachable(fileNamed('archive.zip'))).toBe(false)
-    expect(isAgentAttachable(fileNamed('binary.exe'))).toBe(false)
+  /* The formats PM-1855 rejects. Several of these used to slip through the
+     paperclip because the accept attribute carried image/*, video/* and
+     audio/* wildcards while the picker path ran no check of its own. */
+  it.for([
+    'page.html',
+    'bundle.js',
+    'style.css',
+    'doc.pdf',
+    'clip.wmv',
+    'clip.flv',
+    'scene.usdz',
+    'env.hdr',
+    'track.aac',
+    'track.aiff',
+    'track.wma',
+    'plate.exr'
+  ])('rejects %s', (name) => {
+    expect(isAgentAttachable(fileNamed(name))).toBe(false)
+  })
+
+  it('rejects a file with no extension to judge', () => {
     expect(isAgentAttachable(fileNamed('noextension'))).toBe(false)
   })
 
-  it('names every approved extension in the picker accept list', () => {
-    const accepted = AGENT_ATTACH_ACCEPT.split(',')
-
-    expect(new Set(accepted)).toEqual(
-      new Set([
-        'image/*',
-        'video/*',
-        'audio/*',
-        '.mp4',
-        '.m4a',
-        '.mov',
-        '.mp3',
-        '.wav',
-        '.glb',
-        '.md',
-        '.txt',
-        '.json',
-        'application/json'
-      ])
-    )
-    expect(accepted).toHaveLength(13)
-  })
-
-  it('rejects .json despite it being in the picker accept list, so a dropped workflow file still falls through to the graph loader', () => {
-    expect(isAgentAttachable(fileNamed('workflow.json'))).toBe(false)
+  it('judges the extension case-insensitively', () => {
+    expect(isAgentAttachable(fileNamed('SHOUTY.PNG'))).toBe(true)
+    expect(isAgentAttachable(fileNamed('NOTES.MD'))).toBe(true)
   })
 })
 
-describe('attachableClipboardFiles', () => {
-  /* Chromium hands a pasted screenshot over as image.png; the name, not the
-     MIME type, is what the attachable check reads. */
-  it('takes the screenshot a clipboard carries', () => {
-    const screenshot = new File(['x'], 'image.png', { type: 'image/png' })
-    expect(attachableClipboardFiles(clipboardOf(screenshot))).toEqual([
-      screenshot
-    ])
+describe('agentAttachCapability', () => {
+  /* The tier decides what the composer may promise the user: only `view` means
+     the model reads the content. A file the agent can merely name must never be
+     presented the same way. */
+  it.for([
+    ['photo.png', 'view'],
+    ['photo.jpeg', 'view'],
+    ['clip.mp4', 'probe'],
+    ['song.mp3', 'probe'],
+    ['mesh.glb', 'reference'],
+    ['notes.md', 'reference'],
+    ['workflow.json', 'reference']
+  ] as const)('reports %s as %s', ([name, capability]) => {
+    expect(agentAttachCapability(name)).toBe(capability)
   })
 
-  it('drops clipboard files the composer cannot attach', () => {
-    expect(
-      attachableClipboardFiles(
-        clipboardOf(
-          new File(['x'], 'archive.zip', { type: 'application/zip' }),
-          new File(['x'], 'workflow.json', { type: 'application/json' })
-        )
-      )
-    ).toEqual([])
+  it('reports nothing for a type outside the accepted list', () => {
+    expect(agentAttachCapability('doc.pdf')).toBeUndefined()
+  })
+})
+
+describe('AGENT_ATTACH_ACCEPT', () => {
+  /* The wildcards are what let the OS picker offer .hdr, .exr, .wmv and .wma in
+     the first place (PM-1854); the accept list must name extensions only. */
+  it('carries no MIME wildcard', () => {
+    expect(AGENT_ATTACH_ACCEPT).not.toContain('/*')
   })
 
-  it('is empty for a text-only clipboard, leaving the paste to the editor', () => {
-    expect(attachableClipboardFiles(clipboardOf())).toEqual([])
+  it('offers exactly what the composer will accept', () => {
+    const offered = AGENT_ATTACH_ACCEPT.split(',')
+    expect(offered).toContain('.json')
+    expect(offered).toContain('.md')
+    expect(offered).toContain('.glb')
+    expect(offered).not.toContain('.usdz')
+    for (const extension of offered) {
+      expect(isAgentAttachable(fileNamed(`sample${extension}`))).toBe(true)
+    }
+  })
+})
+
+describe('partitionAttachableFiles', () => {
+  it('splits a mixed batch, preserving order within each side', () => {
+    const png = fileNamed('a.png')
+    const pdf = fileNamed('b.pdf')
+    const md = fileNamed('c.md')
+    const zip = fileNamed('d.zip')
+
+    expect(partitionAttachableFiles([png, pdf, md, zip])).toEqual({
+      attachable: [png, md],
+      rejected: [pdf, zip]
+    })
+  })
+
+  it('is empty on both sides for an empty batch', () => {
+    expect(partitionAttachableFiles([])).toEqual({
+      attachable: [],
+      rejected: []
+    })
   })
 })

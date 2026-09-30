@@ -22,7 +22,6 @@ import {
   composerReferenceKey,
   composerReferenceName
 } from '../../../types/composerPrompt'
-import { attachableClipboardFiles } from '../../../utils/attachableFiles'
 import { sameComposerReferenceOrder } from '../../../utils/composerPrompt'
 import {
   assetReferenceText,
@@ -314,9 +313,13 @@ onMounted(() => {
     handlePaste(editor, event, slice) {
       const clipboard = event.clipboardData
       if (!clipboard) return false
-      const files = attachableClipboardFiles(clipboard)
+      // Every pasted file is forwarded, not only the attachable ones: the
+      // composer's addFiles is the single gate that decides, and it is what
+      // reports a type it will not take. Filtering here made a rejected paste
+      // indistinguishable from pasting nothing (PM-1856).
+      const files = Array.from(clipboard.files)
       const text = clipboard.getData('text/plain')
-      const attachmentsOnly = clipboard.files.length > 0 && text === ''
+      const attachmentsOnly = files.length > 0 && text === ''
       // Attaching rewrites the prompt through the store, so the document edit
       // has to land first or the editor overwrites the staged attachment.
       if (!attachmentsOnly) insertPastedContent(editor, clipboard, slice, text)
