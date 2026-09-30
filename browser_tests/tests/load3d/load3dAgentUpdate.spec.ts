@@ -67,20 +67,7 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
     await expect(agentPanel.root).toBeHidden()
 
     const viewer = new Load3DViewerHelper(page)
-    await page.evaluate(() => {
-      const app = window.app!
-      const node = app.graph.nodes.find(
-        (candidate) => String(candidate.id) === '1'
-      )
-      if (!node) throw new Error('Expected Load3D node 1')
-      app.canvas.selectNode(node)
-    })
-    await page
-      .getByRole('button', {
-        name: 'Open 3D Viewer (Beta) for Selected Node',
-        exact: true
-      })
-      .click()
+    await load3dAgent.viewer.openViewerButton.click()
     await viewer.waitForOpen()
     await agentPanel.open()
     await page.setViewportSize({ width: 500, height: 800 })
