@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test'
+import { mergeTests } from '@playwright/test'
 
 import type { AlgoliaNodePack } from '@/types/algoliaTypes'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
@@ -8,8 +8,14 @@ import type {
 } from '@comfyorg/registry-types'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  comfyExpect as expect,
+  comfyPageFixture
+} from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+
+const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']
