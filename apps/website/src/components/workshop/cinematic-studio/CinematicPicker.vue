@@ -32,17 +32,25 @@ const emit = defineEmits<{
 }>()
 
 const palette = defineModel<StudioImage | undefined>('palette')
+const colors = defineModel<readonly string[]>('colors', { required: true })
+const mainColor = defineModel<number | undefined>('mainColor')
 
 const multiple = groups.length > 1
 const activePart = ref(groups[0].part)
 
 function choose(part: DirectionPart, id: string) {
-  if (part === 'grade') palette.value = undefined
+  if (part === 'grade' && palette.value) {
+    palette.value = undefined
+    colors.value = []
+    mainColor.value = undefined
+  }
   emit('choose', part, id)
   if (!multiple) emit('close')
 }
 
-function matchImage() {
+function matchImage(sampled: readonly string[]) {
+  colors.value = sampled
+  mainColor.value = undefined
   emit('choose', 'grade', 'auto')
   emit('close')
 }

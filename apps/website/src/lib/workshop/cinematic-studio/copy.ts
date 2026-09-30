@@ -594,14 +594,6 @@ const copy = {
     en: 'Your image',
     'zh-CN': '你的图片'
   },
-  'cinematic.reference.palette': {
-    en: 'Palette',
-    'zh-CN': '色板'
-  },
-  'cinematic.reference.paletteAction': {
-    en: 'Add a palette reference',
-    'zh-CN': '添加色板参考'
-  },
   'cinematic.reference.remove': {
     en: 'Remove reference',
     'zh-CN': '移除参考'
@@ -709,10 +701,6 @@ const copy = {
   'cinematic.colors.main': {
     en: 'Main color',
     'zh-CN': '主色'
-  },
-  'cinematic.colors.sample': {
-    en: 'From an image',
-    'zh-CN': '从图片取色'
   },
   'cinematic.colors.sampleError': {
     en: "Couldn't read colors from that image.",

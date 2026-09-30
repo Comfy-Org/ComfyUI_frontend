@@ -82,11 +82,14 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const lastFrame = shallowRef<StudioImage>()
   const sourceVideo = shallowRef<StudioImage>()
 
-  // The colour comes from one place. A picture can arrive through the Grade
-  // picker or the composer's references menu, and either way it stands in for
-  // the preset, whose phrase would otherwise contradict it in the prompt.
+  // The colour comes from one place: a picture chosen in the Grade picker
+  // fills the Colors swatches and stands in for the preset grade. The
+  // picture itself is not sent; clearing its colours clears it too.
   watch(palette, (picture) => {
     if (picture) direction.value = { ...direction.value, grade: 'auto' }
+  })
+  watch(colors, (chosen) => {
+    if (!chosen.length) palette.value = undefined
   })
 
   onMounted(() => {
@@ -103,15 +106,12 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     enhance: enhance.value,
     video: mode.value === 'video',
     cast: mode.value === 'image' && !!cast.value,
-    palette: mode.value === 'image' && !!palette.value,
     colors: colors.value,
     mainColor: mainColor.value
   }))
   const references = computed(() =>
     mode.value === 'image'
-      ? [cast.value, palette.value].filter(
-          (image): image is StudioImage => !!image
-        )
+      ? [cast.value].filter((image): image is StudioImage => !!image)
       : []
   )
   const model = computed(() =>

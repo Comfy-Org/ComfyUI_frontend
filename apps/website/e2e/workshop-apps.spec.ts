@@ -291,4 +291,5 @@ test('matches the Cinematic Studio grade to an uploaded image', async ({
   await expect(page.getByRole('button', { name: /^Grade/ })).toContainText(
     'Your image'
   )
+  await expect(page.getByLabel(/^Color 1: #/)).toBeVisible()
 })

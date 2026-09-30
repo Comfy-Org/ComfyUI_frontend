@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { Pipette } from '@lucide/vue'
-import { useTemplateRef } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
+import { sampleImageColors } from '../../../lib/workshop/cinematic-studio/colors'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
 import CinematicCheckBadge from './CinematicCheckBadge.vue'
@@ -13,18 +14,25 @@ import { useImagePreview } from './useImagePreview'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const file = defineModel<StudioImage | undefined>()
-const emit = defineEmits<{ picked: [] }>()
+const emit = defineEmits<{ picked: [colors: readonly string[]] }>()
 const preview = useImagePreview(() => file.value)
 const input = useTemplateRef<HTMLInputElement>('input')
+const unreadable = ref(false)
 
-function choose(event: Event) {
+async function choose(event: Event) {
   const target = event.target
   if (!(target instanceof HTMLInputElement)) return
   const [picked] = target.files ?? []
   target.value = ''
   if (!picked) return
-  file.value = picked
-  emit('picked')
+  try {
+    const colors = await sampleImageColors(picked)
+    unreadable.value = false
+    file.value = picked
+    emit('picked', colors)
+  } catch {
+    unreadable.value = true
+  }
 }
 </script>
 
@@ -84,11 +92,18 @@ function choose(event: Event) {
         )
       }}
     </span>
+    <span
+      v-if="unreadable"
+      role="status"
+      class="px-1 text-xs text-primary-comfy-canvas"
+    >
+      {{ tc('cinematic.colors.sampleError', locale) }}
+    </span>
   </button>
   <input
     ref="input"
     type="file"
-    accept="image/*"
+    accept="image/png,image/jpeg,image/webp"
     class="hidden"
     tabindex="-1"
     data-testid="cinematic-grade-image-input"

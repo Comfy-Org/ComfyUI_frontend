@@ -178,6 +178,8 @@ function generateOn(slug: string) {
           v-if="popover"
           :key="popover"
           v-model:palette="palette"
+          v-model:colors="colors"
+          v-model:main-color="mainColor"
           :groups="pickerGroups(popover)"
           :direction
           :title="popoverTitle(popover, locale)"

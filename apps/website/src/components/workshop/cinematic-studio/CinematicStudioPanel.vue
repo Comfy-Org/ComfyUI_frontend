@@ -190,6 +190,8 @@ function generate() {
         v-if="picker"
         :key="picker"
         v-model:palette="palette"
+        v-model:colors="colors"
+        v-model:main-color="mainColor"
         :groups="pickerGroups(picker)"
         :direction
         :title="popoverTitle(picker, locale)"

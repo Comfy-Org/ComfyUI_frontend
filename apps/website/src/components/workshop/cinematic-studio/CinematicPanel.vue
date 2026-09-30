@@ -216,7 +216,7 @@ const cardClass =
           v-model:aspect="aspect"
           v-model:resolution="resolution"
           v-model:takes="takes"
-          :aspects="shotAspects(model, !!(cast || palette))"
+          :aspects="shotAspects(model, !!cast)"
           :locale
         />
       </section>

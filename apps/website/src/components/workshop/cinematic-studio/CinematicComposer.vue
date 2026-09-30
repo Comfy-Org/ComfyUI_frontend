@@ -154,7 +154,6 @@ const chipClass = (key: PickerKey) =>
     <div class="flex flex-wrap items-start gap-x-2.5 gap-y-1 px-4 pt-3.5 pb-3">
       <CinematicReferenceMenu
         v-model:cast="cast"
-        v-model:palette="palette"
         v-model:first-frame="firstFrame"
         v-model:last-frame="lastFrame"
         v-model:source-video="sourceVideo"

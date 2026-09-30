@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import {
-  Clapperboard,
-  Film,
-  Palette,
-  Plus,
-  SwatchBook,
-  UserRound,
-  X
-} from '@lucide/vue'
+import { Clapperboard, Film, Plus, SwatchBook, UserRound, X } from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -30,7 +22,7 @@ import { useImagePreview } from './useImagePreview'
 import { REFERENCE_SLOTS } from './reference-kind'
 
 const {
-  shown = ['cast', 'palette'],
+  shown = ['cast'],
   colorCount = 0,
   locale = 'en'
 } = defineProps<{
@@ -43,21 +35,18 @@ const {
 const emit = defineEmits<{ colors: [] }>()
 
 const cast = defineModel<StudioImage | undefined>('cast')
-const palette = defineModel<StudioImage | undefined>('palette')
 const firstFrame = defineModel<StudioImage | undefined>('firstFrame')
 const lastFrame = defineModel<StudioImage | undefined>('lastFrame')
 const sourceVideo = defineModel<StudioImage | undefined>('sourceVideo')
-const files = { cast, palette, firstFrame, lastFrame, video: sourceVideo }
+const files = { cast, firstFrame, lastFrame, video: sourceVideo }
 const previews = {
   cast: useImagePreview(() => cast.value),
-  palette: useImagePreview(() => palette.value),
   firstFrame: useImagePreview(() => firstFrame.value),
   lastFrame: useImagePreview(() => lastFrame.value)
 }
 
 const ICONS: Readonly<Record<ReferenceKind, typeof Plus>> = {
   cast: UserRound,
-  palette: Palette,
   firstFrame: Clapperboard,
   lastFrame: Clapperboard,
   video: Film

@@ -31,6 +31,7 @@ import {
   useWorkshopFlag
 } from '../../../scripts/posthog'
 import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
+import { sampleImageColors } from '../../../lib/workshop/cinematic-studio/colors'
 import { t } from '../../../i18n/translations'
 import { MAX_TAKES } from '../../../lib/workshop/cinematic-studio/catalog'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -47,6 +48,7 @@ vi.mock(import('../../../config/workshop-session-state'))
 vi.mock(import('../../../config/workshop-credits'))
 vi.mock(import('../../../scripts/posthog'))
 vi.mock(import('../../../config/router-render'), { spy: true })
+vi.mock(import('../../../lib/workshop/cinematic-studio/colors'), { spy: true })
 
 const deploy = vi.hoisted(() => ({ env: '' }))
 vi.mock(import('astro:env/client'), () => ({
@@ -160,6 +162,10 @@ describe('CinematicStudio', () => {
       credits: 100
     }))
     signedIn.value = credential
+    vi.mocked(sampleImageColors).mockImplementation(async (file: File) => {
+      if (file.name === 'bad.png') throw new Error('Unsupported image')
+      return ['#102030', '#405060']
+    })
     vi.mocked(router_render)
       .mockReset()
       .mockRejectedValue(new WorkshopRouterError('client'))
@@ -668,8 +674,7 @@ describe('CinematicStudio', () => {
     )
 
   it.for([
-    { kind: 'cast', label: 'Character', action: 'Add a character reference' },
-    { kind: 'palette', label: 'Palette', action: 'Add a palette reference' }
+    { kind: 'cast', label: 'Character', action: 'Add a character reference' }
   ])(
     'names an attached $label reference in the composer menu and removes it from there',
     async ({ kind, label, action }) => {
@@ -699,23 +704,18 @@ describe('CinematicStudio', () => {
     }
   )
 
-  it('counts both references on the composer + once both are attached', async () => {
+  it('offers no palette reference in the composer menu', async () => {
     const user = renderStudio()
-    const file = new File(['ref'], 'ref.png', { type: 'image/png' })
 
-    await user.upload(screen.getByTestId('cinematic-reference-cast'), file)
-    await user.upload(screen.getByTestId('cinematic-reference-palette'), file)
+    await openReferenceMenu(user)
 
     expect(
-      within(
-        screen.getByRole('button', {
-          name: tc('cinematic.composer.references')
-        })
-      ).getByText('2')
+      await screen.findByRole('menuitem', { name: /^Character/ })
     ).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: /^Palette/ })).toBeNull()
   })
 
-  it('drops the preset grade phrase when a palette picture arrives from the menu', async () => {
+  it('sends the colors of a Grade picture as words, in place of the preset', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
 
@@ -725,8 +725,9 @@ describe('CinematicStudio', () => {
         name: 'Teal and orange'
       })
     )
+    await user.click(screen.getByRole('button', { name: /^Grade:/ }))
     await user.upload(
-      screen.getByTestId('cinematic-reference-palette'),
+      screen.getByTestId('cinematic-grade-image-input'),
       new File(['ref'], 'colors.png', { type: 'image/png' })
     )
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
@@ -735,10 +736,8 @@ describe('CinematicStudio', () => {
     await screen.findByAltText(/A diner at dawn/)
     const shot = sent(vi.mocked(router_render).mock.calls[0])
     expect(shot.prompt).not.toContain('teal and orange grade')
-    expect(shot.prompt).toContain(
-      'Match the color palette of reference image 1.'
-    )
-    expect(shot.references).toHaveLength(1)
+    expect(shot.prompt).toContain('dominant colors #102030, #405060')
+    expect(shot.references).toEqual([])
   })
 
   it('keeps the camera picker open across columns until clicked away', async () => {
@@ -1825,6 +1824,8 @@ describe('CinematicStudio', () => {
       )
 
       expect(gradeRow()).toHaveTextContent(tc('cinematic.grade.yourImage'))
+      expect(screen.getByLabelText('Color 1: #102030')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'From an image' })).toBeNull()
 
       await user.click(gradeRow())
       const picker = screen.getByRole('dialog', { name: 'Grade' })
@@ -1838,6 +1839,22 @@ describe('CinematicStudio', () => {
       )
 
       expect(gradeRow()).toHaveTextContent('Teal and orange')
+      expect(screen.queryByLabelText('Color 1: #102030')).toBeNull()
+    })
+
+    it('keeps the grade as it was when a picture has no colors to read', async () => {
+      const user = renderPanel()
+
+      await user.click(gradeRow())
+      await user.upload(
+        screen.getByTestId('cinematic-grade-image-input'),
+        new File(['x'], 'bad.png', { type: 'image/png' })
+      )
+
+      expect(
+        await screen.findByText("Couldn't read colors from that image.")
+      ).toBeInTheDocument()
+      expect(gradeRow()).not.toHaveTextContent(tc('cinematic.grade.yourImage'))
     })
 
     it('lists the camera settings beside the body as separate chips', async () => {
