@@ -363,7 +363,10 @@ describe('useAgentConversationStore', () => {
 
     store.abortActiveTurn()
 
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+    expect(store.messages[0].parts[0]).toMatchObject({
+      state: 'done',
+      ok: true
+    })
   })
 
   // PM-1575 regression (finding #4, medium): resumeBackgroundTurn()'s SECOND
