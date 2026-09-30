@@ -253,6 +253,12 @@ export const useReleaseStore = defineStore('release', () => {
     })
   }
 
+  // --disable-api-nodes is a deprecated alias for --offline; --disable-partner-nodes stays online
+  const isOfflineCore = () =>
+    systemStatsStore.systemStats?.system.argv?.some((arg) =>
+      OFFLINE_ARGS.includes(arg)
+    ) ?? false
+
   // Fetch releases from API
   async function fetchReleases(): Promise<void> {
     if (isLoading.value) {
@@ -263,12 +269,7 @@ export const useReleaseStore = defineStore('release', () => {
       return
     }
 
-    // --disable-api-nodes is a deprecated alias for --offline; --disable-partner-nodes stays online
-    if (
-      systemStatsStore.systemStats?.system.argv?.some((arg) =>
-        OFFLINE_ARGS.includes(arg)
-      )
-    ) {
+    if (isOfflineCore()) {
       return
     }
     isLoading.value = true
@@ -278,6 +279,8 @@ export const useReleaseStore = defineStore('release', () => {
       // Ensure system stats are loaded
       if (!systemStatsStore.systemStats) {
         await until(systemStatsStore.isInitialized)
+        // The argv wasn't known at the first check
+        if (isOfflineCore()) return
       }
 
       const fetchedReleases = await releaseService.getReleases(

@@ -481,6 +481,25 @@ describe('useReleaseStore', () => {
       }
     )
 
+    it('should skip fetchReleases when --offline only arrives once system stats load', async () => {
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats = null
+      systemStatsStore.isInitialized = false
+      vi.mocked(until).mockImplementationOnce(() => {
+        systemStatsStore.systemStats = fromPartial({
+          system: { comfyui_version: '1.0.0', argv: ['--offline'] }
+        })
+        return Promise.resolve() as never
+      })
+
+      await store.fetchReleases()
+
+      expect(releaseService.getReleases).not.toHaveBeenCalled()
+      expect(store.isLoading).toBe(false)
+    })
+
     it('should skip fetchReleases when --offline is among other args', async () => {
       const store = useReleaseStore()
       const releaseService = useReleaseService()
