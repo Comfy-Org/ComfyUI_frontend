@@ -73,9 +73,9 @@ onMounted(() => {
 })
 onBeforeUnmount(() => stopBuyCreditsRequests?.())
 watch(
-  showAccount,
-  (enabled) => {
-    if (enabled) buyCreditsDialogMounted.value = true
+  buyingCredits,
+  (open) => {
+    if (open) buyCreditsDialogMounted.value = true
   },
   { immediate: true }
 )

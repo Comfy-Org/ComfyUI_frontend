@@ -207,6 +207,34 @@ describe('BuyCreditsDialog', () => {
     expect(credits.topUp.value).toEqual({ status: 'idle' })
   })
 
+  it.for([
+    { ageMs: 60_000, initialStep: 'buy-credits-done', staysOpen: false },
+    { ageMs: 60_001, initialStep: 'buy-credits-packs', staysOpen: true }
+  ])(
+    'handles a receipt aged $ageMs ms when first mounted open',
+    async ({ ageMs, initialStep, staysOpen }) => {
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      credits.topUp.value = {
+        status: 'landed',
+        ...topUpScope,
+        newCredits: 5_375,
+        landedAt: Date.now() - ageMs
+      }
+
+      const { isOpen } = renderControlledDialog()
+      await nextTick()
+      expect(screen.getByTestId(initialStep)).toBeTruthy()
+
+      await vi.advanceTimersByTimeAsync(3_600)
+
+      expect(isOpen.value).toBe(staysOpen)
+      expect(credits.topUp.value).toEqual({ status: 'idle' })
+    }
+  )
+
   it('cancels receipt auto-close after dialog interaction', async () => {
     vi.useFakeTimers()
     onTestFinished(() => {
