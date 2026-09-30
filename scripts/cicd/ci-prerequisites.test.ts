@@ -145,10 +145,13 @@ describe('candidate prerequisites', () => {
     'playwright-tests-chromium-sharded',
     'playwright-tests-cloud-sharded',
     'playwright-tests',
-    'playwright-video-new-tests'
-  ])('%s cannot bypass the prerequisite job', (job) => {
+    'playwright-video-new-tests',
+    'comment-on-pr-start'
+  ])('%s overrides skipped ancestors only after preflight succeeds', (job) => {
     expect([pipeline.jobs[job].needs].flat()).toContain('preflight')
-    expect(pipeline.jobs[job].if).not.toMatch(/always\(|!cancelled\(|failure\(/)
+    expect(pipeline.jobs[job].if).toMatch(
+      /^\$\{\{\s*!cancelled\(\)\s*&&\s*needs\.preflight\.result == 'success'\s*&&/
+    )
   })
 
   it.for(['lint-pr', 'lint-queue', 'fallow', 'unit', 'ecosystem'])(
