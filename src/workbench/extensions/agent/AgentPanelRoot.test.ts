@@ -2004,6 +2004,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
     await waitFor(() =>
       expect(reportError).toHaveBeenCalledWith(refreshError, {
+        surface: 'agent',
         errorType: 'error_refreshing_agent_billing_status'
       })
     )

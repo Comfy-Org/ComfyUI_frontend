@@ -311,6 +311,7 @@ describe('launchCancellationFlow', () => {
     )
     expect(useTelemetry()?.trackSubscriptionCancellation).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(preparationError, {
+      surface: 'billing',
       errorType: 'cloud_cancellation_vendor_fallback',
       tags: {
         failure_kind: 'degraded',
@@ -503,6 +504,7 @@ describe('launchCancellationFlow', () => {
         cause: expect.objectContaining({ message: 'blocked by browser' })
       }),
       {
+        surface: 'billing',
         errorType: 'cloud_cancellation_vendor_fallback',
         tags: {
           failure_kind: 'caught_unexpected',

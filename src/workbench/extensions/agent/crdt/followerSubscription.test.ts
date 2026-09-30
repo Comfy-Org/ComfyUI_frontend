@@ -450,6 +450,7 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     expect(bridge.follower.updatesApplied).toBe(1)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_crdt_invalid_server_frame',
       tags: { frame_type: 'doc_reset' },
       level: 'warning'

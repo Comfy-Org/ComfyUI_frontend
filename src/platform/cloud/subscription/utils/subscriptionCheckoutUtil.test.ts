@@ -253,6 +253,7 @@ describe('performSubscriptionCheckout', () => {
     await performSubscriptionCheckout('pro', 'monthly')
 
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'billing',
       errorType: 'cloud_checkout_attribution_fallback',
       tags: {
         failure_kind: 'degraded',
