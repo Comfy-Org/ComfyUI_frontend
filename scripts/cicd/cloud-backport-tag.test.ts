@@ -7,18 +7,32 @@ import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
 interface WorkflowJob {
-  steps?: Array<{ env?: Record<string, string> }>
+  if?: string
+  steps?: Array<{
+    env?: Record<string, string>
+    id?: string
+    uses?: string
+    with?: Record<string, string | boolean>
+  }>
   'timeout-minutes'?: number
 }
 
 interface Workflow {
   concurrency?: { group?: string; 'cancel-in-progress'?: boolean }
   jobs?: Record<string, WorkflowJob>
+  on?: {
+    push?: { branches?: string[]; 'tags-ignore'?: string[] }
+  }
 }
 
 const workflow = parse(
   readFileSync('.github/workflows/cloud-backport-tag.yaml', 'utf8')
 ) as Workflow
+const dispatchWorkflowSource = readFileSync(
+  '.github/workflows/cloud-dispatch-build.yaml',
+  'utf8'
+)
+const dispatchWorkflow = parse(dispatchWorkflowSource) as Workflow
 const targetSha = 'a'.repeat(40)
 const otherSha = 'b'.repeat(40)
 const tagObjectSha = 'c'.repeat(40)
@@ -87,6 +101,7 @@ function runTagScript(
       GITHUB_OUTPUT: output,
       GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
       GITHUB_STEP_SUMMARY: summary,
+      GH_TOKEN: 'test-token',
       PATH: `${directory}:${process.env.PATH}`,
       SHA: options.sha ?? targetSha,
       TAG_OBJECT_SHA: tagObjectSha,
@@ -97,6 +112,20 @@ function runTagScript(
 }
 
 describe('cloud backport tag workflow', () => {
+  it('dispatches branch pushes without dispatching tags or deleted branches', () => {
+    expect(dispatchWorkflow.on?.push?.branches).toEqual(['**'])
+    expect(dispatchWorkflow.on?.push?.['tags-ignore']).toEqual(['**'])
+    expect(dispatchWorkflow.jobs?.dispatch.if).toContain(
+      "github.event_name != 'push' || github.event.deleted == false"
+    )
+    expect(dispatchWorkflow.concurrency?.group).toBe(
+      'cloud-dispatch-${{ github.event.pull_request.head.ref || github.ref_name }}'
+    )
+    expect(dispatchWorkflowSource).toContain(
+      '[[ "${BRANCH}" =~ ^cloud/[0-9]+\\.[0-9]+$ ]]'
+    )
+  })
+
   it('keeps every event distinct and bounds the API-only job', () => {
     expect(workflow.concurrency?.group).toContain(
       'github.event.pull_request.number'
@@ -104,9 +133,18 @@ describe('cloud backport tag workflow', () => {
     expect(workflow.concurrency?.group).toContain('github.run_id')
     expect(workflow.concurrency?.['cancel-in-progress']).toBe(false)
     expect(workflow.jobs?.['create-tag']?.['timeout-minutes']).toBe(10)
-    expect(workflow.jobs?.['create-tag']?.steps?.[1]?.env?.GH_TOKEN).toContain(
-      'secrets.PR_GH_TOKEN'
+    expect(workflow.jobs?.['create-tag']?.if).toBe(
+      "(github.event_name == 'workflow_dispatch' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) || (github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'backport'))\n"
     )
+    const steps = workflow.jobs?.['create-tag']?.steps
+    const checkout = steps?.find((step) =>
+      step.uses?.startsWith('actions/checkout')
+    )
+    const tagStep = steps?.find((step) => step.id === 'tag')
+    expect(checkout?.with?.ref).toBe(
+      '${{ github.event.repository.default_branch }}'
+    )
+    expect(tagStep?.env?.GH_TOKEN).toBe('${{ secrets.PR_GH_TOKEN }}')
   })
 
   it('accepts existing same, different, and annotated tags without moving them', () => {
