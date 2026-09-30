@@ -1283,6 +1283,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     conversationStore.reset()
+    onThreadActivated?.(null)
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     localStorage.removeItem(threadStorageKey)
