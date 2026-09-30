@@ -5,11 +5,17 @@ import { dirname, join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
+import type { CoverageMetadata } from './coverage-metadata'
 import { buildPayload, parseLcovContent } from './coverage-slack-notify'
 
 const ROOT = join(import.meta.dirname, '..')
 const TSX = join(ROOT, 'node_modules/.bin/tsx')
 const SCRIPT = join(import.meta.dirname, 'coverage-slack-notify.ts')
+
+const E2E = 'temp/e2e-coverage'
+const E2E_BASELINE = 'temp/e2e-coverage-baseline'
+const UNIT_TRACEFILE = 'coverage/lcov.info'
+const UNIT_BASELINE_TRACEFILE = 'temp/coverage-baseline/lcov.info'
 
 const CONTEXT = {
   prUrl: 'https://github.com/Comfy-Org/ComfyUI_frontend/pull/7',
@@ -53,63 +59,35 @@ const NO_DATA = { current: null, baseline: null }
 function notifyFixture() {
   const root = mkdtempSync(join(tmpdir(), 'coverage-notify-'))
 
+  function write(relativePath: string, contents: string) {
+    const target = join(root, relativePath)
+    mkdirSync(dirname(target), { recursive: true })
+    writeFileSync(target, contents)
+  }
+
   return {
     root,
-    write(relativePath: string, contents: string) {
-      const target = join(root, relativePath)
-      mkdirSync(dirname(target), { recursive: true })
-      writeFileSync(target, contents)
-    },
-    writeE2e(percentage: number, metadata: Record<string, unknown> | null) {
-      this.write('temp/e2e-coverage/coverage.lcov', tracefile(percentage))
-      if (metadata) {
-        this.write(
-          'temp/e2e-coverage/coverage-metadata.json',
-          JSON.stringify(metadata)
-        )
-      }
-    },
-    writeE2eBaseline(
+    write,
+    writeCoverage(
+      directory: string,
       percentage: number,
-      metadata: Record<string, unknown> | null = null
+      metadata?: CoverageMetadata
     ) {
-      this.write(
-        'temp/e2e-coverage-baseline/coverage.lcov',
-        tracefile(percentage)
-      )
+      write(`${directory}/coverage.lcov`, tracefile(percentage))
       if (metadata) {
-        this.write(
-          'temp/e2e-coverage-baseline/coverage-metadata.json',
-          JSON.stringify(metadata)
-        )
+        write(`${directory}/coverage-metadata.json`, JSON.stringify(metadata))
       }
     },
-    writeUnit(percentage: number, metadata: Record<string, unknown> | null) {
-      this.write('coverage/lcov.info', tracefile(percentage))
-      if (metadata) {
-        this.write('coverage/coverage-metadata.json', JSON.stringify(metadata))
-      }
-    },
-    writeUnitBaseline(
-      percentage: number,
-      metadata: Record<string, unknown> | null = null
-    ) {
-      this.write('temp/coverage-baseline/lcov.info', tracefile(percentage))
-      if (metadata) {
-        this.write(
-          'temp/coverage-baseline/coverage-metadata.json',
-          JSON.stringify(metadata)
-        )
-      }
-    },
-    run() {
+    run(unitSpan: { from?: string; to?: string } = {}) {
       const result = spawnSync(
         TSX,
         [
           SCRIPT,
           `--pr-url=${CONTEXT.prUrl}`,
           `--pr-number=${CONTEXT.prNumber}`,
-          `--author=${CONTEXT.author}`
+          `--author=${CONTEXT.author}`,
+          `--unit-span-from=${unitSpan.from ?? ''}`,
+          `--unit-span-to=${unitSpan.to ?? ''}`
         ],
         { cwd: root, encoding: 'utf8' }
       )
@@ -246,8 +224,8 @@ describe('buildPayload', () => {
 describe('unverified shard merges', () => {
   it('reports E2E movement when the merge is verified whole', () => {
     using fixture = notifyFixture()
-    fixture.writeE2eBaseline(64, { complete: true })
-    fixture.writeE2e(67, { complete: true })
+    fixture.writeCoverage(E2E_BASELINE, 64, { complete: true })
+    fixture.writeCoverage(E2E, 67, { complete: true })
 
     const result = fixture.run()
 
@@ -259,8 +237,8 @@ describe('unverified shard merges', () => {
   // shard that stopped early, not coverage the team gained or lost.
   it('says nothing when the merge is not verified whole', () => {
     using fixture = notifyFixture()
-    fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))
-    fixture.writeE2e(67, { complete: false })
+    fixture.writeCoverage(E2E_BASELINE, 64)
+    fixture.writeCoverage(E2E, 67, { complete: false })
 
     const result = fixture.run()
 
@@ -273,8 +251,8 @@ describe('unverified shard merges', () => {
   // behaviour of publishing non-comparable numbers.
   it('withholds E2E when the artifact carries no shard metadata', () => {
     using fixture = notifyFixture()
-    fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))
-    fixture.writeE2e(67, null)
+    fixture.writeCoverage(E2E_BASELINE, 64)
+    fixture.writeCoverage(E2E, 67)
 
     const result = fixture.run()
 
@@ -284,9 +262,9 @@ describe('unverified shard merges', () => {
 
   it('withholds E2E when the shard metadata is unreadable', () => {
     using fixture = notifyFixture()
-    fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))
-    fixture.writeE2e(67, null)
-    fixture.write('temp/e2e-coverage/coverage-metadata.json', '{ truncated')
+    fixture.writeCoverage(E2E_BASELINE, 64)
+    fixture.writeCoverage(E2E, 67)
+    fixture.write(`${E2E}/coverage-metadata.json`, '{ truncated')
 
     const result = fixture.run()
 
@@ -296,10 +274,10 @@ describe('unverified shard merges', () => {
 
   it('still reports unit coverage while E2E is withheld', () => {
     using fixture = notifyFixture()
-    fixture.write('temp/coverage-baseline/lcov.info', tracefile(70))
-    fixture.write('coverage/lcov.info', tracefile(72))
-    fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))
-    fixture.writeE2e(67, null)
+    fixture.write(UNIT_BASELINE_TRACEFILE, tracefile(70))
+    fixture.write(UNIT_TRACEFILE, tracefile(72))
+    fixture.writeCoverage(E2E_BASELINE, 64)
+    fixture.writeCoverage(E2E, 67)
 
     const result = fixture.run()
 
@@ -313,16 +291,20 @@ describe('unverified shard merges', () => {
 describe('comparison span', () => {
   it('names the commit the baseline measured', () => {
     using fixture = notifyFixture()
-    fixture.writeE2eBaseline(64, {
+    fixture.writeCoverage(E2E_BASELINE, 64, {
       complete: true,
       sourceSha: 'abc1234def5678'
     })
-    fixture.writeE2e(67, { complete: true, sourceSha: '9876543fedcba0' })
+    fixture.writeCoverage(E2E, 67, {
+      complete: true,
+      sourceSha: '9876543fedcba0'
+    })
 
     const result = fixture.run()
 
-    expect(result.stdout).toContain('last whole merge (`abc1234`)')
-    expect(result.stdout).toContain('to `9876543`')
+    expect(result.stdout).toContain(
+      'E2E coverage compared against `abc1234` (last whole merge) through `9876543`'
+    )
     expect(result.stdout).toContain('may cover several merges')
   })
 
@@ -332,8 +314,11 @@ describe('comparison span', () => {
   // unvetted delta — with no span note and no milestone to dress it up.
   it('withholds a baseline that cannot prove it was whole', () => {
     using fixture = notifyFixture()
-    fixture.writeE2eBaseline(64)
-    fixture.writeE2e(67, { complete: true, sourceSha: '9876543fedcba0' })
+    fixture.writeCoverage(E2E_BASELINE, 64)
+    fixture.writeCoverage(E2E, 67, {
+      complete: true,
+      sourceSha: '9876543fedcba0'
+    })
 
     const result = fixture.run()
 
@@ -343,11 +328,14 @@ describe('comparison span', () => {
 
   it('withholds a baseline whose own metadata says it was unverified', () => {
     using fixture = notifyFixture()
-    fixture.writeE2eBaseline(64, {
+    fixture.writeCoverage(E2E_BASELINE, 64, {
       complete: false,
       sourceSha: 'abc1234def5678'
     })
-    fixture.writeE2e(67, { complete: true, sourceSha: '9876543fedcba0' })
+    fixture.writeCoverage(E2E, 67, {
+      complete: true,
+      sourceSha: '9876543fedcba0'
+    })
 
     const result = fixture.run()
 
@@ -357,8 +345,11 @@ describe('comparison span', () => {
 
   it('reports once both sides prove they were whole', () => {
     using fixture = notifyFixture()
-    fixture.writeE2eBaseline(64, { complete: true })
-    fixture.writeE2e(67, { complete: true, sourceSha: '9876543fedcba0' })
+    fixture.writeCoverage(E2E_BASELINE, 64, { complete: true })
+    fixture.writeCoverage(E2E, 67, {
+      complete: true,
+      sourceSha: '9876543fedcba0'
+    })
 
     const result = fixture.run()
 
@@ -368,34 +359,31 @@ describe('comparison span', () => {
 
   // The unit baseline is the nearest measured ancestor, which is not always
   // the direct parent, so its delta can cover merges the named PR did not
-  // make. The workflow writes these sidecars only in that case.
+  // make. The workflow passes the span only in that case.
   it('names the commits a unit delta spans', () => {
     using fixture = notifyFixture()
-    fixture.writeUnitBaseline(70, {
-      complete: true,
-      sourceSha: 'aaaaaaabbbbbb'
-    })
-    fixture.writeUnit(72, { complete: true, sourceSha: 'cccccccdddddd' })
+    fixture.write(UNIT_BASELINE_TRACEFILE, tracefile(70))
+    fixture.write(UNIT_TRACEFILE, tracefile(72))
 
-    const result = fixture.run()
+    const result = fixture.run({ from: 'aaaaaaabbbbbb', to: 'cccccccdddddd' })
 
     expect(result.stdout).toContain(
-      'Unit measured from the last measured merge (`aaaaaaa`) to `ccccccc`'
+      'Unit coverage compared against `aaaaaaa` (last measured merge) through `ccccccc`'
     )
     expect(result.stdout).toContain('may cover several merges')
   })
 
-  // The common case: the ancestor is the direct parent, the delta is exactly
-  // this PR, and the workflow writes no sidecar. Hedging every report would
-  // make the note meaningless on the ones that need it.
+  // The common case: the ancestor is the direct parent and the delta is
+  // exactly this PR, so the workflow passes the head sha and no origin.
+  // Hedging every report would make the note meaningless on those that need it.
   it('stays silent about the span when the delta is one merge', () => {
     using fixture = notifyFixture()
-    fixture.writeUnitBaseline(70)
-    fixture.writeUnit(72, null)
+    fixture.write(UNIT_BASELINE_TRACEFILE, tracefile(70))
+    fixture.write(UNIT_TRACEFILE, tracefile(72))
 
-    const result = fixture.run()
+    const result = fixture.run({ to: 'cccccccdddddd' })
 
     expect(result.stdout).toContain('*Unit:*  70.0% → 72.0%')
-    expect(result.stdout).not.toContain('measured from')
+    expect(result.stdout).not.toContain('compared against')
   })
 })
