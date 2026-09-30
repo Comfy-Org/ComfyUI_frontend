@@ -32,26 +32,28 @@ export async function dropLibraryAsset(
   panel: Locator,
   asset: DroppedLibraryAsset
 ): Promise<void> {
+  const dataTransfer = await page.evaluateHandle(
+    ({ mime, displayName, ref, kind }) => {
+      const transfer = new DataTransfer()
+      transfer.setData(
+        mime,
+        JSON.stringify({
+          filename: displayName,
+          display_name: displayName,
+          subfolder: '',
+          type: 'output',
+          attachment_ref: ref,
+          media_kind: kind
+        })
+      )
+      return transfer
+    },
+    { mime: MIME_ASSET_INFO, ...asset }
+  )
   await panel.dispatchEvent('drop', {
-    dataTransfer: await page.evaluateHandle(
-      ({ mime, displayName, ref, kind }) => {
-        const dataTransfer = new DataTransfer()
-        dataTransfer.setData(
-          mime,
-          JSON.stringify({
-            filename: displayName,
-            display_name: displayName,
-            subfolder: '',
-            type: 'output',
-            attachment_ref: ref,
-            media_kind: kind
-          })
-        )
-        return dataTransfer
-      },
-      { mime: MIME_ASSET_INFO, ...asset }
-    )
+    dataTransfer
   })
+  await dataTransfer.dispose()
 }
 
 export function resolvedImageRefs(
@@ -113,10 +115,9 @@ export async function openAgentPanel(
       exact: true
     })
     .click()
-  const panel = await new AgentPanel(page).open()
-  await panel
-    .getByRole('button', { name: enMessages.agent.switchWorkflow })
-    .click()
+  const agentPanel = new AgentPanel(page)
+  const panel = await agentPanel.open()
+  await agentPanel.workflowPicker.click()
   await page
     .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
     .click()
@@ -126,12 +127,9 @@ export async function openAgentPanel(
 }
 
 export async function sendTurn(panel: Locator, prompt: string): Promise<void> {
-  await panel
-    .getByRole('textbox', { name: /^Describe ideas/ })
-    .pressSequentially(prompt)
-  await panel
-    .getByRole('button', { name: enMessages.agent.send, exact: true })
-    .click()
+  const agentPanel = new AgentPanel(panel.page())
+  await agentPanel.composer.pressSequentially(prompt)
+  await agentPanel.sendButton.click()
 }
 
 export async function reopenAfterReload(

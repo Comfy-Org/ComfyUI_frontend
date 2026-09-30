@@ -297,14 +297,6 @@ describe('normalizeAgentTranscript', () => {
    * services/agent/internal/persist/threads.go.
    */
   describe('persisted attachment resolution', () => {
-    /**
-     * `attachmentRefsForRow` (services/agent/server/agent_handler.go) resolves
-     * each name to a library asset id and to the coarse kind behind its MIME
-     * type, and `contentAttachments` reads both back. Carrying them through
-     * here is what lets a file be classified when its own name cannot classify
-     * it; what the renderer does with either is the sibling case in
-     * UserMessage.test.ts.
-     */
     it('keeps the resolved asset id and media kind the server persisted on a ref', () => {
       const bareDigest = 'a'.repeat(64)
       const message = row(1, 'user', 'turn-a', 'check this clip', 'row-1')
@@ -321,13 +313,6 @@ describe('normalizeAgentTranscript', () => {
       ])
     })
 
-    /**
-     * The two keys disagree about whitespace: `attachmentRefsForRow` trims the
-     * name it stores on a ref while the handler stores `attachments` verbatim,
-     * so a padded name reaches this parser under two spellings. It still has
-     * to find its own resolution — and keep asking `/view?filename=` for the
-     * name the row was actually stored under.
-     */
     it('resolves a padded name against the trimmed ref the server stored', () => {
       const message = row(1, 'user', 'turn-a', 'check this clip', 'row-1')
       message.content = {
@@ -343,19 +328,9 @@ describe('normalizeAgentTranscript', () => {
       ])
     })
 
-    /**
-     * Reachable through the API rather than through this client: the writer
-     * stores `attachments` verbatim and has never filtered it, so a blank name
-     * posted by any client persists. `contentAttachments` drops it — a blank
-     * names no file — and so must this, or the turn gains a tile with an empty
-     * caption and no resolvable preview. The row is shown without a sibling
-     * `attachment_refs`, the pre-`attachment_refs` legacy shape; a current
-     * writer would emit one naming `real.png`, which supplies no resolution
-     * here beyond the name `attachments` already carries.
-     */
     it('drops a blank name persisted under attachments', () => {
       const message = row(1, 'user', 'turn-a', '', 'row-1')
-      message.content = { attachments: ['', 'real.png'] }
+      message.content = { attachments: ['', '   ', 'real.png'] }
 
       const transcript = normalizeAgentTranscript([message])
 

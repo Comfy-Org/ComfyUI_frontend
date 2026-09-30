@@ -9,7 +9,6 @@ import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
-import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
@@ -18,6 +17,7 @@ import type {
   WorkflowReference
 } from '../../../types/workflowReference'
 import type { ReplyAsset } from '../../../utils/replyAssets'
+import { isReplyAssetKind } from '../../../utils/replyAssets'
 import { agentMessageText } from '../../../utils/agentMessageText'
 import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
@@ -134,20 +134,9 @@ const splitAttachments = computed(() => {
   return { grid, plain }
 })
 
-const GRID_KINDS: ReadonlySet<MediaType> = new Set<ReplyAsset['kind']>([
-  'image',
-  'video',
-  'audio',
-  '3D'
-])
-
-function isGridKind(kind: MediaType): kind is ReplyAsset['kind'] {
-  return GRID_KINDS.has(kind)
-}
-
 function gridAsset(item: UserAttachment): ReplyAsset | undefined {
   const kind = item.kind ?? getMediaTypeFromFilename(item.name)
-  if (!isGridKind(kind)) return undefined
+  if (!isReplyAssetKind(kind)) return undefined
   const url =
     item.previewUrl ??
     (item.ref

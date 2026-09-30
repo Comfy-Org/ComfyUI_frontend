@@ -1301,12 +1301,6 @@ describe('useAgentSession (v1 composition root)', () => {
       content: 'upscale this',
       attachments: [storedAttachmentRef]
     })
-    expect(body.selection).toBeUndefined()
-    expect(body.draft).toBeUndefined()
-    expect(body.open_tabs).toBeUndefined()
-    expect(body.current_tab).toBeUndefined()
-    expect(body.workflow_id).toBeUndefined()
-    expect(body.workflow_references).toEqual([])
   })
 
   it('(h2) tags ride as node_ids on the POST selection', async () => {

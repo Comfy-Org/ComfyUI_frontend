@@ -552,6 +552,7 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId.value = undefined
       resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
+      attachmentNamesByThread.clear()
       threadId.value = null
       forgetAllApprovals()
       hydratedMessageIds = new Set()
@@ -584,9 +585,10 @@ export const useAgentConversationStore = defineStore(
         [...transcript.userAttachments].map(([turnId, attachments]) => [
           turnId,
           attachments.map((attachment) => {
-            const name = attachment.ref
-              ? rememberedNames?.get(attachment.ref)
-              : undefined
+            const name =
+              attachment.ref && attachment.name === attachment.ref
+                ? rememberedNames?.get(attachment.ref)
+                : undefined
             return name === undefined ? attachment : { ...attachment, name }
           })
         ])

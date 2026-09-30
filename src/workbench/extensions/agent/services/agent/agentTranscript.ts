@@ -5,18 +5,6 @@ import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage, ToolPart } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 
-/**
- * The coarse media kind the server resolves from an attached asset's MIME
- * type. `mediaKind` (services/agent/server/agent_handler.go) writes only these
- * three and omits the key otherwise, so anything else on the wire reads as
- * unresolved rather than as a fourth kind.
- *
- * The composer admits 3D too, and the preview grid renders it, so a 3D asset
- * stored under an extensionless key still degrades to a plain tile after a
- * refresh. Widening this union cannot fix that on its own — the kind has to be
- * written before it can be read, which is a change to `mimeFamily` in the same
- * Go file.
- */
 type AttachmentKind = 'image' | 'video' | 'audio'
 
 /**
@@ -39,7 +27,9 @@ export interface UserAttachment {
   kind?: AttachmentKind
 }
 
-type ResolvedAttachment = Pick<UserAttachment, 'id' | 'kind'> & {
+type ParsedAttachmentRef = Pick<UserAttachment, 'id' | 'kind'> & {
+  ref: string
+  key: string
   displayName?: string
 }
 
@@ -60,106 +50,75 @@ export interface NormalizedAgentTranscript {
 }
 
 function isNamedAttachment(name: unknown): name is string {
-  return typeof name === 'string' && name !== ''
+  return typeof name === 'string' && name.trim() !== ''
 }
 
-function attachmentRefNames(value: unknown): string[] {
-  if (!Array.isArray(value)) return []
-  const names: string[] = []
-  for (const entry of value as unknown[]) {
-    if (typeof entry !== 'object' || entry === null || !('name' in entry))
-      continue
-    const { name } = entry
-    if (isNamedAttachment(name)) names.push(name)
+function attachmentId(entry: object): Pick<UserAttachment, 'id'> {
+  if (!('id' in entry) || typeof entry.id !== 'string' || entry.id === '')
+    return {}
+  return { id: entry.id }
+}
+
+function attachmentKind(entry: object): Pick<UserAttachment, 'kind'> {
+  if (!('kind' in entry) || !isAttachmentKind(entry.kind)) return {}
+  return { kind: entry.kind }
+}
+
+function attachmentDisplayName(
+  entry: object
+): Pick<ParsedAttachmentRef, 'displayName'> {
+  if (!('display_name' in entry) || !isNamedAttachment(entry.display_name))
+    return {}
+  return { displayName: entry.display_name }
+}
+
+function parseAttachmentRef(entry: unknown): ParsedAttachmentRef | undefined {
+  if (typeof entry !== 'object' || entry === null || !('name' in entry))
+    return undefined
+  if (!isNamedAttachment(entry.name)) return undefined
+
+  return {
+    ref: entry.name,
+    key: entry.name.trim(),
+    ...attachmentId(entry),
+    ...attachmentKind(entry),
+    ...attachmentDisplayName(entry)
   }
-  return names
+}
+
+function parseAttachmentRefs(value: unknown): ParsedAttachmentRef[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((entry) => {
+    const parsed = parseAttachmentRef(entry)
+    return parsed ? [parsed] : []
+  })
 }
 
 function isAttachmentKind(value: unknown): value is AttachmentKind {
   return value === 'image' || value === 'video' || value === 'audio'
 }
 
-/**
- * One `attachment_refs` entry, as the
- * `{name, id?, kind?, display_name?}` the server wrote, reduced to the trimmed
- * name it is keyed by and the resolution it carries. Optional fields are
- * omitted rather than stored empty, matching the writer
- * (`attachmentRefsForRow`, services/agent/server/agent_handler.go), so an
- * unresolved attachment reads the same as one written before ids existed.
- *
- * The name is trimmed for the KEY only, because the two keys disagree about
- * whitespace: the writer trims a ref's name while `attachments` is stored
- * verbatim, so a padded name would otherwise never find its own resolution.
- * The name a row was stored under is what `/view?filename=` has to ask for.
- */
-function resolvedAttachmentRef(
-  entry: unknown
-): [string, ResolvedAttachment] | undefined {
-  if (typeof entry !== 'object' || entry === null) return undefined
-  const {
-    name,
-    id,
-    kind,
-    display_name: displayName
-  } = entry as Record<string, unknown>
-  if (typeof name !== 'string') return undefined
-  return [
-    name.trim(),
-    {
-      ...(typeof id === 'string' && id !== '' ? { id } : {}),
-      ...(isAttachmentKind(kind) ? { kind } : {}),
-      ...(isNamedAttachment(displayName) ? { displayName } : {})
-    }
-  ]
-}
-
-/**
- * Every entry keyed by the trimmed name it shares with `attachments`. An entry
- * is kept even when it resolves to nothing, since the shared name is what
- * makes it a ref at all. First entry wins for a repeated name: the writer
- * emits one ref per posted name, so a duplicate is the same file resolved the
- * same way.
- */
-function resolvedAttachmentRefs(
-  value: unknown
-): Map<string, ResolvedAttachment> {
-  const resolved = new Map<string, ResolvedAttachment>()
-  if (!Array.isArray(value)) return resolved
-  for (const entry of value as unknown[]) {
-    const ref = resolvedAttachmentRef(entry)
-    if (ref && !resolved.has(ref[0])) resolved.set(ref[0], ref[1])
-  }
-  return resolved
-}
-
-/**
- * A persisted user row carries `attachments` (the uploaded input filenames
- * from the original request) and `attachment_refs` (the server's own
- * resolution of those same filenames, as `{name, id?, kind?}`). Either one
- * names the same input-namespace filenames the live send path uses as
- * `SentAttachment.ref`, so either is enough to rebuild the preview grid.
- *
- * The names come off `attachments` whenever it is an array — ingest documents
- * that key as the request's filenames and tells clients to keep reading it,
- * and it is the only key a row written before `attachment_refs` existed has.
- * The refs ride alongside it rather than over it, contributing the id and kind
- * the server already resolved for each of those same names.
- */
 function parseUserAttachments(
   content: Record<string, unknown> | undefined
 ): UserAttachment[] | undefined {
-  const resolved = resolvedAttachmentRefs(content?.attachment_refs)
+  const refs = parseAttachmentRefs(content?.attachment_refs)
+  const resolved = new Map<string, ParsedAttachmentRef>()
+  for (const entry of refs) {
+    if (!resolved.has(entry.key)) resolved.set(entry.key, entry)
+  }
   const postedNames = Array.isArray(content?.attachments)
     ? content.attachments.filter(isNamedAttachment)
-    : []
-  const names =
-    postedNames.length > 0
-      ? postedNames
-      : attachmentRefNames(content?.attachment_refs)
+    : undefined
+  const names = postedNames ?? refs.map(({ ref }) => ref)
   return names.length > 0
     ? names.map((ref) => {
-        const { displayName, ...metadata } = resolved.get(ref.trim()) ?? {}
-        return { name: displayName ?? ref, ref, ...metadata }
+        const match = resolved.get(ref.trim())
+        return {
+          name: match?.displayName ?? ref,
+          ref,
+          ...(match?.id ? { id: match.id } : {}),
+          ...(match?.kind ? { kind: match.kind } : {})
+        }
       })
     : undefined
 }

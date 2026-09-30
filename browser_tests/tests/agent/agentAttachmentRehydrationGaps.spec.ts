@@ -13,21 +13,7 @@ import {
 } from '@e2e/fixtures/helpers/agentAttachmentRehydration'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
-/**
- * PM-1643 / PM-717 item 3, end to end: the attachment shapes a user turn comes
- * back in that agentAttachmentHistoryPersistence.spec.ts cannot reach. That
- * spec attaches two ordinary `*.png` names, so its previews survive on the
- * extension alone; these cases cover the rows where the stored name cannot
- * carry the file — a library asset attached under its bare content hash, a
- * blank name the API let through, and a persisted display name.
- *
- * Each case drives the real composer and a real reload, and stands in for one
- * thing only: the history GET the reload hydrates from. The agent service
- * returns a message row's `content` verbatim (getMessages,
- * services/agent/server/agent_handler.go), so replacing that response is the
- * whole difference between these rows and the shared fixture's, whose POST
- * mock records no attachments at all.
- */
+/** PM-1643 / PM-717 item 3: persisted attachment presentation after reload. */
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
@@ -64,8 +50,9 @@ test(
     // figcaption is the compact grey tile the grid falls back to, and nothing
     // else in the panel renders one.
     await expect(reopened.locator('figcaption')).toHaveCount(0)
-    await reopened.screenshot({
-      path: testInfo.outputPath('extensionless-ref-after-reload.png')
+    await testInfo.attach('extensionless-ref-after-reload.png', {
+      body: await reopened.screenshot(),
+      contentType: 'image/png'
     })
   }
 )
@@ -77,8 +64,7 @@ test(
     await page.route(`**/view?filename=${PLAIN_FILENAME}&type=input`, (route) =>
       route.fulfill({ path: assetPath('image64x64.webp') })
     )
-    // The writer stores `attachments` verbatim and has never filtered it, so a
-    // blank posted by any client reaches the row this reload reads.
+    // The persisted row contains a blank attachment name.
     await serveHistory(page, promptHistory.requests, (posted) => ({
       text: posted.content,
       attachments: ['', ...(posted.attachments ?? [])]
@@ -102,7 +88,7 @@ test(
   }
 )
 
-/** PM-1705: the service persists the resolved asset name beside its storage ref. */
+/** PM-1705 / cloud #10854: expected display name beside its storage ref. */
 test(
   'labels a refreshed attachment with the filename the user attached',
   { tag: ['@cloud', '@ui'] },

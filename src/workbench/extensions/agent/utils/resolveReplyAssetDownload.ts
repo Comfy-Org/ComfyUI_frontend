@@ -8,10 +8,10 @@ import type { FetchedAssetDownload } from '@/platform/assets/composables/useAsse
 import type { ReplyAsset } from './replyAssets'
 
 async function displayFilename(asset: ReplyAsset): Promise<string> {
-  if (!isAssetPreviewSupported()) return asset.filename
+  if (!isAssetPreviewSupported()) return asset.label ?? asset.filename
   const record = await findOutputAsset(asset.filename).catch(() => undefined)
   const name = record?.name.split('/').pop()
-  if (!name) return asset.filename
+  if (!name) return asset.label ?? asset.filename
   const dot = asset.filename.lastIndexOf('.')
   return name.includes('.') || dot === -1
     ? name
