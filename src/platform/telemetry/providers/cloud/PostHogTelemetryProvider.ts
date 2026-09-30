@@ -745,6 +745,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
   }
 
+  // fallow-ignore-next-line unused-class-member
   trackAgentError(metadata: AgentErrorMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_ERROR, metadata)
   }
