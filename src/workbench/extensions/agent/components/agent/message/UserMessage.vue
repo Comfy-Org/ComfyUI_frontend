@@ -117,11 +117,6 @@ function attachmentIconClass(name: string): string {
  * audio-card behavior as agent replies. A ref resolves to the uploaded input
  * file; an image without one still has its local preview. Text and other
  * kinds have no grid treatment and keep the compact tiles.
- *
- * A rehydrated attachment carries the kind the server resolved from the
- * asset's MIME type, which outranks the one guessed from the name: a library
- * asset is attached under its content hash, and a hash has no extension to
- * read a kind off.
  */
 const splitAttachments = computed(() => {
   const grid: ReplyAsset[] = []
