@@ -66,6 +66,7 @@ const tabClass = (tab: CatalogueTab) =>
       <div
         class="rounded-xl bg-transparency-white-t20 transition-transform duration-300 ease-out motion-reduce:transition-none"
         :style="markerStyle"
+        data-testid="catalogue-marker"
       />
     </div>
     <template v-for="tab in tabs" :key="tab">

@@ -617,17 +617,38 @@ test('a workflow card spends its tag line on the whole name while hovered', asyn
   await mockWorkflowVisibility(context, true)
   await page.goto('/hub/workflows/')
 
-  const card = page
-    .locator('[data-testid="workshop-model-card"][data-kind="workflow"]')
-    .first()
+  const cards = page.locator(
+    '[data-testid="workshop-model-card"][data-kind="workflow"]'
+  )
+  await expect(cards.first()).toBeVisible()
+  // Only a name the single line already cuts off can show the hover doing
+  // anything, so the test picks one the catalogue is clipping.
+  const clipped = await cards.evaluateAll((all) =>
+    all.findIndex((card) => {
+      const name = card.querySelector('[data-testid="model-card-name"]')
+      return !!name && name.scrollHeight > name.clientHeight
+    })
+  )
+  expect(clipped, 'no workflow name is long enough to clip').toBeGreaterThan(-1)
+
+  const card = cards.nth(clipped)
   const name = card.getByTestId('model-card-name')
+  const linesOfName = () =>
+    name.evaluate((element) =>
+      Math.round(
+        element.clientHeight /
+          Number.parseFloat(getComputedStyle(element).lineHeight)
+      )
+    )
+
   await expect(card.getByTestId('model-card-task')).toBeVisible()
+  expect(await linesOfName()).toBe(1)
   const resting = await card.boundingBox()
 
   await card.hover()
 
   await expect(card.getByTestId('model-card-task')).toBeHidden()
-  await expect(name).toBeVisible()
+  await expect(async () => expect(await linesOfName()).toBe(2)).toPass()
   expect((await card.boundingBox())?.height).toBeCloseTo(
     resting?.height ?? 0,
     0
