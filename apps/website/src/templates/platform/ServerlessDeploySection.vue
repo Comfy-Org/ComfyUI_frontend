@@ -4,6 +4,7 @@ import { useClipboard } from '@vueuse/core'
 import { computed } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
+import { deployPromptFor } from '../../config/deploy-prompt'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import LiveTerminal from './LiveTerminal.vue'
@@ -11,10 +12,9 @@ import LiveTerminal from './LiveTerminal.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 // The prompt to paste into a coding agent; the copy button puts it on the
-// clipboard verbatim.
-const deployPrompt = computed(() =>
-  t('platform.serverlessDeploy.prompt', locale)
-)
+// clipboard verbatim. Kept out of translations.ts (which every page bundles)
+// since it's only ever used here — see deploy-prompt.ts for why.
+const deployPrompt = computed(() => deployPromptFor(locale))
 const deployTranscript = computed(() => deployPrompt.value.split('\n'))
 const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
 </script>

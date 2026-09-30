@@ -9022,18 +9022,6 @@ Enterprise`
     en: 'Copied',
     'zh-CN': '已复制'
   },
-  'platform.serverlessDeploy.prompt': {
-    en: `Install comfy-cli and read its build skill:
-
-\`pip install -U comfy-cli\`, then \`comfy skills show comfy-build\`.
-
-It covers packaging a local ComfyUI install — models, custom nodes, dependency pins — into a build on platform.comfy.org and cutting a release. \`comfy skills show comfy-deploy\` covers running that release as a serverless endpoint.`,
-    'zh-CN': `安装 comfy-cli，并阅读它的构建技能：
-
-先 \`pip install -U comfy-cli\`，再运行 \`comfy skills show comfy-build\`。
-
-它会把本地 ComfyUI 安装（模型、自定义节点、依赖版本）打包成 platform.comfy.org 上的一个可复现构建，并完成发布。\`comfy skills show comfy-deploy\` 则说明如何把该发布作为无服务器端点运行。`
-  },
   'platform.products.models.description': {
     en: 'Use thousands of the latest models in one API. Call Seedance, Minimax H3, Nano Banana, and GPT-Image.',
     'zh-CN':

@@ -110,7 +110,9 @@ const isSigilLine = (line: string) =>
           :class="cn(index > 0 && 'block')"
         ><template v-if="isSigilLine(line)"><span class="text-primary-comfy-yellow">{{ line.slice(0, 1) }}</span>{{
           line.slice(1)
-        }}</template><template v-else>{{ line || ' ' }}</template></span></template><span
+        }}</template><template v-else>{{
+          line || (visibleLines.length > 1 ? ' ' : '')
+        }}</template></span></template><span
         v-if="!prefersReducedMotion()"
         class="animate-pulse text-primary-comfy-yellow"
       >▋</span></code></pre>

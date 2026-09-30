@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
+import { deployPromptFor } from '../../config/deploy-prompt'
 import { t } from '../../i18n/translations'
 import ServerlessDeploySection from './ServerlessDeploySection.vue'
 
@@ -15,9 +16,7 @@ describe('ServerlessDeploySection', () => {
 
     await user.click(screen.getByRole('button', { name: 'Copy prompt' }))
 
-    expect(await navigator.clipboard.readText()).toBe(
-      t('platform.serverlessDeploy.prompt', 'en')
-    )
+    expect(await navigator.clipboard.readText()).toBe(deployPromptFor('en'))
     expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy()
   })
   it('presents the agent prompt as a live terminal', () => {
@@ -51,9 +50,7 @@ describe('ServerlessDeploySection', () => {
 
     await user.click(screen.getByRole('button', { name: '复制提示词' }))
 
-    expect(await navigator.clipboard.readText()).toBe(
-      t('platform.serverlessDeploy.prompt', 'zh-CN')
-    )
+    expect(await navigator.clipboard.readText()).toBe(deployPromptFor('zh-CN'))
   })
 })
 import userEvent from '@testing-library/user-event'
