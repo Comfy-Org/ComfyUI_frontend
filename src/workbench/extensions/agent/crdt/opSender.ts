@@ -127,6 +127,7 @@ export interface OpSender {
    * re-addressing them to the new lineage would apply them twice.
    */
   abortAll(): void
+  /** Settle outstanding work, unsubscribe, and permanently stop this sender. */
   detach(): void
 }
 
@@ -174,6 +175,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (staleAnonymousBudget === 0) return
     staleAnonymousBudget--
     if (staleAnonymousBudget === 0) retiredOpIds.clear()
+  }
+
+  function reportDetachSettleFailure(cause: unknown): void {
+    reportError(cause, {
+      errorType: 'failure_settling_agent_op_sender_detach',
+      tags: { feature_area: 'agent', operation: 'sync', outcome: 'degraded' }
+    })
   }
 
   function settle(outcome: BatchOutcome): void {
@@ -258,6 +266,28 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       batch.reportedThrow = false
       transmit(batch, 0)
     }, RESULT_TIMEOUT_MS)
+  }
+
+  function drainOutstanding(notify: (outcome: BatchOutcome) => void): void {
+    const queued = queue.splice(0)
+    const admitted = open
+    open = null
+    if (inFlight) {
+      const batch = inFlight
+      if (batch.timer) clearTimeout(batch.timer)
+      retire(batch, 0)
+      inFlight = null
+      notify({
+        state: batch.sends > 0 ? 'unconfirmed' : 'undeliverable',
+        ops: batch.ops
+      })
+    }
+    for (const batch of queued) {
+      notify({ state: 'undeliverable', ops: batch.ops })
+    }
+    if (admitted) {
+      notify({ state: 'undeliverable', ops: admitted.ops })
+    }
   }
 
   function pump(): void {
@@ -377,24 +407,24 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
     },
     abortAll() {
-      const queued = queue.splice(0)
-      const admitted = open
-      open = null
       lastMintedVersion = -1
       lastMintedWorkflowId = null
-      if (inFlight) settleUnbound(inFlight)
-      for (const batch of queued)
-        deps.onBatchSettled({ state: 'undeliverable', ops: batch.ops })
-      if (admitted)
-        deps.onBatchSettled({ state: 'undeliverable', ops: admitted.ops })
+      drainOutstanding((outcome) => deps.onBatchSettled(outcome))
     },
     detach() {
+      if (detached) return
       detached = true
-      if (inFlight?.timer) clearTimeout(inFlight.timer)
-      inFlight = null
-      queue.length = 0
-      open = null
-      unsubscribe()
+      try {
+        drainOutstanding((outcome) => {
+          try {
+            deps.onBatchSettled(outcome)
+          } catch (cause) {
+            reportDetachSettleFailure(cause)
+          }
+        })
+      } finally {
+        unsubscribe()
+      }
     }
   }
 }
