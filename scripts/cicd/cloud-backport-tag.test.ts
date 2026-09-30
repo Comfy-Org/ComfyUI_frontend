@@ -20,11 +20,19 @@ interface WorkflowJob {
 interface Workflow {
   concurrency?: { group?: string; 'cancel-in-progress'?: boolean }
   jobs?: Record<string, WorkflowJob>
+  on?: {
+    push?: { branches?: string[]; 'tags-ignore'?: string[] }
+  }
 }
 
 const workflow = parse(
   readFileSync('.github/workflows/cloud-backport-tag.yaml', 'utf8')
 ) as Workflow
+const dispatchWorkflowSource = readFileSync(
+  '.github/workflows/cloud-dispatch-build.yaml',
+  'utf8'
+)
+const dispatchWorkflow = parse(dispatchWorkflowSource) as Workflow
 const targetSha = 'a'.repeat(40)
 const otherSha = 'b'.repeat(40)
 const tagObjectSha = 'c'.repeat(40)
@@ -104,6 +112,20 @@ function runTagScript(
 }
 
 describe('cloud backport tag workflow', () => {
+  it('dispatches branch pushes without dispatching tags or deleted branches', () => {
+    expect(dispatchWorkflow.on?.push?.branches).toEqual(['**'])
+    expect(dispatchWorkflow.on?.push?.['tags-ignore']).toEqual(['**'])
+    expect(dispatchWorkflow.jobs?.dispatch.if).toContain(
+      "github.event_name != 'push' || github.event.deleted == false"
+    )
+    expect(dispatchWorkflow.concurrency?.group).toBe(
+      'cloud-dispatch-${{ github.event.pull_request.head.ref || github.ref_name }}'
+    )
+    expect(dispatchWorkflowSource).toContain(
+      '[[ "${BRANCH}" =~ ^cloud/[0-9]+\\.[0-9]+$ ]]'
+    )
+  })
+
   it('keeps every event distinct and bounds the API-only job', () => {
     expect(workflow.concurrency?.group).toContain(
       'github.event.pull_request.number'
