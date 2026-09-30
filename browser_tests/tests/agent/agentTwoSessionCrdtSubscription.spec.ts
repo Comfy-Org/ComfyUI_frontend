@@ -8,7 +8,6 @@ import type {
   AgentBoundWorkflow,
   AgentTwoSessionCrdtHarness
 } from '@e2e/fixtures/agentTwoSessionCrdtFixture'
-import type { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
@@ -33,35 +32,6 @@ const BUILT_NODE_IDS = [
   '2514973844700532',
   '2772376668635982'
 ]
-
-// Canvas order is the renderer's, not the document's, so both sides sort.
-async function canvasNodeIds(vueNodes: VueNodeHelpers): Promise<string[]> {
-  return (await vueNodes.getNodeIds()).sort(
-    (left, right) => Number(left) - Number(right)
-  )
-}
-
-/**
- * What the canvas settled on, once it has had `timeout` to fill. Returning the
- * ids rather than asserting on them is what lets the caller tell "still empty"
- * — the PM-1535 defect — apart from "filled, but with the wrong nodes", which
- * would be a new bug and must not be absorbed by an expected-failure marker.
- */
-async function settledCanvasNodeIds(
-  vueNodes: VueNodeHelpers,
-  timeout: number
-): Promise<string[]> {
-  try {
-    await expect
-      .poll(() => canvasNodeIds(vueNodes), { timeout })
-      .not.toEqual([])
-  } catch (neverFilled) {
-    // An empty canvas is the defect under test, not a broken test. The caller
-    // decides what it means; rethrowing here would pre-empt that.
-    void neverFilled
-  }
-  return canvasNodeIds(vueNodes)
-}
 
 test.describe(
   'Agent build displaced by a second thread',
@@ -133,7 +103,10 @@ test.describe(
         WORKFLOW_A.name
       )
 
-      const canvas = await settledCanvasNodeIds(twoSessionCrdt.vueNodes, 20_000)
+      const canvas = await twoSessionCrdt.canvasNodeIdsWhenSettled(
+        BUILT_NODE_IDS,
+        20_000
+      )
       // KNOWN BUG (PM-1535): the follower's subscribe target is the session's
       // boundWorkflowId, still Bravo after thread two bound it, so returning to
       // Alpha unsubscribes rather than resubscribing and Alpha's build is never
@@ -161,7 +134,7 @@ test.describe(
       await twoSessionCrdt.runBoundTurn('What is on my canvas?', alpha)
 
       await expect
-        .poll(() => canvasNodeIds(twoSessionCrdt.vueNodes), { timeout: 20_000 })
+        .poll(() => twoSessionCrdt.canvasNodeIds(), { timeout: 20_000 })
         .toEqual(BUILT_NODE_IDS)
     })
   }

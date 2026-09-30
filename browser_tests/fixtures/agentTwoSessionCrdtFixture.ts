@@ -306,6 +306,36 @@ export class AgentTwoSessionCrdtHarness {
     )
   }
 
+  /** The node ids the canvas is rendering, ordered like `hostNodeIds`. */
+  async canvasNodeIds(): Promise<string[]> {
+    return (await this.vueNodes.getNodeIds()).sort(
+      (left, right) => Number(left) - Number(right)
+    )
+  }
+
+  /**
+   * The canvas node ids once they match `expected`, or whatever the canvas
+   * settled on when the budget ran out. Two reasons this polls for the whole
+   * list and returns rather than asserts: a build that materializes over
+   * several frames must not be read half-rendered, and the caller has to be
+   * able to tell an empty canvas apart from one holding the wrong nodes.
+   */
+  async canvasNodeIdsWhenSettled(
+    expected: readonly string[],
+    timeout: number
+  ): Promise<string[]> {
+    try {
+      await expect
+        .poll(() => this.canvasNodeIds(), { timeout })
+        .toEqual([...expected])
+    } catch (neverMatched) {
+      // A canvas that never matches is an outcome under test, not a broken
+      // test; rethrowing here would pre-empt the caller's decision.
+      void neverMatched
+    }
+    return this.canvasNodeIds()
+  }
+
   /** How many times the client has subscribed this workflow's doc. */
   subscribeCount(workflowId: string): number {
     return this.subscribes.get(workflowId) ?? 0
