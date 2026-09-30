@@ -565,18 +565,20 @@ describe('createOpSender', () => {
 
   it('detach clears an armed transport-retry timer so no late retry send follows', () => {
     transportUp = false
-    sender.enqueue([addNode(1)])
+    const ops = [addNode(1)]
+    sender.enqueue(ops)
     expect(sent).toHaveLength(0)
     expect(vi.getTimerCount()).toBeGreaterThan(0)
 
     sender.detach()
 
     expect(vi.getTimerCount()).toBe(0)
-    const settledAfterDetach = settled.length
+    expect(settled).toHaveLength(1)
+    expect(settled[0]).toMatchObject({ state: 'undeliverable', ops })
     vi.advanceTimersByTime(500 * 6)
 
     expect(sent).toHaveLength(0)
-    expect(settled).toHaveLength(settledAfterDetach)
+    expect(settled).toHaveLength(1)
   })
 
   it('detach settles every outstanding batch instead of dropping it silently', () => {
