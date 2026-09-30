@@ -124,13 +124,18 @@ describe('payVerdictOf', () => {
     },
     {
       name: 'a stale subscription quote',
-      result: refusedWith('REQUEST_FAILED', 'SUBSCRIPTION_QUOTE_STALE'),
+      result: { status: 'error', code: 'QUOTE_STALE' },
       expected: { kind: 'requote', because: 'quote_expired' }
     },
     {
       name: 'a reactivation the server wants confirmed',
       result: { status: 'error', code: 'REACTIVATION_CONFIRMATION_REQUIRED' },
       expected: { kind: 'requote', because: 'reactivation_required' }
+    },
+    {
+      name: 'a stale quote as account-core normalizes it',
+      result: { status: 'error', code: 'QUOTE_STALE' },
+      expected: { kind: 'requote', because: 'quote_expired' }
     },
     {
       name: 'an unreachable billing service',

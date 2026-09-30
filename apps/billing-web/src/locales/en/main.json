@@ -245,7 +245,7 @@
           "upgrade": "Upgrading keeps your subscription, and it renews that day at {amount}.",
           "downgrade": "Switching to {plan} keeps your subscription, and it renews that day at {amount}.",
           "to_yearly": "Switching to yearly keeps your subscription. It renews on {date} at {amount}.",
-          "to_yearly_undated": "Switching to yearly keeps your subscription. It renews at {amount}.",
+          "to_yearly_undated": "Switching to yearly keeps your subscription, and it renews a year from today at {amount}.",
           "to_monthly": "Switching to monthly keeps your subscription, and it renews that day at {amount}.",
           "commitment": "Changing your commitment keeps your subscription, and it renews that day at {amount}.",
           "other": "This change keeps your subscription, and it renews that day at {amount}."
@@ -313,6 +313,8 @@
             "owner": "Billing for this workspace is managed by its owner. Ask them to make this change.",
             "sales_managed": "Your plan is managed by our team. Contact your account manager to make changes.",
             "unfinished": "A previous payment didn’t finish. Finish or cancel it in your billing settings.",
+            "change_scheduled": "Your plan is set to change to {plan} on {date}. Cancel that change in your billing settings to make a different one.",
+            "change_unnamed": "Your plan already has a change scheduled. Cancel it in your billing settings to make a different one.",
             "unknown": "Checkout isn’t available for this workspace right now. Contact support with the code below."
           },
           "codeLabel": "If this is an error, contact support with this code:"
@@ -324,12 +326,10 @@
         },
         "load_failed": {
           "title": "Couldn't load your checkout",
-          "body": "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
-          "codeLabel": "If this keeps happening, contact support with this code:"
-        },
-        "recheck_failed": {
-          "title": "Couldn't load your checkout",
-          "body": "We couldn't check this workspace's payments, so we can't show your checkout yet. Try again, or contact support if this keeps happening.",
+          "body": {
+            "quote": "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
+            "recheck": "We couldn't check your recent payments, so checkout can't open yet. Try again, or contact support if this keeps happening."
+          },
           "codeLabel": "If this keeps happening, contact support with this code:"
         }
       },

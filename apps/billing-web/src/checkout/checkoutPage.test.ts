@@ -110,9 +110,31 @@ describe('reduceCheckoutPage', () => {
       pay: false
     },
     {
+      name: 'a refusal for a change already scheduled, with that change',
+      events: [
+        {
+          type: 'refused',
+          reason: 'subscription_change_in_progress',
+          scheduled: {
+            plan: { tier: 'PRO', duration: 'ANNUAL' },
+            effectiveAt: '2026-10-28T00:00:00.000Z'
+          }
+        }
+      ],
+      expected: {
+        kind: 'refused',
+        reason: 'subscription_change_in_progress',
+        scheduled: {
+          plan: { tier: 'PRO', duration: 'ANNUAL' },
+          effectiveAt: '2026-10-28T00:00:00.000Z'
+        }
+      },
+      pay: false
+    },
+    {
       name: 'a failed read',
       events: [unavailable],
-      expected: { kind: 'unavailable', code: 'REQUEST_FAILED' },
+      expected: { kind: 'unavailable', cause: 'quote', code: 'REQUEST_FAILED' },
       pay: false
     },
     {
@@ -549,7 +571,11 @@ describe('reduceCheckoutPage after Pay', () => {
         { type: 'requoteFailed', code: 'REQUEST_FAILED' }
       ])
 
-      expect(page).toEqual({ kind: 'unavailable', code: 'REQUEST_FAILED' })
+      expect(page).toEqual({
+        kind: 'unavailable',
+        cause: 'quote',
+        code: 'REQUEST_FAILED'
+      })
       expect(railAcceptsPay(page)).toBe(false)
     }
   )
@@ -914,9 +940,13 @@ describe('reduceCheckoutPage endings', () => {
       expected: RESOLVING
     },
     {
-      name: "a re-read of the workspace's payments that fails is its own ending, not a failed load",
+      name: "a re-read of the workspace's payments that fails is a failed load of the re-read",
       events: [recheckFailed],
-      expected: { kind: 'recheck_failed', code: 'REQUEST_FAILED' }
+      expected: {
+        kind: 'unavailable',
+        cause: 'recheck',
+        code: 'REQUEST_FAILED'
+      }
     },
     {
       name: 'Try again after a failed re-read resolves again',
@@ -1219,7 +1249,7 @@ describe('isLocked', () => {
     },
     {
       name: 'unavailable',
-      page: { kind: 'unavailable', code: 'REQUEST_FAILED' },
+      page: { kind: 'unavailable', cause: 'quote', code: 'REQUEST_FAILED' },
       locked: false
     },
     {

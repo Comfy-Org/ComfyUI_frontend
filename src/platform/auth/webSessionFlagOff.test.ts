@@ -310,6 +310,7 @@ const CUSTOMER_PROVISIONING: RecordedRequest = {
 interface FlowGolden {
   signIn: RecordedRequest[]
   tokenRefresh: RecordedRequest[]
+  runToken: string
   apiCall: RecordedRequest[]
   socket: RecordedRequest[]
   signOut: RecordedRequest[]
@@ -318,6 +319,7 @@ interface FlowGolden {
 const UNIFIED_CLOUD_AUTH_OFF: FlowGolden = {
   signIn: [SESSION_POST, CUSTOMER_PROVISIONING],
   tokenRefresh: [SESSION_POST],
+  runToken: 'firebase-id-token',
   apiCall: [
     {
       method: 'GET',
@@ -350,6 +352,7 @@ const UNIFIED_CLOUD_AUTH_OFF: FlowGolden = {
 const UNIFIED_CLOUD_AUTH_ON: FlowGolden = {
   signIn: [TOKEN_MINT, SESSION_POST, CUSTOMER_PROVISIONING],
   tokenRefresh: [TOKEN_MINT, SESSION_POST],
+  runToken: 'cloud-jwt-2',
   apiCall: [
     {
       method: 'GET',
@@ -441,6 +444,10 @@ describe('cloud auth requests with unified_web_session off', () => {
         expect(recorder.pending).toEqual(golden.tokenRefresh)
       )
       recorder.take()
+
+      const runToken = await useAuthStore().getWorkspaceAuthToken()
+      expect(runToken).toBe(golden.runToken)
+      expect(recorder.take()).toEqual([])
 
       await api.fetchApi('/queue')
       await api.fetchApi('/prompt', {
