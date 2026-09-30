@@ -10,8 +10,15 @@ import type {
 } from '@comfyorg/account-core/webSessionIdentity'
 import type {
   WebSession,
+  WebSessionErrorCode,
   WebSessionOptions
 } from '@comfyorg/account-core/webSession'
+import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import {
+  createSessionTokenMint,
+  SessionTokenError
+} from '@comfyorg/account-core/sessionTokenMint'
 import { readWebSession } from '@comfyorg/account-core/webSession'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import {
@@ -19,13 +26,21 @@ import {
   createWebVisibilityPort
 } from '@comfyorg/account-core/web'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import {
+  clearInteractiveSignIn,
+  markInteractiveSignIn,
+  takeInteractiveSignIn
+} from '@/platform/auth/session/interactiveSignInMarker'
 import type { WebSessionRequestScope } from '@/platform/auth/session/webSessionFetch'
 import {
   fetchOnWebSession,
-  provideWebSessionRequests
+  provideWebSessionRequests,
+  WebSessionTokenError
 } from '@/platform/auth/session/webSessionFetch'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -41,6 +56,27 @@ interface InteractiveSignIn {
 const UNSETTLED_PHASES: ReadonlySet<WebSessionIdentityState['phase']> = new Set(
   ['idle', 'reading', 'restoring']
 )
+
+type TokenFailureMessageKey =
+  `auth.webSession.token.${keyof (typeof enMessages)['auth']['webSession']['token']}`
+
+const TOKEN_FAILURE_COPY: Readonly<
+  Record<WebSessionErrorCode, TokenFailureMessageKey>
+> = {
+  NO_SESSION: 'auth.webSession.token.ended',
+  SESSION_EXPIRED: 'auth.webSession.token.ended',
+  SESSION_REVOKED: 'auth.webSession.token.ended',
+  IDENTITY_CHANGED: 'auth.webSession.token.identityChanged',
+  SESSION_UNAVAILABLE: 'auth.webSession.token.unavailable',
+  CSRF_STALE: 'auth.webSession.token.refused',
+  WORKSPACE_ACCESS_DENIED: 'auth.webSession.token.workspaceDenied',
+  SESSION_REQUEST_REFUSED: 'auth.webSession.token.refused'
+}
+
+const LIFECYCLE_RACES: ReadonlySet<WebSessionErrorCode> = new Set([
+  'NO_SESSION',
+  'IDENTITY_CHANGED'
+])
 
 async function whenSettled(identity: WebSessionIdentity): Promise<void> {
   let stop = () => {}
@@ -133,8 +169,12 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     getProof: () => Promise<string>
   ): Promise<void> {
     const result = await session.signedIn(getProof).catch(() => null)
-    if (result?.status === 'ok') return
+    if (result?.status === 'ok') {
+      clearInteractiveSignIn()
+      return
+    }
     reportError(new Error('Web session creation failed'), {
+      surface: 'auth',
       errorType: 'session_cookie_creation_failure',
       level: 'warning'
     })
@@ -144,8 +184,13 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     session: WebSessionIdentity,
     signIn: InteractiveSignIn | null
   ): Promise<void> {
-    if (signIn && signIn.uid === firebaseIdentity.currentUser()?.uid) {
-      await createSession(session, signIn.getProof)
+    const user = firebaseIdentity.currentUser()
+    const reloaded = !signIn && user && takeInteractiveSignIn(user.uid)
+    const interactive =
+      signIn ??
+      (reloaded ? { uid: user.uid, getProof: () => user.getIdToken() } : null)
+    if (interactive && interactive.uid === user?.uid) {
+      await createSession(session, interactive.getProof)
     }
     session.boot()
   }
@@ -162,10 +207,45 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       signedInUserId.value =
         state.phase === 'signed_in' ? state.session.user.id : undefined
     })
+    const mint = createSessionTokenMint({
+      ...sessionOptions(),
+      getSession: currentSession
+    })
+    const authorize = createRequestAuthorizer({
+      getWorkspaceToken: mint.getWorkspaceToken
+    })
     releaseRequests = provideWebSessionRequests({
       scope: requestScope,
       workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
-      send
+      send: (url, init, scope) => send(url, init, scope, authorize),
+      workspaceToken: ({ workspaceId }) => mint.mint(workspaceId),
+      authorizeResource: async ({ session }) => {
+        try {
+          const { headers } = await authorize(
+            { kind: 'session', session },
+            { target: 'resource', method: 'POST' }
+          )
+          return headers
+        } catch (error) {
+          if (!(error instanceof SessionTokenError)) throw error
+          const { failure } = error
+          if (
+            failure.httpStatus !== 401 &&
+            !LIFECYCLE_RACES.has(failure.code)
+          ) {
+            reportError(error, {
+              surface: 'auth',
+              errorType: 'auth_session_token_mint_failure',
+              level: 'warning',
+              tags: { code: failure.code, http_status: failure.httpStatus }
+            })
+          }
+          throw new WebSessionTokenError(
+            error,
+            t(TOKEN_FAILURE_COPY[failure.code])
+          )
+        }
+      }
     })
     ready = whenSettled(session)
     void bootAfter(session, pendingSignIn)
@@ -176,15 +256,18 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   /** Only after an interactive sign-in; a token refresh never calls this. */
   function signedInInteractively(user: User): void {
     const getProof = () => user.getIdToken()
+    if (isCloud) markInteractiveSignIn(user.uid)
     if (identity) void createSession(identity, getProof)
     else if (!decided) pendingSignIn = { uid: user.uid, getProof }
   }
 
   async function signOut(): Promise<void> {
     pendingSignIn = null
+    clearInteractiveSignIn()
     const result = await identity?.signOut()
     if (result === undefined || result.status === 'ok') return
     reportError(new Error('Session cookie deletion failed'), {
+      surface: 'auth',
       errorType: 'auth_session_cookie_delete_failed',
       level: 'error'
     })
@@ -223,9 +306,11 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   function send(
     url: string,
     init: RequestInit,
-    scope: WebSessionRequestScope
+    scope: WebSessionRequestScope,
+    authorize: RequestAuthorizer
   ): Promise<Response> {
     return fetchOnWebSession(url, init, scope, {
+      authorize,
       reread: rereadFor,
       workspaceDenied: (workspaceId) =>
         useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId)

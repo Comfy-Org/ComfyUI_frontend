@@ -92,7 +92,7 @@ describe('PastEventsSection', () => {
     const link = screen.getByRole('link', {
       name: 'Recorded Livestream — WATCH NOW'
     })
-    expect(link.getAttribute('href')).toBe('/events/recorded-livestream')
+    expect(link.getAttribute('href')).toBe('/events/recorded-livestream/')
     expect(link.getAttribute('target')).toBeNull()
   })
 

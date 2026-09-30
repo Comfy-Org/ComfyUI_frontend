@@ -39,15 +39,13 @@ test(
       (route) => route.fulfill({ path: assetPath('image64x64.webp') })
     )
 
-    await new AgentPanel(page).open()
+    const panel = await new AgentPanel(page).open()
     await page
       .getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,
         exact: true
       })
       .click()
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel).toBeVisible()
     await panel
       .getByRole('button', { name: enMessages.agent.switchWorkflow })
       .click()

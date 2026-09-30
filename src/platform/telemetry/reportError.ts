@@ -16,6 +16,15 @@ import { toError } from '@/utils/errorUtil'
  */
 export const REPORTED_ERROR_PREFIX = '[Reported error]: '
 
+export type Surface =
+  | 'agent'
+  | 'billing'
+  | 'graph'
+  | 'auth'
+  | 'assets'
+  | 'workspace'
+  | 'platform'
+
 export interface ReportErrorOptions {
   /**
    * Stable machine-readable slug for this failure mode. Lands as the
@@ -23,6 +32,8 @@ export interface ReportErrorOptions {
    * `error_type` RUM context field.
    */
   errorType: string
+  /** Product surface responsible for acting on this failure. */
+  surface: Surface
   tags?: Record<string, string | number | boolean | undefined>
   context?: Record<string, unknown>
   level?: 'warning' | 'error'
@@ -72,7 +83,7 @@ const definedEntriesOf = <V>(
   )
 
 /** Written from `options`, so a caller tag of the same name never lands. */
-const RESERVED_TAG_KEYS = new Set(['error_type', 'level'])
+const RESERVED_TAG_KEYS = new Set(['error_type', 'level', 'surface'])
 
 let dispatching = false
 
@@ -116,6 +127,7 @@ function desktopExceptionSink(): DesktopCaptureException | undefined {
 function dispatchToDesktop(
   error: Error,
   errorType: string,
+  surface: Surface,
   tags: Record<string, string | number | boolean>,
   level?: ReportErrorOptions['level']
 ): boolean {
@@ -128,7 +140,12 @@ function dispatchToDesktop(
         message: error.message,
         ...(error.stack ? { stack: error.stack } : {})
       },
-      { ...tags, error_type: errorType, ...(level ? { level } : {}) }
+      {
+        ...tags,
+        error_type: errorType,
+        surface,
+        ...(level ? { level } : {})
+      }
     )
     return true
   } catch (reporterFailure) {
@@ -146,7 +163,7 @@ function dispatch(
   options: ReportErrorOptions,
   alreadyDelivered: DeliveryState = NO_DELIVERY
 ): DeliveryState {
-  const { errorType, level } = options
+  const { errorType, surface, level } = options
   const context = definedEntriesOf(options.context)
   const tags = definedTagsOf(options.tags)
   const sentryLive = !alreadyDelivered.sentry && isSentryEnabled()
@@ -160,7 +177,7 @@ function dispatch(
     if (sentryLive) {
       try {
         captureException(error, {
-          tags: { ...tags, error_type: errorType },
+          tags: { ...tags, error_type: errorType, surface },
           extra: context,
           level
         })
@@ -184,6 +201,7 @@ function dispatch(
           ...context,
           ...tags,
           error_type: errorType,
+          surface,
           ...(level ? { level } : {})
         })
         datadogDelivered = true
@@ -199,7 +217,7 @@ function dispatch(
     dispatching = false
   }
   if (!desktopDelivered) {
-    desktopDelivered = dispatchToDesktop(error, errorType, tags, level)
+    desktopDelivered = dispatchToDesktop(error, errorType, surface, tags, level)
   }
 
   return {

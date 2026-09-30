@@ -328,6 +328,7 @@ export const useSubgraphNavigationStore = defineStore(
           } catch (err) {
             if (navigationId !== navigationIntentId) return
             reportError(err, {
+              surface: 'graph',
               errorType: 'workflow_navigation_failure',
               level: 'warning',
               context: { stage: 'recovery' }

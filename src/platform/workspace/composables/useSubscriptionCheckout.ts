@@ -1,5 +1,6 @@
 import { useToast } from 'primevue/usetoast'
-import { computed, onScopeDispose, ref } from 'vue'
+import type { ToastMessageOptions } from 'primevue/toast'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -34,6 +35,7 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { SettledOperationError } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
@@ -640,6 +642,7 @@ export function useSubscriptionCheckout(
     } catch (portalError) {
       if (!isCurrent()) return null
       reportError(portalError, {
+        surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
       showSubscribeError(hasPaymentRecoveryCode ? error : portalError)
@@ -1186,7 +1189,8 @@ export function useSubscriptionCheckout(
         confirmReactivation,
         prorationAt: previewData.value?.is_immediate
           ? previewData.value.proration_at
-          : undefined
+          : undefined,
+        attemptStartedAt
       })
 
       if (response) {
@@ -1241,16 +1245,27 @@ export function useSubscriptionCheckout(
     }
   }
 
+  // A refused attempt's toast stays until dismissed; a later attempt that
+  // succeeds takes them down rather than leaving a decline over the success.
+  const attemptErrorToasts: ToastMessageOptions[] = []
+
   function showSubscribeError(error: unknown) {
-    toast.add({
+    const message: ToastMessageOptions = {
       severity: 'error',
       summary: t('g.error'),
       detail:
         error instanceof Error
           ? error.message
           : t('subscription.subscribeFailed')
-    })
+    }
+    attemptErrorToasts.push(message)
+    toast.add(message)
   }
+
+  watch(checkoutStep, (step) => {
+    if (step !== 'success') return
+    for (const message of attemptErrorToasts.splice(0)) toast.remove(message)
+  })
 
   async function recoverStaleQuote(error: unknown): Promise<boolean> {
     if (!hasErrorCode(error, 'SUBSCRIPTION_QUOTE_STALE')) return false
@@ -1469,6 +1484,7 @@ export function useSubscriptionCheckout(
       ...(errorCode && { error_code: errorCode }),
       duration_ms: Date.now() - context.attemptStartedAt
     })
+    if (error instanceof SettledOperationError) return
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'failed',
@@ -1520,18 +1536,20 @@ export function useSubscriptionCheckout(
           billing_op_id: response.billing_op_id,
           duration_ms: durationMs
         })
-        telemetry?.trackBillingEvent({
-          operation: 'operation',
-          stage: 'succeeded',
-          outcome: 'success',
-          operation_type: 'subscription',
-          tier: context.tier,
-          cycle: context.cycle,
-          checkout_type: context.checkoutType,
-          payment_intent_source: paymentIntentSource,
-          billing_op_id: response.billing_op_id,
-          duration_ms: durationMs
-        })
+        if (!response.operationObserved) {
+          telemetry?.trackBillingEvent({
+            operation: 'operation',
+            stage: 'succeeded',
+            outcome: 'success',
+            operation_type: 'subscription',
+            tier: context.tier,
+            cycle: context.cycle,
+            checkout_type: context.checkoutType,
+            payment_intent_source: paymentIntentSource,
+            billing_op_id: response.billing_op_id,
+            duration_ms: durationMs
+          })
+        }
         if (response.requiredPayment) {
           telemetry?.trackMonthlySubscriptionSucceeded({
             tier: context.tier,
@@ -1755,7 +1773,8 @@ export function useSubscriptionCheckout(
         confirmReactivation,
         prorationAt: previewData.value?.is_immediate
           ? previewData.value.proration_at
-          : undefined
+          : undefined,
+        attemptStartedAt
       })
 
       if (response) {
