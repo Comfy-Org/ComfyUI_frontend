@@ -50,7 +50,7 @@ describe('keepSubscriptionCopy', () => {
         new_plan: { ...previewOf().new_plan, duration: 'ANNUAL' },
         cost_next_period_cents: 30_000
       },
-      body: 'Switching to yearly keeps your subscription. It renews at $300.00.'
+      body: 'Switching to yearly keeps your subscription, and it renews a year from today at $300.00.'
     },
     {
       name: 'yearly to monthly at period end',

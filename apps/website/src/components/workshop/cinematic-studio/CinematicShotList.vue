@@ -13,7 +13,7 @@ import {
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import CinematicDirectionIcon from './CinematicDirectionIcon.vue'
+import CinematicDirectionThumb from './CinematicDirectionThumb.vue'
 import type { PickerKey } from './picker-key'
 
 const {
@@ -48,8 +48,7 @@ const rows = computed(() =>
       key: group.part,
       title: tc(group.title, locale),
       value: tc(option.label, locale),
-      option: option.id,
-      palette: option.palette
+      option
     }
   })
 )
@@ -103,29 +102,7 @@ const rowClass = (key: PickerKey) =>
       :class="rowClass(row.key)"
       @click="emit('open', row.key)"
     >
-      <span
-        v-if="row.palette"
-        class="flex h-7 w-10 shrink-0 overflow-hidden rounded-md"
-        aria-hidden="true"
-      >
-        <span
-          v-for="(color, stripe) in row.palette"
-          :key="stripe"
-          class="h-full flex-1"
-          :style="{ backgroundColor: color }"
-        />
-      </span>
-      <span
-        v-else
-        class="grid h-7 w-10 shrink-0 place-items-center"
-        aria-hidden="true"
-      >
-        <CinematicDirectionIcon
-          :part="row.key"
-          :option="row.option"
-          class="size-7 text-primary-warm-white"
-        />
-      </span>
+      <CinematicDirectionThumb :option="row.option" class="h-7 w-10" />
       <span class="w-14 shrink-0 text-xs text-primary-warm-gray">
         {{ row.title }}
       </span>

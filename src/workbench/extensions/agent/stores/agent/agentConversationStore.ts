@@ -580,7 +580,7 @@ export const useAgentConversationStore = defineStore(
       return true
     }
 
-    function settleBackgroundTurn(turnId: string): void {
+    function settleBackgroundTurn(turnId: string): TurnId | null {
       for (const [key, entry] of backgroundTurns) {
         if (entry.messageId !== turnId) continue
         rememberDepartedTurn(key, entry.messageId, 'settled-turn')
@@ -590,8 +590,9 @@ export const useAgentConversationStore = defineStore(
         // will keep it reachable afterwards, so flush its held parts now.
         entry.transport.dispose()
         backgroundTurns.delete(key)
-        return
+        return entry.messageId
       }
+      return null
     }
 
     function dropBackgroundTurns(): void {

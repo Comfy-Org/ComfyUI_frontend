@@ -6,8 +6,9 @@ import { computed, ref, useTemplateRef } from 'vue'
 import type {
   DepthState,
   ReshootTake
-} from '../../../../composables/useReshootDemo'
+} from '../../../../composables/useReshoot'
 import type { ReshootCamera } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import type { ReshootRunPhase } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/run'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import type { ReshootSound, ReshootView } from './output'
@@ -21,6 +22,8 @@ const {
   clip,
   camera,
   depth,
+  stage,
+  notice,
   step,
   takes,
   selected,
@@ -31,6 +34,8 @@ const {
   clip: string
   camera: Readonly<ReshootCamera>
   depth: DepthState
+  stage?: ReshootRunPhase
+  notice?: string
   step: 1 | 2
   takes: readonly ReshootTake[]
   selected: string
@@ -54,6 +59,11 @@ const sound = ref<ReshootSound>('generated')
 const finished = computed(() =>
   current?.status === 'done' && current.url ? current : undefined
 )
+const href = computed(() =>
+  sound.value === 'original'
+    ? (finished.value?.originalUrl ?? finished.value?.url)
+    : finished.value?.url
+)
 const fileName = computed(
   () =>
     `crossview-take-${current?.n ?? 0}${sound.value === 'original' ? '-original-audio' : ''}.mp4`
@@ -63,21 +73,25 @@ const fileName = computed(
 <template>
   <section
     :aria-label="rc('reshoot.title', locale)"
-    class="flex min-h-0 w-full flex-1 flex-col items-center gap-3"
+    class="flex min-h-0 w-full flex-1 flex-col items-center gap-3 max-lg:contents"
   >
-    <div class="flex w-[min(100%,calc(52svh*16/9))] flex-col gap-3">
+    <div
+      class="flex w-[min(100%,calc(52svh*16/9))] flex-col gap-3 max-lg:contents"
+    >
       <ReshootOutputBar
-        v-if="finished?.url"
+        v-if="href"
         v-model:view="view"
         v-model:sound="sound"
-        :href="finished.url"
+        class="max-lg:order-first"
+        :href
         :file-name="fileName"
         :locale
         @reuse="emit('reuse')"
       />
       <div
         ref="frameEl"
-        class="group/frame relative aspect-video w-full rounded-md bg-primary-comfy-ink ring-1 ring-transparency-white-t8"
+        class="group/frame relative aspect-video w-full rounded-md bg-primary-comfy-ink ring-1 ring-transparency-white-t8 max-lg:sticky max-lg:top-20 max-lg:z-20 max-lg:order-first max-lg:shadow-[0_12px_24px_rgb(0_0_0/0.45)]"
+        data-testid="reshoot-frame"
       >
         <ReshootTakeView
           v-if="current"
@@ -94,6 +108,8 @@ const fileName = computed(
           :clip
           :camera
           :depth
+          :stage
+          :notice
           :aimable="step === 2"
           :locale
           @aim="emit('aim', $event)"
@@ -114,7 +130,7 @@ const fileName = computed(
         </button>
       </div>
     </div>
-    <p class="text-xs text-primary-warm-gray">
+    <p class="text-center text-xs text-primary-warm-gray max-lg:order-last">
       {{
         current?.id === 'example'
           ? rc('reshoot.take.exampleHelp', locale)
@@ -123,6 +139,12 @@ const fileName = computed(
             : rc('reshoot.take.aim', locale)
       }}
     </p>
-    <ReshootTakes :takes :selected :locale @select="emit('select', $event)" />
+    <ReshootTakes
+      :takes
+      :selected
+      :locale
+      class="max-lg:order-last"
+      @select="emit('select', $event)"
+    />
   </section>
 </template>
