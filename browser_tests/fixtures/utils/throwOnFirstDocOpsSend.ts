@@ -12,7 +12,7 @@ export const INJECTED_DOC_OPS_THROWS_ATTR = 'data-injected-doc-ops-throws'
  * Later frames go out untouched, so the op sender's retry is what recovers.
  */
 export async function throwOnFirstDocOpsSend(page: Page): Promise<void> {
-  await page.addInitScript(() => {
+  await page.addInitScript((markAttr: string) => {
     function isDocOpsFrame(data: Parameters<WebSocket['send']>[0]): boolean {
       if (typeof data !== 'string') return false
       try {
@@ -35,10 +35,10 @@ export async function throwOnFirstDocOpsSend(page: Page): Promise<void> {
     ) {
       if (isDocOpsFrame(data) && throwsLeft > 0) {
         throwsLeft--
-        document.documentElement.dataset.injectedDocOpsThrows = '1'
+        document.documentElement.setAttribute(markAttr, '1')
         throw new Error('injected doc_ops transport failure')
       }
       nativeSend.call(this, data)
     }
-  })
+  }, INJECTED_DOC_OPS_THROWS_ATTR)
 }
