@@ -27,7 +27,8 @@ import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
-  useWorkshopAppsEnabled
+  useWorkshopAppsEnabled,
+  useWorkshopFlag
 } from '../../../scripts/posthog'
 import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
 import { t } from '../../../i18n/translations'
@@ -141,6 +142,7 @@ describe('CinematicStudio', () => {
     vi.mocked(useWorkshopEnabled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopEnabledSettled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => true))
+    vi.mocked(useWorkshopFlag).mockReturnValue(computed(() => true))
     const session = useWorkshopSession()
     session.session = computed(() => signedIn.value)
     vi.mocked(session.ensureFresh).mockResolvedValue({
@@ -1068,6 +1070,31 @@ describe('CinematicStudio', () => {
         expect(
           screen.queryAllByText(tc('cinematic.unavailable.title'))
         ).toHaveLength(open ? 0 : 1)
+      })
+    }
+  )
+
+  it.for([
+    { app: 'reshoot', flag: false, open: false },
+    { app: 'reshoot', flag: true, open: true },
+    { app: 'studio', flag: false, open: true }
+  ] as const)(
+    'opens $app only while its PostHog flag allows it (flag $flag)',
+    async ({ app, flag, open }) => {
+      vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+        computed(() => name !== 'workshop-reshoot-app-enabled' || flag)
+      )
+      render(CinematicStudioPage, {
+        props: { apps: appModels, models, initialApp: app }
+      })
+
+      await vi.waitFor(() => {
+        expect(
+          screen.queryAllByText(tc('cinematic.unavailable.title'))
+        ).toHaveLength(open ? 0 : 1)
+        expect(
+          screen.queryAllByTestId(app === 'reshoot' ? 'reshoot' : 'cinematic')
+        ).toHaveLength(open ? 1 : 0)
       })
     }
   )

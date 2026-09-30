@@ -2,7 +2,10 @@ import displayJson from '../content/workshop-display.json'
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
 import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
 import type { AppWorkshopModel } from './models-catalogue'
-import { isWorkshopModelDisabled } from './workshop-model-availability'
+import {
+  isWorkshopModelDisabled,
+  workshopModelFlag
+} from './workshop-model-availability'
 import type { WorkshopAppEntry } from './workshop-workflow-catalog'
 import { appCatalog } from './workshop-workflow-catalog'
 
@@ -23,8 +26,10 @@ function appModelsFor(
         !page.displayName
       )
         return []
+      const flag = workshopModelFlag(page.slug)
       return [
         {
+          ...(flag ? { flag } : {}),
           type: 'APP',
           appId: entry.app,
           slug: page.slug,
