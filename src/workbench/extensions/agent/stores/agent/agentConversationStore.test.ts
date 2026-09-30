@@ -114,6 +114,14 @@ const partTexts = (store: ReturnType<typeof useAgentConversationStore>) =>
     m.parts.flatMap((p) => (p.type === 'text' ? [p.text] : []))
   )
 
+const messageTexts = (
+  store: ReturnType<typeof useAgentConversationStore>,
+  id: string
+) =>
+  store.messages
+    .find((m) => m.id === id)
+    ?.parts.flatMap((p) => (p.type === 'text' ? [p.text] : []))
+
 describe('useAgentConversationStore', () => {
   it('publishes a turn identity before its live status', () => {
     const store = useAgentConversationStore()
@@ -186,6 +194,31 @@ describe('useAgentConversationStore', () => {
     store.hydrate([])
     store.resumeBackgroundTurn()
     expect(tabLinkIds(store)).toEqual(['wf-9'])
+  })
+
+  it('places no tab link when two live stashes on the thread could have sent it', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'older'))
+    store.stashActiveTurn()
+    store.startTurn(T2)
+    store.ingest(delta('t2', 'newer'))
+    store.stashActiveTurn()
+    store.setThreadId('th-other')
+    store.hydrate([])
+
+    store.ingest(activeTab('wf-9', undefined, 'th'))
+
+    store.ingest(delta('t2', ' and more'))
+    store.setThreadId('th')
+    store.hydrate([])
+    store.resumeBackgroundTurn()
+    store.ingest(done('t2'))
+    store.resumeBackgroundTurn()
+    store.ingest(done('t1'))
+    expect(tabLinkIds(store)).toEqual([])
+    expect(messageTexts(store, 't2')).toEqual(['newer and more'])
   })
 
   it('(M2) isStreaming is false after abortActiveTurn() with no done', () => {
@@ -456,6 +489,9 @@ describe('useAgentConversationStore', () => {
     store.resumeBackgroundTurn()
     store.resumeBackgroundTurn()
 
+    expect(store.messages.find((m) => m.id === 't2')?.streaming).toBe(false)
+    expect(messageTexts(store, 't2')).toEqual(['newer'])
+
     store.ingest(runApproval('t1', 'late-old-ask'))
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
@@ -463,6 +499,26 @@ describe('useAgentConversationStore', () => {
         tags: expect.objectContaining({ reason: 'settled-turn' })
       })
     )
+  })
+
+  it('keeps the text a stash received while its thread was off screen', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'older'))
+    store.stashActiveTurn()
+    store.setThreadId('th-other')
+    store.hydrate([])
+
+    store.ingest(delta('t1', ' and complete'))
+    store.ingest(done('t1'))
+
+    store.setThreadId('th')
+    store.hydrate([])
+    store.resumeBackgroundTurn()
+
+    expect(messageTexts(store, 't1')).toEqual(['older and complete'])
+    expect(store.messages.find((m) => m.id === 't1')?.streaming).toBe(false)
   })
 
   // Provenance has to expire with the slot it describes. Here the snapshot row

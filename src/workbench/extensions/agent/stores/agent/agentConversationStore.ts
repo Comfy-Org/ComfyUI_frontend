@@ -331,7 +331,7 @@ export const useAgentConversationStore = defineStore(
     ): void {
       if (eventThreadId === undefined || eventThreadId === threadId.value)
         transport?.ingest(event)
-      else latestBackgroundTurn(eventThreadId)?.transport.ingest(event)
+      else soleLiveBackgroundTurn(eventThreadId)?.transport.ingest(event)
     }
 
     function ingestBackgroundTurnEvent(
@@ -509,6 +509,27 @@ export const useAgentConversationStore = defineStore(
         if (entry.threadId === backgroundThreadId) latest = entry
       }
       return latest
+    }
+
+    /**
+     * `agent_active_tab` is the one event whose `message_id` is optional, so an
+     * unkeyed frame on a thread holding several live turns names no sender.
+     * Insertion order is not that identity, and the frame is not inert on the
+     * turn it lands in: `handleActiveTabEvent` closes the open text part, so
+     * the next delta starts a second one, and it clears the thinking
+     * indicator. A guess therefore fragments an unrelated live transcript and
+     * misfiles the link. Dropping costs one tabLink on a thread off screen.
+     */
+    function soleLiveBackgroundTurn(
+      backgroundThreadId: string
+    ): BackgroundTurn | undefined {
+      let sole: BackgroundTurn | undefined
+      for (const entry of backgroundTurns.values()) {
+        if (entry.threadId !== backgroundThreadId || entry.settled) continue
+        if (sole) return undefined
+        sole = entry
+      }
+      return sole
     }
 
     function restoreBackgroundUserText(entry: BackgroundTurn): void {
