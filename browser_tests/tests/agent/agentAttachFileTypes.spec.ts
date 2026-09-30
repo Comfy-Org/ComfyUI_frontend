@@ -242,9 +242,34 @@ test.describe(
       })
 
       // Dropping onto the composer means "attach this to the chat" (PM-1855).
-      // The canvas still opens a workflow, through its own drop handler.
       await expect(assetSection).toContainText('default.json')
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      // Polled, not read once: the loader runs off a document listener, so a
+      // bare read can pass merely by getting there first.
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    })
+
+    test('still opens a .json dropped on the CANVAS as a workflow', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      // The other half of PM-1855's json rule, and the half the panel change
+      // could silently break: the composer claims a drop on itself, and the
+      // graph loader only runs while a drop is unclaimed.
+      await agentPanel.open()
+      await expect(agentPanel.composerAssetSection).toHaveCount(0)
+
+      await comfyPage.dragDrop.dragAndDropFile('default.json', {
+        preserveNativePropagation: true
+      })
+
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
+      expect(
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+      ).toHaveLength(1)
+      await expect(
+        agentPanel.composerAssetSection,
+        'a canvas drop must not attach to the chat'
+      ).toHaveCount(0)
     })
 
     test('attaches the real fixtures that exist on disk through the picker', async ({

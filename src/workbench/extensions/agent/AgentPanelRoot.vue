@@ -1688,7 +1688,17 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
     return false
   }
 
-  if (asset.ref && asset.kind !== 'other') {
+  // Only a ref the policy actually ACCEPTED skips the upload. An opaque ref —
+  // a bare digest or the blake3: wire form — yields `unknown`, and staging on
+  // that is how a file the server will later refuse gets a chip and no warning:
+  // the docblock's "leaves the decision to the deferred fetch" only holds if
+  // this path declines it. `asset.kind !== 'other'` cannot stand in for the
+  // check, since it reads the shared taxonomy rather than the accept list.
+  if (
+    asset.ref &&
+    asset.kind !== 'other' &&
+    agentAttachRefVerdict(asset.ref) === 'accepted'
+  ) {
     return (
       panelRef.value?.addAttachment({
         id: `asset:${asset.ref}`,

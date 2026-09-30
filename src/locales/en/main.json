@@ -5336,7 +5336,7 @@
     "attachmentCountExceeded": "Only {count} files can be attached to one message",
     "attachmentCapabilityProbe": "The agent can read this file's format and length, but not what it contains",
     "attachmentCapabilityRead": "The agent can read this file's contents",
-    "attachmentCapabilityReference": "The agent can load this file in the graph, but can't read what it contains",
+    "attachmentCapabilityReference": "The agent can see this file is a 3D model, but can't read it or load it in the graph yet",
     "attachmentCapabilityRetain": "Attached for reference only — the agent can't read this file or load it in the graph",
     "attachmentCapabilityUnknown": "The agent will verify this file type when the message is sent",
     "attachmentCapabilityView": "The agent can see this image",

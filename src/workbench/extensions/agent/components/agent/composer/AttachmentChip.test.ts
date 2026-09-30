@@ -69,7 +69,9 @@ describe('AttachmentChip', () => {
     it.for([
       ['cat.png', 'can see this image'],
       ['clip.mp4', 'format and length, but not what it contains'],
-      ['mesh.glb', "load this file in the graph, but can't read"],
+      // Not "can load this in the graph": cloud cannot populate Load3D's
+      // model_file from an upload, and the seed tells the model not to try.
+      ['mesh.glb', "can't read it or load it in the graph yet"],
       ['notes.md', "read this file's contents"],
       ['photo.avif', 'reference only']
     ])('tells the user what the agent can do with %s', ([name, phrase]) => {

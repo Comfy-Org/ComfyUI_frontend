@@ -2976,7 +2976,7 @@ export const zAgentCancelAccepted = z.object({
  * - `retain`: the file is attached and nothing more — neither readable nor wirable. Only
  * .avif, which the turn cannot decode as an image and is not text.
  *
- * The union of the four arrays is the accepted list. Anything absent is rejected.
+ * The union of the five arrays is the accepted list. Anything absent is rejected.
  *
  */
 export const zAgentAttachmentPolicy = z.object({
