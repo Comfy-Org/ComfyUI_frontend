@@ -63,6 +63,7 @@ import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreS
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
+import { useHdrPreviewGeneration } from '@/platform/assets/composables/useHdrPreviewGeneration'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
@@ -291,6 +292,7 @@ registerAssetBrowserModalComponent(AssetBrowserModal)
 void registerCoreBottomPanelTabs()
 
 useQueuePolling()
+useHdrPreviewGeneration()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 
 const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {

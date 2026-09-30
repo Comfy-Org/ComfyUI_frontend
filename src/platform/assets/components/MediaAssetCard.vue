@@ -24,7 +24,7 @@
     <div
       class="relative aspect-square overflow-hidden p-0"
       @click.stop="handlePreviewClick"
-      @dblclick.stop="fileKind === 'image' && handleZoomClick()"
+      @dblclick.stop="handlePreviewDblClick"
     >
       <!-- Loading State -->
       <div
@@ -169,6 +169,7 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -177,6 +178,7 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
 import { startAssetDrag } from '../utils/assetDragUtil'
@@ -191,13 +193,14 @@ import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
 
-type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
+type PreviewKind = ReturnType<typeof getMediaTypeFromFilename> | 'hdr'
 
 const mediaComponents = {
   top: {
     video: defineAsyncComponent(() => import('./MediaVideoTop.vue')),
     audio: defineAsyncComponent(() => import('./MediaAudioTop.vue')),
     image: defineAsyncComponent(() => import('./MediaImageTop.vue')),
+    hdr: defineAsyncComponent(() => import('./MediaHdrTop.vue')),
     '3D': defineAsyncComponent(() => import('./Media3DTop.vue')),
     text: defineAsyncComponent(() => import('./MediaTextTop.vue')),
     other: defineAsyncComponent(() => import('./MediaOtherTop.vue'))
@@ -256,7 +259,10 @@ const fileKind = computed((): MediaKind => {
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
+const isHdr = computed(() => isHdrImageFilename(asset?.name))
+
 const previewKind = computed((): PreviewKind => {
+  if (isHdr.value) return 'hdr'
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
@@ -349,6 +355,11 @@ const handleZoomClick = () => {
   if (asset && canInspect.value) {
     emit('zoom', asset)
   }
+}
+
+function handlePreviewDblClick() {
+  if (asset && isHdr.value) openHdrViewer(getAssetUrl(asset))
+  else if (fileKind.value === 'image') handleZoomClick()
 }
 
 const handleImageLoaded = (width: number, height: number) => {

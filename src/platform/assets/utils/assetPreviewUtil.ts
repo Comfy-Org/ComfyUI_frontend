@@ -75,21 +75,28 @@ export async function persistThumbnail(
     const asset = await findOutputAsset(name)
     if (!asset || asset.preview_id) return
 
-    const previewFilename = `${asset.name}_preview.png`
-    const uploaded = await assetService.uploadAssetFromBase64({
-      data: await blobToDataUrl(blob),
-      name: previewFilename,
-      tags: ['output'],
-      user_metadata: { filename: previewFilename }
-    })
-
-    await assetService.updateAsset(asset.id, {
-      preview_id: uploaded.id
-    })
+    await attachPreview(asset, blob)
     await useAssetsStore().outputAssets.invalidate()
   } catch {
     // Non-critical — client still shows the rendered thumbnail
   }
+}
+
+export async function attachPreview(
+  asset: Pick<AssetRecord, 'id' | 'name'>,
+  blob: Blob
+): Promise<void> {
+  const previewFilename = `${asset.name}_preview.png`
+  const uploaded = await assetService.uploadAssetFromBase64({
+    data: await blobToDataUrl(blob),
+    name: previewFilename,
+    tags: ['output'],
+    user_metadata: { filename: previewFilename }
+  })
+
+  await assetService.updateAsset(asset.id, {
+    preview_id: uploaded.id
+  })
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {

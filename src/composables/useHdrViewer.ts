@@ -1,24 +1,19 @@
 import * as THREE from 'three'
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
 
-import type { ChromaticityCoords, GamutName } from '@/renderer/hdr/colorGamut'
-import {
-  detectGamutFromChromaticities,
-  gamutToSrgbMatrix
-} from '@/renderer/hdr/colorGamut'
+import type { GamutName } from '@/platform/hdr/colorGamut'
+import { gamutToSrgbMatrix } from '@/platform/hdr/colorGamut'
 import {
   HDR_VIEWER_FRAGMENT_SHADER,
   HDR_VIEWER_VERTEX_SHADER
-} from '@/renderer/hdr/hdrViewerShader'
-import type { ChannelHistograms, ImageStats } from '@/renderer/hdr/hdrStats'
+} from '@/platform/hdr/hdrViewerShader'
+import type { ChannelHistograms, ImageStats } from '@/platform/hdr/hdrStats'
 import {
   computeChannelHistograms,
   computeImageStats
-} from '@/renderer/hdr/hdrStats'
+} from '@/platform/hdr/hdrStats'
+import { loadHdrTexture, makeReader } from '@/platform/hdr/hdrTextureLoader'
 import { WebGLViewport } from '@/renderer/three/WebGLViewport'
-import { getImageFilenameFromUrl } from '@/utils/hdrFormatUtil'
 
 const MIN_ZOOM = 0.05
 const MAX_ZOOM = 64
@@ -51,47 +46,6 @@ interface PixelReadout {
   g: number
   b: number
   a: number | null
-}
-
-interface ExrTexData {
-  header?: { chromaticities?: ChromaticityCoords }
-}
-
-function createLoader(url: string) {
-  const filename = getImageFilenameFromUrl(url)
-  if (filename?.toLowerCase().endsWith('.hdr')) return new RGBELoader()
-  const loader = new EXRLoader()
-  loader.setDataType(THREE.FloatType)
-  return loader
-}
-
-function makeReader(
-  data: ArrayLike<number>,
-  type: THREE.TextureDataType
-): (index: number) => number {
-  if (type === THREE.HalfFloatType) {
-    return (index) => THREE.DataUtils.fromHalfFloat(data[index])
-  }
-  return (index) => data[index]
-}
-
-function loadHdrTexture(
-  url: string
-): Promise<{ texture: THREE.DataTexture; gamut: GamutName }> {
-  return new Promise((resolve, reject) => {
-    createLoader(url).load(
-      url,
-      (texture, texData) => {
-        const chromaticities = (texData as ExrTexData).header?.chromaticities
-        resolve({
-          texture,
-          gamut: detectGamutFromChromaticities(chromaticities)
-        })
-      },
-      undefined,
-      reject
-    )
-  })
 }
 
 export function useHdrViewer() {
