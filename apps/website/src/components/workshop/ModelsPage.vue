@@ -201,7 +201,7 @@ const Content = shallowRef(createContent())
   <template v-if="!slug">
     <div
       v-if="heading && catalogueView !== 'denied'"
-      class="mx-auto max-w-10xl px-6 pt-8 pb-4 max-sm:pt-5 lg:px-8 lg:pt-12 sm:short:pb-3"
+      class="mx-auto max-w-10xl animate-soft-in px-6 pt-8 pb-4 max-sm:pt-5 lg:px-8 lg:pt-12 sm:short:pb-3"
     >
       <p :class="workshopEyebrowClass">
         {{ t('workshop.catalogue.eyebrow', 'en') }}

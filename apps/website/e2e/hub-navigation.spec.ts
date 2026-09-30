@@ -50,7 +50,7 @@ for (const { from, to, copy, reducedMotion } of [
       'page'
     )
     const motion = await page.evaluateHandle((destination) => {
-      const observed = { crossfade: false, reveal: false }
+      const observed = { crossfade: false, marker: false }
       const finished = new Promise<void>((resolve) => {
         document.addEventListener(
           'astro:before-swap',
@@ -66,11 +66,16 @@ for (const { from, to, copy, reducedMotion } of [
           '::view-transition-old(root)',
           '::view-transition-new(root)'
         ].every((pseudo) => isFading(document.documentElement, pseudo))
-        const word = document.querySelector(
-          '[data-testid="workshop-hero"] [data-word]'
-        )
-        observed.reveal ||=
-          location.pathname === destination && word !== null && isFading(word)
+        observed.marker ||=
+          location.pathname === destination &&
+          document
+            .getAnimations()
+            .some(
+              (animation) =>
+                animation.effect instanceof KeyframeEffect &&
+                animation.effect.pseudoElement ===
+                  '::view-transition-group(catalogue-marker)'
+            )
         frame = requestAnimationFrame(record)
       }
       function isFading(element: Element, pseudo?: string) {
@@ -92,13 +97,10 @@ for (const { from, to, copy, reducedMotion } of [
         `ComfyUI ${to}`
       )
       await motion.evaluate((probe) => probe.finished)
-      await expect(page.getByTestId('split-reveal')).toContainText(copy)
-      await expect(
-        page.getByTestId('split-reveal').locator('[data-word]').last()
-      ).toHaveCSS('opacity', '1')
+      await expect(page.getByTestId('workshop-hero')).toContainText(copy)
       expect(await motion.evaluate((probe) => probe.observed)).toEqual({
         crossfade: reducedMotion === 'no-preference',
-        reveal: reducedMotion === 'no-preference'
+        marker: reducedMotion === 'no-preference'
       })
     } finally {
       await motion.evaluate((probe) => probe.stop())
