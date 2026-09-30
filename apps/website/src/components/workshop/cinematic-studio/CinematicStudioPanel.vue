@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { nextTick, ref, useTemplateRef } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGuard'
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
+
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -192,7 +195,12 @@ function generate() {
         :direction
         :title="popoverTitle(picker, locale)"
         :locale
-        class="fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:right-0 lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl"
+        :class="
+          cn(
+            'fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl',
+            picker === 'camera' ? 'lg:right-0' : 'lg:w-150'
+          )
+        "
         :style="{ '--anchor-top': `${anchorTop}px` }"
         @choose="choose"
         @close="closePicker"
