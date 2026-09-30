@@ -103,10 +103,6 @@ export interface AgentSessionDeps {
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
-const NON_RETRYABLE_REQUEST_STATUSES = new Set([
-  400, 401, 403, 404, 405, 409, 410, 422
-])
-
 export function isRetryableRequestFailure(
   error: unknown,
   accepted: boolean
@@ -117,8 +113,10 @@ export function isRetryableRequestFailure(
     error instanceof AgentResponseUnreadableError
   )
     return false
-  if (error instanceof AgentApiError)
-    return !NON_RETRYABLE_REQUEST_STATUSES.has(error.status)
+  if (error instanceof AgentApiError) {
+    if ([408, 425, 429].includes(error.status)) return true
+    return error.status < 400 || error.status >= 500
+  }
   return true
 }
 
@@ -616,6 +614,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       originContext === undefined ? null : { tabPath: originContext.tabPath }
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
+    let requestStarted = false
     try {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
@@ -625,6 +624,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       sentContext = wfContext
+      requestStarted = true
       const ack = await postTurn(
         threadAtSend,
         text,
@@ -636,7 +636,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         selectionWorkflowId
       )
       accepted = true
-      if (generation !== loadGeneration) return false
+      if (generation !== loadGeneration) return true
       acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
       return true
     } catch (error) {
@@ -645,7 +645,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
       if (generation !== loadGeneration) return false
-      return recordSendError(error, text, accepted)
+      return recordSendError(
+        error,
+        text,
+        accepted || (requestStarted && isUnreadableAckFailure(error))
+      )
     }
   }
 
