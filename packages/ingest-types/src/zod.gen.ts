@@ -335,6 +335,20 @@ export const zUpdateHubProfileRequest = z.object({
 })
 
 /**
+ * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ */
+export const zToolCallSummary = z.object({
+  duration_ms: z.number().int().optional(),
+  error_code: z.string().optional(),
+  finished_at: z.string().datetime().optional(),
+  id: z.string(),
+  started_at: z.string().datetime().optional(),
+  status: z.enum(['success', 'error']),
+  tool_call_id: z.string(),
+  tool_name: z.string()
+})
+
+/**
  * Pre/post-discount price for a team credit stop, in cents.
  */
 export const zTeamCreditStopPrice = z.object({
@@ -2763,7 +2777,11 @@ export const zAgentPendingAsk = z.object({
  * A persisted message in an agent thread.
  */
 export const zAgentMessage = z.object({
-  content: z.record(z.unknown()).optional(),
+  content: z
+    .object({
+      tool_calls: z.array(zToolCallSummary).optional()
+    })
+    .optional(),
   id: z.string(),
   pending_ask: zAgentPendingAsk.optional(),
   role: z.enum(['user', 'assistant', 'tool', 'system']),
