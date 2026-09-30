@@ -2699,6 +2699,11 @@
         "unavailable": "We couldn't reach your account. Try again in a moment.",
         "workspaceDenied": "You don't have access to this workspace. Contact support if this keeps happening.",
         "refused": "Your request was refused. Reload the page and try again."
+      },
+      "reconnecting": {
+        "title": "Reconnecting to your account",
+        "detail": "We can't reach Comfy right now. We'll keep retrying, and you stay signed in.",
+        "retry": "Retry now"
       }
     },
     "signOut": {
