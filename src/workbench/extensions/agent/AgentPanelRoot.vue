@@ -39,6 +39,7 @@ import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   AGENT_ATTACH_ACCEPT,
+  agentAttachCapability,
   agentAttachRefVerdict,
   agentAttachVerdict,
   isAgentAttachable
@@ -1678,6 +1679,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
         id: `asset:${asset.ref}`,
         name: asset.name,
         ref: asset.ref,
+        capability: agentAttachCapability(asset.ref) ?? 'unknown',
         previewUrl: asset.previewUrl
       }) ?? false
     )

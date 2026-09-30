@@ -7,8 +7,10 @@ import AttachmentChip from './AttachmentChip.vue'
 
 function renderChip(props: {
   name: string
+  refName?: string
   previewUrl?: string
   uploading?: boolean
+  capability?: 'view' | 'probe' | 'reference' | 'retain' | 'unknown'
 }) {
   return render(AttachmentChip, {
     props,
@@ -76,6 +78,35 @@ describe('AttachmentChip', () => {
       expect(chip).toHaveAttribute(
         'aria-description',
         expect.stringContaining(phrase)
+      )
+    })
+
+    it('prefers the admitted local capability over a misleading server ref', () => {
+      renderChip({
+        name: 'cat.png',
+        refName: 'notes.txt',
+        capability: 'view'
+      })
+      expect(screen.getByTestId('agent-attachment-chip')).toHaveAttribute(
+        'title',
+        expect.stringContaining('can see this image')
+      )
+    })
+
+    it('describes an opaque ref instead of dropping the affordance', () => {
+      renderChip({
+        name: 'My renamed asset',
+        refName: 'blake3:abcdef',
+        capability: 'unknown'
+      })
+      const chip = screen.getByTestId('agent-attachment-chip')
+      expect(chip).toHaveAttribute(
+        'title',
+        expect.stringContaining('verify this file type')
+      )
+      expect(chip).toHaveAttribute(
+        'aria-description',
+        expect.stringContaining('verify this file type')
       )
     })
   })

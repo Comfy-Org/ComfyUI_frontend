@@ -502,6 +502,7 @@ defineExpose({
           :key="item.id"
           :name="item.name"
           :ref-name="item.ref"
+          :capability="item.capability"
           :preview-url="item.previewUrl"
           :uploading="item.uploading"
           @remove="composer.removeReference(`asset:${item.id}`)"

@@ -7,17 +7,20 @@ import Tag from '@/components/chip/Tag.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { agentAttachCapability } from '../../../utils/attachableFiles'
+import type { AgentAttachCapability } from '../../../utils/attachableFiles'
 
 const {
   name,
   refName,
   previewUrl,
-  uploading = false
+  uploading = false,
+  capability
 } = defineProps<{
   name: string
   refName?: string
   previewUrl?: string
   uploading?: boolean
+  capability?: AgentAttachCapability | 'unknown'
 }>()
 const emit = defineEmits<{ remove: [] }>()
 
@@ -39,7 +42,12 @@ const capabilityLabel = computed(() => {
   // The stored ref decides when it can: an asset card's name is a display
   // label that need not carry a judgeable extension, and a chip with no
   // capability text is the one case this affordance exists to prevent.
-  switch (agentAttachCapability(refName ?? '') ?? agentAttachCapability(name)) {
+  switch (
+    capability ??
+    agentAttachCapability(name) ??
+    agentAttachCapability(refName ?? '') ??
+    'unknown'
+  ) {
     case 'view':
       return t('agent.attachmentCapabilityView')
     case 'probe':
@@ -49,7 +57,7 @@ const capabilityLabel = computed(() => {
     case 'retain':
       return t('agent.attachmentCapabilityRetain')
     default:
-      return undefined
+      return t('agent.attachmentCapabilityUnknown')
   }
 })
 </script>

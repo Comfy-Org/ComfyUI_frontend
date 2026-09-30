@@ -2,7 +2,10 @@ import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { hasImageType } from '@/utils/eventUtils'
 import { formatSize } from '@/utils/formatUtil'
-import { partitionAttachableFiles } from '../../utils/attachableFiles'
+import {
+  agentAttachCapability,
+  partitionAttachableFiles
+} from '../../utils/attachableFiles'
 import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
 import type { ComposerAttachment } from './useComposer'
 
@@ -128,6 +131,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       if (cancelled.has(id)) return false
       options.update(id, {
         name: file.name,
+        capability: agentAttachCapability(file.name) ?? 'unknown',
         previewUrl: hasImageType(file) ? URL.createObjectURL(file) : undefined
       })
       const controller = new AbortController()
