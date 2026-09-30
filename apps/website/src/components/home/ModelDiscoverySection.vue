@@ -57,7 +57,7 @@ const browseLabel = computed(() =>
   )
 )
 const browseHref = computed(() =>
-  onWorkflows.value ? `${routes.workshop}?type=workflows` : routes.workshop
+  onWorkflows.value ? routes.hubWorkflows : routes.workshop
 )
 
 // The marquee travels one row's width per period, so a fixed period runs a

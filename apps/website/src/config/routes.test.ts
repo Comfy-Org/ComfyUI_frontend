@@ -57,7 +57,9 @@ describe('localizeHref', () => {
     '/terms-of-service',
     '/terms-of-service/',
     '/models/',
-    '/models/apps/reshoot/'
+    '/hub/workflows/?category=product',
+    '/hub/apps/',
+    '/hub/apps/reshoot/'
   ])('never prefixes the locale-invariant route %s', (href) => {
     expect(localizeHref(href, 'zh-CN')).toBe(href)
   })
@@ -76,12 +78,18 @@ describe('localizeHref', () => {
 })
 
 describe('getRoutes workshop', () => {
-  it('keeps the workshop routes locale-invariant', () => {
-    for (const locale of ['en', 'zh-CN', 'ja'] as const) {
-      expect(getRoutes(locale).workshop).toBe('/hub/models/')
-      expect(getRoutes(locale).workshopSignIn).toBe('/login/')
+  it.for(['en', 'zh-CN', 'ja'] as const)(
+    'keeps the workshop routes locale-invariant (%s)',
+    (locale) => {
+      const routes = getRoutes(locale)
+      expect([
+        routes.workshop,
+        routes.hubWorkflows,
+        routes.hubApps,
+        routes.workshopSignIn
+      ]).toEqual(['/hub/models/', '/hub/workflows/', '/hub/apps/', '/login/'])
     }
-  })
+  )
 
   it('still localizes the rest of the Japanese routes', () => {
     expect(getRoutes('ja').home).toBe('/ja/')

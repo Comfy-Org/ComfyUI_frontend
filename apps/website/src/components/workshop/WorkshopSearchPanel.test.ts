@@ -49,7 +49,7 @@ describe('WorkshopSearchPanel', () => {
       appId: 'reshoot',
       slug: 'apps/reshoot',
       name: 'Re-shoot a video',
-      href: '/models/apps/reshoot/',
+      href: '/hub/apps/reshoot/',
       workflowCount: 0,
       capabilities: []
     }

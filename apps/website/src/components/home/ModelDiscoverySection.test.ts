@@ -158,7 +158,7 @@ describe('ModelDiscoverySection', async () => {
     ).toHaveAttribute('href', '/models/workflows/sketch/')
     expect(
       screen.getByRole('link', { name: 'Browse all workflows' })
-    ).toHaveAttribute('href', '/hub/models/?type=workflows')
+    ).toHaveAttribute('href', '/hub/workflows/')
   })
 
   // Both rows cross the screen at one pace, so switching tabs does not speed
