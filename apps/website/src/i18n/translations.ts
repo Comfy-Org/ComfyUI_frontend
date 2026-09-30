@@ -1945,9 +1945,9 @@ Enterprise`
     'zh-CN': '强大 GPU\n端到端安全内置'
   },
   'cloud.reason.1.description': {
-    en: 'Comfy Cloud works on any device. Pay only for running workflows, not idle time. With Comfy Cloud, you get security and infrastructure built-in with access to the most popular custom nodes.',
+    en: 'Comfy Cloud works on any device. Pay only for active usage, not idle time. With Comfy Cloud, you get security and infrastructure built-in with access to the most popular custom nodes.',
     'zh-CN':
-      'Comfy Cloud 可在任何设备上使用。只需为运行工作流付费，无需为闲置时间付费。使用 Comfy Cloud，您可获得内置的安全性和基础设施，并访问最流行的自定义节点。'
+      'Comfy Cloud 可在任何设备上使用。只需为实际使用付费，无需为闲置时间付费。使用 Comfy Cloud，您可获得内置的安全性和基础设施，并访问最流行的自定义节点。'
   },
   'cloud.reason.2.title': {
     en: 'All models. Commercial\nlicense guaranteed.',
@@ -2524,9 +2524,9 @@ Enterprise`
     'zh-CN': '用量计费'
   },
   'pricing.included.feature3.description': {
-    en: "You're only charged for <strong>active GPU</strong> time while a workflow is running. Idle time (e.g. time spent building workflows) does not consume GPU hours.",
+    en: "You're only charged for <strong>active GPU</strong> time while a workflow is running. Idle time (e.g. time you spend building workflows yourself) does not consume GPU hours.",
     'zh-CN':
-      '仅在工作流运行期间按<strong>实际 GPU</strong> 使用时长计费。空闲时间（如构建工作流）不消耗 GPU 时长。'
+      '仅在工作流运行期间按<strong>实际 GPU</strong> 使用时长计费。空闲时间（如你自己构建工作流）不消耗 GPU 时长。'
   },
   'pricing.included.feature4.title': {
     en: 'Credit balance',
@@ -2602,9 +2602,9 @@ Enterprise`
     'zh-CN': 'Comfy Agent'
   },
   'pricing.included.feature12.description': {
-    en: '<a href="/agent" class="text-primary-comfy-yellow underline">Comfy Agent</a> plans, builds, runs, and reviews workflows alongside you on the canvas. It draws on the same monthly pool of credits as the rest of your plan — there is no separate subscription to buy.',
+    en: '<a href="/agent" class="text-primary-comfy-yellow underline">Comfy Agent</a> plans, builds, runs, and reviews workflows alongside you on the canvas. It draws on the same pool of credits as the rest of your plan — there is no separate subscription to buy.',
     'zh-CN':
-      '<a href="/zh-CN/agent" class="text-primary-comfy-yellow underline">Comfy Agent</a> 与你一同在画布上规划、构建、运行并检查工作流。它消耗的是与计划其余部分相同的每月积分池——无需单独订阅。'
+      '<a href="/zh-CN/agent" class="text-primary-comfy-yellow underline">Comfy Agent</a> 与你一同在画布上规划、构建、运行并检查工作流。它消耗的是与计划其余部分相同的积分池——无需单独订阅。'
   },
 
   'pricing.faq.heading': {
