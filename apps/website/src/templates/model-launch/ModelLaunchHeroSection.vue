@@ -223,12 +223,21 @@ const isContentFirst = hero.layout === 'content-first'
     class="mx-auto flex max-w-9xl flex-col px-6 py-12 lg:px-20 lg:py-16"
   >
     <div
-      v-if="hero.videoSrc"
+      v-if="hero.videoSrc || hero.placeholderImageSrc"
       data-testid="model-launch-hero-block"
       :class="cn('relative', isContentFirst ? 'order-3' : 'order-1')"
     >
+      <img
+        v-if="!hero.videoSrc && hero.placeholderImageSrc"
+        :src="hero.placeholderImageSrc"
+        alt=""
+        aria-hidden="true"
+        width="1280"
+        height="720"
+        class="aspect-video w-full rounded-4xl border border-white/10 object-cover"
+      />
       <VideoPlayer
-        v-if="showVideo"
+        v-else-if="showVideo"
         :locale
         :aria-label="t(hero.titleKey, locale)"
         :src="hero.videoSrc"
@@ -260,7 +269,14 @@ const isContentFirst = hero.layout === 'content-first'
         class="pointer-events-none absolute top-6 right-6 flex size-12 items-center justify-center rounded-2xl bg-transparency-white-t4 backdrop-blur-sm lg:top-10 lg:right-10 lg:size-17.5 lg:rounded-3xl"
       >
         <span
-          class="inline-block size-6 bg-current text-primary-warm-white lg:size-8.75"
+          :class="
+            cn(
+              'inline-block bg-current text-primary-warm-white',
+              hero.logoSize === 'large'
+                ? 'size-9 lg:size-13'
+                : 'size-6 lg:size-8.75'
+            )
+          "
           :style="{
             maskImage: `url(${hero.logoSrc})`,
             maskSize: 'contain',

@@ -33,6 +33,25 @@ describe('ModelLaunchHeroSection', () => {
     ).toBeTruthy()
   })
 
+  it('shows the placeholder still above the content when a media-first hero has no video', () => {
+    render(ModelLaunchHeroSection, {
+      props: {
+        hero: {
+          layout: 'media-first',
+          placeholderImageSrc: '/still.webp',
+          titleKey: 'chatgptImage25.hero.title'
+        }
+      }
+    })
+    const blocks = screen.getAllByTestId('model-launch-hero-block')
+
+    expect(blocks).toHaveLength(2)
+    expect(within(blocks[0]).getByAltText('').getAttribute('src')).toBe(
+      '/still.webp'
+    )
+    expect(within(blocks[1]).getByRole('heading', { level: 1 })).toBeTruthy()
+  })
+
   it('spins the logo mask over the placeholder for overlay heroes that opt in', () => {
     render(ModelLaunchHeroSection, {
       props: {

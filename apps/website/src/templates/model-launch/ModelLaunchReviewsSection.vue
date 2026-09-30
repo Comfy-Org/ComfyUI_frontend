@@ -57,6 +57,7 @@ const quotes = creatorReviews.map((review) => ({
 
     <ScrollCarousel
       :locale
+      :autoplay-ms="reviews.autoplayMs"
       gap-class="gap-8"
       class="mt-12 max-w-none p-0 lg:mt-16 lg:p-0"
     >
@@ -66,7 +67,7 @@ const quotes = creatorReviews.map((review) => ({
         class="flex w-full shrink-0 snap-start flex-col justify-between rounded-5xl bg-transparency-white-t4 p-8 lg:w-2/3 lg:p-12"
       >
         <p
-          class="text-xl/relaxed font-light text-primary-comfy-canvas lg:text-2xl/relaxed"
+          class="text-lg/relaxed font-light text-primary-comfy-canvas lg:text-xl/relaxed"
         >
           "{{ quote.body }}"
         </p>

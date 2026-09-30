@@ -57,6 +57,9 @@ export interface ModelLaunchHero {
   eyebrowKey?: TranslationKey
   // Brand mark drawn as a CSS mask over the top-right corner of the video.
   logoSrc?: string
+  // 'large' draws the mark at 1.5× inside the same badge, for lockups that
+  // include a wordmark.
+  logoSize?: 'default' | 'large'
   titleKey: TranslationKey
   // Rendered muted directly after `titleKey`, for the two-tone Figma heading.
   titleRestKey?: TranslationKey
@@ -189,6 +192,9 @@ export interface ModelLaunchRunOptions {
 
 export interface ModelLaunchReviews {
   headingKey: TranslationKey
+  // Auto-advances the testimonial carousel every this many ms; omit for a
+  // manual carousel.
+  autoplayMs?: number
   // The promo card above the testimonials. It points at /mcp unless a page
   // names another route to cross-sell.
   highlight: {

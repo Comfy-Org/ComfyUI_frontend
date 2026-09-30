@@ -11,6 +11,7 @@ import {
   qwenImage21Page
 } from '../../data/qwenImage21'
 import { minimaxMusic3Page } from '../../data/minimaxMusic3'
+import { nvidiaRtxPage } from '../../data/nvidiaRtx'
 import { seedancePage } from '../../data/seedance'
 import { wanAnimate2Page } from '../../data/wanAnimate2'
 import { wan3Page } from '../../data/wan3'
@@ -32,7 +33,8 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'ltx', page: ltxPage },
   { name: 'geminiOmni', page: geminiOmniPage },
   { name: 'wanAnimate2', page: wanAnimate2Page },
-  { name: 'wan3', page: wan3Page }
+  { name: 'wan3', page: wan3Page },
+  { name: 'nvidiaRtx', page: nvidiaRtxPage }
 ]
 
 const VIDEO_URL =
