@@ -241,6 +241,11 @@ const copy = {
     en: 'Describe the moment. Pick the camera, the light and the look. Switch models any time.',
     'zh-CN': '描述这一刻。选择摄影机、光线与风格。随时切换模型。'
   },
+  'cinematic.lead': {
+    en: 'Direct every shot. Pick the camera, lens, light and grade, and get film-grade frames from any model.',
+    'zh-CN':
+      '执导每一个镜头。选择摄影机、镜头、光线与调色，用任意模型生成电影级画面。'
+  },
   'cinematic.firstRun.desert': {
     en: 'Lone rider crossing dunes at dawn',
     'zh-CN': '黎明时分独自穿越沙丘的骑手'

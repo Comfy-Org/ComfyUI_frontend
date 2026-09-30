@@ -196,7 +196,8 @@ beforeEach(() => {
           renewalDate: null,
           endDate: null,
           isCancelled: false,
-          hasFunds: true
+          hasFunds: true,
+          agentHasFunds: true
         }
       : null
   )

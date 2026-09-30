@@ -5,8 +5,8 @@ import { workshopAppHref, workshopAppRepo, workshopApps } from './apps'
 
 describe('workshopAppHref', () => {
   it.for([
-    { app: 'studio', href: '/models/apps/cinematic-studio' },
-    { app: 'reshoot', href: '/models/apps/reshoot' }
+    { app: 'studio', href: '/models/apps/cinematic-studio/' },
+    { app: 'reshoot', href: '/models/apps/reshoot/' }
   ] as const)('puts $app at $href', ({ app, href }) => {
     expect(workshopAppHref(app, 'en')).toBe(href)
   })
@@ -22,10 +22,13 @@ describe('workshopAppHref', () => {
 })
 
 describe('workshopAppRepo', () => {
-  it.for(['studio', 'reshoot'] as const)(
-    'has no repository for $0 until one is published',
-    (app) => {
-      expect(workshopAppRepo(app)).toBeUndefined()
-    }
-  )
+  it.for([
+    {
+      app: 'studio',
+      repo: 'https://github.com/Comfy-Org/comfy-cinematic-studio'
+    },
+    { app: 'reshoot', repo: 'https://github.com/Comfy-Org/comfy-reshoot' }
+  ] as const)('links $app to its published repository', ({ app, repo }) => {
+    expect(workshopAppRepo(app)).toBe(repo)
+  })
 })

@@ -46,7 +46,9 @@ const software = softwareApplicationNode({
   softwareVersion: pack.latestVersion,
   license: pack.license,
   codeRepository: pack.repoUrl,
-  authorName: pack.publisher?.name,
+  author: pack.publisher?.name
+    ? { type: 'Person', name: pack.publisher.name }
+    : undefined,
   isFree: true
 })
 ---
@@ -63,13 +65,13 @@ const software = softwareApplicationNode({
     },
     {
       name: 'Comfy Cloud',
-      url: absoluteUrl(Astro.site, localizeHref('/cloud', locale))
+      url: absoluteUrl(Astro.site, localizeHref('/cloud/', locale))
     },
     {
       name: t('breadcrumb.supportedNodes', locale),
       url: absoluteUrl(
         Astro.site,
-        localizeHref('/cloud/supported-nodes', locale)
+        localizeHref('/cloud/supported-nodes/', locale)
       )
     },
     { name: pack.displayName }

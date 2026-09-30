@@ -32,7 +32,7 @@ const storyList = itemListNode(
   url,
   collectionLabel,
   stories.map((story) => ({
-    url: absoluteUrl(Astro.site, `/customers/${story.slug}`),
+    url: absoluteUrl(Astro.site, `/customers/${story.slug}/`),
     name: story.title
   }))
 )

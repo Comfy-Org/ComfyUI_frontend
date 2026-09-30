@@ -865,16 +865,15 @@ export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
  * A starter prompt by the slot it occupies in the empty state, not by the text
  * it shows: the copy is owned elsewhere and changes without the funnel
  * changing. `unregistered` means the rendered set is larger than this union —
- * a prompt was added to the locale array and not to `starterPrompts.ts` — so a
- * new chip reads as an unmapped slot instead of being silently filed under a
- * neighbour's id.
+ * a prompt was appended to either English distribution list without a matching
+ * entry in `starterPrompts.ts`, so that extra chip reads as an unmapped slot.
  */
 export type AgentStarterPromptId =
-  | 'generate_image'
-  | 'list_workflows'
-  | 'find_workflow'
-  | 'explain_selected_node'
-  | 'build_video_workflow'
+  | 'slot_1'
+  | 'slot_2'
+  | 'slot_3'
+  | 'slot_4'
+  | 'slot_5'
   | 'unregistered'
 export interface AgentStarterPromptClickedMetadata extends Record<
   string,
@@ -1157,14 +1156,33 @@ export type AgentPaywallReason =
   | 'sales_managed'
   | 'unknown'
 
+/**
+ * Which moment put the paywall in front of the user. The two are not
+ * interchangeable and collapsing them made the funnel unreadable:
+ *
+ * - `refused_send` is reactive — a turn POST came back 402/`no_funds`, so the
+ *   user had to compose and send a message to discover they could not.
+ * - `credits_exhausted` is standing — the client already knows the workspace
+ *   has no funds and says so beside the composer, without a refusal first.
+ *
+ * Reported because `app:agent_paywall_shown` alone cannot tell a rise in
+ * impressions caused by the standing surface from one caused by more users
+ * being refused. Without the split, "the paywall is showing more" is
+ * ambiguous between the fix working and the product getting worse.
+ */
+export type AgentPaywallSurface = 'refused_send' | 'credits_exhausted'
+
 export interface AgentPaywallShownMetadata {
   reason: AgentPaywallReason
+  surface: AgentPaywallSurface
 }
 
 export type AgentPaywallCta = 'subscribe' | 'add_credits' | 'upgrade'
 
 export interface AgentPaywallCtaMetadata {
   cta: AgentPaywallCta
+  /** The surface whose impression this click follows. */
+  surface: AgentPaywallSurface
 }
 
 export interface SubscriptionCancellationMetadata {

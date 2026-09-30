@@ -2,23 +2,22 @@ import type { AgentStarterPromptId } from '@/platform/telemetry/types'
 import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 
 /**
- * Stable ids for the empty state's starter prompts, one per slot, index-aligned
- * with `agent.suggestedPrompts` in the locale files exactly as the chips' icons
- * already are.
+ * Stable ids for the empty state's starter prompts, index-aligned with both
+ * `agent.suggestedPrompts.cloud` and `agent.suggestedPrompts.local` in the
+ * English locale, and with the icon list in `EmptyState.vue`.
  *
  * The copy is owned by product and is expected to change; these ids are not,
  * which is the whole point of them — an event keyed on display text cannot
  * survive a rewrite, and an event keyed on nothing cannot tell the five chips
- * apart. A prompt added to the locale array needs its id added here in the same
- * position; until then the extra chip reports `unregistered` rather than
- * borrowing a neighbour's identity.
+ * apart. An appended prompt needs its id added here; until then that extra chip
+ * reports `unregistered`.
  */
 export const STARTER_PROMPT_IDS = [
-  'generate_image',
-  'list_workflows',
-  'find_workflow',
-  'explain_selected_node',
-  'build_video_workflow'
+  'slot_1',
+  'slot_2',
+  'slot_3',
+  'slot_4',
+  'slot_5'
 ] as const satisfies readonly AgentStarterPromptId[]
 
 /** What the empty state knows about the chip that was clicked. */
