@@ -92,17 +92,13 @@ export function useStablePrimeVueSplitterSizer(
     for (const { ref, width, storageKey } of storedWidths) {
       const el = resolveElement(ref)
       const start = el && resizeStart.get(el)
-      if (
-        !el ||
-        !start ||
-        el.offsetWidth === 0 ||
-        el.offsetWidth === start.width ||
-        toValue(storageKey) !== start.storageKey
-      ) {
-        continue
-      }
-      width.value = el.offsetWidth
-      pin(el, el.offsetWidth)
+      if (!el || !start) continue
+      const resized =
+        el.offsetWidth > 0 &&
+        el.offsetWidth !== start.width &&
+        toValue(storageKey) === start.storageKey
+      if (resized) width.value = el.offsetWidth
+      if (isUsableWidth(width.value)) pin(el, width.value)
     }
     resizeStart.clear()
   }

@@ -7,6 +7,7 @@ describe(savedPanelPercent, () => {
     { state: '[30,70]', edge: 'first', expected: 30 },
     { state: '[70,30]', edge: 'last', expected: 30 },
     { state: '[25,50,25]', edge: 'last', expected: 25 },
+    { state: '[30,90]', edge: 'first', expected: 25 },
     { state: null, edge: 'first', expected: null },
     { state: 'not json', edge: 'first', expected: null },
     { state: '{"a":1}', edge: 'first', expected: null },

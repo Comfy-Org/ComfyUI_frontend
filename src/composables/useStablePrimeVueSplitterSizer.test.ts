@@ -203,7 +203,7 @@ describe('useStablePrimeVueSplitterSizer', () => {
     { case: 'the panel is hidden', start: true, width: 0, key: 'a' },
     { case: 'the storage key changed', start: true, width: 520, key: 'b' }
   ])(
-    'keeps the stored width when a resize ends and $case',
+    'keeps and re-pins the stored width when a resize ends and $case',
     async ({ start, width, key }) => {
       const stored = useKeyedStorage({ a: 800, b: 800 })
       const panelRef = createPanel(480)
@@ -218,13 +218,17 @@ describe('useStablePrimeVueSplitterSizer', () => {
       )
       await flushWatcher()
 
-      if (start) onResizeStart(resizeStartEvent(handle))
+      if (start) {
+        onResizeStart(resizeStartEvent(handle))
+        panelRef.value.style.flexBasis = 'calc(40% - 8px)'
+      }
       setRenderedWidth(panelRef.value, width)
       storageKey.value = key
       onResizeEnd(resizeEndEvent())
 
       expect(stored.get('a')).toBe(800)
       expect(stored.get('b')).toBe(800)
+      expect(panelRef.value.style.flexBasis).toBe('800px')
     }
   )
 

@@ -199,6 +199,8 @@ agentTest.describe(
       await expect
         .poll(async () => Math.abs((await widthOf(panel)) - width))
         .toBeLessThanOrEqual(2)
+      await comfyPage.nextFrame()
+      expect(Math.abs((await widthOf(panel)) - width)).toBeLessThanOrEqual(2)
     }
 
     agentTest(

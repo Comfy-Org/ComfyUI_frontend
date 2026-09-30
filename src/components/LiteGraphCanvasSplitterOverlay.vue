@@ -414,9 +414,12 @@ function defaultSidebarWidth() {
     sidebarLocation.value === 'left'
       ? sidebarTabKey.value
       : `${sidebarTabKey.value}-right`
+  const stateKeys = showOffsideSplitter.value
+    ? [offsideStateKey.value, plainStateKey]
+    : [plainStateKey, offsideStateKey.value]
   const percent =
     savedPercent(
-      [plainStateKey, offsideStateKey.value],
+      stateKeys,
       sidebarLocation.value === 'left' ? 'first' : 'last'
     ) ?? SIDE_PANEL_SIZE
   return Math.max(SIDEBAR_MIN_WIDTH, workspaceWidthAt(percent))
@@ -428,7 +431,7 @@ function defaultOffsideWidth() {
       [offsideStateKey.value],
       sidebarLocation.value === 'left' ? 'last' : 'first'
     ) ?? SIDE_PANEL_SIZE
-  return workspaceWidthAt(percent)
+  return Math.max(SIDEBAR_MIN_WIDTH, workspaceWidthAt(percent))
 }
 
 const { onResizeStart: markResizedPanels, onResizeEnd: savePanelWidths } =
