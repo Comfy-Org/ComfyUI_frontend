@@ -30,6 +30,8 @@ import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import { SsoRequiredError } from '@comfyorg/account-core/sso'
+import { useSsoPromptStore } from '@/platform/auth/sso/ssoPromptStore'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -988,6 +990,74 @@ describe('useAuthStore', () => {
       )
 
       expect(customerRequestBody()).toBeUndefined()
+    })
+  })
+
+  describe('SSO-held accounts', () => {
+    it.for([
+      ['comfy-api', { message: 'sso_required: use single sign-on' }],
+      ['ingest', { code: 'sso_required', message: 'x' }]
+    ] as const)(
+      'signs out and offers SSO when %s refuses the customer record',
+      async ([, body]) => {
+        vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+        vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
+          fromPartial<UserCredential>({ user: mockUser })
+        )
+        mockFetch.mockImplementation((url: string) =>
+          url.endsWith('/customers')
+            ? Promise.resolve(
+                new Response(JSON.stringify(body), { status: 403 })
+              )
+            : Promise.reject(new Error('Unexpected API call'))
+        )
+
+        await expect(
+          store.login('test@example.com', 'password')
+        ).rejects.toBeInstanceOf(SsoRequiredError)
+
+        expect(useSsoPromptStore().prompt).toEqual({
+          email: 'test@example.com'
+        })
+        expect(firebaseAuth.signOut).toHaveBeenCalled()
+      }
+    )
+
+    it('offers SSO with the typed email when the blocking function refuses sign-up', async () => {
+      vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockRejectedValue(
+        new FirebaseError(
+          'auth/internal-error',
+          'Firebase: denied (ref: sso_required) (auth/internal-error).'
+        )
+      )
+
+      await expect(
+        store.register('ada@corp.example', 'password')
+      ).rejects.toThrow()
+
+      expect(useSsoPromptStore().prompt).toEqual({ email: 'ada@corp.example' })
+    })
+
+    it('leaves the prompt alone for an ordinary customer failure', async () => {
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
+        fromPartial<UserCredential>({ user: mockUser })
+      )
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers')
+          ? Promise.resolve(
+              new Response(JSON.stringify({ code: 'csrf_invalid' }), {
+                status: 403
+              })
+            )
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await expect(
+        store.login('test@example.com', 'password')
+      ).rejects.toBeInstanceOf(AuthStoreError)
+
+      expect(useSsoPromptStore().prompt).toBeNull()
     })
   })
 

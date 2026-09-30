@@ -23,6 +23,13 @@
     </Message>
 
     <div class="mt-12 flex flex-col gap-4 xl:gap-6">
+      <CloudSsoSignIn
+        v-if="ssoPrompt"
+        :key="ssoPrompt.email"
+        :default-email="ssoPrompt.email"
+        :notice="t('auth.errors.ssoRequired')"
+      />
+
       <template v-if="!showEmailForm">
         <CloudSocialAuthButtons
           :google-label="t('auth.signup.signUpWithGoogle')"
@@ -86,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
@@ -96,9 +103,12 @@ import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Message from '@/components/ui/message/Message.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useSsoPromptStore } from '@/platform/auth/sso/ssoPromptStore'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
+import CloudSsoSignIn from '@/platform/cloud/onboarding/components/CloudSsoSignIn.vue'
 import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useCloudAuthPage'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
+import { useSsoSignIn } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
 import {
   CLOUD_AUTH_FIELD_CLASS,
   CLOUD_AUTH_LINK_BUTTON_CLASS
@@ -110,6 +120,9 @@ const { t } = useI18n()
 const route = useRoute()
 const authActions = useAuthActions()
 const telemetry = useTelemetry()
+const ssoPromptStore = useSsoPromptStore()
+const { redirectIfSso } = useSsoSignIn()
+const ssoPrompt = computed(() => ssoPromptStore.prompt)
 
 const { status: regionStatus } = useRegionGate()
 const { isFreeTierEnabled } = useFreeTierOnboarding()
@@ -134,6 +147,7 @@ const signUpForm = ref<InstanceType<typeof SignUpForm> | null>(null)
 
 const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
   authError.value = ''
+  if (await redirectIfSso(values.email)) return
   if (
     await authActions.signUpWithEmail(
       values.email,

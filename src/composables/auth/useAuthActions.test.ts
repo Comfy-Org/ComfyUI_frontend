@@ -1,6 +1,7 @@
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { SsoRequiredError } from '@comfyorg/account-core/sso'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
@@ -487,6 +488,28 @@ describe('useAuthActions.reportError', () => {
       severity: 'error',
       summary: 'g.error',
       detail: 'auth.errors.signupBlocked'
+    })
+    expect(mockToastErrorHandler).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    [
+      'the blocking function sso_required ref',
+      new FirebaseError(
+        'auth/internal-error',
+        'Use your organization sign-in. (ref: sso_required)'
+      )
+    ],
+    ['an SSO org refusing the account', new SsoRequiredError('a@corp.example')]
+  ] as const)('tells the user to use SSO for %s', ([, error]) => {
+    const { reportError } = useAuthActions()
+
+    reportError(error)
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.ssoRequired'
     })
     expect(mockToastErrorHandler).not.toHaveBeenCalled()
   })

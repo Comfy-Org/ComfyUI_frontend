@@ -8,6 +8,7 @@ import {
   severityForAuthError
 } from '@comfyorg/account-core/firebaseAuthError'
 import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
+import { SsoRequiredError } from '@comfyorg/account-core/sso'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
@@ -47,7 +48,8 @@ export const localizedAuthErrorCopy = (): AuthErrorCopy => ({
     ])
   ),
   generic: t('auth.errors.generic'),
-  signupBlocked: st('auth.errors.signupBlocked', t('auth.errors.generic'))
+  signupBlocked: st('auth.errors.signupBlocked', t('auth.errors.generic')),
+  ssoRequired: st('auth.errors.ssoRequired', t('auth.errors.generic'))
 })
 
 /**
@@ -72,6 +74,14 @@ export const useAuthActions = () => {
     }
 
   const reportError = (error: unknown) => {
+    if (error instanceof SsoRequiredError) {
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('auth.errors.ssoRequired')
+      })
+      return
+    }
     const classification = classifyAuthError(error)
     // Ref: https://firebase.google.com/docs/auth/admin/errors
     const severity = severityForAuthError(classification)

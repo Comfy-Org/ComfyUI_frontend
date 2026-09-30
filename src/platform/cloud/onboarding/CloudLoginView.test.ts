@@ -1,8 +1,12 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useSsoPromptStore } from '@/platform/auth/sso/ssoPromptStore'
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
@@ -56,7 +60,10 @@ async function renderLoginView(
         createI18n({ legacy: false, locale: 'en', messages: { en: messages } })
       ],
       stubs: {
-        CloudSignInForm: { template: '<form data-testid="signin-form" />' }
+        CloudSignInForm: {
+          emits: ['submit'],
+          template: `<form data-testid="signin-form" @submit.prevent="$emit('submit', { email: 'ada@corp.example', password: 'pw' })"><button type="submit">submit-email</button></form>`
+        }
       }
     }
   })
@@ -64,6 +71,164 @@ async function renderLoginView(
 
 afterEach(() => {
   isEmbeddedWebView.value = false
+})
+
+const SSO = enMessages.auth.sso
+
+function stubDiscover(answer: () => Promise<Response>) {
+  const fetchSpy = vi.fn<typeof fetch>(answer)
+  vi.stubGlobal('fetch', fetchSpy)
+  const assign = vi
+    .spyOn(window.location, 'assign')
+    .mockImplementation(() => {})
+  return { fetchSpy, assign }
+}
+
+const discoverAnswer =
+  (body: unknown, status = 200) =>
+  async () =>
+    new Response(JSON.stringify(body), { status })
+
+function startedReturnTo(assign: { mock: { calls: unknown[][] } }) {
+  const url = new URL(String(assign.mock.calls[0][0]))
+  return {
+    path: url.pathname,
+    email: url.searchParams.get('email'),
+    returnTo: url.searchParams.get('return_to')
+  }
+}
+
+describe('CloudLoginView email sign-in discovers SSO first', () => {
+  it('sends an SSO domain to SSO start instead of the password sign-in', async () => {
+    const { assign } = stubDiscover(discoverAnswer({ sso: true }))
+    const user = userEvent.setup()
+    await renderLoginView('/cloud/login?previousFullPath=%2Fworkflows%2Fx')
+
+    await user.click(
+      screen.getByRole('button', { name: 'auth.login.useEmailInstead' })
+    )
+    await user.click(screen.getByRole('button', { name: 'submit-email' }))
+
+    await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+    expect(startedReturnTo(assign)).toEqual({
+      path: '/api/auth/sso/start',
+      email: 'ada@corp.example',
+      returnTo: '/workflows/x'
+    })
+    expect(useAuthActions().signInWithEmail).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    ['a non-SSO domain', discoverAnswer({ sso: false })],
+    ['a discover 5xx', discoverAnswer({ code: 'INTERNAL_ERROR' }, 500)],
+    [
+      'a discover network failure',
+      async () => {
+        throw new TypeError('Failed to fetch')
+      }
+    ]
+  ] as const)('falls through to password sign-in on %s', async ([, answer]) => {
+    const { assign } = stubDiscover(answer)
+    const user = userEvent.setup()
+    await renderLoginView()
+
+    await user.click(
+      screen.getByRole('button', { name: 'auth.login.useEmailInstead' })
+    )
+    await user.click(screen.getByRole('button', { name: 'submit-email' }))
+
+    await waitFor(() =>
+      expect(useAuthActions().signInWithEmail).toHaveBeenCalledWith(
+        'ada@corp.example',
+        'pw'
+      )
+    )
+    expect(assign).not.toHaveBeenCalled()
+  })
+})
+
+describe('CloudLoginView Continue with SSO', () => {
+  async function continueWithSso(url = '/cloud/login') {
+    const user = userEvent.setup()
+    await renderLoginView(url, enMessages)
+    await user.click(screen.getByRole('button', { name: SSO.continueWithSso }))
+    await user.type(screen.getByLabelText(SSO.emailLabel), 'ada@corp.example')
+    await user.click(screen.getByRole('button', { name: SSO.continue }))
+  }
+
+  it('redirects an SSO email with a sanitized return path', async () => {
+    const { assign } = stubDiscover(discoverAnswer({ sso: true }))
+
+    await continueWithSso(
+      '/cloud/login?previousFullPath=https%3A%2F%2Fevil.example%2F'
+    )
+
+    await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+    expect(startedReturnTo(assign).returnTo).toBe('/cloud/user-check')
+  })
+
+  it('explains a non-SSO email and keeps the other sign-in options', async () => {
+    const { assign } = stubDiscover(discoverAnswer({ sso: false }))
+
+    await continueWithSso()
+
+    expect(await screen.findByText(SSO.notSetUp)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: enMessages.auth.login.loginWithGoogle
+      })
+    ).toBeInTheDocument()
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it('says SSO could not be checked when discover fails', async () => {
+    stubDiscover(async () => {
+      throw new TypeError('Failed to fetch')
+    })
+
+    await continueWithSso()
+
+    expect(await screen.findByText(SSO.unavailable)).toBeInTheDocument()
+  })
+})
+
+describe('CloudLoginView SSO failures', () => {
+  it.for([
+    ['SSO_USER_SUSPENDED', SSO.errors.suspended],
+    ['SSO_INVALID_STATE', SSO.errors.expired],
+    ['SSO_SOMETHING_NEW', SSO.errors.failed]
+  ] as const)(
+    'explains ?sso_error=%s in plain language',
+    async ([code, message]) => {
+      await renderLoginView(`/cloud/login?sso_error=${code}`, enMessages)
+
+      expect(screen.getByText(message)).toBeInTheDocument()
+    }
+  )
+
+  it('clears the error and opens the SSO form on retry', async () => {
+    const user = userEvent.setup()
+    await renderLoginView('/cloud/login?sso_error=RATE_LIMITED', enMessages)
+
+    await user.click(screen.getByRole('button', { name: SSO.tryAgain }))
+
+    await waitFor(() =>
+      expect(screen.queryByText(SSO.errors.rateLimited)).not.toBeInTheDocument()
+    )
+    expect(screen.getByLabelText(SSO.emailLabel)).toBeInTheDocument()
+  })
+
+  it('offers SSO with the email prefilled after an sso_required refusal', async () => {
+    useSsoPromptStore().show('ada@corp.example')
+    await renderLoginView('/cloud/login', enMessages)
+
+    expect(
+      screen.getByText(enMessages.auth.errors.ssoRequired)
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText(SSO.emailLabel)).toHaveValue(
+      'ada@corp.example'
+    )
+  })
 })
 
 describe('CloudLoginView', () => {

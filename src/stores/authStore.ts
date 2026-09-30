@@ -12,11 +12,20 @@ import {
   signUpWithProvisioning,
   socialSignInWithProvisioning
 } from '@comfyorg/account-core/provisioning'
+import {
+  authErrorEmail,
+  classifyAuthError
+} from '@comfyorg/account-core/firebaseAuthError'
+import {
+  isSsoRequiredRefusal,
+  SsoRequiredError
+} from '@comfyorg/account-core/sso'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { useSsoPromptStore } from '@/platform/auth/sso/ssoPromptStore'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
@@ -554,6 +563,14 @@ export const useAuthStore = defineStore('auth', () => {
     )
     if (!createCustomerRes.ok) {
       if (!completedUser) assertIdentityUnchanged(sessionIdentity)
+      if (
+        createCustomerRes.status === 403 &&
+        isSsoRequiredRefusal(await createCustomerRes.json().catch(() => null))
+      ) {
+        throw new SsoRequiredError(
+          completedUser?.email ?? currentUser.value?.email ?? undefined
+        )
+      }
       throw new AuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
           error: createCustomerRes.statusText
@@ -625,14 +642,29 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
+  const ssoRefusalEmail = (
+    error: unknown,
+    typedEmail: string | undefined
+  ): string | null => {
+    if (error instanceof SsoRequiredError) {
+      return error.email ?? typedEmail ?? ''
+    }
+    if (classifyAuthError(error).kind === 'sso-required') {
+      return authErrorEmail(error) ?? typedEmail ?? ''
+    }
+    return null
+  }
+
   const executeAuthAction = async <T>(
     action: () => Promise<T>,
     options: {
       createCustomer?: boolean
       customerPayload?: Omit<CreateCustomerPayload, 'signup_source'>
+      email?: string
     } = {}
   ): Promise<T> => {
     loading.value = true
+    useSsoPromptStore().dismiss()
 
     try {
       const result = await action()
@@ -642,6 +674,18 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       return result
+    } catch (error) {
+      const email = ssoRefusalEmail(error, options.email)
+      if (email !== null) {
+        useSsoPromptStore().show(email)
+        // The org refuses this credential everywhere, so do not keep it.
+        await firebaseIdentity
+          .signOut()
+          .catch((signOutError: unknown) =>
+            reportError(signOutError, { errorType: 'auth_sso_sign_out_failed' })
+          )
+      }
+      throw error
     } finally {
       loading.value = false
     }
@@ -653,7 +697,7 @@ export const useAuthStore = defineStore('auth', () => {
   ): Promise<UserCredential> => {
     const result = await executeAuthAction(
       () => firebaseIdentity.signInWithEmail(email, password),
-      { createCustomer: true }
+      { createCustomer: true, email }
     )
 
     useCloudWebSessionStore().signedInInteractively(result.user)
@@ -673,22 +717,25 @@ export const useAuthStore = defineStore('auth', () => {
     password: string,
     turnstileToken?: string
   ): Promise<UserCredential> => {
-    const result = await executeAuthAction(() =>
-      signUpWithProvisioning({
-        createUser: () => firebaseIdentity.createUserWithEmail(email, password),
-        provisionCustomer: (credential) =>
-          createCustomer(
-            turnstileToken ? { turnstile_token: turnstileToken } : undefined,
-            credential
-          ),
-        onRollbackFailure: (error) => {
-          reportError(error, { errorType: 'auth_signup_rollback_failed' })
-          console.warn(
-            'Failed to roll back orphaned Firebase user after customer creation failed',
-            error
-          )
-        }
-      })
+    const result = await executeAuthAction(
+      () =>
+        signUpWithProvisioning({
+          createUser: () =>
+            firebaseIdentity.createUserWithEmail(email, password),
+          provisionCustomer: (credential) =>
+            createCustomer(
+              turnstileToken ? { turnstile_token: turnstileToken } : undefined,
+              credential
+            ),
+          onRollbackFailure: (error) => {
+            reportError(error, { errorType: 'auth_signup_rollback_failed' })
+            console.warn(
+              'Failed to roll back orphaned Firebase user after customer creation failed',
+              error
+            )
+          }
+        }),
+      { email }
     )
 
     useCloudWebSessionStore().signedInInteractively(result.user)

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSignupView from '@/platform/cloud/onboarding/CloudSignupView.vue'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
@@ -88,7 +89,13 @@ async function renderSignupView(url = '/cloud/signup') {
         router,
         createI18n({ legacy: false, locale: 'en', messages: { en: MESSAGES } })
       ],
-      stubs: { SignUpForm: { template: '<form data-testid="signup-form" />' } }
+      stubs: {
+        SignUpForm: {
+          emits: ['submit'],
+          methods: { resetTurnstile: () => undefined },
+          template: `<form data-testid="signup-form" @submit.prevent="$emit('submit', { email: 'ada@corp.example', password: 'pw' })"><button type="submit">submit-signup</button></form>`
+        }
+      }
     }
   })
 }
@@ -241,4 +248,40 @@ describe('CloudSignupView', () => {
       screen.getByRole('button', { name: 'Sign up with GitHub' })
     ).toBeInTheDocument()
   })
+})
+
+describe('CloudSignupView email sign-up discovers SSO first', () => {
+  it.for([
+    [true, 1, 0],
+    [false, 0, 1]
+  ] as const)(
+    'with sso=%s starts SSO %i times and signs up %i times',
+    async ([sso, starts, signUps]) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ sso })))
+      )
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      const user = (await import('@testing-library/user-event')).default.setup()
+      await renderSignupView()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Use email instead' })
+      )
+      await user.click(
+        await screen.findByRole('button', { name: 'submit-signup' })
+      )
+
+      await waitFor(() =>
+        expect(
+          assign.mock.calls.length +
+            vi.mocked(useAuthActions().signUpWithEmail).mock.calls.length
+        ).toBe(1)
+      )
+      expect(assign).toHaveBeenCalledTimes(starts)
+      expect(useAuthActions().signUpWithEmail).toHaveBeenCalledTimes(signUps)
+    }
+  )
 })
