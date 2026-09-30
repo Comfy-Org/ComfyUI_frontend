@@ -1,238 +1,266 @@
-import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
-import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternalScript'
+import { CancelFlowMachine, ChurnkeyApi } from '@churnkey/react/core'
+import type { ChurnkeyFlowResponse } from '@comfyorg/ingest-types'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { toError } from '@/utils/errorUtil'
+import {
+  workspaceApi,
+  WorkspaceApiError
+} from '@/platform/workspace/api/workspaceApi'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
-import type {
-  ChurnkeyHandlerResult,
-  ChurnkeyInit,
-  ChurnkeyInitConfig,
-  ChurnkeyOfferConfig,
-  ChurnkeySessionOutcome
-} from './types'
+import ChurnkeyFlowDialog from './ChurnkeyFlowDialog.vue'
+import { churnkeyCoreSchema } from './churnkeyCoreSchema'
+import type { ChurnkeyHandlerResult, ChurnkeySessionOutcome } from './types'
 
-const EMBED_SCRIPT_URL = 'https://assets.churnkey.co/js/app.js'
-
-const scriptLoaders = new Map<string, () => Promise<ChurnkeyInit>>()
-
-function loadChurnkey(appId: string): Promise<ChurnkeyInit> {
-  window.churnkey ??= { created: true }
-  const src = `${EMBED_SCRIPT_URL}?appId=${encodeURIComponent(appId)}`
-  let loadScript = scriptLoaders.get(src)
-  if (!loadScript) {
-    loadScript = createScriptLoader(src, () => window.churnkey?.init ?? null)
-    scriptLoaders.set(src, loadScript)
-  }
-  return loadScript()
-}
-
-function churnkeyError(error: unknown, type?: string): Error {
-  const baseError = toError(error)
-  return type ? new Error(`${baseError.message} (${type})`) : baseError
+class ChurnkeyActionError extends Error {
+  readonly recoverable = true
 }
 
 export interface ChurnkeyShowOptions {
+  workspaceId?: string
+  isWorkspaceCurrent?: () => boolean
   handleCancel: (
     surveyResponse?: string | null,
     freeformFeedback?: string | null
   ) => Promise<ChurnkeyHandlerResult>
 }
-
 export interface ChurnkeySession {
   show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionOutcome>
 }
 
-type RetentionState =
-  | { type: 'undecided' }
-  | { type: 'discounted' }
-  | { type: 'cancelling'; cancellation: Promise<ChurnkeyHandlerResult> }
-
-function rejectUnsupportedOffer(): Promise<never> {
-  return Promise.reject(
-    new Error(t('subscription.cancelDialog.offerUnavailable'))
-  )
-}
-
-function createSession(
-  init: ChurnkeyInit,
-  auth: ChurnkeyAuthResponse,
-  configuredAppId: string
-): ChurnkeySession {
-  const offerSubscriptionId = auth.offer_subscription_id
+function createSession(flow: ChurnkeyFlowResponse): ChurnkeySession {
+  const config = churnkeyCoreSchema.parse(flow.sdk_config)
+  if (
+    config.customer.id !== flow.customer_id ||
+    config.subscriptions[0]?.id !== flow.subscription.id
+  ) {
+    throw new ChurnkeyActionError(
+      'Cancellation configuration does not match the prepared subscription'
+    )
+  }
   return {
     show: (options) =>
-      new Promise<ChurnkeySessionOutcome>((resolve, reject) => {
-        let settled = false
-        let retention: RetentionState = { type: 'undecided' }
+      new Promise<ChurnkeySessionOutcome>((resolve) => {
+        const dialogs = useDialogStore()
+        const key = `churnkey-${flow.session_id}`
+        let action: Promise<void> | undefined
+        let outcome: ChurnkeySessionOutcome | undefined
+        let closing = false
+        let removed = false
+        let redemptionAttempted = false
+        let uncertain: 'discount' | 'cancel' | undefined
+        const recorded = new Set<string>()
 
-        function settle(fn: () => void) {
-          if (settled) return
-          settled = true
-          fn()
-          window.churnkey?.clearState?.()
+        function record(event: 'flow_opened' | 'offer_shown') {
+          if (recorded.has(event) || options.isWorkspaceCurrent?.() === false)
+            return
+          recorded.add(event)
+          void workspaceApi
+            .recordChurnkeyFlowEvent({ session_id: flow.session_id, event })
+            .catch((error) => {
+              reportError(error, {
+                surface: 'billing',
+                errorType: 'churnkey_exposure_failed'
+              })
+            })
         }
-
-        function handleCancel(
-          surveyResponse?: string | null,
-          freeformFeedback?: string | null
-        ): Promise<ChurnkeyHandlerResult> {
-          switch (retention.type) {
-            case 'discounted':
-              return Promise.reject(
-                new Error(t('subscription.cancelDialog.discountApplied'))
+        function assertScope() {
+          if (options.isWorkspaceCurrent?.() === false)
+            throw new ChurnkeyActionError(
+              t('subscription.cancelDialog.workspaceChanged')
+            )
+        }
+        function runAction(
+          kind: 'discount' | 'cancel',
+          run: () => Promise<void>
+        ): Promise<void> {
+          if (
+            action ||
+            closing ||
+            outcome ||
+            (uncertain && uncertain !== kind)
+          ) {
+            return Promise.reject(
+              new Error(t('subscription.cancelDialog.retentionBusy'))
+            )
+          }
+          const pending = Promise.resolve()
+            .then(() => {
+              assertScope()
+              return run()
+            })
+            .then(() => {
+              uncertain = undefined
+              outcome = {
+                type: kind === 'discount' ? 'discount-applied' : 'closed'
+              }
+            })
+            .catch((error) => {
+              reportError(error, {
+                surface: 'billing',
+                errorType: 'churnkey_billing_action_failed',
+                tags: { action: kind }
+              })
+              throw error
+            })
+            .finally(() => {
+              action = undefined
+            })
+          action = pending
+          return pending
+        }
+        async function applyDiscount() {
+          if (!flow.allowed_offer)
+            throw new ChurnkeyActionError(
+              t('subscription.cancelDialog.offerUnavailable')
+            )
+          if (!redemptionAttempted && Date.now() >= flow.expires_at * 1000)
+            throw new ChurnkeyActionError(
+              t('subscription.cancelDialog.retentionExpired')
+            )
+          redemptionAttempted = true
+          uncertain = 'discount'
+          try {
+            const acceptance = await workspaceApi.acceptChurnkeyRetention(
+              flow.session_id
+            )
+            if (acceptance.status === 'succeeded') return
+            const terminal = await useBillingOperationStore().startOperation(
+              acceptance.billing_op_id,
+              'retention',
+              { workspaceId: options.workspaceId }
+            )
+            if (terminal.status === 'succeeded') return
+            if (terminal.status === 'failed') uncertain = undefined
+            throw new ChurnkeyActionError(
+              t(
+                uncertain
+                  ? 'subscription.cancelDialog.retentionPending'
+                  : 'subscription.cancelDialog.retentionFailed'
               )
-            case 'cancelling':
-              return retention.cancellation
-            case 'undecided': {
-              const cancellation = options.handleCancel(
-                surveyResponse,
-                freeformFeedback
-              )
-              retention = { type: 'cancelling', cancellation }
-              return cancellation
-            }
+            )
+          } catch (error) {
+            if (
+              error instanceof WorkspaceApiError &&
+              error.code &&
+              [
+                'RETENTION_SESSION_STALE',
+                'RETENTION_NOT_ALLOWED',
+                'RETENTION_ALREADY_REDEEMED',
+                'RETENTION_UNAVAILABLE',
+                'PREVIOUS_OPERATION_FAILED'
+              ].includes(error.code)
+            )
+              uncertain = undefined
+            throw error
           }
         }
-
-        function settleAfterCancellation(
-          cancellation: Promise<ChurnkeyHandlerResult>,
-          outcome: ChurnkeySessionOutcome
-        ) {
-          void cancellation.then(
-            () => settle(() => resolve(outcome)),
-            (error) => settle(() => reject(toError(error)))
+        async function finish() {
+          if (closing) return
+          closing = true
+          await action?.catch(() => undefined)
+          machine.close()
+          machine.destroy()
+          resolve(
+            outcome ?? { type: uncertain ? 'billing-pending' : 'abandoned' }
           )
+          if (!removed) dialogs.closeDialog({ key })
         }
-
-        function recordDiscount() {
-          if (settled) return
-          switch (retention.type) {
-            case 'undecided':
-              retention = { type: 'discounted' }
-              return
-            case 'discounted':
-              return
-            case 'cancelling':
-              reportError(
-                new Error('Churnkey applied a discount during cancellation'),
-                {
-                  surface: 'billing',
-                  errorType:
-                    'error_applying_churnkey_discount_during_cancellation'
-                }
-              )
-              return
-            default: {
-              const unreachable: never = retention
-              return unreachable
-            }
-          }
+        const credentials = {
+          appId: flow.app_id,
+          customerId: flow.customer_id,
+          subscriptionId: flow.subscription.id,
+          authHash: flow.auth_hash,
+          mode: flow.mode,
+          issuedAt: Math.floor(Date.now() / 1000)
         }
-
-        const offerConfig: ChurnkeyOfferConfig = offerSubscriptionId
-          ? {
-              subscriptionId: offerSubscriptionId,
-              onDiscount: recordDiscount,
-              customerAttributes: { nativeOfferEligible: true }
-            }
-          : {
-              handleDiscount: rejectUnsupportedOffer,
-              customerAttributes: { nativeOfferEligible: false }
-            }
-
-        const config: ChurnkeyInitConfig = {
-          appId: configuredAppId,
-          authHash: auth.auth_hash,
-          customerId: auth.customer_id,
-          provider: 'stripe',
-          mode: auth.mode,
-          handleCancel: (_customer, surveyResponse, freeformFeedback) =>
-            handleCancel(surveyResponse, freeformFeedback),
-          handlePause: rejectUnsupportedOffer,
-          ...offerConfig,
-          handleTrialExtension: rejectUnsupportedOffer,
-          handlePlanChange: rejectUnsupportedOffer,
-          handleRebate: rejectUnsupportedOffer,
-          handleRedirect: rejectUnsupportedOffer,
-          onClose: (results) => {
-            const closedOutcome: ChurnkeySessionOutcome = {
-              type: results.aborted === true ? 'abandoned' : 'closed'
-            }
-            switch (retention.type) {
-              case 'undecided':
-                settle(() => resolve(closedOutcome))
-                return
-              case 'discounted':
-                settle(() => resolve({ type: 'discount-applied' }))
-                return
-              case 'cancelling':
-                settleAfterCancellation(retention.cancellation, closedOutcome)
-                return
-              default: {
-                const unreachable: never = retention
-                return unreachable
-              }
-            }
-          },
-          onError: (error, type) => {
-            if (settled) return
-            window.churnkey?.hide?.()
-            switch (retention.type) {
-              case 'undecided':
-                settled = true
-                reject(churnkeyError(error, type))
-                queueMicrotask(() => window.churnkey?.clearState?.())
-                return
-              case 'discounted':
-                settled = true
-                resolve({ type: 'discount-applied' })
-                reportError(error, {
-                  surface: 'billing',
-                  errorType: 'error_displaying_churnkey_after_discount',
-                  context: { churnkeyErrorType: type }
-                })
-                queueMicrotask(() => window.churnkey?.clearState?.())
-                return
-              case 'cancelling':
-                reportError(error, {
-                  surface: 'billing',
-                  errorType: 'error_displaying_churnkey_during_cancellation',
-                  context: { churnkeyErrorType: type }
-                })
-                settleAfterCancellation(retention.cancellation, {
-                  type: 'closed'
-                })
-                return
-              default: {
-                const unreachable: never = retention
-                return unreachable
-              }
-            }
-          }
-        }
-
-        try {
-          init('show', config)
-        } catch (error) {
-          settle(() => {
-            window.churnkey?.hide?.()
-            reject(churnkeyError(error))
+        const session = `ck_${btoa(
+          JSON.stringify({
+            a: credentials.appId,
+            c: credentials.customerId,
+            s: credentials.subscriptionId,
+            h: credentials.authHash,
+            m: credentials.mode,
+            t: credentials.issuedAt
           })
-        }
+        )
+          .replaceAll('+', '-')
+          .replaceAll('/', '_')
+          .replaceAll('=', '')}`
+        const unsupported = () =>
+          Promise.reject(
+            new Error(t('subscription.cancelDialog.offerUnavailable'))
+          )
+        const machine = new CancelFlowMachine({
+          session,
+          handleDiscount: () => runAction('discount', applyDiscount),
+          handleCancel: () =>
+            runAction('cancel', async () => {
+              if (uncertain)
+                throw new ChurnkeyActionError(
+                  t('subscription.cancelDialog.retentionPending')
+                )
+              uncertain = 'cancel'
+              await options.handleCancel(
+                machine.getSnapshot().selectedReason,
+                machine.getSnapshot().feedback
+              )
+            }),
+          handlePause: unsupported,
+          handlePlanChange: unsupported,
+          handleTrialExtension: unsupported,
+          handleRebate: unsupported,
+          onStepChange: (step) => {
+            if (step === 'offer') record('offer_shown')
+          }
+        })
+        machine.initializeFromConfig(
+          config,
+          new ChurnkeyApi(credentials),
+          credentials
+        )
+        dialogs.showDialog({
+          key,
+          title: t('subscription.cancelDialog.title'),
+          component: ChurnkeyFlowDialog,
+          props: {
+            machine,
+            onClose: () => {
+              void finish()
+            },
+            canCancel: () => !uncertain,
+            pendingMessage: () =>
+              uncertain
+                ? t('subscription.cancelDialog.retentionPending')
+                : undefined
+          },
+          dialogComponentProps: {
+            size: 'sm',
+            dismissableMask: false,
+            onRemoved: () => {
+              removed = true
+              void finish()
+            }
+          }
+        })
+        record('flow_opened')
+        if (machine.getSnapshot().step === 'offer') record('offer_shown')
       })
   }
 }
 
 export async function prepareChurnkey(): Promise<ChurnkeySession | null> {
-  const configuredAppId = useFeatureFlags().flags.churnkeyAppId
-  if (!configuredAppId) return null
-
-  const auth = await workspaceApi.getChurnkeyAuth()
-
-  const init = await loadChurnkey(configuredAppId)
-  return createSession(init, auth, configuredAppId)
+  try {
+    return createSession(await workspaceApi.prepareChurnkeyFlow())
+  } catch (error) {
+    if (
+      error instanceof WorkspaceApiError &&
+      error.status !== undefined &&
+      [403, 422, 503].includes(error.status)
+    )
+      return null
+    throw error
+  }
 }

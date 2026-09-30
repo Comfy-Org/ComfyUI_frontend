@@ -168,3 +168,4 @@ Optional section for additional information, references, or clarifications.
 
 - [Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) by Michael Nygard
 - [Architecture Decision Records](https://adr.github.io/) - Collection of ADR resources
+  | [BILLING-RETENTION-0031](BILLING-RETENTION-0031-cloud-authorized-cancellation-offers.md) | Cloud-authorized Cancellation Offers | Proposed | 2026-09-30 |

@@ -4721,3 +4721,56 @@ export const zGetWebsocketQuery = z.object({
   workspace_id: z.string().optional(),
   clientId: z.string().optional()
 })
+
+export const zChurnkeyRetentionOffer = z.object({
+  id: z.enum(['save_30_next_3_v1']),
+  percent_off: z.literal(30),
+  renewals: z.literal(3)
+})
+
+export const zChurnkeyRetentionSubscription = z.object({
+  started_at: z.number().int().lte(9007199254740991),
+  id: z.string(),
+  price_id: z.string(),
+  currency: z.string(),
+  unit_amount: z.number().int().lte(9007199254740991),
+  quantity: z.number().int().lte(9007199254740991),
+  period_start: z.number().int().lte(9007199254740991),
+  period_end: z.number().int().lte(9007199254740991),
+  interval: z.enum(['month', 'year']),
+  interval_count: z.number().int().lte(9007199254740991)
+})
+
+export const zChurnkeyFlowEventRequest = z.object({
+  session_id: z.string().uuid(),
+  event: z.enum(['flow_opened', 'offer_shown'])
+})
+
+export const zChurnkeyRetentionAcceptance = z.object({
+  billing_op_id: z.string(),
+  status: z.enum(['pending', 'succeeded'])
+})
+
+export const zChurnkeyRetentionRequest = z.object({
+  session_id: z.string().uuid()
+})
+
+/**
+ * A tax identifier for a company Stripe customer. Stripe validates the
+ * type/value combination synchronously and verifies VAT/ABN-style IDs
+ * asynchronously.
+ *
+ */
+
+export const zChurnkeyFlowResponse = z.object({
+  sdk_config: z.record(z.unknown()),
+  app_id: z.string(),
+  customer_id: z.string(),
+  auth_hash: z.string(),
+  mode: z.enum(['live', 'test']),
+  session_id: z.string().uuid(),
+  expires_at: z.number().int().lte(9007199254740991),
+  experiment_variant: z.enum(['control', 'treatment']).optional(),
+  allowed_offer: zChurnkeyRetentionOffer.optional(),
+  subscription: zChurnkeyRetentionSubscription
+})

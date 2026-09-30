@@ -1375,7 +1375,7 @@ type BillingOperationBillingEvent = {
   operation: 'operation'
   /** Absent when the initiating call itself failed, before the backend returned one to poll. */
   billing_op_id?: string
-  operation_type: 'subscription' | 'topup' | 'cancel'
+  operation_type: 'subscription' | 'topup' | 'cancel' | 'retention'
   /** Set by the billing SDK rail, as is `resumed`; the poller never sets either. */
   presentation?: BillingPresentation
   /** True when this tab reattached to an operation it did not issue. */

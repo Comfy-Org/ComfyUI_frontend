@@ -145,7 +145,18 @@ async function prepareCancellationSession(
   return null
 }
 
-export async function launchCancellationFlow({
+let activeFlow: Promise<void> | undefined
+
+export function launchCancellationFlow(
+  options: LaunchCancellationFlowOptions
+): Promise<void> {
+  activeFlow ??= runCancellationFlow(options).finally(() => {
+    activeFlow = undefined
+  })
+  return activeFlow
+}
+
+async function runCancellationFlow({
   cancelAt,
   launchWorkspaceId: capturedWorkspaceId,
   showFallback
@@ -189,6 +200,8 @@ export async function launchCancellationFlow({
 
   try {
     const results = await session.show({
+      workspaceId: launchWorkspaceId,
+      isWorkspaceCurrent: isLaunchWorkspaceCurrent,
       handleCancel: async () => {
         if (!isLaunchWorkspaceCurrent()) {
           throw new CancellationScopeChangedError(
@@ -225,6 +238,13 @@ export async function launchCancellationFlow({
         return
       case 'abandoned':
         telemetry?.trackSubscriptionCancellation('abandoned', metadata)
+        return
+      case 'billing-pending':
+        useToastStore().add({
+          severity: 'warn',
+          summary: t('subscription.cancelDialog.retentionPending'),
+          life: 10000
+        })
         return
       case 'closed':
         return

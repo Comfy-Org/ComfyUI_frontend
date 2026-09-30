@@ -1,441 +1,205 @@
-import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
+import { CancelFlowMachine, ChurnkeyApi } from '@churnkey/react/core'
+import type { ChurnkeyFlowResponse } from '@comfyorg/ingest-types'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { reportError } from '@/platform/telemetry/reportError'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import type {
-  ChurnkeyHandlerResult,
-  ChurnkeyInit,
-  ChurnkeyInitConfig
-} from './types'
+import {
+  workspaceApi,
+  WorkspaceApiError
+} from '@/platform/workspace/api/workspaceApi'
+import { useDialogStore } from '@/stores/dialogStore'
 
-const mocks = vi.hoisted(() => ({
-  init: vi.fn<ChurnkeyInit>(),
-  hide: vi.fn(),
-  clearState: vi.fn()
-}))
+import { prepareChurnkey } from './churnkeyClient'
 
-vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/i18n'))
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
-import { prepareChurnkey } from './churnkeyClient'
-
-function authResponse(): ChurnkeyAuthResponse {
+function flowResponse(): ChurnkeyFlowResponse {
   return {
-    customer_id: 'cus_test_1',
-    auth_hash: 'signed-hash',
-    mode: 'test'
-  }
-}
-
-interface CancellationControls {
-  resolve: (result: ChurnkeyHandlerResult) => void
-  reject: (error: Error) => void
-}
-
-function capturedConfig(): ChurnkeyInitConfig {
-  const config = mocks.init.mock.calls.at(0)?.[1]
-  if (!config) throw new Error('Churnkey was not initialized')
-  return config
-}
-
-describe('churnkeyClient', () => {
-  beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).churnkeyAppId = 'app_test'
-    vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue(authResponse())
-    window.churnkey = {
-      init: mocks.init,
-      hide: mocks.hide,
-      clearState: mocks.clearState
-    }
-  })
-
-  it('builds a Stripe-provider session from backend credentials', async () => {
-    const session = await prepareChurnkey()
-    assert.exists(session)
-
-    const handleCancel = vi.fn().mockResolvedValue({ message: 'Canceled' })
-    const showPromise = session.show({
-      handleCancel
-    })
-
-    expect(mocks.init).toHaveBeenCalledExactlyOnceWith(
-      'show',
-      expect.objectContaining({
-        appId: 'app_test',
-        authHash: 'signed-hash',
-        customerId: 'cus_test_1',
-        provider: 'stripe',
-        mode: 'test',
-        customerAttributes: { nativeOfferEligible: false }
-      })
-    )
-
-    const config = capturedConfig()
-    expect(config).not.toHaveProperty('customer')
-    expect(config).not.toHaveProperty('subscriptions')
-    expect(config).not.toHaveProperty('record')
-
-    await expect(
-      config.handleCancel({ id: 'cus_test_1' }, 'Too expensive', 'Feedback')
-    ).resolves.toEqual({ message: 'Canceled' })
-    expect(handleCancel).toHaveBeenCalledWith('Too expensive', 'Feedback')
-
-    config.onClose({ aborted: true })
-    await expect(showPromise).resolves.toEqual({ type: 'abandoned' })
-    expect(mocks.clearState).toHaveBeenCalledOnce()
-  })
-
-  it.for([
-    'handlePause',
-    'handleDiscount',
-    'handleTrialExtension',
-    'handlePlanChange',
-    'handleRebate',
-    'handleRedirect'
-  ] as const)('keeps %s blocked by default', async (handler) => {
-    const session = await prepareChurnkey()
-    assert.exists(session)
-    const showPromise = session.show({ handleCancel: vi.fn() })
-
-    await expect(capturedConfig()[handler]?.()).rejects.toThrow(
-      'subscription.cancelDialog.offerUnavailable'
-    )
-
-    capturedConfig().onClose({ aborted: true })
-    await showPromise
-  })
-
-  it.for(['live', 'test', 'sandbox'] as const)(
-    'enables a native discount on the admitted subscription in %s mode',
-    async (mode) => {
-      vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue({
-        ...authResponse(),
-        mode,
-        offer_subscription_id: 'sub_offer_1'
-      })
-      const session = await prepareChurnkey()
-      assert.exists(session)
-      const showPromise = session.show({ handleCancel: vi.fn() })
-
-      expect(capturedConfig()).toMatchObject({
-        mode,
-        subscriptionId: 'sub_offer_1',
-        customerAttributes: { nativeOfferEligible: true }
-      })
-      expect(capturedConfig()).not.toHaveProperty('handleDiscount')
-      capturedConfig().onClose({ aborted: true })
-      await showPromise
-    }
-  )
-
-  it('refuses to cancel once a discount has been applied', async () => {
-    vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue({
-      ...authResponse(),
-      offer_subscription_id: 'sub_offer_1'
-    })
-    const session = await prepareChurnkey()
-    assert.exists(session)
-    const handleCancel = vi.fn()
-    const showPromise = session.show({ handleCancel })
-    const config = capturedConfig()
-
-    config.onDiscount?.({}, {})
-    await expect(config.handleCancel({}, 'too_expensive')).rejects.toThrow(
-      'subscription.cancelDialog.discountApplied'
-    )
-    config.onClose({})
-
-    await expect(showPromise).resolves.toEqual({ type: 'discount-applied' })
-    expect(handleCancel).not.toHaveBeenCalled()
-  })
-
-  async function showWithPendingCancellation() {
-    vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue({
-      ...authResponse(),
-      offer_subscription_id: 'sub_offer_1'
-    })
-    const session = await prepareChurnkey()
-    assert.exists(session)
-    let cancel: CancellationControls | undefined
-    const handleCancel = vi.fn(
-      () =>
-        new Promise<ChurnkeyHandlerResult>((resolve, reject) => {
-          cancel = { resolve, reject }
-        })
-    )
-    const showPromise = session.show({ handleCancel })
-    const config = capturedConfig()
-    const firstCancel = config.handleCancel({}, 'too_expensive')
-    assert.exists(cancel)
-    return { cancel, config, firstCancel, handleCancel, showPromise }
-  }
-
-  const lateDiscountReport = [
-    expect.any(Error),
-    {
-      surface: 'billing',
-      errorType: 'error_applying_churnkey_discount_during_cancellation'
-    }
-  ]
-
-  it('keeps the cancellation result when a discount lands after cancellation starts', async () => {
-    const { cancel, config, firstCancel, handleCancel, showPromise } =
-      await showWithPendingCancellation()
-
-    config.onDiscount?.({}, {})
-    const repeatedCancel = config.handleCancel({}, 'too_expensive')
-    config.onClose({})
-    cancel.resolve({ message: 'Canceled' })
-
-    await expect(showPromise).resolves.toEqual({ type: 'closed' })
-    expect(repeatedCancel).toBe(firstCancel)
-    expect(handleCancel).toHaveBeenCalledOnce()
-    expect(vi.mocked(reportError).mock.calls).toEqual([lateDiscountReport])
-  })
-
-  it('rejects with the cancellation error when a discount lands after cancellation starts', async () => {
-    const { cancel, config, showPromise } = await showWithPendingCancellation()
-
-    config.onDiscount?.({}, {})
-    config.onClose({})
-    cancel.reject(new Error('Cancellation failed'))
-
-    await expect(showPromise).rejects.toThrow('Cancellation failed')
-    expect(vi.mocked(reportError).mock.calls).toEqual([lateDiscountReport])
-  })
-
-  const displayDuringCancellationReport = [
-    'display failed',
-    {
-      surface: 'billing',
-      errorType: 'error_displaying_churnkey_during_cancellation',
-      context: { churnkeyErrorType: 'display' }
-    }
-  ]
-
-  it('waits for an in-flight cancellation to succeed before settling a provider error', async () => {
-    const { cancel, config, showPromise } = await showWithPendingCancellation()
-
-    config.onDiscount?.({}, {})
-    config.onError('display failed', 'display')
-    const pending = Symbol('pending')
-    await expect(
-      Promise.race([showPromise, Promise.resolve(pending)])
-    ).resolves.toBe(pending)
-    cancel.resolve({ message: 'Canceled' })
-
-    await expect(showPromise).resolves.toEqual({ type: 'closed' })
-    expect(mocks.hide).toHaveBeenCalledOnce()
-    expect(vi.mocked(reportError).mock.calls).toEqual([
-      lateDiscountReport,
-      displayDuringCancellationReport
-    ])
-  })
-
-  it('rejects with the cancellation error when cancellation fails after a provider error', async () => {
-    const { cancel, config, showPromise } = await showWithPendingCancellation()
-
-    config.onDiscount?.({}, {})
-    config.onError('display failed', 'display')
-    cancel.reject(new Error('Cancellation failed'))
-
-    await expect(showPromise).rejects.toThrow('Cancellation failed')
-    expect(vi.mocked(reportError).mock.calls).toEqual([
-      lateDiscountReport,
-      displayDuringCancellationReport
-    ])
-  })
-
-  it.for([
-    { ending: 'close', reports: [] },
-    {
-      ending: 'error',
-      reports: [
-        [
-          'display failed after success',
-          {
-            surface: 'billing',
-            errorType: 'error_displaying_churnkey_after_discount',
-            context: { churnkeyErrorType: 'display' }
+    app_id: 'direct-app',
+    customer_id: 'workspace-1',
+    auth_hash: 'hash',
+    mode: 'test',
+    session_id: 'eea22c37-8d91-422c-88a5-06e096645e35',
+    expires_at: Math.floor(Date.now() / 1000) + 600,
+    experiment_variant: 'treatment',
+    allowed_offer: { id: 'save_30_next_3_v1', percent_off: 30, renewals: 3 },
+    subscription: {
+      id: 'sub-1',
+      price_id: 'price-1',
+      started_at: 1000,
+      unit_amount: 2000,
+      quantity: 1,
+      currency: 'usd',
+      period_start: 2000,
+      period_end: 3000,
+      interval: 'month',
+      interval_count: 1
+    },
+    sdk_config: {
+      blueprintId: 'blueprint-1',
+      customer: { id: 'workspace-1', currency: 'usd' },
+      subscriptions: [
+        {
+          id: 'sub-1',
+          customerId: 'workspace-1',
+          start: '2026-01-01T00:00:00Z',
+          status: {
+            name: 'active',
+            currentPeriod: {
+              start: '2026-09-01T00:00:00Z',
+              end: '2026-10-01T00:00:00Z'
+            }
+          },
+          duration: { interval: 'month', intervalCount: 1 },
+          items: [
+            {
+              quantity: 1,
+              price: {
+                id: 'price-1',
+                duration: { interval: 'month', intervalCount: 1 },
+                amount: { value: 2000, currency: 'usd' }
+              }
+            }
+          ]
+        }
+      ],
+      settings: {
+        cancelAtPeriodEnd: true,
+        clickToCancelEnabled: true,
+        strictFTCComplianceEnabled: true
+      },
+      steps: [
+        {
+          guid: 'offer-1',
+          type: 'offer',
+          offer: {
+            type: 'discount',
+            decisionId: 'decision-1',
+            percentOff: 30,
+            durationInMonths: 3,
+            copy: {
+              headline: 'Stay',
+              body: 'Save 30%',
+              cta: 'Accept',
+              declineCta: 'Continue'
+            }
           }
-        ]
+        },
+        { guid: 'confirm-1', type: 'confirm' }
       ]
     }
-  ] as const)(
-    'preserves a confirmed native discount on subsequent $ending',
-    async ({ ending, reports }) => {
-      vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue({
-        ...authResponse(),
-        offer_subscription_id: 'sub_offer_1'
-      })
-      const session = await prepareChurnkey()
-      assert.exists(session)
-      const handleCancel = vi.fn()
-      const showPromise = session.show({ handleCancel })
-      const config = capturedConfig()
+  }
+}
+function currentMachine() {
+  const machine = useDialogStore().dialogStack.at(-1)?.contentProps.machine
+  assert.instanceOf(machine, CancelFlowMachine)
+  return machine
+}
 
-      expect(config.subscriptionId).toBe('sub_offer_1')
-      expect(config).not.toHaveProperty('handleDiscount')
-      await expect(config.handlePause()).rejects.toThrow(
-        'subscription.cancelDialog.offerUnavailable'
+beforeEach(() => {
+  vi.mocked(workspaceApi.prepareChurnkeyFlow).mockResolvedValue(flowResponse())
+  vi.spyOn(ChurnkeyApi.prototype, 'createSession').mockResolvedValue()
+})
+
+describe('Cloud-authorized core flow', () => {
+  it('uses the prepared hosted config and reports success only after Cloud confirms', async () => {
+    type Acceptance = Awaited<
+      ReturnType<typeof workspaceApi.acceptChurnkeyRetention>
+    >
+    let confirm: ((acceptance: Acceptance) => void) | undefined
+    const acceptance = new Promise<Acceptance>((resolve) => {
+      confirm = resolve
+    })
+    vi.mocked(workspaceApi.acceptChurnkeyRetention).mockReturnValue(acceptance)
+    const session = await prepareChurnkey()
+    assert.exists(session)
+    const handleCancel = vi.fn().mockResolvedValue({})
+    const completion = session.show({
+      workspaceId: 'workspace-1',
+      handleCancel
+    })
+    const machine = currentMachine()
+    const action = machine.accept()
+    await vi.waitFor(() =>
+      expect(workspaceApi.acceptChurnkeyRetention).toHaveBeenCalledWith(
+        'eea22c37-8d91-422c-88a5-06e096645e35'
       )
-      config.onDiscount?.({}, {})
-      const end = {
-        close: () => config.onClose({ aborted: true }),
-        error: () => config.onError('display failed after success', 'display')
-      }
-      end[ending]()
-      config.onError('late error')
-
-      await expect(showPromise).resolves.toEqual({
-        type: 'discount-applied'
-      })
-      expect(handleCancel).not.toHaveBeenCalled()
-      expect(vi.mocked(reportError).mock.calls).toEqual(reports)
-    }
-  )
-
-  it('preserves the original post-discount error and provider context', async () => {
-    vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue({
-      ...authResponse(),
-      offer_subscription_id: 'sub_offer_1'
+    )
+    expect(machine.getSnapshot().outcome).toBeNull()
+    assert.exists(confirm)
+    confirm({ billing_op_id: 'retention-1', status: 'succeeded' })
+    await action
+    expect(machine.getSnapshot().outcome).toBe('saved')
+    useDialogStore().closeDialog({
+      key: 'churnkey-eea22c37-8d91-422c-88a5-06e096645e35'
     })
-    const session = await prepareChurnkey()
-    assert.exists(session)
-    const showPromise = session.show({ handleCancel: vi.fn() })
-    const config = capturedConfig()
-    const error = new TypeError('Display failed', {
-      cause: new Error('Renderer unavailable')
-    })
-
-    config.onDiscount?.({}, {})
-    config.onError(error, 'display')
-
-    await expect(showPromise).resolves.toEqual({ type: 'discount-applied' })
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
-      surface: 'billing',
-      errorType: 'error_displaying_churnkey_after_discount',
-      context: { churnkeyErrorType: 'display' }
-    })
-    expect(vi.mocked(reportError).mock.calls[0]?.[0]).toBe(error)
-  })
-
-  it('requires a success notification before reporting a discount', async () => {
-    vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue({
-      ...authResponse(),
-      offer_subscription_id: 'sub_offer_1'
-    })
-    const session = await prepareChurnkey()
-    assert.exists(session)
-    const showPromise = session.show({ handleCancel: vi.fn() })
-    const config = capturedConfig()
-    const closeResults = { aborted: true, discountApplied: true }
-    config.onClose(closeResults)
-    config.onDiscount?.({}, {})
-
-    await expect(showPromise).resolves.toEqual({ type: 'abandoned' })
-  })
-
-  it('reports a failed native action without claiming a discount or canceling', async () => {
-    vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue({
-      ...authResponse(),
-      offer_subscription_id: 'sub_offer_1'
-    })
-    const session = await prepareChurnkey()
-    assert.exists(session)
-    const handleCancel = vi.fn()
-    const showPromise = session.show({ handleCancel })
-    capturedConfig().onError('Stripe rejected the coupon')
-
-    await expect(showPromise).rejects.toThrow('Stripe rejected the coupon')
+    await expect(completion).resolves.toEqual({ type: 'discount-applied' })
     expect(handleCancel).not.toHaveBeenCalled()
   })
-
-  it('does not request a session when the app ID is empty', async () => {
-    vi.mocked(useFeatureFlags().flags).churnkeyAppId = ''
-
-    await expect(prepareChurnkey()).resolves.toBeNull()
-    expect(workspaceApi.getChurnkeyAuth).not.toHaveBeenCalled()
-    expect(mocks.init).not.toHaveBeenCalled()
-  })
-
-  it.for([
-    { aborted: true, outcome: 'abandoned' },
-    { aborted: false, outcome: 'closed' },
-    { aborted: undefined, outcome: 'closed' }
-  ] as const)(
-    'normalizes close with aborted=$aborted to $outcome',
-    async ({ aborted, outcome }) => {
-      const session = await prepareChurnkey()
-      assert.exists(session)
-      const handleCancel = vi.fn()
-
-      const showPromise = session.show({ handleCancel })
-      capturedConfig().onClose({ aborted })
-
-      await expect(showPromise).resolves.toEqual({ type: outcome })
-      expect(handleCancel).not.toHaveBeenCalled()
-      expect(mocks.clearState).toHaveBeenCalledOnce()
-    }
-  )
-
-  it('waits for an in-flight cancellation before settling close', async () => {
-    let rejectCancellation: ((reason: Error) => void) | undefined
-    const cancellation = new Promise<never>((_resolve, reject) => {
-      rejectCancellation = reject
-    })
-    const session = await prepareChurnkey()
-    assert.exists(session)
-
-    const showPromise = session.show({
-      handleCancel: () => cancellation
-    })
-    const config = capturedConfig()
-    const handlerPromise = config.handleCancel({}, null, null)
-    config.onClose({ aborted: true })
-
-    const pending = Symbol('pending')
-    await expect(
-      Promise.race([showPromise, Promise.resolve(pending)])
-    ).resolves.toBe(pending)
-
-    const error = new Error('cancel failed')
-    void handlerPromise.catch(() => undefined)
-    void showPromise.catch(() => undefined)
-    rejectCancellation?.(error)
-
-    await expect(handlerPromise).rejects.toThrow(error)
-    await expect(showPromise).rejects.toThrow(error)
-  })
-
-  it('settles provider errors after the callback returns', async () => {
-    const session = await prepareChurnkey()
-    assert.exists(session)
-
-    const showPromise = session.show({ handleCancel: vi.fn() })
-    capturedConfig().onError('provider failed')
-
-    expect(mocks.hide).toHaveBeenCalledOnce()
-    expect(mocks.clearState).not.toHaveBeenCalled()
-    await expect(showPromise).rejects.toThrow('provider failed')
-    expect(mocks.clearState).toHaveBeenCalledOnce()
-  })
-
-  it('cleans up when ChurnKey initialization throws synchronously', async () => {
-    const session = await prepareChurnkey()
-    assert.exists(session)
-    mocks.init.mockImplementation(() => {
-      throw new Error('init failed')
-    })
-
-    await expect(session.show({ handleCancel: vi.fn() })).rejects.toThrow(
-      'init failed'
+  it('keeps a lost acceptance response from falling through to cancellation', async () => {
+    vi.mocked(workspaceApi.acceptChurnkeyRetention).mockRejectedValue(
+      new WorkspaceApiError('Network interrupted')
     )
-    expect(mocks.hide).toHaveBeenCalledOnce()
-    expect(mocks.clearState).toHaveBeenCalledOnce()
+    const session = await prepareChurnkey()
+    assert.exists(session)
+    const handleCancel = vi.fn().mockResolvedValue({})
+    const completion = session.show({ handleCancel })
+    const machine = currentMachine()
+    await machine.accept()
+    await machine.cancel()
+    expect(handleCancel).not.toHaveBeenCalled()
+    expect(machine.getSnapshot().outcome).toBeNull()
+    useDialogStore().closeDialog({
+      key: 'churnkey-eea22c37-8d91-422c-88a5-06e096645e35'
+    })
+    await expect(completion).resolves.toEqual({ type: 'billing-pending' })
+  })
+  it('can recover a lost response through the same session without another billing action', async () => {
+    vi.mocked(workspaceApi.acceptChurnkeyRetention)
+      .mockRejectedValueOnce(new WorkspaceApiError('Interrupted'))
+      .mockResolvedValueOnce({
+        billing_op_id: 'retention-1',
+        status: 'succeeded'
+      })
+    const session = await prepareChurnkey()
+    assert.exists(session)
+    const completion = session.show({ handleCancel: vi.fn() })
+    const machine = currentMachine()
+    await machine.accept()
+    await machine.accept()
+    expect(machine.getSnapshot().outcome).toBe('saved')
+    expect(workspaceApi.acceptChurnkeyRetention).toHaveBeenNthCalledWith(
+      1,
+      'eea22c37-8d91-422c-88a5-06e096645e35'
+    )
+    expect(workspaceApi.acceptChurnkeyRetention).toHaveBeenNthCalledWith(
+      2,
+      'eea22c37-8d91-422c-88a5-06e096645e35'
+    )
+    useDialogStore().closeDialog({
+      key: 'churnkey-eea22c37-8d91-422c-88a5-06e096645e35'
+    })
+    await expect(completion).resolves.toEqual({ type: 'discount-applied' })
+  })
+  it('rejects a billing action when the active workspace has changed', async () => {
+    const session = await prepareChurnkey()
+    assert.exists(session)
+    const completion = session.show({
+      isWorkspaceCurrent: () => false,
+      handleCancel: vi.fn()
+    })
+    await currentMachine().accept()
+    expect(workspaceApi.acceptChurnkeyRetention).not.toHaveBeenCalled()
+    useDialogStore().closeDialog({
+      key: 'churnkey-eea22c37-8d91-422c-88a5-06e096645e35'
+    })
+    await expect(completion).resolves.toEqual({ type: 'abandoned' })
+  })
+  it('degrades to the existing cancellation dialog while Direct is disabled', async () => {
+    vi.mocked(workspaceApi.prepareChurnkeyFlow).mockRejectedValue(
+      new WorkspaceApiError('Disabled', 503)
+    )
+    await expect(prepareChurnkey()).resolves.toBeNull()
   })
 })
