@@ -369,6 +369,34 @@ describe('useAgentConversationStore', () => {
     })
   })
 
+  // A multi-row turn names itself three ways: the acknowledgement row the
+  // stash holds, the newest persisted row `pending` points at, and the
+  // `turn_id` the transcript keys its message by. No pair of those is equal,
+  // so the snapshot installs a live row of its own that the stash is about to
+  // displace -- and a transport nothing can reach again leaves that row
+  // streaming for good.
+  it('settles a snapshot row the resumed stash displaces', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn('t1' as TurnId)
+    store.ingest(delta('t1', 'partial'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go', 'u1'),
+      historyRow(2, 'assistant', 'turn-a', 'partial', 't1'),
+      { ...historyRow(3, 'assistant', 'turn-a', '', 't2'), status: 'streaming' }
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.activeTurnId).toBe('t1')
+    expect(
+      store.messages.filter(
+        (message) => message.id !== 't1' && message.streaming
+      )
+    ).toEqual([])
+  })
+
   // PM-1575 regression (finding #4, medium): resumeBackgroundTurn()'s SECOND
   // early return -- reached when a settled background turn's message is
   // kept on screen but not reactivated as the live turn -- dropped the

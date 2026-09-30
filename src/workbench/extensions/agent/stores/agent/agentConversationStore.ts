@@ -396,51 +396,72 @@ export const useAgentConversationStore = defineStore(
     }
 
     function resumeBackgroundTurn(): void {
-      if (threadId.value === null) return
-      const entry = backgroundTurns.get(threadId.value)
+      const resumedThreadId = threadId.value
+      if (resumedThreadId === null) return
+      const entry = backgroundTurns.get(resumedThreadId)
       if (!entry) return
-      backgroundTurns.delete(threadId.value)
+      backgroundTurns.delete(resumedThreadId)
+      // A snapshot the stash could not be matched to installed its own live
+      // row, and this stash is about to take the slot. Ownership matching
+      // cannot close that gap alone: a multi-row turn's acknowledgement row
+      // id, its newest persisted row id, and its `turn_id` are three
+      // different values, and `pending` carries the last two while the stash
+      // carries the first. Settling what we replace is what makes the outcome
+      // independent of which of them coincide -- left alone, that row's
+      // transport is unreachable and it streams for good.
+      if (transport !== null) abortActiveTurn()
       // The stash keys a turn by its message_id while hydrate() re-keys the same
       // turn by the server's turn_id; row.id bridges the two. Matching turns by
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
       const kept = messages.value.filter((m) => m.id !== entry.message.id)
+      // The persisted, authoritative copy is already on screen, kept by the
+      // filter above, so this entry contributes nothing but its transport.
+      // Called before the branch, not inside it: it pops the duplicate row and
+      // its user text whether or not this entry turns out to be settled.
       const poppedHydratedCopy = removeHydratedCopy(entry, kept)
       if (
         entry.settled &&
         !poppedHydratedCopy &&
         hydratedMessageIds.has(entry.messageId)
       ) {
-        rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
-        // The persisted, authoritative copy is already on screen (kept, via
-        // the filter above) -- this entry's transport is now discarded for
-        // good, so flush anything it is still holding rather than leaving it
-        // unreachable until its own STALE_AFTER_MS fallback.
-        entry.transport.dispose()
+        retireBackgroundTurn(entry, resumedThreadId)
         return
       }
+      restoreBackgroundUserText(entry)
+      const index = kept.push(entry.message) - 1
+      messages.value = kept
+      // Kept on screen but not reactivated, so its transport is discarded here
+      // just as it is above.
+      if (entry.settled) {
+        retireBackgroundTurn(entry, resumedThreadId)
+        return
+      }
+      activeTurnId.value = entry.messageId
+      activeIndex.value = index
+      activeTransportThreadId = resumedThreadId
+      transport = entry.transport
+      liveMessage = entry.message
+    }
+
+    /**
+     * PM-1575: flush what the discarded transport still holds rather than
+     * leaving it reachable only by its own STALE_AFTER_MS fallback.
+     */
+    function retireBackgroundTurn(
+      entry: BackgroundTurn,
+      resumedThreadId: string
+    ): void {
+      rememberDepartedTurn(resumedThreadId, entry.messageId, 'settled-turn')
+      entry.transport.dispose()
+    }
+
+    function restoreBackgroundUserText(entry: BackgroundTurn): void {
       if (
         entry.userText !== undefined &&
         !userTexts.value.has(entry.message.id)
       )
         userTexts.value.set(entry.message.id, entry.userText)
-      const index = kept.push(entry.message) - 1
-      messages.value = kept
-      if (entry.settled) {
-        rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
-        // PM-1575: this settled turn is kept on screen but not reactivated --
-        // its transport is discarded for good right after this, same as the
-        // hydrated-copy-dropped branch above, so flush anything it is still
-        // holding rather than leaving it unreachable until its own
-        // STALE_AFTER_MS fallback.
-        entry.transport.dispose()
-        return
-      }
-      activeTurnId.value = entry.messageId
-      activeIndex.value = index
-      activeTransportThreadId = threadId.value
-      transport = entry.transport
-      liveMessage = entry.message
     }
 
     function removeHydratedCopy(

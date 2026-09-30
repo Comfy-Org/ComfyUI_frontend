@@ -501,13 +501,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   /**
-   * Replays a hydrate's frames and retires its buffer. Deferred, never
-   * dropped: `ingest` routes each one by thread and turn, so a frame whose
+   * Replays a hydrate's frames and retires its buffer. Deferred rather than
+   * immediate: `ingest` routes each one by thread and turn, so a frame whose
    * hydrate was superseded or failed still reaches the background turn it
    * belongs to -- and a background turn that never receives its own
    * `agent_message_done` is one `resumeBackgroundTurn` later restores as
    * permanently running. Idempotent, so the success path and the `finally`
    * can both call it.
+   *
+   * Delivery is best-effort within explicit bounds, not guaranteed. A thread
+   * captures for `HYDRATION_HANDOFF_MS` from the moment its hydrate is armed;
+   * past that the queue becomes a mailbox a later hydrate of the same thread
+   * can still claim, for `HYDRATION_MAILBOX_MS` and only while it is among the
+   * newest `MAX_HYDRATION_MAILBOXES` threads. A queue holds `MAX_HYDRATION_EVENTS`
+   * frames, evicting non-terminal ones first so an `agent_message_done` --
+   * the frame whose loss strands a turn -- outlives the deltas around it.
    *
    * Only ever deletes its own registration: a superseded hydrate draining
    * late would otherwise unregister the buffer that replaced it, leaving the
