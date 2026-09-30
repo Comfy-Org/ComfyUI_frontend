@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { createSharedComposable, until, useStorage } from '@vueuse/core'
+import { createSharedComposable, useStorage } from '@vueuse/core'
 import { compare } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -445,9 +445,16 @@ describe('useReleaseStore', () => {
       systemStatsStore.isInitialized = false
       vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
 
-      await store.initialize()
+      const initPromise = store.initialize()
+      await Promise.resolve()
+      expect(releaseService.getReleases).not.toHaveBeenCalled()
 
-      expect(vi.mocked(until)).toHaveBeenCalled()
+      systemStatsStore.systemStats = fromPartial({
+        system: { comfyui_version: '1.0.0', argv: [] }
+      })
+      systemStatsStore.isInitialized = true
+      await initPromise
+
       expect(releaseService.getReleases).toHaveBeenCalled()
     })
 
@@ -487,14 +494,16 @@ describe('useReleaseStore', () => {
       const systemStatsStore = useSystemStatsStore()
       systemStatsStore.systemStats = null
       systemStatsStore.isInitialized = false
-      vi.mocked(until).mockImplementationOnce(() => {
-        systemStatsStore.systemStats = fromPartial({
-          system: { comfyui_version: '1.0.0', argv: ['--offline'] }
-        })
-        return Promise.resolve() as never
-      })
 
-      await store.fetchReleases()
+      const fetchPromise = store.fetchReleases()
+      await Promise.resolve()
+      expect(releaseService.getReleases).not.toHaveBeenCalled()
+
+      systemStatsStore.systemStats = fromPartial({
+        system: { comfyui_version: '1.0.0', argv: ['--offline'] }
+      })
+      systemStatsStore.isInitialized = true
+      await fetchPromise
 
       expect(releaseService.getReleases).not.toHaveBeenCalled()
       expect(store.isLoading).toBe(false)
@@ -569,10 +578,16 @@ describe('useReleaseStore', () => {
       systemStatsStore.systemStats = null
       systemStatsStore.isInitialized = false
       vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
+      vi.useFakeTimers()
 
-      await store.fetchReleases()
+      try {
+        const fetchPromise = store.fetchReleases()
+        await vi.advanceTimersByTimeAsync(10_000)
+        await fetchPromise
+      } finally {
+        vi.useRealTimers()
+      }
 
-      expect(until).toHaveBeenCalled()
       expect(releaseService.getReleases).toHaveBeenCalled()
     })
   })

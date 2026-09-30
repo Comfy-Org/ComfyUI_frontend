@@ -14,6 +14,8 @@ import { useReleaseService } from './releaseService'
 import type { ReleaseNote } from './releaseService'
 
 const OFFLINE_ARGS = ['--offline', '--disable-api-nodes']
+// Bounds the wait so a stats load that never finishes can't leave releases loading forever
+const SYSTEM_STATS_WAIT_MS = 10_000
 
 // Store for managing release notes
 export const useReleaseStore = defineStore('release', () => {
@@ -278,7 +280,9 @@ export const useReleaseStore = defineStore('release', () => {
     try {
       // Ensure system stats are loaded
       if (!systemStatsStore.systemStats) {
-        await until(systemStatsStore.isInitialized)
+        await until(() => systemStatsStore.isInitialized).toBeTruthy({
+          timeout: SYSTEM_STATS_WAIT_MS
+        })
         // The argv wasn't known at the first check
         if (isOfflineCore()) return
       }
