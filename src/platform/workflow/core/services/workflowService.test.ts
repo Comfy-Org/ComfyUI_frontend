@@ -889,6 +889,7 @@ describe('useWorkflowService', () => {
       await expect(firstOpen).rejects.toBe(error)
       await expect(secondOpen).resolves.toBe(true)
       expect(reportErrorMock).toHaveBeenCalledWith(error, {
+        surface: 'graph',
         errorType: 'workflow_load_failure'
       })
       expect(
@@ -1892,6 +1893,7 @@ describe('useWorkflowService', () => {
         expect(app.canvas._deserializeItems).not.toHaveBeenCalled()
         expect(reportErrorMock).toHaveBeenCalledTimes(1)
         expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+          surface: 'graph',
           errorType: 'workflow_insert_aborted_canvas_changed',
           level: 'warning',
           tags: {
@@ -1938,6 +1940,7 @@ describe('useWorkflowService', () => {
         expect(deserialize).not.toHaveBeenCalled()
         expect(reportErrorMock).toHaveBeenCalledTimes(1)
         expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+          surface: 'graph',
           errorType: 'workflow_insert_aborted_canvas_changed',
           level: 'warning',
           tags: {

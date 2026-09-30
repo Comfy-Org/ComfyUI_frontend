@@ -75,7 +75,7 @@ const launchModels: WorkshopModel[] = [
     appId: 'studio',
     slug: 'apps/cinematic-studio',
     name: 'Cinematic Studio',
-    href: '/models/apps/cinematic-studio/',
+    href: '/hub/apps/cinematic-studio/',
     workflowCount: 0,
     capabilities: [],
     modality: 'image'
@@ -86,7 +86,7 @@ const launchModels: WorkshopModel[] = [
     slug: 'apps/reshoot',
     flag: 'workshop-reshoot-app-enabled',
     name: 'Re-shoot a video',
-    href: '/models/apps/reshoot/',
+    href: '/hub/apps/reshoot/',
     workflowCount: 0,
     capabilities: [],
     modality: 'video'
@@ -129,26 +129,30 @@ describe('ModelsCatalogue', () => {
       subtitle: '用把多个工作流组合在一起的应用，挑战更大的想法。'
     }
   ] as const)(
-    'introduces the $tab tab in its own words ($locale)',
+    'introduces the $tab section in its own words ($locale)',
     async ({ locale, tab, subtitle }) => {
-      const user = userEvent.setup()
-      render(ModelsCatalogue, { props: { models: launchModels, locale } })
-      if (tab !== 'models')
-        await user.click(screen.getByTestId(`catalogue-tab-${tab}`))
+      render(ModelsCatalogue, {
+        props: { models: launchModels, locale, section: tab }
+      })
 
-      expect(await screen.findByTestId('workshop-hero')).toHaveTextContent(
-        subtitle
-      )
+      const hero = await screen.findByTestId('workshop-hero')
+      const introduction = within(hero).getByTestId('split-reveal')
+      expect(introduction).toBeVisible()
+      expect(introduction).toHaveTextContent(subtitle)
     }
   )
 
-  it('separates workflow outcomes from Models and searches their supporting model names', async () => {
-    const user = userEvent.setup()
+  it('keeps workflow outcomes out of the models section', () => {
     render(ModelsCatalogue, { props: { models: launchModels } })
     expect(screen.getByText('Image model')).toBeVisible()
     expect(screen.queryByText('Remove an image background')).toBeNull()
+  })
 
-    await user.click(screen.getByRole('button', { name: 'Workflows' }))
+  it('lists workflow outcomes in the workflows section and searches their supporting model names', async () => {
+    const user = userEvent.setup()
+    render(ModelsCatalogue, {
+      props: { models: launchModels, section: 'workflows' }
+    })
     expect(screen.queryByText('Image model')).toBeNull()
     expect(
       await screen.findByRole('heading', {
@@ -169,38 +173,11 @@ describe('ModelsCatalogue', () => {
     ).toBeNull()
   })
 
-  // The line under the title belongs to the half that is open, so the eyebrow
-  // is what has to hold still: it names the whole catalogue, not the tab.
-  // Each listing is for something different, so the line under the heading
-  // has to change with the tab rather than describe models on all three.
-  it('gives each tab its own subtitle', async () => {
+  it('filters the workflows section by its own categories', async () => {
     const user = userEvent.setup()
-    render(ModelsCatalogue, { props: { models: launchModels } })
-
-    const hero = () => screen.getByTestId('workshop-hero')
-    expect(hero()).toHaveTextContent('Try the latest AI models')
-
-    await user.click(screen.getByRole('button', { name: 'Workflows' }))
-    await waitFor(() =>
-      expect(hero()).toHaveTextContent('Turn your ideas into finished results')
-    )
-
-    await user.click(screen.getByRole('button', { name: 'Apps' }))
-    await waitFor(() =>
-      expect(hero()).toHaveTextContent('Take on bigger ideas with apps')
-    )
-  })
-
-  it('opens the workflow tab from its return link and filters by its own categories', async () => {
-    history.replaceState(null, '', '/models/?type=workflows')
-    const user = userEvent.setup()
-    render(ModelsCatalogue, { props: { models: launchModels } })
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Workflows' })).toHaveAttribute(
-        'aria-pressed',
-        'true'
-      )
-    )
+    render(ModelsCatalogue, {
+      props: { models: launchModels, section: 'workflows' }
+    })
     await user.click(await screen.findByRole('button', { name: 'Filter' }))
     await user.click(
       await screen.findByRole('button', { name: 'Edit & clean up photos 1' })
@@ -216,62 +193,60 @@ describe('ModelsCatalogue', () => {
   // Apps has no list of its own, so it carries them anyway or there is no way
   // back out of it.
   it.for([
-    { tab: 'Models', named: 'the models half' },
-    { tab: 'Workflows', named: 'the workflows half' },
-    { tab: 'Apps', named: 'the apps half' }
-  ])('keeps the tabs beside the controls in $named', async ({ tab }) => {
-    const user = userEvent.setup()
-    render(ModelsCatalogue, { props: { models: launchModels } })
-    if (tab !== 'Models')
-      await user.click(screen.getByRole('button', { name: tab }))
+    { section: 'models' },
+    { section: 'workflows' },
+    { section: 'apps' }
+  ] as const)(
+    'keeps the tabs beside the controls in the $section section',
+    async ({ section }) => {
+      render(ModelsCatalogue, { props: { models: launchModels, section } })
 
-    const controls = await screen.findByTestId('workshop-toolbar')
-    expect(within(controls).getByTestId('catalogue-tabs')).toBeVisible()
-    expect(
-      within(screen.getByTestId('workshop-hero')).queryByTestId(
-        'catalogue-tabs'
-      )
-    ).toBeNull()
-  })
+      const controls = await screen.findByTestId('workshop-toolbar')
+      expect(within(controls).getByTestId('catalogue-tabs')).toBeVisible()
+      expect(
+        within(screen.getByTestId('workshop-hero')).queryByTestId(
+          'catalogue-tabs'
+        )
+      ).toBeNull()
+    }
+  )
 
   it.for([
-    { from: 'models', to: 'workflows' },
-    { from: 'workflows', to: 'apps' },
-    { from: 'apps', to: 'models' }
-  ])(
-    'keeps keyboard focus on the tabs when switching from $from to $to',
-    async ({ from, to }) => {
-      const user = userEvent.setup()
-      if (from !== 'models')
-        history.replaceState(null, '', `/models/?type=${from}`)
-      render(ModelsCatalogue, { props: { models: launchModels } })
-      expect(document.body).toHaveFocus()
+    { section: 'models', current: 'Models' },
+    { section: 'workflows', current: 'Workflows' },
+    { section: 'apps', current: 'Apps' }
+  ] as const)(
+    'links each tab to its hub page and marks $current as current',
+    async ({ section, current }) => {
+      render(ModelsCatalogue, { props: { models: launchModels, section } })
+      const tabs = within(await screen.findByTestId('catalogue-tabs'))
 
-      const target = await screen.findByTestId(`catalogue-tab-${to}`)
-      target.focus()
-      await user.keyboard('{Enter}')
-
-      await waitFor(() =>
-        expect(screen.getByTestId(`catalogue-tab-${to}`)).toHaveFocus()
-      )
-      expect(screen.getByTestId(`catalogue-tab-${to}`)).toHaveAttribute(
-        'aria-pressed',
-        'true'
+      expect(
+        tabs
+          .getAllByRole('link')
+          .map((link) => [link.textContent.trim(), link.getAttribute('href')])
+      ).toEqual([
+        ['Models', '/hub/models/'],
+        ['Workflows', '/hub/workflows/'],
+        ['Apps', '/hub/apps/']
+      ])
+      expect(tabs.getByRole('link', { current: 'page' })).toHaveTextContent(
+        current
       )
     }
   )
 
-  it('lists the catalogue apps in the Apps tab, each on its own page', async () => {
-    const user = userEvent.setup()
-    render(ModelsCatalogue, { props: { models: launchModels } })
-    await user.click(screen.getByRole('button', { name: 'Apps' }))
+  it('lists the catalogue apps in the apps section, each on its own page', async () => {
+    render(ModelsCatalogue, {
+      props: { models: launchModels, section: 'apps' }
+    })
 
     const shelf = await screen.findByTestId('app-shelf')
     expect(
       within(shelf)
         .getAllByRole('link')
         .map((link) => link.getAttribute('href'))
-    ).toEqual(['/models/apps/cinematic-studio/', '/models/apps/reshoot/'])
+    ).toEqual(['/hub/apps/cinematic-studio/', '/hub/apps/reshoot/'])
     expect(
       within(screen.getByTestId('workshop-toolbar')).getByTestId(
         'catalogue-tabs'
@@ -281,24 +256,24 @@ describe('ModelsCatalogue', () => {
   })
 
   it('hides an app whose PostHog flag is off, and shows it once it turns on', async () => {
-    const user = userEvent.setup()
     reshootFlag.value = false
-    render(ModelsCatalogue, { props: { models: launchModels } })
-    await user.click(screen.getByRole('button', { name: 'Apps' }))
+    render(ModelsCatalogue, {
+      props: { models: launchModels, section: 'apps' }
+    })
     const hrefs = () =>
       within(screen.getByTestId('app-shelf'))
         .getAllByRole('link')
         .map((link) => link.getAttribute('href'))
 
     await waitFor(() =>
-      expect(hrefs()).toEqual(['/models/apps/cinematic-studio/'])
+      expect(hrefs()).toEqual(['/hub/apps/cinematic-studio/'])
     )
 
     reshootFlag.value = true
     await waitFor(() =>
       expect(hrefs()).toEqual([
-        '/models/apps/cinematic-studio/',
-        '/models/apps/reshoot/'
+        '/hub/apps/cinematic-studio/',
+        '/hub/apps/reshoot/'
       ])
     )
   })
@@ -329,16 +304,32 @@ describe('ModelsCatalogue', () => {
 
       expect(
         screen
-          .queryAllByRole('button', { name: /^(Models|Workflows|Apps)$/ })
-          .map((button) => button.textContent.trim())
+          .queryAllByRole('link', { name: /^(Models|Workflows|Apps)$/ })
+          .map((link) => link.textContent.trim())
       ).toEqual(tabs)
     }
   )
 
+  it('keeps the tab of the section on screen when it has nothing to list', async () => {
+    render(ModelsCatalogue, {
+      props: {
+        models: launchModels.filter((model) => model.type !== 'CLOUD'),
+        section: 'workflows'
+      }
+    })
+
+    expect(
+      within(await screen.findByTestId('catalogue-tabs'))
+        .getAllByRole('link')
+        .map((link) => link.textContent.trim())
+    ).toEqual(['Models', 'Workflows', 'Apps'])
+  })
+
   it('opens all workflows with a count and returns to the use-case groups', async () => {
-    history.replaceState(null, '', '/models/?type=workflows')
     const user = userEvent.setup()
-    render(ModelsCatalogue, { props: { models: launchModels } })
+    render(ModelsCatalogue, {
+      props: { models: launchModels, section: 'workflows' }
+    })
     await screen.findByRole('heading', { name: 'Create product photos & ads' })
     await user.click(screen.getByTestId('browse-all-end'))
     expect(
@@ -369,31 +360,25 @@ describe('ModelsCatalogue', () => {
     ).toBeNull()
   })
 
-  it('counts each visible catalogue once with its own content type', async () => {
-    history.replaceState(null, '', '/models/?type=workflows')
-    enabled.value = true
-    const user = userEvent.setup()
-    render(ModelsCatalogue, { props: { models: launchModels } })
-    await screen.findByRole('heading', { name: 'Create product photos & ads' })
-    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
-      name: 'catalogue_viewed',
+  it.for([
+    { section: 'models', properties: { model_count: 1, page_type: 'model' } },
+    {
+      section: 'workflows',
       properties: { model_count: 2, page_type: 'workflow' }
-    })
-    await user.click(screen.getByRole('button', { name: 'Models' }))
-    await user.click(screen.getByRole('button', { name: 'Workflows' }))
-    await screen.findByRole('heading', { name: 'Create product photos & ads' })
-    expect(captureWorkshopEvent).toHaveBeenCalledTimes(2)
-    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
-      name: 'catalogue_viewed',
-      properties: { model_count: 1, page_type: 'model' }
-    })
-    await user.click(screen.getByRole('button', { name: 'Apps' }))
-    expect(captureWorkshopEvent).toHaveBeenCalledTimes(3)
-    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
-      name: 'catalogue_viewed',
-      properties: { model_count: 2, page_type: 'app' }
-    })
-  })
+    },
+    { section: 'apps', properties: { model_count: 2, page_type: 'app' } }
+  ] as const)(
+    'counts the $section catalogue once with its own content type',
+    async ({ section, properties }) => {
+      enabled.value = true
+      render(ModelsCatalogue, { props: { models: launchModels, section } })
+      await waitFor(() => expect(captureWorkshopEvent).toHaveBeenCalled())
+      expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+        name: 'catalogue_viewed',
+        properties
+      })
+    }
+  )
 
   it('records a visit once after access is enabled, without counting the hidden catalogue', async () => {
     render(ModelsCatalogue, { props: { models: [] } })

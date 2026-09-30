@@ -1328,6 +1328,7 @@ class LayoutStoreImpl {
     reportedFailures.add(listener)
 
     reportError(error, {
+      surface: 'platform',
       errorType: 'canvas_layout_listener_failed',
       tags: {
         failure_kind: 'caught_unexpected',

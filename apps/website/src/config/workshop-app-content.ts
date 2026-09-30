@@ -1,6 +1,7 @@
 import displayJson from '../content/workshop-display.json'
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
 import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
+import { hubAppHref, hubAppName } from './hub-models'
 import type { AppWorkshopModel } from './models-catalogue'
 import {
   isWorkshopModelDisabled,
@@ -33,7 +34,7 @@ function appModelsFor(
           type: 'APP',
           appId: entry.app,
           slug: page.slug,
-          href: `/models/${page.slug}/`,
+          href: hubAppHref(page.slug),
           name: page.displayName,
           summary: page.description,
           recommendedRank: page.recommendedRank,
@@ -57,10 +58,10 @@ export const appModels = appModelsFor(
   appCatalog
 )
 
-/** Static paths for /models/apps/[app]: one page per app, from its slug. */
+/** Static paths for /hub/apps/[app]: one page per app, from its slug. */
 export function appPagePaths(models: readonly AppWorkshopModel[] = appModels) {
   return models.map((model) => ({
-    params: { app: model.slug.replace(/^apps\//, '') },
+    params: { app: hubAppName(model.slug) },
     props: { model }
   }))
 }

@@ -26,6 +26,7 @@ import { useSignInHref } from '../../composables/useSignInHref'
 import { usePersonalWorkspaceSwitch } from '../../composables/usePersonalWorkspaceSwitch'
 import { useTablist } from '../../composables/useTablist'
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
+import type { SnippetLanguage } from '../../config/models-snippets'
 import type {
   FieldErrors,
   FormValues,
@@ -86,7 +87,10 @@ import {
 } from '../../scripts/workshop-analytics'
 import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
-import { frameRatioRule } from '../../config/workshop-model-restrictions'
+import {
+  frameRatioRule,
+  refusesRealFaces
+} from '../../config/workshop-model-restrictions'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
@@ -292,6 +296,20 @@ watch([activeSection, workshopEnabled], ([section, enabled]) => {
     captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
   }
 })
+function captureApiKeyClick() {
+  if (workshopEnabled.value)
+    captureWorkshopEvent({
+      name: 'api_key_clicked',
+      properties: modelAnalytics
+    })
+}
+function captureSnippetCopy(language: SnippetLanguage) {
+  if (workshopEnabled.value)
+    captureWorkshopEvent({
+      name: 'api_snippet_copied',
+      properties: { ...modelAnalytics, snippet_language: language }
+    })
+}
 const canRunModel = computed(
   () =>
     !model.incompleteReason &&
@@ -1123,6 +1141,11 @@ function useInCode() {
           :now
           :modality="model.modality"
           :locale
+          :policy-message="
+            refusesRealFaces(model.slug)
+              ? t('workshop.error.policyRealFaces', locale)
+              : undefined
+          "
           :member-workspace="
             session?.role === 'member' ? session.workspace.name : undefined
           "
@@ -1227,6 +1250,8 @@ function useInCode() {
         :workspace-id="session?.workspace.id"
         :locale
         :model-slug="model.slug"
+        @get-key="captureApiKeyClick"
+        @copy="captureSnippetCopy"
       />
     </section>
 

@@ -864,6 +864,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     } catch (error) {
       reportError(error, {
+        surface: 'billing',
         errorType: 'failure_handling_billing_operation_success',
         context: { billing_op_id: opId }
       })
@@ -1031,6 +1032,19 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         payment_intent_source: operation.paymentIntentSource,
         failure_category: 'reconciliation_needed',
         duration_ms: now - operation.businessAttemptStartedAt
+      })
+    }
+    if (operation.downgradeToPersonal) {
+      telemetry?.trackBillingEvent({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: operation.downgradeToPersonal.memberRemovalCount,
+        member_removal_failures:
+          operation.downgradeToPersonal.memberRemovalFailures,
+        target_tier: operation.downgradeToPersonal.targetTier,
+        failure_category: 'reconciliation_needed',
+        duration_ms: now - operation.downgradeToPersonal.startedAt
       })
     }
     resolveTerminal(opId)

@@ -34,7 +34,7 @@ describe('ServerlessHero', () => {
     )
     expect(animation).toHaveAttribute(
       'src',
-      '/assets/platform/serverless/json-api-gpu-animation.html'
+      '/assets/platform/serverless/json-api-gpu-animation.html?v=astronaut-quality-2'
     )
   })
 })

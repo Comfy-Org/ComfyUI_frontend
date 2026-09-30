@@ -53,12 +53,13 @@ const baseRoutes = {
   chatgptImage25: '/chatgpt-image-2.5/',
   qwenImage21: '/qwen-image-2.1/',
   brand: '/brand/',
-  // The catalogue answers to /models now. The keys keep their old names while
-  // the pull requests stacked on this branch are still open against them.
+  // The hub catalogue. `workshop` keeps its old name.
   workshop: '/hub/models/',
+  hubWorkflows: '/hub/workflows/',
+  hubApps: '/hub/apps/',
   workshopSignIn: '/login/',
-  cinematicStudio: '/models/apps/cinematic-studio/',
-  reshoot: '/models/apps/reshoot/'
+  cinematicStudio: '/hub/apps/cinematic-studio/',
+  reshoot: '/hub/apps/reshoot/'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
@@ -86,8 +87,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
-// workshop, workshopSignIn, cinematicStudio, reshoot: English only. Every
-// locale links the one catalogue.
+// workshop, hubWorkflows, hubApps, workshopSignIn, cinematicStudio, reshoot:
+// English only. Every locale links the one catalogue.
 //
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
 // built from a single English-language caption track — a "translated" watch
@@ -101,6 +102,8 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'models',
   'minimaxLicenseProfessionalRequest',
   'workshop',
+  'hubWorkflows',
+  'hubApps',
   'workshopSignIn',
   'cinematicStudio',
   'reshoot',
@@ -128,6 +131,8 @@ const LOCALE_INVARIANT_EXTRA_PATHS = [
   '/signup',
   '/workshop',
   '/hub/models',
+  '/hub/workflows',
+  '/hub/apps',
   '/models'
 ]
 

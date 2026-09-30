@@ -93,19 +93,26 @@ describe('plan selection, which the host app owns', () => {
   }
 
   it.for([
-    `/v1/pricing?${ENTRY_QUERY}&workspace=ws-team`,
-    `/v1/checkout?${ENTRY_QUERY}&workspace=ws-team`
-  ])('sends %s back to the host without rebinding the tab', async (path) => {
-    const { router, onEntryWorkspace, leave } = hostBoundRouter()
-
-    await router.push(path)
-
-    expect(leave).toHaveBeenCalledExactlyOnceWith(
+    [
+      `/v1/pricing?${ENTRY_QUERY}&workspace=ws-team`,
       'https://testcloud.comfy.org/?workspace=ws-team'
-    )
-    expect(onEntryWorkspace).not.toHaveBeenCalled()
-    expect(router.currentRoute.value.path).not.toBe('/sign-in')
-  })
+    ],
+    [
+      `/v1/checkout?${ENTRY_QUERY}&workspace=ws-team`,
+      'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+    ]
+  ])(
+    'sends %s to %s without rebinding the tab',
+    async ([path, destination]) => {
+      const { router, onEntryWorkspace, leave } = hostBoundRouter()
+
+      await router.push(path)
+
+      expect(leave).toHaveBeenCalledExactlyOnceWith(destination)
+      expect(onEntryWorkspace).not.toHaveBeenCalled()
+      expect(router.currentRoute.value.path).not.toBe('/sign-in')
+    }
+  )
 
   it('keeps a checkout that names a plan', async () => {
     const { router, leave } = hostBoundRouter('authenticated')

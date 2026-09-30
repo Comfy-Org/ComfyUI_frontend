@@ -51,6 +51,7 @@ function hasCatalogForScope(scopeKey: string): boolean {
 function reportCatalogFallback(err: unknown, hasCachedPlans: boolean): void {
   const hasTeamCreditStops = (teamCreditStops.value?.stops.length ?? 0) > 0
   reportError(err, {
+    surface: 'billing',
     errorType: 'cloud_billing_plan_catalog_fallback',
     tags: {
       failure_kind: 'degraded',
