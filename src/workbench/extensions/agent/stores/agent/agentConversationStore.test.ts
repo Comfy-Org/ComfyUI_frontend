@@ -757,7 +757,14 @@ describe('useAgentConversationStore', () => {
     const assistant = historyRow(2, 'assistant', 'turn-a', 'Done')
     assistant.content = {
       text: 'Done',
-      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes', status: 'ok' }]
+      tool_calls: [
+        {
+          id: 'audit-1',
+          tool_call_id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'success'
+        }
+      ]
     }
     const store = useAgentConversationStore()
 
@@ -777,7 +784,14 @@ describe('useAgentConversationStore', () => {
     const threadAAssistant = historyRow(2, 'assistant', 'turn-a', 'Done A')
     threadAAssistant.content = {
       text: 'Done A',
-      tool_calls: [{ id: 'call-a', tool_name: 'search_nodes', status: 'ok' }]
+      tool_calls: [
+        {
+          id: 'audit-a',
+          tool_call_id: 'call-a',
+          tool_name: 'search_nodes',
+          status: 'success'
+        }
+      ]
     }
     const threadA = [
       historyRow(1, 'user', 'turn-a', 'Find a node'),
