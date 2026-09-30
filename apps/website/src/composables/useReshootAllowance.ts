@@ -48,9 +48,14 @@ export function useReshootAllowance(
   const now = useTimestamp({ interval: 30_000 })
   const key = computed(() => storageKey(kind, toValue(owner) ?? 'guest'))
   const runs = ref<number[]>([])
-  // Without working storage the count lives in memory for this visit.
+  // Without working storage each owner's count lives in memory for this visit.
   let stored = true
-  watch(key, (next) => (runs.value = readRuns(next) ?? []), { immediate: true })
+  const inMemory = new Map<string, number[]>()
+  watch(
+    key,
+    (next) => (runs.value = readRuns(next) ?? inMemory.get(next) ?? []),
+    { immediate: true }
+  )
 
   const left = computed<Allowance>(() =>
     allowance(runs.value, limit, now.value)
@@ -59,6 +64,7 @@ export function useReshootAllowance(
   function record(at = Date.now()) {
     const latest = (stored && readRuns(key.value)) || runs.value
     runs.value = [...pruneRuns(latest, limit, at), at]
+    inMemory.set(key.value, runs.value)
     stored = writeRuns(key.value, runs.value)
   }
 
