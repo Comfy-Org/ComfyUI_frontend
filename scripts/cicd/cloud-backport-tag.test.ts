@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
 interface WorkflowJob {
+  steps?: Array<{ env?: Record<string, string> }>
   'timeout-minutes'?: number
 }
 
@@ -103,6 +104,9 @@ describe('cloud backport tag workflow', () => {
     expect(workflow.concurrency?.group).toContain('github.run_id')
     expect(workflow.concurrency?.['cancel-in-progress']).toBe(false)
     expect(workflow.jobs?.['create-tag']?.['timeout-minutes']).toBe(10)
+    expect(workflow.jobs?.['create-tag']?.steps?.[1]?.env?.GH_TOKEN).toContain(
+      'secrets.PR_GH_TOKEN'
+    )
   })
 
   it('accepts existing same, different, and annotated tags without moving them', () => {
