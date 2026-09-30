@@ -161,6 +161,18 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('keeps an empty attachments list authoritative over stale refs', () => {
+    const message = row(1, 'user', 'turn-a', 'no attachment', 'row-1')
+    message.content = {
+      attachments: [],
+      attachment_refs: [{ name: 'stale.png', kind: 'image' }]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toBeUndefined()
+  })
+
   it('uses a persisted display name without changing the storage ref', () => {
     const message = row(1, 'user', 'turn-a', '', 'row-1')
     message.content = {
