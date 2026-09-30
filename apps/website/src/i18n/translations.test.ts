@@ -226,14 +226,15 @@ describe('createTranslator', () => {
     )
   })
 
-  it.for(['hyphenated', 'dollar'] as const)(
-    'reads every name vue-i18n accepts in %s as a named value',
-    (key) => {
-      expect(() => catalog.t(key)).toThrow(
-        `Translation ${key} in en needs values`
-      )
-    }
-  )
+  it.for([
+    { key: 'hyphenated', name: 'first-name' },
+    { key: 'dollar', name: 'first$name' }
+  ] as const)('reads {$name} as one named value', ({ key, name }) => {
+    expect(() => catalog.t(key)).toThrow(
+      `Translation ${key} in en needs values for {${name}}`
+    )
+    expect(catalog.t(key, 'en', { [name]: 'Ada' })).toBe('Hi Ada')
+  })
 
   it('refuses a list placeholder', () => {
     expect(() => catalog.t('item')).toThrow(
