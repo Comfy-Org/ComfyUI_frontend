@@ -76,10 +76,19 @@ const FAKE_STRIPE_JS = `
       // A spec sets window.__e2eStripeRedirectTo before load to make the
       // challenge leave the page the way a redirect method does, or
       // window.__e2eStripeHoldNextAction to keep it open until the spec
-      // settles it through window.__e2eFakeStripe.releaseNextAction.
+      // settles it through window.__e2eFakeStripe.releaseNextAction, or
+      // window.__e2eStripeIntentSettled to reject the way Stripe does for an
+      // intent that no longer requires action.
       handleNextAction: (args) => {
         window.__e2eFakeStripe.nextActions += 1
         window.__e2eFakeStripe.nextActionCalls.push(args)
+        if (window.__e2eStripeIntentSettled) {
+          const error = new Error(
+            'handleNextAction: The PaymentIntent supplied is not in the requires_action state.'
+          )
+          error.name = 'IntegrationError'
+          return Promise.reject(error)
+        }
         if (window.__e2eStripeRedirectTo) {
           window.location.assign(window.__e2eStripeRedirectTo)
           return new Promise(() => {})
