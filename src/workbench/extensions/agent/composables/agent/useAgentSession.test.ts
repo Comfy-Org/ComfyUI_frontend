@@ -763,6 +763,59 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('(b4o) keeps a pending mailbox when later threads overflow the cap', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      const deliver = new Map<string, (history: AgentMessages) => void>()
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          (threadId: string) =>
+            new Promise<AgentMessages>((resolve) => {
+              deliver.set(threadId, resolve)
+            })
+        )
+      })
+      const { source, emit } = fakeEvents()
+      conversation.setThreadId('th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+
+      // A second session for the filler loads: `loadGeneration` is per
+      // session, so driving them through this one would supersede th-1's own
+      // hydrate and it would never install the transcript at all. Never
+      // started, so `sessionGeneration` stays with the session under test.
+      const filler = useAgentSession({ rest, events: fakeEvents().source })
+      const loads = Array.from({ length: 33 }, (_, i) =>
+        filler.loadThread(`filler-${i}`)
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(30_001)
+      for (const [threadId, resolve] of deliver)
+        if (threadId !== 'th-1') resolve([])
+      await Promise.all(loads)
+
+      conversation.setThreadId('th-1')
+      emit(done('msg-1'))
+      const deliverHistory = deliver.get('th-1')
+      assert(deliverHistory !== undefined)
+      deliverHistory([
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBeNull())
+      expect(session.isStreaming.value).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('(b4k) retires stopped thread A while its successor hydrates thread B', async () => {
     vi.useFakeTimers()
     try {
