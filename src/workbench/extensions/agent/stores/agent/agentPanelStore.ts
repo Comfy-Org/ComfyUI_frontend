@@ -1,7 +1,7 @@
-import { useLocalStorage, useWindowSize } from '@vueuse/core'
+import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import {
   SIDEBAR_MIN_WIDTH,
@@ -12,18 +12,30 @@ import type {
   AgentPanelCloseSource,
   AgentPanelOpenedMetadata
 } from '@/platform/telemetry/types'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { api } from '@/scripts/api'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
 
-type WorkflowTargetSelection =
-  | { status: 'uninitialized' }
-  | { status: 'cleared' }
-  | { status: 'selected'; workflow: ComfyWorkflow }
+type TargetTracking =
+  | { mode: 'uninitialized' }
+  | { mode: 'following' }
+  | { mode: 'restoring' }
+  | { mode: 'retained'; workflow: ComfyWorkflow | null; unavailable?: true }
+
+export type AgentPanelView =
+  | { screen: 'chat' }
+  | {
+      screen: 'history'
+      previousThreadId: string | null
+      selection:
+        | { status: 'idle' }
+        | { status: 'loading' | 'failed'; id: string }
+    }
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
@@ -37,6 +49,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
+  const view = shallowRef<AgentPanelView>({ screen: 'chat' })
+  const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
   /**
@@ -47,41 +61,87 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
   const dismissedSelectionSignature = ref<string | null>(null)
-  const workflowTargetSelection = ref<WorkflowTargetSelection>({
-    status: 'uninitialized'
+  const workflowStore = useWorkflowStore()
+  const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
+  const followsVisibleWorkflow = computed(
+    () => targetTracking.value.mode === 'following'
+  )
+  const selectedWorkflow = computed(() => {
+    const target = targetTracking.value
+    if (target.mode === 'following') return workflowStore.activeWorkflow
+    return target.mode === 'retained' ? target.workflow : null
   })
-  const selectedWorkflow = computed(() =>
-    workflowTargetSelection.value.status === 'selected'
-      ? workflowTargetSelection.value.workflow
-      : null
+  const targetUnavailable = computed(
+    () =>
+      targetTracking.value.mode === 'retained' &&
+      targetTracking.value.unavailable === true
   )
   const canRestoreWorkflow = computed(
-    () => workflowTargetSelection.value.status === 'uninitialized'
+    () => targetTracking.value.mode === 'restoring'
   )
 
-  function resetWorkflowTarget(): void {
-    workflowTargetSelection.value = { status: 'uninitialized' }
+  function beginWorkflowRestoration(): void {
+    targetTracking.value = { mode: 'restoring' }
+  }
+
+  function interruptHistorySelection(): void {
+    if (
+      view.value.screen === 'history' &&
+      view.value.selection.status === 'loading'
+    )
+      view.value = {
+        ...view.value,
+        selection: { status: 'failed', id: view.value.selection.id }
+      }
+  }
+
+  function initializeTargetTracking(hasThread: boolean): void {
+    if (targetTracking.value.mode !== 'uninitialized') return
+    targetTracking.value = { mode: hasThread ? 'restoring' : 'following' }
+  }
+
+  function retainWorkflowTarget(): void {
+    if (targetTracking.value.mode === 'retained') return
+    setWorkflowTarget(selectedWorkflow.value)
+  }
+
+  function startFollowingVisibleWorkflow(): void {
+    targetTracking.value = { mode: 'following' }
   }
 
   function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
-    workflowTargetSelection.value = workflow
-      ? { status: 'selected', workflow }
-      : { status: 'cleared' }
+    targetTracking.value = { mode: 'retained', workflow }
   }
 
-  const workflowStore = useWorkflowStore()
+  function markWorkflowTargetUnavailable(): void {
+    targetTracking.value = {
+      mode: 'retained',
+      workflow: null,
+      unavailable: true
+    }
+  }
+
+  // Only a retained target can become detached. A following target belongs to
+  // the editor, including its replacement when the visible tab closes.
   watch(
-    () => [selectedWorkflow.value, ...workflowStore.openWorkflows],
+    () => [targetTracking.value, ...workflowStore.openWorkflows],
     () => {
+      const target = targetTracking.value
       if (
-        selectedWorkflow.value !== null &&
-        !workflowStore.openWorkflows.includes(selectedWorkflow.value)
+        target.mode === 'retained' &&
+        target.workflow !== null &&
+        !workflowStore.openWorkflows.includes(target.workflow)
       )
         setWorkflowTarget(null)
     }
   )
 
   let openedAt: number | null = null
+  // Guards the pagehide teardown report below: true once this open epoch has
+  // reported a close, so a bfcache-frozen page that fires pagehide again
+  // (background/resume/close) can't emit a second overlapping duration for
+  // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
+  let teardownReported = false
 
   const isVisible = computed(() => enabled.value && isOpen.value)
 
@@ -93,6 +153,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     hasEverOpened.value = true
     if (openedAt !== null) return
     openedAt = Date.now()
+    teardownReported = false
     useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
   })
 
@@ -116,13 +177,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
     )
   )
-  const requestedWidth = computed(() =>
-    maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
-  )
-  const isOverlay = computed(
-    () =>
-      windowWidth.value <= requestedWidth.value + reservedWorkspaceWidth.value
-  )
 
   const isMaximized = computed(() => maximized.value)
 
@@ -132,6 +186,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (isOpen.value) return
     isOpen.value = true
     openedAt = Date.now()
+    teardownReported = false
     useTelemetry()?.trackAgentPanelOpened({ source })
   }
 
@@ -151,6 +206,31 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isOpen.value = false
     openedAt = null
   }
+
+  // pagehide is the reliable teardown signal on tab close/reload and even on
+  // some mobile Safari backgrounding, where nothing else is guaranteed to
+  // fire again. Reports the open duration without mutating isOpen/local
+  // storage, so the localStorage-backed restore-on-reload behaviour
+  // (FE-1284/PM-648) is untouched.
+  useEventListener(window, 'pagehide', () => {
+    if (!isVisible.value || openedAt === null || teardownReported) return
+    teardownReported = true
+    useTelemetry()?.trackAgentPanelClosed({
+      source: 'pagehide',
+      open_duration_ms: Date.now() - openedAt
+    })
+  })
+
+  // A bfcache restore resumes this same frozen interval rather than starting
+  // a new one, so the pagehide report above already closed it out. Starting
+  // a fresh interval here keeps a later close()/pagehide measuring only the
+  // time since resume, instead of re-including (and double counting) the
+  // span already reported.
+  useEventListener(window, 'pageshow', (event: PageTransitionEvent) => {
+    if (!event.persisted || !isVisible.value) return
+    openedAt = Date.now()
+    teardownReported = false
+  })
 
   function toggle(): void {
     if (isOpen.value) close('topbar_button')
@@ -178,17 +258,24 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isVisible,
     hasEverOpened,
     gateSettled,
+    view,
+    interruptHistorySelection,
+    flagsSettled,
     reportedExhaustionIdentity,
     width,
-    requestedWidth,
-    isOverlay,
     isMaximized,
     dismissedSelectionSignature,
     open,
-    workflowTargetSelection,
+    targetTracking,
+    followsVisibleWorkflow,
+    initializeTargetTracking,
+    retainWorkflowTarget,
+    startFollowingVisibleWorkflow,
     selectedWorkflow,
+    targetUnavailable,
+    markWorkflowTargetUnavailable,
     canRestoreWorkflow,
-    resetWorkflowTarget,
+    beginWorkflowRestoration,
     setWorkflowTarget,
     toggle,
     close,
